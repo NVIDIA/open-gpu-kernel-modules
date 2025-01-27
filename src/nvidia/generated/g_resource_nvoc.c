@@ -49,9 +49,9 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon =
     /*pExportInfo=*/        &__nvoc_export_info_RmResourceCommon
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge RmResourceCommon methods from ancestors (if any)
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
+// Up-thunk(s) to bridge RmResourceCommon methods to ancestors (if any)
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_RmResourceCommon = 
 {
@@ -165,7 +165,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource =
     /*pExportInfo=*/        &__nvoc_export_info_RmResource
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge RmResource methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // this
 NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // this
 NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
@@ -177,36 +177,36 @@ void __nvoc_down_thunk_RmResource_resControl_Epilogue(struct RsResource *pResour
 
 // rmresAccessCallback: virtual override (res) base (res)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) - __nvoc_rtti_RmResource_RsResource.offset), pInvokingClient, pAllocParams, accessRight);
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) - NV_OFFSETOF(RmResource, __nvoc_base_RsResource)), pInvokingClient, pAllocParams, accessRight);
 }
 
 // rmresShareCallback: virtual override (res) base (res)
 NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) - __nvoc_rtti_RmResource_RsResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) - NV_OFFSETOF(RmResource, __nvoc_base_RsResource)), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // rmresControlSerialization_Prologue: virtual override (res) base (res)
 NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) - __nvoc_rtti_RmResource_RsResource.offset), pCallContext, pParams);
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) - NV_OFFSETOF(RmResource, __nvoc_base_RsResource)), pCallContext, pParams);
 }
 
 // rmresControlSerialization_Epilogue: virtual override (res) base (res)
 void __nvoc_down_thunk_RmResource_resControlSerialization_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) - __nvoc_rtti_RmResource_RsResource.offset), pCallContext, pParams);
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) - NV_OFFSETOF(RmResource, __nvoc_base_RsResource)), pCallContext, pParams);
 }
 
 // rmresControl_Prologue: virtual override (res) base (res)
 NV_STATUS __nvoc_down_thunk_RmResource_resControl_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) - __nvoc_rtti_RmResource_RsResource.offset), pCallContext, pParams);
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) - NV_OFFSETOF(RmResource, __nvoc_base_RsResource)), pCallContext, pParams);
 }
 
 // rmresControl_Epilogue: virtual override (res) base (res)
 void __nvoc_down_thunk_RmResource_resControl_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) - __nvoc_rtti_RmResource_RsResource.offset), pCallContext, pParams);
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) - NV_OFFSETOF(RmResource, __nvoc_base_RsResource)), pCallContext, pParams);
 }
 
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
+// Up-thunk(s) to bridge RmResource methods to ancestors (if any)
 NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // this
 NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // this
 void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // this
@@ -224,62 +224,62 @@ void __nvoc_up_thunk_RsResource_rmresAddAdditionalDependants(struct RsClient *pC
 
 // rmresCanCopy: virtual inherited (res) base (res)
 NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmResource_RsResource.offset));
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(RmResource, __nvoc_base_RsResource)));
 }
 
 // rmresIsDuplicate: virtual inherited (res) base (res)
 NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmResource_RsResource.offset), hMemory, pDuplicate);
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(RmResource, __nvoc_base_RsResource)), hMemory, pDuplicate);
 }
 
 // rmresPreDestruct: virtual inherited (res) base (res)
 void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmResource_RsResource.offset));
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(RmResource, __nvoc_base_RsResource)));
 }
 
 // rmresControl: virtual inherited (res) base (res)
 NV_STATUS __nvoc_up_thunk_RsResource_rmresControl(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControl((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmResource_RsResource.offset), pCallContext, pParams);
+    return resControl((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(RmResource, __nvoc_base_RsResource)), pCallContext, pParams);
 }
 
 // rmresControlFilter: virtual inherited (res) base (res)
 NV_STATUS __nvoc_up_thunk_RsResource_rmresControlFilter(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmResource_RsResource.offset), pCallContext, pParams);
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(RmResource, __nvoc_base_RsResource)), pCallContext, pParams);
 }
 
 // rmresMap: virtual inherited (res) base (res)
 NV_STATUS __nvoc_up_thunk_RsResource_rmresMap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmResource_RsResource.offset), pCallContext, pParams, pCpuMapping);
+    return resMap((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(RmResource, __nvoc_base_RsResource)), pCallContext, pParams, pCpuMapping);
 }
 
 // rmresUnmap: virtual inherited (res) base (res)
 NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmResource_RsResource.offset), pCallContext, pCpuMapping);
+    return resUnmap((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(RmResource, __nvoc_base_RsResource)), pCallContext, pCpuMapping);
 }
 
 // rmresIsPartialUnmapSupported: inline virtual inherited (res) base (res) body
 NvBool __nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported(struct RmResource *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmResource_RsResource.offset));
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(RmResource, __nvoc_base_RsResource)));
 }
 
 // rmresMapTo: virtual inherited (res) base (res)
 NV_STATUS __nvoc_up_thunk_RsResource_rmresMapTo(struct RmResource *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmResource_RsResource.offset), pParams);
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(RmResource, __nvoc_base_RsResource)), pParams);
 }
 
 // rmresUnmapFrom: virtual inherited (res) base (res)
 NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmapFrom(struct RmResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmResource_RsResource.offset), pParams);
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(RmResource, __nvoc_base_RsResource)), pParams);
 }
 
 // rmresGetRefCount: virtual inherited (res) base (res)
 NvU32 __nvoc_up_thunk_RsResource_rmresGetRefCount(struct RmResource *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmResource_RsResource.offset));
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(RmResource, __nvoc_base_RsResource)));
 }
 
 // rmresAddAdditionalDependants: virtual inherited (res) base (res)
 void __nvoc_up_thunk_RsResource_rmresAddAdditionalDependants(struct RsClient *pClient, struct RmResource *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmResource_RsResource.offset), pReference);
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(RmResource, __nvoc_base_RsResource)), pReference);
 }
 
 

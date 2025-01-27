@@ -80,6 +80,93 @@ subdeviceCtrlCmdPerfGetGpumonPerfmonUtilSamplesV2_VF
     return status;
 }
 
+/*!
+ * @copydoc NV2080_CTRL_CMD_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_V2
+ *
+ * @params[in]     pSubdevice
+ * @params[in/out] pParams
+ *
+ * @return NV_OK
+ *
+ * @return Other error
+ *     Encountered un-expected error.
+ */
+NV_STATUS
+subdeviceCtrlCmdPerfGetGpumonPerfmonUtilSamplesV2_KERNEL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_V2_PARAMS *pParams
+)
+{
+    OBJGPU   *pGpu   = GPU_RES_GET_GPU(pSubdevice);
+    RM_API   *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV2080_CTRL_PERF_GPUMON_PERFMON_UTIL_SAMPLE *pSample;
+    NvU32 numEntries, index, nsPid;
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+                          pRmApi->Control(pRmApi,
+                             RES_GET_CLIENT_HANDLE(pSubdevice),
+                             RES_GET_HANDLE(pSubdevice),
+                             NV2080_CTRL_CMD_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_V2,
+                             pParams,
+                             sizeof(*pParams)));
+
+    // Now translate the sample's procId.
+    numEntries = pParams->bufSize / sizeof (NV2080_CTRL_PERF_GPUMON_PERFMON_UTIL_SAMPLE);
+    NV_ASSERT_OR_RETURN(numEntries <= NV2080_CTRL_PERF_GPUMON_SAMPLE_COUNT_PERFMON_UTIL,
+                        NV_ERR_BUFFER_TOO_SMALL);
+
+    for (index = 0; index < numEntries; index++)
+    {
+        pSample = &pParams->samples[index];
+
+        // pOsPidInfo is NULL for vGPU GSP case and RsClient of RS_PRIV_LEVEL_KERNEL and above.
+        if ((pSample->gr.pOsPidInfo != 0) &&
+            (osFindNsPid((void *)pSample->gr.pOsPidInfo, &nsPid) == NV_OK))
+        {
+            pSample->gr.pOsPidInfo = 0;
+            pSample->gr.procId = nsPid;
+        }
+
+        if ((pSample->fb.pOsPidInfo != 0) &&
+            (osFindNsPid((void *)pSample->fb.pOsPidInfo, &nsPid) == NV_OK))
+        {
+            pSample->fb.pOsPidInfo = 0;
+            pSample->fb.procId = nsPid;
+        }
+
+        if ((pSample->nvenc.pOsPidInfo != 0) &&
+            (osFindNsPid((void *)pSample->nvenc.pOsPidInfo, &nsPid) == NV_OK))
+        {
+            pSample->nvenc.pOsPidInfo = 0;
+            pSample->nvenc.procId = nsPid;
+        }
+
+        if ((pSample->nvdec.pOsPidInfo != 0) &&
+            (osFindNsPid((void *)pSample->nvdec.pOsPidInfo, &nsPid) == NV_OK))
+        {
+            pSample->nvdec.pOsPidInfo = 0;
+            pSample->nvdec.procId = nsPid;
+        }
+
+        if ((pSample->nvjpg.pOsPidInfo != 0) &&
+            (osFindNsPid((void *)pSample->nvjpg.pOsPidInfo, &nsPid) == NV_OK))
+        {
+            pSample->nvjpg.pOsPidInfo = 0;
+            pSample->nvjpg.procId = nsPid;
+        }
+
+        if ((pSample->nvofa.pOsPidInfo != 0) &&
+            (osFindNsPid((void *)pSample->nvofa.pOsPidInfo, &nsPid) == NV_OK))
+        {
+            pSample->nvofa.pOsPidInfo = 0;
+            pSample->nvofa.procId = nsPid;
+        }
+    }
+
+    return NV_OK;
+}
+
 /*
  * We are using the V1 structure here so as to use the old
  * RPC call, without changing function signature of RPC

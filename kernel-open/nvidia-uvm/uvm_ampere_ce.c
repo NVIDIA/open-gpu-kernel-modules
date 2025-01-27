@@ -29,6 +29,8 @@
 
 bool uvm_hal_ampere_ce_method_is_valid_c6b5(uvm_push_t *push, NvU32 method_address, NvU32 method_data)
 {
+    UVM_ASSERT(push->channel);
+
     if (!uvm_channel_is_proxy(push->channel))
         return true;
 
@@ -116,6 +118,16 @@ bool uvm_hal_ampere_ce_memcopy_is_valid_c6b5(uvm_push_t *push, uvm_gpu_address_t
 {
     NvU64 push_begin_gpu_va;
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+    const bool peer_copy = uvm_gpu_address_is_peer(gpu, dst) || uvm_gpu_address_is_peer(gpu, src);
+
+    UVM_ASSERT(push->channel);
+
+    if (peer_copy && !uvm_channel_is_p2p(push->channel)) {
+        UVM_ERR_PRINT("Peer copy from address (0x%llx) to address (0x%llx) should use designated p2p channels!",
+                      src.address,
+                      dst.address);
+        return false;
+    }
 
     if (!uvm_parent_gpu_is_virt_mode_sriov_heavy(gpu->parent))
         return true;
@@ -181,6 +193,8 @@ bool uvm_hal_ampere_ce_memcopy_is_valid_c6b5(uvm_push_t *push, uvm_gpu_address_t
 void uvm_hal_ampere_ce_memcopy_patch_src_c6b5(uvm_push_t *push, uvm_gpu_address_t *src)
 {
     uvm_pushbuffer_t *pushbuffer;
+
+    UVM_ASSERT(push->channel);
 
     if (!uvm_channel_is_proxy(push->channel))
         return;

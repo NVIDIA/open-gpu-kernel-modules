@@ -463,6 +463,10 @@ NV_STATUS osMapSystemMemory
 {
     OBJGPU *pGpu = pMemDesc->pGpu;
 
+    NvU64     rootOffset = 0;
+    pMemDesc = memdescGetRootMemDesc(pMemDesc, &rootOffset);
+    Offset  += rootOffset;
+
     RmPhysAddr userAddress;
     nv_state_t *nv = NV_GET_NV_STATE(pGpu);
     NV_STATUS rmStatus = NV_OK;
@@ -548,9 +552,12 @@ void osUnmapSystemMemory
 )
 {
     NV_STATUS status;
-    void *pAllocPrivate = memdescGetMemData(pMemDesc);
+    void *pAllocPrivate;
     OBJGPU *pGpu = pMemDesc->pGpu;
     nv_state_t *nv = NV_GET_NV_STATE(pGpu);
+
+    pMemDesc = memdescGetRootMemDesc(pMemDesc, NULL);
+    pAllocPrivate = memdescGetMemData(pMemDesc);
 
     if (Kernel)
     {
@@ -663,6 +670,11 @@ NV_STATUS osFindNsPid(void *pOsPidInfo, NvU32 *pNsPid)
     return os_find_ns_pid(pOsPidInfo, pNsPid);
 }
 
+NvBool osIsInitNs(void)
+{
+    return os_is_init_ns();
+}
+
 NV_STATUS osAttachToProcess(void** ppProcessInfo, NvU32 ProcessId)
 {
     //
@@ -742,6 +754,8 @@ NV_STATUS osQueueWorkItemWithFlags(
         pWi->flags |= OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA;
     if (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW)
         pWi->flags |= OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW;
+    if (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RO)
+        pWi->flags |= OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RO;
     if (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS)
         pWi->flags |= OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS;
     if (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE)
@@ -806,6 +820,15 @@ void osQueueMMUFaultHandler(OBJGPU *pGpu)
     nv_schedule_uvm_isr(nv);
 }
 
+NvBool osGpuSupportsAts(OBJGPU *pGpu)
+{
+    nv_state_t *nv = NV_GET_NV_STATE(pGpu);
+
+    // Checks ATS support from both OS side and RM side.
+    return nv->ats_support && 
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED);
+}
+
 NV_STATUS osQueueDrainP2PHandler(NvU8 *pUuid)
 {
     return nv_schedule_uvm_drain_p2p(pUuid);
@@ -854,11 +877,17 @@ NV_STATUS osAllocPagesInternal(
     NvS32             nodeId    = NV0000_CTRL_NO_NUMA_NODE;
     NV_ADDRESS_SPACE  addrSpace = memdescGetAddressSpace(pMemDesc);
     NvU64             pageSize  = osGetPageSize();
+    NvU64             osPageCount = NV_ALIGN_UP(pMemDesc->Size, pageSize) >> BIT_IDX_32(pageSize); // TODO: Switch out for macro before submission.
+    NvU64             rmPageCount = NV_ALIGN_UP(pMemDesc->Size, RM_PAGE_SIZE) >> RM_PAGE_SHIFT;
 
     memdescSetAddress(pMemDesc, NvP64_NULL);
     memdescSetMemData(pMemDesc, NULL, NULL);
 
-    NV_ASSERT_OR_RETURN(pMemDesc->PageCount > 0, NV_ERR_INVALID_ARGUMENT);
+    // In the non-contig case need to protect against page array overflows.
+    if (!memdescGetContiguity(pMemDesc, AT_CPU))
+    {
+        NV_ASSERT_OR_RETURN(rmPageCount <= pMemDesc->pageArraySize, NV_ERR_INVALID_ARGUMENT);
+    }
 
     //
     // For carveout, the memory is already reserved so we don't have
@@ -867,16 +896,24 @@ NV_STATUS osAllocPagesInternal(
     if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT) ||
         memdescGetFlag(pMemDesc, MEMDESC_FLAGS_GUEST_ALLOCATED))
     {
+        // We only support scanout carveout with contiguous memory.
+        if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT) &&
+            !memdescGetContiguity(pMemDesc, AT_CPU))
+        {
+            status = NV_ERR_NOT_SUPPORTED;
+            goto done;
+        }
+
         if (NV_RM_PAGE_SIZE < os_page_size &&
             !memdescGetContiguity(pMemDesc, AT_CPU))
         {
             RmDeflateRmToOsPageArray(memdescGetPteArray(pMemDesc, AT_CPU),
-                                     pMemDesc->PageCount);
+                                     rmPageCount);
         }
 
         status = nv_alias_pages(
             NV_GET_NV_STATE(pGpu),
-            NV_RM_PAGES_TO_OS_PAGES(pMemDesc->PageCount),
+            osPageCount,
             pageSize,
             memdescGetContiguity(pMemDesc, AT_CPU),
             memdescGetCpuCacheAttrib(pMemDesc),
@@ -910,35 +947,35 @@ NV_STATUS osAllocPagesInternal(
             nodeId = GPU_GET_MEMORY_MANAGER(pGpu)->localEgmNodeId;
         }
 
-        if (NV_RM_PAGES_TO_OS_PAGES(pMemDesc->PageCount) > NV_U32_MAX)
+
+        if (osPageCount > NV_U32_MAX || rmPageCount > NV_U32_MAX)
         {
             status = NV_ERR_INVALID_LIMIT;
+            goto done;
         }
-        else
-        {
-            //
-            // Bug 4270864: Only non-contig EGM memory needs to specify order. Contig memory
-            // calculates it within nv_alloc_pages. The long term goal is to expand the ability
-            // to request large page size for all of sysmem.
-            //
-            if (memdescIsEgm(pMemDesc) && !memdescGetContiguity(pMemDesc, AT_CPU))
-            {
-                pageSize = memdescGetPageSize(pMemDesc, AT_GPU);
-            }
 
-            status = nv_alloc_pages(
-                NV_GET_NV_STATE(pGpu),
-                NV_RM_PAGES_TO_OS_PAGES(pMemDesc->PageCount),
-                pageSize,
-                memdescGetContiguity(pMemDesc, AT_CPU),
-                memdescGetCpuCacheAttrib(pMemDesc),
-                pSys->getProperty(pSys,
-                    PDB_PROP_SYS_INITIALIZE_SYSTEM_MEMORY_ALLOCATIONS),
-                unencrypted,
-                nodeId,
-                memdescGetPteArray(pMemDesc, AT_CPU),
-                &pMemData);
+        //
+        // Bug 4270864: Only non-contig EGM memory needs to specify order. Contig memory
+        // calculates it within nv_alloc_pages. The long term goal is to expand the ability
+        // to request large page size for all of sysmem.
+        //
+        if (memdescIsEgm(pMemDesc) && !memdescGetContiguity(pMemDesc, AT_CPU))
+        {
+            pageSize = memdescGetPageSize(pMemDesc, AT_GPU);
         }
+
+        status = nv_alloc_pages(
+            NV_GET_NV_STATE(pGpu),
+            osPageCount,  // TODO: This call needs to receive the page count param at the requested page size.
+            pageSize,
+            memdescGetContiguity(pMemDesc, AT_CPU),
+            memdescGetCpuCacheAttrib(pMemDesc),
+            pSys->getProperty(pSys,
+                PDB_PROP_SYS_INITIALIZE_SYSTEM_MEMORY_ALLOCATIONS),
+            unencrypted,
+            nodeId,
+            memdescGetPteArray(pMemDesc, AT_CPU),
+            &pMemData);
 
         if (nv && nv->force_dma32_alloc)
             nv->force_dma32_alloc = NV_FALSE;
@@ -946,7 +983,13 @@ NV_STATUS osAllocPagesInternal(
 
     if (status != NV_OK)
     {
-        return status;
+        goto done;
+    }
+
+    // Guest allocated memory is already initialized
+    if (!memdescGetFlag(pMemDesc, MEMDESC_FLAGS_GUEST_ALLOCATED))
+    {
+        NV_ASSERT_OK_OR_RETURN(memdescSetAllocSizeFields(pMemDesc, rmPageCount * RM_PAGE_SIZE, RM_PAGE_SIZE));
     }
 
     //
@@ -964,7 +1007,7 @@ NV_STATUS osAllocPagesInternal(
 
     if ((pGpu != NULL) && IS_VIRTUAL(pGpu))
         NV_ASSERT_OK_OR_RETURN(vgpuUpdateGuestSysmemPfnBitMap(pGpu, pMemDesc, NV_TRUE));
-
+done:
     return status;
 }
 
@@ -4242,54 +4285,6 @@ osCountTailPages
     return os_count_tail_pages(pAddress);
 }
 
-/*
- *  @brief Upon success, gets NPU register address range.
- *
- *  @param[in]  pOsGpuInfo       OS specific GPU information pointer
- *  @param[out] pBase            base (physical) of NPU register address range
- *  @param[out] pSize            size of NPU register address range
- */
-NV_STATUS
-osGetIbmnpuGenregInfo
-(
-    OS_GPU_INFO *pOsGpuInfo,
-    NvU64       *pBase,
-    NvU64       *pSize
-)
-{
-    return nv_get_ibmnpu_genreg_info(pOsGpuInfo, pBase, pSize, NULL);
-}
-
-/*
- *  @brief Upon success, gets NPU's relaxed ordering mode.
- *
- *  @param[in]  pOsGpuInfo       OS specific GPU information pointer
- *  @param[out] pMode            relaxed ordering mode
- */
-NV_STATUS
-osGetIbmnpuRelaxedOrderingMode
-(
-    OS_GPU_INFO *pOsGpuInfo,
-    NvBool      *pMode
-)
-{
-    return nv_get_ibmnpu_relaxed_ordering_mode(pOsGpuInfo, pMode);
-}
-
-/*
- *  @brief Waits for NVLink HW flush on an NPU associated with a GPU.
- *
- *  @param[in]  pOsGpuInfo       OS specific GPU information pointer
- */
-void
-osWaitForIbmnpuRsync
-(
-    OS_GPU_INFO *pOsGpuInfo
-)
-{
-    nv_wait_for_ibmnpu_rsync(pOsGpuInfo);
-}
-
 NvU64
 osGetPageSize(void)
 {
@@ -5038,7 +5033,7 @@ osReadPFPciConfigInVF
  * components of the tegra_bpmp_message struct, which BPMP uses to receive
  * MRQs.
  *
- * @param[in]  pOsGpuInfo         OS specific GPU information pointer
+ * @param[in]  pGpu               OBJGPU pointer
  * @param[in]  mrq                MRQ_xxx ID specifying what is requested
  * @param[in]  pRequestData       Pointer to request input data
  * @param[in]  requestDataSize    Size of structure pointed to by pRequestData
@@ -5058,7 +5053,7 @@ osReadPFPciConfigInVF
 NV_STATUS
 osTegraSocBpmpSendMrq
 (
-    OS_GPU_INFO *pOsGpuInfo,
+    OBJGPU      *pGpu,
     NvU32        mrq,
     const void  *pRequestData,
     NvU32        requestDataSize,

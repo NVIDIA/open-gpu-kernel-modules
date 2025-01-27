@@ -370,67 +370,6 @@ static void nv_dma_unmap_scatterlist(nv_dma_map_t *dma_map)
     nv_destroy_dma_map_scatterlist(dma_map);
 }
 
-static void nv_dma_nvlink_addr_compress
-(
-    nv_dma_device_t *dma_dev,
-    NvU64           *va_array,
-    NvU64            page_count,
-    NvBool           contig
-)
-{
-#if defined(NVCPU_PPC64LE)
-    NvU64 addr = 0;
-    NvU64 i;
-
-    /*
-     * On systems that support NVLink sysmem links, apply the required address
-     * compression scheme when links are trained. Otherwise check that PCIe and
-     * NVLink DMA mappings are equivalent as per requirements of Bug 1920398.
-     */
-    if (dma_dev->nvlink)
-    {
-        for (i = 0; i < (contig ? 1 : page_count); i++)
-        {
-            va_array[i] = nv_compress_nvlink_addr(va_array[i]);
-        }
-
-        return;
-    }
-
-    for (i = 0; i < (contig ? 1 : page_count); i++)
-    {
-        addr = nv_compress_nvlink_addr(va_array[i]);
-        if (WARN_ONCE(va_array[i] != addr,
-                      "unexpected DMA address compression (0x%llx, 0x%llx)\n",
-                      va_array[i], addr))
-        {
-            break;
-        }
-    }
-#endif
-}
-
-static void nv_dma_nvlink_addr_decompress
-(
-    nv_dma_device_t *dma_dev,
-    NvU64           *va_array,
-    NvU64            page_count,
-    NvBool           contig
-)
-{
-#if defined(NVCPU_PPC64LE)
-    NvU64 i;
-
-    if (dma_dev->nvlink)
-    {
-        for (i = 0; i < (contig ? 1 : page_count); i++)
-        {
-            va_array[i] = nv_expand_nvlink_addr(va_array[i]);
-        }
-    }
-#endif
-}
-
 NV_STATUS NV_API_CALL nv_dma_map_sgt(
     nv_dma_device_t *dma_dev,
     NvU64            page_count,
@@ -479,8 +418,6 @@ NV_STATUS NV_API_CALL nv_dma_map_sgt(
     else
     {
         *priv = dma_map;
-        nv_dma_nvlink_addr_compress(dma_dev, va_array, dma_map->page_count,
-                                    dma_map->contiguous);
     }
 
     return status;
@@ -575,8 +512,6 @@ static NV_STATUS NV_API_CALL nv_dma_map_pages(
     else
     {
         *priv = dma_map;
-        nv_dma_nvlink_addr_compress(dma_dev, va_array, dma_map->page_count,
-                                    dma_map->contiguous);
     }
 
     return status;
@@ -908,8 +843,6 @@ NV_STATUS NV_API_CALL nv_dma_map_mmio
         *va = *va + dma_dev->addressable_range.start;
     }
 
-    nv_dma_nvlink_addr_compress(dma_dev, va, page_count, NV_TRUE);
-
     return NV_OK;
 #else
     return NV_ERR_NOT_SUPPORTED;
@@ -924,8 +857,6 @@ void NV_API_CALL nv_dma_unmap_mmio
 )
 {
 #if defined(NV_DMA_MAP_RESOURCE_PRESENT)
-    nv_dma_nvlink_addr_decompress(dma_dev, &va, page_count, NV_TRUE);
-
     if (nv_dma_use_map_resource(dma_dev))
     {
         dma_unmap_resource(dma_dev->dev, va, page_count * PAGE_SIZE,
@@ -972,15 +903,6 @@ void NV_API_CALL nv_dma_cache_invalidate
         }
     }
 #endif
-}
-
-/* Enable DMA-mapping over NVLink */
-void NV_API_CALL nv_dma_enable_nvlink
-(
-    nv_dma_device_t *dma_dev
-)
-{
-    dma_dev->nvlink = NV_TRUE;
 }
 
 #if defined(NV_LINUX_DMA_BUF_H_PRESENT) && \

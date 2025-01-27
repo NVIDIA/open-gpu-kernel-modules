@@ -82,7 +82,7 @@ KernelFalcon *kflcnGetKernelFalconForEngine_IMPL(OBJGPU *pGpu, ENGDESCRIPTOR phy
 
 NvU32 kflcnGetPendingHostInterrupts(OBJGPU *pGpu, KernelFalcon *pKernelFalcon)
 {
-    if (kflcnIsRiscvActive_HAL(pGpu, pKernelFalcon))
+    if (kflcnIsRiscvMode(pGpu, pKernelFalcon))
         return kflcnRiscvReadIntrStatus(pGpu, pKernelFalcon);
     else
         return kflcnReadIntrStatus(pGpu, pKernelFalcon);

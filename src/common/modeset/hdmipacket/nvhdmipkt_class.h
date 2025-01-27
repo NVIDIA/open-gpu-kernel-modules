@@ -48,6 +48,9 @@ typedef enum
     NVHDMIPKT_C571_CLASS = 6, // TU102
     NVHDMIPKT_C671_CLASS = 7, // GA102, T234D
     NVHDMIPKT_C771_CLASS = 8, // AD10X
+    NVHDMIPKT_C871_CLASS = 9, // T239
+    NVHDMIPKT_C971_CLASS = 10, // NVD5.0
+    NVHDMIPKT_CA71_CLASS = 11,
     NVHDMIPKT_INVALID_CLASS   // Not to be used by client, and always the last entry here.
 } NVHDMIPKT_CLASS_ID;
 
@@ -84,6 +87,21 @@ struct tagNVHDMIPKT_CLASS
                                   NVHDMIPKT_TC       transmitControl,
                                   NvU32              packetLen,
                                   NvU8 const *const  pPacket);
+
+    NVHDMIPKT_RESULT
+    (*hdmiPacketRead)            (NVHDMIPKT_CLASS*   pThis,
+                                  NvU32              subDevice,
+                                  NvU32              head,
+                                  NVHDMIPKT_TYPE     packetReg,
+                                  NvU32              bufferLen,
+                                  NvU8 *const        pOutPktBuffer);
+
+    NVHDMIPKT_RESULT
+    (*programAdvancedInfoframe)  (NVHDMIPKT_CLASS*          pThis,
+                                  NvU32                     subDevice,
+                                  NvU32                     head,
+                                  NVHDMIPKT_TYPE            packetReg,
+                                  const ADVANCED_INFOFRAME* pInfoframe);
 
     // HW functions - that read/write registers
     NvBool

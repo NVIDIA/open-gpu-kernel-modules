@@ -56,7 +56,6 @@ extern "C" {
 #include "gpu/gpu_halspec.h"
 
 #include "ctrl/ctrl0073.h"
-#include "ctrl/ctrl5070/ctrl5070event.h"
 #include "ctrl/ctrl5070/ctrl5070or.h"
 #include "ctrl/ctrl5070/ctrl5070system.h"
 #include "ctrl/ctrlc370/ctrlc370chnc.h"
@@ -118,7 +117,7 @@ struct DisplayApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__DisplayApi *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct RmResource __nvoc_base_RmResource;
     struct Notifier __nvoc_base_Notifier;
 
@@ -389,10 +388,10 @@ NV_STATUS dispapiConstruct_IMPL(struct DisplayApi *arg_pDisplayApi, struct CALL_
 void dispapiDestruct_IMPL(struct DisplayApi *pDisplayApi);
 
 #define __nvoc_dispapiDestruct(pDisplayApi) dispapiDestruct_IMPL(pDisplayApi)
-NV_STATUS dispapiCtrlCmdEventSetNotification_IMPL(struct DisplayApi *pDisplayApi, NV5070_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams);
+NV_STATUS dispapiCtrlCmdEventSetNotification_IMPL(struct DisplayApi *pDisplayApi, NV0073_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams);
 
 #ifdef __nvoc_disp_objs_h_disabled
-static inline NV_STATUS dispapiCtrlCmdEventSetNotification(struct DisplayApi *pDisplayApi, NV5070_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams) {
+static inline NV_STATUS dispapiCtrlCmdEventSetNotification(struct DisplayApi *pDisplayApi, NV0073_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams) {
     NV_ASSERT_FAILED_PRECOMP("DisplayApi was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -431,7 +430,7 @@ struct DispObject {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__DispObject *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct DisplayApi __nvoc_base_DisplayApi;
 
     // Ancestor object pointers for `staticCast` feature
@@ -444,13 +443,12 @@ struct DispObject {
     struct DisplayApi *__nvoc_pbase_DisplayApi;    // dispapi super
     struct DispObject *__nvoc_pbase_DispObject;    // dispobj
 
-    // Vtable with 20 per-object function pointers
+    // Vtable with 19 per-object function pointers
     NV_STATUS (*__dispobjCtrlCmdGetPinsetCount__)(struct DispObject * /*this*/, NV5070_CTRL_GET_PINSET_COUNT_PARAMS *);  // exported (id=0x50700115)
     NV_STATUS (*__dispobjCtrlCmdGetPinsetPeer__)(struct DispObject * /*this*/, NV5070_CTRL_GET_PINSET_PEER_PARAMS *);  // exported (id=0x50700116)
     NV_STATUS (*__dispobjCtrlCmdSetMempoolWARForBlitTearing__)(struct DispObject * /*this*/, NV5070_CTRL_SET_MEMPOOL_WAR_FOR_BLIT_TEARING_PARAMS *);  // exported (id=0x50700119)
     NV_STATUS (*__dispobjCtrlCmdGetPinsetLockpins__)(struct DispObject * /*this*/, NV5070_CTRL_GET_PINSET_LOCKPINS_PARAMS *);  // exported (id=0x5070020b)
     NV_STATUS (*__dispobjCtrlCmdGetFrameLockHeaderLockPins__)(struct DispObject * /*this*/, NV5070_CTRL_GET_FRAMELOCK_HEADER_LOCKPINS_PARAMS *);  // exported (id=0x5070020d)
-    NV_STATUS (*__dispobjCtrlCmdEventSetMemoryNotifies__)(struct DispObject * /*this*/, NV5070_CTRL_EVENT_SET_MEMORY_NOTIFIES_PARAMS *);  // exported (id=0x50700903)
     NV_STATUS (*__dispobjCtrlCmdSetRmFreeFlags__)(struct DispObject * /*this*/, NV5070_CTRL_SET_RMFREE_FLAGS_PARAMS *);  // exported (id=0x50700117)
     NV_STATUS (*__dispobjCtrlCmdIMPSetGetParameter__)(struct DispObject * /*this*/, NV5070_CTRL_IMP_SET_GET_PARAMETER_PARAMS *);  // exported (id=0x50700118)
     NV_STATUS (*__dispobjCtrlCmdGetRgStatus__)(struct DispObject * /*this*/, NV5070_CTRL_CMD_GET_RG_STATUS_PARAMS *);  // exported (id=0x50700202)
@@ -463,8 +461,8 @@ struct DispObject {
     NV_STATUS (*__dispobjCtrlCmdGetSorOpMode__)(struct DispObject * /*this*/, NV5070_CTRL_CMD_GET_SOR_OP_MODE_PARAMS *);  // exported (id=0x50700422)
     NV_STATUS (*__dispobjCtrlCmdSetSorOpMode__)(struct DispObject * /*this*/, NV5070_CTRL_CMD_SET_SOR_OP_MODE_PARAMS *);  // exported (id=0x50700423)
     NV_STATUS (*__dispobjCtrlCmdSetSorFlushMode__)(struct DispObject * /*this*/, NV5070_CTRL_SET_SOR_FLUSH_MODE_PARAMS *);  // exported (id=0x50700457)
+    NV_STATUS (*__dispobjCtrlCmdC370SetSorFlushMode__)(struct DispObject * /*this*/, NVC370_CTRL_SET_SOR_FLUSH_MODE_PARAMS *);  // exported (id=0xc3700401)
     NV_STATUS (*__dispobjCtrlCmdSystemGetCapsV2__)(struct DispObject * /*this*/, NV5070_CTRL_SYSTEM_GET_CAPS_V2_PARAMS *);  // exported (id=0x50700709)
-    NV_STATUS (*__dispobjCtrlCmdEventSetTrigger__)(struct DispObject * /*this*/);  // exported (id=0x50700902)
 
     // Data members
     NvU32 rmFreeFlags;
@@ -543,8 +541,6 @@ NV_STATUS __nvoc_objCreate_DispObject(DispObject**, Dynamic*, NvU32, struct CALL
 #define dispobjCtrlCmdGetPinsetLockpins(pDispObject, pParams) dispobjCtrlCmdGetPinsetLockpins_DISPATCH(pDispObject, pParams)
 #define dispobjCtrlCmdGetFrameLockHeaderLockPins_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdGetFrameLockHeaderLockPins__
 #define dispobjCtrlCmdGetFrameLockHeaderLockPins(pDispObject, pParams) dispobjCtrlCmdGetFrameLockHeaderLockPins_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdEventSetMemoryNotifies_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdEventSetMemoryNotifies__
-#define dispobjCtrlCmdEventSetMemoryNotifies(pDispObject, pSetMemoryNotifiesParams) dispobjCtrlCmdEventSetMemoryNotifies_DISPATCH(pDispObject, pSetMemoryNotifiesParams)
 #define dispobjCtrlCmdSetRmFreeFlags_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdSetRmFreeFlags__
 #define dispobjCtrlCmdSetRmFreeFlags(pDispObject, pParams) dispobjCtrlCmdSetRmFreeFlags_DISPATCH(pDispObject, pParams)
 #define dispobjCtrlCmdIMPSetGetParameter_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdIMPSetGetParameter__
@@ -569,10 +565,10 @@ NV_STATUS __nvoc_objCreate_DispObject(DispObject**, Dynamic*, NvU32, struct CALL
 #define dispobjCtrlCmdSetSorOpMode(pDispObject, pParams) dispobjCtrlCmdSetSorOpMode_DISPATCH(pDispObject, pParams)
 #define dispobjCtrlCmdSetSorFlushMode_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdSetSorFlushMode__
 #define dispobjCtrlCmdSetSorFlushMode(pDispObject, pParams) dispobjCtrlCmdSetSorFlushMode_DISPATCH(pDispObject, pParams)
+#define dispobjCtrlCmdC370SetSorFlushMode_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdC370SetSorFlushMode__
+#define dispobjCtrlCmdC370SetSorFlushMode(pDispObject, pParams) dispobjCtrlCmdC370SetSorFlushMode_DISPATCH(pDispObject, pParams)
 #define dispobjCtrlCmdSystemGetCapsV2_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdSystemGetCapsV2__
 #define dispobjCtrlCmdSystemGetCapsV2(pDispObject, pCapsParams) dispobjCtrlCmdSystemGetCapsV2_DISPATCH(pDispObject, pCapsParams)
-#define dispobjCtrlCmdEventSetTrigger_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdEventSetTrigger__
-#define dispobjCtrlCmdEventSetTrigger(pDispObject) dispobjCtrlCmdEventSetTrigger_DISPATCH(pDispObject)
 #define dispobjControl_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_vtable->__dispapiControl__
 #define dispobjControl(pDisplayApi, pCallContext, pParams) dispobjControl_DISPATCH(pDisplayApi, pCallContext, pParams)
 #define dispobjControl_Prologue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_vtable->__dispapiControl_Prologue__
@@ -647,10 +643,6 @@ static inline NV_STATUS dispobjCtrlCmdGetFrameLockHeaderLockPins_DISPATCH(struct
     return pDispObject->__dispobjCtrlCmdGetFrameLockHeaderLockPins__(pDispObject, pParams);
 }
 
-static inline NV_STATUS dispobjCtrlCmdEventSetMemoryNotifies_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_EVENT_SET_MEMORY_NOTIFIES_PARAMS *pSetMemoryNotifiesParams) {
-    return pDispObject->__dispobjCtrlCmdEventSetMemoryNotifies__(pDispObject, pSetMemoryNotifiesParams);
-}
-
 static inline NV_STATUS dispobjCtrlCmdSetRmFreeFlags_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_SET_RMFREE_FLAGS_PARAMS *pParams) {
     return pDispObject->__dispobjCtrlCmdSetRmFreeFlags__(pDispObject, pParams);
 }
@@ -699,12 +691,12 @@ static inline NV_STATUS dispobjCtrlCmdSetSorFlushMode_DISPATCH(struct DispObject
     return pDispObject->__dispobjCtrlCmdSetSorFlushMode__(pDispObject, pParams);
 }
 
-static inline NV_STATUS dispobjCtrlCmdSystemGetCapsV2_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_SYSTEM_GET_CAPS_V2_PARAMS *pCapsParams) {
-    return pDispObject->__dispobjCtrlCmdSystemGetCapsV2__(pDispObject, pCapsParams);
+static inline NV_STATUS dispobjCtrlCmdC370SetSorFlushMode_DISPATCH(struct DispObject *pDispObject, NVC370_CTRL_SET_SOR_FLUSH_MODE_PARAMS *pParams) {
+    return pDispObject->__dispobjCtrlCmdC370SetSorFlushMode__(pDispObject, pParams);
 }
 
-static inline NV_STATUS dispobjCtrlCmdEventSetTrigger_DISPATCH(struct DispObject *pDispObject) {
-    return pDispObject->__dispobjCtrlCmdEventSetTrigger__(pDispObject);
+static inline NV_STATUS dispobjCtrlCmdSystemGetCapsV2_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_SYSTEM_GET_CAPS_V2_PARAMS *pCapsParams) {
+    return pDispObject->__dispobjCtrlCmdSystemGetCapsV2__(pDispObject, pCapsParams);
 }
 
 static inline NV_STATUS dispobjControl_DISPATCH(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -835,8 +827,6 @@ NV_STATUS dispobjCtrlCmdGetPinsetLockpins_IMPL(struct DispObject *pDispObject, N
 
 NV_STATUS dispobjCtrlCmdGetFrameLockHeaderLockPins_IMPL(struct DispObject *pDispObject, NV5070_CTRL_GET_FRAMELOCK_HEADER_LOCKPINS_PARAMS *pParams);
 
-NV_STATUS dispobjCtrlCmdEventSetMemoryNotifies_IMPL(struct DispObject *pDispObject, NV5070_CTRL_EVENT_SET_MEMORY_NOTIFIES_PARAMS *pSetMemoryNotifiesParams);
-
 NV_STATUS dispobjCtrlCmdSetRmFreeFlags_IMPL(struct DispObject *pDispObject, NV5070_CTRL_SET_RMFREE_FLAGS_PARAMS *pParams);
 
 NV_STATUS dispobjCtrlCmdIMPSetGetParameter_IMPL(struct DispObject *pDispObject, NV5070_CTRL_IMP_SET_GET_PARAMETER_PARAMS *pImpSetGetParams);
@@ -861,9 +851,9 @@ NV_STATUS dispobjCtrlCmdSetSorOpMode_IMPL(struct DispObject *pDispObject, NV5070
 
 NV_STATUS dispobjCtrlCmdSetSorFlushMode_IMPL(struct DispObject *pDispObject, NV5070_CTRL_SET_SOR_FLUSH_MODE_PARAMS *pParams);
 
-NV_STATUS dispobjCtrlCmdSystemGetCapsV2_IMPL(struct DispObject *pDispObject, NV5070_CTRL_SYSTEM_GET_CAPS_V2_PARAMS *pCapsParams);
+NV_STATUS dispobjCtrlCmdC370SetSorFlushMode_IMPL(struct DispObject *pDispObject, NVC370_CTRL_SET_SOR_FLUSH_MODE_PARAMS *pParams);
 
-NV_STATUS dispobjCtrlCmdEventSetTrigger_IMPL(struct DispObject *pDispObject);
+NV_STATUS dispobjCtrlCmdSystemGetCapsV2_IMPL(struct DispObject *pDispObject, NV5070_CTRL_SYSTEM_GET_CAPS_V2_PARAMS *pCapsParams);
 
 NV_STATUS dispobjConstruct_IMPL(struct DispObject *arg_pDispObject, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 
@@ -926,7 +916,7 @@ struct NvDispApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__NvDispApi *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct DispObject __nvoc_base_DispObject;
 
     // Ancestor object pointers for `staticCast` feature
@@ -1264,7 +1254,7 @@ struct DispSwObj {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__DispSwObj *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct DisplayApi __nvoc_base_DisplayApi;
 
     // Ancestor object pointers for `staticCast` feature
@@ -1570,7 +1560,7 @@ struct DispCommon {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__DispCommon *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct DisplayApi __nvoc_base_DisplayApi;
 
     // Ancestor object pointers for `staticCast` feature
@@ -1583,21 +1573,19 @@ struct DispCommon {
     struct DisplayApi *__nvoc_pbase_DisplayApi;    // dispapi super
     struct DispCommon *__nvoc_pbase_DispCommon;    // dispcmn
 
-    // Vtable with 134 per-object function pointers
+    // Vtable with 139 per-object function pointers
     NV_STATUS (*__dispcmnCtrlCmdSystemGetVblankCounter__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_VBLANK_COUNTER_PARAMS *);  // exported (id=0x730105)
     NV_STATUS (*__dispcmnCtrlCmdSystemGetVblankEnable__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_VBLANK_ENABLE_PARAMS *);  // exported (id=0x730106)
     NV_STATUS (*__dispcmnCtrlCmdSystemCheckSidebandSrSupport__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_CHECK_SIDEBAND_SR_SUPPORT_PARAMS *);  // exported (id=0x73014c)
     NV_STATUS (*__dispcmnCtrlCmdSystemGetHotplugState__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_HOTPLUG_STATE_PARAMS *);  // exported (id=0x73010a)
-    NV_STATUS (*__dispcmnCtrlCmdSystemNotifyDrrMscgWar__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_NOTIFY_DRR_MSCG_WAR_PARAMS *);  // exported (id=0x730158)
+    NV_STATUS (*__dispcmnCtrlCmdSystemNotifyDrrMscgWar__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_NOTIFY_DRR_MSCG_WAR_PARAMS *);  // exported (id=0x730159)
     NV_STATUS (*__dispcmnCtrlCmdSystemGetInternalDisplays__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_INTERNAL_DISPLAYS_PARAMS *);  // exported (id=0x730116)
     NV_STATUS (*__dispcmnCtrlCmdSystemGetConnectorTable__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_CONNECTOR_TABLE_PARAMS *);  // exported (id=0x73011d)
+    NV_STATUS (*__dispcmnCtrlCmdSystemGetLoadVCounterInfo__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO_PARAMS *);  // exported (id=0x730154)
+    NV_STATUS (*__dispcmnCtrlCmdSystemGetCrashLockCounterInfo__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_GET_CRASH_LOCK_COUNTER_INFO_PARAMS *);  // exported (id=0x730160)
     NV_STATUS (*__dispcmnCtrlCmdSystemVrrDisplayInfo__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_VRR_DISPLAY_INFO_PARAMS *);  // exported (id=0x73012c)
     NV_STATUS (*__dispcmnCtrlCmdVRRSetRgLineActive__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *);  // exported (id=0x73014d)
     NV_STATUS (*__dispcmnCtrlCmdInternalVRRSetRgLineActive__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *);  // exported (id=0x730402)
-    NV_STATUS (*__dispcmnCtrlCmdVblankSemControlEnable__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_ENABLE_PARAMS *);  // exported (id=0x73014e)
-    NV_STATUS (*__dispcmnCtrlCmdInternalVblankSemControlEnable__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_INTERNAL_VBLANK_SEM_CONTROL_ENABLE_PARAMS *);  // exported (id=0x730405)
-    NV_STATUS (*__dispcmnCtrlCmdVblankSemControlDisable__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DISABLE_PARAMS *);  // exported (id=0x73014f)
-    NV_STATUS (*__dispcmnCtrlCmdAccelVblankSemControl__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_ACCEL_VBLANK_SEM_CONTROLS_PARAMS *);  // exported (id=0x730150)
     NV_STATUS (*__dispcmnCtrlCmdDpEnableVrr__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS *);  // exported (id=0x73137d)
     NV_STATUS (*__dispcmnCtrlCmdClearELVBlock__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_CLEAR_ELV_BLOCK_PARAMS *);  // exported (id=0x73012e)
     NV_STATUS (*__dispcmnCtrlCmdSpecificDisplayChange__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_PARAMS *);  // exported (id=0x7302a4)
@@ -1685,8 +1673,11 @@ struct DispCommon {
     NV_STATUS (*__dispcmnCtrlCmdDfpGetPadlinkMask__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_GET_PADLINK_MASK_PARAMS *);  // exported (id=0x731153)
     NV_STATUS (*__dispcmnCtrlCmdDfpGetFixedModeTiming__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS *);  // exported (id=0x731172)
     NV_STATUS (*__dispcmnCtrlCmdDpAuxchCtrl__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_AUXCH_CTRL_PARAMS *);  // exported (id=0x731341)
-    NV_STATUS (*__dispcmnCtrlCmdDpAuxchSetSema__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_AUXCH_SET_SEMA_PARAMS *);  // exported (id=0x731342)
     NV_STATUS (*__dispcmnCtrlCmdDpCtrl__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_CTRL_PARAMS *);  // exported (id=0x731343)
+    NV_STATUS (*__dispcmnCtrlCmdDp2xLinkTrain__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL_PARAMS *);  // exported (id=0x731383)
+    NV_STATUS (*__dispcmnCtrlCmdDp2xGetLaneData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *);  // exported (id=0x731384)
+    NV_STATUS (*__dispcmnCtrlCmdDp2xSetLaneData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *);  // exported (id=0x731385)
+    NV_STATUS (*__dispcmnCtrlCmdCalculateDpImp__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS *);  // exported (id=0x73138b)
     NV_STATUS (*__dispcmnCtrlCmdDpGetLaneData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_LANE_DATA_PARAMS *);  // exported (id=0x731345)
     NV_STATUS (*__dispcmnCtrlCmdDpSetLaneData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_LANE_DATA_PARAMS *);  // exported (id=0x731346)
     NV_STATUS (*__dispcmnCtrlCmdDpGetTestpattern__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_GET_TESTPATTERN_PARAMS *);  // exported (id=0x731348)
@@ -1718,6 +1709,10 @@ struct DispCommon {
     NV_STATUS (*__dispcmnCtrlCmdDpConfigMacroPad__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_CONFIG_MACRO_PAD_PARAMS *);  // exported (id=0x73137b)
     NV_STATUS (*__dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_SET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS *);  // exported (id=0x731351)
     NV_STATUS (*__dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_GET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS *);  // exported (id=0x731352)
+    NV_STATUS (*__dispcmnCtrlCmdDpSetLevelInfoTableData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_SET_LEVEL_INFO_TABLE_DATA_PARAMS *);  // exported (id=0x731387)
+    NV_STATUS (*__dispcmnCtrlCmdDpGetLevelInfoTableData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_GET_LEVEL_INFO_TABLE_DATA_PARAMS *);  // exported (id=0x731388)
+    NV_STATUS (*__dispcmnCtrlCmdDp2xSetLevelInfoTableData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP2X_SET_LEVEL_INFO_TABLE_DATA_PARAMS *);  // exported (id=0x731389)
+    NV_STATUS (*__dispcmnCtrlCmdDp2xGetLevelInfoTableData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA_PARAMS *);  // exported (id=0x73138a)
 
     // Data members
     NvU32 hotPlugMaskToBeReported;
@@ -1801,20 +1796,16 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnCtrlCmdSystemGetInternalDisplays(pDispCommon, pInternalDisplaysParams) dispcmnCtrlCmdSystemGetInternalDisplays_DISPATCH(pDispCommon, pInternalDisplaysParams)
 #define dispcmnCtrlCmdSystemGetConnectorTable_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetConnectorTable__
 #define dispcmnCtrlCmdSystemGetConnectorTable(pDispCommon, pParams) dispcmnCtrlCmdSystemGetConnectorTable_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdSystemGetLoadVCounterInfo_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetLoadVCounterInfo__
+#define dispcmnCtrlCmdSystemGetLoadVCounterInfo(pDispCommon, pLoadVCounterInfoParams) dispcmnCtrlCmdSystemGetLoadVCounterInfo_DISPATCH(pDispCommon, pLoadVCounterInfoParams)
+#define dispcmnCtrlCmdSystemGetCrashLockCounterInfo_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetCrashLockCounterInfo__
+#define dispcmnCtrlCmdSystemGetCrashLockCounterInfo(pDispCommon, pCrashLockCounterInfoParams) dispcmnCtrlCmdSystemGetCrashLockCounterInfo_DISPATCH(pDispCommon, pCrashLockCounterInfoParams)
 #define dispcmnCtrlCmdSystemVrrDisplayInfo_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemVrrDisplayInfo__
 #define dispcmnCtrlCmdSystemVrrDisplayInfo(pDispCommon, pParams) dispcmnCtrlCmdSystemVrrDisplayInfo_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdVRRSetRgLineActive_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdVRRSetRgLineActive__
 #define dispcmnCtrlCmdVRRSetRgLineActive(pDispCommon, pParams) dispcmnCtrlCmdVRRSetRgLineActive_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdInternalVRRSetRgLineActive_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdInternalVRRSetRgLineActive__
 #define dispcmnCtrlCmdInternalVRRSetRgLineActive(pDispCommon, pParams) dispcmnCtrlCmdInternalVRRSetRgLineActive_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdVblankSemControlEnable_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdVblankSemControlEnable__
-#define dispcmnCtrlCmdVblankSemControlEnable(pDispCommon, pParams) dispcmnCtrlCmdVblankSemControlEnable_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdInternalVblankSemControlEnable_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdInternalVblankSemControlEnable__
-#define dispcmnCtrlCmdInternalVblankSemControlEnable(pDispCommon, pParams) dispcmnCtrlCmdInternalVblankSemControlEnable_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdVblankSemControlDisable_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdVblankSemControlDisable__
-#define dispcmnCtrlCmdVblankSemControlDisable(pDispCommon, pParams) dispcmnCtrlCmdVblankSemControlDisable_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdAccelVblankSemControl_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdAccelVblankSemControl__
-#define dispcmnCtrlCmdAccelVblankSemControl(pDispCommon, pParams) dispcmnCtrlCmdAccelVblankSemControl_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpEnableVrr_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpEnableVrr__
 #define dispcmnCtrlCmdDpEnableVrr(pDispCommon, pParams) dispcmnCtrlCmdDpEnableVrr_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdClearELVBlock_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdClearELVBlock__
@@ -1989,10 +1980,16 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnCtrlCmdDfpGetFixedModeTiming(pDispCommon, pParams) dispcmnCtrlCmdDfpGetFixedModeTiming_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpAuxchCtrl_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpAuxchCtrl__
 #define dispcmnCtrlCmdDpAuxchCtrl(pDispCommon, pAuxchCtrlParams) dispcmnCtrlCmdDpAuxchCtrl_DISPATCH(pDispCommon, pAuxchCtrlParams)
-#define dispcmnCtrlCmdDpAuxchSetSema_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpAuxchSetSema__
-#define dispcmnCtrlCmdDpAuxchSetSema(pDispCommon, pSemaParams) dispcmnCtrlCmdDpAuxchSetSema_DISPATCH(pDispCommon, pSemaParams)
 #define dispcmnCtrlCmdDpCtrl_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpCtrl__
 #define dispcmnCtrlCmdDpCtrl(pDispCommon, pParams) dispcmnCtrlCmdDpCtrl_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdDp2xLinkTrain_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDp2xLinkTrain__
+#define dispcmnCtrlCmdDp2xLinkTrain(pDispCommon, pParams) dispcmnCtrlCmdDp2xLinkTrain_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdDp2xGetLaneData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDp2xGetLaneData__
+#define dispcmnCtrlCmdDp2xGetLaneData(pDispCommon, pParams) dispcmnCtrlCmdDp2xGetLaneData_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdDp2xSetLaneData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDp2xSetLaneData__
+#define dispcmnCtrlCmdDp2xSetLaneData(pDispCommon, pParams) dispcmnCtrlCmdDp2xSetLaneData_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdCalculateDpImp_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdCalculateDpImp__
+#define dispcmnCtrlCmdCalculateDpImp(pDispCommon, pParams) dispcmnCtrlCmdCalculateDpImp_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpGetLaneData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpGetLaneData__
 #define dispcmnCtrlCmdDpGetLaneData(pDispCommon, pParams) dispcmnCtrlCmdDpGetLaneData_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpSetLaneData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpSetLaneData__
@@ -2055,6 +2052,14 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data(pDispCommon, pParams) dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data__
 #define dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data(pDispCommon, pParams) dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdDpSetLevelInfoTableData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpSetLevelInfoTableData__
+#define dispcmnCtrlCmdDpSetLevelInfoTableData(pDispCommon, pParams) dispcmnCtrlCmdDpSetLevelInfoTableData_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdDpGetLevelInfoTableData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpGetLevelInfoTableData__
+#define dispcmnCtrlCmdDpGetLevelInfoTableData(pDispCommon, pParams) dispcmnCtrlCmdDpGetLevelInfoTableData_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdDp2xSetLevelInfoTableData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDp2xSetLevelInfoTableData__
+#define dispcmnCtrlCmdDp2xSetLevelInfoTableData(pDispCommon, pParams) dispcmnCtrlCmdDp2xSetLevelInfoTableData_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdDp2xGetLevelInfoTableData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDp2xGetLevelInfoTableData__
+#define dispcmnCtrlCmdDp2xGetLevelInfoTableData(pDispCommon, pParams) dispcmnCtrlCmdDp2xGetLevelInfoTableData_DISPATCH(pDispCommon, pParams)
 #define dispcmnControl_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_vtable->__dispapiControl__
 #define dispcmnControl(pDisplayApi, pCallContext, pParams) dispcmnControl_DISPATCH(pDisplayApi, pCallContext, pParams)
 #define dispcmnControl_Prologue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_vtable->__dispapiControl_Prologue__
@@ -2137,6 +2142,14 @@ static inline NV_STATUS dispcmnCtrlCmdSystemGetConnectorTable_DISPATCH(struct Di
     return pDispCommon->__dispcmnCtrlCmdSystemGetConnectorTable__(pDispCommon, pParams);
 }
 
+static inline NV_STATUS dispcmnCtrlCmdSystemGetLoadVCounterInfo_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO_PARAMS *pLoadVCounterInfoParams) {
+    return pDispCommon->__dispcmnCtrlCmdSystemGetLoadVCounterInfo__(pDispCommon, pLoadVCounterInfoParams);
+}
+
+static inline NV_STATUS dispcmnCtrlCmdSystemGetCrashLockCounterInfo_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_GET_CRASH_LOCK_COUNTER_INFO_PARAMS *pCrashLockCounterInfoParams) {
+    return pDispCommon->__dispcmnCtrlCmdSystemGetCrashLockCounterInfo__(pDispCommon, pCrashLockCounterInfoParams);
+}
+
 static inline NV_STATUS dispcmnCtrlCmdSystemVrrDisplayInfo_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_VRR_DISPLAY_INFO_PARAMS *pParams) {
     return pDispCommon->__dispcmnCtrlCmdSystemVrrDisplayInfo__(pDispCommon, pParams);
 }
@@ -2147,22 +2160,6 @@ static inline NV_STATUS dispcmnCtrlCmdVRRSetRgLineActive_DISPATCH(struct DispCom
 
 static inline NV_STATUS dispcmnCtrlCmdInternalVRRSetRgLineActive_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *pParams) {
     return pDispCommon->__dispcmnCtrlCmdInternalVRRSetRgLineActive__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdVblankSemControlEnable_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_ENABLE_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdVblankSemControlEnable__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdInternalVblankSemControlEnable_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_INTERNAL_VBLANK_SEM_CONTROL_ENABLE_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdInternalVblankSemControlEnable__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdVblankSemControlDisable_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DISABLE_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdVblankSemControlDisable__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdAccelVblankSemControl_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_ACCEL_VBLANK_SEM_CONTROLS_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdAccelVblankSemControl__(pDispCommon, pParams);
 }
 
 static inline NV_STATUS dispcmnCtrlCmdDpEnableVrr_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS *pParams) {
@@ -2513,12 +2510,24 @@ static inline NV_STATUS dispcmnCtrlCmdDpAuxchCtrl_DISPATCH(struct DispCommon *pD
     return pDispCommon->__dispcmnCtrlCmdDpAuxchCtrl__(pDispCommon, pAuxchCtrlParams);
 }
 
-static inline NV_STATUS dispcmnCtrlCmdDpAuxchSetSema_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_AUXCH_SET_SEMA_PARAMS *pSemaParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpAuxchSetSema__(pDispCommon, pSemaParams);
-}
-
 static inline NV_STATUS dispcmnCtrlCmdDpCtrl_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_CTRL_PARAMS *pParams) {
     return pDispCommon->__dispcmnCtrlCmdDpCtrl__(pDispCommon, pParams);
+}
+
+static inline NV_STATUS dispcmnCtrlCmdDp2xLinkTrain_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdDp2xLinkTrain__(pDispCommon, pParams);
+}
+
+static inline NV_STATUS dispcmnCtrlCmdDp2xGetLaneData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdDp2xGetLaneData__(pDispCommon, pParams);
+}
+
+static inline NV_STATUS dispcmnCtrlCmdDp2xSetLaneData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdDp2xSetLaneData__(pDispCommon, pParams);
+}
+
+static inline NV_STATUS dispcmnCtrlCmdCalculateDpImp_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdCalculateDpImp__(pDispCommon, pParams);
 }
 
 static inline NV_STATUS dispcmnCtrlCmdDpGetLaneData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_LANE_DATA_PARAMS *pParams) {
@@ -2645,6 +2654,22 @@ static inline NV_STATUS dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Dat
     return pDispCommon->__dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data__(pDispCommon, pParams);
 }
 
+static inline NV_STATUS dispcmnCtrlCmdDpSetLevelInfoTableData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_SET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdDpSetLevelInfoTableData__(pDispCommon, pParams);
+}
+
+static inline NV_STATUS dispcmnCtrlCmdDpGetLevelInfoTableData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdDpGetLevelInfoTableData__(pDispCommon, pParams);
+}
+
+static inline NV_STATUS dispcmnCtrlCmdDp2xSetLevelInfoTableData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_SET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdDp2xSetLevelInfoTableData__(pDispCommon, pParams);
+}
+
+static inline NV_STATUS dispcmnCtrlCmdDp2xGetLevelInfoTableData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdDp2xGetLevelInfoTableData__(pDispCommon, pParams);
+}
+
 static inline NV_STATUS dispcmnControl_DISPATCH(struct DispCommon *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pDisplayApi->__nvoc_vtable->__dispcmnControl__(pDisplayApi, pCallContext, pParams);
 }
@@ -2763,19 +2788,15 @@ NV_STATUS dispcmnCtrlCmdSystemGetInternalDisplays_IMPL(struct DispCommon *pDispC
 
 NV_STATUS dispcmnCtrlCmdSystemGetConnectorTable_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_CONNECTOR_TABLE_PARAMS *pParams);
 
+NV_STATUS dispcmnCtrlCmdSystemGetLoadVCounterInfo_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO_PARAMS *pLoadVCounterInfoParams);
+
+NV_STATUS dispcmnCtrlCmdSystemGetCrashLockCounterInfo_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_GET_CRASH_LOCK_COUNTER_INFO_PARAMS *pCrashLockCounterInfoParams);
+
 NV_STATUS dispcmnCtrlCmdSystemVrrDisplayInfo_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_VRR_DISPLAY_INFO_PARAMS *pParams);
 
 NV_STATUS dispcmnCtrlCmdVRRSetRgLineActive_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *pParams);
 
 NV_STATUS dispcmnCtrlCmdInternalVRRSetRgLineActive_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *pParams);
-
-NV_STATUS dispcmnCtrlCmdVblankSemControlEnable_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_ENABLE_PARAMS *pParams);
-
-NV_STATUS dispcmnCtrlCmdInternalVblankSemControlEnable_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_INTERNAL_VBLANK_SEM_CONTROL_ENABLE_PARAMS *pParams);
-
-NV_STATUS dispcmnCtrlCmdVblankSemControlDisable_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DISABLE_PARAMS *pParams);
-
-NV_STATUS dispcmnCtrlCmdAccelVblankSemControl_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_ACCEL_VBLANK_SEM_CONTROLS_PARAMS *pParams);
 
 NV_STATUS dispcmnCtrlCmdDpEnableVrr_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS *pParams);
 
@@ -2951,9 +2972,15 @@ NV_STATUS dispcmnCtrlCmdDfpGetFixedModeTiming_IMPL(struct DispCommon *pDispCommo
 
 NV_STATUS dispcmnCtrlCmdDpAuxchCtrl_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_AUXCH_CTRL_PARAMS *pAuxchCtrlParams);
 
-NV_STATUS dispcmnCtrlCmdDpAuxchSetSema_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_AUXCH_SET_SEMA_PARAMS *pSemaParams);
-
 NV_STATUS dispcmnCtrlCmdDpCtrl_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_CTRL_PARAMS *pParams);
+
+NV_STATUS dispcmnCtrlCmdDp2xLinkTrain_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL_PARAMS *pParams);
+
+NV_STATUS dispcmnCtrlCmdDp2xGetLaneData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *pParams);
+
+NV_STATUS dispcmnCtrlCmdDp2xSetLaneData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *pParams);
+
+NV_STATUS dispcmnCtrlCmdCalculateDpImp_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS *pParams);
 
 NV_STATUS dispcmnCtrlCmdDpGetLaneData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_LANE_DATA_PARAMS *pParams);
 
@@ -3016,6 +3043,14 @@ NV_STATUS dispcmnCtrlCmdDpConfigMacroPad_IMPL(struct DispCommon *pDispCommon, NV
 NV_STATUS dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_SET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS *pParams);
 
 NV_STATUS dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS *pParams);
+
+NV_STATUS dispcmnCtrlCmdDpSetLevelInfoTableData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_SET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams);
+
+NV_STATUS dispcmnCtrlCmdDpGetLevelInfoTableData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams);
+
+NV_STATUS dispcmnCtrlCmdDp2xSetLevelInfoTableData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_SET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams);
+
+NV_STATUS dispcmnCtrlCmdDp2xGetLevelInfoTableData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams);
 
 NV_STATUS dispcmnConstruct_IMPL(struct DispCommon *arg_pDispCommon, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 

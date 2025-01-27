@@ -52,6 +52,11 @@ void uvm_hal_volta_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 pa
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
     NvU32 launch_dma_plc_mode;
 
+    UVM_ASSERT_MSG(gpu->parent->ce_hal->semaphore_target_is_valid(push, gpu_va),
+                   "Semaphore target validation failed in channel %s, GPU %s.\n",
+                   push->channel->name,
+                   uvm_gpu_name(gpu));
+
     NV_PUSH_3U(C3B5, SET_SEMAPHORE_A, HWVALUE(C3B5, SET_SEMAPHORE_A, UPPER, NvOffset_HI32(gpu_va)),
                      SET_SEMAPHORE_B, HWVALUE(C3B5, SET_SEMAPHORE_B, LOWER, NvOffset_LO32(gpu_va)),
                      SET_SEMAPHORE_PAYLOAD, payload);
@@ -68,6 +73,11 @@ void uvm_hal_volta_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, Nv
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
     NvU32 launch_dma_plc_mode;
+
+    UVM_ASSERT_MSG(gpu->parent->ce_hal->semaphore_target_is_valid(push, gpu_va),
+                   "Semaphore target validation failed in channel %s, GPU %s.\n",
+                   push->channel->name,
+                   uvm_gpu_name(gpu));
 
     NV_PUSH_3U(C3B5, SET_SEMAPHORE_A, HWVALUE(C3B5, SET_SEMAPHORE_A, UPPER, NvOffset_HI32(gpu_va)),
                      SET_SEMAPHORE_B, HWVALUE(C3B5, SET_SEMAPHORE_B, LOWER, NvOffset_LO32(gpu_va)),
@@ -86,14 +96,18 @@ void uvm_hal_volta_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, Nv
 
 void uvm_hal_volta_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va)
 {
-    uvm_gpu_t *gpu;
+    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
     NvU32 launch_dma_plc_mode;
+
+    UVM_ASSERT_MSG(gpu->parent->ce_hal->semaphore_target_is_valid(push, gpu_va),
+                   "Semaphore target validation failed in channel %s, GPU %s.\n",
+                   push->channel->name,
+                   uvm_gpu_name(gpu));
 
     NV_PUSH_3U(C3B5, SET_SEMAPHORE_A, HWVALUE(C3B5, SET_SEMAPHORE_A, UPPER, NvOffset_HI32(gpu_va)),
                      SET_SEMAPHORE_B, HWVALUE(C3B5, SET_SEMAPHORE_B, LOWER, NvOffset_LO32(gpu_va)),
                      SET_SEMAPHORE_PAYLOAD, 0xdeadbeef);
 
-    gpu = uvm_push_get_gpu(push);
     launch_dma_plc_mode = gpu->parent->ce_hal->plc_mode();
 
     NV_PUSH_1U(C3B5, LAUNCH_DMA, volta_get_flush_value(push) |
@@ -119,6 +133,13 @@ void uvm_hal_volta_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_a
                    "Memcopy validation failed in channel %s, GPU %s.\n",
                    push->channel->name,
                    uvm_gpu_name(gpu));
+
+
+    // Check if the copy is over NVLINK and simulate dropped traffic if there's
+    // an NVLINK error.
+    // Src address cannot be peer as that wouldn't pass the valid check above.
+    if (uvm_gpu_address_is_peer(gpu, dst) && uvm_gpu_get_injected_nvlink_error(gpu) != NV_OK)
+        size = 0;
 
     gpu->parent->ce_hal->memcopy_patch_src(push, &src);
 

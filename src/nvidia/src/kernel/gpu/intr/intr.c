@@ -878,15 +878,12 @@ intrStateInitLocked_IMPL
 
     if (pIntr->getProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING))
     {
-        if (RMCFG_FEATURE_PLATFORM_WINDOWS)
-        {
-            MC_ENGINE_BITVECTOR engines;
+        MC_ENGINE_BITVECTOR engines;
 
-            bitVectorClrAll(&engines);
-            bitVectorSet(&engines, MC_ENGINE_IDX_DISP);
+        bitVectorClrAll(&engines);
+        bitVectorSet(&engines, MC_ENGINE_IDX_DISP);
 
-            intrSetIntrMaskUnblocked(pIntr, &engines);
-        }
+        intrSetIntrMaskUnblocked(pIntr, &engines);
         // Hypervisor will set the intr unblocked mask later at the time of SWRL init.
     }
 
@@ -980,27 +977,27 @@ _intrInitRegistryOverrides
         {
             pIntr->setProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING, NV_TRUE);
         }
+    }
 
-        if (osReadRegistryDword(pGpu, NV_REG_STR_RM_LOCKING_MODE, &data) == NV_OK)
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_INTR_LOCKING_MODE, &data) == NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "NV_REG_STR_RM_INTR_LOCKING_MODE was set to: 0x%x\n", data);
+
+        switch (data)
         {
-            NV_PRINTF(LEVEL_ERROR,
-                      "NV_REG_STR_RM_LOCKING_MODE was set to: 0x%x\n", data);
-
-            switch (data)
+            case NV_REG_STR_RM_INTR_LOCKING_MODE_INTR_MASK:
             {
-                case NV_REG_STR_RM_LOCKING_MODE_INTR_MASK:
+                if (pIntr->getProperty(pIntr, PDB_PROP_INTR_MASK_SUPPORTED))
                 {
-                    if (pIntr->getProperty(pIntr, PDB_PROP_INTR_MASK_SUPPORTED))
-                    {
-                        pIntr->setProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING, NV_TRUE);
-                    }
+                    pIntr->setProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING, NV_TRUE);
                 }
-                break;
+            }
+            break;
 
-                default:
-                {
-                    pIntr->setProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING, NV_FALSE);
-                }
+            default:
+            {
+                pIntr->setProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING, NV_FALSE);
             }
         }
     }
@@ -1403,27 +1400,37 @@ _intrEnterCriticalSection
         NV_ASSERT(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 
         //
-        // Disable intrs to prevent the ISR from coming in and enable all engine
-        // intrs so that intrs will be reflected in NV_PMC_INTR_0.
-        // If the ISR was already executing, prevent it from updating engIntrs
-        // via setting MC_INTR_MASK_FLAGS_ISR_SKIP_MASK_UPDATE.
+        // Top enable handling does not use mask registers, so there is no need to enable
+        // the mask registers to allow the interrupt to be seen in the intr status registers.
+        // Becuase we don't need to touch that, we don't need to disable the interrupt at the
+        // top level either. Interrupt servicing outside the device lock will already be
+        // protected by another lock that prevents concurrent servicing, so this is safe.
         //
-        oldIrql = rmIntrMaskLockAcquire(pGpu);
-
-        pIntrMaskCtx->intrEnable = intrGetIntrEnFromHw_HAL(pGpu, pIntr, NULL /* threadstate */);
-        intrSetIntrEnInHw_HAL(pGpu, pIntr, INTERRUPT_TYPE_DISABLED, NULL /* threadstate */);
-        intrSetStall_HAL(pGpu, pIntr, INTERRUPT_TYPE_DISABLED, NULL /* threadstate */);
-        intrMaskFlags = intrGetIntrMaskFlags(pIntr);
-        intrMaskFlags |= INTR_MASK_FLAGS_ISR_SKIP_MASK_UPDATE;
-        intrSetIntrMaskFlags(pIntr, intrMaskFlags);
-
-        if (pIntr->getProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING))
+        if (!pIntr->getProperty(pIntr, PDB_PROP_INTR_USE_TOP_EN_FOR_VBLANK_HANDLING))
         {
-            intrGetIntrMask_HAL(pGpu, pIntr, &pIntrMaskCtx->intrMask, NULL /* threadstate */);
-            intrSetIntrMask_HAL(pGpu, pIntr, &engines,                NULL /* threadstate */);
-        }
+            //
+            // Disable intrs to prevent the ISR from coming in and enable all engine
+            // intrs so that intrs will be reflected in NV_PMC_INTR_0.
+            // If the ISR was already executing, prevent it from updating engIntrs
+            // via setting MC_INTR_MASK_FLAGS_ISR_SKIP_MASK_UPDATE.
+            //
+            oldIrql = rmIntrMaskLockAcquire(pGpu);
 
-        rmIntrMaskLockRelease(pGpu, oldIrql);
+            pIntrMaskCtx->intrEnable = intrGetIntrEnFromHw_HAL(pGpu, pIntr, NULL /* threadstate */);
+            intrSetIntrEnInHw_HAL(pGpu, pIntr, INTERRUPT_TYPE_DISABLED, NULL /* threadstate */);
+            intrSetStall_HAL(pGpu, pIntr, INTERRUPT_TYPE_DISABLED, NULL /* threadstate */);
+            intrMaskFlags = intrGetIntrMaskFlags(pIntr);
+            intrMaskFlags |= INTR_MASK_FLAGS_ISR_SKIP_MASK_UPDATE;
+            intrSetIntrMaskFlags(pIntr, intrMaskFlags);
+
+            if (pIntr->getProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING))
+            {
+                intrGetIntrMask_HAL(pGpu, pIntr, &pIntrMaskCtx->intrMask, NULL /* threadstate */);
+                intrSetIntrMask_HAL(pGpu, pIntr, &engines,                NULL /* threadstate */);
+            }
+
+            rmIntrMaskLockRelease(pGpu, oldIrql);
+        }
     }
 }
 
@@ -1456,21 +1463,25 @@ _intrExitCriticalSection
     {
         NV_ASSERT(pIntrMaskCtx != NULL);
 
-        // Restore intrEnable and allow the ISR to come in.
-        oldIrql = rmIntrMaskLockAcquire(pGpu);
-
-        intrMaskFlags = intrGetIntrMaskFlags(pIntr);
-        intrMaskFlags &= ~INTR_MASK_FLAGS_ISR_SKIP_MASK_UPDATE;
-        intrSetIntrMaskFlags(pIntr, intrMaskFlags);
-
-        if (pIntr->getProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING))
+        // Nothing touched in _intrEnterCriticalSection if simplified handling
+        if (!pIntr->getProperty(pIntr, PDB_PROP_INTR_USE_TOP_EN_FOR_VBLANK_HANDLING))
         {
-            intrSetIntrMask_HAL(pGpu, pIntr, &pIntrMaskCtx->intrMask, NULL /* threadstate */);
+            // Restore intrEnable and allow the ISR to come in.
+            oldIrql = rmIntrMaskLockAcquire(pGpu);
+
+            intrMaskFlags = intrGetIntrMaskFlags(pIntr);
+            intrMaskFlags &= ~INTR_MASK_FLAGS_ISR_SKIP_MASK_UPDATE;
+            intrSetIntrMaskFlags(pIntr, intrMaskFlags);
+
+            if (pIntr->getProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING))
+            {
+                intrSetIntrMask_HAL(pGpu, pIntr, &pIntrMaskCtx->intrMask, NULL /* threadstate */);
+            }
+
+            intrSetIntrEnInHw_HAL(pGpu, pIntr, pIntrMaskCtx->intrEnable, NULL /* threadstate */);
+
+            rmIntrMaskLockRelease(pGpu, oldIrql);
         }
-
-        intrSetIntrEnInHw_HAL(pGpu, pIntr, pIntrMaskCtx->intrEnable, NULL /* threadstate */);
-
-        rmIntrMaskLockRelease(pGpu, oldIrql);
     }
 }
 
@@ -1700,37 +1711,6 @@ intrServiceStallSingle_IMPL
     bitVectorSet(&engines, engIdx);
     intrServiceStallList_HAL(pGpu, pIntr, &engines, bLoop);
 }
-
-/*!
- * @brief Allow the isr to come in.
- *
- * Checks whether the interrupts are enabled in HW.
- *
- * @param[in]  pGpu         OBJGPU pointer
- * @param[in]  pIntr        Intr pointer
- * @param[in]  pThreadState THREAD_STATE information
- * @returns                 Returns whether interrupts are enabled
- */
-NvBool
-intrIsIntrEnabled_IMPL
-(
-    OBJGPU            *pGpu,
-    Intr              *pIntr,
-    THREAD_STATE_NODE *pThreadState
-)
-{
-    NvU32 intrEn;
-
-    intrEn = intrGetIntrEnFromHw_HAL(pGpu, pIntr, pThreadState);
-
-    if (INTERRUPT_TYPE_DISABLED == intrEn)
-    {
-        return NV_FALSE;
-    }
-
-    return NV_TRUE;
-}
-
 
 NvU64
 intrGetIntrTopCategoryMask_IMPL

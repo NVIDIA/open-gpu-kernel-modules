@@ -24,7 +24,6 @@
 #include "nv-pci-table.h"
 #include "nv-pci-types.h"
 #include "nv-pci.h"
-#include "nv-ibmnpu.h"
 #include "nv-msi.h"
 #include "nv-hypervisor.h"
 
@@ -45,6 +44,8 @@
 #if NV_IS_EXPORT_SYMBOL_GPL_pci_ats_supported
 #include <linux/pci-ats.h>
 #endif
+
+extern int NVreg_GrdmaPciTopoCheckOverride;
 
 static void
 nv_check_and_exclude_gpu(
@@ -492,6 +493,12 @@ nv_init_coherent_link_info
         NV_DEV_PRINTF(NV_DBG_INFO, nv, "\tNVRM: GPU memory NUMA node: %u\n", node);
     }
 
+#if NV_IS_EXPORT_SYMBOL_GPL_pci_ats_supported
+    nv->ats_support = pci_ats_supported(nvl->pci_dev);
+#elif defined(NV_PCI_DEV_HAS_ATS_ENABLED)
+    nv->ats_support = nvl->pci_dev->ats_enabled;
+#endif
+
     if (NVreg_EnableUserNUMAManagement && !os_is_vgx_hyper())
     {
         NV_ATOMIC_SET(nvl->numa_info.status, NV_IOCTL_NUMA_STATUS_OFFLINE);
@@ -785,32 +792,18 @@ next_bar:
     NV_ATOMIC_SET(nvl->numa_info.status, NV_IOCTL_NUMA_STATUS_DISABLED);
     nvl->numa_info.node_id = NUMA_NO_NODE;
 
-    nv_init_ibmnpu_info(nv);
-
     nv_init_coherent_link_info(nv);
 
 #if defined(NVCPU_PPC64LE)
     // Use HW NUMA support as a proxy for ATS support. This is true in the only
     // PPC64LE platform where ATS is currently supported (IBM P9).
-    nv_ats_supported &= nv_platform_supports_numa(nvl);
-#else
-#if NV_IS_EXPORT_SYMBOL_GPL_pci_ats_supported
-    nv_ats_supported &= pci_ats_supported(pci_dev);
-#elif defined(NV_PCI_DEV_HAS_ATS_ENABLED)
-    nv_ats_supported &= pci_dev->ats_enabled;
-#else
-    nv_ats_supported = NV_FALSE;
+    nv->ats_support = nv_platform_supports_numa(nvl);
 #endif
-#endif
-    if (nv_ats_supported)
+    if (nv->ats_support)
     {
         NV_DEV_PRINTF(NV_DBG_INFO, nv, "ATS supported by this GPU!\n");
     }
-    else
-    {
-        NV_DEV_PRINTF(NV_DBG_INFO, nv, "ATS not supported by this GPU. "
-                      "Disabling ATS support for all the GPUs in the system!\n");
-    }
+    nv_ats_supported |= nv->ats_support;
 
     pci_set_master(pci_dev);
 
@@ -929,7 +922,6 @@ err_zero_dev:
     rm_free_private_state(sp, nv);
 err_not_supported:
     nv_ats_supported = prev_nv_ats_supported;
-    nv_destroy_ibmnpu_info(nv);
     nv_lock_destroy_locks(sp, nv);
     if (nvl != NULL)
     {
@@ -1078,9 +1070,6 @@ nv_pci_remove(struct pci_dev *pci_dev)
         filp_close(nvl->sysfs_config_file, NULL);
         nvl->sysfs_config_file = NULL;
     }
-
-    nv_unregister_ibmnpu_devices(nv);
-    nv_destroy_ibmnpu_info(nv);
 
     if (NV_ATOMIC_READ(nvl->usage_count) == 0)
     {
@@ -1297,96 +1286,27 @@ nv_pci_count_devices(void)
     return count;
 }
 
-#if defined(NV_PCI_ERROR_RECOVERY)
-static pci_ers_result_t
-nv_pci_error_detected(
-    struct pci_dev *pci_dev,
-    nv_pci_channel_state_t error
+/*
+ * On coherent platforms that support BAR1 mappings for GPUDirect RDMA,
+ * dma-buf and nv-p2p subsystems need to ensure the 2 devices belong to
+ * the same IOMMU group.
+ */
+NvBool nv_pci_is_valid_topology_for_direct_pci(
+    nv_state_t    *nv,
+    struct device *dev
 )
 {
-    nv_linux_state_t *nvl = pci_get_drvdata(pci_dev);
+    struct pci_dev *pdev0 = to_pci_dev(nv->dma_dev->dev);
+    struct pci_dev *pdev1 = to_pci_dev(dev);
 
-    if ((nvl == NULL) || (nvl->pci_dev != pci_dev))
+    if (!nv->coherent)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: %s: invalid device!\n", __FUNCTION__);
-        return PCI_ERS_RESULT_NONE;
+        return NV_FALSE;
     }
 
-    /*
-     * Tell Linux to continue recovery of the device. The kernel will enable
-     * MMIO for the GPU and call the mmio_enabled callback.
-     */
-    return PCI_ERS_RESULT_CAN_RECOVER;
+    return (NVreg_GrdmaPciTopoCheckOverride != 0) ||
+           (pdev0->dev.iommu_group == pdev1->dev.iommu_group);
 }
-
-static pci_ers_result_t
-nv_pci_mmio_enabled(
-    struct pci_dev *pci_dev
-)
-{
-    NV_STATUS         status = NV_OK;
-    nv_stack_t       *sp = NULL;
-    nv_linux_state_t *nvl = pci_get_drvdata(pci_dev);
-    nv_state_t       *nv = NULL;
-
-    if ((nvl == NULL) || (nvl->pci_dev != pci_dev))
-    {
-        nv_printf(NV_DBG_ERRORS, "NVRM: %s: invalid device!\n", __FUNCTION__);
-        goto done;
-    }
-
-    nv = NV_STATE_PTR(nvl);
-
-    if (nv_kmem_cache_alloc_stack(&sp) != 0)
-    {
-        nv_printf(NV_DBG_ERRORS, "NVRM: %s: failed to allocate stack!\n",
-            __FUNCTION__);
-        goto done;
-    }
-
-    NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "A fatal error was detected.\n");
-
-    /*
-     * MMIO should be re-enabled now. If we still get bad reads, there's
-     * likely something wrong with the adapter itself that will require a
-     * reset. This should let us know whether the GPU has completely fallen
-     * off the bus or just did something the host didn't like.
-     */
-    status = rm_is_supported_device(sp, nv);
-    if (status != NV_OK)
-    {
-        NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
-            "The kernel has enabled MMIO for the device,\n"
-            "NVRM: but it still appears unreachable. The device\n"
-            "NVRM: will not function properly until it is reset.\n");
-    }
-
-    status = rm_log_gpu_crash(sp, nv);
-    if (status != NV_OK)
-    {
-        NV_DEV_PRINTF_STATUS(NV_DBG_ERRORS, nv, status,
-                      "Failed to log crash data\n");
-        goto done;
-    }
-
-done:
-    if (sp != NULL)
-    {
-        nv_kmem_cache_free_stack(sp);
-    }
-
-    /*
-     * Tell Linux to abandon recovery of the device. The kernel might be able
-     * to recover the device, but RM and clients don't yet support that.
-     */
-    return PCI_ERS_RESULT_DISCONNECT;
-}
-
-struct pci_error_handlers nv_pci_error_handlers = {
-    .error_detected = nv_pci_error_detected,
-    .mmio_enabled   = nv_pci_mmio_enabled,
-};
-#endif
 
 #if defined(CONFIG_PM)
 extern struct dev_pm_ops nv_pm_ops;
@@ -1404,9 +1324,6 @@ struct pci_driver nv_pci_driver = {
 #endif
 #if defined(CONFIG_PM)
     .driver.pm = &nv_pm_ops,
-#endif
-#if defined(NV_PCI_ERROR_RECOVERY)
-    .err_handler = &nv_pci_error_handlers,
 #endif
 };
 

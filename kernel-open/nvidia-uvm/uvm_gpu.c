@@ -134,11 +134,13 @@ static NV_STATUS get_gpu_caps(uvm_gpu_t *gpu)
 
     if (gpu_caps.numaEnabled) {
         UVM_ASSERT(uvm_parent_gpu_is_coherent(gpu->parent));
+
         gpu->mem_info.numa.enabled = true;
         gpu->mem_info.numa.node_id = gpu_caps.numaNodeId;
     }
     else {
         UVM_ASSERT(!uvm_parent_gpu_is_coherent(gpu->parent));
+        gpu->mem_info.numa.node_id = NUMA_NO_NODE;
     }
 
     return NV_OK;
@@ -245,7 +247,7 @@ static NV_STATUS get_gpu_fb_info(uvm_gpu_t *gpu)
     }
 
     gpu->mem_info.max_vidmem_page_size = fb_info.maxVidmemPageSize;
-    gpu->mem_info.static_bar1_start = pci_bar1_addr;
+    gpu->mem_info.static_bar1_start = pci_bar1_addr + fb_info.staticBar1StartOffset;
     gpu->mem_info.static_bar1_size = fb_info.staticBar1Size;
 
     return NV_OK;
@@ -272,6 +274,55 @@ static NV_STATUS get_gpu_ecc_info(uvm_gpu_t *gpu)
         UVM_ASSERT(gpu->ecc.error_notifier != NULL);
     }
 
+    return NV_OK;
+}
+
+static NV_STATUS get_gpu_nvlink_info(uvm_gpu_t *gpu)
+{
+    NV_STATUS status;
+    UvmGpuNvlinkInfo nvlink_info = {0};
+
+    status = uvm_rm_locked_call(nvUvmInterfaceGetNvlinkInfo(uvm_gpu_device_handle(gpu), &nvlink_info));
+    if (status != NV_OK)
+        return status;
+
+    atomic_set(&gpu->nvlink_status.injected_error, UVM_TEST_NVLINK_ERROR_NONE);
+
+    gpu->nvlink_status.enabled = nvlink_info.bNvlinkRecoveryEnabled;
+    if (gpu->nvlink_status.enabled) {
+        gpu->nvlink_status.hw_interrupt_tree_location =
+             (volatile NvU32*)((char*)nvlink_info.nvlinkReadLocation + nvlink_info.nvlinkOffset);
+        UVM_ASSERT(gpu->nvlink_status.hw_interrupt_tree_location != NULL);
+
+        gpu->nvlink_status.mask = nvlink_info.nvlinkMask;
+        UVM_ASSERT(gpu->nvlink_status.mask != 0);
+
+        gpu->nvlink_status.error_notifier = nvlink_info.nvlinkErrorNotifier;
+        UVM_ASSERT(gpu->nvlink_status.error_notifier != NULL);
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS uvm_gpu_inject_nvlink_error(uvm_gpu_t *gpu, UVM_TEST_NVLINK_ERROR_TYPE error_type)
+{
+    UVM_ASSERT(gpu);
+
+    if (!uvm_enable_builtin_tests)
+        return NV_ERR_NOT_SUPPORTED;
+
+    switch (error_type)
+    {
+    case UVM_TEST_NVLINK_ERROR_NONE:
+    case UVM_TEST_NVLINK_ERROR_RESOLVED:
+    case UVM_TEST_NVLINK_ERROR_UNRESOLVED:
+        break;
+
+    default:
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    atomic_set(&gpu->nvlink_status.injected_error, error_type);
     return NV_OK;
 }
 
@@ -490,6 +541,7 @@ static void gpu_info_print_common(uvm_gpu_t *gpu, struct seq_file *s)
     UVM_SEQ_OR_DBG_PRINT(s, "GPU %s\n", uvm_gpu_name(gpu));
     UVM_SEQ_OR_DBG_PRINT(s, "retained_count                         %llu\n", uvm_gpu_retained_count(gpu));
     UVM_SEQ_OR_DBG_PRINT(s, "ecc                                    %s\n", gpu->ecc.enabled ? "enabled" : "disabled");
+    UVM_SEQ_OR_DBG_PRINT(s, "nvlink status and recovery             %s\n", gpu->nvlink_status.enabled ? "enabled" : "disabled");
     if (gpu->parent->closest_cpu_numa_node == -1)
         UVM_SEQ_OR_DBG_PRINT(s, "closest_cpu_numa_node                  n/a\n");
     else
@@ -1269,6 +1321,40 @@ NV_STATUS uvm_gpu_check_ecc_error(uvm_gpu_t *gpu)
     return NV_OK;
 }
 
+NV_STATUS uvm_gpu_check_nvlink_error(uvm_gpu_t *gpu)
+{
+    NV_STATUS status = uvm_gpu_check_nvlink_error_no_rm(gpu);
+
+    // Either NV_OK, or a resolved error code.
+    if (status != NV_WARN_MORE_PROCESSING_REQUIRED)
+        return status;
+
+    // An interrupt that might mean an NVLINK error needs to be serviced.
+    UVM_ASSERT(status == NV_WARN_MORE_PROCESSING_REQUIRED);
+
+    status = service_interrupts(gpu->parent);
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("Servicing interrupts failed: %s, GPU %s\n", nvstatusToString(status), uvm_gpu_name(gpu));
+        return status;
+    }
+
+    // Check injected error if present, this works even if nvlink_status is not
+    // supported.
+    if (uvm_enable_builtin_tests) {
+        if (atomic_read(&gpu->nvlink_status.injected_error) != UVM_TEST_NVLINK_ERROR_NONE)
+            return NV_ERR_MEMORY_ERROR;
+
+        UVM_ASSERT(gpu->nvlink_status.error_notifier);
+    }
+
+    // After servicing interrupts, the NVLINK error notifier should be current.
+    if (*gpu->nvlink_status.error_notifier) {
+        UVM_ERR_PRINT("NVLINK error encountered, GPU %s\n", uvm_gpu_name(gpu));
+        return NV_ERR_MEMORY_ERROR;
+    }
+
+    return NV_OK;
+}
 static NV_STATUS init_parent_gpu(uvm_parent_gpu_t *parent_gpu,
                                  const NvProcessorUuid *gpu_uuid,
                                  const UvmGpuInfo *gpu_info,
@@ -1294,6 +1380,9 @@ static NV_STATUS init_parent_gpu(uvm_parent_gpu_t *parent_gpu,
     parent_gpu->closest_cpu_numa_node = dev_to_node(&parent_gpu->pci_dev->dev);
     parent_gpu->dma_addressable_start = gpu_platform_info->dma_addressable_start;
     parent_gpu->dma_addressable_limit = gpu_platform_info->dma_addressable_limit;
+    parent_gpu->egm.enabled = gpu_info->egmEnabled;
+    parent_gpu->egm.local_peer_id = gpu_info->egmPeerId;
+    parent_gpu->egm.base_address = gpu_info->egmBaseAddr;
 
     parent_gpu->sli_enabled = (gpu_info->subdeviceCount > 1);
 
@@ -1397,7 +1486,8 @@ static NV_STATUS init_gpu(uvm_gpu_t *gpu, const UvmGpuInfo *gpu_info)
 
     status = get_gpu_caps(gpu);
     if (status != NV_OK) {
-        UVM_ERR_PRINT("Failed to get GPU caps: %s, GPU %s\n", nvstatusToString(status), uvm_gpu_name(gpu));
+        if (status != NV_ERR_NVLINK_FABRIC_NOT_READY)
+            UVM_ERR_PRINT("Failed to get GPU caps: %s, GPU %s\n", nvstatusToString(status), uvm_gpu_name(gpu));
         return status;
     }
 
@@ -1418,6 +1508,12 @@ static NV_STATUS init_gpu(uvm_gpu_t *gpu, const UvmGpuInfo *gpu_info)
     status = get_gpu_ecc_info(gpu);
     if (status != NV_OK) {
         UVM_ERR_PRINT("Failed to get GPU ECC info: %s, GPU %s\n", nvstatusToString(status), uvm_gpu_name(gpu));
+        return status;
+    }
+
+    status = get_gpu_nvlink_info(gpu);
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("Failed to get GPU NVLINK RECOVERY info: %s, GPU %s\n", nvstatusToString(status), uvm_gpu_name(gpu));
         return status;
     }
 
@@ -1974,6 +2070,56 @@ NV_STATUS uvm_gpu_check_ecc_error_no_rm(uvm_gpu_t *gpu)
     return NV_WARN_MORE_PROCESSING_REQUIRED;
 }
 
+NV_STATUS uvm_gpu_get_injected_nvlink_error(uvm_gpu_t *gpu)
+{
+    if (uvm_enable_builtin_tests) {
+        UVM_TEST_NVLINK_ERROR_TYPE error_type = atomic_read(&gpu->nvlink_status.injected_error);
+
+        if (error_type == UVM_TEST_NVLINK_ERROR_UNRESOLVED)
+            return NV_WARN_MORE_PROCESSING_REQUIRED;
+
+        if (error_type == UVM_TEST_NVLINK_ERROR_RESOLVED)
+            return NV_ERR_MEMORY_ERROR;
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS uvm_gpu_check_nvlink_error_no_rm(uvm_gpu_t *gpu)
+{
+    NV_STATUS status;
+
+    // We may need to call service_interrupts() which cannot be done in the top
+    // half interrupt handler so assert here as well to catch improper use as
+    // early as possible.
+    UVM_ASSERT(!in_interrupt());
+
+    status = uvm_gpu_get_injected_nvlink_error(gpu);
+    if (status != NV_OK)
+        return status;
+
+    if (!gpu->nvlink_status.enabled)
+        return NV_OK;
+
+    if (*gpu->nvlink_status.error_notifier) {
+        UVM_ERR_PRINT("NVLINK error encountered, GPU %s\n", uvm_gpu_name(gpu));
+        return NV_ERR_MEMORY_ERROR;
+    }
+
+    // RM hasn't seen an NVLINK error yet, check whether there is a pending
+    // interrupt that might indicate one. We might get false positives because
+    // the interrupt bits we read are not NVLINK-specific. They're just the
+    // top-level bits for any interrupt on all engines which support NVLINK
+    // errors.
+    if ((*gpu->nvlink_status.hw_interrupt_tree_location & gpu->nvlink_status.mask) == 0) {
+        // No pending interrupts.
+        return NV_OK;
+    }
+
+    // An interrupt that might mean an NVLINK error needs to be serviced, signal
+    // that to the caller.
+    return NV_WARN_MORE_PROCESSING_REQUIRED;
+}
 static NV_STATUS get_parent_p2p_caps(uvm_parent_gpu_t *parent_gpu0,
                                      uvm_parent_gpu_t *parent_gpu1,
                                      UvmGpuP2PCapsParams *p2p_caps_params)
@@ -2041,6 +2187,10 @@ static void set_optimal_p2p_write_ces(uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
     NvU32 ce0, ce1;
 
     UVM_ASSERT(parent_peer_caps->ref_count);
+    UVM_ASSERT(gpu0->parent->peer_copy_mode == gpu1->parent->peer_copy_mode);
+
+    if (gpu0->parent->peer_copy_mode == UVM_GPU_PEER_COPY_MODE_UNSUPPORTED)
+        return;
 
     if (parent_peer_caps->link_type < UVM_GPU_LINK_NVLINK_1)
         return;
@@ -2056,7 +2206,7 @@ static void set_optimal_p2p_write_ces(uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
 static int nv_procfs_read_parent_gpu_peer_caps(struct seq_file *s, void *v)
 {
     if (!uvm_down_read_trylock(&g_uvm_global.pm.lock))
-            return -EAGAIN;
+        return -EAGAIN;
 
     parent_gpu_peer_caps_print((uvm_parent_gpu_t **)s->private, s);
 
@@ -2161,12 +2311,17 @@ static NV_STATUS parent_peers_init(uvm_parent_gpu_t *parent_gpu0,
     parent_peer_caps->link_type = link_type;
     parent_peer_caps->total_link_line_rate_mbyte_per_s = p2p_caps_params.totalLinkLineRateMBps;
 
+    if (parent_gpu0->egm.enabled || parent_gpu1->egm.enabled)
+        UVM_ASSERT(parent_peer_caps->link_type >= UVM_GPU_LINK_NVLINK_2);
+
     // Initialize peer ids and establish peer mappings
     // Peer id from min(gpu_id0, gpu_id1) -> max(gpu_id0, gpu_id1)
     parent_peer_caps->peer_ids[0] = p2p_caps_params.peerIds[0];
+    parent_peer_caps->egm_peer_ids[0] = p2p_caps_params.egmPeerIds[0];
 
     // Peer id from max(gpu_id0, gpu_id1) -> min(gpu_id0, gpu_id1)
     parent_peer_caps->peer_ids[1] = p2p_caps_params.peerIds[1];
+    parent_peer_caps->egm_peer_ids[1] = p2p_caps_params.egmPeerIds[1];
 
     parent_peer_caps->optimalNvlinkWriteCEs[0] = p2p_caps_params.optimalNvlinkWriteCEs[0];
     parent_peer_caps->optimalNvlinkWriteCEs[1] = p2p_caps_params.optimalNvlinkWriteCEs[1];
@@ -2831,6 +2986,53 @@ uvm_aperture_t uvm_gpu_peer_aperture(uvm_gpu_t *local_gpu, uvm_gpu_t *remote_gpu
     return parent_gpu_peer_aperture(local_gpu->parent, remote_gpu->parent, parent_peer_caps);
 }
 
+uvm_gpu_phys_address_t uvm_gpu_peer_phys_address(uvm_gpu_t *owning_gpu, NvU64 address, uvm_gpu_t *accessing_gpu)
+{
+    uvm_aperture_t aperture = uvm_gpu_peer_aperture(accessing_gpu, owning_gpu);
+
+    if (uvm_parent_gpus_are_nvswitch_connected(accessing_gpu->parent, owning_gpu->parent))
+        address += owning_gpu->parent->nvswitch_info.fabric_memory_window_start;
+
+    return uvm_gpu_phys_address(aperture, address);
+}
+
+uvm_gpu_address_t uvm_gpu_peer_copy_address(uvm_gpu_t *owning_gpu, NvU64 address, uvm_gpu_t *accessing_gpu)
+{
+    uvm_gpu_identity_mapping_t *gpu_peer_mapping;
+
+    if (accessing_gpu->parent->peer_copy_mode == UVM_GPU_PEER_COPY_MODE_PHYSICAL)
+        return uvm_gpu_address_from_phys(uvm_gpu_peer_phys_address(owning_gpu, address, accessing_gpu));
+
+    UVM_ASSERT(accessing_gpu->parent->peer_copy_mode == UVM_GPU_PEER_COPY_MODE_VIRTUAL);
+    gpu_peer_mapping = uvm_gpu_get_peer_mapping(accessing_gpu, owning_gpu->id);
+
+    return uvm_gpu_address_virtual(gpu_peer_mapping->base + address);
+}
+
+uvm_aperture_t uvm_gpu_egm_peer_aperture(uvm_parent_gpu_t *local_gpu, uvm_parent_gpu_t *remote_gpu)
+{
+    uvm_parent_gpu_peer_t *peer_caps;
+    NvU8 peer_id;
+
+    if (local_gpu == remote_gpu) {
+        UVM_ASSERT(local_gpu->egm.enabled);
+        peer_id = local_gpu->egm.local_peer_id;
+    }
+    else {
+        UVM_ASSERT(remote_gpu->egm.enabled);
+
+        peer_caps = parent_gpu_peer_caps(local_gpu, remote_gpu);
+
+        // Comparison is based on min(gpu1, gpu2) logic for peer GPUs.
+        if (uvm_parent_id_cmp(local_gpu->id, remote_gpu->id) < 0)
+            peer_id = peer_caps->egm_peer_ids[0];
+        else
+            peer_id = peer_caps->egm_peer_ids[1];
+    }
+
+    return UVM_APERTURE_PEER(peer_id);
+}
+
 NvU64 uvm_gpu_peer_ref_count(const uvm_gpu_t *gpu0, const uvm_gpu_t *gpu1)
 {
     UVM_ASSERT(!uvm_gpus_are_smc_peers(gpu0, gpu1));
@@ -2838,14 +3040,80 @@ NvU64 uvm_gpu_peer_ref_count(const uvm_gpu_t *gpu0, const uvm_gpu_t *gpu1)
     return gpu_peer_caps(gpu0, gpu1)->ref_count;
 }
 
+bool uvm_gpu_address_is_peer(uvm_gpu_t *gpu, uvm_gpu_address_t address)
+{
+    if (address.is_virtual) {
+        // Virtual addresses can be used for peer copies only if
+        // peer_copy_mode == UVM_GPU_PEER_COPY_MODE_VIRTUAL
+        if (gpu->parent->peer_copy_mode == UVM_GPU_PEER_COPY_MODE_VIRTUAL) {
+            return (address.address >= gpu->parent->peer_va_base &&
+                    address.address < (gpu->parent->peer_va_base + gpu->parent->peer_va_size));
+        }
+    } else {
+        uvm_parent_gpu_t *parent_gpu;
+        phys_addr_t phys_addr;
+
+        if (uvm_aperture_is_peer(address.aperture)) {
+            bool is_peer = true;
+            uvm_parent_processor_mask_t parent_gpus;
+            uvm_parent_gpu_t *parent_peer_gpu;
+
+            if (gpu->parent->egm.enabled && address.aperture == gpu->parent->egm.local_peer_id)
+                return false;
+
+            // EGM uses peer IDs but they are different from VIDMEM peer IDs.
+            // Check if the address aperture is an EGM aperture.
+            uvm_parent_gpus_from_processor_mask(&parent_gpus, &gpu->peer_info.peer_gpu_mask);
+            uvm_spin_lock(&gpu->peer_info.peer_gpus_lock);
+            for_each_parent_gpu_in_mask(parent_peer_gpu, &parent_gpus) {
+                uvm_aperture_t egm_peer_aperture;
+
+                if (!parent_peer_gpu->egm.enabled)
+                    continue;
+
+                egm_peer_aperture = uvm_gpu_egm_peer_aperture(gpu->parent, parent_peer_gpu);
+
+                if (address.aperture == egm_peer_aperture) {
+                    is_peer = false;
+                    break;
+                }
+            }
+
+            uvm_spin_unlock(&gpu->peer_info.peer_gpus_lock);
+            return is_peer;
+        }
+
+        if (address.aperture != UVM_APERTURE_SYS)
+            return false;
+
+        // GPU uses DMA addresses, which might be translated by IOMMU/SMMU,
+        // either inline, or via ATS.
+        phys_addr = dma_to_phys(&gpu->parent->pci_dev->dev, (dma_addr_t)address.address);
+
+        // Exposed coherent vidmem can be accessed via sys aperture
+        uvm_spin_lock_irqsave(&g_uvm_global.gpu_table_lock);
+        for_each_parent_gpu(parent_gpu) {
+            if (parent_gpu == gpu->parent)
+                continue;
+
+            if (phys_addr >= parent_gpu->system_bus.memory_window_start &&
+                phys_addr <= parent_gpu->system_bus.memory_window_end) {
+                uvm_spin_unlock_irqrestore(&g_uvm_global.gpu_table_lock);
+                return true;
+            }
+        }
+        uvm_spin_unlock_irqrestore(&g_uvm_global.gpu_table_lock);
+    }
+
+    return false;
+}
+
 uvm_aperture_t uvm_get_page_tree_location(const uvm_parent_gpu_t *parent_gpu)
 {
     // See comment in page_tree_set_location
-    if (uvm_parent_gpu_is_virt_mode_sriov_heavy(parent_gpu))
+    if (uvm_parent_gpu_is_virt_mode_sriov_heavy(parent_gpu) || g_uvm_global.conf_computing_enabled)
         return UVM_APERTURE_VID;
 
-    if (g_uvm_global.conf_computing_enabled)
-        return UVM_APERTURE_VID;
 
     return UVM_APERTURE_DEFAULT;
 }
@@ -2915,6 +3183,7 @@ static NV_STATUS parent_gpu_add_user_channel_subctx_info(uvm_parent_gpu_t *paren
     uvm_gpu_phys_address_t instance_ptr = user_channel->instance_ptr.addr;
     NV_STATUS status = NV_OK;
     uvm_rb_tree_node_t *channel_tree_node;
+    NvU64 node_key;
     uvm_user_channel_subctx_info_t *channel_subctx_info;
     uvm_user_channel_subctx_info_t *new_channel_subctx_info = NULL;
     uvm_gpu_va_space_t *gpu_va_space = user_channel->gpu_va_space;
@@ -2937,7 +3206,8 @@ static NV_STATUS parent_gpu_add_user_channel_subctx_info(uvm_parent_gpu_t *paren
     uvm_spin_lock(&parent_gpu->instance_ptr_table_lock);
 
     // Check if the subcontext information for the channel already exists
-    channel_tree_node = uvm_rb_tree_find(&parent_gpu->tsg_table, user_channel->tsg.id);
+    node_key = ((NvU64)user_channel->hw_runlist_id << 32) | user_channel->tsg.id;
+    channel_tree_node = uvm_rb_tree_find(&parent_gpu->tsg_table, node_key);
 
     if (!channel_tree_node) {
         // We could not allocate the descriptor before taking the lock. Exiting
@@ -2947,7 +3217,7 @@ static NV_STATUS parent_gpu_add_user_channel_subctx_info(uvm_parent_gpu_t *paren
         }
 
         // Insert the new subcontext information descriptor
-        new_channel_subctx_info->node.key = user_channel->tsg.id;
+        new_channel_subctx_info->node.key = node_key;
         status = uvm_rb_tree_insert(&parent_gpu->tsg_table, &new_channel_subctx_info->node);
         UVM_ASSERT(status == NV_OK);
 
@@ -3336,9 +3606,6 @@ static NvU64 gpu_addr_to_dma_addr(uvm_parent_gpu_t *parent_gpu, NvU64 gpu_addr)
     NvU64 dma_addr = gpu_addr;
     UVM_ASSERT(dma_addr <= dma_addr + parent_gpu->dma_addressable_start);
 
-    if (parent_gpu->npu)
-        dma_addr = nv_expand_nvlink_addr(dma_addr);
-
     dma_addr += parent_gpu->dma_addressable_start;
 
     return dma_addr;
@@ -3352,11 +3619,6 @@ static NvU64 dma_addr_to_gpu_addr(uvm_parent_gpu_t *parent_gpu, NvU64 dma_addr)
 {
     NvU64 gpu_addr = dma_addr - parent_gpu->dma_addressable_start;
     UVM_ASSERT(dma_addr >= gpu_addr);
-
-    // See Bug 1920398 for background and details about NVLink DMA address
-    // transformations being applied here.
-    if (parent_gpu->npu)
-        gpu_addr = nv_compress_nvlink_addr(gpu_addr);
 
     return gpu_addr;
 }

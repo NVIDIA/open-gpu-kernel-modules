@@ -135,15 +135,6 @@ _krcInitRegistryOverrides
         pKernelRc->bBreakOnRc = NV_TRUE;
     }
 
-    if (pKernelRc->bBreakOnRc)
-    {
-        NV_PRINTF(LEVEL_INFO, "Breakpoint on RC Error is enabled\n");
-    }
-    else
-    {
-        NV_PRINTF(LEVEL_INFO, "Breakpoint on RC Error is disabled\n");
-    }
-
 
     if (osReadRegistryDword(pGpu,
                             NV_REG_STR_RM_WATCHDOG_TIMEOUT,
@@ -292,38 +283,43 @@ krcReportXid_IMPL
         NvU16          gpuPartitionId;
         NvU16          computeInstanceId;
         KernelChannel *pKernelChannel = krcGetChannelInError(pKernelRc);
-        char          *current_procname = NULL;
-
-        // Channels are populated with osGetCurrentProcessName() and pid of
-        // their process at creation-time. If no channel was found, mark unknown
-        const char *procname = "<unknown>";
-        char pid_string[12] = "'<unknown>'";
+        char          *allocProcName = NULL;
+        const char    *procName = NULL;
+        char           pidStr[12] = "";
 
         //
-        // Get PID of channel creator if available, or get the current PID for
-        // exception types that never have an associated channel
+        // When the channel context is available, use the allocating process'
+        // PID/name, which were populated when the channel was allocated.
+        // For errors without a channel context, use the current process
+        // information, if there's a Resource Server CALL_CONTEXT present
+        // in TLS, indicating we're servicing an RMAPI request.
         //
-        // Check for API lock since this can be called from parallel init
-        // path without API lock, and RES_GET_CLIENT requires API lock
-        //
-        if (rmapiLockIsOwner() && (pKernelChannel != NULL))
+        if (pKernelChannel != NULL)
         {
+            //
+            // This function executes under (at least) the GPU lock, so the
+            // pKernelChannel resource can be accessed, regardless of whether
+            // the API lock is held: the pKernelChannel can't go away while the
+            // GPU lock is held, so the owning client can't go away either.
+            // Duping requires holding all GPU locks, so the client's process/
+            // name can't change in this context either.
+            //
             RsClient *pClient = RES_GET_CLIENT(pKernelChannel);
             RmClient *pRmClient = dynamicCast(pClient, RmClient);
-            procname = pRmClient->name;
-            nvDbgSnprintf(pid_string, sizeof(pid_string), "%u", pKernelChannel->ProcessID);
+            procName = pRmClient->name;
+            nvDbgSnprintf(pidStr, sizeof(pidStr), "%u", pKernelChannel->ProcessID);
         }
-        else if (exceptType == GSP_RPC_TIMEOUT)
+        else if (resservGetTlsCallContext() != NULL)
         {
-            NvU32 current_pid = osGetCurrentProcess();
+            NvU32 currentPid = osGetCurrentProcess();
 
-            nvDbgSnprintf(pid_string, sizeof(pid_string), "%u", current_pid);
+            nvDbgSnprintf(pidStr, sizeof(pidStr), "%u", currentPid);
 
-            current_procname = portMemAllocNonPaged(NV_PROC_NAME_MAX_LENGTH);
-            if (current_procname != NULL)
+            allocProcName = portMemAllocNonPaged(NV_PROC_NAME_MAX_LENGTH);
+            if (allocProcName != NULL)
             {
-                osGetCurrentProcessName(current_procname, NV_PROC_NAME_MAX_LENGTH);
-                procname = current_procname;
+                osGetCurrentProcessName(allocProcName, NV_PROC_NAME_MAX_LENGTH);
+                procName = allocProcName;
             }
         }
 
@@ -334,43 +330,43 @@ krcReportXid_IMPL
                                          &gpuPartitionId,
                                          &computeInstanceId);
 
+        // Code-generating macro to reduce duplication
+        #define XID_PRINT_WITH_ATTR(attr, ...)                                          \
+            do {                                                                        \
+                if (procName != NULL)                                                   \
+                    portDbgPrintf("NVRM: Xid (" attr "): %d, pid=%s, name=%s, %s\n",    \
+                                  __VA_ARGS__, exceptType, pidStr, procName,            \
+                                  pMsg != NULL ? pMsg : "");                            \
+                else                                                                    \
+                    portDbgPrintf("NVRM: Xid (" attr "): %d, %s\n",                     \
+                                  __VA_ARGS__, exceptType, pMsg != NULL ? pMsg : "");   \
+            } while (0)
+
         if (gpuPartitionId    != KMIGMGR_INSTANCE_ATTRIBUTION_ID_INVALID &&
             computeInstanceId != KMIGMGR_INSTANCE_ATTRIBUTION_ID_INVALID)
         {
             // Attribute this XID to both GPU / Compute instance
-            portDbgPrintf(
-                "NVRM: Xid (PCI:%04x:%02x:%02x GPU-I:%02u GPU-CI:%02u): %d, pid=%s, name=%s, %s\n",
-                gpuGetDomain(pGpu), gpuGetBus(pGpu), gpuGetDevice(pGpu),
-                gpuPartitionId, computeInstanceId,
-                exceptType,
-                pid_string,
-                procname,
-                pMsg != NULL ? pMsg : "");
+            XID_PRINT_WITH_ATTR("PCI:%04x:%02x:%02x GPU-I:%02u GPU-CI:%02u",
+                                gpuGetDomain(pGpu), gpuGetBus(pGpu), gpuGetDevice(pGpu),
+                                gpuPartitionId, computeInstanceId);
         }
         else if (gpuPartitionId != KMIGMGR_INSTANCE_ATTRIBUTION_ID_INVALID)
         {
             // Attribute this XID to GPU instance only
-            portDbgPrintf(
-                "NVRM: Xid (PCI:%04x:%02x:%02x GPU-I:%02u): %d, pid=%s, name=%s, %s\n",
-                gpuGetDomain(pGpu), gpuGetBus(pGpu), gpuGetDevice(pGpu),
-                gpuPartitionId,
-                exceptType,
-                pid_string,
-                procname,
-                pMsg != NULL ? pMsg : "");
+            XID_PRINT_WITH_ATTR("PCI:%04x:%02x:%02x GPU-I:%02u",
+                                gpuGetDomain(pGpu), gpuGetBus(pGpu), gpuGetDevice(pGpu),
+                                gpuPartitionId);
         }
         else
         {
-            // Legacy (no attribution) XID reporting
-            portDbgPrintf("NVRM: Xid (PCI:%04x:%02x:%02x): %d, pid=%s, name=%s, %s\n",
-                gpuGetDomain(pGpu), gpuGetBus(pGpu), gpuGetDevice(pGpu),
-                exceptType,
-                pid_string,
-                procname,
-                pMsg != NULL ? pMsg : "");
+            // Attribute this Xid to the device only
+            XID_PRINT_WITH_ATTR("PCI:%04x:%02x:%02x",
+                                gpuGetDomain(pGpu), gpuGetBus(pGpu), gpuGetDevice(pGpu));
         }
 
-        portMemFree(current_procname);
+        #undef XID_PRINT_WITH_ATTR
+
+        portMemFree(allocProcName);
     }
 }
 

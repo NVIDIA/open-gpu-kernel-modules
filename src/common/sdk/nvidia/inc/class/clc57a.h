@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 1993-2020, NVIDIA CORPORATION. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -13,7 +14,7 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
  * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
@@ -43,6 +44,39 @@ typedef volatile struct _clc57a_tag0 {
 #define NVC57A_FREE                                                             (0x00000008)
 #define NVC57A_FREE_COUNT                                                       5:0
 #define NVC57A_UPDATE                                                           (0x00000200)
+#define NVC57A_UPDATE_RELEASE_ELV                                               0:0
+#define NVC57A_UPDATE_RELEASE_ELV_FALSE                                         (0x00000000)
+#define NVC57A_UPDATE_RELEASE_ELV_TRUE                                          (0x00000001)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN                                             8:4
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_NONE                               (0x00000000)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_0                                  (0x00000001)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_1                                  (0x00000002)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_2                                  (0x00000003)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_3                                  (0x00000004)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_4                                  (0x00000005)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_5                                  (0x00000006)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_6                                  (0x00000007)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_7                                  (0x00000008)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_8                                  (0x00000009)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_9                                  (0x0000000A)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_A                                  (0x0000000B)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_B                                  (0x0000000C)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_C                                  (0x0000000D)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_D                                  (0x0000000E)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_E                                  (0x0000000F)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_F                                  (0x00000010)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_INTERNAL_FLIP_LOCK_0                        (0x00000014)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_INTERNAL_FLIP_LOCK_1                        (0x00000015)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_INTERNAL_FLIP_LOCK_2                        (0x00000016)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_INTERNAL_FLIP_LOCK_3                        (0x00000017)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_INTERNAL_SCAN_LOCK_0                        (0x00000018)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_INTERNAL_SCAN_LOCK_1                        (0x00000019)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_INTERNAL_SCAN_LOCK_2                        (0x0000001A)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_INTERNAL_SCAN_LOCK_3                        (0x0000001B)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_INTERNAL_SCAN_LOCK_4                        (0x0000001C)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_INTERNAL_SCAN_LOCK_5                        (0x0000001D)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_INTERNAL_SCAN_LOCK_6                        (0x0000001E)
+#define NVC57A_UPDATE_FLIP_LOCK_PIN_INTERNAL_SCAN_LOCK_7                        (0x0000001F)
 #define NVC57A_SET_INTERLOCK_FLAGS                                              (0x00000204)
 #define NVC57A_SET_INTERLOCK_FLAGS_INTERLOCK_WITH_CURSOR0                       0:0
 #define NVC57A_SET_INTERLOCK_FLAGS_INTERLOCK_WITH_CURSOR0_DISABLE               (0x00000000)

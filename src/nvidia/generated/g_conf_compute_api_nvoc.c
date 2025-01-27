@@ -258,7 +258,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge ConfidentialComputeApi methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
 NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super
 NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
@@ -266,7 +266,7 @@ void __nvoc_down_thunk_RmResource_resControlSerialization_Epilogue(struct RsReso
 NV_STATUS __nvoc_down_thunk_RmResource_resControl_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
 void __nvoc_down_thunk_RmResource_resControl_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
+// Up-thunk(s) to bridge ConfidentialComputeApi methods to ancestors (if any)
 NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super
 NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super
 void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super
@@ -305,107 +305,107 @@ void __nvoc_up_thunk_RsResource_confComputeApiAddAdditionalDependants(struct RsC
 
 // confComputeApiAccessCallback: virtual inherited (rmres) base (rmres)
 NvBool __nvoc_up_thunk_RmResource_confComputeApiAccessCallback(struct ConfidentialComputeApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource)), pInvokingClient, pAllocParams, accessRight);
 }
 
 // confComputeApiShareCallback: virtual inherited (rmres) base (rmres)
 NvBool __nvoc_up_thunk_RmResource_confComputeApiShareCallback(struct ConfidentialComputeApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource)), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // confComputeApiGetMemInterMapParams: virtual inherited (rmres) base (rmres)
 NV_STATUS __nvoc_up_thunk_RmResource_confComputeApiGetMemInterMapParams(struct ConfidentialComputeApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pParams);
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource)), pParams);
 }
 
 // confComputeApiCheckMemInterUnmap: virtual inherited (rmres) base (rmres)
 NV_STATUS __nvoc_up_thunk_RmResource_confComputeApiCheckMemInterUnmap(struct ConfidentialComputeApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), bSubdeviceHandleProvided);
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource)), bSubdeviceHandleProvided);
 }
 
 // confComputeApiGetMemoryMappingDescriptor: virtual inherited (rmres) base (rmres)
 NV_STATUS __nvoc_up_thunk_RmResource_confComputeApiGetMemoryMappingDescriptor(struct ConfidentialComputeApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), ppMemDesc);
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource)), ppMemDesc);
 }
 
 // confComputeApiControlSerialization_Prologue: virtual inherited (rmres) base (rmres)
 NV_STATUS __nvoc_up_thunk_RmResource_confComputeApiControlSerialization_Prologue(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pCallContext, pParams);
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // confComputeApiControlSerialization_Epilogue: virtual inherited (rmres) base (rmres)
 void __nvoc_up_thunk_RmResource_confComputeApiControlSerialization_Epilogue(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pCallContext, pParams);
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // confComputeApiControl_Prologue: virtual inherited (rmres) base (rmres)
 NV_STATUS __nvoc_up_thunk_RmResource_confComputeApiControl_Prologue(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pCallContext, pParams);
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // confComputeApiControl_Epilogue: virtual inherited (rmres) base (rmres)
 void __nvoc_up_thunk_RmResource_confComputeApiControl_Epilogue(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pCallContext, pParams);
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // confComputeApiCanCopy: virtual inherited (res) base (rmres)
 NvBool __nvoc_up_thunk_RsResource_confComputeApiCanCopy(struct ConfidentialComputeApi *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset));
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // confComputeApiIsDuplicate: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_confComputeApiIsDuplicate(struct ConfidentialComputeApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), hMemory, pDuplicate);
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource.__nvoc_base_RsResource)), hMemory, pDuplicate);
 }
 
 // confComputeApiPreDestruct: virtual inherited (res) base (rmres)
 void __nvoc_up_thunk_RsResource_confComputeApiPreDestruct(struct ConfidentialComputeApi *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset));
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // confComputeApiControl: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_confComputeApiControl(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControl((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pCallContext, pParams);
+    return resControl((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams);
 }
 
 // confComputeApiControlFilter: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_confComputeApiControlFilter(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pCallContext, pParams);
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams);
 }
 
 // confComputeApiMap: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_confComputeApiMap(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pCallContext, pParams, pCpuMapping);
+    return resMap((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams, pCpuMapping);
 }
 
 // confComputeApiUnmap: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_confComputeApiUnmap(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pCallContext, pCpuMapping);
+    return resUnmap((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pCpuMapping);
 }
 
 // confComputeApiIsPartialUnmapSupported: inline virtual inherited (res) base (rmres) body
 NvBool __nvoc_up_thunk_RsResource_confComputeApiIsPartialUnmapSupported(struct ConfidentialComputeApi *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset));
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // confComputeApiMapTo: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_confComputeApiMapTo(struct ConfidentialComputeApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pParams);
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
 }
 
 // confComputeApiUnmapFrom: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_confComputeApiUnmapFrom(struct ConfidentialComputeApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pParams);
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
 }
 
 // confComputeApiGetRefCount: virtual inherited (res) base (rmres)
 NvU32 __nvoc_up_thunk_RsResource_confComputeApiGetRefCount(struct ConfidentialComputeApi *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset));
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // confComputeApiAddAdditionalDependants: virtual inherited (res) base (rmres)
 void __nvoc_up_thunk_RsResource_confComputeApiAddAdditionalDependants(struct RsClient *pClient, struct ConfidentialComputeApi *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pReference);
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ConfidentialComputeApi, __nvoc_base_RmResource.__nvoc_base_RsResource)), pReference);
 }
 
 
@@ -511,28 +511,6 @@ void __nvoc_init_funcTable_ConfidentialComputeApi(ConfidentialComputeApi *pThis)
 
     // Per-class vtable definition
     static const struct NVOC_VTABLE__ConfidentialComputeApi vtable = {
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-#endif
         .__confComputeApiAccessCallback__ = &__nvoc_up_thunk_RmResource_confComputeApiAccessCallback,    // virtual inherited (rmres) base (rmres)
         .RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
         .RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual

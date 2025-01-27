@@ -274,10 +274,11 @@ NV_STATUS NV_API_CALL os_lock_user_pages(
 
 NV_STATUS NV_API_CALL os_unlock_user_pages(
     NvU64  page_count,
-    void  *page_array
+    void  *page_array,
+    NvU32  flags
 )
 {
-    NvBool write = 1;
+    NvBool write = FLD_TEST_DRF(_LOCK_USER_PAGES, _FLAGS, _WRITE, _YES, flags);
     struct page **user_pages = page_array;
     NvU32 i;
 

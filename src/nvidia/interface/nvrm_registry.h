@@ -601,18 +601,6 @@
 
 
 //
-// Type: Dword
-// Encoding:
-// 1 - Enable remote GPU
-// 0 - Disable remote GPU
-//
-#define NV_REG_STR_RM_REMOTE_GPU                           "RMRemoteGpu"
-#define NV_REG_STR_RM_REMOTE_GPU_ENABLE                    0x00000001
-#define NV_REG_STR_RM_REMOTE_GPU_DISABLE                   0x00000000
-#define NV_REG_STR_RM_REMOTE_GPU_DEFAULT                   NV_REG_STR_RM_REMOTE_GPU_DISABLE
-
-
-//
 // Type: DWORD
 //
 // This regkey configures thread priority boosting whenever
@@ -1091,10 +1079,12 @@
 // Forces the entire BAR1 to be statically allocated.
 //
 // DISABLE will force disable static BAR1
-// ENABLE will force the amount of video memory to be limited to the amount of BAR1 because
-//        further video memory cannot be mapped
-// AUTO will only map static BAR1 if static BAR1 size is >1.8x the size of FB to allow for both
-//      static as well as dynamic BAR1 mappings
+// ENABLE will force the static BAR1 to be enabled if there is sufficient BAR1
+//        to map all of FB once or fail initialization otherwise. This mode does
+//        not take into account other expected BAR1 mappings and may lead to
+//        BAR1 exhaustion later. Use with caution.
+// AUTO   will only map static BAR1 if static BAR1 size is calculated to be big enough
+//        to map all of FB once plus a calculated amount for other expected BAR1 mappings
 // ONLY_GPU will only map static BAR1 for existing GPU BAR1P2P use cases only
 //
 #define NV_REG_STR_RM_FORCE_STATIC_BAR1                          "RMForceStaticBar1"
@@ -1302,13 +1292,13 @@
 #define NV_REG_STR_RM_INTR_DETAILED_LOGS_DISABLE              0x00000000
 #define NV_REG_STR_RM_INTR_DETAILED_LOGS_ENABLE               0x00000001
 
-#define NV_REG_STR_RM_LOCKING_MODE              "RMLockingMode"
+#define NV_REG_STR_RM_INTR_LOCKING_MODE              "RMIntrLockingMode"
 // Type DWORD
 // Encoding enum
-// Overrides what Locking Mode is in use.
+// Overrides what INTR Locking Mode is in use.
 // Default 0
-#define NV_REG_STR_RM_LOCKING_MODE_DEFAULT               (0x00000000)
-#define NV_REG_STR_RM_LOCKING_MODE_INTR_MASK             (0x00000001)
+#define NV_REG_STR_RM_INTR_LOCKING_MODE_DEFAULT               (0x00000000)
+#define NV_REG_STR_RM_INTR_LOCKING_MODE_INTR_MASK             (0x00000001)
 
 #define NV_REG_STR_RM_PER_INTR_DPC_QUEUING        "RMDisablePerIntrDPCQueueing"
 // Type DWORD
@@ -1370,6 +1360,11 @@
 #define NV_REG_STR_RM_GSP_VGPU_WATCHCAT_TIMEOUT             "RmGspPluginWatchcatTimeOut"
 #define NV_REG_STR_RM_GSP_VGPU_WATCHCAT_TIMEOUT_MIN         0x0000000A
 #define NV_REG_STR_RM_GSP_VGPU_WATCHCAT_TIMEOUT_DEFAULT     NV_REG_STR_RM_GSP_VGPU_WATCHCAT_TIMEOUT_MIN
+
+// Set watchdog timeout value for the libos user task watchdog
+#define NV_REG_STR_RM_GSP_LIBOS_WATCHDOG_TIMEOUT             "RmGspLibosWatchdogTimeOut"
+#define NV_REG_STR_RM_GSP_LIBOS_WATCHDOG_TIMEOUT_MIN         0x00000000
+#define NV_REG_STR_RM_GSP_LIBOS_WATCHDOG_TIMEOUT_DEFAULT     0x00000005
 
 #define NV_REG_STR_RM_DO_LOG_RC_EVENTS                      "RmLogonRC"
 // Type Dword
@@ -2261,6 +2256,17 @@
 #define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_FEATURE_FLAGS_AUTO_UPDATE_ENABLED   0x1
 
 //
+// Type DWORD
+// This regkey toggles whether to enable support for MIG With GFX (SMG)
+//
+// 0 - Disable MIG with GFX (SMG)
+// 1 - Enable MIG with GFX (SMG)
+//
+#define NV_REG_STR_RM_ENABLE_MIG_GFX                  "RmEnableMIGGfx"
+#define NV_REG_STR_RM_ENABLE_MIG_GFX_DISABLED          0
+#define NV_REG_STR_RM_ENABLE_MIG_GFX_ENABLED           1
+
+//
 // Type: DWORD
 //
 // If the midpath spinning feature of the GPU lock is enabled.
@@ -2325,9 +2331,9 @@
 // 0 - Disable multi gpu mode
 // 1 - Enable protected pcie
 //
-#define NV_REG_STR_RM_CC_MULTI_GPU_MODE                     "RmCCMultiGpuMode"
-#define NV_REG_STR_RM_CC_MULTI_GPU_MODE_NONE                0x00000000
-#define NV_REG_STR_RM_CC_MULTI_GPU_MODE_PROTECTED_PCIE      0x00000001
+#define NV_REG_STR_RM_PPCIE_ENABLED                         "RmEnableProtectedPcie"
+#define NV_REG_STR_RM_PPCIE_ENABLED_NO                      0x00000000
+#define NV_REG_STR_RM_PPCIE_ENABLED_YES                     0x00000001
 
 // This regkey allows RM to access CPR vidmem over BARs when HCC devtools mode is ON
 #define NV_REG_STR_RM_FORCE_BAR_ACCESS_ON_HCC               "RmForceBarAccessOnHcc"
@@ -2409,6 +2415,18 @@
 //
 #define NV_REG_STR_RM_GSP_BOOT_RETRY_ATTEMPTS             "RmGspBootRetryAttempts"
 #define NV_REG_STR_RM_GSP_BOOT_RETRY_ATTEMPTS_DEFAULT     4
+
+//
+// Type DWORD
+// Regkey to control placement of GSP firmawre's stack
+// 0 - let RM decide (default)
+// 1 - force use of libos task stack
+// 2 - force use of dmem stack
+//
+#define NV_REG_STR_RM_GSP_STACK_PLACEMENT           "RmGspStackPlacement"
+#define NV_REG_STR_RM_GSP_STACK_PLACEMENT_DEFAULT   0
+#define NV_REG_STR_RM_GSP_STACK_PLACEMENT_LIBOS     1
+#define NV_REG_STR_RM_GSP_STACK_PLACEMENT_DMEM      2
 
 //
 // Type: Dword
@@ -2517,6 +2535,38 @@
 #define NV_REG_STR_RM_DEBUG_RUSD_POLLING_FORCE_DISABLE    1
 #define NV_REG_STR_RM_DEBUG_RUSD_POLLING_FORCE_ENABLE     2
 
+//
+// Type: Dword
+//
+// This regkey controls RM User Shared Data polling frequency
+//
+// By default, RUSD polls requested data once every 100ms.
+// Decreasing this interval will make RUSD update data more often, providing more recent data,
+// but may result in increased GPU power usage.
+//
+// Interval is specified in milliseconds
+// Default - 100
+// Minimum - 100
+// Maximum - 1000
+//
+#define NV_REG_STR_RM_RUSD_POLLING_INTERVAL                  "RMRusdPollingInterval"
+#define NV_REG_STR_RM_RUSD_POLLING_INTERVAL_DEFAULT          500
+#define NV_REG_STR_RM_RUSD_POLLING_INTERVAL_TESLA            100
+#define NV_REG_STR_RM_RUSD_POLLING_INTERVAL_MIN              100
+#define NV_REG_STR_RM_RUSD_POLLING_INTERVAL_MAX              1000
+
+//
+// Type DWORD (Boolean)
+// This regkey controls the use of BAR1 SPA instead of GPA for p2p subsystems
+// like dma-buf and nv-p2p for coherent systems with a direct PCIe link between
+// the GPU and another device in virtualized environments.
+// By default, the regkey shall be set to false to always use GPA.
+//
+#define NV_REG_STR_RM_GPUDIRECT_RDMA_FORCE_SPA          "RmGpuDirectRdmaForceSPA"
+#define NV_REG_STR_RM_GPUDIRECT_RDMA_FORCE_SPA_YES      (0x00000001)
+#define NV_REG_STR_RM_GPUDIRECT_RDMA_FORCE_SPA_NO       (0x00000000)
+#define NV_REG_STR_RM_GPUDIRECT_RDMA_FORCE_SPA_DEFAULT  NV_REG_STR_RM_GPUDIRECT_RDMA_FORCE_SPA_NO
+
 // Type DWORD (Boolean)
 // Disable the check for FSP's fuse error detection status during boot.
 // By default, the check would be enabled and we would bail out during boot on error.
@@ -2524,5 +2574,31 @@
 #define NV_REG_STR_RM_DISABLE_FSP_FUSE_ERROR_CHECK_YES       (0x00000001)
 #define NV_REG_STR_RM_DISABLE_FSP_FUSE_ERROR_CHECK_NO        (0x00000000)
 #define NV_REG_STR_RM_DISABLE_FSP_FUSE_ERROR_CHECK_DEFAULT   (0x00000000)
+
+//
+// TYPE Dword
+// Regkey to set the simulated path for TDR escape.
+// With corresponding bit set the return status will be set to error for simulation.
+// The error resume sequence is bus , ucode and power call
+//
+#define NV_REG_STR_RM_TDR_SIMULATED_ESCAPE                      "RMTdrSimulatedEscape"
+#define NV_REG_STR_RM_TDR_SIMULATED_ESCAPE_NONE                  0
+#define NV_REG_STR_RM_TDR_SIMULATED_ESCAPE_POWER_ERROR           0:0
+#define NV_REG_STR_RM_TDR_SIMULATED_ESCAPE_POWER_ERROR_TRUE      0x00000001
+#define NV_REG_STR_RM_TDR_SIMULATED_ESCAPE_POWER_ERROR_FALSE     0x00000000
+#define NV_REG_STR_RM_TDR_SIMULATED_ESCAPE_BUS_ERROR             1:1
+#define NV_REG_STR_RM_TDR_SIMULATED_ESCAPE_BUS_ERROR_TRUE        0x00000001
+#define NV_REG_STR_RM_TDR_SIMULATED_ESCAPE_BUS_ERROR_FALSE       0x00000000
+#define NV_REG_STR_RM_TDR_SIMULATED_ESCAPE_UCODE_ERROR           2:2
+#define NV_REG_STR_RM_TDR_SIMULATED_ESCAPE_UCODE_ERROR_TRUE      0x00000001
+#define NV_REG_STR_RM_TDR_SIMULATED_ESCAPE_UCODE_ERROR_FALSE     0x00000000
+
+// TYPE DWORD
+// Enable mask for GSPLITE engines
+//
+#define NV_REG_STR_RM_GSPLITE_ENABLE_MASK                         "RmGspliteEnableMask"
+#define NV_REG_STR_RM_GSPLITE_DISABLE_ALL                         (0x00000000)
+#define NV_REG_STR_RM_GSPLITE_ENABLE_ALL                          (0xFFFFFFFF)
+#define NV_REG_STR_RM_GSPLITE_ENABLE_MASK_DEFAULT                 NV_REG_STR_RM_GSPLITE_DISABLE_ALL
 
 #endif // NVRM_REGISTRY_H

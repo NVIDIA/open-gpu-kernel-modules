@@ -73,7 +73,7 @@ struct SwIntr {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__SwIntr *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
     struct IntrService __nvoc_base_IntrService;
 
@@ -182,7 +182,7 @@ NV_STATUS __nvoc_objCreate_SwIntr(SwIntr**, Dynamic*, NvU32);
 #define swintrServiceNotificationInterrupt(pGpu, pIntrService, pParams) swintrServiceNotificationInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 
 // Dispatch functions
-static inline void swintrRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct SwIntr *pSwIntr, IntrServiceRecord pRecords[175]) {
+static inline void swintrRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct SwIntr *pSwIntr, IntrServiceRecord pRecords[177]) {
     pSwIntr->__nvoc_vtable->__swintrRegisterIntrService__(pGpu, pSwIntr, pRecords);
 }
 
@@ -254,7 +254,7 @@ static inline NV_STATUS swintrServiceNotificationInterrupt_DISPATCH(OBJGPU *pGpu
     return pIntrService->__nvoc_vtable->__swintrServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
 }
 
-void swintrRegisterIntrService_IMPL(OBJGPU *pGpu, struct SwIntr *pSwIntr, IntrServiceRecord pRecords[175]);
+void swintrRegisterIntrService_IMPL(OBJGPU *pGpu, struct SwIntr *pSwIntr, IntrServiceRecord pRecords[177]);
 
 NvU32 swintrServiceInterrupt_IMPL(OBJGPU *pGpu, struct SwIntr *pSwIntr, IntrServiceServiceInterruptArguments *pParams);
 

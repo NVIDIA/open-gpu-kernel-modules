@@ -77,15 +77,18 @@ bool LinkConfiguration::lowerConfig(bool bReduceLaneCnt)
     }
 
     minRate = linkOverhead(peakRate);
+    setChannelCoding();
     return lanes != laneCount_0;
 }
 
 LinkConfiguration::LinkConfiguration(LinkPolicy * p, unsigned lanes, LinkRate peakRate,
-                                     bool enhancedFraming, bool MST, bool disablePostLTRequest,
-                                     bool bEnableFEC, bool bDisableLTTPR)
-    : lanes(lanes), peakRatePossible(peakRate), peakRate(peakRate), enhancedFraming(enhancedFraming),
-      multistream(MST), disablePostLTRequest(disablePostLTRequest), bEnableFEC(bEnableFEC),
-      bDisableLTTPR(bDisableLTTPR), linkTrainCounter(0)
+                                     bool enhancedFraming, bool MST, bool disablePostLTRequest, 
+                                     bool bEnableFEC, bool bDisableLTTPR, bool bDisableDownspread)
+    : lanes(lanes), peakRatePossible(peakRate), peakRate(peakRate),
+      enhancedFraming(enhancedFraming), multistream(MST),
+      disablePostLTRequest(disablePostLTRequest), bEnableFEC(bEnableFEC),
+      bDisableLTTPR(bDisableLTTPR), bDisableDownspread(bDisableDownspread),
+      linkTrainCounter(0)
 {
     // downrate for spread and FEC
     minRate = linkOverhead(peakRate);
@@ -93,5 +96,91 @@ LinkConfiguration::LinkConfiguration(LinkPolicy * p, unsigned lanes, LinkRate pe
     {
         policy = *p;
     }
+    setChannelCoding();
 }
 
+void LinkConfiguration::setChannelCoding()
+{
+    bool b128b132bHBREnabled = ((bSupportInternalUhbrOnFpga & NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT_2_7G) != 0);
+    if (IS_DP2_X_UHBR_LINKBW(peakRate) ||
+       (peakRate == dp2LinkRate_2_70Gbps && b128b132bHBREnabled))
+    {
+        bIs128b132bChannelCoding = true;
+        // FEC is always enabled for 128b/132b.
+        bEnableFEC = true;
+    }
+    else
+    {
+        bIs128b132bChannelCoding = false;
+    }
+}
+
+NvU64 LinkConfiguration::getBytesPerTimeslot()
+{
+    NvU64 bytes_per_timeslot;
+
+    // spread is already considered during pbn calculation for required mode. No need to consider here
+    if(bIs128b132bChannelCoding)
+    {
+        // 128b/132b case
+        NvU64 linkRateBytes = DP_LINK_RATE_BITSPS_TO_BYTESPS(DP_LINK_RATE_10M_TO_BPS(peakRate) * lanes);
+        NvU64 total_data_bw = DATA_BW_EFF_128B_132B(linkRateBytes); // Unit: Bps (bytes)
+        bytes_per_timeslot = divide_floor(total_data_bw, 64);
+    }
+    else
+    {
+        // 8b/10b case
+        bytes_per_timeslot = getTotalDataRate() / 64;
+    }
+
+    return bytes_per_timeslot;
+}
+
+NvU32 LinkConfiguration::PBNForSlots(NvU32 slots)
+{
+    NvU64 bytes_per_pbn      = 54 * 1000000 / 64;
+    NvU64 bytes_per_timeslot = getBytesPerTimeslot();
+
+    return (NvU32)(bytes_per_timeslot * slots/ bytes_per_pbn); // Rounded down
+}
+
+NvU32 LinkConfiguration::slotsForPBN(NvU32 allocatedPBN, bool usable)
+{
+    NvU64 bytes_per_pbn      = 54 * 1000000 / 64;
+    NvU64 bytes_per_timeslot = getBytesPerTimeslot();
+    NvU32 slots;
+
+    if (bytes_per_timeslot == 0)
+        return (NvU32)-1;
+
+    if (usable)
+    {
+        // round down to find the usable integral slots for a given value of PBN.
+        slots = (NvU32)divide_floor(allocatedPBN * bytes_per_pbn, bytes_per_timeslot);
+        DP_ASSERT(slots <= 64);
+    }
+    else
+    {
+        slots = (NvU32)divide_ceil(allocatedPBN * bytes_per_pbn, bytes_per_timeslot);
+    }
+
+    return slots;
+}
+
+void LinkConfiguration::pbnRequired(const ModesetInfo & modesetInfo, unsigned & base_pbn, unsigned & slots, unsigned & slots_pbn)
+{
+
+    base_pbn = pbnForMode(modesetInfo);
+
+    if (!bIs128b132bChannelCoding)
+    {
+    if (bEnableFEC)
+    {
+        // IF FEC is enabled, we need to consider 2.4% overhead as per DP1.4 spec.
+        base_pbn = (NvU32)(divide_ceil(base_pbn * 1000, 976));
+    }
+    }
+
+    slots = slotsForPBN(base_pbn);
+    slots_pbn = PBNForSlots(slots);
+}

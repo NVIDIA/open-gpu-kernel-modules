@@ -77,6 +77,16 @@ typedef struct KernelChannelGroupApi KernelChannelGroupApi;
  */
 MAKE_LIST(KernelChannelGroupApiList, KernelChannelGroupApi *);
 
+/*!
+ * Mapping of VASpace handle to pVaSpaceIdHeap offset.
+ */
+typedef struct
+{
+    NvU64 heapOffset;
+    NvU64 refCount;
+} VaSpaceMapEntry;
+MAKE_MAP(VaSpaceMap, VaSpaceMapEntry);
+
 typedef enum
 {
     CHANNELGROUP_STATE_ENABLE,
@@ -134,7 +144,7 @@ struct KernelChannelGroup {
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct RsShared __nvoc_base_RsShared;
 
     // Ancestor object pointers for `staticCast` feature
@@ -151,6 +161,8 @@ struct KernelChannelGroup {
     struct OBJVASPACE *pVAS;
     NvU32 gfid;
     OBJEHEAP *pSubctxIdHeap;
+    VaSpaceMap vaSpaceMap;
+    OBJEHEAP *pVaSpaceIdHeap;
     CHANNEL_LIST *pChanList;
     NvU64 timesliceUs;
     ENGINE_CTX_DESCRIPTOR **ppEngCtxDesc;
@@ -167,6 +179,7 @@ struct KernelChannelGroup {
     struct MapNode mapNode;
     KernelChannelGroupApiList apiObjList;
     NvBool bIsCallingContextVgpuPlugin;
+    NvU32 tsgUniqueId;
 };
 
 #ifndef __NVOC_CLASS_KernelChannelGroup_TYPEDEF__

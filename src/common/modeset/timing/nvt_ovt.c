@@ -264,6 +264,7 @@ NVT_STATUS NvTiming_CalcOVT(NvU32 width, NvU32 height, NvU32 refreshRate, NVT_TI
     pT->VSyncWidth  = (NvU16)NVT_OVT_V_SYNC_WIDTH;
     pT->VFrontPorch = (NvU16)(vBlank - vSyncPosition);
     pT->pclk        = (NvU32)(pixelClockRate /*Hz*/ / 1000 + 5) / 10; //convert to 10Khz
+    pT->pclk1khz    = (NvU32)(pixelClockRate /*Hz*/ / 1000); //convert to 1Khz
     pT->HSyncPol    = NVT_H_SYNC_POSITIVE;
     pT->VSyncPol    = NVT_V_SYNC_POSITIVE;
     pT->HBorder     = pT->VBorder = 0;  // not supported

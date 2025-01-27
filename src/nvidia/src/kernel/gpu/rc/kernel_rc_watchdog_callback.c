@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,9 @@
 #include "kernel/gpu/gpu.h"
 #include "kernel/gpu_mgr/gpu_mgr.h"
 #include "platform/sli/sli.h"
+
+#include "kernel/gpu/intr/engine_idx.h"
+#include "kernel/gpu/intr/intr.h"
 
 #include "ctrl/ctrl906f.h"
 
@@ -369,6 +372,8 @@ void krcWatchdogCallbackVblankRecovery_IMPL
 {
     NvU32           head;
     KernelDisplay  *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    Intr           *pIntr = GPU_GET_INTR(pGpu);
+    MC_ENGINE_BITVECTOR intrDispPending;
 
     if (!pKernelRc->bRobustChannelsEnabled ||
         (pKernelRc->watchdog.flags & WATCHDOG_FLAGS_DISABLED) ||
@@ -376,6 +381,12 @@ void krcWatchdogCallbackVblankRecovery_IMPL
     {
         return;
     }
+
+    //
+    // Determine the interrupt type for kdispServiceLowLatencyIntrs_HAL
+    // to know what interrupt type it is
+    //
+    intrGetPendingDisplayIntr_HAL(pGpu, pIntr, &intrDispPending, NULL);
 
     for (head = 0; head < kdispGetNumHeads(pKernelDisplay); head++)
     {
@@ -424,12 +435,15 @@ void krcWatchdogCallbackVblankRecovery_IMPL
                 //
                 // Have the VBlank Service run through in IMMEDIATE mode and
                 // process all queues
+                // XXX: Do we need to clear the low latency interrupt bit here?
                 //
-                kdispServiceVblank_HAL(pGpu, pKernelDisplay,
-                                       NVBIT(head),
-                                       (VBLANK_STATE_PROCESS_IMMEDIATE |
-                                        VBLANK_STATE_PROCESS_ALL_CALLBACKS),
-                                       NULL /* threadstate */);
+                kdispServiceLowLatencyIntrs_HAL(pGpu, pKernelDisplay,
+                                                NVBIT(head),
+                                                (VBLANK_STATE_PROCESS_IMMEDIATE |
+                                                VBLANK_STATE_PROCESS_ALL_CALLBACKS),
+                                                NULL /* threadstate */,
+                                                NULL /* vblankIntrServicedHeadMask */,
+                                                &intrDispPending);
 
                 pKernelRc->watchdog.vblankFailureCount[head] = 0;
             }

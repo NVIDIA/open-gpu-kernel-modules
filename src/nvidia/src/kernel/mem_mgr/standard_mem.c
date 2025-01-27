@@ -34,7 +34,7 @@
 NV_STATUS stdmemValidateParams
 (
     OBJGPU                      *pGpu,
-    NvHandle                     hClient,
+    RmClient                    *pRmClient,
     NV_MEMORY_ALLOCATION_PARAMS *pAllocData
 )
 {
@@ -57,7 +57,7 @@ NV_STATUS stdmemValidateParams
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    //
+   //
     // These flags don't do anything in this path. No mapping on alloc and
     // kernel map is controlled by TYPE
     //
@@ -99,18 +99,11 @@ NV_STATUS stdmemValidateParams
     //
     if (FLD_TEST_DRF(OS32, _ATTR2, _PAGE_OFFLINING, _OFF, pAllocData->attr2))
     {
-        if (hypervisorIsVgxHyper())
-        {
-            if (!(rmclientIsAdminByHandle(hClient, privLevel) || hypervisorCheckForObjectAccess(hClient)))
-            {
-                return NV_ERR_INSUFFICIENT_PERMISSIONS;
-            }
-        }
-        else
+        if (!hypervisorIsVgxHyper())
         {
             // if the client requesting is not kernel mode, return early
 #if defined(DEBUG) || defined(DEVELOP) || defined(NV_VERIF_FEATURES)
-            if (!rmclientIsAdminByHandle(hClient, privLevel))
+            if (!rmclientIsAdmin(pRmClient, privLevel))
 #else
             if (privLevel < RS_PRIV_LEVEL_KERNEL)
 #endif

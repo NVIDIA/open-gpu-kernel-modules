@@ -790,6 +790,10 @@ NV_STATUS kceTopLevelPceLceMappingsUpdate_IMPL(OBJGPU *pGpu, KernelCE *pKCe)
     params.exposeCeMask = exposeCeMask;
     params.bUpdateNvlinkPceLce = bUpdateNvlinkPceLce;
 
+    NV_ASSERT_OK_OR_RETURN(
+        rmapiControlCacheFreeForControl(gpuGetInstance(pGpu),
+                                        NV2080_CTRL_CMD_CE_GET_CE_PCE_MASK));
+
     // For GSP clients, the update needs to be routed through ctrl call
     params.shimInstance = pKCe->shimInstance;
     status = pRmApi->Control(pRmApi,
@@ -798,6 +802,7 @@ NV_STATUS kceTopLevelPceLceMappingsUpdate_IMPL(OBJGPU *pGpu, KernelCE *pKCe)
                              NV2080_CTRL_CMD_CE_UPDATE_PCE_LCE_MAPPINGS_V2,
                              &params,
                              sizeof(params));
+
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -1044,4 +1049,32 @@ kceIsDecompLce_IMPL
         params.bDecompEnabled = NV_FALSE;
 
     return params.bDecompEnabled;
+}
+
+/*!
+ * Checks whether given LCE index is enabled for decompression workloads
+ * based on the presence of the CE_DECOMP_SUPPORTED capability. Reads the
+ * capability from the static data.
+ *
+ * @param[in]  pGpu         OBJGPU pointer
+ * @param[in]  lceIndex     LCE Index to be checked for Decomp Cap.
+ *
+ * Returns NV_TRUE if the LCE index can accept decomp workloads from clients
+ *         NV_FALSE if decomp workloads are not supported on this LCE
+ */
+NvBool
+kceIsDecompLce_VF
+(
+    OBJGPU   *pGpu,
+    NvU32    lceIndex
+)
+{
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+
+    NV_ASSERT_OR_RETURN(pVSI, NV_ERR_INVALID_STATE);
+
+    if (RMCTRL_GET_CAP(pVSI->ceCaps[lceIndex].capsTbl, NV2080_CTRL_CE_CAPS, _CE_DECOMP_SUPPORTED))
+        return NV_TRUE;
+
+    return NV_FALSE;
 }

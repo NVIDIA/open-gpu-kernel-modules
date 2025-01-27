@@ -62,6 +62,7 @@ typedef struct
     NvBool bSysMemoryProfilingPermitted;
     NvBool bAdminProfilingPermitted;
     NvBool bDevProfilingPermitted;
+    NvBool bCtxProfilingPermitted;
 } PROFILER_CLIENT_PERMISSIONS;
 
 
@@ -85,7 +86,7 @@ struct ProfilerBase {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__ProfilerBase *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct GpuResource __nvoc_base_GpuResource;
 
     // Ancestor object pointers for `staticCast` feature
@@ -96,7 +97,7 @@ struct ProfilerBase {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct ProfilerBase *__nvoc_pbase_ProfilerBase;    // profilerBase
 
-    // Vtable with 34 per-object function pointers
+    // Vtable with 36 per-object function pointers
     NV_STATUS (*__profilerBaseConstructState__)(struct ProfilerBase * /*this*/, CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);  // halified (2 hals) body
     void (*__profilerBaseDestructState__)(struct ProfilerBase * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__profilerBaseCtrlCmdReserveHwpmLegacy__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_RESERVE_HWPM_LEGACY_PARAMS *);  // exported (id=0xb0cc0101)
@@ -127,6 +128,8 @@ struct ProfilerBase {
     NV_STATUS (*__profilerBaseCtrlCmdSetHsCredits__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_SET_HS_CREDITS_PARAMS *);  // exported (id=0xb0cc010e)
     NV_STATUS (*__profilerBaseCtrlCmdReserveHes__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_RESERVE_HES_PARAMS *);  // exported (id=0xb0cc0113)
     NV_STATUS (*__profilerBaseCtrlCmdReleaseHes__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_RELEASE_HES_PARAMS *);  // exported (id=0xb0cc0114)
+    NV_STATUS (*__profilerBaseCtrlCmdReserveCcuProf__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS *);  // exported (id=0xb0cc0119)
+    NV_STATUS (*__profilerBaseCtrlCmdReleaseCcuProf__)(struct ProfilerBase * /*this*/);  // exported (id=0xb0cc011a)
     NV_STATUS (*__profilerBaseCtrlCmdRequestCgControls__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_POWER_REQUEST_FEATURES_PARAMS *);  // halified (2 hals) exported (id=0xb0cc0301) body
     NV_STATUS (*__profilerBaseCtrlCmdReleaseCgControls__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_POWER_RELEASE_FEATURES_PARAMS *);  // halified (2 hals) exported (id=0xb0cc0302) body
     NV_STATUS (*__profilerBaseCtrlCmdDisableDynamicMMABoost__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_DISABLE_DYNAMIC_MMA_BOOST_PARAMS *);  // exported (id=0xb0cc0117)
@@ -276,6 +279,10 @@ NV_STATUS __nvoc_objCreate_ProfilerBase(ProfilerBase**, Dynamic*, NvU32, CALL_CO
 #define profilerBaseCtrlCmdReserveHes(pProfiler, pParams) profilerBaseCtrlCmdReserveHes_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdReleaseHes_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdReleaseHes__
 #define profilerBaseCtrlCmdReleaseHes(pProfiler, pParams) profilerBaseCtrlCmdReleaseHes_DISPATCH(pProfiler, pParams)
+#define profilerBaseCtrlCmdReserveCcuProf_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdReserveCcuProf__
+#define profilerBaseCtrlCmdReserveCcuProf(pProfiler, pParams) profilerBaseCtrlCmdReserveCcuProf_DISPATCH(pProfiler, pParams)
+#define profilerBaseCtrlCmdReleaseCcuProf_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdReleaseCcuProf__
+#define profilerBaseCtrlCmdReleaseCcuProf(pProfiler) profilerBaseCtrlCmdReleaseCcuProf_DISPATCH(pProfiler)
 #define profilerBaseCtrlCmdRequestCgControls_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdRequestCgControls__
 #define profilerBaseCtrlCmdRequestCgControls(pProfiler, pParams) profilerBaseCtrlCmdRequestCgControls_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdRequestCgControls_HAL(pProfiler, pParams) profilerBaseCtrlCmdRequestCgControls_DISPATCH(pProfiler, pParams)
@@ -458,6 +465,14 @@ static inline NV_STATUS profilerBaseCtrlCmdReleaseHes_DISPATCH(struct ProfilerBa
     return pProfiler->__profilerBaseCtrlCmdReleaseHes__(pProfiler, pParams);
 }
 
+static inline NV_STATUS profilerBaseCtrlCmdReserveCcuProf_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS *pParams) {
+    return pProfiler->__profilerBaseCtrlCmdReserveCcuProf__(pProfiler, pParams);
+}
+
+static inline NV_STATUS profilerBaseCtrlCmdReleaseCcuProf_DISPATCH(struct ProfilerBase *pProfiler) {
+    return pProfiler->__profilerBaseCtrlCmdReleaseCcuProf__(pProfiler);
+}
+
 static inline NV_STATUS profilerBaseCtrlCmdRequestCgControls_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_POWER_REQUEST_FEATURES_PARAMS *pParams) {
     return pProfiler->__profilerBaseCtrlCmdRequestCgControls__(pProfiler, pParams);
 }
@@ -574,6 +589,20 @@ static inline void profilerBaseAddAdditionalDependants_DISPATCH(struct RsClient 
     pResource->__nvoc_vtable->__profilerBaseAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+NvBool profilerBaseQueryCapabilities_IMPL(struct ProfilerBase *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS *pClientPermissions);
+
+
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NvBool profilerBaseQueryCapabilities(struct ProfilerBase *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS *pClientPermissions) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_profiler_v2_h_disabled
+#define profilerBaseQueryCapabilities(pResource, pCallContext, pParams, pClientPermissions) profilerBaseQueryCapabilities_IMPL(pResource, pCallContext, pParams, pClientPermissions)
+#endif //__nvoc_profiler_v2_h_disabled
+
+#define profilerBaseQueryCapabilities_HAL(pResource, pCallContext, pParams, pClientPermissions) profilerBaseQueryCapabilities(pResource, pCallContext, pParams, pClientPermissions)
+
 static inline NV_STATUS profilerBaseConstructState_56cd7a(struct ProfilerBase *pProf, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
     return NV_OK;
 }
@@ -662,6 +691,10 @@ NV_STATUS profilerBaseCtrlCmdReserveHes_IMPL(struct ProfilerBase *pProfiler, NVB
 
 NV_STATUS profilerBaseCtrlCmdReleaseHes_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RELEASE_HES_PARAMS *pParams);
 
+NV_STATUS profilerBaseCtrlCmdReserveCcuProf_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS *pParams);
+
+NV_STATUS profilerBaseCtrlCmdReleaseCcuProf_IMPL(struct ProfilerBase *pProfiler);
+
 NV_STATUS profilerBaseCtrlCmdRequestCgControls_VF(struct ProfilerBase *pProfiler, NVB0CC_CTRL_POWER_REQUEST_FEATURES_PARAMS *pParams);
 
 static inline NV_STATUS profilerBaseCtrlCmdRequestCgControls_92bfc3(struct ProfilerBase *pProfiler, NVB0CC_CTRL_POWER_REQUEST_FEATURES_PARAMS *pParams) {
@@ -722,7 +755,7 @@ struct ProfilerCtx {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__ProfilerCtx *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct ProfilerBase __nvoc_base_ProfilerBase;
 
     // Ancestor object pointers for `staticCast` feature
@@ -736,7 +769,7 @@ struct ProfilerCtx {
 
     // Vtable with 4 per-object function pointers
     NV_STATUS (*__profilerCtxConstructStatePrologue__)(struct ProfilerCtx * /*this*/, CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);  // halified (2 hals) body
-    NV_STATUS (*__profilerCtxConstructStateInterlude__)(struct ProfilerCtx * /*this*/, CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);  // halified (2 hals) body
+    NV_STATUS (*__profilerCtxConstructStateInterlude__)(struct ProfilerCtx * /*this*/, CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *, PROFILER_CLIENT_PERMISSIONS);  // halified (2 hals) body
     NV_STATUS (*__profilerCtxConstructStateEpilogue__)(struct ProfilerCtx * /*this*/, CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);  // halified (2 hals) body
     void (*__profilerCtxDestruct__)(struct ProfilerCtx * /*this*/);  // halified (2 hals) override (res) base (profilerBase) body
 };
@@ -807,8 +840,8 @@ NV_STATUS __nvoc_objCreate_ProfilerCtx(ProfilerCtx**, Dynamic*, NvU32, CALL_CONT
 #define profilerCtxConstructStatePrologue(pResource, pCallContext, pParams) profilerCtxConstructStatePrologue_DISPATCH(pResource, pCallContext, pParams)
 #define profilerCtxConstructStatePrologue_HAL(pResource, pCallContext, pParams) profilerCtxConstructStatePrologue_DISPATCH(pResource, pCallContext, pParams)
 #define profilerCtxConstructStateInterlude_FNPTR(pResource) pResource->__profilerCtxConstructStateInterlude__
-#define profilerCtxConstructStateInterlude(pResource, pCallContext, pParams) profilerCtxConstructStateInterlude_DISPATCH(pResource, pCallContext, pParams)
-#define profilerCtxConstructStateInterlude_HAL(pResource, pCallContext, pParams) profilerCtxConstructStateInterlude_DISPATCH(pResource, pCallContext, pParams)
+#define profilerCtxConstructStateInterlude(pResource, pCallContext, pParams, clientPermissions) profilerCtxConstructStateInterlude_DISPATCH(pResource, pCallContext, pParams, clientPermissions)
+#define profilerCtxConstructStateInterlude_HAL(pResource, pCallContext, pParams, clientPermissions) profilerCtxConstructStateInterlude_DISPATCH(pResource, pCallContext, pParams, clientPermissions)
 #define profilerCtxConstructStateEpilogue_FNPTR(pResource) pResource->__profilerCtxConstructStateEpilogue__
 #define profilerCtxConstructStateEpilogue(pResource, pCallContext, pParams) profilerCtxConstructStateEpilogue_DISPATCH(pResource, pCallContext, pParams)
 #define profilerCtxConstructStateEpilogue_HAL(pResource, pCallContext, pParams) profilerCtxConstructStateEpilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -870,8 +903,8 @@ static inline NV_STATUS profilerCtxConstructStatePrologue_DISPATCH(struct Profil
     return pResource->__profilerCtxConstructStatePrologue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS profilerCtxConstructStateInterlude_DISPATCH(struct ProfilerCtx *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
-    return pResource->__profilerCtxConstructStateInterlude__(pResource, pCallContext, pParams);
+static inline NV_STATUS profilerCtxConstructStateInterlude_DISPATCH(struct ProfilerCtx *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS clientPermissions) {
+    return pResource->__profilerCtxConstructStateInterlude__(pResource, pCallContext, pParams, clientPermissions);
 }
 
 static inline NV_STATUS profilerCtxConstructStateEpilogue_DISPATCH(struct ProfilerCtx *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
@@ -989,9 +1022,9 @@ static inline NV_STATUS profilerCtxConstructStatePrologue_92bfc3(struct Profiler
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NV_STATUS profilerCtxConstructStateInterlude_IMPL(struct ProfilerCtx *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+NV_STATUS profilerCtxConstructStateInterlude_IMPL(struct ProfilerCtx *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS clientPermissions);
 
-static inline NV_STATUS profilerCtxConstructStateInterlude_92bfc3(struct ProfilerCtx *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS profilerCtxConstructStateInterlude_92bfc3(struct ProfilerCtx *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS clientPermissions) {
     NV_ASSERT_PRECOMP(0);
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -1014,6 +1047,17 @@ static inline void profilerCtxDestruct_b3696a(struct ProfilerCtx *pResource) {
 NV_STATUS profilerCtxConstruct_IMPL(struct ProfilerCtx *arg_pResource, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 
 #define __nvoc_profilerCtxConstruct(arg_pResource, arg_pCallContext, arg_pParams) profilerCtxConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+NV_STATUS profilerCtxConstructState_IMPL(struct ProfilerCtx *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS clientPermissions);
+
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerCtxConstructState(struct ProfilerCtx *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS clientPermissions) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerCtx was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_profiler_v2_h_disabled
+#define profilerCtxConstructState(pResource, pCallContext, pParams, clientPermissions) profilerCtxConstructState_IMPL(pResource, pCallContext, pParams, clientPermissions)
+#endif //__nvoc_profiler_v2_h_disabled
+
 #undef PRIVATE_FIELD
 
 
@@ -1037,7 +1081,7 @@ struct ProfilerDev {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__ProfilerDev *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct ProfilerBase __nvoc_base_ProfilerBase;
 
     // Ancestor object pointers for `staticCast` feature
@@ -1305,20 +1349,6 @@ static inline NvU32 profilerDevGetRefCount_DISPATCH(struct ProfilerDev *pResourc
 static inline void profilerDevAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct ProfilerDev *pResource, RsResourceRef *pReference) {
     pResource->__nvoc_vtable->__profilerDevAddAdditionalDependants__(pClient, pResource, pReference);
 }
-
-NvBool profilerDevQueryCapabilities_IMPL(struct ProfilerDev *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS *pClientPermissions);
-
-
-#ifdef __nvoc_profiler_v2_h_disabled
-static inline NvBool profilerDevQueryCapabilities(struct ProfilerDev *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS *pClientPermissions) {
-    NV_ASSERT_FAILED_PRECOMP("ProfilerDev was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_profiler_v2_h_disabled
-#define profilerDevQueryCapabilities(pResource, pCallContext, pParams, pClientPermissions) profilerDevQueryCapabilities_IMPL(pResource, pCallContext, pParams, pClientPermissions)
-#endif //__nvoc_profiler_v2_h_disabled
-
-#define profilerDevQueryCapabilities_HAL(pResource, pCallContext, pParams, pClientPermissions) profilerDevQueryCapabilities(pResource, pCallContext, pParams, pClientPermissions)
 
 NV_STATUS profilerDevConstructState_VF(struct ProfilerDev *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS clientPermissions);
 

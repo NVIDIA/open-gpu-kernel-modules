@@ -24,6 +24,9 @@
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/gpu_access.h"
 
+#include "kernel/gpu/device/device.h"
+#include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
+
 #include "published/pascal/gp102/dev_pbdma.h"
 
 static NvBool _kfifoIsValidCETag_GP102(OBJGPU *pGpu, KernelFifo *pKernelFifo,
@@ -191,6 +194,28 @@ _kfifoIsValidCETag_GP102
     NvU32 numSrcPbdmaIds;
     NvU32 i;
     NvU32 grEngineTag = ENG_GR(0);
+
+    if (IS_MIG_IN_USE(pGpu))
+    {
+        CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+        RsResourceRef *pDeviceRef;
+        NV_STATUS status = NV_OK;
+        KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+        Device *pDevice;
+        MIG_INSTANCE_REF ref;
+        RM_ENGINE_TYPE rmEngineType;
+
+        NV_ASSERT_OK_OR_ELSE(status,
+                        refFindAncestorOfType(pCallContext->pResourceRef,
+                                            classId(Device), &pDeviceRef),
+                        return NV_FALSE; );
+        pDevice = dynamicCast(pDeviceRef->pResource, Device);
+        NV_ASSERT_OK(kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref));
+        NV_ASSERT_OK(kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
+                                                       RM_ENGINE_TYPE_GR(0),
+                                                       &rmEngineType));
+        grEngineTag = ENG_GR(RM_ENGINE_TYPE_GR_IDX(rmEngineType));
+    }
 
     if (kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
                                  ENGINE_INFO_TYPE_ENG_DESC, ceEngineTag,

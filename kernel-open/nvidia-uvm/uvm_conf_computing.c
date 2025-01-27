@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2021-2023 NVIDIA Corporation
+    Copyright (c) 2021-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -65,32 +65,13 @@ static ulong uvm_conf_computing_channel_iv_rotation_limit = UVM_CONF_COMPUTING_I
 
 module_param(uvm_conf_computing_channel_iv_rotation_limit, ulong, S_IRUGO);
 
-static UvmGpuConfComputeMode uvm_conf_computing_get_mode(const uvm_parent_gpu_t *parent)
-{
-    return parent->rm_info.gpuConfComputeCaps.mode;
-}
-
-bool uvm_conf_computing_mode_is_hcc(const uvm_gpu_t *gpu)
-{
-    return uvm_conf_computing_get_mode(gpu->parent) == UVM_GPU_CONF_COMPUTE_MODE_HCC;
-}
-
 void uvm_conf_computing_check_parent_gpu(const uvm_parent_gpu_t *parent)
 {
-    uvm_parent_gpu_t *other_parent;
-    UvmGpuConfComputeMode parent_mode = uvm_conf_computing_get_mode(parent);
-
     uvm_assert_mutex_locked(&g_uvm_global.global_lock);
 
-    // The Confidential Computing state of the GPU should match that of the
-    // system.
-    UVM_ASSERT((parent_mode != UVM_GPU_CONF_COMPUTE_MODE_NONE) == g_uvm_global.conf_computing_enabled);
-
-    // All GPUs derive Confidential Computing status from their parent. By
-    // current policy all parent GPUs have identical Confidential Computing
-    // status.
-    for_each_parent_gpu(other_parent)
-        UVM_ASSERT(parent_mode == uvm_conf_computing_get_mode(other_parent));
+    // Confidential Computing enablement on the system should match enablement
+    // on the GPU.
+    UVM_ASSERT(parent->rm_info.gpuConfComputeCaps.bConfComputingEnabled == g_uvm_global.conf_computing_enabled);
 }
 
 static void dma_buffer_destroy_locked(uvm_conf_computing_dma_buffer_pool_t *dma_buffer_pool,
@@ -342,9 +323,6 @@ static void dummy_iv_mem_deinit(uvm_gpu_t *gpu)
 static NV_STATUS dummy_iv_mem_init(uvm_gpu_t *gpu)
 {
     NV_STATUS status;
-
-    if (!uvm_conf_computing_mode_is_hcc(gpu))
-        return NV_OK;
 
     status = uvm_mem_alloc_sysmem_dma(sizeof(UvmCslIv), gpu, NULL, &gpu->conf_computing.iv_mem);
     if (status != NV_OK)

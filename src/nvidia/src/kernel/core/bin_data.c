@@ -29,12 +29,13 @@
 #include "bin_data_pvt.h"
 #include "os/os.h"
 #include "nvRmReg.h"
+#include "gpu_mgr/gpu_mgr.h"
 
 /*
  * Private helper functions
  */
 static NV_STATUS   _bindataWriteStorageToBuffer(const BINDATA_STORAGE *pBinStorage, NvU8 *pBuffer);
-
+static const NvU8 *_bindataGetBindataPtr(const BINDATA_RUNTIME_INFO *pBinInfo);
 
 /*!
  * Initialize a BINDATA_RUNTIME_INFO structure for use, this function does not allocate any
@@ -58,6 +59,7 @@ bindataAcquire
 {
     NV_STATUS              status         = NV_OK;
     PBINDATA_RUNTIME_INFO  pBinInfo       = NULL;
+    const NvU8            *pData          = NULL;
 
     // paged memory access check
     osPagedSegmentAccessCheck();
@@ -88,17 +90,13 @@ bindataAcquire
     // if resource is compressed, also initialize the GZ state struct
     if (pBinInfo->pBinStoragePvt->bCompressed)
     {
-        if ((status = utilGzAllocate((NvU8*)(pBinInfo->pBinStoragePvt->pData),
-                                     pBinInfo->pBinStoragePvt->actualSize,
-                                     &(pBinInfo->pGzState))) != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "gz state allocation faileded, return code %u\n",
-                      status);
-            DBG_BREAKPOINT();
-            goto FAIL;
-        }
-        NV_ASSERT(pBinInfo->pGzState);
+        pData = _bindataGetBindataPtr(pBinInfo);
+
+        NV_ASSERT_OK_OR_GOTO(status,
+                             utilGzAllocate((const NvU8*)pData,
+                                            pBinInfo->pBinStoragePvt->actualSize,
+                                            &(pBinInfo->pGzState)),
+                             FAIL);
     }
 
     *ppBinInfo = pBinInfo;
@@ -137,7 +135,7 @@ bindataGetNextChunk
 )
 {
     NvU32               nBytesInflated;
-
+    const NvU8         *pData = NULL;
     // paged memory access check
     osPagedSegmentAccessCheck();
 
@@ -145,6 +143,8 @@ bindataGetNextChunk
     NV_ASSERT_OR_RETURN(pBuffer != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(nBytes + pBinInfo->currDataPos <= pBinInfo->pBinStoragePvt->actualSize,
                       NV_ERR_INVALID_ARGUMENT);
+
+pData = _bindataGetBindataPtr(pBinInfo);
 
     // if the resource is compressed, the pGzState structure must be initialized
     if (pBinInfo->pBinStoragePvt->bCompressed == NV_TRUE && pBinInfo->pGzState == NULL)
@@ -170,7 +170,7 @@ bindataGetNextChunk
     }
     else
     {
-        portMemCopy(pBuffer, nBytes, (NvU8*)(pBinInfo->pBinStoragePvt->pData) + pBinInfo->currDataPos, nBytes);
+        portMemCopy(pBuffer, nBytes, (NvU8*)(pData) + pBinInfo->currDataPos, nBytes);
     }
 
     pBinInfo->currDataPos += nBytes;
@@ -202,6 +202,15 @@ bindataRelease
     }
 
     portMemFree(pBinInfo);
+}
+
+/*!
+ * Helper function to get appropriate pointer to bindata, depending on whether it was loaded 
+ * from disk or compiled with the driver
+ */
+static const NvU8 *_bindataGetBindataPtr(const BINDATA_RUNTIME_INFO *pBinInfo)
+{
+    return pBinInfo->pBinStoragePvt->pData;
 }
 
 /*!
@@ -406,43 +415,38 @@ void bindataMarkReferenced(const BINDATA_STORAGE *pBinStorage)
     }
 }
 
-void* bindataGetNextUnreferencedStorage(const BINDATA_STORAGE **iter, NvU32 *pDataSize)
+void* bindataGetNextUnreferencedStorage(NvU32 *pIdx, NvU32 *pDataSize)
 {
-    extern struct BINDATA_STORAGE_PVT_ALL g_bindata_pvt;
+    extern BINDATA_STORAGE_PVT g_bindata_pvt[];
     extern const NvU32 g_bindata_pvt_count;
 
-    const BINDATA_STORAGE_PVT *iterPvt  = *(const BINDATA_STORAGE_PVT **)iter;
-    const BINDATA_STORAGE_PVT *firstPvt = (BINDATA_STORAGE_PVT*)&g_bindata_pvt;
-    const BINDATA_STORAGE_PVT *lastPvt  = firstPvt + g_bindata_pvt_count - 1;
+
+    NV_ASSERT_OR_RETURN((pIdx != NULL), NULL);
 
     // This API makes no sense if the data is const, so just bail out early.
     NV_ASSERT_OR_RETURN(BINDATA_IS_MUTABLE, NULL);
 
-    if (iterPvt == NULL || (iterPvt >= firstPvt && iterPvt < lastPvt))
+    // Note:    idx passed in from caller will be initialized to 0.
+    //          Valid index for g_bindata_pvt starts from 1
+    (*pIdx)++;
+    while (*pIdx < g_bindata_pvt_count)
     {
-        // Passing in NULL means start iterating.
-        iterPvt = (iterPvt == NULL) ? firstPvt : (iterPvt + 1);
-        while (iterPvt <= lastPvt)
+        if (!g_bindata_pvt[*pIdx].bReferenced && g_bindata_pvt[*pIdx].pData != NULL)
         {
-            if (!iterPvt->bReferenced && iterPvt->pData != NULL)
-            {
-                *iter = (const BINDATA_STORAGE *)iterPvt;
-                *pDataSize = iterPvt->compressedSize;
-                return (void*)iterPvt->pData;
-            }
-            iterPvt++;
+            *pDataSize = g_bindata_pvt[*pIdx].compressedSize;
+            return (void*)g_bindata_pvt[*pIdx].pData;
         }
+        (*pIdx)++;
     }
 
-    *iter = NULL;
     *pDataSize = 0;
     return NULL;
 }
 
-void bindataDestroyStorage(BINDATA_STORAGE *storage)
+void bindataDestroyStorage(NvU32 idx)
 {
-    BINDATA_STORAGE_PVT *pBindataPvt = (BINDATA_STORAGE_PVT *)storage;
-    pBindataPvt->pData = NULL;
-    pBindataPvt->actualSize = 0;
-    pBindataPvt->compressedSize = 0;
+    extern BINDATA_STORAGE_PVT g_bindata_pvt[];
+    g_bindata_pvt[idx].pData = NULL;
+    g_bindata_pvt[idx].actualSize = 0;
+    g_bindata_pvt[idx].compressedSize = 0;
 }

@@ -166,6 +166,13 @@ typedef enum
     UVM_TEST_READ_DUPLICATION_MAX
 } UVM_TEST_READ_DUPLICATION_POLICY;
 
+typedef enum
+{
+    UVM_TEST_NVLINK_ERROR_NONE = 0,
+    UVM_TEST_NVLINK_ERROR_UNRESOLVED,
+    UVM_TEST_NVLINK_ERROR_RESOLVED
+} UVM_TEST_NVLINK_ERROR_TYPE;
+
 typedef struct
 {
     // Note: if this is a zombie or not owned by the calling process, the vma info
@@ -650,6 +657,7 @@ typedef struct
     NvProcessorUuid                 mapped_on[UVM_MAX_PROCESSORS];                      // Out
     NvU32                           mapping_type[UVM_MAX_PROCESSORS];                   // Out
     NvU64                           mapping_physical_address[UVM_MAX_PROCESSORS] NV_ALIGN_BYTES(8); // Out
+    NvBool                          is_egm_mapping[UVM_MAX_PROCESSORS];                 // Out
     NvU32                           mapped_on_count;                                    // Out
 
     // The size of the virtual mapping covering lookup_address on each
@@ -1478,6 +1486,24 @@ typedef struct
     // Out param
     NV_STATUS rmStatus;
 } UVM_TEST_INJECT_TOOLS_EVENT_V2_PARAMS;
+
+#define UVM_TEST_SET_P2P_SUSPENDED                       UVM_TEST_IOCTL_BASE(105)
+typedef struct
+{
+    // UUID of the processor to check.
+    NvProcessorUuid gpu_uuid          NV_ALIGN_BYTES(8); // In
+    NvBool suspended;                                    // In
+
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_SET_P2P_SUSPENDED_PARAMS;
+
+#define UVM_TEST_INJECT_NVLINK_ERROR                     UVM_TEST_IOCTL_BASE(106)
+typedef struct
+{
+    NvProcessorUuid gpu_uuid;                           // In
+    NvU32           error_type;                         // In (UVM_TEST_NVLINK_ERROR_TYPE)
+    NV_STATUS       rmStatus;                           // Out
+} UVM_TEST_INJECT_NVLINK_ERROR_PARAMS;
 
 #ifdef __cplusplus
 }

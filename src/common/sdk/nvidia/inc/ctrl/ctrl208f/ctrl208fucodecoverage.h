@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,6 +38,9 @@
 #define NV208F_UCODE_COVERAGE_GSP_TASK_RM   3
 #define NV208F_UCODE_COVERAGE_GSP_TASK_VGPU 4
 
+/* Coverage Type */
+#define NV208F_SANITIZER_COVERAGE_TYPE      0
+#define NV208F_BULLSEYE_COVERAGE_TYPE       1
 
 /*
  * NV208F_CTRL_UCODE_COVERAGE_STATE_PARAMS
@@ -51,6 +54,7 @@ typedef struct NV208F_CTRL_UCODE_COVERAGE_STATE_PARAMS {
     NvU32  gfid;
     NvBool bEnabled;
     NvBool bClear;
+    NvU32  covType;
 } NV208F_CTRL_UCODE_COVERAGE_STATE_PARAMS;
 
 /*
@@ -63,6 +67,7 @@ typedef struct NV208F_CTRL_UCODE_COVERAGE_STATE_PARAMS {
  *             (applies to ucode=NV208F_UCODE_COVERAGE_GSP_TASK_VGPU only)
  *   bEnabled  whether the ucode's SanitizerCoverage run-time data gathering
  *             is enabled (NV_TRUE) or not (NV_FALSE)
+ *   covType   determines if using SanitizerCoverage or BullseyeCoverage
  *
  * Possible status values returned are
  *   NV_OK
@@ -85,6 +90,7 @@ typedef NV208F_CTRL_UCODE_COVERAGE_STATE_PARAMS NV208F_CTRL_UCODE_COVERAGE_GET_S
  *             (applies to ucode=NV208F_UCODE_COVERAGE_GSP_TASK_VGPU only)
  *   bEnabled  whether to enable (NV_TRUE) or disable (NV_FALSE) coverage for the given ucode
  *   bClear    whether to clear coverage prior to enabling enabling coverage collection
+ *   covType   determines if using SanitizerCoverage or BullseyeCoverage
  *
  * Possible status values returned are
  *   NV_OK
@@ -117,6 +123,7 @@ typedef NV208F_CTRL_UCODE_COVERAGE_STATE_PARAMS NV208F_CTRL_UCODE_COVERAGE_SET_S
  *   gfid         specifies which partition to send the command to
  *                (applies to ucode=NV208F_UCODE_FUZZER_GSP_TASK_VGPU only)
  *   offset       offset of internal buffer to copy from
+ *   covType      determines if using SanitizerCoverage or BullseyeCoverage
  *
  * Possible status values returned are
  *   NV_OK
@@ -132,6 +139,7 @@ typedef struct NV208F_CTRL_UCODE_COVERAGE_GET_DATA_PARAMS {
     NvU32 ucode;
     NvU32 gfid;
     NvU32 offset;
+    NvU32 covType;
 } NV208F_CTRL_UCODE_COVERAGE_GET_DATA_PARAMS;
 
 /* _ctrl208fucodecoverage_h_ */

@@ -1615,6 +1615,41 @@ bool DeviceImpl::isPanelReplaySupported()
     return prCaps.bPanelReplaySupported;
 }
 
+NvBool DeviceImpl::isSelectiveUpdateSupported()
+{
+    return prCaps.bSelUpdateSupported;
+}
+
+NvBool DeviceImpl::isEarlyRegionTpSupported()
+{
+    return prCaps.bEarlyRegionTpSupported;
+}
+
+NvBool DeviceImpl::isAdaptiveSyncSdpNotSupportedInPr()
+{
+    return prCaps.bAdaptiveSyncSdpNotSupportedInPr;
+}
+
+NvBool DeviceImpl::isdscDecodeNotSupportedInPr()
+{
+    return prCaps.bDscDecodeNotSupportedInPr;
+}
+
+NvBool DeviceImpl::isLinkOffSupportedAfterAsSdpInPr()
+{
+    return prCaps.bLinkOffSupportAfterAsSdpSent;
+}
+
+SelectiveUpdateCaps DeviceImpl::getSelectiveUpdateCaps()
+{
+    return prCaps.suCaps;
+}
+
+NvBool DeviceImpl::isAuxLessAlpmSupported()
+{
+    return alpmCaps.bAuxLessAlpmSupported;
+}
+
 void  DeviceImpl::getPanelReplayCaps()
 {
     NvU8 buffer[10]    = {0U};
@@ -1629,6 +1664,83 @@ void  DeviceImpl::getPanelReplayCaps()
         prCaps.bPanelReplaySupported =
             FLD_TEST_DRF(_DPCD20_PANEL, _REPLAY_CAPABILITY, _SUPPORTED,
             _YES, buffer[0]);
+        prCaps.bSelUpdateSupported =
+            FLD_TEST_DRF(_DPCD20_PANEL, _REPLAY_CAPABILITY, _SEL_UPDATE,
+            _YES, buffer[0]);
+        prCaps.bEarlyRegionTpSupported =
+            FLD_TEST_DRF(_DPCD20_PANEL, _REPLAY_CAPABILITY, _EARLY_TRANSPORT,
+            _YES, buffer[0]);
+
+        size = 1U;
+        // Check Additional Panel replay caps register
+        if (AuxBus::success == this->getDpcdData(NV_DPCD20_PANEL_REPLAY_CAPABILITY_ADD,
+            &buffer[1], size, &sizeCompleted, &nakReason))
+        {
+            prCaps.bDscDecodeNotSupportedInPr =
+                FLD_TEST_DRF(_DPCD20_PANEL, _REPLAY_CAPABILITY_ADD,
+                _DSC_DECODE_NOT_SUPPORTED_IN_PR, _YES, buffer[1]);
+            prCaps.bAdaptiveSyncSdpNotSupportedInPr =
+                FLD_TEST_DRF(_DPCD20_PANEL, _REPLAY_CAPABILITY_ADD,
+                _ASYNC_VIDEOTIMING_NOT_SUPPORTED_IN_PR, _YES, buffer[1]);
+            prCaps.bLinkOffSupportAfterAsSdpSent =
+                FLD_TEST_DRF(_DPCD20_PANEL, _REPLAY_CAPABILITY_ADD,
+                _LINK_OFF_SUPPORTED_IN_PR_AFTER_ADAPT_SYNC_SDP, _YES, buffer[1]);
+            prCaps.suCaps.bDscCrcOfMultipleSuSupported =
+                FLD_TEST_DRF(_DPCD20_PANEL, _REPLAY_CAPABILITY_ADD,
+                _DSC_CRC_MULTIPLE_SUS_SUPPORTED, _YES, buffer[1]);
+            prCaps.suCaps.bSelUpdateGranularityNeeded =
+                FLD_TEST_DRF(_DPCD20_PANEL, _REPLAY_CAPABILITY_ADD,
+                _PR_SEL_UPDATE_GRANULARITY_NEEDED, _YES, buffer[1]);
+
+            if (prCaps.suCaps.bSelUpdateGranularityNeeded)
+            {
+                size = 3U;
+                if (AuxBus::success ==
+                    this->getDpcdData(NV_DPCD20_PANEL_REPLAY_SU_X_GRANULARITY_CAPABILITY,
+                    &buffer[2], size, &sizeCompleted, &nakReason))
+                {
+                    prCaps.suCaps.selUpdateXGranularityCap = DRF_VAL(_DPCD20_PANEL, _REPLAY_SU_X_GRANULARITY,
+                    _CAPABILITY_VAL, buffer[2]);
+
+                    prCaps.suCaps.selUpdateXGranularityCap1 = DRF_VAL(_DPCD20_PANEL, _REPLAY_SU_X,
+                    _GRANULARITY_CAPABILITY1_VAL, buffer[3]);
+
+                    prCaps.suCaps.selUpdateYGranularityCap = DRF_VAL(_DPCD20_PANEL, _REPLAY_SU_Y,
+                    _GRANULARITY_CAPABILITY_VAL, buffer[4]);
+                }
+                else
+                {
+                    DP_PRINTF(DP_ERROR, "DP-DEV> Aux Read to DPCD offset 0xB2-0xB4 failed!");
+                }
+            }
+
+            prCaps.suCaps.bSuYGranularityExtendedCap =
+                FLD_TEST_DRF(_DPCD20_PANEL, _REPLAY_CAPABILITY_ADD,
+                _SU_Y_GRANULARITY_EXT_CAP_SUPPORTED, _YES, buffer[1]);
+
+            if (prCaps.suCaps.bSuYGranularityExtendedCap)
+            {
+                size = 2U;
+                if (AuxBus::success ==
+                    this->getDpcdData(NV_DPCD20_PANEL_REPLAY_SU_Y_GRANULARITY_EXTENDED_CAPABILITY,
+                    &buffer[5], size, &sizeCompleted, &nakReason))
+                {
+                    prCaps.suCaps.selUpdateYGranularityExtCap = DRF_VAL(_DPCD20_PANEL, _REPLAY_SU_Y,
+                    _GRANULARITY_EXTENDED_CAPABILITY_VAL, buffer[5]);
+
+                    prCaps.suCaps.selUpdateYGranularityExtCap1 = DRF_VAL(_DPCD20_PANEL, _REPLAY_SU_Y,
+                    _GRANULARITY_EXTENDED_CAPABILITY1_VAL, buffer[6]);
+                }
+                else
+                {
+                    DP_PRINTF(DP_ERROR, "DP-DEV> Aux Read to DPCD offset 0xB5 failed!");
+                }
+            }
+        }
+        else
+        {
+            DP_PRINTF(DP_ERROR, "DP-DEV> Aux Read to DPCD offset 0xB1 failed!");
+        }
     }
     else
     {
@@ -1708,8 +1820,85 @@ bool DeviceImpl::setPanelReplayConfig(panelReplayConfig prcfg)
             _HPD_RFB_ACTIVE_FRAME_CRC_ERROR, _NO, config);
     }
 
+    if (prcfg.bEnableSelectiveUpdate)
+    {
+        config = FLD_SET_DRF(_DPCD20_PANEL, _REPLAY_CONFIGURATION,
+            _ENABLE_SELECTIVE_UPDATE, _YES, config);
+    }
+    else
+    {
+        config = FLD_SET_DRF(_DPCD20_PANEL, _REPLAY_CONFIGURATION,
+            _ENABLE_SELECTIVE_UPDATE, _NO, config);
+    }
+
+    if (prcfg.bSuRegionEarlyTpEnable)
+    {
+        config = FLD_SET_DRF(_DPCD20_PANEL, _REPLAY_CONFIGURATION,
+            _ENABLE_SU_REGION_EARLY_TRANSPORT, _YES, config);
+    }
+    else
+    {
+        config = FLD_SET_DRF(_DPCD20_PANEL, _REPLAY_CONFIGURATION,
+            _ENABLE_SU_REGION_EARLY_TRANSPORT, _NO, config);
+    }
+
     if (AuxBus::success !=
         this->setDpcdData(NV_DPCD20_PANEL_REPLAY_CONFIGURATION,
+        &config, sizeof(config), &size, &nakReason))
+    {
+        return false;
+    }
+
+    config = 0U;
+    if (prcfg.bSinkRrUnlockGranted)
+    {
+        config = FLD_SET_DRF(_DPCD20_PANEL, _REPLAY_CONFIGURATION2,
+            _SINK_RR_UNLOCK_GRANTED, _YES, config);
+    }
+    else
+    {
+        config = FLD_SET_DRF(_DPCD20_PANEL, _REPLAY_CONFIGURATION2,
+            _SINK_RR_UNLOCK_GRANTED, _NO, config);
+    }
+
+    if (prcfg.bSelUpdateYExtValEnable)
+    {
+        config = FLD_SET_DRF(_DPCD20_PANEL, _REPLAY_CONFIGURATION2,
+            _SU_Y_GRANULARITY_EXTENDED_VALUE, _YES, config);
+
+        config = FLD_SET_DRF_NUM(_DPCD20_PANEL, _REPLAY_CONFIGURATION2,
+            _SU_Y_GRANULARITY_EXTENDED_VALUE_SELECTION, prcfg.selUpdateYExtVal, config);
+    }
+    else
+    {
+        config = FLD_SET_DRF(_DPCD20_PANEL, _REPLAY_CONFIGURATION2,
+            _SU_Y_GRANULARITY_EXTENDED_VALUE, _NO, config);
+    }
+
+    if (prcfg.bSuRegionScanLineIndicate)
+    {
+        config = FLD_SET_DRF(_DPCD20_PANEL, _REPLAY_CONFIGURATION2,
+            _SU_REGION_SCANLINE_CAPTURE_INDICATION, _YES, config);
+    }
+    else
+    {
+        config = FLD_SET_DRF(_DPCD20_PANEL, _REPLAY_CONFIGURATION2,
+            _SU_REGION_SCANLINE_CAPTURE_INDICATION, _NO, config);
+    }
+
+    if (AuxBus::success !=
+        this->setDpcdData(NV_DPCD20_PANEL_REPLAY_CONFIGURATION2,
+        &config, sizeof(config), &size, &nakReason))
+    {
+        return false;
+    }
+
+    config = 0U;
+    config = FLD_SET_DRF_NUM(_DPCD20_PANEL, _REPLAY_CONFIGURATION3,
+        _AS_SDP_SETUP_CONFIG_PR_ACTIVE_TIME, prcfg.asSdpSetUpTimePrActive, config);
+
+    if (AuxBus::success !=
+        this->setDpcdData(NV_DPCD20_PANEL_REPLAY_CONFIGURATION3,
         &config, sizeof(config), &size, &nakReason))
     {
         return false;
@@ -1749,6 +1938,41 @@ bool DeviceImpl::getPanelReplayConfig(panelReplayConfig *pPrcfg)
     pPrcfg->bHpdOnRfbActiveFrameCrcError = FLD_TEST_DRF(_DPCD20_PANEL, _REPLAY_CONFIGURATION,
         _HPD_RFB_ACTIVE_FRAME_CRC_ERROR, _YES, config);
 
+
+    pPrcfg->bEnableSelectiveUpdate = FLD_TEST_DRF(_DPCD20_PANEL, _REPLAY_CONFIGURATION,
+        _ENABLE_SELECTIVE_UPDATE, _YES, config);
+
+    pPrcfg->bSuRegionEarlyTpEnable = FLD_TEST_DRF(_DPCD20_PANEL, _REPLAY_CONFIGURATION,
+            _ENABLE_SU_REGION_EARLY_TRANSPORT, _YES, config);
+
+   if (AuxBus::success !=
+        this->getDpcdData(NV_DPCD20_PANEL_REPLAY_CONFIGURATION2,
+        &config, sizeof(config), &size, &nakReason))
+    {
+        return false;
+    }
+
+    pPrcfg->bSinkRrUnlockGranted = FLD_TEST_DRF(_DPCD20_PANEL, _REPLAY_CONFIGURATION2,
+        _SINK_RR_UNLOCK_GRANTED, _YES, config);
+
+    pPrcfg->bSelUpdateYExtValEnable =  FLD_TEST_DRF(_DPCD20_PANEL, _REPLAY_CONFIGURATION2,
+        _SU_Y_GRANULARITY_EXTENDED_VALUE, _YES, config);
+
+    pPrcfg->selUpdateYExtVal = DRF_VAL(_DPCD20_PANEL, _REPLAY_CONFIGURATION2,
+        _SU_Y_GRANULARITY_EXTENDED_VALUE_SELECTION, config);
+
+    pPrcfg->bSuRegionScanLineIndicate = FLD_TEST_DRF(_DPCD20_PANEL, _REPLAY_CONFIGURATION2,
+        _SU_REGION_SCANLINE_CAPTURE_INDICATION, _YES, config);
+
+    if (AuxBus::success !=
+        this->getDpcdData(NV_DPCD20_PANEL_REPLAY_CONFIGURATION3,
+        &config, sizeof(config), &size, &nakReason))
+    {
+        return false;
+    }
+
+    pPrcfg->asSdpSetUpTimePrActive = DRF_VAL(_DPCD20_PANEL, _REPLAY_CONFIGURATION3,
+        _AS_SDP_SETUP_CONFIG_PR_ACTIVE_TIME, config);
 
     return true;
 }
@@ -1790,6 +2014,152 @@ bool DeviceImpl::getPanelReplayStatus(PanelReplayStatus *pPrStatus)
     }
 
     return false;
+}
+
+void DeviceImpl::getAlpmCaps()
+{
+    NvU8     byte      = 0U;
+    unsigned size      = 0U;
+    unsigned nakReason = NakUndefined;
+
+    if (AuxBus::success ==
+        this->getDpcdData(NV_DPCD20_RECEIVER_ALPM_CAPABILITIES,
+        &byte, sizeof(byte), &size, &nakReason))
+    {
+        alpmCaps.bFwStandbySupported =
+           FLD_TEST_DRF(_DPCD20_RECEIVER, _ALPM_CAPABILITIES,
+           _FW_STANDBY_SUPPORT, _YES, byte);
+        alpmCaps.bAuxLessAlpmSupported =
+           FLD_TEST_DRF(_DPCD20_RECEIVER, _ALPM_CAPABILITIES,
+           _AUX_LESS_ALPM_CAP, _YES, byte);
+        alpmCaps.bAuxLessAlpmPhySleepSupported =
+            FLD_TEST_DRF(_DPCD20_RECEIVER, _ALPM_CAPABILITIES,
+            _AUX_LESS_ALPM_ML_PHY_SLEEP_SUPPORT, _YES, byte);
+    }
+    else
+    {
+        DP_PRINTF(DP_ERROR, "DP-DEV> Aux Read to DPCD offset 0x2E failed!");
+    }
+}
+
+NvBool DeviceImpl::setAlpmConfig(AlpmConfig alpmCfg)
+{
+    NvU8     config = 0U;
+    unsigned size = 0U;
+    unsigned nakReason = NakUndefined;
+
+    if (alpmCfg.bEnableAlpm)
+    {
+        config = FLD_SET_DRF(_DPCD20_RECEIVER, _ALPM_CONFIGURATION,
+            _ENABLE_ALPM, _YES, config);
+    }
+    else
+    {
+        config = FLD_SET_DRF(_DPCD20_RECEIVER, _ALPM_CONFIGURATION,
+            _ENABLE_ALPM, _NO, config);
+    }
+
+    if (alpmCfg.bHpdOnAlpmLockError)
+    {
+        config = FLD_SET_DRF(_DPCD20_RECEIVER, _ALPM_CONFIGURATION,
+            _IRQ_HPD_ON_ALPM_LOCK_ERROR, _YES, config);
+    }
+    else
+    {
+        config = FLD_SET_DRF(_DPCD20_RECEIVER, _ALPM_CONFIGURATION,
+            _IRQ_HPD_ON_ALPM_LOCK_ERROR, _NO, config);
+    }
+
+    if (alpmCfg.bSelectedAlpmMode)
+    {
+        config = FLD_SET_DRF(_DPCD20_RECEIVER, _ALPM_CONFIGURATION,
+            _ALPM_SELECTED_MODE, _AUX_LESS_ALPM, config);
+    }
+
+    if (alpmCfg.bAcdsPeriodDuration)
+    {
+        config = FLD_SET_DRF(_DPCD20_RECEIVER, _ALPM_CONFIGURATION,
+            _ACDS_PERIOD_DURATION, _YES, config);
+    }
+    else
+    {
+        config = FLD_SET_DRF(_DPCD20_RECEIVER, _ALPM_CONFIGURATION,
+            _ACDS_PERIOD_DURATION, _NO, config);
+    }
+
+    if (AuxBus::success ==
+        this->setDpcdData(NV_DPCD20_RECEIVER_ALPM_CONFIGURATION,
+        &config, sizeof(config), &size, &nakReason))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+NvBool DeviceImpl::getAlpmStatus(AlpmStatus *pAlpmStatus)
+{
+    NvU8 byte = 0U;
+    unsigned size = 0U;
+    unsigned nakReason = NakUndefined;
+
+    if (pAlpmStatus == NULL)
+    {
+        DP_ASSERT(0);
+        return false;
+    }
+
+    if (AuxBus::success == this->getDpcdData(NV_DPCD20_RECEIVER_ALPM_STATUS,
+        &byte, sizeof(byte), &size, &nakReason))
+    {
+        pAlpmStatus->bAuxlessAlpmLockTimeout =
+            FLD_TEST_DRF(_DPCD20_RECEIVER, _ALPM_STATUS,
+            _AUX_LESS_ALPM_LOCK_TIMEOUT_ERR, _YES, byte);
+        pAlpmStatus->bAuxlessAlpmPhySleepDetected =
+            FLD_TEST_DRF(_DPCD20_RECEIVER, _ALPM_STATUS,
+            _AUX_LESS_ALPM_ML_PHY_SLEEP_DETECTED, _YES, byte);
+        return true;
+    }
+
+    return false;
+}
+
+NvBool DeviceImpl::enableAdaptiveSyncSdp(NvBool bEnable)
+{
+    NvU8     byte = 0U;
+    unsigned size = 0U;
+    unsigned nakReason = NakUndefined;
+    AuxBus::status status;
+
+    status = this->getDpcdData(NV_DPCD_DOWNSPREAD_CTRL,
+                               &byte, sizeof byte, &size, &nakReason);
+    if (status == AuxBus::success)
+    {
+        if (bEnable)
+        {
+            byte = FLD_SET_DRF(_DPCD, _DOWNSPREAD_CTRL,
+                _FIXED_VTOTAL_AS_SDP_EN_IN_PR_ACTIVE, _YES, byte);
+        }
+        else
+        {
+            byte = FLD_SET_DRF(_DPCD, _DOWNSPREAD_CTRL,
+                _FIXED_VTOTAL_AS_SDP_EN_IN_PR_ACTIVE, _NO, byte);
+        }
+
+        status = this->setDpcdData(NV_DPCD_DOWNSPREAD_CTRL,
+                                   &byte, sizeof byte, &size, &nakReason);
+        if (status != AuxBus::success)
+        {
+            DP_PRINTF(DP_ERROR, "DP-DEV> Aux Write to DPCD offset 0x107 failed!");
+            return status;
+        }
+    }
+    else
+    {
+        DP_PRINTF(DP_ERROR, "DP-DEV> Aux Read to DPCD offset 0x107 failed!");
+        return status;
+    }
+    return true;
 }
 
 bool DeviceImpl::getFECSupport()

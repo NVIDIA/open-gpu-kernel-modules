@@ -336,6 +336,18 @@ namespace DisplayPort
 
         virtual bool setModeList(DisplayPort::DpModesetParams *pModeList, unsigned numModes) = 0;
 
+        virtual NvBool isSelectiveUpdateSupported(void) = 0;
+        virtual NvBool isEarlyRegionTpSupported(void) = 0;
+        virtual NvBool enableAdaptiveSyncSdp(NvBool enable) = 0;
+        virtual SelectiveUpdateCaps getSelectiveUpdateCaps(void) = 0;
+        virtual NvBool isAdaptiveSyncSdpNotSupportedInPr(void) = 0;
+        virtual NvBool isdscDecodeNotSupportedInPr(void) = 0;
+        virtual NvBool isLinkOffSupportedAfterAsSdpInPr(void) = 0;
+        virtual void getAlpmCaps(void) = 0;
+        virtual NvBool setAlpmConfig(AlpmConfig alpmcfg) = 0;
+        virtual NvBool getAlpmStatus(AlpmStatus *pAlpmStatus) = 0;
+        virtual NvBool isAuxLessAlpmSupported(void) = 0;
+
     protected:
             virtual ~Device() {}
 
@@ -731,6 +743,10 @@ namespace DisplayPort
         // "data" is an array of NV0073_CTRL_MAX_LANES unsigned ints
         virtual bool setLaneConfig(NvU32 numLanes, NvU32 *data) = 0;
 
+        // "data" is an array of NV0073_CTRL_MAX_LANES unsigned ints
+        virtual bool getDp2xLaneConfig(NvU32 *numLanes, NvU32 *data) = 0;
+        // "data" is an array of NV0073_CTRL_MAX_LANES unsigned ints
+        virtual bool setDp2xLaneConfig(NvU32 numLanes, NvU32 *data) = 0;
         virtual DP_TESTMESSAGE_STATUS sendDPTestMessage(void *pBuffer,
                                                         NvU32 requestSize,
                                                         NvU32 *pDpStatus) = 0;
@@ -752,7 +768,9 @@ namespace DisplayPort
 
     virtual bool readPrSinkDebugInfo(panelReplaySinkDebugInfo *prDbgInfo) = 0;
     virtual void enableDpTunnelingBwAllocationSupport() = 0;
-    virtual bool willLinkSupportModeSST(const LinkConfiguration &linkConfig, const ModesetInfo &modesetInfo) = 0;
+    virtual bool willLinkSupportModeSST(const LinkConfiguration &linkConfig,
+                                        const ModesetInfo &modesetInfo,
+                                        const DscParams *pDscParams = NULL) = 0;
 
     protected:
            virtual ~Connector() {}

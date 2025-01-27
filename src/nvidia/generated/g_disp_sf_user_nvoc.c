@@ -93,7 +93,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_DispSfUser =
     /*pExportInfo=*/        &__nvoc_export_info_DispSfUser
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge DispSfUser methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^2
 NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super^2
 NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
@@ -110,11 +110,11 @@ NV_STATUS __nvoc_down_thunk_DispSfUser_gpuresGetRegBaseOffsetAndSize(struct GpuR
 
 // dispsfGetRegBaseOffsetAndSize: virtual override (gpures) base (gpures)
 NV_STATUS __nvoc_down_thunk_DispSfUser_gpuresGetRegBaseOffsetAndSize(struct GpuResource *pDispSfUser, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return dispsfGetRegBaseOffsetAndSize((struct DispSfUser *)(((unsigned char *) pDispSfUser) - __nvoc_rtti_DispSfUser_GpuResource.offset), pGpu, pOffset, pSize);
+    return dispsfGetRegBaseOffsetAndSize((struct DispSfUser *)(((unsigned char *) pDispSfUser) - NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource)), pGpu, pOffset, pSize);
 }
 
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
+// Up-thunk(s) to bridge DispSfUser methods to ancestors (if any)
 NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^2
 NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super^2
 void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super^2
@@ -173,122 +173,122 @@ void __nvoc_up_thunk_RsResource_dispsfAddAdditionalDependants(struct RsClient *p
 
 // dispsfControl: virtual inherited (gpures) base (gpures)
 NV_STATUS __nvoc_up_thunk_GpuResource_dispsfControl(struct DispSfUser *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispSfUser_GpuResource.offset), pCallContext, pParams);
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource)), pCallContext, pParams);
 }
 
 // dispsfMap: virtual inherited (gpures) base (gpures)
 NV_STATUS __nvoc_up_thunk_GpuResource_dispsfMap(struct DispSfUser *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispSfUser_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource)), pCallContext, pParams, pCpuMapping);
 }
 
 // dispsfUnmap: virtual inherited (gpures) base (gpures)
 NV_STATUS __nvoc_up_thunk_GpuResource_dispsfUnmap(struct DispSfUser *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispSfUser_GpuResource.offset), pCallContext, pCpuMapping);
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource)), pCallContext, pCpuMapping);
 }
 
 // dispsfShareCallback: virtual inherited (gpures) base (gpures)
 NvBool __nvoc_up_thunk_GpuResource_dispsfShareCallback(struct DispSfUser *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispSfUser_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource)), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // dispsfGetMapAddrSpace: virtual inherited (gpures) base (gpures)
 NV_STATUS __nvoc_up_thunk_GpuResource_dispsfGetMapAddrSpace(struct DispSfUser *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispSfUser_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource)), pCallContext, mapFlags, pAddrSpace);
 }
 
 // dispsfInternalControlForward: virtual inherited (gpures) base (gpures)
 NV_STATUS __nvoc_up_thunk_GpuResource_dispsfInternalControlForward(struct DispSfUser *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispSfUser_GpuResource.offset), command, pParams, size);
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource)), command, pParams, size);
 }
 
 // dispsfGetInternalObjectHandle: virtual inherited (gpures) base (gpures)
 NvHandle __nvoc_up_thunk_GpuResource_dispsfGetInternalObjectHandle(struct DispSfUser *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispSfUser_GpuResource.offset));
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource)));
 }
 
 // dispsfAccessCallback: virtual inherited (rmres) base (gpures)
 NvBool __nvoc_up_thunk_RmResource_dispsfAccessCallback(struct DispSfUser *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSfUser_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource.__nvoc_base_RmResource)), pInvokingClient, pAllocParams, accessRight);
 }
 
 // dispsfGetMemInterMapParams: virtual inherited (rmres) base (gpures)
 NV_STATUS __nvoc_up_thunk_RmResource_dispsfGetMemInterMapParams(struct DispSfUser *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispSfUser_RmResource.offset), pParams);
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource.__nvoc_base_RmResource)), pParams);
 }
 
 // dispsfCheckMemInterUnmap: virtual inherited (rmres) base (gpures)
 NV_STATUS __nvoc_up_thunk_RmResource_dispsfCheckMemInterUnmap(struct DispSfUser *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispSfUser_RmResource.offset), bSubdeviceHandleProvided);
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource.__nvoc_base_RmResource)), bSubdeviceHandleProvided);
 }
 
 // dispsfGetMemoryMappingDescriptor: virtual inherited (rmres) base (gpures)
 NV_STATUS __nvoc_up_thunk_RmResource_dispsfGetMemoryMappingDescriptor(struct DispSfUser *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispSfUser_RmResource.offset), ppMemDesc);
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource.__nvoc_base_RmResource)), ppMemDesc);
 }
 
 // dispsfControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
 NV_STATUS __nvoc_up_thunk_RmResource_dispsfControlSerialization_Prologue(struct DispSfUser *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSfUser_RmResource.offset), pCallContext, pParams);
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // dispsfControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
 void __nvoc_up_thunk_RmResource_dispsfControlSerialization_Epilogue(struct DispSfUser *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSfUser_RmResource.offset), pCallContext, pParams);
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // dispsfControl_Prologue: virtual inherited (rmres) base (gpures)
 NV_STATUS __nvoc_up_thunk_RmResource_dispsfControl_Prologue(struct DispSfUser *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSfUser_RmResource.offset), pCallContext, pParams);
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // dispsfControl_Epilogue: virtual inherited (rmres) base (gpures)
 void __nvoc_up_thunk_RmResource_dispsfControl_Epilogue(struct DispSfUser *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSfUser_RmResource.offset), pCallContext, pParams);
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // dispsfCanCopy: virtual inherited (res) base (gpures)
 NvBool __nvoc_up_thunk_RsResource_dispsfCanCopy(struct DispSfUser *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSfUser_RsResource.offset));
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // dispsfIsDuplicate: virtual inherited (res) base (gpures)
 NV_STATUS __nvoc_up_thunk_RsResource_dispsfIsDuplicate(struct DispSfUser *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSfUser_RsResource.offset), hMemory, pDuplicate);
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)), hMemory, pDuplicate);
 }
 
 // dispsfPreDestruct: virtual inherited (res) base (gpures)
 void __nvoc_up_thunk_RsResource_dispsfPreDestruct(struct DispSfUser *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSfUser_RsResource.offset));
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // dispsfControlFilter: virtual inherited (res) base (gpures)
 NV_STATUS __nvoc_up_thunk_RsResource_dispsfControlFilter(struct DispSfUser *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSfUser_RsResource.offset), pCallContext, pParams);
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams);
 }
 
 // dispsfIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
 NvBool __nvoc_up_thunk_RsResource_dispsfIsPartialUnmapSupported(struct DispSfUser *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSfUser_RsResource.offset));
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // dispsfMapTo: virtual inherited (res) base (gpures)
 NV_STATUS __nvoc_up_thunk_RsResource_dispsfMapTo(struct DispSfUser *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSfUser_RsResource.offset), pParams);
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
 }
 
 // dispsfUnmapFrom: virtual inherited (res) base (gpures)
 NV_STATUS __nvoc_up_thunk_RsResource_dispsfUnmapFrom(struct DispSfUser *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSfUser_RsResource.offset), pParams);
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
 }
 
 // dispsfGetRefCount: virtual inherited (res) base (gpures)
 NvU32 __nvoc_up_thunk_RsResource_dispsfGetRefCount(struct DispSfUser *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSfUser_RsResource.offset));
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // dispsfAddAdditionalDependants: virtual inherited (res) base (gpures)
 void __nvoc_up_thunk_RsResource_dispsfAddAdditionalDependants(struct RsClient *pClient, struct DispSfUser *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSfUser_RsResource.offset), pReference);
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(DispSfUser, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)), pReference);
 }
 
 

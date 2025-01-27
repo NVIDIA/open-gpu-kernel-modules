@@ -172,6 +172,8 @@ namespace DisplayPort
 
         // Panel replay Caps
         PanelReplayCaps prCaps;
+        // ALPM caps
+        AlpmCaps alpmCaps;
         bool bIsFakedMuxDevice;
         bool bIsPreviouslyFakedMuxDevice;
         bool bisMarkedForDeletion;
@@ -455,6 +457,17 @@ namespace DisplayPort
         bool setPanelReplayConfig(panelReplayConfig prcfg);
         bool getPanelReplayConfig(panelReplayConfig *pPrcfg);
         bool getPanelReplayStatus(PanelReplayStatus *pPrStatus);
+        NvBool isSelectiveUpdateSupported(void);
+        NvBool isEarlyRegionTpSupported(void);
+        NvBool enableAdaptiveSyncSdp(NvBool enable);
+        SelectiveUpdateCaps getSelectiveUpdateCaps(void);
+        NvBool isAdaptiveSyncSdpNotSupportedInPr(void);
+        NvBool isdscDecodeNotSupportedInPr(void);
+        NvBool isLinkOffSupportedAfterAsSdpInPr(void);
+        void getAlpmCaps(void);
+        NvBool setAlpmConfig(AlpmConfig alpmcfg);
+        NvBool getAlpmStatus(AlpmStatus *pAlpmStatus);
+        NvBool isAuxLessAlpmSupported(void);
 
         NvBool getDSCSupport();
         bool getFECSupport();

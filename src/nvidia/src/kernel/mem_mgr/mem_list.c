@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -341,7 +341,7 @@ continue_alloc_object:
 
         // this will fake a memory allocation at
         // the OS driver interface level - and also set pMemDesc->Allocated
-        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_46, 
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_46,
                         pMemDesc);
 
         if (status != NV_OK)
@@ -384,24 +384,20 @@ continue_alloc_object:
         {
             memdescDestroy(pMemDesc);
         }
-        // Memory has to be mapped on GSP since it came from CPU-RM
+        //
+        // We currently map all allocations that get registered with GSP
+        // since there is no mechanism to specify whether the registered
+        // allocation is ever accessed by GSP.
+        //
         else if (RMCFG_FEATURE_PLATFORM_GSP)
         {
-            //
-            // TODO - Once Bug 4429199 is resolved, this call should probably be
-            // changed to memdescMapInternal().
-            //
-            status = memdescMap(pMemory->pMemDesc, 0, pMemory->Length, NV_TRUE,
-                NV_PROTECT_READ_WRITE, &pMemory->KernelVAddr, &pMemory->KernelMapPriv);
-
-            if (status != NV_OK)
+            // GSP only supports contiguous mappings
+            if (pAllocParams->pageCount == 1)
             {
-                pMemory->KernelVAddr = NvP64_NULL;
-                pMemory->KernelMapPriv = NvP64_NULL;
-                NV_PRINTF(LEVEL_ERROR, "memDescMap failed with: %d\n", status);
+                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                    memCreateKernelMapping(pMemory, NV_PROTECT_READ_WRITE, NV_FALSE));
             }
         }
-
     }
     else if (addressSpace == ADDR_FBMEM)
     {

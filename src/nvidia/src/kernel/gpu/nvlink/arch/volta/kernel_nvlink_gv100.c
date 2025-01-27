@@ -80,7 +80,7 @@ knvlinkEnableLinksPostTopology_GV100
 )
 {
     NV_STATUS status = NV_OK;
-    NV2080_CTRL_NVLINK_ENABLE_LINKS_POST_TOPOLOGY_PARAMS params;
+    NV2080_CTRL_INTERNAL_NVLINK_ENABLE_LINKS_POST_TOPOLOGY_PARAMS params;
 
     //
     // Skip the RPC if linkmask is 0 or if all the links in the mask
@@ -102,7 +102,7 @@ knvlinkEnableLinksPostTopology_GV100
     }
 
     status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                                 NV2080_CTRL_CMD_NVLINK_ENABLE_LINKS_POST_TOPOLOGY,
+                                 NV2080_CTRL_CMD_INTERNAL_NVLINK_ENABLE_LINKS_POST_TOPOLOGY,
                                  (void *)&params, sizeof(params));
     if (status != NV_OK)
     {
@@ -163,7 +163,7 @@ knvlinkOverrideConfig_GV100
         return NV_OK;
     }
 
-    NV2080_CTRL_NVLINK_PROCESS_FORCED_CONFIGS_PARAMS forcedConfigParams;
+    NV2080_CTRL_INTERNAL_NVLINK_PROCESS_FORCED_CONFIGS_PARAMS forcedConfigParams;
     portMemSet(&forcedConfigParams, 0, sizeof(forcedConfigParams));
 
     forcedConfigParams.bLegacyForcedConfig = NV_FALSE;
@@ -175,7 +175,7 @@ knvlinkOverrideConfig_GV100
     // setting up of HSHUB state and programming the memory subsystem registers.
     //
     status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                                 NV2080_CTRL_CMD_NVLINK_PROCESS_FORCED_CONFIGS,
+                                 NV2080_CTRL_CMD_INTERNAL_NVLINK_PROCESS_FORCED_CONFIGS,
                                  (void *)&forcedConfigParams, sizeof(forcedConfigParams));
     if (status != NV_OK)
     {
@@ -231,7 +231,7 @@ knvlinkApplyNvswitchDegradedModeSettings_GV100
     NvU32   linkId;
 
     // At least there should be one connection to NVSwitch, else bail out
-    FOR_EACH_INDEX_IN_MASK(32, linkId, pKernelNvlink->enabledLinks)
+    FOR_EACH_INDEX_IN_MASK(32, linkId, KNVLINK_GET_MASK(pKernelNvlink, enabledLinks, 32))
     {
         if (pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.deviceType == NVLINK_DEVICE_TYPE_NVSWITCH)
         {
@@ -255,7 +255,7 @@ knvlinkApplyNvswitchDegradedModeSettings_GV100
     status = _knvlinkAreLinksDisconnected(pGpu, pKernelNvlink, bLinkDisconnected);
     NV_CHECK_OR_RETURN(LEVEL_INFO, status == NV_OK, status);
 
-    FOR_EACH_INDEX_IN_MASK(32, linkId, pKernelNvlink->enabledLinks)
+    FOR_EACH_INDEX_IN_MASK(32, linkId, KNVLINK_GET_MASK(pKernelNvlink, enabledLinks, 32))
     {
         bUpdateConnStatus = NV_FALSE;
 
@@ -333,7 +333,7 @@ _knvlinkAreLinksDisconnected
 
     NV_ASSERT_OR_RETURN(bLinkDisconnected != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    NV2080_CTRL_NVLINK_GET_LINK_AND_CLOCK_INFO_PARAMS *pParams =
+    NV2080_CTRL_INTERNAL_NVLINK_GET_LINK_AND_CLOCK_INFO_PARAMS *pParams =
         portMemAllocNonPaged(sizeof(*pParams));
     if (pParams == NULL)
     {
@@ -341,16 +341,16 @@ _knvlinkAreLinksDisconnected
     }
 
     portMemSet(pParams, 0, sizeof(*pParams));
-    pParams->linkMask = pKernelNvlink->enabledLinks;
+    pParams->linkMask = KNVLINK_GET_MASK(pKernelNvlink, enabledLinks, 32);
     pParams->bSublinkStateInst = NV_TRUE;
 
     status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                                 NV2080_CTRL_CMD_NVLINK_GET_LINK_AND_CLOCK_INFO,
+                                 NV2080_CTRL_CMD_INTERNAL_NVLINK_GET_LINK_AND_CLOCK_INFO,
                                  (void *)pParams, sizeof(*pParams));
     if (status != NV_OK)
         goto cleanup;
 
-    FOR_EACH_INDEX_IN_MASK(32, linkId, pKernelNvlink->enabledLinks)
+    FOR_EACH_INDEX_IN_MASK(32, linkId, KNVLINK_GET_MASK(pKernelNvlink, enabledLinks, 32))
     {
         if ((pParams->linkInfo[linkId].linkState == NVLINK_LINKSTATE_SAFE) &&
             (pParams->linkInfo[linkId].txSublinkState == NVLINK_SUBLINK_STATE_TX_OFF) &&
@@ -399,14 +399,14 @@ knvlinkProgramLinkSpeed_GV100
     NV_STATUS platformLinerateDefined = NV_ERR_NOT_SUPPORTED;
     platformLinerateDefined = osGetPlatformNvlinkLinerate(pGpu, &platformLineRate);
 
-    NV2080_CTRL_NVLINK_PROGRAM_LINK_SPEED_PARAMS programLinkSpeedParams;
+    NV2080_CTRL_INTERNAL_NVLINK_PROGRAM_LINK_SPEED_PARAMS programLinkSpeedParams;
     portMemSet(&programLinkSpeedParams, 0, sizeof(programLinkSpeedParams));
 
     programLinkSpeedParams.bPlatformLinerateDefined = (platformLinerateDefined == NV_OK);
     programLinkSpeedParams.platformLineRate         = platformLineRate;
 
     status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                                 NV2080_CTRL_CMD_NVLINK_PROGRAM_LINK_SPEED,
+                                 NV2080_CTRL_CMD_INTERNAL_NVLINK_PROGRAM_LINK_SPEED,
                                  (void *)&programLinkSpeedParams,
                                  sizeof(programLinkSpeedParams));
     if (status != NV_OK)
@@ -571,7 +571,7 @@ knvlinkSetUniqueFabricBaseAddress_GV100
         knvlinkCoreGetRemoteDeviceInfo(pGpu, pKernelNvlink);
 
         status = knvlinkEnableLinksPostTopology_HAL(pGpu, pKernelNvlink,
-                                        pKernelNvlink->enabledLinks);
+                                        KNVLINK_GET_MASK(pKernelNvlink, enabledLinks, 32));
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,

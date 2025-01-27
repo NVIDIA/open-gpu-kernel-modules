@@ -778,31 +778,6 @@ osGetPlatformNvlinkLinerate
     NvU32   *lineRate
 )
 {
-#if defined(NVCPU_PPC64LE)
-    nv_state_t *nv      = NV_GET_NV_STATE(pGpu);
-    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-
-    if (!pKernelNvlink)
-        return NV_ERR_INVALID_ARGUMENT;
-
-    return nv_get_nvlink_line_rate(nv, lineRate);
-#else
-    //TODO : FRU based method to be filled out by Bug 200285656
-    //*lineRate = 0;
-    //return NV_OK;
+    // TODO: Remove this function
     return NV_ERR_NOT_SUPPORTED;
-#endif
-}
-
-void
-osSetNVLinkSysmemLinkState
-(
-    OBJGPU *pGpu,
-    NvBool enabled
-)
-{
-    nv_state_t *nv = NV_GET_NV_STATE(pGpu);
-    NV_ASSERT(enabled);
-    if (enabled)
-        nv_dma_enable_nvlink(nv->dma_dev);
 }

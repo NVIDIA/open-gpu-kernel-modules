@@ -36,7 +36,9 @@
 #include "ctrl/ctrl0073/ctrl0073specific.h" // NV0073_CTRL_HDCP_VPRIME_SIZE
 #include "displayport.h"
 
-#define NV_SUPPORTED_DP_LINK_RATES__SIZE NV_SUPPORTED_DP1X_LINK_RATES__SIZE
+#include "displayport2x.h"
+#define NV_SUPPORTED_DP_LINK_RATES__SIZE NV_SUPPORTED_DP2X_LINK_RATES__SIZE
+extern NvU32 bSupportInternalUhbrOnFpga;
 namespace DisplayPort
 {
     typedef NvU64 LinkRate;
@@ -66,9 +68,11 @@ namespace DisplayPort
             }
         }
 
+        // Only use import if element can be added at the end
+        // given element list needs to be sorted
         bool import(NvU16 linkBw)
         {
-            if (!IS_VALID_LINKBW_10M(linkBw))
+            if (!IS_VALID_DP2_X_LINKBW(linkBw))
             {
                 DP_ASSERT(0 && "Unsupported Link Bandwidth");
                 return false;
@@ -82,6 +86,48 @@ namespace DisplayPort
             }
             else
                 return false;
+        }
+
+        // Use insert to import to the right spot in the sorted
+        // element list if you are not sure of where linkBw is compared
+        // to existing entries in the element list
+        bool insert(NvU16 linkBw)
+        {
+            if (!IS_VALID_DP2_X_LINKBW(linkBw))
+            {
+                DP_ASSERT(0 && "Unsupported Link Bandwidth");
+                return false;
+            }
+
+            for (int i = 0; i < entries; i++)
+            {
+                if (element[i] == linkBw)
+                {
+                    // element already present, nothing to do here
+                    return true;
+                }
+                else if (element[i] > linkBw)
+                {
+                    // make space for the new element
+                    if (entries >= NV_SUPPORTED_DP_LINK_RATES__SIZE) {
+                        DP_ASSERT(0 && "No more space for adding additional link rate");
+                        return false;
+                    }
+
+                    for (int j = entries-1; j >= i; j--)
+                    {
+                        element[j+1] = element[j];
+                    }
+                    entries++;
+                    // space is made, insert linkBw to the right spot
+                    element[i] = linkBw;
+                    return true;
+                }
+
+            }
+            // if we are here and not returned, that means linkBw is bigger than
+            // the current entries, just import
+            return import(linkBw);
         }
 
         LinkRate getLowerRate(LinkRate rate)
@@ -173,7 +219,14 @@ namespace DisplayPort
         EDP_3_24GHZ     =  324000000,
         EDP_4_32GHZ     =  432000000,
         HBR2            =  540000000,
-        HBR3            =  810000000
+        EDP_6_75GHZ     =  675000000,
+        HBR3            =  810000000,
+        UHBR_2_50GHZ    =  303030303, //  2.5G * (128 / 132) / 8
+        UHBR_2_70GHZ    =  327272727, //  2.7G * (128 / 132) / 8
+        UHBR_5_00GHZ    =  606060606, //  5.0G * (128 / 132) / 8
+        UHBR_10_0GHZ    = 1212121212, // 10.0G * (128 / 132) / 8
+        UHBR_13_5GHZ    = 1636363636, // 13.5G * (128 / 132) / 8
+        UHBR_20_0GHZ    = 2424242424  // 20.0G * (128 / 132) / 8
     };
 
     struct HDCPState
@@ -222,6 +275,8 @@ namespace DisplayPort
         bool     disablePostLTRequest;
         bool     bEnableFEC;
         bool     bDisableLTTPR;
+        bool     bDisableDownspread;
+        bool     bIs128b132bChannelCoding;
         //
         // The counter to record how many times link training happens.
         // Client can reset the counter by calling setLTCounter(0)
@@ -231,12 +286,16 @@ namespace DisplayPort
         LinkConfiguration() :
             lanes(0), peakRatePossible(0), peakRate(0), minRate(0),
             enhancedFraming(false), multistream(false), disablePostLTRequest(false),
-            bEnableFEC(false), bDisableLTTPR(false),
+            bEnableFEC(false), bDisableLTTPR(false), bDisableDownspread(false),
+            bIs128b132bChannelCoding(false),
             linkTrainCounter(0) {};
 
         LinkConfiguration(LinkPolicy * p, unsigned lanes, LinkRate peakRate,
-                          bool enhancedFraming, bool MST, bool disablePostLTRequest = false,
-                          bool bEnableFEC = false, bool bDisableLTTPR = false);
+                          bool enhancedFraming, bool MST,
+                          bool disablePostLTRequest = false,
+                          bool bEnableFEC = false,
+                          bool bDisableLTTPR = false,
+                          bool bDisableDownspread = false);
 
         void setLTCounter(unsigned counter)
         {
@@ -252,7 +311,14 @@ namespace DisplayPort
         NvU64 convertLinkRateToDataRate(LinkRate linkRate) const
         {
             NvU64 dataRate;
-            dataRate = LINK_RATE_TO_DATA_RATE_8B_10B(linkRate);
+            if (bIs128b132bChannelCoding)
+            {
+                dataRate = LINK_RATE_TO_DATA_RATE_128B_132B(linkRate);
+            }
+            else
+            {
+                dataRate = LINK_RATE_TO_DATA_RATE_8B_10B(linkRate);
+            }
             return dataRate;
         }
 
@@ -260,7 +326,14 @@ namespace DisplayPort
         NvU64 convertMinRateToDataRate() const
         {
             NvU64 dataRate;
-            dataRate = DP_LINK_RATE_BITSPS_TO_BYTESPS(OVERHEAD_8B_10B(minRate));
+            if (bIs128b132bChannelCoding)
+            {
+                dataRate = DP_LINK_RATE_BITSPS_TO_BYTESPS(DATA_BW_EFF_128B_132B(minRate));
+            }
+            else
+            {
+                dataRate = DP_LINK_RATE_BITSPS_TO_BYTESPS(OVERHEAD_8B_10B(minRate));
+            }
             return dataRate;
         }
 
@@ -269,22 +342,28 @@ namespace DisplayPort
             return (convertLinkRateToDataRate(peakRate) * lanes);
         }
 
-        NvU64 linkOverhead(NvU64 rate)
+        NvU64 linkOverhead(NvU64 rate10M)
         {
-            if(IS_VALID_LINKBW_10M(rate))
+            NvU64 rate;
+            if(IS_VALID_DP2_X_LINKBW(rate10M))
             {
                 // Converting here so that minRate from 10M is converted to bps
-                rate = DP_LINK_RATE_10M_TO_BPS(rate);
+                rate = DP_LINK_RATE_10M_TO_BPS(rate10M);
             }
             else
             {
                 // Convert from data rate to bps
-                rate = DATA_RATE_8B_10B_TO_LINK_RATE_BPS(rate);
+                rate = DATA_RATE_8B_10B_TO_LINK_RATE_BPS(rate10M);
             }
 
+            if(IS_DP2_X_UHBR_LINKBW(rate10M))
+            {
+                // Consider downspread only. FEC is already considered
+                // in 128b/132b channel encoding
+                return rate - 6 * rate/ 1000;
+            }
             if(bEnableFEC)
             {
-
                 // if FEC is enabled, we have to account for 3% overhead
                 // for FEC+downspread according to DP 1.4 spec
 
@@ -295,7 +374,6 @@ namespace DisplayPort
                 // if FEC is not enabled, link overhead comprises only of
                 // 0.6% downspread.
                 return rate - 6 * rate/ 1000;
-
             }
         }
 
@@ -312,6 +390,8 @@ namespace DisplayPort
               disablePostLTRequest(false),
               bEnableFEC(false),
               bDisableLTTPR(false),
+              bDisableDownspread(false),
+              bIs128b132bChannelCoding(false),
               linkTrainCounter(0)
         {
             //
@@ -432,6 +512,42 @@ namespace DisplayPort
                 minRate = linkOverhead(dp2LinkRate_8_10Gbps);
                 lanes = 4;
             }
+            else if (TotalLinkPBN <= 3878)
+            {
+                peakRatePossible = dp2LinkRate_13_5Gbps;
+                peakRate = peakRatePossible;
+                minRate = linkOverhead(dp2LinkRate_13_5Gbps);
+                lanes = 2;
+                bEnableFEC = true;
+                bIs128b132bChannelCoding = true;
+            }
+            else if (TotalLinkPBN <= 5746)
+            {
+                peakRatePossible = dp2LinkRate_10_0Gbps;
+                peakRate = peakRatePossible;
+                minRate = linkOverhead(dp2LinkRate_10_0Gbps);
+                lanes = 4;
+                bEnableFEC = true;
+                bIs128b132bChannelCoding = true;
+            }
+            else if (TotalLinkPBN <= 7757)
+            {
+                peakRatePossible = dp2LinkRate_13_5Gbps;
+                peakRate = peakRatePossible;
+                minRate = linkOverhead(dp2LinkRate_13_5Gbps);
+                lanes = 4;
+                bEnableFEC = true;
+                bIs128b132bChannelCoding = true;
+            }
+            else if (TotalLinkPBN <= 11492)
+            {
+                peakRatePossible = dp2LinkRate_20_0Gbps;
+                peakRate = peakRatePossible;
+                minRate = linkOverhead(dp2LinkRate_20_0Gbps);
+                lanes = 4;
+                bEnableFEC = true;
+                bIs128b132bChannelCoding = true;
+            }
             else
             {
                 peakRatePossible = dp2LinkRate_1_62Gbps;
@@ -454,11 +570,19 @@ namespace DisplayPort
 
         bool lowerConfig(bool bReduceLaneCnt = false);
 
+        void setChannelCoding();
+
+        void setChannelCoding(bool bIs128b132bChannelCoding)
+        {
+            this->bIs128b132bChannelCoding = bIs128b132bChannelCoding;
+        }
+
         void setLaneRate(LinkRate newRate, unsigned newLanes)
         {
             peakRate  = newRate;
             lanes = newLanes;
             minRate = linkOverhead(peakRate);
+            setChannelCoding();
         }
 
         unsigned pbnTotal()
@@ -466,45 +590,13 @@ namespace DisplayPort
             return PBNForSlots(totalUsableTimeslots);
         }
 
-        void pbnRequired(const ModesetInfo & modesetInfo, unsigned & base_pbn, unsigned & slots, unsigned & slots_pbn)
-        {
-            base_pbn = pbnForMode(modesetInfo);
-            if (bEnableFEC)
-            {
-                // IF FEC is enabled, we need to consider 3% overhead as per DP1.4 spec.
-                base_pbn = (NvU32)(divide_ceil(base_pbn * 100, 97));
-            }
-            slots = slotsForPBN(base_pbn);
-            slots_pbn = PBNForSlots(slots);
-        }
+        NvU64 getBytesPerTimeslot();
 
-        NvU32 slotsForPBN(NvU32 allocatedPBN, bool usable = false)
-        {
-            NvU64 bytes_per_pbn      = 54 * 1000000 / 64;     // this comes out exact
-            NvU64 bytes_per_timeslot = getTotalDataRate() / 64;
+        void pbnRequired(const ModesetInfo & modesetInfo, unsigned & base_pbn, unsigned & slots, unsigned & slots_pbn);
 
-            if (bytes_per_timeslot == 0)
-                return (NvU32)-1;
+        NvU32 slotsForPBN(NvU32 allocatedPBN, bool usable = false);
 
-            if (usable)
-            {
-                // round down to find the usable integral slots for a given value of PBN.
-                NvU32 slots = (NvU32)divide_floor(allocatedPBN * bytes_per_pbn, bytes_per_timeslot);
-                DP_ASSERT(slots <= 64);
-
-                return slots;
-            }
-            else
-                return (NvU32)divide_ceil(allocatedPBN * bytes_per_pbn, bytes_per_timeslot);
-        }
-
-        NvU32 PBNForSlots(NvU32 slots)                      // Rounded down
-        {
-            NvU64 bytes_per_pbn      = 54 * 1000000 / 64;     // this comes out exact
-            NvU64 bytes_per_timeslot = getTotalDataRate() / 64;
-
-            return (NvU32)(bytes_per_timeslot * slots/ bytes_per_pbn);
-        }
+        NvU32 PBNForSlots(NvU32 slots);
 
         bool operator!= (const LinkConfiguration & right) const
         {
@@ -536,5 +628,11 @@ namespace DisplayPort
         }
     };
 
+#define IS_DP2X_UHBR_LINK_DATA_RATE(val)   (((NvU32)(val) == dp2LinkRate_2_50Gbps) || \
+                                            ((NvU32)(val) == dp2LinkRate_2_70Gbps && bSupportInternalUhbrOnFpga) || \
+                                            ((NvU32)(val) == dp2LinkRate_5_00Gbps) || \
+                                            ((NvU32)(val) == dp2LinkRate_10_0Gbps) || \
+                                            ((NvU32)(val) == dp2LinkRate_13_5Gbps) || \
+                                            ((NvU32)(val) == dp2LinkRate_20_0Gbps))
 }
 #endif //INCLUDED_DP_LINKCONFIG_H

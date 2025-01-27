@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -60,6 +60,19 @@ typedef struct MemoryManager MemoryManager;
 #endif /* __nvoc_class_id_MemoryManager */
 
 
+struct RmClient;
+
+#ifndef __NVOC_CLASS_RmClient_TYPEDEF__
+#define __NVOC_CLASS_RmClient_TYPEDEF__
+typedef struct RmClient RmClient;
+#endif /* __NVOC_CLASS_RmClient_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_RmClient
+#define __nvoc_class_id_RmClient 0xb23d83
+#endif /* __nvoc_class_id_RmClient */
+
+
+
 /*!
  * Allocator for normal virtual, video and system memory
  */
@@ -84,7 +97,7 @@ struct StandardMemory {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__StandardMemory *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct Memory __nvoc_base_Memory;
 
     // Ancestor object pointers for `staticCast` feature
@@ -336,9 +349,9 @@ NvBool stdmemCanCopy_IMPL(struct StandardMemory *pStandardMemory);
 NV_STATUS stdmemConstruct_IMPL(struct StandardMemory *arg_pStandardMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 
 #define __nvoc_stdmemConstruct(arg_pStandardMemory, arg_pCallContext, arg_pParams) stdmemConstruct_IMPL(arg_pStandardMemory, arg_pCallContext, arg_pParams)
-NV_STATUS stdmemValidateParams_IMPL(struct OBJGPU *pGpu, NvHandle hClient, NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
+NV_STATUS stdmemValidateParams_IMPL(struct OBJGPU *pGpu, struct RmClient *pRmClient, NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
 
-#define stdmemValidateParams(pGpu, hClient, pAllocData) stdmemValidateParams_IMPL(pGpu, hClient, pAllocData)
+#define stdmemValidateParams(pGpu, pRmClient, pAllocData) stdmemValidateParams_IMPL(pGpu, pRmClient, pAllocData)
 void stdmemDumpInputAllocParams_IMPL(NV_MEMORY_ALLOCATION_PARAMS *pAllocData, CALL_CONTEXT *pCallContext);
 
 #define stdmemDumpInputAllocParams(pAllocData, pCallContext) stdmemDumpInputAllocParams_IMPL(pAllocData, pCallContext)

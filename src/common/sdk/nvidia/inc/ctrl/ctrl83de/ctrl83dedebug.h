@@ -1157,5 +1157,78 @@ typedef struct NV83DE_CTRL_DEBUG_SET_DROP_DEFERRED_RC_PARAMS {
     NvBool bDropDeferredRc;
 } NV83DE_CTRL_DEBUG_SET_DROP_DEFERRED_RC_PARAMS;
 
+/*
+ * NV83DE_CTRL_CMD_DEBUG_SET_MODE_MMU_GCC_DEBUG
+ *
+ * This command sets the MMU GCC DEBUG mode.  This is Blackwell-onwards feature.
+ * If the query is made on an incorrect platform (for example, pre-Blackwell)
+ * the call will return with an NV_ERR_NOT_SUPPORTED error.
+ *
+ *   action
+ *     The possible action values are:
+ *   - NV83DE_CTRL_CMD_DEBUG_SET_MODE_MMU_GCC_DEBUG_ENABLE
+ *      This enables the MMU GCC debug mode if possible. If however, any another
+ *      client has already disabled the mode (via NV83DE call) then this
+ *      operation returns  NV_ERR_STATE_IN_USE.
+ *
+ *   - NV83DE_CTRL_CMD_DEBUG_SET_MODE_MMU_GCC_DEBUG_DISABLE
+ *      This disables the MMU GCC debug mode if possible. If however, any another
+ *      client has already enabled the mode (via NV83DE call) then this
+ *      operation returns  NV_ERR_STATE_IN_USE.
+ *
+ *   - NV83DE_CTRL_CMD_DEBUG_RELEASE_MMU_GCC_DEBUG_REQUESTS
+ *      This operation releases all the client's outstanding requests to enable
+ *      or disable the MMU debug mode.
+ *
+ * Possible return values:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_INVALID_OBJECT_HANDLE
+ *   NV_ERR_INVALID_CLIENT
+ *   NV_ERR_OBJECT_NOT_FOUND
+ */
+#define NV83DE_CTRL_CMD_DEBUG_SET_MODE_MMU_GCC_DEBUG (0x83de032a) /* finn: Evaluated from "(FINN_GT200_DEBUGGER_DEBUG_INTERFACE_ID << 8) | NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_MESSAGE_ID" */
+
+#define NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_MESSAGE_ID (0x2AU)
+
+typedef struct NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS {
+    NvU32 action;
+} NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS;
+
+#define NV83DE_CTRL_CMD_DEBUG_SET_MODE_MMU_GCC_DEBUG_ENABLE  (0x00000001)
+#define NV83DE_CTRL_CMD_DEBUG_SET_MODE_MMU_GCC_DEBUG_DISABLE (0x00000002)
+#define NV83DE_CTRL_CMD_DEBUG_RELEASE_MMU_GCC_DEBUG_REQUESTS (0x00000003)
+
+/*
+ * NV83DE_CTRL_CMD_DEBUG_GET_MODE_MMU_GCC_DEBUG
+ *
+ * This command gets the value of currently configured MMU GCC DEBUG mode.
+ * This is Blackwell-onwards feature. If the query is made on an incorrect
+ * platform (for example, pre-Blackwell) the call will return with an
+ * NV_ERR_NOT_SUPPORTED error.
+ *
+ *   value
+ *     This parameter returns the configured value.
+ *
+ * Possible return values:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_INVALID_OBJECT_HANDLE
+ *   NV_ERR_INVALID_CLIENT
+ *   NV_ERR_OBJECT_NOT_FOUND
+ */
+#define NV83DE_CTRL_CMD_DEBUG_GET_MODE_MMU_GCC_DEBUG         (0x83de032b) /* finn: Evaluated from "(FINN_GT200_DEBUGGER_DEBUG_INTERFACE_ID << 8) | NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_MESSAGE_ID" */
+
+#define NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_MESSAGE_ID (0x2BU)
+
+typedef struct NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS {
+    NvU32 value;
+} NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS;
+
+#define NV83DE_CTRL_CMD_DEBUG_GET_MODE_MMU_GCC_DEBUG_ENABLED  (0x00000001)
+#define NV83DE_CTRL_CMD_DEBUG_GET_MODE_MMU_GCC_DEBUG_DISABLED (0x00000002)
+
 /* _ctrl83dedebug_h_ */
 

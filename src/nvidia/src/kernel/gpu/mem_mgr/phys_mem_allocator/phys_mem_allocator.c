@@ -1684,7 +1684,7 @@ pmaGetClientAddrSpaceSize
     }
 
     // should end in 0xFFFF as a limit
-    NV_ASSERT((highestAddr & RM_PAGE_SIZE ) != 0);
+    NV_ASSERT((highestAddr & RM_PAGE_MASK) != 0);
 
     *pSize = highestAddr + 1;
 }

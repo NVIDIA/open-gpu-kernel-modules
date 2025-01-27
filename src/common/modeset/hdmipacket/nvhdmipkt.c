@@ -48,6 +48,12 @@
 #include "class/clc670.h"
 #include "class/clc67d.h"
 #include "class/clc770.h"
+#include "class/clc870.h"
+#include "class/clc87d.h"
+#include "class/clc970.h"
+#include "class/clc97d.h"
+#include "class/clca70.h"
+#include "class/clca7d.h"
 
 #include "hdmi_spec.h"
 
@@ -181,6 +187,36 @@ static const NVHDMIPKT_CLASS_HIERARCHY hierarchy[] =
         NVC770_DISPLAY,                   // displayClass
         NVC67D_CORE_CHANNEL_DMA           // coreDmaClass
     },
+    [NVHDMIPKT_C871_CLASS] = {// Index 9==NVHDMIPKT_C871_CLASS
+        NVHDMIPKT_C871_CLASS,             // classId
+        NVHDMIPKT_C671_CLASS,             // parentClassId
+        NV_FALSE,                         // isRootClass
+        initializeHdmiPktInterfaceC871,   // initInterface
+        hdmiConstructorC871,              // constructor
+        hdmiDestructorC871,               // destructor
+        NVC870_DISPLAY,                   // displayClass
+        NVC87D_CORE_CHANNEL_DMA           // coreDmaClass
+    },
+    [NVHDMIPKT_C971_CLASS] = {// Index 10==NVHDMIPKT_C971_CLASS
+        NVHDMIPKT_C971_CLASS,             // classId
+        NVHDMIPKT_C871_CLASS,             // parentClassId
+        NV_FALSE,                         // isRootClass
+        initializeHdmiPktInterfaceC971,   // initInterface
+        hdmiConstructorC971,              // constructor
+        hdmiDestructorC971,               // destructor
+        NVC970_DISPLAY,                   // displayClass
+        NVC97D_CORE_CHANNEL_DMA           // coreDmaClass
+    },
+    [NVHDMIPKT_CA71_CLASS] = {// Index 11==NVHDMIPKT_CA71_CLASS
+        NVHDMIPKT_CA71_CLASS,             // classId
+        NVHDMIPKT_C971_CLASS,             // parentClassId
+        NV_FALSE,                         // isRootClass
+        initializeHdmiPktInterfaceCA71,   // initInterface
+        hdmiConstructorCA71,              // constructor
+        hdmiDestructorCA71,               // destructor
+        NVCA70_DISPLAY,                   // displayClass
+        NVCA7D_CORE_CHANNEL_DMA           // coreDmaClass
+    },
 };
 
 /********************************** HDMI Library interfaces *************************************/
@@ -260,6 +296,61 @@ NvHdmiPkt_PacketWrite(NvHdmiPkt_Handle  libHandle,
                                    transmitControl,
                                    packetLen,
                                    pPacket);
+}
+
+/*
+ * NvHdmiPkt_PacketRead
+ */
+NVHDMIPKT_RESULT
+NvHdmiPkt_PacketRead(NvHdmiPkt_Handle    libHandle,
+                     NvU32               subDevice,
+                     NvU32               head,
+                     NVHDMIPKT_TYPE      packetReg,
+                     NvU32               bufferLen,
+                     NvU8 *const         pOutPktBuffer)
+{
+    if (libHandle == NVHDMIPKT_INVALID_HANDLE)
+    {
+        return NVHDMIPKT_LIBRARY_INIT_FAIL;
+    }
+
+    NVHDMIPKT_CLASS* pClass = fromHdmiPktHandle(libHandle);
+
+    if ((pOutPktBuffer == NULL) || (bufferLen == 0))
+    {
+        return NVHDMIPKT_INVALID_ARG;
+    }
+
+    return pClass->hdmiPacketRead(pClass,
+                                  subDevice,
+                                  head,
+                                  packetReg,
+                                  bufferLen,
+                                  pOutPktBuffer);
+}
+
+/*
+ * NvHdmiPkt_SetupAdvancedInfoframe
+ */
+NVHDMIPKT_RESULT
+NvHdmiPkt_SetupAdvancedInfoframe(NvHdmiPkt_Handle          libHandle,
+                                 NvU32                     subDevice,
+                                 NvU32                     head,
+                                 NVHDMIPKT_TYPE            packetReg,
+                                 ADVANCED_INFOFRAME const *pInfoframe)
+{
+    if (libHandle == NVHDMIPKT_INVALID_HANDLE)
+    {
+        return NVHDMIPKT_LIBRARY_INIT_FAIL;
+    }
+
+    NVHDMIPKT_CLASS* pClass = fromHdmiPktHandle(libHandle);
+
+    return pClass->programAdvancedInfoframe(pClass,
+                                            subDevice,
+                                            head,
+                                            packetReg,
+                                            pInfoframe);
 }
 
 NVHDMIPKT_RESULT

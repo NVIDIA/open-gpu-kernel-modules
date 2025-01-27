@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2021-2023 NVIDIA Corporation
+    Copyright (c) 2021-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -61,8 +61,6 @@
 #define UVM_CONF_COMPUTING_SIGN_BUF_MAX_SIZE 80
 
 void uvm_conf_computing_check_parent_gpu(const uvm_parent_gpu_t *parent);
-
-bool uvm_conf_computing_mode_is_hcc(const uvm_gpu_t *gpu);
 
 typedef struct
 {

@@ -81,7 +81,7 @@ struct KernelHwpm {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__KernelHwpm *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
 
     // Ancestor object pointers for `staticCast` feature
@@ -90,10 +90,11 @@ struct KernelHwpm {
     struct KernelHwpm *__nvoc_pbase_KernelHwpm;    // khwpm
 
     // Vtable with 1 per-object function pointer
-    void (*__khwpmGetCblockInfo__)(OBJGPU *, struct KernelHwpm * /*this*/, NvU32 *, NvU32 *);  // halified (3 hals) body
+    void (*__khwpmGetCblockInfo__)(OBJGPU *, struct KernelHwpm * /*this*/, NvU32 *, NvU32 *);  // halified (4 hals) body
 
-    // 1 PDB property
+    // 2 PDB properties
     NvBool PDB_PROP_KHWPM_MULTIPLE_PMA_SUPPORTED;
+    NvBool PDB_PROP_KHWPM_HES_CWD_SUPPORTED;
 
     // Data members
     NvU32 numPma;
@@ -150,6 +151,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelHwpm;
 #endif //__nvoc_kern_hwpm_h_disabled
 
 // Property macros
+#define PDB_PROP_KHWPM_HES_CWD_SUPPORTED_BASE_CAST
+#define PDB_PROP_KHWPM_HES_CWD_SUPPORTED_BASE_NAME PDB_PROP_KHWPM_HES_CWD_SUPPORTED
 #define PDB_PROP_KHWPM_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_KHWPM_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 #define PDB_PROP_KHWPM_MULTIPLE_PMA_SUPPORTED_BASE_CAST
@@ -292,6 +295,8 @@ void khwpmGetCblockInfo_GM107(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU3
 void khwpmGetCblockInfo_GH100(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 *arg3, NvU32 *arg4);
 
 void khwpmGetCblockInfo_GB100(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 *arg3, NvU32 *arg4);
+
+void khwpmGetCblockInfo_GB10B(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 *arg3, NvU32 *arg4);
 
 NV_STATUS khwpmStreamoutAllocPmaStream_IMPL(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU64 arg3, MEMORY_DESCRIPTOR *arg4, MEMORY_DESCRIPTOR *arg5, NvU32 arg6, HWPM_PMA_STREAM *arg7);
 

@@ -340,11 +340,51 @@ memmgrGetUncompressedKind_TU102
         case NV_MMU_PTE_KIND_ZF32_X24S8:
         case NV_MMU_PTE_KIND_ZF32_X24S8_COMPRESSIBLE_DISABLE_PLC:
             return NV_MMU_PTE_KIND_ZF32_X24S8;
+        case NV_MMU_PTE_KIND_PITCH:
+            return NV_MMU_PTE_KIND_PITCH;
         default:
         {
             NV_PRINTF(LEVEL_ERROR, "Unknown kind 0x%x.\n", kind);
             DBG_BREAKPOINT();
 
+            return NV_MMU_PTE_KIND_INVALID;
+        }
+    }
+}
+
+NvU32
+memmgrGetCompressedKind_TU102
+(
+    MemoryManager *pMemoryManager,
+    NvU32          kind,
+    NvBool         bDisablePlc
+)
+{
+    switch (kind)
+    {
+        case NV_MMU_PTE_KIND_GENERIC_MEMORY:
+        case NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE:
+        case NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE_DISABLE_PLC:
+            return bDisablePlc ? NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE_DISABLE_PLC
+                               : NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE;
+        case NV_MMU_PTE_KIND_S8:
+        case NV_MMU_PTE_KIND_S8_COMPRESSIBLE_DISABLE_PLC:
+            return NV_MMU_PTE_KIND_S8_COMPRESSIBLE_DISABLE_PLC;
+        case NV_MMU_PTE_KIND_Z16:
+        case NV_MMU_PTE_KIND_Z16_COMPRESSIBLE_DISABLE_PLC:
+            return NV_MMU_PTE_KIND_Z16_COMPRESSIBLE_DISABLE_PLC;
+        case NV_MMU_PTE_KIND_S8Z24:
+        case NV_MMU_PTE_KIND_S8Z24_COMPRESSIBLE_DISABLE_PLC:
+            return NV_MMU_PTE_KIND_S8Z24_COMPRESSIBLE_DISABLE_PLC;
+        case NV_MMU_PTE_KIND_Z24S8:
+        case NV_MMU_PTE_KIND_Z24S8_COMPRESSIBLE_DISABLE_PLC:
+            return NV_MMU_PTE_KIND_Z24S8_COMPRESSIBLE_DISABLE_PLC;
+        case NV_MMU_PTE_KIND_ZF32_X24S8:
+        case NV_MMU_PTE_KIND_ZF32_X24S8_COMPRESSIBLE_DISABLE_PLC:
+            return NV_MMU_PTE_KIND_ZF32_X24S8_COMPRESSIBLE_DISABLE_PLC;
+        default:
+        {
+            NV_PRINTF(LEVEL_ERROR, "Unknown kind 0x%x.\n", kind);
             return NV_MMU_PTE_KIND_INVALID;
         }
     }

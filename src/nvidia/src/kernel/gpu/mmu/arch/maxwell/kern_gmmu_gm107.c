@@ -305,9 +305,6 @@ kgmmuDetermineMaxVASize_GM107
 /*
  * @brief Checks the system memory address against the PA capabilities of the
  *        GMMU.
- *
- * This will account for the DMA window, if applicable, and strip out any bits
- * that won't fit in the format (since the DMA window will be handling those).
  */
 void
 kgmmuEncodeSysmemAddrs_GM107
@@ -324,15 +321,8 @@ kgmmuEncodeSysmemAddrs_GM107
     for (i = 0; i < count; ++i)
     {
         NvU64 address = pAddresses[i];
-        NvU64 addressAdjusted = address;
 
-        NV_ASSERT(address >= pKernelGmmu->sysmemBaseAddress);
-        NV_ASSERT(address <= pKernelGmmu->sysmemBaseAddress + (NVBIT64(paWidth) - 1));
-
-        addressAdjusted &= (NVBIT64(paWidth) - 1);
-        NV_ASSERT(addressAdjusted == (address - pKernelGmmu->sysmemBaseAddress));
-
-        pAddresses[i] = addressAdjusted;
+        NV_ASSERT(address <= (NVBIT64(paWidth) - 1));
     }
 }
 

@@ -44,6 +44,9 @@
 #include "kernel/rmapi/rs_utils.h"
 #include "vgpu/vgpu_events.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
+#if RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
+#include "diagnostics/code_coverage_mgr.h"
+#endif
 
 ct_assert(NVA084_MAX_VMMU_SEGMENTS == NV2080_CTRL_MAX_VMMU_SEGMENTS);
 ct_assert(NV2080_GPU_MAX_ENGINES == RM_ENGINE_TYPE_LAST);
@@ -996,6 +999,10 @@ kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_IMPL
         NV_ASSERT_OK(kgspPreserveVgpuPartitionLogging(pGpu, pKernelGsp, pKernelHostVgpuDevice->gfid));
     }
 
+#if RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    codecovmgrResetCoverage(pSys->pCodeCovMgr, pKernelHostVgpuDevice->gfid, pGpu->gpuInstance);
+#endif
     if (status != NV_OK && pBootloadParams != NULL)
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to call NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK\n");
@@ -1028,4 +1035,65 @@ done:
     }
 
     return status;
+}
+
+NV_STATUS
+kernelhostvgpudeviceapiCtrlCmdSetPlacementId_IMPL
+(
+    KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi,
+    NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_SET_PLACEMENT_ID_PARAMS* pParams
+)
+{
+    NV_STATUS                rmStatus               = NV_OK;
+    OBJGPU                  *pGpu                   = GPU_RES_GET_GPU(pKernelHostVgpuDeviceApi);
+    NvBool                   bMIGInUse              = IS_MIG_IN_USE(pGpu);
+    VGPU_TYPE               *vgpuTypeInfo           = NULL;
+    Device                  *pMigDevice             = NULL;
+    RsClient                *pClient;
+    KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice;
+
+    NV_PRINTF(LEVEL_INFO, "%s\n", __FUNCTION__);
+
+    pKernelHostVgpuDevice = pKernelHostVgpuDeviceApi->pShared->pDevice;
+    pKernelHostVgpuDevice->placementId = pParams->placementId;
+
+    if (!gpuIsSriovEnabled(pGpu))
+        return rmStatus;
+
+    NV_ASSERT_OK_OR_RETURN(kvgpumgrGetVgpuTypeInfo(pKernelHostVgpuDevice->vgpuType, &vgpuTypeInfo));
+
+    // This block will execute in case of openRM
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+        ENGINE_INFO tmpEngineInfo;
+
+        if (bMIGInUse)
+        {
+            NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, pKernelHostVgpuDevice->hMigClient, &pClient));
+            NV_ASSERT_OK_OR_RETURN(deviceGetByHandle(pClient, pKernelHostVgpuDevice->hMigDevice, &pMigDevice));
+        }
+
+        portMemSet(&tmpEngineInfo, 0, sizeof(ENGINE_INFO));
+
+        NV_ASSERT_OK_OR_RETURN(kfifoGetHostDeviceInfoTable_HAL(pGpu, pKernelFifo, &tmpEngineInfo, pMigDevice));
+
+        rmStatus = vgpuMgrReserveSystemChannelIDs(pGpu,
+                                                  vgpuTypeInfo,
+                                                  pKernelHostVgpuDevice->gfid,
+                                                  pKernelHostVgpuDevice->chidOffset,
+                                                  pKernelHostVgpuDevice->channelCount,
+                                                  pMigDevice,
+                                                  pParams->numChannels,
+                                                  pKernelHostVgpuDevice->placementId,
+                                                  tmpEngineInfo.engineInfoListSize,
+                                                  tmpEngineInfo.engineInfoList);
+
+        portMemFree(tmpEngineInfo.engineInfoList);
+        tmpEngineInfo.engineInfoList = NULL;
+    }
+
+    // This block will execute in case of monolithic RM
+
+    return rmStatus;
 }

@@ -735,14 +735,14 @@ NV_STATUS ksmdbgssnCtrlCmdDebugExecRegOps_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
     NvBool isClientGspPlugin = NV_FALSE;
 
-    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+    NV_CHECK_OR_RETURN(LEVEL_WARNING,
         pParams->regOpCount <= NV83DE_CTRL_GPU_EXEC_REG_OPS_MAX_OPS,
         NV_ERR_INVALID_ARGUMENT);
 
     // Check if User have permission to access register offset
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
         gpuValidateRegOps(pGpu, pParams->regOps, pParams->regOpCount,
-                          pParams->bNonTransactional, isClientGspPlugin));
+                          pParams->bNonTransactional, isClientGspPlugin, NV_FALSE));
 
     if (IS_GSP_CLIENT(pGpu))
     {
@@ -772,7 +772,7 @@ ksmdbgssnCtrlCmdDebugReadBatchMemory_IMPL
     NV_STATUS status = NV_OK;
     NvU32 i;
 
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pParams->count <= MAX_ACCESS_MEMORY_OPS,
+    NV_CHECK_OR_RETURN(LEVEL_WARNING, pParams->count <= MAX_ACCESS_MEMORY_OPS,
                        NV_ERR_INVALID_ARGUMENT);
 
     for (i = 0; i < pParams->count; ++i)
@@ -781,7 +781,7 @@ ksmdbgssnCtrlCmdDebugReadBatchMemory_IMPL
         NvP64 pData = (NvP64)(((NvU8 *)pParams->pData) + pParams->entries[i].dataOffset);
         NvU32 endingOffset;
 
-        NV_CHECK_OR_ELSE(LEVEL_ERROR,
+        NV_CHECK_OR_ELSE(LEVEL_WARNING,
             portSafeAddU32(pParams->entries[i].dataOffset, pParams->entries[i].length, &endingOffset) &&
             (endingOffset <= pParams->dataLength),
             localStatus = NV_ERR_INVALID_OFFSET;
@@ -818,7 +818,7 @@ ksmdbgssnCtrlCmdDebugWriteBatchMemory_IMPL
     NV_STATUS status = NV_OK;
     NvU32 i;
 
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pParams->count <= MAX_ACCESS_MEMORY_OPS,
+    NV_CHECK_OR_RETURN(LEVEL_WARNING, pParams->count <= MAX_ACCESS_MEMORY_OPS,
                        NV_ERR_INVALID_ARGUMENT);
 
     for (i = 0; i < pParams->count; ++i)
@@ -827,7 +827,7 @@ ksmdbgssnCtrlCmdDebugWriteBatchMemory_IMPL
         NvP64 pData = (NvP64)(((NvU8 *)pParams->pData) + pParams->entries[i].dataOffset);
         NvU32 endingOffset;
 
-        NV_CHECK_OR_ELSE(LEVEL_ERROR,
+        NV_CHECK_OR_ELSE(LEVEL_WARNING,
             portSafeAddU32(pParams->entries[i].dataOffset, pParams->entries[i].length, &endingOffset) &&
             (endingOffset <= pParams->dataLength),
             localStatus = NV_ERR_INVALID_OFFSET;

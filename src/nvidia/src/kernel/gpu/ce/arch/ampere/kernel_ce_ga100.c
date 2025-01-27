@@ -597,14 +597,14 @@ kceMapPceLceForSysmemLinks_GA100
 
     KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
 
-    NV2080_CTRL_NVLINK_HSHUB_GET_SYSMEM_NVLINK_MASK_PARAMS paramsNvlinkMask;
+    NV2080_CTRL_INTERNAL_NVLINK_HSHUB_GET_SYSMEM_NVLINK_MASK_PARAMS paramsNvlinkMask;
     NV2080_CTRL_INTERNAL_HSHUB_GET_HSHUB_ID_FOR_LINKS_PARAMS *pParamsHshubId = NULL;
 
     NV_ASSERT_OR_RETURN(pKernelNvlink != NULL, NV_ERR_NOT_SUPPORTED);
 
     portMemSet(&paramsNvlinkMask, 0, sizeof(paramsNvlinkMask));
     status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                                 NV2080_CTRL_CMD_NVLINK_HSHUB_GET_SYSMEM_NVLINK_MASK,
+                                 NV2080_CTRL_CMD_INTERNAL_NVLINK_HSHUB_GET_SYSMEM_NVLINK_MASK,
                                  (void *)&paramsNvlinkMask, sizeof(paramsNvlinkMask));
     if (status != NV_OK)
     {

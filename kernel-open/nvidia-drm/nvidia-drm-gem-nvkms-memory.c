@@ -167,7 +167,7 @@ static int __nv_drm_gem_nvkms_map(
         goto done;
     }
 
-    if (!nv_dev->hasVideoMemory) {
+    if (!nvKms->isVidmem(pMemory)) {
         goto done;
     }
 
@@ -218,11 +218,13 @@ static void *__nv_drm_gem_nvkms_prime_vmap(
 
     /*
      * If this buffer isn't physically mapped, it might be backed by struct
-     * pages. Use vmap in that case.
+     * pages. Use vmap in that case. Do a noncached mapping for system memory
+     * as display is non io-coherent device in case of Tegra.
      */
     if (nv_nvkms_memory->pages_count > 0) {
          return nv_drm_vmap(nv_nvkms_memory->pages,
-                            nv_nvkms_memory->pages_count);
+                            nv_nvkms_memory->pages_count,
+                            false);
     }
 
     return ERR_PTR(-ENOMEM);
@@ -310,7 +312,7 @@ static int __nv_drm_nvkms_gem_obj_init(
                                pMemory,
                                &pages,
                                &numPages) &&
-        !nv_dev->hasVideoMemory) {
+        !nvKms->isVidmem(pMemory)) {
         /* GetMemoryPages may fail for vidmem allocations,
          * but it should not fail for sysmem allocations. */
         NV_DRM_DEV_LOG_ERR(nv_dev,
@@ -382,6 +384,8 @@ int nv_drm_dumb_create(
     if (ret) {
         goto nvkms_gem_obj_init_failed;
     }
+
+    nv_nvkms_memory->base.is_drm_dumb = true;
 
     /* Always map dumb buffer memory up front.  Clients are only expected
      * to use dumb buffers for software rendering, so they're not much use

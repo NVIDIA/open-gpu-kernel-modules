@@ -90,7 +90,7 @@ int nv_drm_lock_user_pages(unsigned long address,
 
 void nv_drm_unlock_user_pages(unsigned long  pages_count, struct page **pages);
 
-void *nv_drm_vmap(struct page **pages, unsigned long pages_count);
+void *nv_drm_vmap(struct page **pages, unsigned long pages_count, bool cached);
 
 void nv_drm_vunmap(void *address);
 

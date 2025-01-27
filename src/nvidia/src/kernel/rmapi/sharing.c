@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -132,13 +132,13 @@ rmapiDupObjectWithSecInfo
     }
     else
     {
-        NV_PRINTF(LEVEL_WARNING,
+        NV_PRINTF(LEVEL_INFO,
                   "Nv04DupObject: dup failed; status: %s (0x%08x)\n",
                   nvstatusToString(status), status);
-        NV_PRINTF(LEVEL_WARNING,
+        NV_PRINTF(LEVEL_INFO,
                   "Nv04DupObject:  hClient:0x%x hParent:0x%x hObject:0x%x\n",
                   hClient, hParent, *phObject);
-        NV_PRINTF(LEVEL_WARNING,
+        NV_PRINTF(LEVEL_INFO,
                   "Nv04DupObject:  hClientSrc:0x%x hObjectSrc:0x%x flags:0x%x\n",
                   hClientSrc, hObjectSrc, flags);
     }
@@ -266,10 +266,10 @@ rmapiShareWithSecInfo
     }
     else
     {
-        NV_PRINTF(LEVEL_WARNING,
+        NV_PRINTF(LEVEL_INFO,
                   "Nv04Share: share failed; status: %s (0x%08x)\n",
                   nvstatusToString(status), status);
-        NV_PRINTF(LEVEL_WARNING,
+        NV_PRINTF(LEVEL_INFO,
                   "Nv04Share:  hClient:0x%x hObject:0x%x pSharePolicy:%p\n",
                   hClient, hObject, pSharePolicy);
     }

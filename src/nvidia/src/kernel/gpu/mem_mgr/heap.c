@@ -2642,7 +2642,7 @@ heapGetClientAddrSpaceSize_IMPL
     }
 
     // should end in 0xFFFF as a limit
-    NV_ASSERT((highestAddr & RM_PAGE_SIZE ) != 0);
+    NV_ASSERT((highestAddr & RM_PAGE_MASK) != 0);
     HEAP_VALIDATE(pHeap);
 
     *pSize = highestAddr + 1;
@@ -3810,6 +3810,7 @@ _heapAllocNoncontig
     NvU32       k, shuffleStride = 1;
     NvU64       addr, j, numPages;
     RM_ATTR_PAGE_SIZE pageSizeAttr = dmaNvos32ToPageSizeAttr(pFbAllocInfo->retAttr, pFbAllocInfo->retAttr2);
+    NvU64       alignedSize = NV_ALIGN_UP64(pMemDesc->Size, RM_PAGE_SIZE);
 
     switch (pageSizeAttr)
     {
@@ -4023,7 +4024,7 @@ _heapAllocNoncontig
 
         pteAddress = RM_PAGE_ALIGN_DOWN(pBlockNew->begin);
 
-        numPages = NV_MIN(blockSizeInPages, ((pMemDesc->PageCount - pteIndexOffset) * RM_PAGE_SIZE) / pageSize);
+        numPages = NV_MIN(blockSizeInPages, ((alignedSize - (((NvU64) pteIndexOffset) * RM_PAGE_SIZE)) / pageSize));
 
         if (pHeap->getProperty(pHeap, PDB_PROP_HEAP_PAGE_SHUFFLE))
         {
@@ -4130,6 +4131,8 @@ unwind_and_exit:
             pSavedAllocList = pCurrBlock;
         }
     }
+
+    NV_ASSERT_OK_OR_RETURN(memdescSetAllocSizeFields(pMemDesc, alignedSize, RM_PAGE_SIZE));
     return status;
 }
 

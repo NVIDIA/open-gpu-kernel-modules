@@ -31,6 +31,7 @@
 #include "class/clb8d1.h" // NVB8D1_VIDEO_NVJPG
 #include "class/clc9d1.h" // NVC9D1_VIDEO_NVJPG
 #include "class/clcdd1.h" // NVCDD1_VIDEO_NVJPG
+#include "class/clcfd1.h" // NVCFD1_VIDEO_NVJPG
 
 /*!
  * This function returns an engine descriptor corresponding to the class
@@ -72,6 +73,7 @@ nvjpgGetEngineDescFromAllocParams
             break;
         case NVB8D1_VIDEO_NVJPG:
         case NVCDD1_VIDEO_NVJPG:
+        case NVCFD1_VIDEO_NVJPG:
         case NVC9D1_VIDEO_NVJPG:
             engineInstance = pNvjpgAllocParms->engineInstance;
             NV_PRINTF(LEVEL_INFO, "Supported nvjpg class Id (classId = 0x%x / engineInstance = 0x%x)\n",

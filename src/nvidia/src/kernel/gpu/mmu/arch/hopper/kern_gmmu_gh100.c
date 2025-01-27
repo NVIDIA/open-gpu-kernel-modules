@@ -1028,7 +1028,7 @@ kgmmuFillFakeSparseTables
         }
         else
         {
-            NvU64 nextLevelPD = pKernelGmmu->fakeSparseEntry[i-1];
+            NvU64 nextLevelPD = pKernelGmmu->fakeSparseEntry[i-1] & (~(NVBIT64(pFldAddr->shift) - 1ULL));
             portMemCopy(fillEntry.v8, NV_MMU_VER3_PDE__SIZE, templateFakeEntry.v8, NV_MMU_VER3_PDE__SIZE);
 
             // Update PDE address field to point to next level fake PD

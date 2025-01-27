@@ -253,11 +253,13 @@ typedef struct
         NvU32 laneCount;
         DSC_DP_MODE dpMode;
         NvU32 hBlank;
+        NvBool bIsEdp;
+        NvBool bIs128b132bChannelCoding;
     }dpData;
 } WAR_DATA;
 
 typedef struct {
-    NvU8 data[496U]; // total size of DSC_IN/OUTPUT_PARAMS
+    NvU8 data[500U]; // total size of DSC_IN/OUTPUT_PARAMS
 } DSC_GENERATE_PPS_OPAQUE_WORKAREA;
 
 /*

@@ -97,18 +97,9 @@ typedef enum
 {
     // Memory type for backing user pages. On Pascal+ it can be evicted.
     UVM_PMM_GPU_MEMORY_TYPE_USER,
-    // When the Confidential Computing feature is enabled, the protected flavor
-    // allocates memory out of the VPR region. When it's disabled, all flavors
-    // have no effects and are equivalent to the base type.
-    UVM_PMM_GPU_MEMORY_TYPE_USER_PROTECTED = UVM_PMM_GPU_MEMORY_TYPE_USER,
-    UVM_PMM_GPU_MEMORY_TYPE_USER_UNPROTECTED,
 
     // Memory type for internal UVM allocations. It cannot be evicted.
     UVM_PMM_GPU_MEMORY_TYPE_KERNEL,
-    // See user types for the behavior description when the Confidential
-    // Computing feature is ON or OFF.
-    UVM_PMM_GPU_MEMORY_TYPE_KERNEL_PROTECTED = UVM_PMM_GPU_MEMORY_TYPE_KERNEL,
-    UVM_PMM_GPU_MEMORY_TYPE_KERNEL_UNPROTECTED,
 
     // Number of types - MUST BE LAST.
     UVM_PMM_GPU_MEMORY_TYPE_COUNT
@@ -116,17 +107,6 @@ typedef enum
 
 const char *uvm_pmm_gpu_memory_type_string(uvm_pmm_gpu_memory_type_t type);
 
-// Returns true if the given memory type is used to back user pages.
-bool uvm_pmm_gpu_memory_type_is_user(uvm_pmm_gpu_memory_type_t type);
-
-// Returns true if the given memory type is used to back internal UVM
-// allocations.
-static bool uvm_pmm_gpu_memory_type_is_kernel(uvm_pmm_gpu_memory_type_t type)
-{
-    return !uvm_pmm_gpu_memory_type_is_user(type);
-}
-
-bool uvm_pmm_gpu_memory_type_is_protected(uvm_pmm_gpu_memory_type_t type);
 
 typedef enum
 {
@@ -171,7 +151,7 @@ typedef enum
     // VA block lock.
     UVM_PMM_ALLOC_FLAGS_EVICT = (1 << 0),
 
-    // Do not use batching in this call if PMA page allocaion is required
+    // Do not use batching in this call if PMA page allocation is required
     UVM_PMM_ALLOC_FLAGS_DONT_BATCH = (1 << 1),
 
     UVM_PMM_ALLOC_FLAGS_MASK = (1 << 2) - 1
@@ -420,10 +400,12 @@ static void uvm_gpu_chunk_set_size(uvm_gpu_chunk_t *chunk, uvm_chunk_size_t size
 // use it if the owning GPU is retained.
 uvm_gpu_t *uvm_gpu_chunk_get_gpu(const uvm_gpu_chunk_t *chunk);
 
-// Returns true if the memory type of the chunk is a user type.
+// Returns true for user chunks.
 static bool uvm_gpu_chunk_is_user(const uvm_gpu_chunk_t *chunk)
 {
-    return uvm_pmm_gpu_memory_type_is_user(chunk->type);
+    UVM_ASSERT(chunk->type < UVM_PMM_GPU_MEMORY_TYPE_COUNT);
+
+    return chunk->type == UVM_PMM_GPU_MEMORY_TYPE_USER;
 }
 
 // Return the first struct page corresponding to the physical address range
@@ -555,22 +537,6 @@ void uvm_pmm_gpu_sync(uvm_pmm_gpu_t *pmm);
 
 // Mark an allocated chunk as evicted
 void uvm_pmm_gpu_mark_chunk_evicted(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk);
-
-// Returns the physical address for use by accessing_gpu of a vidmem allocation
-// on the peer pmm->gpu. This address can be used for making PTEs on
-// accessing_gpu, but not for copying between the two GPUs. For that, use
-// uvm_gpu_peer_copy_address.
-uvm_gpu_phys_address_t uvm_pmm_gpu_peer_phys_address(uvm_pmm_gpu_t *pmm,
-                                                     uvm_gpu_chunk_t *chunk,
-                                                     uvm_gpu_t *accessing_gpu);
-
-// Returns the physical or virtual address for use by accessing_gpu to copy to/
-// from a vidmem allocation on the peer pmm->gpu. This may be different from
-// uvm_gpu_peer_phys_address to handle CE limitations in addressing peer
-// physical memory directly.
-uvm_gpu_address_t uvm_pmm_gpu_peer_copy_address(uvm_pmm_gpu_t *pmm,
-                                                uvm_gpu_chunk_t *chunk,
-                                                uvm_gpu_t *accessing_gpu);
 
 // Mark a user chunk as used
 //

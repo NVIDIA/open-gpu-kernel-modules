@@ -45,7 +45,6 @@ NvBool nvHsIoctlFlip(
     const struct NvKmsFlipRequestOneHead *pFlipHead,
     NvU32 numFlipHeads,
     NvBool commit,
-    NvBool allowVrr,
     struct NvKmsFlipReply *pReply);
 
 #endif /* __NVKMS_HEADSURFACE_IOCTL_H__ */

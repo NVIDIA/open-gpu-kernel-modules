@@ -71,7 +71,7 @@ struct ExtendedGpuMemory {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__ExtendedGpuMemory *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct StandardMemory __nvoc_base_StandardMemory;
 
     // Ancestor object pointers for `staticCast` feature
@@ -308,9 +308,9 @@ static inline void egmmemAddAdditionalDependants_DISPATCH(struct RsClient *pClie
 NV_STATUS egmmemConstruct_IMPL(struct ExtendedGpuMemory *arg_pStandardMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 
 #define __nvoc_egmmemConstruct(arg_pStandardMemory, arg_pCallContext, arg_pParams) egmmemConstruct_IMPL(arg_pStandardMemory, arg_pCallContext, arg_pParams)
-NV_STATUS egmmemValidateParams_IMPL(struct OBJGPU *pGpu, NvHandle hClient, NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
+NV_STATUS egmmemValidateParams_IMPL(struct OBJGPU *pGpu, struct RmClient *pRmClient, NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
 
-#define egmmemValidateParams(pGpu, hClient, pAllocData) egmmemValidateParams_IMPL(pGpu, hClient, pAllocData)
+#define egmmemValidateParams(pGpu, pRmClient, pAllocData) egmmemValidateParams_IMPL(pGpu, pRmClient, pAllocData)
 #undef PRIVATE_FIELD
 
 

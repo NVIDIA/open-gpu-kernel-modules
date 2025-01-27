@@ -111,7 +111,7 @@ exit:
 
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_WARNING, "deferred rmctrl %x failed %x!\n",
+        NV_PRINTF(LEVEL_NOTICE, "deferred rmctrl %x failed %x!\n",
                   rmCtrlParams.cmd, status);
     }
 
@@ -455,7 +455,7 @@ _rmapiRmControl(NvHandle hClient, NvHandle hObject, NvU32 cmd, NvP64 pUserParams
         || ((getCtrlInfoStatus == NV_OK) && (paramsSize != ctrlParamsSize))
         )
     {
-        NV_PRINTF(LEVEL_WARNING,
+        NV_PRINTF(LEVEL_INFO,
                   "bad params: cmd:0x%x ptr " NvP64_fmt " size: 0x%x expect size: 0x%x\n",
                   cmd, pUserParams, paramsSize, ctrlParamsSize);
         rmStatus = NV_ERR_INVALID_ARGUMENT;
@@ -760,7 +760,7 @@ NV_STATUS serverControl_ValidateCookie
                                                                pRmCtrlExecuteCookie->ctrlFlags);
         if (!bPermissionGranted)
         {
-            NV_PRINTF(LEVEL_WARNING,
+            NV_PRINTF(LEVEL_NOTICE,
                       "hClient: 0x%08x, hObject 0x%08x, cmd 0x%08x: non-privileged hypervisor context issued privileged cmd\n",
                       pRmCtrlParams->hClient, pRmCtrlParams->hObject,
                       pRmCtrlParams->cmd);
@@ -786,7 +786,7 @@ NV_STATUS serverControl_ValidateCookie
             //
             if (pRmCtrlParams->secInfo.privLevel < RS_PRIV_LEVEL_USER_ROOT)
             {
-                NV_PRINTF(LEVEL_WARNING,
+                NV_PRINTF(LEVEL_NOTICE,
                           "hClient: 0x%08x, hObject 0x%08x, cmd 0x%08x: non-privileged context issued privileged cmd\n",
                           pRmCtrlParams->hClient, pRmCtrlParams->hObject,
                           pRmCtrlParams->cmd);
@@ -799,7 +799,7 @@ NV_STATUS serverControl_ValidateCookie
         {
             if (pRmCtrlParams->secInfo.privLevel < RS_PRIV_LEVEL_KERNEL)
             {
-                NV_PRINTF(LEVEL_WARNING,
+                NV_PRINTF(LEVEL_NOTICE,
                           "hClient: 0x%08x, hObject 0x%08x, cmd 0x%08x: non-kernel client issued kernel-only cmd\n",
                           pRmCtrlParams->hClient, pRmCtrlParams->hObject,
                           pRmCtrlParams->cmd);

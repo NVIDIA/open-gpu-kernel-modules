@@ -612,40 +612,35 @@ static void access_counters_isr_bottom_half_entry(void *args)
    UVM_ENTRY_VOID(access_counters_isr_bottom_half(args));
 }
 
+// When Confidential Computing is enabled, UVM does not (indirectly) trigger
+// the replayable fault interrupt by updating GET. This is because, in this
+// configuration, GET is a dummy register used to inform GSP-RM (the owner
+// of the HW replayable fault buffer) of the latest entry consumed by the
+// UVM driver. The real GET register is owned by GSP-RM.
+//
+// The retriggering of a replayable faults bottom half happens then
+// manually, by scheduling a bottom half for later if there is any pending
+// work in the fault buffer accessible by UVM. The retriggering adddresses
+// two problematic scenarios caused by GET updates not setting any
+// interrupt:
+//
+//   (1) UVM didn't process all the entries up to cached PUT
+//
+//   (2) UVM did process all the entries up to cached PUT, but GSP-RM
+//       added new entries such that cached PUT is out-of-date
+//
+// In both cases, re-enablement of interrupts would have caused the
+// replayable fault to be triggered in a non-CC setup, because the updated
+// value of GET is different from PUT. But this not the case in Confidential
+// Computing, so a bottom half needs to be manually scheduled in order to
+// ensure that all faults are serviced.
+//
+// While in the typical case the retriggering happens within a replayable
+// fault bottom half, it can also happen within a non-interrupt path such as
+// uvm_gpu_fault_buffer_flush.
 static void replayable_faults_retrigger_bottom_half(uvm_parent_gpu_t *parent_gpu)
 {
-    bool retrigger = false;
-
-    // When Confidential Computing is enabled, UVM does not (indirectly) trigger
-    // the replayable fault interrupt by updating GET. This is because, in this
-    // configuration, GET is a dummy register used to inform GSP-RM (the owner
-    // of the HW replayable fault buffer) of the latest entry consumed by the
-    // UVM driver. The real GET register is owned by GSP-RM.
-    //
-    // The retriggering of a replayable faults bottom half happens then
-    // manually, by scheduling a bottom half for later if there is any pending
-    // work in the fault buffer accessible by UVM. The retriggering adddresses
-    // two problematic scenarios caused by GET updates not setting any
-    // interrupt:
-    //
-    //   (1) UVM didn't process all the entries up to cached PUT
-    //
-    //   (2) UVM did process all the entries up to cached PUT, but GSP-RM
-    //       added new entries such that cached PUT is out-of-date
-    //
-    // In both cases, re-enablement of interrupts would have caused the
-    // replayable fault to be triggered in a non-CC setup, because the updated
-    // value of GET is different from PUT. But this not the case in Confidential
-    // Computing, so a bottom half needs to be manually scheduled in order to
-    // ensure that all faults are serviced.
-    //
-    // While in the typical case the retriggering happens within a replayable
-    // fault bottom half, it can also happen within a non-interrupt path such as
-    // uvm_gpu_fault_buffer_flush.
-    if (g_uvm_global.conf_computing_enabled)
-        retrigger = true;
-
-    if (!retrigger)
+    if (!g_uvm_global.conf_computing_enabled)
         return;
 
     uvm_spin_lock_irqsave(&parent_gpu->isr.interrupts_lock);

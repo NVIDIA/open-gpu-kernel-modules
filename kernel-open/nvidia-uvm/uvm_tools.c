@@ -2499,7 +2499,6 @@ static NV_STATUS tools_access_process_memory(uvm_va_space_t *va_space,
         NvU64 bytes_left = size - *bytes;
         NvU64 page_offset = target_va_start & (PAGE_SIZE - 1);
         NvU64 bytes_now = min(bytes_left, (NvU64)(PAGE_SIZE - page_offset));
-        bool map_stage_mem_on_gpus = true;
 
         if (is_write) {
             NvU64 remaining = copy_from_user(stage_addr, user_va_start, bytes_now);
@@ -2512,8 +2511,8 @@ static NV_STATUS tools_access_process_memory(uvm_va_space_t *va_space,
         if (mm)
             uvm_down_read_mmap_lock(mm);
 
-        // The RM flavor of the lock is needed to perform ECC checks.
-        uvm_va_space_down_read_rm(va_space);
+        uvm_va_space_down_read(va_space);
+
         if (mm)
             status = uvm_va_block_find_create(va_space, UVM_PAGE_ALIGN_DOWN(target_va_start), &block_context->hmm.vma, &block);
         else
@@ -2522,34 +2521,29 @@ static NV_STATUS tools_access_process_memory(uvm_va_space_t *va_space,
         if (status != NV_OK)
             goto unlock_and_exit;
 
-        // When CC is enabled, the staging memory cannot be mapped on the GPU
-        // (it is protected sysmem), but it is still used to store the
-        // unencrypted version of the page contents when the page is resident
-        // on vidmem.
-        if (g_uvm_global.conf_computing_enabled)
-            map_stage_mem_on_gpus = false;
+        for_each_gpu_in_mask(gpu, &va_space->registered_gpus) {
+            if (uvm_processor_mask_test_and_set(retained_gpus, gpu->id))
+                continue;
 
-        if (map_stage_mem_on_gpus) {
-            for_each_gpu_in_mask(gpu, &va_space->registered_gpus) {
-                if (uvm_processor_mask_test_and_set(retained_gpus, gpu->id))
-                    continue;
+            // The retention of each GPU ensures that the staging memory is
+            // freed before the unregistration of any of the GPUs is mapped
+            // on. Each GPU is retained once.
+            uvm_gpu_retain(gpu);
 
-                // The retention of each GPU ensures that the staging memory is
-                // freed before the unregistration of any of the GPUs is mapped
-                // on. Each GPU is retained once.
-                uvm_gpu_retain(gpu);
+            // In Confidential Computing, the staging memory cannot be mapped on
+            // the GPU (it is protected sysmem), but it is still used to store
+            // the unencrypted version of the page contents when the page is
+            // resident on vidmem.
+            if (g_uvm_global.conf_computing_enabled)
+                continue;
 
-                // Accessing the VA block may result in copying data between the
-                // CPU and a GPU. Conservatively add virtual mappings to all the
-                // GPUs (even if those mappings may never be used) as tools
-                // read/write is not on a performance critical path.
-                status = uvm_mem_map_gpu_kernel(stage_mem, gpu);
-                if (status != NV_OK)
-                    goto unlock_and_exit;
-            }
-        }
-        else {
-            UVM_ASSERT(uvm_processor_mask_empty(retained_gpus));
+            // Accessing the VA block may result in copying data between the
+            // CPU and a GPU. Conservatively add virtual mappings to all the
+            // GPUs (even if those mappings may never be used) as tools
+            // read/write is not on a performance critical path.
+            status = uvm_mem_map_gpu_kernel(stage_mem, gpu);
+            if (status != NV_OK)
+                goto unlock_and_exit;
         }
 
         // Make sure a CPU resident page has an up to date struct page pointer.
@@ -2561,14 +2555,14 @@ static NV_STATUS tools_access_process_memory(uvm_va_space_t *va_space,
 
         status = tools_access_va_block(block, block_context, target_va_start, bytes_now, is_write, stage_mem);
 
-        // For simplicity, check for ECC errors on all GPUs registered in the VA
-        // space
-        if (status == NV_OK)
-            status = uvm_global_gpu_check_ecc_error(&va_space->registered_gpus);
-
-        uvm_va_space_up_read_rm(va_space);
+        uvm_va_space_up_read(va_space);
         if (mm)
             uvm_up_read_mmap_lock(mm);
+
+        // Check for ECC errors on all retained GPUs, even if they are no longer
+        // registered in the VA space.
+        if (status == NV_OK)
+            status = uvm_global_gpu_check_ecc_error(retained_gpus);
 
         if (status != NV_OK)
             goto exit;
@@ -2597,7 +2591,7 @@ static NV_STATUS tools_access_process_memory(uvm_va_space_t *va_space,
 
 unlock_and_exit:
     if (status != NV_OK) {
-        uvm_va_space_up_read_rm(va_space);
+        uvm_va_space_up_read(va_space);
         if (mm)
             uvm_up_read_mmap_lock(mm);
     }

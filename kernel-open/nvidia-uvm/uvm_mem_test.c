@@ -358,10 +358,8 @@ static NV_STATUS test_all(uvm_va_space_t *va_space)
     // Pascal+ can map sysmem with 4K, 64K and 2M PTEs, other GPUs can only use
     // 4K. Test all of the sizes supported by Pascal+ and 128K to match big page
     // size on pre-Pascal GPUs with 128K big page size.
-    // Ampere+ also supports 512M PTEs, but since UVM's maximum chunk size is
-    // 2M, we don't test for this page size.
-    // Blackwell+ also supports 256G PTEs and the above holds for this case too.
-
+    // Ampere+ supports 512M PTEs and Blackwell+ supports 256G PTEs, but since
+    // UVM's maximum chunk size is 2M, we don't test for these page sizes.
     static const NvU64 cpu_chunk_sizes = PAGE_SIZE | UVM_PAGE_SIZE_64K | UVM_PAGE_SIZE_128K | UVM_PAGE_SIZE_2M;
 
     // All supported page sizes will be tested, CPU has the most with 4 and +1

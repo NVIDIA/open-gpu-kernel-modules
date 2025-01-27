@@ -37,13 +37,13 @@ PUSH_SEGMENTS
 // DMT table 2-1
 // Macro to declare a TIMING initializer for given parameters without border
 #define DMT_TIMING(hv,hfp,hsw,ht,hsp,vv,vfp,vsw,vt,vsp,rr,pclk,id) \
-{hv,0,hfp,hsw,ht,(hsp)=='-',vv,0,vfp,vsw,vt,(vsp)=='-',NVT_PROGRESSIVE,pclk,{0,rr,set_rrx1k(pclk,ht,vt),0,0x1,{0},{0},{0},{0},NVT_DEF_TIMING_STATUS(NVT_TYPE_DMT,id),"VESA DMT"}}
+{hv,0,hfp,hsw,ht,(hsp)=='-',vv,0,vfp,vsw,vt,(vsp)=='-',NVT_PROGRESSIVE,pclk,((pclk<<3)+(pclk<<1)),{0,rr,set_rrx1k(pclk,ht,vt),0,0x1,{0},{0},{0},{0},NVT_DEF_TIMING_STATUS(NVT_TYPE_DMT,id),"VESA DMT"}}
 
 #define DMTRB_TIMING(hv,hfp,hsw,ht,hsp,vv,vfp,vsw,vt,vsp,rr,pclk,id) \
-{hv,0,hfp,hsw,ht,(hsp)=='-',vv,0,vfp,vsw,vt,(vsp)=='-',NVT_PROGRESSIVE,pclk,{0,rr,set_rrx1k(pclk,ht,vt),0,0x1,{0},{0},{0},{0},NVT_DEF_TIMING_STATUS(NVT_TYPE_DMT_RB,id),"VESA DMT/RB"}}
+{hv,0,hfp,hsw,ht,(hsp)=='-',vv,0,vfp,vsw,vt,(vsp)=='-',NVT_PROGRESSIVE,pclk,((pclk<<3)+(pclk<<1)),{0,rr,set_rrx1k(pclk,ht,vt),0,0x1,{0},{0},{0},{0},NVT_DEF_TIMING_STATUS(NVT_TYPE_DMT_RB,id),"VESA DMT/RB"}}
 
 #define DMTRB_2_TIMING(hv,hfp,hsw,ht,hsp,vv,vfp,vsw,vt,vsp,rr,pclk,id) \
-{hv,0,hfp,hsw,ht,(hsp)=='-',vv,0,vfp,vsw,vt,(vsp)=='-',NVT_PROGRESSIVE,pclk,{0,rr,set_rrx1k(pclk,ht,vt),0,0x1,{0},{0},{0},{0},NVT_DEF_TIMING_STATUS(NVT_TYPE_DMT_RB_2,id),"VESA DMT/RB2"}}
+{hv,0,hfp,hsw,ht,(hsp)=='-',vv,0,vfp,vsw,vt,(vsp)=='-',NVT_PROGRESSIVE,pclk,((pclk<<3)+(pclk<<1)),{0,rr,set_rrx1k(pclk,ht,vt),0,0x1,{0},{0},{0},{0},NVT_DEF_TIMING_STATUS(NVT_TYPE_DMT_RB_2,id),"VESA DMT/RB2"}}
 
 DATA_SEGMENT(PAGE_DATA)
 
@@ -56,7 +56,7 @@ static NVT_TIMING DMT[] =
     DMT_TIMING  ( 720, 36, 72, 936,'-', 400,  1,  3, 446,'+', 85, 3550, 0x03),
     DMT_TIMING  ( 640,  8, 96, 800,'-', 480,  2,  2, 525,'-', 60, 2518, 0x04),
     // 640x480x72Hz (VESA) - this entry have borders
-    {640,8,16,40,832,NVT_H_SYNC_NEGATIVE,480,8,1,3,520,NVT_V_SYNC_NEGATIVE,NVT_PROGRESSIVE,3150,{0,72,72000,0,1,{0},{0},{0},{0},NVT_DEF_TIMING_STATUS(NVT_TYPE_DMT,5),"VESA DMT"}},
+    {640,8,16,40,832,NVT_H_SYNC_NEGATIVE,480,8,1,3,520,NVT_V_SYNC_NEGATIVE,NVT_PROGRESSIVE,3150,31500,{0,72,72000,0,1,{0},{0},{0},{0},NVT_DEF_TIMING_STATUS(NVT_TYPE_DMT,5),"VESA DMT"}},
     DMT_TIMING  ( 640, 16, 64, 840,'-', 480,  1,  3, 500,'-', 75, 3150, 0x06),
     DMT_TIMING  ( 640, 56, 56, 832,'-', 480,  1,  3, 509,'-', 85, 3600, 0x07),
     DMT_TIMING  ( 800, 24, 72,1024,'+', 600,  1,  2, 625,'+', 56, 3600, 0x08),

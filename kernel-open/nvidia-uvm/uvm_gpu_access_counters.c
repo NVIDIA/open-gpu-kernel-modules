@@ -24,7 +24,6 @@
 #include "nv_uvm_interface.h"
 #include "uvm_gpu_access_counters.h"
 #include "uvm_global.h"
-#include "uvm_api.h"
 #include "uvm_gpu.h"
 #include "uvm_hal.h"
 #include "uvm_kvmalloc.h"

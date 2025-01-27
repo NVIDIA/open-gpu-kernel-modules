@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2026-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -60,7 +60,7 @@ subdeviceCtrlCmdNvlinkGetErrorRecoveries_IMPL
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    FOR_EACH_INDEX_IN_MASK(32, i, pParams->linkMask & pKernelNvlink->enabledLinks)
+    FOR_EACH_INDEX_IN_MASK(32, i, pParams->linkMask & KNVLINK_GET_MASK(pKernelNvlink, enabledLinks, 32))
     {
         pParams->numRecoveries[i] = pKernelNvlink->errorRecoveries[i];
 
@@ -98,7 +98,7 @@ subdeviceCtrlCmdNvlinkSetPowerState_IMPL
     }
 
     // Verify the mask of links requested are enabled on the GPU
-    if ((pParams->linkMask & pKernelNvlink->enabledLinks) != pParams->linkMask)
+    if ((pParams->linkMask & KNVLINK_GET_MASK(pKernelNvlink, enabledLinks, 32)) != pParams->linkMask)
     {
         NV_PRINTF(LEVEL_INFO, "Links not enabled. Return.\n");
 
@@ -352,6 +352,9 @@ subdeviceCtrlCmdNvlinkGetBWMode_IMPL
     KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
     NvU8 bwModeScope;
 
+    if (pKernelNvlink == NULL)
+        return NV_ERR_NOT_SUPPORTED;
+
     bwModeScope = gpumgrGetGpuNvlinkBwModeScope();
     if (bwModeScope == GPU_NVLINK_BW_MODE_SCOPE_PER_NODE)
     {
@@ -364,3 +367,48 @@ subdeviceCtrlCmdNvlinkGetBWMode_IMPL
 
     return NV_OK;
 }
+
+NV_STATUS
+subdeviceCtrlCmdNvlinkGetLocalDeviceInfo_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_NVLINK_GET_LOCAL_DEVICE_INFO_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    if (pKernelNvlink == NULL)
+        return NV_ERR_NOT_SUPPORTED;
+
+    pParams->localDeviceInfo.domain      = gpuGetDomain(pGpu);
+    pParams->localDeviceInfo.bus         = gpuGetBus(pGpu);
+    pParams->localDeviceInfo.device      = gpuGetDevice(pGpu);
+    pParams->localDeviceInfo.function    = 0;
+    pParams->localDeviceInfo.pciDeviceId = pGpu->idInfo.PCIDeviceID;
+    pParams->localDeviceInfo.deviceType  = NV2080_CTRL_NVLINK_DEVICE_INFO_DEVICE_TYPE_GPU;
+
+    if (pGpu->idInfo.PCIDeviceID != 0)
+    {
+        pParams->localDeviceInfo.deviceIdFlags =
+            FLD_SET_DRF(2080_CTRL_NVLINK, _DEVICE_INFO, _DEVICE_ID_FLAGS, _PCI,
+                        pParams->localDeviceInfo.deviceIdFlags);
+    }
+
+    pParams->localDeviceInfo.fabricRecoveryStatusMask = 0x0;
+    if (knvlinkGetDegradedMode(pGpu, pKernelNvlink))
+    {
+        pParams->localDeviceInfo.fabricRecoveryStatusMask =
+            FLD_SET_DRF(2080_CTRL_NVLINK_DEVICE_INFO, _FABRIC_RECOVERY_STATUS_MASK, _GPU_DEGRADED, _TRUE,
+                        pParams->localDeviceInfo.fabricRecoveryStatusMask);
+    }
+    else if (knvlinkIsUncontainedErrorRecoveryActive(pGpu, pKernelNvlink))
+    {
+        pParams->localDeviceInfo.fabricRecoveryStatusMask =
+            FLD_SET_DRF(2080_CTRL_NVLINK_DEVICE_INFO, _FABRIC_RECOVERY_STATUS_MASK, _UNCONTAINED_ERROR_RECOVERY, _ACTIVE,
+                        pParams->localDeviceInfo.fabricRecoveryStatusMask);
+    }
+
+    return NV_OK;
+}
+

@@ -76,11 +76,11 @@ typedef enum _NV_ERROR_CONT_ERR_ID
  */
 typedef struct _NV_ERROR_CONT_SMC_DIS_EN_SETTING
 {
-    NvU32     rcErrorCode;
-    NvBool    bGpuResetReqd;
-    NvBool    bGpuDrainAndResetReqd;
-    NvBool    bPrintSmcPartitionInfo;
-    NvU32     nv2080Notifier;
+    NvU32  rcErrorCode;
+    NvBool bGpuResetReqd;
+    NvBool bGpuDrainAndResetReqd;
+    NvBool bPrintSmcPartitionInfo;
+    NvU32  nv2080Notifier;
 } NV_ERROR_CONT_SMC_DIS_EN_SETTING;
 
 /*!
@@ -88,9 +88,9 @@ typedef struct _NV_ERROR_CONT_SMC_DIS_EN_SETTING
  */
 typedef struct _NV_ERROR_CONT_STATE_TABLE
 {
-    NV_ERROR_CONT_ERR_ID                    errorCode;
-    NV_ERROR_CONT_SMC_DIS_EN_SETTING        smcDisEnSetting[2]; // 0: SMC memory partitioning disabled,
-                                                                // 1: SMC memory partitioning enabled
+    NV_ERROR_CONT_ERR_ID             errorCode;
+    NV_ERROR_CONT_SMC_DIS_EN_SETTING smcDisEnSetting[2]; // 0: SMC memory partitioning disabled,
+                                                         // 1: SMC memory partitioning enabled
 } NV_ERROR_CONT_STATE_TABLE;
 
 /*!
@@ -117,8 +117,8 @@ typedef struct _NV_ERROR_CONT_LOCATION_DRAM
  */
 typedef struct _NV_ERROR_CONT_LOCATION_ENG_ID
 {
-    RM_ENGINE_TYPE rmEngineId;
-    Device *pDevice;
+    RM_ENGINE_TYPE  rmEngineId;
+    Device         *pDevice;
 } NV_ERROR_CONT_LOCATION_ENG_ID;
 
 /*!
@@ -126,11 +126,11 @@ typedef struct _NV_ERROR_CONT_LOCATION_ENG_ID
  */
 typedef enum _NV_ERROR_CONT_LOCATION_TYPE
 {
-    NV_ERROR_CONT_LOCATION_TYPE_NONE    =  0,   // No location information available
-    NV_ERROR_CONT_LOCATION_TYPE_DRAM    =  1,   // DRAM location
-    NV_ERROR_CONT_LOCATION_TYPE_LTC     =  2,   // LTC location
-    NV_ERROR_CONT_LOCATION_TYPE_ENGINE  =  3,   // Engine location
-    NV_ERROR_CONT_LOCATION_TYPE_VF      =  4    // VF location
+    NV_ERROR_CONT_LOCATION_TYPE_NONE   = 0, // No location information available
+    NV_ERROR_CONT_LOCATION_TYPE_DRAM   = 1, // DRAM location
+    NV_ERROR_CONT_LOCATION_TYPE_LTC    = 2, // LTC location
+    NV_ERROR_CONT_LOCATION_TYPE_ENGINE = 3, // Engine location
+    NV_ERROR_CONT_LOCATION_TYPE_VF     = 4  // VF location
 } NV_ERROR_CONT_LOCATION_TYPE;
 
 /*!
@@ -138,10 +138,10 @@ typedef enum _NV_ERROR_CONT_LOCATION_TYPE
  */
 typedef union _NV_ERROR_CONT_LOCATION_INFO
 {
-    NV_ERROR_CONT_LOCATION_DRAM   dramLoc;    // DRAM location
-    NV_ERROR_CONT_LOCATION_LTC    ltcLoc;     // LTC location
-    NV_ERROR_CONT_LOCATION_ENG_ID engineLoc;  // Engine location
-    NvU32                         vfGfid;     // VF location
+    NV_ERROR_CONT_LOCATION_DRAM   dramLoc;   // DRAM location
+    NV_ERROR_CONT_LOCATION_LTC    ltcLoc;    // LTC location
+    NV_ERROR_CONT_LOCATION_ENG_ID engineLoc; // Engine location
+    NvU32                         vfGfid;    // VF location
 } NV_ERROR_CONT_LOCATION_INFO;
 
 typedef struct _NV_ERROR_CONT_LOCATION
@@ -152,14 +152,15 @@ typedef struct _NV_ERROR_CONT_LOCATION
 
 /* ------------------------ Macros ------------------------------------------ */
 
-#define ROBUST_CHANNEL_CONTAINED_ERROR_STR      "Contained"
-#define ROBUST_CHANNEL_UNCONTAINED_ERROR_STR    "Uncontained"
-#define NO_XID                                  NV_U32_MAX
-#define NO_NV2080_NOTIFIER                      NV2080_NOTIFIERS_MAXCOUNT
-#define NV_ERR_CONT_LOCATION_STRING_SIZE_MAX    64
+#define ROBUST_CHANNEL_CONTAINED_ERROR_STR   "Contained"
+#define ROBUST_CHANNEL_UNCONTAINED_ERROR_STR "Uncontained"
+#define NO_XID                               NV_U32_MAX
+#define NO_NV2080_NOTIFIER                   NV2080_NOTIFIERS_MAXCOUNT
+#define NV_ERR_CONT_LOCATION_STRING_SIZE_MAX 64
 
 /*!
- * Error Containment error types string
+ * Error Containment error types string.
+ * The order of this list must match the NV_ERROR_CONT_ERR_ID enums.
  */
 #define NV_ERROR_CONT_ERR_ID_STRING_PUBLIC {"FB DED",            \
                                             "DED CBC",           \
@@ -184,83 +185,5 @@ typedef struct _NV_ERROR_CONT_LOCATION
                                             "NVDEC",             \
                                             "NVJPG",             \
                                             "OFA"}
-
-/*!
- * Error Containment state table showing policy settings for each error id
- *
- * Where:
- * RC_Recovery_Type:
- *      Type of RC recovery handling in response to a given error. Possible values:
- *
- * - NO_RC                                         : No RC Recovery performed. Subsequent 2nd interrupt by engine
- *                                                   consuming poison will determine the RC Recovery type.
- * - RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE          : RC Recovery compute channels of only the processes whose
- *                                                   channels were loaded on halted TSG when _E10_SM_POISON or
- *                                                   _E12A_CE_POISON_IN_USER_CHANNEL occurs.
- * - RC_ALL_COMPUTE_CHANNELS_IN_SPECIFIC_PARTITION : RC Recovery compute channels of only specific MIG partition
- *                                                   as that error can be attributed to a specific MIG partition.
- * - RC_ALL_CHANNELS_IN_VF                         : RC Recovery compute channels of only specific GFID
- *                                                   as that error can be attributed to a VF.
- * - RC_ALL_USER_CHANNELS                          : RC Recovery ALL user channels on a GPU.
- * - RC_ALL_COMPUTE_CHANNELS                       : RC Recovery ALL compute channels on a GPU that saw this interrupt.
- *                                                   (If MIG is enabled, then RC Recovery compute channels in all MIG partitions)
- * - CE_TSG_RESET                                  : Reset the halted CE Engine. Impacts the CE channels loaded on the TSG when the CE Halted.
- *                                                   This is used in NV_ERROR_CONT_ERR_ID_E12A_CE_POISON_IN_USER_CHANNEL &
- *                                                   NV_ERROR_CONT_ERR_ID_E12B_CE_POISON_IN_KERNEL_CHANNEL along with additional
- *                                                   Compute Channels RC policy (either RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE or
- *                                                   RC_ALL_COMPUTE_CHANNELS).
- */
-#define NV_ERROR_CONT_STATE_TABLE_SETTINGS                                                                                                                                                                                                                                                           \
-{                                                                                                                                                                                                                                                                                                    \
-    /* errorCode                                                ,  rcErrorCode                      , bGpuResetReqd, bGpuDrainAndResetReqd, bPrintSmcPartitionInfo, nv2080Notifier                             , Dynamic Page Blacklisting , RC_Recovery_Type                                    */      \
-    { NV_ERROR_CONT_ERR_ID_E01_FB_ECC_DED                       , {{NO_XID                          , NV_FALSE     , NV_FALSE             , NV_FALSE              , NO_NV2080_NOTIFIER                      /* , Yes(PMA but not subheap)  , NO_RC                                               */ },   \
-                                                                   {NO_XID                          , NV_FALSE     , NV_FALSE             , NV_FALSE              , NO_NV2080_NOTIFIER                      /* , Yes(PMA but not subheap)  , NO_RC                                               */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E02_FB_ECC_DED_IN_CBC_STORE          , {{ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , Yes(PMA but not subheap)  , RC_ALL_COMPUTE_CHANNELS                             */ },   \
-                                                                   {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_TRUE              , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , Yes(PMA but not subheap)  , RC_ALL_COMPUTE_CHANNELS_IN_SPECIFIC_PARTITION       */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E05_LTC_ECC_DSTG                     , {{NO_XID                          , NV_FALSE     , NV_FALSE             , NV_FALSE              , NO_NV2080_NOTIFIER                      /* , No                        , NO_RC                                               */ },   \
-                                                                   {NO_XID                          , NV_FALSE     , NV_FALSE             , NV_FALSE              , NO_NV2080_NOTIFIER                      /* , No                        , NO_RC                                               */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E06_LTC_UNSUPPORTED_CLIENT_POISON    , {{ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ },   \
-                                                                   {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_TRUE              , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_ALL_COMPUTE_CHANNELS_IN_SPECIFIC_PARTITION       */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E07_LTC_ECC_TSTG                     , {{ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ },   \
-                                                                   {ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E08_LTC_ECC_RSTG                     , {{ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ },   \
-                                                                   {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_TRUE              , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_ALL_COMPUTE_CHANNELS_IN_SPECIFIC_PARTITION       */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E09_FBHUB_POISON                     , {{ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ },   \
-                                                                   {ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E10_SM_POISON                        , {{ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE                */ },   \
-                                                                   {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE                */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E12A_CE_POISON_IN_USER_CHANNEL       , {{ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE + CE_TSG_RESET */ },   \
-                                                                   {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE + CE_TSG_RESET */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E12B_CE_POISON_IN_KERNEL_CHANNEL     , {{ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS              + CE_TSG_RESET */ },   \
-                                                                   {ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS              + CE_TSG_RESET */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E13_MMU_POISON                       , {{ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , NO_RC                                               */ },   \
-                                                                   {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , NO_RC                                               */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E16_GCC_POISON                       , {{ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE                */ },   \
-                                                                   {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE                */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E17_CTXSW_POISON                     , {{ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE                */ },   \
-                                                                   {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE                */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E20_XALEP_EGRESS_POISON              , {{ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ },   \
-                                                                   {ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E21A_XALEP_INGRESS_CONTAINED_POISON  , {{ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_ALL_CHANNELS_IN_VF                               */ },   \
-                                                                   {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_ALL_CHANNELS_IN_VF                               */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E21B_XALEP_INGRESS_UNCONTAINED_POISON, {{ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ },   \
-                                                                   {ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E22_PMU_POISON                       , {{ROBUST_CHANNEL_CONTAINED_ERROR  , NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ },   \
-                                                                   {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E23_SEC2_POISON                      , {{ROBUST_CHANNEL_CONTAINED_ERROR  , NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ },   \
-                                                                   {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E24_GSP_POISON                       , {{ROBUST_CHANNEL_CONTAINED_ERROR  , NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_USER_CHANNELS                                */ },   \
-                                                                   {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_USER_CHANNELS                                */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E25_FBFALCON_POISON                  , {{ROBUST_CHANNEL_CONTAINED_ERROR  , NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ },   \
-                                                                   {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E26_NVDEC_POISON                     , {{ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE                */ },   \
-                                                                   {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE                */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E27_NVJPG_POISON                     , {{ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE                */ },   \
-                                                                   {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE                */ }}}, \
-    { NV_ERROR_CONT_ERR_ID_E28_OFA_POISON                       , {{ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE                */ },   \
-                                                                   {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE                */ }}}  \
-}
-
-/* ------------------------ Function Prototypes ----------------------------- */
 
 #endif // _ERROR_CONT_H_

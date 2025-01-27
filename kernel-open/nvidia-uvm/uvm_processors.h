@@ -609,6 +609,10 @@ static NvU32 uvm_sub_processor_mask_get_count(const uvm_sub_processor_mask_t *ma
     return hweight8(mask->bitmap);
 }
 
+// Return the sub processor mask for the parent GPU with id parent_id.
+uvm_sub_processor_mask_t uvm_sub_processor_mask_from_processor_mask(const uvm_processor_mask_t *mask,
+                                                                    uvm_parent_gpu_id_t parent_id);
+
 // Like uvm_processor_mask_subset() but ignores the CPU in the subset mask.
 // Returns whether the GPUs in subset are a subset of the GPUs in mask.
 bool uvm_processor_mask_gpu_subset(const uvm_processor_mask_t *subset,

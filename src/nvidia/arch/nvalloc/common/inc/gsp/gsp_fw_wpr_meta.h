@@ -235,5 +235,6 @@ typedef struct
 #define GSP_FW_FLAGS                            8:0
 #define GSP_FW_FLAGS_CLOCK_BOOST                NVBIT(0)
 #define GSP_FW_FLAGS_RECOVERY_MARGIN_PRESENT    NVBIT(1)
+#define GSP_FW_FLAGS_PPCIE_ENABLED              NVBIT(2)
 
 #endif // GSP_FW_WPR_META_H_

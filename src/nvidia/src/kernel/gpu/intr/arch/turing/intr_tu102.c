@@ -186,8 +186,6 @@ intrCacheIntrFields_TU102
     //
     pIntr->intrTopEnMask |= intrGetIntrTopLockedMask(pGpu, pIntr);
 
-    OBJDISP *pDisp = GPU_GET_DISP(pGpu);
-
     // Cache client owned, shared interrupt, and display vectors for ease of use later
     pIntr->accessCntrIntrVector      = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_ACCESS_CNTR, NV_FALSE);
 
@@ -200,14 +198,7 @@ intrCacheIntrFields_TU102
         pIntr->replayableFaultIntrVector = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_REPLAYABLE_FAULT_CPU, NV_FALSE);
     }
 
-    if (pDisp != NULL)
-    {
-        pIntr->displayIntrVector     = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_DISP, NV_FALSE);
-    }
-    else
-    {
-        pIntr->displayIntrVector     = NV_INTR_VECTOR_INVALID;
-    }
+    intrCacheDispIntrVectors_HAL(pGpu, pIntr);
 
     //
     // Ensure that both UVM vectors are in the same leaf register (check right
@@ -282,6 +273,21 @@ intrCacheIntrFields_TU102
 exit:
 
     return status;
+}
+
+void intrCacheDispIntrVectors_TU102(OBJGPU *pGpu, Intr *pIntr)
+{
+    KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+
+    if (pKernelDisplay != NULL && !RMCFG_FEATURE_PLATFORM_GSP)
+    {
+        pIntr->displayIntrVector           = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_DISP, NV_FALSE);
+    }
+    else
+    {
+        pIntr->displayIntrVector           = NV_INTR_VECTOR_INVALID;
+    }
+    pIntr->displayLowLatencyIntrVector = NV_INTR_VECTOR_INVALID;
 }
 
 /*!
@@ -1100,7 +1106,8 @@ intrGetPendingDisplayIntr_TU102
     {
         return NV_OK;
     }
-    else if (intrIsVectorPending_TU102(pGpu, pIntr, pIntr->displayIntrVector, pThreadState))
+
+    if (intrIsVectorPending_HAL(pGpu, pIntr, pIntr->displayIntrVector, pThreadState))
     {
         bitVectorSet(pEngines, MC_ENGINE_IDX_DISP);
     }

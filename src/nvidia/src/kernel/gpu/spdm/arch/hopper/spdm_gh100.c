@@ -83,9 +83,7 @@ static SPDM_ALGO_CHECK_ENTRY g_SpdmAlgoCheckTable_GH100[] =
     { LIBSPDM_DATA_AEAD_CIPHER_SUITE,      SPDM_ALGORITHMS_AEAD_CIPHER_SUITE_AES_256_GCM },
     { LIBSPDM_DATA_KEY_SCHEDULE,           SPDM_ALGORITHMS_KEY_SCHEDULE_HMAC_HASH },
     { LIBSPDM_DATA_OTHER_PARAMS_SUPPORT,   0 },
-#if LIBSPDM_ENABLE_CAPABILITY_MUT_AUTH_CAP
     { LIBSPDM_DATA_REQ_BASE_ASYM_ALG,      SPDM_ALGORITHMS_BASE_ASYM_ALGO_TPM_ALG_RSAPSS_3072 }
-#endif
 };
 
 /* ------------------------ Static Function Prototypes --------------------- */
@@ -200,6 +198,7 @@ ErrorExit:
         // Ideally we don't have dependency on Confidential Compute object here,
         // but that's the best we can do without unnecessary code duplication.
         //
+        NV_PRINTF(LEVEL_FATAL, "SPDM: Fatal heartbeat failure detected 0x%x\n", status);
         confComputeSetErrorState(pGpu, pConfCompute);
     }
 }
@@ -247,6 +246,7 @@ _spdmTriggerHeartbeat
         // Ideally we don't have dependency on Confidential Compute object here,
         // but that's the best we can do without unnecessary code duplication.
         //
+        NV_PRINTF(LEVEL_FATAL, "SPDM: Fatal heartbeat failure detected 0x%x\n", status);
         confComputeSetErrorState(pGpu, pConfCompute);
     }
     return status;
@@ -1018,7 +1018,10 @@ spdmCheckConnection_GH100
         return NV_ERR_INVALID_STATE;
     }
 
+    //
     // Check all capabilities match expected.
+    // NOTE: Even if Requester doesn't support Mutual Auth, we expect Responder will report it as capable.
+    //
     expectedFlags = SPDM_CAPABILITIES_FLAGS_GH100;
 
     dataSize = sizeof(capabilitiesFlags);
@@ -1037,6 +1040,12 @@ spdmCheckConnection_GH100
     for (i = 0; i < algoCheckCount; i++)
     {
         pCheckEntry = &g_SpdmAlgoCheckTable_GH100[i];
+
+        if (pCheckEntry->dataType == LIBSPDM_DATA_REQ_BASE_ASYM_ALG && !spdmMutualAuthSupported(pGpu, pSpdm))
+        {
+            // If mutual auth not supported, skip this entry
+            continue;
+        }
 
         actualAlgo = 0;
         dataSize   = sizeof(actualAlgo);
@@ -1292,7 +1301,7 @@ spdmRegisterForHeartbeats_GH100
     pTmr = GPU_GET_TIMER(pGpu);
 
     // Create the timer event and schedule the first heartbeat callback
-    status = tmrEventCreate(pTmr, &pSpdm->pHeartbeatEvent, _spdmTriggerHeartbeat, pSpdm, TMR_FLAGS_NONE);
+    status = tmrEventCreate(pTmr, &pSpdm->pHeartbeatEvent, _spdmTriggerHeartbeat, pSpdm, TMR_FLAG_USE_OS_TIMER);
     if (status != NV_OK)
     {
         return status;

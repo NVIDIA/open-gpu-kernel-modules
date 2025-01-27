@@ -91,7 +91,7 @@ osdescConstruct_IMPL
     {
         //
         // We currently allow RmMapMemory on external IO resources which are
-        // safe to share across processes. For example, NpuResource.
+        // safe to share across processes.
         //
         // Otherwise we would be affected by the security issues like Bug 1630288.
         //

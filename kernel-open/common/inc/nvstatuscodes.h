@@ -155,6 +155,10 @@ NV_STATUS_CODE(NV_ERR_KEY_ROTATION_IN_PROGRESS,        0x0000007D, "Operation no
 NV_STATUS_CODE(NV_ERR_TEST_ONLY_CODE_NOT_ENABLED,      0x0000007E, "Test-only code path not enabled")
 NV_STATUS_CODE(NV_ERR_SECURE_BOOT_FAILED,              0x0000007F, "GFW secure boot failed")
 NV_STATUS_CODE(NV_ERR_INSUFFICIENT_ZBC_ENTRY,          0x00000080, "No more ZBC entry for the client")
+NV_STATUS_CODE(NV_ERR_NVLINK_FABRIC_NOT_READY,         0x00000081, "Nvlink Fabric Status or Fabric Probe is not yet complete, caller needs to retry")
+NV_STATUS_CODE(NV_ERR_NVLINK_FABRIC_FAILURE,           0x00000082, "Nvlink Fabric Probe failed")
+NV_STATUS_CODE(NV_ERR_GPU_MEMORY_ONLINING_FAILURE,     0x00000083, "GPU Memory Onlining failed")
+NV_STATUS_CODE(NV_ERR_REDUCTION_MANAGER_NOT_AVAILABLE, 0x00000084, "Reduction Manager is not available")
 
 // Warnings:
 NV_STATUS_CODE(NV_WARN_HOT_SWITCH,                     0x00010001, "WARNING Hot switch")

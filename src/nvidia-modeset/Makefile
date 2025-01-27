@@ -63,6 +63,9 @@ CFLAGS += -DSOFTFLOAT_FAST_DIV64TO32
 # Tell nvtiming to use nvkms import functions
 CFLAGS += -DNVT_USE_NVKMS
 
+# Tell SMG we're being compiled into kernel
+CFLAGS += -DNV_SMG_IN_NVKMS
+
 CFLAGS += -Wformat
 CFLAGS += -Wreturn-type
 CFLAGS += -Wswitch
@@ -201,6 +204,7 @@ SHADER_OBJS =
   $(eval $(call COMPRESS_SHADERS,ampere))
     $(eval $(call COMPRESS_SHADERS,hopper))
     $(eval $(call COMPRESS_SHADERS,blackwell))
+    $(eval $(call COMPRESS_SHADERS,gb20x))
 
 OBJS = $(call BUILD_OBJECT_LIST,$(ALL_SRCS))
 OBJS += $(SHADER_OBJS)

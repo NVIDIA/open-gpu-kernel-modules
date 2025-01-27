@@ -137,7 +137,6 @@
 --undefined=rm_gpu_ops_ccsl_query_message_pool
 --undefined=rm_gpu_ops_ccsl_increment_iv
 --undefined=rm_gpu_ops_ccsl_log_encryption
---undefined=rm_log_gpu_crash
 --undefined=rm_kernel_rmapi_op
 --undefined=nv_get_hypervisor_type
 --undefined=nvlink_lib_initialize
@@ -187,6 +186,7 @@
 --undefined=nv_vgpu_create_request
 --undefined=nv_vgpu_delete
 --undefined=nv_vgpu_get_bar_info
+--undefined=nv_vgpu_update_sysfs_info
 --undefined=nv_vgpu_get_hbm_info
 --undefined=nv_vgpu_get_type_ids
 --undefined=nv_vgpu_get_type_info
@@ -204,7 +204,6 @@
 --undefined=rm_transition_dynamic_power
 --undefined=rm_acpi_notify
 --undefined=rm_get_power_info
---undefined=rm_is_iommu_needed_for_sriov
 --undefined=rm_disable_iomap_wc
 --undefined=rm_is_altstack_in_use
 --undefined=rm_acpi_nvpcf_notify

@@ -120,7 +120,7 @@ void crashcatReportLogReporter_V1_LIBOS2(CrashCatReport *pReport)
     //
     if (taskId == NV_CRASHCAT_REPORT_V1_REPORTER_ID_LIBOS2_TASK_ID_UNSPECIFIED)
     {
-        CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport, "Reported by libos kernel v%u.%u [%u] @ %u",
+        CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport, "Reported by libos kernel v%u.%u [%u] @ %u\n",
             crashcatReportV1ReporterVersionLibos2Major(pReportV1),
             crashcatReportV1ReporterVersionLibos2Minor(pReportV1),
             crashcatReportV1ReporterVersionLibos2Cl(pReportV1),
@@ -128,7 +128,7 @@ void crashcatReportLogReporter_V1_LIBOS2(CrashCatReport *pReport)
     }
     else
     {
-        CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport, "Reported by libos task:%u v%u.%u [%u] @ ts:%u",
+        CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport, "Reported by libos task:%u v%u.%u [%u] @ ts:%u\n",
             taskId, crashcatReportV1ReporterVersionLibos2Major(pReportV1),
             crashcatReportV1ReporterVersionLibos2Minor(pReportV1),
             crashcatReportV1ReporterVersionLibos2Cl(pReportV1),

@@ -232,7 +232,7 @@ struct P2PTokenShare {
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct RsShared __nvoc_base_RsShared;
 
     // Ancestor object pointers for `staticCast` feature
@@ -306,7 +306,7 @@ struct ThirdPartyP2P {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__ThirdPartyP2P *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct GpuResource __nvoc_base_GpuResource;
 
     // Ancestor object pointers for `staticCast` feature
@@ -613,26 +613,26 @@ static inline NvBool thirdpartyp2pIsValidClientPid(struct ThirdPartyP2P *pThirdP
 #define thirdpartyp2pIsValidClientPid(pThirdPartyP2P, pid, hClient) thirdpartyp2pIsValidClientPid_IMPL(pThirdPartyP2P, pid, hClient)
 #endif //__nvoc_third_party_p2p_h_disabled
 
-NV_STATUS thirdpartyp2pDelMappingInfoByKey_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey, NvBool bIsRsyncNeeded);
+NV_STATUS thirdpartyp2pDelMappingInfoByKey_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey);
 
 #ifdef __nvoc_third_party_p2p_h_disabled
-static inline NV_STATUS thirdpartyp2pDelMappingInfoByKey(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey, NvBool bIsRsyncNeeded) {
+static inline NV_STATUS thirdpartyp2pDelMappingInfoByKey(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey) {
     NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_third_party_p2p_h_disabled
-#define thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2P, pKey, bIsRsyncNeeded) thirdpartyp2pDelMappingInfoByKey_IMPL(pThirdPartyP2P, pKey, bIsRsyncNeeded)
+#define thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2P, pKey) thirdpartyp2pDelMappingInfoByKey_IMPL(pThirdPartyP2P, pKey)
 #endif //__nvoc_third_party_p2p_h_disabled
 
-NV_STATUS thirdpartyp2pDelPersistentMappingInfoByKey_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey, NvBool bIsRsyncNeeded);
+NV_STATUS thirdpartyp2pDelPersistentMappingInfoByKey_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey);
 
 #ifdef __nvoc_third_party_p2p_h_disabled
-static inline NV_STATUS thirdpartyp2pDelPersistentMappingInfoByKey(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey, NvBool bIsRsyncNeeded) {
+static inline NV_STATUS thirdpartyp2pDelPersistentMappingInfoByKey(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey) {
     NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_third_party_p2p_h_disabled
-#define thirdpartyp2pDelPersistentMappingInfoByKey(pThirdPartyP2P, pKey, bIsRsyncNeeded) thirdpartyp2pDelPersistentMappingInfoByKey_IMPL(pThirdPartyP2P, pKey, bIsRsyncNeeded)
+#define thirdpartyp2pDelPersistentMappingInfoByKey(pThirdPartyP2P, pKey) thirdpartyp2pDelPersistentMappingInfoByKey_IMPL(pThirdPartyP2P, pKey)
 #endif //__nvoc_third_party_p2p_h_disabled
 
 NV_STATUS thirdpartyp2pGetVASpaceInfoFromToken_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, NvU32 vaSpaceToken, PCLI_THIRD_PARTY_P2P_VASPACE_INFO *ppVASpaceInfo);

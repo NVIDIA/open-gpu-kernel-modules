@@ -38,15 +38,15 @@ PUSH_SEGMENTS
 
 #define EIA_TIMING(hv,hfp,hsw,ht,hsp,vv,vfp,vsw,vt,vsp,rrx1k,ip,aspect,rep,format) \
     {hv,0,hfp,hsw,ht,(hsp)=='-',vv,0,vfp,vsw,vt,(vsp)=='-',(ip)=='i' ? NVT_INTERLACED:NVT_PROGRESSIVE,\
-    0,{0,((rrx1k)+500)/1000,rrx1k,((1?aspect)<<16)|(0?aspect),rep,{0},{0},{0},{0},NVT_STATUS_EDID_861STn(format),"CEA-861B:#"#format""}}
+    0,0,{0,((rrx1k)+500)/1000,rrx1k,((1?aspect)<<16)|(0?aspect),rep,{0},{0},{0},{0},NVT_STATUS_EDID_861STn(format),"CEA-861B:#"#format""}}
 
 #define NVT_TIMING(hv,hfp,hsw,ht,hsp,vv,vfp,vsw,vt,vsp,rrx1k,ip,aspect,rep,format,name) \
     {hv,0,hfp,hsw,ht,(hsp)=='-',vv,0,vfp,vsw,vt,(vsp)=='-',(ip)=='i' ? NVT_INTERLACED:NVT_PROGRESSIVE,\
-    0,{0,((rrx1k)+500)/1000,rrx1k,((1?aspect)<<16)|(0?aspect),rep,{0},{0},{0},{0},NVT_TYPE_NV_PREDEFINEDn(format),name}}
+    0,0,{0,((rrx1k)+500)/1000,rrx1k,((1?aspect)<<16)|(0?aspect),rep,{0},{0},{0},{0},NVT_TYPE_NV_PREDEFINEDn(format),name}}
 
 #define HDMI_EXT_TIMING(hv,hfp,hsw,ht,hsp,vv,vfp,vsw,vt,vsp,rrx1k,ip,aspect,rep,format,name) \
     {hv,0,hfp,hsw,ht,(hsp)=='-',vv,0,vfp,vsw,vt,(vsp)=='-',(ip)=='i' ? NVT_INTERLACED:NVT_PROGRESSIVE,\
-    0,{0,((rrx1k)+500)/1000,rrx1k,((1?aspect)<<16)|(0?aspect),rep,{0},{0},{0},{0},NVT_STATUS_HDMI_EXTn(format),name}}
+    0,0,{0,((rrx1k)+500)/1000,rrx1k,((1?aspect)<<16)|(0?aspect),rep,{0},{0},{0},{0},NVT_STATUS_HDMI_EXTn(format),name}}
 
 #define RID_MODE(hv, hsp, vv, vsp, ip, aspect, rid) \
     {hv, (hsp)=='-', vv, (vsp)=='-',(ip)=='i'? NVT_INTERLACED:NVT_PROGRESSIVE,((1?aspect)<<16)|(0?aspect), rid}
@@ -261,7 +261,7 @@ static const NVT_TIMING EIA861B[]=
     EIA_TIMING( 7680,2352,176,10800,'+',4320,16,20,4400,'+', 50000,'p',   16:9,0x1,198),// 7680 x 4320p @50         (Format 198)
     EIA_TIMING( 7680, 552,176, 9000,'+',4320,16,20,4400,'+', 59940,'p',   16:9,0x1,199),// 7680 x 4320p @59.94/60   (Format 199)
     EIA_TIMING( 7680,2112,176,10560,'+',4320,16,20,4500,'+',100000,'p',   16:9,0x1,200),// 7680 x 4320p @100        (Format 200)
-    EIA_TIMING( 7680, 352,176, 8000,'+',4320,16,20,4500,'+',119880,'p',   16:9,0x1,201),// 7680 x 4320p @119.88/120 (Format 201)
+    EIA_TIMING( 7680, 352,176, 8800,'+',4320,16,20,4500,'+',119880,'p',   16:9,0x1,201),// 7680 x 4320p @119.88/120 (Format 201)
     EIA_TIMING( 7680,2552,176,11000,'+',4320,16,20,4500,'+', 23976,'p',  64:27,0x1,202),// 7680 x 4320p @23.98/24   (Format 202)
     EIA_TIMING( 7680,2352,176,10800,'+',4320,16,20,4400,'+', 25000,'p',  64:27,0x1,203),// 7680 x 4320p @25         (Format 203)
     EIA_TIMING( 7680, 552,176, 9000,'+',4320,16,20,4400,'+', 29970,'p',  64:27,0x1,204),// 7680 x 4320p @29.97/30   (Format 204)
@@ -269,12 +269,12 @@ static const NVT_TIMING EIA861B[]=
     EIA_TIMING( 7680,2352,176,10800,'+',4320,16,20,4400,'+', 50000,'p',  64:27,0x1,206),// 7680 x 4320p @50         (Format 206)
     EIA_TIMING( 7680, 552,176, 9000,'+',4320,16,20,4400,'+', 59940,'p',  64:27,0x1,207),// 7680 x 4320p @59.94/60   (Format 207)
     EIA_TIMING( 7680,2112,176,10560,'+',4320,16,20,4500,'+',100000,'p',  64:27,0x1,208),// 7680 x 4320p @100        (Format 208)
-    EIA_TIMING( 7680, 352,176, 8800,'+',4500,16,20,4950,'+',119880,'p',  64:27,0x1,209),// 7680 x 4320p @119.88/120 (Format 209)
+    EIA_TIMING( 7680, 352,176, 8800,'+',4320,16,20,4500,'+',119880,'p',  64:27,0x1,209),// 7680 x 4320p @119.88/120 (Format 209)
     EIA_TIMING(10240,1492,176,12500,'+',4320,16,20,4950,'+', 23976,'p',  64:27,0x1,210),//10240 x 4320p @23.98/24   (Format 210)
     EIA_TIMING(10240,2492,176,13500,'+',4320,16,20,4400,'+', 25000,'p',  64:27,0x1,211),//10240 x 4320p @25         (Format 211)
     EIA_TIMING(10240, 288,176,11000,'+',4320,16,20,4500,'+', 29970,'p',  64:27,0x1,212),//10240 x 4320p @29.97/30   (Format 212)
     EIA_TIMING(10240,1492,176,12500,'+',4320,16,20,4950,'+', 47950,'p',  64:27,0x1,213),//10240 x 4320p @47.95/48   (Format 213)
-    EIA_TIMING(10240,2492,176,13500,'+',4320,16,20,4400,'+', 44000,'p',  64:27,0x1,214),//10240 x 4320p @50         (Format 214)
+    EIA_TIMING(10240,2492,176,13500,'+',4320,16,20,4400,'+', 50000,'p',  64:27,0x1,214),//10240 x 4320p @50         (Format 214)
     EIA_TIMING(10240, 288,176,11000,'+',4320,16,20,4500,'+', 59940,'p',  64:27,0x1,215),//10240 x 4320p @59.94/60   (Format 215)
     EIA_TIMING(10240,2192,176,13200,'+',4320,16,20,4500,'+',100000,'p',  64:27,0x1,216),//10240 x 4320p @100        (Format 216)
     EIA_TIMING(10240, 288,176,11000,'+',4320,16,20,4500,'+',119880,'p',  64:27,0x1,217),//10240 x 4320p @119.88/120 (Format 217)
@@ -649,7 +649,8 @@ void parse861bShortTiming(NVT_EDID_CEA861_INFO *pExt861,
         }
 
         // calculate the pixel clock
-        newTiming.pclk  = RRx1kToPclk(&newTiming);
+        newTiming.pclk     = RRx1kToPclk(&newTiming);
+        newTiming.pclk1khz = (newTiming.pclk << 3) + (newTiming.pclk << 1); // *10
 
         if ((vic <= 64) && (pVic[i] & NVT_CTA861_VIDEO_NATIVE_MASK))
         {
@@ -790,7 +791,8 @@ void parseCta861VideoFormatDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawIn
                                                    pInfo->hdmiForumInfo.dc_48bit_420);
                     }
 
-                    newTiming.etc.flag |= NVT_FLAG_CTA_OVT_TIMING;
+                    newTiming.etc.aspect = RID[pVFDOneByte->rid].aspect;
+                    newTiming.etc.flag  |= NVT_FLAG_CTA_OVT_TIMING;
                     if (pExt861->vfdb[vfdb_idx].info.ntsc)
                     {
                         newTiming.etc.flag |= NVT_FLAG_CTA_OVT_FRR_TIMING;
@@ -924,7 +926,8 @@ void parse861bShortYuv420Timing(NVT_EDID_CEA861_INFO *pExt861,
         }
 
         // calculate the pixel clock
-        newTiming.pclk = RRx1kToPclk(&newTiming);
+        newTiming.pclk     = RRx1kToPclk(&newTiming);
+        newTiming.pclk1khz = (newTiming.pclk << 3) + (newTiming.pclk << 1); // *10
 
         // From CTA-861-F: By default, Y420VDB SVDs, when present in the EDID, shall be less preferred than all regular Video Data Block SVDs.
         // So it should use normal VIC code without native flag.
@@ -2161,7 +2164,8 @@ NVT_STATUS NvTiming_EnumCEA861bTiming(NvU32 ceaFormat, NVT_TIMING *pT)
     *pT = EIA861B[ceaFormat - 1];
 
     // calculate the pixel clock
-    pT->pclk  = RRx1kToPclk (pT);
+    pT->pclk     = RRx1kToPclk (pT);
+    pT->pclk1khz = (pT->pclk << 3) + (pT->pclk << 1); // *10
     NVT_SET_CEA_FORMAT(pT->etc.status, ceaFormat);
 
     NVT_SNPRINTF((char *)pT->etc.name, sizeof(pT->etc.name), "CTA-861G:#%3d:%dx%dx%3d.%03dHz/%s", (int)ceaFormat, (int)pT->HVisible, (int)((pT->interlaced ? 2 : 1)*pT->VVisible), (int)pT->etc.rrx1k/1000, (int)pT->etc.rrx1k%1000, (pT->interlaced ? "I":"P"));
@@ -2270,7 +2274,8 @@ NVT_STATUS NvTiming_CalcCEA861bTiming(NvU32 width, NvU32 height, NvU32 rr, NvU32
             *pT = EIA861B[i];
 
             // calculate the pixel clock
-            pT->pclk  = RRx1kToPclk (pT);
+            pT->pclk      = RRx1kToPclk (pT);
+            pT->pclk1khz  = (pT->pclk << 3) + (pT->pclk << 1); // *10
 
             NVT_SET_CEA_FORMAT(pT->etc.status, NVT_GET_TIMING_STATUS_SEQ(pT->etc.status));
 
@@ -2336,8 +2341,8 @@ NVT_STATUS NvTiming_ConstructVideoInfoframeCtrl(const NVT_TIMING *pTiming, NVT_V
                 ridIdx = 10 * (pTiming->etc.name[10] - '0') + (pTiming->etc.name[11] - '0');
             }
 
-            if (ridIdx > NVT_CTA861_RID_1280x720p_16x9 &&
-                ridIdx < NVT_CTA861_RID_20480x8640p_64x27)
+            if (ridIdx >= NVT_CTA861_RID_1280x720p_16x9 &&
+                ridIdx < NVT_CTA861_RID_EXCEED_RESOLUTION)
             {
                 pCtrl->rid = ridIdx;
             }
@@ -2472,7 +2477,7 @@ NVT_STATUS NvTiming_ConstructVideoInfoframeCtrl(const NVT_TIMING *pTiming, NVT_V
         }
         else
         {
-            // default to no data, to cover other non-cea modes
+            // default to no data if there is no match, to cover other non-cta modes
             pCtrl->pic_aspect_ratio = NVT_VIDEO_INFOFRAME_BYTE2_M1M0_NO_DATA;
         }
     }
@@ -2839,13 +2844,13 @@ NVT_STATUS NvTiming_ConstructVendorSpecificInfoframe(NVT_EDID_INFO *pEdidInfo, N
     nvt_nvu8_set_bits(pInfoFrame->Header.version, NVT_HDMI_VS_HB1_VALUE, NVT_HDMI_VS_HB1_MASK, NVT_HDMI_VS_HB1_SHIFT);
     nvt_nvu8_set_bits(pInfoFrame->Header.length, NVT_HDMI_VS_HB2_VALUE, NVT_HDMI_VS_HB2_MASK, NVT_HDMI_VS_HB2_SHIFT);
 
-    if (pCtrl->HDMIRevision == 14)
+    if (pCtrl->VSIFVersion == NVT_VSIF_VERSION_H14B_VSIF)
     {
         nvt_nvu8_set_bits(pInfoFrame->Data.byte1, NVT_HDMI_VS_BYTE1_OUI_VER_1_4, NVT_HDMI_VS_BYTE1_OUI_MASK, NVT_HDMI_VS_BYTE1_OUI_SHIFT);
         nvt_nvu8_set_bits(pInfoFrame->Data.byte2, NVT_HDMI_VS_BYTE2_OUI_VER_1_4, NVT_HDMI_VS_BYTE2_OUI_MASK, NVT_HDMI_VS_BYTE2_OUI_SHIFT);
         nvt_nvu8_set_bits(pInfoFrame->Data.byte3, NVT_HDMI_VS_BYTE3_OUI_VER_1_4, NVT_HDMI_VS_BYTE3_OUI_MASK, NVT_HDMI_VS_BYTE3_OUI_SHIFT);
     }
-    else if (pCtrl->HDMIRevision >= 20)
+    else if (pCtrl->VSIFVersion == NVT_VSIF_VERSION_HF_VSIF)
     {
         nvt_nvu8_set_bits(pInfoFrame->Data.byte1, NVT_HDMI_VS_BYTE1_OUI_VER_2_0, NVT_HDMI_VS_BYTE1_OUI_MASK, NVT_HDMI_VS_BYTE1_OUI_SHIFT);
         nvt_nvu8_set_bits(pInfoFrame->Data.byte2, NVT_HDMI_VS_BYTE2_OUI_VER_2_0, NVT_HDMI_VS_BYTE2_OUI_MASK, NVT_HDMI_VS_BYTE2_OUI_SHIFT);
@@ -3106,7 +3111,7 @@ void NvTiming_ConstructAdaptiveSyncSDP(
                                         NVT_DP_ADAPTIVE_SYNC_SDP_DB3_TARGET_RR_LSB_MASK,
                                         NVT_DP_ADAPTIVE_SYNC_SDP_DB3_TARGET_RR_LSB_SHIFT);
 
-            nvt_nvu8_set_bits(pSdp->payload.db4, pCtrl->targetRefreshRate & 0x1,
+            nvt_nvu8_set_bits(pSdp->payload.db4, (pCtrl->targetRefreshRate & 0x300) >> 8,
                                         NVT_DP_ADAPTIVE_SYNC_SDP_DB4_TARGET_RR_MSB_MASK,
                                         NVT_DP_ADAPTIVE_SYNC_SDP_DB4_TARGET_RR_MSB_SHIFT);
         }
@@ -3158,7 +3163,8 @@ NVT_STATUS NvTiming_EnumNvPsfTiming(NvU32 nvPsfFormat, NVT_TIMING *pT)
     *pT = PSF_TIMING[nvPsfFormat - 1];
 
     // calculate the pixel clock
-    pT->pclk  = RRx1kToPclk (pT);
+    pT->pclk      = RRx1kToPclk (pT);
+    pT->pclk1khz  = (pT->pclk << 3) + (pT->pclk << 1); // *10
 
     return NVT_STATUS_SUCCESS;
 }
@@ -3267,7 +3273,9 @@ void NvTiming_GetHDMIStereoTimingFrom2DTiming(const NVT_TIMING *pTiming, NvU8 St
         }
     }
     // calculate the pixel clock
-    pExtTiming->timing.pclk  = RRx1kToPclk (&(pExtTiming->timing));
+    pExtTiming->timing.pclk      = RRx1kToPclk (&(pExtTiming->timing));
+    pExtTiming->timing.pclk1khz  = (pExtTiming->timing.pclk << 3) + (pExtTiming->timing.pclk << 1); // *10;
+
     return;
 }
 
@@ -3491,7 +3499,8 @@ void parseEdidHDMILLCTiming(NVT_EDID_INFO *pInfo, VSDB_DATA *pVsdb, NvU32 *pMapS
                                           sizeof(newTiming));
 
                             // Fill in the pixel clock
-                            newTiming.pclk = RRx1kToPclk(&newTiming);
+                            newTiming.pclk     = RRx1kToPclk(&newTiming);
+                            newTiming.pclk1khz = (newTiming.pclk << 3) + (newTiming.pclk << 1); // *10
 
                             if (!assignNextAvailableTiming(pInfo, &newTiming))
                             {
@@ -3638,7 +3647,8 @@ NVT_STATUS NvTiming_EnumHdmiVsdbExtendedTiming(NvU32 hdmi_vic, NVT_TIMING *pT)
         return NVT_STATUS_ERR;
     }
     *pT = HDMI_EXT_4Kx2K_TIMING[hdmi_vic - 1];
-    pT->pclk = RRx1kToPclk(pT);
+    pT->pclk     = RRx1kToPclk(pT);
+    pT->pclk1khz = (pT->pclk << 3) + (pT->pclk << 1); // *10
     return NVT_STATUS_SUCCESS;
 }
 

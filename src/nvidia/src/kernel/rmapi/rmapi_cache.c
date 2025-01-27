@@ -29,11 +29,13 @@
 #include "os/os.h"
 #include "rmapi/control.h"
 #include "rmapi/rmapi.h"
+#include "rmapi/rmapi_cache_handlers.h"
 #include "rmapi/rmapi_utils.h"
 #include "ctrl/ctrl0000/ctrl0000system.h"
 #include "ctrl/ctrl2080/ctrl2080gpu.h"
 #include "ctrl/ctrl2080/ctrl2080fifo.h"
 #include "ctrl/ctrl2080/ctrl2080bus.h"
+#include "ctrl/ctrl2080/ctrl2080ce.h"
 #include "gpu/gpu.h"
 
 typedef struct
@@ -104,8 +106,11 @@ static NvU64 _getGpuAttrFromGpu(OBJGPU *pGpu)
 }
 
 static struct {
-    /* NOTE: Size unbounded for now */
+    /* NOTE: Size unbounded for now. Clear on gpu state unload */
     GpusControlCache gpusControlCache;
+
+    /* Stay over gpu state unload. Clear on gpu state destroy */
+    GpusControlCache gpusPersistentCache;
     ObjectToGpuAttrMap objectToGpuAttrMap;
     NvU32 mode;
     PORT_RWLOCK *pLock;
@@ -141,7 +146,7 @@ NvBool _cacheIsDisabled(void)
 }
 
 static RmapiControlCacheEntry* _getOrInitCacheEntry(NvU64 key1, NvU64 key2, NvBool bSet,
-                                                    NvU32 allocSize, NvBool *pbParamAllocated);
+                                                    NvBool bPersistent, NvU32 allocSize, NvBool *pbParamAllocated);
 
 NvBool rmapiControlIsCacheable(NvU32 flags, NvU32 accessRight, NvBool bAllowInternal)
 {
@@ -190,6 +195,7 @@ NvBool rmapiCmdIsCacheable(NvU32 cmd, NvBool bAllowInternal)
 NV_STATUS rmapiControlCacheInit(void)
 {
 #if   defined(DEBUG)
+    // Beware that verification only mode will not work during GCOFF.
     RmapiControlCache.mode = NV0000_CTRL_SYSTEM_RMCTRL_CACHE_MODE_CTRL_MODE_VERIFY_ONLY;
 #else
     RmapiControlCache.mode = NV0000_CTRL_SYSTEM_RMCTRL_CACHE_MODE_CTRL_MODE_ENABLE;
@@ -204,12 +210,14 @@ NV_STATUS rmapiControlCacheInit(void)
     NV_PRINTF(LEVEL_INFO, "using cache mode %d\n", RmapiControlCache.mode);
 
     multimapInit(&RmapiControlCache.gpusControlCache, portMemAllocatorGetGlobalNonPaged());
+    multimapInit(&RmapiControlCache.gpusPersistentCache, portMemAllocatorGetGlobalNonPaged());
     mapInit(&RmapiControlCache.objectToGpuAttrMap, portMemAllocatorGetGlobalNonPaged());
     RmapiControlCache.pLock = portSyncRwLockCreate(portMemAllocatorGetGlobalNonPaged());
     if (RmapiControlCache.pLock == NULL)
     {
         NV_PRINTF(LEVEL_ERROR, "failed to create rw lock\n");
         multimapDestroy(&RmapiControlCache.gpusControlCache);
+        multimapDestroy(&RmapiControlCache.gpusPersistentCache);
         mapDestroy(&RmapiControlCache.objectToGpuAttrMap);
         return NV_ERR_NO_MEMORY;
     }
@@ -334,9 +342,10 @@ static NV_STATUS _rmapiControlCacheGet
 (
     NvHandle hClient,
     NvHandle hObject,
-    NvU32 cmd,
-    void* params,
-    NvU32 paramsSize
+    NvU32    cmd,
+    NvBool   bPersistent,
+    void*    params,
+    NvU32    paramsSize
 )
 {
     RmapiControlCacheEntry *entry;
@@ -363,7 +372,7 @@ static NV_STATUS _rmapiControlCacheGet
             goto done;
     }
 
-    entry = _getOrInitCacheEntry(gpuInst, cmd, NV_FALSE, 0, NULL);
+    entry = _getOrInitCacheEntry(gpuInst, cmd, NV_FALSE, bPersistent, 0, NULL);
     if (entry == NULL || entry->params == NULL)
     {
         status = NV_ERR_OBJECT_NOT_FOUND;
@@ -381,6 +390,7 @@ static NV_STATUS _rmapiControlCacheSet
     NvHandle hClient,
     NvHandle hObject,
     NvU32 cmd,
+    NvBool bPersistent,
     const void* params,
     NvU32 paramsSize
 )
@@ -410,7 +420,8 @@ static NV_STATUS _rmapiControlCacheSet
             goto done;
     }
 
-    entry = _getOrInitCacheEntry(gpuInst, cmd, NV_TRUE, paramsSize, &bParamsAllocated);
+    entry = _getOrInitCacheEntry(gpuInst, cmd, NV_TRUE, bPersistent,
+                                 paramsSize, &bParamsAllocated);
     if (entry == NULL)
     {
         status = NV_ERR_NO_MEMORY;
@@ -455,6 +466,8 @@ done:
 //     Second key for the multimap entry
 //   bSet [IN]
 //     If the query is for cache set or cache get
+//   bPersistent [IN]
+//     If the entry can be cached over GC6/GCOFF cycle
 //   allocSize [IN]
 //     For cache set only.
 //     The size to allocate for new cache entry
@@ -469,14 +482,17 @@ _getOrInitCacheEntry
     NvU64 key1,
     NvU64 key2,
     NvBool bSet,
+    NvBool bPersistent,
     NvU32 allocSize,
     NvBool *pbParamsAllocated
 )
 {
     RmapiControlCacheEntry *entry = NULL;
     GpusControlCacheSubmap *insertedSubmap = NULL;
+    GpusControlCache *pMap = bPersistent ?
+        (&RmapiControlCache.gpusPersistentCache) : (&RmapiControlCache.gpusControlCache);
 
-    entry = multimapFindItem(&RmapiControlCache.gpusControlCache, key1, key2);
+    entry = multimapFindItem(pMap, key1, key2);
 
     // for cache get, return map find result directly
     if (!bSet)
@@ -485,14 +501,14 @@ _getOrInitCacheEntry
     // for cache set, try to init entry if not valid
     if (entry == NULL)
     {
-        if (multimapFindSubmap(&RmapiControlCache.gpusControlCache, key1) == NULL)
+        if (multimapFindSubmap(pMap, key1) == NULL)
         {
-            insertedSubmap = multimapInsertSubmap(&RmapiControlCache.gpusControlCache, key1);
+            insertedSubmap = multimapInsertSubmap(pMap, key1);
             if (insertedSubmap == NULL)
                 goto failed;
         }
 
-        entry = multimapInsertItemNew(&RmapiControlCache.gpusControlCache, key1, key2);
+        entry = multimapInsertItemNew(pMap, key1, key2);
     }
 
     if (entry == NULL)
@@ -518,10 +534,10 @@ _getOrInitCacheEntry
 
 failed_free_entry:
     if (entry != NULL)
-        multimapRemoveItem(&RmapiControlCache.gpusControlCache, entry);
+        multimapRemoveItem(pMap, entry);
 failed_free_submap:
     if (insertedSubmap != NULL)
-        multimapRemoveSubmap(&RmapiControlCache.gpusControlCache, insertedSubmap);
+        multimapRemoveSubmap(pMap, insertedSubmap);
 failed:
     return NULL;
 }
@@ -623,6 +639,18 @@ static NvBool _isGetInfoIndexCacheable(NvU32 cmd, NvU32 index, NvU32 cacheGpuFla
     return NV_FALSE;
 }
 
+void _rmapiControlCacheRemoveMapEntry
+(
+    RmapiControlCacheEntry *pEntry,
+    NvBool                  bPersistent
+)
+{
+    if (bPersistent)
+        multimapRemoveItem(&RmapiControlCache.gpusPersistentCache, pEntry);
+    else
+        multimapRemoveItem(&RmapiControlCache.gpusControlCache, pEntry);
+}
+
 //
 // For GET_INFO controls, we use an array of getInfoCacheEntry to store the
 // cached value.
@@ -642,13 +670,14 @@ typedef struct GetInfoCacheEntry {
 
 static NV_STATUS _getInfoCacheHandler
 (
-    NvHandle hClient,
-    NvHandle hObject,
-    NvU32 cmd,
+    NvHandle              hClient,
+    NvHandle              hObject,
+    NvU32                 cmd,
     NVXXXX_CTRL_XXX_INFO *pInfo,
-    NvU32 listSize,
-    NvU32 listSizeLimit,
-    NvBool bSet
+    NvU32                 listSize,
+    NvU32                 listSizeLimit,
+    NvBool                bSet,
+    NvBool                bPersistent
 )
 {
     NV_STATUS status = NV_OK;
@@ -678,7 +707,7 @@ static NV_STATUS _getInfoCacheHandler
     if (status != NV_OK)
         goto done;
 
-    entry = _getOrInitCacheEntry(gpuInst, cmd, bSet, allocSize, NULL);
+    entry = _getOrInitCacheEntry(gpuInst, cmd, bSet, bPersistent, allocSize, NULL);
 
     if (entry == NULL || entry->params == NULL)
     {
@@ -737,12 +766,65 @@ done:
         if (entry != NULL)
         {
             portMemFree(entry->params);
-            multimapRemoveItem(&RmapiControlCache.gpusControlCache, entry);
+            _rmapiControlCacheRemoveMapEntry(entry, bPersistent);
         }
     }
 
     _cacheLockRelease(lockType);
 
+    return status;
+}
+
+NV_STATUS _rmapiControlCacheGetByInputTemplateMethod
+(
+    NvHandle                    hClient,
+    NvHandle                    hObject,
+    NvBool                      bPersistent,
+    NvU32                       cmd,
+    void                       *pParams,
+    NvU32                       cacheEntrySize,
+    RmapiCacheGetByInputHandler cacheHandler,
+    NvBool                      bSet
+)
+{
+    NvU32                   gpuInst;
+    NV_STATUS               status   = NV_OK;
+    RmapiControlCacheEntry *entry    = NULL;
+    enum CACHE_LOCK_TYPE    lockType = (bSet) ? LOCK_EXCLUSIVE : LOCK_SHARED;
+    NvBool                  bCacheEntryAllocated;
+
+    _cacheLockAcquire(lockType);
+
+    if (_cacheIsDisabled())
+    {
+        // Unexpected mode change.
+        status = NV_ERR_INVALID_STATE;
+        goto done;
+    }
+
+    status = _rmapiControlCacheGetGpuAttrForObject(hClient, hObject, &gpuInst, NULL);
+    if (status != NV_OK)
+        goto done;
+
+    entry = _getOrInitCacheEntry(gpuInst, cmd, bSet, bPersistent, cacheEntrySize, &bCacheEntryAllocated);
+    if (entry == NULL || entry->params == NULL)
+    {
+        status = (bSet) ? NV_ERR_NO_MEMORY : NV_ERR_OBJECT_NOT_FOUND;
+        goto done;
+    }
+
+    status = cacheHandler(entry->params, pParams, bSet);
+done:
+    if (status != NV_OK && bSet)
+    {
+        if (entry != NULL && bCacheEntryAllocated)
+        {
+            if (entry->params)
+                portMemFree(entry->params);
+            _rmapiControlCacheRemoveMapEntry(entry, bPersistent);
+        }
+    }
+    _cacheLockRelease(lockType);
     return status;
 }
 
@@ -758,6 +840,7 @@ NV_STATUS _gpuNameStringGet
 (
     NvHandle hClient,
     NvHandle hObject,
+    NvBool   bPersistent,
     NV2080_CTRL_GPU_GET_NAME_STRING_PARAMS *pParams
 )
 {
@@ -780,7 +863,7 @@ NV_STATUS _gpuNameStringGet
         goto done;
 
     entry = _getOrInitCacheEntry(gpuInst, NV2080_CTRL_CMD_GPU_GET_NAME_STRING,
-                                 NV_FALSE, 0, NULL);
+                                 NV_FALSE, bPersistent, 0, NULL);
     if (entry == NULL || entry->params == NULL)
     {
         status = NV_ERR_OBJECT_NOT_FOUND;
@@ -829,6 +912,7 @@ NV_STATUS _gpuNameStringSet
 (
     NvHandle hClient,
     NvHandle hObject,
+    NvBool   bPersistent,
     const NV2080_CTRL_GPU_GET_NAME_STRING_PARAMS *pParams
 )
 {
@@ -851,7 +935,7 @@ NV_STATUS _gpuNameStringSet
         goto done;
 
     entry = _getOrInitCacheEntry(gpuInst, NV2080_CTRL_CMD_GPU_GET_NAME_STRING,
-                                 NV_TRUE, sizeof(GpuNameStringCacheEntry), NULL);
+                                 NV_TRUE, bPersistent, sizeof(GpuNameStringCacheEntry), NULL);
     if (entry == NULL)
     {
         status = NV_ERR_NO_MEMORY;
@@ -911,7 +995,7 @@ done:
         {
             if (entry->params)
                 portMemFree(entry->params);
-            multimapRemoveItem(&RmapiControlCache.gpusControlCache, entry);
+            _rmapiControlCacheRemoveMapEntry(entry, bPersistent);
         }
     }
     _cacheLockRelease(LOCK_EXCLUSIVE);
@@ -919,13 +1003,234 @@ done:
     return status;
 }
 
+typedef struct CePhysicalCapsCacheEntry
+{
+    NvBool valid;
+    NvU8 capsTbl[NV2080_CTRL_CE_CAPS_TBL_SIZE];
+} CePhysicalCapsCacheEntry;
+
+static NV_STATUS _getCePhysicalCapsHandler
+(
+    NvHandle hClient,
+    NvHandle hObject,
+    NvU32 ceEngineType,
+    NvU8 capsTbl[NV2080_CTRL_CE_CAPS_TBL_SIZE],
+    NvBool bSet,
+    NvBool bPersistent
+)
+{
+    NV_STATUS status = NV_OK;
+    NvU32 gpuInst;
+    RmapiControlCacheEntry *entry = NULL;
+    CePhysicalCapsCacheEntry *cachedTable = NULL;
+    const NvU32 allocSize = sizeof(CePhysicalCapsCacheEntry) * NV2080_ENGINE_TYPE_COPY_SIZE;
+    enum CACHE_LOCK_TYPE lockType = bSet ? LOCK_EXCLUSIVE : LOCK_SHARED;
+    NvU32 ceEngineIndex;
+
+    if (!NV2080_ENGINE_TYPE_IS_COPY(ceEngineType))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+    ceEngineIndex = NV2080_ENGINE_TYPE_COPY_IDX(ceEngineType);
+
+    _cacheLockAcquire(lockType);
+
+    if (_cacheIsDisabled())
+    {
+        // unexpected mode change.
+        status = NV_ERR_INVALID_STATE;
+        goto done;
+    }
+
+    status = _rmapiControlCacheGetGpuAttrForObject(hClient, hObject, &gpuInst, NULL);
+    if (status != NV_OK)
+        goto done;
+
+    entry = _getOrInitCacheEntry(gpuInst, NV2080_CTRL_CMD_CE_GET_PHYSICAL_CAPS,
+                                 bSet, bPersistent, allocSize, NULL);
+    if (entry == NULL || entry->params == NULL)
+    {
+        status = NV_ERR_NO_MEMORY;
+        goto done;
+    }
+
+    cachedTable = (CePhysicalCapsCacheEntry *)entry->params;
+
+    if (bSet)
+    {
+        if (cachedTable[ceEngineIndex].valid)
+        {
+            NV_ASSERT(portMemCmp(capsTbl,
+                                 cachedTable[ceEngineIndex].capsTbl,
+                                 NV2080_CTRL_CE_CAPS_TBL_SIZE) == 0);
+        }
+        else
+        {
+            cachedTable[ceEngineIndex].valid = NV_TRUE;
+            portMemCopy(cachedTable[ceEngineIndex].capsTbl,
+                        NV2080_CTRL_CE_CAPS_TBL_SIZE,
+                        capsTbl,
+                        NV2080_CTRL_CE_CAPS_TBL_SIZE);
+        }
+    }
+    else
+    {
+        if (!cachedTable[ceEngineIndex].valid)
+        {
+            status = NV_ERR_OBJECT_NOT_FOUND;
+            goto done;
+        }
+        else
+        {
+            portMemCopy(capsTbl,
+                        NV2080_CTRL_CE_CAPS_TBL_SIZE,
+                        cachedTable[ceEngineIndex].capsTbl,
+                        NV2080_CTRL_CE_CAPS_TBL_SIZE);
+        }
+    }
+
+done:
+    if (status != NV_OK && bSet)
+    {
+        if (entry != NULL)
+        {
+            if (entry->params != NULL)
+                portMemFree(entry->params);
+            multimapRemoveItem(&RmapiControlCache.gpusControlCache, entry);
+        }
+    }
+    _cacheLockRelease(lockType);
+
+    return status;
+}
+
+typedef struct CePceMaskCacheEntry
+{
+    NvBool valid;
+    NvU32 pceMask;
+} CePceMaskCacheEntry;
+
+static NV_STATUS _getCePceMaskHandler
+(
+    NvHandle hClient,
+    NvHandle hObject,
+    NvU32 ceEngineType,
+    NvU32 *pceMask,
+    NvBool bSet,
+    NvBool bPersistent
+)
+{
+    NV_STATUS status = NV_OK;
+    NvU32 gpuInst;
+    RmapiControlCacheEntry *entry = NULL;
+    CePceMaskCacheEntry *cachedTable = NULL;
+    const NvU32 allocSize = sizeof(CePceMaskCacheEntry) * NV2080_ENGINE_TYPE_COPY_SIZE;
+    enum CACHE_LOCK_TYPE lockType = bSet ? LOCK_EXCLUSIVE : LOCK_SHARED;
+    NvU32 ceEngineIndex;
+
+    if (!NV2080_ENGINE_TYPE_IS_COPY(ceEngineType))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+    ceEngineIndex = NV2080_ENGINE_TYPE_COPY_IDX(ceEngineType);
+
+    _cacheLockAcquire(lockType);
+
+    if (_cacheIsDisabled())
+    {
+        // unexpected mode change.
+        status = NV_ERR_INVALID_STATE;
+        goto done;
+    }
+
+    status = _rmapiControlCacheGetGpuAttrForObject(hClient, hObject, &gpuInst, NULL);
+    if (status != NV_OK)
+        goto done;
+
+    entry = _getOrInitCacheEntry(gpuInst, NV2080_CTRL_CMD_CE_GET_CE_PCE_MASK,
+                                 bSet, bPersistent, allocSize, NULL);
+    if (entry == NULL || entry->params == NULL)
+    {
+        status = NV_ERR_NO_MEMORY;
+        goto done;
+    }
+
+    cachedTable = (CePceMaskCacheEntry *)entry->params;
+
+    if (bSet)
+    {
+        if (cachedTable[ceEngineIndex].valid)
+        {
+            NV_ASSERT(*pceMask == cachedTable[ceEngineIndex].pceMask);
+        }
+        else
+        {
+            cachedTable[ceEngineIndex].valid = NV_TRUE;
+            cachedTable[ceEngineIndex].pceMask = *pceMask;
+        }
+    }
+    else
+    {
+        if (!cachedTable[ceEngineIndex].valid)
+        {
+            status = NV_ERR_OBJECT_NOT_FOUND;
+            goto done;
+        }
+        else
+        {
+            *pceMask = cachedTable[ceEngineIndex].pceMask;
+        }
+    }
+
+done:
+    if (status != NV_OK && bSet)
+    {
+        if (entry != NULL)
+        {
+            if (entry->params != NULL)
+                portMemFree(entry->params);
+            multimapRemoveItem(&RmapiControlCache.gpusControlCache, entry);
+        }
+    }
+    _cacheLockRelease(lockType);
+
+    return status;
+}
+
+NV_STATUS rmapiControlCacheFreeForControl
+(
+    NvU32 gpuInstance,
+    NvU32 cmd
+)
+{
+    RmapiControlCacheEntry *entry = NULL;
+
+    _cacheLockAcquire(LOCK_EXCLUSIVE);
+
+    entry = multimapFindItem(&RmapiControlCache.gpusControlCache, gpuInstance, cmd);
+
+    if (entry == NULL)
+        goto done;
+
+    if (entry->params != NULL)
+        portMemFree(entry->params);
+
+    multimapRemoveItem(&RmapiControlCache.gpusControlCache, entry);
+
+done:
+    _cacheLockRelease(LOCK_EXCLUSIVE);
+
+    return NV_OK;
+}
+
 NV_STATUS _rmapiControlCacheGetByInput
 (
     NvHandle hClient,
     NvHandle hObject,
-    NvU32 cmd,
-    void* params,
-    NvU32 paramsSize
+    NvU32    cmd,
+    NvBool   bPersistent,
+    void*    params,
+    NvU32    paramsSize
 )
 {
     switch (cmd)
@@ -935,31 +1240,44 @@ NV_STATUS _rmapiControlCacheGetByInput
                                         ((NV2080_CTRL_GPU_GET_INFO_V2_PARAMS*)params)->gpuInfoList,
                                         ((NV2080_CTRL_GPU_GET_INFO_V2_PARAMS*)params)->gpuInfoListSize,
                                         NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE,
-                                        NV_FALSE);
+                                        NV_FALSE, bPersistent);
 
         case NV2080_CTRL_CMD_FIFO_GET_INFO:
             return _getInfoCacheHandler(hClient, hObject, cmd,
                                         ((NV2080_CTRL_FIFO_GET_INFO_PARAMS*)params)->fifoInfoTbl,
                                         ((NV2080_CTRL_FIFO_GET_INFO_PARAMS*)params)->fifoInfoTblSize,
                                         NV2080_CTRL_FIFO_GET_INFO_MAX_ENTRIES,
-                                        NV_FALSE);
+                                        NV_FALSE, bPersistent);
 
         case NV2080_CTRL_CMD_BUS_GET_INFO_V2:
             return _getInfoCacheHandler(hClient, hObject, cmd,
                                         ((NV2080_CTRL_BUS_GET_INFO_V2_PARAMS*)params)->busInfoList,
                                         ((NV2080_CTRL_BUS_GET_INFO_V2_PARAMS*)params)->busInfoListSize,
                                         NV2080_CTRL_BUS_INFO_MAX_LIST_SIZE,
-                                        NV_FALSE);
+                                        NV_FALSE, bPersistent);
 
         case NV2080_CTRL_CMD_BIOS_GET_INFO_V2:
             return _getInfoCacheHandler(hClient, hObject, cmd,
                                         ((NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS*)params)->biosInfoList,
                                         ((NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS*)params)->biosInfoListSize,
                                         NV2080_CTRL_BIOS_INFO_MAX_SIZE,
-                                        NV_FALSE);
+                                        NV_FALSE, bPersistent);
+
+        case NV2080_CTRL_CMD_CE_GET_PHYSICAL_CAPS:
+            return _getCePhysicalCapsHandler(hClient, hObject,
+                                             ((NV2080_CTRL_CE_GET_PHYSICAL_CAPS_PARAMS*)params)->ceEngineType,
+                                             ((NV2080_CTRL_CE_GET_PHYSICAL_CAPS_PARAMS*)params)->capsTbl,
+                                             NV_FALSE, bPersistent);
+
+        case NV2080_CTRL_CMD_CE_GET_CE_PCE_MASK:
+            return _getCePceMaskHandler(hClient, hObject,
+                                        ((NV2080_CTRL_CE_GET_CE_PCE_MASK_PARAMS*)params)->ceEngineType,
+                                        &((NV2080_CTRL_CE_GET_CE_PCE_MASK_PARAMS*)params)->pceMask,
+                                        NV_FALSE, bPersistent);
 
         case NV2080_CTRL_CMD_GPU_GET_NAME_STRING:
-            return _gpuNameStringGet(hClient, hObject, params);
+            return _gpuNameStringGet(hClient, hObject, bPersistent, params);
+
         default:
             NV_PRINTF(LEVEL_WARNING, "No implementation for cacheable by input cmd 0x%x\n", cmd);
             return NV_ERR_OBJECT_NOT_FOUND;
@@ -971,6 +1289,7 @@ NV_STATUS _rmapiControlCacheSetByInput
     NvHandle hClient,
     NvHandle hObject,
     NvU32 cmd,
+    NvBool bPersistent,
     void* params,
     NvU32 paramsSize
 )
@@ -982,31 +1301,44 @@ NV_STATUS _rmapiControlCacheSetByInput
                                         ((NV2080_CTRL_GPU_GET_INFO_V2_PARAMS*)params)->gpuInfoList,
                                         ((NV2080_CTRL_GPU_GET_INFO_V2_PARAMS*)params)->gpuInfoListSize,
                                         NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE,
-                                        NV_TRUE);
+                                        NV_TRUE, bPersistent);
 
         case NV2080_CTRL_CMD_FIFO_GET_INFO:
             return _getInfoCacheHandler(hClient, hObject, cmd,
                                         ((NV2080_CTRL_FIFO_GET_INFO_PARAMS*)params)->fifoInfoTbl,
                                         ((NV2080_CTRL_FIFO_GET_INFO_PARAMS*)params)->fifoInfoTblSize,
                                         NV2080_CTRL_FIFO_GET_INFO_MAX_ENTRIES,
-                                        NV_TRUE);
+                                        NV_TRUE, bPersistent);
 
         case NV2080_CTRL_CMD_BUS_GET_INFO_V2:
             return _getInfoCacheHandler(hClient, hObject, cmd,
                                         ((NV2080_CTRL_BUS_GET_INFO_V2_PARAMS*)params)->busInfoList,
                                         ((NV2080_CTRL_BUS_GET_INFO_V2_PARAMS*)params)->busInfoListSize,
                                         NV2080_CTRL_BUS_INFO_MAX_LIST_SIZE,
-                                        NV_TRUE);
+                                        NV_TRUE, bPersistent);
 
         case NV2080_CTRL_CMD_BIOS_GET_INFO_V2:
             return _getInfoCacheHandler(hClient, hObject, cmd,
                                         ((NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS*)params)->biosInfoList,
                                         ((NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS*)params)->biosInfoListSize,
                                         NV2080_CTRL_BIOS_INFO_MAX_SIZE,
-                                        NV_TRUE);
+                                        NV_TRUE, bPersistent);
+
+        case NV2080_CTRL_CMD_CE_GET_PHYSICAL_CAPS:
+            return _getCePhysicalCapsHandler(hClient, hObject,
+                                             ((NV2080_CTRL_CE_GET_PHYSICAL_CAPS_PARAMS*)params)->ceEngineType,
+                                             ((NV2080_CTRL_CE_GET_PHYSICAL_CAPS_PARAMS*)params)->capsTbl,
+                                             NV_TRUE, bPersistent);
+
+        case NV2080_CTRL_CMD_CE_GET_CE_PCE_MASK:
+            return _getCePceMaskHandler(hClient, hObject,
+                                        ((NV2080_CTRL_CE_GET_CE_PCE_MASK_PARAMS*)params)->ceEngineType,
+                                        &((NV2080_CTRL_CE_GET_CE_PCE_MASK_PARAMS*)params)->pceMask,
+                                        NV_TRUE, bPersistent);
 
         case NV2080_CTRL_CMD_GPU_GET_NAME_STRING:
-            return _gpuNameStringSet(hClient, hObject, params);
+            return _gpuNameStringSet(hClient, hObject, bPersistent, params);
+
         default:
             NV_PRINTF(LEVEL_WARNING, "No implementation for cacheable by input cmd 0x%x\n", cmd);
             return NV_ERR_OBJECT_NOT_FOUND;
@@ -1025,6 +1357,7 @@ NV_STATUS rmapiControlCacheGet
     NV_STATUS status = NV_OK;
     NvU32 flags;
     NvU32 ctrlParamsSize;
+    NvBool bPersistent;
 
     if (RmapiControlCache.mode == NV0000_CTRL_SYSTEM_RMCTRL_CACHE_MODE_CTRL_MODE_VERIFY_ONLY)
         return NV_ERR_OBJECT_NOT_FOUND;
@@ -1037,13 +1370,15 @@ NV_STATUS rmapiControlCacheGet
                      (params != NULL && paramsSize == ctrlParamsSize),
                      status = NV_ERR_INVALID_PARAMETER; goto done);
 
+    bPersistent = ((flags & RMCTRL_FLAGS_PERSISTENT_CACHEABLE) != 0);
+
     switch ((flags & RMCTRL_FLAGS_CACHEABLE_ANY))
     {
         case RMCTRL_FLAGS_CACHEABLE:
-            status = _rmapiControlCacheGet(hClient, hObject, cmd, params, paramsSize);
+            status = _rmapiControlCacheGet(hClient, hObject, cmd, bPersistent, params, paramsSize);
             break;
         case RMCTRL_FLAGS_CACHEABLE_BY_INPUT:
-            status = _rmapiControlCacheGetByInput(hClient, hObject, cmd, params, paramsSize);
+            status = _rmapiControlCacheGetByInput(hClient, hObject, cmd, bPersistent, params, paramsSize);
             break;
         default:
             NV_PRINTF(LEVEL_ERROR, "Invalid cacheable flag 0x%x for cmd 0x%x\n", flags, cmd);
@@ -1068,6 +1403,7 @@ NV_STATUS rmapiControlCacheSet
     NV_STATUS status = NV_OK;
     NvU32 flags;
     NvU32 ctrlParamsSize;
+    NvBool bPersistent;
 
     status = rmapiutilGetControlInfo(cmd, &flags, NULL, &ctrlParamsSize);
     if (status != NV_OK)
@@ -1077,13 +1413,15 @@ NV_STATUS rmapiControlCacheSet
                      (params != NULL && paramsSize == ctrlParamsSize),
                      status = NV_ERR_INVALID_PARAMETER; goto done);
 
+    bPersistent = ((flags & RMCTRL_FLAGS_PERSISTENT_CACHEABLE) != 0);
+
     switch ((flags & RMCTRL_FLAGS_CACHEABLE_ANY))
     {
         case RMCTRL_FLAGS_CACHEABLE:
-            status = _rmapiControlCacheSet(hClient, hObject, cmd, params, paramsSize);
+            status = _rmapiControlCacheSet(hClient, hObject, cmd, bPersistent, params, paramsSize);
             break;
         case RMCTRL_FLAGS_CACHEABLE_BY_INPUT:
-            status = _rmapiControlCacheSetByInput(hClient, hObject, cmd, params, paramsSize);
+            status = _rmapiControlCacheSetByInput(hClient, hObject, cmd, bPersistent, params, paramsSize);
             break;
         default:
             NV_PRINTF(LEVEL_ERROR, "Invalid cacheable flag 0x%x for cmd 0x%x\n", flags, cmd);
@@ -1097,25 +1435,48 @@ done:
 }
 
 // Need to hold rmapi control cache write lock
-static void _freeSubmap(GpusControlCacheSubmap* submap)
+static void _freeSubmap(GpusControlCache *pMap, GpusControlCacheSubmap* pSubmap)
 {
     /* (Sub)map modification invalidates the iterator, so we have to restart */
     while (NV_TRUE)
     {
-        GpusControlCacheIter it = multimapSubmapIterItems(&RmapiControlCache.gpusControlCache, submap);
+        GpusControlCacheIter it = multimapSubmapIterItems(pMap, pSubmap);
 
         if (multimapItemIterNext(&it))
         {
             RmapiControlCacheEntry* entry = it.pValue;
             portMemFree(entry->params);
-            multimapRemoveItem(&RmapiControlCache.gpusControlCache, entry);
+            multimapRemoveItem(pMap, entry);
         }
         else
         {
             break;
         }
     }
-    multimapRemoveSubmap(&RmapiControlCache.gpusControlCache, submap);
+    multimapRemoveSubmap(pMap, pSubmap);
+}
+
+static void _rmapiControlCacheFreeGpuCache(NvU32 gpuInst, NvBool bPersistent)
+{
+    GpusControlCacheSubmap *submap;
+    GpusControlCache       *gpuCache = (bPersistent) ? &RmapiControlCache.gpusPersistentCache
+                                                     : &RmapiControlCache.gpusControlCache;
+
+    submap = multimapFindSubmap(gpuCache, gpuInst);
+    if (submap != NULL)
+        _freeSubmap(gpuCache, submap);
+}
+
+void rmapiControlCacheFreeNonPersistentCacheForGpu
+(
+    NvU32 gpuInst
+)
+{
+    _cacheLockAcquire(LOCK_EXCLUSIVE);
+
+    _rmapiControlCacheFreeGpuCache(gpuInst, NV_FALSE);
+
+    _cacheLockRelease(LOCK_EXCLUSIVE);
 }
 
 void rmapiControlCacheFreeAllCacheForGpu
@@ -1123,14 +1484,10 @@ void rmapiControlCacheFreeAllCacheForGpu
     NvU32 gpuInst
 )
 {
-    GpusControlCacheSubmap* submap;
-
     _cacheLockAcquire(LOCK_EXCLUSIVE);
 
-    submap = multimapFindSubmap(&RmapiControlCache.gpusControlCache, gpuInst);
-
-    if (submap != NULL)
-        _freeSubmap(submap);
+    _rmapiControlCacheFreeGpuCache(gpuInst, NV_FALSE);
+    _rmapiControlCacheFreeGpuCache(gpuInst, NV_TRUE);
 
     _cacheLockRelease(LOCK_EXCLUSIVE);
 }
@@ -1166,9 +1523,18 @@ void rmapiControlCacheFree(void)
         portMemFree(entry->params);
     }
 
+    it = multimapItemIterAll(&RmapiControlCache.gpusPersistentCache);
+    while (multimapItemIterNext(&it))
+    {
+        RmapiControlCacheEntry* entry = it.pValue;
+        portMemFree(entry->params);
+    }
+
     multimapDestroy(&RmapiControlCache.gpusControlCache);
+    multimapDestroy(&RmapiControlCache.gpusPersistentCache);
     mapDestroy(&RmapiControlCache.objectToGpuAttrMap);
     portSyncRwLockDestroy(RmapiControlCache.pLock);
+    RmapiControlCache.pLock = NULL;
 }
 
 void rmapiControlCacheSetMode(NvU32 mode)

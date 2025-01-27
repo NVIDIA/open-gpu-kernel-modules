@@ -38,6 +38,7 @@
 #define portMemExTrackingGetNext_SUPPORTED              \
     (PORT_MEM_TRACK_USE_FENCEPOSTS & PORT_MEM_TRACK_USE_ALLOCLIST)
 #define portMemExTrackingGetHeapSize_SUPPORTED          (NVOS_IS_LIBOS)
+#define portMemGetLargestFreeChunkSize_SUPPORTED        (NVOS_IS_LIBOS)
 #define portMemExValidate_SUPPORTED            0
 #define portMemExValidateAllocations_SUPPORTED 0
 #define portMemExFreeAll_SUPPORTED             0

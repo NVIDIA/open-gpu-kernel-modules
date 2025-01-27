@@ -62,7 +62,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCrashCatEngine =
     /*pExportInfo=*/        &__nvoc_export_info_KernelCrashCatEngine
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge KernelCrashCatEngine methods from ancestors (if any)
 NvBool __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineConfigured(struct CrashCatEngine *arg_this);    // this
 void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineUnload(struct CrashCatEngine *arg_this);    // this
 void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineVprintf(struct CrashCatEngine *arg_this, NvBool bReportStart, const char *fmt, va_list args);    // this
@@ -78,56 +78,56 @@ NvU32 __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineGetWFL0Offset(struct 
 
 // kcrashcatEngineConfigured: virtual override (crashcatEngine) base (crashcatEngine)
 NvBool __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineConfigured(struct CrashCatEngine *arg_this) {
-    return kcrashcatEngineConfigured((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - __nvoc_rtti_KernelCrashCatEngine_CrashCatEngine.offset));
+    return kcrashcatEngineConfigured((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCrashCatEngine, __nvoc_base_CrashCatEngine)));
 }
 
 // kcrashcatEngineUnload: virtual override (crashcatEngine) base (crashcatEngine)
 void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineUnload(struct CrashCatEngine *arg_this) {
-    kcrashcatEngineUnload((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - __nvoc_rtti_KernelCrashCatEngine_CrashCatEngine.offset));
+    kcrashcatEngineUnload((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCrashCatEngine, __nvoc_base_CrashCatEngine)));
 }
 
 // kcrashcatEngineVprintf: virtual override (crashcatEngine) base (crashcatEngine)
 void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineVprintf(struct CrashCatEngine *arg_this, NvBool bReportStart, const char *fmt, va_list args) {
-    kcrashcatEngineVprintf((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - __nvoc_rtti_KernelCrashCatEngine_CrashCatEngine.offset), bReportStart, fmt, args);
+    kcrashcatEngineVprintf((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCrashCatEngine, __nvoc_base_CrashCatEngine)), bReportStart, fmt, args);
 }
 
 // kcrashcatEnginePriRead: virtual override (crashcatEngine) base (crashcatEngine)
 NvU32 __nvoc_down_thunk_KernelCrashCatEngine_crashcatEnginePriRead(struct CrashCatEngine *arg_this, NvU32 offset) {
-    return kcrashcatEnginePriRead((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - __nvoc_rtti_KernelCrashCatEngine_CrashCatEngine.offset), offset);
+    return kcrashcatEnginePriRead((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCrashCatEngine, __nvoc_base_CrashCatEngine)), offset);
 }
 
 // kcrashcatEnginePriWrite: virtual override (crashcatEngine) base (crashcatEngine)
 void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEnginePriWrite(struct CrashCatEngine *arg_this, NvU32 offset, NvU32 data) {
-    kcrashcatEnginePriWrite((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - __nvoc_rtti_KernelCrashCatEngine_CrashCatEngine.offset), offset, data);
+    kcrashcatEnginePriWrite((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCrashCatEngine, __nvoc_base_CrashCatEngine)), offset, data);
 }
 
 // kcrashcatEngineMapBufferDescriptor: virtual override (crashcatEngine) base (crashcatEngine)
 void * __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineMapBufferDescriptor(struct CrashCatEngine *arg_this, CrashCatBufferDescriptor *pBufDesc) {
-    return kcrashcatEngineMapBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - __nvoc_rtti_KernelCrashCatEngine_CrashCatEngine.offset), pBufDesc);
+    return kcrashcatEngineMapBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCrashCatEngine, __nvoc_base_CrashCatEngine)), pBufDesc);
 }
 
 // kcrashcatEngineUnmapBufferDescriptor: virtual override (crashcatEngine) base (crashcatEngine)
 void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineUnmapBufferDescriptor(struct CrashCatEngine *arg_this, CrashCatBufferDescriptor *pBufDesc) {
-    kcrashcatEngineUnmapBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - __nvoc_rtti_KernelCrashCatEngine_CrashCatEngine.offset), pBufDesc);
+    kcrashcatEngineUnmapBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCrashCatEngine, __nvoc_base_CrashCatEngine)), pBufDesc);
 }
 
 // kcrashcatEngineSyncBufferDescriptor: virtual override (crashcatEngine) base (crashcatEngine)
 void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineSyncBufferDescriptor(struct CrashCatEngine *arg_this, CrashCatBufferDescriptor *pBufDesc, NvU32 offset, NvU32 size) {
-    kcrashcatEngineSyncBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - __nvoc_rtti_KernelCrashCatEngine_CrashCatEngine.offset), pBufDesc, offset, size);
+    kcrashcatEngineSyncBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCrashCatEngine, __nvoc_base_CrashCatEngine)), pBufDesc, offset, size);
 }
 
 // kcrashcatEngineGetScratchOffsets: virtual halified (singleton optimized) override (crashcatEngine) base (crashcatEngine)
 const NvU32 * __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineGetScratchOffsets(struct CrashCatEngine *arg_this, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId) {
-    return kcrashcatEngineGetScratchOffsets((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - __nvoc_rtti_KernelCrashCatEngine_CrashCatEngine.offset), scratchGroupId);
+    return kcrashcatEngineGetScratchOffsets((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCrashCatEngine, __nvoc_base_CrashCatEngine)), scratchGroupId);
 }
 
 // kcrashcatEngineGetWFL0Offset: virtual halified (singleton optimized) override (crashcatEngine) base (crashcatEngine)
 NvU32 __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineGetWFL0Offset(struct CrashCatEngine *arg_this) {
-    return kcrashcatEngineGetWFL0Offset((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - __nvoc_rtti_KernelCrashCatEngine_CrashCatEngine.offset));
+    return kcrashcatEngineGetWFL0Offset((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCrashCatEngine, __nvoc_base_CrashCatEngine)));
 }
 
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
+// Up-thunk(s) to bridge KernelCrashCatEngine methods to ancestors (if any)
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelCrashCatEngine = 
 {

@@ -172,8 +172,11 @@ struct drm_gem_object *nv_drm_gem_prime_import(struct drm_device *dev,
              */
             gem_dst = nv_gem_src->ops->prime_dup(dev, nv_gem_src);
 
-            if (gem_dst)
-                return gem_dst;
+            if (gem_dst == NULL) {
+                return ERR_PTR(-ENOTSUPP);
+            }
+
+            return gem_dst;
         }
     }
 #endif /* NV_DMA_BUF_OWNER_PRESENT */

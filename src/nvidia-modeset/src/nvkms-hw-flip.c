@@ -2423,8 +2423,12 @@ NvBool nvAllocatePreFlipBandwidth(NVDevEvoPtr pDevEvo,
         timingsParams[head].pTimings = &pHeadState->timings;
         timingsParams[head].enableDsc = (pHeadState->dscInfo.type !=
             NV_DSC_INFO_EVO_TYPE_DISABLED);
+        timingsParams[head].dscSliceCount = pHeadState->dscInfo.sliceCount;
+        timingsParams[head].possibleDscSliceCountMask =
+            pHeadState->dscInfo.possibleSliceCountMask;
         timingsParams[head].b2Heads1Or =
             (pHeadState->mergeMode != NV_EVO_MERGE_MODE_DISABLED);
+        timingsParams[head].pMultiTileConfig = &pHeadState->multiTileConfig;
 
         nvUnionUsageBounds(pCurrent, pNew, &currentAndNew[head]);
         nvUnionUsageBounds(&pHeadState->timings.viewPort.guaranteedUsage,
@@ -2447,7 +2451,8 @@ NvBool nvAllocatePreFlipBandwidth(NVDevEvoPtr pDevEvo,
                                    FALSE /* requireBootClocks */,
                                    NV_EVO_REALLOCATE_BANDWIDTH_MODE_PRE,
                                    NULL /* pMinIsoBandwidthKBPS */,
-                                   NULL /* pMinDramFloorKBPS */);
+                                   NULL /* pMinDramFloorKBPS */,
+                                   0x0 /* changedHeadsMask */);
         if (ret) {
             for (head = 0; head < pDevEvo->numHeads; head++) {
                 pDevEvo->gpus[0].headState[head].preallocatedUsage =
@@ -2657,8 +2662,12 @@ static void LowerDispBandwidth(void *dataPtr, NvU32 dataU32)
         timingsParams[head].pTimings = &pHeadState->timings;
         timingsParams[head].enableDsc = (pHeadState->dscInfo.type !=
             NV_DSC_INFO_EVO_TYPE_DISABLED);
+        timingsParams[head].dscSliceCount = pHeadState->dscInfo.sliceCount;
+        timingsParams[head].possibleDscSliceCountMask =
+            pHeadState->dscInfo.possibleSliceCountMask;
         timingsParams[head].b2Heads1Or =
             (pHeadState->mergeMode != NV_EVO_MERGE_MODE_DISABLED);
+        timingsParams[head].pMultiTileConfig = &pHeadState->multiTileConfig;
 
         nvUnionUsageBounds(pGuaranteed, pCurrent, &guaranteedAndCurrent[head]);
         timingsParams[head].pUsage = &guaranteedAndCurrent[head];
@@ -2668,7 +2677,8 @@ static void LowerDispBandwidth(void *dataPtr, NvU32 dataU32)
                                FALSE /* requireBootClocks */,
                                NV_EVO_REALLOCATE_BANDWIDTH_MODE_POST,
                                NULL /* pMinIsoBandwidthKBPS */,
-                               NULL /* pMinDramFloorKBPS */);
+                               NULL /* pMinDramFloorKBPS */,
+                               0x0 /* changedHeadsMask */);
     if (ret) {
         for (head = 0; head < pDevEvo->numHeads; head++) {
             pDevEvo->gpus[0].headState[head].preallocatedUsage =
@@ -2964,8 +2974,8 @@ static void SkipLayerPendingFlips(NVDevEvoRec *pDevEvo,
 
 void nvPreFlip(NVDevEvoRec *pDevEvo,
                struct NvKmsFlipWorkArea *pWorkArea,
-               const NvBool applyAllowVrr,
-               const NvBool allowVrr,
+               const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES],
+               const NvU32 allowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES],
                const NvBool skipUpdate)
 {
     NvU32 sd, head;
@@ -2996,8 +3006,12 @@ void nvPreFlip(NVDevEvoRec *pDevEvo,
                               pWorkArea);
     }
 
-    if (applyAllowVrr) {
-        nvSetVrrActive(pDevEvo, allowVrr);
+    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
+        if (applyAllowVrrApiHeadMasks[sd] > 0){
+            // Applying allowVrrApiHeadMask to at least one apiHead
+            nvSetVrrActive(pDevEvo, applyAllowVrrApiHeadMasks, allowVrrApiHeadMasks);
+            break;
+        }
     }
 
     /*
@@ -3050,7 +3064,7 @@ void nvPreFlip(NVDevEvoRec *pDevEvo,
 void nvPostFlip(NVDevEvoRec *pDevEvo,
                 struct NvKmsFlipWorkArea *pWorkArea,
                 const NvBool skipUpdate,
-                const NvBool applyAllowVrr,
+                const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES],
                 NvS32 *pVrrSemaphoreIndex)
 {
     NvU32 sd, head;
@@ -3062,10 +3076,11 @@ void nvPostFlip(NVDevEvoRec *pDevEvo,
                               pWorkArea);
     }
 
-    if (applyAllowVrr) {
-        *pVrrSemaphoreIndex = nvIncVrrSemaphoreIndex(pDevEvo);
-    } else {
-        // TODO Schedule vrr unstall; per-disp/per-device?
+    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
+        if (applyAllowVrrApiHeadMasks[sd] > 0) {
+            *pVrrSemaphoreIndex = nvIncVrrSemaphoreIndex(pDevEvo, applyAllowVrrApiHeadMasks);
+            break;
+        }
     }
 
     for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {

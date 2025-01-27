@@ -285,8 +285,7 @@ static NV_FORCEINLINE int __NVatomicDecrement_LSE(int volatile *location)
 //
 //     for (__NVbsfFirst(&index, &mask, maskInit); mask; __NVbsfNext(&index, &mask)) { ... }
 //
-// These operations are implemented using gcc/MSVC builtins/intrinsics. A test program to verify the correct
-// functionality of these routines is available at //sw/pvt/ddadap/bitscantest.c
+// These operations are implemented using gcc/MSVC builtins/intrinsics.
 //
 // The scan process provides the next valid "index". In __NVbsfNext() the bit corresponding to the passed in
 // (1 << index) will be masked out.

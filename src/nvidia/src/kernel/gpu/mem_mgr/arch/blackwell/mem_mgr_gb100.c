@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,11 +35,12 @@ memmgrIsMemDescSupportedByFla_GB100
 {
     NV_ADDRESS_SPACE addrSpace = memdescGetAddressSpace(pMemDesc);
 
-    if ((addrSpace == ADDR_FBMEM) || (addrSpace == ADDR_SYSMEM))
+    if (!IS_SILICON(pGpu) && (addrSpace == ADDR_SYSMEM))
     {
         return NV_TRUE;
     }
-    return NV_FALSE;
+
+    return memmgrIsMemDescSupportedByFla_GA100(pGpu, pMemoryManager, pMemDesc);
 }
 
 NvU32

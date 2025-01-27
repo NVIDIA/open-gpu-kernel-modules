@@ -33,13 +33,8 @@
 #include "flcnretval.h"
 
 /* ------------------------ Macros ----------------------------------------- */
-#define DER_LONG_FORM_LENGTH_FIELD_BIT   (0x80)
-#define DER_CERT_SIZE_FIELD_LENGTH       (0x4)
-
-#define SPDM_MAX_ENCODED_CERT_CHAIN_SIZE (0x1400)
-
-#define SPDM_PEM_BEGIN_CERTIFICATE "-----BEGIN CERTIFICATE-----\n"
-#define SPDM_PEM_END_CERTIFICATE   "-----END CERTIFICATE-----\n"
+#define SPDM_MAX_ENCODED_CERT_CHAIN_SIZE    (0x1400)
+#define NV_GH100_SPDM_REQUESTER_CERT_COUNT  (3)
 
 #define SPDM_L1_CERTIFICATE_PEM "-----BEGIN CERTIFICATE-----\n"\
                                 "MIICCzCCAZCgAwIBAgIQLTZwscoQBBHB/sDoKgZbVDAKBggqhkjOPQQDAzA1MSIw\n"\
@@ -223,7 +218,7 @@ const static NvU8 SPDM_L3_CERTIFICATE_DER[686] =
 //TODO : Need to generate individual encapsulated certification chain.
 //
 
-NvU8 SPDM_REQ_ENCAP_CERTIFICATE_DER[NV_SPDM_ENCAP_CERT_SIZE_IN_BYTE] =
+static NvU8 SPDM_REQ_ENCAP_CERTIFICATE_DER[NV_SPDM_ENCAP_CERT_SIZE_IN_BYTE] =
 {
     0x30, 0x82, 0x02, 0x3e, 0x30, 0x82, 0x01, 0xc4, 0xa0, 0x03, 0x02, 0x01, 0x02, 0x02, 0x09, 0x00,
     0xff, 0xe0, 0xbc, 0xe4, 0x95, 0xe5, 0x9e, 0xe2, 0x30, 0x0a, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce,
@@ -265,414 +260,162 @@ NvU8 SPDM_REQ_ENCAP_CERTIFICATE_DER[NV_SPDM_ENCAP_CERT_SIZE_IN_BYTE] =
 };
 
 /* ------------------------ Static Functions ------------------------------- */
-/*!
- @param pCert       : The pointer to certification chain start
- @param bufferEnd   : The pointer to certification chain end
- @parsm pCertLength : The pointer to store return certification size
-
- @return Return NV-OK if no error.
-
-* Static function that calculates the length of the X509 certificate in DER/TLV
-* format. It assumes that the certificate is valid.
-*/
-static NV_STATUS
-_calcX509CertSize
-(
-    NvU8 *pCert,
-    NvU8 *bufferEnd,
-    NvU32 *pCertLength
-)
-{
-    // The cert is in TLV format.
-    NvU32 certSize       = pCert[1];
-
-    // Check to make sure that some data exists after SPDM header, and it is enough to check cert size.
-    if (pCert + DER_CERT_SIZE_FIELD_LENGTH >= bufferEnd ||
-        pCert + DER_CERT_SIZE_FIELD_LENGTH <= pCert)
-    {
-        NV_PRINTF(LEVEL_ERROR, " %s: pCert + DER_CERT_SIZE_FIELD_LENGTH(0x%x) is not valid value !! \n",
-                  __FUNCTION__, DER_CERT_SIZE_FIELD_LENGTH);
-
-       return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    // Check if the length is in DER longform.
-    // MSB in the length field is set for long form notation.
-    // fields.
-    if (certSize & DER_LONG_FORM_LENGTH_FIELD_BIT)
-    {
-        //
-        // The remaining bits in the length field indicate the
-        // number of following bytes used to represent the length.
-        // in base 256, most significant digit first.
-        //
-        NvU32 numLenBytes = certSize & 0x3f;
-        NvU8 *pStart      = &pCert[2];
-        NvU8 *pEnd        = pStart + numLenBytes; // NOTE: Don't need to subtract numLenBytes 1 here.
-
-        // Checking for buffer overflow.
-        if (pEnd > bufferEnd)
-        {
-            return NV_ERR_BUFFER_TOO_SMALL;
-        }
-
-        certSize = *pStart;
-        while (++pStart < pEnd)
-        {
-            certSize = (certSize << 8) + *pStart ;
-        }
-        // Total cert length includes the Tag + length
-        // Adding it here.
-        certSize += 2 + numLenBytes;
-    }
-
-    //
-    // Check to make sure we have not hit end of buffer, and there is space for AK cert.
-    // Check for underflow as well. This makes sure we haven't missed the calculation to
-    // go past the end of the buffer
-    //
-    if (pCert + (certSize - 1) > bufferEnd ||
-        pCert + (certSize - 1) <= pCert)
-    {
-        NV_PRINTF(LEVEL_ERROR, " %s: pCert + (certSize(0x%x) - 1) is not a valid value !! \n",
-                  __FUNCTION__, certSize);
-
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    *pCertLength = certSize;
-    return NV_OK;
-}
-
-static NV_STATUS
-pem_write_buffer
-(
-    NvU8 const *der,
-    NvU64       derLen,
-    NvU8       *buffer,
-    NvU64       bufferLen,
-    NvU64      *bufferUsed
-)
-{
-    static const NvU8 base64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    NvU64 i, tmp, size;
-    NvU64 printed = 0;
-    NvU8 *ptr = buffer;
-
-    // Base64 encoded size
-    size = (derLen + 2) / 3 * 4;
-
-    // Add 1 byte per 64 for newline
-    size = size + (size + 63) / 64;
-
-    // Add header excluding the terminating null and footer including the null
-    size += sizeof(SPDM_PEM_BEGIN_CERTIFICATE) - 1 +
-            sizeof(SPDM_PEM_END_CERTIFICATE);
-
-    if (bufferLen < size)
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    portMemCopy(ptr, bufferLen - (ptr - buffer), SPDM_PEM_BEGIN_CERTIFICATE,
-                sizeof(SPDM_PEM_BEGIN_CERTIFICATE) - 1);
-    ptr += sizeof(SPDM_PEM_BEGIN_CERTIFICATE) - 1;
-
-    for (i = 0; (i + 2) < derLen; i += 3)
-    {
-        tmp = (der[i] << 16) | (der[i + 1] << 8) | (der[i + 2]);
-        *ptr++ = base64[(tmp >> 18) & 63];
-        *ptr++ = base64[(tmp >> 12) & 63];
-        *ptr++ = base64[(tmp >> 6) & 63];
-        *ptr++ = base64[(tmp >> 0) & 63];
-
-        printed += 4;
-        if (printed == 64)
-        {
-            *ptr++ = '\n';
-            printed = 0;
-        }
-    }
-
-    if ((i == derLen) && (printed != 0))
-    {
-        *ptr++ = '\n';
-    }
-
-    // 1 byte extra
-    if (i == (derLen - 1))
-    {
-        tmp = der[i] << 4;
-        *ptr++ = base64[(tmp >> 6) & 63];
-        *ptr++ = base64[(tmp >> 0) & 63];
-        *ptr++ = '=';
-        *ptr++ = '=';
-        *ptr++ = '\n';
-    }
-
-    // 2 byte extra
-    if (i == (derLen - 2))
-    {
-        tmp = ((der[i] << 8) | (der[i + 1])) << 2;
-        *ptr++ = base64[(tmp >> 12) & 63];
-        *ptr++ = base64[(tmp >> 6) & 63];
-        *ptr++ = base64[(tmp >> 0) & 63];
-        *ptr++ = '=';
-        *ptr++ = '\n';
-    }
-
-     portMemCopy(ptr, bufferLen - (ptr - buffer), SPDM_PEM_END_CERTIFICATE,
-                 sizeof(SPDM_PEM_END_CERTIFICATE));
-     ptr += sizeof(SPDM_PEM_END_CERTIFICATE);
-
-    *bufferUsed = size;
-    return NV_OK;
-}
-
-/*!
-* Static function builds the cert chain in DER format. It is assumed that
-* the all the certificates are valid. Also it is assumed that there is a valid
-* spdm session already established.
-*/
-static NV_STATUS
-_spdmBuildCertChainDer
-(
-    NvU8   *pFirstCert,
-    NvU32   firstCertSize,
-    NvU8   *pSecondCert,
-    NvU32   secondCertSize,
-    NvU8   *pOutBuffer,
-    size_t *outBufferSize
-)
-{
-    NvU64      remainingOutBufferSize = 0;
-    NvU64      totalSize              = 0;
-    void      *pPortMemCopyStatus     = NULL;
-
-    if (pFirstCert == NULL || pSecondCert == NULL || pOutBuffer == NULL || outBufferSize == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    // Calculate the total size of the certificate chain (in DER).
-    totalSize = sizeof(SPDM_L1_CERTIFICATE_DER) +
-                sizeof(SPDM_L2_CERTIFICATE_DER) +
-                sizeof(SPDM_L3_CERTIFICATE_DER) +
-                secondCertSize                  +
-                firstCertSize;
-
-    remainingOutBufferSize = *outBufferSize;
-    if (remainingOutBufferSize < totalSize)
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    //
-    // Write the L1 DER certificate to the output buffer
-    //
-    pPortMemCopyStatus = portMemCopy(pOutBuffer,
-                                     remainingOutBufferSize,
-                                     SPDM_L1_CERTIFICATE_DER,
-                                     sizeof(SPDM_L1_CERTIFICATE_DER));
-    if (pPortMemCopyStatus == NULL)
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    remainingOutBufferSize -= sizeof(SPDM_L1_CERTIFICATE_DER);
-    pOutBuffer             += sizeof(SPDM_L1_CERTIFICATE_DER);
-
-    //
-    // Write the L2 DER certificate to the output buffer
-    //
-    pPortMemCopyStatus = portMemCopy(pOutBuffer,
-                                     remainingOutBufferSize,
-                                     SPDM_L2_CERTIFICATE_DER,
-                                     sizeof(SPDM_L2_CERTIFICATE_DER));
-    if (pPortMemCopyStatus == NULL)
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    remainingOutBufferSize -= sizeof(SPDM_L2_CERTIFICATE_DER);
-    pOutBuffer             += sizeof(SPDM_L2_CERTIFICATE_DER);
-
-    //
-    // Write the L3 DER certificate to the output buffer
-    //
-    pPortMemCopyStatus = portMemCopy(pOutBuffer,
-                                     remainingOutBufferSize,
-                                     SPDM_L3_CERTIFICATE_DER,
-                                     sizeof(SPDM_L3_CERTIFICATE_DER));
-    if (pPortMemCopyStatus == NULL)
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    remainingOutBufferSize -= sizeof(SPDM_L3_CERTIFICATE_DER);
-    pOutBuffer             += sizeof(SPDM_L3_CERTIFICATE_DER);
-
-    //
-    // Write the IK certificate in DER to the output buffer
-    //
-    pPortMemCopyStatus = portMemCopy(pOutBuffer,
-                                     remainingOutBufferSize,
-                                     pSecondCert,
-                                     secondCertSize);
-    if (pPortMemCopyStatus == NULL)
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    remainingOutBufferSize -= secondCertSize;
-    pOutBuffer             += secondCertSize;
-
-    //
-    // Write the AK certificate in DER to the output buffer
-    //
-    pPortMemCopyStatus = portMemCopy(pOutBuffer,
-                                     remainingOutBufferSize,
-                                     pFirstCert,
-                                     firstCertSize);
-    if (pPortMemCopyStatus == NULL)
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    remainingOutBufferSize -= firstCertSize;
-    pOutBuffer             += firstCertSize;
-
-    // Output the total certificate chain size
-    *outBufferSize = totalSize;
-
-    return NV_OK;
-}
-
-/*!
-* Static function that first converts the IK and AK certificates from DER to
-* PEM format. Then it builds the cert chain in PEM format. It is assumed that
-* the all the certificates are valid. Also it is assumed that there is a valid
-* spdm session already established.
-*/
-static NV_STATUS
-_spdmBuildCertChainPem
-(
-    NvU8   *pFirstCert,
-    NvU32   firstCertSize,
-    NvU8   *pSecondCert,
-    NvU32   secondCertSize,
-    NvU8   *pOutBuffer,
-    size_t *outBufferSize
-)
-{
-    NvU64              firstCertOutputSize      = 0;
-    NvU64              secondCertOutputSize     = 0;
-    NvU64              remainingOutBufferSize   = 0;
-    void              *pPortMemCopyStatus       = NULL;
-    NV_STATUS          status;
-
-    if (pFirstCert == NULL || pSecondCert == NULL || pOutBuffer == NULL || outBufferSize == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    remainingOutBufferSize = *outBufferSize;
-
-    //
-    // Write the AK certificate to the output buffer
-    //
-    status = pem_write_buffer(pFirstCert, firstCertSize, pOutBuffer,
-                              remainingOutBufferSize, &firstCertOutputSize);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    //
-    // Keep track how much space we have left in the output buffer
-    // and where the next certificate should start.
-    // Clear the last byte (NULL).
-    //
-    remainingOutBufferSize -= firstCertOutputSize - 1;
-    pOutBuffer             += firstCertOutputSize - 1;
-
-    //
-    // Write the IK certificate to the output buffer
-    //
-    status = pem_write_buffer(pSecondCert, secondCertSize, pOutBuffer,
-                              remainingOutBufferSize, &secondCertOutputSize);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    remainingOutBufferSize -= secondCertOutputSize - 1;
-    pOutBuffer             += secondCertOutputSize - 1;
-
-    // Checking if the available size of buffer is enough to keep the whole
-    // certificate chain otherwise raise error.
-    if (remainingOutBufferSize < sizeof(SPDM_L1_CERTIFICATE_PEM)
-                               + sizeof(SPDM_L2_CERTIFICATE_PEM)
-                               + sizeof(SPDM_L3_CERTIFICATE_PEM))
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    //
-    // Write the L3 certificate to the output buffer
-    //
-    pPortMemCopyStatus = portMemCopy(pOutBuffer,
-                                     remainingOutBufferSize,
-                                     SPDM_L3_CERTIFICATE_PEM,
-                                     sizeof(SPDM_L3_CERTIFICATE_PEM) - 1);
-    if (pPortMemCopyStatus == NULL)
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    remainingOutBufferSize -= sizeof(SPDM_L3_CERTIFICATE_PEM) - 1;
-    pOutBuffer             += sizeof(SPDM_L3_CERTIFICATE_PEM) - 1;
-
-    //
-    // Write the L2 certificate to the output buffer
-    //
-    pPortMemCopyStatus = portMemCopy(pOutBuffer,
-                                     remainingOutBufferSize,
-                                     SPDM_L2_CERTIFICATE_PEM,
-                                     sizeof(SPDM_L2_CERTIFICATE_PEM) - 1);
-    if (pPortMemCopyStatus == NULL)
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-    remainingOutBufferSize -= sizeof(SPDM_L2_CERTIFICATE_PEM) - 1;
-    pOutBuffer             += sizeof(SPDM_L2_CERTIFICATE_PEM) - 1;
-
-    //
-    // Write the L1 certificate to the output buffer
-    //
-    pPortMemCopyStatus = portMemCopy(pOutBuffer,
-                                     remainingOutBufferSize,
-                                     SPDM_L1_CERTIFICATE_PEM,
-                                     sizeof(SPDM_L1_CERTIFICATE_PEM) - 1);
-    if (pPortMemCopyStatus == NULL)
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    //
-    // Output the total certificate chain size
-    // Do not count the NULL bytes.
-    //
-    *outBufferSize = firstCertOutputSize - 1 +
-                     secondCertOutputSize - 1 +
-                     sizeof(SPDM_L3_CERTIFICATE_PEM) - 1 +
-                     sizeof(SPDM_L2_CERTIFICATE_PEM) - 1 +
-                     sizeof(SPDM_L1_CERTIFICATE_PEM) - 1;
-
-    return NV_OK;
-}
 
 /* ------------------------ Public Functions ------------------------------- */
+/*!
+ *  Return requester certificate count
+ *
+ * @param[in]  pGpu          Pointer to GPU object.
+ * @param[in]  pSpdm         Pointer to SPDM object.
+ * @param[out] pCertCount    The pointer to store requester certificate count
+ *
+ * @return     Return NV_OK if no error; otherwise return NV_ERR_XXX
+ */
+NV_STATUS
+spdmGetRequesterCertificateCount_GH100
+(
+    OBJGPU *pGpu,
+    Spdm   *pSpdm,
+    NvU32  *pCertCount
+)
+{
+    if (pCertCount == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    *pCertCount = NV_GH100_SPDM_REQUESTER_CERT_COUNT;
+
+    return NV_OK;
+}
+
+/*!
+ *  To return individual certificate.
+ *
+ * @param[in]     pGpu        Pointer to GPU object.
+ * @param[in]     pSpdm       Pointer to SPDM object.
+ * @param[in]     certId      The certificate id
+ * @param[in]     bDerFormat  To indicate return cert format, DER or PEM.
+ * @param[out]    pCert       Pointer to return certificate
+ * @param[in/out] pCertSize   As input, this pointer represent the size of pCert buffer;
+ *                            as output, this pointer contain the size of return certificate.
+ *
+ * @return     Return NV_OK if no error; otherwise return NV_ERR_XXX
+ */
+NV_STATUS
+spdmGetIndividualCertificate_GH100
+(
+    OBJGPU *pGpu,
+    Spdm   *pSpdm,
+    NvU32   certId,
+    NvBool  bDerFormat,
+    void   *pCert,
+    NvU64  *pCertSize
+)
+{
+    NvU64  certSize;
+    const  NvU8  *pCertSrc  = NULL;
+    void  *pCopyRet  = NULL;
+    NvBool bNeedCopy = NV_FALSE;
+
+    if (pCertSize == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    bNeedCopy = (pCert == NULL ? NV_FALSE : NV_TRUE);
+
+    switch(certId)
+    {
+       case NV_SPDM_REQ_L1_CERTIFICATE_ID:
+           if (bNeedCopy && *pCertSize < sizeof(SPDM_L1_CERTIFICATE_DER))
+           {
+               return NV_ERR_BUFFER_TOO_SMALL;
+           }
+           else
+           {
+               if (bDerFormat)
+               {
+                   certSize = sizeof(SPDM_L1_CERTIFICATE_DER);
+                   pCertSrc = SPDM_L1_CERTIFICATE_DER;
+               }
+               else
+               {
+                   certSize = sizeof(SPDM_L1_CERTIFICATE_PEM);
+                   pCertSrc = (const NvU8 *)SPDM_L1_CERTIFICATE_PEM;
+               }
+           }
+       break;
+
+       case NV_SPDM_REQ_L2_CERTIFICATE_ID:
+            if (bNeedCopy && *pCertSize < sizeof(SPDM_L2_CERTIFICATE_DER))
+            {
+                return NV_ERR_BUFFER_TOO_SMALL;
+            }
+            else
+            {
+                if (bDerFormat)
+                {
+                    certSize = sizeof(SPDM_L2_CERTIFICATE_DER);
+                    pCertSrc = SPDM_L2_CERTIFICATE_DER;
+                }
+                else
+                {
+                    certSize = sizeof(SPDM_L2_CERTIFICATE_PEM);
+                    pCertSrc = (const NvU8 *)SPDM_L2_CERTIFICATE_PEM;
+                }
+            }
+       break;
+
+       case NV_SPDM_REQ_L3_CERTIFICATE_ID:
+            if (bNeedCopy && *pCertSize < sizeof(SPDM_L3_CERTIFICATE_DER))
+            {
+               return NV_ERR_BUFFER_TOO_SMALL;
+            }
+            else
+            {
+                if (bDerFormat)
+                {
+                    certSize = sizeof(SPDM_L3_CERTIFICATE_DER);
+                    pCertSrc = SPDM_L3_CERTIFICATE_DER;
+                }
+                else
+                {
+                    certSize = sizeof(SPDM_L3_CERTIFICATE_PEM);
+                    pCertSrc = (const NvU8 *)SPDM_L3_CERTIFICATE_PEM;
+                }
+            }
+       break;
+
+       default:
+           *pCertSize = 0;
+           return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if (bNeedCopy)
+    {
+        pCopyRet = portMemCopy(pCert, certSize, pCertSrc, certSize);
+
+        if (pCopyRet == NULL)
+        {
+           *pCertSize = 0;
+           return NV_ERR_INVALID_DATA;
+        }
+    }
+
+   *pCertSize = certSize;
+
+    return NV_OK;
+}
+
+/*!
+ *  To get responder certificate.
+ *
+ * @param[in]     pGpu        Pointer to GPU object.
+ * @param[in]     pSpdm       Pointer to SPDM object.
+ *
+ * @return     Return NV_OK if no error; otherwise return NV_ERR_XXX
+ */
 NV_STATUS
 spdmGetCertificates_GH100
 (
@@ -680,24 +423,13 @@ spdmGetCertificates_GH100
     Spdm   *pSpdm
 )
 {
-    NV_STATUS          status = NV_OK;
-    NvU8              *pIkCertificate          = NULL;
-    NvU32              ikCertificateSize       = 0;
-    NvU8              *pAkCertificate          = NULL;
-    NvU32              akCertificateSize       = 0;
-    NvU8              *pGpuCerts               = NULL;
-    size_t             gpuCertsSize            = 0;
-    NvU8              *pDerCertChain           = NULL;
-    size_t             derCertChainSize        = 0;
-    NvU8              *pSpdmCertChainBufferEnd = NULL;
-    libspdm_context_t *pContext                = NULL;
-    uint32_t           base_hash_algo          = 0;
-    NvU32              totalSize               = 0;
-
-    if (pGpu == NULL || pSpdm == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
+    NV_STATUS             status = NV_OK;
+    NvU8                 *pGpuCerts               = NULL;
+    size_t                gpuCertsSize            = 0;
+    NvU8                 *pDerCertChain           = NULL;
+    size_t                derCertChainSize        = 0;
+    NvU32                 responderCertCount;
+    NV_SPDM_CERT_CONTEXT  responderCertCtx[NV_SPDM_RESPONDER_CERT_COUNT_MAX];
 
     // Don't allow certificate retrieval after session is established.
     if (pSpdm->pLibspdmContext == NULL || pSpdm->sessionId != INVALID_SESSION_ID)
@@ -724,79 +456,30 @@ spdmGetCertificates_GH100
     portMemSet(pDerCertChain, 0, derCertChainSize);
     portMemSet(pSpdm->pAttestationCertChain, 0, pSpdm->attestationCertChainSize);
 
-    // We fetch Attestation cert chain only on Hopper.
+    // We fetch Attestation cert chain on Hopper and Blackwell.
     CHECK_SPDM_STATUS(libspdm_get_certificate(pSpdm->pLibspdmContext, NULL,
                                               SPDM_CERT_DEFAULT_SLOT_ID,
                                               &gpuCertsSize, pGpuCerts));
 
-    // Now, append the root certificates to create the entire chain.
-    pContext = (libspdm_context_t *)pSpdm->pLibspdmContext;
+    status = spdmSetupResponderCertCtx(pGpu, pSpdm, pGpuCerts, gpuCertsSize,
+                                      (void *)responderCertCtx, &responderCertCount);
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "spdmRetrieveResponderCert() failed !!! \n");
+        goto ErrorExit;
+    }
 
     //
     // Skip over the certificate chain size, reserved size and the root hash
     // pSpdmCertChainBufferEnd represents last valid byte for cert buffer.
     //
-    pSpdmCertChainBufferEnd = pGpuCerts + gpuCertsSize - 1;
-    base_hash_algo          = pContext->connection_info.algorithm.base_hash_algo;
-    pIkCertificate          = (NvU8 *)pGpuCerts;
-    pIkCertificate         += sizeof(spdm_cert_chain_t) + libspdm_get_hash_size(base_hash_algo);
-
-    // Calculate the size of the IK cert, and skip past it to get the AK cert.
-    status = _calcX509CertSize(pIkCertificate, pSpdmCertChainBufferEnd, &ikCertificateSize);
+    status = spdmBuildCertChainDer(pGpu, pSpdm, (void *)responderCertCtx,
+                                   responderCertCount, pDerCertChain, &derCertChainSize);
 
     if (status != NV_OK)
     {
-        goto ErrorExit;
-    }
-
-    pAkCertificate = (NvU8 *)pIkCertificate + ikCertificateSize;
-
-    // Calculate the size of the AK certificate.
-    status = _calcX509CertSize(pAkCertificate, pSpdmCertChainBufferEnd, &akCertificateSize);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    // Make sure we have calculated the size correctly.
-    if ((pAkCertificate + akCertificateSize - 1) != pSpdmCertChainBufferEnd)
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    // Retrieve the entire certificate chain in DER format in order to validate it.
-    status = _spdmBuildCertChainDer(pAkCertificate, akCertificateSize,
-                                    pIkCertificate, ikCertificateSize,
-                                    pDerCertChain,
-                                    &derCertChainSize);
-
-    if (status != NV_OK)
-    {
-        goto ErrorExit;
-    }
-
-    totalSize = sizeof(SPDM_L1_CERTIFICATE_DER)  +
-                sizeof(SPDM_L2_CERTIFICATE_DER)  +
-                sizeof(SPDM_L3_CERTIFICATE_DER)  +
-                akCertificateSize                +
-                ikCertificateSize;
-
-    if (derCertChainSize != totalSize)
-    {
-        NV_PRINTF(LEVEL_ERROR, " %s: derCertChainSize(%llu) != totalSize(0x%x) !! \n",
-                  __FUNCTION__, ((NvU64)derCertChainSize), totalSize);
-
-        // Something has gone quite wrong with our calculations.
-        status = NV_ERR_BUFFER_TOO_SMALL;
-        goto ErrorExit;
-    }
-
-    // Now, validate that the certificate chain is correctly signed.
-    if (!libspdm_x509_verify_cert_chain(pDerCertChain, sizeof(SPDM_L1_CERTIFICATE_DER),
-                                        pDerCertChain + sizeof(SPDM_L1_CERTIFICATE_DER),
-                                        derCertChainSize - sizeof(SPDM_L1_CERTIFICATE_DER)))
-    {
-        status = NV_ERR_INVALID_DATA;
+        NV_PRINTF(LEVEL_ERROR, "spdmBuildCertChainDer() failed !!! \n");
         goto ErrorExit;
     }
 
@@ -804,12 +487,13 @@ spdmGetCertificates_GH100
     // Now that the cert chain is valid, retrieve the cert chain in PEM format,
     // as the Verifier can only parse PEM format.
     //
-    status = _spdmBuildCertChainPem(pAkCertificate, akCertificateSize,
-                                    pIkCertificate, ikCertificateSize,
-                                    pSpdm->pAttestationCertChain,
-                                    &pSpdm->attestationCertChainSize);
+    status = spdmBuildCertChainPem(pGpu, pSpdm, (void *)responderCertCtx, responderCertCount,
+                                   pSpdm->pAttestationCertChain,
+                                   &pSpdm->attestationCertChainSize);
+
     if (status != NV_OK)
     {
+        NV_PRINTF(LEVEL_ERROR, "spdmBuildCertChainPem() failed !!! \n");
         goto ErrorExit;
     }
 
@@ -847,7 +531,7 @@ spdmGetCertChains_GH100
     NvU32  *pAttestationCertChainSize
 )
 {
-    if (pGpu == NULL || pSpdm == NULL || pAttestationCertChain == NULL ||
+    if (pAttestationCertChain == NULL ||
         pAttestationCertChainSize == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;

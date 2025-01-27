@@ -197,7 +197,7 @@ kpmuInitLibosLoggingStructures_IMPL
     // Add PMU log buffer (use a fake "task name" - NVRISCV)
     libosLogAddLogEx(&pKernelPmu->logDecode, pKernelPmu->pPrintBuf, pKernelPmu->printBufSize,
                      pGpu->gpuInstance, (gpuGetChipArch(pGpu) >> GPU_ARCH_SHIFT), gpuGetChipImpl(pGpu),
-                     "NVRISCV", NULL);
+                     "NVRISCV", NULL, NULL);
 
     // Finish PMU log init (setting the lossless-print flag and resolve-pointers flag)
     libosLogInitEx(&pKernelPmu->logDecode, pKernelPmu->pLogElf, NV_TRUE, NV_TRUE, NV_TRUE, pKernelPmu->logElfSize);

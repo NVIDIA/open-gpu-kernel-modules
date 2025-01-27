@@ -27,6 +27,8 @@
 *                                                                           *
 \***************************************************************************/
 
+#include "core/system.h"
+
 #include "mem_mgr/virt_mem_mgr.h"
 #include "mem_mgr/vaspace.h"
 #include "mem_mgr/io_vaspace.h"
@@ -137,6 +139,7 @@ vmmCreateVaspace_IMPL
         return status;
     }
 
+    (*ppVAS)->vasUniqueId = portAtomicIncrementU32(&SYS_GET_INSTANCE()->currentVasUniqueId);
     return status;
 }
 

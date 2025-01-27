@@ -36,7 +36,6 @@
 
 #include "published/blackwell/gb100/dev_boot.h"
 #include "published/blackwell/gb100/dev_boot_addendum.h"
-#include "published/blackwell/gb100/dev_riscv_pri.h"
 #include "published/blackwell/gb100/dev_pcfg_pf0.h"
 #include "published/blackwell/gb100/dev_nv_pcie_config_reg_addendum.h"
 
@@ -163,7 +162,7 @@ gpuGetChildrenPresent_GB102(OBJGPU *pGpu, NvU32 *pNumEntries)
  * @brief If this is a GSP-RM platform, config accesses are not allowed
  *
  * @param[in] pGpu  GPU object pointer
- * 
+ *
  * @returns NV_OK                Config space access supported
  *          NV_ERR_NOT_SUPPORTED Config space access not supported
  */
@@ -1066,23 +1065,3 @@ gpuIsDevModeEnabledInHw_GB100
     return FLD_TEST_DRF(_PMC, _SCRATCH_RESET_2_CC, _DEV_ENABLED, _TRUE, val);
 }
 
-/*!
- * @brief Check if a parity error is pending for RISCV engine
- *
- * @param[in] pGpu  GPU object pointer
- */
-NvBool
-gpuIsFlcnRiscvParityError_GB100
-(
-    OBJGPU *pGpu,
-    NvU32   errStatus
-)
-{
-    return FLD_TEST_DRF(_PRISCV, _RISCV_FAULT_CONTAINMENT_SRCSTAT, _ITCM,   _FAULTED, errStatus) ||
-           FLD_TEST_DRF(_PRISCV, _RISCV_FAULT_CONTAINMENT_SRCSTAT, _DTCM,   _FAULTED, errStatus) ||
-           FLD_TEST_DRF(_PRISCV, _RISCV_FAULT_CONTAINMENT_SRCSTAT, _ICACHE, _FAULTED, errStatus) ||
-           FLD_TEST_DRF(_PRISCV, _RISCV_FAULT_CONTAINMENT_SRCSTAT, _DCACHE, _FAULTED, errStatus) ||
-           FLD_TEST_DRF(_PRISCV, _RISCV_FAULT_CONTAINMENT_SRCSTAT, _RVCORE, _FAULTED, errStatus) ||
-           FLD_TEST_DRF(_PRISCV, _RISCV_FAULT_CONTAINMENT_SRCSTAT, _REG,    _FAULTED, errStatus) ||
-           FLD_TEST_DRF(_PRISCV, _RISCV_FAULT_CONTAINMENT_SRCSTAT, _MPURAM, _FAULTED, errStatus);
-}

@@ -56,27 +56,31 @@ subdeviceCtrlCmdPerfRatedTdpSetControl_KERNEL
 )
 {
     OBJGPU   *pGpu     = GPU_RES_GET_GPU(pSubdevice);
-    NvHandle  hClient  = RES_GET_CLIENT_HANDLE(pSubdevice);
     NV_STATUS status   = NV_OK;
+    RmClient *pRmClient;
 
     NvBool bSmcEnabled = IS_MIG_ENABLED(pGpu);
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
 
     NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
 
+    pRmClient = dynamicCast(pCallContext->pClient, RmClient);
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+
+    NvBool isAdmin = rmclientIsAdmin(pRmClient, pCallContext->secInfo.privLevel);
     //
     // With SMC enabled, the clock controls can only be modified by a priv client
     // This is to ensure that clients running under a SMC partition do not impact
     // other clients running on different partitions
     //
-    if (bSmcEnabled && !rmclientIsAdminByHandle(hClient, pCallContext->secInfo.privLevel))
+    if (bSmcEnabled && !isAdmin)
     {
         NV_PRINTF(LEVEL_ERROR,
                 "Non-Privileged clients are not allowed to access clock controls with SMC enabled.\n");
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
 
-    if ((!(rmclientIsAdminByHandle(hClient, pCallContext->secInfo.privLevel) || osCheckAccess(RS_ACCESS_PERFMON))) &&
+    if ((!(isAdmin || osCheckAccess(RS_ACCESS_PERFMON))) &&
         (gpuIsRmProfilingPrivileged(pGpu) && (pControlParams->vPstateType == NV2080_CTRL_PERF_VPSTATE_TURBO_BOOST)))
     {
         NV_PRINTF(LEVEL_ERROR,

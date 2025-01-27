@@ -139,18 +139,8 @@ memmgrIsSurfaceBlockLinear_GV100
 (
     MemoryManager     *pMemoryManager,
     Memory            *pMemory,
-    NvU32              kind,
-    NvU32              dmaFlags
+    NvU32              kind
 )
 {
-    if (FLD_TEST_DRF(OS03, _FLAGS, _PTE_KIND, _BL, dmaFlags))
-    {
-        return NV_TRUE;
-    }
-    else if (FLD_TEST_DRF(OS03, _FLAGS, _PTE_KIND, _PITCH, dmaFlags))
-    {
-        return NV_FALSE;
-    }
-
     return (kind != NV_MMU_PTE_KIND_PITCH) ? NV_TRUE: NV_FALSE;
 }

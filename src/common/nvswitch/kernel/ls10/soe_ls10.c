@@ -670,6 +670,87 @@ nvswitch_soe_issue_ingress_stop_ls10
  * @Brief : Perform register writes in SOE during TNVL
  *
  * @param[in] device
+ * @param[in] eng_id
+ * @param[in] eng_instance
+ * @param[in] reg
+ * @param[in] data
+ */
+NvlStatus
+nvswitch_soe_update_intr_report_en_ls10
+(
+    nvswitch_device *device,
+    RM_SOE_CORE_ENGINE_ID eng_id,
+    NvU32 eng_instance,
+    RM_SOE_CORE_NPORT_REPORT_EN_REGISTER reg,
+    NvU32 data
+)
+{
+    FLCN            *pFlcn;
+    NvU32            cmdSeqDesc = 0;
+    NV_STATUS        status;
+    RM_FLCN_CMD_SOE  cmd;
+    NVSWITCH_TIMEOUT timeout;
+    RM_SOE_CORE_CMD_ERROR_REPORT_EN *pErrorReportEnable;
+    NVSWITCH_GET_BIOS_INFO_PARAMS params = { 0 };
+
+    if (!nvswitch_is_soe_supported(device))
+    {
+        NVSWITCH_PRINT(device, INFO,
+            "%s: SOE is not supported\n",
+            __FUNCTION__);
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    status = device->hal.nvswitch_ctrl_get_bios_info(device, &params);
+    if ((status != NVL_SUCCESS) || ((params.version & SOE_VBIOS_VERSION_MASK) < 
+            SOE_VBIOS_REVLOCK_REPORT_EN))
+    {
+        NVSWITCH_PRINT(device, INFO,
+            "%s: Unable to update REPORT_EN register and disabiling NVLW interrupt.  Update firmware "
+            "from .%02x to .%02x\n",
+            __FUNCTION__, (NvU32)((params.version & SOE_VBIOS_VERSION_MASK) >> 16), 
+            SOE_VBIOS_REVLOCK_REPORT_EN);
+
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    pFlcn = device->pSoe->pFlcn;
+
+    nvswitch_os_memset(&cmd, 0, sizeof(cmd));
+    cmd.hdr.unitId = RM_SOE_UNIT_CORE;
+    cmd.hdr.size   = RM_SOE_CMD_SIZE(CORE, ERROR_REPORT_EN);
+
+    pErrorReportEnable = &cmd.cmd.core.enableErrorReport;
+    pErrorReportEnable->cmdType = RM_SOE_CORE_CMD_UPDATE_INTR_REPORT_EN;
+
+    pErrorReportEnable->engId = RM_SOE_CORE_ENGINE_ID_NPORT;
+    pErrorReportEnable->engInstance = eng_instance;
+    pErrorReportEnable->reg = reg;
+    pErrorReportEnable->data = data;
+
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_5MSEC_IN_NS, &timeout);
+    status = flcnQueueCmdPostBlocking(device, pFlcn,
+                                      (PRM_FLCN_CMD)&cmd,
+                                      NULL,                 // pMsg
+                                      NULL,                 // pPayload
+                                      SOE_RM_CMDQ_LOG_ID,
+                                      &cmdSeqDesc,
+                                      &timeout);
+    if (status != NV_OK)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Failed to update [0x%x] REPORT_EN register through SOE, status 0x%x\n",
+            __FUNCTION__, reg, status);
+        return -NVL_ERR_GENERIC;
+    }
+
+    return NVL_SUCCESS;
+}
+
+/*
+ * @Brief : Perform register writes in SOE during TNVL
+ *
+ * @param[in] device
  * @param[in] offset
  * @param[in] data
  */
@@ -697,11 +778,19 @@ nvswitch_soe_reg_wr_32_ls10
         return NVL_SUCCESS; // -NVL_ERR_NOT_SUPPORTED
     }
 
+    if (device->nvlink_device->pciInfo.bars[0].pBar == NULL)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: register write failed at offset 0x%x\n",
+            __FUNCTION__, offset);
+        return -NVL_IO_ERROR;
+    }
+
     status = device->hal.nvswitch_ctrl_get_bios_info(device, &params);
     if ((status != NVL_SUCCESS) || ((params.version & SOE_VBIOS_VERSION_MASK) < 
-            SOE_VBIOS_REVLOCK_ISSUE_REGISTER_WRITE))
+            SOE_VBIOS_REVLOCK_SOE_PRI_CHECKS))
     {
-        nvswitch_reg_write_32(device, offset, data);
+        nvswitch_os_mem_write32((NvU8 *)device->nvlink_device->pciInfo.bars[0].pBar + offset, data);
         return NVL_SUCCESS;
     }
 
@@ -729,6 +818,96 @@ nvswitch_soe_reg_wr_32_ls10
     {
         NVSWITCH_PRINT(device, ERROR,
             "%s: Failed to send REGISTER_WRITE command to SOE, offset = 0x%x, data = 0x%x\n", 
+            __FUNCTION__, offset, data);
+        return -NVL_ERR_GENERIC;
+    }
+
+    return NVL_SUCCESS;
+}
+
+/*
+ * @Brief : Perform engine writes in SOE during TNVL
+ *
+ * @param[in] device
+ * @param[in] eng_id        NVSWITCH_ENGINE_ID*
+ * @param[in] eng_bcast     NVSWITCH_GET_ENG_DESC_TYPE*
+ * @param[in] eng_instance  
+ * @param[in] base_addr
+ * @param[in] offset
+ * @param[in] data
+ */
+NvlStatus
+nvswitch_soe_eng_wr_32_ls10
+(
+    nvswitch_device     *device,
+    NVSWITCH_ENGINE_ID  eng_id,
+    NvU32               eng_bcast,
+    NvU32               eng_instance,
+    NvU32               base_addr,
+    NvU32               offset,
+    NvU32               data
+)
+{
+    FLCN *pFlcn;
+    NvU32               cmdSeqDesc = 0;
+    NV_STATUS           status;
+    RM_FLCN_CMD_SOE     cmd;
+    NVSWITCH_TIMEOUT    timeout;
+    RM_SOE_TNVL_CMD_ENGINE_WRITE *pEngineWrite;
+    NVSWITCH_GET_BIOS_INFO_PARAMS params = { 0 };
+
+    if (!nvswitch_is_soe_supported(device))
+    {
+        NVSWITCH_PRINT(device, INFO,
+            "%s: SOE is not supported\n",
+            __FUNCTION__);
+        return NVL_SUCCESS; // -NVL_ERR_NOT_SUPPORTED
+    }
+
+    if (device->nvlink_device->pciInfo.bars[0].pBar == NULL)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: register write failed at offset 0x%x\n",
+            __FUNCTION__, offset);
+        return -NVL_IO_ERROR;
+    }
+
+    status = device->hal.nvswitch_ctrl_get_bios_info(device, &params);
+    if ((status != NVL_SUCCESS) || ((params.version & SOE_VBIOS_VERSION_MASK) < 
+            SOE_VBIOS_REVLOCK_SOE_PRI_CHECKS))
+    {
+        nvswitch_os_mem_write32((NvU8 *)device->nvlink_device->pciInfo.bars[0].pBar + offset, data);
+        return NVL_SUCCESS;
+    }
+
+    pFlcn = device->pSoe->pFlcn;
+
+    nvswitch_os_memset(&cmd, 0, sizeof(cmd));
+
+    cmd.hdr.unitId = RM_SOE_UNIT_TNVL;
+    cmd.hdr.size   = RM_SOE_CMD_SIZE(TNVL, ENGINE_WRITE);
+
+    pEngineWrite = &cmd.cmd.tnvl.engineWrite;
+    pEngineWrite->cmdType = RM_SOE_TNVL_CMD_ISSUE_ENGINE_WRITE;
+    pEngineWrite->eng_id = eng_id;
+    pEngineWrite->eng_bcast = eng_bcast;
+    pEngineWrite->eng_instance = eng_instance;
+    pEngineWrite->base = base_addr;
+    pEngineWrite->offset = offset;
+    pEngineWrite->data = data;
+
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_5MSEC_IN_NS, &timeout);
+    status = flcnQueueCmdPostBlocking(device, pFlcn,
+                                      (PRM_FLCN_CMD)&cmd,
+                                      NULL,                 // pMsg
+                                      NULL,                 // pPayload
+                                      SOE_RM_CMDQ_LOG_ID,
+                                      &cmdSeqDesc,
+                                      &timeout);
+    if (status != NV_OK)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Failed to send ENGINE_WRITE command to SOE, offset = 0x%x, data = 0x%x\n", 
             __FUNCTION__, offset, data);
         return -NVL_ERR_GENERIC;
     }
@@ -1009,7 +1188,6 @@ _soeService_LS10
 )
 {
     NvBool  bRecheckMsgQ    = NV_FALSE;
-    NvBool  bRecheckPrintQ  = NV_FALSE;
     NvU32   clearBits       = 0;
     NvU32   intrStatus;
     PFLCN   pFlcn  = ENG_GET_FLCN(pSoe);
@@ -1075,8 +1253,6 @@ _soeService_LS10
         NVSWITCH_PRINT(device, INFO,
                     "%s: Received a SWGEN1 interrupt\n",
                     __FUNCTION__);
-        flcnDebugBufferDisplay_HAL(device, pFlcn);
-        bRecheckPrintQ = NV_TRUE;
     }
 
     // Clear any sources that were serviced and get the new status.
@@ -1109,22 +1285,6 @@ _soeService_LS10
            // It is not necessary to RMW IRQSSET (zeros are ignored)
            flcnRegWrite_HAL(device, pFlcn, NV_PFALCON_FALCON_IRQSSET,
                             DRF_DEF(_PFALCON, _FALCON_IRQSSET, _SWGEN0, _SET));
-        }
-    }
-
-    //
-    // If we just processed a SWGEN1 interrupt (Debug Buffer interrupt), peek
-    // into the Debug Buffer and see if any text was missed the last time
-    // the buffer was displayed (above). If it is not empty, re-generate SWGEN1
-    // (since it is now cleared) and exit. As long as an interrupt is pending,
-    // this function will be re-entered and the message(s) will be processed.
-    //
-    if (bRecheckPrintQ)
-    {
-        if (!flcnDebugBufferIsEmpty_HAL(device, pFlcn))
-        {
-            flcnRegWrite_HAL(device, pFlcn, NV_PFALCON_FALCON_IRQSSET,
-                              DRF_DEF(_PFALCON, _FALCON_IRQSSET, _SWGEN1, _SET));
         }
     }
 

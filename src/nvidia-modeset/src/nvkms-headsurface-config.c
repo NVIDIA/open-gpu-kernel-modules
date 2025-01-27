@@ -1936,7 +1936,6 @@ static void HsMainLayerFlip(
                     pFlipHead,
                     1     /* numFlipHeads */,
                     TRUE  /* commit */,
-                    FALSE /* allowVrr */,
                     NULL  /* pReply */,
                     FALSE /* skipUpdate */,
                     FALSE /* allowFlipLock */);

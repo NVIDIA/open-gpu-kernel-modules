@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -110,7 +110,7 @@ kgspExecuteBooterLoad_TU102
     NV_PRINTF(LEVEL_INFO, "executing Booter Load, sysmemAddrOfData 0x%llx\n",
               sysmemAddrOfData);
 
-    kflcnReset_HAL(pGpu, staticCast(pKernelSec2, KernelFalcon));
+    NV_ASSERT_OK_OR_RETURN(kflcnReset_HAL(pGpu, staticCast(pKernelSec2, KernelFalcon)));
 
     status = s_executeBooterUcode_TU102(pGpu, pKernelGsp,
                                         pKernelGsp->pBooterLoadUcode,
@@ -152,7 +152,7 @@ kgspExecuteBooterUnloadIfNeeded_TU102
     NV_PRINTF(LEVEL_INFO, "executing Booter Unload\n");
     NV_ASSERT_OR_RETURN(pKernelGsp->pBooterUnloadUcode != NULL, NV_ERR_INVALID_STATE);
 
-    kflcnReset_HAL(pGpu, staticCast(pKernelSec2, KernelFalcon));
+    NV_ASSERT_OK(kflcnReset_HAL(pGpu, staticCast(pKernelSec2, KernelFalcon)));
 
     // SR code
     if (sysmemAddrOfSuspendResumeData != 0)

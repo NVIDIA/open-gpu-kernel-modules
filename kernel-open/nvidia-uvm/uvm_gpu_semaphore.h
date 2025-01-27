@@ -107,11 +107,12 @@ NV_STATUS uvm_gpu_semaphore_secure_pool_create(uvm_gpu_t *gpu, uvm_gpu_semaphore
 void uvm_gpu_semaphore_pool_destroy(uvm_gpu_semaphore_pool_t *pool);
 
 // Allocate a semaphore from the pool.
+//
 // The semaphore will be mapped on all GPUs currently registered with the UVM
-// driver, and on all new GPUs which will be registered in the future.
-// Unless the Confidential Computing feature is enabled and the pool is a
-// secure pool. In this case, it is only mapped to the GPU that holds the
-// allocation.
+// driver, and on all new GPUs which will be registered in the future. The only
+// exception (in Confidential Computing) are semaphores allocated from a secure
+// pool, which are only mapped on the GPU that holds the allocation.
+//
 // The mappings are added to UVM's internal address space, and (in SR-IOV heavy)
 // to the proxy address space.
 //

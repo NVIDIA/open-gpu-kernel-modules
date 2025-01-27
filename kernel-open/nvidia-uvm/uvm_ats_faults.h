@@ -29,12 +29,13 @@
 
 // Service ATS faults in the range (base, base + UVM_VA_BLOCK_SIZE) with service
 // type for individual pages in the range requested by page masks set in
-// ats_context->fault.read_fault_mask/write_fault_mask. base must be aligned to
-// UVM_VA_BLOCK_SIZE. The caller is responsible for ensuring that faulting
-// addresses fall completely within the VMA. The caller is also responsible for
-// ensuring that the faulting addresses don't overlap a GMMU region. (See
-// uvm_ats_check_in_gmmu_region). The caller is also responsible for handling
-// any errors returned by this function (fault cancellations etc.).
+// ats_context->fault.read_fault_mask/write_fault_mask/prefetch_only_mask.
+// base must be aligned to UVM_VA_BLOCK_SIZE. The caller is responsible for
+// ensuring that faulting addresses fall completely within the VMA. The caller
+// is also responsible for ensuring that the faulting addresses don't overlap
+// a GMMU region. (See uvm_ats_check_in_gmmu_region). The caller is also
+// responsible for handling any errors returned by this function (fault
+// cancellations etc.).
 //
 // Returns the fault service status in ats_context->fault.faults_serviced_mask.
 // In addition, ats_context->fault.reads_serviced_mask returns whether read

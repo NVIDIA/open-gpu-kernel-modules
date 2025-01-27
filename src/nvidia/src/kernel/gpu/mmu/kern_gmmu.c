@@ -30,7 +30,6 @@
 
 #define NVOC_KERN_GMMU_H_PRIVATE_ACCESS_ALLOWED
 
-#include "gpu/bif/kernel_bif.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/nvlink/kernel_nvlink.h"
@@ -175,14 +174,7 @@ NV_STATUS kgmmuStateInitLocked_IMPL
     KernelGmmu *pKernelGmmu
 )
 {
-    KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
     NV_STATUS  status;
-
-    if (pKernelBif != NULL)
-    {
-        // This value shouldn't change after initialization, so cache it now
-        pKernelGmmu->sysmemBaseAddress = pKernelBif->dmaWindowStartAddress;
-    }
 
     status = _kgmmuInitStaticInfo(pGpu, pKernelGmmu);
     if (status != NV_OK)
@@ -285,15 +277,9 @@ kgmmuEnableComputePeerAddressing_IMPL
     OBJSYS    *pSys = SYS_GET_INSTANCE();
     NV_STATUS status = NV_OK;
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-    NvBool bComputePeerMode = NV_FALSE;
 
     if (pSys->getProperty(pSys, PDB_PROP_SYS_NVSWITCH_IS_PRESENT) ||
         kbusIsFlaSupported(pKernelBus))
-    {
-        bComputePeerMode = NV_TRUE;
-    }
-
-    if (bComputePeerMode)
     {
         status = kgmmuEnableNvlinkComputePeerAddressing_HAL(pKernelGmmu);
         if (status != NV_OK)
@@ -304,11 +290,14 @@ kgmmuEnableComputePeerAddressing_IMPL
             return status;
         }
 
-        status = pRmApi->Control(pRmApi,
-                                pGpu->hInternalClient,
-                                pGpu->hInternalSubdevice,
-                                NV2080_CTRL_CMD_INTERNAL_NVLINK_ENABLE_COMPUTE_PEER_ADDR,
-                                NULL, 0);
+        if (!IS_VIRTUAL(pGpu))
+        {
+            status = pRmApi->Control(pRmApi,
+                                    pGpu->hInternalClient,
+                                    pGpu->hInternalSubdevice,
+                                    NV2080_CTRL_CMD_INTERNAL_NVLINK_ENABLE_COMPUTE_PEER_ADDR,
+                                    NULL, 0);
+        }
     }
     return status;
 }

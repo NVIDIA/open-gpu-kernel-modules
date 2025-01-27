@@ -53,6 +53,7 @@ typedef NV_STATUS      Deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PA
 typedef NV_STATUS      Deserialize_NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS(NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_GPU_GET_GID_INFO_PARAMS(NV2080_CTRL_GPU_GET_GID_INFO_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS(NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
+typedef NV_STATUS      Deserialize_NV2080_CTRL_INTERNAL_CCU_SAMPLE_INFO_PARAMS(NV2080_CTRL_INTERNAL_CCU_SAMPLE_INFO_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS(NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS(NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_VGPU_FB_GET_DYNAMIC_BLACKLISTED_PAGES(VGPU_FB_GET_DYNAMIC_BLACKLISTED_PAGES* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
@@ -109,6 +110,7 @@ typedef struct RPCSTRUCTURECOPY_HAL_IFACES {
     Deserialize_NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS  *deserialize_NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS; /* HAL function to deserialize NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS */
     Deserialize_NV2080_CTRL_GPU_GET_GID_INFO_PARAMS  *deserialize_NV2080_CTRL_GPU_GET_GID_INFO_PARAMS; /* HAL function to deserialize NV2080_CTRL_GPU_GET_GID_INFO_PARAMS */
     Deserialize_NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS  *deserialize_NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS; /* HAL function to deserialize NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS */
+    Deserialize_NV2080_CTRL_INTERNAL_CCU_SAMPLE_INFO_PARAMS  *deserialize_NV2080_CTRL_INTERNAL_CCU_SAMPLE_INFO_PARAMS; /* HAL function to deserialize NV2080_CTRL_INTERNAL_CCU_SAMPLE_INFO_PARAMS */
     Deserialize_NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS  *deserialize_NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS; /* HAL function to deserialize NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS */
     Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS  *deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS; /* HAL function to deserialize NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS */
     Deserialize_VGPU_FB_GET_DYNAMIC_BLACKLISTED_PAGES  *deserialize_VGPU_FB_GET_DYNAMIC_BLACKLISTED_PAGES; /* HAL function to deserialize VGPU_FB_GET_DYNAMIC_BLACKLISTED_PAGES */
@@ -178,6 +180,8 @@ typedef struct RPCSTRUCTURECOPY_HAL_IFACES {
         (_pRpcstructurecopy)->_hal.deserialize_NV2080_CTRL_GPU_GET_GID_INFO_PARAMS(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
         (_pRpcstructurecopy)->_hal.deserialize_NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS(_pData, _pStream, _streamSize, _pOffset)
+#define deserialize_NV2080_CTRL_INTERNAL_CCU_SAMPLE_INFO_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
+        (_pRpcstructurecopy)->_hal.deserialize_NV2080_CTRL_INTERNAL_CCU_SAMPLE_INFO_PARAMS(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
         (_pRpcstructurecopy)->_hal.deserialize_NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \

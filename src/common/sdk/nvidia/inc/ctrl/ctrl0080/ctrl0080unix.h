@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -88,6 +88,8 @@ typedef struct NV0080_CTRL_OS_UNIX_VT_GET_FB_INFO_PARAMS {
     NvU16 height; /* out */
     NvU16 depth; /* out */
     NvU16 pitch; /* out */
+    NV_DECLARE_ALIGNED(NvU64 baseAddress, 8); /* out */
+    NV_DECLARE_ALIGNED(NvU64 size, 8); /* out */
 } NV0080_CTRL_OS_UNIX_VT_GET_FB_INFO_PARAMS;
 
 /* _ctrl0080unix_h_ */

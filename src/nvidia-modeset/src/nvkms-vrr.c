@@ -69,7 +69,8 @@ typedef struct _vrrSurfaceNotifier
  *     pDevEvo->vrr.enabled indicates whether VRR was enabled successfully at
  *     modeset time.
  *
- *  2. At flip time, if NvKmsFlipRequest::allowVrr is true, VRR is "activated".
+ *  2. At flip time, for each apiHead, if pHeadState[apiHead].flip.allowVrr is true,
+ *     VRR is "activated".
  *
  *     a. Stall lock is enabled.
  *     b. (NVDisplay only) The RG is switched from continuous mode to one-shot
@@ -81,12 +82,11 @@ typedef struct _vrrSurfaceNotifier
  *        NVC37E_UPDATE_RELEASE_ELV_TRUE to trigger an unstall when the frame is
  *        ready.
  *
- *     pDevEvo->vrr.active (not to be confused with pDevEvo->vrr.enabled,
- *     described above) indicates whether VRR was activated successfully at flip
- *     time.
+ *     pApiHeadState->vrr.active indicates whether VRR was activated successfully 
+ *     on a particular apiHead at flip time.
  *
- *  3. Also at flip time, if NvKmsFlipRequest::allowVrr is false, VRR is
- *     "deactivated".
+ *  3. Also at flip time, for each apiHead, if pHeadState[apiHead].flip.allowVrr is 
+ *     false, VRR is "deactivated".
  *
  *     a. Stall lock is disabled.
  *     b. (NVDisplay only) the RG is switched from one-shot mode to continuous
@@ -94,7 +94,10 @@ typedef struct _vrrSurfaceNotifier
  *     c. (EVO only) RM's VRR state machine is suspended.
  */
 
-static NvBool SetVrrActivePriv(NVDevEvoPtr pDevEvo, NvBool active);
+static NvBool SetVrrActivePriv(NVDevEvoPtr pDevEvo,
+                               const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES],
+                               const NvU32 vrrActiveApiHeadMasks[NVKMS_MAX_SUBDEVICES]);
+
 static void ConfigVrrPstateSwitch(NVDispEvoPtr pDispEvo,
                                   NvBool vrrEnabled,
                                   NvBool vrrState,
@@ -180,7 +183,7 @@ NvBool nvExportVrrSemaphoreSurface(const NVDevEvoRec *pDevEvo, int fd)
  */
 static NvBool DpyIsGsync(const NVDpyEvoRec *pDpyEvo)
 {
-    return pDpyEvo->vrr.type == NVKMS_DPY_VRR_TYPE_GSYNC;
+    return nvIsGsyncDpyVrrType(pDpyEvo->vrr.type);
 }
 
 static NvBool AnyEnabledAdaptiveSyncDpys(const NVDevEvoRec *pDevEvo)
@@ -202,6 +205,32 @@ static NvBool AnyEnabledAdaptiveSyncDpys(const NVDevEvoRec *pDevEvo)
     }
 
     return FALSE;
+}
+
+static NvBool AnyActiveVrrHeads(const NVDevEvoRec *pDevEvo)
+{
+    NvU32 sd, apiHead;
+    NVDispEvoPtr pDispEvo;
+
+    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
+        pDispEvo = pDevEvo->gpus[sd].pDispEvo;
+
+        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+            if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
+                continue;
+            }
+            
+            const NVDispApiHeadStateEvoRec *pApiHeadState =
+                &pDispEvo->apiHeadState[apiHead];
+
+            if (!pApiHeadState->vrr.active) {
+                continue;
+            }
+            
+            return NV_TRUE;
+        }
+    }
+    return NV_FALSE;
 }
 
 static NvBool DpyAllowsAdaptiveSync(
@@ -266,6 +295,13 @@ static NvBool GetEdidTimeoutMicroseconds(
     const NvU32 nominalRefreshRateHz = rr10kHz / 10000; // XXX round?
     NVT_PROTOCOL sinkProtocol = NVT_PROTOCOL_UNKNOWN;
     NvU32 fmin;
+    
+    /*
+    At this point, we have verified that we have a valid display, so
+    nominalRefreshRateHz should be != 0. Assert so Coverity doesn't complain
+    about potential divide by 0 later in the function.
+    */
+    nvAssert(nominalRefreshRateHz != 0);
 
     if (!pParsedEdid->valid) {
         return FALSE;
@@ -300,7 +336,7 @@ static NvBool GetEdidTimeoutMicroseconds(
             return TRUE;
         }
 
-        if (pDpyEvo->vrr.type == NVKMS_DPY_VRR_TYPE_GSYNC) {
+        if (nvIsGsyncDpyVrrType(pDpyEvo->vrr.type)) {
             /* GSYNC can have fmin==0; i.e., the panel is self-refreshing. */
             *pEdidTimeoutMicroseconds = 0;
             return TRUE;
@@ -370,7 +406,7 @@ void nvAdjustHwModeTimingsForVrrEvo(const NVDpyEvoRec *pDpyEvo,
      * the monitor that VRR is enabled.  It is not necessary on
      * Adaptive-Sync displays.
      */
-    if (vrrType == NVKMS_DPY_VRR_TYPE_GSYNC) {
+    if (nvIsGsyncDpyVrrType(vrrType)) {
         pTimings->rasterSize.y += 2;
         pTimings->rasterBlankEnd.y += 2;
         pTimings->rasterBlankStart.y += 2;
@@ -799,7 +835,13 @@ void nvDisableVrr(NVDevEvoPtr pDevEvo)
         return;
     }
 
-    SetVrrActivePriv(pDevEvo, FALSE);
+    // set vrr on all apiHeads to inactive
+    NvU32 fullApiHeadMasks[NVKMS_MAX_SUBDEVICES];
+    NvU32 emptyApiHeadMasks[NVKMS_MAX_SUBDEVICES];
+    nvkms_memset(fullApiHeadMasks, 0xFF, sizeof(fullApiHeadMasks));
+    nvkms_memset(emptyApiHeadMasks, 0, sizeof(emptyApiHeadMasks));
+
+    SetVrrActivePriv(pDevEvo, fullApiHeadMasks, emptyApiHeadMasks);
     RmDisableVrr(pDevEvo);
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
@@ -818,7 +860,7 @@ void nvDisableVrr(NVDevEvoPtr pDevEvo)
     }
 
     pDevEvo->vrr.enabled = FALSE;
-    nvAssert(!pDevEvo->vrr.active);
+    nvAssert(!AnyActiveVrrHeads(pDevEvo));
 }
 
 static NvBool AnyEnabledGsyncDpys(const NVDevEvoRec *pDevEvo)
@@ -832,7 +874,7 @@ static NvBool AnyEnabledGsyncDpys(const NVDevEvoRec *pDevEvo)
         for (head = 0; head < pDevEvo->numHeads; head++) {
             const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
 
-            if (pHeadState->timings.vrr.type == NVKMS_DPY_VRR_TYPE_GSYNC) {
+            if (nvIsGsyncDpyVrrType(pHeadState->timings.vrr.type)) {
                 return TRUE;
             }
         }
@@ -1029,19 +1071,28 @@ static void ConfigVrrPstateSwitch(NVDispEvoPtr pDispEvo, NvBool vrrEnabled,
     }
 }
 
-static void SetStallLockOneDisp(NVDispEvoPtr pDispEvo, NvBool enable)
+static void SetStallLockOneDisp(NVDispEvoPtr pDispEvo, NvU32 applyAllowVrrApiHeadMask, 
+                                NvU32 enableApiHeadMask)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NvBool enableVrrOnHead[NVKMS_MAX_HEADS_PER_DISP];
     NVEvoUpdateState updateState = { };
-    NvU32 head;
+    NvU32 apiHead, head;
 
-    if (enable) {
-        for (head = 0; head < pDevEvo->numHeads; head++) {
+    for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
+        if (!(applyAllowVrrApiHeadMask & (1 << apiHead))) {
+            continue;
+        }
+        NvBool enable = enableApiHeadMask & (1 << apiHead);
+        if (!enable) {
+            continue;
+        }
+        FOR_EACH_EVO_HW_HEAD_IN_MASK(pDispEvo->apiHeadState[apiHead].hwHeadsMask, head) {
+            // ignores inactive heads
             ConfigVrrPstateSwitch(pDispEvo, TRUE /* vrrEnabled */,
-                                  TRUE /* vrrState */,
-                                  FALSE/* vrrDirty */,
-                                  head);
+                                    TRUE /* vrrState */,
+                                    FALSE/* vrrDirty */,
+                                    head);
         }
     }
 
@@ -1051,33 +1102,42 @@ static void SetStallLockOneDisp(NVDispEvoPtr pDispEvo, NvBool enable)
     // completed.
     nvRMSyncEvoChannel(pDevEvo, pDevEvo->core, __LINE__);
 
-    for (head = 0; head < pDevEvo->numHeads; head++) {
-        const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
-        const NvU32 timeout = pHeadState->timings.vrr.timeoutMicroseconds;
-
-        enableVrrOnHead[head] = ((pHeadState->timings.vrr.type !=
-                                    NVKMS_DPY_VRR_TYPE_NONE) && enable);
-
-        nvEvoArmLightweightSupervisor(pDispEvo, head,
-                                      enableVrrOnHead[head], TRUE);
-        if (!enableVrrOnHead[head]) {
-            ClearElvBlock(pDispEvo, head);
+    for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
+        if (!(applyAllowVrrApiHeadMask & (1 << apiHead))) {
+            continue;
         }
-        pDevEvo->hal->SetStallLock(pDispEvo, head,
-                                   enableVrrOnHead[head],
-                                   &updateState);
 
-        if (pDevEvo->hal->caps.supportsDisplayRate) {
-            pDevEvo->hal->SetDisplayRate(pDispEvo, head,
-                                         enableVrrOnHead[head],
-                                         &updateState,
-                                         timeout);
+        NvBool enable = enableApiHeadMask & (1 << apiHead);
 
-            if ((pHeadState->timings.vrr.type !=
-                        NVKMS_DPY_VRR_TYPE_NONE) &&
-                    pHeadState->timings.vrr.needsSwFramePacing) {
-                SetSwFramePacing(pDispEvo, head,
-                                 enableVrrOnHead[head]);
+        FOR_EACH_EVO_HW_HEAD_IN_MASK(pDispEvo->apiHeadState[apiHead].hwHeadsMask, head) {
+            const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
+            const NvU32 timeout = pHeadState->timings.vrr.timeoutMicroseconds;
+
+            enableVrrOnHead[head] = ((pHeadState->timings.vrr.type !=
+                                        NVKMS_DPY_VRR_TYPE_NONE) && enable);
+
+            // ignores inactive heads
+            nvEvoArmLightweightSupervisor(pDispEvo, head,
+                                        enableVrrOnHead[head], TRUE);
+            if (!enableVrrOnHead[head]) {
+                ClearElvBlock(pDispEvo, head);
+            }
+            pDevEvo->hal->SetStallLock(pDispEvo, head,
+                                    enableVrrOnHead[head],
+                                    &updateState);
+
+            if (pDevEvo->hal->caps.supportsDisplayRate) {
+                pDevEvo->hal->SetDisplayRate(pDispEvo, head,
+                                            enableVrrOnHead[head],
+                                            &updateState,
+                                            timeout);
+
+                if ((pHeadState->timings.vrr.type !=
+                            NVKMS_DPY_VRR_TYPE_NONE) &&
+                        pHeadState->timings.vrr.needsSwFramePacing) {
+                    SetSwFramePacing(pDispEvo, head,
+                                    enableVrrOnHead[head]);
+                }
             }
         }
     }
@@ -1085,54 +1145,118 @@ static void SetStallLockOneDisp(NVDispEvoPtr pDispEvo, NvBool enable)
     nvEvoUpdateAndKickOff(pDispEvo, TRUE, &updateState,
                           TRUE /* releaseElv */);
 
-    for (head = 0; head < pDevEvo->numHeads; head++) {
-        nvEvoArmLightweightSupervisor(pDispEvo, head,
-                                      enableVrrOnHead[head], FALSE);
+
+    for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
+        if (!(applyAllowVrrApiHeadMask & (1 << apiHead))) {
+            continue;
+        }
+        FOR_EACH_EVO_HW_HEAD_IN_MASK(pDispEvo->apiHeadState[apiHead].hwHeadsMask, head) {
+            nvEvoArmLightweightSupervisor(pDispEvo, head,
+                                          enableVrrOnHead[head], FALSE);
+        }
     }
 
     nvPopEvoSubDevMask(pDevEvo);
 
-    if (!enable) {
-        for (head = 0; head < pDevEvo->numHeads; head++) {
+    for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
+        if (!(applyAllowVrrApiHeadMask & (1 << apiHead))) {
+            continue;
+        }
+        NvBool enable = enableApiHeadMask & (1 << apiHead);
+        if (enable) {
+            continue;
+        }
+        FOR_EACH_EVO_HW_HEAD_IN_MASK(pDispEvo->apiHeadState[apiHead].hwHeadsMask, head) {
             ConfigVrrPstateSwitch(pDispEvo, TRUE /* vrrEnabled */,
-                                  FALSE /* vrrState */,
-                                  FALSE /* vrrDirty */,
-                                  head);
+                                    FALSE /* vrrState */,
+                                    FALSE/* vrrDirty */,
+                                    head);
         }
     }
 }
 
-static void SetStallLockOneDev(NVDevEvoPtr pDevEvo, NvBool enable)
+static void SetStallLockOneDev(NVDevEvoPtr pDevEvo, 
+                               const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES], 
+                               const NvU32 enableApiHeadMasks[NVKMS_MAX_SUBDEVICES])
 {
     NVDispEvoPtr pDispEvo;
     NvU32 dispIndex;
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        SetStallLockOneDisp(pDispEvo, enable);
+        SetStallLockOneDisp(pDispEvo, 
+                            applyAllowVrrApiHeadMasks[dispIndex], enableApiHeadMasks[dispIndex]);
     }
 }
 
 /*!
  * Modify the VRR state to activate or deactivate VRR on the heads of a pDevEvo.
  */
-static NvBool SetVrrActivePriv(NVDevEvoPtr pDevEvo, NvBool active)
+static NvBool SetVrrActivePriv(NVDevEvoPtr pDevEvo,
+                               const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES],
+                               const NvU32 vrrActiveApiHeadMasks[NVKMS_MAX_SUBDEVICES])
 {
-    if (!pDevEvo->vrr.enabled ||
-        pDevEvo->vrr.active == active) {
+    NvU32 sd, apiHead;
+    NvU32 currVrrActiveApiHeadMasks[NVKMS_MAX_SUBDEVICES];
+    NvBool isUpdate;
+    NVDispEvoPtr pDispEvo;
+
+    nvkms_memset(currVrrActiveApiHeadMasks, 0, sizeof(currVrrActiveApiHeadMasks));
+    isUpdate = NV_FALSE;
+    
+    if (!pDevEvo->vrr.enabled) {
         return NV_TRUE;
     }
 
-    // TODO: Drain the base channel first?
-    SetStallLockOneDev(pDevEvo, active);
+    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
+        pDispEvo = pDevEvo->pDispEvo[sd];
+        for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
+            if (pDispEvo->apiHeadState[apiHead].vrr.active) {
+                currVrrActiveApiHeadMasks[sd] |= (1 << apiHead);
+            }
+        }
+    }
 
-    pDevEvo->vrr.active = active;
+    // check if we are asking to update the existing activeMasks
+    for (sd = 0; sd < pDevEvo->numSubDevices; sd++){
+        for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
+            if (!(applyAllowVrrApiHeadMasks[sd] & (1 << apiHead))) {
+                continue;
+            }
+            if ((vrrActiveApiHeadMasks[sd] & (1 << apiHead)) != 
+                (currVrrActiveApiHeadMasks[sd] & (1 << apiHead))) {
+                isUpdate = NV_TRUE;
+                break;
+            }
+        }
+    }
+
+    if (!isUpdate) {
+        return NV_TRUE;
+    }
+
+    SetStallLockOneDev(pDevEvo, applyAllowVrrApiHeadMasks, 
+                       vrrActiveApiHeadMasks);
+
+    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
+        pDispEvo = pDevEvo->gpus[sd].pDispEvo;
+        for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
+            if (!(applyAllowVrrApiHeadMasks[sd] & (1 << apiHead))) {
+                continue;
+            }
+            pDispEvo->apiHeadState[apiHead].vrr.active = 
+                (vrrActiveApiHeadMasks[sd] & (1 << apiHead)) > 0;
+        }
+    }
     pDevEvo->vrr.flipCounter = 0;
     return NV_TRUE;
 }
 
-void nvSetVrrActive(NVDevEvoPtr pDevEvo, NvBool active)
+void nvSetVrrActive(NVDevEvoPtr pDevEvo,
+                    const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES],
+                    const NvU32 vrrActiveApiHeadMasks[NVKMS_MAX_SUBDEVICES])
 {
-    if (!SetVrrActivePriv(pDevEvo, active)) {
+    if (!SetVrrActivePriv(pDevEvo, applyAllowVrrApiHeadMasks, 
+                          vrrActiveApiHeadMasks)) {
         nvDisableVrr(pDevEvo);
     }
 }
@@ -1235,14 +1359,34 @@ void nvApplyVrrBaseFlipOverrides(const NVDispEvoRec *pDispEvo, NvU32 head,
     }
 }
 
-void nvCancelVrrFrameReleaseTimers(NVDevEvoPtr pDevEvo)
+void nvCancelVrrFrameReleaseTimers(NVDevEvoPtr pDevEvo,
+                                   const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES])
 {
     NVDispEvoPtr pDispEvo;
-    NvU32 dispIndex;
+    NvU32 dispIndex, apiHead;
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        nvkms_free_timer(pDispEvo->vrr.unstallTimer);
-        pDispEvo->vrr.unstallTimer = NULL;
+        NvBool pendingCursorMotionUnflipped = NV_FALSE;
+        NvU32 applyAllowVrrApiHeadMask = applyAllowVrrApiHeadMasks[dispIndex];
+
+        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+            if (!(applyAllowVrrApiHeadMask & (1 << apiHead))) {
+                // This apiHead is not currently flipping:
+                // Check if this apiHead is pending cursor motion;
+                // if so, we don't want to cancel the unstall timer yet, 
+                // as the cursor on this apiHead could then freeze up
+                pendingCursorMotionUnflipped = (pendingCursorMotionUnflipped) || 
+                                               (pDispEvo->apiHeadState[apiHead].vrr.pendingCursorMotion);
+            } else {
+                // clear pendingCursorMotion for all flipped apiHeads
+                pDispEvo->apiHeadState[apiHead].vrr.pendingCursorMotion = NV_FALSE;
+            }
+        }
+        
+        if (!pendingCursorMotionUnflipped) {
+            nvkms_free_timer(pDispEvo->vrr.unstallTimer);
+            pDispEvo->vrr.unstallTimer = NULL;
+        }
     }
 }
 
@@ -1257,7 +1401,7 @@ enum NvKmsVrrFlipType nvGetActiveVrrType(const NVDevEvoRec *pDevEvo)
      * XXX NVKMS TODO: We could be smarter about reporting whether this flip
      * exclusively changed surfaces on Adaptive-Sync or G-SYNC heads.
      */
-    if (pDevEvo->vrr.active) {
+    if (AnyActiveVrrHeads(pDevEvo)) {
         if (AnyEnabledGsyncDpys(pDevEvo)) {
             return NV_KMS_VRR_FLIP_GSYNC;
         } else {
@@ -1272,16 +1416,20 @@ enum NvKmsVrrFlipType nvGetActiveVrrType(const NVDevEvoRec *pDevEvo)
  * Get the next VRR semaphore index to be released
  * by the client, increments the counter and handles wrapping.
  */
-NvS32 nvIncVrrSemaphoreIndex(NVDevEvoPtr pDevEvo)
+NvS32 nvIncVrrSemaphoreIndex(NVDevEvoPtr pDevEvo, 
+                             const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES])
 {
     NvS32 vrrSemaphoreIndex = -1;
 
     // If there are pending unstall timers (e.g. triggered by cursor motion),
     // cancel them now. The flip that was just requested will trigger an
     // unstall.
-    nvCancelVrrFrameReleaseTimers(pDevEvo);
+    // NOTE: This call will not cancel the frame release timer in
+    // the case where there is a vrr active head that is pending cursor motion
+    // and not currently flipping, since we need to wait for the timer for that head
+    nvCancelVrrFrameReleaseTimers(pDevEvo, applyAllowVrrApiHeadMasks);
 
-    if (pDevEvo->vrr.active && !pDevEvo->hal->caps.supportsDisplayRate) {
+    if (AnyActiveVrrHeads(pDevEvo) && !pDevEvo->hal->caps.supportsDisplayRate) {
         vrrSemaphoreIndex = pDevEvo->vrr.flipCounter++;
         if (pDevEvo->vrr.flipCounter >= NVKMS_VRR_SEMAPHORE_SURFACE_COUNT) {
             pDevEvo->vrr.flipCounter = 0;
@@ -1295,16 +1443,21 @@ static void
 VrrUnstallNow(NVDispEvoPtr pDispEvo)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    NvU32 head;
+    NvU32 apiHead, head;
 
     nvAssert(pDevEvo->hal->caps.supportsDisplayRate);
 
-    for (head = 0; head < pDevEvo->numHeads; head++) {
-        if (!nvHeadIsActive(pDispEvo, head)) {
+    for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
+        if (!pDispEvo->apiHeadState[apiHead].vrr.pendingCursorMotion) {
             continue;
         }
-
-        pDevEvo->cursorHal->ReleaseElv(pDevEvo, pDispEvo->displayOwner, head);
+        FOR_EACH_EVO_HW_HEAD_IN_MASK (pDispEvo->apiHeadState[apiHead].hwHeadsMask, head) {
+            if (!nvHeadIsActive(pDispEvo, head)) {
+                continue;
+            }
+            pDevEvo->cursorHal->ReleaseElv(pDevEvo, pDispEvo->displayOwner, head);
+        }
+        pDispEvo->apiHeadState[apiHead].vrr.pendingCursorMotion = NV_FALSE;
     }
 }
 
@@ -1336,12 +1489,19 @@ void nvTriggerVrrUnstallMoveCursor(NVDispEvoPtr pDispEvo)
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     const NvU32 timeoutMs = 33; // 30 fps
 
-    if (!pDevEvo->vrr.active) {
+    NvU32 apiHead;
+
+    if (!AnyActiveVrrHeads(pDevEvo)) {
         return;
     }
 
     {
         if (!pDispEvo->vrr.unstallTimer) {
+            for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
+                if (pDispEvo->apiHeadState[apiHead].vrr.active) {
+                    pDispEvo->apiHeadState[apiHead].vrr.pendingCursorMotion = NV_TRUE;
+                }
+            }
             pDispEvo->vrr.unstallTimer =
                 nvkms_alloc_timer(VrrUnstallTimer, pDispEvo, 0, timeoutMs * 1000);
         }
@@ -1356,7 +1516,7 @@ void nvTriggerVrrUnstallSetCursorImage(NVDispEvoPtr pDispEvo,
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
 
-    if (pDevEvo->vrr.active) {
+    if (AnyActiveVrrHeads(pDevEvo)) {
         if (!elvReleased) {
             // On nvdisplay, no unstall is necessary if the cursor image update
             // path did a releaseElv=true Update.

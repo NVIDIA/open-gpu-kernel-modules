@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -151,28 +151,42 @@ vgpuMgrReserveSystemChannelIDs
     if (RMCFG_FEATURE_PLATFORM_GSP && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
         flags |= NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE;
 
-   if (!RMCFG_FEATURE_PLATFORM_GSP &&
-        pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VGPU_HETEROGENEOUS_MODE) &&
-        (placementId != NVA081_PLACEMENT_ID_INVALID))
+    if (!RMCFG_FEATURE_PLATFORM_GSP && (placementId != NVA081_PLACEMENT_ID_INVALID))
     {
         /*
-         * If heterogeneous mode is enabled, query chidOffset based on placement ID
-         * and vGPU typeId.
+         * Heterogeneous and Homogeneous vGPU modes are mutually exclusive.
+         * Query chidOffset based on placement ID and vGPU typeId based on the
+         * placement ID mode set.
          */
-        NV_ASSERT_OK_OR_RETURN(kvgpumgrHeterogeneousGetChidOffset(vgpuTypeInfo->vgpuTypeId,
-                                                                  placementId,
-                                                                  numChannels,
-                                                                  &heapOffset));
-
-        flags |= NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE;
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VGPU_HETEROGENEOUS_MODE))
+        {
+            NV_ASSERT_OK_OR_RETURN(kvgpumgrHeterogeneousGetChidOffset(vgpuTypeInfo->vgpuTypeId,
+                                                                      placementId,
+                                                                      numChannels,
+                                                                      &heapOffset));
+            flags |= NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE;
+        } 
+        else if (kvgpumgrCheckHomogeneousPlacementSupported(pGpu) == NV_OK)
+        {
+            NV_ASSERT_OK_OR_RETURN(kvgpumgrHomogeneousGetChidOffset(vgpuTypeInfo->vgpuTypeId,
+                                                                    placementId,
+                                                                    numChannels,
+                                                                    &heapOffset));
+            flags |= NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE;
+        }
     }
 
-    // Last entry is ENG_SW. Don't include that
-    for (i = 0; i < engineFifoListNumEntries - 1; i++)
+    for (i = 0; i < engineFifoListNumEntries; i++)
     {
         NvU32       runlistId;
         CHID_MGR   *pChidMgr;
         NvU32       currentNumChannels = numChannels;
+
+        if (engineFifoList[i].engineData[ENGINE_INFO_TYPE_RM_ENGINE_TYPE] ==
+            RM_ENGINE_TYPE_SW)
+        {
+            continue;
+        }
 
         //
         // This code needs the physical runlist ID. ENGINE_INFO_TYPE_FIFO_TAG is not virtualized currently,
@@ -247,11 +261,16 @@ vgpuMgrFreeSystemChannelIDs
 
     NV_ASSERT_OR_RETURN_VOID(engineFifoListNumEntries != 0);
 
-    // Last entry is ENG_SW. Don't include that
-    for (i = 0; i < engineFifoListNumEntries - 1; i++)
+    for (i = 0; i < engineFifoListNumEntries; i++)
     {
         NvU32       runlistId;
         CHID_MGR   *pChidMgr;
+
+        if (engineFifoList[i].engineData[ENGINE_INFO_TYPE_RM_ENGINE_TYPE] ==
+            RM_ENGINE_TYPE_SW)
+        {
+            continue;
+        }
 
         //
         // This code needs the physical runlist ID. ENGINE_INFO_TYPE_FIFO_TAG is not virtualized currently,

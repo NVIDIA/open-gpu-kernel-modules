@@ -341,8 +341,8 @@ static NV_STATUS _threadNodeInitTime(THREAD_STATE_NODE *pThreadNode)
         //
         const NvU32 DEVICE_INIT_TIMEOUT_MS = 60 * 1000;
 
-        computeTimeoutMsecs = DEVICE_INIT_TIMEOUT_MS;
-        nonComputeTimeoutMsecs = DEVICE_INIT_TIMEOUT_MS;
+        computeTimeoutMsecs = NV_MAX(computeTimeoutMsecs, DEVICE_INIT_TIMEOUT_MS);
+        nonComputeTimeoutMsecs = NV_MAX(nonComputeTimeoutMsecs, DEVICE_INIT_TIMEOUT_MS);
     }
 
     _threadStateSetNextCpuYieldTime(pThreadNode);
@@ -702,15 +702,24 @@ TlsMirror_Exit:
     pThreadStateIsrLockless->ppIsrThreadStateGpu[pGpu->gpuInstance] = pThreadNode;
 }
 
-/**
- * @brief Free the thread state for locked ISR and bottom-half
- *
- * @param[in/out] pThreadNode
- * @param[in] pGpu
- * @param[in] flags THREAD_STATE_FLAGS_IS_ISR or THREAD_STATE_FLAGS_DEFERRED_INT_HANDLER_RUNNING
- *
- */
-void threadStateFreeISRAndDeferredIntHandler
+void threadStateOnlyProcessWorkISRAndDeferredIntHandler
+(
+    THREAD_STATE_NODE *pThreadNode,
+    OBJGPU *pGpu,
+    NvU32 flags
+)
+{
+    NV_ASSERT_OR_RETURN_VOID(pGpu &&
+        (flags & (THREAD_STATE_FLAGS_IS_ISR | THREAD_STATE_FLAGS_DEFERRED_INT_HANDLER_RUNNING)));
+
+    if (!(threadStateDatabase.setupFlags & THREAD_STATE_SETUP_FLAGS_ENABLED))
+        return;
+
+    // Process any work needed before exiting.
+    _threadStateFreeProcessWork(pThreadNode);
+}
+
+void threadStateOnlyFreeISRAndDeferredIntHandler
 (
     THREAD_STATE_NODE *pThreadNode,
     OBJGPU *pGpu,
@@ -724,9 +733,6 @@ void threadStateFreeISRAndDeferredIntHandler
 
     if (!(threadStateDatabase.setupFlags & THREAD_STATE_SETUP_FLAGS_ENABLED))
         return;
-
-    // Process any work needed before exiting.
-    _threadStateFreeProcessWork(pThreadNode);
 
     if (threadStateDatabase.setupFlags & THREAD_STATE_SETUP_FLAGS_CHECK_TIMEOUT_AT_FREE_ENABLED)
     {
@@ -755,6 +761,26 @@ void threadStateFreeISRAndDeferredIntHandler
                      r);
         }
     }
+}
+
+/**
+ * @brief Free the thread state for locked ISR and bottom-half
+ *
+ * @param[in/out] pThreadNode
+ * @param[in] pGpu
+ * @param[in] flags THREAD_STATE_FLAGS_IS_ISR or THREAD_STATE_FLAGS_DEFERRED_INT_HANDLER_RUNNING
+ *
+ */
+void threadStateFreeISRAndDeferredIntHandler
+(
+    THREAD_STATE_NODE *pThreadNode,
+    OBJGPU *pGpu,
+    NvU32 flags
+)
+{
+    threadStateOnlyProcessWorkISRAndDeferredIntHandler(pThreadNode, pGpu, flags);
+
+    threadStateOnlyFreeISRAndDeferredIntHandler(pThreadNode, pGpu, flags);
 }
 
 /**

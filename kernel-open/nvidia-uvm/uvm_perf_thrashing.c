@@ -1400,10 +1400,10 @@ static bool thrashing_processors_have_fast_access_to(uvm_va_space_t *va_space,
     if (UVM_ID_IS_INVALID(to))
         return false;
 
-    // Combine NVLINK and native atomics mask since we could have PCIe
+    // Combine NVLINK/C2C and native atomics mask since we could have PCIe
     // atomics in the future
     uvm_processor_mask_and(fast_to,
-                           &va_space->has_nvlink[uvm_id_value(to)],
+                           &va_space->has_fast_link[uvm_id_value(to)],
                            &va_space->has_native_atomics[uvm_id_value(to)]);
     if (UVM_ID_IS_CPU(to)) {
         uvm_processor_mask_set(fast_to, to);

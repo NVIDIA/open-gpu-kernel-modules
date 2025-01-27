@@ -92,6 +92,11 @@ static NV_STATUS gpuDetermineVirtualMode(OBJGPU *);
 #include "gpu/fsp/kern_fsp.h"
 #include "fsp/fsp_clock_boost_rpc.h"
 
+#if RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
+#include "nv_sriov_defines.h"
+#include "diagnostics/code_coverage_mgr.h"
+#endif
+
 #include "g_odb.h"
 
 #define  RMTRACE_ENGINE_PROFILE_EVENT(EventName, EngineId, ReadCount, WriteCount)           \
@@ -326,7 +331,6 @@ gpuPostConstruct_IMPL
         return rmStatus;
     }
 
-
     config = GPU_REG_RD32(pGpu, NV_PMC_BOOT_1);
     if (FLD_TEST_DRF(_PMC, _BOOT_1, _VGPU, _VF, config))
     {
@@ -530,6 +534,20 @@ gpuPostConstruct_IMPL
     // Initialize reference count for external kernel clients
     pGpu->externalKernelClientCount = 0;
 
+#if RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        OBJSYS *pSys = SYS_GET_INSTANCE();
+        codecovmgrRegisterCoverageBuffer(pSys->pCodeCovMgr, GFID_TASK_RM,
+                                         pGpu->gpuInstance, BULLSEYE_TASK_RM_COVERAGE_SIZE);
+        for (NvU32 gfid = 1; gfid <= MAX_PARTITIONS_WITH_GFID; gfid++)
+        {
+            codecovmgrRegisterCoverageBuffer(pSys->pCodeCovMgr, gfid,
+                                             pGpu->gpuInstance, BULLSEYE_TASK_VGPU_COVERAGE_SIZE);
+        }
+    }
+#endif
+
     // Initialize the GPU recovery action, if the OS is already in a bad state.
     pGpu->currentRecoveryAction = GPU_RECOVERY_ACTION_UNKNOWN;
     gpuRefreshRecoveryAction_KERNEL(pGpu, NV_TRUE);
@@ -581,6 +599,9 @@ NV_STATUS gpuConstruct_IMPL
         pGpu->peer[i].pGpu        = NULL;
         pGpu->peer[i].pinset      = NV5070_CTRL_CMD_GET_PINSET_PEER_PEER_PINSET_NONE;
     }
+
+    pGpu->pDpcThreadState = portMemAllocNonPaged(sizeof(THREAD_STATE_NODE));
+    NV_ASSERT_OR_RETURN(pGpu->pDpcThreadState != NULL, NV_ERR_NO_MEMORY);
 
     return gpuConstructPhysical(pGpu);
 }
@@ -1477,6 +1498,8 @@ gpuDestruct_IMPL
     multimapDestroy(&pGpu->gspTraceEventBufferBindingsUid);
 #endif
 
+    portMemFree(pGpu->pDpcThreadState);
+
     gpuDestructPhysical(pGpu);
 }
 
@@ -1996,11 +2019,10 @@ gpuStatePreInit_IMPL
 
     NV_ASSERT_OK_OR_RETURN(gpuBuildKernelVideoEngineList(pGpu));
 
-    //
-    // Must be called after _gpuInitChipInfo since gpuDetermineMIGSupport_HAL
-    // reads chip revision and that is available only after _gpuInitChipInfo.
-    //
-    gpuDetermineMIGSupport_HAL(pGpu);
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_SUPPORTED))
+    {
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_MIG_SUPPORTED, gpuValidateMIGSupport_HAL(pGpu));
+    }
 
     rmStatus = gpuRemoveMissingEngines(pGpu);
     NV_ASSERT(rmStatus == NV_OK);
@@ -2898,7 +2920,7 @@ gpuStatePreUnload
 {
     NV_STATUS           rmStatus = NV_OK;
 
-    rmapiControlCacheFreeAllCacheForGpu(pGpu->gpuInstance);
+    rmapiControlCacheFreeNonPersistentCacheForGpu(pGpu->gpuInstance);
 
     if (!hypervisorIsVgxHyper())
     {
@@ -3198,6 +3220,8 @@ gpuStateDestroy_IMPL
 )
 {
     NV_STATUS      rmStatus = NV_OK;
+
+    rmapiControlCacheFreeAllCacheForGpu(pGpu->gpuInstance);
 
     // remove all video event bind points before destroying gsp engine state below
     videoRemoveAllBindpointsForGpu(pGpu);
@@ -3828,15 +3852,57 @@ gpuXlateHalImplToArchImpl
 
         case HAL_IMPL_GB100:
         {
-            *gpuArch = GPU_ARCHITECTURE_BLACKWELL;
+            *gpuArch = GPU_ARCHITECTURE_BLACKWELL_GB1XX;
             *gpuImpl = GPU_IMPLEMENTATION_GB100;
             break;
         }
 
         case HAL_IMPL_GB102:
         {
-            *gpuArch = GPU_ARCHITECTURE_BLACKWELL;
+            *gpuArch = GPU_ARCHITECTURE_BLACKWELL_GB1XX;
             *gpuImpl = GPU_IMPLEMENTATION_GB102;
+            break;
+        }
+
+        case HAL_IMPL_GB10B:
+        {
+            *gpuArch = GPU_ARCHITECTURE_BLACKWELL_GB1XX;
+            *gpuImpl = GPU_IMPLEMENTATION_GB10B;
+            break;
+        }
+
+        case HAL_IMPL_GB202:
+        {
+            *gpuArch = GPU_ARCHITECTURE_BLACKWELL_GB2XX;
+            *gpuImpl = GPU_IMPLEMENTATION_GB202;
+            break;
+        }
+
+        case HAL_IMPL_GB203:
+        {
+            *gpuArch = GPU_ARCHITECTURE_BLACKWELL_GB2XX;
+            *gpuImpl = GPU_IMPLEMENTATION_GB203;
+            break;
+        }
+
+        case HAL_IMPL_GB205:
+        {
+            *gpuArch = GPU_ARCHITECTURE_BLACKWELL_GB2XX;
+            *gpuImpl = GPU_IMPLEMENTATION_GB205;
+            break;
+        }
+
+        case HAL_IMPL_GB206:
+        {
+            *gpuArch = GPU_ARCHITECTURE_BLACKWELL_GB2XX;
+            *gpuImpl = GPU_IMPLEMENTATION_GB206;
+            break;
+        }
+
+        case HAL_IMPL_GB207:
+        {
+            *gpuArch = GPU_ARCHITECTURE_BLACKWELL_GB2XX;
+            *gpuImpl = GPU_IMPLEMENTATION_GB207;
             break;
         }
 
@@ -4001,6 +4067,8 @@ static const EXTERN_TO_INTERNAL_ENGINE_ID rmClientEngineTable[] =
     { RM_ENGINE_TYPE_NVENC0,     classId(OBJMSENC)   , 0,  NV_TRUE },
     { RM_ENGINE_TYPE_NVENC1,     classId(OBJMSENC)   , 1,  NV_TRUE },
     { RM_ENGINE_TYPE_NVENC2,     classId(OBJMSENC)   , 2,  NV_TRUE },
+// Bug 4175886 - Use this new value for all chips once GB20X is released
+    { RM_ENGINE_TYPE_NVENC3,     classId(OBJMSENC)   , 3,  NV_TRUE },
     { RM_ENGINE_TYPE_SW,         classId(OBJSWENG)   , 0,  NV_TRUE },
     { RM_ENGINE_TYPE_SEC2,       classId(OBJSEC2)    , 0,  NV_TRUE },
     { RM_ENGINE_TYPE_NVJPEG0,    classId(OBJNVJPG)   , 0,  NV_TRUE },
@@ -5108,9 +5176,8 @@ RmPhysAddr
 gpuGetDmaEndAddress_IMPL(OBJGPU *pGpu)
 {
     NvU32 numPhysAddrBits = gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM);
-    RmPhysAddr dmaWindowStartAddr = gpuGetDmaStartAddress(pGpu);
 
-    return dmaWindowStartAddr + (1ULL << numPhysAddrBits) - 1;
+    return (1ULL << numPhysAddrBits) - 1;
 }
 
 VGPU_STATIC_INFO *gpuGetStaticInfo(OBJGPU *pGpu)
@@ -5603,7 +5670,7 @@ gpuGetSchedulerPolicy_IMPL
         {
             schedPolicy = SCHED_POLICY_DEFAULT;
         }
-        else if (IS_MIG_ENABLED(pGpu) &&
+        else if (IS_MIG_IN_USE(pGpu) &&
                 (hypervisorIsVgxHyper() || (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && !IS_VIRTUAL(pGpu))))
         {
             schedPolicy = SCHED_POLICY_VGPU_FIXED_SHARE;
@@ -5778,6 +5845,37 @@ gpuIsDeviceMarkedForReset_IMPL
     return gpuGetResetScratchBit_HAL(pGpu, pbResetRequired);
 }
 
+static NV_STATUS
+_gpuSetDrainAndResetState
+(
+    OBJGPU *pGpu,
+    NvBool  newState
+)
+{
+    NvBool      prevState;
+    NV_STATUS   status;
+
+    status = gpuIsDeviceMarkedForDrainAndReset(pGpu, &prevState);
+    if (status != NV_OK)
+    {
+        goto _gpuSetDrainAndResetState_exit;
+    }
+
+    status = gpuSetDrainAndResetScratchBit_HAL(pGpu, newState);
+    if (status != NV_OK)
+    {
+        goto _gpuSetDrainAndResetState_exit;
+    }
+
+    if (prevState != newState)
+    {
+        gpuRefreshRecoveryAction_HAL(pGpu, NV_FALSE);
+    }
+
+_gpuSetDrainAndResetState_exit:
+    return status;
+}
+
 /*!
  * @brief Interface which allows GPU to be marked for pending drain and reset. This means,
  * applications should be drained from the GPU and the GPU reset to regain full operability.
@@ -5797,7 +5895,7 @@ gpuMarkDeviceForDrainAndReset_IMPL
     OBJGPU *pGpu
 )
 {
-    return gpuSetDrainAndResetScratchBit_HAL(pGpu, NV_TRUE);
+    return _gpuSetDrainAndResetState(pGpu, NV_TRUE);
 }
 
 /*!
@@ -5821,7 +5919,7 @@ gpuUnmarkDeviceForDrainAndReset_IMPL
     OBJGPU *pGpu
 )
 {
-    return gpuSetDrainAndResetScratchBit_HAL(pGpu, NV_FALSE);
+    return _gpuSetDrainAndResetState(pGpu, NV_FALSE);
 }
 
 /*!
@@ -5859,6 +5957,8 @@ _gpuRecoveryActionName
             return "Node Reboot Required";
         case NV2080_CTRL_GPU_RECOVERY_ACTION_DRAIN_P2P:
             return "Drain P2P";
+        case NV2080_CTRL_GPU_RECOVERY_ACTION_DRAIN_AND_RESET:
+            return "Drain and Reset";
         default:
             NV_ASSERT_FAILED("Unknown recovery action!");
             return "Unknown";
@@ -5908,6 +6008,7 @@ _gpuRefreshRecoveryActionInLock
     OBJGPU                          *pGpu = gpumgrGetGpu(gpuInstance);
     NV_STATUS                        rmStatus;
     NvBool                           bResetRequired;
+    NvBool                           bDrainAndReset;
     NV2080_CTRL_GPU_RECOVERY_ACTION  newAction;
     NV2080_CTRL_GPU_RECOVERY_ACTION  oldAction;
 
@@ -5924,13 +6025,21 @@ _gpuRefreshRecoveryActionInLock
         {
             newAction = NV2080_CTRL_GPU_RECOVERY_ACTION_GPU_RESET;
         }
-        else if (pGpu->getProperty(pGpu, PDB_PROP_GPU_RECOVERY_DRAIN_P2P_REQUIRED))
-        {
-            newAction = NV2080_CTRL_GPU_RECOVERY_ACTION_DRAIN_P2P;
-        }
         else
         {
-            newAction = NV2080_CTRL_GPU_RECOVERY_ACTION_NONE;
+            rmStatus = gpuIsDeviceMarkedForDrainAndReset(pGpu, &bDrainAndReset);
+            if ((rmStatus == NV_OK) && bDrainAndReset)
+            {
+                newAction = NV2080_CTRL_GPU_RECOVERY_ACTION_DRAIN_AND_RESET;
+            }
+            else if (pGpu->getProperty(pGpu, PDB_PROP_GPU_RECOVERY_DRAIN_P2P_REQUIRED))
+            {
+                newAction = NV2080_CTRL_GPU_RECOVERY_ACTION_DRAIN_P2P;
+            }
+            else
+            {
+                newAction = NV2080_CTRL_GPU_RECOVERY_ACTION_NONE;
+            }
         }
     }
 
@@ -6047,3 +6156,73 @@ gpuSetPartitionErrorAttribution_KERNEL
 
     return NV_OK;
 }
+
+/*!
+ * @brief This function logs an XID message to OOB by sending an RPC message to the GSP.
+ *
+ * @param[in] pGpu         OBJGPU pointer
+ * @param[in] xid          The XID number
+ * @param[in] message      The text message associated with the XID
+ * @param[in] len          Length, in bytes, of the text message, excluding the null terminator
+ *
+ * @returns NV_OK
+ *          NV_ERR_INVALID_ARGUMENT if errorCode is invalid or
+            if partition attribution isn't supported for the error
+ */
+void
+gpuLogOobXidMessage_KERNEL
+(
+    OBJGPU      *pGpu,
+    NvU32        xid,
+    const char  *message,
+    NvU32        len
+)
+{
+    RM_API                                 *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV_STATUS                               status;
+    NV2080_CTRL_INTERNAL_LOG_OOB_XID_PARAMS params = {0};
+
+    // Exclude conditions that indicate issues with GSP communication.
+    if ((xid == GSP_ERROR) ||
+        (xid == GSP_RPC_TIMEOUT) ||
+        (xid == ROBUST_CHANNEL_GPU_HAS_FALLEN_OFF_THE_BUS) ||
+        API_GPU_IN_RESET_SANITY_CHECK(pGpu) ||
+        !pGpu->gspRmInitialized ||
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_PREPARING_FULLCHIP_RESET) ||
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST) ||
+        !pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_CONNECTED))
+    {
+        return;
+    }
+
+    // Copy the message into the RPC params, truncated to max RPC size, but
+    // always include a tailing NULL terminator.
+    len = NV_MIN(len, NV2080_INTERNAL_OOB_XID_MESSAGE_BUFFER_SIZE - 1);
+    params.message[len] = '\0';
+    params.xid = xid;
+    params.len = len;
+    portMemCopy(params.message, NV2080_INTERNAL_OOB_XID_MESSAGE_BUFFER_SIZE, message, len);
+
+    NV_CHECK_OK(status, LEVEL_ERROR,
+                pRmApi->Control(pRmApi,
+                                pGpu->hInternalClient,
+                                pGpu->hInternalSubdevice,
+                                NV2080_CTRL_CMD_INTERNAL_LOG_OOB_XID,
+                                &params,
+                                sizeof(params)));
+
+}
+
+NvBool
+gpuValidateMIGSupport_KERNEL
+(
+    OBJGPU *pGpu
+)
+{
+    GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+
+    NV_ASSERT_OR_RETURN(pGSCI != NULL, NV_FALSE);
+
+    return pGSCI->bIsMigSupported;
+}
+

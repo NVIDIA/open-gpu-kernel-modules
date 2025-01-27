@@ -38,7 +38,7 @@ PUSH_SEGMENTS
 
 // Macro to declare a TIMING initializer for given parameters without border
 #define EST_TIMING(hv,hfp,hsw,ht,hsp,vv,vfp,vsw,vt,vsp,rr,pclk,format) \
-{hv,0,hfp,hsw,ht,(hsp)=='-',vv,0,vfp,vsw,vt,(vsp)=='-',NVT_PROGRESSIVE,pclk,{0,rr,set_rrx1k(pclk,ht,vt),0,1,{0},{0},{0},{0},format,"VESA Established"}}
+{hv,0,hfp,hsw,ht,(hsp)=='-',vv,0,vfp,vsw,vt,(vsp)=='-',NVT_PROGRESSIVE,pclk,((pclk<<3)+(pclk<<1)),{0,rr,set_rrx1k(pclk,ht,vt),0,1,{0},{0},{0},{0},format,"VESA Established"}}
 
 DATA_SEGMENT(PAGE_DATA)
 #if !defined(NV_WSA)
@@ -53,12 +53,12 @@ static const NVT_TIMING EDID_EST[] =
 {
     EST_TIMING( 720, 0,  0, 720,'-', 400, 0,0, 400,'-',70,    0,NVT_STATUS_EDID_EST), // 720x400x70Hz   (IBM, VGA)
     EST_TIMING( 720, 0,  0, 720,'-', 400, 0,0, 400,'-',88,    0,NVT_STATUS_EDID_EST), // 720x400x88Hz   (IBM, XGA2)
-    {640,0,16,96,800,NVT_H_SYNC_NEGATIVE,480,0,10,2,525,NVT_V_SYNC_NEGATIVE,NVT_PROGRESSIVE,2518,{0,60,60000,0,1,{0},{0},{0},{0},NVT_STATUS_EDID_EST,"EDID_Established"}},
+    {640,0,16,96,800,NVT_H_SYNC_NEGATIVE,480,0,10,2,525,NVT_V_SYNC_NEGATIVE,NVT_PROGRESSIVE,2518,25180,{0,60,60000,0,1,{0},{0},{0},{0},NVT_STATUS_EDID_EST,"EDID_Established"}},
 
     EST_TIMING( 640, 0,  0, 640,'-', 480, 0,0, 480,'-',67,    0,NVT_STATUS_EDID_EST), // 640x480x67Hz   (Apple, Mac II)
 
     // 640x480x72Hz (VESA) - this entry have borders
-    {640,8,16,40,832,NVT_H_SYNC_NEGATIVE,480,8,1,3,520,NVT_V_SYNC_NEGATIVE,NVT_PROGRESSIVE,3150,{0,72,72000,0,1,{0},{0},{0},{0},NVT_STATUS_EDID_EST,"EDID_Established"}},
+    {640,8,16,40,832,NVT_H_SYNC_NEGATIVE,480,8,1,3,520,NVT_V_SYNC_NEGATIVE,NVT_PROGRESSIVE,3150,31500,{0,72,72000,0,1,{0},{0},{0},{0},NVT_STATUS_EDID_EST,"EDID_Established"}},
     EST_TIMING( 640,16, 64, 840,'-', 480, 1,3, 500,'-',75, 3150,NVT_STATUS_EDID_EST), // 640x480x75Hz   (VESA)
     EST_TIMING( 800,24, 72,1024,'+', 600, 1,2, 625,'+',56, 3600,NVT_STATUS_EDID_EST), // 800x600x56Hz   (VESA)
     EST_TIMING( 800,40,128,1056,'+', 600, 1,4, 628,'+',60, 4000,NVT_STATUS_EDID_EST), // 800x600x60Hz   (VESA)
@@ -564,7 +564,8 @@ NVT_STATUS parseEdidDetailedTimingDescriptor(NvU8 *p, NVT_TIMING *pT)
         pT->VSyncWidth  = (NvU16)((pDTD->bDTVerticalSync & 0x0F) + ((pDTD->bDTHorizVertSyncOverFlow & 0x03) << 4));
 
         // pixel clock
-        pT->pclk = (NvU32)pDTD->wDTPixelClock;
+        pT->pclk     = (NvU32)pDTD->wDTPixelClock;
+        pT->pclk1khz = (NvU32)((pT->pclk << 3) + (pT->pclk << 1));
 
         // sync polarities
         if ((pDTD->bDTFlags & 0x18) == 0x18)
@@ -2964,7 +2965,7 @@ NvU32 NvTiming_CalculateCommonEDIDCRC32(NvU8* pEDIDBuffer, NvU32 edidVersion)
         CommonEDIDBuffer[0x7F] = 0;
         CommonEDIDBuffer[0xFF] = 0;
 
-        // We also need to zero out any "EDID Other Monitor Descriptors" (http://en.wikipedia.org/wiki/Extended_display_identification_data)
+        // We also need to zero out any "EDID Other Monitor Descriptors" (https://en.wikipedia.org/wiki/Extended_display_identification_data)
         for (edidBufferIndex = 54; edidBufferIndex <= 108; edidBufferIndex += 18)
         {
             if (CommonEDIDBuffer[edidBufferIndex] == 0 && CommonEDIDBuffer[edidBufferIndex+1] == 0)

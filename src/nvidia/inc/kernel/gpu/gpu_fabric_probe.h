@@ -44,6 +44,7 @@ void gpuFabricProbeStopPhysical(GPU_FABRIC_PROBE_INFO_PHYSICAL *pGpuFabricProbeI
                                 NvU32 gfId);
 
 void gpuFabricProbeSuspend(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel);
+void gpuFabricProbeInvalidate(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel);
 NV_STATUS gpuFabricProbeResume(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel);
 
 NV_STATUS gpuFabricProbeGetGpuFabricHandle(GPU_FABRIC_PROBE_INFO_KERNEL *pInfo, NvU64 *pHandle);

@@ -159,17 +159,16 @@ serverInterMap_Prologue
     if (((offset + length) < offset) ||
         ((offset + length) > pSrcMemDesc->Size))
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "Mapping offset 0x%llX or length 0x%llX out of bounds!\n",
                   offset, length);
-        DBG_BREAKPOINT();
         return NV_ERR_INVALID_LIMIT;
     }
 
     if (memdescGetFlag(memdescGetMemDescFromGpu(pSrcMemDesc, pGpu), MEMDESC_FLAGS_DEVICE_READ_ONLY) &&
         !FLD_TEST_DRF(OS46, _FLAGS, _ACCESS, _READ_ONLY, pParams->flags))
     {
-        NV_PRINTF(LEVEL_ERROR, "Attempting to map READ_ONLY surface as READ_WRITE / WRITE_ONLY!\n");
+        NV_PRINTF(LEVEL_NOTICE, "Attempting to map READ_ONLY surface as READ_WRITE / WRITE_ONLY!\n");
         return NV_ERR_INVALID_ARGUMENT;
     }
 
@@ -424,7 +423,7 @@ rmapiMapWithSecInfo
     }
     else
     {
-        NV_PRINTF(LEVEL_ERROR, "Nv04Map: map failed; status: %s (0x%08x)\n",
+        NV_PRINTF(LEVEL_INFO, "Nv04Map: map failed; status: %s (0x%08x)\n",
                   nvstatusToString(status), status);
     }
 
@@ -529,7 +528,7 @@ rmapiUnmapWithSecInfo
     }
     else
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "Nv04Unmap: ummap failed; status: %s (0x%08x)\n",
                   nvstatusToString(status), status);
     }

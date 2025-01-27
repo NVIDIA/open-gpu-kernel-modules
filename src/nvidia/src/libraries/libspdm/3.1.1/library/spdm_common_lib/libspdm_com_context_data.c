@@ -705,6 +705,8 @@ libspdm_return_t libspdm_set_data(void *spdm_context, libspdm_data_type_t data_t
             return LIBSPDM_STATUS_INVALID_PARAMETER;
         }
         context->sequence_number_endian = *(uint8_t *)data;
+        // NVIDIA_EDIT: Fix bug with missing break statement.
+        break;
     default:
         return LIBSPDM_STATUS_UNSUPPORTED_CAP;
         break;
@@ -1010,6 +1012,8 @@ libspdm_return_t libspdm_get_data(void *spdm_context, libspdm_data_type_t data_t
     case LIBSPDM_DATA_SEQUENCE_NUMBER_ENDIAN:
         target_data_size = sizeof(uint8_t);
         target_data = &context->sequence_number_endian;
+        // NVIDIA_EDIT: Fix bug with missing break statement.
+        break;
     case LIBSPDM_DATA_SESSION_SEQUENCE_NUMBER_ENDIAN:
         // NVIDIA_EDIT: Appease compiler that we will not use secured_context uninitialized.
         if (secured_context == NULL)
@@ -1018,6 +1022,8 @@ libspdm_return_t libspdm_get_data(void *spdm_context, libspdm_data_type_t data_t
         }
         target_data_size = sizeof(uint8_t);
         target_data = &secured_context->sequence_number_endian;
+        // NVIDIA_EDIT: Fix bug with missing break statement.
+        break;
     default:
         return LIBSPDM_STATUS_UNSUPPORTED_CAP;
         break;
@@ -2567,22 +2573,23 @@ bool libspdm_import_fips_selftest_context_to_spdm_context(void *spdm_context,
                                                           void *fips_selftest_context,
                                                           size_t fips_selftest_context_size)
 {
-    libspdm_fips_selftest_context *libspdm_fips_selftest_context;
+    // NVIDIA_EDIT: Rename libspdm_fips_selftest_context to casted_fips_selftest_context to appease GCC
+    libspdm_fips_selftest_context *casted_fips_selftest_context;
     libspdm_context_t *libspdm_context;
 
     libspdm_context = spdm_context;
-    libspdm_fips_selftest_context = fips_selftest_context;
+    casted_fips_selftest_context = fips_selftest_context;
 
-    if ((libspdm_context == NULL) || (libspdm_fips_selftest_context == NULL)) {
+    if ((libspdm_context == NULL) || (casted_fips_selftest_context == NULL)) {
         return false;
     }
-    if (fips_selftest_context_size != sizeof(libspdm_fips_selftest_context)) {
+    if (fips_selftest_context_size != sizeof(casted_fips_selftest_context)) {
         return false;
     }
 
     libspdm_copy_mem(&(libspdm_context->fips_selftest_context),
-                     sizeof(libspdm_fips_selftest_context),
-                     libspdm_fips_selftest_context, sizeof(libspdm_fips_selftest_context));
+                     sizeof(casted_fips_selftest_context),
+                     casted_fips_selftest_context, sizeof(casted_fips_selftest_context));
     return true;
 }
 
@@ -2600,23 +2607,24 @@ bool libspdm_export_fips_selftest_context_from_spdm_context(void *spdm_context,
                                                             void *fips_selftest_context,
                                                             size_t fips_selftest_context_size)
 {
-    libspdm_fips_selftest_context *libspdm_fips_selftest_context;
+    // NVIDIA_EDIT: Rename libspdm_fips_selftest_context to casted_fips_selftest_context to appease GCC
+    libspdm_fips_selftest_context *casted_fips_selftest_context;
     libspdm_context_t *libspdm_context;
 
     libspdm_context = spdm_context;
-    libspdm_fips_selftest_context = fips_selftest_context;
+    casted_fips_selftest_context = fips_selftest_context;
 
-    if ((libspdm_context == NULL) || (libspdm_fips_selftest_context == NULL)) {
+    if ((libspdm_context == NULL) || (casted_fips_selftest_context == NULL)) {
         return false;
     }
-    if (fips_selftest_context_size != sizeof(libspdm_fips_selftest_context)) {
+    if (fips_selftest_context_size != sizeof(casted_fips_selftest_context)) {
         return false;
     }
 
-    libspdm_copy_mem(libspdm_fips_selftest_context,
-                     sizeof(libspdm_fips_selftest_context),
+    libspdm_copy_mem(casted_fips_selftest_context,
+                     sizeof(casted_fips_selftest_context),
                      &(libspdm_context->fips_selftest_context),
-                     sizeof(libspdm_fips_selftest_context));
+                     sizeof(casted_fips_selftest_context));
     return true;
 }
 

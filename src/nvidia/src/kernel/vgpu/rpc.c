@@ -323,46 +323,6 @@ _freeRpcMemDescFbBar2Virtual(
 }
 
 static NV_STATUS
-_allocRpcMemDescFbBar2Physical(
-    OBJGPU             *pGpu,
-    NvU64               size,
-    NvBool              bContig,
-    MEMORY_DESCRIPTOR **ppMemDesc,
-    void              **ppMemBuffer)
-{
-    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-    OBJVGPU *pVGpu = GPU_GET_VGPU(pGpu);
-
-    NV_ASSERT_OK_OR_RETURN(
-        memdescCreate(ppMemDesc,
-                      pGpu,
-                      size,
-                      RM_PAGE_SIZE,
-                      bContig,
-                      ADDR_FBMEM,
-                      NV_MEMORY_UNCACHED,
-                      MEMDESC_FLAGS_NONE));
-
-    memdescDescribe(*ppMemDesc,
-                    ADDR_FBMEM,
-                    pVGpu->allocFbOffsetBar2Physical,
-                    size);
-
-    pVGpu->allocFbOffsetBar2Physical += size;
-
-    *ppMemBuffer = kbusCpuOffsetInBar2WindowGet(pGpu, pKernelBus, *ppMemDesc);
-
-    return NV_OK;
-}
-
-static void
-_freeRpcMemDescFbBar2Physical(
-    MEMORY_DESCRIPTOR **ppMemDesc)
-{
-    memdescDestroy(*ppMemDesc);
-}
-
-static NV_STATUS
 _allocRpcMemDescFb(
     OBJGPU             *pGpu,
     NvU64               size,
@@ -371,16 +331,8 @@ _allocRpcMemDescFb(
     void              **ppMemBuffer)
 {
     NV_STATUS status;
-    OBJVGPU *pVGpu = GPU_GET_VGPU(pGpu);
 
-    if (pVGpu->bIsBar2Physical)
-    {
-        status = _allocRpcMemDescFbBar2Physical(pGpu, size, bContig, ppMemDesc, ppMemBuffer);
-    }
-    else
-    {
-        status = _allocRpcMemDescFbBar2Virtual(pGpu, size, bContig, ppMemDesc, ppMemBuffer);
-    }
+    status = _allocRpcMemDescFbBar2Virtual(pGpu, size, bContig, ppMemDesc, ppMemBuffer);
 
     return status;
 }
@@ -391,16 +343,7 @@ _freeRpcMemDescFb(
     MEMORY_DESCRIPTOR **ppMemDesc,
     void              **ppMemBuffer)
 {
-    OBJVGPU *pVGpu = GPU_GET_VGPU(pGpu);
-
-    if (pVGpu->bIsBar2Physical)
-    {
-        _freeRpcMemDescFbBar2Physical(ppMemDesc);
-    }
-    else
-    {
-        _freeRpcMemDescFbBar2Virtual(pGpu, ppMemDesc, ppMemBuffer);
-    }
+    _freeRpcMemDescFbBar2Virtual(pGpu, ppMemDesc, ppMemBuffer);
 }
 
 NV_STATUS
@@ -521,7 +464,7 @@ static NV_STATUS _setupGspSharedMemory(OBJGPU *pGpu, OBJVGPU *pVGpu)
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvU32 memFlags = 0;
 
-    if (IsGH100orBetter(pGpu) && (!kbusIsBar2Initialized(pKernelBus)))
+    if (!kbusIsBar2Initialized(pKernelBus))
         addressSpace = ADDR_SYSMEM;
 
     NV_ASSERT_OK_OR_RETURN(_allocSharedMemory(pGpu, pVGpu, addressSpace, memFlags));
@@ -625,11 +568,7 @@ static NV_STATUS _initSysmemPfnRing(OBJGPU *pGpu)
 {
     NV_STATUS status = NV_OK;
     OBJVGPU *pVGpu = GPU_GET_VGPU(pGpu);
-    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvU32 memFlags = 0;
-
-    if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
-        memFlags = MEMDESC_FLAGS_CPU_ONLY;
 
     status = _allocRpcMemDesc(pGpu,
                               RM_PAGE_SIZE,
@@ -660,10 +599,14 @@ static NV_STATUS _initSysmemPfnRing(OBJGPU *pGpu)
 static void _freeSysmemPfnRing(OBJGPU *pGpu)
 {
 
-    _freeRpcMemDesc(pGpu,
-                    &vgpuSysmemPfnInfo.pMemDesc_sysmemPfnRing,
-                    (void**)&vgpuSysmemPfnInfo.sysmemPfnRing,
-                    (void**)&vgpuSysmemPfnInfo.sysmemPfnRing_priv);
+    if (vgpuSysmemPfnInfo.pMemDesc_sysmemPfnRing &&
+        (vgpuSysmemPfnInfo.pMemDesc_sysmemPfnRing->pGpu != NULL))
+    {
+        _freeRpcMemDesc(pGpu,
+                        &vgpuSysmemPfnInfo.pMemDesc_sysmemPfnRing,
+                        (void**)&vgpuSysmemPfnInfo.sysmemPfnRing,
+                        (void**)&vgpuSysmemPfnInfo.sysmemPfnRing_priv);
+    }
 }
 
 static NV_STATUS _setupSysmemPfnBitMap(OBJGPU *pGpu, OBJVGPU *pVGpu)
@@ -764,10 +707,30 @@ done:
 static NV_STATUS updateSharedBufferInfoInSysmemPfnBitMap(OBJGPU *pGpu, OBJVGPU *pVGpu, NvBool add)
 {
     NV_STATUS status = NV_OK;
+    VGPU_SYSMEM_PFN_BITMAP_NODE_P node = NULL;
+    VGPU_SYSMEM_PFN_BITMAP_NODE_P nodeNext = NULL;
 
     if (RMCFG_FEATURE_PLATFORM_MODS ||
         !pGpu->getProperty(pGpu, PDB_PROP_GPU_SRIOV_SYSMEM_DIRTY_PAGE_TRACKING_ENABLED))
         return NV_OK;
+
+    for (node = listHead(&(vgpuSysmemPfnInfo.listVgpuSysmemPfnBitmapHead));
+         node != NULL;
+         node = nodeNext)
+    {
+        if (node->pMemDesc_sysmemPfnMap != NULL &&
+            (memdescGetAddressSpace(node->pMemDesc_sysmemPfnMap) == ADDR_SYSMEM))
+        {
+            status = vgpuUpdateSysmemPfnBitMap(pGpu, node->pMemDesc_sysmemPfnMap, add);
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_INFO, "Failed to update sysmemPfnMap info in PFN bitmap, error 0x%x\n", status);
+                return status;
+            }
+            node->bAddedToBitmap = NV_TRUE;
+        }
+        nodeNext = listNext(&(vgpuSysmemPfnInfo.listVgpuSysmemPfnBitmapHead), node);
+    }
 
     if ((pVGpu->gspCtrlBufInfo.pMemDesc != NULL) &&
         (memdescGetAddressSpace(pVGpu->gspCtrlBufInfo.pMemDesc) == ADDR_SYSMEM))
@@ -838,20 +801,11 @@ static NV_STATUS updateSharedBufferInfoInSysmemPfnBitMap(OBJGPU *pGpu, OBJVGPU *
     if ((vgpuSysmemPfnInfo.pMemDesc_sysmemPfnRing != NULL) &&
         (memdescGetAddressSpace(vgpuSysmemPfnInfo.pMemDesc_sysmemPfnRing) == ADDR_SYSMEM))
     {
-        VGPU_SYSMEM_PFN_BITMAP_NODE_P head = NULL;
-        if (listCount(&(vgpuSysmemPfnInfo.listVgpuSysmemPfnBitmapHead)) > 0)
+        status = vgpuUpdateSysmemPfnBitMap(pGpu, vgpuSysmemPfnInfo.pMemDesc_sysmemPfnRing, add);
+        if (status != NV_OK)
         {
-            head = listHead(&(vgpuSysmemPfnInfo.listVgpuSysmemPfnBitmapHead));
-        }
-
-        if (head && head->pMemDesc_sysmemPfnMap->RefCount == 1)
-        {
-            status = vgpuUpdateSysmemPfnBitMap(pGpu, vgpuSysmemPfnInfo.pMemDesc_sysmemPfnRing, add);
-            if (status != NV_OK)
-            {
-                NV_PRINTF(LEVEL_INFO, "Failed to update PFN bitmap sysmem info in PFN bitmap, error 0x%x\n", status);
-                return status;
-            }
+            NV_PRINTF(LEVEL_INFO, "Failed to update PFN bitmap sysmem info in PFN bitmap, error 0x%x\n", status);
+            return status;
         }
     }
 
@@ -879,6 +833,8 @@ void teardownSysmemPfnBitMap(OBJGPU *pGpu, OBJVGPU *pVGpu)
         VGPU_SYSMEM_PFN_BITMAP_NODE_P node;
         VGPU_SYSMEM_PFN_BITMAP_NODE_P nodeNext;
 
+        vgpuSysmemPfnInfo.bSysmemPfnInfoInitialized = NV_FALSE;
+
         _freeSysmemPfnRing(pGpu);
 
         for (node = listHead(&(vgpuSysmemPfnInfo.listVgpuSysmemPfnBitmapHead));
@@ -894,8 +850,32 @@ void teardownSysmemPfnBitMap(OBJGPU *pGpu, OBJVGPU *pVGpu)
 
         vgpuSysmemPfnInfo.guestMaxPfn = 0;
         vgpuSysmemPfnInfo.sizeInBytes = 0;
+    }
+    else 
+    {
+        // Bug 4991902: War - set the pGpu to NULL if the deactivating pGpu is same
+        // as one used to allocate the memory descriptors. This is to avoid guest VM
+        // BSOD.
+        if (vgpuSysmemPfnInfo.pMemDesc_sysmemPfnRing &&
+            (vgpuSysmemPfnInfo.pMemDesc_sysmemPfnRing->pGpu == pGpu))
+        {
+            VGPU_SYSMEM_PFN_BITMAP_NODE_P node;
+            VGPU_SYSMEM_PFN_BITMAP_NODE_P nodeNext;
 
-        vgpuSysmemPfnInfo.bSysmemPfnInfoInitialized = NV_FALSE;
+            vgpuSysmemPfnInfo.pMemDesc_sysmemPfnRing->pGpu = NULL;
+            
+            for (node = listHead(&(vgpuSysmemPfnInfo.listVgpuSysmemPfnBitmapHead));
+                 node != NULL;
+                 node = nodeNext)
+            {
+                nodeNext = listNext(&(vgpuSysmemPfnInfo.listVgpuSysmemPfnBitmapHead), node);
+                
+                if (node && node->pMemDesc_sysmemPfnMap)
+                {
+                    node->pMemDesc_sysmemPfnMap->Allocated = NV_FALSE;
+                }
+            }
+        }
     }
 }
 
@@ -1058,7 +1038,7 @@ static NV_STATUS _setupGspMessageBuffer(OBJGPU *pGpu, OBJVGPU *pVGpu)
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvU32 memFlags = 0;
 
-    if (IsGH100orBetter(pGpu) && (!kbusIsBar2Initialized(pKernelBus)))
+    if (!kbusIsBar2Initialized(pKernelBus))
         addressSpace = ADDR_SYSMEM;
 
     status = _allocRpcMemDesc(pGpu,
@@ -1312,8 +1292,6 @@ static NV_STATUS _vgpuGspSetupCommunicationWithPlugin(OBJGPU *pGpu, OBJVGPU *pVG
 
     addrCtrlBuf = vgpuGspMakeBufferAddress(&pVGpu->gspCtrlBufInfo, pVGpu->gspCtrlBufInfo.pfn);
 
-    NV_PRINTF(LEVEL_INFO, "RPC: BAR2 Physical            0x%x\n",   pVGpu->bIsBar2Physical ? 1 : 0);
-
     status = _vgpuGspSendSetupRequest(pGpu, addrCtrlBuf);
     if (status != NV_OK)
     {
@@ -1395,15 +1373,11 @@ NV_STATUS vgpuGspSetupBuffers(OBJGPU *pGpu)
 {
     NV_STATUS status = NV_OK;
     OBJVGPU *pVGpu = GPU_GET_VGPU(pGpu);
-    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
 
     if (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
     {
         return NV_ERR_NOT_SUPPORTED;
     }
-
-    pVGpu->bIsBar2Physical = pKernelBus->bIsBar2SetupInPhysicalMode;
-    pVGpu->allocFbOffsetBar2Physical = 0xa00000;
 
     rpcSendMessage_FNPTR(pVGpu->pRpc) = _rpcSendMessage_VGPUGSP;
     rpcRecvPoll_FNPTR(pVGpu->pRpc)    = _rpcRecvPoll_VGPUGSP;
@@ -1635,8 +1609,6 @@ NV_STATUS initRpcInfrastructure_VGPU(OBJGPU *pGpu)
     return NV_OK;
 
 fail:
-    teardownSysmemPfnBitMap(pGpu, pVGpu);
-
     if (pVGpu->bGspPlugin)
     {
         vgpuGspTeardownBuffers(pGpu);
@@ -1648,6 +1620,7 @@ fail:
         portMemFree(pVGpu->pRpc);
         pVGpu->pRpc = NULL;
     }
+    teardownSysmemPfnBitMap(pGpu, pVGpu);
 
     return rmStatus;
 }
@@ -2213,6 +2186,7 @@ NV_STATUS _serializeClassParams_v(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 hClass, void
         case ADA_A:
         case HOPPER_A:
         case BLACKWELL_A:
+        case BLACKWELL_B:
             {
                 NV_GR_ALLOCATION_PARAMETERS *pGrAllocParam = pCreateParms;
 
@@ -2228,6 +2202,7 @@ NV_STATUS _serializeClassParams_v(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 hClass, void
         case AMPERE_DMA_COPY_B:
         case HOPPER_DMA_COPY_A:
         case BLACKWELL_DMA_COPY_A:
+        case BLACKWELL_DMA_COPY_B:
             {
                 NV85B5_ALLOCATION_PARAMETERS *pNv85b5CreateParms = pCreateParms;
 
@@ -2316,6 +2291,7 @@ NV_STATUS _serializeClassParams_v(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 hClass, void
         case NVB8B0_VIDEO_DECODER:
         case NVC9B0_VIDEO_DECODER:
         case NVCDB0_VIDEO_DECODER:
+        case NVCFB0_VIDEO_DECODER:
             {
                 NV_BSP_ALLOCATION_PARAMETERS *pParams = pCreateParms;
                 params->param_NVC4B0_VIDEO_DECODER.size                      = pParams->size;
@@ -2395,6 +2371,7 @@ NV_STATUS _serializeClassParams_v(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 hClass, void
         case ADA_COMPUTE_A:
         case HOPPER_COMPUTE_A:
         case BLACKWELL_COMPUTE_A:
+        case BLACKWELL_COMPUTE_B:
         {
             NV_GR_ALLOCATION_PARAMETERS *pParams = pCreateParms;
             if (pParams != NULL) {
@@ -2459,6 +2436,7 @@ NV_STATUS _serializeClassParams_v(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 hClass, void
         case NVC6FA_VIDEO_OFA:
         case NVC7FA_VIDEO_OFA:
         case NVB8FA_VIDEO_OFA:
+        case NVCFFA_VIDEO_OFA:
         {
             alloc_object_params_v* params = &rpc_message->alloc_object_v.params;
             NV_OFA_ALLOCATION_PARAMETERS *pParams = pCreateParms;
@@ -2474,6 +2452,7 @@ NV_STATUS _serializeClassParams_v(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 hClass, void
         case NVB8D1_VIDEO_NVJPG:
         case NVC9D1_VIDEO_NVJPG:
         case NVCDD1_VIDEO_NVJPG:
+        case NVCFD1_VIDEO_NVJPG:
         {
             const NV_NVJPG_ALLOCATION_PARAMETERS *pParams = pCreateParms;
 
@@ -2513,6 +2492,8 @@ NV_STATUS _serializeClassParams_v26_00(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 hClass,
 {
     switch (hClass)
     {
+        case NVCFB7_VIDEO_ENCODER:
+            return _serializeClassParams_v25_08(pGpu, pRpc, NVC9B7_VIDEO_ENCODER, pCreateParms);
         default:
             return _serializeClassParams_v25_08(pGpu, pRpc, hClass, pCreateParms);
     }
@@ -2525,6 +2506,33 @@ NV_STATUS _serializeClassParams_v27_00(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 hClass,
         default:
             return _serializeClassParams_v26_00(pGpu, pRpc, hClass, pCreateParms);
     }
+}
+
+NV_STATUS _serializeClassParams_v29_06(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 hClass, void *pCreateParms)
+{
+    NvU32 param_length = 0;
+    switch (hClass)
+    {
+        case NVCDFA_VIDEO_OFA:
+        {
+            alloc_object_params_v29_06* params = &rpc_message->alloc_object_v29_06.params;
+            NV_OFA_ALLOCATION_PARAMETERS *pParams = pCreateParms;
+            if (pParams != NULL) {
+                params->param_NVC9FA_VIDEO_OFA.size                      = pParams->size;
+                params->param_NVC9FA_VIDEO_OFA.prohibitMultipleInstances = pParams->prohibitMultipleInstances;
+                params->param_NVC9FA_VIDEO_OFA.engineInstance            = pParams->engineInstance;
+                param_length = sizeof(params->param_NVC9FA_VIDEO_OFA);
+            }
+            break;
+        }
+        default:
+            return _serializeClassParams_v27_00(pGpu, pRpc, hClass, pCreateParms);
+    }
+
+    rpc_message->alloc_object_v29_06.param_len = param_length;
+    
+   // all done.
+    return NV_OK;
 }
 
 /* Copy params from RPC buffer*/
@@ -3877,6 +3885,61 @@ NV_STATUS rpcAllocObject_v27_00(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, Nv
     return status;
 }
 
+NV_STATUS rpcAllocObject_v29_06(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hChannel, NvHandle hObject,
+                                NvU32 hClass, void *params)
+{
+    NV_STATUS status;
+    NvBool rpcToHost = NV_TRUE;
+
+    status = _rpcAllocObjectPrologue(pGpu, pRpc, hClient, hObject, hClass, &rpcToHost);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Alloc object RPC prologue failed (status: 0x%x) for hObject: 0x%x, "
+                  "hClass: 0x%x, hChannel: 0x%x, hClient: 0x%x\n", status,
+                  hObject, hClass, hChannel, hClient);
+        return status;
+    }
+
+    if (rpcToHost == NV_FALSE)
+        return status;
+
+    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_ALLOC_OBJECT, sizeof(rpc_alloc_object_v29_06));
+    if (status != NV_OK)
+        return status;
+
+    rpc_message->alloc_object_v.hClient   = hClient;
+    rpc_message->alloc_object_v.hParent   = hChannel;
+    rpc_message->alloc_object_v.hObject   = hObject;
+    rpc_message->alloc_object_v.hClass    = hClass ;
+    rpc_message->alloc_object_v.param_len = 0;
+
+    if (params != NULL)
+    {
+        status = _serializeClassParams_v29_06(pGpu, pRpc, hClass, params);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "RmAllocObjectEx: vGPU: object RPC skipped (handle = 0x%08x, class = "
+                      "0x%x) with non-NULL params ptr\n", hObject, hClass);
+            // XXX: No RPC for unsupported classes. This must be taken care of.
+            // Return failure so that we can identify when this situation arises.
+            NV_ASSERT_OR_RETURN(0,status);
+            return status;
+        }
+    }
+
+    status = _issueRpcAndWait(pGpu, pRpc);
+
+    // Populate return values!
+    if ((status == NV_OK) && params)
+    {
+        status = _setRmReturnParams_v(pGpu, pRpc, hClass, params);
+    }
+
+    return status;
+}
+
 NV_STATUS rpcMapMemoryDma_v03_00(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hDevice, NvHandle hDma, NvHandle hMemory,
                                 NvU64 offset, NvU64 length, NvU32 flags, NvU64 *pDmaOffset)
 {
@@ -4252,6 +4315,9 @@ NV_STATUS rpcDmaControl_wrapper(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, Nv
         case NV83DE_CTRL_CMD_DEBUG_SET_MODE_MMU_DEBUG:
             return rpcCtrlDbgSetModeMmuDebug_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
 
+        case NV83DE_CTRL_CMD_DEBUG_SET_MODE_MMU_GCC_DEBUG:
+            return rpcCtrlDbgSetModeMmuGccDebug_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
+
         case NV83DE_CTRL_CMD_DEBUG_CLEAR_SINGLE_SM_ERROR_STATE:
             return rpcCtrlDbgClearSingleSmErrorState_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
 
@@ -4379,6 +4445,18 @@ NV_STATUS rpcDmaControl_wrapper(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, Nv
         case NVB0CC_CTRL_CMD_GET_HS_CREDITS:
             return rpcCtrlGetHsCredits_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
 
+        case NVB0CC_CTRL_CMD_RESERVE_HES:
+            return rpcCtrlReserveHes_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
+
+        case NVB0CC_CTRL_CMD_RELEASE_HES:
+            return rpcCtrlReleaseHes_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
+
+        case NVB0CC_CTRL_CMD_RESERVE_CCU_PROF:
+            return rpcCtrlReserveCcuProf_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
+
+        case NVB0CC_CTRL_CMD_RELEASE_CCU_PROF:
+            return rpcCtrlReleaseCcuProf_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
+
         case NVB0CC_CTRL_CMD_SET_HS_CREDITS:
             return rpcCtrlSetHsCredits_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
 
@@ -4401,6 +4479,9 @@ NV_STATUS rpcDmaControl_wrapper(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, Nv
         case NV83DE_CTRL_CMD_DEBUG_GET_MODE_MMU_DEBUG:
             return rpcCtrlDbgGetModeMmuDebug_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
 
+        case NV83DE_CTRL_CMD_DEBUG_GET_MODE_MMU_GCC_DEBUG:
+            return rpcCtrlDbgGetModeMmuGccDebug_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
+
         case NV2080_CTRL_CMD_INTERNAL_GPU_START_FABRIC_PROBE:
             return rpcCtrlCmdInternalGpuStartFabricProbe_HAL(pGpu, pRpc, pParamStructPtr);
 
@@ -4412,6 +4493,12 @@ NV_STATUS rpcDmaControl_wrapper(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, Nv
 
         case NV2080_CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE:
             return rpcCtrlCmdInternalControlGspTrace_HAL(pGpu, pRpc, pParamStructPtr);
+
+        case NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS:
+            return rpcCtrlSubdeviceGetVgpuHeapStats_HAL(pGpu, pRpc, pParamStructPtr);
+            
+        case NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS:
+            return rpcCtrlSubdeviceGetLibosHeapStats_HAL(pGpu, pRpc, pParamStructPtr);
 
         default:
         {
@@ -4671,6 +4758,110 @@ NV_STATUS rpcCtrlGetHsCredits_v21_08(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClien
     return status;
 }
 
+NV_STATUS rpcCtrlReserveHes_v29_07(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
+{
+    NV_STATUS status = NV_OK;
+    NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07 *pParams = (NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07 *)pParamStructPtr;
+    rpc_ctrl_reserve_hes_v29_07 *rpc_buffer_params = &rpc_message->ctrl_reserve_hes_v29_07;
+    NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07 *pParams_buf = (void*) &(rpc_buffer_params->params);
+
+    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_CTRL_RESERVE_HES,
+                                  sizeof(rpc_ctrl_reserve_hes_v29_07));
+    if (status != NV_OK)
+        return status;
+
+    rpc_buffer_params->hClient = hClient;
+    rpc_buffer_params->hObject = hObject;
+    portMemCopy(pParams_buf, sizeof(NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07), pParams, sizeof(NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07));
+
+    status = _issueRpcAndWait(pGpu, pRpc);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "RPC rpcCtrlReserveHes_v29_07 failed with error 0x%x\n", status);
+        return status;
+    }
+    portMemCopy(pParams, sizeof(NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07), pParams_buf, sizeof(NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07));
+
+    return status;
+}
+
+NV_STATUS rpcCtrlReleaseHes_v29_07(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
+{
+    NV_STATUS status = NV_OK;
+    NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07 *pParams = (NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07 *)pParamStructPtr;
+    rpc_ctrl_release_hes_v29_07 *rpc_buffer_params = &rpc_message->ctrl_release_hes_v29_07;
+    NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07 *pParams_buf = (void*) &(rpc_buffer_params->params);
+
+    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_CTRL_RELEASE_HES,
+                                  sizeof(rpc_ctrl_release_hes_v29_07));
+    if (status != NV_OK)
+        return status;
+
+    rpc_buffer_params->hClient = hClient;
+    rpc_buffer_params->hObject = hObject;
+    portMemCopy(pParams_buf, sizeof(NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07), pParams, sizeof(NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07));
+
+    status = _issueRpcAndWait(pGpu, pRpc);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "RPC rpcCtrlReleaseHes_v29_07 failed with error 0x%x\n", status);
+        return status;
+    }
+    portMemCopy(pParams, sizeof(NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07), pParams_buf, sizeof(NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07));
+
+    return status;
+}
+
+NV_STATUS rpcCtrlReserveCcuProf_v29_07(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
+{
+    NV_STATUS status = NV_OK;
+    NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS_v29_07 *pParams = (NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS_v29_07 *)pParamStructPtr;
+    rpc_ctrl_reserve_ccu_prof_v29_07 *rpc_buffer_params = &rpc_message->ctrl_reserve_ccu_prof_v29_07;
+    NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS_v29_07 *pParams_buf = (void*) &(rpc_buffer_params->params);
+
+    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_CTRL_RESERVE_CCU_PROF,
+                                  sizeof(rpc_ctrl_reserve_ccu_prof_v29_07));
+    if (status != NV_OK)
+        return status;
+
+    rpc_buffer_params->hClient = hClient;
+    rpc_buffer_params->hObject = hObject;
+    portMemCopy(pParams_buf, sizeof(NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS_v29_07), pParams, sizeof(NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS_v29_07));
+
+    status = _issueRpcAndWait(pGpu, pRpc);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "RPC rpcCtrlReserveCcuProf_v29_07 failed with error 0x%x\n", status);
+        return status;
+    }
+    portMemCopy(pParams, sizeof(NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS_v29_07), pParams_buf, sizeof(NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS_v29_07));
+
+    return status;
+}
+
+NV_STATUS rpcCtrlReleaseCcuProf_v29_07(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
+{
+    NV_STATUS status = NV_OK;
+    rpc_ctrl_release_ccu_prof_v29_07 *rpc_buffer_params = &rpc_message->ctrl_release_ccu_prof_v29_07;
+
+    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_CTRL_RELEASE_CCU_PROF,
+                                  sizeof(rpc_ctrl_release_ccu_prof_v29_07));
+    if (status != NV_OK)
+        return status;
+
+    rpc_buffer_params->hClient = hClient;
+    rpc_buffer_params->hObject = hObject;
+
+    status = _issueRpcAndWait(pGpu, pRpc);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "RPC rpcCtrlReleaseCcuProf_v29_07 failed with error 0x%x\n", status);
+        return status;
+    }
+
+    return status;
+}
+
 NV_STATUS rpcCtrlSetHsCredits_v21_08(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
 {
     NV_STATUS status;
@@ -4830,6 +5021,18 @@ NV_STATUS rpcRmApiControl_v25_1A(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, N
 }
 
 NV_STATUS rpcRmApiControl_v27_03(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, NvU32 cmd,
+                                 void *pParamStructPtr, NvU32 paramSize)
+{
+    return rpcRmApiControl_wrapper(pGpu, pRpc, hClient, hObject, cmd, pParamStructPtr, paramSize);
+}
+
+NV_STATUS rpcRmApiControl_v29_04(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, NvU32 cmd,
+                                 void *pParamStructPtr, NvU32 paramSize)
+{
+    return rpcRmApiControl_wrapper(pGpu, pRpc, hClient, hObject, cmd, pParamStructPtr, paramSize);
+}
+
+NV_STATUS rpcRmApiControl_v29_09(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, NvU32 cmd,
                                  void *pParamStructPtr, NvU32 paramSize)
 {
     return rpcRmApiControl_wrapper(pGpu, pRpc, hClient, hObject, cmd, pParamStructPtr, paramSize);
@@ -5825,6 +6028,7 @@ NV_STATUS rpcCtrlB0ccExecRegOps_v1A_0F(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hCli
 
     status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_CTRL_B0CC_EXEC_REG_OPS,
                                       sizeof(rpc_ctrl_b0cc_exec_reg_ops_v1A_0F));
+
     if (status != NV_OK)
         return status;
 
@@ -6905,6 +7109,34 @@ NV_STATUS rpcCtrlDbgSetModeMmuDebug_v1A_10(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle 
     return status;
 }
 
+NV_STATUS rpcCtrlDbgSetModeMmuGccDebug_v29_07(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
+{
+    NV_STATUS status;
+    NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS *pParams = (NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS *)pParamStructPtr;
+    rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v29_07 *rpc_params = &rpc_message->ctrl_dbg_set_mode_mmu_gcc_debug_v29_07;
+
+    status = rpcWriteCommonHeader(pGpu,
+                                  pRpc,
+                                  NV_VGPU_MSG_FUNCTION_CTRL_DBG_SET_MODE_MMU_GCC_DEBUG,
+                                  sizeof(rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v29_07));
+    if (status != NV_OK)
+        return status;
+
+    rpc_params->hClient = hClient;
+    rpc_params->hObject = hObject;
+
+    status = serialize_NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
+    if (status != NV_OK)
+        return status;
+
+    status = _issueRpcAndWait(pGpu, pRpc);
+    if (status != NV_OK)
+        return status;
+
+    status = deserialize_NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
+    return status;
+}
+
 NV_STATUS rpcCtrlDbgClearSingleSmErrorState_v1A_10(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
 {
     NV_STATUS status;
@@ -7129,6 +7361,34 @@ NV_STATUS rpcCtrlGetNvlinkStatus_v23_04(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hCl
     return status;
 }
 
+NV_STATUS rpcCtrlGetNvlinkStatus_v28_09(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
+{
+    NV_STATUS status;
+    NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS *pParams = (NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS *)pParamStructPtr;
+    rpc_ctrl_get_nvlink_status_v28_09 *rpc_params = &rpc_message->ctrl_get_nvlink_status_v28_09;
+
+    status = rpcWriteCommonHeader(pGpu,
+                                  pRpc,
+                                  NV_VGPU_MSG_FUNCTION_CTRL_GET_NVLINK_STATUS,
+                                  sizeof(rpc_ctrl_get_nvlink_status_v28_09));
+    if (status != NV_OK)
+        return status;
+
+    rpc_params->hClient = hClient;
+    rpc_params->hObject = hObject;
+
+    status = serialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v28_09(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
+    if (status != NV_OK)
+        return status;
+
+    status = _issueRpcAndWait(pGpu, pRpc);
+    if (status != NV_OK)
+        return status;
+
+    status = deserialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v28_09(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
+    return status;
+}
+
 NV_STATUS rpcCtrlGetP2pCaps_v1F_0D(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
 {
     NV_STATUS status;
@@ -7321,6 +7581,34 @@ NV_STATUS rpcCtrlFifoSetChannelProperties_v1A_16(OBJGPU *pGpu, OBJRPC *pRpc, NvH
     return status;
 }
 
+NV_STATUS rpcCtrlBusSetP2pMapping_v29_08(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
+{
+    NV_STATUS status;
+    NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS *pParams = (NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS *)pParamStructPtr;
+    rpc_ctrl_bus_set_p2p_mapping_v29_08 *rpc_params = &rpc_message->ctrl_bus_set_p2p_mapping_v29_08;
+
+    status = rpcWriteCommonHeader(pGpu,
+                                  pRpc,
+                                  NV_VGPU_MSG_FUNCTION_CTRL_BUS_SET_P2P_MAPPING,
+                                  sizeof(rpc_ctrl_bus_set_p2p_mapping_v29_08));
+    if (status != NV_OK)
+        return status;
+
+    rpc_params->hClient = hClient;
+    rpc_params->hObject = hObject;
+
+    status = serialize_NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS_v29_08(pParams, (NvU8 *) &rpc_params->params, 0, NULL);
+    if (status != NV_OK)
+        return status;
+
+    status = _issueRpcAndWait(pGpu, pRpc);
+    if (status != NV_OK)
+        return status;
+
+    status = deserialize_NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS_v29_08(pParams, (NvU8 *) &rpc_params->params, 0, NULL);
+    return status;
+}
+
 NV_STATUS rpcCtrlBusSetP2pMapping_v21_03(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
 {
     NV_STATUS status;
@@ -7468,6 +7756,34 @@ NV_STATUS rpcCtrlDbgGetModeMmuDebug_v25_04(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle 
         return status;
 
     status = deserialize_NV83DE_CTRL_DEBUG_GET_MODE_MMU_DEBUG_PARAMS_v25_04(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
+    return status;
+}
+
+NV_STATUS rpcCtrlDbgGetModeMmuGccDebug_v29_07(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
+{
+    NV_STATUS status;
+    NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS *pParams = (NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS *)pParamStructPtr;
+    rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v29_07 *rpc_params = &rpc_message->ctrl_dbg_get_mode_mmu_gcc_debug_v29_07;
+
+    status = rpcWriteCommonHeader(pGpu,
+                                  pRpc,
+                                  NV_VGPU_MSG_FUNCTION_CTRL_DBG_GET_MODE_MMU_GCC_DEBUG,
+                                  sizeof(rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v29_07));
+    if (status != NV_OK)
+        return status;
+
+    rpc_params->hClient = hClient;
+    rpc_params->hObject = hObject;
+
+    status = serialize_NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
+    if (status != NV_OK)
+        return status;
+
+    status = _issueRpcAndWait(pGpu, pRpc);
+    if (status != NV_OK)
+        return status;
+
+    status = deserialize_NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
     return status;
 }
 
@@ -9019,6 +9335,9 @@ NV_STATUS rpcGspSetSystemInfo_v17_00
             // Cache MNOC interface support
             rpcInfo->bMnocAvailable = pKernelBif->bMnocAvailable;
 
+            // Cache L1SS enablement from chipset side
+            rpcInfo->chipsetL1ssEnable = pKernelBif->chipsetL1ssEnable;
+
             // Cache FLR and 64b Bar0 support
             rpcInfo->bFlrSupported     = pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_FLR_SUPPORTED);
             rpcInfo->b64bBar0Supported = pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_64BIT_BAR0_SUPPORTED);
@@ -9061,6 +9380,11 @@ NV_STATUS rpcGspSetSystemInfo_v17_00
         // Fill in the cached ACPI method data
         rpcInfo->acpiMethodData = pGpu->acpiMethodData;
         rpcInfo->bSystemHasMux = pGpu->bSystemHasMux;
+
+        if (RMCFG_FEATURE_PLATFORM_WINDOWS)
+            rpcInfo->bRouteDispIntrsToCPU = NV_TRUE;
+        else
+            rpcInfo->bRouteDispIntrsToCPU = NV_FALSE;
 
         // Fill in ASPM related GPU flags
         rpcInfo->bGpuBehindBridge         = pGpu->getProperty(pGpu, PDB_PROP_GPU_BEHIND_BRIDGE);
@@ -9899,5 +10223,123 @@ NV_STATUS rpcCtrlCmdInternalControlGspTrace_v28_00
     rpc_message->ctrl_cmd_internal_control_gsp_trace_v28_00.bufferWatermark = pParams->bufferWatermark;
     rpc_message->ctrl_cmd_internal_control_gsp_trace_v28_00.flag = pParams->flag;
     status = _issueRpcAndWait(pGpu, pRpc);
+    return status;
+}
+
+NV_STATUS rpcCtrlSubdeviceGetVgpuHeapStats_v28_03
+(
+    OBJGPU *pGpu,
+    OBJRPC *pRpc,
+    void *pParams
+)
+{
+    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
+    NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS *params = (NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS*) pParams;
+    rpc_ctrl_subdevice_get_vgpu_heap_stats_v28_03 *rpc_params = &rpc_message->ctrl_subdevice_get_vgpu_heap_stats_v28_03;
+
+    if (!IS_VIRTUAL(pGpu) || !IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+    {
+        return status;
+    }
+
+    // serialize
+    status = serialize_NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS_v28_03(params, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
+    if (status != NV_OK)
+        return status;
+    
+    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_CTRL_SUBDEVICE_GET_VGPU_HEAP_STATS,
+                                    sizeof(rpc_ctrl_subdevice_get_vgpu_heap_stats_v28_03));
+
+    if (status != NV_OK)
+        return status;
+
+    portMemSet(&rpc_message->ctrl_subdevice_get_vgpu_heap_stats_v28_03, 0, sizeof(rpc_message->ctrl_subdevice_get_vgpu_heap_stats_v28_03));
+    status = _issueRpcAndWait(pGpu, pRpc);
+    if (status != NV_OK)
+        return status;
+
+    // deserialize
+    status = deserialize_NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS_v28_03(params, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
+    if (status != NV_OK)
+        return status;
+
+    return status;
+}
+
+NV_STATUS rpcCtrlSubdeviceGetVgpuHeapStats_v28_06
+(
+    OBJGPU *pGpu,
+    OBJRPC *pRpc,
+    void *pParams
+)
+{
+    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
+    NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS *params = (NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS*) pParams;
+    rpc_ctrl_subdevice_get_vgpu_heap_stats_v28_06 *rpc_params = &rpc_message->ctrl_subdevice_get_vgpu_heap_stats_v28_06;
+
+    if (!IS_VIRTUAL(pGpu) || !IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+    {
+        return status;
+    }
+
+    // serialize
+    status = serialize_NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS_v28_06(params, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
+    if (status != NV_OK)
+        return status;
+    
+    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_CTRL_SUBDEVICE_GET_VGPU_HEAP_STATS,
+                                    sizeof(rpc_ctrl_subdevice_get_vgpu_heap_stats_v28_06));
+
+    if (status != NV_OK)
+        return status;
+
+    portMemSet(&rpc_message->ctrl_subdevice_get_vgpu_heap_stats_v28_06, 0, sizeof(rpc_message->ctrl_subdevice_get_vgpu_heap_stats_v28_06));
+    status = _issueRpcAndWait(pGpu, pRpc);
+    if (status != NV_OK)
+        return status;
+
+    // deserialize
+    status = deserialize_NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS_v28_06(params, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
+    if (status != NV_OK)
+        return status;
+
+    return status;
+}
+
+NV_STATUS rpcCtrlSubdeviceGetLibosHeapStats_v29_02
+(
+    OBJGPU *pGpu,
+    OBJRPC *pRpc,
+    void *pParams
+)
+{
+    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
+    NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS_PARAMS *params = (NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS_PARAMS*) pParams;
+    rpc_ctrl_subdevice_get_libos_heap_stats_v29_02 *rpc_params = &rpc_message->ctrl_subdevice_get_libos_heap_stats_v29_02;
+
+    if (!IS_VIRTUAL(pGpu) || !IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+    {
+        return status;
+    }
+
+    // serialize
+    status = serialize_NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS_PARAMS_v29_02(params, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
+    if (status != NV_OK)
+        return status;
+    
+    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_CTRL_SUBDEVICE_GET_LIBOS_HEAP_STATS,
+                                    sizeof(rpc_ctrl_subdevice_get_libos_heap_stats_v29_02));
+
+    if (status != NV_OK)
+        return status;
+
+    portMemSet(&rpc_message->ctrl_subdevice_get_libos_heap_stats_v29_02, 0, sizeof(rpc_message->ctrl_subdevice_get_libos_heap_stats_v29_02));
+    status = _issueRpcAndWait(pGpu, pRpc);
+    if (status != NV_OK)
+        return status;
+
+    // deserialize
+    status = deserialize_NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS_PARAMS_v29_02(params, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
+
     return status;
 }

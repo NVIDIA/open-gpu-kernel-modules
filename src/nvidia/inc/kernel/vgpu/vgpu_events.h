@@ -156,9 +156,6 @@ struct _object_vgpu
     VGPU_MEM_INFO debugBuff;
 
     NvBool bGspPlugin;
-    NvBool bIsBar2Physical;
-    // Start offset of FB to use in Physical BAR2 mode
-    NvU64 allocFbOffsetBar2Physical;
 
     // Message sequence counter
     NvU32 sequence_base;
@@ -236,6 +233,7 @@ typedef struct vgpu_sysmem_pfn_bitmap_node {
     NvU64    nodeEndPfn;
     NvU64    sizeInBytes;
     NvU32    index;
+    NvBool   bAddedToBitmap;
     ListNode listNode;                          // For intrusive lists
 } VGPU_SYSMEM_PFN_BITMAP_NODE, * VGPU_SYSMEM_PFN_BITMAP_NODE_P;
 

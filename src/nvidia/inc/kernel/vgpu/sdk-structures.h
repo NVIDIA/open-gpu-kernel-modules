@@ -131,6 +131,7 @@ typedef struct vmiopd_SM_info {
 #define NV0080_CTRL_GR_INFO_MAX_SIZE_24_02                                      (0x00000036)
 #define NV0080_CTRL_GR_INFO_MAX_SIZE_24_03                                      (0x00000037)
 #define NV0080_CTRL_GR_INFO_MAX_SIZE_24_07                                      (0x00000038)
+#define NV0080_CTRL_GR_INFO_MAX_SIZE_29_00                                      (0x0000003A)
 #define NV2080_CTRL_INTERNAL_GR_MAX_ENGINES_1B_04                               8
 #define NV2080_CTRL_INTERNAL_GR_MAX_SM_v1B_05                                   256
 #define NV2080_CTRL_INTERNAL_GR_MAX_SM_v1E_03                                   240
@@ -216,6 +217,8 @@ typedef struct VGPU_BSP_CAPS
 
 #define NV2080_CTRL_BUS_INFO_MAX_LIST_SIZE_v1A_0F   (0x00000033)
 #define NV2080_CTRL_BUS_INFO_MAX_LIST_SIZE_v1C_09   (0x00000034)
+
+#define NV2080_CTRL_GSP_LIBOS_POOL_COUNT_MAX_v29_02 (64)
 
 //Maximum GMMU_FMT_LEVELS
 #define GMMU_FMT_MAX_LEVELS_v05_00 5
@@ -352,6 +355,7 @@ typedef struct _VGPU_STATIC_PROPERTIES
     NvU32 channelCount;
     NvBool bPblObjNotPresent;       //Valid only in case of GA100 SRIOV Heavy
     NvU64 vmmuSegmentSize;
+    NvU32 firstAsyncCEIdx;
 } VGPU_STATIC_PROPERTIES;
 
 struct _vgpu_static_info
@@ -434,6 +438,7 @@ struct _vgpu_static_info
     NV2080_CTRL_CMD_BUS_GET_PCIE_REQ_ATOMICS_CAPS_PARAMS busGetPcieReqAtomicsCaps;
     NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS masterGetVfErrCntIntMsk;
     GPU_EXEC_SYSPIPE_INFO execSyspipeInfo;
+    NV2080_CTRL_INTERNAL_CCU_SAMPLE_INFO_PARAMS ccuSampleInfo;
 };
 
 typedef struct _vgpu_static_info VGPU_STATIC_INFO, VGPU_STATIC_INFO2;
@@ -455,7 +460,7 @@ ct_assert(NV2080_CTRL_FB_FS_INFO_MAX_QUERIES == NV2080_CTRL_FB_FS_INFO_MAX_QUERI
 ct_assert(NV2080_CTRL_FB_FS_INFO_MAX_QUERY_SIZE == NV2080_CTRL_FB_FS_INFO_MAX_QUERY_SIZE_v1A_1D);
 ct_assert(NV2080_CTRL_GRMGR_GR_FS_INFO_MAX_QUERIES == NV2080_CTRL_GRMGR_GR_FS_INFO_MAX_QUERIES_v1A_1D);
 ct_assert(NV2080_CTRL_GRMGR_MAX_SMC_IDS == NV2080_CTRL_GRMGR_MAX_SMC_IDS_v1A_1D);
-ct_assert((NV0080_CTRL_GR_INFO_INDEX_MAX + 1) == NV0080_CTRL_GR_INFO_MAX_SIZE_24_07);
+ct_assert((NV0080_CTRL_GR_INFO_INDEX_MAX + 1) == NV0080_CTRL_GR_INFO_MAX_SIZE_29_00);
 ct_assert(NV2080_CTRL_INTERNAL_GR_MAX_ENGINES == NV2080_CTRL_INTERNAL_GR_MAX_ENGINES_1B_04);
 ct_assert(NV2080_CTRL_INTERNAL_GR_MAX_SM == NV2080_CTRL_INTERNAL_GR_MAX_SM_v1E_03);
 ct_assert(NV2080_CTRL_INTERNAL_GR_MAX_GPC == NV2080_CTRL_INTERNAL_GR_MAX_GPC_v1C_03);

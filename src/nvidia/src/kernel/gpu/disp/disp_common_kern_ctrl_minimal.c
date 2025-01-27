@@ -40,6 +40,8 @@
 #include "gpu/disp/head/kernel_head.h"
 #include "mem_mgr/mem.h"
 #include "platform/sli/sli.h"
+#include "displayport/displayport.h"
+#include "displayport/displayport2x.h"
 
 NV_STATUS
 dispcmnCtrlCmdSystemGetHotplugUnplugState_IMPL
@@ -376,57 +378,6 @@ dispcmnCtrlCmdSystemGetVblankCounter_IMPL
     return NV_OK;
 }
 
-NV_STATUS dispcmnCtrlCmdVblankSemControlEnable_IMPL(
-    DispCommon *pDispCommon,
-    NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_ENABLE_PARAMS *pParams
-)
-{
-    OBJGPU   *pGpu   = DISPAPI_GET_GPU(pDispCommon);
-    RsClient *pClient = RES_GET_CLIENT(pDispCommon);
-    NvHandle  hParent = RES_GET_PARENT_HANDLE(pDispCommon);
-    RM_API   *pRmApi = GPU_GET_PHYSICAL_RMAPI(DISPAPI_GET_GPU(pDispCommon));
-    NV_STATUS status = NV_OK;
-
-    // Get the right pGpu from subdevice instance given by client
-    status = dispapiSetUnicastAndSynchronize_HAL(
-                               staticCast(pDispCommon, DisplayApi),
-                               DISPAPI_GET_GPUGRP(pDispCommon),
-                               &pGpu,
-                               NULL,
-                               pParams->subDeviceInstance);
-
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    //
-    // Note: memRegisterWithGsp() is a noop when either (a) we're not
-    // operating as a GSP client, or (b) the hMemory is already registered
-    // with GSP.
-    //
-    // Also, note that we don't explicitly unregister here in the
-    // !pParams->bEnable case: that could unregister the memory out from
-    // under other uses of this hMemory on GSP (e.g., other vblank semaphore
-    // controls).  Instead, we rely on the hMemory getting unregistered when
-    // the 'struct Memory' is freed.
-    //
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                          memRegisterWithGsp(pGpu, pClient, hParent, pParams->hMemory));
-
-    //
-    // NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_ENABLE_PARAMS and
-    // NV0073_CTRL_CMD_INTERNAL_VBLANK_SEM_CONTROL_ENABLE_PARAMS are
-    // equivalent, so just pass pParams through.
-    //
-    return pRmApi->Control(pRmApi,
-                           pClient->hClient,
-                           RES_GET_HANDLE(pDispCommon),
-                           NV0073_CTRL_CMD_INTERNAL_VBLANK_SEM_CONTROL_ENABLE,
-                           pParams,
-                           sizeof(*pParams));
-}
-
 /*
  * @brief This call engages the WAR for VR where the Pstate
  *        switching can cause delay in serving Vblank interrupts
@@ -483,3 +434,224 @@ dispcmnCtrlCmdInlineDispIntrServiceWarForVr_IMPL
     return NV_OK;
 }
 
+/*!
+ * @brief Function to handle NV0073_CTRL_CMD_CALCULATE_DP_IMP control call.
+ *        Check if the requested mode is supported by the link.
+ *
+ * @param[in]      pDispCommon      DispCommon pointer
+ * @param[in/out]  pParams          NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS pointer
+ *
+ * @Possible return status:
+ *      NV_OK
+ *          The mode is validated.
+ *          Note even if the mode is not supported, the status returned can still be NV_OK.
+ *      NV_ERR_INVALID_ARGUMENT
+ *          Client did not set displayId or link configuration properly in pParams.
+ *      Any other error code
+ *
+ */
+NV_STATUS
+dispcmnCtrlCmdCalculateDpImp_IMPL
+(
+    DispCommon                                 *pDispCommon,
+    NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS    *pParams
+)
+{
+    OBJGPU         *pGpu           = NULL;
+    DPMODESETDATA   dpModesetData;
+    DPIMPINFO       dpInfo;
+    NV_STATUS       status                  = NV_OK;
+
+    status = dispapiSetUnicastAndSynchronize_HAL(
+                               staticCast(pDispCommon, DisplayApi),
+                               DISPAPI_GET_GPUGRP(pDispCommon),
+                               &pGpu,
+                               NULL,
+                               pParams->subDeviceInstance);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    if (!(pParams->displayId) || (pParams->displayId & (pParams->displayId - 1)))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+
+    portMemSet(&dpModesetData, 0, sizeof(DPMODESETDATA));
+    portMemSet(&dpInfo, 0, sizeof(DPIMPINFO));
+
+    dpModesetData.dp2LinkBw                 = pParams->linkConfig.linkRate10M;
+    dpModesetData.laneCount                 = pParams->linkConfig.laneCount;
+    dpModesetData.bDP2xChannelCoding        = pParams->linkConfig.bDp2xChannelCoding;
+    dpModesetData.bMultiStream              = pParams->linkConfig.bMultiStreamTopology;
+    dpModesetData.bFecEnable                = pParams->linkConfig.bFECEnabled;
+    dpModesetData.bEnhancedFraming          = pParams->linkConfig.bEnhancedFraming;
+
+    NV_ASSERT_OR_RETURN((IS_VALID_DP2_X_LINKBW(dpModesetData.dp2LinkBw) &&
+                         IS_VALID_LANECOUNT(dpModesetData.laneCount)),
+                         NV_ERR_INVALID_ARGUMENT);
+
+    dpModesetData.PClkFreqHz                = (NvU64)pParams->modesetInfo.pixelFrequencyKHz * 1000;
+    dpModesetData.bpp                       = pParams->modesetInfo.depth;
+    dpModesetData.SetRasterSizeWidth        = pParams->modesetInfo.rasterWidth;
+    dpModesetData.SetRasterBlankStartX      = pParams->modesetInfo.rasterBlankStartX;
+    dpModesetData.SetRasterBlankEndX        = pParams->modesetInfo.rasterBlankEndX;
+    dpModesetData.bDscEnable                = pParams->modesetInfo.bDSCEnabled;
+    dpModesetData.colorFormat               = pParams->modesetInfo.colorFormat;
+
+    if (dpModesetData.bDscEnable)
+    {
+        dpModesetData.sliceCount            = pParams->dscInfo.sliceCount;
+        dpModesetData.sliceWidth            = pParams->dscInfo.sliceWidth;
+        dpModesetData.sliceHeight           = pParams->dscInfo.sliceHeight;
+        dpModesetData.dscVersionMajor       = pParams->dscInfo.dscVersionMinor;
+        dpModesetData.dscVersionMinor       = pParams->dscInfo.dscVersionMinor;
+    }
+
+    pParams->watermark.bIsModePossible = NV_TRUE;
+
+    status = kdispComputeDpModeSettings_HAL(pGpu, pKernelDisplay, pParams->headIndex, &dpModesetData, &dpInfo);
+
+    if (status == NV_OK)
+    {
+        NvU32 hActive                       = dpModesetData.SetRasterBlankStartX -
+                                              dpModesetData.SetRasterBlankEndX;
+        NvU32 hBlank                        = dpModesetData.SetRasterSizeWidth - hActive;
+
+        pParams->watermark.tuSize           = dpInfo.tuSize;
+        pParams->watermark.waterMark        = dpInfo.waterMark;
+        pParams->watermark.hBlankSym        = dpInfo.hBlankSym;
+        pParams->watermark.vBlankSym        = dpInfo.vBlankSym;
+        pParams->watermark.minHBlank        = dpInfo.minHBlank;
+
+        if ((dpInfo.minHBlank > hBlank) ||
+            (dpInfo.hBlankSym < NV_MAX(dpInfo.twoChannelAudioSymbols, dpInfo.eightChannelAudioSymbols)) ||
+            (dpModesetData.PClkFreqHz * dpModesetData.bpp >= dpInfo.linkTotalDataRate))
+        {
+            pParams->watermark.bIsModePossible = NV_FALSE;
+        }
+
+        //
+        // For DSC, if (pclk * bpp) < (1/64 * orclk * 8 * lanes) then some TU may end up with
+        // 0 active symbols. This may cause HW hang. Bug 200379426
+        //
+        if (!(dpModesetData.bDP2xChannelCoding || dpModesetData.bMultiStream) &&
+            (dpModesetData.bDscEnable) &&
+            (dpModesetData.PClkFreqHz * dpModesetData.bpp < dpInfo.linkTotalDataRate / 64))
+        {
+            pParams->watermark.bIsModePossible = NV_FALSE;
+        }
+    }
+    else
+    {
+        pParams->watermark.bIsModePossible = NV_FALSE;
+    }
+    return status;
+}
+
+/*!
+ * @brief prints the LoadV Counter info
+ *
+ * @Parameter pDispCommon                 [In]
+ * @Parameter pLoadVCounterInfoParams     [In, Out]
+ *
+ * @Possible return status:
+ *      NV_OK
+ *          succeed in getting value of LoadVCounter
+ *      NV_ERR_INVALID_ARGUMENT
+ *         wrong parameters passed in
+ *
+ */
+
+NV_STATUS
+dispcmnCtrlCmdSystemGetLoadVCounterInfo_IMPL
+(
+    DispCommon                                              *pDispCommon,
+    NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO_PARAMS    *pLoadVCounterInfoParams
+)
+{
+    OBJGPU        *pGpu;
+    KernelDisplay *pKernelDisplay;
+    KernelHead    *pKernelHead;
+    NV_STATUS      status         = NV_OK;
+
+    status = dispapiSetUnicastAndSynchronize_HAL(
+                               staticCast(pDispCommon, DisplayApi),
+                               DISPAPI_GET_GPUGRP(pDispCommon),
+                               &pGpu,
+                               NULL,
+                               pLoadVCounterInfoParams->subDeviceInstance);
+
+    if (status != NV_OK)
+        return status;
+
+    if (pLoadVCounterInfoParams->head >= OBJ_MAX_HEADS)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    pKernelHead = KDISP_GET_HEAD(pKernelDisplay, pLoadVCounterInfoParams->head);
+    NV_ASSERT_OR_RETURN(pKernelHead != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    pLoadVCounterInfoParams->counterValue = kheadGetLoadVCounter_HAL(pGpu, pKernelHead);
+    NV_PRINTF(LEVEL_INFO, "LoadV Counter value fetched from register is : %x\n", pLoadVCounterInfoParams->counterValue);
+
+    return status;
+}
+
+/*!
+ * @brief returns crashlock counter value
+ *
+ * @Parameter pDispCommon                 [In]
+ * @Parameter pCrashLockCounterInfoParams     [In, Out]
+ *
+ * @Possible return status:
+ *      NV_OK
+ *          succeed in getting value of LoadVCounter
+ *      NV_ERR_INVALID_ARGUMENT
+ *         wrong parameters passed in
+ *
+ */
+
+NV_STATUS
+dispcmnCtrlCmdSystemGetCrashLockCounterInfo_IMPL
+(
+    DispCommon                                                 *pDispCommon,
+    NV0073_CTRL_CMD_SYSTEM_GET_CRASH_LOCK_COUNTER_INFO_PARAMS  *pCrashLockCounterInfoParams
+)
+{
+    OBJGPU        *pGpu;
+    KernelDisplay *pKernelDisplay;
+    KernelHead    *pKernelHead;
+    NV_STATUS      status         = NV_OK;
+
+    status = dispapiSetUnicastAndSynchronize_HAL(
+                               staticCast(pDispCommon, DisplayApi),
+                               DISPAPI_GET_GPUGRP(pDispCommon),
+                               &pGpu,
+                               NULL,
+                               pCrashLockCounterInfoParams->subDeviceInstance);
+
+    if (status != NV_OK)
+        return status;
+
+    if (pCrashLockCounterInfoParams->head >= OBJ_MAX_HEADS)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+
+    pKernelHead = KDISP_GET_HEAD(pKernelDisplay, pCrashLockCounterInfoParams->head);
+    NV_ASSERT_OR_RETURN(pKernelHead != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    pCrashLockCounterInfoParams->counterValueV =  kheadGetCrashLockCounterV_HAL(pGpu, pKernelHead);
+
+    NV_PRINTF(LEVEL_INFO, "Crash Lock Counter value fetched from register is : %x\n", pCrashLockCounterInfoParams->counterValueV);
+
+    return status;
+}

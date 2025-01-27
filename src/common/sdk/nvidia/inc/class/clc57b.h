@@ -51,6 +51,9 @@ extern "C" {
 #define NVC57B_GET                                                              (0x00000004)
 #define NVC57B_GET_PTR                                                          9:0
 #define NVC57B_UPDATE                                                           (0x00000200)
+#define NVC57B_UPDATE_RELEASE_ELV                                               0:0
+#define NVC57B_UPDATE_RELEASE_ELV_FALSE                                         (0x00000000)
+#define NVC57B_UPDATE_RELEASE_ELV_TRUE                                          (0x00000001)
 #define NVC57B_UPDATE_INTERLOCK_WITH_WINDOW                                     1:1
 #define NVC57B_UPDATE_INTERLOCK_WITH_WINDOW_DISABLE                             (0x00000000)
 #define NVC57B_UPDATE_INTERLOCK_WITH_WINDOW_ENABLE                              (0x00000001)

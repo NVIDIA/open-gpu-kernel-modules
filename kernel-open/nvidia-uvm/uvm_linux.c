@@ -54,3 +54,30 @@ void uvm_memcg_context_end(uvm_memcg_context_t *context)
     mem_cgroup_put(context->new_memcg);
 }
 #endif
+
+#if !UVM_FOR_EACH_SGTABLE_DMA_PAGE_PRESENT()
+static int sg_dma_page_count(struct scatterlist *sg)
+{
+    return PAGE_ALIGN(sg->offset + sg_dma_len(sg)) >> PAGE_SHIFT;
+}
+
+bool __sg_page_iter_dma_next(struct sg_dma_page_iter *dma_iter)
+{
+    struct sg_page_iter *piter = &dma_iter->base;
+
+    if (!piter->__nents || !piter->sg)
+        return false;
+
+    piter->sg_pgoffset += piter->__pg_advance;
+    piter->__pg_advance = 1;
+
+    while (piter->sg_pgoffset >= sg_dma_page_count(piter->sg)) {
+        piter->sg_pgoffset -= sg_dma_page_count(piter->sg);
+        piter->sg = sg_next(piter->sg);
+        if (!--piter->__nents || !piter->sg)
+            return false;
+    }
+
+    return true;
+}
+#endif

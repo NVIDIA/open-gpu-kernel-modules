@@ -56,8 +56,8 @@
 // |  (up to 1TB)   |
 // ------------------ 64PB + 32TB (flat_vidmem_va_base)
 // |peer ident. maps|
-// |32 * 1TB = 32TB | ==> NV_MAX_DEVICES * UVM_PEER_IDENTITY_VA_SIZE
-// ------------------ 64PB
+// |32 * 1TB = 32TB | ==> NV_MAX_DEVICES * UVM_PEER_IDENTITY_VA_SIZE (peer_va_size)
+// ------------------ 64PB (peer_va_base)
 // |                |
 // |  rm_mem(64PB)  | (rm_va_size)
 // |                |
@@ -84,8 +84,8 @@
 // |  (up to 1TB)   |
 // ------------------ 160TB (flat_vidmem_va_base)
 // |peer ident. maps|
-// |32 * 1TB = 32TB | ==> NV_MAX_DEVICES * UVM_PEER_IDENTITY_VA_SIZE
-// ------------------ 128TB
+// |32 * 1TB = 32TB | ==> NV_MAX_DEVICES * UVM_PEER_IDENTITY_VA_SIZE (peer_va_size)
+// ------------------ 128TB (peer_va_base)
 // |                |
 // | rm_mem(128TB)  | (rm_va_size)
 // |                |

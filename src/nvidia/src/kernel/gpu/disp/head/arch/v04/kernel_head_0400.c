@@ -40,7 +40,7 @@ NvBool kheadGetDisplayInitialized_KERNEL
     return NV_FALSE;
 }
 
-NvBool kheadReadVblankIntrEnable_KERNEL
+NvBool kheadReadVblankIntrEnable_KERNEL_v04_00
 (
     OBJGPU *pGpu,
     KernelHead *pKernelHead
@@ -55,7 +55,7 @@ NvBool kheadReadVblankIntrEnable_KERNEL
     return NV_FALSE;
 }
 
-void kheadWriteVblankIntrEnable_KERNEL
+void kheadWriteVblankIntrEnable_KERNEL_v04_00
 (
     OBJGPU *pGpu,
     KernelHead *pKernelHead,

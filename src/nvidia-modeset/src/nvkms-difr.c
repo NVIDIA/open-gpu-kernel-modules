@@ -109,6 +109,7 @@
 #include <class/cla0b5.h>
 #include <class/clb0b5sw.h>
 #include <class/clc7b5.h>
+#include "class/clcab5.h" // BLACKWELL_DMA_COPY_B
 #include <ctrl/ctrl2080/ctrl2080ce.h>
 #include <ctrl/ctrl2080/ctrl2080lpwr.h>
 
@@ -450,12 +451,30 @@ static NvBool AllocDIFRCopyEngine(NVDIFRStateEvoPtr pDifr)
     NVB0B5_ALLOCATION_PARAMETERS allocParams = { 0 };
     NVDevEvoPtr pDevEvo = pDifr->pDevEvo;
     NvU32 ret;
+    NvU32 ceClass = 0, i;
 
-    /*
-     * We will only be called if NV2080_CTRL_CMD_LPWR_DIFR_CTRL says DIFR is
-     * supported in which case we assume the chip supports this CE class.
-     */
-    nvAssert(nvRmEvoClassListCheck(pDevEvo, AMPERE_DMA_COPY_B));
+    static const NvU32 ceClasses[] = {
+        BLACKWELL_DMA_COPY_B,
+        AMPERE_DMA_COPY_B,
+    };
+
+    for (i = 0; i < ARRAY_LEN(ceClasses); i++) {
+        if (nvRmEvoClassListCheck(pDevEvo, ceClasses[i])) {
+            ceClass = ceClasses[i];
+            break;
+        }
+    }
+
+    if (ceClass == 0) {
+        nvEvoLogDevDebug(pDevEvo, EVO_LOG_ERROR,
+                         "Failed to find a supported DIFR CE class.");
+        return NV_FALSE;
+    }
+
+    // XXX Disabled DIFR on GB20x due to bug 5026524 and bug 5002540
+    if (ceClass == BLACKWELL_DMA_COPY_B) {
+        return NV_FALSE;
+    }
 
     pDifr->prefetchEngine = nvGenerateUnixRmHandle(&pDevEvo->handleAllocator);
     if (pDifr->prefetchEngine == 0) {
@@ -468,9 +487,12 @@ static NvBool AllocDIFRCopyEngine(NVDIFRStateEvoPtr pDifr)
     ret = nvRmApiAlloc(nvEvoGlobal.clientHandle,
                        pDifr->prefetchPushChannel.channelHandle[0],
                        pDifr->prefetchEngine,
-                       AMPERE_DMA_COPY_B,
+                       ceClass,
                        &allocParams);
     if (ret != NVOS_STATUS_SUCCESS) {
+        nvFreeUnixRmHandle(&pDifr->pDevEvo->handleAllocator,
+                           pDifr->prefetchEngine);
+        pDifr->prefetchEngine = 0;
         return NV_FALSE;
     }
 
@@ -487,6 +509,7 @@ static void FreeDIFRCopyEngine(NVDIFRStateEvoPtr pDifr)
 
     nvFreeUnixRmHandle(&pDifr->pDevEvo->handleAllocator,
                        pDifr->prefetchEngine);
+    pDifr->prefetchEngine = 0;
 }
 
 static NvU32 PrefetchSingleSurface(NVDIFRStateEvoPtr pDifr,

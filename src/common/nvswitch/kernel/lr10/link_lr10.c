@@ -1329,6 +1329,13 @@ nvswitch_corelib_set_tl_link_mode_lr10
     nvswitch_device *device = link->dev->pDevInfo;
     NvlStatus       status = NVL_SUCCESS;
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     if (!NVSWITCH_IS_LINK_ENG_VALID_LR10(device, NVLDL, link->linkNumber))
     {
         NVSWITCH_PRINT(device, ERROR,
@@ -1728,6 +1735,13 @@ nvswitch_corelib_set_rx_mode_lr10
     NvlStatus status = NVL_SUCCESS;
     NvU32 delay_ns;
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     if (!NVSWITCH_IS_LINK_ENG_VALID_LR10(device, NVLDL, link->linkNumber))
     {
         NVSWITCH_PRINT(device, ERROR,
@@ -1955,6 +1969,13 @@ nvswitch_corelib_set_rx_detect_lr10
     NvlStatus status;
     nvswitch_device *device = link->dev->pDevInfo;
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     if (nvswitch_does_link_need_termination_enabled(device, link))
     {
         NVSWITCH_PRINT(device, INFO,
@@ -2093,6 +2114,13 @@ nvswitch_request_tl_link_state_lr10
     nvswitch_device *device = link->dev->pDevInfo;
     NvlStatus status = NVL_SUCCESS;
     NvU32 linkStatus;
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
 
     if (!NVSWITCH_IS_LINK_ENG_VALID_LR10(device, NVLIPT_LNK, link->linkNumber))
     {

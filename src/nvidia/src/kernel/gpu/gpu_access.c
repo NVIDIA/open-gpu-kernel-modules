@@ -1592,6 +1592,7 @@ done:
  *
  * @param[in] pGpu
  * @param[in] offset
+ * @param[in] bSkipPermissionValidation 
  *
  * @returns NV_OK if valid
  * @returns NV_ERR_INVALID_ARGUMENT if offset is too large for bar
@@ -1601,7 +1602,8 @@ NV_STATUS
 gpuValidateRegOffset_IMPL
 (
     OBJGPU *pGpu,
-    NvU32   offset
+    NvU32   offset,
+    NvBool bSkipPermissionValidation
 )
 {
     NvU64 maxBar0Size = pGpu->deviceMappings[0].gpuNvLength;
@@ -1612,7 +1614,10 @@ gpuValidateRegOffset_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    if (!osIsAdministrator() &&
+    // Regop calls are typically subject to the allowlist, however certain regop calls might originate from RM on behalf of user-space clients.
+    // In these cases, we can skip permission validation so that these ctrl calls can be made by any UMD without adding these registers to the allowlist.
+    // To bypass this check, set bSkipPermissionValidation to true in gpuExecRegOps().
+    if (!bSkipPermissionValidation && !osIsAdministrator() &&
         !gpuGetUserRegisterAccessPermissions(pGpu, offset))
     {
         NV_PRINTF(LEVEL_ERROR,

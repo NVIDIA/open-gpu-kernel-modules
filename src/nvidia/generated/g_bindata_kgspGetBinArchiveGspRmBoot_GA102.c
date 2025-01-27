@@ -2411,10 +2411,10 @@ static const BINDATA_ARCHIVE __kgspGetBinArchiveGspRmBoot_GA102 =
     4,  // entryNum
     {
         // entries[] : { "name", pBinStorage }
-        { "ucode_image_dbg"   , (const PBINDATA_STORAGE) &g_bindata_pvt.kgspBinArchiveGspRmBoot_GA102_ucode_image_dbg_storage_pvt },
-        { "ucode_desc_dbg"    , (const PBINDATA_STORAGE) &g_bindata_pvt.kgspBinArchiveGspRmBoot_GA102_ucode_desc_dbg_storage_pvt },
-        { "ucode_image_prod"  , (const PBINDATA_STORAGE) &g_bindata_pvt.kgspBinArchiveGspRmBoot_GA102_ucode_image_prod_storage_pvt },
-        { "ucode_desc_prod"   , (const PBINDATA_STORAGE) &g_bindata_pvt.kgspBinArchiveGspRmBoot_GA102_ucode_desc_prod_storage_pvt },
+        { "ucode_image_dbg"   , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveGspRmBoot_GA102_ucode_image_dbg] },
+        { "ucode_desc_dbg"    , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveGspRmBoot_GA102_ucode_desc_dbg] },
+        { "ucode_image_prod"  , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveGspRmBoot_GA102_ucode_image_prod] },
+        { "ucode_desc_prod"   , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveGspRmBoot_GA102_ucode_desc_prod] },
     }
 };
 

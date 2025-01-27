@@ -117,4 +117,6 @@
 #define NV_EP_PCFG_GPU_VSEC_DEBUG_SEC_FAULT_BOOTFSM                                                            15:15                /* R-CVF */
 #define NV_EP_PCFG_GPU_VSEC_DEBUG_SEC_IFF_POS                                                                  22:16                /* R-CVF */
 #define NV_EP_PCFG_GPU_L1_PM_SS_CONTROL_1_REGISTER                                                             0x00000298           /* RW-4R */
+#define NV_EP_PCFG_GPU_PF_RESIZE_BAR_CAP                                                                       0x00000138           /* R--4R */
+
 #endif // __gh100_dev_xtl_ep_pcfg_gpu_h__

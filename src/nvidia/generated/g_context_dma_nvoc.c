@@ -156,7 +156,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ContextD
 
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge ContextDma methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
 NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super
 NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
@@ -175,16 +175,16 @@ NV_STATUS __nvoc_down_thunk_ContextDma_resUnmapFrom(struct RsResource *pContextD
 
 // ctxdmaMapTo: virtual override (res) base (rmres)
 NV_STATUS __nvoc_down_thunk_ContextDma_resMapTo(struct RsResource *pContextDma, struct RS_RES_MAP_TO_PARAMS *pParams) {
-    return ctxdmaMapTo((struct ContextDma *)(((unsigned char *) pContextDma) - __nvoc_rtti_ContextDma_RsResource.offset), pParams);
+    return ctxdmaMapTo((struct ContextDma *)(((unsigned char *) pContextDma) - NV_OFFSETOF(ContextDma, __nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
 }
 
 // ctxdmaUnmapFrom: virtual override (res) base (rmres)
 NV_STATUS __nvoc_down_thunk_ContextDma_resUnmapFrom(struct RsResource *pContextDma, struct RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return ctxdmaUnmapFrom((struct ContextDma *)(((unsigned char *) pContextDma) - __nvoc_rtti_ContextDma_RsResource.offset), pParams);
+    return ctxdmaUnmapFrom((struct ContextDma *)(((unsigned char *) pContextDma) - NV_OFFSETOF(ContextDma, __nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
 }
 
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
+// Up-thunk(s) to bridge ContextDma methods to ancestors (if any)
 NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super
 NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super
 void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super
@@ -226,122 +226,122 @@ NV_STATUS __nvoc_up_thunk_Notifier_ctxdmaGetOrAllocNotifShare(struct ContextDma 
 
 // ctxdmaAccessCallback: virtual inherited (rmres) base (rmres)
 NvBool __nvoc_up_thunk_RmResource_ctxdmaAccessCallback(struct ContextDma *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ContextDma_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource)), pInvokingClient, pAllocParams, accessRight);
 }
 
 // ctxdmaShareCallback: virtual inherited (rmres) base (rmres)
 NvBool __nvoc_up_thunk_RmResource_ctxdmaShareCallback(struct ContextDma *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ContextDma_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource)), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // ctxdmaGetMemInterMapParams: virtual inherited (rmres) base (rmres)
 NV_STATUS __nvoc_up_thunk_RmResource_ctxdmaGetMemInterMapParams(struct ContextDma *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ContextDma_RmResource.offset), pParams);
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource)), pParams);
 }
 
 // ctxdmaCheckMemInterUnmap: virtual inherited (rmres) base (rmres)
 NV_STATUS __nvoc_up_thunk_RmResource_ctxdmaCheckMemInterUnmap(struct ContextDma *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ContextDma_RmResource.offset), bSubdeviceHandleProvided);
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource)), bSubdeviceHandleProvided);
 }
 
 // ctxdmaGetMemoryMappingDescriptor: virtual inherited (rmres) base (rmres)
 NV_STATUS __nvoc_up_thunk_RmResource_ctxdmaGetMemoryMappingDescriptor(struct ContextDma *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ContextDma_RmResource.offset), ppMemDesc);
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource)), ppMemDesc);
 }
 
 // ctxdmaControlSerialization_Prologue: virtual inherited (rmres) base (rmres)
 NV_STATUS __nvoc_up_thunk_RmResource_ctxdmaControlSerialization_Prologue(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ContextDma_RmResource.offset), pCallContext, pParams);
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // ctxdmaControlSerialization_Epilogue: virtual inherited (rmres) base (rmres)
 void __nvoc_up_thunk_RmResource_ctxdmaControlSerialization_Epilogue(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ContextDma_RmResource.offset), pCallContext, pParams);
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // ctxdmaControl_Prologue: virtual inherited (rmres) base (rmres)
 NV_STATUS __nvoc_up_thunk_RmResource_ctxdmaControl_Prologue(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ContextDma_RmResource.offset), pCallContext, pParams);
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // ctxdmaControl_Epilogue: virtual inherited (rmres) base (rmres)
 void __nvoc_up_thunk_RmResource_ctxdmaControl_Epilogue(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ContextDma_RmResource.offset), pCallContext, pParams);
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // ctxdmaCanCopy: virtual inherited (res) base (rmres)
 NvBool __nvoc_up_thunk_RsResource_ctxdmaCanCopy(struct ContextDma *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ContextDma_RsResource.offset));
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // ctxdmaIsDuplicate: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_ctxdmaIsDuplicate(struct ContextDma *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ContextDma_RsResource.offset), hMemory, pDuplicate);
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource.__nvoc_base_RsResource)), hMemory, pDuplicate);
 }
 
 // ctxdmaPreDestruct: virtual inherited (res) base (rmres)
 void __nvoc_up_thunk_RsResource_ctxdmaPreDestruct(struct ContextDma *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ContextDma_RsResource.offset));
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // ctxdmaControl: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_ctxdmaControl(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControl((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ContextDma_RsResource.offset), pCallContext, pParams);
+    return resControl((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams);
 }
 
 // ctxdmaControlFilter: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_ctxdmaControlFilter(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ContextDma_RsResource.offset), pCallContext, pParams);
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams);
 }
 
 // ctxdmaMap: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_ctxdmaMap(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ContextDma_RsResource.offset), pCallContext, pParams, pCpuMapping);
+    return resMap((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams, pCpuMapping);
 }
 
 // ctxdmaUnmap: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_ctxdmaUnmap(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ContextDma_RsResource.offset), pCallContext, pCpuMapping);
+    return resUnmap((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pCpuMapping);
 }
 
 // ctxdmaIsPartialUnmapSupported: inline virtual inherited (res) base (rmres) body
 NvBool __nvoc_up_thunk_RsResource_ctxdmaIsPartialUnmapSupported(struct ContextDma *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ContextDma_RsResource.offset));
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // ctxdmaGetRefCount: virtual inherited (res) base (rmres)
 NvU32 __nvoc_up_thunk_RsResource_ctxdmaGetRefCount(struct ContextDma *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ContextDma_RsResource.offset));
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // ctxdmaAddAdditionalDependants: virtual inherited (res) base (rmres)
 void __nvoc_up_thunk_RsResource_ctxdmaAddAdditionalDependants(struct RsClient *pClient, struct ContextDma *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ContextDma_RsResource.offset), pReference);
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(ContextDma, __nvoc_base_RmResource.__nvoc_base_RsResource)), pReference);
 }
 
 // ctxdmaGetNotificationListPtr: virtual inherited (notify) base (notify)
 PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_ctxdmaGetNotificationListPtr(struct ContextDma *pNotifier) {
-    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_ContextDma_Notifier.offset));
+    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + NV_OFFSETOF(ContextDma, __nvoc_base_Notifier)));
 }
 
 // ctxdmaGetNotificationShare: virtual inherited (notify) base (notify)
 struct NotifShare * __nvoc_up_thunk_Notifier_ctxdmaGetNotificationShare(struct ContextDma *pNotifier) {
-    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_ContextDma_Notifier.offset));
+    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + NV_OFFSETOF(ContextDma, __nvoc_base_Notifier)));
 }
 
 // ctxdmaSetNotificationShare: virtual inherited (notify) base (notify)
 void __nvoc_up_thunk_Notifier_ctxdmaSetNotificationShare(struct ContextDma *pNotifier, struct NotifShare *pNotifShare) {
-    notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_ContextDma_Notifier.offset), pNotifShare);
+    notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + NV_OFFSETOF(ContextDma, __nvoc_base_Notifier)), pNotifShare);
 }
 
 // ctxdmaUnregisterEvent: virtual inherited (notify) base (notify)
 NV_STATUS __nvoc_up_thunk_Notifier_ctxdmaUnregisterEvent(struct ContextDma *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_ContextDma_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + NV_OFFSETOF(ContextDma, __nvoc_base_Notifier)), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 // ctxdmaGetOrAllocNotifShare: virtual inherited (notify) base (notify)
 NV_STATUS __nvoc_up_thunk_Notifier_ctxdmaGetOrAllocNotifShare(struct ContextDma *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_ContextDma_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
+    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + NV_OFFSETOF(ContextDma, __nvoc_base_Notifier)), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 
@@ -420,12 +420,6 @@ void __nvoc_init_funcTable_ContextDma(ContextDma *pThis) {
         .__ctxdmaUnmapFrom__ = &ctxdmaUnmapFrom_IMPL,    // virtual override (res) base (rmres)
         .RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
         .RmResource.RsResource.__resUnmapFrom__ = &__nvoc_down_thunk_ContextDma_resUnmapFrom,    // virtual
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-#endif
         .__ctxdmaAccessCallback__ = &__nvoc_up_thunk_RmResource_ctxdmaAccessCallback,    // virtual inherited (rmres) base (rmres)
         .RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
         .RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual

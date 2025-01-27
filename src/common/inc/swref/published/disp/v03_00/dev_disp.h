@@ -114,10 +114,33 @@
 #define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_LINE_B_PENDING                                    0x00000001 /* R---V */
 #define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_LINE_B_RESET                                      0x00000001 /* -W--V */
 
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_VBLANK                                                      2:2 /* RWIVF */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_VBLANK_INIT                                          0x00000000 /* R-I-V */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_VBLANK_NOT_PENDING                                   0x00000000 /* R---V */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_VBLANK_PENDING                                       0x00000001 /* R---V */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_VBLANK_RESET                                         0x00000001 /* -W--V */
+
 #define NV_PDISP_FE_RM_INTR_STAT_CTRL_DISP                                     0x00611C30 /* R--4R */
 #define NV_PDISP_FE_RM_INTR_STAT_CTRL_DISP_AWAKEN                                     8:8 /* R-IVF */
 #define NV_PDISP_FE_RM_INTR_STAT_CTRL_DISP_AWAKEN_NOT_PENDING                  0x00000000 /* R-I-V */
 #define NV_PDISP_FE_RM_INTR_STAT_CTRL_DISP_AWAKEN_PENDING                      0x00000001 /* R---V */
+
+#define NV_PDISP_FE_EVT_STAT_AWAKEN_WIN                                                       0x00611858 /* RW-4R */
+
+#define NV_PDISP_FE_EVT_STAT_AWAKEN_WIN_CH(i)                                            (0+(i)):(0+(i)) /*       */
+#define NV_PDISP_FE_EVT_STAT_AWAKEN_WIN_CH__SIZE_1                                                    32 /*       */
+#define NV_PDISP_FE_EVT_STAT_AWAKEN_WIN_CH_INIT                                               0x00000000 /*       */
+#define NV_PDISP_FE_EVT_STAT_AWAKEN_WIN_CH_NOT_PENDING                                        0x00000000 /*       */
+#define NV_PDISP_FE_EVT_STAT_AWAKEN_WIN_CH_PENDING                                            0x00000001 /*       */
+#define NV_PDISP_FE_EVT_STAT_AWAKEN_WIN_CH_RESET                                              0x00000001 /*       */
+
+#define NV_PDISP_FE_EVT_STAT_AWAKEN_OTHER                                                     0x0061185C /* RW-4R */
+
+#define NV_PDISP_FE_EVT_STAT_AWAKEN_OTHER_CORE                                                       0:0 /* RWIVF */
+#define NV_PDISP_FE_EVT_STAT_AWAKEN_OTHER_CORE_INIT                                           0x00000000 /* R-I-V */
+#define NV_PDISP_FE_EVT_STAT_AWAKEN_OTHER_CORE_NOT_PENDING                                    0x00000000 /* R---V */
+#define NV_PDISP_FE_EVT_STAT_AWAKEN_OTHER_CORE_PENDING                                        0x00000001 /* R---V */
+#define NV_PDISP_FE_EVT_STAT_AWAKEN_OTHER_CORE_RESET                                          0x00000001 /* -W--V */
 
 #define NV_PDISP_POSTCOMP_HEAD_LOADV_COUNTER(i)                    (0x0061611C+(i)*2048) /* RW-4A */
 #define NV_PDISP_POSTCOMP_HEAD_LOADV_COUNTER__SIZE_1                                   8 /*       */

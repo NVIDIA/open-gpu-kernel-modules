@@ -202,11 +202,20 @@ kchangrpInit_IMPL
                                                            pKernelChannelGroup,
                                                            NV_FALSE);
 
-    constructObjEHeap(pKernelChannelGroup->pSubctxIdHeap,
-                      0,
-                      maxSubctx,
-                      sizeof(KernelCtxShare *),
-                      0);
+    constructObjEHeap(pKernelChannelGroup->pSubctxIdHeap, 0, maxSubctx, 0, 0);
+
+    pKernelChannelGroup->pVaSpaceIdHeap = portMemAllocNonPaged(sizeof(OBJEHEAP));
+    if (pKernelChannelGroup->pVaSpaceIdHeap == NULL)
+    {
+        NV_CHECK(LEVEL_ERROR, pKernelChannelGroup->pVaSpaceIdHeap != NULL);
+        status = NV_ERR_NO_MEMORY;
+        goto failed;
+    }
+
+     // Heap to track unique VaSpace instances and assign IDs. Max 1 entry per subcontext.
+    constructObjEHeap(pKernelChannelGroup->pVaSpaceIdHeap, 0, maxSubctx, 0, 0);
+
+    mapInit(&pKernelChannelGroup->vaSpaceMap, portMemAllocatorGetGlobalNonPaged());
 
     // Subcontext mode is now enabled on all chips.
     pKernelChannelGroup->bLegacyMode = NV_FALSE;
@@ -287,6 +296,8 @@ kchangrpInit_IMPL
 
     NV_ASSERT(status == NV_OK);
 
+    pKernelChannelGroup->tsgUniqueId = portAtomicIncrementU32(&SYS_GET_INSTANCE()->currentChannelUniqueId);
+
     return NV_OK;
 
 failed:
@@ -296,6 +307,17 @@ failed:
             pKernelChannelGroup->pSubctxIdHeap);
         portMemFree(pKernelChannelGroup->pSubctxIdHeap);
         pKernelChannelGroup->pSubctxIdHeap = NULL;
+    }
+
+    if (pKernelChannelGroup->pVaSpaceIdHeap != NULL)
+    {
+        pKernelChannelGroup->pVaSpaceIdHeap->eheapDestruct(
+            pKernelChannelGroup->pVaSpaceIdHeap);
+        portMemFree(pKernelChannelGroup->pVaSpaceIdHeap);
+        pKernelChannelGroup->pVaSpaceIdHeap = NULL;
+
+        // vaSpaceMap is only initialized if pVaSpaceIdHeap allocation succeeds.
+        mapDestroy(&pKernelChannelGroup->vaSpaceMap);
     }
 
     _kchangrpFreeAllEngCtxDescs(pGpu, pKernelChannelGroup);
@@ -416,6 +438,13 @@ kchangrpDestroy_IMPL
     portMemFree(pKernelChannelGroup->pSubctxIdHeap);
     pKernelChannelGroup->pSubctxIdHeap = NULL;
 
+    pKernelChannelGroup->pVaSpaceIdHeap->eheapDestruct(
+        pKernelChannelGroup->pVaSpaceIdHeap);
+    portMemFree(pKernelChannelGroup->pVaSpaceIdHeap);
+    pKernelChannelGroup->pVaSpaceIdHeap = NULL;
+
+    mapDestroy(&pKernelChannelGroup->vaSpaceMap);
+
     _kchangrpFreeAllEngCtxDescs(pGpu, pKernelChannelGroup);
 
     kfifoChannelListDestroy(pGpu, pKernelFifo, pKernelChannelGroup->pChanList);
@@ -525,6 +554,7 @@ kchangrpAddChannel_IMPL
                             NV_ERR_INVALID_STATE);
 
     pKernelChannel->subctxId = pKernelCtxShare->subctxId;
+    pKernelChannel->vaSpaceId = pKernelCtxShare->vaSpaceId;
 
     NV_PRINTF(LEVEL_INFO,
               "Channel 0x%x within TSG 0x%x is using subcontext 0x%x\n",

@@ -153,7 +153,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_EventBuf
 
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge EventBuffer methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
 NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super
 NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
@@ -161,7 +161,7 @@ void __nvoc_down_thunk_RmResource_resControlSerialization_Epilogue(struct RsReso
 NV_STATUS __nvoc_down_thunk_RmResource_resControl_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
 void __nvoc_down_thunk_RmResource_resControl_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
+// Up-thunk(s) to bridge EventBuffer methods to ancestors (if any)
 NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super
 NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super
 void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super
@@ -200,107 +200,107 @@ void __nvoc_up_thunk_RsResource_eventbufferAddAdditionalDependants(struct RsClie
 
 // eventbufferAccessCallback: virtual inherited (rmres) base (rmres)
 NvBool __nvoc_up_thunk_RmResource_eventbufferAccessCallback(struct EventBuffer *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource)), pInvokingClient, pAllocParams, accessRight);
 }
 
 // eventbufferShareCallback: virtual inherited (rmres) base (rmres)
 NvBool __nvoc_up_thunk_RmResource_eventbufferShareCallback(struct EventBuffer *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource)), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // eventbufferGetMemInterMapParams: virtual inherited (rmres) base (rmres)
 NV_STATUS __nvoc_up_thunk_RmResource_eventbufferGetMemInterMapParams(struct EventBuffer *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_EventBuffer_RmResource.offset), pParams);
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource)), pParams);
 }
 
 // eventbufferCheckMemInterUnmap: virtual inherited (rmres) base (rmres)
 NV_STATUS __nvoc_up_thunk_RmResource_eventbufferCheckMemInterUnmap(struct EventBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_EventBuffer_RmResource.offset), bSubdeviceHandleProvided);
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource)), bSubdeviceHandleProvided);
 }
 
 // eventbufferGetMemoryMappingDescriptor: virtual inherited (rmres) base (rmres)
 NV_STATUS __nvoc_up_thunk_RmResource_eventbufferGetMemoryMappingDescriptor(struct EventBuffer *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_EventBuffer_RmResource.offset), ppMemDesc);
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource)), ppMemDesc);
 }
 
 // eventbufferControlSerialization_Prologue: virtual inherited (rmres) base (rmres)
 NV_STATUS __nvoc_up_thunk_RmResource_eventbufferControlSerialization_Prologue(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RmResource.offset), pCallContext, pParams);
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // eventbufferControlSerialization_Epilogue: virtual inherited (rmres) base (rmres)
 void __nvoc_up_thunk_RmResource_eventbufferControlSerialization_Epilogue(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RmResource.offset), pCallContext, pParams);
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // eventbufferControl_Prologue: virtual inherited (rmres) base (rmres)
 NV_STATUS __nvoc_up_thunk_RmResource_eventbufferControl_Prologue(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RmResource.offset), pCallContext, pParams);
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // eventbufferControl_Epilogue: virtual inherited (rmres) base (rmres)
 void __nvoc_up_thunk_RmResource_eventbufferControl_Epilogue(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RmResource.offset), pCallContext, pParams);
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // eventbufferCanCopy: virtual inherited (res) base (rmres)
 NvBool __nvoc_up_thunk_RsResource_eventbufferCanCopy(struct EventBuffer *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RsResource.offset));
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // eventbufferIsDuplicate: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_eventbufferIsDuplicate(struct EventBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RsResource.offset), hMemory, pDuplicate);
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource.__nvoc_base_RsResource)), hMemory, pDuplicate);
 }
 
 // eventbufferPreDestruct: virtual inherited (res) base (rmres)
 void __nvoc_up_thunk_RsResource_eventbufferPreDestruct(struct EventBuffer *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RsResource.offset));
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // eventbufferControl: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_eventbufferControl(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControl((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RsResource.offset), pCallContext, pParams);
+    return resControl((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams);
 }
 
 // eventbufferControlFilter: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_eventbufferControlFilter(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RsResource.offset), pCallContext, pParams);
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams);
 }
 
 // eventbufferMap: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_eventbufferMap(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RsResource.offset), pCallContext, pParams, pCpuMapping);
+    return resMap((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams, pCpuMapping);
 }
 
 // eventbufferUnmap: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_eventbufferUnmap(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RsResource.offset), pCallContext, pCpuMapping);
+    return resUnmap((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pCpuMapping);
 }
 
 // eventbufferIsPartialUnmapSupported: inline virtual inherited (res) base (rmres) body
 NvBool __nvoc_up_thunk_RsResource_eventbufferIsPartialUnmapSupported(struct EventBuffer *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RsResource.offset));
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // eventbufferMapTo: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_eventbufferMapTo(struct EventBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RsResource.offset), pParams);
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
 }
 
 // eventbufferUnmapFrom: virtual inherited (res) base (rmres)
 NV_STATUS __nvoc_up_thunk_RsResource_eventbufferUnmapFrom(struct EventBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RsResource.offset), pParams);
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
 }
 
 // eventbufferGetRefCount: virtual inherited (res) base (rmres)
 NvU32 __nvoc_up_thunk_RsResource_eventbufferGetRefCount(struct EventBuffer *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RsResource.offset));
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // eventbufferAddAdditionalDependants: virtual inherited (res) base (rmres)
 void __nvoc_up_thunk_RsResource_eventbufferAddAdditionalDependants(struct RsClient *pClient, struct EventBuffer *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_EventBuffer_RsResource.offset), pReference);
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(EventBuffer, __nvoc_base_RmResource.__nvoc_base_RsResource)), pReference);
 }
 
 
@@ -371,14 +371,6 @@ void __nvoc_init_funcTable_EventBuffer(EventBuffer *pThis) {
 
     // Per-class vtable definition
     static const struct NVOC_VTABLE__EventBuffer vtable = {
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x9u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x9u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-#endif
         .__eventbufferAccessCallback__ = &__nvoc_up_thunk_RmResource_eventbufferAccessCallback,    // virtual inherited (rmres) base (rmres)
         .RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
         .RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual

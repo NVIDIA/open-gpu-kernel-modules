@@ -51,7 +51,9 @@ typedef struct tagNVHDMIPKT_MEM_MAP NVHDMIPKT_MEM_MAP;
 #define REG_WR32(reg, offset, data) ((*(((volatile NvU32*)(reg)) + ((offset)/4))) = (data))
 
 #define NVHDMIPKT_INVALID_SUBDEV              (0xFFFFFFFF)
+#if !defined (WINNT) && !defined(NVHDMIPKT_NVKMS)
 #define NVHDMIPKT_DONT_USE_TIMER
+#endif
 #define NVHDMIPKT_STATUS_READ_TIMEOUT_IN_us   (1*1000*1000) /* us - micro second */
 
 // Disp SF User memory map and handle structure
@@ -109,5 +111,18 @@ extern NVHDMIPKT_RESULT hdmiSetFRLConfigDummy(NVHDMIPKT_CLASS             *pThis
 extern NVHDMIPKT_RESULT hdmiClearFRLConfigDummy(NVHDMIPKT_CLASS    *pThis,
                                                 NvU32               subDevice,
                                                 NvU32               displayId);
+
+extern NVHDMIPKT_RESULT hdmiPacketReadDummy(NVHDMIPKT_CLASS*   pThis,
+                                            NvU32              subDevice,
+                                            NvU32              head,
+                                            NVHDMIPKT_TYPE     packetReg,
+                                            NvU32              bufferLen,
+                                            NvU8 *const        pOutPktBuffer);
+
+extern NVHDMIPKT_RESULT programAdvancedInfoframeDummy(NVHDMIPKT_CLASS*          pThis,
+                                                      NvU32                     subDevice,
+                                                      NvU32                     head,
+                                                      NVHDMIPKT_TYPE            packetReg,
+                                                      const ADVANCED_INFOFRAME* pInfoframe);
 
 #endif //_NVHDMIPKT_COMMON_H_

@@ -126,13 +126,7 @@ _gmmuGetPdePa
 
         if (pAddrFld)
         {
-            KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
-            NvU64    addr  = gmmuFieldGetAddress(pAddrFld, pGmmuEntry->v8);
-            if ((aperture == GMMU_APERTURE_SYS_NONCOH) || (aperture == GMMU_APERTURE_SYS_COH))
-            {
-                addr += pKernelGmmu->sysmemBaseAddress;
-            }
-            return addr;
+            return gmmuFieldGetAddress(pAddrFld, pGmmuEntry->v8);
         }
     }
 
@@ -157,13 +151,7 @@ _gmmuGetPtePa
         const GMMU_FIELD_ADDRESS *pAddrFld = gmmuFmtPtePhysAddrFld(pFmt, aperture);
         if (pAddrFld)
         {
-            KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
-            NvU64    addr  = gmmuFieldGetAddress(pAddrFld, pGmmuEntry->v8);
-            if ((aperture == GMMU_APERTURE_SYS_NONCOH) || (aperture == GMMU_APERTURE_SYS_COH))
-            {
-                addr += pKernelGmmu->sysmemBaseAddress;
-            }
-            return addr;
+            return gmmuFieldGetAddress(pAddrFld, pGmmuEntry->v8);
         }
     }
 

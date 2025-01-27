@@ -44,9 +44,43 @@ NvBool ceIsCeGrce(OBJGPU *pGpu, RM_ENGINE_TYPE rmCeEngineType)
 
     NV_ASSERT_OR_RETURN(RM_ENGINE_TYPE_IS_COPY(rmCeEngineType), NV_FALSE);
 
-    NvU32      i;
-    NV_STATUS  status = NV_OK;
+    //
+    // If the GRCE config register exists on chips, refer to it directly
+    // to get the mask of GRCEs, else revert to checking the partnerlist
+    // to see if this CE shares runlist with any GR engine
+    //
+    NvU32     lceNum   = RM_ENGINE_TYPE_COPY_IDX(rmCeEngineType);
+    NvU32     grceMask = 0;
+    NV_STATUS status   = NV_ERR_NOT_SUPPORTED;
 
+    if (!IS_VIRTUAL(pGpu))
+    {
+        {
+            KernelCE *pKCe = GPU_GET_KCE(pGpu, 0);
+            if (pKCe != NULL)
+            {
+                status = kceGetGrceMaskReg_HAL(pGpu, pKCe, &grceMask);
+            }
+        }
+
+        if (status == NV_OK)
+        {
+            if (NVBIT32(lceNum) & grceMask)
+            {
+                return NV_TRUE;
+            }
+
+            return NV_FALSE;
+        }
+    }
+
+    //
+    // If GRCE mask register is not supported, then fallback to checking the
+    // partnerlist for any GRrunlist match
+    //
+    NvU32 i;
+
+    status = NV_OK;
     partnerParams.engineType = gpuGetNv2080EngineType(rmCeEngineType);
     partnerParams.numPartners = 0;
 
@@ -255,6 +289,8 @@ subdeviceCtrlCmdCeGetAllCaps_IMPL
     RM_API *pRmApi;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
     Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
+    NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+    NvHandle hSubdevice = RES_GET_HANDLE(pSubdevice);
 
     ct_assert(NV2080_CTRL_MAX_CES  <= NV_ARRAY_ELEMENTS(pCeCapsParams->capsTbl));
 
@@ -277,8 +313,8 @@ subdeviceCtrlCmdCeGetAllCaps_IMPL
 
     pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
-                                           pGpu->hInternalClient,
-                                           pGpu->hInternalSubdevice,
+                                           hClient,
+                                           hSubdevice,
                                            NV2080_CTRL_CMD_CE_GET_ALL_PHYSICAL_CAPS,
                                            pCeCapsParams,
                                            sizeof(*pCeCapsParams)));

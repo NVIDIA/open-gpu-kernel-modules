@@ -1239,16 +1239,16 @@ static const BINDATA_ARCHIVE __ksec2GetBinArchiveSecurescrubUcode_AD10X =
     10,  // entryNum
     {
         // entries[] : { "name", pBinStorage }
-        { "image_dbg"         , (const PBINDATA_STORAGE) &g_bindata_pvt.ksec2BinArchiveSecurescrubUcode_AD10X_image_dbg_storage_pvt },
-        { "header_dbg"        , (const PBINDATA_STORAGE) &g_bindata_pvt.ksec2BinArchiveSecurescrubUcode_AD10X_header_dbg_storage_pvt },
-        { "image_prod"        , (const PBINDATA_STORAGE) &g_bindata_pvt.ksec2BinArchiveSecurescrubUcode_AD10X_image_prod_storage_pvt },
-        { "header_prod"       , (const PBINDATA_STORAGE) &g_bindata_pvt.ksec2BinArchiveSecurescrubUcode_AD10X_header_prod_storage_pvt },
-        { "sig_dbg"           , (const PBINDATA_STORAGE) &g_bindata_pvt.ksec2BinArchiveSecurescrubUcode_AD10X_sig_dbg_storage_pvt },
-        { "sig_prod"          , (const PBINDATA_STORAGE) &g_bindata_pvt.ksec2BinArchiveSecurescrubUcode_AD10X_sig_prod_storage_pvt },
-        { "patch_loc"         , (const PBINDATA_STORAGE) &g_bindata_pvt.ksec2BinArchiveSecurescrubUcode_AD10X_patch_loc_storage_pvt },
-        { "patch_sig"         , (const PBINDATA_STORAGE) &g_bindata_pvt.ksec2BinArchiveSecurescrubUcode_AD10X_patch_sig_storage_pvt },
-        { "patch_meta"        , (const PBINDATA_STORAGE) &g_bindata_pvt.ksec2BinArchiveSecurescrubUcode_AD10X_patch_meta_storage_pvt },
-        { "num_sigs"          , (const PBINDATA_STORAGE) &g_bindata_pvt.ksec2BinArchiveSecurescrubUcode_AD10X_num_sigs_storage_pvt },
+        { "image_dbg"         , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_ksec2BinArchiveSecurescrubUcode_AD10X_image_dbg] },
+        { "header_dbg"        , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_ksec2BinArchiveSecurescrubUcode_AD10X_header_dbg] },
+        { "image_prod"        , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_ksec2BinArchiveSecurescrubUcode_AD10X_image_prod] },
+        { "header_prod"       , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_ksec2BinArchiveSecurescrubUcode_AD10X_header_prod] },
+        { "sig_dbg"           , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_ksec2BinArchiveSecurescrubUcode_AD10X_sig_dbg] },
+        { "sig_prod"          , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_ksec2BinArchiveSecurescrubUcode_AD10X_sig_prod] },
+        { "patch_loc"         , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_ksec2BinArchiveSecurescrubUcode_AD10X_patch_loc] },
+        { "patch_sig"         , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_ksec2BinArchiveSecurescrubUcode_AD10X_patch_sig] },
+        { "patch_meta"        , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_ksec2BinArchiveSecurescrubUcode_AD10X_patch_meta] },
+        { "num_sigs"          , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_ksec2BinArchiveSecurescrubUcode_AD10X_num_sigs] },
     }
 };
 

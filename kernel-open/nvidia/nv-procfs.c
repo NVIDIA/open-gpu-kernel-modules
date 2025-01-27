@@ -32,7 +32,6 @@
 #include "nv_compiler.h"
 #include "nv-reg.h"
 #include "conftest/patches.h"
-#include "nv-ibmnpu.h"
 
 #define NV_DEFINE_SINGLE_NVRM_PROCFS_FILE(name) \
     NV_DEFINE_SINGLE_PROCFS_FILE_READ_ONLY(name, nv_system_pm_lock)
@@ -215,7 +214,8 @@ nv_procfs_read_power(
     seq_printf(s, "S0ix Power Management:\n");
     seq_printf(s, " Platform Support:          %s\n",
                nv_platform_supports_s0ix() ? "Supported" : "Not Supported");
-    seq_printf(s, " Status:                    %s\n", power_info.s0ix_status);
+    seq_printf(s, " Status:                    %s\n\n", power_info.s0ix_status);
+    seq_printf(s, "Notebook Dynamic Boost:     %s\n", power_info.db_support);
 
     nv_kmem_cache_free_stack(sp);
     return 0;

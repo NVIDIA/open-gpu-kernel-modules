@@ -129,6 +129,9 @@ dispchnConstruct_IMPL
     NvU32           hClass = RES_GET_EXT_CLASS_ID(pDispChannel);
     ChannelPBSize   channelPBSize;
     NvU32           subDeviceId = 0U;
+    RsClient       *pClient;
+    NvHandle        hChannel;
+    NvU32           dispChannelNum;
 
     NV_ASSERT_OR_RETURN(pDispObject, NV_ERR_INVALID_OBJECT_HANDLE);
 
@@ -241,6 +244,26 @@ dispchnConstruct_IMPL
     {
         NV50VAIO_CHANNELPIO_ALLOCATION_PARAMETERS *pPioChannelAllocParams = pAllocParams;
         pPioChannelAllocParams->pControl = pDispChannel->pControl;
+    }
+
+    if (rmStatus == NV_OK && (pKernelDisplay->pClientChannelTable != NULL))
+    {
+        pClient = RES_GET_CLIENT(pDispChannel);
+        hChannel = RES_GET_HANDLE(pDispChannel);
+
+        rmStatus = kdispGetChannelNum_HAL(pKernelDisplay, internalDispChnClass, channelInstance, &dispChannelNum);
+        if (rmStatus != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "kdispGetChannelNum_HAL failed!\n");
+            return rmStatus;
+        }
+
+        pKernelDisplay->pClientChannelTable[dispChannelNum].pClient = pClient;
+        pKernelDisplay->pClientChannelTable[dispChannelNum].hChannel = hChannel;
+        pKernelDisplay->pClientChannelTable[dispChannelNum].bInUse = NV_TRUE;
+         
+        NV_PRINTF(LEVEL_INFO, "Mapped hclient: %p hchannel: 0x%x channleNum: 0x%x\n",
+                                pClient, hChannel, dispChannelNum);
     }
 
     return rmStatus;
@@ -467,6 +490,7 @@ dispchnDestruct_IMPL
     OBJGPU             *pGpu      = GPU_RES_GET_GPU(pDispChannel);
     KernelDisplay      *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
     RM_API             *pRmApi    = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    NvU32               dispChannelNum;
 
     LOCK_METER_DATA(FREE_CHANNEL_DISP, pDispChannel->DispClass, 0, 0);
 
@@ -544,6 +568,21 @@ dispchnDestruct_IMPL
                     }
                 }
             }
+        }
+    }
+
+    if (pKernelDisplay->pClientChannelTable != NULL)
+    {
+        rmStatus = kdispGetChannelNum_HAL(pKernelDisplay, pDispChannel->DispClass, pDispChannel->InstanceNumber, &dispChannelNum);
+        if (rmStatus == NV_OK)
+        {
+            pKernelDisplay->pClientChannelTable[dispChannelNum].pClient = NULL;
+            pKernelDisplay->pClientChannelTable[dispChannelNum].hChannel = 0;
+            pKernelDisplay->pClientChannelTable[dispChannelNum].bInUse = NV_FALSE;
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_WARNING, "Failed to reset clientChannelTable!\n");
         }
     }
 

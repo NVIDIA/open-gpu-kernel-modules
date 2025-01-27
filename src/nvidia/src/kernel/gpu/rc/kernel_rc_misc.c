@@ -113,5 +113,5 @@ NV_STATUS krcReadVirtMem_IMPL
 cleanup:
     portMemFree(pMem);
 
-    return NV_OK;
+    return status;
 }

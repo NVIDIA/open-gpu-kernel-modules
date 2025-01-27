@@ -47,6 +47,8 @@ kmigmgrIsGPUInstanceFlagValid_GB100
                                 _MEMORY_SIZE, gpuInstanceFlag);
     NvU32 computeSizeFlag = DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG,
                                     _COMPUTE_SIZE, gpuInstanceFlag);
+    NvU32 gfxSizeFlag = DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG,
+                                    _GFX_SIZE, gpuInstanceFlag);
 
     switch (memSizeFlag)
     {
@@ -76,6 +78,45 @@ kmigmgrIsGPUInstanceFlagValid_GB100
             return NV_FALSE;
     }
 
+    switch (gfxSizeFlag)
+    {
+        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_FULL:
+            if (!pKernelMIGManager->bIsSmgEnabled)
+            {
+                return NV_FALSE;
+            }
+            break;
+        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_NONE:
+            break;
+        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_HALF:
+        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_MINI_HALF:
+        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_QUARTER:
+        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_EIGHTH:
+            // Cannot support these sizes since there is only one GFX Capable SYSPIPE
+            return NV_FALSE;
+        default:
+            NV_PRINTF(LEVEL_ERROR, "Unrecognized GPU GFX partitioning flag 0x%x\n",
+                      gfxSizeFlag);
+            return NV_FALSE;
+    }
+
     return NV_TRUE;
 }
 
+/*!
+ * @brief   Checks if user requested a configuration that should require GFX capabilities
+ *
+ * @param[IN]   pGpu
+ * @param[IN]   pKernelMIGManager
+ * @param[IN]   partitionFlags    Client request flags
+ */
+NvBool
+kmigmgrIsGfxCapabilitesRequested_GB100
+(
+    OBJGPU *pGpu,
+    KernelMIGManager *pKernelMIGManager,
+    NvU32 partitionFlags
+)
+{
+    return (!FLD_TEST_DRF(2080_CTRL_GPU, _PARTITION_FLAG, _GFX_SIZE, _NONE, partitionFlags));
+}

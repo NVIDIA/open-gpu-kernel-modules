@@ -164,7 +164,7 @@ NvU32 axb_div_c_old(NvU32 a, NvU32 b, NvU32 c);
 
 // Sentinel values for NVT_TIMING
 #define NVT_TIMINGEXT_SENTINEL {0,0,0,0,0,{0},{0},{0},{0},0,""}
-#define NVT_TIMING_SENTINEL {0,0,0,0,0,0,0,0,0,0,0,0,0,0,NVT_TIMINGEXT_SENTINEL}
+#define NVT_TIMING_SENTINEL {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NVT_TIMINGEXT_SENTINEL}
 
 #endif //__NVTIMING_PVT_H_
 

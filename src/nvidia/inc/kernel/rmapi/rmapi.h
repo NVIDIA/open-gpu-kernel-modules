@@ -317,9 +317,11 @@ NV_STATUS rmapiControlCacheSet(NvHandle hClient, NvHandle hObject, NvU32 cmd,
                                void* params, NvU32 paramsSize);
 NV_STATUS rmapiControlCacheSetGpuAttrForObject(NvHandle hClient, NvHandle hObject, OBJGPU *pGpu);
 void rmapiControlCacheFreeAllCacheForGpu(NvU32 gpuInst);
+void rmapiControlCacheFreeNonPersistentCacheForGpu(NvU32 gpuInst);
 void rmapiControlCacheSetMode(NvU32 mode);
 NvU32 rmapiControlCacheGetMode(void);
 void rmapiControlCacheFree(void);
+NV_STATUS rmapiControlCacheFreeForControl(NvU32 gpuInstance, NvU32 cmd);
 void rmapiControlCacheFreeClientEntry(NvHandle hClient);
 void rmapiControlCacheFreeObjectEntry(NvHandle hClient, NvHandle hObject);
 

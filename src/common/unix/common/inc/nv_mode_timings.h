@@ -76,7 +76,7 @@ enum NvYuv420Mode {
 
 typedef struct _NvModeTimings {
     NvU32 RRx1k;
-    NvU32 pixelClockHz; /* in Hz units */
+    NvU64 pixelClockHz NV_ALIGN_BYTES(8); /* in Hz units */
     NvU16 hVisible;
     NvU16 hSyncStart;
     NvU16 hSyncEnd;
@@ -149,14 +149,14 @@ static inline NvBool NvModeTimingsMatch(const NvModeTimings *pA,
  *
  * We do +500 before /1000 in order to round, rather than truncate.
  */
-static inline NvU32 HzToKHz(NvU32 hz)
+static inline NvU32 HzToKHz(NvU64 hz)
 {
     return (hz + 500) / 1000;
 }
 
-static inline NvU32 KHzToHz(NvU32 kHz)
+static inline NvU64 KHzToHz(NvU32 kHz)
 {
-    return kHz * 1000;
+    return kHz * (NvU64)1000;
 }
 
 

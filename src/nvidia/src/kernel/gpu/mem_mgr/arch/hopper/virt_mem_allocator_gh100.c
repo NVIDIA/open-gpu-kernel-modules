@@ -25,6 +25,8 @@
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
 #include "gpu/bus/kern_bus.h"
+#include "gpu_mgr/gpu_mgr.h"
+#include "rmapi/mapping_list.h"
 #include "published/hopper/gh100/dev_mmu.h"
 
 /*!

@@ -1004,6 +1004,38 @@ void nvEvoSetTimings(NVDispEvoPtr pDispEvo,
     nvPopEvoSubDevMask(pDevEvo);
 }
 
+
+void nvEvoSetDpVscSdp(NVDispEvoPtr pDispEvo,
+                      const NvU32 head,
+                      const NVDispHeadInfoFrameStateEvoRec *pInfoFrame,
+                      const NVDpyAttributeColor *pDpyColor,
+                      NVEvoUpdateState *updateState)
+{
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
+    const NVHwModeTimingsEvo *pTimings = &pHeadState->timings;
+
+    if (pDevEvo->hal->SetDpVscSdp == NULL) {
+        return;
+    }
+
+    nvPushEvoSubDevMaskDisp(pDispEvo);
+
+    if (((pDpyColor->format == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420) ||
+         (pDpyColor->colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100)) &&
+        ((pTimings->protocol == NVKMS_PROTOCOL_SOR_DP_A) ||
+         (pTimings->protocol == NVKMS_PROTOCOL_SOR_DP_B))) {
+        DPSDP_DP_VSC_SDP_DESCRIPTOR sdp = { };
+        nvConstructDpVscSdp(pInfoFrame, pDpyColor, &sdp);
+        pDevEvo->hal->SetDpVscSdp(pDispEvo, head, &sdp, updateState);
+    } else {
+        pDevEvo->hal->SetDpVscSdp(pDispEvo, head, NULL /* pVscSdp */,
+                                  updateState);
+    }
+
+    nvPopEvoSubDevMask(pDevEvo);
+}
+
 /*
  * Increase the size of the provided raster lock group by 1.
  *
@@ -2394,11 +2426,11 @@ static NvU32 ApiHeadMaskToHwHeadMask(
     const NVDispEvoRec *pDispEvo,
     const NvU32 apiHeadMask)
 {
-    const NvU32 numHeads = pDispEvo->pDevEvo->numHeads;
+    const NvU32 numApiHeads = pDispEvo->pDevEvo->numApiHeads; 
     NvU32 apiHead;
     NvU32 hwHeadMask = 0;
 
-    for (apiHead = 0; apiHead < numHeads; apiHead++) {
+    for (apiHead = 0; apiHead < numApiHeads; apiHead++) {
         if ((apiHeadMask & (1 << apiHead)) != 0) {
             const NVDispApiHeadStateEvoRec *pApiHeadState =
                 &pDispEvo->apiHeadState[apiHead];
@@ -5275,6 +5307,9 @@ NvBool nvAllocCoreChannelEvo(NVDevEvoPtr pDevEvo)
     NvU32 dispIndex;
     NvU32 head;
 
+    const NvBool bFailCoreChannelSetup =
+        nvkms_test_fail_alloc_core_channel(FAIL_ALLOC_CORE_CHANNEL_RM_SETUP_CORE_CHANNEL);
+
     /* Do nothing if the display was already allocated */
     if (pDevEvo->displayHandle != 0) {
         return TRUE;
@@ -5337,7 +5372,7 @@ NvBool nvAllocCoreChannelEvo(NVDevEvoPtr pDevEvo)
                  sizeof(pDevEvo->capsBits));
 
     // Evo core channel. Allocated once, shared per GPU
-    if (!nvRMSetupEvoCoreChannel(pDevEvo)) {
+    if (bFailCoreChannelSetup || !nvRMSetupEvoCoreChannel(pDevEvo)) {
         nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
                     "Failed to allocate display engine core DMA push buffer");
         goto failed;
@@ -5400,9 +5435,19 @@ NvBool nvAllocCoreChannelEvo(NVDevEvoPtr pDevEvo)
             nvAssert(pDevEvo->base[head] != NULL && pDevEvo->overlay[head] != NULL);
 
             pDevEvo->head[head].layer[NVKMS_MAIN_LAYER] = pDevEvo->base[head];
+            pDevEvo->head[head].numLayers++;
+
+            if (!nvkms_enable_overlay_layers()) {
+                continue;
+            }
+
             pDevEvo->head[head].layer[NVKMS_OVERLAY_LAYER] = pDevEvo->overlay[head];
-            pDevEvo->head[head].numLayers = 2;
+            pDevEvo->head[head].numLayers++;
         }
+    }
+
+    if (pDevEvo->hal->InitHwHeadMultiTileConfig != NULL) {
+        pDevEvo->hal->InitHwHeadMultiTileConfig(pDevEvo);
     }
 
     // Allocate and map the cursor controls for all heads
@@ -5724,7 +5769,10 @@ void nvFreeCoreChannelEvo(NVDevEvoPtr pDevEvo)
     ClearApiHeadState(pDevEvo);
 
     nvEvoCancelPostFlipIMPTimer(pDevEvo);
-    nvCancelVrrFrameReleaseTimers(pDevEvo);
+
+    NvU32 fullApiHeadMasks[NVKMS_MAX_SUBDEVICES];
+    nvkms_memset(fullApiHeadMasks, 0xFF, sizeof(fullApiHeadMasks));
+    nvCancelVrrFrameReleaseTimers(pDevEvo, fullApiHeadMasks);
 
     nvCancelLowerDispBandwidthTimer(pDevEvo);
 
@@ -6086,7 +6134,7 @@ NvBool nvLayerSetPositionEvo(
 NvBool nvConstructHwModeTimingsImpCheckEvo(
     const NVConnectorEvoRec                *pConnectorEvo,
     const NVHwModeTimingsEvo               *pTimings,
-    const NvBool                            enableDsc,
+    const NVDscInfoEvoRec                  *pDscInfo,
     const NvBool                            b2Heads1Or,
     const NVDpyAttributeColor              *pColor,
     const struct NvKmsModeValidationParams *pParams,
@@ -6098,6 +6146,7 @@ NvBool nvConstructHwModeTimingsImpCheckEvo(
     NvU32 activeRmId;
     const NvU32 numHeads = b2Heads1Or ? 2 : 1;
     NVValidateImpOneDispHeadParamsRec timingsParams[NVKMS_MAX_HEADS_PER_DISP];
+    NVHwHeadMultiTileConfigRec multiTileConfig[NVKMS_MAX_HEADS_PER_DISP] = { };
     NvBool requireBootClocks = !!(pParams->overrides &
                                   NVKMS_MODE_VALIDATION_REQUIRE_BOOT_CLOCKS);
     NvU32 ret;
@@ -6120,7 +6169,12 @@ NvBool nvConstructHwModeTimingsImpCheckEvo(
             goto done;
         }
         timingsParams[head].pTimings = &timings[head];
-        timingsParams[head].enableDsc = enableDsc;
+        timingsParams[head].pMultiTileConfig = &multiTileConfig[head];
+        timingsParams[head].enableDsc =
+            (pDscInfo->type != NV_DSC_INFO_EVO_TYPE_DISABLED);
+        timingsParams[head].dscSliceCount = pDscInfo->sliceCount;
+        timingsParams[head].possibleDscSliceCountMask =
+            pDscInfo->possibleSliceCountMask;
         timingsParams[head].b2Heads1Or = b2Heads1Or;
         timingsParams[head].pUsage = &timings[head].viewPort.guaranteedUsage;
     }
@@ -6133,11 +6187,15 @@ NvBool nvConstructHwModeTimingsImpCheckEvo(
         ret = nvValidateImpOneDispDowngrade(pConnectorEvo->pDispEvo, timingsParams,
                                             requireBootClocks,
                                             NV_EVO_REALLOCATE_BANDWIDTH_MODE_NONE,
-                                            /* downgradePossibleHeadsBitMask */
+                                            /* modesetRequestedHeadsMask */
                                             (NVBIT(NVKMS_MAX_HEADS_PER_DISP) - 1UL));
     }
 
     if (ret) {
+        for (NvU32 head = 1; head < numHeads; head++) {
+            nvAssert(timingsParams[head].dscSliceCount ==
+                        timingsParams[head - 1].dscSliceCount);
+        }
         *pNumHeads = numHeads;
     } else {
         nvEvoLogInfoString(pInfoString,
@@ -7645,7 +7703,7 @@ typedef NvBool (*DowngradeViewPortFuncPtr)(const NVDevEvoRec *pDevEvo,
 static NvBool DownGradeMetaModeUsageBounds(
     const NVDevEvoRec                      *pDevEvo,
     const NVValidateImpOneDispHeadParamsRec timingsParams[NVKMS_MAX_HEADS_PER_DISP],
-    NvU32                                   downgradePossibleHeadsBitMask)
+    NvU32                                   modesetRequestedHeadsMask)
 {
     static const struct {
         DowngradeViewPortFuncPtr downgradeFunc;
@@ -7739,7 +7797,7 @@ static NvBool DownGradeMetaModeUsageBounds(
 
     for (i = 0; i < ARRAY_LEN(downgradeFuncs); i++) {
         int head;
-        FOR_ALL_HEADS(head, downgradePossibleHeadsBitMask) {
+        FOR_ALL_HEADS(head, modesetRequestedHeadsMask) {
             if (timingsParams[head].pTimings == NULL) {
                 continue;
             }
@@ -7798,7 +7856,8 @@ static void AssignNVEvoIsModePossibleDispInput(
     const NVValidateImpOneDispHeadParamsRec  timingsParams[NVKMS_MAX_HEADS_PER_DISP],
     NvBool                                   requireBootClocks,
     NVEvoReallocateBandwidthMode             reallocBandwidth,
-    NVEvoIsModePossibleDispInput            *pImpInput)
+    NVEvoIsModePossibleDispInput            *pImpInput,
+    const NvU32                              modesetRequestedHeadsMask)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NvU32 head;
@@ -7823,13 +7882,22 @@ static void AssignNVEvoIsModePossibleDispInput(
             continue;
         }
 
+        if ((modesetRequestedHeadsMask & NVBIT(head)) != 0x0) {
+            pImpInput->head[head].modesetRequested = TRUE;
+        }
+
         pImpInput->head[head].pTimings = timingsParams[head].pTimings;
         pImpInput->head[head].enableDsc = timingsParams[head].enableDsc;
+        pImpInput->head[head].dscSliceCount = timingsParams[head].dscSliceCount;
+        pImpInput->head[head].possibleDscSliceCountMask =
+            timingsParams[head].possibleDscSliceCountMask;
         pImpInput->head[head].b2Heads1Or = timingsParams[head].b2Heads1Or;
         pImpInput->head[head].pixelDepth = timingsParams[head].pixelDepth;
         pImpInput->head[head].displayId = timingsParams[head].activeRmId;
         pImpInput->head[head].orType = pConnectorEvo->or.type;
         pImpInput->head[head].pUsage = timingsParams[head].pUsage;
+        pImpInput->head[head].multiTileConfig =
+            *timingsParams[head].pMultiTileConfig;
 
         if (!NV0073_CTRL_SYSTEM_GET_CAP(pDevEvo->commonCapsBits,
                 NV0073_CTRL_SYSTEM_CAPS_CROSS_BAR_SUPPORTED) ||
@@ -7913,11 +7981,12 @@ static void AssignNVEvoIsModePossibleDispInput(
  */
 NvBool nvValidateImpOneDisp(
     NVDispEvoPtr                            pDispEvo,
-    const NVValidateImpOneDispHeadParamsRec timingsParams[NVKMS_MAX_HEADS_PER_DISP],
+    NVValidateImpOneDispHeadParamsRec       timingsParams[NVKMS_MAX_HEADS_PER_DISP],
     NvBool                                  requireBootClocks,
     NVEvoReallocateBandwidthMode            reallocBandwidth,
     NvU32                                   *pMinIsoBandwidthKBPS,
-    NvU32                                   *pMinDramFloorKBPS)
+    NvU32                                   *pMinDramFloorKBPS,
+    const NvU32                              modesetRequestedHeadsMask)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NVEvoIsModePossibleDispInput impInput = { };
@@ -7928,7 +7997,8 @@ NvBool nvValidateImpOneDisp(
     AssignNVEvoIsModePossibleDispInput(pDispEvo,
                                        timingsParams, requireBootClocks,
                                        reallocBandwidth,
-                                       &impInput);
+                                       &impInput,
+                                       modesetRequestedHeadsMask);
 
     pDevEvo->hal->IsModePossible(pDispEvo, &impInput, &impOutput);
     if (!impOutput.possible) {
@@ -7973,15 +8043,41 @@ NvBool nvValidateImpOneDisp(
         *pMinDramFloorKBPS = impOutput.floorBandwidthKBPS;
     }
 
+    for (NvU32 head = 0; head < pDevEvo->numHeads; head++) {
+        if (timingsParams[head].pTimings == NULL) {
+            continue;
+        }
+
+        if ((modesetRequestedHeadsMask & NVBIT(head)) == 0x0) {
+            nvAssert(timingsParams[head].dscSliceCount ==
+                        impOutput.head[head].dscSliceCount);
+
+            nvAssert(timingsParams[head].pMultiTileConfig->tilesMask ==
+                        impOutput.head[head].multiTileConfig.tilesMask);
+            for (NvU32 layer = 0;
+                    layer < pDevEvo->head[head].numLayers; layer++) {
+                nvAssert(timingsParams[head].pMultiTileConfig->
+                            phywinsMask[layer] == impOutput.head[head].
+                            multiTileConfig.phywinsMask[layer]);
+            }
+        } else {
+            timingsParams[head].dscSliceCount =
+                impOutput.head[head].dscSliceCount;
+
+            *timingsParams[head].pMultiTileConfig =
+                impOutput.head[head].multiTileConfig;
+        }
+    }
+
     return TRUE;
 }
 
 NvBool nvValidateImpOneDispDowngrade(
     NVDispEvoPtr                            pDispEvo,
-    const NVValidateImpOneDispHeadParamsRec timingsParams[NVKMS_MAX_HEADS_PER_DISP],
+    NVValidateImpOneDispHeadParamsRec       timingsParams[NVKMS_MAX_HEADS_PER_DISP],
     NvBool                                  requireBootClocks,
     NVEvoReallocateBandwidthMode            reallocBandwidth,
-    NvU32                                   downgradePossibleHeadsBitMask)
+    NvU32                                   modesetRequestedHeadsMask)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NvBool impPassed = FALSE;
@@ -7992,12 +8088,13 @@ NvBool nvValidateImpOneDispDowngrade(
                                          requireBootClocks,
                                          reallocBandwidth,
                                          NULL /* pMinIsoBandwidthKBPS */,
-                                         NULL /* pMinDramFloorKBPS */);
+                                         NULL /* pMinDramFloorKBPS */,
+                                         modesetRequestedHeadsMask);
         if (impPassed) {
             break;
         }
     } while (DownGradeMetaModeUsageBounds(pDevEvo, timingsParams,
-                                          downgradePossibleHeadsBitMask));
+                                          modesetRequestedHeadsMask));
 
     if (impPassed && !pDevEvo->isSOCDisplay) {
         NvU32 head;

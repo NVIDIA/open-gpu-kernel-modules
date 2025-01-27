@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -37,6 +37,7 @@
 #include "nv_uvm_interface.h"
 #include "clb06f.h"
 #include "uvm_conf_computing.h"
+
 
 // WLC push is decrypted by SEC2 or CE (in WLC schedule).
 // In sysmem it's followed by auth tag.
@@ -97,6 +98,31 @@ typedef enum
     UVM_CHANNEL_UPDATE_MODE_FORCE_ALL
 } uvm_channel_update_mode_t;
 
+typedef enum
+{
+    // Reserve an entry that is expected to use p2p operations.
+    UVM_CHANNEL_RESERVE_WITH_P2P,
+
+    // Reserve an entry that is not expected to use p2p operations.
+    UVM_CHANNEL_RESERVE_NO_P2P,
+} uvm_channel_reserve_type_t;
+
+bool uvm_channel_pool_is_p2p(uvm_channel_pool_t *pool)
+{
+    uvm_channel_manager_t *manager = pool->manager;
+    uvm_gpu_id_t id;
+
+    if (manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_GPU_TO_GPU] == pool)
+        return true;
+
+    for_each_gpu_id_in_mask(id, &manager->gpu->peer_info.peer_gpu_mask) {
+        if (manager->pool_to_use.gpu_to_gpu[uvm_id_gpu_index(id)] == pool)
+            return true;
+    }
+
+    return false;
+}
+
 bool uvm_channel_pool_uses_mutex(uvm_channel_pool_t *pool)
 {
     // Work submission to proxy channels in SR-IOV heavy entails calling RM API
@@ -119,10 +145,12 @@ bool uvm_channel_pool_uses_mutex(uvm_channel_pool_t *pool)
 
 static void channel_pool_lock_init(uvm_channel_pool_t *pool)
 {
-    uvm_lock_order_t order = UVM_LOCK_ORDER_CHANNEL;
+    uvm_lock_order_t order;
 
     if (g_uvm_global.conf_computing_enabled && uvm_channel_pool_is_wlc(pool))
         order = UVM_LOCK_ORDER_WLC_CHANNEL;
+    else
+        order = UVM_LOCK_ORDER_CHANNEL;
 
     if (uvm_channel_pool_uses_mutex(pool))
         uvm_mutex_init(&pool->mutex, order);
@@ -274,7 +302,9 @@ NvU32 uvm_channel_get_available_gpfifo_entries(uvm_channel_t *channel)
     return available;
 }
 
-static bool try_claim_channel_locked(uvm_channel_t *channel, NvU32 num_gpfifo_entries)
+static bool try_claim_channel_locked(uvm_channel_t *channel,
+                                     NvU32 num_gpfifo_entries,
+                                     uvm_channel_reserve_type_t reserve_type)
 {
     bool claimed = false;
 
@@ -282,6 +312,9 @@ static bool try_claim_channel_locked(uvm_channel_t *channel, NvU32 num_gpfifo_en
     UVM_ASSERT(num_gpfifo_entries < channel->num_gpfifo_entries);
 
     uvm_channel_pool_assert_locked(channel->pool);
+
+    if (reserve_type == UVM_CHANNEL_RESERVE_WITH_P2P && channel->suspended_p2p)
+        return false;
 
     if (channel_get_available_gpfifo_entries(channel) >= num_gpfifo_entries) {
         channel->current_gpfifo_count += num_gpfifo_entries;
@@ -291,12 +324,14 @@ static bool try_claim_channel_locked(uvm_channel_t *channel, NvU32 num_gpfifo_en
     return claimed;
 }
 
-static bool try_claim_channel(uvm_channel_t *channel, NvU32 num_gpfifo_entries)
+static bool try_claim_channel(uvm_channel_t *channel,
+                              NvU32 num_gpfifo_entries,
+                              uvm_channel_reserve_type_t reserve_type)
 {
     bool claimed;
 
     channel_pool_lock(channel->pool);
-    claimed = try_claim_channel_locked(channel, num_gpfifo_entries);
+    claimed = try_claim_channel_locked(channel, num_gpfifo_entries, reserve_type);
     channel_pool_unlock(channel->pool);
 
     return claimed;
@@ -349,7 +384,8 @@ static bool test_claim_and_lock_channel(uvm_channel_t *channel, NvU32 num_gpfifo
     if (uvm_channel_is_locked_for_push(channel))
         return false;
 
-    if (try_claim_channel_locked(channel, num_gpfifo_entries)) {
+    // Confidential compute is not using p2p ops, reserve without p2p
+    if (try_claim_channel_locked(channel, num_gpfifo_entries, UVM_CHANNEL_RESERVE_NO_P2P)) {
         lock_channel_for_push(channel);
         return true;
     }
@@ -490,7 +526,9 @@ static NV_STATUS channel_reserve_and_lock_in_pool(uvm_channel_pool_t *pool, uvm_
 
     for_each_clear_bit(index, pool->conf_computing.push_locks, pool->num_channels) {
         channel = &pool->channels[index];
-        if (try_claim_channel_locked(channel, 1)) {
+
+        // Confidential compute is not using p2p ops, reserve without p2p
+        if (try_claim_channel_locked(channel, 1, UVM_CHANNEL_RESERVE_NO_P2P)) {
             lock_channel_for_push(channel);
             goto done;
         }
@@ -529,7 +567,9 @@ done:
 }
 
 // Reserve a channel in the specified pool
-static NV_STATUS channel_reserve_in_pool(uvm_channel_pool_t *pool, uvm_channel_t **channel_out)
+static NV_STATUS channel_reserve_in_pool(uvm_channel_pool_t *pool,
+                                         uvm_channel_reserve_type_t reserve_type,
+                                         uvm_channel_t **channel_out)
 {
     uvm_channel_t *channel;
     uvm_spin_loop_t spin;
@@ -541,7 +581,7 @@ static NV_STATUS channel_reserve_in_pool(uvm_channel_pool_t *pool, uvm_channel_t
 
     uvm_for_each_channel_in_pool(channel, pool) {
         // TODO: Bug 1764953: Prefer idle/less busy channels
-        if (try_claim_channel(channel, 1)) {
+        if (try_claim_channel(channel, 1, reserve_type)) {
             *channel_out = channel;
             return NV_OK;
         }
@@ -554,7 +594,7 @@ static NV_STATUS channel_reserve_in_pool(uvm_channel_pool_t *pool, uvm_channel_t
 
             uvm_channel_update_progress(channel);
 
-            if (try_claim_channel(channel, 1)) {
+            if (try_claim_channel(channel, 1, reserve_type)) {
                 *channel_out = channel;
 
                 return NV_OK;
@@ -563,6 +603,9 @@ static NV_STATUS channel_reserve_in_pool(uvm_channel_pool_t *pool, uvm_channel_t
             status = uvm_channel_check_errors(channel);
             if (status != NV_OK)
                 return status;
+
+            if (reserve_type == UVM_CHANNEL_RESERVE_WITH_P2P && channel->suspended_p2p)
+                return NV_ERR_BUSY_RETRY;
 
             UVM_SPIN_LOOP(&spin);
         }
@@ -575,12 +618,18 @@ static NV_STATUS channel_reserve_in_pool(uvm_channel_pool_t *pool, uvm_channel_t
 
 NV_STATUS uvm_channel_reserve_type(uvm_channel_manager_t *manager, uvm_channel_type_t type, uvm_channel_t **channel_out)
 {
+    uvm_channel_reserve_type_t reserve_type;
     uvm_channel_pool_t *pool = manager->pool_to_use.default_for_type[type];
 
     UVM_ASSERT(pool != NULL);
     UVM_ASSERT(type < UVM_CHANNEL_TYPE_COUNT);
 
-    return channel_reserve_in_pool(pool, channel_out);
+    if (type == UVM_CHANNEL_TYPE_GPU_TO_GPU)
+        reserve_type = UVM_CHANNEL_RESERVE_WITH_P2P;
+    else
+        reserve_type = UVM_CHANNEL_RESERVE_NO_P2P;
+
+    return channel_reserve_in_pool(pool, reserve_type, channel_out);
 }
 
 NV_STATUS uvm_channel_reserve_gpu_to_gpu(uvm_channel_manager_t *manager,
@@ -596,7 +645,7 @@ NV_STATUS uvm_channel_reserve_gpu_to_gpu(uvm_channel_manager_t *manager,
 
     UVM_ASSERT(pool->pool_type == UVM_CHANNEL_POOL_TYPE_CE);
 
-    return channel_reserve_in_pool(pool, channel_out);
+    return channel_reserve_in_pool(pool, UVM_CHANNEL_RESERVE_WITH_P2P, channel_out);
 }
 
 NV_STATUS uvm_channel_manager_wait(uvm_channel_manager_t *manager)
@@ -1441,7 +1490,6 @@ void uvm_channel_end_push(uvm_push_t *push)
     bool needs_sec2_work_submit = false;
 
     channel_pool_lock(channel->pool);
-
     encrypt_push(push);
 
     new_tracking_value = ++channel->tracking_sem.queued_value;
@@ -1523,6 +1571,7 @@ void uvm_channel_end_push(uvm_push_t *push)
     // push must be updated before that. Notably uvm_pushbuffer_end_push() has
     // to be called first.
     unlock_channel_for_push(channel);
+
     channel_pool_unlock(channel->pool);
 
     // This memory barrier is borrowed from CUDA, as it supposedly fixes perf
@@ -1805,13 +1854,14 @@ NV_STATUS uvm_channel_reserve(uvm_channel_t *channel, NvU32 num_gpfifo_entries)
     if (g_uvm_global.conf_computing_enabled)
         return channel_reserve_and_lock(channel, num_gpfifo_entries);
 
-    if (try_claim_channel(channel, num_gpfifo_entries))
+    // Direct channel reservations don't use p2p
+    if (try_claim_channel(channel, num_gpfifo_entries, UVM_CHANNEL_RESERVE_NO_P2P))
         return NV_OK;
 
     uvm_channel_update_progress(channel);
 
     uvm_spin_loop_init(&spin);
-    while (!try_claim_channel(channel, num_gpfifo_entries) && status == NV_OK) {
+    while (!try_claim_channel(channel, num_gpfifo_entries, UVM_CHANNEL_RESERVE_NO_P2P) && status == NV_OK) {
         UVM_SPIN_LOOP(&spin);
         status = uvm_channel_check_errors(channel);
         uvm_channel_update_progress(channel);
@@ -1825,9 +1875,11 @@ void uvm_channel_release(uvm_channel_t *channel, NvU32 num_gpfifo_entries)
     channel_pool_lock(channel->pool);
 
     UVM_ASSERT(uvm_channel_is_locked_for_push(channel));
+
     unlock_channel_for_push(channel);
 
     UVM_ASSERT(channel->current_gpfifo_count >= num_gpfifo_entries);
+
     channel->current_gpfifo_count -= num_gpfifo_entries;
     channel_pool_unlock(channel->pool);
 }
@@ -1850,6 +1902,134 @@ static uvm_gpfifo_entry_t *uvm_channel_get_first_pending_entry(uvm_channel_t *ch
     channel_pool_unlock(channel->pool);
 
     return entry;
+}
+
+static NV_STATUS channel_suspend_p2p(uvm_channel_t *channel)
+{
+    NV_STATUS status = NV_OK;
+
+    UVM_ASSERT(channel);
+    UVM_ASSERT(!channel->suspended_p2p);
+
+    // Reserve all entries to block traffic.
+    // Each channel needs 1 entry as sentinel.
+    status = uvm_channel_reserve(channel, channel->num_gpfifo_entries - 1);
+
+    // Prevent p2p traffic from reserving entries
+    if (status == NV_OK)
+        channel->suspended_p2p = true;
+
+    // Release the entries reserved above to allow non-p2p traffic
+    uvm_channel_release(channel, channel->num_gpfifo_entries - 1);
+
+    return status;
+}
+
+static void channel_resume_p2p(uvm_channel_t *channel)
+{
+    UVM_ASSERT(channel);
+    UVM_ASSERT(channel->suspended_p2p);
+
+    channel->suspended_p2p = false;
+}
+
+static NV_STATUS channel_pool_suspend_p2p(uvm_channel_pool_t *pool)
+{
+    NV_STATUS status = NV_OK;
+    NvU32 i;
+
+    UVM_ASSERT(pool);
+    UVM_ASSERT(!uvm_channel_pool_is_wlc(pool));
+    UVM_ASSERT(!uvm_channel_pool_is_lcic(pool));
+
+    for (i = 0; i < pool->num_channels; ++i) {
+        status = channel_suspend_p2p(pool->channels + i);
+        if (status != NV_OK)
+            break;
+    }
+
+    // Resume suspended channels in case of error
+    while ((status != NV_OK) && (i-- > 0))
+        channel_resume_p2p(pool->channels + i);
+
+    for (i = 0; i < pool->num_channels; ++i)
+        UVM_ASSERT(pool->channels[i].suspended_p2p == (status == NV_OK));
+
+    return status;
+}
+
+static void channel_pool_resume_p2p(uvm_channel_pool_t *pool)
+{
+    NvU32 i;
+
+    UVM_ASSERT(pool);
+    UVM_ASSERT(!uvm_channel_pool_is_wlc(pool));
+    UVM_ASSERT(!uvm_channel_pool_is_lcic(pool));
+
+    for (i = 0; i < pool->num_channels; ++i)
+        channel_resume_p2p(pool->channels + i);
+}
+
+NV_STATUS uvm_channel_manager_suspend_p2p(uvm_channel_manager_t *channel_manager)
+{
+    uvm_channel_pool_t *pool;
+    NV_STATUS status = NV_OK;
+    uvm_gpu_id_t gpu_id;
+    DECLARE_BITMAP(suspended_pools, UVM_COPY_ENGINE_COUNT_MAX);
+
+    // Pools can be assigned to multiple 'pool_to_use' locations
+    // Use bitmap to track which were suspended.
+    bitmap_zero(suspended_pools, channel_manager->num_channel_pools);
+
+    for_each_gpu_id_in_mask(gpu_id, &channel_manager->gpu->peer_info.peer_gpu_mask) {
+        pool = channel_manager->pool_to_use.gpu_to_gpu[uvm_id_gpu_index(gpu_id)];
+        if (pool && !test_bit(uvm_channel_pool_index_in_channel_manager(pool), suspended_pools)) {
+            status = channel_pool_suspend_p2p(pool);
+            if (status != NV_OK)
+                break;
+
+            __set_bit(uvm_channel_pool_index_in_channel_manager(pool), suspended_pools);
+        }
+    }
+
+    pool = channel_manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_GPU_TO_GPU];
+    if (status == NV_OK && !test_bit(uvm_channel_pool_index_in_channel_manager(pool), suspended_pools)) {
+        status = channel_pool_suspend_p2p(pool);
+
+        // Do not set the suspended_pools bit here. If status is NV_OK it's not
+        // needed, otherwise it should not be set anyway.
+    }
+
+    // Resume suspended pools in case of error
+    if (status != NV_OK) {
+        unsigned i;
+
+        for_each_set_bit(i, suspended_pools, channel_manager->num_channel_pools)
+            channel_pool_resume_p2p(channel_manager->channel_pools + i);
+    }
+
+    return status;
+}
+
+void uvm_channel_manager_resume_p2p(uvm_channel_manager_t *channel_manager)
+{
+    uvm_channel_pool_t *pool;
+    uvm_gpu_id_t gpu_id;
+    DECLARE_BITMAP(resumed_pools, UVM_COPY_ENGINE_COUNT_MAX);
+
+    // Pools can be assigned to multiple 'pool_to_use' locations
+    // Use bitmap to track which were suspended.
+    bitmap_zero(resumed_pools, channel_manager->num_channel_pools);
+
+    for_each_gpu_id_in_mask(gpu_id, &channel_manager->gpu->peer_info.peer_gpu_mask) {
+        pool = channel_manager->pool_to_use.gpu_to_gpu[uvm_id_gpu_index(gpu_id)];
+        if (pool && !test_and_set_bit(uvm_channel_pool_index_in_channel_manager(pool), resumed_pools))
+            channel_pool_resume_p2p(pool);
+    }
+
+    pool = channel_manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_GPU_TO_GPU];
+    if (!test_and_set_bit(uvm_channel_pool_index_in_channel_manager(pool), resumed_pools))
+        channel_pool_resume_p2p(pool);
 }
 
 NV_STATUS uvm_channel_get_status(uvm_channel_t *channel)
@@ -1891,7 +2071,7 @@ NV_STATUS uvm_channel_check_errors(uvm_channel_t *channel)
     NV_STATUS status = uvm_channel_get_status(channel);
 
     if (status == NV_OK)
-        return NV_OK;
+        return status;
 
     UVM_ERR_PRINT("Detected a channel error, channel %s GPU %s\n",
                   channel->name,
@@ -2134,6 +2314,7 @@ static uvmGpuTsgHandle channel_get_tsg(uvm_channel_t *channel)
 
         tsg_index = uvm_channel_index_in_pool(channel);
     }
+
     UVM_ASSERT(tsg_index < pool->num_tsgs);
 
     return pool->tsg_handles[tsg_index];
@@ -2251,6 +2432,7 @@ static NV_STATUS channel_create(uvm_channel_pool_t *pool, uvm_channel_t *channel
      if (status != NV_OK)
          goto error;
 
+    channel->suspended_p2p = false;
     channel->num_gpfifo_entries = channel_pool_num_gpfifo_entries(pool);
     channel->gpfifo_entries = uvm_kvmalloc_zero(sizeof(*channel->gpfifo_entries) * channel->num_gpfifo_entries);
     if (channel->gpfifo_entries == NULL) {
@@ -2444,6 +2626,7 @@ static UVM_GPU_CHANNEL_ENGINE_TYPE pool_type_to_engine_type(uvm_channel_pool_typ
 {
     if (pool_type ==  UVM_CHANNEL_POOL_TYPE_SEC2)
         return UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2;
+
     return UVM_GPU_CHANNEL_ENGINE_TYPE_CE;
 }
 
@@ -2862,10 +3045,6 @@ static void pick_ces_for_channel_types(uvm_channel_manager_t *manager,
 {
     unsigned i;
 
-    // In Confidential Computing, do not mark all usable CEs, only the preferred
-    // ones, because non-preferred CE channels are guaranteed to not be used.
-    bool mark_all_usable_ces = !g_uvm_global.conf_computing_enabled;
-
     for (i = 0; i < num_channel_types; ++i) {
         unsigned ce;
         unsigned best_ce = UVM_COPY_ENGINE_COUNT_MAX;
@@ -2875,7 +3054,10 @@ static void pick_ces_for_channel_types(uvm_channel_manager_t *manager,
             if (!ce_is_usable(ce_caps + ce))
                 continue;
 
-            if (mark_all_usable_ces)
+            // In Confidential Computing, do not mark all usable CEs, only the
+            // preferred ones, because non-preferred CE channels are guaranteed
+            // to not be used.
+            if (!g_uvm_global.conf_computing_enabled)
                 __set_bit(ce, manager->ce_mask);
 
             if (best_ce == UVM_COPY_ENGINE_COUNT_MAX) {
@@ -2919,6 +3101,7 @@ static void pick_ces_conf_computing(uvm_channel_manager_t *manager,
                                     unsigned *preferred_ce)
 {
     unsigned best_wlc_ce;
+    uvm_gpu_t *gpu = manager->gpu;
 
     // The WLC type must go last so an unused CE is chosen, if available
     uvm_channel_type_t types[] = {UVM_CHANNEL_TYPE_CPU_TO_GPU,
@@ -2937,9 +3120,10 @@ static void pick_ces_conf_computing(uvm_channel_manager_t *manager,
 
     best_wlc_ce = preferred_ce[UVM_CHANNEL_TYPE_WLC];
 
-    // TODO: Bug 4576908: in HCC, the WLC type should not share a CE with any
-    // channel type other than LCIC. The assertion should be a check instead.
-    UVM_ASSERT(ce_usage_count(best_wlc_ce, preferred_ce) == 0);
+    // The implementation of engine-wide key rotation depends on using a
+    // dedicated CE for the WLC and LCIC pools.
+    if (uvm_conf_computing_is_key_rotation_enabled(gpu) && !gpu->parent->conf_computing.per_channel_key_rotation)
+        UVM_ASSERT(ce_usage_count(best_wlc_ce, preferred_ce) == 0);
 }
 
 static NV_STATUS channel_manager_pick_ces(uvm_channel_manager_t *manager, unsigned *preferred_ce)
@@ -2967,6 +3151,7 @@ static NV_STATUS channel_manager_pick_ces(uvm_channel_manager_t *manager, unsign
         pick_ces_conf_computing(manager, ces_caps->copyEngineCaps, preferred_ce);
     else
         pick_ces(manager, ces_caps->copyEngineCaps, preferred_ce);
+
 out:
     uvm_kvfree(ces_caps);
 
@@ -3000,6 +3185,8 @@ void uvm_channel_manager_set_p2p_ce(uvm_channel_manager_t *manager, uvm_gpu_t *p
 
     UVM_ASSERT(manager->gpu != peer);
     UVM_ASSERT(optimal_ce < UVM_COPY_ENGINE_COUNT_MAX);
+    UVM_ASSERT(manager->gpu->parent->peer_copy_mode != UVM_GPU_PEER_COPY_MODE_UNSUPPORTED);
+    UVM_ASSERT(peer->parent->peer_copy_mode != UVM_GPU_PEER_COPY_MODE_UNSUPPORTED);
 
     manager->pool_to_use.gpu_to_gpu[peer_gpu_index] = channel_manager_ce_pool(manager, optimal_ce);
 }
@@ -3063,7 +3250,7 @@ static void init_channel_manager_conf(uvm_channel_manager_t *manager)
 
     // 2- Allocation locations
 
-    if (uvm_conf_computing_mode_is_hcc(gpu)) {
+    if (g_uvm_global.conf_computing_enabled) {
         UVM_ASSERT(gpu->mem_info.size > 0);
 
         // When the Confidential Computing feature is enabled, the GPU is
@@ -3290,7 +3477,7 @@ static NV_STATUS setup_wlc_schedule(uvm_channel_t *wlc)
     // WLC can only process one job at a time.
     // Prune any initialization entries and block all but one (+1 for sentinel)
     uvm_channel_update_progress(wlc);
-    if (!try_claim_channel(wlc, wlc->num_gpfifo_entries - 2)) {
+    if (!try_claim_channel(wlc, wlc->num_gpfifo_entries - 2, UVM_CHANNEL_RESERVE_NO_P2P)) {
         status = NV_ERR_INVALID_STATE;
         goto free_gpfifo_entries;
     }
@@ -3437,7 +3624,7 @@ static NV_STATUS setup_lcic_schedule(uvm_channel_t *paired_wlc, uvm_channel_t *l
     // Prune any initialization entries and
     // block all gpfifo entries (-1 for sentinel)
     uvm_channel_update_progress(lcic);
-    if (!try_claim_channel(lcic, lcic->num_gpfifo_entries - 1)) {
+    if (!try_claim_channel(lcic, lcic->num_gpfifo_entries - 1, UVM_CHANNEL_RESERVE_NO_P2P)) {
         status = NV_ERR_INVALID_STATE;
         goto free_gpfifo_entries;
     }
@@ -3700,6 +3887,7 @@ static void channel_manager_destroy_pools(uvm_channel_manager_t *manager)
 {
     uvm_rm_mem_free(manager->gpu->conf_computing.iv_rm_mem);
     manager->gpu->conf_computing.iv_rm_mem = NULL;
+
     while (manager->num_channel_pools > 0)
         channel_pool_destroy(manager->channel_pools + manager->num_channel_pools - 1);
 
@@ -3856,6 +4044,7 @@ const char *uvm_channel_type_to_string(uvm_channel_type_t channel_type)
 
 const char *uvm_channel_pool_type_to_string(uvm_channel_pool_type_t channel_pool_type)
 {
+
     BUILD_BUG_ON(UVM_CHANNEL_POOL_TYPE_COUNT != 5);
 
     switch (channel_pool_type) {
@@ -3870,17 +4059,21 @@ const char *uvm_channel_pool_type_to_string(uvm_channel_pool_type_t channel_pool
 
 static const char *get_gpfifo_location_string(uvm_channel_t *channel)
 {
+
     // SEC2 channels override the channel manager location for GPFIFO.
     if (uvm_channel_is_sec2(channel))
         return buffer_location_to_string(UVM_BUFFER_LOCATION_SYS);
+
     return buffer_location_to_string(channel->pool->manager->conf.gpfifo_loc);
 }
 
 static const char *get_gpput_location_string(uvm_channel_t *channel)
 {
+
     // SEC2 channels override the channel manager location for GPPUT.
     if (uvm_channel_is_sec2(channel))
         return buffer_location_to_string(UVM_BUFFER_LOCATION_SYS);
+
     return buffer_location_to_string(channel->pool->manager->conf.gpput_loc);
 }
 

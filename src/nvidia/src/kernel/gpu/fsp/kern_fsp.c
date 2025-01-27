@@ -69,7 +69,6 @@ static NV_STATUS kfspScheduleAsyncResponseCheck(OBJGPU *pGpu, KernelFsp *pKernel
                                                 AsyncRpcCallback callback, void  *pCallbackArgs,
                                                 NvU8 *pBuffer, NvU32  bufferSize);
 static void kfspClearAsyncResponseState(KernelFsp *pKernelFsp);
-static void kfspReleaseProxyImage(OBJGPU *pGpu, KernelFsp *pKernelFsp);
 
 NV_STATUS
 kfspConstructEngine_IMPL(OBJGPU *pGpu, KernelFsp *pKernelFsp, ENGDESCRIPTOR engDesc)
@@ -157,8 +156,8 @@ kfspInitRegistryOverrides
     }
 }
 
-static void
-kfspReleaseProxyImage
+void
+kfspReleaseProxyImage_IMPL
 (
     OBJGPU    *pGpu,
     KernelFsp *pKernelFsp
@@ -175,18 +174,22 @@ kfspReleaseProxyImage
         pKernelFsp->pSysmemFrtsMemdesc = NULL;
     }
 
-    if (pKernelFsp->pGspFmcMemdesc != NULL)
+    // With Keep WPR feature, keep the GSP-FMC and BootArgsMemdesc.
+    if (!(pGpu->getProperty(pGpu, PDB_PROP_GPU_KEEP_WPR_ACROSS_GC6_SUPPORTED) && IS_GPU_GC6_STATE_ENTERING(pGpu)))
     {
-        memdescFree(pKernelFsp->pGspFmcMemdesc);
-        memdescDestroy(pKernelFsp->pGspFmcMemdesc);
-        pKernelFsp->pGspFmcMemdesc = NULL;
-    }
+        if (pKernelFsp->pGspFmcMemdesc != NULL)
+        {
+            memdescFree(pKernelFsp->pGspFmcMemdesc);
+            memdescDestroy(pKernelFsp->pGspFmcMemdesc);
+            pKernelFsp->pGspFmcMemdesc = NULL;
+        }
 
-    if (pKernelFsp->pGspBootArgsMemdesc != NULL)
-    {
-        memdescFree(pKernelFsp->pGspBootArgsMemdesc);
-        memdescDestroy(pKernelFsp->pGspBootArgsMemdesc);
-        pKernelFsp->pGspBootArgsMemdesc = NULL;
+        if (pKernelFsp->pGspBootArgsMemdesc != NULL)
+        {
+            memdescFree(pKernelFsp->pGspBootArgsMemdesc);
+            memdescDestroy(pKernelFsp->pGspBootArgsMemdesc);
+            pKernelFsp->pGspBootArgsMemdesc = NULL;
+        }
     }
 }
 
@@ -263,6 +266,7 @@ kfspStateDestroy_IMPL
         memdescDestroy(pKernelFsp->pVidmemFrtsMemdesc);
         pKernelFsp->pVidmemFrtsMemdesc = NULL;
     }
+
 }
 
 /*!

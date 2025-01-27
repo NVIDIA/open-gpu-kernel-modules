@@ -208,7 +208,7 @@ struct OBJTMR {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__OBJTMR *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
     struct IntrService __nvoc_base_IntrService;
 
@@ -394,7 +394,7 @@ static inline NV_STATUS tmrDelay_DISPATCH(struct OBJTMR *pTmr, NvU32 arg2) {
     return pTmr->__tmrDelay__(pTmr, arg2);
 }
 
-static inline void tmrRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[175]) {
+static inline void tmrRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[177]) {
     pTmr->__nvoc_vtable->__tmrRegisterIntrService__(pGpu, pTmr, pRecords);
 }
 
@@ -892,7 +892,7 @@ NV_STATUS tmrDelay_OSTIMER(struct OBJTMR *pTmr, NvU32 arg2);
 
 NV_STATUS tmrDelay_PTIMER(struct OBJTMR *pTmr, NvU32 arg2);
 
-void tmrRegisterIntrService_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[175]);
+void tmrRegisterIntrService_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[177]);
 
 NvBool tmrClearInterrupt_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceClearInterruptArguments *pParams);
 

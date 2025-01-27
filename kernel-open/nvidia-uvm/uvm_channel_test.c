@@ -206,9 +206,10 @@ static NV_STATUS uvm_test_rc_for_gpu(uvm_gpu_t *gpu)
     uvm_for_each_pool(pool, manager) {
         uvm_channel_t *channel;
 
-            // Skip LCIC channels as those can't accept any pushes
-            if (uvm_channel_pool_is_lcic(pool))
-                continue;
+        // Skip LCIC channels as those can't accept any pushes
+        if (uvm_channel_pool_is_lcic(pool))
+            continue;
+
         uvm_for_each_channel_in_pool(channel, pool) {
             NvU32 i;
             for (i = 0; i < 512; ++i) {
@@ -1292,6 +1293,7 @@ static NV_STATUS test_write_ctrl_gpfifo_noop(uvm_va_space_t *va_space)
             // after their schedule is set up
             if (uvm_channel_pool_is_wlc(pool))
                 continue;
+
             uvm_for_each_channel_in_pool(channel, pool) {
                 NvU32 i;
 
@@ -1331,6 +1333,7 @@ static NV_STATUS test_write_ctrl_gpfifo_and_pushes(uvm_va_space_t *va_space)
             // after their schedule is set up
             if (uvm_channel_pool_is_wlc(pool))
                 continue;
+
             uvm_for_each_channel_in_pool(channel, pool) {
                 NvU32 i;
                 uvm_push_t push;
@@ -1473,6 +1476,7 @@ static NV_STATUS test_channel_pushbuffer_extension_base(uvm_va_space_t *va_space
             // Skip LCIC channels as those can't accept any pushes
             if (uvm_channel_pool_is_lcic(pool))
                 continue;
+
             uvm_for_each_channel_in_pool(channel, pool) {
                 NvU32 i;
                 uvm_push_t push;

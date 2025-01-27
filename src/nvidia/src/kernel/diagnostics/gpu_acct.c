@@ -38,7 +38,7 @@ static NvU64 gpuacctGetCurrTime(void);
 static NV_STATUS gpuacctAddProcEntry(GPU_ACCT_PROC_DATA_STORE *, GPUACCT_PROC_ENTRY *, NvBool);
 static NV_STATUS gpuacctRemoveProcEntry(GPU_ACCT_PROC_DATA_STORE *, GPUACCT_PROC_ENTRY *);
 static NV_STATUS gpuacctLookupProcEntry(GPU_ACCT_PROC_DATA_STORE *, NvU32, GPUACCT_PROC_ENTRY **);
-static NV_STATUS gpuacctAllocProcEntry(GPU_ACCT_PROC_DATA_STORE *, NvU32, NvU32, GPUACCT_PROC_ENTRY **);
+static NV_STATUS gpuacctAllocProcEntry(GPU_ACCT_PROC_DATA_STORE *, NvU32, NvU32, RmClient *, GPUACCT_PROC_ENTRY **);
 static NV_STATUS gpuacctFreeProcEntry(GPU_ACCT_PROC_DATA_STORE *, GPUACCT_PROC_ENTRY *);
 static NV_STATUS gpuacctCleanupDataStore(GPU_ACCT_PROC_DATA_STORE *);
 static NV_STATUS gpuacctDestroyDataStore(GPU_ACCT_PROC_DATA_STORE *);
@@ -218,6 +218,7 @@ void gpuacctDestruct_IMPL
  * @param[in]  pDS       Pointer to data store where process entry is to be added.
  * @param[in]  pid       PID of the process.
  * @param[in]  procType  Type of the process.
+ * @param[in]  pClient   Process RmClient
  * @param[out] ppEntry   Pointer to process entry.
  *
  * @return  NV_OK
@@ -232,6 +233,7 @@ gpuacctAllocProcEntry
     GPU_ACCT_PROC_DATA_STORE *pDS,
     NvU32 pid,
     NvU32 procType,
+    RmClient *pClient,
     GPUACCT_PROC_ENTRY **ppEntry
 )
 {
@@ -250,6 +252,7 @@ gpuacctAllocProcEntry
 
     pEntry->procId = pid;
     pEntry->procType = procType;
+    pEntry->pClient = pClient;
 
     status = gpuacctAddProcEntry(pDS, pEntry, NV_TRUE);
     if (status != NV_OK)
@@ -262,6 +265,7 @@ gpuacctAllocProcEntry
 out:
     if (status != NV_OK)
     {
+        portMemSet(pEntry, 0, sizeof(GPUACCT_PROC_ENTRY));
         portMemFree(pEntry);
     }
     return status;
@@ -287,6 +291,7 @@ gpuacctFreeProcEntry
 
     NV_ASSERT_OR_RETURN(status == NV_OK, status);
 
+    portMemSet(pEntry, 0, sizeof(GPUACCT_PROC_ENTRY));
     portMemFree(pEntry);
 
     return NV_OK;
@@ -648,7 +653,8 @@ gpuacctStartGpuAccounting_IMPL
     GpuAccounting *pGpuAcct,
     NvU32 gpuInstance,
     NvU32 pid,
-    NvU32 subPid
+    NvU32 subPid,
+    RmClient *pClient
 )
 {
     OBJGPU *pGpu;
@@ -707,7 +713,7 @@ gpuacctStartGpuAccounting_IMPL
 
     // Create entry for the incoming pid.
     status = gpuacctAllocProcEntry(pDS, searchPid,
-                                   NV_GPUACCT_PROC_TYPE_CPU, &pEntry);
+                                   NV_GPUACCT_PROC_TYPE_CPU, pClient, &pEntry);
     NV_ASSERT_OR_RETURN(status == NV_OK, status);
     NV_ASSERT_OR_RETURN(pEntry != NULL, NV_ERR_NO_MEMORY);
 
@@ -860,6 +866,7 @@ gpuacctStopGpuAccounting_IMPL
         }
 
         // Move the entry to dead procs data store
+        pEntry->pClient = NULL;
         status = gpuacctRemoveProcEntry(pLiveDS, pEntry);
         if (status != NV_OK)
         {
@@ -869,6 +876,7 @@ gpuacctStopGpuAccounting_IMPL
         status = gpuacctAddProcEntry(pDeadDS, pEntry, NV_FALSE);
         if (status != NV_OK)
         {
+            portMemSet(pEntry, 0, sizeof(GPUACCT_PROC_ENTRY));
             portMemFree(pEntry);
             return status;
         }
@@ -1193,6 +1201,25 @@ gpuacctGetProcAcctInfo_IMPL
     return NV_OK;
 }
 
+static NV_STATUS  _gpuAcctGetPidValue(GPUACCT_PROC_ENTRY *pEntry, NvU32 vmIndex, NvU32 *nsPid)
+{
+    if ((vmIndex != NV_INVALID_VM_INDEX) ||
+        (pEntry->pClient == NULL) ||
+        (pEntry->pClient->pOsPidInfo == NULL))
+    {
+        *nsPid = pEntry->procId;
+    } 
+    else 
+    {
+        if (osFindNsPid(pEntry->pClient->pOsPidInfo, nsPid) != NV_OK)
+        {
+            return NV_ERR_OBJECT_NOT_FOUND;
+        }
+    }
+
+    return NV_OK;
+}
+
 /*!
  * Gets all the pids for which accounting data is available.
  *
@@ -1212,6 +1239,7 @@ gpuacctGetAcctPids_IMPL
 {
     GPUACCT_PROC_ENTRY *pEntry;
     GPU_ACCT_PROC_LIST *pList;
+    NV_STATUS status;
     OBJGPU *pGpu;
     NvU32 count;
     NvU32 vmPid;
@@ -1264,6 +1292,12 @@ gpuacctGetAcctPids_IMPL
 
     if (vmIndex == NV_INVALID_VM_INDEX)
     {
+        // Skip dead info if the request is for baremetal and from container.
+        if (osIsInitNs() != NV_TRUE)
+        {
+            goto addLiveProc;
+        }
+
         pList = &pGpuInstanceInfo->deadProcAcctInfo.procList;
     }
     else
@@ -1282,6 +1316,7 @@ gpuacctGetAcctPids_IMPL
         }
     }
 
+addLiveProc:
     if (vmIndex == NV_INVALID_VM_INDEX)
     {
         pList = &pGpuInstanceInfo->liveProcAcctInfo.procList;
@@ -1298,7 +1333,11 @@ gpuacctGetAcctPids_IMPL
         pEntry = iter.pValue;
         if (pEntry && pEntry->procType == NV_GPUACCT_PROC_TYPE_GPU)
         {
-            pParams->pidTbl[count++] = pEntry->procId;
+            status = _gpuAcctGetPidValue(pEntry, vmIndex, &pParams->pidTbl[count]);
+            if (status == NV_OK)
+            {
+                count++;
+            }
         }
     }
 

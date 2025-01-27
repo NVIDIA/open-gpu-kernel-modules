@@ -2279,6 +2279,8 @@ typedef struct NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS {
     NvU32                                         cpuTdpmw;
 } NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS;
 
+typedef NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS;
+
 /* Define the filter types */
 #define CONTROLLER_FILTER_TYPE_EMWA                                        0U
 #define CONTROLLER_FILTER_TYPE_MOVING_MAX                                  1U

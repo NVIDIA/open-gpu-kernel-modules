@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -74,7 +74,7 @@ struct VirtualMemory {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__VirtualMemory *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct StandardMemory __nvoc_base_StandardMemory;
 
     // Ancestor object pointers for `staticCast` feature
@@ -363,7 +363,7 @@ void virtmemGetAddressAndSize_IMPL(struct VirtualMemory *arg1, NvU64 *pVAddr, Nv
 
 
 NV_STATUS virtmemAllocResources(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, MEMORY_ALLOCATION_REQUEST *pAllocRequest,
-                                FB_ALLOC_INFO *pFbAllocInfo);
+                                FB_ALLOC_INFO *pFbAllocInfo, struct RmClient *pFbAllocInfoClient);
 
 #endif
 

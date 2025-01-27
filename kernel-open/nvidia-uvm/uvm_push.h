@@ -389,6 +389,7 @@ static bool uvm_push_has_space(uvm_push_t *push, NvU32 free_space)
 // These do just enough for inline push data and uvm_push_get_gpu() to work.
 // Used by tests that run on fake GPUs without a channel manager (see
 // uvm_page_tree_test.c for an example).
+//
 // When the Confidential Computing feature is enabled, LCIC channels also use
 // fake push for other things, like encrypting semaphore values to unprotected
 // sysmem.

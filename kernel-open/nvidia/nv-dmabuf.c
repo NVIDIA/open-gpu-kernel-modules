@@ -90,6 +90,20 @@ typedef struct nv_dma_buf_file_private
     // fetched during dma-buf create/reuse instead of in map.
     //
     NvBool                   static_phys_addrs;
+
+    //
+    // Type of mapping requested, one of:
+    //   NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT
+    //   NV_DMABUF_EXPORT_MAPPING_TYPE_FORCE_PCIE
+    //
+    NvU8                     mapping_type;
+
+    //
+    // On some coherent platforms requesting mapping_type FORCE_PCIE,
+    // peer-to-peer is expected to bypass the IOMMU due to hardware
+    // limitations. On such systems, IOMMU map/unmap will be skipped.
+    //
+    NvBool                   skip_iommu;
 } nv_dma_buf_file_private_t;
 
 static void
@@ -380,6 +394,7 @@ nv_put_phys_addresses(
         // Per-handle memArea is freed by RM
         rm_dma_buf_unmap_mem_handle(sp, priv->nv, priv->h_client,
                                     priv->handles[index].h_memory,
+                                    priv->mapping_type,
                                     priv->handles[index].mem_info,
                                     priv->static_phys_addrs,
                                     priv->handles[index].memArea);
@@ -508,6 +523,7 @@ nv_dma_buf_get_phys_addresses (
                                            priv->handles[index].h_memory,
                                            mrangeMake(priv->handles[index].offset,
                                                 priv->handles[index].size),
+                                           priv->mapping_type,
                                            priv->handles[index].mem_info,
                                            priv->static_phys_addrs,
                                            &priv->handles[index].memArea);
@@ -557,21 +573,33 @@ failed:
 static void
 nv_dma_buf_unmap_pages(
     struct device *dev,
-    struct sg_table *sgt
+    struct sg_table *sgt,
+    nv_dma_buf_file_private_t *priv
 )
 {
+    if (priv->skip_iommu)
+    {
+        return;
+    }
+
     dma_unmap_sg(dev, sgt->sgl, sgt->nents, DMA_BIDIRECTIONAL);
 }
 
 static void
 nv_dma_buf_unmap_pfns(
     struct device *dev,
-    struct sg_table *sgt
+    struct sg_table *sgt,
+    nv_dma_buf_file_private_t *priv
 )
 {
     nv_dma_device_t peer_dma_dev = {{ 0 }};
     struct scatterlist *sg = sgt->sgl;
     NvU32 i;
+
+    if (priv->skip_iommu)
+    {
+        return;
+    }
 
     peer_dma_dev.dev = dev;
     peer_dma_dev.addressable_range.limit = (NvU64)dev->dma_mask;
@@ -729,11 +757,14 @@ nv_dma_buf_map_pfns (
                     goto unmap_pfns;
                 }
 
-                status = nv_dma_map_peer(&peer_dma_dev, priv->nv->dma_dev, 0x1,
-                                         (sg_len >> PAGE_SHIFT), &dma_addr);
-                if (status != NV_OK)
+                if (!priv->skip_iommu)
                 {
-                    goto unmap_pfns;
+                    status = nv_dma_map_peer(&peer_dma_dev, priv->nv->dma_dev, 0x1,
+                                             (sg_len >> PAGE_SHIFT), &dma_addr);
+                    if (status != NV_OK)
+                    {
+                        goto unmap_pfns;
+                    }
                 }
 
                 sg_set_page(sg, NULL, sg_len, 0);
@@ -755,7 +786,7 @@ nv_dma_buf_map_pfns (
 unmap_pfns:
     sgt->nents = mapped_nents;
 
-    nv_dma_buf_unmap_pfns(dev, sgt);
+    nv_dma_buf_unmap_pfns(dev, sgt, priv);
 
     sg_free_table(sgt);
 
@@ -777,12 +808,14 @@ nv_dma_buf_map(
     nv_dma_buf_file_private_t *priv = buf->priv;
 
     //
-    // On non-coherent platforms, importers must be able to handle peer
-    // MMIO resources not backed by struct page.
+    // On non-coherent platforms, and on coherent platforms requesting
+    // PCIe mapping, importers must be able to handle peer MMIO resources
+    // not backed by struct page.
     //
 #if defined(NV_DMA_BUF_HAS_DYNAMIC_ATTACHMENT) && \
     defined(NV_DMA_BUF_ATTACHMENT_HAS_PEER2PEER)
-    if (!priv->nv->coherent &&
+    if (((!priv->nv->coherent) ||
+         (priv->mapping_type == NV_DMABUF_EXPORT_MAPPING_TYPE_FORCE_PCIE)) &&
         dma_buf_attachment_is_dynamic(attachment) &&
         !attachment->peer2peer)
     {
@@ -793,6 +826,17 @@ nv_dma_buf_map(
 #endif
 
     mutex_lock(&priv->lock);
+
+    if (priv->mapping_type == NV_DMABUF_EXPORT_MAPPING_TYPE_FORCE_PCIE)
+    {
+        if(!nv_pci_is_valid_topology_for_direct_pci(priv->nv, attachment->dev))
+        {
+            nv_printf(NV_DBG_ERRORS,
+                      "NVRM: topology not supported for mapping type FORCE_PCIE\n");
+            return NULL;
+        }
+        priv->skip_iommu = NV_TRUE;
+    }
 
     if (priv->num_objects != priv->total_objects)
     {
@@ -808,7 +852,12 @@ nv_dma_buf_map(
         }
     }
 
-    if (priv->nv->coherent)
+    //
+    // For MAPPING_TYPE_FORCE_PCIE on coherent platforms,
+    // get the BAR1 PFN scatterlist instead of C2C pages.
+    //
+    if ((priv->nv->coherent) &&
+        (priv->mapping_type == NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT))
     {
         sgt = nv_dma_buf_map_pages(attachment->dev, priv);
     }
@@ -849,13 +898,14 @@ nv_dma_buf_unmap(
 
     mutex_lock(&priv->lock);
 
-    if (priv->nv->coherent)
+    if ((priv->nv->coherent) &&
+        (priv->mapping_type == NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT))
     {
-        nv_dma_buf_unmap_pages(attachment->dev, sgt);
+        nv_dma_buf_unmap_pages(attachment->dev, sgt, priv);
     }
     else
     {
-        nv_dma_buf_unmap_pfns(attachment->dev, sgt);
+        nv_dma_buf_unmap_pfns(attachment->dev, sgt, priv);
     }
 
     //
@@ -1048,6 +1098,8 @@ nv_dma_buf_create(
     priv->total_size    = params->totalSize;
     priv->nv            = nv;
     priv->can_mmap      = NV_FALSE;
+    priv->mapping_type  = params->mappingType;
+    priv->skip_iommu    = NV_FALSE;
 
     rc = nv_kmem_cache_alloc_stack(&sp);
     if (rc != 0)
@@ -1066,6 +1118,7 @@ nv_dma_buf_create(
     status = rm_dma_buf_get_client_and_device(sp, priv->nv,
                                               params->hClient,
                                               params->handles[0],
+                                              priv->mapping_type,
                                               &priv->h_client,
                                               &priv->h_device,
                                               &priv->h_subdevice,
@@ -1208,7 +1261,8 @@ nv_dma_buf_reuse(
     }
 
     if ((priv->total_objects < params->numObjects) ||
-        (params->index > (priv->total_objects - params->numObjects)))
+        (params->index > (priv->total_objects - params->numObjects)) ||
+        (params->mappingType != priv->mapping_type))
     {
         status = NV_ERR_INVALID_ARGUMENT;
         goto unlock_priv;
@@ -1277,6 +1331,12 @@ nv_dma_buf_export(
         (params->totalObjects == 0) ||
         (params->numObjects > NV_DMABUF_EXPORT_MAX_HANDLES) ||
         (params->numObjects > params->totalObjects))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if ((params->mappingType != NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT) &&
+        (params->mappingType != NV_DMABUF_EXPORT_MAPPING_TYPE_FORCE_PCIE))
     {
         return NV_ERR_INVALID_ARGUMENT;
     }

@@ -145,6 +145,43 @@ typedef struct
     uvm_processor_mask_t gpus;
 } uvm_cpu_gpu_affinity_t;
 
+typedef struct
+{
+    // The starting physical address of the EGM memory region.
+    NvU64 node_start;
+
+    // The ending physical address of the EGM memory region.
+    // The ending address is exclusive.
+    NvU64 node_end;
+
+    // The set of parent GPUs that are attached to the CPU NUMA node
+    // corresponding to the EGM memory region.
+    uvm_parent_processor_mask_t parent_gpus;
+
+    // This table is used to get the EGM peer GPU through which to route
+    // the accesses to EGM memory. If GPU A needs to create EGM mappings to
+    // SYSMEM pages on NUMA node NID_X, GPU A will use the GPU set in
+    // node_info[NID_X]->routing_table[GPU A] as the routing GPU. If the
+    // pointer is NULL, EGM mappings cannot be created EGM.
+    //
+    // The routing table pointers are set when peer access between GPU A and
+    // the routing GPU is enabled with the exception of local EGM routing,
+    // which is set when GPU A's parent GPU is registered.
+    //
+    // The pointers are cleared when peer access between the GPUs is disabled.
+    //
+    // We can't use the parent_gpus mask to get the routing GPUs because
+    // parent GPUs are set in parent_gpus when they are registered. Therefore,
+    // GPU A may attempt to create EGM mappings when peer access between GPU A
+    // and the routing GPU has not been enabled.
+    //
+    // A secondary purpose is to have a faster lookup for the routing GPU.
+    // Otherwise, lookups would have to iterate over all
+    // uvm_egm_numa_node_info_t structure to find the one tracking the
+    // range covering the SYSMEM address.
+    uvm_parent_gpu_t *routing_table[UVM_PARENT_ID_MAX_GPUS];
+} uvm_egm_numa_node_info_t;
+
 struct uvm_va_space_struct
 {
     // Mask of gpus registered with the va space
@@ -201,6 +238,12 @@ struct uvm_va_space_struct
     // space destroy.
     DECLARE_BITMAP(enabled_peers_teardown, UVM_MAX_UNIQUE_GPU_PAIRS);
 
+    // Array of pointers to EGM node structures for each possible NUMA node.
+    // The array is part of uvm_va_space_t to ensure consistent
+    // state with respect to GPU (un)registration, which manipulates
+    // the state.
+    uvm_egm_numa_node_info_t egm_numa_nodes[MAX_NUMNODES];
+
     // Interpreting these processor masks:
     //      uvm_processor_mask_test(foo[A], B)
     // ...should be read as "test if A foo B." For example:
@@ -229,11 +272,11 @@ struct uvm_va_space_struct
     uvm_processor_mask_t can_copy_from[UVM_ID_MAX_PROCESSORS];
 
     // Pre-computed masks that contain, for each processor, a mask of processors
-    // to which that processor has NVLINK access. In other words, this will test
-    // whether A has NVLINK access to B:
-    //      uvm_processor_mask_test(has_nvlink[A], B)
+    // to which that processor has NVLINK or C2C access. In other words, this
+    // will test whether A has NVLINK or C2C access to B:
+    //      uvm_processor_mask_test(has_fast_link[A], B)
     // This is a subset of can_access.
-    uvm_processor_mask_t has_nvlink[UVM_ID_MAX_PROCESSORS];
+    uvm_processor_mask_t has_fast_link[UVM_ID_MAX_PROCESSORS];
 
     // Pre-computed masks that contain, for each processor memory, a mask with
     // the processors that have direct access to its memory and native support
@@ -506,6 +549,11 @@ NV_STATUS uvm_va_space_register_gpu_va_space(uvm_va_space_t *va_space,
 // Unregisters a GPU VA space from the UVM VA space.
 NV_STATUS uvm_va_space_unregister_gpu_va_space(uvm_va_space_t *va_space, const NvProcessorUuid *gpu_uuid);
 
+// Returns whether there is only a single registered GPU under the parent GPU.
+//
+// LOCKING: The VA space lock must be held.
+bool uvm_va_space_single_gpu_in_parent(uvm_va_space_t *va_space, uvm_parent_gpu_t *parent_gpu);
+
 // Stop all user channels
 //
 // This function sets a flag in the VA space indicating that all the channels
@@ -527,6 +575,37 @@ void uvm_va_space_detach_all_user_channels(uvm_va_space_t *va_space, struct list
 // Returns whether peer access between these two GPUs has been enabled in this
 // VA space. Both GPUs must be registered in the VA space.
 bool uvm_va_space_peer_enabled(uvm_va_space_t *va_space, const uvm_gpu_t *gpu0, const uvm_gpu_t *gpu1);
+
+// Returns the EGM info structure for the CPU NUMA node ID node_id.
+static uvm_egm_numa_node_info_t *uvm_va_space_get_egm_numa_node_info(uvm_va_space_t *va_space, int node_id)
+{
+    return &va_space->egm_numa_nodes[node_id];
+}
+
+static uvm_parent_gpu_t *uvm_va_space_get_egm_routing_gpu(uvm_va_space_t *va_space,
+                                                          uvm_gpu_t *accessing_gpu,
+                                                          int node_id)
+{
+    uvm_egm_numa_node_info_t *node_info = uvm_va_space_get_egm_numa_node_info(va_space, node_id);
+    return node_info->routing_table[uvm_parent_id_gpu_index(accessing_gpu->parent->id)];
+}
+
+uvm_egm_numa_node_info_t *uvm_va_space_get_next_egm_numa_node_info_for_gpu(uvm_va_space_t *va_space,
+                                                                           uvm_parent_gpu_t *parent_gpu,
+                                                                           int *nid);
+
+static uvm_egm_numa_node_info_t *uvm_va_space_get_first_egm_numa_node_info_for_gpu(uvm_va_space_t *va_space,
+                                                                                   uvm_parent_gpu_t *parent_gpu,
+                                                                                   int *nid)
+{
+    *nid = NUMA_NO_NODE;
+    return uvm_va_space_get_next_egm_numa_node_info_for_gpu(va_space, parent_gpu, nid);
+}
+
+#define for_each_egm_numa_node_info_for_gpu(node_info, va_space, parent_gpu, nid)                                      \
+    for ((node_info) = uvm_va_space_get_first_egm_numa_node_info_for_gpu((va_space), (parent_gpu), &(nid));            \
+         (node_info);                                                                                                  \
+         (node_info) = uvm_va_space_get_next_egm_numa_node_info_for_gpu((va_space), (parent_gpu), &(nid)))
 
 // Returns the va_space this file points to. Returns NULL if this file
 // does not point to a va_space.
@@ -719,7 +798,7 @@ static uvm_gpu_t *uvm_va_space_find_gpu_with_memory_node_id(uvm_va_space_t *va_s
         return NULL;
 
     for_each_va_space_gpu(gpu, va_space) {
-        if (uvm_gpu_numa_node(gpu) == node_id)
+        if (gpu->mem_info.numa.enabled && uvm_gpu_numa_node(gpu) == node_id)
             return gpu;
     }
 

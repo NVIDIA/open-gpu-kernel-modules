@@ -714,6 +714,8 @@ struct NvKmsChannelSyncObjects {
  * hardware value is used.
  */
 struct NvKmsFlipCommonParams {
+    
+    NvBool allowVrr;
 
     struct {
         NvBool specified;
@@ -1520,6 +1522,8 @@ struct NvKmsQueryDpyDynamicDataReply {
      */
     enum NvKmsDpyVRRType vrrType;
 
+    NvBool supportsHDR;
+
     struct {
         NvBool supported;
         NvBool isDLP;
@@ -2262,12 +2266,6 @@ struct NvKmsFlipRequest {
      */
     NvBool commit;
 
-    /*!
-     * When set, indicates that the client is capable of releasing the VRR
-     * semaphore to indicate when the flip is ready.  Setting this to FALSE
-     * disables VRR.
-     */
-    NvBool allowVrr;
 };
 
 enum NvKmsVrrFlipType {

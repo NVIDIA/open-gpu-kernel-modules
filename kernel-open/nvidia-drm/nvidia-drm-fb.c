@@ -161,6 +161,20 @@ static int nv_drm_framebuffer_init(struct drm_device *dev,
             params.planes[i].memory = nv_gem->pMemory;
             params.planes[i].offset = fb->offsets[i];
             params.planes[i].pitch = fb->pitches[i];
+
+            /*
+             * XXX Use drm_framebuffer_funcs.dirty and
+             * drm_fb_helper_funcs.fb_dirty instead
+             *
+             * Currently using noDisplayCaching when registering surfaces with
+             * NVKMS that are using memory allocated through the DRM
+             * Dumb-Buffers API. This prevents Display Idle Frame Rate from
+             * kicking in and preventing CPU updates to the surface memory from
+             * not being reflected on the display. Ideally, DIFR would be
+             * dynamically disabled whenever a user of the memory blits to the
+             * frontbuffer. DRM provides the needed callbacks to achieve this.
+             */
+            params.noDisplayCaching |= !!nv_gem->is_drm_dumb;
         }
     }
     params.height = fb->height;

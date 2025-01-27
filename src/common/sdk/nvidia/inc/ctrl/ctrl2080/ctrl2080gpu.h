@@ -42,7 +42,7 @@
 #define NV_GRID_LICENSE_FEATURE_VAPPS_EDITION               "GRID-Virtual-Apps,3.0"
 #define NV_GRID_LICENSE_FEATURE_VIRTUAL_WORKSTATION_EDITION "Quadro-Virtual-DWS,5.0;GRID-Virtual-WS,2.0;GRID-Virtual-WS-Ext,2.0"
 #define NV_GRID_LICENSE_FEATURE_GAMING_EDITION              "GRID-vGaming,8.0"
-#define NV_GRID_LICENSE_FEATURE_COMPUTE_EDITION             "NVIDIA-vComputeServer,9.0;Quadro-Virtual-DWS,5.0"
+#define NV_GRID_LICENSE_FEATURE_COMPUTE_EDITION             "NVIDIA-vComputeServer,9.0"
 
 #define NV_GRID_LICENSED_PRODUCT_VWS     "NVIDIA RTX Virtual Workstation"
 #define NV_GRID_LICENSED_PRODUCT_GAMING  "NVIDIA Cloud Gaming"
@@ -81,7 +81,6 @@ typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_GPU_INFO;
 
 
 #define NV2080_CTRL_GPU_INFO_INDEX_SURPRISE_REMOVAL_POSSIBLE           (0x00000025U)
-#define NV2080_CTRL_GPU_INFO_INDEX_IBMNPU_RELAXED_ORDERING             (0x00000026U)
 #define NV2080_CTRL_GPU_INFO_INDEX_GLOBAL_POISON_FUSE_ENABLED          (0x00000027U)
 #define NV2080_CTRL_GPU_INFO_INDEX_NVSWITCH_PROXY_DETECTED             (0x00000028U)
 #define NV2080_CTRL_GPU_INFO_INDEX_GPU_SR_SUPPORT                      (0x00000029U)
@@ -138,11 +137,6 @@ typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_GPU_INFO;
 /* valid surprise removal values */
 #define NV2080_CTRL_GPU_INFO_INDEX_SURPRISE_REMOVAL_POSSIBLE_NO        (0x00000000U)
 #define NV2080_CTRL_GPU_INFO_INDEX_SURPRISE_REMOVAL_POSSIBLE_YES       (0x00000001U)
-
-/* valid relaxed ordering values */
-#define NV2080_CTRL_GPU_INFO_IBMNPU_RELAXED_ORDERING_DISABLED          (0x00000000U)
-#define NV2080_CTRL_GPU_INFO_IBMNPU_RELAXED_ORDERING_ENABLED           (0x00000001U)
-#define NV2080_CTRL_GPU_INFO_IBMNPU_RELAXED_ORDERING_UNSUPPORTED       (0xFFFFFFFFU)
 
 /* valid poison fuse capability values */
 #define NV2080_CTRL_GPU_INFO_INDEX_GLOBAL_POISON_FUSE_ENABLED_NO       (0x00000000U)
@@ -2523,6 +2517,26 @@ typedef struct NV2080_CTRL_GPU_PARTITION_SPAN {
     NV_DECLARE_ALIGNED(NvU64 hi, 8);
 } NV2080_CTRL_GPU_PARTITION_SPAN;
 
+/*
+ * NV2080_CTRL_EXEC_PARTITION_SPAN
+ *
+ * This struct represents the span of a compute partition, which represents the
+ * slices a given partition occupies (or may occupy) within a fixed range which
+ * is defined memory partition. A partition containing more resources will cover
+ * more GPU instance slices and therefore cover a larger span.
+ *
+ *   lo
+ *      - The starting unit of this span, inclusive
+ *
+ *   hi
+ *      - The ending unit of this span, inclusive
+ *
+ */
+typedef struct NV2080_CTRL_EXEC_PARTITION_SPAN {
+    NV_DECLARE_ALIGNED(NvU64 lo, 8);
+    NV_DECLARE_ALIGNED(NvU64 hi, 8);
+} NV2080_CTRL_EXEC_PARTITION_SPAN;
+
 #define NV_GI_UUID_LEN 16U
 
 /*
@@ -2606,6 +2620,18 @@ typedef struct NV2080_CTRL_GPU_SET_PARTITION_INFO {
 #define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_RESERVED_INTERNAL_06 0x00000006U
 #define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_RESERVED_INTERNAL_07 0x00000007U
 #define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE__SIZE                8U
+
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE                7:5
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_FULL                     0x00000001U
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_HALF                     0x00000002U
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_MINI_HALF                0x00000003U
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_QUARTER                  0x00000004U
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_EIGHTH                   0x00000005U
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_RESERVED_INTERNAL_06     0x00000006U
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_RESERVED_INTERNAL_07     0x00000007U
+
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_NONE                     0x00000000U
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE__SIZE                    8U
 
 
 #define NV2080_CTRL_GPU_PARTITION_MAX_TYPES                              40U
@@ -2896,10 +2922,13 @@ typedef NV2080_CTRL_GPU_EXEC_REG_OPS_PARAMS NV2080_CTRL_GPU_EXEC_REG_OPS_VGPU_PA
 typedef struct NV2080_CTRL_GPU_GET_ENGINE_RUNLIST_PRI_BASE_PARAMS {
     NvU32 engineList[NV2080_GPU_MAX_ENGINES_LIST_SIZE];
     NvU32 runlistPriBase[NV2080_GPU_MAX_ENGINES_LIST_SIZE];
+    NvU32 runlistId[NV2080_GPU_MAX_ENGINES_LIST_SIZE];
 } NV2080_CTRL_GPU_GET_ENGINE_RUNLIST_PRI_BASE_PARAMS;
 
 #define NV2080_CTRL_GPU_GET_ENGINE_RUNLIST_PRI_BASE_NULL  (0xFFFFFFFFU)
 #define NV2080_CTRL_GPU_GET_ENGINE_RUNLIST_PRI_BASE_ERROR (0xFFFFFFFBU)
+#define NV2080_CTRL_GPU_GET_ENGINE_RUNLIST_INVALID        (0xFFFFFFFFU)
+#define NV2080_CTRL_GPU_GET_ENGINE_RUNLIST_ERROR          (0xFFFFFFFBU)
 
 /*
  * NV2080_CTRL_CMD_GPU_GET_HW_ENGINE_ID
@@ -3055,6 +3084,26 @@ typedef struct NV2080_CTRL_GPU_GET_NVFBC_SW_SESSION_INFO_PARAMS {
 #define NV2080_CTRL_GPU_GET_NVFBC_SW_SESSION_INFO (0x2080017cU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_NVFBC_SW_SESSION_INFO_PARAMS_MESSAGE_ID" */
 
 
+/*
+ * NV2080_CTRL_CMD_GPU_GET_FIRST_ASYNC_CE_IDX
+ *
+ * This command returns the first async ce index
+ *
+ *   CE Index
+ *     Output parameter.
+ *     Returns the first async ce index
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV2080_CTRL_GPU_GET_FIRST_ASYNC_CE_IDX_PARAMS_MESSAGE_ID (0xe6U)
+
+typedef struct NV2080_CTRL_GPU_GET_FIRST_ASYNC_CE_IDX_PARAMS {
+    NvU32 firstAsyncCEIdx;
+} NV2080_CTRL_GPU_GET_FIRST_ASYNC_CE_IDX_PARAMS;
+#define NV2080_CTRL_CMD_GPU_GET_FIRST_ASYNC_CE_IDX (0x208001e6U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_FIRST_ASYNC_CE_IDX_PARAMS_MESSAGE_ID" */
+
 
 /*
  * NV2080_CTRL_CMD_GPU_GET_VMMU_SEGMENT_SIZE
@@ -3069,7 +3118,7 @@ typedef struct NV2080_CTRL_GPU_GET_NVFBC_SW_SESSION_INFO_PARAMS {
  *   NV_OK
  *   NV_ERR_NOT_SUPPORTED
  */
-#define NV2080_CTRL_CMD_GPU_GET_VMMU_SEGMENT_SIZE (0x2080017eU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_VMMU_SEGMENT_SIZE_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_GPU_GET_VMMU_SEGMENT_SIZE  (0x2080017eU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_VMMU_SEGMENT_SIZE_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_GPU_GET_VMMU_SEGMENT_SIZE_PARAMS_MESSAGE_ID (0x7EU)
 
@@ -4029,6 +4078,10 @@ typedef struct NV2080_CTRL_GPU_COMPUTE_PROFILE {
  *
  * This structure specifies resources in an execution partition
  *
+ *  partitionFlag[IN]
+ *      - GPU instance profile flags for which to query compute profiles
+ *        Ignored, if subdevice is subscribed to a GPU instance
+ *
  *  profileCount[OUT]
  *      - Total Number of profiles filled
  *
@@ -4038,6 +4091,7 @@ typedef struct NV2080_CTRL_GPU_COMPUTE_PROFILE {
 #define NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS_MESSAGE_ID (0xA2U)
 
 typedef struct NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS {
+    NvU32                           partitionFlag;
     NvU32                           profileCount;
     NV2080_CTRL_GPU_COMPUTE_PROFILE profiles[NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE__SIZE];
 } NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS;
@@ -4057,10 +4111,25 @@ typedef struct NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS {
 
 
 
-#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_DEGRADED_BW 1:0
-#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_DEGRADED_BW_NOT_SUPPORTED 0
-#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_DEGRADED_BW_TRUE          1
-#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_DEGRADED_BW_FALSE         2
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_DEGRADED_BW                    1:0
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_DEGRADED_BW_NOT_SUPPORTED      0
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_DEGRADED_BW_TRUE               1
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_DEGRADED_BW_FALSE              2
+
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_ROUTE_UPDATE               3:2
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_ROUTE_UPDATE_NOT_SUPPORTED 0
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_ROUTE_UPDATE_TRUE          1
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_ROUTE_UPDATE_FALSE         2
+
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_CONNECTION_UNHEALTHY               5:4
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_CONNECTION_UNHEALTHY_NOT_SUPPORTED 0
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_CONNECTION_UNHEALTHY_TRUE          1
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_CONNECTION_UNHEALTHY_FALSE         2
+
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_ACCESS_TIMEOUT_RECOVERY               7:6
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_ACCESS_TIMEOUT_RECOVERY_NOT_SUPPORTED 0
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_ACCESS_TIMEOUT_RECOVERY_TRUE          1
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_ACCESS_TIMEOUT_RECOVERY_FALSE         2
 
 /*!
  * NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS
@@ -4376,6 +4445,7 @@ typedef enum NV2080_CTRL_GPU_RECOVERY_ACTION {
     NV2080_CTRL_GPU_RECOVERY_ACTION_GPU_RESET = 1,
     NV2080_CTRL_GPU_RECOVERY_ACTION_NODE_REBOOT = 2,
     NV2080_CTRL_GPU_RECOVERY_ACTION_DRAIN_P2P = 3,
+    NV2080_CTRL_GPU_RECOVERY_ACTION_DRAIN_AND_RESET = 4,
 } NV2080_CTRL_GPU_RECOVERY_ACTION;
 
 #define NV2080_CTRL_GPU_GET_RECOVERY_ACTION_PARAMS_MESSAGE_ID (0xB2U)
@@ -4400,5 +4470,120 @@ typedef struct NV2080_CTRL_GPU_GET_FIPS_STATUS_PARAMS {
 } NV2080_CTRL_GPU_GET_FIPS_STATUS_PARAMS;
 #define NV2080_CTRL_GPU_GET_FIPS_STATUS (0x208001e4) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_FIPS_STATUS_PARAMS_MESSAGE_ID" */
 
+/*
+ * NV2080_CTRL_GPU_GET_RAFTS_FS_MASK
+ *
+ * @brief Get floorsweeping mask for given skyline configuration.
+ *
+ * tpcCountMatrix [IN]
+ *   TPC per GPC distribution for which user require floorsweeping mask.
+ *
+ * gfxGpcCount [IN]
+ *   Number of GFX capable GPC required.
+ *
+ * gfxTpcCount [IN]
+ *   Number of GFX capable TPC required.
+ *
+ * floorSweepConfig [OUT]
+ *   MODS floorsweeping mask.
+ *
+ * bValid [OUT]
+ *   If entries in floorSweepConfig are valid or not.
+ *
+ * @return NV_OK                      : on success
+ * @return NV_ERR_INVALID_PARAMETER   : Parameters in pParams are incompatible with each other
+ * @return NV_ERR_NOT_SUPPORTED       : Requested skyline not supported by current chip but can be supported by a chip
+ *                                       with fewer defects
+ */
+typedef enum NV2080_RAFTS_FLOORSWEEP_UNIT_MASK_TYPE {
+    NV2080_RAFTS_FLOORSWEEP_UNIT_TYPE_INVALID = 0,
+    NV2080_RAFTS_FLOORSWEEP_UNIT_TYPE_TPC = 1,
+    NV2080_RAFTS_FLOORSWEEP_UNIT_TYPE_GPC = 2,
+} NV2080_RAFTS_FLOORSWEEP_UNIT_MASK_TYPE;
+
+typedef struct NV2080_RAFTS_FLOORSWEEP_INFO {
+    NV2080_RAFTS_FLOORSWEEP_UNIT_MASK_TYPE unitType;
+    NvU32                                  parentId;
+    NvU32                                  mask;
+} NV2080_RAFTS_FLOORSWEEP_INFO;
+
+#define NV2080_CTRL_GPU_RAFTS_NUM_MAX_UGPU         0x2
+#define NV2080_CTRL_GPU_RAFTS_NUM_MAX_GPC_PER_UGPU 0xC
+#define NV2080_CTRL_GPU_RAFTS_NUM_MAX_NUM_GPC      (0x18) /* finn: Evaluated from "NV2080_CTRL_GPU_RAFTS_NUM_MAX_UGPU * NV2080_CTRL_GPU_RAFTS_NUM_MAX_GPC_PER_UGPU" */
+#define NV2080_CTRL_GPU_RAFTS_NUM_MAX_FS_UNIT      (0x1a) /* finn: Evaluated from "NV2080_CTRL_GPU_RAFTS_NUM_MAX_NUM_GPC + 2" */
+
+#define NV2080_CTRL_GPU_GET_RAFTS_FS_MASK_PARAMS_MESSAGE_ID (0xB3U)
+
+typedef struct NV2080_CTRL_GPU_GET_RAFTS_FS_MASK_PARAMS {
+    NvU8                         tpcCountMatrix[NV2080_CTRL_GPU_RAFTS_NUM_MAX_UGPU][NV2080_CTRL_GPU_RAFTS_NUM_MAX_GPC_PER_UGPU];
+    NvBool                       bValid;
+    NV2080_RAFTS_FLOORSWEEP_INFO floorSweepConfig[NV2080_CTRL_GPU_RAFTS_NUM_MAX_FS_UNIT];
+    NvU8                         gfxGpcCount;
+    NvU8                         gfxTpcPerGpcCount;
+    NvU8                         maxUgpuTpcDiff;
+} NV2080_CTRL_GPU_GET_RAFTS_FS_MASK_PARAMS;
+
+#define NV2080_CTRL_GPU_GET_RAFTS_FS_MASK                (0x208001b3) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_RAFTS_FS_MASK_PARAMS_MESSAGE_ID" */
+
+/*!
+ * NV2080_CTRL_GPU_GET_COMPUTE_PROFILE_CAPACITY_PARAMS
+ *
+ * This structure specifies resources in an execution partition
+ *
+ *  partitionFlag[IN]
+ *      - If GPU instance profile flag for which to query specified
+ *        compute profile
+ *
+ *  computeSize[IN]
+ *      - Size specifying compute profile whose info to query
+ *
+ *  totalProfileCount[OUT]
+ *      - Total Number of profiles possible to create in instance of specified GPU
+ *        profile
+ *
+ *  totalSpans[OUT]
+ *      - List of spans which can possibly be occupied by partitions of the
+ *        given type.
+ *
+ *  totalSpansCount[OUT]
+ *      - Number of entries filled in totalSpans
+ *
+ */
+#define NV2080_CTRL_CMD_GPU_GET_COMPUTE_PROFILE_CAPACITY (0x208001e5U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_COMPUTE_PROFILE_CAPACITY_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_GPU_GET_COMPUTE_PROFILE_CAPACITY_PARAMS_MESSAGE_ID (0xe5U)
+
+typedef struct NV2080_CTRL_GPU_GET_COMPUTE_PROFILE_CAPACITY_PARAMS {
+    NvU32 partitionFlag;
+    NvU32 computeSize;
+    NvU32 totalProfileCount;
+    NV_DECLARE_ALIGNED(NV2080_CTRL_EXEC_PARTITION_SPAN totalSpans[NV2080_CTRL_GPU_MAX_PARTITIONS], 8);
+    NvU32 totalSpansCount;
+} NV2080_CTRL_GPU_GET_COMPUTE_PROFILE_CAPACITY_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_GPU_GET_TPC_RECONFIG_MASK
+ *
+ * This command returns the TPC reconfig mask for a specific GPC
+ *
+ *  gpc[IN]
+ *      The GPC for which the TPC reconfig mask needs to be queried.
+ *      The GPC should be specified as a logical index.
+ *
+ *  tpcReconfigMask[OUT]
+ *     Mask of reconfigurable TPCs in the specified GPC
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV2080_CTRL_CMD_GPU_GET_TPC_RECONFIG_MASK (0x208001e7U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_TPC_RECONFIG_MASK_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_GPU_GET_TPC_RECONFIG_MASK_PARAMS_MESSAGE_ID (0xe7U)
+
+typedef struct NV2080_CTRL_GPU_GET_TPC_RECONFIG_MASK_PARAMS {
+    NvU32 gpc;
+    NvU32 tpcReconfigMask;
+} NV2080_CTRL_GPU_GET_TPC_RECONFIG_MASK_PARAMS;
 
 /* _ctrl2080gpu_h_ */

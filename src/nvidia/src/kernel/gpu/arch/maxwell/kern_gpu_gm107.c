@@ -517,6 +517,7 @@ gpuChildOrderList_GM200[] =
     {classId(KernelGraphics),     GCO_ALL},
     {classId(OBJLSFM),            GCO_LIST_INIT},
     {classId(OBJACR),             GCO_LIST_INIT},
+    {classId(OBJINFOROM),         GCO_ALL},
     {classId(Pmu),                GCO_LIST_INIT},
     {classId(KernelPmu),          GCO_LIST_INIT},
     {classId(Lpwr   ),            GCO_LIST_INIT},
@@ -537,7 +538,6 @@ gpuChildOrderList_GM200[] =
     {classId(KernelFifo),              GCO_ALL},
     {classId(OBJFIFO),            GCO_ALL},
     {classId(OBJDPAUX),           GCO_ALL},
-    {classId(OBJINFOROM),         GCO_ALL},
     {classId(OBJUVM),             GCO_ALL},
     {classId(OBJGPULOG),          GCO_LIST_INIT | GCO_LIST_LOAD},
     {classId(OBJGPUMON),          GCO_ALL},
@@ -546,7 +546,8 @@ gpuChildOrderList_GM200[] =
     {classId(OBJHWPM),            GCO_ALL},
     {classId(OBJSWENG),           GCO_ALL},
     {classId(OBJGRIDDISPLAYLESS), GCO_ALL},
-    {classId(KernelCcu),      GCO_ALL},
+    {classId(KernelCcu),          GCO_ALL},
+    {classId(KernelGsplite),      GCO_ALL},
 };
 
 const GPUCHILDORDER *

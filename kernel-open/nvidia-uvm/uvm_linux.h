@@ -84,8 +84,18 @@
 #include <linux/sched/task_stack.h>
 #endif
 
+#if !defined(NV_SG_DMA_PAGE_ITER_PRESENT)
+#include <linux/scatterlist.h>
+#endif
+
 #include <linux/cpumask.h>
 #include <linux/topology.h>
+
+#if defined(NV_LINUX_DMA_DIRECT_H_PRESENT)
+#include <linux/dma-direct.h>
+#else
+#include <asm/dma-mapping.h>
+#endif
 
 #include "nv-kthread-q.h"
 
@@ -381,5 +391,38 @@ static inline pgprot_t uvm_pgprot_decrypted(pgprot_t prot)
 
    return prot;
 }
+
+#if !defined(NV_SG_DMA_PAGE_ITER_PRESENT)
+    // Added by commit d901b2760dc6c ("lib/scatterlist: Provide a DMA page
+    // iterator") v5.0
+    struct sg_dma_page_iter {
+        struct sg_page_iter base;
+    };
+
+    #define uvm_sg_page_iter_dma_address(dma_iter)      \
+        sg_page_iter_dma_address(&((dma_iter)->base))
+#else
+    #define uvm_sg_page_iter_dma_address(dma_iter)      \
+        sg_page_iter_dma_address((dma_iter))
+#endif
+
+#if !defined(NV_FOR_EACH_SGTABLE_DMA_PAGE_PRESENT)
+    // Added by commit 709d6d73c756 ("scatterlist: add generic wrappers for
+    // iterating over sgtable objects") v5.7.
+    #define UVM_FOR_EACH_SGTABLE_DMA_PAGE_PRESENT() 0
+
+    static int sg_dma_page_count(struct scatterlist *sg);
+    bool __sg_page_iter_dma_next(struct sg_dma_page_iter *dma_iter);
+
+    #define for_each_sg_dma_page(sglist, dma_iter, dma_nents, pgoffset)         \
+        for (__sg_page_iter_start(&(dma_iter)->base, sglist, dma_nents,         \
+                                  pgoffset);                                    \
+            __sg_page_iter_dma_next(dma_iter);)
+
+    #define for_each_sgtable_dma_page(sgt, dma_iter, pgoffset)                  \
+            for_each_sg_dma_page((sgt)->sgl, dma_iter, (sgt)->nents, pgoffset)
+#else
+    #define UVM_FOR_EACH_SGTABLE_DMA_PAGE_PRESENT() 1
+#endif
 
 #endif // _UVM_LINUX_H

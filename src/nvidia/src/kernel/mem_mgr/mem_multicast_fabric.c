@@ -44,6 +44,7 @@
 #include "nvport/nvport.h"
 #include "rmapi/rs_utils.h"
 #include "rmapi/rmapi_utils.h"
+#include "resserv/rs_resource.h"
 #include "compute/fabric.h"
 #include "gpu/gpu.h"
 #include "gpu/bus/kern_bus.h"
@@ -59,11 +60,12 @@
 #include "mem_mgr/mem_export.h"
 
 #include "gpu/gpu_fabric_probe.h"
+#include "gpu_mgr/gpu_mgr.h"
 
 typedef struct mem_multicast_fabric_attach_mem_info_node
 {
     MEMORY_DESCRIPTOR *pPhysMemDesc;
-    NvHandle           hDupedPhysMem;
+    RsInterMapping    *pInterMapping;
     NvU64              physMapLength;
     NODE               node;
 } MEM_MULTICAST_FABRIC_ATTACH_MEM_INFO_NODE;
@@ -945,7 +947,6 @@ _memorymulticastfabricDetachMem
     NODE               *pMemNode
 )
 {
-    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     MEMORY_DESCRIPTOR *pPhysMemDesc;
     MEM_MULTICAST_FABRIC_ATTACH_MEM_INFO_NODE *pAttachMemInfoNode;
 
@@ -957,13 +958,10 @@ _memorymulticastfabricDetachMem
                                   pMemNode->keyStart,
                                   pPhysMemDesc,
                                   pAttachMemInfoNode->physMapLength);
-
-    NV_ASSERT_OK(pRmApi->Free(pRmApi, pFabricVAS->hClient,
-                              pAttachMemInfoNode->hDupedPhysMem));
 }
 
 static void
-_memorymulticastfabricBatchDetachMem
+_memorymulticastfabricBatchFreeVas
 (
     MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc
 )
@@ -994,17 +992,9 @@ _memorymulticastfabricBatchDetachMem
             continue;
         }
 
+        // Everything should have been unmapped by now..
         btreeEnumStart(0, &pMemNode, pGpuNode->pAttachMemInfoTree);
-        while (pMemNode != NULL)
-        {
-            _memorymulticastfabricDetachMem(pFabricVAS, pFabricMemDesc,
-                                            pMemNode);
-
-            btreeUnlink(pMemNode, &pGpuNode->pAttachMemInfoTree);
-            portMemFree(pMemNode->Data);
-
-            btreeEnumStart(0, &pMemNode, pGpuNode->pAttachMemInfoTree);
-        }
+        NV_ASSERT(pMemNode == NULL);
 
         // Everything is detached during object cleanup, free MCFLA now.
         if (pGpuNode->bMcflaAlloc)
@@ -1071,10 +1061,10 @@ _memMulticastFabricDescriptorFree
     portSyncRwLockReleaseWrite(pFabric->pMulticastFabricModuleLock);
 
     //
-    // TODO: Make this a per-GPU lock in future. For now both dup() and free()
-    // forces all GPU lock.
+    // TODO: Make this a per-GPU lock in future. For simplicity and as we rely
+    // on the serverInterUnmap paths, we take the all GPU locks here as well as
+    // at the resource level free too.
     //
-
     if (!rmGpuLockIsOwner())
     {
         gpuMask = GPUS_LOCK_ALL;
@@ -1098,7 +1088,7 @@ _memMulticastFabricDescriptorFree
         NV_ASSERT(pMulticastFabricDesc->bMemdescInstalled);
         NV_ASSERT(pNode != NULL);
 
-        _memorymulticastfabricBatchDetachMem(pMulticastFabricDesc);
+        _memorymulticastfabricBatchFreeVas(pMulticastFabricDesc);
 
         _memMulticastFabricSendInbandRequest(pNode->pGpu, pMulticastFabricDesc,
                                     MEM_MULTICAST_FABRIC_TEAM_RELEASE_REQUEST);
@@ -2312,7 +2302,7 @@ static MEM_MULTICAST_FABRIC_GPU_INFO*
 _memorymulticastfabricGetAttchedGpuInfo
 (
     MemoryMulticastFabric  *pMemoryMulticastFabric,
-    Subdevice              *pSubdevice
+    OBJGPU                 *pGpu
 )
 {
     MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc =
@@ -2323,7 +2313,7 @@ _memorymulticastfabricGetAttchedGpuInfo
          pNodeItr != NULL;
          pNodeItr = listNext(&pMulticastFabricDesc->gpuInfoList, pNodeItr))
     {
-        if (pNodeItr->pGpu == GPU_RES_GET_GPU(pSubdevice))
+        if (pNodeItr->pGpu == pGpu)
             return pNodeItr;
     }
 
@@ -2337,38 +2327,37 @@ _memorymulticastfabricGetAttchedGpuInfo
 static NV_STATUS
 _memorymulticastfabricCtrlDetachMem
 (
-    Subdevice                     *pSubdevice,
+    OBJGPU                        *pGpu,
     MemoryMulticastFabric         *pMemoryMulticastFabric,
-    NV00FD_CTRL_DETACH_MEM_PARAMS *pParams
+    NvU64                          offset,
+    NvBool                         bRemoveInterMapping
 )
 {
     MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc =
                                 pMemoryMulticastFabric->pMulticastFabricDesc;
     MEM_MULTICAST_FABRIC_GPU_INFO *pGpuInfo;
     NODE *pNode;
+    MEM_MULTICAST_FABRIC_ATTACH_MEM_INFO_NODE *pAttachMemInfoNode;
     MEMORY_DESCRIPTOR *pFabricMemDesc;
     FABRIC_VASPACE *pFabricVAS;
     NV_STATUS status;
-    OBJGPU *pGpu;
     NvU32 gpuMask;
 
-    if (pParams->flags != 0)
-        return NV_ERR_INVALID_ARGUMENT;
-
     pGpuInfo = _memorymulticastfabricGetAttchedGpuInfo(pMemoryMulticastFabric,
-                                                       pSubdevice);
+                                                       pGpu);
     if (pGpuInfo == NULL)
         return NV_ERR_INVALID_DEVICE;
 
-    pGpu = pGpuInfo->pGpu;
     gpuMask = NVBIT(gpuGetInstance(pGpu));
 
     if (!rmGpuGroupLockIsOwner(0, GPU_LOCK_GRP_MASK, &gpuMask))
         return NV_ERR_INVALID_LOCK_STATE;
 
-    status = btreeSearch(pParams->offset, &pNode, pGpuInfo->pAttachMemInfoTree);
+    status = btreeSearch(offset, &pNode, pGpuInfo->pAttachMemInfoTree);
     if (status != NV_OK)
         return status;
+
+    pAttachMemInfoNode = pNode->Data;
 
     pFabricMemDesc = pMulticastFabricDesc->pMemDesc;
     NV_ASSERT_OR_RETURN(pFabricMemDesc != NULL, NV_ERR_INVALID_STATE);
@@ -2377,6 +2366,12 @@ _memorymulticastfabricCtrlDetachMem
     NV_ASSERT_OR_RETURN(pFabricVAS != NULL, NV_ERR_INVALID_STATE);
 
     _memorymulticastfabricDetachMem(pFabricVAS, pFabricMemDesc, pNode);
+
+    if (bRemoveInterMapping)
+    {
+        refRemoveInterMapping(RES_GET_REF(pMemoryMulticastFabric),
+                              pAttachMemInfoNode->pInterMapping);
+    }
 
     btreeUnlink(pNode, &pGpuInfo->pAttachMemInfoTree);
     portMemFree(pNode->Data);
@@ -2396,6 +2391,10 @@ memorymulticastfabricCtrlDetachMem_IMPL
                                 pMemoryMulticastFabric->pMulticastFabricDesc;
     Subdevice *pSubdevice;
     NvU32 gpuMask;
+    OBJGPU *pGpu;
+
+    if (pParams->flags != 0)
+        return NV_ERR_INVALID_ARGUMENT;
 
     status = subdeviceGetByHandle(RES_GET_CLIENT(pMemoryMulticastFabric),
                                   pParams->hSubdevice, &pSubdevice);
@@ -2405,10 +2404,7 @@ memorymulticastfabricCtrlDetachMem_IMPL
     if (status != NV_OK)
         return status;
 
-    //
-    // TODO: Make this a per-GPU lock in future. For now both dup() and free()
-    // forces all GPU lock.
-    //
+    pGpu = GPU_RES_GET_GPU(pSubdevice);
     gpuMask = GPUS_LOCK_ALL;
 
     //
@@ -2429,9 +2425,9 @@ memorymulticastfabricCtrlDetachMem_IMPL
     //
     portSyncRwLockAcquireRead(pMulticastFabricDesc->pLock);
 
-    status = _memorymulticastfabricCtrlDetachMem(pSubdevice,
-                                                 pMemoryMulticastFabric,
-                                                 pParams);
+    // Remove inter mapping on explicit detach by the control call.
+    status = _memorymulticastfabricCtrlDetachMem(pGpu, pMemoryMulticastFabric,
+                                                 pParams->offset, NV_TRUE);
 
     portSyncRwLockReleaseRead(pMulticastFabricDesc->pLock);
 
@@ -2443,10 +2439,10 @@ memorymulticastfabricCtrlDetachMem_IMPL
 static NV_STATUS
 _memorymulticastfabricValidatePhysMem
 (
-    MemoryMulticastFabric *pMemoryMulticastFabric,
+    RsClient              *pClient,
     NvHandle               hPhysMem,
-    OBJGPU                *pAttachedGpu,
-    MEMORY_DESCRIPTOR    **ppPhysMemDesc
+    OBJGPU               **ppGpu,
+    Memory               **ppPhysMemory
 )
 {
     MEMORY_DESCRIPTOR *pPhysMemDesc;
@@ -2454,8 +2450,7 @@ _memorymulticastfabricValidatePhysMem
     NV_STATUS status;
     Memory *pMemory;
 
-    status = memGetByHandle(RES_GET_CLIENT(pMemoryMulticastFabric),
-                            hPhysMem, &pMemory);
+    status = memGetByHandle(pClient, hPhysMem, &pMemory);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Invalid object handle passed\n");
@@ -2464,9 +2459,15 @@ _memorymulticastfabricValidatePhysMem
 
     pPhysMemDesc = pMemory->pMemDesc;
 
-    if ((pAttachedGpu != pPhysMemDesc->pGpu) ||
-        !memmgrIsMemDescSupportedByFla_HAL(pAttachedGpu,
-                                           GPU_GET_MEMORY_MANAGER(pAttachedGpu),
+    if (pPhysMemDesc->pGpu == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Device-less memory isn't supported yet\n");
+
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    if (!memmgrIsMemDescSupportedByFla_HAL(pPhysMemDesc->pGpu,
+                                           GPU_GET_MEMORY_MANAGER(pPhysMemDesc->pGpu),
                                            pPhysMemDesc))
     {
         NV_PRINTF(LEVEL_ERROR, "Invalid physmem handle passed\n");
@@ -2483,7 +2484,8 @@ _memorymulticastfabricValidatePhysMem
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    *ppPhysMemDesc = pPhysMemDesc;
+    *ppGpu = pPhysMemDesc->pGpu;
+    *ppPhysMemory = pMemory;
 
     return NV_OK;
 }
@@ -2495,8 +2497,9 @@ _memorymulticastfabricValidatePhysMem
 static NV_STATUS
 _memorymulticastfabricCtrlAttachMem
 (
-    Subdevice                     *pSubdevice,
+    OBJGPU                        *pGpu,
     MemoryMulticastFabric         *pMemoryMulticastFabric,
+    Memory                        *pPhysMemory,
     NV00FD_CTRL_ATTACH_MEM_PARAMS *pParams
 )
 {
@@ -2504,40 +2507,22 @@ _memorymulticastfabricCtrlAttachMem
                                 pMemoryMulticastFabric->pMulticastFabricDesc;
     MEM_MULTICAST_FABRIC_GPU_INFO *pGpuInfo;
     NV_STATUS status;
-    MEMORY_DESCRIPTOR *pPhysMemDesc;
+    MEMORY_DESCRIPTOR *pPhysMemDesc = pPhysMemory->pMemDesc;
     MEMORY_DESCRIPTOR *pFabricMemDesc;
-    NvHandle hDupedPhysMem = 0;
-    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     FABRIC_VASPACE *pFabricVAS;
     MEM_MULTICAST_FABRIC_ATTACH_MEM_INFO_NODE *pNode;
-    OBJGPU *pGpu;
-    NvU32 gpuMask;
-
-    if (pParams->flags != 0)
-        return NV_ERR_INVALID_ARGUMENT;
-
-    pGpuInfo = _memorymulticastfabricGetAttchedGpuInfo(pMemoryMulticastFabric,
-                                                       pSubdevice);
-    if (pGpuInfo == NULL)
-        return NV_ERR_INVALID_DEVICE;
-
-    pGpu = pGpuInfo->pGpu;
-    gpuMask = NVBIT(gpuGetInstance(pGpu));
+    NvU32 gpuMask = NVBIT(gpuGetInstance(pGpu));
+    RsInterMapping *pInterMapping;
 
     if (!rmGpuGroupLockIsOwner(0, GPU_LOCK_GRP_MASK, &gpuMask))
         return NV_ERR_INVALID_LOCK_STATE;
 
-    status = _memorymulticastfabricValidatePhysMem(pMemoryMulticastFabric,
-                                                   pParams->hMemory,
-                                                   pGpuInfo->pGpu,
-                                                   &pPhysMemDesc);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Failed to validate physmem handle\n");
-        return status;
-    }
+    pGpuInfo = _memorymulticastfabricGetAttchedGpuInfo(pMemoryMulticastFabric,
+                                                       pGpu);
+    if (pGpuInfo == NULL)
+        return NV_ERR_INVALID_DEVICE;
 
-    pFabricVAS = dynamicCast(pGpuInfo->pGpu->pFabricVAS, FABRIC_VASPACE);
+    pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
     NV_ASSERT_OR_RETURN(pFabricVAS != NULL, NV_ERR_INVALID_STATE);
 
     pFabricMemDesc = pMulticastFabricDesc->pMemDesc;
@@ -2545,15 +2530,22 @@ _memorymulticastfabricCtrlAttachMem
 
     NV_ASSERT_OR_RETURN(pGpuInfo->bMcflaAlloc, NV_ERR_INVALID_STATE);
 
-    status = pRmApi->DupObject(pRmApi, pFabricVAS->hClient,
-                               pFabricVAS->hDevice, &hDupedPhysMem,
-                               RES_GET_CLIENT_HANDLE(pMemoryMulticastFabric),
-                               pParams->hMemory, 0);
+    status = refAddInterMapping(RES_GET_REF(pMemoryMulticastFabric),
+                                RES_GET_REF(pPhysMemory),
+                                RES_GET_REF(pPhysMemory)->pParentRef,
+                                &pInterMapping);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "Failed to dup physmem handle\n");
+        NV_PRINTF(LEVEL_ERROR, "Failed to setup inter mapping\n");
         return status;
     }
+
+    pInterMapping->flags = pParams->flags;
+    pInterMapping->dmaOffset = pParams->offset;
+    pInterMapping->pMemDesc = pPhysMemDesc;
+
+    // No partial unmap supported
+    pInterMapping->size = 0;
 
     status = fabricvaspaceMapPhysMemdesc(pFabricVAS,
                                          pFabricMemDesc,
@@ -2565,7 +2557,7 @@ _memorymulticastfabricCtrlAttachMem
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to map FLA\n");
-        goto freeDupedMem;
+        goto removeIntermap;
     }
 
     pNode = portMemAllocNonPaged(sizeof(*pNode));
@@ -2581,7 +2573,7 @@ _memorymulticastfabricCtrlAttachMem
     pNode->node.keyEnd   = pParams->offset;
     pNode->physMapLength = pParams->mapLength;
     pNode->pPhysMemDesc  = pPhysMemDesc;
-    pNode->hDupedPhysMem = hDupedPhysMem;
+    pNode->pInterMapping = pInterMapping;
     pNode->node.Data     = pNode;
 
     status = btreeInsert(&pNode->node, &pGpuInfo->pAttachMemInfoTree);
@@ -2600,8 +2592,8 @@ unmapVas:
     fabricvaspaceUnmapPhysMemdesc(pFabricVAS, pFabricMemDesc, pParams->offset,
                                   pPhysMemDesc, pParams->mapLength);
 
-freeDupedMem:
-    NV_ASSERT_OK(pRmApi->Free(pRmApi, pFabricVAS->hClient, hDupedPhysMem));
+removeIntermap:
+    refRemoveInterMapping(RES_GET_REF(pMemoryMulticastFabric), pInterMapping);
 
     return status;
 }
@@ -2616,22 +2608,27 @@ memorymulticastfabricCtrlAttachMem_IMPL
     MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc =
                                 pMemoryMulticastFabric->pMulticastFabricDesc;
     NV_STATUS status;
-    Subdevice *pSubdevice;
     NvU32 gpuMask;
+    OBJGPU *pGpu;
+    Memory *pPhysMemory;
 
-    status = subdeviceGetByHandle(RES_GET_CLIENT(pMemoryMulticastFabric),
-                                  pParams->hSubdevice, &pSubdevice);
-    if (status == NV_ERR_OBJECT_NOT_FOUND)
-        status = NV_ERR_INVALID_DEVICE;
+    if (pParams->flags != 0)
+        return NV_ERR_INVALID_ARGUMENT;
 
+    //
+    // TODO: pParams->hSubdevice will be used when deviceless memory classes
+    // will be supported.
+    //
+
+    status = _memorymulticastfabricValidatePhysMem(RES_GET_CLIENT(pMemoryMulticastFabric),
+                                                   pParams->hMemory, &pGpu, &pPhysMemory);
     if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to validate physmem handle\n");
         return status;
+    }
 
-    //
-    // TODO: Make this a per-GPU lock in future. For now both dup() and free()
-    // forces all GPU lock.
-    //
-    gpuMask = GPUS_LOCK_ALL;
+    gpuMask = NVBIT(gpuGetInstance(pGpu));
 
     //
     // Take per-GPU lock as we ensure source and destination devices are the
@@ -2651,9 +2648,8 @@ memorymulticastfabricCtrlAttachMem_IMPL
     //
     portSyncRwLockAcquireRead(pMulticastFabricDesc->pLock);
 
-    status = _memorymulticastfabricCtrlAttachMem(pSubdevice,
-                                                 pMemoryMulticastFabric,
-                                                 pParams);
+    status = _memorymulticastfabricCtrlAttachMem(pGpu, pMemoryMulticastFabric,
+                                                 pPhysMemory, pParams);
 
     portSyncRwLockReleaseRead(pMulticastFabricDesc->pLock);
 
@@ -2681,6 +2677,41 @@ memorymulticastfabricDestruct_IMPL
     portSyncRwLockReleaseWrite(pMulticastFabricDesc->pLock);
 
     _memMulticastFabricDescriptorFree(pMulticastFabricDesc);
+}
+
+NV_STATUS
+memorymulticastfabricUnmapFrom_IMPL
+(
+    MemoryMulticastFabric    *pMemoryMulticastFabric,
+    RS_RES_UNMAP_FROM_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = pParams->pGpu;
+    NvU32 gpuMask = NVBIT(gpuGetInstance(pGpu));
+    NV_STATUS status;
+    MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc;
+
+    if (!rmGpuGroupLockIsOwner(0, GPU_LOCK_GRP_MASK, &gpuMask))
+    {
+        NV_ASSERT(0);
+        return NV_ERR_INVALID_STATE;
+    }
+
+    pMulticastFabricDesc = pMemoryMulticastFabric->pMulticastFabricDesc;
+
+    //
+    // pMulticastFabricDesc->pLock read locking is sufficient as rest of the
+    // state in being modified is per-GPU, which is protected by the GPU lock.
+    //
+    portSyncRwLockAcquireRead(pMulticastFabricDesc->pLock);
+
+    status = _memorymulticastfabricCtrlDetachMem(pGpu, pMemoryMulticastFabric,
+                                                 pParams->dmaOffset, NV_FALSE);
+    NV_ASSERT(status == NV_OK);
+
+    portSyncRwLockReleaseRead(pMulticastFabricDesc->pLock);
+
+    return status;
 }
 
 NvBool

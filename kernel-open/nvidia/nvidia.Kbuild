@@ -40,9 +40,6 @@ NVIDIA_KO = nvidia/nvidia.ko
 NVIDIA_BINARY_OBJECT := $(src)/nvidia/nv-kernel.o_binary
 NVIDIA_BINARY_OBJECT_O := nvidia/nv-kernel.o
 
-quiet_cmd_symlink = SYMLINK $@
- cmd_symlink = ln -sf $< $@
-
 targets += $(NVIDIA_BINARY_OBJECT_O)
 
 $(obj)/$(NVIDIA_BINARY_OBJECT_O): $(NVIDIA_BINARY_OBJECT) FORCE
@@ -134,7 +131,6 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_map_page_attrs
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += write_cr4
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += of_find_node_by_phandle
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += of_node_to_nid
-NV_CONFTEST_FUNCTION_COMPILE_TESTS += pnv_pci_get_npu_dev
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += of_get_ibm_chip_id
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += pci_stop_and_remove_bus_device
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += pci_rebar_get_possible_sizes
@@ -182,6 +178,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += gpio_get_value
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += gpio_set_value
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += gpio_to_irq
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += icc_get
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += devm_of_icc_get
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += icc_put
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += icc_set_bw
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_buf_export_args
@@ -230,8 +227,10 @@ NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tsec_comms_alloc_me
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tsec_comms_free_gscco_mem
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_memory_block_size_bytes
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += crypto
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += crypto_akcipher_verify
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_follow_pte
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_pci_ats_supported
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += ecc_digits_from_bytes
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += dma_ops
 NV_CONFTEST_TYPE_COMPILE_TESTS += swiotlb_dma_ops
@@ -256,6 +255,8 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += vm_area_struct_has_const_vm_flags
 NV_CONFTEST_TYPE_COMPILE_TESTS += memory_failure_has_trapno_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += foll_longterm_present
 NV_CONFTEST_TYPE_COMPILE_TESTS += bus_type_has_iommu_ops
+NV_CONFTEST_TYPE_COMPILE_TESTS += class_create_has_no_owner_arg
+NV_CONFTEST_TYPE_COMPILE_TESTS += class_devnode_has_const_arg
 
 NV_CONFTEST_GENERIC_COMPILE_TESTS += dom0_kernel_present
 NV_CONFTEST_GENERIC_COMPILE_TESTS += nvidia_vgpu_kvm_build
@@ -274,3 +275,6 @@ NV_CONFTEST_GENERIC_COMPILE_TESTS += mdev_available
 NV_CONFTEST_GENERIC_COMPILE_TESTS += cmd_uphy_display_port_init
 NV_CONFTEST_GENERIC_COMPILE_TESTS += cmd_uphy_display_port_off
 NV_CONFTEST_GENERIC_COMPILE_TESTS += memory_failure_mf_sw_simulated_defined
+NV_CONFTEST_GENERIC_COMPILE_TESTS += device_vm_build
+NV_CONFTEST_GENERIC_COMPILE_TESTS += pcie_reset_flr
+NV_CONFTEST_GENERIC_COMPILE_TESTS += module_import_ns_takes_constant

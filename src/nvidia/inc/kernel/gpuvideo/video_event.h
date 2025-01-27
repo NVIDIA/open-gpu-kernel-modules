@@ -94,8 +94,7 @@ typedef enum
 } VIDEO_ENGINE_EVENT_ID;
 
 /*!
-* Defines types of the log data of video events if VIDEO_ENGINE_EVENT__LOG_DATA_MAGIC present
-* as first DWORD of log data.
+* Defines types of the log data of video events
 */
 typedef enum
 {
@@ -143,18 +142,9 @@ typedef struct
 {
     NvU8     engine_type;
     NvU8     engine_id;
-    NvU16    codec_id;
+    NvU16    type;              /* VIDEO_ENGINE_EVENT_LOG_DATA_TYPE */
     NvU32    size;              /* size of data being logged in NvU32 */
 } VIDEO_ENGINE_EVENT__LOG_DATA;
-
-#define VIDEO_ENGINE_EVENT__LOG_DATA_MAGIC  RM_VIDEO_TRACE_EVENT_MAGIC_HI
-
-typedef struct
-{
-    NvU32   magic;
-    VIDEO_ENGINE_EVENT_LOG_DATA_TYPE type;
-    NvU32   data[];
-} VIDEO_ENGINE_EVENT__LOG_DATA_HDR;
 
 /*!
 * Defines the struct for a full trace record contains various event structs.

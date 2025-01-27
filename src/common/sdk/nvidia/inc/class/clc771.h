@@ -20,6 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
 #ifndef _clc771_h_
 #define _clc771_h_
 
@@ -33,6 +34,11 @@ typedef volatile struct _clc771_tag0 {
     NvU32 dispSfUserOffset[0x400];    /* NV_PDISP_SF_USER   0x000D0FFF:0x000D0000 */
 } _NvC771DispSfUser, NvC771DispSfUserMap;
 
+#define NVC771_SF_HDMI_INFO_IDX_GENERIC_INFOFRAME                         0x00000001 /*       */
+#define NVC771_SF_HDMI_INFO_IDX_VSI                                       0x00000004 /*       */
+#define NVC771_SF_HDMI_INFO_CTRL(i,j)                 (0x000E0000-0x000E0000+(i)*1024+(j)*64) /* RW-4A */
+#define NVC771_SF_HDMI_INFO_CTRL__SIZE_1                                         4 /*       */
+#define NVC771_SF_HDMI_INFO_CTRL__SIZE_2                                         5 /*       */
 #define NVC771_SF_HDMI_AVI_INFOFRAME_CTRL(i)                    (0x000E0000-0x000E0000+(i)*1024) /* RW-4A */
 #define NVC771_SF_HDMI_AVI_INFOFRAME_CTRL__SIZE_1                                   8 /*       */
 #define NVC771_SF_HDMI_AVI_INFOFRAME_CTRL_ENABLE                                  0:0 /* RWIVF */
@@ -111,21 +117,40 @@ typedef volatile struct _clc771_tag0 {
 #define NVC771_SF_HDMI_AVI_INFOFRAME_SUBPACK2_LOW_PB17                           31:24 /* RWIVF */
 #define NVC771_SF_HDMI_AVI_INFOFRAME_SUBPACK2_LOW_PB17_INIT                 0x00000000 /* RWI-V */
 #define NVC771_SF_SHARED_GENERIC_CTRL(i,j)                          (0x000E0200-0x000E0000+(i)*1024+(j)*40) /* RW-4A */
+#define NVC771_SF_SHARED_GENERIC_CTRL__SIZE_1                                         8 /*       */
+#define NVC771_SF_SHARED_GENERIC_CTRL__SIZE_2                                         6 /*       */
 #define NVC771_SF_SHARED_GENERIC_CTRL_ENABLE                                        0:0 /* RWIVF */
 #define NVC771_SF_SHARED_GENERIC_CTRL_ENABLE_NO                              0x00000000 /* RWI-V */
 #define NVC771_SF_SHARED_GENERIC_CTRL_ENABLE_YES                             0x00000001 /* RW--V */
 #define NVC771_SF_SHARED_GENERIC_CTRL_SINGLE                                        4:4 /* RWIVF */
 #define NVC771_SF_SHARED_GENERIC_CTRL_SINGLE_NO                              0x00000000 /* RWI-V */
 #define NVC771_SF_SHARED_GENERIC_CTRL_SINGLE_YES                             0x00000001 /* RW--V */
-#define NVC771_SF_SHARED_GENERIC_CTRL_CHECKSUM_HW                                 16:16 /* RWIVF */
-#define NVC771_SF_SHARED_GENERIC_CTRL_CHECKSUM_HW_NO                         0x00000000 /* RWI-V */
-#define NVC771_SF_SHARED_GENERIC_CTRL_CHECKSUM_HW_YES                        0x00000001 /* RW--V */
 #define NVC771_SF_SHARED_GENERIC_CTRL_LOC                                           9:8 /* RWIVF */
 #define NVC771_SF_SHARED_GENERIC_CTRL_LOC_VBLANK                             0x00000000 /* RWI-V */
 #define NVC771_SF_SHARED_GENERIC_CTRL_LOC_VSYNC                              0x00000001 /* RW--V */
 #define NVC771_SF_SHARED_GENERIC_CTRL_LOC_LOADV                              0x00000002 /* RW--V */
+#define NVC771_SF_SHARED_GENERIC_CTRL_NEW                                         12:12 /* RWIVF */
+#define NVC771_SF_SHARED_GENERIC_CTRL_NEW_INIT                               0x00000000 /* R-I-V */
+#define NVC771_SF_SHARED_GENERIC_CTRL_NEW_DONE                               0x00000000 /* R---V */
+#define NVC771_SF_SHARED_GENERIC_CTRL_NEW_PENDING                            0x00000001 /* R---V */
+#define NVC771_SF_SHARED_GENERIC_CTRL_NEW_TRIGGER                            0x00000001 /* -W--T */
+#define NVC771_SF_SHARED_GENERIC_CTRL_STATUS                                      13:13 /* R-IVF */
+#define NVC771_SF_SHARED_GENERIC_CTRL_STATUS_DONE                            0x00000001 /* R---V */
+#define NVC771_SF_SHARED_GENERIC_CTRL_STATUS_WAIT                            0x00000000 /* R---V */
+#define NVC771_SF_SHARED_GENERIC_CTRL_STATUS_INIT                            0x00000000 /* R-I-V */
+#define NVC771_SF_SHARED_GENERIC_CTRL_CHECKSUM_HW                                 16:16 /* RWIVF */
+#define NVC771_SF_SHARED_GENERIC_CTRL_CHECKSUM_HW_NO                         0x00000000 /* RWI-V */
+#define NVC771_SF_SHARED_GENERIC_CTRL_CHECKSUM_HW_YES                        0x00000001 /* RW--V */
+#define NVC771_SF_SHARED_GENERIC_CTRL_BUSY                                        20:20 /* R-IVF */
+#define NVC771_SF_SHARED_GENERIC_CTRL_BUSY_NO                                0x00000000 /* R-I-V */
+#define NVC771_SF_SHARED_GENERIC_CTRL_BUSY_YES                               0x00000001 /* R---V */
+#define NVC771_SF_SHARED_GENERIC_CTRL_VSC_SDP_UPDATE_RFB_OVERRIDE                 28:28 /* RWIVF */
+#define NVC771_SF_SHARED_GENERIC_CTRL_VSC_SDP_UPDATE_RFB_OVERRIDE_DISABLE    0x00000000 /* RWI-V */
+#define NVC771_SF_SHARED_GENERIC_CTRL_VSC_SDP_UPDATE_RFB_OVERRIDE_ENABLE     0x00000001 /* RW--V */
+#define NVC771_SF_SHARED_GENERIC_CTRL_VSC_SDP_SU_COORDINATES_VALID_OVERRIDE       31:31 /* RWIVF */
+#define NVC771_SF_SHARED_GENERIC_CTRL_VSC_SDP_SU_COORDINATES_VALID_OVERRIDE_DISABLE    0x00000000   /* RWI-V */
+#define NVC771_SF_SHARED_GENERIC_CTRL_VSC_SDP_SU_COORDINATES_VALID_OVERRIDE_ENABLE     0x00000001   /* RW--V */
 #define NVC771_SF_SHARED_GENERIC_INFOFRAME_HEADER(i,j)                (0x000E0204-0x000E0000+(i)*1024+(j)*40) /* RW-4A */
-
 #define NVC771_SF_SHARED_GENERIC_INFOFRAME_HEADER__SIZE_1                               8 /*       */
 #define NVC771_SF_SHARED_GENERIC_INFOFRAME_HEADER__SIZE_2                               6 /*       */
 #define NVC771_SF_SHARED_GENERIC_INFOFRAME_HEADER_HB0                                 7:0 /* RWIVF */
@@ -229,4 +254,4 @@ typedef volatile struct _clc771_tag0 {
 };     /* extern "C" */
 #endif
 
-#endif
+#endif // _clc771_h_

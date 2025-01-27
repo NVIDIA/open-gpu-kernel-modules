@@ -60,8 +60,8 @@ eventbufferConstruct_IMPL
     EVENT_BUFFER_MAP_INFO            *pKernelMap     = &pEventBuffer->kernelMapInfo;
     EVENT_BUFFER_MAP_INFO            *pClientMap     = &pEventBuffer->clientMapInfo;
 
-    NvU32                             hClient        = pCallContext->pClient->hClient;
-    NvBool                            bKernel        = (rmclientGetCachedPrivilegeByHandle(hClient) >= RS_PRIV_LEVEL_KERNEL);
+    RmClient                         *pRmClient;
+    NvBool                            bKernel;
 
     NvU32                             recordBufferSize;
     NvP64                             kernelNotificationhandle;
@@ -75,6 +75,11 @@ eventbufferConstruct_IMPL
     RsResourceRef                    *pVardataRef    = NULL;
     NvHandle                          hMapperClient  = 0;
     NvHandle                          hMapperDevice  = 0;
+
+    pRmClient = dynamicCast(pCallContext->pClient, RmClient);
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+
+    bKernel = (rmclientGetCachedPrivilege(pRmClient) >= RS_PRIV_LEVEL_KERNEL);
 
     pAllocParams->bufferHeader  = NvP64_NULL;
     pAllocParams->recordBuffer  = NvP64_NULL;
@@ -484,8 +489,13 @@ eventbufferDestruct_IMPL
     CALL_CONTEXT          *pCallContext;
     EVENT_BUFFER_MAP_INFO *pClientMap         = &pEventBuffer->clientMapInfo;
     EVENT_BUFFER_MAP_INFO *pKernelMap         = &pEventBuffer->kernelMapInfo;
-    NvBool                 bKernel            = rmclientGetCachedPrivilegeByHandle(pEventBuffer->hClient) >= RS_PRIV_LEVEL_KERNEL;
+    RmClient              *pRmClient          = dynamicCast(RES_GET_CLIENT(pEventBuffer), RmClient);
+    NvBool                 bKernel;
     void                  *notificationHandle = NvP64_VALUE(pEventBuffer->producerInfo.notificationHandle);
+
+    NV_ASSERT_OR_RETURN_VOID(pRmClient != NULL);
+
+    bKernel = (rmclientGetCachedPrivilege(pRmClient) >= RS_PRIV_LEVEL_KERNEL);
 
     resGetFreeParams(staticCast(pEventBuffer, RsResource), &pCallContext, NULL);
 

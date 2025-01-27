@@ -972,13 +972,26 @@ kfifoChidMgrReleaseChid_IMPL
 
     if (IS_GFID_VF(gfid))
     {
-        NV_ASSERT_OR_RETURN(pChidMgr->ppVirtualChIDHeap[gfid] != NULL, NV_ERR_INVALID_STATE);
-        NV_ASSERT_OK(pChidMgr->ppVirtualChIDHeap[gfid]->eheapFree(pChidMgr->ppVirtualChIDHeap[gfid], ChID));
+        //
+        // ppVirtualChIDHeap is freed during hostvgpudeviceapiDestruct in GSP-RM.
+        // In the case of a GSP-Plugin crash after running the VF doorbell fuzzer, only the hostvgpudeviceapi object is freed in GSP-RM.
+        // Other resources are cleaned up when shutting down the VM.
+        //
+        if (pChidMgr->ppVirtualChIDHeap[gfid] != NULL)
+        {
+            NV_ASSERT_OK(pChidMgr->ppVirtualChIDHeap[gfid]->eheapFree(pChidMgr->ppVirtualChIDHeap[gfid], ChID));
+        }
     }
     else
     {
-        NV_ASSERT_OR_RETURN(pChidMgr->pGlobalChIDHeap != NULL, NV_ERR_INVALID_STATE);
-        NV_ASSERT_OK(pChidMgr->pGlobalChIDHeap->eheapFree(pChidMgr->pGlobalChIDHeap, ChID));
+        if (pChidMgr->pGlobalChIDHeap != NULL)
+        {
+            NV_ASSERT_OK(pChidMgr->pGlobalChIDHeap->eheapFree(pChidMgr->pGlobalChIDHeap, ChID));
+        }
+        else
+        {
+            NV_ASSERT(pChidMgr->pGlobalChIDHeap != NULL);
+        }
     }
 
     NV_ASSERT_OR_RETURN(pChidMgr->pFifoDataHeap != NULL, NV_ERR_INVALID_STATE);
@@ -1196,6 +1209,8 @@ kfifoChidMgrFreeSystemChids_IMPL
         return NV_ERR_NOT_SUPPORTED;
     }
 
+    NV_ASSERT_OR_RETURN(pChidMgr->ppVirtualChIDHeap[gfid] != NULL, NV_ERR_INVALID_STATE);
+
     // Get the schid base
     pChidMgr->ppVirtualChIDHeap[gfid]->eheapGetBase(
         pChidMgr->ppVirtualChIDHeap[gfid],
@@ -1380,7 +1395,6 @@ kfifoChidMgrAllocChannelGroupHwID_IMPL
     }
     return NV_OK;
 }
-
 
 /**
  * @brief Releases a hardware channel group ID.
@@ -3494,6 +3508,8 @@ kfifoGetGuestEngineLookupTable_IMPL
         {NV2080_ENGINE_TYPE_NVENC0,     MC_ENGINE_IDX_NVENC},
         {NV2080_ENGINE_TYPE_NVENC1,     MC_ENGINE_IDX_NVENC1},
         {NV2080_ENGINE_TYPE_NVENC2,     MC_ENGINE_IDX_NVENC2},
+// Bug 4175886 - Use this new value for all chips once GB20X is released
+        {NV2080_ENGINE_TYPE_NVENC3,     MC_ENGINE_IDX_NVENC3},
         {NV2080_ENGINE_TYPE_NVDEC0,     MC_ENGINE_IDX_NVDEC0},
         {NV2080_ENGINE_TYPE_NVDEC1,     MC_ENGINE_IDX_NVDEC1},
         {NV2080_ENGINE_TYPE_NVDEC2,     MC_ENGINE_IDX_NVDEC2},
@@ -3738,13 +3754,13 @@ NV_STATUS kfifoGenerateWorkSubmitToken_IMPL
 
 /*!
  *  * @brief Function to print engine with pbdmaId/VEID for the given pbdma falut id
- *  
+ *
  *  @param[in]  pGpu
  *  @param[in]  pKernelFifo
  *  @param[in]  pbdmaFaultId
- *  
- *  @returns engine name with pbdmaId/VEID 
- * 
+ *
+ *  @returns engine name with pbdmaId/VEID
+ *
  */
 const char *
 kfifoPrintFaultingPbdmaEngineName_IMPL
@@ -3806,4 +3822,3 @@ kfifoPrintFaultingPbdmaEngineName_IMPL
 
     return "UNKNOWN";
 }
-

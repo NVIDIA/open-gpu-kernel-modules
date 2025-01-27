@@ -168,7 +168,7 @@ struct Memory {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__Memory *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct RmResource __nvoc_base_RmResource;
 
     // Ancestor object pointers for `staticCast` feature
@@ -180,12 +180,12 @@ struct Memory {
 
     // Vtable with 7 per-object function pointers
     NV_STATUS (*__memCtrlCmdGetSurfaceCompressionCoverageLvm__)(struct Memory * /*this*/, NV0041_CTRL_GET_SURFACE_COMPRESSION_COVERAGE_PARAMS *);  // exported (id=0x410112)
-    NV_STATUS (*__memCtrlCmdGetSurfaceInfoLvm__)(struct Memory * /*this*/, NV0041_CTRL_GET_SURFACE_INFO_PARAMS *);  // exported (id=0x410110)
     NV_STATUS (*__memCtrlCmdSurfaceFlushGpuCache__)(struct Memory * /*this*/, NV0041_CTRL_SURFACE_FLUSH_GPU_CACHE_PARAMS *);  // exported (id=0x410116)
     NV_STATUS (*__memCtrlCmdGetMemPageSize__)(struct Memory * /*this*/, NV0041_CTRL_GET_MEM_PAGE_SIZE_PARAMS *);  // exported (id=0x410118)
     NV_STATUS (*__memCtrlCmdSetTag__)(struct Memory * /*this*/, NV0041_CTRL_CMD_SET_TAG_PARAMS *);  // exported (id=0x410120)
     NV_STATUS (*__memCtrlCmdGetTag__)(struct Memory * /*this*/, NV0041_CTRL_CMD_GET_TAG_PARAMS *);  // exported (id=0x410121)
     NV_STATUS (*__memCtrlCmdGetSurfacePhysAttrLvm__)(struct Memory * /*this*/, NV0041_CTRL_GET_SURFACE_PHYS_ATTR_PARAMS *);  // exported (id=0x410103)
+    NV_STATUS (*__memCtrlCmdGetSurfaceInfoLvm__)(struct Memory * /*this*/, NV0041_CTRL_GET_SURFACE_INFO_PARAMS *);  // exported (id=0x410110)
 
     // Data members
     NvBool bConstructed;
@@ -307,8 +307,6 @@ NV_STATUS __nvoc_objCreate_Memory(Memory**, Dynamic*, NvU32, CALL_CONTEXT * arg_
 #define memIsExportAllowed(pMemory) memIsExportAllowed_DISPATCH(pMemory)
 #define memCtrlCmdGetSurfaceCompressionCoverageLvm_FNPTR(pMemory) pMemory->__memCtrlCmdGetSurfaceCompressionCoverageLvm__
 #define memCtrlCmdGetSurfaceCompressionCoverageLvm(pMemory, pParams) memCtrlCmdGetSurfaceCompressionCoverageLvm_DISPATCH(pMemory, pParams)
-#define memCtrlCmdGetSurfaceInfoLvm_FNPTR(pMemory) pMemory->__memCtrlCmdGetSurfaceInfoLvm__
-#define memCtrlCmdGetSurfaceInfoLvm(pMemory, pSurfaceInfoParams) memCtrlCmdGetSurfaceInfoLvm_DISPATCH(pMemory, pSurfaceInfoParams)
 #define memCtrlCmdSurfaceFlushGpuCache_FNPTR(pMemory) pMemory->__memCtrlCmdSurfaceFlushGpuCache__
 #define memCtrlCmdSurfaceFlushGpuCache(pMemory, pCacheFlushParams) memCtrlCmdSurfaceFlushGpuCache_DISPATCH(pMemory, pCacheFlushParams)
 #define memCtrlCmdGetMemPageSize_FNPTR(pMemory) pMemory->__memCtrlCmdGetMemPageSize__
@@ -319,6 +317,8 @@ NV_STATUS __nvoc_objCreate_Memory(Memory**, Dynamic*, NvU32, CALL_CONTEXT * arg_
 #define memCtrlCmdGetTag(pMemory, pParams) memCtrlCmdGetTag_DISPATCH(pMemory, pParams)
 #define memCtrlCmdGetSurfacePhysAttrLvm_FNPTR(pMemory) pMemory->__memCtrlCmdGetSurfacePhysAttrLvm__
 #define memCtrlCmdGetSurfacePhysAttrLvm(pMemory, pGPAP) memCtrlCmdGetSurfacePhysAttrLvm_DISPATCH(pMemory, pGPAP)
+#define memCtrlCmdGetSurfaceInfoLvm_FNPTR(pMemory) pMemory->__memCtrlCmdGetSurfaceInfoLvm__
+#define memCtrlCmdGetSurfaceInfoLvm(pMemory, pSurfaceInfoParams) memCtrlCmdGetSurfaceInfoLvm_DISPATCH(pMemory, pSurfaceInfoParams)
 #define memAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
 #define memAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) memAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define memShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresShareCallback__
@@ -401,10 +401,6 @@ static inline NV_STATUS memCtrlCmdGetSurfaceCompressionCoverageLvm_DISPATCH(stru
     return pMemory->__memCtrlCmdGetSurfaceCompressionCoverageLvm__(pMemory, pParams);
 }
 
-static inline NV_STATUS memCtrlCmdGetSurfaceInfoLvm_DISPATCH(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_INFO_PARAMS *pSurfaceInfoParams) {
-    return pMemory->__memCtrlCmdGetSurfaceInfoLvm__(pMemory, pSurfaceInfoParams);
-}
-
 static inline NV_STATUS memCtrlCmdSurfaceFlushGpuCache_DISPATCH(struct Memory *pMemory, NV0041_CTRL_SURFACE_FLUSH_GPU_CACHE_PARAMS *pCacheFlushParams) {
     return pMemory->__memCtrlCmdSurfaceFlushGpuCache__(pMemory, pCacheFlushParams);
 }
@@ -423,6 +419,10 @@ static inline NV_STATUS memCtrlCmdGetTag_DISPATCH(struct Memory *pMemory, NV0041
 
 static inline NV_STATUS memCtrlCmdGetSurfacePhysAttrLvm_DISPATCH(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_PHYS_ATTR_PARAMS *pGPAP) {
     return pMemory->__memCtrlCmdGetSurfacePhysAttrLvm__(pMemory, pGPAP);
+}
+
+static inline NV_STATUS memCtrlCmdGetSurfaceInfoLvm_DISPATCH(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_INFO_PARAMS *pSurfaceInfoParams) {
+    return pMemory->__memCtrlCmdGetSurfaceInfoLvm__(pMemory, pSurfaceInfoParams);
 }
 
 static inline NvBool memAccessCallback_DISPATCH(struct Memory *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
@@ -515,8 +515,6 @@ static inline NvBool memIsExportAllowed_e661f0(struct Memory *pMemory) {
 
 NV_STATUS memCtrlCmdGetSurfaceCompressionCoverageLvm_IMPL(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_COMPRESSION_COVERAGE_PARAMS *pParams);
 
-NV_STATUS memCtrlCmdGetSurfaceInfoLvm_IMPL(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_INFO_PARAMS *pSurfaceInfoParams);
-
 NV_STATUS memCtrlCmdSurfaceFlushGpuCache_IMPL(struct Memory *pMemory, NV0041_CTRL_SURFACE_FLUSH_GPU_CACHE_PARAMS *pCacheFlushParams);
 
 NV_STATUS memCtrlCmdGetMemPageSize_IMPL(struct Memory *pMemory, NV0041_CTRL_GET_MEM_PAGE_SIZE_PARAMS *pPageSizeParams);
@@ -526,6 +524,8 @@ NV_STATUS memCtrlCmdSetTag_IMPL(struct Memory *pMemory, NV0041_CTRL_CMD_SET_TAG_
 NV_STATUS memCtrlCmdGetTag_IMPL(struct Memory *pMemory, NV0041_CTRL_CMD_GET_TAG_PARAMS *pParams);
 
 NV_STATUS memCtrlCmdGetSurfacePhysAttrLvm_IMPL(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_PHYS_ATTR_PARAMS *pGPAP);
+
+NV_STATUS memCtrlCmdGetSurfaceInfoLvm_IMPL(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_INFO_PARAMS *pSurfaceInfoParams);
 
 NV_STATUS memConstruct_IMPL(struct Memory *arg_pMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 

@@ -280,6 +280,8 @@ kgspWaitForGfwBootOk_GH100
  *   | ACR-placed metadata      |
  *   | (struct GspFwWprMeta)    |
  *   ---------------------------- <- gspFwWprStart (128K aligned)
+ *   | WPR and LSB Header       |
+ *   ---------------------------- <- WPR2 Start
  *   | GSP FW (non-WPR) HEAP    |
  *   ---------------------------- <- nonWprHeapOffset, gspFwRsvdStart
  *
@@ -349,7 +351,10 @@ kgspCalculateFbLayout_GH100
     // before GSP-RM boots, so we pass 0 to allow the heap to extend outside the
     // pre-scrubbed area at the end of FB, if needed.
     //
-    pWprMeta->gspFwHeapSize = kgspGetFwHeapSize(pGpu, pKernelGsp, 0);
+    pWprMeta->gspFwHeapSize = kgspGetFwHeapSize(pGpu, pKernelGsp, 0, 0);
+
+    // Fill in the FRTS size
+    pWprMeta->frtsSize = kgspGetFrtsSize_HAL(pGpu, pKernelGsp);
 
     // Number of VF partitions allocating sub-heaps from the WPR heap
     pWprMeta->gspFwHeapVfPartitionCount =
@@ -368,6 +373,15 @@ kgspCalculateFbLayout_GH100
     // Fill in the meta-metadata
     pWprMeta->revision = GSP_FW_WPR_META_REVISION;
     pWprMeta->magic = GSP_FW_WPR_META_MAGIC;
+
+	if (gpuIsCCMultiGpuProtectedPcieModeEnabled(pGpu))
+	{
+		pWprMeta->flags |= GSP_FW_FLAGS_PPCIE_ENABLED;
+	}
+    else
+    {
+		pWprMeta->flags &= ~GSP_FW_FLAGS_PPCIE_ENABLED;
+    }
 
     return NV_OK;
 }
@@ -656,7 +670,7 @@ _kgspHasCcCleanupFinished
             ccCleanupStatus == NV_SPDM_SECRET_TEARDOWN_FAILURE);
 }
 
-static void
+static NV_STATUS
 _kgspBootstrapGspFmc_GH100
 (
     OBJGPU    *pGpu,
@@ -667,7 +681,7 @@ _kgspBootstrapGspFmc_GH100
     RmPhysAddr physAddr;
 
     // Reset the GSP to prepare for RISCV bootstrap
-    kgspResetHw_HAL(pGpu, pKernelGsp);
+    NV_ASSERT_OK_OR_RETURN(kgspResetHw_HAL(pGpu, pKernelGsp));
 
     // Stuff the GSP-FMC arguments into the mailbox regs
     physAddr = memdescGetPhysAddr(pKernelGsp->pGspFmcArgumentsDescriptor, AT_GPU, 0);
@@ -714,6 +728,8 @@ _kgspBootstrapGspFmc_GH100
     // Start it
     kflcnRiscvRegWrite_HAL(pGpu, pKernelFalcon, NV_PRISCV_RISCV_CPUCTL,
                            DRF_DEF(_PRISCV_RISCV, _CPUCTL, _STARTCPU, _TRUE));
+
+    return NV_OK;
 }
 
 /*!
@@ -795,14 +811,31 @@ kgspBootstrap_GH100
     NvU32         mailbox0;
     ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
 
+    //
+    // Hopper+ GSP always boots in RISC-V mode. The GSP-FMC blocks RISCV_BCR_CTRL reads via PLM,
+    // so override the setting here so KernelFalcon doesn't try to read it from HW.
+    //
+    kflcnSetRiscvMode(pKernelFalcon, NV_TRUE);
+
     if (pKernelFsp != NULL && !pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_GSPFMC))
     {
+        //
+        // For resume, ACR will restore FRTS based on what was saved during suspend.
+        // For GC6, FRTS will stay alive in WPR2. So, instruct FSP to skip
+        // vidmem FRTS for boot modes other than normal boot.
+        //
+        if (bootMode != KGSP_BOOT_MODE_NORMAL)
+        {
+            pKernelFsp->pCotPayload->frtsVidmemOffset = 0;
+            pKernelFsp->pCotPayload->frtsVidmemSize = 0;
+        }
+
         NV_PRINTF(LEVEL_NOTICE, "Starting to boot GSP via FSP.\n");
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kfspSendBootCommands_HAL(pGpu, pKernelFsp));
     }
     else
     {
-        _kgspBootstrapGspFmc_GH100(pGpu, pKernelGsp);
+        NV_ASSERT_OK_OR_RETURN(_kgspBootstrapGspFmc_GH100(pGpu, pKernelGsp));
     }
 
     // Wait for target mask to be released.
@@ -927,6 +960,7 @@ kgspGetGspRmBootUcodeStorage_GH100
     BINDATA_STORAGE **ppBinStorageDesc
 )
 {
+
         ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
         if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
         {

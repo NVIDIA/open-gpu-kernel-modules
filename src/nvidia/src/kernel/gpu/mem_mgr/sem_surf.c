@@ -522,7 +522,7 @@ _semsurfDupMemory
 
     if (pAllocParams->hMaxSubmittedMem != NV01_NULL_OBJECT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        NV_CHECK_OR_RETURN(LEVEL_NOTICE,
                            !pSemSurf->pShared->bIs64Bit,
                            NV_ERR_INVALID_PARAMETER);
 
@@ -797,7 +797,7 @@ semsurfConstruct_IMPL
         return semsurfCopyConstruct(pSemSurf, pCallContext, pParams);
     }
 
-    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+    NV_CHECK_OR_RETURN(LEVEL_NOTICE,
                        pAllocParams->flags == 0ULL,
                        NV_ERR_INVALID_ARGUMENT);
 
@@ -833,7 +833,7 @@ semsurfConstruct_IMPL
 
     pRsClient = staticCast(pClient, RsClient);
 
-    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
         _semsurfDupMemory(pSemSurf, pAllocParams),
         ctorFailed);
 

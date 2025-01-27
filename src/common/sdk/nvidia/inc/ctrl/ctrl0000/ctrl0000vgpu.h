@@ -67,6 +67,12 @@
  *   vgpuId [OUT]
  *     This parameter returns the vgpu id allocated by RM for the device
  *
+ *   gpuInstanceId [OUT]
+ *     This parameter returns the swizzId allocated by RM for the device.
+ *
+ *   placementId [OUT]
+ *     This parameter returns the placementId allocated by RM for the device.
+ *
  * Possible status values returned are:
  *   NV_OK
  *   NV_ERR_INVALID_EVENT
@@ -85,6 +91,8 @@ typedef struct NV0000_CTRL_VGPU_CREATE_DEVICE_PARAMS {
     NvU32 gpuPciBdf;
     NvU32 vgpuTypeId;
     NvU16 vgpuId;
+    NvU32 gpuInstanceId;
+    NvU32 placementId;
 } NV0000_CTRL_VGPU_CREATE_DEVICE_PARAMS;
 
 /*
@@ -183,5 +191,34 @@ typedef struct NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS {
     NvU32 returnStatus;
     NvU32 gpuId;
 } NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS;
+
+/*
+ * NV0000_CTRL_CMD_GPU_UPDATE_SYSFS_NODE
+ *
+ * This command will get/set the information of following sysfs node:
+ *      gpuInstanceId
+ *      placementId
+ *
+ * vgpuName [IN]
+ *      This parameter provides the MDEV UUID or VF BDF depending on whether MDEV
+ *      or vfio-pci-core framework is used.
+ *
+ * mode [IN]
+ *      This parameter provides info about the type of operation this cmd will perform.
+ *
+ * sysfs_val [IN/OUT]
+ *      This parameter will store the info of placementID/gpuInstanceId.
+ *
+ */
+
+#define NV0000_CTRL_CMD_GPU_UPDATE_SYSFS_NODE (0x206U) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_UPDATE_SYSFS_NODE_PARAMS_MESSAGE_ID" */
+
+#define NV0000_CTRL_GPU_UPDATE_SYSFS_NODE_PARAMS_MESSAGE_ID (0x6U)
+
+typedef struct NV0000_CTRL_GPU_UPDATE_SYSFS_NODE_PARAMS {
+    NvU8  vgpuName[VM_UUID_SIZE];
+    NvU32 mode;
+    NvU32 sysfs_val;
+} NV0000_CTRL_GPU_UPDATE_SYSFS_NODE_PARAMS;
 
 /* _ctrl0000vgpu_h_ */

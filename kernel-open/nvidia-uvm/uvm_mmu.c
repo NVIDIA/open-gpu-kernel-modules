@@ -1029,7 +1029,6 @@ error:
 // the pages can be in more than one location: vidmem is given priority, but if
 // the allocation fails it will fallback to sysmem.
 //
-// Behavior outside of SR-IOV heavy (bare metal, SR-IOV standard, etc):
 //             Inputs                                     Outputs
 // init location | uvm_page_table_location || tree->location | tree->location_sys_fallback
 // --------------|-------------------------||----------------|----------------
@@ -1039,12 +1038,17 @@ error:
 //    default    |         vidmem          ||    vidmem      |      false
 //    default    |         sysmem          ||    sysmem      |      false
 //
+// Some configurations impose more strict restrictions on the tree location,
+// and do not obey the table above:
 //
-// In SR-IOV heavy the the page tree must be in vidmem, to prevent guest drivers
-// from updating GPU page tables without hypervisor knowledge.
-// When the Confidential Computing feature is enabled, all kernel
-// allocations must be made in the CPR of vidmem. This is a hardware security
-// constraint.
+//   - in SR-IOV heavy the page tree must be in vidmem, to prevent guest drivers
+//     from updating GPU page tables without hypervisor knowledge.
+//
+//   - in Confidential Computing, all kernel allocations must be in vidmem.
+//     This is a hardware security constraint.
+//
+// In these setups, the location table is:
+//
 //             Inputs                                     Outputs
 // init location | uvm_page_table_location || tree->location | tree->location_sys_fallback
 //  -------------|-------------------------||----------------|----------------
@@ -1065,9 +1069,7 @@ static void page_tree_set_location(uvm_page_tree_t *tree, uvm_aperture_t locatio
     // be identified by having no channel manager.
     if (tree->gpu->channel_manager != NULL) {
 
-        if (uvm_parent_gpu_is_virt_mode_sriov_heavy(tree->gpu->parent))
-            UVM_ASSERT(location == UVM_APERTURE_VID);
-        else if (g_uvm_global.conf_computing_enabled)
+        if (uvm_parent_gpu_is_virt_mode_sriov_heavy(tree->gpu->parent) || g_uvm_global.conf_computing_enabled)
             UVM_ASSERT(location == UVM_APERTURE_VID);
     }
 
@@ -2421,8 +2423,7 @@ void uvm_mmu_init_gpu_peer_addresses(uvm_gpu_t *gpu)
         uvm_gpu_id_t gpu_id;
 
         for_each_gpu_id(gpu_id) {
-            uvm_gpu_get_peer_mapping(gpu, gpu_id)->base = gpu->parent->rm_va_base +
-                                                          gpu->parent->rm_va_size +
+            uvm_gpu_get_peer_mapping(gpu, gpu_id)->base = gpu->parent->peer_va_base +
                                                           UVM_PEER_IDENTITY_VA_SIZE * uvm_id_gpu_index(gpu_id);
         }
 

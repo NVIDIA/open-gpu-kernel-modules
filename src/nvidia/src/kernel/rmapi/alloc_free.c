@@ -294,6 +294,35 @@ serverTopLock_Epilogue
     }
 }
 
+static NvU32
+_resGetBackRefGpusMask(RsResourceRef *pResourceRef)
+{
+    NvU32 gpuMask = 0x0;
+    RsInterMapping *pBackRefItem;
+
+    if (pResourceRef == NULL)
+    {
+        return 0x0;
+    }
+
+    pBackRefItem = listHead(&pResourceRef->interBackRefsContext);
+    while (pBackRefItem != NULL)
+    {
+        RsResourceRef *pDeviceRef = pBackRefItem->pContextRef;
+        GpuResource *pGpuResource = dynamicCast(pDeviceRef->pResource, GpuResource);
+
+        if (pGpuResource != NULL)
+        {
+            OBJGPU *pGpu = GPU_RES_GET_GPU(pGpuResource);
+            gpuMask |= gpumgrGetGpuMask(pGpu);
+        }
+
+        pBackRefItem = listNext(&pResourceRef->interBackRefsContext, pBackRefItem);
+    }
+
+    return gpuMask;
+}
+
 NV_STATUS
 serverResLock_Prologue
 (
@@ -411,8 +440,15 @@ serverResLock_Prologue
         }
         else
         {
-            status = rmGpuGroupLockAcquire(pParentGpu->gpuInstance,
-                                           GPU_LOCK_GRP_DEVICE,
+            //
+            // Lock the parent GPU and if specified any GPUs that resource
+            // may backreference via mappings.
+            //
+            pLockInfo->gpuMask = gpumgrGetGpuMask(pParentGpu) |
+                                 _resGetBackRefGpusMask(pLockInfo->pResRefToBackRef);
+
+            status = rmGpuGroupLockAcquire(0,
+                                           GPU_LOCK_GRP_MASK,
                                            GPUS_LOCK_FLAGS_NONE,
                                            RM_LOCK_MODULES_CLIENT,
                                            &pLockInfo->gpuMask);
@@ -600,7 +636,7 @@ _serverAllocValidatePrivilege
         if (!_serverAlloc_ValidateVgpu(pClient, pParams->hParent, pParams->externalClassId,
                                       pParams->pSecInfo->privLevel, pResDesc->flags))
         {
-            NV_PRINTF(LEVEL_WARNING,
+            NV_PRINTF(LEVEL_NOTICE,
                       "hClient: 0x%08x, externalClassId: 0x%08x: CPU hypervisor does not have permission to allocate object\n",
                       pParams->hClient, pParams->externalClassId);
             return NV_ERR_INSUFFICIENT_PERMISSIONS;
@@ -615,7 +651,7 @@ _serverAllocValidatePrivilege
         {
             if (privLevel < RS_PRIV_LEVEL_USER_ROOT)
             {
-                NV_PRINTF(LEVEL_WARNING,
+                NV_PRINTF(LEVEL_NOTICE,
                           "hClient: 0x%08x, externalClassId: 0x%08x: non-privileged context tried to allocate privileged object\n",
                           pParams->hClient, pParams->externalClassId);
                 return NV_ERR_INSUFFICIENT_PERMISSIONS;
@@ -626,7 +662,7 @@ _serverAllocValidatePrivilege
         {
             if (privLevel < RS_PRIV_LEVEL_KERNEL)
             {
-                NV_PRINTF(LEVEL_WARNING,
+                NV_PRINTF(LEVEL_NOTICE,
                           "hClient: 0x%08x, externalClassId: 0x%08x: non-privileged context tried to allocate kernel privileged object\n",
                           pParams->hClient, pParams->externalClassId);
                 return NV_ERR_INSUFFICIENT_PERMISSIONS;
@@ -1258,9 +1294,9 @@ rmapiAllocWithSecInfo
     }
     else
     {
-        NV_PRINTF(LEVEL_WARNING, "allocation failed; status: %s (0x%08x)\n",
+        NV_PRINTF(LEVEL_INFO, "allocation failed; status: %s (0x%08x)\n",
                   nvstatusToString(status), status);
-        NV_PRINTF(LEVEL_WARNING,
+        NV_PRINTF(LEVEL_INFO,
                   "client:0x%x parent:0x%x object:0x%x class:0x%x\n", hClient,
                   hParent, *phObject, hClass);
     }
@@ -1361,7 +1397,9 @@ resservResourceFactory
 
     if (pResDesc->internalClassId == classId(Subdevice) || pResDesc->internalClassId == classId(Device))
     {
-        pGpu = GPU_RES_GET_GPU(dynamicCast(pDynamic, GpuResource));
+        {
+            pGpu = GPU_RES_GET_GPU(dynamicCast(pDynamic, GpuResource));
+        }
 
         if (pGpu && !IS_MIG_IN_USE(pGpu))
         {
@@ -1481,10 +1519,10 @@ rmapiFreeWithSecInfo
     }
     else
     {
-        NV_PRINTF(LEVEL_WARNING,
+        NV_PRINTF(LEVEL_INFO,
                   "Nv01Free: free failed; status: %s (0x%08x)\n",
                   nvstatusToString(status), status);
-        NV_PRINTF(LEVEL_WARNING, "Nv01Free:  client:0x%x object:0x%x\n",
+        NV_PRINTF(LEVEL_INFO, "Nv01Free:  client:0x%x object:0x%x\n",
                   hClient, hObject);
     }
 

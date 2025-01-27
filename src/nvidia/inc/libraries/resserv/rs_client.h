@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -275,7 +275,8 @@ public:
      * @param[in] pClient This client
      * @param[in] pResourceRef The reference to free
      */
-    virtual NV_STATUS clientDestructResourceRef(RsClient *pClient, RsServer *pServer, RsResourceRef *pResourceRef);
+    virtual NV_STATUS clientDestructResourceRef(RsClient *pClient, RsServer *pServer, RsResourceRef *pResourceRef,
+                                                RS_LOCK_INFO *pLockInfo, API_SECURITY_INFO *pSecInfo);
 
    /**
      * Unmap a mapping that belongs to a resource reference in this client.

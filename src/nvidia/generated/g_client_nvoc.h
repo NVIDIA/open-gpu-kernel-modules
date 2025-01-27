@@ -73,7 +73,7 @@ struct UserInfo {
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct RsShared __nvoc_base_RsShared;
 
     // Ancestor object pointers for `staticCast` feature
@@ -156,7 +156,7 @@ struct RmClient {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__RmClient *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct RsClient __nvoc_base_RsClient;
 
     // Ancestor object pointers for `staticCast` feature
@@ -198,7 +198,7 @@ struct NVOC_VTABLE__RmClient {
     NV_STATUS (*__rmclientPostProcessPendingFreeList__)(struct RmClient * /*this*/, struct RsResourceRef **);  // virtual override (client) base (client)
     RS_PRIV_LEVEL (*__rmclientGetCachedPrivilege__)(struct RmClient * /*this*/);  // virtual override (client) base (client)
     NvBool (*__rmclientIsAdmin__)(struct RmClient * /*this*/, RS_PRIV_LEVEL);  // virtual override (client) base (client)
-    NV_STATUS (*__rmclientDestructResourceRef__)(struct RmClient * /*this*/, RsServer *, struct RsResourceRef *);  // virtual inherited (client) base (client)
+    NV_STATUS (*__rmclientDestructResourceRef__)(struct RmClient * /*this*/, RsServer *, struct RsResourceRef *, struct RS_LOCK_INFO *, API_SECURITY_INFO *);  // virtual inherited (client) base (client)
     NV_STATUS (*__rmclientUnmapMemory__)(struct RmClient * /*this*/, struct RsResourceRef *, struct RS_LOCK_INFO *, struct RsCpuMapping **, API_SECURITY_INFO *);  // virtual inherited (client) base (client)
     NV_STATUS (*__rmclientValidateNewResourceHandle__)(struct RmClient * /*this*/, NvHandle, NvBool);  // virtual inherited (client) base (client)
     NV_STATUS (*__rmclientShareResource__)(struct RmClient * /*this*/, struct RsResourceRef *, RS_SHARE_POLICY *, struct CALL_CONTEXT *);  // virtual inherited (client) base (client)
@@ -251,7 +251,7 @@ NV_STATUS __nvoc_objCreate_RmClient(RmClient**, Dynamic*, NvU32, struct PORT_MEM
 #define rmclientIsAdmin_FNPTR(pClient) pClient->__nvoc_vtable->__rmclientIsAdmin__
 #define rmclientIsAdmin(pClient, privLevel) rmclientIsAdmin_DISPATCH(pClient, privLevel)
 #define rmclientDestructResourceRef_FNPTR(pClient) pClient->__nvoc_base_RsClient.__nvoc_vtable->__clientDestructResourceRef__
-#define rmclientDestructResourceRef(pClient, pServer, pResourceRef) rmclientDestructResourceRef_DISPATCH(pClient, pServer, pResourceRef)
+#define rmclientDestructResourceRef(pClient, pServer, pResourceRef, pLockInfo, pSecInfo) rmclientDestructResourceRef_DISPATCH(pClient, pServer, pResourceRef, pLockInfo, pSecInfo)
 #define rmclientUnmapMemory_FNPTR(pClient) pClient->__nvoc_base_RsClient.__nvoc_vtable->__clientUnmapMemory__
 #define rmclientUnmapMemory(pClient, pResourceRef, pLockInfo, ppCpuMapping, pSecInfo) rmclientUnmapMemory_DISPATCH(pClient, pResourceRef, pLockInfo, ppCpuMapping, pSecInfo)
 #define rmclientValidateNewResourceHandle_FNPTR(pClient) pClient->__nvoc_base_RsClient.__nvoc_vtable->__clientValidateNewResourceHandle__
@@ -292,8 +292,8 @@ static inline NvBool rmclientIsAdmin_DISPATCH(struct RmClient *pClient, RS_PRIV_
     return pClient->__nvoc_vtable->__rmclientIsAdmin__(pClient, privLevel);
 }
 
-static inline NV_STATUS rmclientDestructResourceRef_DISPATCH(struct RmClient *pClient, RsServer *pServer, struct RsResourceRef *pResourceRef) {
-    return pClient->__nvoc_vtable->__rmclientDestructResourceRef__(pClient, pServer, pResourceRef);
+static inline NV_STATUS rmclientDestructResourceRef_DISPATCH(struct RmClient *pClient, RsServer *pServer, struct RsResourceRef *pResourceRef, struct RS_LOCK_INFO *pLockInfo, API_SECURITY_INFO *pSecInfo) {
+    return pClient->__nvoc_vtable->__rmclientDestructResourceRef__(pClient, pServer, pResourceRef, pLockInfo, pSecInfo);
 }
 
 static inline NV_STATUS rmclientUnmapMemory_DISPATCH(struct RmClient *pClient, struct RsResourceRef *pResourceRef, struct RS_LOCK_INFO *pLockInfo, struct RsCpuMapping **ppCpuMapping, API_SECURITY_INFO *pSecInfo) {
@@ -389,14 +389,11 @@ extern OsInfoMap g_osInfoList;
 // pClient directly instead of hClient but providing these for compatibility
 // to hClient-heavy code.
 //
-RS_PRIV_LEVEL rmclientGetCachedPrivilegeByHandle(NvHandle hClient);
-NvBool rmclientIsAdminByHandle(NvHandle hClient, RS_PRIV_LEVEL privLevel);
 NvBool rmclientIsKernelOnlyByHandle(NvHandle hClient);
 NvBool rmclientSetClientFlagsByHandle(NvHandle hClient, NvU32 clientFlags);
 void rmclientPromoteDebuggerStateByHandle(NvHandle hClient, NvU32 newMinimumState);
 void *rmclientGetSecurityTokenByHandle(NvHandle hClient);
 NV_STATUS rmclientUserClientSecurityCheckByHandle(NvHandle hClient, const API_SECURITY_INFO *pSecInfo);
-NvBool rmclientIsCapableOrAdminByHandle(NvHandle hClient, NvU32 capability, RS_PRIV_LEVEL privLevel);
 
 #endif
 

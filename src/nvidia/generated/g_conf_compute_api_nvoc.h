@@ -77,7 +77,7 @@ struct ConfidentialComputeApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__ConfidentialComputeApi *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct RmResource __nvoc_base_RmResource;
 
     // Ancestor object pointers for `staticCast` feature

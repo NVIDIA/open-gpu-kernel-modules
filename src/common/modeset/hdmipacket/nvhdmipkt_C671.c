@@ -360,7 +360,12 @@ static void populateDscCaps(HDMI_SRC_CAPS         const * const pSrcCaps,
     pDscInfo->sinkCaps.algorithmRevision.versionMajor = 1;
     pDscInfo->sinkCaps.algorithmRevision.versionMinor = 2;
     pDscInfo->sinkCaps.peakThroughputMode0 = peakThroughput;
-    pDscInfo->sinkCaps.peakThroughputMode1 = peakThroughput * 2;
+
+    // Per DSC v1.2 spec, native 422/420 per-slice peak throughput is approximately twice of RGB/444 peak throughput
+    // HDMI has only one throughput cap reporting, no separate 422/420 throughput cap unlike for DP, so just double 444's value here.
+    pDscInfo->sinkCaps.peakThroughputMode1 = (peakThroughput == DSC_DECODER_PEAK_THROUGHPUT_MODE0_340) ? 
+                                                 DSC_DECODER_PEAK_THROUGHPUT_MODE1_650 : // closest approximation to 680Mhz
+                                                 DSC_DECODER_PEAK_THROUGHPUT_MODE1_800;
 }
 
 // Fill in mode related info for DSC lib
@@ -790,7 +795,7 @@ hdmiQueryFRLConfigC671(NVHDMIPKT_CLASS                         *pThis,
         (pClientCtrl->forceBppx16     && ((pClientCtrl->bitsPerPixelX16 < bppMinX16) || (pClientCtrl->bitsPerPixelX16 > bppMaxX16)))  ||
         (pClientCtrl->forceBppx16     && !pSinkCaps->pHdmiForumInfo->dsc_All_bpp))
     {
-        return NVHDMIPKT_FAIL;
+        return NVHDMIPKT_INVALID_ARG;
     }
 
     bTryUncompressedMode = (bCanUseDSC && (pClientCtrl->enableDSC ||
@@ -1185,8 +1190,9 @@ frlQuery_Success:
         {
             NvHdmiPkt_Print(pThis, "ERROR - DSC PPS calculation failed.");
             NvHdmiPkt_Assert(0);
-            result = NVHDMIPKT_FAIL;
+            result = NVHDMIPKT_DSC_PPS_ERROR;
         }
+
         if (pDscScratchBuffer != NULL)
         {
             pThis->callback.free(pThis->cbHandle, pDscScratchBuffer);

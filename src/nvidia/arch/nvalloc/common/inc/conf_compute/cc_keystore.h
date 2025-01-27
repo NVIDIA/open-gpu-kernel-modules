@@ -474,4 +474,9 @@ enum
 
 #define CC_EXPORT_MASTER_KEY_SIZE_BYTES 32
 
+#define CC_KEYID_PERCHANNEL_INITIAL_KEYSEED      "ce_channel"
+#define CC_KEYID_PERCHANNEL_UPDATE_KEYSEED       "update_keyseeed"
+#define CC_KEYID_PERCHANNEL_CPU_GPU_UPDATE_KEY   "update_key1"
+#define CC_KEYID_PERCHANNEL_GPU_CPU_UPDATE_KEY   "update_key2"
+
 #endif // CC_KEYSTORE_H

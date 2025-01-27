@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -129,10 +129,16 @@ typedef struct NVB0CC_CTRL_INTERNAL_PERMISSIONS_INIT_PARAMS {
      * [in] Is Admin profiling permitted
      */
     NvBool bAdminProfilingPermitted;
+
     /*!
      * [in] Is Device profiling permitted
      */
     NvBool bDevProfilingPermitted;
+
+    /*!
+     * [in] Is Context profiling permitted
+     */
+    NvBool bCtxProfilingPermitted;
 
     /*!
      * [in] Is Video memory profiling permitted

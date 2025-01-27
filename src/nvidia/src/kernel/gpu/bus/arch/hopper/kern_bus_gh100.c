@@ -54,10 +54,9 @@
 #include "nvrm_registry.h"
 
  // Defines for P2P
-#define HOPPER_WRITE_MAILBOX_SIZE            ((NvU64)64 * 1024)
 #define HOPPER_MAX_WRITE_MAILBOX_ADDR(pGpu)                                         \
-    ((HOPPER_WRITE_MAILBOX_SIZE << kbusGetP2PWriteMailboxAddressSize_HAL(pGpu)) - \
-     HOPPER_WRITE_MAILBOX_SIZE)
+    ((PCIE_P2P_WRITE_MAILBOX_SIZE << kbusGetP2PWriteMailboxAddressSize_HAL(pGpu)) - \
+     PCIE_P2P_WRITE_MAILBOX_SIZE)
 
 // RM reserved memory region is mapped separately as it is not added to the kernel
 #define COHERENT_CPU_MAPPING_RM_RESV_REGION             COHERENT_CPU_MAPPING_REGION_1
@@ -667,13 +666,13 @@ kbusAllocP2PMailboxBar1_GH100
     }
 
     pKernelBus->p2pPcie.writeMailboxTotalSize =
-        HOPPER_WRITE_MAILBOX_SIZE * P2P_MAX_NUM_PEERS;
+        PCIE_P2P_WRITE_MAILBOX_SIZE * P2P_MAX_NUM_PEERS;
     vaAllocMax = NV_MIN(vaRangeMax,
-        HOPPER_MAX_WRITE_MAILBOX_ADDR(pGpu) + HOPPER_WRITE_MAILBOX_SIZE - 1);
+        HOPPER_MAX_WRITE_MAILBOX_ADDR(pGpu) + PCIE_P2P_WRITE_MAILBOX_SIZE - 1);
 
     status = vaspaceAlloc(pKernelBus->bar1[gfid].pVAS,
                           pKernelBus->p2pPcie.writeMailboxTotalSize,
-                          HOPPER_WRITE_MAILBOX_SIZE,
+                          PCIE_P2P_WRITE_MAILBOX_SIZE,
                           0, vaAllocMax,
                           0,
                           flags,
@@ -744,7 +743,7 @@ kbusGetP2PMailboxAttributes_GH100
     // Retrieve attributes
     if (pMailboxAreaSize != NULL)
     {
-        *pMailboxAreaSize = HOPPER_WRITE_MAILBOX_SIZE * P2P_MAX_NUM_PEERS;
+        *pMailboxAreaSize = PCIE_P2P_WRITE_MAILBOX_SIZE * P2P_MAX_NUM_PEERS;
     }
 
     if (pMailboxAlignmentSize != NULL)
@@ -757,7 +756,7 @@ kbusGetP2PMailboxAttributes_GH100
     {
         *pMailboxBar1MaxOffset64KB =
             NvU64_LO32(
-                (HOPPER_MAX_WRITE_MAILBOX_ADDR(pGpu) + HOPPER_WRITE_MAILBOX_SIZE) >> 16
+                (HOPPER_MAX_WRITE_MAILBOX_ADDR(pGpu) + PCIE_P2P_WRITE_MAILBOX_SIZE) >> 16
             );
     }
 
@@ -2362,17 +2361,6 @@ kbusGetEgmPeerId_GH100
         return BUS_INVALID_PEER;
     }
 
-    //
-    // For Nvswitch connected systems, AAS (Alternate Address Space) is set by Nvswitch itself
-    // based on the EGM fabric address range and so there is no need for a separate peer id
-    // in the Nvswitch case.
-    //
-    if (GPU_IS_NVSWITCH_DETECTED(pLocalGpu))
-    {
-        LOWESTBITIDX_32(peerMask);
-        return peerMask;
-    }
-
     FOR_EACH_INDEX_IN_MASK(32, peerId, peerMask)
     {
         if (pLocalKernelBus->p2p.bEgmPeer[peerId])
@@ -2400,9 +2388,18 @@ kbusCacheBAR1ResizeSize_WAR_BUG_3249028_GH100
 {
     NvU32 regVal;
 
+    if ((GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_EP_PCFG_GPU_PF_RESIZE_BAR_CAP, &regVal) != NV_OK) ||
+        (regVal == 0))
+    {
+        NV_PRINTF(LEVEL_INFO, "Resizable Bar capability is absent\n");
+        pKernelBus->setProperty(pKernelBus, PDB_PROP_KBUS_RESTORE_BAR1_SIZE_BUG_3249028_WAR, NV_FALSE);
+        return;
+    }
+
     if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_EP_PCFG_GPU_PF_RESIZE_BAR_CTRL, &regVal) != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Unable to read NV_EP_PCFG_GPU_PF_RESIZE_BAR_CTRL\n");
+        pKernelBus->setProperty(pKernelBus, PDB_PROP_KBUS_RESTORE_BAR1_SIZE_BUG_3249028_WAR, NV_FALSE);
         return;
     }
     pKernelBus->bar1ResizeSizeIndex = DRF_VAL(_EP_PCFG_GPU, _PF_RESIZE_BAR_CTRL, _BAR_SIZE, regVal);

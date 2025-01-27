@@ -88,6 +88,15 @@ MODULE_PARM_DESC(uvm_exp_gpu_cache_sysmem,
                  "This is an experimental parameter that may cause correctness issues if used.");
 
 static void block_add_eviction_mappings_entry(void *args);
+static void block_unmap_cpu(uvm_va_block_t *block,
+                            uvm_va_block_context_t *block_context,
+                            uvm_va_block_region_t region,
+                            const uvm_page_mask_t *unmap_pages);
+static bool block_check_chunks(uvm_va_block_t *va_block);
+static size_t block_gpu_chunk_index(uvm_va_block_t *block,
+                                    uvm_gpu_t *gpu,
+                                    uvm_page_index_t page_index,
+                                    uvm_chunk_size_t *out_chunk_size);
 
 uvm_va_space_t *uvm_va_block_get_va_space_maybe_dead(uvm_va_block_t *va_block)
 {
@@ -2817,6 +2826,32 @@ static bool block_check_processor_not_mapped(uvm_va_block_t *block,
     return true;
 }
 
+// Check that the EGM peer GPU was EGM enabled and that the EGM address
+// is within the peer NUMA node address range.
+static bool block_check_egm_peer(uvm_va_space_t *va_space, uvm_gpu_t *gpu, int nid, uvm_gpu_phys_address_t phys_addr)
+{
+    uvm_egm_numa_node_info_t *remote_node_info;
+    uvm_parent_gpu_t *parent_gpu;
+
+    if (!uvm_aperture_is_peer(phys_addr.aperture))
+        return true;
+
+    remote_node_info = uvm_va_space_get_egm_numa_node_info(va_space, nid);
+    UVM_ASSERT(!uvm_parent_processor_mask_empty(&remote_node_info->parent_gpus));
+    for_each_parent_gpu_in_mask(parent_gpu, &remote_node_info->parent_gpus) {
+        UVM_ASSERT(parent_gpu->egm.enabled);
+
+        if (phys_addr.address + parent_gpu->egm.base_address >= remote_node_info->node_start &&
+            phys_addr.address + parent_gpu->egm.base_address < remote_node_info->node_end &&
+            remote_node_info->routing_table[uvm_parent_id_gpu_index(gpu->parent->id)] == parent_gpu) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
 // Zero all pages of the newly-populated chunk which are not resident anywhere
 // else in the system, adding that work to the block's tracker. In all cases,
 // this function adds a dependency on passed in tracker to the block's tracker.
@@ -3186,17 +3221,28 @@ static uvm_gpu_phys_address_t block_phys_page_address(uvm_va_block_t *block,
 
     if (UVM_ID_IS_CPU(block_page.processor)) {
         uvm_cpu_chunk_t *chunk = uvm_cpu_chunk_get_chunk_for_page(block, block_page.nid, block_page.page_index);
-        NvU64 dma_addr = uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu);
-        uvm_va_block_region_t chunk_region = uvm_va_block_chunk_region(block,
-                                                                       uvm_cpu_chunk_get_size(chunk),
-                                                                       block_page.page_index);
+        uvm_va_block_region_t chunk_region;
+        NvU64 phys_addr;
+        uvm_aperture_t aperture = UVM_APERTURE_SYS;
+        uvm_va_space_t *va_space = uvm_va_block_get_va_space(block);
+        uvm_parent_gpu_t *routing_gpu = uvm_va_space_get_egm_routing_gpu(va_space, gpu, block_page.nid);
+
+        if (routing_gpu) {
+            struct page *page = uvm_cpu_chunk_get_cpu_page(block, chunk, block_page.page_index);
+            phys_addr = page_to_phys(page);
+            aperture = uvm_gpu_egm_peer_aperture(gpu->parent, routing_gpu);
+            uvm_page_mask_set(&accessing_gpu_state->egm_pages, block_page.page_index);
+            return uvm_gpu_phys_address(aperture, phys_addr - routing_gpu->egm.base_address);
+        }
 
         // The page should be mapped for physical access already as we do that
         // eagerly on CPU page population and GPU state alloc.
-        UVM_ASSERT(dma_addr != 0);
-        dma_addr += (block_page.page_index - chunk_region.first) * PAGE_SIZE;
+        phys_addr = uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu);
+        chunk_region = uvm_va_block_chunk_region(block, uvm_cpu_chunk_get_size(chunk), block_page.page_index);
+        UVM_ASSERT(phys_addr != 0);
+        phys_addr += (block_page.page_index - chunk_region.first) * PAGE_SIZE;
 
-        return uvm_gpu_phys_address(UVM_APERTURE_SYS, dma_addr);
+        return uvm_gpu_phys_address(aperture, phys_addr);
     }
 
     chunk = block_phys_page_chunk(block, block_page, &chunk_offset);
@@ -3210,7 +3256,7 @@ static uvm_gpu_phys_address_t block_phys_page_address(uvm_va_block_t *block,
         uvm_va_space_t *va_space = uvm_va_block_get_va_space(block);
 
         UVM_ASSERT(uvm_va_space_peer_enabled(va_space, gpu, owning_gpu));
-        phys_addr = uvm_pmm_gpu_peer_phys_address(&owning_gpu->pmm, chunk, gpu);
+        phys_addr = uvm_gpu_peer_phys_address(owning_gpu, chunk->address, gpu);
         phys_addr.address += chunk_offset;
         return phys_addr;
     }
@@ -3238,8 +3284,17 @@ static uvm_gpu_address_t block_phys_page_copy_address(uvm_va_block_t *block,
 
     // CPU and local GPU accesses can rely on block_phys_page_address, but the
     // resulting physical address may need to be converted into virtual.
-    if (UVM_ID_IS_CPU(block_page.processor) || uvm_id_equal(block_page.processor, gpu->id))
-        return uvm_gpu_address_copy(gpu, block_phys_page_address(block, block_page, gpu));
+    if (UVM_ID_IS_CPU(block_page.processor) || uvm_id_equal(block_page.processor, gpu->id)) {
+        uvm_gpu_phys_address_t phys_addr = block_phys_page_address(block, block_page, gpu);
+
+        // EGM mappings use physical addresses with a PEER aperture.
+        if (uvm_aperture_is_peer(phys_addr.aperture)) {
+            UVM_ASSERT(block_check_egm_peer(uvm_va_block_get_va_space(block), gpu, block_page.nid, phys_addr));
+            return uvm_gpu_address_from_phys(phys_addr);
+        }
+
+        return uvm_gpu_address_copy(gpu, phys_addr);
+    }
 
     va_space = uvm_va_block_get_va_space(block);
 
@@ -3250,7 +3305,7 @@ static uvm_gpu_address_t block_phys_page_copy_address(uvm_va_block_t *block,
     UVM_ASSERT(uvm_va_space_peer_enabled(va_space, gpu, owning_gpu));
 
     chunk = block_phys_page_chunk(block, block_page, &chunk_offset);
-    copy_addr = uvm_pmm_gpu_peer_copy_address(&owning_gpu->pmm, chunk, gpu);
+    copy_addr = uvm_gpu_peer_copy_address(owning_gpu, chunk->address, gpu);
     copy_addr.address += chunk_offset;
     return copy_addr;
 }
@@ -3300,6 +3355,7 @@ typedef struct
     block_copy_addr_t src;
     block_copy_addr_t dst;
     uvm_conf_computing_dma_buffer_t *dma_buffer;
+
     // True if at least one CE transfer (such as a memcopy) has already been
     // pushed to the GPU during the VA block copy thus far.
     bool copy_pushed;
@@ -3910,6 +3966,75 @@ static NV_STATUS block_copy_pages(uvm_va_block_t *va_block,
     return NV_OK;
 }
 
+static NV_STATUS zero_destination_mem_if_needed(uvm_va_block_t *block,
+                                                uvm_va_block_region_t region,
+                                                uvm_page_mask_t *copy_mask,
+                                                uvm_processor_id_t src_id,
+                                                uvm_processor_id_t dst_id)
+{
+    uvm_push_t zero_push;
+    uvm_page_index_t page_index;
+    bool zero_push_started = false;
+    uvm_gpu_t *dst_gpu, *src_gpu;
+    NV_STATUS status = NV_OK;
+
+    if (UVM_ID_IS_CPU(src_id) || UVM_ID_IS_CPU(dst_id))
+        return NV_OK;
+
+    src_gpu = uvm_gpu_get(src_id);
+    dst_gpu = uvm_gpu_get(dst_id);
+
+    if ((!src_gpu->nvlink_status.enabled ||
+         (uvm_parent_gpu_peer_link_type(src_gpu->parent, dst_gpu->parent) < UVM_GPU_LINK_NVLINK_5)) &&
+        uvm_gpu_get_injected_nvlink_error(src_gpu) == NV_OK)
+        return NV_OK;
+        
+    for_each_va_block_page_in_region_mask(page_index, copy_mask, region) {
+        block_phys_page_t dst_phys_page = block_phys_page(dst_id, NUMA_NO_NODE, page_index);
+        uvm_gpu_chunk_t *dst_chunk = block_phys_page_chunk(block, dst_phys_page, NULL);
+        uvm_gpu_address_t memset_addr;
+
+        if (dst_chunk->is_zero)
+            continue;
+
+        if (!zero_push_started) {
+            status = uvm_push_begin_acquire(dst_gpu->channel_manager,
+                                            UVM_CHANNEL_TYPE_GPU_INTERNAL,
+                                            &block->tracker,
+                                            &zero_push,
+                                            "Zero dest pages for copy from %s to %s",
+                                            uvm_processor_get_name(src_id),
+                                            uvm_processor_get_name(dst_id));
+            if (status != NV_OK)
+                return status;
+
+            zero_push_started = true;
+        }
+
+        // Address if destination buffer relative to destination GPU should
+        // be fast to retrieve and doesn't need to be cached.
+        memset_addr = block_phys_page_copy_address(block, dst_phys_page, dst_gpu);
+
+        // Pipeline the memsets since they never overlap with each other
+        uvm_push_set_flag(&zero_push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED);
+
+        // Ending the push will add membar for all operations
+        uvm_push_set_flag(&zero_push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
+
+        dst_gpu->parent->ce_hal->memset_8(&zero_push, memset_addr, 0, PAGE_SIZE);
+    }
+
+    if (zero_push_started) {
+        uvm_push_end(&zero_push);
+
+        status = uvm_tracker_add_push(&block->tracker, &zero_push);
+        if (status != NV_OK)
+            return status;
+    }
+
+    return status;
+}
+
 // Copies pages resident on the src_id processor to the dst_id processor
 //
 // The function adds the pages that were successfully copied to the output
@@ -3973,6 +4098,12 @@ static NV_STATUS block_copy_resident_pages_between(uvm_va_block_t *block,
 
     copy_state.src.is_block_contig = is_block_phys_contig(block, src_id, copy_state.src.nid);
     copy_state.dst.is_block_contig = is_block_phys_contig(block, dst_id, copy_state.dst.nid);
+
+    // Zero destination pages if copying over nvlink that can hit STO
+    status = zero_destination_mem_if_needed(block, region, copy_mask, src_id, dst_id);
+    if (status != NV_OK)
+        return status;
+
 
     // uvm_range_group_range_iter_first should only be called when the va_space
     // lock is held, which is always the case unless an eviction is taking
@@ -4043,11 +4174,11 @@ static NV_STATUS block_copy_resident_pages_between(uvm_va_block_t *block,
         if (block_copy_should_use_push(block, &copy_state)) {
             if (!copying_gpu) {
                 status = block_copy_begin_push(block, &copy_state, &block->tracker, &push);
-
                 if (status != NV_OK)
                     break;
 
                 copying_gpu = uvm_push_get_gpu(&push);
+                UVM_ASSERT(UVM_ID_IS_CPU(src_id) || uvm_id_equal(copying_gpu->id, src_id));
 
                 // Ensure that there is GPU state that can be used for CPU-to-CPU copies
                 if (UVM_ID_IS_CPU(dst_id) && uvm_id_equal(src_id, dst_id)) {
@@ -4093,11 +4224,12 @@ static NV_STATUS block_copy_resident_pages_between(uvm_va_block_t *block,
             if (block_copy_should_use_push(block, &copy_state)) {
                 // When CC is enabled, transfers between GPU and CPU don't rely on
                 // any GPU mapping of CPU chunks, physical or virtual.
-            if (UVM_ID_IS_CPU(src_id) && g_uvm_global.conf_computing_enabled)
+                if (UVM_ID_IS_CPU(src_id) && g_uvm_global.conf_computing_enabled)
                     can_cache_src_phys_addr = false;
 
-            if (UVM_ID_IS_CPU(dst_id) && g_uvm_global.conf_computing_enabled)
+                if (UVM_ID_IS_CPU(dst_id) && g_uvm_global.conf_computing_enabled)
                     can_cache_dst_phys_addr = false;
+
                 // Computing the physical address is a non-trivial operation and
                 // seems to be a performance limiter on systems with 2 or more
                 // NVLINK links. Therefore, for physically-contiguous block
@@ -4690,6 +4822,34 @@ out:
     return status == NV_OK ? tracker_status : status;
 }
 
+
+// Cleanup chunks that were pinned (e.g. to move data residency) but are no
+// longer needed (e.g. the copy to move data residency failed)
+static void block_cleanup_temp_pinned_gpu_chunks(uvm_va_block_t *va_block, uvm_gpu_id_t gpu_id)
+{
+    size_t i, num_chunks;
+    uvm_gpu_t *gpu = uvm_gpu_get(gpu_id);
+    uvm_va_block_gpu_state_t *gpu_state = uvm_va_block_gpu_state_get(va_block, gpu_id);
+
+    // The GPU state has to be present otherwise there wouldn't be TEMP_PINNED
+    // chunks.
+    UVM_ASSERT(gpu_state);
+
+    num_chunks = block_num_gpu_chunks(va_block, gpu);
+    for (i = 0; i < num_chunks; ++i) {
+        uvm_gpu_chunk_t *chunk = gpu_state->chunks[i];
+
+        // chunks that are TEMP_PINNED were newly populated in
+        // block_populate_pages above. Release them since the copy
+        // failed and they won't be mapped to userspace.
+        if (chunk && chunk->state == UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED) {
+            uvm_mmu_chunk_unmap(chunk, &va_block->tracker);
+            uvm_pmm_gpu_free(&gpu->pmm, chunk, &va_block->tracker);
+            gpu_state->chunks[i] = NULL;
+        }
+    }
+}
+
 NV_STATUS uvm_va_block_make_resident_copy(uvm_va_block_t *va_block,
                                           uvm_va_block_retry_t *va_block_retry,
                                           uvm_va_block_context_t *va_block_context,
@@ -4776,6 +4936,15 @@ NV_STATUS uvm_va_block_make_resident_copy(uvm_va_block_t *va_block,
                                        page_mask,
                                        prefetch_page_mask,
                                        UVM_VA_BLOCK_TRANSFER_MODE_MOVE);
+
+    if (status != NV_OK) {
+        if (UVM_ID_IS_GPU(dest_id))
+            block_cleanup_temp_pinned_gpu_chunks(va_block, dest_id);
+
+        // TODO: bug 1766110 [uvm8] Async free of CPU pages
+        // Free allocated CPU pages.
+        UVM_ASSERT(block_check_chunks(va_block));
+    }
 
 out:
     uvm_processor_mask_cache_free(unmap_processor_mask);
@@ -4983,6 +5152,8 @@ NV_STATUS uvm_va_block_make_resident_read_duplicate(uvm_va_block_t *va_block,
     uvm_page_mask_t *migrated_pages;
     uvm_page_mask_t *staged_pages;
     uvm_page_mask_t *scratch_residency_mask;
+    uvm_page_mask_t *resident_mask;
+    uvm_page_mask_t *preprocess_page_mask = &va_block_context->make_resident.page_mask;
 
     // TODO: Bug 3660922: need to implement HMM read duplication support.
     UVM_ASSERT(!uvm_va_block_is_hmm(va_block));
@@ -5005,6 +5176,28 @@ NV_STATUS uvm_va_block_make_resident_read_duplicate(uvm_va_block_t *va_block,
     if (!scratch_residency_mask)
         return NV_ERR_NO_MEMORY;
 
+    // We cannot read-duplicate on different CPU NUMA nodes since there is only one
+    // CPU page table. So, the page has to migrate from the source NUMA node to the
+    // destination one.
+    // In order to correctly map pages on the destination NUMA node, all pages
+    // resident on other NUMA nodes have to be unmapped. Otherwise, their WRITE
+    // permission will be revoked but they'll remain mapped on the source NUMA node.
+    if (uvm_processor_mask_test(&va_block->resident, UVM_ID_CPU) &&
+        UVM_ID_IS_CPU(va_block_context->make_resident.dest_id)) {
+        uvm_page_mask_t *dest_nid_resident = uvm_va_block_resident_mask_get(va_block,
+                                                                            UVM_ID_CPU,
+                                                                            va_block_context->make_resident.dest_nid);
+        resident_mask = uvm_va_block_resident_mask_get(va_block, UVM_ID_CPU, NUMA_NO_NODE);
+
+        if (page_mask)
+            uvm_page_mask_and(preprocess_page_mask, page_mask, resident_mask);
+        else
+            uvm_page_mask_copy(preprocess_page_mask, resident_mask);
+
+        if (uvm_page_mask_andnot(preprocess_page_mask, preprocess_page_mask, dest_nid_resident))
+            block_unmap_cpu(va_block, va_block_context, region, preprocess_page_mask);
+    }
+
     // For pages that are entering read-duplication we need to unmap remote
     // mappings and revoke RW and higher access permissions.
     //
@@ -5012,11 +5205,11 @@ NV_STATUS uvm_va_block_make_resident_read_duplicate(uvm_va_block_t *va_block,
     // - Unmaps pages from all processors but the one with the resident copy
     // - Revokes write access from the processor with the resident copy
     for_each_id_in_mask(src_id, &va_block->resident) {
+        resident_mask = uvm_va_block_resident_mask_get(va_block, src_id, NUMA_NO_NODE);
+
         // Note that the below calls to block_populate_pages and
         // block_copy_resident_pages also use
         // va_block_context->make_resident.page_mask.
-        uvm_page_mask_t *preprocess_page_mask = &va_block_context->make_resident.page_mask;
-        const uvm_page_mask_t *resident_mask = uvm_va_block_resident_mask_get(va_block, src_id, NUMA_NO_NODE);
         UVM_ASSERT(!uvm_page_mask_empty(resident_mask));
 
         if (page_mask)
@@ -5233,7 +5426,7 @@ static bool block_check_gpu_chunks(uvm_va_block_t *block, uvm_gpu_id_t id)
             }
 
             if (chunk->state != UVM_PMM_GPU_CHUNK_STATE_ALLOCATED) {
-                UVM_ERR_PRINT("Invalid chunk state %s. VA block [0x%llx, 0x%llx) GPU: %u page_index: %u chunk index: %lu chunk_size: llu\n",
+                UVM_ERR_PRINT("Invalid chunk state %s. VA block [0x%llx, 0x%llx) GPU: %u page_index: %u chunk index: %lu chunk_size: %u\n",
                               uvm_pmm_gpu_chunk_state_string(chunk->state),
                               block->start,
                               block->end + 1,
@@ -8904,9 +9097,7 @@ static void block_destroy_gpu_state(uvm_va_block_t *block, uvm_va_block_context_
     uvm_gpu_va_space_t *gpu_va_space;
     uvm_gpu_t *gpu;
 
-    if (!gpu_state)
-        return;
-
+    UVM_ASSERT(gpu_state);
     uvm_assert_mutex_locked(&block->lock);
 
     // Unmap PTEs and free page tables
@@ -9065,6 +9256,62 @@ void uvm_va_block_remove_gpu_va_space(uvm_va_block_t *va_block,
     UVM_ASSERT(block_check_mappings(va_block, block_context));
 }
 
+static void compute_egm_page_mask(uvm_va_block_t *block,
+                                  uvm_va_block_context_t *block_context,
+                                  uvm_gpu_t *local_gpu,
+                                  uvm_parent_gpu_t *routing_gpu,
+                                  uvm_page_mask_t *mask)
+{
+    uvm_va_space_t *va_space = uvm_va_block_get_va_space(block);
+    uvm_egm_numa_node_info_t *node_info;
+    uvm_va_block_gpu_state_t *gpu_state = uvm_va_block_gpu_state_get(block, local_gpu->id);
+    int nid;
+
+    uvm_page_mask_zero(mask);
+
+    // The pages that are using EGM mappings are determined by looking at the
+    // pages resident on the CPU NUMA node closest to the peer GPU.
+    for_each_egm_numa_node_info_for_gpu(node_info, va_space, routing_gpu, nid) {
+        uvm_page_mask_t *residency_mask = uvm_va_block_resident_mask_get(block, UVM_ID_CPU, nid);
+
+        uvm_page_mask_or(mask, mask, residency_mask);
+    }
+
+    uvm_page_mask_and(mask, mask, &gpu_state->egm_pages);
+}
+
+// Unmap any EGM mappings. EGM mappings are torn down only if there is only
+// one GPU instance under the parent
+static void block_unmap_gpu_egm_mappings(uvm_va_block_t *va_block,
+                                         uvm_gpu_t *gpu0,
+                                         uvm_gpu_t *gpu1,
+                                         uvm_tracker_t *tracker)
+{
+    uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
+    uvm_va_block_context_t *block_context = uvm_va_space_block_context(va_space, NULL);
+    uvm_va_block_gpu_state_t *gpu_state0 = uvm_va_block_gpu_state_get(va_block, gpu0->id);
+
+    if (gpu1->parent->egm.enabled && uvm_va_space_single_gpu_in_parent(va_space, gpu1->parent) && gpu_state0) {
+        uvm_page_mask_t *unmap_page_mask = &block_context->caller_page_mask;
+        const uvm_page_mask_t *resident0 = uvm_va_block_resident_mask_get(va_block, gpu0->id, NUMA_NO_NODE);
+        const uvm_page_mask_t *resident1 = uvm_va_block_resident_mask_get(va_block,
+                                                                          UVM_ID_CPU,
+                                                                          gpu1->parent->closest_cpu_numa_node);
+
+        if (uvm_page_mask_andnot(unmap_page_mask, resident1, resident0) &&
+            uvm_page_mask_and(unmap_page_mask, unmap_page_mask, &gpu_state0->egm_pages)) {
+            NV_STATUS status = block_unmap_gpu(va_block, block_context, gpu0, unmap_page_mask, tracker);
+
+            if (status != NV_OK) {
+                UVM_ASSERT_MSG(status == uvm_global_get_status(),
+                               "Unmapping failed: %s, GPU %s\n",
+                               nvstatusToString(status),
+                               uvm_gpu_name(gpu0));
+            }
+        }
+    }
+}
+
 void uvm_va_block_disable_peer(uvm_va_block_t *va_block, uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
 {
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
@@ -9072,43 +9319,50 @@ void uvm_va_block_disable_peer(uvm_va_block_t *va_block, uvm_gpu_t *gpu0, uvm_gp
     uvm_tracker_t tracker = UVM_TRACKER_INIT();
     uvm_va_block_context_t *block_context = uvm_va_space_block_context(va_space, NULL);
     uvm_page_mask_t *unmap_page_mask = &block_context->caller_page_mask;
+    uvm_va_block_gpu_state_t *gpu_state0 = uvm_va_block_gpu_state_get(va_block, gpu0->id);
+    uvm_va_block_gpu_state_t *gpu_state1 = uvm_va_block_gpu_state_get(va_block, gpu1->id);
     const uvm_page_mask_t *resident0;
     const uvm_page_mask_t *resident1;
 
     uvm_assert_mutex_locked(&va_block->lock);
 
-    // If either of the GPUs doesn't have GPU state then nothing could be mapped
+    // If neither of the GPUs has a GPU state then nothing could be mapped
     // between them.
-    if (!uvm_va_block_gpu_state_get(va_block, gpu0->id) || !uvm_va_block_gpu_state_get(va_block, gpu1->id))
+    if (!gpu_state0 && !gpu_state1)
         return;
 
-    resident0 = uvm_va_block_resident_mask_get(va_block, gpu0->id, NUMA_NO_NODE);
-    resident1 = uvm_va_block_resident_mask_get(va_block, gpu1->id, NUMA_NO_NODE);
+    if (gpu_state0 && gpu_state1) {
+        resident0 = uvm_va_block_resident_mask_get(va_block, gpu0->id, NUMA_NO_NODE);
+        resident1 = uvm_va_block_resident_mask_get(va_block, gpu1->id, NUMA_NO_NODE);
 
-    // Unmap all pages resident on gpu1, but not on gpu0, from gpu0
-    if (uvm_page_mask_andnot(unmap_page_mask, resident1, resident0)) {
-        status = block_unmap_gpu(va_block, block_context, gpu0, unmap_page_mask, &tracker);
-        if (status != NV_OK) {
-            // Since all PTEs unmapped by this call have the same aperture, page
-            // splits should never be required so any failure should be the
-            // result of a system-fatal error.
-            UVM_ASSERT_MSG(status == uvm_global_get_status(),
-                           "Unmapping failed: %s, GPU %s\n",
-                           nvstatusToString(status),
-                           uvm_gpu_name(gpu0));
+        // Unmap all pages resident on gpu1, but not on gpu0, from gpu0
+        if (uvm_page_mask_andnot(unmap_page_mask, resident1, resident0)) {
+            status = block_unmap_gpu(va_block, block_context, gpu0, unmap_page_mask, &tracker);
+            if (status != NV_OK) {
+                // Since all PTEs unmapped by this call have the same aperture, page
+                // splits should never be required so any failure should be the
+                // result of a system-fatal error.
+                UVM_ASSERT_MSG(status == uvm_global_get_status(),
+                               "Unmapping failed: %s, GPU %s\n",
+                               nvstatusToString(status),
+                               uvm_gpu_name(gpu0));
+            }
+        }
+
+        // Unmap all pages resident on gpu0, but not on gpu1, from gpu1
+        if (uvm_page_mask_andnot(unmap_page_mask, resident0, resident1)) {
+            status = block_unmap_gpu(va_block, block_context, gpu1, unmap_page_mask, &tracker);
+            if (status != NV_OK) {
+                UVM_ASSERT_MSG(status == uvm_global_get_status(),
+                               "Unmapping failed: %s, GPU %s\n",
+                               nvstatusToString(status),
+                               uvm_gpu_name(gpu0));
+            }
         }
     }
 
-    // Unmap all pages resident on gpu0, but not on gpu1, from gpu1
-    if (uvm_page_mask_andnot(unmap_page_mask, resident0, resident1)) {
-        status = block_unmap_gpu(va_block, block_context, gpu1, unmap_page_mask, &tracker);
-        if (status != NV_OK) {
-            UVM_ASSERT_MSG(status == uvm_global_get_status(),
-                           "Unmapping failed: %s, GPU %s\n",
-                           nvstatusToString(status),
-                           uvm_gpu_name(gpu0));
-        }
-    }
+    block_unmap_gpu_egm_mappings(va_block, gpu0, gpu1, &tracker);
+    block_unmap_gpu_egm_mappings(va_block, gpu1, gpu0, &tracker);
 
     status = uvm_tracker_add_tracker_safe(&va_block->tracker, &tracker);
     if (status != NV_OK)
@@ -9225,11 +9479,16 @@ void uvm_va_block_unregister_gpu_locked(uvm_va_block_t *va_block, uvm_gpu_t *gpu
         uvm_global_set_fatal_error(status);
     }
 
-    // This function will copy the block's tracker into each chunk then free the
-    // chunk to PMM. If we do this before waiting for the block tracker below
-    // we'll populate PMM's free chunks with tracker entries, which gives us
-    // better testing coverage of chunk synchronization on GPU unregister.
-    block_destroy_gpu_state(va_block, va_block_context, gpu->id);
+    // The block lock might've been dropped and re-taken, so we have to re-check
+    // that gpu_state still exists.
+    if (uvm_va_block_gpu_state_get(va_block, gpu->id)) {
+        // This function will copy the block's tracker into each chunk then free
+        // the chunk to PMM. If we do this before waiting for the block tracker
+        // below we'll populate PMM's free chunks with tracker entries, which
+        // gives us better testing coverage of chunk synchronization on GPU
+        // unregister.
+        block_destroy_gpu_state(va_block, va_block_context, gpu->id);
+    }
 
     // Any time a GPU is unregistered we need to make sure that there are no
     // pending (direct or indirect) tracker entries for that GPU left in the
@@ -9280,7 +9539,7 @@ static void block_kill(uvm_va_block_t *block)
     uvm_page_index_t page_index;
     uvm_page_index_t next_page_index;
     int nid;
-    uvm_va_block_context_t *block_context;
+    uvm_va_block_context_t *block_context = NULL;
 
     if (uvm_va_block_is_dead(block))
         return;
@@ -9288,8 +9547,6 @@ static void block_kill(uvm_va_block_t *block)
     va_space = uvm_va_block_get_va_space(block);
     event_data.block_destroy.block = block;
     uvm_perf_event_notify(&va_space->perf_events, UVM_PERF_EVENT_BLOCK_DESTROY, &event_data);
-
-    block_context = uvm_va_space_block_context(va_space, NULL);
 
     // Unmap all processors in parallel first. Unmapping the whole block won't
     // cause a page table split, so this should only fail if we have a system-
@@ -9306,6 +9563,9 @@ static void block_kill(uvm_va_block_t *block)
         // We could only be killed with mapped GPU state by VA range free or VA
         // space teardown, so it's safe to use the va_space's block_context
         // because both of those have the VA space lock held in write mode.
+        if (!block_context)
+            block_context = uvm_va_space_block_context(va_space, NULL);
+
         status = uvm_va_block_unmap_mask(block, block_context, &block->mapped, region, NULL);
         UVM_ASSERT(status == uvm_global_get_status());
     }
@@ -9313,13 +9573,21 @@ static void block_kill(uvm_va_block_t *block)
     UVM_ASSERT(uvm_processor_mask_empty(&block->mapped));
 
     // Free the GPU page tables and chunks
-    for_each_gpu_id(id)
-        block_destroy_gpu_state(block, block_context, id);
+    for_each_gpu_id(id) {
+        if (uvm_va_block_gpu_state_get(block, id)) {
+            if (!block_context)
+                block_context = uvm_va_space_block_context(va_space, NULL);
+
+            block_destroy_gpu_state(block, block_context, id);
+        }
+    }
 
     // Wait for the GPU PTE unmaps before freeing CPU memory
     uvm_tracker_wait_deinit(&block->tracker);
 
-    // No processor should have the CPU mapped at this point
+    // No processor should have the CPU mapped at this point. block_context will
+    // be valid if any processor is mapped from the check above. Otherwise it
+    // won't be used by this helper.
     UVM_ASSERT(block_check_processor_not_mapped(block, block_context, UVM_ID_CPU));
 
     // Free CPU pages
@@ -9401,9 +9669,11 @@ static void block_gpu_release_region(uvm_va_block_t *va_block,
                                      uvm_va_block_region_t region)
 {
     uvm_page_index_t page_index;
+    uvm_gpu_t *gpu = uvm_gpu_get(gpu_id);
 
     for_each_va_block_page_in_region_mask(page_index, page_mask, region) {
-        uvm_gpu_chunk_t *gpu_chunk = gpu_state->chunks[page_index];
+        size_t chunk_index = block_gpu_chunk_index(va_block, gpu, page_index, NULL);
+        uvm_gpu_chunk_t *gpu_chunk = gpu_state->chunks[chunk_index];
 
         if (!gpu_chunk)
             continue;
@@ -11645,14 +11915,16 @@ NV_STATUS uvm_va_block_service_copy(uvm_processor_id_t processor_id,
         !uvm_processor_mask_empty(all_involved_processors)) {
         uvm_gpu_t *gpu;
 
-        // Before checking for ECC errors, make sure all of the GPU work
-        // is finished. Creating mappings on the CPU would have to wait
+        // Before checking for ECC and NVLINK errors, make sure all of the GPU
+        // work is finished. Creating mappings on the CPU would have to wait
         // for the tracker anyway so this shouldn't hurt performance.
         status = uvm_tracker_wait(&va_block->tracker);
         if (status != NV_OK)
             return status;
 
         for_each_va_space_gpu_in_mask(gpu, va_space, all_involved_processors) {
+            uvm_gpu_t *peer_gpu;
+
             // We cannot call into RM here so use the no RM ECC check.
             status = uvm_gpu_check_ecc_error_no_rm(gpu);
             if (status == NV_WARN_MORE_PROCESSING_REQUIRED) {
@@ -11669,6 +11941,24 @@ NV_STATUS uvm_va_block_service_copy(uvm_processor_id_t processor_id,
                 uvm_processor_mask_set(&service_context->cpu_fault.gpus_to_check_for_ecc, gpu->id);
                 status = NV_OK;
             }
+            if (status != NV_OK)
+                return status;
+
+            // Same as above for nvlink errors. Check the source GPU as well
+            // as all its peers.
+            for_each_gpu_in_mask(peer_gpu, &gpu->peer_info.peer_gpu_mask) {
+                status = uvm_gpu_check_nvlink_error_no_rm(peer_gpu);
+                if (status == NV_WARN_MORE_PROCESSING_REQUIRED)
+                    uvm_processor_mask_set(&service_context->gpus_to_check_for_nvlink_errors, peer_gpu->id);
+
+                if (status != NV_OK)
+                    return status;
+            }
+
+            status = uvm_gpu_check_nvlink_error_no_rm(gpu);
+            if (status == NV_WARN_MORE_PROCESSING_REQUIRED)
+                uvm_processor_mask_set(&service_context->gpus_to_check_for_nvlink_errors, gpu->id);
+
             if (status != NV_OK)
                 return status;
         }
@@ -12170,6 +12460,7 @@ static NV_STATUS block_cpu_fault_locked(uvm_va_block_t *va_block,
         return status;
 
     uvm_processor_mask_zero(&service_context->cpu_fault.gpus_to_check_for_ecc);
+    uvm_processor_mask_zero(&service_context->gpus_to_check_for_nvlink_errors);
 
     if (skip_cpu_fault_with_valid_permissions(va_block, page_index, fault_access_type))
         return NV_OK;
@@ -12178,7 +12469,8 @@ static NV_STATUS block_cpu_fault_locked(uvm_va_block_t *va_block,
     // Throttling is implemented by sleeping in the fault handler on the CPU
     if (thrashing_hint.type == UVM_PERF_THRASHING_HINT_TYPE_THROTTLE) {
         service_context->cpu_fault.wakeup_time_stamp = thrashing_hint.throttle.end_time_stamp;
-        return NV_WARN_MORE_PROCESSING_REQUIRED;
+        status =  NV_WARN_MORE_PROCESSING_REQUIRED;
+        goto out;
     }
 
     service_context->read_duplicate_count = 0;
@@ -12226,6 +12518,7 @@ static NV_STATUS block_cpu_fault_locked(uvm_va_block_t *va_block,
     status = uvm_va_block_service_locked(UVM_ID_CPU, va_block, va_block_retry, service_context);
     UVM_ASSERT(status != NV_WARN_MISMATCHED_TARGET);
 
+out:
     ++service_context->num_retries;
 
     return status;
@@ -12245,7 +12538,6 @@ NV_STATUS uvm_va_block_cpu_fault(uvm_va_block_t *va_block,
     else
         fault_access_type = UVM_FAULT_ACCESS_TYPE_READ;
 
-    service_context->num_retries = 0;
     service_context->cpu_fault.did_migrate = false;
 
     // We have to use vm_insert_page instead of handing the page to the kernel
@@ -13258,6 +13550,7 @@ NV_STATUS uvm_test_va_residency_info(UVM_TEST_VA_RESIDENCY_INFO_PARAMS *params, 
             continue;
 
         uvm_processor_get_uuid(id, &params->mapped_on[count]);
+        params->is_egm_mapping[count] = false;
 
         params->mapping_type[count] = g_uvm_prot_to_test_pte_mapping[block_page_prot(block, id, page_index)];
         UVM_ASSERT(params->mapping_type[count] != UVM_TEST_PTE_MAPPING_INVALID);
@@ -13266,11 +13559,28 @@ NV_STATUS uvm_test_va_residency_info(UVM_TEST_VA_RESIDENCY_INFO_PARAMS *params, 
             nid = block_get_page_node_residency(block, page_index);
 
         block_page = block_phys_page(processor_to_map, nid, page_index);
-
         if (!UVM_ID_IS_CPU(id)) {
-            uvm_gpu_phys_address_t gpu_phys_addr = block_phys_page_address(block, block_page, uvm_gpu_get(id));
+            uvm_gpu_t *gpu = uvm_gpu_get(id);
+            uvm_gpu_phys_address_t gpu_phys_addr = block_phys_page_address(block, block_page, gpu);
+            NvU64 phys_addr = gpu_phys_addr.address;
 
-            params->mapping_physical_address[count] = gpu_phys_addr.address;
+            if (UVM_ID_IS_CPU(block_page.processor)) {
+                uvm_parent_gpu_t *egm_routing_gpu = uvm_va_space_get_egm_routing_gpu(va_space, gpu, nid);
+
+                if (egm_routing_gpu) {
+                    uvm_gpu_t *egm_gpu = uvm_parent_gpu_find_first_valid_gpu(egm_routing_gpu);
+
+                    compute_egm_page_mask(block, block_context, gpu, egm_gpu->parent, &block_context->caller_page_mask);
+                    if (uvm_page_mask_test(&block_context->caller_page_mask, block_page.page_index)) {
+                        struct page *page = block_page_get(block, block_page);
+
+                        phys_addr = page_to_phys(page) - egm_routing_gpu->egm.base_address;
+                        params->is_egm_mapping[count] = true;
+                    }
+                }
+            }
+
+            params->mapping_physical_address[count] = phys_addr;
         }
         else {
             struct page *page = block_page_get(block, block_page);

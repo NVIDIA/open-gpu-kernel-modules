@@ -1200,6 +1200,130 @@ subdeviceCtrlCmdFbGetNumaInfo_IMPL
 }
 
 /*!
+ * @brief This call can be used to get the FB availability status.
+ *
+ * Lock Requirements:
+ *      Assert that API and GPUs lock held on entry
+ *
+ * @param[in] pSubdevice Subdevice
+ * @param[in] pParams    pointer to FB_GET_STATUS_PARAMS parameters
+ *
+ * @return NV_OK When successful
+ *         Otherwise
+ *         NV_ERR_INVALID_STATE or
+ *         NV_ERR_NOT_SUPPORTED or
+ *         NV_ERR_NOT_READY or
+ *         NV_ERR_INVALID_LOCK_STATE
+ *
+ */
+NV_STATUS
+subdeviceCtrlCmdFbGetStatus_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FB_GET_STATUS_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+    NvU64 fbSize = 0;
+    NvU32 swizzId = 0;
+
+    // If FB size is zero, FB availability status is not applicable
+    NV_ASSERT_OK_OR_RETURN(kmemsysGetUsableFbSize_HAL(pGpu, pKernelMemorySystem, &fbSize));
+    if (fbSize == 0)
+    {
+        pParams->fbStatus = NV2080_CTRL_FB_STATUS_NOT_APPLICABLE;
+        return NV_OK;
+    }
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+
+    //
+    // First check if this is a Self Hosted system. If yes, get the swizzId
+    // and finally set the fbStatus based on Switch or direct connected system.
+    //
+    if (gpuIsSelfHosted(pGpu))
+    {
+        if (IS_MIG_IN_USE(pGpu))
+        {
+            KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+            Device           *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
+            MIG_INSTANCE_REF  ref;
+
+            if (kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref) == NV_OK)
+            {
+                swizzId = ref.pKernelMIGGpuInstance->swizzId;
+            }
+            else
+            {
+                return NV_ERR_INVALID_STATE;
+            }
+        }
+        else
+        {
+            // Self Hosted but no MIG, hence swizzId = 0
+            swizzId = 0;
+        }
+
+        //
+        // kmemsysIsNumaPartitionInUse works for MIG and non-MIG cases too.
+        // We should be ideally return from here for both direct connected
+        // and nvswitch self hosted systems.
+        //
+        if (kmemsysIsNumaPartitionInUse_HAL(pGpu, pKernelMemorySystem, swizzId))
+        {
+            pParams->fbStatus = NV2080_CTRL_FB_STATUS_READY;
+            return NV_OK;
+        }
+
+        if (GPU_IS_NVSWITCH_DETECTED(pGpu))
+        {
+            NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS fabricParams = {0};
+            NV_ASSERT_OK_OR_RETURN(
+                subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL(pGpu->pCachedSubdevice, &fabricParams));
+
+            switch (fabricParams.state)
+            {
+                case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_IN_PROGRESS:
+                case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_NOT_STARTED:
+                    pParams->fbStatus = NV2080_CTRL_FB_STATUS_PENDING;
+                    return NV_OK;
+                case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_COMPLETE:
+                {
+                    //
+                    // We should reach here only when fabric probe failed since memory
+                    // onlining would have succeeded by now otherwise.
+                    //
+                    NV_ASSERT_OR_RETURN(fabricParams.status != NV_OK, NV_ERR_INVALID_STATE);
+                    pParams->fbStatus = NV2080_CTRL_FB_STATUS_FAILED;
+                    return NV_OK;
+                }
+
+                default:
+                    NV_PRINTF(LEVEL_ERROR, "Invalid Fabric State\n");
+                    return NV_ERR_INVALID_STATE;
+            }
+        }
+        else
+        {
+            //
+            // For Direct connected self hosted system, we should not have reached this point.
+            // Hence assert and return.
+            //
+            NV_ASSERT(0);
+            return NV_ERR_INVALID_STATE;
+        }
+    }
+    else
+    {
+        // GPU is not self hosted, but it has FB
+        pParams->fbStatus = NV2080_CTRL_FB_STATUS_READY;
+    }
+
+    return NV_OK;
+}
+
+/*!
  * @brief This call can be used to get static Bar1 related information.
  *
  * Lock Requirements:
@@ -1232,10 +1356,12 @@ subdeviceCtrlCmdFbGetStaticBar1Info_IMPL
 
     if (pParams->bStaticBar1Enabled)
     {
-        pParams->staticBar1Size = pKernelBus->bar1[gfid].staticBar1.size;
+        pParams->staticBar1StartOffset = pKernelBus->bar1[gfid].staticBar1.startOffset;
+        pParams->staticBar1Size        = pKernelBus->bar1[gfid].staticBar1.size;
     }
     else
     {
+        pParams->staticBar1StartOffset = 0;
         pParams->staticBar1Size = 0;
     }
 

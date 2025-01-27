@@ -54,8 +54,11 @@ static inline nv_firmware_chip_family_t nv_firmware_get_chip_family(
         case GPU_ARCHITECTURE_HOPPER:
             return NV_FIRMWARE_CHIP_FAMILY_GH100;
 
-        case GPU_ARCHITECTURE_BLACKWELL:
+        case GPU_ARCHITECTURE_BLACKWELL_GB1XX:
             return NV_FIRMWARE_CHIP_FAMILY_GB10X;
+
+        case GPU_ARCHITECTURE_BLACKWELL_GB2XX:
+            return NV_FIRMWARE_CHIP_FAMILY_GB20X;
 
     }
 

@@ -268,6 +268,15 @@ void uvm_hal_maxwell_host_semaphore_acquire(uvm_push_t *push, NvU64 gpu_va, NvU3
 void uvm_hal_turing_host_semaphore_acquire(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_hopper_host_semaphore_acquire(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 
+// Semaphore op validation.
+// The validation happens at the start of semaphore op (uvm_hal_semaphore_*_t)
+// execution. This is currently shared for all semaphore operations;
+// semaphore releases by both CE, SEC2, and esched as well as semaphore
+// reduction operations, semaphore acquire, and semaphore release
+// operations with timestamp.
+typedef bool (*uvm_hal_semaphore_target_is_valid_t)(uvm_push_t *push, NvU64 gpu_va);
+bool uvm_hal_maxwell_semaphore_target_is_valid(uvm_push_t *push, NvU64 gpu_va);
+
 typedef void (*uvm_hal_host_set_gpfifo_entry_t)(NvU64 *fifo_entry,
                                                 NvU64 pushbuffer_va,
                                                 NvU32 pushbuffer_length,
@@ -330,10 +339,9 @@ bool uvm_hal_ampere_ce_method_is_valid_c6b5(uvm_push_t *push, NvU32 method_addre
 
 // Memcopy validation.
 // The validation happens at the start of the memcopy (uvm_hal_memcopy_t)
-// execution. Use uvm_hal_ce_memcopy_is_valid_stub to skip the validation for
-// a given architecture.
+// execution.
 typedef bool (*uvm_hal_ce_memcopy_is_valid)(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
-bool uvm_hal_ce_memcopy_is_valid_stub(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
+bool uvm_hal_maxwell_ce_memcopy_is_valid(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
 bool uvm_hal_ampere_ce_memcopy_is_valid_c6b5(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
 bool uvm_hal_hopper_ce_memcopy_is_valid(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
 
@@ -358,13 +366,15 @@ void uvm_hal_maxwell_ce_memcopy_v_to_v(uvm_push_t *push, NvU64 dst, NvU64 src, s
 
 // Memset validation.
 // The validation happens at the start of the memset (uvm_hal_memset_*_t)
-// execution. Use uvm_hal_ce_memset_is_valid_stub to skip the validation for
-// a given architecture.
+// execution.
 typedef bool (*uvm_hal_ce_memset_is_valid)(uvm_push_t *push,
                                            uvm_gpu_address_t dst,
                                            size_t num_elements,
                                            size_t element_size);
-bool uvm_hal_ce_memset_is_valid_stub(uvm_push_t *push, uvm_gpu_address_t dst, size_t num_elements, size_t element_size);
+bool uvm_hal_maxwell_ce_memset_is_valid(uvm_push_t *push,
+                                        uvm_gpu_address_t dst,
+                                        size_t num_elements,
+                                        size_t element_size);
 bool uvm_hal_ampere_ce_memset_is_valid_c6b5(uvm_push_t *push,
                                             uvm_gpu_address_t dst,
                                             size_t num_elements,
@@ -484,6 +494,7 @@ uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_turing(NvU64 big_page_size);
 uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_ampere(NvU64 big_page_size);
 uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_hopper(NvU64 big_page_size);
 uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_blackwell(NvU64 big_page_size);
+
 void uvm_hal_maxwell_mmu_enable_prefetch_faults_unsupported(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_maxwell_mmu_disable_prefetch_faults_unsupported(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_pascal_mmu_enable_prefetch_faults(uvm_parent_gpu_t *parent_gpu);
@@ -566,7 +577,6 @@ NvU8 uvm_hal_volta_fault_buffer_get_ve_id(NvU16 mmu_engine_id, uvm_mmu_engine_ty
 uvm_mmu_engine_type_t uvm_hal_volta_fault_buffer_get_mmu_engine_type(NvU16 mmu_engine_id,
                                                                      uvm_fault_client_type_t client_type,
                                                                      NvU16 client_id);
-
 uvm_fault_type_t uvm_hal_volta_fault_buffer_get_fault_type(const NvU32 *fault_entry);
 
 void uvm_hal_turing_disable_replayable_faults(uvm_parent_gpu_t *parent_gpu);
@@ -760,6 +770,7 @@ struct uvm_host_hal_struct
     uvm_hal_semaphore_release_t semaphore_release;
     uvm_hal_semaphore_acquire_t semaphore_acquire;
     uvm_hal_semaphore_timestamp_t semaphore_timestamp;
+    uvm_hal_semaphore_target_is_valid_t semaphore_target_is_valid;
     uvm_hal_host_set_gpfifo_entry_t set_gpfifo_entry;
     uvm_hal_host_set_gpfifo_noop_t set_gpfifo_noop;
     uvm_hal_host_set_gpfifo_pushbuffer_segment_base_t set_gpfifo_pushbuffer_segment_base;
@@ -786,6 +797,7 @@ struct uvm_ce_hal_struct
     uvm_hal_ce_method_is_valid method_is_valid;
     uvm_hal_semaphore_release_t semaphore_release;
     uvm_hal_semaphore_timestamp_t semaphore_timestamp;
+    uvm_hal_semaphore_target_is_valid_t semaphore_target_is_valid;
     uvm_hal_ce_offset_out_t offset_out;
     uvm_hal_ce_offset_in_out_t offset_in_out;
     uvm_hal_ce_phys_mode_t phys_mode;
@@ -849,6 +861,7 @@ struct uvm_sec2_hal_struct
     uvm_hal_sec2_decrypt_t decrypt;
     uvm_hal_semaphore_release_t semaphore_release;
     uvm_hal_semaphore_timestamp_t semaphore_timestamp;
+    uvm_hal_semaphore_target_is_valid_t semaphore_target_is_valid;
 };
 
 typedef struct

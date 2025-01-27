@@ -48,15 +48,18 @@
 
 #include "class/cl0080.h"
 
-static NV_STATUS _memUtilsGetCe
+NV_STATUS
+ceutilsGetFirstAsyncCe_IMPL
 (
+    CeUtils  *pCeUtils,
     OBJGPU   *pGpu,
     RsClient *pClient,
     NvHandle  hDevice,
-    NvU32    *pCeInstance
+    NvU32    *pCeInstance,
+    NvBool    forceSkipMIG
 )
 {
-    if (IS_MIG_IN_USE(pGpu))
+    if (IS_MIG_IN_USE(pGpu) && !forceSkipMIG)
     {
         Device *pDevice;
 
@@ -171,6 +174,7 @@ ceutilsConstruct_IMPL
 
     if (((pCeUtils->hTdCopyClass == HOPPER_DMA_COPY_A)
         || (pCeUtils->hTdCopyClass == BLACKWELL_DMA_COPY_A)
+        || (pCeUtils->hTdCopyClass == BLACKWELL_DMA_COPY_B)
         ) && !pChannel->bUseVasForCeCopy)
     {
         pChannel->type = FAST_SCRUBBER_CHANNEL;
@@ -207,7 +211,7 @@ ceutilsConstruct_IMPL
     else
     {
         NV_ASSERT_OK_OR_GOTO(status,
-            _memUtilsGetCe(pGpu, pChannel->pRsClient, pChannel->deviceId, &pChannel->ceId),
+            ceutilsGetFirstAsyncCe(pCeUtils, pGpu, pChannel->pRsClient, pChannel->deviceId, &pChannel->ceId, NV_FALSE),
             free_client);
     }
 

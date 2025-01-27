@@ -77,7 +77,6 @@ subdeviceCtrlCmdBifGetStaticInfo_VF
     // on guest RM as of today, hence enforcing default values
     //
     pParams->bIsC2CLinkUp = pVSI->bC2CLinkUp;
-    pParams->dmaWindowStartAddress  = 0ull;
     pParams->bPcieGen4Capable       = NV_FALSE;
     pParams->bIsDeviceMultiFunction = NV_FALSE;
     pParams->bGcxPmuCfgSpaceRestore = NV_FALSE;

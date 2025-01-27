@@ -86,7 +86,7 @@ struct RmClientResource {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__RmClientResource *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct RsClientResource __nvoc_base_RsClientResource;
     struct RmResourceCommon __nvoc_base_RmResourceCommon;
     struct Notifier __nvoc_base_Notifier;
@@ -168,7 +168,7 @@ struct RmClientResource {
     NV_STATUS (*__cliresCtrlCmdGpuGetNvlinkBwMode__)(struct RmClientResource * /*this*/, NV0000_CTRL_GPU_GET_NVLINK_BW_MODE_PARAMS *);  // exported (id=0x287)
     NV_STATUS (*__cliresCtrlCmdLegacyConfig__)(struct RmClientResource * /*this*/, NV0000_CTRL_GPU_LEGACY_CONFIG_PARAMS *);  // exported (id=0x282)
     NV_STATUS (*__cliresCtrlCmdIdleChannels__)(struct RmClientResource * /*this*/, NV0000_CTRL_GPU_IDLE_CHANNELS_PARAMS *);  // exported (id=0x283)
-    NV_STATUS (*__cliresCtrlCmdPushGspUcode__)(struct RmClientResource * /*this*/, NV0000_CTRL_GPU_PUSH_GSP_UCODE_PARAMS *);  // exported (id=0x285)
+    NV_STATUS (*__cliresCtrlCmdPushUcodeImage__)(struct RmClientResource * /*this*/, NV0000_CTRL_GPU_PUSH_UCODE_IMAGE_PARAMS *);  // exported (id=0x285)
     NV_STATUS (*__cliresCtrlCmdGpuGetVideoLinks__)(struct RmClientResource * /*this*/, NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS *);  // exported (id=0x219)
     NV_STATUS (*__cliresCtrlCmdSystemGetVrrCookiePresent__)(struct RmClientResource * /*this*/, NV0000_CTRL_SYSTEM_GET_VRR_COOKIE_PRESENT_PARAMS *);  // exported (id=0x107)
     NV_STATUS (*__cliresCtrlCmdGsyncGetAttachedIds__)(struct RmClientResource * /*this*/, NV0000_CTRL_GSYNC_GET_ATTACHED_IDS_PARAMS *);  // exported (id=0x301)
@@ -413,8 +413,8 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresCtrlCmdLegacyConfig(pRmCliRes, pParams) cliresCtrlCmdLegacyConfig_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdIdleChannels_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdIdleChannels__
 #define cliresCtrlCmdIdleChannels(pRmCliRes, pParams) cliresCtrlCmdIdleChannels_DISPATCH(pRmCliRes, pParams)
-#define cliresCtrlCmdPushGspUcode_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdPushGspUcode__
-#define cliresCtrlCmdPushGspUcode(pRmCliRes, pParams) cliresCtrlCmdPushGspUcode_DISPATCH(pRmCliRes, pParams)
+#define cliresCtrlCmdPushUcodeImage_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdPushUcodeImage__
+#define cliresCtrlCmdPushUcodeImage(pRmCliRes, pParams) cliresCtrlCmdPushUcodeImage_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdGpuGetVideoLinks_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdGpuGetVideoLinks__
 #define cliresCtrlCmdGpuGetVideoLinks(pRmCliRes, pParams) cliresCtrlCmdGpuGetVideoLinks_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemGetVrrCookiePresent_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdSystemGetVrrCookiePresent__
@@ -817,8 +817,8 @@ static inline NV_STATUS cliresCtrlCmdIdleChannels_DISPATCH(struct RmClientResour
     return pRmCliRes->__cliresCtrlCmdIdleChannels__(pRmCliRes, pParams);
 }
 
-static inline NV_STATUS cliresCtrlCmdPushGspUcode_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_PUSH_GSP_UCODE_PARAMS *pParams) {
-    return pRmCliRes->__cliresCtrlCmdPushGspUcode__(pRmCliRes, pParams);
+static inline NV_STATUS cliresCtrlCmdPushUcodeImage_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_PUSH_UCODE_IMAGE_PARAMS *pParams) {
+    return pRmCliRes->__cliresCtrlCmdPushUcodeImage__(pRmCliRes, pParams);
 }
 
 static inline NV_STATUS cliresCtrlCmdGpuGetVideoLinks_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS *pParams) {
@@ -1195,7 +1195,7 @@ NV_STATUS cliresCtrlCmdLegacyConfig_IMPL(struct RmClientResource *pRmCliRes, NV0
 
 NV_STATUS cliresCtrlCmdIdleChannels_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_IDLE_CHANNELS_PARAMS *pParams);
 
-NV_STATUS cliresCtrlCmdPushGspUcode_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_PUSH_GSP_UCODE_PARAMS *pParams);
+NV_STATUS cliresCtrlCmdPushUcodeImage_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_PUSH_UCODE_IMAGE_PARAMS *pParams);
 
 NV_STATUS cliresCtrlCmdGpuGetVideoLinks_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS *pParams);
 

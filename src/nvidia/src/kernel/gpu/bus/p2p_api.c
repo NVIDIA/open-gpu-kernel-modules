@@ -549,15 +549,10 @@ p2papiConstruct_IMPL
     pP2PApi->attributes |= bSpaAccessOnly ? DRF_DEF(_P2PAPI, _ATTRIBUTES, _LINK_TYPE, _SPA) :
                                             DRF_DEF(_P2PAPI, _ATTRIBUTES, _LINK_TYPE, _GPA);
 
-    //
-    // For Nvswitch connected systems, AAS(Alternate Address Space) is set by Nvswitch itself
-    // based on the EGM fabric address range and so there is no need for a separate peer id
-    // in the Nvswitch case.
-    //
     bEgmPeer = (!bSpaAccessOnly &&
                 memmgrIsLocalEgmEnabled(GPU_GET_MEMORY_MANAGER(pLocalGpu)) &&
-                memmgrIsLocalEgmEnabled(GPU_GET_MEMORY_MANAGER(pRemoteGpu)) &&
-                !GPU_IS_NVSWITCH_DETECTED(pLocalGpu));
+                memmgrIsLocalEgmEnabled(GPU_GET_MEMORY_MANAGER(pRemoteGpu)));
+                
 
     if (bSpaAccessOnly &&
         memmgrIsLocalEgmEnabled(GPU_GET_MEMORY_MANAGER(pLocalGpu)) &&
@@ -749,8 +744,7 @@ p2papiDestruct_IMPL
 
         if (!FLD_TEST_DRF(_P2PAPI, _ATTRIBUTES, _LINK_TYPE, _SPA, pP2PApi->attributes) &&
             memmgrIsLocalEgmEnabled(GPU_GET_MEMORY_MANAGER(pLocalGpu)) &&
-            memmgrIsLocalEgmEnabled(GPU_GET_MEMORY_MANAGER(pRemoteGpu)) &&
-            !GPU_IS_NVSWITCH_DETECTED(pLocalGpu))
+            memmgrIsLocalEgmEnabled(GPU_GET_MEMORY_MANAGER(pRemoteGpu)))
         {
             status = kbusRemoveP2PMapping_HAL(pLocalGpu, pLocalKernelBus,
                                               pRemoteGpu, pRemoteKernelBus,

@@ -1341,7 +1341,7 @@ NV_STATUS gsyncGetStatusCaps(OBJGSYNC *pGsync,
 
     pGpu = gsyncGetMasterableGpu(pGsync);
 
-    status |= pGsync->gsyncHal.gsyncGetRevision(pGpu, pGsync->pExtDev, pParams);
+    status |= pGsync->gsyncHal.gsyncGetRevision(pGpu, pGsync, pParams);
 
     return status;
 }
@@ -2420,9 +2420,9 @@ gsyncNullSetWatchdog
 static NV_STATUS
 gsyncNullGetRevision
 (
- OBJGPU       *pGpu,
- PDACEXTERNALDEVICE pExtDev,
- GSYNCCAPSPARAMS *pParams
+    OBJGPU       *pGpu,
+    OBJGSYNC *pGsync,
+    GSYNCCAPSPARAMS *pParams
 )
 {
     return NV_ERR_GENERIC;

@@ -56,11 +56,15 @@ NV_STATUS uvm_populate_pageable_vma(struct vm_area_struct *vma,
 // pages. This can be useful in virtualization environment. See
 // uvm_ats_service_fault() for example usage.
 //
+// flags is the set of UVM_POPULATE_PAGEABLE_FLAG_* values. Only
+// UVM_POPULATE_PAGEABLE_FLAG_ALLOW_MANAGED is currently supported.
+//
 // Locking: mm->mmap_lock must be held in read or write mode
 NV_STATUS uvm_populate_pageable(struct mm_struct *mm,
                                 unsigned long start,
                                 unsigned long length,
                                 int min_prot,
                                 bool touch,
-                                uvm_populate_permissions_t populate_permissions);
+                                uvm_populate_permissions_t populate_permissions,
+                                NvU32 flags);
 #endif

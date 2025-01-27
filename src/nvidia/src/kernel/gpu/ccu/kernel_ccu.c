@@ -68,6 +68,7 @@ _kccuAllocMemory
     NV_STATUS status            = NV_OK;
     MEMORY_DESCRIPTOR *pMemDesc = NULL;
     NvU32 aperture              = ADDR_SYSMEM;
+    NvU64 flags                 = MEMDESC_FLAGS_USER_READ_ONLY;
 
     NV_PRINTF(LEVEL_INFO, "KernelCcu: Allocate memory for class members and shared buffer\n");
 
@@ -75,6 +76,8 @@ _kccuAllocMemory
     {
         aperture = ADDR_FBMEM;
     }
+
+    flags |= MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
 
     // Allocate memory & init the KernelCcu class members to store shared buffer info
     pKernelCcu->shrBuf[idx].pCounterDstInfo = portMemAllocNonPaged(sizeof(CCU_SHRBUF_INFO));
@@ -91,7 +94,7 @@ _kccuAllocMemory
 
     // Create a memory descriptor data structure for the shared buffer
     status = memdescCreate(&pKernelCcu->pMemDesc[idx], pGpu, shrBufSize, 0, NV_MEMORY_CONTIGUOUS,
-                           aperture, NV_MEMORY_CACHED, MEMDESC_FLAGS_USER_READ_ONLY);
+                           aperture, NV_MEMORY_CACHED, flags);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "CCU memdescCreate failed for(%u) with status: 0x%x\n", idx, status);

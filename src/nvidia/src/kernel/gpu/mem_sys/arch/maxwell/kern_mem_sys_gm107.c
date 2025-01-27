@@ -226,9 +226,7 @@ kmemsysInitFlushSysmemBuffer_GM107
     if (pKernelMemorySystem->pSysmemFlushBufferMemDesc == NULL)
     {
         const NvU32 flushBufferDmaAddressSize = 40;
-        RmPhysAddr dmaWindowStartAddr = gpuGetDmaStartAddress(pGpu);
-        RmPhysAddr dmaWindowEndAddr = dmaWindowStartAddr +
-            (1ULL << flushBufferDmaAddressSize) - 1;
+        RmPhysAddr dmaWindowEndAddr = (1ULL << flushBufferDmaAddressSize) - 1;
 
         //
         // Sysmem flush buffer
@@ -270,8 +268,7 @@ kmemsysInitFlushSysmemBuffer_GM107
             // (possible on non-Linux platforms).
             //
             pKernelMemorySystem->sysmemFlushBuffer = memdescGetPhysAddr(pKernelMemorySystem->pSysmemFlushBufferMemDesc, AT_GPU, 0);
-            if (pKernelMemorySystem->sysmemFlushBuffer < dmaWindowStartAddr ||
-                pKernelMemorySystem->sysmemFlushBuffer + RM_PAGE_SIZE - 1 > dmaWindowEndAddr)
+            if (pKernelMemorySystem->sysmemFlushBuffer + RM_PAGE_SIZE - 1 > dmaWindowEndAddr)
                 bTryAgain = NV_TRUE;
         }
 
@@ -328,13 +325,6 @@ kmemsysInitFlushSysmemBuffer_GM107
         {
             pKernelMemorySystem->sysmemFlushBuffer = memdescGetPhysAddr(pKernelMemorySystem->pSysmemFlushBufferMemDesc, AT_GPU, 0);
         }
-        else if (status == NV_ERR_INVALID_ADDRESS)
-        {
-            if (NVCPU_IS_PPC64LE && dmaWindowStartAddr != 0)
-            {
-                pKernelMemorySystem->sysmemFlushBuffer = dmaWindowStartAddr;
-            }
-        }
         else
         {
             NV_PRINTF(LEVEL_ERROR,
@@ -344,8 +334,7 @@ kmemsysInitFlushSysmemBuffer_GM107
         }
 
         // Manually redo the memdesc addressability check for the reduced address size
-        if (pKernelMemorySystem->sysmemFlushBuffer < dmaWindowStartAddr ||
-            pKernelMemorySystem->sysmemFlushBuffer + RM_PAGE_SIZE - 1 > dmaWindowEndAddr)
+        if (pKernelMemorySystem->sysmemFlushBuffer + RM_PAGE_SIZE - 1 > dmaWindowEndAddr)
         {
             NvBool bMakeItFatal = NV_TRUE;
             NV_PRINTF(LEVEL_ERROR,

@@ -186,7 +186,7 @@ static void RmCreateOsDescriptor(NVOS32_PARAMETERS *pApi, API_SECURITY_INFO secI
             default:
                 break;
             case NVOS32_DESCRIPTOR_TYPE_OS_PAGE_ARRAY:
-                os_unlock_user_pages(pageCount, pPageArray);
+                os_unlock_user_pages(pageCount, pPageArray, flags);
                 break;
         }
     }

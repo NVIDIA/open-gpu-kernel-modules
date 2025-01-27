@@ -47,6 +47,7 @@
 #include "class/clc56f.h" // AMPERE_CHANNEL_GPFIFO_A
 #include "class/clc86f.h" // HOPPER_CHANNEL_GPFIFO_A
 #include "class/clc96f.h" // BLACKWELL_CHANNEL_GPFIFO_A
+#include "class/clca6f.h" // BLACKWELL_CHANNEL_GPFIFO_B
 #include "class/clc361.h" // VOLTA_USERMODE_A
 #include "class/clc661.h" // HOPPER_USERMODE_A
 
@@ -605,6 +606,11 @@ static NvBool GetChannelClassAndUserDSize(
         NvPushSupportedClass base;
         size_t gpFifoSize;
     } gpFifoDmaClasses[] = {
+    {
+        { BLACKWELL_CHANNEL_GPFIFO_B,
+          NV_AMODEL_GB20X },
+        sizeof(BlackwellBControlGPFifo)
+    },
     {
         { BLACKWELL_CHANNEL_GPFIFO_A,
           NV_AMODEL_BLACKWELL },

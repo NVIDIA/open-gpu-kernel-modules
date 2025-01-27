@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -85,7 +85,7 @@ struct MemoryMulticastFabric {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__MemoryMulticastFabric *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct Memory __nvoc_base_Memory;
 
     // Ancestor object pointers for `staticCast` feature
@@ -116,6 +116,7 @@ struct MemoryMulticastFabric {
 struct NVOC_VTABLE__MemoryMulticastFabric {
     const struct NVOC_VTABLE__Memory Memory;    // (mem) 26 function pointers
 
+    NV_STATUS (*__memorymulticastfabricUnmapFrom__)(struct MemoryMulticastFabric * /*this*/, struct RS_RES_UNMAP_FROM_PARAMS *);  // virtual override (res) base (mem)
     NvBool (*__memorymulticastfabricCanCopy__)(struct MemoryMulticastFabric * /*this*/);  // virtual override (res) base (mem)
     NV_STATUS (*__memorymulticastfabricCopyConstruct__)(struct MemoryMulticastFabric * /*this*/, CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);  // virtual override (mem) base (mem)
     NV_STATUS (*__memorymulticastfabricIsReady__)(struct MemoryMulticastFabric * /*this*/, NvBool);  // virtual override (mem) base (mem)
@@ -140,7 +141,6 @@ struct NVOC_VTABLE__MemoryMulticastFabric {
     NV_STATUS (*__memorymulticastfabricControlFilter__)(struct MemoryMulticastFabric * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (mem)
     NvBool (*__memorymulticastfabricIsPartialUnmapSupported__)(struct MemoryMulticastFabric * /*this*/);  // inline virtual inherited (res) base (mem) body
     NV_STATUS (*__memorymulticastfabricMapTo__)(struct MemoryMulticastFabric * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (mem)
-    NV_STATUS (*__memorymulticastfabricUnmapFrom__)(struct MemoryMulticastFabric * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (mem)
     NvU32 (*__memorymulticastfabricGetRefCount__)(struct MemoryMulticastFabric * /*this*/);  // virtual inherited (res) base (mem)
     void (*__memorymulticastfabricAddAdditionalDependants__)(struct RsClient *, struct MemoryMulticastFabric * /*this*/, RsResourceRef *);  // virtual inherited (res) base (mem)
 };
@@ -175,6 +175,8 @@ NV_STATUS __nvoc_objCreate_MemoryMulticastFabric(MemoryMulticastFabric**, Dynami
 
 
 // Wrapper macros
+#define memorymulticastfabricUnmapFrom_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_vtable->__memorymulticastfabricUnmapFrom__
+#define memorymulticastfabricUnmapFrom(pMemoryMulticastFabric, pParams) memorymulticastfabricUnmapFrom_DISPATCH(pMemoryMulticastFabric, pParams)
 #define memorymulticastfabricCanCopy_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_vtable->__memorymulticastfabricCanCopy__
 #define memorymulticastfabricCanCopy(pMemoryMulticastFabric) memorymulticastfabricCanCopy_DISPATCH(pMemoryMulticastFabric)
 #define memorymulticastfabricCopyConstruct_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_vtable->__memorymulticastfabricCopyConstruct__
@@ -237,14 +239,16 @@ NV_STATUS __nvoc_objCreate_MemoryMulticastFabric(MemoryMulticastFabric**, Dynami
 #define memorymulticastfabricIsPartialUnmapSupported(pResource) memorymulticastfabricIsPartialUnmapSupported_DISPATCH(pResource)
 #define memorymulticastfabricMapTo_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
 #define memorymulticastfabricMapTo(pResource, pParams) memorymulticastfabricMapTo_DISPATCH(pResource, pParams)
-#define memorymulticastfabricUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
-#define memorymulticastfabricUnmapFrom(pResource, pParams) memorymulticastfabricUnmapFrom_DISPATCH(pResource, pParams)
 #define memorymulticastfabricGetRefCount_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
 #define memorymulticastfabricGetRefCount(pResource) memorymulticastfabricGetRefCount_DISPATCH(pResource)
 #define memorymulticastfabricAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
 #define memorymulticastfabricAddAdditionalDependants(pClient, pResource, pReference) memorymulticastfabricAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
+static inline NV_STATUS memorymulticastfabricUnmapFrom_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, struct RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pMemoryMulticastFabric->__nvoc_vtable->__memorymulticastfabricUnmapFrom__(pMemoryMulticastFabric, pParams);
+}
+
 static inline NvBool memorymulticastfabricCanCopy_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric) {
     return pMemoryMulticastFabric->__nvoc_vtable->__memorymulticastfabricCanCopy__(pMemoryMulticastFabric);
 }
@@ -369,10 +373,6 @@ static inline NV_STATUS memorymulticastfabricMapTo_DISPATCH(struct MemoryMultica
     return pResource->__nvoc_vtable->__memorymulticastfabricMapTo__(pResource, pParams);
 }
 
-static inline NV_STATUS memorymulticastfabricUnmapFrom_DISPATCH(struct MemoryMulticastFabric *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__memorymulticastfabricUnmapFrom__(pResource, pParams);
-}
-
 static inline NvU32 memorymulticastfabricGetRefCount_DISPATCH(struct MemoryMulticastFabric *pResource) {
     return pResource->__nvoc_vtable->__memorymulticastfabricGetRefCount__(pResource);
 }
@@ -380,6 +380,8 @@ static inline NvU32 memorymulticastfabricGetRefCount_DISPATCH(struct MemoryMulti
 static inline void memorymulticastfabricAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct MemoryMulticastFabric *pResource, RsResourceRef *pReference) {
     pResource->__nvoc_vtable->__memorymulticastfabricAddAdditionalDependants__(pClient, pResource, pReference);
 }
+
+NV_STATUS memorymulticastfabricUnmapFrom_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, struct RS_RES_UNMAP_FROM_PARAMS *pParams);
 
 NvBool memorymulticastfabricCanCopy_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric);
 

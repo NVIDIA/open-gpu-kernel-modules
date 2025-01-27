@@ -386,26 +386,8 @@ osHandleGpuLost
             kgspRcAndNotifyAllChannels(pGpu, pKernelGsp, ROBUST_CHANNEL_GPU_HAS_FALLEN_OFF_THE_BUS, NV_FALSE);
         }
 
-        // Trigger the OS's PCI recovery mechanism
-        if (nv_pci_trigger_recovery(nv) != NV_OK)
-        {
-            //
-            // Initiate a crash dump immediately, since the OS doesn't appear
-            // to have a mechanism wired up for attempted recovery.
-            //
-            (void) RmLogGpuCrash(pGpu);
-        }
-        else
-        {
-            //
-            // Make the SW state stick around until the recovery can start, but
-            // don't change the PDB property: this is only used to report to
-            // clients whether or not persistence mode is enabled, and we'll
-            // need it after the recovery callbacks to restore the correct
-            // persistence mode for the GPU.
-            //
-            osModifyGpuSwStatePersistence(pGpu->pOsGpuInfo, NV_TRUE);
-        }
+        // Initiate a crash dump immediately.
+        RmLogGpuCrash(pGpu);
 
         // Set SURPRISE_REMOVAL flag for eGPU to help in device removal.
         if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU))
@@ -732,6 +714,13 @@ osInitNvMapping(
 
         gpuAttachArg->iovaspaceId     = nv->iovaspace_id;
         gpuAttachArg->cpuNumaNodeId   = nv->cpu_numa_node_id;
+
+        if (nv->iovaspace_id != NV_IOVA_DOMAIN_NONE)
+        {
+            // Default - PCIe GPUs are connected via NISO IOMMU
+            nv->iommus.iso_iommu_present  = NV_FALSE;
+            nv->iommus.niso_iommu_present = NV_TRUE;
+        }
     }
 
     //
@@ -774,7 +763,6 @@ osInitNvMapping(
     //
     nv_set_dma_address_size(nv, gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM));
 
-    pGpu->dmaStartAddress = (RmPhysAddr)nv_get_dma_start_address(nv);
     if (nv->fb != NULL)
     {
         pGpu->registerAccess.gpuFbAddr = (GPUHWREG*) nv->fb->map;
@@ -835,6 +823,11 @@ osInitNvMapping(
     else
     {
         pGpu->setProperty(pGpu, PDB_PROP_GPU_DISP_PB_REQUIRES_SMMU_BYPASS, NV_TRUE);
+    }
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TRIGGER_PCIE_FLR))
+    {
+        nv->flags |= NV_FLAG_TRIGGER_FLR;
     }
 }
 
@@ -1407,6 +1400,7 @@ NvBool RmInitPrivateState(
     nvp->pmc_boot_0 = pmc_boot_0;
     nvp->pmc_boot_1 = pmc_boot_1;
     nvp->pmc_boot_42 = pmc_boot_42;
+    nvp->db_supported = -1;
     NV_SET_NV_PRIV(pNv, nvp);
 
     return NV_TRUE;
@@ -1426,6 +1420,7 @@ void RmClearPrivateState(
     NvU32 x = 0;
     NvU32 pmc_boot_0, pmc_boot_1, pmc_boot_42;
     NvBool pr3_acpi_method_present = 0;
+    int db_supported;
 
     //
     // Do not clear private state after GPU resets, it is used while
@@ -1446,6 +1441,7 @@ void RmClearPrivateState(
     pmc_boot_1 = nvp->pmc_boot_1;
     pmc_boot_42 = nvp->pmc_boot_42;
     pr3_acpi_method_present = nvp->pr3_acpi_method_present;
+    db_supported = nvp->db_supported;
 
     for (x = 0; x < MAX_I2C_ADAPTERS; x++)
     {
@@ -1463,6 +1459,7 @@ void RmClearPrivateState(
     nvp->pmc_boot_1 = pmc_boot_1;
     nvp->pmc_boot_42 = pmc_boot_42;
     nvp->pr3_acpi_method_present = pr3_acpi_method_present;
+    nvp->db_supported = db_supported;
 
     for (x = 0; x < MAX_I2C_ADAPTERS; x++)
     {

@@ -81,7 +81,7 @@ struct KernelCrashCatEngine {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__KernelCrashCatEngine *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct CrashCatEngine __nvoc_base_CrashCatEngine;
 
     // Ancestor object pointers for `staticCast` feature

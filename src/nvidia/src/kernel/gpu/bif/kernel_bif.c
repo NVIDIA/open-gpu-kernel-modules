@@ -88,6 +88,9 @@ kbifConstructEngine_IMPL
     // Cache GPU link capabilities
     kbifGetGpuLinkCapabilities(pGpu, pKernelBif);
 
+    // Cache L1SS enablement info from chipset side
+    kbifCacheChipsetL1SubstatesEnable(pGpu, pKernelBif);
+
     // Used to track when the link has gone into Recovery, which can cause CEs.
     pKernelBif->EnteredRecoverySinceErrorsLastChecked = NV_FALSE;
 
@@ -171,6 +174,9 @@ kbifStateLoad_IMPL
 
     // Check for stale PCI-E dev ctrl/status errors and AER errors
     kbifClearConfigErrors(pGpu, pKernelBif, NV_TRUE, KBIF_CLEAR_XVE_AER_ALL_MASK);
+
+    // Initialize LTR from config space
+    kbifInitLtr_HAL(pGpu, pKernelBif);
 
     //  Cache PCI config registers to be restored during resume
     if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH))
@@ -274,6 +280,64 @@ kbifStateUnload_IMPL
     return NV_OK;
 }
 
+
+/*!
+ * @brief Cache L1substates info from chipset or bridge behind the GPUs.
+ *
+ * @param[in]  pGpu       GPU object pointer
+ * @param[in]  pKernelBif Kernel BIF object pointer
+ */
+void
+kbifCacheChipsetL1SubstatesEnable_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    OBJSYS                  *pSys = SYS_GET_INSTANCE();
+    OBJCL                   *pCl  = SYS_GET_CL(pSys);
+    PexL1SubstateCapability  L1SsCap;
+    NvBool                   bChipsetPcipmL12Enabled;
+    NvBool                   bChipsetPcipmL11Enabled;
+    NvBool                   bChipsetAspmL12Enabled;
+    NvBool                   bChipsetAspmL11Enabled;
+
+    if (pGpu->gpuClData.upstreamPort.addr.valid)
+    {
+        if (pCl && (clPcieReadL1SsCapability(pGpu, pCl, &L1SsCap) == NV_OK))
+        {
+            pKernelBif->chipsetL1ssEnable = L1SsCap.Control1Reg;
+
+            bChipsetPcipmL12Enabled = FLD_TEST_DRF(2080, _CTRL_BUS_INFO_PCIE_L1_SS_CTRL1, _PCIPM_L1_2_ENABLED, _YES, L1SsCap.Control1Reg);
+            bChipsetPcipmL11Enabled = FLD_TEST_DRF(2080, _CTRL_BUS_INFO_PCIE_L1_SS_CTRL1, _PCIPM_L1_1_ENABLED, _YES, L1SsCap.Control1Reg);
+            bChipsetAspmL12Enabled  = FLD_TEST_DRF(2080, _CTRL_BUS_INFO_PCIE_L1_SS_CTRL1, _ASPM_L1_2_ENABLED,  _YES, L1SsCap.Control1Reg);
+            bChipsetAspmL11Enabled  = FLD_TEST_DRF(2080, _CTRL_BUS_INFO_PCIE_L1_SS_CTRL1, _ASPM_L1_1_ENABLED,  _YES, L1SsCap.Control1Reg);
+
+            //
+            // L1 PM substates can be done with ASPM or PCI-PM
+            // Its supported if any of L1.1/L1.2 PCI-PM/ASPM susbtates is enabled
+            //
+            if (bChipsetPcipmL12Enabled || bChipsetPcipmL11Enabled || bChipsetAspmL12Enabled || bChipsetAspmL11Enabled)
+            {
+                // Chipset Supports L1 PM Substates
+                NV_PRINTF(LEVEL_INFO,
+                          "Chipset supports L1 PM substates.\n      L1 PM Capabilities Register 0x%x\n      L1 PM Control 1 Register 0x%x\n      L1 PM Control 2 Register 0x%x\n",
+                          L1SsCap.Capabilities, L1SsCap.Control1Reg, L1SsCap.Control1Reg);
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_ERROR,
+                          "L1 PM susbstates is not enabled in RootPort. L1 PM Control 1 Register 0x%x \n",
+                          L1SsCap.Control1Reg);
+            }
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to get L1 PM substates capabilites from Root Port\n");
+        }
+    }
+}
+
 /*!
  * @brief Initialize DMA caps
  *
@@ -364,7 +428,6 @@ kbifStaticInfoInit_IMPL
                             pStaticInfo->bIsDeviceMultiFunction);
     pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_GCX_PMU_CFG_SPACE_RESTORE,
                             pStaticInfo->bGcxPmuCfgSpaceRestore);
-    pKernelBif->dmaWindowStartAddress = pStaticInfo->dmaWindowStartAddress;
 
 kBifStaticInfoInit_IMPL_exit:
     portMemFree(pStaticInfo);
@@ -762,7 +825,7 @@ _kbifInitRegistryOverrides
         else
         {
             // The regkey was set to a 0, disable config save
-            pKernelBif->setProperty(pBif, PDB_PROP_KBIF_FORCE_PCIE_CONFIG_SAVE, NV_FALSE);
+            pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_FORCE_PCIE_CONFIG_SAVE, NV_FALSE);
         }
     }
 

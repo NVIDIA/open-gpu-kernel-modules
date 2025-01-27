@@ -161,7 +161,7 @@ struct uvm_mem_struct
     // lifetime of the GPU. For CPU allocations there is no lifetime limitation.
     uvm_gpu_t *backing_gpu;
 
-    // For Confidential Computing, the accessing GPU needs to be known at alloc
+    // In Confidential Computing, the accessing GPU needs to be known at alloc
     // time for sysmem allocations.
     uvm_gpu_t *dma_owner;
 

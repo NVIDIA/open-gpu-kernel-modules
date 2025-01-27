@@ -72,7 +72,8 @@ static void *__nv_drm_gem_user_memory_prime_vmap(
     struct nv_drm_gem_user_memory *nv_user_memory = to_nv_user_memory(nv_gem);
 
     return nv_drm_vmap(nv_user_memory->pages,
-                           nv_user_memory->pages_count);
+                           nv_user_memory->pages_count,
+                           true);
 }
 
 static void __nv_drm_gem_user_memory_prime_vunmap(

@@ -59,6 +59,8 @@
 #include "class/clc57e.h" /* NVC57E_WINDOW_CHANNEL_DMA */
 #include "class/clc67b.h" /* NVC67B_WINDOW_IMM_CHANNEL_DMA */
 #include "class/clc67e.h" /* NVC67E_WINDOW_CHANNEL_DMA */
+#include "class/clca7b.h" /* NVCA7B_WINDOW_IMM_CHANNEL_DMA */
+#include "class/clca7e.h" /* NVCA7E_WINDOW_CHANNEL_DMA */
 
 #include "class/cl917b.h" /* NV917B_OVERLAY_IMM_CHANNEL_PIO */
 
@@ -976,6 +978,8 @@ static NvBool ProbeHeadCountAndWindowAssignment(NVDevEvoPtr pDevEvo)
                              &winHeadAssignParams, sizeof(winHeadAssignParams));
 
         if (ret == NVOS_STATUS_SUCCESS) {
+            NvBool windowAssigned[NV_MAX_HEADS] = { FALSE };
+
             for (win = 0; win < NVKMS_MAX_WINDOWS_PER_DISP; win++) {
                 NvU32 windowHeadMask = winHeadAssignParams.windowHeadMask[win];
 
@@ -1016,9 +1020,14 @@ static NvBool ProbeHeadCountAndWindowAssignment(NVDevEvoPtr pDevEvo)
                     head = BIT_IDX_32(windowHeadMask);
                 }
 
+                if (!nvkms_enable_overlay_layers() && windowAssigned[head]) {
+                    continue;
+                }
+
                 if (first) {
                     pDevEvo->headForWindow[win] = head;
                     headsWithWindowsMask |= windowHeadMask;
+                    windowAssigned[head] = TRUE;
                 } else {
                     nvAssert(pDevEvo->headForWindow[win] == head);
                 }
@@ -3179,6 +3188,8 @@ NvBool nvRMAllocateWindowChannels(NVDevEvoPtr pDevEvo)
         NvU32 windowClass;
         NvU32 immClass;
     } windowChannelClasses[] = {
+        { NVCA7E_WINDOW_CHANNEL_DMA,
+          NVCA7B_WINDOW_IMM_CHANNEL_DMA },
         { NVC67E_WINDOW_CHANNEL_DMA,
           NVC67B_WINDOW_IMM_CHANNEL_DMA },
         { NVC57E_WINDOW_CHANNEL_DMA,

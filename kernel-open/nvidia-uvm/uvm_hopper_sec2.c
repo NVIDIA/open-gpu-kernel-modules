@@ -93,6 +93,11 @@ void uvm_hal_hopper_sec2_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32
     uvm_gpu_address_t sign_auth_tag_gpu_va;
     NvU32 *csl_sign_init = push->next;
 
+    UVM_ASSERT_MSG(uvm_push_get_gpu(push)->parent->sec2_hal->semaphore_target_is_valid(push, gpu_va),
+                   "Semaphore target validation failed in channel %s, GPU %s.\n",
+                   push->channel->name,
+                   uvm_gpu_name(uvm_push_get_gpu(push)));
+
     UVM_ASSERT(IS_ALIGNED(NvU64_LO32(gpu_va), 1 << HWSHIFT(CBA2, SEMAPHORE_B, LOWER)));
 
     sem_lo = READ_HWVALUE(NvU64_LO32(gpu_va), CBA2, SEMAPHORE_B, LOWER);

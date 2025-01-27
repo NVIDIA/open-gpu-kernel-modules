@@ -73,6 +73,8 @@ struct nv_drm_gem_object {
 
     struct NvKmsKapiMemory *pMemory;
 
+    bool is_drm_dumb;
+
 #if defined(NV_DRM_FENCE_AVAILABLE) && !defined(NV_DRM_GEM_OBJECT_HAS_RESV)
     nv_dma_resv_t  resv;
 #endif

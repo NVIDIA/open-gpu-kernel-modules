@@ -41,6 +41,7 @@
 #include "mem_mgr/vaspace.h"
 #include "mem_mgr/gpu_vaspace.h"
 #include "mem_mgr/virtual_mem.h"
+#include "rmapi/mapping_list.h"
 #include "class/cl0000.h"
 #include "class/cl90f1.h" // FERMI_VASPACE_A
 #include "ctrl/ctrl0080/ctrl0080dma.h"
@@ -125,6 +126,8 @@ dmaAllocMap_IMPL
     dmaAllocMapFlag = pDmaMappingInfo->Flags;
     if (pVirtualMemory->bReserveVaOnAlloc)
         dmaAllocMapFlag = FLD_SET_DRF(OS46, _FLAGS, _DMA_UNICAST_REUSE_ALLOC, _TRUE, dmaAllocMapFlag);
+
+    // print debug on these addressses
 
     //
     // Calculate the virtual address of the mapping.
@@ -721,7 +724,8 @@ deviceCtrlCmdDmaAdvSchedGetVaCaps_IMPL
     const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig =
         kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
 
-    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() || rmapiInRtd3PmPath(),
+        NV_ERR_INVALID_LOCK_STATE);
 
     if (IS_GSP_CLIENT(pGpu) && pParams->hVASpace == NV01_NULL_OBJECT && pDevice->pVASpace == NULL)
     {
@@ -1171,12 +1175,27 @@ dmaPageArrayInitFromMemDesc
 (
     DMA_PAGE_ARRAY     *pPageArray,         //!< [out] Abstracted page array.
     MEMORY_DESCRIPTOR  *pMemDesc,           //!< [in] Memory descriptor.
+    OBJGPU             *pMappingGpu,        //!< [in] Mapping GPU, if different from default GPU
     ADDRESS_TRANSLATION addressTranslation  //!< [in] Address translation for page array.
 )
 {
-    dmaPageArrayInit(pPageArray,
-        memdescGetPteArray(pMemDesc, addressTranslation),
-        memdescGetPteArraySize(pMemDesc, addressTranslation));
+    NvU64 pageArrayFlags = 0;
+
+    RmPhysAddr *pteArray;
+
+    if (pMappingGpu != NULL)
+    {
+        pteArray = memdescGetPteArrayForGpu(pMemDesc, pMappingGpu, addressTranslation);
+    }
+    else
+    {
+        pteArray = memdescGetPteArray(pMemDesc, addressTranslation);
+    }
+
+    dmaPageArrayInitWithFlags(pPageArray,
+        pteArray,
+        memdescGetPteArraySize(pMemDesc, addressTranslation),
+        pageArrayFlags);
 }
 
 /*!

@@ -47,6 +47,7 @@
 #include "class/clc9c0.h"
 #include "class/clcbc0.h"
 #include "class/clcdc0.h"
+#include "class/clcec0.h"
 // GFX
 #include "class/clb097.h"
 #include "class/clb197.h"
@@ -59,6 +60,7 @@
 #include "class/clc997.h"
 #include "class/clcb97.h"
 #include "class/clcd97.h"
+#include "class/clce97.h"
 // TWOD
 #include "class/cl902d.h"
 
@@ -114,6 +116,7 @@ kgrmgrGetGrObjectType_IMPL
         case ADA_COMPUTE_A:
         case HOPPER_COMPUTE_A:
         case BLACKWELL_COMPUTE_A:
+        case BLACKWELL_COMPUTE_B:
             *pObjectType = GR_OBJECT_TYPE_COMPUTE;
             break;
         case MAXWELL_A:
@@ -127,6 +130,7 @@ kgrmgrGetGrObjectType_IMPL
         case ADA_A:
         case HOPPER_A:
         case BLACKWELL_A:
+        case BLACKWELL_B:
             *pObjectType = GR_OBJECT_TYPE_3D;
             break;
         case FERMI_TWOD_A:

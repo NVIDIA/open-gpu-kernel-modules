@@ -208,10 +208,11 @@ knvlinkApplyRegkeyOverrides_IMPL
     // NOTE: This is used only on Pascal. Volta and beyond, this should not be used
     //
     if (NV_OK == osReadRegistryDword(pGpu,
-                NV_REG_STR_RM_NVLINK_ENABLE, &pKernelNvlink->registryLinkMask))
+                NV_REG_STR_RM_NVLINK_ENABLE, &regdata))
     {
+        pKernelNvlink->registryLinkMask = regdata;
         pKernelNvlink->bRegistryLinkOverride = NV_TRUE;
-        NV_PRINTF(LEVEL_INFO, "Enable NvLinks 0x%x via regkey\n",
+        NV_PRINTF(LEVEL_INFO, "Enable NvLinks 0x%llx via regkey\n",
                   pKernelNvlink->registryLinkMask);
     }
 

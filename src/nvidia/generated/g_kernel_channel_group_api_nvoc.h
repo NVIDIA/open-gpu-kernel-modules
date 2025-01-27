@@ -100,7 +100,7 @@ struct KernelChannelGroupApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__KernelChannelGroupApi *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct GpuResource __nvoc_base_GpuResource;
 
     // Ancestor object pointers for `staticCast` feature
@@ -111,7 +111,7 @@ struct KernelChannelGroupApi {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct KernelChannelGroupApi *__nvoc_pbase_KernelChannelGroupApi;    // kchangrpapi
 
-    // Vtable with 16 per-object function pointers
+    // Vtable with 17 per-object function pointers
     NV_STATUS (*__kchangrpapiCtrlCmdGpFifoSchedule__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_GPFIFO_SCHEDULE_PARAMS *);  // exported (id=0xa06c0101)
     NV_STATUS (*__kchangrpapiCtrlCmdBind__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_BIND_PARAMS *);  // exported (id=0xa06c0102)
     NV_STATUS (*__kchangrpapiCtrlCmdSetTimeslice__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_TIMESLICE_PARAMS *);  // exported (id=0xa06c0103)
@@ -128,6 +128,7 @@ struct KernelChannelGroupApi {
     NV_STATUS (*__kchangrpapiCtrlSetTpcPartitionMode__)(struct KernelChannelGroupApi * /*this*/, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *);  // inline exported (id=0x900101) body
     NV_STATUS (*__kchangrpapiCtrlGetMMUDebugMode__)(struct KernelChannelGroupApi * /*this*/, NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS *);  // inline exported (id=0x900105) body
     NV_STATUS (*__kchangrpapiCtrlProgramVidmemPromote__)(struct KernelChannelGroupApi * /*this*/, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *);  // inline exported (id=0x900107) body
+    NV_STATUS (*__kchangrpapiCtrlSetLgSectorPromotion__)(struct KernelChannelGroupApi * /*this*/, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *);  // inline exported (id=0x90010b) body
 
     // Data members
     struct KernelChannelGroup *pKernelChannelGroup;
@@ -237,6 +238,8 @@ NV_STATUS __nvoc_objCreate_KernelChannelGroupApi(KernelChannelGroupApi**, Dynami
 #define kchangrpapiCtrlGetMMUDebugMode(pKernelChannelGroupApi, pParams) kchangrpapiCtrlGetMMUDebugMode_DISPATCH(pKernelChannelGroupApi, pParams)
 #define kchangrpapiCtrlProgramVidmemPromote_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlProgramVidmemPromote__
 #define kchangrpapiCtrlProgramVidmemPromote(pKernelChannelGroupApi, pParams) kchangrpapiCtrlProgramVidmemPromote_DISPATCH(pKernelChannelGroupApi, pParams)
+#define kchangrpapiCtrlSetLgSectorPromotion_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlSetLgSectorPromotion__
+#define kchangrpapiCtrlSetLgSectorPromotion(pKernelChannelGroupApi, pParams) kchangrpapiCtrlSetLgSectorPromotion_DISPATCH(pKernelChannelGroupApi, pParams)
 #define kchangrpapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresMap__
 #define kchangrpapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) kchangrpapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define kchangrpapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresUnmap__
@@ -355,6 +358,10 @@ static inline NV_STATUS kchangrpapiCtrlGetMMUDebugMode_DISPATCH(struct KernelCha
 
 static inline NV_STATUS kchangrpapiCtrlProgramVidmemPromote_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *pParams) {
     return pKernelChannelGroupApi->__kchangrpapiCtrlProgramVidmemPromote__(pKernelChannelGroupApi, pParams);
+}
+
+static inline NV_STATUS kchangrpapiCtrlSetLgSectorPromotion_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *pParams) {
+    return pKernelChannelGroupApi->__kchangrpapiCtrlSetLgSectorPromotion__(pKernelChannelGroupApi, pParams);
 }
 
 static inline NV_STATUS kchangrpapiMap_DISPATCH(struct KernelChannelGroupApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
@@ -490,6 +497,10 @@ static inline NV_STATUS kchangrpapiCtrlGetMMUDebugMode_a094e1(struct KernelChann
 }
 
 static inline NV_STATUS kchangrpapiCtrlProgramVidmemPromote_a094e1(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *pParams) {
+    return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannelGroupApi->hKernelGraphicsContext);
+}
+
+static inline NV_STATUS kchangrpapiCtrlSetLgSectorPromotion_a094e1(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *pParams) {
     return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannelGroupApi->hKernelGraphicsContext);
 }
 

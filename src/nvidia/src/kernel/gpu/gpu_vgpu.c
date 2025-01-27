@@ -331,17 +331,13 @@ gpuGetSkuInfo_VF
     return NV_OK;
 }
 
-void
-gpuDetermineMIGSupport_VF
+NvBool
+gpuValidateMIGSupport_VF
 (
     OBJGPU *pGpu
 )
 {
     VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
 
-    if (pVSI->gpuPartitionInfo.swizzId == KMIGMGR_SWIZZID_INVALID)
-    {
-            pGpu->setProperty(pGpu, PDB_PROP_GPU_MIG_SUPPORTED, NV_FALSE);
-    }
-
+    return pVSI->gpuPartitionInfo.swizzId != KMIGMGR_SWIZZID_INVALID;
 }

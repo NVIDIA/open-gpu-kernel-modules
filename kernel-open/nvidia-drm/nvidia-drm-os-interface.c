@@ -42,7 +42,7 @@
 #endif
 
 bool nv_drm_modeset_module_param = false;
-bool nv_drm_fbdev_module_param = false;
+bool nv_drm_fbdev_module_param = true;
 
 void *nv_drm_calloc(size_t nmemb, size_t size)
 {
@@ -156,9 +156,15 @@ void nv_drm_unlock_user_pages(unsigned long  pages_count, struct page **pages)
 #define VM_USERMAP 0
 #endif
 
-void *nv_drm_vmap(struct page **pages, unsigned long pages_count)
+void *nv_drm_vmap(struct page **pages, unsigned long pages_count, bool cached)
 {
-    return vmap(pages, pages_count, VM_USERMAP, PAGE_KERNEL);
+    pgprot_t prot = PAGE_KERNEL;
+
+    if (!cached) {
+        prot = pgprot_noncached(PAGE_KERNEL);
+    }
+
+    return vmap(pages, pages_count, VM_USERMAP, prot);
 }
 
 void nv_drm_vunmap(void *address)

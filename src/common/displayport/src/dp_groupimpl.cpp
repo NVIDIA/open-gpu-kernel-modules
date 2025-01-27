@@ -346,11 +346,11 @@ void GroupImpl::updateVbiosScratchRegister(Device * lastDev)
 //
 // Helper function for attaching and detaching heads.
 //
-// For attach, we will assert if group already has head attached but for 
+// For attach, we will assert if group already has head attached but for
 // some device in the group, active group did not point to current group.
-// For detach, we will assert if the group does not have head attached but  
-// some device in group has an active group OR head is marked attached but 
-// not all devies in the group have the current group as active group.  
+// For detach, we will assert if the group does not have head attached but
+// some device in group has an active group OR head is marked attached but
+// not all devies in the group have the current group as active group.
 // This also sets or clears dev->activeGroup for each contained
 // device.
 //
@@ -374,7 +374,7 @@ void GroupImpl::setHeadAttached(bool attached)
             {
                 DP_ASSERT(di->activeGroup == NULL);
             }
-            else 
+            else
             {
                 DP_ASSERT(di->activeGroup == this);
             }

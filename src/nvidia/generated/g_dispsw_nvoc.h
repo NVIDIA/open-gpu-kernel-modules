@@ -133,7 +133,7 @@ struct DispSwObject {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__DispSwObject *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct ChannelDescendant __nvoc_base_ChannelDescendant;
 
     // Ancestor object pointers for `staticCast` feature

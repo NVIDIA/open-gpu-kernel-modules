@@ -50,17 +50,43 @@ extern "C" {
 
 #include "kernel/core/core.h"
 #include "kernel/core/info_block.h"
-#include "kernel/gpu/disp/disp_objs.h"
 #include "kernel/gpu/eng_state.h"
-#include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/gpu.h"
 #include "kernel/gpu/mem_mgr/virt_mem_allocator_common.h"
-#include "kernel/mem_mgr/vaspace.h"
 #include "kernel/mem_mgr/virtual_mem.h"
-#include "kernel/rmapi/control.h"
-#include "kernel/rmapi/mapping_list.h"
+
+#include "ctrl/ctrl0080/ctrl0080dma.h" // NV0080_CTRL_DMA_*_PARAMS
 
 typedef struct DMA_PAGE_ARRAY DMA_PAGE_ARRAY;
+
+
+struct OBJVASPACE;
+
+#ifndef __NVOC_CLASS_OBJVASPACE_TYPEDEF__
+#define __NVOC_CLASS_OBJVASPACE_TYPEDEF__
+typedef struct OBJVASPACE OBJVASPACE;
+#endif /* __NVOC_CLASS_OBJVASPACE_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_OBJVASPACE
+#define __nvoc_class_id_OBJVASPACE 0x6c347f
+#endif /* __nvoc_class_id_OBJVASPACE */
+
+
+
+struct KernelChannel;
+
+#ifndef __NVOC_CLASS_KernelChannel_TYPEDEF__
+#define __NVOC_CLASS_KernelChannel_TYPEDEF__
+typedef struct KernelChannel KernelChannel;
+#endif /* __NVOC_CLASS_KernelChannel_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_KernelChannel
+#define __nvoc_class_id_KernelChannel 0x5d8d70
+#endif /* __nvoc_class_id_KernelChannel */
+
+
+typedef struct _def_client_dma_mapping_info CLI_DMA_MAPPING_INFO;
+typedef struct _def_client_dma_alloc_map_info CLI_DMA_ALLOC_MAP_INFO;
 
 //
 // DMA mapping calls can invalidate synchronously which always leaves the TLB in a
@@ -117,7 +143,7 @@ struct VirtMemAllocator {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__VirtMemAllocator *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
 
     // Ancestor object pointers for `staticCast` feature
@@ -480,10 +506,10 @@ static inline void dmaFreeBar1P2PMapping_b3696a(struct VirtMemAllocator *pDma, C
 
 NV_STATUS dmaStatePostLoad_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, NvU32 arg3);
 
-NV_STATUS dmaAllocMap_IMPL(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, VirtualMemory *arg4, Memory *arg5, CLI_DMA_MAPPING_INFO *arg6);
+NV_STATUS dmaAllocMap_IMPL(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, struct VirtualMemory *arg4, struct Memory *arg5, CLI_DMA_MAPPING_INFO *arg6);
 
 #ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline NV_STATUS dmaAllocMap(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, VirtualMemory *arg4, Memory *arg5, CLI_DMA_MAPPING_INFO *arg6) {
+static inline NV_STATUS dmaAllocMap(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, struct VirtualMemory *arg4, struct Memory *arg5, CLI_DMA_MAPPING_INFO *arg6) {
     NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -491,10 +517,10 @@ static inline NV_STATUS dmaAllocMap(struct OBJGPU *pGpu, struct VirtMemAllocator
 #define dmaAllocMap(pGpu, pDma, arg3, arg4, arg5, arg6) dmaAllocMap_IMPL(pGpu, pDma, arg3, arg4, arg5, arg6)
 #endif //__nvoc_virt_mem_allocator_h_disabled
 
-NV_STATUS dmaFreeMap_IMPL(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, VirtualMemory *arg4, CLI_DMA_MAPPING_INFO *arg5, NvU32 flags);
+NV_STATUS dmaFreeMap_IMPL(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, struct VirtualMemory *arg4, CLI_DMA_MAPPING_INFO *arg5, NvU32 flags);
 
 #ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline NV_STATUS dmaFreeMap(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, VirtualMemory *arg4, CLI_DMA_MAPPING_INFO *arg5, NvU32 flags) {
+static inline NV_STATUS dmaFreeMap(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, struct VirtualMemory *arg4, CLI_DMA_MAPPING_INFO *arg5, NvU32 flags) {
     NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -520,25 +546,6 @@ static inline NV_STATUS dmaFreeMap(struct OBJGPU *pGpu, struct VirtMemAllocator 
 #define VAS_PAGESIZE_IDX_512M  3
 #define VAS_PAGESIZE_IDX_256G  4
 
-// VMM-TODO Used by old VAS Object
-#define VAS_NUM_PAGESIZE_TYPES VAS_PAGESIZE_IDX_BIG+1
-#define VAS_PAGESIZE_IDX(PS)   ((PS) != 4096)
-
-// Convert a page size mask to a string for debug prints.
-#define VAS_PAGESIZE_MASK_STR(mask)                      \
-    (!ONEBITSET(mask) ? "BOTH" :                         \
-        ((mask == RM_PAGE_SIZE) ? "4KB" : "BIG"))
-
-// Value to pass to dmaAllocVASpace_HAL for both (default) page size.
-#define VAS_ALLOC_PAGESIZE_BOTH  (0x0)
-
-typedef enum
-{
-    VASPACE_BIG_PAGE_SIZE_64K_IDX     = 0,
-    VASPACE_BIG_PAGE_SIZE_128K_IDX    = 1,
-    VASPACE_NUM_BIG_PAGE_TYPES        = 2
-}VASPACE_BIG_PAGE_SIZE_IDX;
-
 /*!
  * Abstracts an array of physical page addresses.
  */
@@ -562,14 +569,9 @@ void dmaPageArrayInitWithFlags(DMA_PAGE_ARRAY *pPageArray, void *pPageData, NvU3
 
 void dmaPageArrayInitFromMemDesc(DMA_PAGE_ARRAY *pPageArray,
                                  MEMORY_DESCRIPTOR *pMemDesc,
+                                 struct OBJGPU *pMappingGpu,
                                  ADDRESS_TRANSLATION addressTranslation);
 RmPhysAddr dmaPageArrayGetPhysAddr(DMA_PAGE_ARRAY *pPageArray, NvU32 pageIndex);
-
-/*!
- * Indicates that if the VA range being initialized is sparse,
- * the sparse bit should be set for the range.
- */
-#define DMA_INIT_VAS_FLAGS_ENABLE_SPARSE  NVBIT(0)
 
 //
 // hal.dmaUpdateVASpace() flags

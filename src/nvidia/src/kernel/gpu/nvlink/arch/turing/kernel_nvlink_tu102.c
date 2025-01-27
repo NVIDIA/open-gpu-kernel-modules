@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,13 +48,13 @@ knvlinkFilterBridgeLinks_TU102
     NvU32     linkId;
 
     // All links from Turing+ are sensable by receiver detect
-    pKernelNvlink->bridgeSensableLinks = pKernelNvlink->discoveredLinks;
+    pKernelNvlink->bridgeSensableLinks = KNVLINK_GET_MASK(pKernelNvlink, discoveredLinks, 32);
 
     // If connections are forced through chiplib, return enabled links
     if (pKernelNvlink->bRegistryLinkOverride)
     {
-        pKernelNvlink->connectedLinksMask = pKernelNvlink->enabledLinks;
-        pKernelNvlink->bridgedLinks       = pKernelNvlink->enabledLinks;
+        pKernelNvlink->connectedLinksMask = KNVLINK_GET_MASK(pKernelNvlink, enabledLinks, 32);
+        pKernelNvlink->bridgedLinks       = KNVLINK_GET_MASK(pKernelNvlink, enabledLinks, 32);
 
         NV_PRINTF(LEVEL_INFO,
                   "Connections forced through chiplib. ConnectedLinksMask same as "
@@ -64,7 +64,7 @@ knvlinkFilterBridgeLinks_TU102
     }
 
     // Mark the links as bridged if receiver detect has passed
-    FOR_EACH_INDEX_IN_MASK(32, linkId, pKernelNvlink->discoveredLinks)
+    FOR_EACH_INDEX_IN_MASK(32, linkId, KNVLINK_GET_MASK(pKernelNvlink, discoveredLinks, 32))
     {
 #if defined(INCLUDE_NVLINK_LIB)
 

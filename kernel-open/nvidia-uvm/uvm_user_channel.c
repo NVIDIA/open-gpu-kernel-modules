@@ -236,7 +236,8 @@ static uvm_user_channel_t *find_user_channel(uvm_va_space_t *va_space, uvm_rm_us
 // The criteria are:
 // 1) gpu_va_space must match
 // 2) rm_descriptor must match
-// 3) new_user_channel's TSG matches existing mappings
+// 3) hw_runlist_id must match
+// 4) new_user_channel's TSG matches existing mappings
 static uvm_va_range_channel_t *find_va_range(uvm_user_channel_t *new_user_channel, NvP64 rm_descriptor)
 {
     uvm_gpu_va_space_t *gpu_va_space = new_user_channel->gpu_va_space;
@@ -250,6 +251,7 @@ static uvm_va_range_channel_t *find_va_range(uvm_user_channel_t *new_user_channe
         UVM_ASSERT(channel_range->ref_count > 0);
 
         if (channel_range->tsg.valid &&
+            channel_range->hw_runlist_id == new_user_channel->hw_runlist_id &&
             channel_range->tsg.id == new_user_channel->tsg.id &&
             channel_range->rm_descriptor == rm_descriptor)
             return channel_range;
@@ -355,6 +357,7 @@ static NV_STATUS create_va_range(struct mm_struct *mm,
     channel_range->aperture         = aperture;
     channel_range->rm_descriptor    = resource->resourceDescriptor;
     channel_range->rm_id            = resource->resourceId;
+    channel_range->hw_runlist_id    = user_channel->hw_runlist_id;
     channel_range->tsg.valid        = user_channel->tsg.valid;
     channel_range->tsg.id           = user_channel->tsg.id;
     channel_range->ref_count        = 1;
@@ -385,6 +388,7 @@ static void destroy_va_ranges(uvm_user_channel_t *user_channel)
 
         UVM_ASSERT(resource_range->rm_descriptor == user_channel->resources[i].resourceDescriptor);
         UVM_ASSERT(resource_range->rm_id         == user_channel->resources[i].resourceId);
+        UVM_ASSERT(resource_range->hw_runlist_id == user_channel->hw_runlist_id);
         UVM_ASSERT(resource_range->tsg.valid == user_channel->tsg.valid);
         UVM_ASSERT(resource_range->tsg.id == user_channel->tsg.id);
 
@@ -452,6 +456,7 @@ static NV_STATUS bind_channel_resources(uvm_user_channel_t *user_channel)
         UVM_ASSERT(resource_range->va_range.type == UVM_VA_RANGE_TYPE_CHANNEL);
         UVM_ASSERT(resource_range->rm_descriptor == user_channel->resources[i].resourceDescriptor);
         UVM_ASSERT(resource_range->rm_id         == user_channel->resources[i].resourceId);
+        UVM_ASSERT(resource_range->hw_runlist_id == user_channel->hw_runlist_id);
         UVM_ASSERT(resource_range->tsg.valid == user_channel->tsg.valid);
         UVM_ASSERT(resource_range->tsg.id == user_channel->tsg.id);
 

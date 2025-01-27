@@ -604,7 +604,7 @@ kbusMapBar2ApertureCached_VBAR2
     // Allocate VA SPACE
     //
     pVASpaceHeap = pKernelBus->virtualBar2[GPU_GFID_PF].pVASpaceHeap;
-    allocSize = pMemDesc->PageCount << RM_PAGE_SHIFT;
+    allocSize = GET_SIZE_FROM_PAGE_AND_COUNT(pMemDesc->PageCount, pMemDesc->pageArrayGranularity);
     bEvictNeeded =
         (NV_OK != pVASpaceHeap->eheapAlloc(pVASpaceHeap, VAS_EHEAP_OWNER_NVRM,
                                            &allocFlags, &vAddr, &allocSize,
@@ -625,7 +625,8 @@ kbusMapBar2ApertureCached_VBAR2
              pMap = listPrev(&pKernelBus->virtualBar2[GPU_GFID_PF].cachedMapList, pMap))
         {
             NV_ASSERT(pMap->pMemDesc != NULL);
-            if (pMap->pMemDesc->PageCount >= pMemDesc->PageCount)
+            if ((GET_SIZE_FROM_PAGE_AND_COUNT(pMap->pMemDesc->PageCount, pMap->pMemDesc->pageArrayGranularity)) >=
+                (GET_SIZE_FROM_PAGE_AND_COUNT(pMemDesc->PageCount, pMemDesc->pageArrayGranularity)))
             {
 #if NV_PRINTF_ENABLED
                 pKernelBus->virtualBar2[GPU_GFID_PF].evictions++;

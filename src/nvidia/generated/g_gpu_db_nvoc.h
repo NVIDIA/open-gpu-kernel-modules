@@ -115,7 +115,7 @@ struct GpuDb {
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
 
     // Ancestor object pointers for `staticCast` feature

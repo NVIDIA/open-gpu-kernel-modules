@@ -107,7 +107,7 @@ struct ConfidentialCompute {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__ConfidentialCompute *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
 
     // Ancestor object pointers for `staticCast` feature
@@ -115,14 +115,17 @@ struct ConfidentialCompute {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct ConfidentialCompute *__nvoc_pbase_ConfidentialCompute;    // confCompute
 
-    // Vtable with 33 per-object function pointers
+    // Vtable with 37 per-object function pointers
     void (*__confComputeDestruct__)(struct ConfidentialCompute * /*this*/);  // halified (2 hals) override (engstate) base (engstate) body
     NV_STATUS (*__confComputeStatePostLoad__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/, NvU32);  // virtual halified (2 hals) override (engstate) base (engstate) body
     NV_STATUS (*__confComputeStatePreUnload__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/, NvU32);  // virtual halified (2 hals) override (engstate) base (engstate) body
     void (*__confComputeSetErrorState__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/);  // halified (2 hals) body
-    NV_STATUS (*__confComputeKeyStoreRetrieveViaChannel__)(struct ConfidentialCompute * /*this*/, struct KernelChannel *, ROTATE_IV_TYPE, NvBool, CC_KMB *);  // halified (2 hals) body
+    NV_STATUS (*__confComputeKeyStoreDeriveViaChannel__)(struct ConfidentialCompute * /*this*/, struct KernelChannel *, ROTATE_IV_TYPE, NvBool, CC_KMB *);  // halified (3 hals) body
+    NV_STATUS (*__confComputeKeyStoreRetrieveViaChannel__)(struct ConfidentialCompute * /*this*/, struct KernelChannel *, ROTATE_IV_TYPE, NvBool, CC_KMB *);  // halified (3 hals) body
     NV_STATUS (*__confComputeKeyStoreRetrieveViaKeyId__)(struct ConfidentialCompute * /*this*/, NvU32, ROTATE_IV_TYPE, NvBool, CC_KMB *);  // halified (2 hals) body
     NV_STATUS (*__confComputeDeriveSecretsForCEKeySpace__)(struct ConfidentialCompute * /*this*/, RM_ENGINE_TYPE, NvU32);  // halified (3 hals) body
+    NV_STATUS (*__confComputeDeriveInitialKeySeed__)(struct ConfidentialCompute * /*this*/);  // halified (3 hals) body
+    NV_STATUS (*__confComputeGetAndUpdateCurrentKeySeed__)(struct ConfidentialCompute * /*this*/, NvU8 *);  // halified (2 hals) body
     NV_STATUS (*__confComputeDeriveSecrets__)(struct ConfidentialCompute * /*this*/, NvU32);  // halified (3 hals) body
     NV_STATUS (*__confComputeUpdateSecrets__)(struct ConfidentialCompute * /*this*/, NvU32);  // halified (2 hals) body
     NvBool (*__confComputeIsSpdmEnabled__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/);  // halified (2 hals) body
@@ -147,6 +150,7 @@ struct ConfidentialCompute {
     NV_STATUS (*__confComputeKeyStoreInit__)(struct ConfidentialCompute * /*this*/);  // halified (2 hals) body
     void (*__confComputeKeyStoreDeinit__)(struct ConfidentialCompute * /*this*/);  // halified (2 hals) body
     void * (*__confComputeKeyStoreGetExportMasterKey__)(struct ConfidentialCompute * /*this*/);  // halified (2 hals) body
+    void * (*__confComputeGetCurrentKeySeed__)(struct ConfidentialCompute * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__confComputeKeyStoreDeriveKey__)(struct ConfidentialCompute * /*this*/, NvU32);  // halified (2 hals) body
     void (*__confComputeKeyStoreClearExportMasterKey__)(struct ConfidentialCompute * /*this*/);  // halified (2 hals) body
 
@@ -181,6 +185,7 @@ struct ConfidentialCompute {
     KEY_ROTATION_STATS_INFO aggregateStats[112];
     NvU8 PRIVATE_FIELD(m_exportMasterKey)[32];
     void *PRIVATE_FIELD(m_keySlot);
+    NvU8 PRIVATE_FIELD(channelKeySeed)[32];
     KEY_ROTATION_STATUS PRIVATE_FIELD(keyRotationState)[112];
     KEY_ROTATION_STATS_INFO PRIVATE_FIELD(freedChannelAggregateStats)[112];
     KEY_ROTATION_TIMEOUT_INFO PRIVATE_FIELD(keyRotationTimeoutInfo)[112];
@@ -284,6 +289,9 @@ NV_STATUS __nvoc_objCreate_ConfidentialCompute(ConfidentialCompute**, Dynamic*, 
 #define confComputeSetErrorState_FNPTR(pConfCompute) pConfCompute->__confComputeSetErrorState__
 #define confComputeSetErrorState(pGpu, pConfCompute) confComputeSetErrorState_DISPATCH(pGpu, pConfCompute)
 #define confComputeSetErrorState_HAL(pGpu, pConfCompute) confComputeSetErrorState_DISPATCH(pGpu, pConfCompute)
+#define confComputeKeyStoreDeriveViaChannel_FNPTR(pConfCompute) pConfCompute->__confComputeKeyStoreDeriveViaChannel__
+#define confComputeKeyStoreDeriveViaChannel(pConfCompute, pKernelChannel, rotateOperation, bIncludeIvOrNonce, keyMaterialBundle) confComputeKeyStoreDeriveViaChannel_DISPATCH(pConfCompute, pKernelChannel, rotateOperation, bIncludeIvOrNonce, keyMaterialBundle)
+#define confComputeKeyStoreDeriveViaChannel_HAL(pConfCompute, pKernelChannel, rotateOperation, bIncludeIvOrNonce, keyMaterialBundle) confComputeKeyStoreDeriveViaChannel_DISPATCH(pConfCompute, pKernelChannel, rotateOperation, bIncludeIvOrNonce, keyMaterialBundle)
 #define confComputeKeyStoreRetrieveViaChannel_FNPTR(pConfCompute) pConfCompute->__confComputeKeyStoreRetrieveViaChannel__
 #define confComputeKeyStoreRetrieveViaChannel(pConfCompute, pKernelChannel, rotateOperation, bIncludeIvOrNonce, keyMaterialBundle) confComputeKeyStoreRetrieveViaChannel_DISPATCH(pConfCompute, pKernelChannel, rotateOperation, bIncludeIvOrNonce, keyMaterialBundle)
 #define confComputeKeyStoreRetrieveViaChannel_HAL(pConfCompute, pKernelChannel, rotateOperation, bIncludeIvOrNonce, keyMaterialBundle) confComputeKeyStoreRetrieveViaChannel_DISPATCH(pConfCompute, pKernelChannel, rotateOperation, bIncludeIvOrNonce, keyMaterialBundle)
@@ -293,6 +301,12 @@ NV_STATUS __nvoc_objCreate_ConfidentialCompute(ConfidentialCompute**, Dynamic*, 
 #define confComputeDeriveSecretsForCEKeySpace_FNPTR(pConfCompute) pConfCompute->__confComputeDeriveSecretsForCEKeySpace__
 #define confComputeDeriveSecretsForCEKeySpace(pConfCompute, ceRmEngineTypeIdx, ccKeyspaceIndex) confComputeDeriveSecretsForCEKeySpace_DISPATCH(pConfCompute, ceRmEngineTypeIdx, ccKeyspaceIndex)
 #define confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute, ceRmEngineTypeIdx, ccKeyspaceIndex) confComputeDeriveSecretsForCEKeySpace_DISPATCH(pConfCompute, ceRmEngineTypeIdx, ccKeyspaceIndex)
+#define confComputeDeriveInitialKeySeed_FNPTR(pConfCompute) pConfCompute->__confComputeDeriveInitialKeySeed__
+#define confComputeDeriveInitialKeySeed(pConfCompute) confComputeDeriveInitialKeySeed_DISPATCH(pConfCompute)
+#define confComputeDeriveInitialKeySeed_HAL(pConfCompute) confComputeDeriveInitialKeySeed_DISPATCH(pConfCompute)
+#define confComputeGetAndUpdateCurrentKeySeed_FNPTR(pConfCompute) pConfCompute->__confComputeGetAndUpdateCurrentKeySeed__
+#define confComputeGetAndUpdateCurrentKeySeed(pConfCompute, pKey) confComputeGetAndUpdateCurrentKeySeed_DISPATCH(pConfCompute, pKey)
+#define confComputeGetAndUpdateCurrentKeySeed_HAL(pConfCompute, pKey) confComputeGetAndUpdateCurrentKeySeed_DISPATCH(pConfCompute, pKey)
 #define confComputeDeriveSecrets_FNPTR(pConfCompute) pConfCompute->__confComputeDeriveSecrets__
 #define confComputeDeriveSecrets(pConfCompute, engine) confComputeDeriveSecrets_DISPATCH(pConfCompute, engine)
 #define confComputeDeriveSecrets_HAL(pConfCompute, engine) confComputeDeriveSecrets_DISPATCH(pConfCompute, engine)
@@ -365,6 +379,9 @@ NV_STATUS __nvoc_objCreate_ConfidentialCompute(ConfidentialCompute**, Dynamic*, 
 #define confComputeKeyStoreGetExportMasterKey_FNPTR(pConfCompute) pConfCompute->__confComputeKeyStoreGetExportMasterKey__
 #define confComputeKeyStoreGetExportMasterKey(pConfCompute) confComputeKeyStoreGetExportMasterKey_DISPATCH(pConfCompute)
 #define confComputeKeyStoreGetExportMasterKey_HAL(pConfCompute) confComputeKeyStoreGetExportMasterKey_DISPATCH(pConfCompute)
+#define confComputeGetCurrentKeySeed_FNPTR(pConfCompute) pConfCompute->__confComputeGetCurrentKeySeed__
+#define confComputeGetCurrentKeySeed(pConfCompute) confComputeGetCurrentKeySeed_DISPATCH(pConfCompute)
+#define confComputeGetCurrentKeySeed_HAL(pConfCompute) confComputeGetCurrentKeySeed_DISPATCH(pConfCompute)
 #define confComputeKeyStoreDeriveKey_FNPTR(pConfCompute) pConfCompute->__confComputeKeyStoreDeriveKey__
 #define confComputeKeyStoreDeriveKey(pConfCompute, globalKeyId) confComputeKeyStoreDeriveKey_DISPATCH(pConfCompute, globalKeyId)
 #define confComputeKeyStoreDeriveKey_HAL(pConfCompute, globalKeyId) confComputeKeyStoreDeriveKey_DISPATCH(pConfCompute, globalKeyId)
@@ -419,6 +436,10 @@ static inline void confComputeSetErrorState_DISPATCH(struct OBJGPU *pGpu, struct
     pConfCompute->__confComputeSetErrorState__(pGpu, pConfCompute);
 }
 
+static inline NV_STATUS confComputeKeyStoreDeriveViaChannel_DISPATCH(struct ConfidentialCompute *pConfCompute, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool bIncludeIvOrNonce, CC_KMB *keyMaterialBundle) {
+    return pConfCompute->__confComputeKeyStoreDeriveViaChannel__(pConfCompute, pKernelChannel, rotateOperation, bIncludeIvOrNonce, keyMaterialBundle);
+}
+
 static inline NV_STATUS confComputeKeyStoreRetrieveViaChannel_DISPATCH(struct ConfidentialCompute *pConfCompute, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool bIncludeIvOrNonce, CC_KMB *keyMaterialBundle) {
     return pConfCompute->__confComputeKeyStoreRetrieveViaChannel__(pConfCompute, pKernelChannel, rotateOperation, bIncludeIvOrNonce, keyMaterialBundle);
 }
@@ -429,6 +450,14 @@ static inline NV_STATUS confComputeKeyStoreRetrieveViaKeyId_DISPATCH(struct Conf
 
 static inline NV_STATUS confComputeDeriveSecretsForCEKeySpace_DISPATCH(struct ConfidentialCompute *pConfCompute, RM_ENGINE_TYPE ceRmEngineTypeIdx, NvU32 ccKeyspaceIndex) {
     return pConfCompute->__confComputeDeriveSecretsForCEKeySpace__(pConfCompute, ceRmEngineTypeIdx, ccKeyspaceIndex);
+}
+
+static inline NV_STATUS confComputeDeriveInitialKeySeed_DISPATCH(struct ConfidentialCompute *pConfCompute) {
+    return pConfCompute->__confComputeDeriveInitialKeySeed__(pConfCompute);
+}
+
+static inline NV_STATUS confComputeGetAndUpdateCurrentKeySeed_DISPATCH(struct ConfidentialCompute *pConfCompute, NvU8 pKey[]) {
+    return pConfCompute->__confComputeGetAndUpdateCurrentKeySeed__(pConfCompute, pKey);
 }
 
 static inline NV_STATUS confComputeDeriveSecrets_DISPATCH(struct ConfidentialCompute *pConfCompute, NvU32 engine) {
@@ -527,6 +556,10 @@ static inline void * confComputeKeyStoreGetExportMasterKey_DISPATCH(struct Confi
     return pConfCompute->__confComputeKeyStoreGetExportMasterKey__(pConfCompute);
 }
 
+static inline void * confComputeGetCurrentKeySeed_DISPATCH(struct ConfidentialCompute *pConfCompute) {
+    return pConfCompute->__confComputeGetCurrentKeySeed__(pConfCompute);
+}
+
 static inline NV_STATUS confComputeKeyStoreDeriveKey_DISPATCH(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId) {
     return pConfCompute->__confComputeKeyStoreDeriveKey__(pConfCompute, globalKeyId);
 }
@@ -603,7 +636,19 @@ static inline void confComputeSetErrorState_b3696a(struct OBJGPU *pGpu, struct C
     return;
 }
 
+static inline NV_STATUS confComputeKeyStoreDeriveViaChannel_56cd7a(struct ConfidentialCompute *pConfCompute, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool bIncludeIvOrNonce, CC_KMB *keyMaterialBundle) {
+    return NV_OK;
+}
+
+NV_STATUS confComputeKeyStoreDeriveViaChannel_GB100(struct ConfidentialCompute *pConfCompute, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool bIncludeIvOrNonce, CC_KMB *keyMaterialBundle);
+
+static inline NV_STATUS confComputeKeyStoreDeriveViaChannel_46f6a7(struct ConfidentialCompute *pConfCompute, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool bIncludeIvOrNonce, CC_KMB *keyMaterialBundle) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
 NV_STATUS confComputeKeyStoreRetrieveViaChannel_GH100(struct ConfidentialCompute *pConfCompute, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool bIncludeIvOrNonce, CC_KMB *keyMaterialBundle);
+
+NV_STATUS confComputeKeyStoreRetrieveViaChannel_GB100(struct ConfidentialCompute *pConfCompute, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool bIncludeIvOrNonce, CC_KMB *keyMaterialBundle);
 
 static inline NV_STATUS confComputeKeyStoreRetrieveViaChannel_46f6a7(struct ConfidentialCompute *pConfCompute, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool bIncludeIvOrNonce, CC_KMB *keyMaterialBundle) {
     return NV_ERR_NOT_SUPPORTED;
@@ -617,9 +662,27 @@ static inline NV_STATUS confComputeKeyStoreRetrieveViaKeyId_46f6a7(struct Confid
 
 NV_STATUS confComputeDeriveSecretsForCEKeySpace_GH100(struct ConfidentialCompute *pConfCompute, RM_ENGINE_TYPE ceRmEngineTypeIdx, NvU32 ccKeyspaceIndex);
 
-NV_STATUS confComputeDeriveSecretsForCEKeySpace_GB100(struct ConfidentialCompute *pConfCompute, RM_ENGINE_TYPE ceRmEngineTypeIdx, NvU32 ccKeyspaceIndex);
+static inline NV_STATUS confComputeDeriveSecretsForCEKeySpace_56cd7a(struct ConfidentialCompute *pConfCompute, RM_ENGINE_TYPE ceRmEngineTypeIdx, NvU32 ccKeyspaceIndex) {
+    return NV_OK;
+}
 
 static inline NV_STATUS confComputeDeriveSecretsForCEKeySpace_46f6a7(struct ConfidentialCompute *pConfCompute, RM_ENGINE_TYPE ceRmEngineTypeIdx, NvU32 ccKeyspaceIndex) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS confComputeDeriveInitialKeySeed_GB100(struct ConfidentialCompute *pConfCompute);
+
+static inline NV_STATUS confComputeDeriveInitialKeySeed_56cd7a(struct ConfidentialCompute *pConfCompute) {
+    return NV_OK;
+}
+
+static inline NV_STATUS confComputeDeriveInitialKeySeed_46f6a7(struct ConfidentialCompute *pConfCompute) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS confComputeGetAndUpdateCurrentKeySeed_GB100(struct ConfidentialCompute *pConfCompute, NvU8 pKey[]);
+
+static inline NV_STATUS confComputeGetAndUpdateCurrentKeySeed_46f6a7(struct ConfidentialCompute *pConfCompute, NvU8 pKey[]) {
     return NV_ERR_NOT_SUPPORTED;
 }
 
@@ -792,6 +855,12 @@ static inline void confComputeKeyStoreDeinit_b3696a(struct ConfidentialCompute *
 void *confComputeKeyStoreGetExportMasterKey_GH100(struct ConfidentialCompute *pConfCompute);
 
 static inline void *confComputeKeyStoreGetExportMasterKey_fa6e19(struct ConfidentialCompute *pConfCompute) {
+    return ((void *)0);
+}
+
+void *confComputeGetCurrentKeySeed_GB100(struct ConfidentialCompute *pConfCompute);
+
+static inline void *confComputeGetCurrentKeySeed_fa6e19(struct ConfidentialCompute *pConfCompute) {
     return ((void *)0);
 }
 
@@ -1016,6 +1085,12 @@ void *NVOC_PRIVATE_FUNCTION(confComputeKeyStoreGetExportMasterKey)(struct Confid
 
 #undef confComputeKeyStoreGetExportMasterKey_HAL
 void *NVOC_PRIVATE_FUNCTION(confComputeKeyStoreGetExportMasterKey_HAL)(struct ConfidentialCompute *pConfCompute);
+
+#undef confComputeGetCurrentKeySeed
+void *NVOC_PRIVATE_FUNCTION(confComputeGetCurrentKeySeed)(struct ConfidentialCompute *pConfCompute);
+
+#undef confComputeGetCurrentKeySeed_HAL
+void *NVOC_PRIVATE_FUNCTION(confComputeGetCurrentKeySeed_HAL)(struct ConfidentialCompute *pConfCompute);
 
 #undef confComputeKeyStoreDeriveKey
 NV_STATUS NVOC_PRIVATE_FUNCTION(confComputeKeyStoreDeriveKey)(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId);

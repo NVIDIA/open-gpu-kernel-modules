@@ -33,38 +33,18 @@ extern "C" {
 
 #include "nvtypes.h"
 
-#if !defined(NVIDIA_UNDEF_LEGACY_BIT_MACROS)
-//
-// Miscellaneous macros useful for bit field manipulations
-//
-// STUPID HACK FOR CL 19434692.  Will revert when fix CL is delivered bfm -> chips_a.
-#ifndef BIT
-#define BIT(b)                  (1U<<(b))
-#endif
-#ifndef BIT32
-#define BIT32(b)                ((NvU32)1U<<(b))
-#endif
-#ifndef BIT64
-#define BIT64(b)                ((NvU64)1U<<(b))
-#endif
-
-#endif
-
-//
-// It is recommended to use the following bit macros to avoid macro name
-// collisions with other src code bases.
-//
+// Miscellaneous macros useful for bit field manipulations.
 #ifndef NVBIT
-#define NVBIT(b)                  (1U<<(b))
+#define NVBIT(b)         (1U<<(b))
 #endif
 #ifndef NVBIT_TYPE
-#define NVBIT_TYPE(b, t)          (((t)1U)<<(b))
+#define NVBIT_TYPE(b, t) (((t)1U)<<(b))
 #endif
 #ifndef NVBIT32
-#define NVBIT32(b)                NVBIT_TYPE(b, NvU32)
+#define NVBIT32(b)       NVBIT_TYPE(b, NvU32)
 #endif
 #ifndef NVBIT64
-#define NVBIT64(b)                NVBIT_TYPE(b, NvU64)
+#define NVBIT64(b)       NVBIT_TYPE(b, NvU64)
 #endif
 
 //Concatenate 2 32bit values to a 64bit value
@@ -72,7 +52,7 @@ extern "C" {
 
 // Helper macro's for 32 bit bitmasks
 #define NV_BITMASK32_ELEMENT_SIZE            (sizeof(NvU32) << 3)
-#define NV_BITMASK32_IDX(chId)               (((chId) & ~(0x1F)) >> 5)  
+#define NV_BITMASK32_IDX(chId)               (((chId) & ~(0x1F)) >> 5)
 #define NV_BITMASK32_OFFSET(chId)            ((chId) & (0x1F))
 #define NV_BITMASK32_SET(pChannelMask, chId) \
         (pChannelMask)[NV_BITMASK32_IDX(chId)] |= NVBIT(NV_BITMASK32_OFFSET(chId))
@@ -989,6 +969,22 @@ static NV_FORCEINLINE void *NV_NVUPTR_TO_PTR(NvUPtr address)
 
 // Get the number of elements the specified fixed-size array
 #define NV_ARRAY_ELEMENTS(x)                   ((sizeof(x)/sizeof((x)[0])))
+
+#if !defined(NVIDIA_UNDEF_LEGACY_BIT_MACROS)
+//
+// Deprecated macros whose definition can be removed once the code base no longer references them.
+// Use the NVBIT* macros instead of these macros.
+//
+#ifndef BIT
+#define BIT(b)   (1U<<(b))
+#endif
+#ifndef BIT32
+#define BIT32(b) ((NvU32)1U<<(b))
+#endif
+#ifndef BIT64
+#define BIT64(b) ((NvU64)1U<<(b))
+#endif
+#endif
 
 #ifdef __cplusplus
 }

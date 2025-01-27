@@ -211,6 +211,21 @@ gpuInitRegistryOverrides_KERNEL
         pGpu->userSharedData.pollingRegistryOverride = data32;
     }
 
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_RUSD_POLLING_INTERVAL, &data32) == NV_OK)
+    {
+        if (data32 < NV_REG_STR_RM_RUSD_POLLING_INTERVAL_MIN)
+            data32 = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_MIN;
+        if (data32 > NV_REG_STR_RM_RUSD_POLLING_INTERVAL_MAX)
+            data32 = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_MAX;
+        pGpu->userSharedData.pollingFrequencyMs = data32;
+        pGpu->userSharedData.bPollFrequencyOverridden = NV_TRUE;
+    }
+    else
+    {
+        pGpu->userSharedData.pollingFrequencyMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_DEFAULT;
+        pGpu->userSharedData.bPollFrequencyOverridden = NV_FALSE;
+    }
+
     return NV_OK;
 }
 
@@ -229,9 +244,9 @@ gpuInitInstLocOverrides_IMPL
     //
     if (((osReadRegistryDword(pGpu, NV_REG_STR_RM_CONFIDENTIAL_COMPUTE, &data32) == NV_OK) &&
          FLD_TEST_DRF(_REG_STR, _RM_CONFIDENTIAL_COMPUTE, _ENABLED, _YES, data32) &&
-         pGpu->getProperty(pGpu, PDB_PROP_GPU_CC_FEATURE_CAPABLE)) || gpuIsCCEnabledInHw_HAL(pGpu) ||
-        ((osReadRegistryDword(pGpu, NV_REG_STR_RM_CC_MULTI_GPU_MODE, &data32) == NV_OK) &&
-         (data32 == NV_REG_STR_RM_CC_MULTI_GPU_MODE_PROTECTED_PCIE)) || gpuIsProtectedPcieEnabledInHw_HAL(pGpu))
+         pGpu->getProperty(pGpu, PDB_PROP_GPU_CC_FEATURE_CAPABLE)) ||
+        gpuIsCCEnabledInHw_HAL(pGpu) ||
+        gpuIsProtectedPcieEnabledInHw_HAL(pGpu))
     {
 
         pGpu->instLocOverrides  = NV_REG_STR_RM_INST_LOC_ALL_VID;

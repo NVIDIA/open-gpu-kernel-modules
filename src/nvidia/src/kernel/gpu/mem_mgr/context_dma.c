@@ -30,7 +30,7 @@
 
 #include "core/core.h"
 #include "gpu/gpu.h"
-#include "gpu/mem_mgr/mem_mgr.h"
+#include "mem_mgr/mem.h"
 #include "gpu/mem_mgr/virt_mem_allocator_common.h"
 #include "gpu/mem_mgr/context_dma.h"
 #include "gpu/mem_mgr/mem_desc.h"
@@ -452,7 +452,6 @@ _ctxdmaConstruct
     NV_STATUS           rmStatus        = NV_OK;
     Memory             *pMemory         = NULL;
     OBJGPU             *pGpu            = NULL;
-    MemoryManager      *pMemoryManager  = NULL;
     MEMORY_DESCRIPTOR  *pMemDesc        = NULL;
     NvHandle            hDevice         = 0;
     NvHandle            hClient         = pClient->hClient;
@@ -499,8 +498,6 @@ _ctxdmaConstruct
     hDevice = RES_GET_HANDLE(pDevice);
 
     API_GPU_FULL_POWER_SANITY_CHECK(pGpu, NV_TRUE, NV_FALSE);
-
-    pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
     pMemDesc = pMemory->pMemDesc;
 
@@ -552,15 +549,6 @@ _ctxdmaConstruct
             if (rmStatus != NV_OK)
                 goto done;
         }
-    }
-
-    if (FLD_TEST_DRF(OS03, _FLAGS, _PTE_KIND, _BL, flags))
-    {
-        memdescSetPteKind(pContextDma->pMemDesc, memmgrGetPteKindBl_HAL(pGpu, pMemoryManager));
-    }
-    else if (FLD_TEST_DRF(OS03, _FLAGS, _PTE_KIND, _PITCH, flags))
-    {
-        memdescSetPteKind(pContextDma->pMemDesc, memmgrGetPteKindPitch_HAL(pGpu, pMemoryManager));
     }
 
     //

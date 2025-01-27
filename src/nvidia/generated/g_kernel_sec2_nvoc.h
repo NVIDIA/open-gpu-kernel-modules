@@ -73,7 +73,7 @@ struct KernelSec2 {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__KernelSec2 *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
     struct IntrService __nvoc_base_IntrService;
     struct KernelFalcon __nvoc_base_KernelFalcon;
@@ -88,8 +88,8 @@ struct KernelSec2 {
     struct KernelSec2 *__nvoc_pbase_KernelSec2;    // ksec2
 
     // Vtable with 10 per-object function pointers
-    NV_STATUS (*__ksec2ConfigureFalcon__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // halified (3 hals) body
-    NV_STATUS (*__ksec2ResetHw__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // virtual halified (2 hals) override (kflcn) base (kflcn) body
+    NV_STATUS (*__ksec2ConfigureFalcon__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // halified (4 hals) body
+    NV_STATUS (*__ksec2ResetHw__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // virtual halified (3 hals) override (kflcn) base (kflcn) body
     NV_STATUS (*__ksec2StateLoad__)(struct OBJGPU *, struct KernelSec2 * /*this*/, NvU32);  // virtual halified (3 hals) override (engstate) base (engstate) body
     NvU32 (*__ksec2ReadUcodeFuseVersion__)(struct OBJGPU *, struct KernelSec2 * /*this*/, NvU32);  // halified (3 hals) body
     const BINDATA_ARCHIVE * (*__ksec2GetBinArchiveBlUcode__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // halified (3 hals) body
@@ -277,7 +277,7 @@ static inline NV_STATUS ksec2ConstructEngine_DISPATCH(struct OBJGPU *pGpu, struc
     return pKernelSec2->__nvoc_vtable->__ksec2ConstructEngine__(pGpu, pKernelSec2, arg3);
 }
 
-static inline void ksec2RegisterIntrService_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[175]) {
+static inline void ksec2RegisterIntrService_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[177]) {
     pKernelSec2->__nvoc_vtable->__ksec2RegisterIntrService__(pGpu, pKernelSec2, pRecords);
 }
 
@@ -431,7 +431,7 @@ static inline NvU32 ksec2GetWFL0Offset_DISPATCH(struct KernelSec2 *arg_this) {
 
 NV_STATUS ksec2ConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, ENGDESCRIPTOR arg3);
 
-void ksec2RegisterIntrService_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[175]);
+void ksec2RegisterIntrService_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[177]);
 
 NV_STATUS ksec2ServiceNotificationInterrupt_IMPL(struct OBJGPU *arg1, struct KernelSec2 *arg2, IntrServiceServiceNotificationInterruptArguments *arg3);
 
@@ -440,6 +440,11 @@ NV_STATUS ksec2ConfigureFalcon_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKe
 NV_STATUS ksec2ConfigureFalcon_GA100(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
 NV_STATUS ksec2ConfigureFalcon_GA102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
+
+static inline NV_STATUS ksec2ConfigureFalcon_92bfc3(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
+    NV_ASSERT_PRECOMP(0);
+    return NV_ERR_NOT_SUPPORTED;
+}
 
 NV_STATUS ksec2ResetHw_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 

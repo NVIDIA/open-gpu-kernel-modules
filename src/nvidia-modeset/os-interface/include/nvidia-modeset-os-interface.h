@@ -104,6 +104,12 @@ typedef struct {
     } read_minval;
 } NvKmsSyncPtOpParams;
 
+enum FailAllocCoreChannelMethod {
+    FAIL_ALLOC_CORE_CHANNEL_RM_SETUP_CORE_CHANNEL = 0,
+    FAIL_ALLOC_CORE_CHANNEL_RESTORE_CONSOLE = 1,
+};
+
+NvBool nvkms_test_fail_alloc_core_channel(enum FailAllocCoreChannelMethod method);
 NvBool nvkms_output_rounding_fix(void);
 NvBool nvkms_disable_hdmi_frl(void);
 NvBool nvkms_disable_vrr_memclk_switch(void);
@@ -111,6 +117,7 @@ NvBool nvkms_hdmi_deepcolor(void);
 NvBool nvkms_vblank_sem_control(void);
 NvBool nvkms_opportunistic_display_sync(void);
 enum NvKmsDebugForceColorSpace nvkms_debug_force_color_space(void);
+NvBool nvkms_enable_overlay_layers(void);
 
 void   nvkms_call_rm    (void *ops);
 void*  nvkms_alloc      (size_t size,

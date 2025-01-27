@@ -101,7 +101,7 @@ struct ContextDma {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__ContextDma *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct RmResource __nvoc_base_RmResource;
     struct Notifier __nvoc_base_Notifier;
 

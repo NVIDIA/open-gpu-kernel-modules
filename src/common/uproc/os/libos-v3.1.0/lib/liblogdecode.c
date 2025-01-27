@@ -1608,7 +1608,7 @@ void libosLogCreateEx(LIBOS_LOG_DECODE *logDecode, const char *pSourceName)
 }
 #endif
 
-void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSize, NvU32 gpuInstance, NvU32 gpuArch, NvU32 gpuImpl, const char *name, const char *elfSectionName)
+void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSize, NvU32 gpuInstance, NvU32 gpuArch, NvU32 gpuImpl, const char *name, const char *elfSectionName, void *buildId)
 {
     NvU32 i;
     LIBOS_LOG_DECODE_LOG *pLog;
@@ -1683,6 +1683,16 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
 
             pNoWrapBuf->gpuArch = gpuArch;
             pNoWrapBuf->gpuImpl = gpuImpl;
+            pNoWrapBuf->version = LIBOS_LOG_NVLOG_BUFFER_VERSION;
+
+            LibosElfNoteHeader *buildIdSection = buildId;
+
+            if (buildIdSection != NULL)
+            {
+                pNoWrapBuf->buildIdLength = buildIdSection->descsz;
+                portMemCopy(&pNoWrapBuf->buildId[0], sizeof(pNoWrapBuf->buildId), 
+                            buildIdSection->data + buildIdSection->namesz, buildIdSection->descsz);
+            }
 
             NvLogLogger.pBuffers[pLog->hNvLogNoWrap]->pos = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) + sizeof(NvU64); // offset to account for LIBOS buffer header and put pointer
             pLog->bNvLogNoWrap                            = NV_TRUE;
@@ -1717,6 +1727,16 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
 
         pWrapBuf->gpuArch = gpuArch;
         pWrapBuf->gpuImpl = gpuImpl;
+        pWrapBuf->version = LIBOS_LOG_NVLOG_BUFFER_VERSION;
+
+        LibosElfNoteHeader *buildIdSection = buildId;
+
+        if (buildIdSection != NULL)
+        {
+            pWrapBuf->buildIdLength = buildIdSection->descsz;
+            portMemCopy(&pWrapBuf->buildId[0], sizeof(pWrapBuf->buildId), 
+                        buildIdSection->data + buildIdSection->namesz, buildIdSection->descsz);
+        }
 
         NvLogLogger.pBuffers[pLog->hNvLogWrap]->pos = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) + sizeof(NvU64); // offset to account for LIBOS buffer header and put pointer
     }
@@ -1730,7 +1750,7 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
 void libosLogAddLog(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSize, NvU32 gpuInstance, const char *name, const char *elfSectionName)
 {
     // Use defaults for gpuArch and gpuImpl
-    libosLogAddLogEx(logDecode, buffer, bufferSize, gpuInstance, 0, 0, name, elfSectionName);
+    libosLogAddLogEx(logDecode, buffer, bufferSize, gpuInstance, 0, 0, name, elfSectionName, NULL);
 }
 
 #if LIBOS_LOG_DECODE_ENABLE
@@ -1821,7 +1841,8 @@ void libosLogInit(LIBOS_LOG_DECODE *logDecode, LibosElf64Header *elf, NvU64 elfS
 
             // Initialize each log buffer with its own task's logging ELF
             sectionHdr = LibosElfFindSectionByName(&image, (const char *) logDecode->log[i].elfSectionName);
-            if (sectionHdr != NULL) {
+            if (sectionHdr != NULL)
+            {
                 LibosElfMapSection(&image, sectionHdr, &sectionData, &sectionDataEnd);
                 sectionSize = sectionHdr->size;
             }
@@ -1846,6 +1867,20 @@ void libosLogInitEx(
 
     // Complete init
     libosLogInit(logDecode, elf, elfSize);
+}
+
+void libosLogUpdateTimerDelta(LIBOS_LOG_DECODE *logDecode, NvU64 localToGlobalTimerDelta)
+{
+#if LIBOS_LOG_TO_NVLOG
+    for (NvU64 i = 0; i < logDecode->numLogBuffers; i++)
+    {
+        LIBOS_LOG_NVLOG_BUFFER *pNoWrapBuf = (LIBOS_LOG_NVLOG_BUFFER *) NvLogLogger.pBuffers[logDecode->log[i].hNvLogNoWrap]->data;
+        LIBOS_LOG_NVLOG_BUFFER *pWrapBuf = (LIBOS_LOG_NVLOG_BUFFER *) NvLogLogger.pBuffers[logDecode->log[i].hNvLogWrap]->data;
+
+        pNoWrapBuf->localToGlobalTimerDelta = localToGlobalTimerDelta;
+        pWrapBuf->localToGlobalTimerDelta = localToGlobalTimerDelta;
+    }
+#endif
 }
 
 #else // LIBOS_LOG_DECODE_ENABLE
@@ -1912,6 +1947,82 @@ void libosExtractLogs(LIBOS_LOG_DECODE *logDecode, NvBool bSyncNvLog)
 #if LIBOS_LOG_TO_NVLOG
     libosExtractLogs_nvlog(logDecode, bSyncNvLog);
 #endif
+}
+
+/**
+ *
+ * @brief Return pointer to data buffer in LibosBuf
+ *
+ * Tools like protodmp/nvwatch/nvlog_decoder needs to handle older drivers 
+ * that had older libos log format, which has different offset to data buffer.
+ *
+ * These function abstract out libos log version handling for tools.
+ *
+ * LIBOS_LOG_NVLOG_BUFFER memebr access like pLibosBuf->data 
+ * shouldn't be used outside of liblogdecode.c
+ *
+ */
+void* libosLogGetDataPointer(LIBOS_LOG_NVLOG_BUFFER *pLibosBuf)
+{
+    void *dataPointer = NULL;
+    switch (pLibosBuf->version)
+    {
+        case LIBOS_LOG_NVLOG_BUFFER_VERSION_0:
+        {
+            LIBOS_LOG_NVLOG_BUFFER_V0 *pLibosBufV0 = (LIBOS_LOG_NVLOG_BUFFER_V0 *) pLibosBuf;
+            dataPointer = pLibosBufV0->data;
+            break;
+        }
+
+        case LIBOS_LOG_NVLOG_BUFFER_VERSION_1:
+        {
+            LIBOS_LOG_NVLOG_BUFFER_V1 *pLibosBufV1 = (LIBOS_LOG_NVLOG_BUFFER_V1 *) pLibosBuf;
+            dataPointer = pLibosBufV1->data;
+            break;
+        }
+        default:
+            dataPointer = pLibosBuf->data;
+            break;
+    }
+    return dataPointer;
+}
+
+/**
+ * @brief Return size of data buffer in LibosBuf
+ */
+NvU32 libosLogGetDataSize(LIBOS_LOG_NVLOG_BUFFER *pLibosBuf, NVLOG_BUFFER *pBuffer)
+{
+    NvU32 libosLogDataOffset = 0;
+    switch (pLibosBuf->version)
+    {
+        case LIBOS_LOG_NVLOG_BUFFER_VERSION_0:
+            libosLogDataOffset = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER_V0, data);
+            break;
+        case LIBOS_LOG_NVLOG_BUFFER_VERSION_1:
+            libosLogDataOffset = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER_V1, data);
+            break;
+        default:
+            libosLogDataOffset = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data);
+            break;
+    }
+
+    return pBuffer->size - libosLogDataOffset;
+}
+
+/**
+ * @brief Return offset to data buffer in LibosBuf
+ */
+NvU32 libosLogGetDataOffset(LIBOS_LOG_NVLOG_BUFFER *pLibosBuf)
+{
+    switch (pLibosBuf->version)
+    {
+        case LIBOS_LOG_NVLOG_BUFFER_VERSION_0:
+            return NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER_V0, data);
+        case LIBOS_LOG_NVLOG_BUFFER_VERSION_1:
+            return NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER_V1, data);
+        default:
+            return NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data);
+    }
 }
 
 

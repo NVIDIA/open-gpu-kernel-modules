@@ -287,7 +287,7 @@ poolReserve
     pPageHandle = PORT_ALLOC(pPool->pAllocator, totalAlloc * sizeof(POOLALLOC_HANDLE));
     NV_ASSERT_OR_GOTO(pPageHandle != NULL, free_none);
 
-    NV_ASSERT_OK_OR_GOTO(status, 
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
         allocCb(pPool->callBackInfo.pUpstreamCtx, pPool->upstreamPageSize,
             totalAlloc, pPageHandle),
         free_page);

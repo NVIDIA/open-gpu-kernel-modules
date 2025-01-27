@@ -2053,10 +2053,9 @@ kgmmuServiceMmuFault_GV100
     if (IS_VIRTUAL_WITH_SRIOV(pGpu))
     {
         NvBool bIsMmuDebugModeEnabled = NV_FALSE;
-        NvU32 engDesc;
+        RM_ENGINE_TYPE rmEngineType = kchannelGetEngineType(pKernelChannel);
 
-        rmStatus = kchannelGetEngine_HAL(pGpu, pKernelChannel, &engDesc);
-        if ((rmStatus == NV_OK) && IS_GR(engDesc))
+        if ((rmStatus == NV_OK) && RM_ENGINE_TYPE_IS_GR(rmEngineType))
         {
             NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS params;
 
@@ -2168,7 +2167,7 @@ kgmmuServiceMmuFault_GV100
         //
         kchannelFillMmuExceptionInfo(pKernelChannel, pMmuExceptionData);
 
-        if (IS_GR(engDesc) && pMmuExceptionData->bGpc)
+        if (RM_ENGINE_TYPE_IS_GR(rmEngineType) && pMmuExceptionData->bGpc)
         {
             KernelGraphicsContext *pKernelGraphicsContext;
 
@@ -2351,7 +2350,7 @@ _kgmmuServiceBar2Faults_GV100
                                                     _REPLAYABLE_ERROR, _SET, faultStatus);
     NvBool nonReplayableFaultError = FLD_TEST_DRF(_PFB_PRI, _MMU_FAULT_STATUS,
                                                       _NON_REPLAYABLE_ERROR, _SET, faultStatus);
-    NvBool accessCntrError = kgmmuTestAccessCounterWriteNak_HAL(pGpu, pKernelGmmu);
+    NvBool bServiceActrs = kgmmuCheckAccessCounterBar2FaultServicingState_HAL(pGpu, pKernelGmmu);
 
     NvBool bVidmemAccessBitBufError = kgmmuTestVidmemAccessBitBufferError_HAL(pGpu, pKernelGmmu, faultStatus);
 
@@ -2370,7 +2369,7 @@ _kgmmuServiceBar2Faults_GV100
     }
 
     // Access counter Bar2 fault handling
-    if (accessCntrError)
+    if (bServiceActrs)
     {
         for (i = 0; i < pUvm->accessCounterBufferCount; i++)
         {
@@ -2400,7 +2399,7 @@ _kgmmuServiceBar2Faults_GV100
         faultStatus |= _kgmmuResetFaultBufferError_GV100(faultBufType);
     }
 
-    if (accessCntrError)
+    if (bServiceActrs)
     {
         for (i = 0; i < pUvm->accessCounterBufferCount; i++)
         {
@@ -2611,3 +2610,20 @@ kgmmuServicePriFaults_GV100
     }
     return rmStatus;
 }
+
+/*!
+ *  @brief Checks whether the access counter reset sequence
+ *         should be performed on BAR2 fault servicing
+ *
+ * @returns NvBool indicating whether servicing should be performed.
+ */
+NvBool
+kgmmuCheckAccessCounterBar2FaultServicingState_GV100
+(
+    OBJGPU *pGpu,
+    KernelGmmu *pKernelGmmu
+)
+{
+    return kgmmuTestAccessCounterWriteNak_HAL(pGpu, pKernelGmmu);
+}
+

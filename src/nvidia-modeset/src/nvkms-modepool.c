@@ -38,6 +38,8 @@
 
 #include "nvkms-api.h"
 
+#include "dp/nvdp-connector-event-sink.h"
+
 typedef struct {
     enum NvKmsModeSource source;
     NvBool patchedStereoTimings;
@@ -233,6 +235,11 @@ static NvBool DpYuv420Required(const NVDpyEvoRec *pDpyEvo,
 
     if (!pDevEvo->caps.supportsDP13) {
         // The GPU doesn't support YUV420.
+        return FALSE;
+    }
+
+    if (!nvDPLibDpyIsYuv420ModeSupported(pDpyEvo)) {
+        // The dpy doesn't support YUV420.
         return FALSE;
     }
 
@@ -1780,8 +1787,7 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
     /* Run the raster timings through IMP checking. */
     if (!nvConstructHwModeTimingsImpCheckEvo(pDpyEvo->pConnectorEvo,
                                              pTimingsEvo,
-                                             (pDscInfo->type !=
-                                                NV_DSC_INFO_EVO_TYPE_DISABLED),
+                                             pDscInfo,
                                              b2Heads1Or,
                                              &dpyColor,
                                              pParams,

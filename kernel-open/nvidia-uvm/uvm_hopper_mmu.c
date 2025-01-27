@@ -54,6 +54,10 @@ static NvU32 page_table_depth_hopper(NvU64 page_size)
         return 4;
     else if (page_size == UVM_PAGE_SIZE_512M)
         return 3;
+
+    UVM_ASSERT((page_size == UVM_PAGE_SIZE_4K) || (page_size == UVM_PAGE_SIZE_64K) ||
+               (page_size == UVM_PAGE_SIZE_DEFAULT));
+
     return 5;
 }
 

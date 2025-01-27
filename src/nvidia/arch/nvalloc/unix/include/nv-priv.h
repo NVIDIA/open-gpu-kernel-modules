@@ -330,6 +330,9 @@ typedef struct
     /* Flag to check if S0ix-based power management is enabled. */
     NvBool s0ix_pm_enabled;
 
+    /* Variable to track Dynamic Boost support */
+    int db_supported;
+
     /*
      * Maximum FB allocation size which can be saved in system memory
      * during system supened with S0ix-based power management.

@@ -231,7 +231,7 @@ struct KernelChannel {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__KernelChannel *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct GpuResource __nvoc_base_GpuResource;
     struct Notifier __nvoc_base_Notifier;
 
@@ -245,9 +245,9 @@ struct KernelChannel {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct KernelChannel *__nvoc_pbase_KernelChannel;    // kchannel
 
-    // Vtable with 37 per-object function pointers
+    // Vtable with 38 per-object function pointers
     NV_STATUS (*__kchannelCreateUserMemDesc__)(struct OBJGPU *, struct KernelChannel * /*this*/);  // halified (2 hals)
-    NvBool (*__kchannelIsUserdAddrSizeValid__)(struct KernelChannel * /*this*/, NvU32, NvU32);  // halified (3 hals) body
+    NvBool (*__kchannelIsUserdAddrSizeValid__)(struct KernelChannel * /*this*/, NvU32, NvU32);  // halified (4 hals) body
     NV_STATUS (*__kchannelCtrlCmdResetIsolatedChannel__)(struct KernelChannel * /*this*/, NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS *);  // exported (id=0x506f0105)
     NV_STATUS (*__kchannelCtrlCmdInternalResetIsolatedChannel__)(struct KernelChannel * /*this*/, NV506F_CTRL_CMD_INTERNAL_RESET_ISOLATED_CHANNEL_PARAMS *);  // exported (id=0x506f0106)
     NV_STATUS (*__kchannelCtrlCmdGetClassEngineid__)(struct KernelChannel * /*this*/, NV906F_CTRL_GET_CLASS_ENGINEID_PARAMS *);  // exported (id=0x906f0101)
@@ -281,7 +281,8 @@ struct KernelChannel {
     NV_STATUS (*__kchannelCtrlSetTpcPartitionMode__)(struct KernelChannel * /*this*/, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *);  // inline exported (id=0x900101) body
     NV_STATUS (*__kchannelCtrlGetMMUDebugMode__)(struct KernelChannel * /*this*/, NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS *);  // inline exported (id=0x900105) body
     NV_STATUS (*__kchannelCtrlProgramVidmemPromote__)(struct KernelChannel * /*this*/, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *);  // inline exported (id=0x900107) body
-    NV_STATUS (*__kchannelRetrieveKmb__)(struct OBJGPU *, struct KernelChannel * /*this*/, ROTATE_IV_TYPE, NvBool, CC_KMB *);  // halified (2 hals) body
+    NV_STATUS (*__kchannelCtrlSetLgSectorPromotion__)(struct KernelChannel * /*this*/, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *);  // inline exported (id=0x90010b) body
+    NV_STATUS (*__kchannelDeriveAndRetrieveKmb__)(struct OBJGPU *, struct KernelChannel * /*this*/, ROTATE_IV_TYPE, NvBool, CC_KMB *);  // halified (2 hals) body
     NV_STATUS (*__kchannelSetKeyRotationNotifier__)(struct OBJGPU *, struct KernelChannel * /*this*/, NvBool);  // halified (2 hals) body
 
     // Data members
@@ -323,6 +324,7 @@ struct KernelChannel {
     NvU64 userdLength;
     NvBool bSkipCtxBufferAlloc;
     NvU32 subctxId;
+    NvU32 vaSpaceId;
     NvU32 cid;
     struct MIG_INSTANCE_REF partitionRef;
     NvU32 runqueue;
@@ -489,9 +491,11 @@ NV_STATUS __nvoc_objCreate_KernelChannel(KernelChannel**, Dynamic*, NvU32, CALL_
 #define kchannelCtrlGetMMUDebugMode(pKernelChannel, pParams) kchannelCtrlGetMMUDebugMode_DISPATCH(pKernelChannel, pParams)
 #define kchannelCtrlProgramVidmemPromote_FNPTR(pKernelChannel) pKernelChannel->__kchannelCtrlProgramVidmemPromote__
 #define kchannelCtrlProgramVidmemPromote(pKernelChannel, pParams) kchannelCtrlProgramVidmemPromote_DISPATCH(pKernelChannel, pParams)
-#define kchannelRetrieveKmb_FNPTR(pKernelChannel) pKernelChannel->__kchannelRetrieveKmb__
-#define kchannelRetrieveKmb(pGpu, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle) kchannelRetrieveKmb_DISPATCH(pGpu, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle)
-#define kchannelRetrieveKmb_HAL(pGpu, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle) kchannelRetrieveKmb_DISPATCH(pGpu, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle)
+#define kchannelCtrlSetLgSectorPromotion_FNPTR(pKernelChannel) pKernelChannel->__kchannelCtrlSetLgSectorPromotion__
+#define kchannelCtrlSetLgSectorPromotion(pKernelChannel, pParams) kchannelCtrlSetLgSectorPromotion_DISPATCH(pKernelChannel, pParams)
+#define kchannelDeriveAndRetrieveKmb_FNPTR(pKernelChannel) pKernelChannel->__kchannelDeriveAndRetrieveKmb__
+#define kchannelDeriveAndRetrieveKmb(pGpu, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle) kchannelDeriveAndRetrieveKmb_DISPATCH(pGpu, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle)
+#define kchannelDeriveAndRetrieveKmb_HAL(pGpu, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle) kchannelDeriveAndRetrieveKmb_DISPATCH(pGpu, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle)
 #define kchannelSetKeyRotationNotifier_FNPTR(pKernelChannel) pKernelChannel->__kchannelSetKeyRotationNotifier__
 #define kchannelSetKeyRotationNotifier(pGpu, pKernelChannel, bSet) kchannelSetKeyRotationNotifier_DISPATCH(pGpu, pKernelChannel, bSet)
 #define kchannelSetKeyRotationNotifier_HAL(pGpu, pKernelChannel, bSet) kchannelSetKeyRotationNotifier_DISPATCH(pGpu, pKernelChannel, bSet)
@@ -707,8 +711,12 @@ static inline NV_STATUS kchannelCtrlProgramVidmemPromote_DISPATCH(struct KernelC
     return pKernelChannel->__kchannelCtrlProgramVidmemPromote__(pKernelChannel, pParams);
 }
 
-static inline NV_STATUS kchannelRetrieveKmb_DISPATCH(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool includeSecrets, CC_KMB *keyMaterialBundle) {
-    return pKernelChannel->__kchannelRetrieveKmb__(pGpu, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle);
+static inline NV_STATUS kchannelCtrlSetLgSectorPromotion_DISPATCH(struct KernelChannel *pKernelChannel, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *pParams) {
+    return pKernelChannel->__kchannelCtrlSetLgSectorPromotion__(pKernelChannel, pParams);
+}
+
+static inline NV_STATUS kchannelDeriveAndRetrieveKmb_DISPATCH(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool includeSecrets, CC_KMB *keyMaterialBundle) {
+    return pKernelChannel->__kchannelDeriveAndRetrieveKmb__(pGpu, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle);
 }
 
 static inline NV_STATUS kchannelSetKeyRotationNotifier_DISPATCH(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvBool bSet) {
@@ -1124,6 +1132,8 @@ NvBool kchannelIsUserdAddrSizeValid_GA100(struct KernelChannel *pKernelChannel, 
 
 NvBool kchannelIsUserdAddrSizeValid_GH100(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi);
 
+NvBool kchannelIsUserdAddrSizeValid_GB10B(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi);
+
 NV_STATUS kchannelCtrlCmdResetIsolatedChannel_IMPL(struct KernelChannel *pKernelChannel, NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS *pResetParams);
 
 NV_STATUS kchannelCtrlCmdInternalResetIsolatedChannel_IMPL(struct KernelChannel *pKernelChannel, NV506F_CTRL_CMD_INTERNAL_RESET_ISOLATED_CHANNEL_PARAMS *pResetParams);
@@ -1210,11 +1220,15 @@ static inline NV_STATUS kchannelCtrlProgramVidmemPromote_a094e1(struct KernelCha
     return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannel->hKernelGraphicsContext);
 }
 
-static inline NV_STATUS kchannelRetrieveKmb_56cd7a(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool includeSecrets, CC_KMB *keyMaterialBundle) {
+static inline NV_STATUS kchannelCtrlSetLgSectorPromotion_a094e1(struct KernelChannel *pKernelChannel, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *pParams) {
+    return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannel->hKernelGraphicsContext);
+}
+
+static inline NV_STATUS kchannelDeriveAndRetrieveKmb_56cd7a(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool includeSecrets, CC_KMB *keyMaterialBundle) {
     return NV_OK;
 }
 
-NV_STATUS kchannelRetrieveKmb_KERNEL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool includeSecrets, CC_KMB *keyMaterialBundle);
+NV_STATUS kchannelDeriveAndRetrieveKmb_KERNEL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool includeSecrets, CC_KMB *keyMaterialBundle);
 
 NV_STATUS kchannelSetKeyRotationNotifier_KERNEL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvBool bSet);
 
@@ -1234,6 +1248,10 @@ static inline NvBool kchannelIsCtxBufferAllocSkipped(struct KernelChannel *pKern
 
 static inline NvU32 kchannelGetSubctxId(struct KernelChannel *pKernelChannel) {
     return pKernelChannel->subctxId;
+}
+
+static inline NvU32 kchannelGetVaSpaceId(struct KernelChannel *pKernelChannel) {
+    return pKernelChannel->vaSpaceId;
 }
 
 static inline NvU32 kchannelGetCid(struct KernelChannel *pKernelChannel) {
@@ -1480,11 +1498,11 @@ static inline NvU32 kchannelGetGfid(struct KernelChannel *pKernelChannel) {
 #undef PRIVATE_FIELD
 
 #ifndef NVOC_KERNEL_CHANNEL_H_PRIVATE_ACCESS_ALLOWED
-#undef kchannelRetrieveKmb
-NV_STATUS NVOC_PRIVATE_FUNCTION(kchannelRetrieveKmb)(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool includeSecrets, CC_KMB *keyMaterialBundle);
+#undef kchannelDeriveAndRetrieveKmb
+NV_STATUS NVOC_PRIVATE_FUNCTION(kchannelDeriveAndRetrieveKmb)(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool includeSecrets, CC_KMB *keyMaterialBundle);
 
-#undef kchannelRetrieveKmb_HAL
-NV_STATUS NVOC_PRIVATE_FUNCTION(kchannelRetrieveKmb_HAL)(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool includeSecrets, CC_KMB *keyMaterialBundle);
+#undef kchannelDeriveAndRetrieveKmb_HAL
+NV_STATUS NVOC_PRIVATE_FUNCTION(kchannelDeriveAndRetrieveKmb_HAL)(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool includeSecrets, CC_KMB *keyMaterialBundle);
 
 #undef kchannelSetKeyRotationNotifier
 NV_STATUS NVOC_PRIVATE_FUNCTION(kchannelSetKeyRotationNotifier)(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvBool bSet);

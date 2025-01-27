@@ -40,6 +40,8 @@
 #include "published/turing/tu102/dev_nv_pcfg_xve_regmap.h"
 #include "published/turing/tu102/dev_boot.h"
 
+#include "ctrl/ctrla084.h"
+
 #define RTLSIM_DELAY_SCALE_US          8
 
 // XVE register map for PCIe config space
@@ -423,40 +425,31 @@ kbifGetMSIXTableVectorControlSize_TU102
 
 /*!
  * This function saves MSIX vector control masks which can later be restored
- * using bifRestoreMSIXVectorControlMasks_HAL.
+ * using _kbifRestoreMSIXVectorControlMasks.
  *
  * @param[in]   pGpu            GPU object pointer
  * @param[in]   pKernelBif      Pointer to KernelBif object
- * @param[out] *msixVectorMask  MSIX vector control mask state for all
+ *
+ * @return  'msixVectorMask'    MSIX vector control mask state for all
  *                              MSIX table entries
- * @return  'NV_OK' if successful, an RM error code otherwise.
  */
-NV_STATUS
-kbifSaveMSIXVectorControlMasks_TU102
+static NvU32
+_kbifSaveMSIXVectorControlMasks
 (
     OBJGPU    *pGpu,
-    KernelBif *pKernelBif,
-    NvU32     *msixVectorMask
+    KernelBif *pKernelBif
 )
 {
     NvU32     i;
     NvU32     regVal;
-    NV_STATUS status = NV_OK;
     NvU32     controlSize = kbifGetMSIXTableVectorControlSize_HAL(pGpu, pKernelBif);
+    NvU32     msixVectorMask = 0U;
 
-    //Sanity check for size
-    if (controlSize > 32U)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Size of MSIX vector control exceeds maximum assumed size!!\n");
-        DBG_BREAKPOINT();
-
-        status = NV_ERR_BUFFER_TOO_SMALL;
-        goto kbifSaveMSIXVectorControlMasks_TU102_exit;
-    }
+    // All implementations of kbifGetMSIXTableVectorControlSize_HAL() return a
+    // value less than 32.
+    NV_ASSERT(controlSize < 32);
 
     // Set the bits in msixVectorMask if NV_MSIX_TABLE_VECTOR_CONTROL(i) is masked
-    *msixVectorMask = 0U;
     for (i = 0U; i < controlSize; i++)
     {
         regVal = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_VECTOR_CONTROL(i));
@@ -464,26 +457,23 @@ kbifSaveMSIXVectorControlMasks_TU102
         if (FLD_TEST_DRF(_VIRTUAL_FUNCTION_PRIV, _MSIX_TABLE_VECTOR_CONTROL,
                          _MASK_BIT, _MASKED, regVal))
         {
-            (*msixVectorMask) |= NVBIT(i);
+            msixVectorMask |= NVBIT(i);
         }
     }
 
-kbifSaveMSIXVectorControlMasks_TU102_exit:
-    return status;
+    return msixVectorMask;
 }
 
 /*!
  * This function restores MSIX vector control masks to the saved state. Vector
- * control mask needs to be saved using bifSaveMSIXVectorControlMasks_HAL.
+ * control mask needs to be saved using _kbifSaveMSIXVectorControlMasks.
  *
  * @param[in]  pGpu            GPU object pointer
  * @param[in]  pKernelBif      Pointer to KernelBif object
  * @param[in]  msixVectorMask  State of MSIX vector control masks
- *
- * @return  'NV_OK' if successful, an RM error code otherwise.
  */
-NV_STATUS
-kbifRestoreMSIXVectorControlMasks_TU102
+static void
+_kbifRestoreMSIXVectorControlMasks
 (
     OBJGPU    *pGpu,
     KernelBif *pKernelBif,
@@ -491,21 +481,14 @@ kbifRestoreMSIXVectorControlMasks_TU102
 )
 {
     NvU32     i;
-    NV_STATUS status      = NV_OK;
     NvU32     controlSize = kbifGetMSIXTableVectorControlSize_HAL(pGpu, pKernelBif);
 
     // Initialize the base offset for the virtual registers for physical function
     NvU32 vRegOffset = pGpu->sriovState.virtualRegPhysOffset;
 
-    //Sanity check for size
-    if (controlSize > 32U)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Size of MSIX vector control exceeds maximum assumed size!!\n");
-        DBG_BREAKPOINT();
-        status = NV_ERR_BUFFER_TOO_SMALL;
-        goto kbifRestoreMSIXVectorControlMasks_TU102_exit;
-    }
+    // All implementations of kbifGetMSIXTableVectorControlSize_HAL() return a
+    // value less than 32.
+    NV_ASSERT(controlSize < 32);
 
     //
     // Restore NV_MSIX_TABLE_VECTOR_CONTROL(i) based on msixVectorMask
@@ -526,9 +509,6 @@ kbifRestoreMSIXVectorControlMasks_TU102
                 NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_VECTOR_CONTROL_MASK_BIT_UNMASKED);
         }
     }
-
-kbifRestoreMSIXVectorControlMasks_TU102_exit:
-    return status;
 }
 
 
@@ -553,7 +533,7 @@ kbifDoFunctionLevelReset_TU102
     NvU16      vendorId;
     NvU16      deviceId;
     // 'i'th bit set to 1 indicates NV_MSIX_TABLE_VECTOR_CONTROL(i) is masked
-    NvU32      msixVectorMask;
+    NvU32      msixVectorMask = 0;
     NvBool     bMSIXEnabled;
 
     //
@@ -575,13 +555,7 @@ kbifDoFunctionLevelReset_TU102
     bMSIXEnabled = kbifIsMSIXEnabledInHW_HAL(pGpu, pKernelBif);
     if (bMSIXEnabled)
     {
-        status = kbifSaveMSIXVectorControlMasks_HAL(pGpu, pKernelBif, &msixVectorMask);
-        if (status != NV_OK)
-        {
-            DBG_BREAKPOINT();
-            NV_PRINTF(LEVEL_ERROR, "MSIX vector control registers save failed!\n");
-            goto bifDoFunctionLevelReset_TU102_exit;
-        }
+        msixVectorMask = _kbifSaveMSIXVectorControlMasks(pGpu, pKernelBif);
     }
 
     pKernelBif->bPreparingFunctionLevelReset = NV_FALSE;
@@ -660,13 +634,7 @@ kbifDoFunctionLevelReset_TU102
     if (bMSIXEnabled)
     {
         // TODO-NM: Check if this needed for other NVPM flows like GC6
-        status = kbifRestoreMSIXVectorControlMasks_HAL(pGpu, pKernelBif, msixVectorMask);
-        if (status != NV_OK)
-        {
-            DBG_BREAKPOINT();
-            NV_PRINTF(LEVEL_ERROR, "MSIX vector control restore failed!\n");
-            goto bifDoFunctionLevelReset_TU102_exit;
-        }
+        _kbifRestoreMSIXVectorControlMasks(pGpu, pKernelBif, msixVectorMask);
     }
 
     //

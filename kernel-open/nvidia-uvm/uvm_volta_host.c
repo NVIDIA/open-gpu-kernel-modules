@@ -324,6 +324,12 @@ void uvm_hal_volta_replay_faults(uvm_push_t *push, uvm_fault_replay_type_t type)
 void uvm_hal_volta_host_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va)
 {
     NvU32 sem_lo;
+
+    UVM_ASSERT_MSG(uvm_push_get_gpu(push)->parent->host_hal->semaphore_target_is_valid(push, gpu_va),
+                   "Semaphore target validation failed in channel %s, GPU %s.\n",
+                   push->channel->name,
+                   uvm_gpu_name(uvm_push_get_gpu(push)));
+
     UVM_ASSERT(!(NvOffset_LO32(gpu_va) & ~HWSHIFTMASK(C36F, SEM_ADDR_LO, OFFSET)));
     sem_lo = READ_HWVALUE(NvOffset_LO32(gpu_va), C36F, SEM_ADDR_LO, OFFSET);
 

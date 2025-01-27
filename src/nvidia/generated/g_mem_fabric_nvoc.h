@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -52,6 +52,7 @@ extern "C" {
 #include "core/core.h"
 #include "mem_mgr/mem.h"
 #include "rmapi/resource.h"
+#include "resserv/rs_resource.h"
 #include "gpu/mem_mgr/mem_desc.h"
 
 #include "ctrl/ctrl00f8.h"
@@ -81,7 +82,7 @@ struct MemoryFabric {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__MemoryFabric *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct Memory __nvoc_base_Memory;
 
     // Ancestor object pointers for `staticCast` feature
@@ -92,13 +93,12 @@ struct MemoryFabric {
     struct Memory *__nvoc_pbase_Memory;    // mem super
     struct MemoryFabric *__nvoc_pbase_MemoryFabric;    // memoryfabric
 
-    // Vtable with 7 per-object function pointers
+    // Vtable with 6 per-object function pointers
     NV_STATUS (*__memoryfabricCtrlGetInfo__)(struct MemoryFabric * /*this*/, NV00F8_CTRL_GET_INFO_PARAMS *);  // exported (id=0xf80101)
     NV_STATUS (*__memoryfabricCtrlCmdDescribe__)(struct MemoryFabric * /*this*/, NV00F8_CTRL_DESCRIBE_PARAMS *);  // exported (id=0xf80102)
     NV_STATUS (*__memoryfabricCtrlAttachMem__)(struct MemoryFabric * /*this*/, NV00F8_CTRL_ATTACH_MEM_PARAMS *);  // exported (id=0xf80103)
     NV_STATUS (*__memoryfabricCtrlDetachMem__)(struct MemoryFabric * /*this*/, NV00F8_CTRL_DETACH_MEM_PARAMS *);  // exported (id=0xf80104)
     NV_STATUS (*__memoryfabricCtrlGetNumAttachedMem__)(struct MemoryFabric * /*this*/, NV00F8_CTRL_GET_NUM_ATTACHED_MEM_PARAMS *);  // exported (id=0xf80105)
-    NV_STATUS (*__memoryfabricCtrlGetAttachedMem__)(struct MemoryFabric * /*this*/, NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS *);  // exported (id=0xf80106)
     NV_STATUS (*__memoryfabricCtrlGetPageLevelInfo__)(struct MemoryFabric * /*this*/, NV00F8_CTRL_GET_PAGE_LEVEL_INFO_PARAMS *);  // exported (id=0xf80107)
 };
 
@@ -107,6 +107,7 @@ struct MemoryFabric {
 struct NVOC_VTABLE__MemoryFabric {
     const struct NVOC_VTABLE__Memory Memory;    // (mem) 26 function pointers
 
+    NV_STATUS (*__memoryfabricUnmapFrom__)(struct MemoryFabric * /*this*/, struct RS_RES_UNMAP_FROM_PARAMS *);  // virtual override (res) base (mem)
     NvBool (*__memoryfabricCanCopy__)(struct MemoryFabric * /*this*/);  // virtual override (res) base (mem)
     NV_STATUS (*__memoryfabricCopyConstruct__)(struct MemoryFabric * /*this*/, CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);  // virtual override (mem) base (mem)
     NV_STATUS (*__memoryfabricControl__)(struct MemoryFabric * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (mem)
@@ -131,7 +132,6 @@ struct NVOC_VTABLE__MemoryFabric {
     NV_STATUS (*__memoryfabricControlFilter__)(struct MemoryFabric * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (mem)
     NvBool (*__memoryfabricIsPartialUnmapSupported__)(struct MemoryFabric * /*this*/);  // inline virtual inherited (res) base (mem) body
     NV_STATUS (*__memoryfabricMapTo__)(struct MemoryFabric * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (mem)
-    NV_STATUS (*__memoryfabricUnmapFrom__)(struct MemoryFabric * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (mem)
     NvU32 (*__memoryfabricGetRefCount__)(struct MemoryFabric * /*this*/);  // virtual inherited (res) base (mem)
     void (*__memoryfabricAddAdditionalDependants__)(struct RsClient *, struct MemoryFabric * /*this*/, RsResourceRef *);  // virtual inherited (res) base (mem)
 };
@@ -166,6 +166,8 @@ NV_STATUS __nvoc_objCreate_MemoryFabric(MemoryFabric**, Dynamic*, NvU32, CALL_CO
 
 
 // Wrapper macros
+#define memoryfabricUnmapFrom_FNPTR(pMemoryFabric) pMemoryFabric->__nvoc_vtable->__memoryfabricUnmapFrom__
+#define memoryfabricUnmapFrom(pMemoryFabric, pParams) memoryfabricUnmapFrom_DISPATCH(pMemoryFabric, pParams)
 #define memoryfabricCanCopy_FNPTR(pMemoryFabric) pMemoryFabric->__nvoc_vtable->__memoryfabricCanCopy__
 #define memoryfabricCanCopy(pMemoryFabric) memoryfabricCanCopy_DISPATCH(pMemoryFabric)
 #define memoryfabricCopyConstruct_FNPTR(pMemoryFabric) pMemoryFabric->__nvoc_vtable->__memoryfabricCopyConstruct__
@@ -182,8 +184,6 @@ NV_STATUS __nvoc_objCreate_MemoryFabric(MemoryFabric**, Dynamic*, NvU32, CALL_CO
 #define memoryfabricCtrlDetachMem(pMemoryFabric, pParams) memoryfabricCtrlDetachMem_DISPATCH(pMemoryFabric, pParams)
 #define memoryfabricCtrlGetNumAttachedMem_FNPTR(pMemoryFabric) pMemoryFabric->__memoryfabricCtrlGetNumAttachedMem__
 #define memoryfabricCtrlGetNumAttachedMem(pMemoryFabric, pParams) memoryfabricCtrlGetNumAttachedMem_DISPATCH(pMemoryFabric, pParams)
-#define memoryfabricCtrlGetAttachedMem_FNPTR(pMemoryFabric) pMemoryFabric->__memoryfabricCtrlGetAttachedMem__
-#define memoryfabricCtrlGetAttachedMem(pMemoryFabric, pParams) memoryfabricCtrlGetAttachedMem_DISPATCH(pMemoryFabric, pParams)
 #define memoryfabricCtrlGetPageLevelInfo_FNPTR(pMemoryFabric) pMemoryFabric->__memoryfabricCtrlGetPageLevelInfo__
 #define memoryfabricCtrlGetPageLevelInfo(pMemoryFabric, pParams) memoryfabricCtrlGetPageLevelInfo_DISPATCH(pMemoryFabric, pParams)
 #define memoryfabricIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memIsDuplicate__
@@ -228,14 +228,16 @@ NV_STATUS __nvoc_objCreate_MemoryFabric(MemoryFabric**, Dynamic*, NvU32, CALL_CO
 #define memoryfabricIsPartialUnmapSupported(pResource) memoryfabricIsPartialUnmapSupported_DISPATCH(pResource)
 #define memoryfabricMapTo_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
 #define memoryfabricMapTo(pResource, pParams) memoryfabricMapTo_DISPATCH(pResource, pParams)
-#define memoryfabricUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
-#define memoryfabricUnmapFrom(pResource, pParams) memoryfabricUnmapFrom_DISPATCH(pResource, pParams)
 #define memoryfabricGetRefCount_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
 #define memoryfabricGetRefCount(pResource) memoryfabricGetRefCount_DISPATCH(pResource)
 #define memoryfabricAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
 #define memoryfabricAddAdditionalDependants(pClient, pResource, pReference) memoryfabricAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
+static inline NV_STATUS memoryfabricUnmapFrom_DISPATCH(struct MemoryFabric *pMemoryFabric, struct RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pMemoryFabric->__nvoc_vtable->__memoryfabricUnmapFrom__(pMemoryFabric, pParams);
+}
+
 static inline NvBool memoryfabricCanCopy_DISPATCH(struct MemoryFabric *pMemoryFabric) {
     return pMemoryFabric->__nvoc_vtable->__memoryfabricCanCopy__(pMemoryFabric);
 }
@@ -266,10 +268,6 @@ static inline NV_STATUS memoryfabricCtrlDetachMem_DISPATCH(struct MemoryFabric *
 
 static inline NV_STATUS memoryfabricCtrlGetNumAttachedMem_DISPATCH(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_GET_NUM_ATTACHED_MEM_PARAMS *pParams) {
     return pMemoryFabric->__memoryfabricCtrlGetNumAttachedMem__(pMemoryFabric, pParams);
-}
-
-static inline NV_STATUS memoryfabricCtrlGetAttachedMem_DISPATCH(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS *pParams) {
-    return pMemoryFabric->__memoryfabricCtrlGetAttachedMem__(pMemoryFabric, pParams);
 }
 
 static inline NV_STATUS memoryfabricCtrlGetPageLevelInfo_DISPATCH(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_GET_PAGE_LEVEL_INFO_PARAMS *pParams) {
@@ -360,10 +358,6 @@ static inline NV_STATUS memoryfabricMapTo_DISPATCH(struct MemoryFabric *pResourc
     return pResource->__nvoc_vtable->__memoryfabricMapTo__(pResource, pParams);
 }
 
-static inline NV_STATUS memoryfabricUnmapFrom_DISPATCH(struct MemoryFabric *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__memoryfabricUnmapFrom__(pResource, pParams);
-}
-
 static inline NvU32 memoryfabricGetRefCount_DISPATCH(struct MemoryFabric *pResource) {
     return pResource->__nvoc_vtable->__memoryfabricGetRefCount__(pResource);
 }
@@ -371,6 +365,8 @@ static inline NvU32 memoryfabricGetRefCount_DISPATCH(struct MemoryFabric *pResou
 static inline void memoryfabricAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct MemoryFabric *pResource, RsResourceRef *pReference) {
     pResource->__nvoc_vtable->__memoryfabricAddAdditionalDependants__(pClient, pResource, pReference);
 }
+
+NV_STATUS memoryfabricUnmapFrom_IMPL(struct MemoryFabric *pMemoryFabric, struct RS_RES_UNMAP_FROM_PARAMS *pParams);
 
 NvBool memoryfabricCanCopy_IMPL(struct MemoryFabric *pMemoryFabric);
 
@@ -388,8 +384,6 @@ NV_STATUS memoryfabricCtrlDetachMem_IMPL(struct MemoryFabric *pMemoryFabric, NV0
 
 NV_STATUS memoryfabricCtrlGetNumAttachedMem_IMPL(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_GET_NUM_ATTACHED_MEM_PARAMS *pParams);
 
-NV_STATUS memoryfabricCtrlGetAttachedMem_IMPL(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS *pParams);
-
 NV_STATUS memoryfabricCtrlGetPageLevelInfo_IMPL(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_GET_PAGE_LEVEL_INFO_PARAMS *pParams);
 
 NV_STATUS memoryfabricConstruct_IMPL(struct MemoryFabric *arg_pMemoryFabric, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
@@ -404,9 +398,9 @@ void memoryfabricDestruct_IMPL(struct MemoryFabric *pMemoryFabric);
 typedef struct
 {
     MEMORY_DESCRIPTOR *pPhysMemDesc;
+    RsInterMapping    *pInterMapping;
     NvU64    physMapOffset;
     NvU64    physMapLength;
-    NvHandle hDupedPhysMem;
     NODE     node;
 } FABRIC_ATTCH_MEM_INFO_NODE;
 

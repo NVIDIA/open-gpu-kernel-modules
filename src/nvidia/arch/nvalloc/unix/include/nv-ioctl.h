@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -128,6 +128,9 @@ typedef struct nv_ioctl_register_fd
 
 #define NV_DMABUF_EXPORT_MAX_HANDLES 128
 
+#define NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT        0
+#define NV_DMABUF_EXPORT_MAPPING_TYPE_FORCE_PCIE     1
+
 typedef struct nv_ioctl_export_to_dma_buf_fd
 {
     int         fd;
@@ -136,6 +139,7 @@ typedef struct nv_ioctl_export_to_dma_buf_fd
     NvU32       numObjects;
     NvU32       index;
     NvU64       totalSize NV_ALIGN_BYTES(8);
+    NvU8        mappingType;
     NvHandle    handles[NV_DMABUF_EXPORT_MAX_HANDLES];
     NvU64       offsets[NV_DMABUF_EXPORT_MAX_HANDLES] NV_ALIGN_BYTES(8);
     NvU64       sizes[NV_DMABUF_EXPORT_MAX_HANDLES] NV_ALIGN_BYTES(8);

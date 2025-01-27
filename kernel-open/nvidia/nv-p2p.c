@@ -25,7 +25,6 @@
 
 #include "os-interface.h"
 #include "nv-linux.h"
-#include "nv-ibmnpu.h"
 #include "nv-rsync.h"
 
 #include "nv-p2p.h"
@@ -53,6 +52,7 @@ typedef struct nv_p2p_mem_info {
     } dma_mapping_list;
     void *private;
     void *mig_info;
+    NvBool force_pcie;
 } nv_p2p_mem_info_t;
 
 // declared and created in nv.c
@@ -391,6 +391,7 @@ static int nv_p2p_get_pages(
     uint32_t va_space,
     uint64_t virtual_address,
     uint64_t length,
+    uint8_t  flags,
     struct nvidia_p2p_page_table **page_table,
     void (*free_callback)(void * data),
     void *data
@@ -413,6 +414,7 @@ static int nv_p2p_get_pages(
     NvU64 temp_length;
     NvU8 *gpu_uuid = NULL;
     NvU8 uuid[NVIDIA_P2P_GPU_UUID_LEN] = {0};
+    NvBool force_pcie = !!(flags & NVIDIA_P2P_FLAGS_FORCE_BAR1_MAPPING);
     int rc;
 
     if (!NV_IS_ALIGNED64(virtual_address, NVRM_P2P_PAGESIZE_BIG_64K) ||
@@ -424,6 +426,12 @@ static int nv_p2p_get_pages(
                   "address=0x%llx, length=0x%llx\n",
                   virtual_address, length);
         return -EINVAL;
+    }
+
+    // Forced PCIe mappings are not supported for non-persistent APIs
+    if ((free_callback != NULL) && force_pcie)
+    {
+        return -ENOTSUPP;
     }
 
     rc = nv_kmem_cache_alloc_stack(&sp);
@@ -443,6 +451,8 @@ static int nv_p2p_get_pages(
 
     INIT_LIST_HEAD(&mem_info->dma_mapping_list.list_head);
     NV_INIT_MUTEX(&mem_info->dma_mapping_list.lock);
+
+    mem_info->force_pcie = force_pcie;
 
     *page_table = &(mem_info->page_table);
 
@@ -509,7 +519,8 @@ static int nv_p2p_get_pages(
         status = rm_p2p_get_pages_persistent(sp, virtual_address, length,
                                              &mem_info->private,
                                              physical_addresses, &entries,
-                                             *page_table, gpu_info, &mem_info->mig_info);
+                                             force_pcie, *page_table, gpu_info,
+                                             &mem_info->mig_info);
         if (status != NV_OK)
         {
             goto failed;
@@ -647,7 +658,8 @@ int nvidia_p2p_get_pages(
 
     return nv_p2p_get_pages(NV_P2P_PAGE_TABLE_TYPE_NON_PERSISTENT,
                             p2p_token, va_space, virtual_address,
-                            length, page_table, free_callback, data);
+                            length, NVIDIA_P2P_FLAGS_DEFAULT,
+                            page_table, free_callback, data);
 }
 NV_EXPORT_SYMBOL(nvidia_p2p_get_pages);
 
@@ -658,13 +670,8 @@ int nvidia_p2p_get_pages_persistent(
     uint32_t flags
 )
 {
-    if (flags != 0)
-    {
-        return -EINVAL;
-    }
-
     return nv_p2p_get_pages(NV_P2P_PAGE_TABLE_TYPE_PERSISTENT, 0, 0,
-                            virtual_address, length, page_table,
+                            virtual_address, length, flags, page_table,
                             NULL, NULL);
 }
 NV_EXPORT_SYMBOL(nvidia_p2p_get_pages_persistent);
@@ -778,6 +785,15 @@ int nvidia_p2p_dma_map_pages(
     }
 
     mem_info = container_of(page_table, nv_p2p_mem_info_t, page_table);
+
+    //
+    // Only CPU mappings are supported for forced PCIe config through
+    // nv-p2p APIs. IO mappings will not be supported.
+    //
+    if (mem_info->force_pcie)
+    {
+        return -ENOTSUPP;
+    }
 
     rc = nv_kmem_cache_alloc_stack(&sp);
     if (rc != 0)
@@ -989,12 +1005,7 @@ int nvidia_p2p_get_rsync_registers(
 )
 {
     nv_linux_state_t *nvl;
-    nv_state_t *nv;
     NV_STATUS status;
-    void *ptr = NULL;
-    NvU64 addr;
-    NvU64 size;
-    struct pci_dev *ibmnpu = NULL;
     NvU32 index = 0;
     NvU32 count = 0;
     nvidia_p2p_rsync_reg_info_t *info = NULL;
@@ -1030,34 +1041,9 @@ int nvidia_p2p_get_rsync_registers(
         return -ENOMEM;
     }
 
-    for (nvl = nv_linux_devices; nvl; nvl = nvl->next)
-    {
-        nv = NV_STATE_PTR(nvl);
-
-        addr = 0;
-        size = 0;
-
-        status = nv_get_ibmnpu_genreg_info(nv, &addr, &size, (void**)&ibmnpu);
-        if (status != NV_OK)
-        {
-            continue;
-        }
-
-        ptr = nv_ioremap_nocache(addr, size);
-        if (ptr == NULL)
-        {
-            continue;
-        }
-
-        regs[index].ptr = ptr;
-        regs[index].size = size;
-        regs[index].gpu = nvl->pci_dev;
-        regs[index].ibmnpu = ibmnpu;
-        regs[index].cluster_id = 0;
-        regs[index].socket_id = nv_get_ibmnpu_chip_id(nv);
-
-        index++;
-    }
+    // TODO: This function will always fail with -ENODEV because the logic that
+    // incremented 'index' was removed.  It should be cleaned up in a future
+    // change.
 
     UNLOCK_NV_LINUX_DEVICES();
 

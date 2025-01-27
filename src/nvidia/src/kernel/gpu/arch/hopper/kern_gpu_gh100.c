@@ -26,6 +26,7 @@
 #include "os/os.h"
 #include "nverror.h"
 #include "vgpu/rpc.h"
+#include "nvrm_registry.h"
 
 #include "published/hopper/gh100/hwproject.h"
 #include "published/hopper/gh100/dev_gc6_island.h"
@@ -459,30 +460,6 @@ gpuDetermineSelfHostedSocType_GH100
 }
 
 /*!
- * @brief Determine if MIG can be supported.
- * In self hosted hopper, MIG can be supported only from specific
- * GH100 revisions.
- *
- * @param[in]      pGpu           OBJGPU pointer
- *
- * @return void
- */
-void
-gpuDetermineMIGSupport_GH100
-(
-    OBJGPU *pGpu
-)
-{
-    if (gpuIsSelfHosted(pGpu) &&
-        (gpuGetChipSubRev_HAL(pGpu) < NV2080_CTRL_MC_ARCH_INFO_SUBREVISION_R))
-    {
-        NV_PRINTF(LEVEL_ERROR, "Disabling MIG Support. MIG can be supported on self hosted hopper "
-                  "only from revision R onwards\n");
-        pGpu->setProperty(pGpu, PDB_PROP_GPU_MIG_SUPPORTED, NV_FALSE);
-    }
-}
-
-/*!
  * Check if CC bit has been set in the scratch register
  *
  * @param[in]  pGpu  GPU object pointer
@@ -523,7 +500,20 @@ gpuIsProtectedPcieEnabledInHw_GH100
     OBJGPU *pGpu
 )
 {
-    // Bug 4870925: Disabled PPCIE
+    NvU32 data;
+    NvU32 scratchVal = GPU_REG_RD32(pGpu, NV_PGC6_AON_SECURE_SCRATCH_GROUP_20_CC);
+    NvBool bIsScratchSet = FLD_TEST_DRF(_PGC6, _AON_SECURE_SCRATCH_GROUP_20_CC, _MULTI_GPU_MODE,
+                                        _PROTECTED_PCIE, scratchVal);
+
+    if (!bIsScratchSet)
+        return NV_FALSE;
+
+    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_PPCIE_ENABLED, &data) == NV_OK) &&
+        (data == NV_REG_STR_RM_PPCIE_ENABLED_YES))
+    {
+        return NV_TRUE;
+    }
+
     return NV_FALSE;
 }
 

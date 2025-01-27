@@ -774,7 +774,7 @@ fail:
             indexRemove(&pParentRef->childRefMap, pResourceRef->internalClassId, pResourceRef);
         }
 
-        clientDestructResourceRef(pClient, pServer, pResourceRef);
+        clientDestructResourceRef(pClient, pServer, pResourceRef, pParams->pLockInfo, pParams->pSecInfo);
     }
 
     return status;
@@ -865,7 +865,7 @@ done:
         if (pClientRef != NULL)
             refUncacheRef(pClientRef, pResourceRef);
 
-        tmpStatus = clientDestructResourceRef(pClient, pServer, pResourceRef);
+        tmpStatus = clientDestructResourceRef(pClient, pServer, pResourceRef, pParams->pLockInfo, pParams->pSecInfo);
         NV_ASSERT(tmpStatus == NV_OK);
     }
 
@@ -1045,9 +1045,10 @@ _clientConstructResourceRef
     multimapInit(&pResourceRef->depRefMap, pAllocator);
     multimapInit(&pResourceRef->depBackRefMap, pAllocator);
     listInit(&pResourceRef->cpuMappings, pAllocator);
-    listInit(&pResourceRef->backRefs, pAllocator);
+    listInitIntrusive(&pResourceRef->backRefs);
     listInit(&pResourceRef->interMappings, pAllocator);
-    listInit(&pResourceRef->interBackRefs, pAllocator);
+    listInitIntrusive(&pResourceRef->interBackRefsContext);
+    listInitIntrusive(&pResourceRef->interBackRefsMappable);
     listInit(&pResourceRef->sharePolicyList, pAllocator);
 
     portAtomicExIncrementU64(&pServer->activeResourceCount);
@@ -1061,23 +1062,62 @@ clientDestructResourceRef_IMPL
 (
     RsClient *pClient,
     RsServer *pServer,
-    RsResourceRef *pResourceRef
+    RsResourceRef *pResourceRef,
+    RS_LOCK_INFO *pLockInfo,
+    API_SECURITY_INFO *pSecInfo
 )
 {
     NV_ASSERT(pResourceRef != NULL);
     NV_ASSERT(listCount(&pResourceRef->backRefs) == 0);
     NV_ASSERT(listCount(&pResourceRef->cpuMappings) == 0);
-    NV_ASSERT(listCount(&pResourceRef->interBackRefs) == 0);
+    NV_ASSERT(listCount(&pResourceRef->interBackRefsMappable) == 0);
+    NV_ASSERT(listCount(&pResourceRef->interBackRefsContext) == 0);
     NV_ASSERT(listCount(&pResourceRef->interMappings) == 0);
 
     listDestroy(&pResourceRef->backRefs);
     listDestroy(&pResourceRef->cpuMappings);
-    listDestroy(&pResourceRef->interBackRefs);
+    listDestroy(&pResourceRef->interBackRefsMappable);
+    listDestroy(&pResourceRef->interBackRefsContext);
     listDestroy(&pResourceRef->interMappings);
     listDestroy(&pResourceRef->sharePolicyList);
 
     // All children should be free
-    NV_ASSERT(0 == multimapCountItems(&pResourceRef->childRefMap));
+    if (0 != multimapCountItems(&pResourceRef->childRefMap))
+    {
+        RS_RES_FREE_PARAMS_INTERNAL params;
+        NV_STATUS      tmpStatus;
+
+        NV_ASSERT(0 == multimapCountItems(&pResourceRef->childRefMap));
+
+        NV_PRINTF(LEVEL_ERROR, "Resource %x (Class %x) has unfreed children!\n",
+                  pResourceRef->hResource, pResourceRef->externalClassId);
+
+        RsIndexSupermapIter it = multimapSubmapIterAll(&pResourceRef->childRefMap);
+        while (multimapSubmapIterNext(&it))
+        {
+            RsIndexSubmap *pSubmap = it.pValue;
+            RsIndexIter subIt = multimapSubmapIterItems(&pResourceRef->childRefMap, pSubmap);
+            while (multimapItemIterNext(&subIt))
+            {
+                RsResourceRef *pChildRef = *subIt.pValue;
+                NV_PRINTF(LEVEL_ERROR, "Child %x (Class %x) is still alive!\n",
+                          pChildRef->hResource, pChildRef->externalClassId);
+
+                //
+                // Attempt to kill any leaked children. If they are not deleted here,
+                // they are likely to use-after-free when interacting with this parent object later.
+                //
+                portMemSet(&params, 0, sizeof(params));
+                params.hClient = pChildRef->pClient->hClient;
+                params.hResource = pChildRef->hResource;
+                params.pResourceRef = pChildRef;
+                params.pSecInfo = pSecInfo;
+                params.pLockInfo = pLockInfo;
+                tmpStatus = clientFreeResource(pChildRef->pClient, pServer, &params);
+                NV_ASSERT(tmpStatus == NV_OK);
+            }
+        }
+    }
     multimapDestroy(&pResourceRef->childRefMap);
 
     // Nothing should be cached
@@ -1168,15 +1208,15 @@ _clientUnmapBackRefMappings
 {
     NV_STATUS       status;
     RsResourceRef  *pResourceRef = pCallContext->pResourceRef;
-    RS_CPU_MAPPING_BACK_REF *pBackRefItem;
+    RsCpuMapping *pBackRefItem;
     RS_LOCK_INFO lockInfo;
     RS_CPU_UNMAP_PARAMS params;
 
     pBackRefItem = listHead(&pResourceRef->backRefs);
     while(pBackRefItem != NULL)
     {
-        RsCpuMapping *pCpuMapping = pBackRefItem->pCpuMapping;
-        RsResourceRef *pBackRef = pBackRefItem->pBackRef;
+        RsCpuMapping *pCpuMapping = pBackRefItem;
+        RsResourceRef *pBackRef = pCpuMapping->pResourceRef;
 
         portMemSet(&params, 0, sizeof(params));
         portMemSet(&lockInfo, 0, sizeof(lockInfo));
@@ -1303,33 +1343,49 @@ _clientUnmapInterBackRefMappings
 )
 {
     NV_STATUS status;
-    RS_INTER_MAPPING_BACK_REF *pBackRefItem;
+    RsInterMapping *pBackRefItem;
 
     RsResourceRef *pResourceRef = pCallContext->pResourceRef;
+    NvBool         bSwitched = NV_FALSE;
 
-    pBackRefItem = listHead(&pResourceRef->interBackRefs);
+    pBackRefItem = listHead(&(pResourceRef->interBackRefsMappable));
+    if (pBackRefItem == NULL)
+    {
+        bSwitched = NV_TRUE;
+        pBackRefItem = listHead(&(pResourceRef->interBackRefsContext));
+    }
     while (pBackRefItem != NULL)
     {
         RsResourceRef *pMapperRef = pBackRefItem->pMapperRef;
-        RsInterMapping *pMapping = pBackRefItem->pMapping;
+        RsInterMapping *pMapping = pBackRefItem;
 
         status = _unmapInterMapping(pCallContext->pServer, pClient, pMapperRef,
                                     pMapping, pLockInfo, &pCallContext->secInfo);
         if (status != NV_OK)
         {
+            RsInterMapping *pCurHead = bSwitched ? listHead(&(pResourceRef->interBackRefsContext)) :
+                listHead(&(pResourceRef->interBackRefsMappable));
+
             NV_PRINTF(LEVEL_ERROR, "Failed to auto-unmap backref (status=0x%x) hClient %x: hMapper: %x\n",
                       status, pClient->hClient, pMapperRef->hResource);
             NV_PRINTF(LEVEL_ERROR, "hMappable: %x hContext: %x\n",
                       pMapping->pMappableRef->hResource, pMapping->pContextRef->hResource);
 
-            if (pBackRefItem == listHead(&pResourceRef->interBackRefs))
+            if (pBackRefItem == pCurHead)
             {
                 NV_ASSERT(0);
                 refRemoveInterMapping(pMapperRef, pMapping);
             }
         }
 
-        pBackRefItem = listHead(&pResourceRef->interBackRefs);
+        pBackRefItem = bSwitched ? listHead(&(pResourceRef->interBackRefsContext)) :
+            listHead(&(pResourceRef->interBackRefsMappable));
+
+        if (pBackRefItem == NULL && (!bSwitched))
+        {
+            bSwitched = NV_TRUE;
+            pBackRefItem = listHead(&(pResourceRef->interBackRefsContext));
+        }
     }
 }
 

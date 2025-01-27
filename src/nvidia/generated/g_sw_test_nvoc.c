@@ -120,7 +120,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_SoftwareMethodTest =
     /*pExportInfo=*/        &__nvoc_export_info_SoftwareMethodTest
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge SoftwareMethodTest methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^3
 NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super^3
 NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^3
@@ -143,11 +143,11 @@ NV_STATUS __nvoc_down_thunk_SoftwareMethodTest_chandesGetSwMethods(struct Channe
 
 // swtestGetSwMethods: virtual override (chandes) base (chandes)
 NV_STATUS __nvoc_down_thunk_SoftwareMethodTest_chandesGetSwMethods(struct ChannelDescendant *pSwTest, const METHOD **ppMethods, NvU32 *pNumMethods) {
-    return swtestGetSwMethods((struct SoftwareMethodTest *)(((unsigned char *) pSwTest) - __nvoc_rtti_SoftwareMethodTest_ChannelDescendant.offset), ppMethods, pNumMethods);
+    return swtestGetSwMethods((struct SoftwareMethodTest *)(((unsigned char *) pSwTest) - NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant)), ppMethods, pNumMethods);
 }
 
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
+// Up-thunk(s) to bridge SoftwareMethodTest methods to ancestors (if any)
 NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^3
 NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super^3
 void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super^3
@@ -242,157 +242,157 @@ NV_STATUS __nvoc_up_thunk_Notifier_swtestGetOrAllocNotifShare(struct SoftwareMet
 
 // swtestIsSwMethodStalling: virtual inherited (chandes) base (chandes)
 NvBool __nvoc_up_thunk_ChannelDescendant_swtestIsSwMethodStalling(struct SoftwareMethodTest *pChannelDescendant, NvU32 hHandle) {
-    return chandesIsSwMethodStalling((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + __nvoc_rtti_SoftwareMethodTest_ChannelDescendant.offset), hHandle);
+    return chandesIsSwMethodStalling((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant)), hHandle);
 }
 
 // swtestCheckMemInterUnmap: virtual inherited (chandes) base (chandes)
 NV_STATUS __nvoc_up_thunk_ChannelDescendant_swtestCheckMemInterUnmap(struct SoftwareMethodTest *pChannelDescendant, NvBool bSubdeviceHandleProvided) {
-    return chandesCheckMemInterUnmap((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + __nvoc_rtti_SoftwareMethodTest_ChannelDescendant.offset), bSubdeviceHandleProvided);
+    return chandesCheckMemInterUnmap((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant)), bSubdeviceHandleProvided);
 }
 
 // swtestControl: virtual inherited (gpures) base (chandes)
 NV_STATUS __nvoc_up_thunk_GpuResource_swtestControl(struct SoftwareMethodTest *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_SoftwareMethodTest_GpuResource.offset), pCallContext, pParams);
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource)), pCallContext, pParams);
 }
 
 // swtestMap: virtual inherited (gpures) base (chandes)
 NV_STATUS __nvoc_up_thunk_GpuResource_swtestMap(struct SoftwareMethodTest *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_SoftwareMethodTest_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource)), pCallContext, pParams, pCpuMapping);
 }
 
 // swtestUnmap: virtual inherited (gpures) base (chandes)
 NV_STATUS __nvoc_up_thunk_GpuResource_swtestUnmap(struct SoftwareMethodTest *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_SoftwareMethodTest_GpuResource.offset), pCallContext, pCpuMapping);
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource)), pCallContext, pCpuMapping);
 }
 
 // swtestShareCallback: virtual inherited (gpures) base (chandes)
 NvBool __nvoc_up_thunk_GpuResource_swtestShareCallback(struct SoftwareMethodTest *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_SoftwareMethodTest_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource)), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // swtestGetRegBaseOffsetAndSize: virtual inherited (gpures) base (chandes)
 NV_STATUS __nvoc_up_thunk_GpuResource_swtestGetRegBaseOffsetAndSize(struct SoftwareMethodTest *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_SoftwareMethodTest_GpuResource.offset), pGpu, pOffset, pSize);
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource)), pGpu, pOffset, pSize);
 }
 
 // swtestGetMapAddrSpace: virtual inherited (gpures) base (chandes)
 NV_STATUS __nvoc_up_thunk_GpuResource_swtestGetMapAddrSpace(struct SoftwareMethodTest *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_SoftwareMethodTest_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource)), pCallContext, mapFlags, pAddrSpace);
 }
 
 // swtestInternalControlForward: virtual inherited (gpures) base (chandes)
 NV_STATUS __nvoc_up_thunk_GpuResource_swtestInternalControlForward(struct SoftwareMethodTest *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_SoftwareMethodTest_GpuResource.offset), command, pParams, size);
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource)), command, pParams, size);
 }
 
 // swtestGetInternalObjectHandle: virtual inherited (gpures) base (chandes)
 NvHandle __nvoc_up_thunk_GpuResource_swtestGetInternalObjectHandle(struct SoftwareMethodTest *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_SoftwareMethodTest_GpuResource.offset));
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource)));
 }
 
 // swtestAccessCallback: virtual inherited (rmres) base (chandes)
 NvBool __nvoc_up_thunk_RmResource_swtestAccessCallback(struct SoftwareMethodTest *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_SoftwareMethodTest_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource)), pInvokingClient, pAllocParams, accessRight);
 }
 
 // swtestGetMemInterMapParams: virtual inherited (rmres) base (chandes)
 NV_STATUS __nvoc_up_thunk_RmResource_swtestGetMemInterMapParams(struct SoftwareMethodTest *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_SoftwareMethodTest_RmResource.offset), pParams);
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource)), pParams);
 }
 
 // swtestGetMemoryMappingDescriptor: virtual inherited (rmres) base (chandes)
 NV_STATUS __nvoc_up_thunk_RmResource_swtestGetMemoryMappingDescriptor(struct SoftwareMethodTest *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_SoftwareMethodTest_RmResource.offset), ppMemDesc);
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource)), ppMemDesc);
 }
 
 // swtestControlSerialization_Prologue: virtual inherited (rmres) base (chandes)
 NV_STATUS __nvoc_up_thunk_RmResource_swtestControlSerialization_Prologue(struct SoftwareMethodTest *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_SoftwareMethodTest_RmResource.offset), pCallContext, pParams);
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // swtestControlSerialization_Epilogue: virtual inherited (rmres) base (chandes)
 void __nvoc_up_thunk_RmResource_swtestControlSerialization_Epilogue(struct SoftwareMethodTest *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_SoftwareMethodTest_RmResource.offset), pCallContext, pParams);
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // swtestControl_Prologue: virtual inherited (rmres) base (chandes)
 NV_STATUS __nvoc_up_thunk_RmResource_swtestControl_Prologue(struct SoftwareMethodTest *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_SoftwareMethodTest_RmResource.offset), pCallContext, pParams);
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // swtestControl_Epilogue: virtual inherited (rmres) base (chandes)
 void __nvoc_up_thunk_RmResource_swtestControl_Epilogue(struct SoftwareMethodTest *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_SoftwareMethodTest_RmResource.offset), pCallContext, pParams);
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // swtestCanCopy: virtual inherited (res) base (chandes)
 NvBool __nvoc_up_thunk_RsResource_swtestCanCopy(struct SoftwareMethodTest *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SoftwareMethodTest_RsResource.offset));
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // swtestIsDuplicate: virtual inherited (res) base (chandes)
 NV_STATUS __nvoc_up_thunk_RsResource_swtestIsDuplicate(struct SoftwareMethodTest *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SoftwareMethodTest_RsResource.offset), hMemory, pDuplicate);
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)), hMemory, pDuplicate);
 }
 
 // swtestPreDestruct: virtual inherited (res) base (chandes)
 void __nvoc_up_thunk_RsResource_swtestPreDestruct(struct SoftwareMethodTest *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SoftwareMethodTest_RsResource.offset));
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // swtestControlFilter: virtual inherited (res) base (chandes)
 NV_STATUS __nvoc_up_thunk_RsResource_swtestControlFilter(struct SoftwareMethodTest *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SoftwareMethodTest_RsResource.offset), pCallContext, pParams);
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams);
 }
 
 // swtestIsPartialUnmapSupported: inline virtual inherited (res) base (chandes) body
 NvBool __nvoc_up_thunk_RsResource_swtestIsPartialUnmapSupported(struct SoftwareMethodTest *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SoftwareMethodTest_RsResource.offset));
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // swtestMapTo: virtual inherited (res) base (chandes)
 NV_STATUS __nvoc_up_thunk_RsResource_swtestMapTo(struct SoftwareMethodTest *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SoftwareMethodTest_RsResource.offset), pParams);
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
 }
 
 // swtestUnmapFrom: virtual inherited (res) base (chandes)
 NV_STATUS __nvoc_up_thunk_RsResource_swtestUnmapFrom(struct SoftwareMethodTest *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SoftwareMethodTest_RsResource.offset), pParams);
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
 }
 
 // swtestGetRefCount: virtual inherited (res) base (chandes)
 NvU32 __nvoc_up_thunk_RsResource_swtestGetRefCount(struct SoftwareMethodTest *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SoftwareMethodTest_RsResource.offset));
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // swtestAddAdditionalDependants: virtual inherited (res) base (chandes)
 void __nvoc_up_thunk_RsResource_swtestAddAdditionalDependants(struct RsClient *pClient, struct SoftwareMethodTest *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SoftwareMethodTest_RsResource.offset), pReference);
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)), pReference);
 }
 
 // swtestGetNotificationListPtr: virtual inherited (notify) base (chandes)
 PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_swtestGetNotificationListPtr(struct SoftwareMethodTest *pNotifier) {
-    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_SoftwareMethodTest_Notifier.offset));
+    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_Notifier)));
 }
 
 // swtestGetNotificationShare: virtual inherited (notify) base (chandes)
 struct NotifShare * __nvoc_up_thunk_Notifier_swtestGetNotificationShare(struct SoftwareMethodTest *pNotifier) {
-    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_SoftwareMethodTest_Notifier.offset));
+    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_Notifier)));
 }
 
 // swtestSetNotificationShare: virtual inherited (notify) base (chandes)
 void __nvoc_up_thunk_Notifier_swtestSetNotificationShare(struct SoftwareMethodTest *pNotifier, struct NotifShare *pNotifShare) {
-    notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_SoftwareMethodTest_Notifier.offset), pNotifShare);
+    notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_Notifier)), pNotifShare);
 }
 
 // swtestUnregisterEvent: virtual inherited (notify) base (chandes)
 NV_STATUS __nvoc_up_thunk_Notifier_swtestUnregisterEvent(struct SoftwareMethodTest *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_SoftwareMethodTest_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_Notifier)), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 // swtestGetOrAllocNotifShare: virtual inherited (notify) base (chandes)
 NV_STATUS __nvoc_up_thunk_Notifier_swtestGetOrAllocNotifShare(struct SoftwareMethodTest *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_SoftwareMethodTest_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
+    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + NV_OFFSETOF(SoftwareMethodTest, __nvoc_base_ChannelDescendant.__nvoc_base_Notifier)), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 

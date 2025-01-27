@@ -757,7 +757,7 @@ osTegraSocDeviceReset
 NV_STATUS
 osTegraSocPmPowergate
 (
-    OS_GPU_INFO *pOsGpuInfo
+    OBJGPU *pGpu
 )
 {
     return NV_ERR_NOT_SUPPORTED;
@@ -766,7 +766,7 @@ osTegraSocPmPowergate
 NV_STATUS
 osTegraSocPmUnpowergate
 (
-    OS_GPU_INFO *pOsGpuInfo
+    OBJGPU *pGpu
 )
 {
     return NV_ERR_NOT_SUPPORTED;
@@ -805,3 +805,14 @@ NV_STATUS osGetPcieCplAtomicsCaps
 {
     return NV_ERR_NOT_SUPPORTED;
 }
+
+NV_STATUS
+osMapGsc
+(
+    NvU64        gsc_base,
+    NvU64        *va
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+

@@ -203,7 +203,7 @@ struct KernelGraphicsContext {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__KernelGraphicsContext *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct GpuResource __nvoc_base_GpuResource;
 
     // Ancestor object pointers for `staticCast` feature
@@ -214,13 +214,14 @@ struct KernelGraphicsContext {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct KernelGraphicsContext *__nvoc_pbase_KernelGraphicsContext;    // kgrctx
 
-    // Vtable with 6 per-object function pointers
+    // Vtable with 7 per-object function pointers
     NvBool (*__kgrctxShouldPreAllocPmBuffer__)(struct OBJGPU *, struct KernelGraphicsContext * /*this*/, struct KernelChannel *);  // halified (2 hals) body
     GR_GLOBALCTX_BUFFER (*__kgrctxGetRegisterAccessMapId__)(struct OBJGPU *, struct KernelGraphicsContext * /*this*/, struct KernelChannel *);  // halified (2 hals)
     NV_STATUS (*__kgrctxCtrlGetTpcPartitionMode__)(struct KernelGraphicsContext * /*this*/, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *);  // exported (id=0x900103)
     NV_STATUS (*__kgrctxCtrlSetTpcPartitionMode__)(struct KernelGraphicsContext * /*this*/, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *);  // exported (id=0x900101)
     NV_STATUS (*__kgrctxCtrlGetMMUDebugMode__)(struct KernelGraphicsContext * /*this*/, NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS *);  // exported (id=0x900105)
     NV_STATUS (*__kgrctxCtrlProgramVidmemPromote__)(struct KernelGraphicsContext * /*this*/, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *);  // exported (id=0x900107)
+    NV_STATUS (*__kgrctxCtrlSetLgSectorPromotion__)(struct KernelGraphicsContext * /*this*/, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *);  // exported (id=0x90010b)
 
     // Data members
     struct KernelGraphicsContextShared *PRIVATE_FIELD(pShared);
@@ -234,7 +235,7 @@ struct KernelGraphicsContext_PRIVATE {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__KernelGraphicsContext *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct GpuResource __nvoc_base_GpuResource;
 
     // Ancestor object pointers for `staticCast` feature
@@ -245,13 +246,14 @@ struct KernelGraphicsContext_PRIVATE {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct KernelGraphicsContext *__nvoc_pbase_KernelGraphicsContext;    // kgrctx
 
-    // Vtable with 6 per-object function pointers
+    // Vtable with 7 per-object function pointers
     NvBool (*__kgrctxShouldPreAllocPmBuffer__)(struct OBJGPU *, struct KernelGraphicsContext * /*this*/, struct KernelChannel *);  // halified (2 hals) body
     GR_GLOBALCTX_BUFFER (*__kgrctxGetRegisterAccessMapId__)(struct OBJGPU *, struct KernelGraphicsContext * /*this*/, struct KernelChannel *);  // halified (2 hals)
     NV_STATUS (*__kgrctxCtrlGetTpcPartitionMode__)(struct KernelGraphicsContext * /*this*/, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *);  // exported (id=0x900103)
     NV_STATUS (*__kgrctxCtrlSetTpcPartitionMode__)(struct KernelGraphicsContext * /*this*/, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *);  // exported (id=0x900101)
     NV_STATUS (*__kgrctxCtrlGetMMUDebugMode__)(struct KernelGraphicsContext * /*this*/, NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS *);  // exported (id=0x900105)
     NV_STATUS (*__kgrctxCtrlProgramVidmemPromote__)(struct KernelGraphicsContext * /*this*/, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *);  // exported (id=0x900107)
+    NV_STATUS (*__kgrctxCtrlSetLgSectorPromotion__)(struct KernelGraphicsContext * /*this*/, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *);  // exported (id=0x90010b)
 
     // Data members
     struct KernelGraphicsContextShared *pShared;
@@ -338,6 +340,8 @@ NV_STATUS __nvoc_objCreate_KernelGraphicsContext(KernelGraphicsContext**, Dynami
 #define kgrctxCtrlGetMMUDebugMode(pKernelGraphicsContext, pParams) kgrctxCtrlGetMMUDebugMode_DISPATCH(pKernelGraphicsContext, pParams)
 #define kgrctxCtrlProgramVidmemPromote_FNPTR(pKernelGraphicsContext) pKernelGraphicsContext->__kgrctxCtrlProgramVidmemPromote__
 #define kgrctxCtrlProgramVidmemPromote(pKernelGraphicsContext, pParams) kgrctxCtrlProgramVidmemPromote_DISPATCH(pKernelGraphicsContext, pParams)
+#define kgrctxCtrlSetLgSectorPromotion_FNPTR(pKernelGraphicsContext) pKernelGraphicsContext->__kgrctxCtrlSetLgSectorPromotion__
+#define kgrctxCtrlSetLgSectorPromotion(pKernelGraphicsContext, pParams) kgrctxCtrlSetLgSectorPromotion_DISPATCH(pKernelGraphicsContext, pParams)
 #define kgrctxControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresControl__
 #define kgrctxControl(pGpuResource, pCallContext, pParams) kgrctxControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define kgrctxMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresMap__
@@ -416,6 +420,10 @@ static inline NV_STATUS kgrctxCtrlGetMMUDebugMode_DISPATCH(struct KernelGraphics
 
 static inline NV_STATUS kgrctxCtrlProgramVidmemPromote_DISPATCH(struct KernelGraphicsContext *pKernelGraphicsContext, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *pParams) {
     return pKernelGraphicsContext->__kgrctxCtrlProgramVidmemPromote__(pKernelGraphicsContext, pParams);
+}
+
+static inline NV_STATUS kgrctxCtrlSetLgSectorPromotion_DISPATCH(struct KernelGraphicsContext *pKernelGraphicsContext, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *pParams) {
+    return pKernelGraphicsContext->__kgrctxCtrlSetLgSectorPromotion__(pKernelGraphicsContext, pParams);
 }
 
 static inline NV_STATUS kgrctxControl_DISPATCH(struct KernelGraphicsContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -614,6 +622,8 @@ NV_STATUS kgrctxCtrlSetTpcPartitionMode_IMPL(struct KernelGraphicsContext *pKern
 NV_STATUS kgrctxCtrlGetMMUDebugMode_IMPL(struct KernelGraphicsContext *pKernelGraphicsContext, NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS *pParams);
 
 NV_STATUS kgrctxCtrlProgramVidmemPromote_IMPL(struct KernelGraphicsContext *pKernelGraphicsContext, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *pParams);
+
+NV_STATUS kgrctxCtrlSetLgSectorPromotion_IMPL(struct KernelGraphicsContext *pKernelGraphicsContext, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *pParams);
 
 static inline struct KernelGraphicsContextShared *kgrctxGetShared(struct OBJGPU *pGpu, struct KernelGraphicsContext *pKernelGraphicsContext) {
     struct KernelGraphicsContext_PRIVATE *pKernelGraphicsContext_PRIVATE = (struct KernelGraphicsContext_PRIVATE *)pKernelGraphicsContext;
@@ -1171,7 +1181,7 @@ struct KernelGraphicsContextShared {
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct RsShared __nvoc_base_RsShared;
 
     // Ancestor object pointers for `staticCast` feature

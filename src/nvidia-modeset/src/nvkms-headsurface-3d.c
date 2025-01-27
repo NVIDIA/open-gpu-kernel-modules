@@ -271,10 +271,10 @@ static void FreeNv2dChannel(NVHsChannelEvoRec *pHsChannel)
     pDispEvo = pHsChannel->pDispEvo;
     pDevEvo = pDispEvo->pDevEvo;
 
-    if (pHsChannel->nv2d.handle != 0) {
+    if (pHsChannel->nv2d.handle[0] != 0) {
         nvFreeUnixRmHandle(&pDevEvo->handleAllocator,
-                           pHsChannel->nv2d.handle);
-        pHsChannel->nv2d.handle = 0;
+                           pHsChannel->nv2d.handle[0]);
+        pHsChannel->nv2d.handle[0] = 0;
     }
 }
 
@@ -287,11 +287,11 @@ static NvBool AllocNv2dChannel(NVHsChannelEvoRec *pHsChannel)
         goto fail;
     }
 
-    pHsChannel->nv2d.handle = nvGenerateUnixRmHandle(&pDevEvo->handleAllocator);
+    pHsChannel->nv2d.handle[0] = nvGenerateUnixRmHandle(&pDevEvo->handleAllocator);
 
     ret = nvRmApiAlloc(nvEvoGlobal.clientHandle,
                        pHsChannel->nvPush.channel.channelHandle[0],
-                       pHsChannel->nv2d.handle,
+                       pHsChannel->nv2d.handle[0],
                        FERMI_TWOD_A,
                        NULL);
 
@@ -719,7 +719,7 @@ static void Hs3dSetup2d(NVHsChannelEvoPtr pHsChannel)
     NvPushChannelPtr p = &pHsChannel->nvPush.channel;
 
     nvAssert(!p->pDevice->clientSli || p->pDevice->numSubDevices == 1);
-    nvPushSetObject(p, NVA06F_SUBCHANNEL_2D, &pHsChannel->nv2d.handle);
+    nvPushSetObject(p, NVA06F_SUBCHANNEL_2D, pHsChannel->nv2d.handle);
 }
 
 /*!

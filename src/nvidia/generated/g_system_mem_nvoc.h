@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -66,7 +66,7 @@ struct SystemMemory {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__SystemMemory *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct StandardMemory __nvoc_base_StandardMemory;
 
     // Ancestor object pointers for `staticCast` feature
@@ -344,6 +344,8 @@ NV_STATUS sysmemAllocResources(OBJGPU *pGpu, struct MemoryManager *pMemoryManage
                                MEMORY_ALLOCATION_REQUEST *pAllocRequest, FB_ALLOC_INFO *pFbAllocInfo,
                                struct SystemMemory *pSystemMemory);
 
+void sysmemSetCacheAttrib(NV_MEMORY_ALLOCATION_PARAMS *pAllocData, NvU32 *pCpuCacheAttrib,
+                          NvU32 *pGpuCacheAttrib);
 #endif
 
 #ifdef __cplusplus

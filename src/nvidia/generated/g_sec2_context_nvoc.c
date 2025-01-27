@@ -120,7 +120,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_Sec2Context =
     /*pExportInfo=*/        &__nvoc_export_info_Sec2Context
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge Sec2Context methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^3
 NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super^3
 NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^3
@@ -138,7 +138,7 @@ NV_STATUS __nvoc_down_thunk_Notifier_inotifyUnregisterEvent(struct INotifier *pN
 NV_STATUS __nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super^2
 NV_STATUS __nvoc_down_thunk_ChannelDescendant_rmresCheckMemInterUnmap(struct RmResource *pChannelDescendant, NvBool bSubdeviceHandleProvided);    // super
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
+// Up-thunk(s) to bridge Sec2Context methods to ancestors (if any)
 NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^3
 NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super^3
 void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super^3
@@ -234,162 +234,162 @@ NV_STATUS __nvoc_up_thunk_Notifier_sec2ctxGetOrAllocNotifShare(struct Sec2Contex
 
 // sec2ctxGetSwMethods: virtual inherited (chandes) base (chandes)
 NV_STATUS __nvoc_up_thunk_ChannelDescendant_sec2ctxGetSwMethods(struct Sec2Context *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
-    return chandesGetSwMethods((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + __nvoc_rtti_Sec2Context_ChannelDescendant.offset), ppMethods, pNumMethods);
+    return chandesGetSwMethods((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant)), ppMethods, pNumMethods);
 }
 
 // sec2ctxIsSwMethodStalling: virtual inherited (chandes) base (chandes)
 NvBool __nvoc_up_thunk_ChannelDescendant_sec2ctxIsSwMethodStalling(struct Sec2Context *pChannelDescendant, NvU32 hHandle) {
-    return chandesIsSwMethodStalling((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + __nvoc_rtti_Sec2Context_ChannelDescendant.offset), hHandle);
+    return chandesIsSwMethodStalling((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant)), hHandle);
 }
 
 // sec2ctxCheckMemInterUnmap: virtual inherited (chandes) base (chandes)
 NV_STATUS __nvoc_up_thunk_ChannelDescendant_sec2ctxCheckMemInterUnmap(struct Sec2Context *pChannelDescendant, NvBool bSubdeviceHandleProvided) {
-    return chandesCheckMemInterUnmap((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + __nvoc_rtti_Sec2Context_ChannelDescendant.offset), bSubdeviceHandleProvided);
+    return chandesCheckMemInterUnmap((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant)), bSubdeviceHandleProvided);
 }
 
 // sec2ctxControl: virtual inherited (gpures) base (chandes)
 NV_STATUS __nvoc_up_thunk_GpuResource_sec2ctxControl(struct Sec2Context *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_Sec2Context_GpuResource.offset), pCallContext, pParams);
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource)), pCallContext, pParams);
 }
 
 // sec2ctxMap: virtual inherited (gpures) base (chandes)
 NV_STATUS __nvoc_up_thunk_GpuResource_sec2ctxMap(struct Sec2Context *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_Sec2Context_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource)), pCallContext, pParams, pCpuMapping);
 }
 
 // sec2ctxUnmap: virtual inherited (gpures) base (chandes)
 NV_STATUS __nvoc_up_thunk_GpuResource_sec2ctxUnmap(struct Sec2Context *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_Sec2Context_GpuResource.offset), pCallContext, pCpuMapping);
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource)), pCallContext, pCpuMapping);
 }
 
 // sec2ctxShareCallback: virtual inherited (gpures) base (chandes)
 NvBool __nvoc_up_thunk_GpuResource_sec2ctxShareCallback(struct Sec2Context *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_Sec2Context_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource)), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // sec2ctxGetRegBaseOffsetAndSize: virtual inherited (gpures) base (chandes)
 NV_STATUS __nvoc_up_thunk_GpuResource_sec2ctxGetRegBaseOffsetAndSize(struct Sec2Context *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_Sec2Context_GpuResource.offset), pGpu, pOffset, pSize);
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource)), pGpu, pOffset, pSize);
 }
 
 // sec2ctxGetMapAddrSpace: virtual inherited (gpures) base (chandes)
 NV_STATUS __nvoc_up_thunk_GpuResource_sec2ctxGetMapAddrSpace(struct Sec2Context *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_Sec2Context_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource)), pCallContext, mapFlags, pAddrSpace);
 }
 
 // sec2ctxInternalControlForward: virtual inherited (gpures) base (chandes)
 NV_STATUS __nvoc_up_thunk_GpuResource_sec2ctxInternalControlForward(struct Sec2Context *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_Sec2Context_GpuResource.offset), command, pParams, size);
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource)), command, pParams, size);
 }
 
 // sec2ctxGetInternalObjectHandle: virtual inherited (gpures) base (chandes)
 NvHandle __nvoc_up_thunk_GpuResource_sec2ctxGetInternalObjectHandle(struct Sec2Context *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_Sec2Context_GpuResource.offset));
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource)));
 }
 
 // sec2ctxAccessCallback: virtual inherited (rmres) base (chandes)
 NvBool __nvoc_up_thunk_RmResource_sec2ctxAccessCallback(struct Sec2Context *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_Sec2Context_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource)), pInvokingClient, pAllocParams, accessRight);
 }
 
 // sec2ctxGetMemInterMapParams: virtual inherited (rmres) base (chandes)
 NV_STATUS __nvoc_up_thunk_RmResource_sec2ctxGetMemInterMapParams(struct Sec2Context *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_Sec2Context_RmResource.offset), pParams);
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource)), pParams);
 }
 
 // sec2ctxGetMemoryMappingDescriptor: virtual inherited (rmres) base (chandes)
 NV_STATUS __nvoc_up_thunk_RmResource_sec2ctxGetMemoryMappingDescriptor(struct Sec2Context *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_Sec2Context_RmResource.offset), ppMemDesc);
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource)), ppMemDesc);
 }
 
 // sec2ctxControlSerialization_Prologue: virtual inherited (rmres) base (chandes)
 NV_STATUS __nvoc_up_thunk_RmResource_sec2ctxControlSerialization_Prologue(struct Sec2Context *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_Sec2Context_RmResource.offset), pCallContext, pParams);
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // sec2ctxControlSerialization_Epilogue: virtual inherited (rmres) base (chandes)
 void __nvoc_up_thunk_RmResource_sec2ctxControlSerialization_Epilogue(struct Sec2Context *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_Sec2Context_RmResource.offset), pCallContext, pParams);
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // sec2ctxControl_Prologue: virtual inherited (rmres) base (chandes)
 NV_STATUS __nvoc_up_thunk_RmResource_sec2ctxControl_Prologue(struct Sec2Context *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_Sec2Context_RmResource.offset), pCallContext, pParams);
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // sec2ctxControl_Epilogue: virtual inherited (rmres) base (chandes)
 void __nvoc_up_thunk_RmResource_sec2ctxControl_Epilogue(struct Sec2Context *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_Sec2Context_RmResource.offset), pCallContext, pParams);
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // sec2ctxCanCopy: virtual inherited (res) base (chandes)
 NvBool __nvoc_up_thunk_RsResource_sec2ctxCanCopy(struct Sec2Context *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_Sec2Context_RsResource.offset));
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // sec2ctxIsDuplicate: virtual inherited (res) base (chandes)
 NV_STATUS __nvoc_up_thunk_RsResource_sec2ctxIsDuplicate(struct Sec2Context *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_Sec2Context_RsResource.offset), hMemory, pDuplicate);
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)), hMemory, pDuplicate);
 }
 
 // sec2ctxPreDestruct: virtual inherited (res) base (chandes)
 void __nvoc_up_thunk_RsResource_sec2ctxPreDestruct(struct Sec2Context *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_Sec2Context_RsResource.offset));
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // sec2ctxControlFilter: virtual inherited (res) base (chandes)
 NV_STATUS __nvoc_up_thunk_RsResource_sec2ctxControlFilter(struct Sec2Context *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_Sec2Context_RsResource.offset), pCallContext, pParams);
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams);
 }
 
 // sec2ctxIsPartialUnmapSupported: inline virtual inherited (res) base (chandes) body
 NvBool __nvoc_up_thunk_RsResource_sec2ctxIsPartialUnmapSupported(struct Sec2Context *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_Sec2Context_RsResource.offset));
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // sec2ctxMapTo: virtual inherited (res) base (chandes)
 NV_STATUS __nvoc_up_thunk_RsResource_sec2ctxMapTo(struct Sec2Context *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_Sec2Context_RsResource.offset), pParams);
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
 }
 
 // sec2ctxUnmapFrom: virtual inherited (res) base (chandes)
 NV_STATUS __nvoc_up_thunk_RsResource_sec2ctxUnmapFrom(struct Sec2Context *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_Sec2Context_RsResource.offset), pParams);
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
 }
 
 // sec2ctxGetRefCount: virtual inherited (res) base (chandes)
 NvU32 __nvoc_up_thunk_RsResource_sec2ctxGetRefCount(struct Sec2Context *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_Sec2Context_RsResource.offset));
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // sec2ctxAddAdditionalDependants: virtual inherited (res) base (chandes)
 void __nvoc_up_thunk_RsResource_sec2ctxAddAdditionalDependants(struct RsClient *pClient, struct Sec2Context *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_Sec2Context_RsResource.offset), pReference);
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)), pReference);
 }
 
 // sec2ctxGetNotificationListPtr: virtual inherited (notify) base (chandes)
 PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_sec2ctxGetNotificationListPtr(struct Sec2Context *pNotifier) {
-    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_Sec2Context_Notifier.offset));
+    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_Notifier)));
 }
 
 // sec2ctxGetNotificationShare: virtual inherited (notify) base (chandes)
 struct NotifShare * __nvoc_up_thunk_Notifier_sec2ctxGetNotificationShare(struct Sec2Context *pNotifier) {
-    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_Sec2Context_Notifier.offset));
+    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_Notifier)));
 }
 
 // sec2ctxSetNotificationShare: virtual inherited (notify) base (chandes)
 void __nvoc_up_thunk_Notifier_sec2ctxSetNotificationShare(struct Sec2Context *pNotifier, struct NotifShare *pNotifShare) {
-    notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_Sec2Context_Notifier.offset), pNotifShare);
+    notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_Notifier)), pNotifShare);
 }
 
 // sec2ctxUnregisterEvent: virtual inherited (notify) base (chandes)
 NV_STATUS __nvoc_up_thunk_Notifier_sec2ctxUnregisterEvent(struct Sec2Context *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_Sec2Context_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_Notifier)), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 // sec2ctxGetOrAllocNotifShare: virtual inherited (notify) base (chandes)
 NV_STATUS __nvoc_up_thunk_Notifier_sec2ctxGetOrAllocNotifShare(struct Sec2Context *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_Sec2Context_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
+    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + NV_OFFSETOF(Sec2Context, __nvoc_base_ChannelDescendant.__nvoc_base_Notifier)), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 

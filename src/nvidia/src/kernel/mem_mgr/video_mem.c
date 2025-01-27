@@ -520,6 +520,7 @@ vidmemConstruct_IMPL
     MEMORY_DESCRIPTOR           *pTempMemDesc          = NULL;
     HWRESOURCE_INFO              hwResource;
     RsClient                    *pRsClient             = pCallContext->pClient;
+    RmClient                    *pRmClient             = dynamicCast(pRsClient, RmClient);
     RsResourceRef               *pResourceRef          = pCallContext->pResourceRef;
     RsResourceRef               *pDeviceRef;
     Device                      *pDevice;
@@ -535,7 +536,8 @@ vidmemConstruct_IMPL
     FB_ALLOC_PAGE_FORMAT        *pFbAllocPageFormat    = NULL;
     NV_STATUS                    rmStatus              = NV_OK;
     KernelBus                   *pKernelBus            = GPU_GET_KERNEL_BUS(pGpu);
-    NvBool                       bUpdatePteKind        = NV_FALSE;
+
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
 
     NV_ASSERT_OK_OR_RETURN(
         refFindAncestorOfType(pResourceRef, classId(Device), &pDeviceRef));
@@ -557,22 +559,6 @@ vidmemConstruct_IMPL
         goto done;
     }
 
-    if (!FLD_TEST_DRF(OS32, _ATTR, _COMPR, _NONE, pAllocData->attr) &&
-        kbusIsStaticBar1Enabled(pGpu, pKernelBus))
-    {
-        if (!FLD_TEST_DRF(OS32, _ATTR, _PAGE_SIZE, _HUGE, pAllocData->attr))
-        {
-            // Override the attr to use 2MB page size
-            pAllocData->attr = FLD_SET_DRF(OS32, _ATTR, _PAGE_SIZE, _HUGE, pAllocData->attr);
-            pAllocData->attr2 = FLD_SET_DRF(OS32, _ATTR2, _PAGE_SIZE_HUGE, _DEFAULT, pAllocData->attr2);
-
-            NV_PRINTF(LEVEL_INFO,
-                      "Overrode the page size to 2MB on this compressed vidmem for the static bar1\n");
-        }
-
-        bUpdatePteKind = NV_TRUE;
-    }
-
     if (FLD_TEST_DRF(OS32, _ATTR, _PHYSICALITY, _DEFAULT, pAllocData->attr))
     {
         pAllocData->attr =
@@ -581,7 +567,7 @@ vidmemConstruct_IMPL
                             pAllocData->attr);
     }
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_WARNING, stdmemValidateParams(pGpu, hClient, pAllocData));
+    NV_CHECK_OK_OR_RETURN(LEVEL_WARNING, stdmemValidateParams(pGpu, pRmClient, pAllocData));
     NV_CHECK_OR_RETURN(LEVEL_WARNING,
                        DRF_VAL(OS32, _ATTR, _LOCATION, pAllocData->attr) == NVOS32_ATTR_LOCATION_VIDMEM &&
                            !(pAllocData->flags & NVOS32_ALLOC_FLAGS_VIRTUAL),
@@ -850,49 +836,51 @@ vidmemConstruct_IMPL
         SLI_LOOP_END;
     }
 
-    //
-    // Video memory is always locally transparently cached.  It does not require
-    // any cache managment.  Marked cached unconditionally.  Non-coherent peer
-    // caching is handled with an override at mapping time.
-    //
-    if (DRF_VAL(OS32, _ATTR2, _GPU_CACHEABLE, pAllocData->attr2) ==
-        NVOS32_ATTR2_GPU_CACHEABLE_DEFAULT)
     {
-        pAllocData->attr2 = FLD_SET_DRF(OS32, _ATTR2, _GPU_CACHEABLE, _YES,
-                                        pAllocData->attr2);
-    }
-    gpuCacheAttrib = NV_MEMORY_CACHED;
-
-    // ClientDB can set the pagesize for memdesc.
-    // With GPU SMMU mapping, this needs to be set on the SMMU memdesc.
-    // So SMMU allocation should happen before memConstructCommon()
-    // Eventaully SMMU allocation will be part of memdescAlloc().
-
-    //
-    // There are a few cases where the heap will return an existing
-    // memdesc.  Only update attributes if it is new.
-    //
-    // @todo attr tracking should move into heapAlloc
-    //
-    if (pTempMemDesc->RefCount == 1)
-    {
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY);
-        memdescSetGpuCacheAttrib(memdescGetMemDescFromGpu(pTopLevelMemDesc, pGpu), gpuCacheAttrib);
-        SLI_LOOP_END;
-
-
-        // An SMMU mapping will be added to FB allocations in the following cases:
-        // 1. RM clients forcing SMMU mapping via flags
-        //    GPU Arch verification with VPR is one such usecase.
-
-        if (FLD_TEST_DRF(OS32, _ATTR2, _SMMU_ON_GPU, _ENABLE, pAllocData->attr2))
+        //
+        // Video memory is always locally transparently cached.  It does not require
+        // any cache management.  Marked cached unconditionally.  Non-coherent peer
+        // caching is handled with an override at mapping time.
+        //
+        if (DRF_VAL(OS32, _ATTR2, _GPU_CACHEABLE, pAllocData->attr2) ==
+            NVOS32_ATTR2_GPU_CACHEABLE_DEFAULT)
         {
-            NV_ASSERT_FAILED("SMMU mapping allocation is not supported for ARMv7");
-            rmStatus = NV_ERR_NOT_SUPPORTED;
+            pAllocData->attr2 = FLD_SET_DRF(OS32, _ATTR2, _GPU_CACHEABLE, _YES,
+                                            pAllocData->attr2);
+        }
+        gpuCacheAttrib = NV_MEMORY_CACHED;
 
-            memdescFree(pTopLevelMemDesc);
-            memdescDestroy(pTopLevelMemDesc);
-            goto done;
+        // ClientDB can set the pagesize for memdesc.
+        // With GPU SMMU mapping, this needs to be set on the SMMU memdesc.
+        // So SMMU allocation should happen before memConstructCommon()
+        // Eventually SMMU allocation will be part of memdescAlloc().
+
+        //
+        // There are a few cases where the heap will return an existing
+        // memdesc.  Only update attributes if it is new.
+        //
+        // @todo attr tracking should move into heapAlloc
+        //
+        if (pTempMemDesc->RefCount == 1)
+        {
+            SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY);
+            memdescSetGpuCacheAttrib(memdescGetMemDescFromGpu(pTopLevelMemDesc, pGpu), gpuCacheAttrib);
+            SLI_LOOP_END;
+
+
+            // An SMMU mapping will be added to FB allocations in the following cases:
+            // 1. RM clients forcing SMMU mapping via flags
+            //    GPU Arch verification with VPR is one such usecase.
+
+            if (FLD_TEST_DRF(OS32, _ATTR2, _SMMU_ON_GPU, _ENABLE, pAllocData->attr2))
+            {
+                NV_ASSERT_FAILED("SMMU mapping allocation is not supported for ARMv7");
+                rmStatus = NV_ERR_NOT_SUPPORTED;
+
+                memdescFree(pTopLevelMemDesc);
+                memdescDestroy(pTopLevelMemDesc);
+                goto done;
+            }
         }
     }
 
@@ -1012,29 +1000,30 @@ vidmemConstruct_IMPL
         }
     }
 
-    if (bUpdatePteKind)
+    rmStatus = kbusIncreaseStaticBar1Refcount_HAL(pGpu, pKernelBus, pMemory->pMemDesc);
+
+    if (rmStatus == NV_OK)
     {
-        rmStatus = kbusUpdateStaticBar1VAMapping_HAL(pGpu, pKernelBus,
-                         pMemory->pMemDesc, NV_FALSE);
-
-        if (rmStatus != NV_OK)
+        memdescSetFlag(pMemory->pMemDesc, MEMDESC_FLAGS_RESTORE_PTE_KIND_ON_FREE, NV_TRUE);
+    }
+    else if (rmStatus == NV_ERR_NOT_SUPPORTED)
+    {
+        rmStatus = NV_OK;
+    }
+    else
+    {
+        if (pMemory->bRpcAlloc)
         {
-            if (pMemory->bRpcAlloc)
-            {
-                NV_STATUS status = NV_OK;
-                NV_RM_RPC_FREE(pGpu, hClient, hParent,
-                               pAllocRequest->hMemory, status);
-                NV_ASSERT(status == NV_OK);
-            }
-            memDestructCommon(pMemory);
-            memdescFree(pTopLevelMemDesc);
-            memdescDestroy(pTopLevelMemDesc);
-            pTopLevelMemDesc = NULL;
-            goto done;
+            NV_STATUS status = NV_OK;
+            NV_RM_RPC_FREE(pGpu, hClient, hParent,
+                           pAllocRequest->hMemory, status);
+            NV_ASSERT(status == NV_OK);
         }
-
-        memdescSetFlag(pMemory->pMemDesc,
-                       MEMDESC_FLAGS_RESTORE_PTE_KIND_ON_FREE, NV_TRUE);
+        memDestructCommon(pMemory);
+        memdescFree(pTopLevelMemDesc);
+        memdescDestroy(pTopLevelMemDesc);
+        pTopLevelMemDesc = NULL;
+        goto done;
     }
 
     pAllocData->size = sizeOut;

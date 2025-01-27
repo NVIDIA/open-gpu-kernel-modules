@@ -332,6 +332,8 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmC
 //
 #define RMCTRL_FLAGS_NO_API_LOCK                              0x000400000
 
+#define RMCTRL_FLAGS_PERSISTENT_CACHEABLE                     0x000800000
+
 //
 //  'ACCESS_RIGHTS' Attribute
 //  ------------------------

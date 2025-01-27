@@ -122,6 +122,8 @@
 #include "mem_mgr/virt_mem_mgr.h"
 #include "platform/sli/sli.h"
 #include "containers/eheap_old.h"
+#include "kernel/gpu/fifo/kernel_channel.h"
+#include "rmapi/mapping_list.h"
 
 #include "mem_mgr/fla_mem.h"
 
@@ -251,7 +253,7 @@ dmaAllocMapping_GM107
         NODE              *pMapNode;
         NvU32              shaderFlags;
         NvU32              disableEncryption;
-        VASINFO_MAXWELL     *pVASInfo;
+        VASINFO_MAXWELL   *pVASInfo;
         OBJGPU            *pSrcGpu;
         NvU32              peerNumber;
         NvBool             bAllocVASpace;
@@ -528,19 +530,7 @@ dmaAllocMapping_GM107
     {
         pLocals->totalVaRange = rangeMake(vaspaceGetVaStart(pVAS), vaspaceGetVaLimit(pVAS));
 
-        // !!!! Nasty hack
-        //
-        // NVOS46_FLAGS_PTE_COALESCE_LEVEL_CAP used to get the encryption info from _busMapAperture_GF100().
-        // Since we have no bit fields left in NVOS46_FLAGS_* to specify encryption info.
-        // This is applicable to FERMI+ chips.
-        //
-        // NVOS46_FLAGS_PTE_COALESCE_LEVEL_CAP is _NV50 specific, and is not used in FERMI+.
-        // NVOS46_FLAGS_PTE_COALESCE_LEVEL_CAP_DEFAULT means use default encryption status
-        // NVOS46_FLAGS_PTE_COALESCE_LEVEL_CAP_1       means disable encryption
-        //
-        // VMM-TODO: Add meaningful alias defines or just expand flag bits?
-        //
-        pLocals->disableEncryption = FLD_TEST_DRF(OS46, _FLAGS, _PTE_COALESCE_LEVEL_CAP, _1, flags) ?
+        pLocals->disableEncryption = FLD_TEST_DRF(OS46, _FLAGS, _DISABLE_ENCRYPTION, _TRUE, flags) ?
             DMA_UPDATE_VASPACE_FLAGS_DISABLE_ENCRYPTION : 0;
 
         if (pLocals->bIsMemContiguous)
@@ -2006,8 +1996,7 @@ dmaUpdateVASpace_GF100
     {
         NvU32       kind = pComprInfo->kind;
         NvU32       kindNoCompression;
-
-        //
+        
         // If the original kind is compressible we need to know what the non-compresible
         // kind is so we can fall back to that if we run out of compression tags.
         //

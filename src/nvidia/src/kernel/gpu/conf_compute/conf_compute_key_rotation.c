@@ -24,7 +24,6 @@
 #define NVOC_CONF_COMPUTE_H_PRIVATE_ACCESS_ALLOWED
 
 #include "gpu/conf_compute/conf_compute.h"
-#include "gpu/conf_compute/conf_compute_keystore.h"
 #include "class/clc86fsw.h"
 #include "ctrl/ctrl2080/ctrl2080internal.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"

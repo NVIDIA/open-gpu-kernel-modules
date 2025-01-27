@@ -38,6 +38,8 @@
 #include "nvkms-kapi-internal.h"
 #include "nvkms-kapi-notifiers.h"
 
+#include "nv_smg.h"
+
 #include <class/cl0000.h> /* NV01_ROOT/NV01_NULL_OBJECT */
 #include <class/cl003e.h> /* NV01_MEMORY_SYSTEM */
 #include <class/cl0080.h> /* NV01_DEVICE */
@@ -77,6 +79,8 @@ static NvU32 EnumerateGpus(nv_gpu_info_t *gpuInfo)
  */
 static void RmFreeDevice(struct NvKmsKapiDevice *device)
 {
+    nvKmsKapiFreeRmHandle(device, device->smgGpuInstSubscriptionHdl);
+    nvKmsKapiFreeRmHandle(device, device->smgComputeInstSubscriptionHdl);
 
     if (device->hRmSubDevice != 0x0) {
         nvRmApiFree(device->hRmClient,
@@ -110,6 +114,30 @@ static void RmFreeDevice(struct NvKmsKapiDevice *device)
 
         device->hRmClient = 0x0;
     }
+}
+
+/*
+ * Wrappers to help NVSubdevSMG access NvKmsKapiDevice's RM abstraction.
+ */
+static NvU32 NvKmsSmgRMControl(void *ctx, NvU32 object, NvU32 cmd, void *params, NvU32 paramsSize)
+{
+    struct NvKmsKapiDevice *pDev = (struct NvKmsKapiDevice *)ctx;
+
+    return nvRmApiControl(pDev->hRmClient, object, cmd, params, paramsSize);
+}
+
+static NvU32 NvKmsSmgRMAlloc(void *ctx, NvHandle parent, NvHandle object, NvU32 class, void *allocParams)
+{
+    struct NvKmsKapiDevice *pDev = (struct NvKmsKapiDevice *)ctx;
+
+    return nvRmApiAlloc(pDev->hRmClient, parent, object, class, allocParams);
+}
+
+static NvU32 NvKmsSmgRMFree(void *ctx, NvHandle parent, NvHandle object)
+{
+    struct NvKmsKapiDevice *pDev = (struct NvKmsKapiDevice *)ctx;
+
+    return nvRmApiFree(pDev->hRmClient, parent, object);
 }
 
 /*
@@ -237,6 +265,25 @@ static NvBool RmAllocateDevice(struct NvKmsKapiDevice *device)
     }
 
     device->hRmSubDevice = hRmSubDevice;
+
+    device->smgGpuInstSubscriptionHdl     = nvKmsKapiGenerateRmHandle(device);
+    device->smgComputeInstSubscriptionHdl = nvKmsKapiGenerateRmHandle(device);
+
+    if (!device->smgGpuInstSubscriptionHdl || !device->smgComputeInstSubscriptionHdl) {
+        goto failed;
+    }
+
+    if (!NVSubdevSMGSetPartition(device,
+                                 device->hRmSubDevice,
+                                 NULL,
+                                 device->smgGpuInstSubscriptionHdl,
+                                 device->smgComputeInstSubscriptionHdl,
+                                 NvKmsSmgRMControl,
+                                 NvKmsSmgRMAlloc,
+                                 NvKmsSmgRMFree)) {
+        nvKmsKapiLogDeviceDebug(device, "Unable to configure SMG partition in SMC mode");
+        goto failed;
+    }
 
     if (device->isSOC) {
         /* NVKMS is only used on T23X and later chips,
@@ -394,7 +441,7 @@ static NvBool KmsAllocateDevice(struct NvKmsKapiDevice *device)
     device->numHeads = paramsAlloc->reply.numHeads;
 
     for (head = 0; head < device->numHeads; head++) {
-        if (paramsAlloc->reply.numLayers[head] < 2) {
+        if (paramsAlloc->reply.numLayers[head] < 1) {
             goto done;
         }
         device->numLayers[head] = paramsAlloc->reply.numLayers[head];
@@ -1461,6 +1508,7 @@ static struct NvKmsKapiMemory* AllocateVideoMemory
     memory->hRmHandle = hRmHandle;
     memory->size = size;
     memory->surfaceParams.layout = layout;
+    memory->isVidmem = NV_TRUE;
 
     if (layout == NvKmsSurfaceMemoryLayoutBlockLinear) {
         memory->surfaceParams.blockLinear.genericMemory = NV_TRUE;
@@ -1501,6 +1549,7 @@ static struct NvKmsKapiMemory* AllocateSystemMemory
     memory->hRmHandle = hRmHandle;
     memory->size = size;
     memory->surfaceParams.layout = layout;
+    memory->isVidmem = NV_FALSE;
 
     if (layout == NvKmsSurfaceMemoryLayoutBlockLinear) {
         memory->surfaceParams.blockLinear.genericMemory = NV_TRUE;
@@ -1595,6 +1644,39 @@ static struct NvKmsKapiMemory* ImportMemory
     memory->size = memorySize;
     memory->surfaceParams = nvKmsParams.surfaceParams;
 
+    /*
+     * Determine address space of imported memory. For Tegra, there is only a
+     * single unified address space.
+     */
+    if (!device->isSOC) {
+        NV0041_CTRL_GET_SURFACE_INFO_PARAMS surfaceInfoParams = {};
+        NV0041_CTRL_SURFACE_INFO surfaceInfo = {};
+
+        surfaceInfo.index = NV0041_CTRL_SURFACE_INFO_INDEX_ADDR_SPACE_TYPE;
+
+        surfaceInfoParams.surfaceInfoListSize = 1;
+        surfaceInfoParams.surfaceInfoList = (NvP64)&surfaceInfo;
+
+        ret = nvRmApiControl(device->hRmClient,
+                             memory->hRmHandle,
+                             NV0041_CTRL_CMD_GET_SURFACE_INFO,
+                             &surfaceInfoParams,
+                             sizeof(surfaceInfoParams));
+
+        if (ret != NVOS_STATUS_SUCCESS) {
+            nvKmsKapiLogDeviceDebug(
+                device,
+                "Failed to get memory location of RM memory object 0x%x",
+                memory->hRmHandle);
+
+            nvKmsKapiFreeRmHandle(device, hMemory);
+            goto failed;
+        }
+
+        memory->isVidmem =
+            surfaceInfo.data == NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_VIDMEM;
+    }
+
     return memory;
 
 failed:
@@ -1614,6 +1696,14 @@ static struct NvKmsKapiMemory* DupMemory
     struct NvKmsKapiMemory *memory;
     NvU32 hMemory;
     NvU32 ret;
+
+    if (srcMemory->isVidmem &&
+        (device->gpuId != srcDevice->gpuId)) {
+        nvKmsKapiLogDeviceDebug(
+            device,
+            "It is not possible to dup an NVKMS memory object located on the vidmem of a different device");
+        return NULL;
+    }
 
     memory = AllocMemoryObjectAndHandle(device, &hMemory);
 
@@ -1643,6 +1733,7 @@ static struct NvKmsKapiMemory* DupMemory
     memory->hRmHandle = hMemory;
     memory->size = srcMemory->size;
     memory->surfaceParams = srcMemory->surfaceParams;
+    memory->isVidmem = srcMemory->isVidmem;
 
     return memory;
 
@@ -1789,6 +1880,7 @@ GetSystemMemoryHandleFromDmaBufSgtHelper(struct NvKmsKapiDevice *device,
     memory->hRmHandle = hRmHandle;
     memory->size = limit + 1;
     memory->surfaceParams.layout = NvKmsSurfaceMemoryLayoutPitch;
+    memory->isVidmem = NV_FALSE;
 
     return memory;
 }
@@ -2028,11 +2120,18 @@ static void UnmapMemory
     }
 }
 
+static NvBool IsVidmem(
+    const struct NvKmsKapiMemory *memory)
+{
+    return memory->isVidmem;
+}
+
 static NvBool GetSurfaceParams(
     struct NvKmsKapiCreateSurfaceParams *params,
     NvU32 *pNumPlanes,
     enum NvKmsSurfaceMemoryLayout *pLayout,
     NvU32 *pLog2GobsPerBlockY,
+    NvBool *pNoDisplayCaching,
     NvU32 pitch[])
 {
     const NvKmsSurfaceMemoryFormatInfo *pFormatInfo =
@@ -2127,6 +2226,7 @@ static NvBool GetSurfaceParams(
     *pNumPlanes = pFormatInfo->numPlanes;
     *pLayout = layout;
     *pLog2GobsPerBlockY = log2GobsPerBlockY;
+    *pNoDisplayCaching = params->noDisplayCaching;
 
     return NV_TRUE;
 }
@@ -2145,12 +2245,14 @@ static struct NvKmsKapiSurface* CreateSurface
     NvU32 log2GobsPerBlockY = 0;
     NvU32 numPlanes = 0;
     NvU32 pitch[NVKMS_MAX_PLANES_PER_SURFACE] = { 0 };
+    NvBool noDisplayCaching = NV_FALSE;
     NvU32 i;
 
     if (!GetSurfaceParams(params,
                           &numPlanes,
                           &layout,
                           &log2GobsPerBlockY,
+                          &noDisplayCaching,
                           pitch))
     {
         goto failed;
@@ -2194,6 +2296,8 @@ static struct NvKmsKapiSurface* CreateSurface
         paramsReg.request.planes[i].offset = params->planes[i].offset;
         paramsReg.request.planes[i].pitch = pitch[i];
     }
+
+    paramsReg.request.noDisplayCaching = noDisplayCaching;
 
     status = nvkms_ioctl_from_kapi(device->pKmsOpen,
                                    NVKMS_IOCTL_REGISTER_SURFACE,
@@ -3292,7 +3396,6 @@ static NvBool KmsFlip(
 
     params->request.deviceHandle = device->hKmsDevice;
     params->request.commit = commit;
-    params->request.allowVrr = NV_FALSE;
     params->request.pFlipHead = nvKmsPointerToNvU64(pFlipHead);
     params->request.numFlipHeads = 0;
     for (head = 0;
@@ -3372,7 +3475,7 @@ static NvBool KmsFlip(
         }
 
         if (headModeSetConfig->vrrEnabled) {
-            params->request.allowVrr = NV_TRUE;
+            flipParams->allowVrr = NV_TRUE;
         }
 
         NvKmsKapiHeadLutConfigToKms(headRequestedConfig,
@@ -3764,6 +3867,7 @@ NvBool nvKmsKapiGetFunctionsTableInternal
 
     funcsTable->mapMemory   = MapMemory;
     funcsTable->unmapMemory = UnmapMemory;
+    funcsTable->isVidmem    = IsVidmem;
 
     funcsTable->createSurface  = CreateSurface;
     funcsTable->destroySurface = DestroySurface;

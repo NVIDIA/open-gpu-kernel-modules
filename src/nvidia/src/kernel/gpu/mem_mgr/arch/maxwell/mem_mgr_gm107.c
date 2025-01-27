@@ -38,7 +38,6 @@
 #include "platform/sli/sli.h"
 #include "nvrm_registry.h"
 
-#include "gpu/bif/kernel_bif.h"
 #include "gpu/device/device.h"
 #include "gpu/subdevice/subdevice.h"
 #include "gpu/disp/inst_mem/disp_inst_mem.h"
@@ -1085,8 +1084,6 @@ memmgrComparePhysicalAddresses_GM107
     NvU64          address1
 )
 {
-    KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
-
     //
     // Sysmem inst blocks can be flipped:
     //   * PDB_PROP_FIFO_BUG_442481_NCOH_INST_BLOCK_DEF: ncoh -> coh
@@ -1098,21 +1095,6 @@ memmgrComparePhysicalAddresses_GM107
         target0 = NV_MMU_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY;
     if (target1 == NV_MMU_PTE_APERTURE_SYSTEM_COHERENT_MEMORY)
         target1 = NV_MMU_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY;
-
-    if (target0 == NV_MMU_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY)
-    {
-        //
-        // One of the addresses may not account for the DMA window while the
-        // other does. Given the nature of the DMA window (its offset must be
-        // outside the addressable range of the GPU or 0), there's no danger
-        // in trying to account for it here; it can't cause any false
-        // positives.
-        //
-        if (address0 < address1)
-            address0 += pKernelBif->dmaWindowStartAddress;
-        else if (address1 < address0)
-            address1 += pKernelBif->dmaWindowStartAddress;
-    }
 
     return (target0 == target1) && (address0 == address1);
 }
@@ -1418,7 +1400,7 @@ memmgrGetRsvdSizeForSr_GM107
     MemoryManager *pMemoryManager
 )
 {
-    if (((pMemoryManager->Ram.fbTotalMemSizeMb >> 10) > 32) || IS_GSP_CLIENT(pGpu))
+    if (((pMemoryManager->Ram.fbTotalMemSizeMb >> 10) >= 31) || IS_GSP_CLIENT(pGpu))
     {
         //
         // We need to reserve more memory for S/R if

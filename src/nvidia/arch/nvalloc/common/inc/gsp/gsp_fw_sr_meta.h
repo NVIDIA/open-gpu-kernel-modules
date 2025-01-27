@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,61 +29,46 @@
 #define GSP_FW_SR_META_MAGIC     0x8a3bb9e6c6c39d93ULL
 #define GSP_FW_SR_META_REVISION  2
 
+#define GSP_FW_SR_META_INTERNAL_SIZE  128
+
 /*!
  * GSP firmware SR metadata
  *
  * Initialized by CPU-RM and kept in Sysmem.
- * Verified by Booter.
- *
+ * Consumed by secure ucode (Booter or ACR_RISCV).
  */
 typedef struct
 {
-    //
-    // Magic
-    // Use for verification by Booter
-    //
+    // Magic for verification by secure ucode
     NvU64 magic;  // = GSP_FW_SR_META_MAGIC;
 
     //
     // Revision number
     // Bumped up when we change this interface so it is not backward compatible.
-    // Bumped up when we revoke GSP-RM ucode
     //
     NvU64 revision;  // = GSP_FW_SR_META_MAGIC_REVISION;
 
-    //
-    // ---- Members regarding data in SYSMEM ----------------------------
-    // Consumed by Booter for DMA
-    //
+    // Members regarding data in SYSMEM
     NvU64 sysmemAddrOfSuspendResumeData;
     NvU64 sizeOfSuspendResumeData;
 
-    // ---- Members for crypto ops across S/R ---------------------------
-
     //
-    // HMAC over the entire GspFwSRMeta structure (including padding)
-    // with the hmac field itself zeroed.
+    // Internal members for use by secure ucode
+    // Must be exactly GSP_FW_SR_META_INTERNAL_SIZE bytes.
     //
-    NvU8 hmac[32];
-
-    // Hash over GspFwWprMeta structure
-    NvU8 wprMetaHash[32];
-
-    // Hash over GspFwHeapFreeList structure. All zeros signifies no free list.
-    NvU8 heapFreeListHash[32];
-
-    // Hash over data in WPR2 (skipping over free heap chunks; see Booter for details)
-    NvU8 dataHash[32];
+    NvU32 internal[32];
 
     // Same as flags of GspFwWprMeta
     NvU32 flags;
+
+    // Subrevision number used by secure ucode
+    NvU32 subrevision;
 
     //
     // Pad structure to exactly 256 bytes (1 DMA chunk).
     // Padding initialized to zero.
     //
-    NvU32 padding[23];
-
+    NvU32 padding[22];
 } GspFwSRMeta;
 
 #endif // GSP_FW_SR_META_H_

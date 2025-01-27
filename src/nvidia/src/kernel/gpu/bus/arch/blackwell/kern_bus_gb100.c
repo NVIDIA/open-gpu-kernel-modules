@@ -116,9 +116,18 @@ kbusCacheBAR1ResizeSize_WAR_BUG_3249028_GB100
 {
     NvU32 regVal;
 
+    if ((GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_PF0_PF_RESIZABLE_BAR_CAPABILITY, &regVal) != NV_OK) ||
+        (regVal == 0))
+    {
+        NV_PRINTF(LEVEL_INFO, "Resizable bar capability is absent\n");
+        pKernelBus->setProperty(pKernelBus, PDB_PROP_KBUS_RESTORE_BAR1_SIZE_BUG_3249028_WAR, NV_FALSE);
+        return;
+    }
+
     if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_PF0_PF_RESIZABLE_BAR_CONTROL, &regVal) != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Unable to read NV_PF0_PF_RESIZABLE_BAR_CONTROL\n");
+        pKernelBus->setProperty(pKernelBus, PDB_PROP_KBUS_RESTORE_BAR1_SIZE_BUG_3249028_WAR, NV_FALSE);
         return;
     }
     pKernelBus->bar1ResizeSizeIndex = DRF_VAL(_PF0_PF, _RESIZABLE_BAR_CONTROL, _BAR_SIZE, regVal);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -370,6 +370,8 @@ NV_STATUS deviceCtrlCmdOsUnixVTGetFBInfo_IMPL
                 nv_get_screen_info(nv, &baseAddr, &width, &height, &depth,
                                    &pitch, &size);
 
+                pParams->baseAddress = baseAddr;
+                pParams->size = size;
                 pParams->width = (NvU16)width;
                 pParams->height = (NvU16)height;
                 pParams->depth = (NvU16)depth;

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,6 +41,7 @@ egmmemConstruct_IMPL
     Memory                      *pMemory            = staticCast(pExtendedGpuMemory, Memory);
     OBJGPU                      *pGpu               = pMemory->pGpu;
     MemoryManager               *pMemoryManager     = GPU_GET_MEMORY_MANAGER(pGpu);
+    RmClient                    *pRmClient          = dynamicCast(pCallContext->pClient, RmClient);
     NvHandle                     hClient            = pCallContext->pClient->hClient;
     NvHandle                     hParent            = pCallContext->pResourceRef->pParentRef->hResource;
     NV_MEMORY_ALLOCATION_PARAMS *pAllocData         = pParams->pAllocParams;
@@ -59,11 +60,13 @@ egmmemConstruct_IMPL
     NvU32 gpuCacheAttrib;
     NvU32 Cache;
 
+
     // Copy-construction has already been done by the base Memory class
     if (RS_IS_COPY_CTOR(pParams))
         return NV_OK;
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, egmmemValidateParams(pGpu, hClient, pAllocData));
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, egmmemValidateParams(pGpu, pRmClient, pAllocData));
 
     //
     // For non self-hosted case, we mimic vidmem as EGM and is only used for
@@ -246,13 +249,13 @@ NV_STATUS
 egmmemValidateParams
 (
     OBJGPU                      *pGpu,
-    NvHandle                     hClient,
+    RmClient                    *pRmClient,
     NV_MEMORY_ALLOCATION_PARAMS *pAllocData
 )
 {
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, stdmemValidateParams(pGpu, hClient, pAllocData));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, stdmemValidateParams(pGpu, pRmClient, pAllocData));
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR,
                        FLD_TEST_DRF(OS32, _ATTR2, _USE_EGM, _TRUE, pAllocData->attr2),

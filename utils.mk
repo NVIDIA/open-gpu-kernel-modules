@@ -541,6 +541,8 @@ NVIDSTRING = $(OUTPUTDIR)/g_nvid_string.c
 
 ifeq ($(DEBUG),1)
   NVIDSTRING_BUILD_TYPE_STRING = Debug Build
+else ifeq ($(DEVELOP),1)
+  NVIDSTRING_BUILD_TYPE_STRING = Develop Build
 else
   NVIDSTRING_BUILD_TYPE_STRING = Release Build
 endif

@@ -140,6 +140,7 @@ static NV_STATUS test_push_end_size(uvm_va_space_t *va_space)
             // LCIC doesn't accept pushes
             if (type == UVM_CHANNEL_TYPE_LCIC)
                 continue;
+
             TEST_NV_CHECK_RET(uvm_push_begin(gpu->channel_manager,
                                              type,
                                              &push,

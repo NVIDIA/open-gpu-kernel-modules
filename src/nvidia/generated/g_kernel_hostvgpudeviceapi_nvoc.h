@@ -49,6 +49,8 @@ extern "C" {
 
 #include "class/cla084.h"
 
+#include "ctrl/ctrla084.h"
+
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
 // the matching C source file, but causes diagnostics to be issued if another
@@ -65,7 +67,7 @@ struct KernelHostVgpuDeviceShr {
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct RsShared __nvoc_base_RsShared;
 
     // Ancestor object pointers for `staticCast` feature
@@ -141,7 +143,7 @@ struct KernelHostVgpuDeviceApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__KernelHostVgpuDeviceApi *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct GpuResource __nvoc_base_GpuResource;
     struct Notifier __nvoc_base_Notifier;
 
@@ -155,7 +157,7 @@ struct KernelHostVgpuDeviceApi {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct KernelHostVgpuDeviceApi *__nvoc_pbase_KernelHostVgpuDeviceApi;    // kernelhostvgpudeviceapi
 
-    // Vtable with 11 per-object function pointers
+    // Vtable with 12 per-object function pointers
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_VGPU_DEVICE_INFO_PARAMS *);  // exported (id=0xa0840101)
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_VGPU_GUEST_LIFE_CYCLE_STATE_PARAMS *);  // exported (id=0xa0840102)
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_OFFLINED_PAGE_PATCHINFO_PARAMS *);  // exported (id=0xa0840103)
@@ -167,6 +169,7 @@ struct KernelHostVgpuDeviceApi {
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition__)(struct KernelHostVgpuDeviceApi * /*this*/);  // exported (id=0xa084010b)
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdFreeStates__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_FREE_STATES_PARAMS *);  // exported (id=0xa084010c)
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS *);  // exported (id=0xa084010d)
+    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdSetPlacementId__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_SET_PLACEMENT_ID_PARAMS *);  // exported (id=0xa084010e)
 
     // Data members
     struct KernelHostVgpuDeviceShr *pShared;
@@ -265,6 +268,8 @@ NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi**, Dy
 #define kernelhostvgpudeviceapiCtrlCmdFreeStates(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdFreeStates_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
 #define kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask__
 #define kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
+#define kernelhostvgpudeviceapiCtrlCmdSetPlacementId_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdSetPlacementId__
+#define kernelhostvgpudeviceapiCtrlCmdSetPlacementId(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdSetPlacementId_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
 #define kernelhostvgpudeviceapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresControl__
 #define kernelhostvgpudeviceapiControl(pGpuResource, pCallContext, pParams) kernelhostvgpudeviceapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define kernelhostvgpudeviceapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresMap__
@@ -371,6 +376,10 @@ static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdFreeStates_DISPATCH(struct
 
 static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS *pParams) {
     return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask__(pKernelHostVgpuDeviceApi, pParams);
+}
+
+static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetPlacementId_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_SET_PLACEMENT_ID_PARAMS *pParams) {
+    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdSetPlacementId__(pKernelHostVgpuDeviceApi, pParams);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiControl_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -512,6 +521,8 @@ NV_STATUS kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition_IMPL(struct 
 NV_STATUS kernelhostvgpudeviceapiCtrlCmdFreeStates_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_FREE_STATES_PARAMS *pParams);
 
 NV_STATUS kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS *pParams);
+
+NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetPlacementId_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_SET_PLACEMENT_ID_PARAMS *pParams);
 
 NV_STATUS kernelhostvgpudeviceapiConstruct_IMPL(struct KernelHostVgpuDeviceApi *arg_pKernelHostVgpuDeviceApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 

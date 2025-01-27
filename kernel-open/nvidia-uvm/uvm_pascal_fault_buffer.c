@@ -286,8 +286,6 @@ NV_STATUS uvm_hal_pascal_fault_buffer_parse_replayable_entry(uvm_parent_gpu_t *p
 
 bool uvm_hal_pascal_fault_buffer_entry_is_valid(uvm_parent_gpu_t *parent_gpu, NvU32 index)
 {
-    NvU32 *fault_entry;
-
     if (g_uvm_global.conf_computing_enabled) {
         // Use the valid bit present in the encryption metadata, which is
         // unencrypted, instead of the valid bit present in the (encrypted)
@@ -296,15 +294,15 @@ bool uvm_hal_pascal_fault_buffer_entry_is_valid(uvm_parent_gpu_t *parent_gpu, Nv
 
         return fault_entry_metadata->valid;
     }
+    else {
+        NvU32 *fault_entry = get_fault_buffer_entry(parent_gpu, index);
 
-    fault_entry = get_fault_buffer_entry(parent_gpu, index);
-    return READ_HWVALUE_MW(fault_entry, B069, FAULT_BUF_ENTRY, VALID);
+        return READ_HWVALUE_MW(fault_entry, B069, FAULT_BUF_ENTRY, VALID);
+    }
 }
 
 void uvm_hal_pascal_fault_buffer_entry_clear_valid(uvm_parent_gpu_t *parent_gpu, NvU32 index)
 {
-    NvU32 *fault_entry;
-
     if (g_uvm_global.conf_computing_enabled) {
         // Use the valid bit present in the encryption metadata, which is
         // unencrypted, instead of the valid bit present in the (encrypted)
@@ -312,11 +310,12 @@ void uvm_hal_pascal_fault_buffer_entry_clear_valid(uvm_parent_gpu_t *parent_gpu,
         UvmFaultMetadataPacket *fault_entry_metadata = get_fault_buffer_entry_metadata(parent_gpu, index);
 
         fault_entry_metadata->valid = false;
-        return;
     }
+    else {
+        NvU32 *fault_entry = get_fault_buffer_entry(parent_gpu, index);
 
-    fault_entry = get_fault_buffer_entry(parent_gpu, index);
-    WRITE_HWCONST_MW(fault_entry, B069, FAULT_BUF_ENTRY, VALID, FALSE);
+        WRITE_HWCONST_MW(fault_entry, B069, FAULT_BUF_ENTRY, VALID, FALSE);
+    }
 }
 
 NvU32 uvm_hal_pascal_fault_buffer_entry_size(uvm_parent_gpu_t *parent_gpu)

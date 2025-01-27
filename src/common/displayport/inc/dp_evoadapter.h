@@ -135,8 +135,8 @@ namespace DisplayPort
     {
       private:
         NvU32 _maxLinkRateSupportedGpu;
+        NvU32 _minPClkForCompressed;
         NvU32 _maxLinkRateSupportedDfp;
-        unsigned allHeadMask;
         bool _hasIncreasedWatermarkLimits;
         bool _hasMultistream;
         bool _isPC2Disabled;
@@ -188,9 +188,12 @@ namespace DisplayPort
 
         NvU32 displayId;
         NvU32 subdeviceIndex;
+        unsigned allHeadMask;
 
         NV0073_CTRL_DFP_GET_INFO_PARAMS     dfpParams;
         NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS  dpParams;
+
+        bool _isDownspreadDisabledByRegkey;
 
     public:
         EvoMainLink(EvoInterface * provider, Timer * timer);
@@ -210,9 +213,18 @@ namespace DisplayPort
             return _isPC2Disabled;
         }
 
+        virtual NvU32 getMinPClkForCompressed()
+        {
+            return _minPClkForCompressed;
+        }
+
         virtual NvU32 getGpuDpSupportedVersions()
         {
             return _gpuSupportedDpVersions;
+        }
+        virtual NvU32 getUHBRSupported()
+        {
+            return 0U;
         }
         virtual bool isFECSupported()
         {
@@ -235,9 +247,9 @@ namespace DisplayPort
             if ((_applyLinkBwOverrideWarRegVal || _useDfpMaxLinkRateCaps) &&
                 (_maxLinkRateSupportedDfp < _maxLinkRateSupportedGpu))
             {
-                return (LINK_RATE_TO_DATA_RATE_8B_10B(_maxLinkRateSupportedDfp));
+                return _maxLinkRateSupportedDfp;
             }
-            return (LINK_RATE_TO_DATA_RATE_8B_10B(_maxLinkRateSupportedGpu));
+            return _maxLinkRateSupportedGpu;
         }
 
         virtual bool isForceRmEdidRequired()
@@ -326,9 +338,12 @@ namespace DisplayPort
         // Return the current mux state. Returns false if device is not mux capable
         bool getDynamicMuxState(NvU32 *muxState);
 
-        virtual bool aquireSema();
-        virtual void releaseSema();
         virtual bool physicalLayerSetTestPattern(PatternInfo * patternInfo);
+        virtual bool physicalLayerSetDP2xTestPattern(DP2xPatternInfo *patternInfo)
+        {
+            DP_ASSERT(0 && "DP1x should never get this request.");
+            return false;
+        }
         virtual void preLinkTraining(NvU32 head);
         virtual void postLinkTraining(NvU32 head);
         virtual NvU32 getRegkeyValue(const char *key);
@@ -354,9 +369,7 @@ namespace DisplayPort
         void configureHDCPGetHDCPState(HDCPState &hdcpState);
         bool rmUpdateDynamicDfpCache(NvU32 headIndex, RmDfpCache * dfpCache, NvBool bResetDfp);
 
-        virtual NvU32 streamToHead(NvU32 streamId, DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID streamIdentifier = DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID_PRIMARY);
-
-        virtual NvU32 headToStream(NvU32 head, DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID streamIdentifier = DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID_PRIMARY);
+        virtual NvU32 headToStream(NvU32 head, bool bSidebandMessageSupported, DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID streamIdentifier = DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID_PRIMARY);
 
         void configureSingleStream(NvU32 head,
             NvU32 hBlankSym,
@@ -412,6 +425,10 @@ namespace DisplayPort
         bool freeDisplayId(NvU32 displayId);
         virtual bool queryAndUpdateDfpParams();
         virtual bool queryGPUCapability();
+        virtual void updateFallbackMap(NvU32 maxLaneCount, LinkRate maxLinkRate, NvU32 sinkUhbrCaps = 0)
+        {
+            return;
+        }
         bool getEdpPowerData(bool *panelPowerOn, bool *dpcdPowerStateD0);
         virtual bool vrrRunEnablementStage(unsigned stage, NvU32 *status);
 

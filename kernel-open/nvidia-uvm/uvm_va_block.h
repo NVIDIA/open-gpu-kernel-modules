@@ -225,6 +225,8 @@ typedef struct
     // isn't involved, for example false sharing among peer GPUs.
     uvm_page_mask_t pte_bits[UVM_PTE_BITS_GPU_MAX];
 
+    // Set of pages using EGM mappings.
+    uvm_page_mask_t egm_pages;
 } uvm_va_block_gpu_state_t;
 
 typedef struct

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1167,7 +1167,7 @@ typedef struct NV30F1_CTRL_GSYNC_GET_OPTIMIZED_TIMING_PARAMS {
     NvU32  vInterlacedBlankStart;
     NvU32  vTotal;
     NvU32  refreshX10K;
-    NvU32  pixelClockHz;
+    NV_DECLARE_ALIGNED(NvU64 pixelClockHz, 8);
 
     NvBool bOptimized;
 } NV30F1_CTRL_GSYNC_GET_OPTIMIZED_TIMING_PARAMS;

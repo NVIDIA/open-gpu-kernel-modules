@@ -605,26 +605,16 @@ initKeyRotationRegistryOverrides
         }
         else
         {
-            NvU32 gpuCnt;
-
-            if (gpumgrGetGpuAttachInfo(&gpuCnt, NULL) != NV_OK)
+            if (!pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_MULTI_GPU_PROTECTED_PCIE_MODE_ENABLED))
             {
-                NV_PRINTF(LEVEL_ERROR, "Unable to acquire GPU attach information.\n");
+                NV_PRINTF(LEVEL_INFO, "Confidential Compute key rotation is enabled.\n");
+                pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED, NV_TRUE);
+                pConfCompute->keyRotationEnableMask = NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_ENABLED_ALL_YES;
             }
             else
             {
-                //
-                // From bug 4588046, key rotation currently does not work when there are multiple
-                // GPUs in the system, even if only one GPU is being used. Therefore key rotation
-                // will only be enabled by default if there is exactly one GPU
-                //
-                if (gpuCnt == 1)
-                {
-                    NV_PRINTF(LEVEL_INFO, "Confidential Compute key rotation is enabled.\n");
-
-                    pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED, NV_TRUE);
-                    pConfCompute->keyRotationEnableMask = NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_ENABLED_ALL_YES;
-                }
+                NV_PRINTF(LEVEL_INFO, "Confidential Compute key rotation is disabled.\n");
+                pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED, NV_FALSE);
             }
         }
     }

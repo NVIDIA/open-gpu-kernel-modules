@@ -89,6 +89,9 @@ module_param_named(opportunistic_display_sync, opportunistic_display_sync, bool,
 static enum NvKmsDebugForceColorSpace debug_force_color_space = NVKMS_DEBUG_FORCE_COLOR_SPACE_NONE;
 module_param_named(debug_force_color_space, debug_force_color_space, uint, 0400);
 
+static bool enable_overlay_layers = true;
+module_param_named(enable_overlay_layers, enable_overlay_layers, bool, 0400);
+
 /* These parameters are used for fault injection tests.  Normally the defaults
  * should be used. */
 MODULE_PARM_DESC(fail_malloc, "Fail the Nth call to nvkms_alloc");
@@ -99,19 +102,40 @@ MODULE_PARM_DESC(malloc_verbose, "Report information about malloc calls on modul
 static bool malloc_verbose = false;
 module_param_named(malloc_verbose, malloc_verbose, bool, 0400);
 
+/* Fail allocating the RM core channel for NVKMS using the i-th method (see
+ * FailAllocCoreChannelMethod). Failures not using the i-th method are ignored. */
+MODULE_PARM_DESC(fail_alloc_core_channel, "Control testing for hardware core channel allocation failure");
+static int fail_alloc_core_channel_method = -1;
+module_param_named(fail_alloc_core_channel, fail_alloc_core_channel_method, int, 0400);
+
 #if NVKMS_CONFIG_FILE_SUPPORTED
 /* This parameter is used to find the dpy override conf file */
 #define NVKMS_CONF_FILE_SPECIFIED (nvkms_conf != NULL)
 
 MODULE_PARM_DESC(config_file,
-                 "Path to the nvidia-modeset configuration file "
-                 "(default: disabled)");
+                 "Path to the nvidia-modeset configuration file (default: disabled)");
 static char *nvkms_conf = NULL;
 module_param_named(config_file, nvkms_conf, charp, 0400);
 #endif
 
 static atomic_t nvkms_alloc_called_count;
 
+NvBool nvkms_test_fail_alloc_core_channel(
+    enum FailAllocCoreChannelMethod method
+)
+{
+    if (method != fail_alloc_core_channel_method) {
+        // don't fail if it's not the currently specified method
+        return NV_FALSE;
+    } 
+
+    printk(KERN_INFO NVKMS_LOG_PREFIX 
+        "Failing core channel allocation using method %d", 
+        fail_alloc_core_channel_method);    
+
+    return NV_TRUE;
+}
+    
 NvBool nvkms_output_rounding_fix(void)
 {
     return output_rounding_fix;
@@ -148,6 +172,11 @@ enum NvKmsDebugForceColorSpace nvkms_debug_force_color_space(void)
         return NVKMS_DEBUG_FORCE_COLOR_SPACE_NONE;
     }
     return debug_force_color_space;
+}
+
+NvBool nvkms_enable_overlay_layers(void)
+{
+    return enable_overlay_layers;
 }
 
 NvBool nvkms_kernel_supports_syncpts(void)
@@ -1463,6 +1492,8 @@ static size_t nvkms_config_file_open
     loff_t pos = 0;
 #endif
 
+    *buff = NULL;
+    
     if (!nvkms_fs_mounted()) {
         printk(KERN_ERR NVKMS_LOG_PREFIX "ERROR: Filesystems not mounted\n");
         return 0;
@@ -1483,6 +1514,11 @@ static size_t nvkms_config_file_open
     file_size = file_inode->i_size;
     if (file_size > NVKMS_READ_FILE_MAX_SIZE) {
         printk(KERN_WARNING NVKMS_LOG_PREFIX "WARNING: File exceeds maximum size\n");
+        goto done;
+    }
+
+    // Do not alloc a 0 sized buffer
+    if (file_size == 0) {
         goto done;
     }
 

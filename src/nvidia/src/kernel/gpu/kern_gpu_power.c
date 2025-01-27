@@ -50,7 +50,6 @@ static NV_STATUS _gpuGc6ExitSanityCheck(OBJGPU *);
 static NV_STATUS _gpuGc6ExitGpuPowerOn(OBJGPU *, NV2080_CTRL_GC6_EXIT_PARAMS *);
 static NV_STATUS _gpuGc6ExitStateLoad(OBJGPU *, NV2080_CTRL_GC6_EXIT_PARAMS *);
 static void      _gpuGc6ExitSwStateRestore(OBJGPU *);
-static void      _gpuForceGc6inD3Hot(OBJGPU *, NV2080_CTRL_GC6_EXIT_PARAMS *);
 
 /*!
  * @brief: This HAL function executes the steps of GC6 exit sequence
@@ -571,15 +570,15 @@ _gpuGc6ExitSwStateRestore(OBJGPU *pGpu)
 }
 
 /*!
- * @brief: Helper function to force GC6 cycle in this D3 hot exit
+ * @brief: This function to check GC6 cycle in D3 hot exit
  *
  * @param[in]   pGpu       OBJGPU pointer
  */
-static void
-_gpuForceGc6inD3Hot(OBJGPU *pGpu, NV2080_CTRL_GC6_EXIT_PARAMS *pParams)
+void
+gpuCheckGc6inD3Hot_IMPL(OBJGPU *pGpu)
 {
 
-    pParams->params.bIsRTD3HotTransition = NV_FALSE;
+    pGpu->bIsRTD3Gc6D3HotTransition = NV_FALSE;
     //
     // If this was a D3Hot cycle (no power down), force a GC6 cycle
     // This is due to instability of some memory types with D3Hot cycles
@@ -591,28 +590,11 @@ _gpuForceGc6inD3Hot(OBJGPU *pGpu, NV2080_CTRL_GC6_EXIT_PARAMS *pParams)
     // Note _FORCE_D3HOT works only on NVPM
     //
 
-    //
-    // Enable BAR0 accesses here for RTLSIM, EMU, and silicon MFG MODS.
-    // FMODEL will not be reset, so no need to enable.
-    // Windows will be pci bus driver to restore, but below function will check before enabling.
-    // Only enable BAR0 accesses here,
-    // and leave whole restore steps in gpuPowerManagementResumePreLoadPhysical().
-    //
-    if (!IS_FMODEL(pGpu) && IS_GPU_GC6_STATE_EXITING(pGpu))
-    {
-        NV_STATUS tempStatus = kbifPollDeviceOnBus(pGpu, GPU_GET_KERNEL_BIF(pGpu));
-
-        if (tempStatus != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Enable BAR0 accesses failed.\n");
-        }
-    }
-
     // The power remains is necessary for d3hot
     if (!gpuCompletedGC6PowerOff_HAL(pGpu)
         )
     {
-        pParams->params.bIsRTD3HotTransition = NV_TRUE;
+        pGpu->bIsRTD3Gc6D3HotTransition = NV_TRUE;
 
         NV_PRINTF(LEVEL_ERROR,
                   "D3Hot detected. Going to recover from D3Hot\n");
@@ -653,10 +635,17 @@ _gpuGc6ExitStateLoad(OBJGPU *pGpu, NV2080_CTRL_GC6_EXIT_PARAMS *pParams)
 
     pGpu->setProperty(pGpu, PDB_PROP_GPU_FORCE_PERF_BIOS_LEVEL, NV_TRUE);
 
-    // Force GC6 cycle if this D3 hot
-    _gpuForceGc6inD3Hot(pGpu, pParams);
-
     status = gpuResumeFromStandby(pGpu);
+
+    //
+    // Update D3Hot transition here since we moved GC6 D3Hot checking
+    // into the above gpu resume path in order to
+    // run polling CFG in the same place for all GCx case.
+    //
+    if (pGpu->bIsRTD3Gc6D3HotTransition == NV_TRUE)
+    {
+        pParams->params.bIsRTD3HotTransition = NV_TRUE;
+    }
 
     pGpu->setProperty(pGpu, PDB_PROP_GPU_FORCE_PERF_BIOS_LEVEL, NV_FALSE);
 

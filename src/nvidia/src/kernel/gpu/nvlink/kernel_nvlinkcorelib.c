@@ -588,7 +588,7 @@ knvlinkIsGpuConnectedToNvswitch_IMPL
     NvU32 i;
     KNVLINK_CONN_INFO remoteEndInfo;
 
-    FOR_EACH_INDEX_IN_MASK(32, i, pKernelNvlink->enabledLinks)
+    FOR_EACH_INDEX_IN_MASK(32, i, KNVLINK_GET_MASK(pKernelNvlink, enabledLinks, 32))
     {
         remoteEndInfo = pKernelNvlink->nvlinkLinks[i].remoteEndInfo;
 
@@ -667,7 +667,7 @@ _knvlinkUpdateRemoteEndUuidInfo
     unsigned      remoteLinkId;
     unsigned      i, j;
 
-    FOR_EACH_INDEX_IN_MASK(32, i, pKernelNvlink->enabledLinks)
+    FOR_EACH_INDEX_IN_MASK(32, i, KNVLINK_GET_MASK(pKernelNvlink, enabledLinks, 32))
     {
         if (pKernelNvlink->nvlinkLinks[i].remoteEndInfo.bConnected &&
             (pKernelNvlink->nvlinkLinks[i].remoteEndInfo.deviceType == NVLINK_DEVICE_TYPE_GPU))

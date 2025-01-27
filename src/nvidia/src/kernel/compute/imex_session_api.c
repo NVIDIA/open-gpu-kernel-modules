@@ -141,7 +141,7 @@ _checkClientDesiredImporterAndClearCache
     return bMatch;
 }
 
-void
+NvBool
 rcAndDisableOutstandingClientsWithImportedMemory
 (
     OBJGPU   *pGpu,
@@ -154,6 +154,7 @@ rcAndDisableOutstandingClientsWithImportedMemory
     NvU32 gpuMask = 0;
     NvU32 gpuCount = 0;
     NvU32 gpuInstance = 0;
+    NvBool channelRcInvoked = NV_FALSE;
 
     NV_ASSERT(rmapiLockIsOwner());
 
@@ -213,13 +214,19 @@ rcAndDisableOutstandingClientsWithImportedMemory
                             NV_FIFO_PERMANENTLY_DISABLE_CHANNELS_MAX_CLIENTS)
             {
                 _performRcAndDisableChannels(pGpu, &params);
+                channelRcInvoked = NV_TRUE;
                 params.numClients = 0;
             }
         }
 
         if (params.numClients != 0)
+        {
             _performRcAndDisableChannels(pGpu, &params);
+            channelRcInvoked = NV_TRUE;
+        }
     }
+
+    return channelRcInvoked;
 }
 
 NV_STATUS
@@ -234,9 +241,11 @@ imexsessionapiConstruct_IMPL
     OBJSYS *pSys = SYS_GET_INSTANCE();
     Fabric *pFabric = SYS_GET_FABRIC(pSys);
     NvHandle hClient = pCallContext->pClient->hClient;
+    RmClient *pRmClient = dynamicCast(pCallContext->pClient, RmClient);
     NV_STATUS status;
     NvP64 pImexOsEvent = NvP64_NULL;
 
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
     NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
 
     if ((pUserParams->flags != 0) ||
@@ -278,7 +287,7 @@ imexsessionapiConstruct_IMPL
     //
     if (status == NV_ERR_NOT_SUPPORTED)
     {
-        if (!rmclientIsAdminByHandle(hClient, pCallContext->secInfo.privLevel))
+        if (!rmclientIsAdmin(pRmClient, pCallContext->secInfo.privLevel))
         {
             NV_PRINTF(LEVEL_ERROR, "insufficient permissions\n");
             status = NV_ERR_INSUFFICIENT_PERMISSIONS;
@@ -329,9 +338,8 @@ imexsessionapiDestruct_IMPL
 
     if (_checkDanglingExports(RES_GET_CLIENT(pImexSessionApi)))
     {
-        NV_PRINTF(LEVEL_WARNING,
-                  "Disabling fabric allocations due to unclean IMEX shutdown!\n");
         fabricDisableMemAlloc(pFabric);
+        NV_PRINTF(LEVEL_ERROR, "Abrupt nvidia-imex daemon shutdown detected, disabled fabric allocations!\n");
     }
 
     // Invalidate export cache to block future imports on this node ID.
@@ -351,10 +359,11 @@ imexsessionapiDestruct_IMPL
 
     if (!(pImexSessionApi->flags & NV00F1_ALLOC_DISABLE_CHANNEL_RECOVERY))
     {
-        rcAndDisableOutstandingClientsWithImportedMemory(NULL, NV_FABRIC_INVALID_NODE_ID);
+        if (rcAndDisableOutstandingClientsWithImportedMemory(NULL, NV_FABRIC_INVALID_NODE_ID))
+        {
+            NV_PRINTF(LEVEL_ERROR, "Abrupt nvidia-imex daemon shutdown detected, robust channel recovery invoked!\n");
+        }
     }
-
-    NV_PRINTF(LEVEL_WARNING, "IMEX daemon shutdown!\n");
 }
 
 NV_STATUS
@@ -416,7 +425,8 @@ imexsessionapiCtrlCmdDisableImporters_IMPL
     if (pImexSessionApi->flags & NV00F1_ALLOC_DISABLE_CHANNEL_RECOVERY)
         return NV_ERR_NOT_SUPPORTED;
 
-    rcAndDisableOutstandingClientsWithImportedMemory(NULL, pParams->nodeId);
+    if (rcAndDisableOutstandingClientsWithImportedMemory(NULL, pParams->nodeId))
+        NV_PRINTF(LEVEL_ERROR, "nvidia-imex daemon has invoked robust channel recovery!\n");
 
     return NV_OK;
 }

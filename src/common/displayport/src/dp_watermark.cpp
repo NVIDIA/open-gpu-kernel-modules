@@ -49,6 +49,7 @@ bool DisplayPort::isModePossibleMST
 {
     // For MST, use downspread 0.6%
     NvU64 linkFreq;
+    DP_ASSERT(!linkConfig.bIs128b132bChannelCoding);
     linkFreq = LINK_RATE_TO_DATA_RATE_8B_10B(linkConfig.peakRate) * 994 / 1000;
 
     //  This function is for multistream only!
@@ -168,6 +169,7 @@ bool DisplayPort::isModePossibleSST
 )
 {
     NvU64 laneDataRate;
+    DP_ASSERT(!linkConfig.bIs128b132bChannelCoding);
     laneDataRate = linkConfig.convertMinRateToDataRate();
 
 
@@ -839,13 +841,20 @@ bool DisplayPort::isModePossibleMSTWithFEC
 unsigned DisplayPort::pbnForMode(const ModesetInfo & modesetInfo)
 {
     // When DSC is enabled consider depth will multiplied by 16
-    unsigned dsc_factor = modesetInfo.bEnableDsc ? 16 : 1;
+    unsigned dsc_factor = 1;
 
-    //
-    // Calculate PBN in terms of 54/64 mbyte/sec
-    // round up by .6% for spread de-rate. Note: if we're not spreading our link
-    // this MUST still be counted.  It's also to allow downstream links to be spread.
-    //
+    if (modesetInfo.bEnableDsc)
+    {
+        if(modesetInfo.colorFormat == dpColorFormat_YCbCr422_Native)
+        {
+            dsc_factor = 32;
+        }
+        else
+        {
+            dsc_factor = 16;
+        }
+    }
+
     unsigned pbnForMode = (NvU32)(divide_ceil(modesetInfo.pixelClockHz * modesetInfo.depth * 1006 * 64 / 8,
                                     (NvU64)54000000 * 1000 * dsc_factor));
 

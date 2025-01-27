@@ -41,6 +41,7 @@
 #include "uvm_common.h"
 #include "nv_uvm_interface.h"
 #include "nv-kthread-q.h"
+#include <linux/mmzone.h>
 
 static bool processor_mask_array_test(const uvm_processor_mask_t *mask,
                                       uvm_processor_id_t mask_id,
@@ -145,11 +146,11 @@ static bool va_space_check_processors_masks(uvm_va_space_t *va_space)
         UVM_ASSERT(processor_mask_array_test(va_space->can_copy_from, processor, UVM_ID_CPU));
         UVM_ASSERT(processor_mask_array_test(va_space->can_copy_from, UVM_ID_CPU, processor));
 
-        // NVLINK
-        UVM_ASSERT(!processor_mask_array_test(va_space->has_nvlink, processor, processor));
+        // NVLINK/C2C
+        UVM_ASSERT(!processor_mask_array_test(va_space->has_fast_link, processor, processor));
 
         if (check_can_copy_from) {
-            UVM_ASSERT(uvm_processor_mask_subset(&va_space->has_nvlink[uvm_id_value(processor)],
+            UVM_ASSERT(uvm_processor_mask_subset(&va_space->has_fast_link[uvm_id_value(processor)],
                                                  &va_space->can_copy_from[uvm_id_value(processor)]));
         }
 
@@ -293,6 +294,22 @@ fail:
     return status;
 }
 
+static void va_space_parent_gpu_unregister(uvm_va_space_t *va_space, uvm_parent_gpu_t *parent)
+{
+    uvm_egm_numa_node_info_t *node_info;
+
+    if (!uvm_va_space_single_gpu_in_parent(va_space, parent) ||
+        !parent->egm.enabled ||
+        parent->closest_cpu_numa_node == NUMA_NO_NODE)
+        return;
+
+    node_info = uvm_va_space_get_egm_numa_node_info(va_space, parent->closest_cpu_numa_node);
+    uvm_parent_processor_mask_clear(&node_info->parent_gpus, parent->id);
+
+    // Clear local EGM routing
+    node_info->routing_table[uvm_parent_id_gpu_index(parent->id)] = NULL;
+}
+
 // This function does *not* release the GPU, nor the GPU's PCIE peer pairings.
 // Those are returned so the caller can do it after dropping the VA space lock.
 static void unregister_gpu(uvm_va_space_t *va_space,
@@ -340,6 +357,8 @@ static void unregister_gpu(uvm_va_space_t *va_space,
         }
     }
 
+    va_space_parent_gpu_unregister(va_space, gpu->parent);
+
     if (gpu->parent->isr.replayable_faults.handling) {
         UVM_ASSERT(uvm_processor_mask_test(&va_space->faultable_processors, gpu->id));
         uvm_processor_mask_clear(&va_space->faultable_processors, gpu->id);
@@ -365,9 +384,9 @@ static void unregister_gpu(uvm_va_space_t *va_space,
     processor_mask_array_clear(va_space->can_copy_from, UVM_ID_CPU, gpu->id);
     UVM_ASSERT(processor_mask_array_empty(va_space->can_copy_from, gpu->id));
 
-    processor_mask_array_clear(va_space->has_nvlink, gpu->id, UVM_ID_CPU);
-    processor_mask_array_clear(va_space->has_nvlink, UVM_ID_CPU, gpu->id);
-    UVM_ASSERT(processor_mask_array_empty(va_space->has_nvlink, gpu->id));
+    processor_mask_array_clear(va_space->has_fast_link, gpu->id, UVM_ID_CPU);
+    processor_mask_array_clear(va_space->has_fast_link, UVM_ID_CPU, gpu->id);
+    UVM_ASSERT(processor_mask_array_empty(va_space->has_fast_link, gpu->id));
 
     processor_mask_array_clear(va_space->has_native_atomics, gpu->id, gpu->id);
     processor_mask_array_clear(va_space->has_native_atomics, gpu->id, UVM_ID_CPU);
@@ -395,6 +414,7 @@ static void unregister_gpu(uvm_va_space_t *va_space,
                                            va_space->gpu_unregister_dma_buffer[uvm_id_gpu_index(gpu->id)],
                                            &va_space->gpu_unregister_dma_buffer[uvm_id_gpu_index(gpu->id)]->tracker);
     }
+
     va_space_check_processors_masks(va_space);
 }
 
@@ -698,6 +718,32 @@ bool uvm_va_space_can_read_duplicate(uvm_va_space_t *va_space, uvm_gpu_t *changi
     return count == 0;
 }
 
+static void va_space_parent_gpu_register(uvm_va_space_t *va_space, uvm_parent_gpu_t *parent)
+{
+    uvm_egm_numa_node_info_t *node_info;
+
+    if (!uvm_va_space_single_gpu_in_parent(va_space, parent) ||
+        !parent->egm.enabled ||
+        parent->closest_cpu_numa_node == -1)
+        return;
+
+    node_info = uvm_va_space_get_egm_numa_node_info(va_space, parent->closest_cpu_numa_node);
+
+    if (!node_info->node_start) {
+        node_info->node_start = node_start_pfn(parent->closest_cpu_numa_node) << PAGE_SHIFT;
+        node_info->node_end = node_end_pfn(parent->closest_cpu_numa_node) << PAGE_SHIFT;
+    }
+
+    uvm_parent_processor_mask_set(&node_info->parent_gpus, parent->id);
+
+    // Setup local EGM routing.
+    // This is done here because local EGM routing does need not any peers.
+    // So, if there are no peers to this GPU, local EGM accesses should
+    // still be possible.
+    if (parent->egm.enabled)
+        node_info->routing_table[uvm_parent_id_gpu_index(parent->id)] = parent;
+}
+
 // Note that the "VA space" in the function name refers to a UVM per-process
 // VA space. (This is different from a per-GPU VA space.)
 NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
@@ -795,10 +841,9 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
     // All GPUs have native atomics on their own memory
     processor_mask_array_set(va_space->has_native_atomics, gpu->id, gpu->id);
 
-    // TODO: Bug 3252572: Support the new link type UVM_GPU_LINK_C2C
     if (gpu->parent->system_bus.link >= UVM_GPU_LINK_NVLINK_1) {
-        processor_mask_array_set(va_space->has_nvlink, gpu->id, UVM_ID_CPU);
-        processor_mask_array_set(va_space->has_nvlink, UVM_ID_CPU, gpu->id);
+        processor_mask_array_set(va_space->has_fast_link, gpu->id, UVM_ID_CPU);
+        processor_mask_array_set(va_space->has_fast_link, UVM_ID_CPU, gpu->id);
     }
 
     if (uvm_parent_gpu_is_coherent(gpu->parent)) {
@@ -845,6 +890,8 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
             }
         }
     }
+
+    va_space_parent_gpu_register(va_space, gpu->parent);
 
     status = register_gpu_peers(va_space, gpu);
     if (status != NV_OK)
@@ -1023,6 +1070,30 @@ NV_STATUS uvm_va_space_unregister_gpu(uvm_va_space_t *va_space, const NvProcesso
     return NV_OK;
 }
 
+static void disable_egm_peers(uvm_va_space_t *va_space, uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
+{
+    uvm_egm_numa_node_info_t *node_info;
+    int nid;
+
+    for_each_egm_numa_node_info_for_gpu(node_info, va_space, gpu0->parent, nid) {
+        if (uvm_va_space_single_gpu_in_parent(va_space, gpu0->parent)) {
+            uvm_parent_processor_mask_t proc_mask;
+            uvm_parent_gpu_id_t peer_parent_id;
+
+            uvm_parent_processor_mask_copy(&proc_mask, &node_info->parent_gpus);
+            uvm_parent_processor_mask_clear(&proc_mask, gpu0->parent->id);
+            peer_parent_id = uvm_parent_processor_mask_find_first_gpu_id(&proc_mask);
+            if (!UVM_PARENT_ID_IS_VALID(peer_parent_id)) {
+                node_info->routing_table[uvm_parent_id_gpu_index(gpu1->parent->id)] = NULL;
+            }
+            else {
+                uvm_parent_gpu_t *peer_parent_gpu = uvm_parent_gpu_get(peer_parent_id);
+                node_info->routing_table[uvm_parent_id_gpu_index(gpu1->parent->id)] = peer_parent_gpu;
+            }
+        }
+    }
+}
+
 // This does *not* release the global GPU peer entry
 static void disable_peers(uvm_va_space_t *va_space,
                           uvm_gpu_t *gpu0,
@@ -1044,20 +1115,41 @@ static void disable_peers(uvm_va_space_t *va_space,
     uvm_for_each_va_range(va_range, va_space)
         uvm_va_range_disable_peer(va_range, gpu0, gpu1, deferred_free_list);
 
+    disable_egm_peers(va_space, gpu0, gpu1);
+    disable_egm_peers(va_space, gpu1, gpu0);
+
     processor_mask_array_clear(va_space->can_access, gpu0->id, gpu1->id);
     processor_mask_array_clear(va_space->can_access, gpu1->id, gpu0->id);
     processor_mask_array_clear(va_space->accessible_from, gpu0->id, gpu1->id);
     processor_mask_array_clear(va_space->accessible_from, gpu1->id, gpu0->id);
     processor_mask_array_clear(va_space->can_copy_from, gpu0->id, gpu1->id);
     processor_mask_array_clear(va_space->can_copy_from, gpu1->id, gpu0->id);
-    processor_mask_array_clear(va_space->has_nvlink, gpu0->id, gpu1->id);
-    processor_mask_array_clear(va_space->has_nvlink, gpu1->id, gpu0->id);
+    processor_mask_array_clear(va_space->has_fast_link, gpu0->id, gpu1->id);
+    processor_mask_array_clear(va_space->has_fast_link, gpu1->id, gpu0->id);
     processor_mask_array_clear(va_space->has_native_atomics, gpu0->id, gpu1->id);
     processor_mask_array_clear(va_space->has_native_atomics, gpu1->id, gpu0->id);
 
     __clear_bit(pair_index, va_space->enabled_peers);
 
     va_space_check_processors_masks(va_space);
+}
+
+static void enable_egm_peers(uvm_va_space_t *va_space, uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
+{
+    if (gpu0->parent->egm.enabled) {
+        uvm_egm_numa_node_info_t *node_info;
+        int nid;
+
+        for_each_egm_numa_node_info_for_gpu(node_info, va_space, gpu0->parent, nid) {
+            // Setup remote EGM routing.
+            // Note that we only setup this routing if gpu1 is not attached to the
+            // same NUMA node. Otherwise, we want accesses from it to this CPU NUMA
+            // node to use gpu1's local EGM accesses.
+            if (!node_info->routing_table[uvm_parent_id_gpu_index(gpu1->parent->id)] &&
+                !uvm_parent_processor_mask_test(&node_info->parent_gpus, gpu1->parent->id))
+                node_info->routing_table[uvm_parent_id_gpu_index(gpu1->parent->id)] = gpu0->parent;
+        }
+    }
 }
 
 static NV_STATUS enable_peers(uvm_va_space_t *va_space, uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
@@ -1112,12 +1204,15 @@ static NV_STATUS enable_peers(uvm_va_space_t *va_space, uvm_gpu_t *gpu0, uvm_gpu
         processor_mask_array_set(va_space->has_native_atomics, gpu1->id, gpu0->id);
     }
     else if (uvm_parent_gpu_peer_link_type(gpu0->parent, gpu1->parent) >= UVM_GPU_LINK_NVLINK_1) {
-        processor_mask_array_set(va_space->has_nvlink, gpu0->id, gpu1->id);
-        processor_mask_array_set(va_space->has_nvlink, gpu1->id, gpu0->id);
+        processor_mask_array_set(va_space->has_fast_link, gpu0->id, gpu1->id);
+        processor_mask_array_set(va_space->has_fast_link, gpu1->id, gpu0->id);
 
         processor_mask_array_set(va_space->has_native_atomics, gpu0->id, gpu1->id);
         processor_mask_array_set(va_space->has_native_atomics, gpu1->id, gpu0->id);
     }
+
+    enable_egm_peers(va_space, gpu0, gpu1);
+    enable_egm_peers(va_space, gpu1, gpu0);
 
     UVM_ASSERT(va_space_check_processors_masks(va_space));
     __set_bit(pair_index, va_space->enabled_peers);
@@ -1168,14 +1263,35 @@ static NV_STATUS retain_pcie_peers_from_uuids(uvm_va_space_t *va_space,
 
 static bool uvm_va_space_pcie_peer_enabled(uvm_va_space_t *va_space, uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
 {
-    return !processor_mask_array_test(va_space->has_nvlink, gpu0->id, gpu1->id) &&
+    return !processor_mask_array_test(va_space->has_fast_link, gpu0->id, gpu1->id) &&
            !uvm_gpus_are_smc_peers(gpu0, gpu1) &&
            uvm_va_space_peer_enabled(va_space, gpu0, gpu1);
 }
 
 static bool uvm_va_space_nvlink_peer_enabled(uvm_va_space_t *va_space, uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
 {
-    return processor_mask_array_test(va_space->has_nvlink, gpu0->id, gpu1->id);
+    return processor_mask_array_test(va_space->has_fast_link, gpu0->id, gpu1->id);
+}
+
+uvm_egm_numa_node_info_t *uvm_va_space_get_next_egm_numa_node_info_for_gpu(uvm_va_space_t *va_space,
+                                                                           uvm_parent_gpu_t *parent_gpu,
+                                                                           int *nid)
+{
+    int _nid;
+
+    UVM_ASSERT(nid);
+    uvm_assert_rwsem_locked(&va_space->lock);
+
+    for (_nid = next_node(*nid, node_possible_map); _nid != MAX_NUMNODES; _nid = next_node(_nid, node_possible_map)) {
+        uvm_egm_numa_node_info_t *node_info = uvm_va_space_get_egm_numa_node_info(va_space, _nid);
+        if (uvm_parent_processor_mask_test(&node_info->parent_gpus, parent_gpu->id)) {
+            *nid = _nid;
+            return node_info;
+        }
+    }
+
+    *nid = NUMA_NO_NODE;
+    return NULL;
 }
 
 static void free_gpu_va_space(nv_kref_t *nv_kref)
@@ -1725,6 +1841,17 @@ NV_STATUS uvm_va_space_unregister_gpu_va_space(uvm_va_space_t *va_space, const N
     return status;
 }
 
+bool uvm_va_space_single_gpu_in_parent(uvm_va_space_t *va_space, uvm_parent_gpu_t *parent_gpu)
+{
+    uvm_sub_processor_mask_t sub_processors;
+
+    uvm_assert_rwsem_locked(&va_space->lock);
+    UVM_ASSERT(!uvm_processor_mask_empty(&va_space->registered_gpus));
+
+    sub_processors = uvm_sub_processor_mask_from_processor_mask(&va_space->registered_gpus, parent_gpu->id);
+    return uvm_sub_processor_mask_get_count(&sub_processors) == 1;
+}
+
 bool uvm_va_space_peer_enabled(uvm_va_space_t *va_space, const uvm_gpu_t *gpu0, const uvm_gpu_t *gpu1)
 {
     UVM_ASSERT(uvm_processor_mask_test(&va_space->registered_gpus, gpu0->id));
@@ -1762,7 +1889,7 @@ uvm_processor_id_t uvm_processor_mask_find_closest_id(uvm_va_space_t *va_space,
         }
     }
 
-    if (uvm_processor_mask_and(mask, candidates, &va_space->has_nvlink[uvm_id_value(src)])) {
+    if (uvm_processor_mask_and(mask, candidates, &va_space->has_fast_link[uvm_id_value(src)])) {
         // Direct peers, prioritizing GPU peers over CPU
         closest_id = uvm_processor_mask_find_first_gpu_id(mask);
         if (UVM_ID_IS_INVALID(closest_id))
@@ -2369,6 +2496,7 @@ static vm_fault_t uvm_va_space_cpu_fault(uvm_va_space_t *va_space,
     }
 
     service_context->cpu_fault.wakeup_time_stamp = 0;
+    service_context->num_retries = 0;
 
     // There are up to three mm_structs to worry about, and they might all be
     // different:
@@ -2392,26 +2520,47 @@ static vm_fault_t uvm_va_space_cpu_fault(uvm_va_space_t *va_space,
     do {
         bool do_sleep = false;
 
+        // NV_WARN_MORE_PROCESSING_REQUIRED can be returned by either thrashing
+        // or NVLINK error check. Use bits in gpus_to_check_for_nvlink_errors
+        // to select one or the other.
         if (status == NV_WARN_MORE_PROCESSING_REQUIRED) {
-            NvU64 now = NV_GETTIME();
-            if (now < service_context->cpu_fault.wakeup_time_stamp)
-                do_sleep = true;
+            if (uvm_processor_mask_empty(&service_context->gpus_to_check_for_nvlink_errors)) {
+                NvU64 now = NV_GETTIME();
+                if (now < service_context->cpu_fault.wakeup_time_stamp)
+                    do_sleep = true;
 
-            if (do_sleep)
-                uvm_tools_record_throttling_start(va_space, fault_addr, UVM_ID_CPU);
+                if (do_sleep)
+                    uvm_tools_record_throttling_start(va_space, fault_addr, UVM_ID_CPU);
 
-            // Drop the VA space lock while we sleep
-            uvm_va_space_up_read(va_space);
+                // Drop the VA space lock while we sleep
+                uvm_va_space_up_read(va_space);
 
-            // usleep_range is preferred because msleep has a 20ms granularity
-            // and udelay uses a busy-wait loop. usleep_range uses
-            // high-resolution timers and, by adding a range, the Linux
-            // scheduler may coalesce our wakeup with others, thus saving some
-            // interrupts.
-            if (do_sleep) {
-                unsigned long nap_us = (service_context->cpu_fault.wakeup_time_stamp - now) / 1000;
+                // usleep_range is preferred because msleep has a 20ms
+                // granularity and udelay uses a busy-wait loop. usleep_range
+                // uses high-resolution timers and, by adding a range, the
+                // Linux scheduler may coalesce our wakeup with others, thus
+                // saving some interrupts.
+                if (do_sleep) {
+                    unsigned long nap_us = (service_context->cpu_fault.wakeup_time_stamp - now) / 1000;
 
-                usleep_range(nap_us, nap_us + nap_us / 2);
+                    usleep_range(nap_us, nap_us + nap_us / 2);
+                }
+            }
+            else {
+                // Drop the VA space lock while we check RM for nvlink errors
+                uvm_va_space_up_read(va_space);
+
+                // Record unlock of the mm lock without actually releasing it
+                // to allow calling RM. This matches the ECC error checking
+                // below.
+                uvm_record_unlock_mmap_lock_read(vma->vm_mm);
+
+                status = uvm_global_gpu_check_nvlink_error(&service_context->gpus_to_check_for_nvlink_errors);
+
+                uvm_record_lock_mmap_lock_read(vma->vm_mm);
+                uvm_va_space_down_read(va_space);
+                if (status != NV_OK)
+                    break;
             }
         }
 

@@ -81,10 +81,11 @@ _memoryfabricMemDescGetNumAddr
 static NV_STATUS
 _memoryfabricValidatePhysMem
 (
-    RsClient          *pRsClient,
-    NvHandle           hPhysMem,
-    OBJGPU            *pOwnerGpu,
-    MEMORY_DESCRIPTOR **ppPhysMemDesc
+    RsClient           *pRsClient,
+    NvHandle            hPhysMem,
+    OBJGPU             *pOwnerGpu,
+    MEMORY_DESCRIPTOR **ppPhysMemDesc,
+    Memory            **ppPhysMemory
 )
 {
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pOwnerGpu);
@@ -124,21 +125,26 @@ _memoryfabricValidatePhysMem
 
     *ppPhysMemDesc = pPhysMemDesc;
 
+    if (ppPhysMemory != NULL)
+        *ppPhysMemory = pMemory;
+
     return NV_OK;
 }
 
 static NV_STATUS
 _memoryFabricDetachMem
 (
-    MEMORY_DESCRIPTOR   *pFabricMemDesc,
-    NvU64                offset
+    MemoryFabric        *pMemoryFabric,
+    NvU64                offset,
+    NvBool               bRemoveInterMapping
 )
 {
     NV_STATUS status;
-    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     FABRIC_ATTCH_MEM_INFO_NODE *pAttachMemInfoNode;
     NODE *pNode = NULL;
     FABRIC_VASPACE *pFabricVAS;
+    Memory *pMemory = staticCast(pMemoryFabric, Memory);
+    MEMORY_DESCRIPTOR *pFabricMemDesc = pMemory->pMemDesc;
     MEMORY_DESCRIPTOR *pPhysMemDesc;
     FABRIC_MEMDESC_DATA *pMemdescData;
 
@@ -156,37 +162,17 @@ _memoryFabricDetachMem
                                   pPhysMemDesc,
                                   pAttachMemInfoNode->physMapLength);
 
-    NV_ASSERT_OK(pRmApi->Free(pRmApi, pFabricVAS->hClient,
-                              pAttachMemInfoNode->hDupedPhysMem));
+    if (bRemoveInterMapping)
+    {
+        refRemoveInterMapping(RES_GET_REF(pMemoryFabric),
+                              pAttachMemInfoNode->pInterMapping);
+    }
 
     btreeUnlink(&pAttachMemInfoNode->node, &pMemdescData->pAttachMemInfoTree);
 
     portMemFree(pAttachMemInfoNode);
 
     return NV_OK;
-}
-
-static void
-_memoryFabricBatchDetachMem
-(
-    MEMORY_DESCRIPTOR *pFabricMemDesc
-)
-{
-    FABRIC_MEMDESC_DATA *pMemdescData;
-    NODE *pNode = NULL;
-    NvU64 offset;
-    pMemdescData = (FABRIC_MEMDESC_DATA *)memdescGetMemData(pFabricMemDesc);
-
-    if (pMemdescData == NULL)
-        return;
-
-    btreeEnumStart(0, &pNode, pMemdescData->pAttachMemInfoTree);
-    while (pNode != NULL)
-    {
-        offset = pNode->keyStart;
-        btreeEnumNext(&pNode, pMemdescData->pAttachMemInfoTree);
-        NV_ASSERT_OK(_memoryFabricDetachMem(pFabricMemDesc, offset));
-    }
 }
 
 static NV_STATUS
@@ -202,10 +188,10 @@ _memoryFabricAttachMem
     MEMORY_DESCRIPTOR *pPhysMemDesc;
     MEMORY_DESCRIPTOR *pFabricMemDesc = pMemory->pMemDesc;
     FABRIC_MEMDESC_DATA *pMemdescData;
-    NvHandle hDupedPhysMem = 0;
-    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     FABRIC_VASPACE *pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
     FABRIC_ATTCH_MEM_INFO_NODE *pNode;
+    RsInterMapping *pInterMapping;
+    Memory *pPhysMemory;
 
     pMemdescData = (FABRIC_MEMDESC_DATA *)memdescGetMemData(pFabricMemDesc);
 
@@ -222,18 +208,18 @@ _memoryFabricAttachMem
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    status = _memoryfabricValidatePhysMem(RES_GET_CLIENT(pMemory),
-                                          pAttachInfo->hMemory,
-                                          pGpu, &pPhysMemDesc);
+    status = _memoryfabricValidatePhysMem(RES_GET_CLIENT(pMemory), pAttachInfo->hMemory,
+                                          pGpu, &pPhysMemDesc, &pPhysMemory);
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
 
-    status = pRmApi->DupObject(pRmApi, pFabricVAS->hClient, pFabricVAS->hDevice,
-                               &hDupedPhysMem, RES_GET_CLIENT_HANDLE(pMemory),
-                               pAttachInfo->hMemory, 0);
+    status = refAddInterMapping(RES_GET_REF(pMemoryFabric),
+                                RES_GET_REF(pPhysMemory),
+                                RES_GET_REF(pMemoryFabric)->pParentRef,
+                                &pInterMapping);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "Failed to dup physmem handle\n");
+        NV_PRINTF(LEVEL_ERROR, "Failed to setup inter mapping\n");
         return status;
     }
 
@@ -247,7 +233,7 @@ _memoryFabricAttachMem
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to map FLA\n");
-        goto freeDupedMem;
+        goto freeInterMapping;
     }
 
     pNode = portMemAllocNonPaged(sizeof(*pNode));
@@ -264,8 +250,14 @@ _memoryFabricAttachMem
     pNode->physMapOffset = pAttachInfo->mapOffset;
     pNode->physMapLength = pAttachInfo->mapLength;
     pNode->pPhysMemDesc  = pPhysMemDesc;
-    pNode->hDupedPhysMem = hDupedPhysMem;
+    pNode->pInterMapping = pInterMapping;
     pNode->node.Data     = pNode;
+
+    pInterMapping->dmaOffset = pAttachInfo->offset;
+    pInterMapping->pMemDesc = pPhysMemDesc;
+
+    // No partial unmap supported
+    pInterMapping->size = 0;
 
     status = btreeInsert(&pNode->node, &pMemdescData->pAttachMemInfoTree);
     if (status != NV_OK)
@@ -284,8 +276,8 @@ unmapVas:
                                   pAttachInfo->offset,
                                   pPhysMemDesc, pAttachInfo->mapLength);
 
-freeDupedMem:
-    NV_ASSERT_OK(pRmApi->Free(pRmApi, pFabricVAS->hClient, hDupedPhysMem));
+freeInterMapping:
+    refRemoveInterMapping(RES_GET_REF(pMemoryFabric), pInterMapping);
 
     return status;
 }
@@ -304,6 +296,7 @@ _memoryfabricMemDescDestroyCallback
     FABRIC_MEMDESC_DATA *pMemdescData;
     NvU32                numAddr;
     NvU64                pageSize;
+    NODE                *pNode;
 
     NV_ASSERT_OR_RETURN_VOID(pGpu->pFabricVAS != NULL);
 
@@ -319,8 +312,9 @@ _memoryfabricMemDescDestroyCallback
     // Remove the fabric memory allocations from the map.
     fabricvaspaceVaToGpaMapRemove(pFabricVAS, pteArray[0]);
 
-    // Detach any pending memory...
-    _memoryFabricBatchDetachMem(pMemDesc);
+    // Every attached memory should have been unmapped by now..
+    btreeEnumStart(0, &pNode, pMemdescData->pAttachMemInfoTree);
+    NV_ASSERT(pNode == NULL);
 
     if (!pFabricVAS->bRpcAlloc)
     {
@@ -610,8 +604,8 @@ memoryfabricConstruct_IMPL
     }
     else if (!bFlexible)
     {
-        status = _memoryfabricValidatePhysMem(pCallContext->pClient,
-                                              hPhysMem, pGpu, &pPhysMemDesc);
+        status = _memoryfabricValidatePhysMem(pCallContext->pClient, hPhysMem,
+                                              pGpu, &pPhysMemDesc, NULL);
         if (status != NV_OK)
             return status;
     }
@@ -1050,7 +1044,6 @@ memoryfabricCtrlDetachMem_IMPL
 {
     NvU32 i;
     NV_STATUS status;
-    Memory *pMemory = staticCast(pMemoryFabric, Memory);
 
     pParams->numDetached = 0;
 
@@ -1063,7 +1056,9 @@ memoryfabricCtrlDetachMem_IMPL
 
     for (i = 0; i < pParams->numOffsets; i++)
     {
-        status = _memoryFabricDetachMem(pMemory->pMemDesc, pParams->offsets[i]);
+        // Remove inter mapping on explicit detach by the control call.
+        status = _memoryFabricDetachMem(pMemoryFabric, pParams->offsets[i],
+                                        NV_TRUE);
         if (status != NV_OK)
             return status;
 
@@ -1100,76 +1095,6 @@ memoryfabricCtrlGetNumAttachedMem_IMPL
     return NV_OK;
 }
 
-NV_STATUS
-memoryfabricCtrlGetAttachedMem_IMPL
-(
-    MemoryFabric                        *pMemoryFabric,
-    NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS *pParams
-)
-{
-    NV_STATUS status;
-    Memory *pMemory = staticCast(pMemoryFabric, Memory);
-    MEMORY_DESCRIPTOR *pFabricMemDesc = pMemory->pMemDesc;
-    FABRIC_MEMDESC_DATA *pMemdescData = \
-                    (FABRIC_MEMDESC_DATA *)memdescGetMemData(pFabricMemDesc);
-    OBJGPU *pGpu = pMemory->pGpu;
-    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    FABRIC_VASPACE *pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
-    FABRIC_ATTCH_MEM_INFO_NODE *pAttachMemInfoNode;
-    NODE *pNode = NULL;
-    NvU16 i, count = 0;
-
-    if ((pParams->numMemInfos == 0) ||
-        (pParams->numMemInfos > NV00F8_MAX_ATTACHED_MEM_INFOS))
-        return NV_ERR_INVALID_ARGUMENT;
-
-    btreeEnumStart(pParams->offsetStart, &pNode,
-                   pMemdescData->pAttachMemInfoTree);
-
-    while (count < pParams->numMemInfos)
-    {
-        if (pNode == NULL)
-        {
-            status = NV_ERR_INVALID_ARGUMENT;
-            goto cleanup;
-        }
-
-        pAttachMemInfoNode = (FABRIC_ATTCH_MEM_INFO_NODE *)pNode->Data;
-
-        status = pRmApi->DupObject(pRmApi, RES_GET_CLIENT_HANDLE(pMemory),
-                                   RES_GET_HANDLE(pMemory->pDevice),
-                                   &pParams->memInfos[count].hMemory,
-                                   pFabricVAS->hClient,
-                                   pAttachMemInfoNode->hDupedPhysMem, 0);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Failed to dup physmem handle\n");
-            goto cleanup;
-        }
-
-        pParams->memInfos[count].offset = pNode->keyStart;
-        pParams->memInfos[count].mapOffset = pAttachMemInfoNode->physMapOffset;
-        pParams->memInfos[count].mapLength = pAttachMemInfoNode->physMapLength;
-
-        btreeEnumNext(&pNode, pMemdescData->pAttachMemInfoTree);
-        count++;
-    }
-
-    return NV_OK;
-
-cleanup:
-    for (i = 0; i < count; i++)
-    {
-        NV_ASSERT_OK(pRmApi->Free(pRmApi, RES_GET_CLIENT_HANDLE(pMemory),
-                                  pParams->memInfos[i].hMemory));
-        pParams->memInfos[i].offset = 0;
-        pParams->memInfos[i].mapOffset = 0;
-        pParams->memInfos[i].mapLength = 0;
-    }
-
-    return status;
-}
-
 static NV_STATUS
 _memoryfabricGetPhysAttrsUsingFabricMemdesc
 (
@@ -1196,7 +1121,8 @@ _memoryfabricGetPhysAttrsUsingFabricMemdesc
     if (status == NV_OK)
     {
         *pPhysPageSize = memdescGetPageSize(pPhysMemDesc, AT_GPU);
-        memdescDestroy(pPhysMemDesc);
+        if (pPhysMemDesc != pFabricMemDesc)
+            fabricvaspacePutGpaMemdesc(pFabricVAS, pPhysMemDesc);
         return NV_OK;
     }
 
@@ -1266,6 +1192,25 @@ memoryfabricCtrlGetPageLevelInfo_IMPL
                     &pageLevelInfoParams.levels[i],
                     sizeof(pageLevelInfoParams.levels[i]));
     }
+
+    return NV_OK;
+}
+
+NV_STATUS
+memoryfabricUnmapFrom_IMPL
+(
+    MemoryFabric             *pMemoryFabric,
+    RS_RES_UNMAP_FROM_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = pParams->pGpu;
+    NvU32 gpuMask = NVBIT(gpuGetInstance(pGpu));
+
+    NV_ASSERT_OR_RETURN(rmGpuGroupLockIsOwner(0, GPU_LOCK_GRP_MASK, &gpuMask),
+                        NV_ERR_INVALID_STATE);
+
+    NV_ASSERT_OK_OR_RETURN(_memoryFabricDetachMem(pMemoryFabric,
+                                                  pParams->dmaOffset, NV_FALSE));
 
     return NV_OK;
 }

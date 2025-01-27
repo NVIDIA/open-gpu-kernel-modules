@@ -143,7 +143,7 @@ typedef NV_STATUS GsyncRefMaster         (struct OBJGPU *, OBJGSYNC *, REFTYPE, 
 typedef NV_STATUS GsyncRefSlaves         (struct OBJGPU *, PDACEXTERNALDEVICE, REFTYPE, NvU32 *, NvU32 *);
 typedef NV_STATUS GsyncGetCplStatus      (struct OBJGPU *, PDACEXTERNALDEVICE, GSYNCSTATUS, NvU32 *);
 typedef NV_STATUS GsyncSetWatchdog       (struct OBJGPU *, PDACEXTERNALDEVICE, NvU32);
-typedef NV_STATUS GsyncGetRevision       (struct OBJGPU *, PDACEXTERNALDEVICE, GSYNCCAPSPARAMS *);
+typedef NV_STATUS GsyncGetRevision       (struct OBJGPU *, OBJGSYNC *, GSYNCCAPSPARAMS *);
 typedef NV_STATUS GsyncRefMasterable     (struct OBJGPU *, PDACEXTERNALDEVICE, REFTYPE, NvU32 *, NvU32 *);
 typedef NV_STATUS GsyncGetStereoLockMode (struct OBJGPU *, PDACEXTERNALDEVICE, NvU32 *);
 typedef NV_STATUS GsyncSetStereoLockMode (struct OBJGPU *, PDACEXTERNALDEVICE, NvU32);
@@ -246,7 +246,7 @@ struct OBJGSYNCMGR {
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
 
     // Ancestor object pointers for `staticCast` feature
@@ -288,8 +288,18 @@ NV_STATUS __nvoc_objCreate_OBJGSYNCMGR(OBJGSYNCMGR**, Dynamic*, NvU32);
 
 
 // Wrapper macros
+#define gsyncmgrIsFirmwareGPUMismatch(pGpu, pGsync) gsyncmgrIsFirmwareGPUMismatch_STATIC_DISPATCH(pGpu, pGsync)
+#define gsyncmgrIsFirmwareGPUMismatch_HAL(pGpu, pGsync) gsyncmgrIsFirmwareGPUMismatch_STATIC_DISPATCH(pGpu, pGsync)
 
 // Dispatch functions
+NvBool gsyncmgrIsFirmwareGPUMismatch_GB100(struct OBJGPU *pGpu, OBJGSYNC *pGsync);
+
+static inline NvBool gsyncmgrIsFirmwareGPUMismatch_4a4dee(struct OBJGPU *pGpu, OBJGSYNC *pGsync) {
+    return 0;
+}
+
+NvBool gsyncmgrIsFirmwareGPUMismatch_STATIC_DISPATCH(struct OBJGPU *pGpu, OBJGSYNC *pGsync);
+
 NV_STATUS gsyncmgrConstruct_IMPL(struct OBJGSYNCMGR *arg_pGsyncmgr);
 
 #define __nvoc_gsyncmgrConstruct(arg_pGsyncmgr) gsyncmgrConstruct_IMPL(arg_pGsyncmgr)

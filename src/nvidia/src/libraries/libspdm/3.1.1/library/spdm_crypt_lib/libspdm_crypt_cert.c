@@ -119,8 +119,9 @@ typedef bool (*libspdm_asym_get_public_key_from_x509_func)(const uint8_t *cert,
  *
  * @return asymmetric GET_PUBLIC_KEY_FROM_X509 function
  **/
-libspdm_asym_get_public_key_from_x509_func
-static libspdm_get_asym_get_public_key_from_x509(uint32_t base_asym_algo)
+// NVIDIA_EDIT: Move static to front of function to appease GCC.
+static libspdm_asym_get_public_key_from_x509_func
+libspdm_get_asym_get_public_key_from_x509(uint32_t base_asym_algo)
 {
     switch (base_asym_algo) {
     case SPDM_ALGORITHMS_BASE_ASYM_ALGO_TPM_ALG_RSASSA_2048:

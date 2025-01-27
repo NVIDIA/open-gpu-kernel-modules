@@ -387,6 +387,7 @@ static void mmu_set_prefetch_faults(uvm_parent_gpu_t *parent_gpu, bool enable)
         // Access to the register is currently blocked only in Confidential
         // Computing.
         UVM_ASSERT(g_uvm_global.conf_computing_enabled);
+
         status = nvUvmInterfaceTogglePrefetchFaults(&parent_gpu->fault_buffer_info.rm_info, (NvBool)enable);
 
         UVM_ASSERT(status == NV_OK);

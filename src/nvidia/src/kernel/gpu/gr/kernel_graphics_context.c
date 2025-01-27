@@ -3388,6 +3388,37 @@ kgrctxCtrlSetTpcPartitionMode_IMPL
 }
 
 NV_STATUS
+kgrctxCtrlSetLgSectorPromotion_IMPL
+(
+    KernelGraphicsContext* pKernelGraphicsContext,
+    NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS* pParams
+)
+{
+    OBJGPU* pGpu = GPU_RES_GET_GPU(pKernelGraphicsContext);
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        RM_API* pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        CALL_CONTEXT* pCallContext = resservGetTlsCallContext();
+        RmCtrlParams* pRmCtrlParams = pCallContext->pControlParams;
+
+        return pRmApi->Control(pRmApi,
+            pRmCtrlParams->hClient,
+            pRmCtrlParams->hObject,
+            pRmCtrlParams->cmd,
+            pRmCtrlParams->pParams,
+            pRmCtrlParams->paramsSize);
+    }
+
+    return gpuresInternalControlForward_IMPL(staticCast(pKernelGraphicsContext, GpuResource),
+        NV0090_CTRL_CMD_INTERNAL_SET_LG_SECTOR_PROMOTION,
+        pParams,
+        sizeof(*pParams));
+}
+
+NV_STATUS
 kgrctxCtrlGetMMUDebugMode_IMPL
 (
     KernelGraphicsContext *pKernelGraphicsContext,

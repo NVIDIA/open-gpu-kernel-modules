@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -898,11 +898,11 @@ typedef struct NV0000_CTRL_GPU_IDLE_CHANNELS_PARAMS {
     NvV32    timeout;
 } NV0000_CTRL_GPU_IDLE_CHANNELS_PARAMS;
 
-#define NV0000_CTRL_GPU_IMAGE_TYPE_GSP     (0x00000001U)
-#define NV0000_CTRL_GPU_IMAGE_TYPE_GSP_LOG (0x00000002U)
-
+#define NV0000_CTRL_GPU_IMAGE_TYPE_GSP           (0x00000001U)
+#define NV0000_CTRL_GPU_IMAGE_TYPE_GSP_LOG       (0x00000002U)
+#define NV0000_CTRL_GPU_IMAGE_TYPE_BINDATA_IMAGE (0x00000003U)
 /*
- * NV0000_CTRL_CMD_PUSH_GSP_UCODE
+ * NV0000_CTRL_CMD_PUSH_UCODE_IMAGE
  *
  * This command is used to push the GSP ucode into RM.
  * This function is used only on VMware
@@ -915,15 +915,15 @@ typedef struct NV0000_CTRL_GPU_IDLE_CHANNELS_PARAMS {
  *                              setup other than VMware host
  *
  */
-#define NV0000_CTRL_CMD_PUSH_GSP_UCODE     (0x285) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_PUSH_GSP_UCODE_PARAMS_MESSAGE_ID" */
+#define NV0000_CTRL_CMD_PUSH_UCODE_IMAGE         (0x285) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_PUSH_UCODE_IMAGE_PARAMS_MESSAGE_ID" */
 
-#define NV0000_CTRL_GPU_PUSH_GSP_UCODE_PARAMS_MESSAGE_ID (0x85U)
+#define NV0000_CTRL_GPU_PUSH_UCODE_IMAGE_PARAMS_MESSAGE_ID (0x85U)
 
-typedef struct NV0000_CTRL_GPU_PUSH_GSP_UCODE_PARAMS {
+typedef struct NV0000_CTRL_GPU_PUSH_UCODE_IMAGE_PARAMS {
     NvU8 image;
     NV_DECLARE_ALIGNED(NvU64 totalSize, 8);
     NV_DECLARE_ALIGNED(NvP64 pData, 8);
-} NV0000_CTRL_GPU_PUSH_GSP_UCODE_PARAMS;
+} NV0000_CTRL_GPU_PUSH_UCODE_IMAGE_PARAMS;
 
 /*
  * NV0000_CTRL_CMD_GPU_SET_NVLINK_BW_MODE

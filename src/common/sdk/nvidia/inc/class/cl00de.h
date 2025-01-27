@@ -197,15 +197,19 @@ typedef struct RUSD_POWER_LIMITS {
     RUSD_POWER_LIMIT_INFO info;
 } RUSD_POWER_LIMITS;
 
-typedef struct RUSD_TEMPERATURE_INFO {
-    NvTemp gpuTemperature;
-    NvTemp hbmTemperature;
-} RUSD_TEMPERATURE_INFO;
+typedef enum RUSD_TEMPERATURE_TYPE {
+    RUSD_TEMPERATURE_TYPE_GPU,
+    RUSD_TEMPERATURE_TYPE_HBM,
+    RUSD_TEMPERATURE_TYPE_MAX
+} RUSD_TEMPERATURE_TYPE;
 
 typedef struct RUSD_TEMPERATURE {
     volatile NvU64 lastModifiedTimestamp;
-    RUSD_TEMPERATURE_INFO info;
+    NvTemp temperature;
 } RUSD_TEMPERATURE;
+
+// Temporary until clients can migrate to using RUSD_TEMPERATURE type name
+typedef RUSD_TEMPERATURE RUSD_TEMPERATURE_GENERIC;
 
 typedef struct RUSD_MEM_ROW_REMAP_INFO {
     // Provided from NV2080_CTRL_CMD_FB_GET_ROW_REMAPPER_HISTOGRAM
@@ -325,7 +329,7 @@ typedef struct NV00DE_SHARED_DATA {
     NV_DECLARE_ALIGNED(RUSD_POWER_LIMITS powerLimitGpu, 8);
 
     // POLL_THERMAL
-    NV_DECLARE_ALIGNED(RUSD_TEMPERATURE temperature, 8);
+    NV_DECLARE_ALIGNED(RUSD_TEMPERATURE temperatures[RUSD_TEMPERATURE_TYPE_MAX], 8);
 
     // POLL_MEMORY
     NV_DECLARE_ALIGNED(RUSD_MEM_ROW_REMAP memRowRemap, 8);

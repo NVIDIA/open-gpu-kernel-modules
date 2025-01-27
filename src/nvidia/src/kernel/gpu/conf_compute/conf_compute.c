@@ -31,7 +31,6 @@
 
 #include "nvrm_registry.h"
 #include "gpu/conf_compute/conf_compute.h"
-#include "gpu/conf_compute/conf_compute_keystore.h"
 #include "spdm/rmspdmvendordef.h"
 #include "gsp/gsp_proxy_reg.h"
 #include "gpu_mgr/gpu_mgr.h"
@@ -79,21 +78,22 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
 
     if (gpuIsCCEnabledInHw_HAL(pGpu))
     {
+        NV_PRINTF(LEVEL_INFO, "CC mode is enabled by HW\n");
         pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED, NV_TRUE);
     }
-
-    if (gpuIsDevModeEnabledInHw_HAL(pGpu))
-    {
-        pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DEVTOOLS_MODE_ENABLED, NV_TRUE);
-    }
-
-    if (gpuIsProtectedPcieEnabledInHw_HAL(pGpu))
+    else if (gpuIsProtectedPcieEnabledInHw_HAL(pGpu))
     {
         NV_PRINTF(LEVEL_INFO, "Enabling protected PCIe in secure PRI\n");
         // Internally, RM must use CC code paths for protected pcie as well
         pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED, NV_TRUE);
-        pConfCompute->setProperty(pConfCompute,
-            PDB_PROP_CONFCOMPUTE_MULTI_GPU_PROTECTED_PCIE_MODE_ENABLED, NV_TRUE);
+        pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_MULTI_GPU_PROTECTED_PCIE_MODE_ENABLED, NV_TRUE);
+        pConfCompute->gspProxyRegkeys |= DRF_DEF(GSP, _PROXY_REG, _CONF_COMPUTE_MULTI_GPU_MODE, _PROTECTED_PCIE);
+    }
+
+    if (gpuIsDevModeEnabledInHw_HAL(pGpu))
+    {
+        NV_PRINTF(LEVEL_INFO, "CC Devtools mode is enabled by HW\n");
+        pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DEVTOOLS_MODE_ENABLED, NV_TRUE);
     }
 
     status = _confComputeInitRegistryOverrides(pGpu, pConfCompute);
@@ -123,7 +123,7 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
         bForceEnableCC = (osReadRegistryDword(pGpu, NV_REG_STR_RM_CONFIDENTIAL_COMPUTE, &data) == NV_OK) &&
          FLD_TEST_DRF(_REG_STR, _RM_CONFIDENTIAL_COMPUTE, _ENABLED, _YES, data);
 
-        if (!RMCFG_FEATURE_PLATFORM_GSP && !RMCFG_FEATURE_PLATFORM_MODS && !bForceEnableCC)
+        if (!RMCFG_FEATURE_PLATFORM_GSP && !RMCFG_FEATURE_MODS_FEATURES && !bForceEnableCC)
         {
             if (!(sysGetStaticConfig(pSys)->bOsCCEnabled))
             {
@@ -214,19 +214,8 @@ _confComputeInitRegistryOverrides
         }
     }
 
-    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_CC_MULTI_GPU_MODE, &data) == NV_OK) &&
-        (data == NV_REG_STR_RM_CC_MULTI_GPU_MODE_PROTECTED_PCIE))
-    {
-        NV_PRINTF(LEVEL_INFO, "Enabling protected PCIe\n");
-        // Internally, RM must use CC code paths for protected pcie as well
-        pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED, NV_TRUE);
-        pConfCompute->setProperty(pConfCompute,
-             PDB_PROP_CONFCOMPUTE_MULTI_GPU_PROTECTED_PCIE_MODE_ENABLED, NV_TRUE);
-        pConfCompute->gspProxyRegkeys |=
-            DRF_DEF(GSP, _PROXY_REG, _CONF_COMPUTE_MULTI_GPU_MODE, _PROTECTED_PCIE);
-    }
-
-    if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED))
+    if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED)
+        )
     {
         if (confComputeIsSpdmEnabled(pGpu, pConfCompute))
         {
@@ -341,24 +330,27 @@ confComputeEstablishSpdmSessionAndKeys_KERNEL
 
     if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED))
     {
-        // Initialize keystore first, as it is still needed even if SPDM disabled.
+        // Keystore is always needed for CC, even without SPDM, as it is also used for MODS testing.
         NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
                             confComputeKeyStoreInit_HAL(pConfCompute),
                             ErrorExit);
+    }
 
-        if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED))
+    if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED))
+    {
+        //
+        // Initialize SPDM session between Guest RM and SPDM Responder on GPU.
+        // The session lifetime will track Confidential Compute object state lifetime.
+        //
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                            spdmContextInit(pGpu, pConfCompute->pSpdm),
+                            ErrorExit);
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                            spdmStart(pGpu, pConfCompute->pSpdm),
+                            ErrorExit);
+
+        if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED))
         {
-            //
-            // Initialize SPDM session between Guest RM and SPDM Responder on GPU.
-            // The session lifetime will track Confidential Compute object state lifetime.
-            //
-            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-                                spdmContextInit(pGpu, pConfCompute->pSpdm),
-                                ErrorExit);
-            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-                                spdmStart(pGpu, pConfCompute->pSpdm),
-                                ErrorExit);          
-
             // Store the export master secret in the keystore.
             NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
                                 spdmRetrieveExportSecret(pGpu, pConfCompute->pSpdm,
@@ -369,6 +361,11 @@ confComputeEstablishSpdmSessionAndKeys_KERNEL
             // Derive secrets for encrypted communication
             NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
                                 confComputeDeriveSecrets_HAL(pConfCompute, MC_ENGINE_IDX_GSP),
+                                ErrorExit);
+
+            // Derive initial keyseed for Blackwell.
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                                confComputeDeriveInitialKeySeed_HAL(pConfCompute),
                                 ErrorExit);
 
             // Initialize encryption contexts for encrypted traffic between Kernel-RM and GSP.
@@ -416,29 +413,32 @@ _confComputeDeinitSpdmSessionAndKeys
 
     if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED))
     {
-        // Keystore will always be initialized, regardless of whether we use SPDM
+        // Keystore will always be initialized whenever CC enabled
         confComputeKeyStoreDeinit_HAL(pConfCompute);
+    }
 
-        if (pConfCompute->pSpdm == NULL)
-        {
-            //
-            // If SPDM object doesn't exist, alert in logs and move on.
-            // This means we either never established the session, or have already torn down.
-            //
-            NV_PRINTF(LEVEL_INFO, "SPDM teardown did not occur, as SPDM object is null!\n");
-            return NV_OK;
-        }
-
+    if (pConfCompute->pSpdm == NULL)
+    {
         //
-        // Tear down SPDM session between Guest RM and SPDM Responder on GPU.
-        // We must do in pre-unload, before Responder is torn down entirely.
+        // If SPDM object doesn't exist, alert in logs and move on.
+        // This means we either never established the session, or have already torn down.
         //
-        if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED))
+        NV_PRINTF(LEVEL_INFO, "SPDM teardown did not occur, as SPDM object is null!\n");
+        return NV_OK;
+    }
+
+    //
+    // Tear down SPDM session between Guest RM and SPDM Responder on GPU.
+    // We must do in pre-unload, before Responder is torn down entirely.
+    //
+    if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED))
+    {
+        status = spdmContextDeinit(pGpu, pConfCompute->pSpdm, NV_TRUE);
+
+        NV_PRINTF(LEVEL_INFO, "SPDM teardown successful.\n");
+
+        if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED))
         {
-            status = spdmContextDeinit(pGpu, pConfCompute->pSpdm, NV_TRUE);
-
-            NV_PRINTF(LEVEL_INFO, "SPDM teardown successful.\n");
-
             // Deinitialize CCSL contexts.
             ccslContextClear(pConfCompute->pRpcCcslCtx);
             ccslContextClear(pConfCompute->pDmaCcslCtx);
@@ -451,10 +451,10 @@ _confComputeDeinitSpdmSessionAndKeys
             pConfCompute->pNonReplayableFaultCcslCtx = NULL;
             pConfCompute->pGspSec2RpcCcslCtx         = NULL;
         }
-
-        objDelete(pConfCompute->pSpdm);
-        pConfCompute->pSpdm = NULL;
     }
+
+    objDelete(pConfCompute->pSpdm);
+    pConfCompute->pSpdm = NULL;
 
     return status;
 }

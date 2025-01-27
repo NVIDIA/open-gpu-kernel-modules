@@ -557,22 +557,14 @@ refAddMapping
         (pContextRef != pResourceRef) &&
         !refHasAncestor(pResourceRef, pContextRef))
     {
-        RS_CPU_MAPPING_BACK_REF *pBackRefItem = listAppendNew(&pContextRef->backRefs);
-        if (pBackRefItem == NULL)
-        {
-            refFreeCpuMappingPrivate(pCpuMapping);
-            listRemove(&pResourceRef->cpuMappings, pCpuMapping);
-            return NV_ERR_NO_MEMORY;
-        }
-
-        pBackRefItem->pBackRef = pResourceRef;
-        pBackRefItem->pCpuMapping = pCpuMapping;
+        listAppendExisting(&pContextRef->backRefs, pCpuMapping);
     }
 
     pCpuMapping->offset = pParams->offset;
     pCpuMapping->length = pParams->length;
     pCpuMapping->flags = pParams->flags;
     pCpuMapping->pContextRef = pContextRef;
+    pCpuMapping->pResourceRef = pResourceRef;
 
     if (ppMapping != NULL)
         *ppMapping = pCpuMapping;
@@ -590,19 +582,7 @@ refRemoveMapping
     if ((pCpuMapping->pContextRef != NULL) &&
         !refHasAncestor(pResourceRef, pCpuMapping->pContextRef))
     {
-        RS_CPU_MAPPING_BACK_REF *pBackRefItem;
-        RsCpuMappingBackRefListIter it = listIterAll(&pCpuMapping->pContextRef->backRefs);
-
-        while (listIterNext(&it))
-        {
-            pBackRefItem = it.pValue;
-            if ((pBackRefItem->pBackRef == pResourceRef) &&
-                (pBackRefItem->pCpuMapping == pCpuMapping))
-            {
-                listRemove(&pCpuMapping->pContextRef->backRefs, pBackRefItem);
-                break;
-            }
-        }
+        listRemove(&pCpuMapping->pContextRef->backRefs, pCpuMapping);
     }
 
     refFreeCpuMappingPrivate(pCpuMapping);
@@ -639,8 +619,6 @@ refAddInterMapping
 )
 {
     RsInterMapping *pInterMapping;
-    RS_INTER_MAPPING_BACK_REF *pBackRefItem;
-    RS_INTER_MAPPING_BACK_REF *pContextBackRefItem;
 
     NV_ASSERT(pMapperRef != NULL);
     NV_ASSERT(pMappableRef != NULL);
@@ -651,15 +629,7 @@ refAddInterMapping
         return NV_ERR_NO_MEMORY;
 
     // Add backref linked to this inter-mapping
-    pBackRefItem = listAppendNew(&pMappableRef->interBackRefs);
-    if (pBackRefItem == NULL)
-    {
-        listRemove(&pMapperRef->interMappings, pInterMapping);
-        return NV_ERR_NO_MEMORY;
-    }
-
-    pBackRefItem->pMapperRef = pMapperRef;
-    pBackRefItem->pMapping = pInterMapping;
+    listAppendExisting(&pMappableRef->interBackRefsMappable, pInterMapping);
 
     //
     // Either pMapperRef or pMappableRef should be a descendant of pContextRef
@@ -669,20 +639,12 @@ refAddInterMapping
     if (!refHasAncestor(pMapperRef, pContextRef) &&
         !refHasAncestor(pMappableRef, pContextRef))
     {
-        pContextBackRefItem = listAppendNew(&pContextRef->interBackRefs);
-        if (pContextBackRefItem == NULL)
-        {
-            listRemove(&pMapperRef->interMappings, pInterMapping);
-            listRemove(&pMappableRef->interBackRefs, pBackRefItem);
-            return NV_ERR_NO_MEMORY;
-        }
-
-        pContextBackRefItem->pMapperRef = pMapperRef;
-        pContextBackRefItem->pMapping = pInterMapping;
+        listAppendExisting(&pContextRef->interBackRefsContext, pInterMapping);
     }
 
     pInterMapping->pMappableRef = pMappableRef;
     pInterMapping->pContextRef = pContextRef;
+    pInterMapping->pMapperRef = pMapperRef;
 
     if (ppMapping != NULL)
         *ppMapping = pInterMapping;
@@ -697,33 +659,17 @@ refRemoveInterMapping
     RsInterMapping *pMapping
 )
 {
-    RsInterMappingBackRefListIter it;
-    RS_INTER_MAPPING_BACK_REF *pBackRefItem = NULL;
     RsResourceRef *pMappableRef = pMapping->pMappableRef;
     RsResourceRef *pContextRef = pMapping->pContextRef;
 
     // Find and remove the mappable's backref linked to this inter-mapping
-    it = listIterAll(&pMappableRef->interBackRefs);
-    while (listIterNext(&it))
-    {
-        pBackRefItem = it.pValue;
-        if (pBackRefItem->pMapping == pMapping)
-        {
-            listRemove(&pMappableRef->interBackRefs, pBackRefItem);
-            break;
-        }
-    }
+    listRemove(&pMappableRef->interBackRefsMappable, pMapping);
 
     // Find and remove the context's backref linked to this inter-mapping, if present
-    it = listIterAll(&pContextRef->interBackRefs);
-    while (listIterNext(&it))
+    if (!refHasAncestor(pMapperRef, pContextRef) &&
+        !refHasAncestor(pMappableRef, pContextRef))
     {
-        pBackRefItem = it.pValue;
-        if (pBackRefItem->pMapping == pMapping)
-        {
-            listRemove(&pContextRef->interBackRefs, pBackRefItem);
-            break;
-        }
+        listRemove(&pContextRef->interBackRefsContext, pMapping);
     }
 
     listRemove(&pMapperRef->interMappings, pMapping);

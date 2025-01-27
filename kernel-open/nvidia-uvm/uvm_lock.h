@@ -523,6 +523,7 @@ typedef enum
     // This lock order can be removed after RM no longer relies on RPC event
     // notifications.
     UVM_LOCK_ORDER_CSL_CTX,
+
     UVM_LOCK_ORDER_LEAF,
     UVM_LOCK_ORDER_COUNT,
 } uvm_lock_order_t;

@@ -63,7 +63,7 @@ struct OBJHALMGR {
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
 
     // Ancestor object pointers for `staticCast` feature
@@ -71,7 +71,7 @@ struct OBJHALMGR {
     struct OBJHALMGR *__nvoc_pbase_OBJHALMGR;    // halmgr
 
     // Data members
-    struct OBJHAL *pHalList[71];
+    struct OBJHAL *pHalList[77];
 };
 
 #ifndef __NVOC_CLASS_OBJHALMGR_TYPEDEF__

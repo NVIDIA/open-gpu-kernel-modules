@@ -185,6 +185,7 @@ typedef NvU8 FLCN_STATUS;
 #define FLCN_ERR_NVRNG_GENERATE_FAILED                                     (0x97U)
 #define FLCN_ERR_NVPKA_ECDSA_INIT_FAILED                                   (0x98U)
 #define FLCN_ERR_NVPKA_ECDSA_SIGN_FAILED                                   (0x99U)
+#define FLCN_ERR_NVPKA_GET_ECC_KEY_PAIR_FAILED                             (0x9AU)
 
 // Heavy Secure Errors
 #define FLCN_ERR_HS_CHK_INVALID_INPUT                                      (0xA0U)

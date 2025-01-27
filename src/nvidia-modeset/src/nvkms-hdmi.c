@@ -355,34 +355,6 @@ static void HdmiSendEnable(NVDpyEvoPtr pDpyEvo, NvBool hdmiEnable)
 }
 
 /*!
- * Disable sending the vendor specific infoframe on this display.
- */
-static void DisableVendorSpecificInfoFrame(
-    const NVDispEvoRec *pDispEvo,
-    const NvU32 head)
-{
-    const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
-    NV0073_CTRL_SPECIFIC_SET_OD_PACKET_CTRL_PARAMS params = { 0 };
-    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    NvU32 ret;
-
-    params.subDeviceInstance = pDispEvo->displayOwner;
-    params.displayId = pHeadState->activeRmId;
-    params.type = pktType_VendorSpecInfoFrame;
-    params.transmitControl = DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_CTRL_TRANSMIT_CONTROL, _ENABLE, _NO);
-
-    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
-                         pDevEvo->displayCommonHandle,
-                         NV0073_CTRL_CMD_SPECIFIC_SET_OD_PACKET_CTRL,
-                         &params,
-                         sizeof(params));
-
-    if (ret != NVOS_STATUS_SUCCESS) {
-        nvAssert(!"NV0073_CTRL_CMD_SPECIFIC_SET_OD_PACKET_CTRL failed");
-    }
-}
-
-/*!
  * Sends General Control Packet to the HDMI sink.
  */
 static void SendHdmiGcp(const NVDispEvoRec *pDispEvo,
@@ -418,125 +390,8 @@ static void SendHdmiGcp(const NVDispEvoRec *pDispEvo,
 }
 
 /*
- * SendInfoFrame() - Send infoframe to the hardware through the hdmipkt
- * library.
- */
-
-static void SendInfoFrame(const NVDispEvoRec *pDispEvo,
-                          const NvU32 head,
-                          NVHDMIPKT_TC transmitControl,
-                          NVT_INFOFRAME_HEADER *pInfoFrameHeader,
-                          NvU32 infoframeSize)
-{
-    const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
-    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    NVHDMIPKT_TYPE hdmiLibType;
-    NVHDMIPKT_RESULT ret;
-    NvU8 *infoframe = NULL;
-    NvU8 hdmiPacketType, checksum;
-    NvU32 i;
-    NvU8 *pPayload;
-    size_t headerSize;
-    NvBool needChecksum =
-        (transmitControl & DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _CHKSUM_HW, _EN));
-
-    /*
-     * The 'type' the timing library writes into the NVT_INFOFRAME_HEADER
-     * structure is not the same as the protocol values that hardware expects
-     * to see in the real packet header; those are defined in the
-     * HDMI_PACKET_TYPE enums (hdmi_pktType_*) from hdmi_spec.h; use those
-     * to fill in the first byte of the packet.  It's *also* not the type that
-     * the HDMI library expects to see in its NvHdmiPkt_PacketWrite call; those
-     * are NVHDMIPKT_TYPE_*.  Determine both below.
-     */
-    switch (pInfoFrameHeader->type) {
-        default:
-            nvAssert(0);
-            return;
-        case NVT_INFOFRAME_TYPE_EXTENDED_METADATA_PACKET:
-            hdmiLibType = NVHDMIPKT_TYPE_GENERIC;
-            hdmiPacketType = hdmi_pktType_ExtendedMetadata;
-            break;
-        case NVT_INFOFRAME_TYPE_VIDEO:
-            hdmiLibType = NVHDMIPKT_TYPE_AVI_INFOFRAME;
-            hdmiPacketType = hdmi_pktType_AviInfoFrame;
-            break;
-        case NVT_INFOFRAME_TYPE_VENDOR_SPECIFIC:
-            hdmiLibType = NVHDMIPKT_TYPE_VENDOR_SPECIFIC_INFOFRAME;
-            hdmiPacketType = hdmi_pktType_VendorSpecInfoFrame;
-            break;
-        case NVT_INFOFRAME_TYPE_DYNAMIC_RANGE_MASTERING:
-            hdmiLibType = NVHDMIPKT_TYPE_VENDOR_SPECIFIC_INFOFRAME;
-            hdmiPacketType = hdmi_pktType_DynamicRangeMasteringInfoFrame;
-            break;
-    }
-
-    /*
-     * These structures are weird. The NVT_VIDEO_INFOFRAME,
-     * NVT_VENDOR_SPECIFIC_INFOFRAME, NVT_EXTENDED_METADATA_PACKET_INFOFRAME,
-     * etc structures are *kind of* what we want to send to the hdmipkt library,
-     * except the type in the header is different, and a single checksum byte
-     * may need to be inserted *between* the header and the payload (requiring
-     * us to allocate a buffer one byte larger).
-     */
-    infoframe = nvAlloc(infoframeSize + (needChecksum ? sizeof(checksum) : 0));
-    if (infoframe == NULL) {
-        return;
-    }
-
-    /*
-     * The fields and size of NVT_EXTENDED_METADATA_PACKET_INFOFRAME_HEADER
-     * match with those of NVT_INFOFRAME_HEADER at the time of writing, but
-     * nvtiming.h declares them separately. To be safe, special case
-     * NVT_INFOFRAME_TYPE_EXTENDED_METADATA_PACKET.
-     */
-    if (pInfoFrameHeader->type == NVT_INFOFRAME_TYPE_EXTENDED_METADATA_PACKET) {
-        NVT_EXTENDED_METADATA_PACKET_INFOFRAME_HEADER *pExtMetadataHeader =
-            (NVT_EXTENDED_METADATA_PACKET_INFOFRAME_HEADER *) pInfoFrameHeader;
-
-        pPayload = (NvU8 *)(pExtMetadataHeader + 1);
-        headerSize = sizeof(NVT_EXTENDED_METADATA_PACKET_INFOFRAME_HEADER);
-    } else {
-        pPayload = (NvU8 *)(pInfoFrameHeader + 1);
-        headerSize = sizeof(NVT_INFOFRAME_HEADER);
-    }
-
-    infoframe[0] = hdmiPacketType;
-    nvkms_memcpy(&infoframe[1], &((NvU8*) pInfoFrameHeader)[1], headerSize - 1);
-
-    if (needChecksum) {
-        /* PB0: checksum */
-        checksum = 0;
-        infoframe[headerSize] = 0;
-        for (i = 0; i < infoframeSize + sizeof(checksum); i++) {
-            checksum += infoframe[i];
-        }
-        infoframe[headerSize] = ~checksum + 1;
-    }
-
-    /* copy the payload, starting after the 3-byte header and checksum */
-    nvkms_memcpy(&infoframe[headerSize + (needChecksum ? sizeof(checksum) : 0)],
-                 pPayload, infoframeSize - headerSize /* payload size */);
-
-    ret = NvHdmiPkt_PacketWrite(pDevEvo->hdmiLib.handle,
-                                pDispEvo->displayOwner,
-                                pHeadState->activeRmId,
-                                head,
-                                hdmiLibType,
-                                transmitControl,
-                                infoframeSize,
-                                infoframe);
-
-    if (ret != NVHDMIPKT_SUCCESS) {
-        nvAssert(ret == NVHDMIPKT_SUCCESS);
-    }
-
-    nvFree(infoframe);
-}
-
-/*
  * SendVideoInfoFrame() - Construct video infoframe using provided EDID and call
- * SendInfoFrame() to send it to RM.
+ * ->SendHdmiInfoFrame() to send it to RM.
  */
 static void SendVideoInfoFrame(const NVDispEvoRec *pDispEvo,
                                const NvU32 head,
@@ -544,6 +399,7 @@ static void SendVideoInfoFrame(const NVDispEvoRec *pDispEvo,
                                const NVDispHeadInfoFrameStateEvoRec *pInfoFrameState,
                                NVT_EDID_INFO *pEdidInfo)
 {
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     NvBool hdTimings = pInfoFrameState->hdTimings;
     NVT_VIDEO_INFOFRAME_CTRL videoCtrl = pInfoFrameState->ctrl;
     NVT_VIDEO_INFOFRAME VideoInfoFrame;
@@ -560,16 +416,18 @@ static void SendVideoInfoFrame(const NVDispEvoRec *pDispEvo,
         return;
     }
 
-    SendInfoFrame(pDispEvo,
-                  head,
-                  NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_EVERY_FRAME,
-                  (NVT_INFOFRAME_HEADER *) &VideoInfoFrame,
-                  sizeof(VideoInfoFrame));
+    pDevEvo->hal->SendHdmiInfoFrame(
+        pDispEvo,
+        head,
+        NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME,
+        (NVT_INFOFRAME_HEADER *) &VideoInfoFrame,
+        /* header length */ sizeof(NVT_INFOFRAME_HEADER) +
+        /* payload length */ VideoInfoFrame.length);
 }
 
 /*
  * SendHDMI3DVendorSpecificInfoFrame() - Construct vendor specific infoframe
- * using provided EDID and call SendInfoFrame() to send it to RM. Currently
+ * using provided EDID and call ->SendHdmiInfoFrame() to send it to RM. Currently
  * hardcoded to send the infoframe necessary for HDMI 3D.
  */
 
@@ -577,6 +435,7 @@ static void
 SendHDMI3DVendorSpecificInfoFrame(const NVDispEvoRec *pDispEvo,
                                   const NvU32 head, NVT_EDID_INFO *pEdidInfo)
 {
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     const NVDispHeadStateEvoRec *pHeadState =
                                  &pDispEvo->headState[head];
     NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL vendorCtrl = {
@@ -599,7 +458,8 @@ SendHDMI3DVendorSpecificInfoFrame(const NVDispEvoRec *pDispEvo,
     // Send the infoframe with HDMI 3D configured if we're setting an HDMI 3D
     // mode.
     if (!pHeadState->timings.hdmi3D) {
-        DisableVendorSpecificInfoFrame(pDispEvo, head);
+        pDevEvo->hal->DisableHdmiInfoFrame(pDispEvo, head,
+                                           NVT_INFOFRAME_TYPE_VENDOR_SPECIFIC);
         return;
     }
 
@@ -612,23 +472,27 @@ SendHDMI3DVendorSpecificInfoFrame(const NVDispEvoRec *pDispEvo,
         return;
     }
 
-    SendInfoFrame(pDispEvo,
-                  head,
-                  NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_EVERY_FRAME,
-                  &vendorInfoFrame.Header,
-                  sizeof(vendorInfoFrame));
+    pDevEvo->hal->SendHdmiInfoFrame(
+        pDispEvo,
+        head,
+        NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME,
+        &vendorInfoFrame.Header,
+        /* header length */ sizeof(vendorInfoFrame.Header) +
+        /* payload length */ vendorInfoFrame.Header.length);
 }
 
 static void
 SendHDRInfoFrame(const NVDispEvoRec *pDispEvo, const NvU32 head,
                  NVT_EDID_INFO *pEdidInfo)
 {
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     const NVDispHeadStateEvoRec *pHeadState =
                                  &pDispEvo->headState[head];
     NVT_HDR_INFOFRAME hdrInfoFrame = { 0 };
-    NVHDMIPKT_TC transmitControl;
     const NVT_HDR_STATIC_METADATA *pHdrInfo =
         &pEdidInfo->hdr_static_metadata_info;
+    NvEvoInfoFrameTransmitControl transmitCtrl =
+        NV_EVO_INFOFRAME_TRANSMIT_CONTROL_INIT;
 
     // Only send the HDMI HDR infoframe if the display supports HDR
     if (!pHdrInfo->supported_eotf.smpte_st_2084_eotf ||
@@ -648,7 +512,6 @@ SendHDRInfoFrame(const NVDispEvoRec *pDispEvo, const NvU32 head,
 
     if (pHeadState->hdrInfoFrame.state == NVKMS_HDR_INFOFRAME_STATE_ENABLED) {
         hdrInfoFrame.payload.eotf = pHeadState->hdrInfoFrame.eotf;
-
         hdrInfoFrame.payload.static_metadata_desc_id =
             NVT_CEA861_STATIC_METADATA_SM0;
 
@@ -659,25 +522,27 @@ SendHDRInfoFrame(const NVDispEvoRec *pDispEvo, const NvU32 head,
                      (const NvU16 *) &pHeadState->hdrInfoFrame.staticMetadata,
                      sizeof(NVT_HDR_INFOFRAME_MASTERING_DATA));
 
-        transmitControl = NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_EVERY_FRAME;
+        transmitCtrl = NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME;
     } else if (pHeadState->hdrInfoFrame.state ==
                NVKMS_HDR_INFOFRAME_STATE_TRANSITIONING) {
         nvDpyAssignSDRInfoFramePayload(&hdrInfoFrame.payload);
 
-        transmitControl = NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_EVERY_FRAME;
+        transmitCtrl = NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME;
     } else {
         nvAssert(pHeadState->hdrInfoFrame.state == NVKMS_HDR_INFOFRAME_STATE_DISABLED);
 
         nvDpyAssignSDRInfoFramePayload(&hdrInfoFrame.payload);
 
-        transmitControl = NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_SINGLE_FRAME;
+        transmitCtrl = NV_EVO_INFOFRAME_TRANSMIT_CONTROL_SINGLE_FRAME;
     }
 
-    SendInfoFrame(pDispEvo,
-                  head,
-                  transmitControl,
-                  (NVT_INFOFRAME_HEADER *) &hdrInfoFrame.header,
-                  sizeof(hdrInfoFrame));
+    pDevEvo->hal->SendHdmiInfoFrame(
+        pDispEvo,
+        head,
+        transmitCtrl,
+        (NVT_INFOFRAME_HEADER *) &hdrInfoFrame.header,
+        /* header length */ sizeof(hdrInfoFrame.header) +
+        /* payload length */ hdrInfoFrame.header.length);
 }
 
 
@@ -1855,9 +1720,12 @@ NvBool nvHdmi204k60HzRGB444Allowed(const NVDpyEvoRec *pDpyEvo,
  */
 void nvHdmiSetVRR(NVDispEvoPtr pDispEvo, NvU32 head, NvBool enable)
 {
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     NVT_EXTENDED_METADATA_PACKET_INFOFRAME empInfoFrame;
     NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL empCtrl = { 0 };
-    NVHDMIPKT_TC transmitControl;
+    NvEvoInfoFrameTransmitControl transmitCtrl = enable ?
+        NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME :
+        NV_EVO_INFOFRAME_TRANSMIT_CONTROL_SINGLE_FRAME;
     NVT_STATUS status;
 
     empCtrl.EnableVRR = enable;
@@ -1871,24 +1739,13 @@ void nvHdmiSetVRR(NVDispEvoPtr pDispEvo, NvU32 head, NvBool enable)
         return;
     }
 
-    transmitControl =
-        DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _ENABLE,    _EN)   |
-        DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _OTHER,     _DIS)  |
-        DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _CHKSUM_HW, _DIS);
-
-    // Transmit the enable packet every frame, but only transmit the
-    // disable packet once.
-    if (enable) {
-        transmitControl |= DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _SINGLE, _DIS);
-    } else {
-        transmitControl |= DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _SINGLE, _EN);
-    }
-
-    SendInfoFrame(pDispEvo,
-                  head,
-                  transmitControl,
-                  (NVT_INFOFRAME_HEADER *) &empInfoFrame,
-                  sizeof(empInfoFrame));
+    // XXX Extended metadata infoframes do not contain a length header field.
+    pDevEvo->hal->SendHdmiInfoFrame(
+        pDispEvo,
+        head,
+        transmitCtrl,
+        (NVT_INFOFRAME_HEADER *) &empInfoFrame,
+        sizeof(empInfoFrame));
 }
 
 /*
@@ -2052,6 +1909,26 @@ static void HdmiLibAssert(
     nvAssert(expr);
 }
 
+static NvU64 hdmiLibTimerStartTime = 0;
+static NvU64 hdmiLibTimerTimeout = 0;
+
+static NvBool HdmiLibSetTimeout(NvHdmiPkt_CBHandle handle,
+                                NvU32 timeoutUs)
+{
+    hdmiLibTimerTimeout = timeoutUs;
+    hdmiLibTimerStartTime = nvkms_get_usec();
+    return TRUE;
+}
+
+static NvBool HdmiLibCheckTimeout(NvHdmiPkt_CBHandle handle)
+{
+    const NvU64 currentTime = nvkms_get_usec();
+    if (currentTime < hdmiLibTimerStartTime) {
+        return TRUE;
+    }
+    return (currentTime - hdmiLibTimerStartTime) > hdmiLibTimerTimeout;
+}
+
 static const NVHDMIPKT_CALLBACK HdmiLibCallbacks =
 {
     .rmGetMemoryMap = HdmiLibRmGetMemoryMap,
@@ -2059,8 +1936,8 @@ static const NVHDMIPKT_CALLBACK HdmiLibCallbacks =
     .rmDispControl2 = HdmiLibRmDispControl,
     .acquireMutex = HdmiLibAcquireMutex,
     .releaseMutex = HdmiLibReleaseMutex,
-    .setTimeout = NULL,     /* optional */
-    .checkTimeout = NULL,   /* optional */
+    .setTimeout = HdmiLibSetTimeout,
+    .checkTimeout = HdmiLibCheckTimeout,
     .malloc = HdmiLibMalloc,
     .free = HdmiLibFree,
     .print = HdmiLibPrint,
@@ -2382,6 +2259,16 @@ static NvBool nvHdmiFrlQueryConfigOneBpc(
                 }
 
                 pDscInfo->type = NV_DSC_INFO_EVO_TYPE_HDMI;
+                pDscInfo->sliceCount = pConfig->dscInfo.sliceCount;
+                /*
+                 * XXX NvHdmi_QueryFRLConfig() might get updated in future, but
+                 * today it does not return the possible DSC slice counts.
+                 * NvHdmi_QueryFRLConfig() returns the slice count which it has
+                 * been used to calculate DSC PPS, populate
+                 * 'possibleSliceCountMask' using that slice count.
+                 */
+                pDscInfo->possibleSliceCountMask =
+                    NVBIT(pDscInfo->sliceCount - 1);
                 pDscInfo->hdmi.dscMode = b2Heads1Or ?
                     NV_DSC_EVO_MODE_DUAL : NV_DSC_EVO_MODE_SINGLE;
                 pDscInfo->hdmi.bitsPerPixelX16 =

@@ -34,122 +34,6 @@
 #include "conf_compute/cc_keystore.h"
 
 /*!
- * @brief Derives secrets for given CE key space.
- *
- * @param[in]  ceRmEngineTypeIdx    the RM engine type for LCE
- * @param[in]  ccKeyspaceLCEIndex   the key space index
- *
- * @return NV_ERR_INVALID_ARGUMENT if engine is not correct.
- *         NV_OK otherwise.
- */
-NV_STATUS
-confComputeDeriveSecretsForCEKeySpace_GB100
-(
-    ConfidentialCompute *pConfCompute,
-    RM_ENGINE_TYPE       ceRmEngineTypeIdx,
-    NvU32                ccKeyspaceLCEIndex
-)
-{
-    OBJGPU *pGpu = ENG_GET_GPU(pConfCompute);
-    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-    NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS params = {0};
-
-    //
-    // ceRmEngineTypeIdx is not exactly used as a CE index.
-    // For example, ceRmEngineTypeIdx is 0 for the first secure CE which is
-    // actually the LCE 2. 
-    // It is used as a key space index. 
-    //
-    // TODO: refactor the code to use exact the engine type number, bug 4594450.
-    //
-    params.engineId = gpuGetNv2080EngineType(ceRmEngineTypeIdx);
-    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
-                                           pGpu->hInternalClient,
-                                           pGpu->hInternalSubdevice,
-                                           NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS,
-                                           &params,
-                                           sizeof(params)));
-
-    NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
-        CC_GKEYID_GEN(ccKeyspaceLCEIndex, CC_LKEYID_LCE_H2D_KERN)));
-
-    NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
-        CC_GKEYID_GEN(ccKeyspaceLCEIndex, CC_LKEYID_LCE_D2H_KERN)));
-
-    confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
-        CC_GKEYID_GEN(ccKeyspaceLCEIndex, CC_LKEYID_LCE_H2D_KERN),
-        (void*)&params.ivMaskSet[CC_LKEYID_LCE_H2D_KERN].ivMask);
-
-    confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
-        CC_GKEYID_GEN(ccKeyspaceLCEIndex, CC_LKEYID_LCE_D2H_KERN),
-        (void*)&params.ivMaskSet[CC_LKEYID_LCE_D2H_KERN].ivMask);
-
-    return NV_OK;
-}
-NV_STATUS
-confComputeDeriveSecrets_GB100
-(
-    ConfidentialCompute *pConfCompute,
-    NvU32                engine
-)
-{
-    OBJGPU *pGpu = ENG_GET_GPU(pConfCompute);
-
-    if (!IS_GSP_CLIENT(pGpu))
-    {
-        return NV_OK;
-    }
-
-    switch (engine)
-    {
-        case MC_ENGINE_IDX_CE12:
-            confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute,
-                RM_ENGINE_TYPE_COPY10, CC_KEYSPACE_LCE10);
-            break;
-
-        case MC_ENGINE_IDX_CE13:
-            confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute,
-                RM_ENGINE_TYPE_COPY11, CC_KEYSPACE_LCE11);
-            break;
-
-        case MC_ENGINE_IDX_CE14:
-            confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute,
-                RM_ENGINE_TYPE_COPY12, CC_KEYSPACE_LCE12);
-            break;
-
-        case MC_ENGINE_IDX_CE15:
-            confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute,
-                RM_ENGINE_TYPE_COPY13, CC_KEYSPACE_LCE13);
-            break;
-
-        case MC_ENGINE_IDX_CE16:
-            confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute,
-                RM_ENGINE_TYPE_COPY14, CC_KEYSPACE_LCE14);
-            break;
-
-        case MC_ENGINE_IDX_CE17:
-            confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute,
-                RM_ENGINE_TYPE_COPY15, CC_KEYSPACE_LCE15);
-            break;
-
-        case MC_ENGINE_IDX_CE18:
-            confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute,
-                RM_ENGINE_TYPE_COPY16, CC_KEYSPACE_LCE16);
-            break;
-
-        case MC_ENGINE_IDX_CE19:
-            confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute,
-                RM_ENGINE_TYPE_COPY17, CC_KEYSPACE_LCE17);
-            break;
-
-        default:
-            return confComputeDeriveSecrets_GH100(pConfCompute, engine);
-    }
-
-    return NV_OK;
-}
-
-/*!
  * Returns RM engine Id corresponding to a key space
  *
  * @param[in]     pConfCompute             : ConfidentialCompute pointer
@@ -203,6 +87,39 @@ confComputeGetEngineIdFromKeySpace_GB100
     }
 
     return RM_ENGINE_TYPE_NULL;
+}
+
+NV_STATUS
+confComputeDeriveSecrets_GB100
+(
+    ConfidentialCompute *pConfCompute,
+    NvU32                engine
+)
+{
+    OBJGPU *pGpu = ENG_GET_GPU(pConfCompute);
+
+    if (!IS_GSP_CLIENT(pGpu))
+    {
+        return NV_OK;
+    }
+
+    // Add a check if the engine supports Secure Channels
+    switch (engine)
+    {
+        case MC_ENGINE_IDX_CE12:
+        case MC_ENGINE_IDX_CE13:
+        case MC_ENGINE_IDX_CE14:
+        case MC_ENGINE_IDX_CE15:
+        case MC_ENGINE_IDX_CE16:
+        case MC_ENGINE_IDX_CE17:
+        case MC_ENGINE_IDX_CE18:
+        case MC_ENGINE_IDX_CE19:
+            return NV_OK;
+        default:
+            return confComputeDeriveSecrets_GH100(pConfCompute, engine);
+    }
+
+    return NV_OK;
 }
 
 /*!

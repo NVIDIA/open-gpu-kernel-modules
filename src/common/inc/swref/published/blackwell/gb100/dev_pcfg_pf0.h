@@ -257,5 +257,6 @@
 #define NV_PF0_DVSEC0_SEC_FAULT_REGISTER_1_IFF_PRI_ERROR_2ND                                         29:29               /* R-IVF */
 #define NV_PF0_DVSEC0_SEC_FAULT_REGISTER_1_DEVICE_LOCKDOWN                                           30:30               /* R-IVF */
 #define NV_PF0_DVSEC0_SEC_FAULT_REGISTER_1_FUNCTION_LOCKDOWN                                         31:31               /* R-IVF */
+#define NV_PF0_PF_RESIZABLE_BAR_CAPABILITY                                                           0x0000019c          /* R--4R */
 
 #endif // __gb100_dev_pcfg_pf0_h__

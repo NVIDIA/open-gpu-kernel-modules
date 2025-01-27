@@ -33,6 +33,9 @@
 #include "gpu/gpu.h"
 #include "gpu/disp/kern_disp.h"
 #include "gpu/disp/head/kernel_head.h"
+#include "gpu/disp/disp_channel.h"
+#include "gpu/disp/disp_objs.h"
+#include "os/os.h"
 #include "gpu/external_device/gsync.h"
 
 #include "disp/v03_00/dev_disp.h"
@@ -510,11 +513,236 @@ kheadReadPendingVblank_v03_00
     return NV_FALSE;
 }
 
-void kheadResetPendingVblank_KERNEL(OBJGPU *pGpu, KernelHead *pKernelHead, THREAD_STATE_NODE *pThreadState)
+void kheadResetPendingLastData_v03_00
+(
+    OBJGPU *pGpu,
+    KernelHead *pKernelHead,
+    THREAD_STATE_NODE *pThreadState
+)
 {
-    NvU32 writeIntr = GPU_REG_RD32(pGpu, NV_PDISP_FE_EVT_STAT_HEAD_TIMING(pKernelHead->PublicId));
+    NvU32 writeIntr = GPU_REG_RD32_EX(pGpu, NV_PDISP_FE_EVT_STAT_HEAD_TIMING(pKernelHead->PublicId), pThreadState);
 
     writeIntr = DRF_DEF(_PDISP, _FE_EVT_STAT_HEAD_TIMING, _LAST_DATA, _RESET);
 
-    GPU_REG_WR32(pGpu, NV_PDISP_FE_EVT_STAT_HEAD_TIMING(pKernelHead->PublicId), writeIntr);
+    GPU_REG_WR32_EX(pGpu, NV_PDISP_FE_EVT_STAT_HEAD_TIMING(pKernelHead->PublicId), writeIntr, pThreadState);
+}
+
+NV_STATUS
+kdispReadAwakenChannelNumMask_v03_00
+(
+    OBJGPU             *pGpu,
+    KernelDisplay      *pKernelDisplay,
+    NvU32              *pAwakenChannelNumMask,
+    DISPCHNCLASS        channelClass,
+    THREAD_STATE_NODE  *pThreadState
+)
+{
+    NvU32      channelNum     = 0;
+    NvU32      channelNumMask = 0;
+    NvU32      intr           = 0;
+    NV_STATUS  status         = NV_OK;
+
+    NV_ASSERT_OR_RETURN(pAwakenChannelNumMask, NV_ERR_INVALID_ARGUMENT);
+
+    switch (channelClass)
+    {
+        case dispChnClass_Win:
+            intr = GPU_REG_RD32_EX(pGpu, NV_PDISP_FE_EVT_STAT_AWAKEN_WIN, pThreadState);
+
+            for (channelNum = 0;
+                channelNum < NV_PDISP_FE_EVT_STAT_AWAKEN_WIN_CH__SIZE_1;
+                ++channelNum)
+            {
+                if (FLD_IDX_TEST_DRF(_PDISP, _FE_EVT_STAT_AWAKEN_WIN,
+                    _CH, channelNum, _PENDING, intr))
+                {
+                    channelNumMask |= NVBIT(channelNum);
+                }
+            }
+            break;
+
+        case dispChnClass_Core:
+            intr = GPU_REG_RD32_EX(pGpu, NV_PDISP_FE_EVT_STAT_AWAKEN_OTHER, pThreadState);
+
+            if (FLD_TEST_DRF(_PDISP, _FE_EVT_STAT_AWAKEN_OTHER, _CORE, _PENDING, intr))
+            {
+                channelNumMask |= NVBIT(NV_PDISP_CHN_NUM_CORE);
+            }
+            break;
+
+        default:
+            NV_PRINTF(LEVEL_ERROR, "invalid channel class passed\n");
+            DBG_BREAKPOINT();
+            channelNumMask = 0;
+            status = NV_ERR_INVALID_ARGUMENT;
+            break;
+    }
+
+    *pAwakenChannelNumMask = channelNumMask;
+    return status;
+}
+
+static void
+_kdispResetAwakenChannelNumMask
+(
+    OBJGPU             *pGpu,
+    KernelDisplay      *pKernelDisplay,
+    NvU32               awakenChannelNumMask,
+    DISPCHNCLASS        channelClass,
+    THREAD_STATE_NODE  *pThreadState
+)
+{
+    NvU32 channelNum = 0;
+    NvU32 writeIntr  = 0;
+
+    switch (channelClass)
+    {
+        case dispChnClass_Win:
+            for (channelNum = 0; awakenChannelNumMask != 0; channelNum++)
+            {
+                if (awakenChannelNumMask & NVBIT(channelNum))
+                {
+                    writeIntr |= DRF_IDX_DEF(_PDISP, _FE_EVT_STAT_AWAKEN_WIN,
+                        _CH, channelNum, _RESET);
+                    awakenChannelNumMask &= ~NVBIT(channelNum);
+                }
+            }
+            if (writeIntr != 0)
+            {
+                GPU_REG_WR32_EX(pGpu, NV_PDISP_FE_EVT_STAT_AWAKEN_WIN, writeIntr, pThreadState);
+            }
+            break;
+
+        case dispChnClass_Core:
+            if (awakenChannelNumMask & NVBIT(NV_PDISP_CHN_NUM_CORE))
+            {
+                writeIntr = DRF_DEF(_PDISP, _FE_EVT_STAT_AWAKEN_OTHER, _CORE, _RESET);
+                GPU_REG_WR32_EX(pGpu, NV_PDISP_FE_EVT_STAT_AWAKEN_OTHER, writeIntr, pThreadState);
+            }
+            break;
+
+        default:
+            NV_PRINTF(LEVEL_ERROR, "invalid channel class passed!\n");
+            DBG_BREAKPOINT();
+            break;
+    }
+}
+
+static void
+_kdispHandleAwakenChnMask
+(
+    OBJGPU             *pGpu,
+    KernelDisplay      *pKernelDisplay,
+    NvU32               channelNumMask,
+    DISPCHNCLASS        channelClass,
+    THREAD_STATE_NODE  *pThreadState
+)
+{
+    NvU32             i            = 0;
+    NvBool            bEventFound  = NV_FALSE;
+    NV_STATUS         status       = NV_OK;
+    NvU32             channelNum   = 0;
+    RsClient         *pClient;
+    NvHandle          hChannel;
+    NvBool            bInUse;
+
+    _kdispResetAwakenChannelNumMask(pGpu, pKernelDisplay, channelNumMask, channelClass, pThreadState);
+
+    // Handle Awaken notifiers in channel order
+    for (i = 0; channelNumMask != 0; i++)
+    {
+        if (!(NVBIT(i) & channelNumMask))
+        {
+            continue;
+        }
+
+        bEventFound = NV_FALSE;
+
+        status = kdispGetChannelNum_HAL(pKernelDisplay, channelClass, i, &channelNum);
+
+        if (status != NV_OK)
+        {
+            return;
+        }
+
+        NV_ASSERT_OR_RETURN_VOID(pKernelDisplay->pClientChannelTable != NULL);
+        bInUse = pKernelDisplay->pClientChannelTable[channelNum].bInUse;
+        pClient = pKernelDisplay->pClientChannelTable[channelNum].pClient;
+        hChannel = pKernelDisplay->pClientChannelTable[channelNum].hChannel;
+
+        // OK, we've got this interrupt, lets see if we have a SW channel ready for it.
+        if (bInUse)
+        {
+            DispChannel *pChannel;
+
+            if (dispchnGetByHandle(pClient, hChannel, &pChannel) == NV_OK)
+            {
+                PEVENTNOTIFICATION pEventNotifications = inotifyGetNotificationList(staticCast(pChannel, INotifier));
+                bEventFound = NV_TRUE;
+
+                //
+                // Assuming that caller must always use 0 as the index.
+                // And since the method that will always cause this is UPDATE, there's no need
+                // to send any real method data here anyway.
+                //
+                notifyEvents(pGpu, pEventNotifications, 0, 0, 0, NV_OK, NV_OS_WRITE_THEN_AWAKEN);
+            }
+        }
+
+        if (bEventFound == NV_FALSE)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "seeing an awaken in channel %d without an associated awaken event\n",
+                      channelNum);
+            DBG_BREAKPOINT();
+        }
+        channelNumMask &= ~NVBIT(i);
+    }
+}
+
+NvU32
+kdispServiceAwakenIntr_v03_00
+(
+    OBJGPU             *pGpu,
+    KernelDisplay      *pKernelDisplay,
+    THREAD_STATE_NODE  *pThreadState
+)
+{
+    NvU32  awakenWinChannelNumMask = 0, awakenCoreChannelNumMask = 0;
+    NvU32  intrCtrlDisp;
+    NvBool bAwakenIntrPending = NV_FALSE;
+
+    if (pKernelDisplay->getProperty(pKernelDisplay, PDB_PROP_KDISP_IN_AWAKEN_INTR))
+        return awakenWinChannelNumMask;
+
+    pKernelDisplay->setProperty(pKernelDisplay, PDB_PROP_KDISP_IN_AWAKEN_INTR, NV_TRUE);
+
+    intrCtrlDisp = GPU_REG_RD32_EX(pGpu, DISP_INTR_REG(STAT_CTRL_DISP), pThreadState);
+
+    // Handle awaken interrupts
+    if (FLD_TEST_DRF(_PDISP, _FE_RM_INTR_STAT_CTRL_DISP, _AWAKEN, _PENDING, intrCtrlDisp))
+    {
+        // Handle Window Awaken Inetrrupts
+        kdispReadAwakenChannelNumMask_HAL(pGpu, pKernelDisplay, &awakenWinChannelNumMask, dispChnClass_Win, pThreadState);
+        if (awakenWinChannelNumMask != 0)
+        {            
+            bAwakenIntrPending = NV_TRUE;
+            _kdispHandleAwakenChnMask(pGpu, pKernelDisplay, awakenWinChannelNumMask, dispChnClass_Win, pThreadState);
+        }
+
+        // Handle Core Channel Awaken Inetrrupts
+        kdispReadAwakenChannelNumMask_HAL(pGpu, pKernelDisplay, &awakenCoreChannelNumMask, dispChnClass_Core, pThreadState);
+        if (awakenCoreChannelNumMask != 0)
+        {
+            bAwakenIntrPending = NV_TRUE;
+            _kdispHandleAwakenChnMask(pGpu, pKernelDisplay, awakenCoreChannelNumMask, dispChnClass_Core, pThreadState);
+        }
+
+        // HW reported AWAKEN interrupt, we should not end up with no channel having AWAKEN pending
+        NV_ASSERT(bAwakenIntrPending);
+    }
+
+    pKernelDisplay->setProperty(pKernelDisplay, PDB_PROP_KDISP_IN_AWAKEN_INTR, NV_FALSE);
+
+    return awakenWinChannelNumMask;
 }

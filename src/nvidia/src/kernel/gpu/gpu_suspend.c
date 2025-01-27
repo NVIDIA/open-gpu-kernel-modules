@@ -31,6 +31,7 @@
 
 #include "platform/platform.h"
 #include "platform/chipset/chipset.h"
+#include "gpu/bif/kernel_bif.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/fbsr.h"
 #include "gpu/gsp/gsp_init_args.h"
@@ -47,6 +48,7 @@
 //
 static NV_STATUS gpuPowerManagementEnter(OBJGPU *, NvU32 newLevel, NvU32 flags);
 static NV_STATUS gpuPowerManagementResume(OBJGPU *, NvU32 oldLevel, NvU32 flags);
+static NV_STATUS _gpuPollCFGAndCheckD3Hot(OBJGPU *);
 
 // XXX Needs to be further cleaned up. No new code should be placed in this
 // routine. Please use the per-engine StateLoad() and StateUnload() routines
@@ -226,6 +228,9 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
         {
             pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_BOOT_COMMAND_OK, NV_FALSE);
 
+            // This is a no-op in CPU-RM
+            NV_ASSERT_OK_OR_GOTO(status, kfspPrepareKeepWPRAcrossGc6Physical(pGpu, pKernelFsp), done);
+
             status = kfspPrepareAndSendBootCommands_HAL(pGpu, pKernelFsp);
             if (status != NV_OK)
             {
@@ -264,6 +269,47 @@ done:
     }
 
     return status;
+}
+
+//
+// Since the BAR firewall introduced from Blackwell
+// Need to poll Device on the bus and CFG BAR firewall first,
+// before any PRI register accessing.
+// For GCOFF/GC8/GC6 three cases, all will run into standby path,
+// So adding this helper function before calling gpu resume.
+//
+static NV_STATUS
+_gpuPollCFGAndCheckD3Hot(OBJGPU *pGpu)
+{
+    KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
+
+    //
+    // GCOFF/GC8/GC6 three cases, all will run into here.
+    // Because of BAR firewall introduced from Blackwell,
+    // We need to poll CFG for:
+    // 1. if GPU is on the bus
+    // 2. if BAR firewall disengage only if blackwell and later
+    // 3. check GC6 D3Hot case (has PRI register access, must after firewall disengage)
+    //
+
+    if (!IS_FMODEL(pGpu))
+    {
+        // Polling GPU on the bus
+        NV_ASSERT_OK_OR_RETURN(kbifPollDeviceOnBus(pGpu, pKernelBif));
+
+        //
+        // For V0/V0S fused board, BAR firewall introduced from Blackwell onwards.
+        // Polling BAR firewall disengage if FSP released before accessing any PRI access.
+        //
+        NV_ASSERT_OK_OR_RETURN(kbifPollBarFirewallDisengage_HAL(pGpu, pKernelBif));
+    }
+
+    // For GC6 exit, check if D3Hot case
+    if(IS_GPU_GC6_STATE_EXITING(pGpu))
+    {
+        gpuCheckGc6inD3Hot(pGpu);
+    }
+    return NV_OK;
 }
 
 NV_STATUS
@@ -337,6 +383,12 @@ gpuResumeFromStandby_IMPL(OBJGPU *pGpu)
     }
 
     pGpu->setProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH, NV_TRUE);
+
+    resumeStatus = _gpuPollCFGAndCheckD3Hot(pGpu);
+    if (resumeStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Polling BAR0 or BAR firewall timeout\n");
+    }
 
     resumeStatus = gpuPowerManagementResume(pGpu, state, GPU_STATE_FLAGS_PM_SUSPEND);
 

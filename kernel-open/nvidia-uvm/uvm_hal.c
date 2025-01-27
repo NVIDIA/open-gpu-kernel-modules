@@ -46,6 +46,8 @@
 #include "clc8b5.h"
 #include "clc96f.h"
 #include "clc9b5.h"
+#include "clca6f.h"
+#include "clcab5.h"
 
 static int uvm_downgrade_force_membar_sys = 1;
 module_param(uvm_downgrade_force_membar_sys, uint, 0644);
@@ -73,16 +75,17 @@ static uvm_hal_class_ops_t ce_table[] =
             .semaphore_release = uvm_hal_maxwell_ce_semaphore_release,
             .semaphore_timestamp = uvm_hal_maxwell_ce_semaphore_timestamp,
             .semaphore_reduction_inc = uvm_hal_maxwell_ce_semaphore_reduction_inc,
+            .semaphore_target_is_valid = uvm_hal_maxwell_semaphore_target_is_valid,
             .offset_out = uvm_hal_maxwell_ce_offset_out,
             .offset_in_out = uvm_hal_maxwell_ce_offset_in_out,
             .phys_mode = uvm_hal_maxwell_ce_phys_mode,
             .plc_mode = uvm_hal_maxwell_ce_plc_mode,
             .memcopy_copy_type = uvm_hal_maxwell_ce_memcopy_copy_type,
-            .memcopy_is_valid = uvm_hal_ce_memcopy_is_valid_stub,
+            .memcopy_is_valid = uvm_hal_maxwell_ce_memcopy_is_valid,
             .memcopy_patch_src = uvm_hal_ce_memcopy_patch_src_stub,
             .memcopy = uvm_hal_maxwell_ce_memcopy,
             .memcopy_v_to_v = uvm_hal_maxwell_ce_memcopy_v_to_v,
-            .memset_is_valid = uvm_hal_ce_memset_is_valid_stub,
+            .memset_is_valid = uvm_hal_maxwell_ce_memset_is_valid,
             .memset_1 = uvm_hal_maxwell_ce_memset_1,
             .memset_4 = uvm_hal_maxwell_ce_memset_4,
             .memset_8 = uvm_hal_maxwell_ce_memset_8,
@@ -142,9 +145,9 @@ static uvm_hal_class_ops_t ce_table[] =
         .u.ce_ops = {
             .method_is_valid = uvm_hal_method_is_valid_stub,
             .plc_mode = uvm_hal_ampere_ce_plc_mode_c7b5,
-            .memcopy_is_valid = uvm_hal_ce_memcopy_is_valid_stub,
+            .memcopy_is_valid = uvm_hal_maxwell_ce_memcopy_is_valid,
             .memcopy_patch_src = uvm_hal_ce_memcopy_patch_src_stub,
-            .memset_is_valid = uvm_hal_ce_memset_is_valid_stub,
+            .memset_is_valid = uvm_hal_maxwell_ce_memset_is_valid,
         },
     },
     {
@@ -171,6 +174,11 @@ static uvm_hal_class_ops_t ce_table[] =
         .parent_id = HOPPER_DMA_COPY_A,
         .u.ce_ops = {},
     },
+    {
+        .id = BLACKWELL_DMA_COPY_B,
+        .parent_id = BLACKWELL_DMA_COPY_A,
+        .u.ce_ops = {},
+    },
 };
 
 // Table for GPFIFO functions.  Same idea as the copy engine table.
@@ -185,6 +193,7 @@ static uvm_hal_class_ops_t host_table[] =
             .sw_method_is_valid = uvm_hal_method_is_valid_stub,
             .wait_for_idle = uvm_hal_maxwell_host_wait_for_idle,
             .membar_sys = uvm_hal_maxwell_host_membar_sys,
+
             // No MEMBAR GPU until Pascal, just do a MEMBAR SYS.
             .membar_gpu = uvm_hal_maxwell_host_membar_sys,
             .noop = uvm_hal_maxwell_host_noop,
@@ -192,6 +201,7 @@ static uvm_hal_class_ops_t host_table[] =
             .semaphore_acquire = uvm_hal_maxwell_host_semaphore_acquire,
             .semaphore_release = uvm_hal_maxwell_host_semaphore_release,
             .semaphore_timestamp = uvm_hal_maxwell_host_semaphore_timestamp,
+            .semaphore_target_is_valid = uvm_hal_maxwell_semaphore_target_is_valid,
             .set_gpfifo_entry = uvm_hal_maxwell_host_set_gpfifo_entry,
             .set_gpfifo_noop = uvm_hal_maxwell_host_set_gpfifo_noop,
             .set_gpfifo_pushbuffer_segment_base = uvm_hal_maxwell_host_set_gpfifo_pushbuffer_segment_base_unsupported,
@@ -302,6 +312,11 @@ static uvm_hal_class_ops_t host_table[] =
             .tlb_invalidate_test = uvm_hal_blackwell_host_tlb_invalidate_test,
         }
     },
+    {
+        .id = BLACKWELL_CHANNEL_GPFIFO_B,
+        .parent_id = BLACKWELL_CHANNEL_GPFIFO_A,
+        .u.host_ops = {}
+    },
 };
 
 static uvm_hal_class_ops_t arch_table[] =
@@ -381,6 +396,15 @@ static uvm_hal_class_ops_t arch_table[] =
             .init_properties = uvm_hal_blackwell_arch_init_properties,
             .mmu_mode_hal = uvm_hal_mmu_mode_blackwell,
             .mmu_client_id_to_utlb_id = uvm_hal_blackwell_mmu_client_id_to_utlb_id,
+        }
+    },
+    {
+        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB200,
+        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100,
+        .u.arch_ops = {
+            // Note that GB20x MMU behaves as Hopper MMU, so it inherits from
+            // Hopper's MMU, not from GB10x.
+            .mmu_mode_hal = uvm_hal_mmu_mode_hopper,
         }
     },
 };
@@ -479,6 +503,11 @@ static uvm_hal_class_ops_t fault_buffer_table[] =
             .get_mmu_engine_type = uvm_hal_blackwell_fault_buffer_get_mmu_engine_type,
         }
     },
+    {
+        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB200,
+        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100,
+        .u.fault_buffer_ops = {}
+    },
 };
 
 static uvm_hal_class_ops_t access_counter_buffer_table[] =
@@ -546,6 +575,11 @@ static uvm_hal_class_ops_t access_counter_buffer_table[] =
         .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GH100,
         .u.access_counter_buffer_ops = {}
     },
+    {
+        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB200,
+        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100,
+        .u.access_counter_buffer_ops = {}
+    },
 };
 
 static uvm_hal_class_ops_t sec2_table[] =
@@ -557,6 +591,7 @@ static uvm_hal_class_ops_t sec2_table[] =
             .decrypt = uvm_hal_maxwell_sec2_decrypt_unsupported,
             .semaphore_release = uvm_hal_maxwell_sec2_semaphore_release_unsupported,
             .semaphore_timestamp = uvm_hal_maxwell_sec2_semaphore_timestamp_unsupported,
+            .semaphore_target_is_valid = uvm_hal_maxwell_semaphore_target_is_valid,
         }
     },
     {
@@ -602,6 +637,11 @@ static uvm_hal_class_ops_t sec2_table[] =
     {
         .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100,
         .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GH100,
+        .u.sec2_ops = {}
+    },
+    {
+        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB200,
+        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100,
         .u.sec2_ops = {}
     },
 };
@@ -799,16 +839,11 @@ NV_STATUS uvm_hal_init_gpu(uvm_parent_gpu_t *parent_gpu)
 
 static void hal_override_properties(uvm_parent_gpu_t *parent_gpu)
 {
-    // Access counters are currently not supported in vGPU.
+    // Access counters are currently not supported in vGPU or Confidential
+    // Computing.
     //
     // TODO: Bug 200692962: Add support for access counters in vGPU
-    if (parent_gpu->virt_mode != UVM_VIRT_MODE_NONE) {
-        parent_gpu->access_counters_supported = false;
-        parent_gpu->access_counters_can_use_physical_addresses = false;
-    }
-
-    // Access counters are not supported in Confidential Computing.
-    else if (g_uvm_global.conf_computing_enabled) {
+    if ((parent_gpu->virt_mode != UVM_VIRT_MODE_NONE) || g_uvm_global.conf_computing_enabled) {
         parent_gpu->access_counters_supported = false;
         parent_gpu->access_counters_can_use_physical_addresses = false;
     }
@@ -1048,16 +1083,6 @@ bool uvm_hal_method_is_valid_stub(uvm_push_t *push, NvU32 method_address, NvU32 
     return true;
 }
 
-bool uvm_hal_ce_memcopy_is_valid_stub(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src)
-{
-    return true;
-}
-
 void uvm_hal_ce_memcopy_patch_src_stub(uvm_push_t *push, uvm_gpu_address_t *src)
 {
-}
-
-bool uvm_hal_ce_memset_is_valid_stub(uvm_push_t *push, uvm_gpu_address_t dst, size_t num_elements, size_t element_size)
-{
-    return true;
 }

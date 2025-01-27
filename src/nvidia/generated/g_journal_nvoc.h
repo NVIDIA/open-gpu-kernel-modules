@@ -206,7 +206,7 @@ struct OBJRCDB {
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
     struct OBJTRACEABLE __nvoc_base_OBJTRACEABLE;
 

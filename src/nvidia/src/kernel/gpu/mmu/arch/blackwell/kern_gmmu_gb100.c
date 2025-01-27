@@ -24,6 +24,8 @@
 #define NVOC_KERN_GMMU_H_PRIVATE_ACCESS_ALLOWED
 
 #include "gpu/mmu/kern_gmmu.h"
+#include "gpu/uvm/uvm.h"
+
 #include "published/blackwell/gb100/dev_vm.h"
 #include "published/blackwell/gb100/dev_fault.h"
 
@@ -221,3 +223,31 @@ kgmmuWriteClientShadowBufPutIndex_GB100
 )
 {
 }
+
+/*!
+ *  @brief Checks whether the access counter reset sequence
+ *         should be performed on BAR2 fault servicing
+ *
+ * @returns NvBool indicating whether servicing should be performed.
+ */
+NvBool
+kgmmuCheckAccessCounterBar2FaultServicingState_GB100
+(
+    OBJGPU *pGpu,
+    KernelGmmu *pKernelGmmu
+)
+{
+    OBJUVM *pUvm = GPU_GET_UVM(pGpu);
+    NvU32 i;
+
+    for (i = 0; i < pUvm->accessCounterBufferCount; i++)
+    {
+        if (uvmIsAccessCntrBufferEnabled_HAL(pGpu, pUvm, i))
+        {
+            return NV_TRUE;
+        }
+    }
+
+    return NV_FALSE;
+}
+

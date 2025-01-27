@@ -93,14 +93,14 @@ NvBool nvAllocatePreFlipBandwidth(NVDevEvoPtr pDevEvo,
 
 void nvPreFlip(NVDevEvoRec *pDevEvo,
                struct NvKmsFlipWorkArea *pWorkArea,
-               const NvBool applyAllowVrr,
-               const NvBool allowVrr,
+               const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES],
+               const NvU32 allowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES],
                const NvBool skipUpdate);
 
 void nvPostFlip(NVDevEvoRec *pDevEvo,
                 struct NvKmsFlipWorkArea *pWorkArea,
                 const NvBool skipUpdate,
-                const NvBool applyAllowVrr,
+                const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES],
                 NvS32 *pVrrSemaphoreIndex);
 
 NvBool nvPrepareToDoPreFlip(NVDevEvoRec *pDevEvo,

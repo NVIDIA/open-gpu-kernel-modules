@@ -386,7 +386,12 @@ NV_STATUS nv_alloc_contig_pages(
 
     if (at->flags.node)
     {
-        NV_ALLOC_PAGES_NODE(virt_addr, at->node_id, at->order, gfp_mask);
+        unsigned long ptr = 0ULL;
+        NV_ALLOC_PAGES_NODE(ptr, at->node_id, at->order, gfp_mask);
+        if (ptr != 0)
+        {
+            virt_addr = (unsigned long) page_address((void *)ptr);
+        }
     }
     else
     {
@@ -538,7 +543,16 @@ NV_STATUS nv_alloc_system_pages(
         }
         else if (at->flags.node)
         {
-            NV_ALLOC_PAGES_NODE(virt_addr, at->node_id, at->order, gfp_mask);
+            unsigned long ptr = 0ULL;
+            NV_ALLOC_PAGES_NODE(ptr, at->node_id, at->order, gfp_mask);
+            if (ptr != 0)
+            {
+                virt_addr = (unsigned long) page_address((void *)ptr);
+            }
+            else
+            {
+                virt_addr = 0;
+            }
         }
         else
         {

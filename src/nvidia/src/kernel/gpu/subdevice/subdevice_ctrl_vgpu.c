@@ -237,3 +237,52 @@ NV_STATUS subdeviceCtrlCmdBiosGetInfoV2_VF
     return NV_OK;
 }
 
+NV_STATUS
+subdeviceCtrlCmdMemSysQueryDramEncryptionPendingConfiguration_VF
+(
+    Subdevice                                                           *pSubdevice,
+    NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_PENDING_CONFIGURATION_PARAMS   *pConfig
+)
+{
+    // TODO: Will implement the functionality for VF in a subsequent changelist (Bug 4308325)
+    return NV_OK;
+}
+
+NV_STATUS
+subdeviceCtrlCmdMemSysSetDramEncryptionConfiguration_VF
+(
+    Subdevice                                                   *pSubdevice,
+    NV2080_CTRL_FB_SET_DRAM_ENCRYPTION_CONFIGURATION_PARAMS     *pConfig
+)
+{
+    // TODO: Will implement the functionality for VF in a subsequent changelist (Bug 4308325)
+    return NV_OK;
+}
+
+NV_STATUS
+subdeviceCtrlCmdMemSysQueryDramEncryptionStatus_VF
+(
+    Subdevice                                           *pSubdevice,
+    NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_STATUS_PARAMS  *pConfig
+)
+{
+    // TODO: Will implement the functionality for VF in a subsequent changelist (Bug 4308325)
+    return NV_OK;
+}
+
+NV_STATUS
+subdeviceCtrlCmdCcuGetSampleInfo_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_INTERNAL_CCU_SAMPLE_INFO_PARAMS *pParams
+)
+{
+    OBJGPU           *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+
+    portMemCopy(pParams, sizeof(*pParams), &pVSI->ccuSampleInfo, sizeof(pVSI->ccuSampleInfo));
+
+    return NV_OK;
+}

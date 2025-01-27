@@ -75,7 +75,7 @@ NV_STATUS hypervisorInjectInterrupt_IMPL
 {
     NV_STATUS status = NV_ERR_NOT_SUPPORTED;
 
-    if (osIsVgpuVfioPresent() == NV_TRUE)
+    if (osIsVgpuVfioPresent() == NV_OK)
         return NV_ERR_NOT_SUPPORTED;
     else
     {
@@ -328,6 +328,8 @@ NV_STATUS  NV_API_CALL nv_vgpu_create_request(
     const NvU8 *pVgpuDevName,
     NvU32 vgpuTypeId,
     NvU16 *vgpuId,
+    NvU32 *gpu_instance_id,
+    NvU32 *placement_id,
     NvU32 gpuPciBdf
 )
 {
@@ -342,7 +344,7 @@ NV_STATUS  NV_API_CALL nv_vgpu_create_request(
     if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_HYPERVISOR)) == NV_OK)
     {
         rmStatus = kvgpumgrCreateRequestVgpu(pNv->gpu_id, pVgpuDevName,
-                                             vgpuTypeId, vgpuId, gpuPciBdf);
+                                             vgpuTypeId, vgpuId, gpu_instance_id, placement_id, gpuPciBdf);
 
         // UNLOCK: release API lock
         rmapiLockRelease();
@@ -523,6 +525,61 @@ NV_STATUS NV_API_CALL nv_vgpu_get_bar_info
                                                 sparseCount, isBar064bit,
                                                 configParams),
                         release_lock);
+release_lock:
+    // UNLOCK: release API lock
+    rmapiLockRelease();
+
+exit:
+    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+
+    return rmStatus;
+}
+
+NV_STATUS NV_API_CALL nv_vgpu_update_sysfs_info
+(
+    nvidia_stack_t      *sp,
+    nv_state_t          *pNv,
+    const NvU8          *pVgpuDevName,
+    NvU32                mode,
+    NvU32                sysfs_val
+)
+{
+    THREAD_STATE_NODE       threadState;
+    void                   *fp              = NULL;
+    OBJSYS                 *pSys            = SYS_GET_INSTANCE();
+    KernelVgpuMgr          *pKernelVgpuMgr  = SYS_GET_KERNEL_VGPUMGR(pSys);
+    REQUEST_VGPU_INFO_NODE *pRequestVgpu    = NULL;
+    NV_STATUS               rmStatus        = NV_OK;
+    VGPU_SYSFS_OP           updateMode      = (VGPU_SYSFS_OP)mode;
+
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+
+    // LOCK: acquire API lock
+    NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT,
+                        rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_HYPERVISOR), exit);
+
+    // Check the corresponding REQUEST_VGPU_INFO_NODE
+    for (pRequestVgpu = listHead(&pKernelVgpuMgr->listRequestVgpuHead);
+         pRequestVgpu != NULL;
+         pRequestVgpu = listNext(&pKernelVgpuMgr->listRequestVgpuHead, pRequestVgpu))
+    {
+        if (portMemCmp(pRequestVgpu->vgpuDevName, pVgpuDevName, VM_UUID_SIZE) == 0)
+            break;
+    }
+
+    if (pRequestVgpu == NULL)
+    {
+        rmStatus = NV_ERR_OBJECT_NOT_FOUND;
+        goto release_lock;
+    }
+
+    if (updateMode == SET_GPU_INSTANCE_ID)
+        rmStatus = kvgpumgrSetGpuInstanceId(pRequestVgpu, sysfs_val);
+    else if (updateMode == SET_PLACEMENT_ID)
+        rmStatus = kvgpumgrSetPlacementId(pRequestVgpu, sysfs_val);
+
 release_lock:
     // UNLOCK: release API lock
     rmapiLockRelease();
@@ -925,3 +982,7 @@ NV_STATUS rm_is_vgpu_supported_device(
     return NV_ERR_NOT_SUPPORTED;
 }
 
+NV_STATUS osIsVgpuDeviceVmPresent(void)
+{
+    return os_device_vm_present();
+}

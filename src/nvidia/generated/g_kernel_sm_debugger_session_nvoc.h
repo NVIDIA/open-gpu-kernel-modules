@@ -108,7 +108,7 @@ struct RmDebuggerSession {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__RmDebuggerSession *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct RsSession __nvoc_base_RsSession;
 
     // Ancestor object pointers for `staticCast` feature
@@ -199,7 +199,7 @@ struct KernelSMDebuggerSession {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__KernelSMDebuggerSession *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct GpuResource __nvoc_base_GpuResource;
     struct Notifier __nvoc_base_Notifier;
 
@@ -213,11 +213,13 @@ struct KernelSMDebuggerSession {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct KernelSMDebuggerSession *__nvoc_pbase_KernelSMDebuggerSession;    // ksmdbgssn
 
-    // Vtable with 29 per-object function pointers
+    // Vtable with 31 per-object function pointers
     NV_STATUS (*__ksmdbgssnCtrlCmdSMDebugModeEnable__)(struct KernelSMDebuggerSession * /*this*/);  // inline exported (id=0x83de0301) body
     NV_STATUS (*__ksmdbgssnCtrlCmdSMDebugModeDisable__)(struct KernelSMDebuggerSession * /*this*/);  // inline exported (id=0x83de0302) body
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugSetModeMMUDebug__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_SET_MODE_MMU_DEBUG_PARAMS *);  // inline exported (id=0x83de0307) body
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugGetModeMMUDebug__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_GET_MODE_MMU_DEBUG_PARAMS *);  // inline exported (id=0x83de0308) body
+    NV_STATUS (*__ksmdbgssnCtrlCmdDebugSetModeMMUGccDebug__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS *);  // inline exported (id=0x83de032a) body
+    NV_STATUS (*__ksmdbgssnCtrlCmdDebugGetModeMMUGccDebug__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS *);  // inline exported (id=0x83de032b) body
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugSetModeErrbarDebug__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_SET_MODE_ERRBAR_DEBUG_PARAMS *);  // inline exported (id=0x83de031f) body
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugGetModeErrbarDebug__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_GET_MODE_ERRBAR_DEBUG_PARAMS *);  // inline exported (id=0x83de0320) body
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugSetExceptionMask__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_SET_EXCEPTION_MASK_PARAMS *);  // inline exported (id=0x83de0309) body
@@ -339,6 +341,10 @@ NV_STATUS __nvoc_objCreate_KernelSMDebuggerSession(KernelSMDebuggerSession**, Dy
 #define ksmdbgssnCtrlCmdDebugSetModeMMUDebug(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugSetModeMMUDebug_DISPATCH(pKernelSMDebuggerSession, pParams)
 #define ksmdbgssnCtrlCmdDebugGetModeMMUDebug_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugGetModeMMUDebug__
 #define ksmdbgssnCtrlCmdDebugGetModeMMUDebug(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugGetModeMMUDebug_DISPATCH(pKernelSMDebuggerSession, pParams)
+#define ksmdbgssnCtrlCmdDebugSetModeMMUGccDebug_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetModeMMUGccDebug__
+#define ksmdbgssnCtrlCmdDebugSetModeMMUGccDebug(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugSetModeMMUGccDebug_DISPATCH(pKernelSMDebuggerSession, pParams)
+#define ksmdbgssnCtrlCmdDebugGetModeMMUGccDebug_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugGetModeMMUGccDebug__
+#define ksmdbgssnCtrlCmdDebugGetModeMMUGccDebug(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugGetModeMMUGccDebug_DISPATCH(pKernelSMDebuggerSession, pParams)
 #define ksmdbgssnCtrlCmdDebugSetModeErrbarDebug_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetModeErrbarDebug__
 #define ksmdbgssnCtrlCmdDebugSetModeErrbarDebug(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugSetModeErrbarDebug_DISPATCH(pKernelSMDebuggerSession, pParams)
 #define ksmdbgssnCtrlCmdDebugGetModeErrbarDebug_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugGetModeErrbarDebug__
@@ -470,6 +476,14 @@ static inline NV_STATUS ksmdbgssnCtrlCmdDebugSetModeMMUDebug_DISPATCH(struct Ker
 
 static inline NV_STATUS ksmdbgssnCtrlCmdDebugGetModeMMUDebug_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_GET_MODE_MMU_DEBUG_PARAMS *pParams) {
     return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugGetModeMMUDebug__(pKernelSMDebuggerSession, pParams);
+}
+
+static inline NV_STATUS ksmdbgssnCtrlCmdDebugSetModeMMUGccDebug_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS *pParams) {
+    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetModeMMUGccDebug__(pKernelSMDebuggerSession, pParams);
+}
+
+static inline NV_STATUS ksmdbgssnCtrlCmdDebugGetModeMMUGccDebug_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS *pParams) {
+    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugGetModeMMUGccDebug__(pKernelSMDebuggerSession, pParams);
 }
 
 static inline NV_STATUS ksmdbgssnCtrlCmdDebugSetModeErrbarDebug_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_SET_MODE_ERRBAR_DEBUG_PARAMS *pParams) {
@@ -702,6 +716,14 @@ static inline NV_STATUS ksmdbgssnCtrlCmdDebugSetModeMMUDebug_fcf1ac(struct Kerne
 
 static inline NV_STATUS ksmdbgssnCtrlCmdDebugGetModeMMUDebug_fcf1ac(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_GET_MODE_MMU_DEBUG_PARAMS *pParams) {
     return ksmdbgssnInternalControlForward(pKernelSMDebuggerSession, (2212365316U), pParams, sizeof (*pParams));
+}
+
+static inline NV_STATUS ksmdbgssnCtrlCmdDebugSetModeMMUGccDebug_fcf1ac(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS *pParams) {
+    return ksmdbgssnInternalControlForward(pKernelSMDebuggerSession, (2212365336U), pParams, sizeof (*pParams));
+}
+
+static inline NV_STATUS ksmdbgssnCtrlCmdDebugGetModeMMUGccDebug_fcf1ac(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS *pParams) {
+    return ksmdbgssnInternalControlForward(pKernelSMDebuggerSession, (2212365337U), pParams, sizeof (*pParams));
 }
 
 static inline NV_STATUS ksmdbgssnCtrlCmdDebugSetModeErrbarDebug_fcf1ac(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_SET_MODE_ERRBAR_DEBUG_PARAMS *pParams) {

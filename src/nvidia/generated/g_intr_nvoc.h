@@ -293,7 +293,7 @@ struct Intr {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__Intr *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
 
     // Ancestor object pointers for `staticCast` feature
@@ -301,12 +301,14 @@ struct Intr {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct Intr *__nvoc_pbase_Intr;    // intr
 
-    // Vtable with 18 per-object function pointers
+    // Vtable with 20 per-object function pointers
     NvU32 (*__intrDecodeStallIntrEn__)(OBJGPU *, struct Intr * /*this*/, NvU32);  // halified (2 hals) body
     void (*__intrServiceVirtual__)(OBJGPU *, struct Intr * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__intrTriggerPrivDoorbell__)(OBJGPU *, struct Intr * /*this*/, NvU32);  // halified (2 hals) body
     void (*__intrGetLocklessVectorsInRmSubtree__)(OBJGPU *, struct Intr * /*this*/, NvU32 (*)[2]);  // halified (2 hals) body
-    void (*__intrSetDisplayInterruptEnable__)(OBJGPU *, struct Intr * /*this*/, NvBool, struct THREAD_STATE_NODE *);  // halified (2 hals) body
+    NV_STATUS (*__intrGetPendingDisplayIntr__)(OBJGPU *, struct Intr * /*this*/, union MC_ENGINE_BITVECTOR *, struct THREAD_STATE_NODE *);  // halified (2 hals) body
+    void (*__intrSetDisplayInterruptEnable__)(OBJGPU *, struct Intr * /*this*/, NvBool, struct THREAD_STATE_NODE *);  // halified (3 hals) body
+    void (*__intrCacheDispIntrVectors__)(OBJGPU *, struct Intr * /*this*/);  // halified (3 hals) body
     NvU32 (*__intrReadRegTopEnSet__)(OBJGPU *, struct Intr * /*this*/, NvU32, struct THREAD_STATE_NODE *);  // halified (2 hals) body
     void (*__intrWriteRegTopEnSet__)(OBJGPU *, struct Intr * /*this*/, NvU32, NvU32, struct THREAD_STATE_NODE *);  // halified (2 hals) body
     void (*__intrWriteRegTopEnClear__)(OBJGPU *, struct Intr * /*this*/, NvU32, NvU32, struct THREAD_STATE_NODE *);  // halified (2 hals) body
@@ -326,7 +328,7 @@ struct Intr {
     NvBool PDB_PROP_INTR_HOST_DRIVEN_ENGINES_REMOVED_FROM_PMC;
     NvBool PDB_PROP_INTR_READ_ONLY_EVEN_NUMBERED_INTR_LEAF_REGS;
     NvBool PDB_PROP_INTR_ENUMERATIONS_ON_ENGINE_RESET;
-    NvBool PDB_PROP_INTR_SIMPLIFIED_VBLANK_HANDLING_FOR_CTRL_TREE;
+    NvBool PDB_PROP_INTR_USE_TOP_EN_FOR_VBLANK_HANDLING;
     NvBool PDB_PROP_INTR_DISABLE_PER_INTR_DPC_QUEUEING;
     NvBool PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING;
     NvBool PDB_PROP_INTR_MASK_SUPPORTED;
@@ -338,9 +340,10 @@ struct Intr {
     NvU32 replayableFaultIntrVector;
     NvU32 accessCntrIntrVector;
     NvU32 displayIntrVector;
+    NvU32 displayLowLatencyIntrVector;
     NvU64 intrTopEnMask;
     InterruptTable intrTable;
-    IntrServiceRecord intrServiceTable[175];
+    IntrServiceRecord intrServiceTable[177];
     InterruptEntry *(vectorToMcIdx[1]);
     NvLength vectorToMcIdxCounts[1];
     NvBool bDefaultNonstallNotify;
@@ -359,7 +362,7 @@ struct Intr {
     NvU32 intrEn0Orig;
     NvBool halIntrEnabled;
     NvU32 saveIntrEn0;
-    struct __nvoc_inner_struc_Intr_1__ longIntrStats[175];
+    struct __nvoc_inner_struc_Intr_1__ longIntrStats[177];
 };
 
 
@@ -408,16 +411,16 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Intr;
 // Property macros
 #define PDB_PROP_INTR_HOST_DRIVEN_ENGINES_REMOVED_FROM_PMC_BASE_CAST
 #define PDB_PROP_INTR_HOST_DRIVEN_ENGINES_REMOVED_FROM_PMC_BASE_NAME PDB_PROP_INTR_HOST_DRIVEN_ENGINES_REMOVED_FROM_PMC
-#define PDB_PROP_INTR_SIMPLIFIED_VBLANK_HANDLING_FOR_CTRL_TREE_BASE_CAST
-#define PDB_PROP_INTR_SIMPLIFIED_VBLANK_HANDLING_FOR_CTRL_TREE_BASE_NAME PDB_PROP_INTR_SIMPLIFIED_VBLANK_HANDLING_FOR_CTRL_TREE
-#define PDB_PROP_INTR_MASK_SUPPORTED_BASE_CAST
-#define PDB_PROP_INTR_MASK_SUPPORTED_BASE_NAME PDB_PROP_INTR_MASK_SUPPORTED
 #define PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING_BASE_CAST
 #define PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING_BASE_NAME PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING
+#define PDB_PROP_INTR_MASK_SUPPORTED_BASE_CAST
+#define PDB_PROP_INTR_MASK_SUPPORTED_BASE_NAME PDB_PROP_INTR_MASK_SUPPORTED
 #define PDB_PROP_INTR_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_INTR_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 #define PDB_PROP_INTR_ENABLE_DETAILED_LOGS_BASE_CAST
 #define PDB_PROP_INTR_ENABLE_DETAILED_LOGS_BASE_NAME PDB_PROP_INTR_ENABLE_DETAILED_LOGS
+#define PDB_PROP_INTR_USE_TOP_EN_FOR_VBLANK_HANDLING_BASE_CAST
+#define PDB_PROP_INTR_USE_TOP_EN_FOR_VBLANK_HANDLING_BASE_NAME PDB_PROP_INTR_USE_TOP_EN_FOR_VBLANK_HANDLING
 #define PDB_PROP_INTR_ENUMERATIONS_ON_ENGINE_RESET_BASE_CAST
 #define PDB_PROP_INTR_ENUMERATIONS_ON_ENGINE_RESET_BASE_NAME PDB_PROP_INTR_ENUMERATIONS_ON_ENGINE_RESET
 #define PDB_PROP_INTR_READ_ONLY_EVEN_NUMBERED_INTR_LEAF_REGS_BASE_CAST
@@ -455,9 +458,15 @@ NV_STATUS __nvoc_objCreate_Intr(Intr**, Dynamic*, NvU32);
 #define intrGetLocklessVectorsInRmSubtree_FNPTR(pIntr) pIntr->__intrGetLocklessVectorsInRmSubtree__
 #define intrGetLocklessVectorsInRmSubtree(pGpu, pIntr, pInterruptVectors) intrGetLocklessVectorsInRmSubtree_DISPATCH(pGpu, pIntr, pInterruptVectors)
 #define intrGetLocklessVectorsInRmSubtree_HAL(pGpu, pIntr, pInterruptVectors) intrGetLocklessVectorsInRmSubtree_DISPATCH(pGpu, pIntr, pInterruptVectors)
+#define intrGetPendingDisplayIntr_FNPTR(pIntr) pIntr->__intrGetPendingDisplayIntr__
+#define intrGetPendingDisplayIntr(pGpu, pIntr, pEngines, pThreadState) intrGetPendingDisplayIntr_DISPATCH(pGpu, pIntr, pEngines, pThreadState)
+#define intrGetPendingDisplayIntr_HAL(pGpu, pIntr, pEngines, pThreadState) intrGetPendingDisplayIntr_DISPATCH(pGpu, pIntr, pEngines, pThreadState)
 #define intrSetDisplayInterruptEnable_FNPTR(pIntr) pIntr->__intrSetDisplayInterruptEnable__
 #define intrSetDisplayInterruptEnable(pGpu, pIntr, bEnable, pThreadState) intrSetDisplayInterruptEnable_DISPATCH(pGpu, pIntr, bEnable, pThreadState)
 #define intrSetDisplayInterruptEnable_HAL(pGpu, pIntr, bEnable, pThreadState) intrSetDisplayInterruptEnable_DISPATCH(pGpu, pIntr, bEnable, pThreadState)
+#define intrCacheDispIntrVectors_FNPTR(pIntr) pIntr->__intrCacheDispIntrVectors__
+#define intrCacheDispIntrVectors(pGpu, pIntr) intrCacheDispIntrVectors_DISPATCH(pGpu, pIntr)
+#define intrCacheDispIntrVectors_HAL(pGpu, pIntr) intrCacheDispIntrVectors_DISPATCH(pGpu, pIntr)
 #define intrReadRegTopEnSet_FNPTR(pIntr) pIntr->__intrReadRegTopEnSet__
 #define intrReadRegTopEnSet(pGpu, pIntr, arg3, arg4) intrReadRegTopEnSet_DISPATCH(pGpu, pIntr, arg3, arg4)
 #define intrReadRegTopEnSet_HAL(pGpu, pIntr, arg3, arg4) intrReadRegTopEnSet_DISPATCH(pGpu, pIntr, arg3, arg4)
@@ -555,8 +564,16 @@ static inline void intrGetLocklessVectorsInRmSubtree_DISPATCH(OBJGPU *pGpu, stru
     pIntr->__intrGetLocklessVectorsInRmSubtree__(pGpu, pIntr, pInterruptVectors);
 }
 
+static inline NV_STATUS intrGetPendingDisplayIntr_DISPATCH(OBJGPU *pGpu, struct Intr *pIntr, union MC_ENGINE_BITVECTOR *pEngines, struct THREAD_STATE_NODE *pThreadState) {
+    return pIntr->__intrGetPendingDisplayIntr__(pGpu, pIntr, pEngines, pThreadState);
+}
+
 static inline void intrSetDisplayInterruptEnable_DISPATCH(OBJGPU *pGpu, struct Intr *pIntr, NvBool bEnable, struct THREAD_STATE_NODE *pThreadState) {
     pIntr->__intrSetDisplayInterruptEnable__(pGpu, pIntr, bEnable, pThreadState);
+}
+
+static inline void intrCacheDispIntrVectors_DISPATCH(OBJGPU *pGpu, struct Intr *pIntr) {
+    pIntr->__intrCacheDispIntrVectors__(pGpu, pIntr);
 }
 
 static inline NvU32 intrReadRegTopEnSet_DISPATCH(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, struct THREAD_STATE_NODE *arg4) {
@@ -1082,20 +1099,6 @@ static inline NV_STATUS intrGetLeafStatus(OBJGPU *pGpu, struct Intr *pIntr, NvU3
 
 #define intrGetLeafStatus_HAL(pGpu, pIntr, arg3, arg4) intrGetLeafStatus(pGpu, pIntr, arg3, arg4)
 
-NV_STATUS intrGetPendingDisplayIntr_TU102(OBJGPU *pGpu, struct Intr *pIntr, union MC_ENGINE_BITVECTOR *pEngines, struct THREAD_STATE_NODE *pThreadState);
-
-
-#ifdef __nvoc_intr_h_disabled
-static inline NV_STATUS intrGetPendingDisplayIntr(OBJGPU *pGpu, struct Intr *pIntr, union MC_ENGINE_BITVECTOR *pEngines, struct THREAD_STATE_NODE *pThreadState) {
-    NV_ASSERT_FAILED_PRECOMP("Intr was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_intr_h_disabled
-#define intrGetPendingDisplayIntr(pGpu, pIntr, pEngines, pThreadState) intrGetPendingDisplayIntr_TU102(pGpu, pIntr, pEngines, pThreadState)
-#endif //__nvoc_intr_h_disabled
-
-#define intrGetPendingDisplayIntr_HAL(pGpu, pIntr, pEngines, pThreadState) intrGetPendingDisplayIntr(pGpu, pIntr, pEngines, pThreadState)
-
 void intrDumpState_TU102(OBJGPU *pGpu, struct Intr *pIntr);
 
 
@@ -1127,6 +1130,8 @@ NvU32 intrReadRegLeafEnSet_CPU_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg
 
 NvU32 intrReadRegLeafEnSet_GSP_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, struct THREAD_STATE_NODE *arg4);
 
+NvU32 intrReadRegLeafEnSet_GSP_GB202(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, struct THREAD_STATE_NODE *arg4);
+
 
 #ifdef __nvoc_intr_h_disabled
 static inline NvU32 intrReadRegLeafEnSet(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, struct THREAD_STATE_NODE *arg4) {
@@ -1142,6 +1147,8 @@ static inline NvU32 intrReadRegLeafEnSet(OBJGPU *pGpu, struct Intr *pIntr, NvU32
 NvU32 intrReadRegLeaf_CPU_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, struct THREAD_STATE_NODE *arg4);
 
 NvU32 intrReadRegLeaf_GSP_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, struct THREAD_STATE_NODE *arg4);
+
+NvU32 intrReadRegLeaf_GSP_GB202(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, struct THREAD_STATE_NODE *arg4);
 
 
 #ifdef __nvoc_intr_h_disabled
@@ -1159,6 +1166,8 @@ NvU32 intrReadRegTop_CPU_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, str
 
 NvU32 intrReadRegTop_GSP_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, struct THREAD_STATE_NODE *arg4);
 
+NvU32 intrReadRegTop_GSP_GB202(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, struct THREAD_STATE_NODE *arg4);
+
 
 #ifdef __nvoc_intr_h_disabled
 static inline NvU32 intrReadRegTop(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, struct THREAD_STATE_NODE *arg4) {
@@ -1175,6 +1184,8 @@ void intrWriteRegLeafEnSet_CPU_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg
 
 void intrWriteRegLeafEnSet_GSP_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
 
+void intrWriteRegLeafEnSet_GSP_GB202(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
+
 
 #ifdef __nvoc_intr_h_disabled
 static inline void intrWriteRegLeafEnSet(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5) {
@@ -1190,6 +1201,8 @@ void intrWriteRegLeafEnClear_CPU_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 a
 
 void intrWriteRegLeafEnClear_GSP_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
 
+void intrWriteRegLeafEnClear_GSP_GB202(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
+
 
 #ifdef __nvoc_intr_h_disabled
 static inline void intrWriteRegLeafEnClear(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5) {
@@ -1204,6 +1217,8 @@ static inline void intrWriteRegLeafEnClear(OBJGPU *pGpu, struct Intr *pIntr, NvU
 void intrWriteRegLeaf_CPU_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
 
 void intrWriteRegLeaf_GSP_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
+
+void intrWriteRegLeaf_GSP_GB202(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
 
 
 #ifdef __nvoc_intr_h_disabled
@@ -1554,20 +1569,6 @@ static inline NV_STATUS intrGetPendingStallEngines(OBJGPU *pGpu, struct Intr *pI
 
 #define intrGetPendingStallEngines_HAL(pGpu, pIntr, arg3, arg4) intrGetPendingStallEngines(pGpu, pIntr, arg3, arg4)
 
-NvBool intrIsIntrEnabled_IMPL(OBJGPU *pGpu, struct Intr *pIntr, struct THREAD_STATE_NODE *arg3);
-
-
-#ifdef __nvoc_intr_h_disabled
-static inline NvBool intrIsIntrEnabled(OBJGPU *pGpu, struct Intr *pIntr, struct THREAD_STATE_NODE *arg3) {
-    NV_ASSERT_FAILED_PRECOMP("Intr was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_intr_h_disabled
-#define intrIsIntrEnabled(pGpu, pIntr, arg3) intrIsIntrEnabled_IMPL(pGpu, pIntr, arg3)
-#endif //__nvoc_intr_h_disabled
-
-#define intrIsIntrEnabled_HAL(pGpu, pIntr, arg3) intrIsIntrEnabled(pGpu, pIntr, arg3)
-
 static inline void intrSetHubLeafIntr_b3696a(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 *arg4, NvU32 *arg5, struct THREAD_STATE_NODE *arg6) {
     return;
 }
@@ -1642,9 +1643,23 @@ void intrGetLocklessVectorsInRmSubtree_TU102(OBJGPU *pGpu, struct Intr *pIntr, N
 
 void intrGetLocklessVectorsInRmSubtree_GA100(OBJGPU *pGpu, struct Intr *pIntr, NvU32 (*pInterruptVectors)[2]);
 
+NV_STATUS intrGetPendingDisplayIntr_TU102(OBJGPU *pGpu, struct Intr *pIntr, union MC_ENGINE_BITVECTOR *pEngines, struct THREAD_STATE_NODE *pThreadState);
+
+NV_STATUS intrGetPendingDisplayIntr_GB202(OBJGPU *pGpu, struct Intr *pIntr, union MC_ENGINE_BITVECTOR *pEngines, struct THREAD_STATE_NODE *pThreadState);
+
 void intrSetDisplayInterruptEnable_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvBool bEnable, struct THREAD_STATE_NODE *pThreadState);
 
+void intrSetDisplayInterruptEnable_GB202(OBJGPU *pGpu, struct Intr *pIntr, NvBool bEnable, struct THREAD_STATE_NODE *pThreadState);
+
 static inline void intrSetDisplayInterruptEnable_b3696a(OBJGPU *pGpu, struct Intr *pIntr, NvBool bEnable, struct THREAD_STATE_NODE *pThreadState) {
+    return;
+}
+
+void intrCacheDispIntrVectors_TU102(OBJGPU *pGpu, struct Intr *pIntr);
+
+void intrCacheDispIntrVectors_GB202(OBJGPU *pGpu, struct Intr *pIntr);
+
+static inline void intrCacheDispIntrVectors_b3696a(OBJGPU *pGpu, struct Intr *pIntr) {
     return;
 }
 
@@ -1656,6 +1671,8 @@ NvU32 intrReadRegTopEnSet_GSP_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3
 
 NvU32 intrReadRegTopEnSet_GSP_GA102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, struct THREAD_STATE_NODE *arg4);
 
+NvU32 intrReadRegTopEnSet_GSP_GB202(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, struct THREAD_STATE_NODE *arg4);
+
 void intrWriteRegTopEnSet_CPU_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
 
 void intrWriteRegTopEnSet_CPU_GA102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
@@ -1664,6 +1681,8 @@ void intrWriteRegTopEnSet_GSP_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3
 
 void intrWriteRegTopEnSet_GSP_GA102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
 
+void intrWriteRegTopEnSet_GSP_GB202(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
+
 void intrWriteRegTopEnClear_CPU_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
 
 void intrWriteRegTopEnClear_CPU_GA102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
@@ -1671,6 +1690,8 @@ void intrWriteRegTopEnClear_CPU_GA102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 ar
 void intrWriteRegTopEnClear_GSP_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
 
 void intrWriteRegTopEnClear_GSP_GA102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
+
+void intrWriteRegTopEnClear_GSP_GB202(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
 
 NvU32 intrGetNumLeaves_TU102(OBJGPU *pGpu, struct Intr *pIntr);
 

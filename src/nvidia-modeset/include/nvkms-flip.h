@@ -39,7 +39,6 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
                  const struct NvKmsFlipRequestOneHead *pFlipHead,
                  NvU32 numFlipHeads,
                  NvBool commit,
-                 NvBool allowVrr,
                  struct NvKmsFlipReply *reply,
                  NvBool skipUpdate,
                  NvBool allowFlipLock);

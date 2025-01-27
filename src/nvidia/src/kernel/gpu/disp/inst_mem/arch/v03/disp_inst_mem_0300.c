@@ -156,7 +156,6 @@ instmemCommitContextDma_v03_00
     NvU32               ctxDMAFlag;
     NvU32               instoffset;
     NvU8               *pInstMemCpuVA;
-    NvU32               kind;
     NvBool              bIsSurfaceBl    = NV_FALSE;
     TRANSFER_SURFACE    dest = {0};
 
@@ -169,21 +168,36 @@ instmemCommitContextDma_v03_00
     FrameAddr = memdescGetPhysAddr(pMemDesc, AT_GPU, 0);
     Limit     = FrameAddr + pContextDma->Limit;
 
-    kind = memdescGetPteKindForGpu(pMemDesc, pGpu);
-
-    // Cannot bind a Z surface to display.  Bug 439965.
-    if (memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_Z, kind))
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
     //
     // Set surface format
     //
-    ctxDMAFlag = 0;
+    switch (DRF_VAL(OS03, _FLAGS, _PTE_KIND, pContextDma->Flags))
+    {
+    case NVOS03_FLAGS_PTE_KIND_BL:
+        bIsSurfaceBl = NV_TRUE;
+        break;
+    case NVOS03_FLAGS_PTE_KIND_PITCH:
+        bIsSurfaceBl = NV_FALSE;
+        break;
+    case NVOS03_FLAGS_PTE_KIND_NONE:
+        {
+            NvU32 const kind = memdescGetPteKindForGpu(pMemDesc, pGpu);
 
-    bIsSurfaceBl = memmgrIsSurfaceBlockLinear_HAL(pMemoryManager, pContextDma->pMemory,
-                                                  kind, pContextDma->Flags);
+            // Cannot bind a Z surface to display.  Bug 439965.
+            if (memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_Z, kind))
+                return NV_ERR_INVALID_ARGUMENT;
+
+            bIsSurfaceBl = memmgrIsSurfaceBlockLinear_HAL(pMemoryManager,
+                                                          pContextDma->pMemory,
+                                                          kind);
+        }
+        break;
+    default:
+        NV_PRINTF(LEVEL_ERROR, "Unexpected PTE_KIND value\n");
+        return NV_ERR_INVALID_STATE;
+    }
+
+    ctxDMAFlag = 0;
 
     if (bIsSurfaceBl)
     {

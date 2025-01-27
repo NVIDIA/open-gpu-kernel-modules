@@ -165,13 +165,15 @@ NvBool     rmGpuLockIsHidden(OBJGPU *);
 NV_STATUS  rmGpuLockSetOwner(OS_THREAD_HANDLE);
 void       rmGpuLockGetTimes(NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS *);
 NV_STATUS  rmGpuGroupLockAcquire(NvU32, GPU_LOCK_GRP_ID, NvU32, NvU32, GPU_MASK *);
-NV_STATUS  rmGpuGroupLockRelease(GPU_MASK, NvU32);
+void       rmGpuGroupLockRelease(GPU_MASK, NvU32);
 NvBool     rmGpuGroupLockIsOwner(NvU32, GPU_LOCK_GRP_ID, GPU_MASK*);
 
 NvBool     rmDeviceGpuLockIsOwner(NvU32);
 NV_STATUS  rmDeviceGpuLockSetOwner(OBJGPU *, OS_THREAD_HANDLE);
 NV_STATUS  rmDeviceGpuLocksAcquire(OBJGPU *, NvU32, NvU32);
 NvU32      rmDeviceGpuLocksRelease(OBJGPU *, NvU32, OBJGPU *);
+NvU32      rmDeviceGpuLocksReleaseAndThreadStateFreeDeferredIntHandlerOptimized(OBJGPU *, NvU32, OBJGPU *);
+
 
 NV_STATUS  rmIntrMaskLockAlloc(NvU32 gpuInst);
 void       rmIntrMaskLockFree(NvU32 gpuInst);

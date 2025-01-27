@@ -33,6 +33,7 @@
 #include "nvt_dsc_pps.h"
 #include "nvmisc.h"
 #include "displayport/displayport.h"
+#include "displayport/displayport2x.h"
 #include "nvctassert.h"
 #include <stddef.h>
 
@@ -104,6 +105,7 @@ typedef struct
     NvU32  multi_tile;            // 1 = Multi-tile architecture, 0 = dsc single or dual mode without multi-tile
     NvU32  peak_throughput_mode0; // peak throughput supported by the sink for 444 and simple 422 modes. 
     NvU32  peak_throughput_mode1; // peak throughput supported by the sink for native 422 and 420 modes.
+    NvU32  eDP;                   // 1 = connector type is eDP, 0 otherwise. 
 } DSC_INPUT_PARAMS;
 
 //output pps parameters after calculation
@@ -989,7 +991,6 @@ DSC_PpsCalcBase
     out->pps_identifier = 0;
     ENUM3_CHECK("bits_per_component", in->bits_per_component, 8, 10, 12);
     out->bits_per_component = in->bits_per_component;
-    RANGE_CHECK("bits_per_pixelx16", in->bits_per_pixel, 8 * BPP_UNIT, (out->bits_per_component * 3) * BPP_UNIT);
     out->bits_per_pixel = in->bits_per_pixel;
     RANGE_CHECK("linebuf_depth", in->linebuf_depth, DSC_DECODER_LINE_BUFFER_BIT_DEPTH_MIN, DSC_DECODER_LINE_BUFFER_BIT_DEPTH_MAX);
     out->linebuf_depth = in->linebuf_depth;
@@ -1598,22 +1599,74 @@ DSC_PpsCheckSliceHeight(DSC_OUTPUT_PARAMS *out)
  *          NVT_STATUS_ERR if unsuccessful;
  */
 static NVT_STATUS
-Dsc_PpsCalcHeight(DSC_OUTPUT_PARAMS *out)
+Dsc_PpsCalcHeight
+(
+const DSC_INPUT_PARAMS *in,
+DSC_OUTPUT_PARAMS *out
+)
 {
-    if(out->slice_height == 0)
+    //
+    // From Blackwell and later, eDP we will try to use smallest slice height 
+    // if client has not asked for a specific slice height. Multi-tile is enabled
+    // from Blackwell and so here we will use that condition for deciding on 
+    // slice height calculation. Minimum slice height will help with power savings 
+    // when eDP1.5 Selective Update is enabled.
+    //
+    if (in->multi_tile && in->eDP)
     {
-        NvU32 i;
-        for (i = 1 ; i <= 16; i++)
+        if (out->slice_height == 0U)
         {
-            out->slice_height = out->pic_height / i;
-            if (out->pic_height != out->slice_height * i )
-                continue;
+            // Minimum area of slice should be 15000 as per VESA spec
+            out->slice_height = (NvU32)NV_CEIL(15000U,(out->slice_width));
+            while (out->pic_height > out->slice_height)
+            {
+                if (out->pic_height % out->slice_height == 0U)
+                {
+                    if (DSC_PpsCheckSliceHeight(out) == NVT_STATUS_SUCCESS)
+                    {
+                        return NVT_STATUS_SUCCESS;
+                    }
+                    else
+                    {
+                        out->slice_height++;
+                    }
+                }
+                else
+                {
+                    out->slice_height++;
+                }
 
-            if (DSC_PpsCheckSliceHeight(out) == NVT_STATUS_SUCCESS)
-                return NVT_STATUS_SUCCESS;
+                if (out->pic_height == out->slice_height)
+                {
+                    if(DSC_PpsCheckSliceHeight(out) == NVT_STATUS_SUCCESS)
+                    {
+                        return NVT_STATUS_SUCCESS;
+                    }
+                    else
+                    {
+                        return NVT_STATUS_PPS_SLICE_HEIGHT_ERROR;    
+                    }
+                }
+            }
         }
-        // Error! can't find valid slice_height
-        return NVT_STATUS_PPS_SLICE_HEIGHT_ERROR;
+    }
+    else
+    {
+        if(out->slice_height == 0)
+        {
+            NvU32 i;
+            for (i = 1 ; i <= 16; i++)
+            {
+                out->slice_height = out->pic_height / i;
+                if (out->pic_height != out->slice_height * i )
+                    continue;
+
+                if (DSC_PpsCheckSliceHeight(out) == NVT_STATUS_SUCCESS)
+                    return NVT_STATUS_SUCCESS;
+            }
+            // Error! can't find valid slice_height
+            return NVT_STATUS_PPS_SLICE_HEIGHT_ERROR;
+        }
     }
 
     RANGE_CHECK("slice_height", out->slice_height, 8, out->pic_height);
@@ -1677,7 +1730,7 @@ DSC_PpsCalc
     if (ret != NVT_STATUS_SUCCESS) return ret;
     ret = DSC_PpsCalcRcInitValue(out);
     if (ret != NVT_STATUS_SUCCESS) return ret;
-    ret = Dsc_PpsCalcHeight(out);
+    ret = Dsc_PpsCalcHeight(in, out);
     if (ret != NVT_STATUS_SUCCESS) return ret;
     ret = DSC_PpsCalcRcParam(out);
     return ret;
@@ -1842,9 +1895,14 @@ _validateInput
         (pDscInfo->forcedDscParams.sliceCount != 1U) &&
         (pDscInfo->forcedDscParams.sliceCount != 2U) &&
         (pDscInfo->forcedDscParams.sliceCount != 4U) &&
-        (pDscInfo->forcedDscParams.sliceCount != 8U))
+        (pDscInfo->forcedDscParams.sliceCount != 8U) && 
+        (pDscInfo->forcedDscParams.sliceCount != 10U) &&
+        (pDscInfo->forcedDscParams.sliceCount != 12U) &&
+        (pDscInfo->forcedDscParams.sliceCount != 16U) &&
+        (pDscInfo->forcedDscParams.sliceCount != 20U) &&
+        (pDscInfo->forcedDscParams.sliceCount != 24U))
     {
-        // ERROR - Forced Slice Count has to be 1/2/4/8.
+        // ERROR - Forced Slice Count has to be 1/2/4/8/10/12/16/20/24.
         return NVT_STATUS_DSC_SLICE_ERROR;
     }
 
@@ -2013,7 +2071,7 @@ _validateInput
                 return NVT_STATUS_INVALID_PARAMETER;
             }
 
-            if (!IS_VALID_LINKBW(pWARData->dpData.linkRateHz / DP_LINK_BW_FREQ_MULTI_MBPS))
+            if (!IS_VALID_DP2_X_LINKBW(pWARData->dpData.linkRateHz))
             {
                 // ERROR - Incorrect DP Link rate info sent with WAR data
                 return NVT_STATUS_INVALID_PARAMETER;
@@ -2084,7 +2142,6 @@ DSC_GeneratePPSWithSliceCountMask
     NvU32 sliceArrayCount;
     NvU32 i;
     DSC_INFO localDscInfo;
-    NvU32* ppsOut = NULL;
     NVT_STATUS status;
     DSC_GENERATE_PPS_OPAQUE_WORKAREA scratchBuffer;
 
@@ -2166,27 +2223,19 @@ DSC_GeneratePPSWithSliceCountMask
     //
     if (possibleSliceCountMask)
     {
+        NvU32 minSliceCountOut = 0;
         localDscInfo = *pDscInfo;
 
         for(i = 0U ; i < sliceArrayCount; i++)
         {
             if (possibleSliceCountMask & DSC_SliceCountMaskforSliceNum(validSliceNum[i]))
             {
-                ppsOut = NULL;
+                // Use the forced bits per pixel, if any
+                NvU32 bitsPerPixelX16Local = *pBitsPerPixelX16;
                 localDscInfo.forcedDscParams.sliceCount = validSliceNum[i];
-                if (localDscInfo.forcedDscParams.sliceCount == minSliceCount)
-                {
-                    //
-                    // We need to return PPS with minimum slice count if client 
-                    // has not forced any slice count even though we generate 
-                    // pps with all other possible slice counts to validate them. 
-                    //
-                    ppsOut = pps;
-                }
                 status = DSC_GeneratePPS(&localDscInfo, pModesetInfo, pWARData, 
                                          availableBandwidthBitsPerSecond, &scratchBuffer,
-                                         ppsOut, pBitsPerPixelX16);
-                
+                                         NULL, &bitsPerPixelX16Local);
                 if (status == NVT_STATUS_SUCCESS)
                 {
                     //
@@ -2200,7 +2249,28 @@ DSC_GeneratePPSWithSliceCountMask
                     //  corresponding bit index.
                     // 
                     validSliceCountMask |= NVBIT32((validSliceNum[i]) - 1U);
+                    if ((minSliceCountOut == 0) || (minSliceCountOut > validSliceNum[i]))
+                    {
+                        minSliceCountOut = validSliceNum[i];
+                    }
                 }
+            }
+        }
+
+        if (minSliceCountOut != 0)
+        {
+            //
+            // We need to return PPS with minimum slice count if client
+            // has not forced any slice count even though we generate
+            // pps with all other possible slice counts to validate them.
+            //
+            localDscInfo.forcedDscParams.sliceCount = minSliceCountOut;
+            status = DSC_GeneratePPS(&localDscInfo, pModesetInfo, pWARData,
+                                     availableBandwidthBitsPerSecond, &scratchBuffer,
+                                     pps, pBitsPerPixelX16);
+            if (status != NVT_STATUS_SUCCESS)
+            {
+                return status;
             }
         }
     }
@@ -2390,7 +2460,14 @@ DSC_GeneratePPS
 
             dscOverhead = minSliceCount * 2U;
 
-            dataRate = pWARData->dpData.linkRateHz;
+            if(pWARData->dpData.bIs128b132bChannelCoding)
+            {
+                dataRate = LINK_RATE_TO_DATA_RATE_128B_132B(pWARData->dpData.linkRateHz);
+            }
+            else
+            {
+                dataRate = LINK_RATE_TO_DATA_RATE_8B_10B(pWARData->dpData.linkRateHz);
+            }
             if ((pWARData->dpData.hBlank * dataRate / pModesetInfo->pixelClockHz) <
                 (protocolOverhead + dscOverhead + 3U))
             {
@@ -2408,6 +2485,7 @@ DSC_GeneratePPS
                 in->bits_per_pixel = i;
             }
         }
+        in->eDP = (pWARData->dpData.bIsEdp == NV_TRUE) ? 1 : 0;
     }
 
     // 

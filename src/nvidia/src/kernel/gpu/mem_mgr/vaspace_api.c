@@ -83,7 +83,7 @@ vaspaceapiConstruct_IMPL
     NvU64                             originalVaSize;
     NvU32                             gfid                  = 0;
 
-    if((!rmapiLockIsOwner()) && rmGpuLockIsOwner() && rmapiInRtd3PmPath())
+    if (rmGpuLockIsOwner() && rmapiInRtd3PmPath())
     {
         //
         // RTD3 exit codepath may only take the GPU lock, hence it becomes

@@ -207,7 +207,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MemoryMu
 
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge MemoryMulticastFabric methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^2
 NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super^2
 NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
@@ -221,6 +221,7 @@ NV_STATUS __nvoc_down_thunk_Memory_resUnmap(struct RsResource *pMemory, CALL_CON
 NV_STATUS __nvoc_down_thunk_Memory_rmresGetMemInterMapParams(struct RmResource *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // super
 NV_STATUS __nvoc_down_thunk_Memory_rmresCheckMemInterUnmap(struct RmResource *pMemory, NvBool bSubdeviceHandleProvided);    // super
 NV_STATUS __nvoc_down_thunk_Memory_rmresGetMemoryMappingDescriptor(struct RmResource *pMemory, MEMORY_DESCRIPTOR **ppMemDesc);    // super
+NV_STATUS __nvoc_down_thunk_MemoryMulticastFabric_resUnmapFrom(struct RsResource *pMemoryMulticastFabric, struct RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
 NvBool __nvoc_down_thunk_MemoryMulticastFabric_resCanCopy(struct RsResource *pMemoryMulticastFabric);    // this
 NV_STATUS __nvoc_down_thunk_MemoryMulticastFabric_memIsReady(struct Memory *pMemoryMulticastFabric, NvBool bCopyConstructorContext);    // this
 NV_STATUS __nvoc_down_thunk_MemoryMulticastFabric_memControl(struct Memory *pMemoryMulticastFabric, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
@@ -228,40 +229,45 @@ NvBool __nvoc_down_thunk_MemoryMulticastFabric_memIsGpuMapAllowed(struct Memory 
 NvBool __nvoc_down_thunk_MemoryMulticastFabric_memIsExportAllowed(struct Memory *pMemoryMulticastFabric);    // this
 NV_STATUS __nvoc_down_thunk_MemoryMulticastFabric_memGetMapAddrSpace(struct Memory *pMemoryMulticastFabric, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);    // this
 
-// 6 down-thunk(s) defined to bridge methods in MemoryMulticastFabric from superclasses
+// 7 down-thunk(s) defined to bridge methods in MemoryMulticastFabric from superclasses
+
+// memorymulticastfabricUnmapFrom: virtual override (res) base (mem)
+NV_STATUS __nvoc_down_thunk_MemoryMulticastFabric_resUnmapFrom(struct RsResource *pMemoryMulticastFabric, struct RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return memorymulticastfabricUnmapFrom((struct MemoryMulticastFabric *)(((unsigned char *) pMemoryMulticastFabric) - NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
+}
 
 // memorymulticastfabricCanCopy: virtual override (res) base (mem)
 NvBool __nvoc_down_thunk_MemoryMulticastFabric_resCanCopy(struct RsResource *pMemoryMulticastFabric) {
-    return memorymulticastfabricCanCopy((struct MemoryMulticastFabric *)(((unsigned char *) pMemoryMulticastFabric) - __nvoc_rtti_MemoryMulticastFabric_RsResource.offset));
+    return memorymulticastfabricCanCopy((struct MemoryMulticastFabric *)(((unsigned char *) pMemoryMulticastFabric) - NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // memorymulticastfabricIsReady: virtual override (mem) base (mem)
 NV_STATUS __nvoc_down_thunk_MemoryMulticastFabric_memIsReady(struct Memory *pMemoryMulticastFabric, NvBool bCopyConstructorContext) {
-    return memorymulticastfabricIsReady((struct MemoryMulticastFabric *)(((unsigned char *) pMemoryMulticastFabric) - __nvoc_rtti_MemoryMulticastFabric_Memory.offset), bCopyConstructorContext);
+    return memorymulticastfabricIsReady((struct MemoryMulticastFabric *)(((unsigned char *) pMemoryMulticastFabric) - NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory)), bCopyConstructorContext);
 }
 
 // memorymulticastfabricControl: virtual override (res) base (mem)
 NV_STATUS __nvoc_down_thunk_MemoryMulticastFabric_memControl(struct Memory *pMemoryMulticastFabric, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return memorymulticastfabricControl((struct MemoryMulticastFabric *)(((unsigned char *) pMemoryMulticastFabric) - __nvoc_rtti_MemoryMulticastFabric_Memory.offset), pCallContext, pParams);
+    return memorymulticastfabricControl((struct MemoryMulticastFabric *)(((unsigned char *) pMemoryMulticastFabric) - NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory)), pCallContext, pParams);
 }
 
 // memorymulticastfabricIsGpuMapAllowed: virtual override (mem) base (mem)
 NvBool __nvoc_down_thunk_MemoryMulticastFabric_memIsGpuMapAllowed(struct Memory *pMemoryMulticastFabric, struct OBJGPU *pGpu) {
-    return memorymulticastfabricIsGpuMapAllowed((struct MemoryMulticastFabric *)(((unsigned char *) pMemoryMulticastFabric) - __nvoc_rtti_MemoryMulticastFabric_Memory.offset), pGpu);
+    return memorymulticastfabricIsGpuMapAllowed((struct MemoryMulticastFabric *)(((unsigned char *) pMemoryMulticastFabric) - NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory)), pGpu);
 }
 
 // memorymulticastfabricIsExportAllowed: virtual override (mem) base (mem)
 NvBool __nvoc_down_thunk_MemoryMulticastFabric_memIsExportAllowed(struct Memory *pMemoryMulticastFabric) {
-    return memorymulticastfabricIsExportAllowed((struct MemoryMulticastFabric *)(((unsigned char *) pMemoryMulticastFabric) - __nvoc_rtti_MemoryMulticastFabric_Memory.offset));
+    return memorymulticastfabricIsExportAllowed((struct MemoryMulticastFabric *)(((unsigned char *) pMemoryMulticastFabric) - NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory)));
 }
 
 // memorymulticastfabricGetMapAddrSpace: virtual override (mem) base (mem)
 NV_STATUS __nvoc_down_thunk_MemoryMulticastFabric_memGetMapAddrSpace(struct Memory *pMemoryMulticastFabric, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return memorymulticastfabricGetMapAddrSpace((struct MemoryMulticastFabric *)(((unsigned char *) pMemoryMulticastFabric) - __nvoc_rtti_MemoryMulticastFabric_Memory.offset), pCallContext, mapFlags, pAddrSpace);
+    return memorymulticastfabricGetMapAddrSpace((struct MemoryMulticastFabric *)(((unsigned char *) pMemoryMulticastFabric) - NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory)), pCallContext, mapFlags, pAddrSpace);
 }
 
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
+// Up-thunk(s) to bridge MemoryMulticastFabric methods to ancestors (if any)
 NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^2
 NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super^2
 void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super^2
@@ -305,110 +311,104 @@ void __nvoc_up_thunk_RsResource_memorymulticastfabricPreDestruct(struct MemoryMu
 NV_STATUS __nvoc_up_thunk_RsResource_memorymulticastfabricControlFilter(struct MemoryMulticastFabric *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
 NvBool __nvoc_up_thunk_RsResource_memorymulticastfabricIsPartialUnmapSupported(struct MemoryMulticastFabric *pResource);    // this
 NV_STATUS __nvoc_up_thunk_RsResource_memorymulticastfabricMapTo(struct MemoryMulticastFabric *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // this
-NV_STATUS __nvoc_up_thunk_RsResource_memorymulticastfabricUnmapFrom(struct MemoryMulticastFabric *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
 NvU32 __nvoc_up_thunk_RsResource_memorymulticastfabricGetRefCount(struct MemoryMulticastFabric *pResource);    // this
 void __nvoc_up_thunk_RsResource_memorymulticastfabricAddAdditionalDependants(struct RsClient *pClient, struct MemoryMulticastFabric *pResource, RsResourceRef *pReference);    // this
 
-// 20 up-thunk(s) defined to bridge methods in MemoryMulticastFabric to superclasses
+// 19 up-thunk(s) defined to bridge methods in MemoryMulticastFabric to superclasses
 
 // memorymulticastfabricIsDuplicate: virtual inherited (mem) base (mem)
 NV_STATUS __nvoc_up_thunk_Memory_memorymulticastfabricIsDuplicate(struct MemoryMulticastFabric *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
-    return memIsDuplicate((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryMulticastFabric_Memory.offset), hMemory, pDuplicate);
+    return memIsDuplicate((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory)), hMemory, pDuplicate);
 }
 
 // memorymulticastfabricMap: virtual inherited (mem) base (mem)
 NV_STATUS __nvoc_up_thunk_Memory_memorymulticastfabricMap(struct MemoryMulticastFabric *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return memMap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryMulticastFabric_Memory.offset), pCallContext, pParams, pCpuMapping);
+    return memMap((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory)), pCallContext, pParams, pCpuMapping);
 }
 
 // memorymulticastfabricUnmap: virtual inherited (mem) base (mem)
 NV_STATUS __nvoc_up_thunk_Memory_memorymulticastfabricUnmap(struct MemoryMulticastFabric *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return memUnmap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryMulticastFabric_Memory.offset), pCallContext, pCpuMapping);
+    return memUnmap((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory)), pCallContext, pCpuMapping);
 }
 
 // memorymulticastfabricGetMemInterMapParams: virtual inherited (mem) base (mem)
 NV_STATUS __nvoc_up_thunk_Memory_memorymulticastfabricGetMemInterMapParams(struct MemoryMulticastFabric *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return memGetMemInterMapParams((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryMulticastFabric_Memory.offset), pParams);
+    return memGetMemInterMapParams((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory)), pParams);
 }
 
 // memorymulticastfabricCheckMemInterUnmap: inline virtual inherited (mem) base (mem) body
 NV_STATUS __nvoc_up_thunk_Memory_memorymulticastfabricCheckMemInterUnmap(struct MemoryMulticastFabric *pMemory, NvBool bSubdeviceHandleProvided) {
-    return memCheckMemInterUnmap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryMulticastFabric_Memory.offset), bSubdeviceHandleProvided);
+    return memCheckMemInterUnmap((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory)), bSubdeviceHandleProvided);
 }
 
 // memorymulticastfabricGetMemoryMappingDescriptor: virtual inherited (mem) base (mem)
 NV_STATUS __nvoc_up_thunk_Memory_memorymulticastfabricGetMemoryMappingDescriptor(struct MemoryMulticastFabric *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
-    return memGetMemoryMappingDescriptor((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryMulticastFabric_Memory.offset), ppMemDesc);
+    return memGetMemoryMappingDescriptor((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory)), ppMemDesc);
 }
 
 // memorymulticastfabricCheckCopyPermissions: inline virtual inherited (mem) base (mem) body
 NV_STATUS __nvoc_up_thunk_Memory_memorymulticastfabricCheckCopyPermissions(struct MemoryMulticastFabric *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
-    return memCheckCopyPermissions((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryMulticastFabric_Memory.offset), pDstGpu, pDstDevice);
+    return memCheckCopyPermissions((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory)), pDstGpu, pDstDevice);
 }
 
 // memorymulticastfabricAccessCallback: virtual inherited (rmres) base (mem)
 NvBool __nvoc_up_thunk_RmResource_memorymulticastfabricAccessCallback(struct MemoryMulticastFabric *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMulticastFabric_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory.__nvoc_base_RmResource)), pInvokingClient, pAllocParams, accessRight);
 }
 
 // memorymulticastfabricShareCallback: virtual inherited (rmres) base (mem)
 NvBool __nvoc_up_thunk_RmResource_memorymulticastfabricShareCallback(struct MemoryMulticastFabric *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMulticastFabric_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory.__nvoc_base_RmResource)), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // memorymulticastfabricControlSerialization_Prologue: virtual inherited (rmres) base (mem)
 NV_STATUS __nvoc_up_thunk_RmResource_memorymulticastfabricControlSerialization_Prologue(struct MemoryMulticastFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMulticastFabric_RmResource.offset), pCallContext, pParams);
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // memorymulticastfabricControlSerialization_Epilogue: virtual inherited (rmres) base (mem)
 void __nvoc_up_thunk_RmResource_memorymulticastfabricControlSerialization_Epilogue(struct MemoryMulticastFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMulticastFabric_RmResource.offset), pCallContext, pParams);
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // memorymulticastfabricControl_Prologue: virtual inherited (rmres) base (mem)
 NV_STATUS __nvoc_up_thunk_RmResource_memorymulticastfabricControl_Prologue(struct MemoryMulticastFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMulticastFabric_RmResource.offset), pCallContext, pParams);
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // memorymulticastfabricControl_Epilogue: virtual inherited (rmres) base (mem)
 void __nvoc_up_thunk_RmResource_memorymulticastfabricControl_Epilogue(struct MemoryMulticastFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMulticastFabric_RmResource.offset), pCallContext, pParams);
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // memorymulticastfabricPreDestruct: virtual inherited (res) base (mem)
 void __nvoc_up_thunk_RsResource_memorymulticastfabricPreDestruct(struct MemoryMulticastFabric *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMulticastFabric_RsResource.offset));
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // memorymulticastfabricControlFilter: virtual inherited (res) base (mem)
 NV_STATUS __nvoc_up_thunk_RsResource_memorymulticastfabricControlFilter(struct MemoryMulticastFabric *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMulticastFabric_RsResource.offset), pCallContext, pParams);
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams);
 }
 
 // memorymulticastfabricIsPartialUnmapSupported: inline virtual inherited (res) base (mem) body
 NvBool __nvoc_up_thunk_RsResource_memorymulticastfabricIsPartialUnmapSupported(struct MemoryMulticastFabric *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMulticastFabric_RsResource.offset));
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // memorymulticastfabricMapTo: virtual inherited (res) base (mem)
 NV_STATUS __nvoc_up_thunk_RsResource_memorymulticastfabricMapTo(struct MemoryMulticastFabric *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMulticastFabric_RsResource.offset), pParams);
-}
-
-// memorymulticastfabricUnmapFrom: virtual inherited (res) base (mem)
-NV_STATUS __nvoc_up_thunk_RsResource_memorymulticastfabricUnmapFrom(struct MemoryMulticastFabric *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMulticastFabric_RsResource.offset), pParams);
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
 }
 
 // memorymulticastfabricGetRefCount: virtual inherited (res) base (mem)
 NvU32 __nvoc_up_thunk_RsResource_memorymulticastfabricGetRefCount(struct MemoryMulticastFabric *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMulticastFabric_RsResource.offset));
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // memorymulticastfabricAddAdditionalDependants: virtual inherited (res) base (mem)
 void __nvoc_up_thunk_RsResource_memorymulticastfabricAddAdditionalDependants(struct RsClient *pClient, struct MemoryMulticastFabric *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMulticastFabric_RsResource.offset), pReference);
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(MemoryMulticastFabric, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)), pReference);
 }
 
 
@@ -494,6 +494,10 @@ void __nvoc_init_funcTable_MemoryMulticastFabric(MemoryMulticastFabric *pThis) {
 
     // Per-class vtable definition
     static const struct NVOC_VTABLE__MemoryMulticastFabric vtable = {
+        .__memorymulticastfabricUnmapFrom__ = &memorymulticastfabricUnmapFrom_IMPL,    // virtual override (res) base (mem)
+        .Memory.__memUnmapFrom__ = &__nvoc_up_thunk_RsResource_memUnmapFrom,    // virtual inherited (res) base (rmres)
+        .Memory.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+        .Memory.RmResource.RsResource.__resUnmapFrom__ = &__nvoc_down_thunk_MemoryMulticastFabric_resUnmapFrom,    // virtual
         .__memorymulticastfabricCanCopy__ = &memorymulticastfabricCanCopy_IMPL,    // virtual override (res) base (mem)
         .Memory.__memCanCopy__ = &__nvoc_up_thunk_RsResource_memCanCopy,    // virtual inherited (res) base (rmres)
         .Memory.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
@@ -511,20 +515,6 @@ void __nvoc_init_funcTable_MemoryMulticastFabric(MemoryMulticastFabric *pThis) {
         .Memory.__memIsExportAllowed__ = &__nvoc_down_thunk_MemoryMulticastFabric_memIsExportAllowed,    // inline virtual body
         .__memorymulticastfabricGetMapAddrSpace__ = &memorymulticastfabricGetMapAddrSpace_IMPL,    // virtual override (mem) base (mem)
         .Memory.__memGetMapAddrSpace__ = &__nvoc_down_thunk_MemoryMulticastFabric_memGetMapAddrSpace,    // virtual
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
-#endif
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
-#endif
         .__memorymulticastfabricIsDuplicate__ = &__nvoc_up_thunk_Memory_memorymulticastfabricIsDuplicate,    // virtual inherited (mem) base (mem)
         .Memory.__memIsDuplicate__ = &memIsDuplicate_IMPL,    // virtual override (res) base (rmres)
         .Memory.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
@@ -588,10 +578,6 @@ void __nvoc_init_funcTable_MemoryMulticastFabric(MemoryMulticastFabric *pThis) {
         .Memory.__memMapTo__ = &__nvoc_up_thunk_RsResource_memMapTo,    // virtual inherited (res) base (rmres)
         .Memory.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
         .Memory.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
-        .__memorymulticastfabricUnmapFrom__ = &__nvoc_up_thunk_RsResource_memorymulticastfabricUnmapFrom,    // virtual inherited (res) base (mem)
-        .Memory.__memUnmapFrom__ = &__nvoc_up_thunk_RsResource_memUnmapFrom,    // virtual inherited (res) base (rmres)
-        .Memory.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
         .__memorymulticastfabricGetRefCount__ = &__nvoc_up_thunk_RsResource_memorymulticastfabricGetRefCount,    // virtual inherited (res) base (mem)
         .Memory.__memGetRefCount__ = &__nvoc_up_thunk_RsResource_memGetRefCount,    // virtual inherited (res) base (rmres)
         .Memory.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)

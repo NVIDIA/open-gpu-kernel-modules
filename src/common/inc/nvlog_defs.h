@@ -102,9 +102,10 @@ struct _NVLOG_BUFFER
 
 #define NVLOG_MAX_BUFFERS_v11       16
 #define NVLOG_MAX_BUFFERS_v12       256
+#define NVLOG_MAX_BUFFERS_v13       3840
 
-#define NVLOG_MAX_BUFFERS           NVLOG_MAX_BUFFERS_v12
-#define NVLOG_LOGGER_VERSION        12          // v1.2
+#define NVLOG_MAX_BUFFERS           NVLOG_MAX_BUFFERS_v13
+#define NVLOG_LOGGER_VERSION        13          // v1.3
 
 // Due to this file's peculiar location, NvPort may or may not be includable
 typedef struct PORT_SPINLOCK PORT_SPINLOCK;

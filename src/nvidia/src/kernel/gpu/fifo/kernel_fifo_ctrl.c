@@ -254,10 +254,6 @@ subdeviceCtrlCmdFifoGetInfo_IMPL
                 data = kfifoGetChannelGroupsInUse(pGpu, pKernelFifo);
                 break;
             case NV2080_CTRL_FIFO_INFO_INDEX_MAX_SUBCONTEXT_PER_GROUP:
-                //
-                // RM-SMC AMPERE-TODO This data is incompatible with SMC, where
-                // different engines can have different max VEID counts
-                //
                 data = kfifoGetMaxSubcontext_HAL(pGpu, pKernelFifo, NV_FALSE);
                 break;
             case NV2080_CTRL_FIFO_INFO_INDEX_BAR1_USERD_START_OFFSET:
@@ -307,6 +303,9 @@ subdeviceCtrlCmdFifoGetInfo_IMPL
                                                                 gpuGetRmEngineType(pFifoInfoParams->engineType),
                                                                 ENGINE_INFO_TYPE_RUNLIST, &runlistId));
                 data = kfifoGetRunlistChannelGroupsInUse(pGpu, pKernelFifo, runlistId);
+                break;
+            case NV2080_CTRL_FIFO_INFO_INDEX_MAX_LOWER_SUBCONTEXT:
+                data = kfifoGetMaxLowerSubcontext(pGpu, pKernelFifo);
                 break;
             default:
                 data = 0;
@@ -506,28 +505,6 @@ subdeviceCtrlCmdFifoGetChannelMemInfo_IMPL
                 &chMemInfo,
                 sizeof(NV2080_CTRL_FIFO_CHANNEL_MEM_INFO));
 
-    return rmStatus;
-}
-
-NV_STATUS
-diagapiCtrlCmdFifoEnableVirtualContext_IMPL
-(
-    DiagApi *pDiagApi,
-    NV208F_CTRL_FIFO_ENABLE_VIRTUAL_CONTEXT_PARAMS *pEnableVCParams
-)
-{
-    NV_STATUS      rmStatus = NV_OK;
-    KernelChannel *pKernelChannel = NULL;
-    RsClient      *pClient = RES_GET_CLIENT(pDiagApi);
-    Device        *pDevice = GPU_RES_GET_DEVICE(pDiagApi);
-
-    NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
-        CliGetKernelChannelWithDevice(pClient,
-                                      RES_GET_HANDLE(pDevice),
-                                      pEnableVCParams->hChannel,
-                                      &pKernelChannel));
-
-    rmStatus = kchannelEnableVirtualContext_HAL(pKernelChannel);
     return rmStatus;
 }
 
@@ -772,7 +749,7 @@ subdeviceCtrlCmdFifoDisableChannels_IMPL
 }
 
 /**
- * @brief Disables and preempts the given channels and marks 
+ * @brief Disables and preempts the given channels and marks
  *        them disabled for key rotation. Conditionally also marks
  *        them for re-enablement.
  */
@@ -905,7 +882,7 @@ _kfifoDisableChannelsForKeyRotation
         if (tmpStatus != NV_OK)
         {
             status = tmpStatus;
-            NV_PRINTF(LEVEL_ERROR, "Failed to get channel with hclient = 0x%x hChannel = 0x%x status = 0x%x\n", 
+            NV_PRINTF(LEVEL_ERROR, "Failed to get channel with hclient = 0x%x hChannel = 0x%x status = 0x%x\n",
                                     pParams->hClientList[i], pParams->hChannelList[i], status);
             continue;
         }
@@ -1077,4 +1054,102 @@ deviceCtrlCmdFifoGetEngineContextProperties_VF
     }
 
     return NV_ERR_NOT_SUPPORTED;
+}
+
+
+NV_STATUS
+subdeviceCtrlCmdFifoQueryChannelUniqueId_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FIFO_QUERY_CHANNEL_UNIQUE_ID_PARAMS *pGetChannelUidParams
+)
+{
+    RsClient      *pRsClient      = NULL;
+    RsResourceRef *pResourceRef   = NULL;
+    KernelChannel *pKernelChannel = NULL;
+    NvU32 i;
+
+    NV_CHECK_OR_RETURN(LEVEL_INFO,
+        (pGetChannelUidParams->numChannels > 0 && pGetChannelUidParams->numChannels <= NV2080_CTRL_CMD_FIFO_MAX_CHANNELS_PER_TSG),
+         NV_ERR_INVALID_PARAMETER);
+
+    for (i = 0; i < pGetChannelUidParams->numChannels; i++)
+    {
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+            serverGetClientUnderLock(&g_resServ, pGetChannelUidParams->hClients[i], &pRsClient));
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+            clientGetResourceRefByType(pRsClient, pGetChannelUidParams->hChannels[i],
+                classId(KernelChannel), &pResourceRef));
+        pKernelChannel = dynamicCast(pResourceRef->pResource, KernelChannel);
+        pGetChannelUidParams->channelUniqueIDs[i] = kchannelGetCid(pKernelChannel);
+    }
+    return NV_OK;
+}
+
+NV_STATUS
+subdeviceCtrlCmdFifoGetChannelGroupUniqueIdInfo_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FIFO_GET_CHANNEL_GROUP_UNIQUE_ID_INFO_PARAMS *pGetCidGrpParams
+)
+{
+    RsClient              *pRsClient              = NULL;
+    RsResourceRef         *pResourceRef           = NULL;
+    KernelChannelGroupApi *pKernelChannelGroupApi = NULL;
+    KernelChannelGroup    *pKernelChannelGroup    = NULL;
+    KernelChannel         *pKernelChannel         = NULL;
+    NV_STATUS status;
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+            serverGetClientUnderLock(&g_resServ, pGetCidGrpParams->hClient, &pRsClient));
+
+    status = clientGetResourceRefByType(pRsClient, pGetCidGrpParams->hChannelOrTsg,
+                                        classId(KernelChannelGroupApi),
+                                        &pResourceRef);;
+    if (status != NV_OK)
+    {
+        // if its not a channel Group, check if its a Kernel Channel.
+        NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+            clientGetResourceRefByType(pRsClient, pGetCidGrpParams->hChannelOrTsg,
+                classId(KernelChannel),
+                &pResourceRef));
+
+        pKernelChannel = dynamicCast(pResourceRef->pResource, KernelChannel);
+
+        pGetCidGrpParams->numChannels = 1;
+        pGetCidGrpParams->tsgId = 0;
+        pGetCidGrpParams->channelUniqueID[0] = kchannelGetCid(pKernelChannel);
+        pGetCidGrpParams->veid[0] = pKernelChannel->subctxId;
+        pGetCidGrpParams->vasUniqueID[0] = pKernelChannel->pVAS->vasUniqueId;
+   }
+   else // Channel Group
+   {
+        NvU32 chanIdx = 0;
+        OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+        NvU32 maxChannelsPerTSG = kfifoGetMaxChannelGroupSize_HAL(GPU_GET_KERNEL_FIFO(pGpu));
+
+        pKernelChannelGroupApi = dynamicCast(pResourceRef->pResource, KernelChannelGroupApi);
+        pKernelChannelGroup = pKernelChannelGroupApi->pKernelChannelGroup;
+        PCHANNEL_LIST pChanList = pKernelChannelGroup->pChanList;
+        PCHANNEL_NODE pChanNode = pChanList->pHead;
+        pGetCidGrpParams->tsgId = pKernelChannelGroup->tsgUniqueId;
+
+        for (; (pChanNode != NULL && chanIdx < maxChannelsPerTSG); pChanNode = pChanNode->pNext)
+        {
+            pKernelChannel = pChanNode->pKernelChannel;
+            if (pKernelChannel == NULL)
+                continue;
+
+            pGetCidGrpParams->channelUniqueID[chanIdx] = kchannelGetCid(pKernelChannel);
+            pGetCidGrpParams->veid[chanIdx] = pKernelChannel->subctxId;
+            pGetCidGrpParams->vasUniqueID[chanIdx] = pKernelChannel->pVAS->vasUniqueId;
+            chanIdx++;
+        }
+
+        pGetCidGrpParams->numChannels = chanIdx;
+   }
+
+   return NV_OK;
 }

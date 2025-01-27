@@ -49,7 +49,7 @@ extern "C" {
 #include "ctrl/ctrl0000/ctrl0000gpuacct.h"
 #include "ctrl/ctrl0000/ctrl0000gpu.h" // NV0000_CTRL_GPU_MAX_ATTACHED_GPUS
 #include "ctrl/ctrl2080/ctrl2080perf.h" // NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_V2_PARAMS
-
+#include "rmapi/client.h"
 
 typedef struct TMR_EVENT TMR_EVENT;
 
@@ -75,6 +75,7 @@ typedef struct
 {
     NvU32  procId;      // Pid of the process.
     NvU32  procType;    // Type of the process.
+    struct RmClient *pClient;  // Process' RmClient.
     NvU32  gpuUtil;     // Process's average GR engine utilization.
     NvU64  sumUtil;     // Running sum of process's GR engine utilization.
     NvU32  fbUtil;      // Process's average FB bandwidth utilization.
@@ -148,7 +149,7 @@ struct GpuAccounting {
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
 
     // Ancestor object pointers for `staticCast` feature
@@ -241,15 +242,15 @@ static inline NV_STATUS gpuacctClearAccountingData(struct GpuAccounting *arg1, N
 #define gpuacctClearAccountingData(arg1, arg2, arg3) gpuacctClearAccountingData_IMPL(arg1, arg2, arg3)
 #endif //__nvoc_gpu_acct_h_disabled
 
-NV_STATUS gpuacctStartGpuAccounting_IMPL(struct GpuAccounting *arg1, NvU32 arg2, NvU32 arg3, NvU32 arg4);
+NV_STATUS gpuacctStartGpuAccounting_IMPL(struct GpuAccounting *arg1, NvU32 arg2, NvU32 arg3, NvU32 arg4, struct RmClient *arg5);
 
 #ifdef __nvoc_gpu_acct_h_disabled
-static inline NV_STATUS gpuacctStartGpuAccounting(struct GpuAccounting *arg1, NvU32 arg2, NvU32 arg3, NvU32 arg4) {
+static inline NV_STATUS gpuacctStartGpuAccounting(struct GpuAccounting *arg1, NvU32 arg2, NvU32 arg3, NvU32 arg4, struct RmClient *arg5) {
     NV_ASSERT_FAILED_PRECOMP("GpuAccounting was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_gpu_acct_h_disabled
-#define gpuacctStartGpuAccounting(arg1, arg2, arg3, arg4) gpuacctStartGpuAccounting_IMPL(arg1, arg2, arg3, arg4)
+#define gpuacctStartGpuAccounting(arg1, arg2, arg3, arg4, arg5) gpuacctStartGpuAccounting_IMPL(arg1, arg2, arg3, arg4, arg5)
 #endif //__nvoc_gpu_acct_h_disabled
 
 NV_STATUS gpuacctStopGpuAccounting_IMPL(struct GpuAccounting *arg1, NvU32 arg2, NvU32 arg3, NvU32 arg4);

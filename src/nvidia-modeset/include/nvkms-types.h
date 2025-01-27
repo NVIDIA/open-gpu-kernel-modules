@@ -58,6 +58,7 @@ extern "C" {
 #include "timing/nvtiming.h"
 #include "timing/dpsdp.h"
 #include "timing/nvt_dsc_pps.h"
+#include "timing/dpsdp.h"
 #include "hdmipacket/nvhdmi_frlInterface.h" // HDMI_{SRC,SINK}_CAPS
 
 #include <stddef.h>
@@ -298,6 +299,39 @@ typedef struct {
     NVEvoScalerCaps scalerCaps;
 } NVEvoWindowCaps;
 #define NV_EVO_NUM_WINDOW_CAPS 32
+
+/*
+ * The GB20X+ gpus support two different tile variants:
+ *   1. TYPE_0: This tile variant supports legacy post-composition
+ *   features which excludes LTM (Local Tone Mapping) and 3DLUT.
+ *   2. TYPE_1: A trimmed configuration that does not support LTM
+ *   (Local Tone Mapping), SCALER, VFILTER (used in YUV420
+ *   down-sampling), or 3DLUT.
+ *
+ * TYPE_0 is the top variant of tile configurations, with trimming
+ * applied progressively from TYPE_0 to TYPE_N.
+ *
+ * The function EvoIsModePossibleCA() selects and assigns the correct
+ * tile type to the given heads.
+ */
+typedef enum _NVEvoHwTileType {
+    NV_EVO_HW_TILE_TYPE_FIRST = 0,
+    NV_EVO_HW_TILE_TYPE_0 =
+        NV_EVO_HW_TILE_TYPE_FIRST,
+    NV_EVO_HW_TILE_TYPE_1,
+    NV_EVO_HW_TILE_TYPE_LAST =
+        NV_EVO_HW_TILE_TYPE_1,
+} NVEvoHwTileType;
+
+typedef struct {
+    NVEvoHwTileType type;
+    NvBool usable;
+    NvBool supportMultiTile;
+} NVEvoHwTileCaps;
+
+typedef struct {
+    NvBool supportMultiTile;
+} NVEvoHwPhywinCaps;
 
 
 typedef NvU64 NVEvoChannelMask;
@@ -577,6 +611,8 @@ typedef struct _NVEvoCapabilities {
     NVEvoHeadCaps               head[NV_EVO_NUM_HEAD_CAPS];
     NVEvoSorCaps                sor[NV_EVO_NUM_SOR_CAPS];
     NVEvoWindowCaps             window[NV_EVO_NUM_WINDOW_CAPS];
+    NVEvoHwTileCaps             hwTile[8];
+    NVEvoHwPhywinCaps           hwPhywin[32];
 } NVEvoCapabilities;
 
 typedef struct {
@@ -1007,6 +1043,12 @@ typedef struct _NVEvoDevRec {
 
     NvU32               numHeads;
     NvU32               numWindows; /* NVDisplay only. */
+    /*
+     * 'numHwTiles' and 'numHwPhywins' fields are
+     * NVDisplay 5.0+ only.
+     */
+    NvU32               numHwTiles;
+    NvU32               numHwPhywins;
 
     NvU32               displayHandle;
 
@@ -1202,7 +1244,6 @@ typedef struct _NVEvoDevRec {
         NvU32 semaphoreHandle;
         void *pSemaphores;
         NvBool enabled;
-        NvBool active;
         NvU32 flipCounter;
     } vrr;
 
@@ -1414,6 +1455,9 @@ typedef struct _NVDscInfoEvoRec {
         } hdmi;
     };
 
+    NvU32 sliceCount;
+    NvU32 possibleSliceCountMask;
+
     enum NVDscInfoEvoType type;
 } NVDscInfoEvoRec;
 
@@ -1476,6 +1520,11 @@ static inline NvBool nvIsAdaptiveSyncDpyVrrType(enum NvKmsDpyVRRType type)
 {
     return ((type == NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_DEFAULTLISTED) ||
             (type == NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_NON_DEFAULTLISTED));
+}
+
+static inline NvBool nvIsGsyncDpyVrrType(enum NvKmsDpyVRRType type)
+{
+    return (type == NVKMS_DPY_VRR_TYPE_GSYNC);
 }
 
 static inline NvU64 nvEvoFrametimeUsFromTimings(const NVHwModeTimingsEvo *pTimings)
@@ -1669,7 +1718,16 @@ NvBool nvIsConnectorActiveEvo(const NVConnectorEvoRec *pConnectorEvo)
            (pConnectorEvo->or.ownerHeadMask[pConnectorEvo->or.primary] != 0x0);
 }
 
+enum NVDpLibIsModePossibleQueryMode {
+    NV_DP_LIB_IS_MODE_POSSIBLE_QUERY_MODE_NONE,
+    NV_DP_LIB_IS_MODE_POSSIBLE_QUERY_MODE_PRE_IMP =
+            NV_DP_LIB_IS_MODE_POSSIBLE_QUERY_MODE_NONE,
+    NV_DP_LIB_IS_MODE_POSSIBLE_QUERY_MODE_POST_IMP,
+};
+
 typedef struct _NVDpLibIsModePossibleParamsRec {
+    enum NVDpLibIsModePossibleQueryMode queryMode;
+
     struct {
         NvU32 displayId;
         NVDpyIdList dpyIdList;
@@ -1801,6 +1859,27 @@ typedef enum _NVEvoMergeMode {
 } NVEvoMergeMode;
 
 /*
+ * In GB20X+ architecture, the postcomp pipe is now referred to as a "Tile".
+ * The term "Head" now refers to just the RG (Raster Generator)  and SF (Serial
+ * Frontend). Each Tile can be independently assigned to a Head and multiple
+ * Tiles can feed into a single Head. Each Tile will generate one vertical
+ * slice of the output viewport
+ *
+ * When multiple tiles are used, multiple precomp pipelines are used to render
+ * a single window in the desktop space. The precomp pipe is now referred to
+ * as a "PhyWin" (Physical Window).
+ *
+ * When a Window channel is attached to a head, the channel must own a number
+ * of physical windows equal to the number of tiles owned by that head.
+ */
+typedef struct _NVHwHeadMultiTileConfigRec {
+    /* Mask of tiles feeding into the head */
+    NvU32 tilesMask;
+    /* Per layer mask of phywins used to render a layer. */
+    NvU32 phywinsMask[NVKMS_MAX_LAYERS_PER_HEAD];
+} NVHwHeadMultiTileConfigRec;
+
+/*
  * This structure stores information about the active per-head display state.
  */
 typedef struct _NVDispHeadStateEvoRec {
@@ -1880,6 +1959,7 @@ typedef struct _NVDispHeadStateEvoRec {
      * NVDispEvoRec::mergeModeVrrSecondaryHeadMask.
      */
     NvU32 mergeModeVrrSecondaryHeadMask;
+    NVHwHeadMultiTileConfigRec multiTileConfig;
 } NVDispHeadStateEvoRec;
 
 typedef struct _NVDispStereoParamsEvoRec {
@@ -1917,6 +1997,11 @@ typedef struct _NVDispApiHeadStateEvoRec {
      */
     NVHwModeTimingsEvo timings;
 
+    struct {
+        NvBool active;
+        NvBool pendingCursorMotion;
+    } vrr;
+    
     NVDispStereoParamsEvoRec stereo;
 
     struct NvKmsPoint viewPortPointIn;
@@ -2073,12 +2158,21 @@ typedef struct _NVDispEvoRec {
 
 static inline NvU32 GetNextHwHead(NvU32 hwHeadsMask, const NvU32 prevHwHead)
 {
+    NvU32 head;
+
     if ((hwHeadsMask == 0x0) ||
             ((prevHwHead != NV_INVALID_HEAD) &&
              ((hwHeadsMask &= ~((1 << (prevHwHead + 1)) -1 )) == 0x0))) {
         return NV_INVALID_HEAD;
     }
-    return BIT_IDX_32(LOWESTBIT(hwHeadsMask));
+
+    head = BIT_IDX_32(LOWESTBIT(hwHeadsMask));
+
+    if (head >= NV_MAX_HEADS) {
+        return NV_INVALID_HEAD;
+    }
+
+    return head;
 }
 
 #define FOR_EACH_EVO_HW_HEAD_IN_MASK(__hwHeadsMask, __hwHead)           \
@@ -2834,6 +2928,10 @@ typedef struct {
         NvU32 displayId;
         NvU32 orIndex;
         NvU8 orType; /* NV0073_CTRL_SPECIFIC_OR_TYPE_* */
+        NvU32 dscSliceCount;
+        NvU32 possibleDscSliceCountMask;
+        NVHwHeadMultiTileConfigRec multiTileConfig;
+        NvBool modesetRequested : 1;
     } head[NVKMS_MAX_HEADS_PER_DISP];
 
     NvBool requireBootClocks;
@@ -2844,6 +2942,10 @@ typedef struct {
     NvBool possible;
     NvU32 minRequiredBandwidthKBPS;
     NvU32 floorBandwidthKBPS;
+    struct {
+        NvU32 dscSliceCount;
+        NVHwHeadMultiTileConfigRec multiTileConfig;
+    } head[NVKMS_MAX_HEADS_PER_DISP];
 } NVEvoIsModePossibleDispOutput;
 
 /* CRC-query specific defines */
@@ -2899,6 +3001,12 @@ typedef struct _CRC32NotifierCrcOut {
 
 } CRC32NotifierCrcOut;
 
+typedef enum {
+    NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME,
+    NV_EVO_INFOFRAME_TRANSMIT_CONTROL_INIT =
+        NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME,
+    NV_EVO_INFOFRAME_TRANSMIT_CONTROL_SINGLE_FRAME,
+} NvEvoInfoFrameTransmitControl;
 
 typedef const struct _nv_evo_hal {
     void (*SetRasterParams)     (NVDevEvoPtr pDevEvo, int head,
@@ -3082,6 +3190,29 @@ typedef const struct _nv_evo_hal {
                          const NvU32 head,
                          const NVEvoMergeMode mode,
                          NVEvoUpdateState* pUpdateState);
+    void (*SendHdmiInfoFrame)(const NVDispEvoRec *pDispEvo,
+                              const NvU32 head,
+                              const NvEvoInfoFrameTransmitControl transmitCtrl,
+                              const NVT_INFOFRAME_HEADER *pInfoFrameHeader,
+                              const NvU32 infoFrameSize);
+    void (*DisableHdmiInfoFrame)(const NVDispEvoRec *pDispEvo,
+                                 const NvU32 head,
+                                 const NvU8 nvtInfoFrameType);
+    void (*SendDpInfoFrameSdp)(const NVDispEvoRec *pDispEvo,
+                               const NvU32 head,
+                               const NvEvoInfoFrameTransmitControl transmitCtrl,
+                               const DPSDP_DESCRIPTOR *sdp);
+    void (*SetDpVscSdp)(const NVDispEvoRec *pDispEvo,
+                        const NvU32 head,
+                        const DPSDP_DP_VSC_SDP_DESCRIPTOR *sdp,
+                        NVEvoUpdateState *pUpdateState);
+    void (*InitHwHeadMultiTileConfig)(NVDevEvoRec *pDevEvo);
+    void (*SetMultiTileConfig)(const NVDispEvoRec *pDispEvo,
+                               const NvU32 head,
+                               const NVHwModeTimingsEvo *pTimings,
+                               const NVDscInfoEvoRec *pDscInfo,
+                               const NVHwHeadMultiTileConfigRec *pMultiTileConfig,
+                               NVEvoModesetUpdateState *pModesetUpdateState);
 
     NvU32 (*AllocSurfaceDescriptor) (NVDevEvoPtr pDevEvo,
                                      NVSurfaceDescriptor *pSurfaceDesc,

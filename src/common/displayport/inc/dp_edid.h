@@ -166,6 +166,9 @@ namespace DisplayPort
             bool keepLinkAlive;
             bool useLegacyAddress;
             bool bIgnoreDscCap;           // Ignore DSC even if sink reports DSC capability
+            bool bDisableDownspread;
+            bool bSkipCableIdCheck;
+            bool bAllocateManualTimeslots;
         }_WARFlags;
 
         _WARFlags WARFlags;

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -102,6 +102,28 @@ BRINFO upstreamPortInfo[] =
     // last element must have zero vendor id and device id
     {0, 0, NULL}
 };
+
+static NV_STATUS
+AMD_14D8_setupFunc
+(
+    OBJCL *pCl
+)
+{
+    pCl->setProperty(pCl, PDB_PROP_CL_WAR_4802761_ENABLED, NV_TRUE);
+
+    return NV_OK;
+}
+
+static NV_STATUS
+Intel_A70D_setupFunc
+(
+    OBJCL *pCl
+)
+{
+    pCl->setProperty(pCl, PDB_PROP_CL_WAR_4802761_ENABLED, NV_TRUE);
+
+    return NV_OK;
+}
 
 static NV_STATUS
 Intel_25XX_setupFunc
@@ -893,6 +915,29 @@ Intel_7A04_setupFunc
 
     return NV_OK;
 }
+
+static NV_STATUS
+Intel_5795_setupFunc
+(
+    OBJCL *pCl
+)
+{
+    pCl->setProperty(pCl, PDB_PROP_CL_RELAXED_ORDERING_NOT_CAPABLE, NV_TRUE);
+
+    return NV_OK;
+}
+
+static NV_STATUS
+Intel_1B81_setupFunc
+(
+    OBJCL *pCl
+)
+{
+    pCl->setProperty(pCl, PDB_PROP_CL_RELAXED_ORDERING_NOT_CAPABLE, NV_TRUE);
+
+    return NV_OK;
+}
+
 
 static NV_STATUS
 Nvidia_T210_setupFunc

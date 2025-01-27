@@ -579,6 +579,7 @@ static NV_STATUS service_non_managed_fault(uvm_gpu_va_space_t *gpu_va_space,
         uvm_fault_access_type_t fault_access_type = fault_entry->fault_access_type;
         uvm_ats_fault_context_t *ats_context = &non_replayable_faults->ats_context;
 
+        uvm_page_mask_zero(&ats_context->faults.prefetch_only_fault_mask);
         uvm_page_mask_zero(&ats_context->faults.read_fault_mask);
         uvm_page_mask_zero(&ats_context->faults.write_fault_mask);
         uvm_page_mask_zero(&ats_context->faults.accessed_mask);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -212,6 +212,10 @@ typedef struct NV2080_CTRL_FIFO_GET_PHYSICAL_CHANNEL_COUNT_PARAMS {
  *     This index can be used to get max channel groups supported per engine/runlist.
  *   NV2080_CTRL_FIFO_INFO_INDEX_CHANNEL_GROUPS_IN_USE_PER_ENGINE
  *     This index can be used too get channel groups currently in use per engine/runlist.
+ *   NV2080_CTRL_FIFO_INFO_INDEX_MAX_LOWER_SUBCONTEXT
+ *     This index can be used to query the maximum "lower" subcontext index
+ *     allocated under NV_CTXSHARE_ALLOCATION_FLAGS_SUBCONTEXT_ASYNC_PREFER_LOWER.
+ *     Note: Includes subcontext ID 0, which will be allocated last in ASYNC allocation mode.
  *
  */
 typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_FIFO_INFO;
@@ -227,10 +231,11 @@ typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_FIFO_INFO;
 #define NV2080_CTRL_FIFO_INFO_INDEX_IS_PER_RUNLIST_CHANNEL_RAM_SUPPORTED (0x000000007)
 #define NV2080_CTRL_FIFO_INFO_INDEX_MAX_CHANNEL_GROUPS_PER_ENGINE        (0x000000008)
 #define NV2080_CTRL_FIFO_INFO_INDEX_CHANNEL_GROUPS_IN_USE_PER_ENGINE     (0x000000009)
+#define NV2080_CTRL_FIFO_INFO_INDEX_MAX_LOWER_SUBCONTEXT                 (0x00000000a)
 
 
 /* set INDEX_MAX to greatest possible index value */
-#define NV2080_CTRL_FIFO_INFO_INDEX_MAX                                  NV2080_CTRL_FIFO_INFO_INDEX_DEFAULT_CHANNEL_TIMESLICE
+#define NV2080_CTRL_FIFO_INFO_INDEX_MAX                                  NV2080_CTRL_FIFO_INFO_INDEX_MAX_LOWER_SUBCONTEXT
 
 #define NV2080_CTRL_FIFO_GET_INFO_USERD_OFFSET_SHIFT                     (12)
 
@@ -989,7 +994,7 @@ typedef struct NV2080_CTRL_FIFO_OBJSCHED_GET_STATE_PARAMS {
  *    This field sets the runlist scheduling policy. It specifies the
  *    NV2080_CTRL_CMD_VGPU_SCHEDULER_POLICY_* scheduling policy.
  *
- *  enableArr 
+ *  enableArr
  *    This field sets the Adaptive round robin scheduler
  *    is enabled/disabled.
  *
@@ -1085,4 +1090,74 @@ typedef struct NV2080_CTRL_FIFO_OBJSCHED_GET_CAPS_PARAMS {
     NvU32  minAvgFactorForARR;
 } NV2080_CTRL_FIFO_OBJSCHED_GET_CAPS_PARAMS;
 
+// Max channels per group is limited by NV_RAMRL_ENTRY_TSG_LENGTH_MAX for the arch.
+#define NV2080_CTRL_CMD_FIFO_MAX_CHANNELS_PER_TSG             128
+
+/*
+ * NV2080_CTRL_CMD_FIFO_GET_CHANNEL_GROUP_UNIQUE_ID_INFO
+ *   hClient
+ *      Input parameter
+ *      This parameter specifies the client handle associated input channel/TSG
+ *   hChannelOrTsg
+ *     Input parameter.
+ *     This parameter specifies the handle of input channel handle (or channel
+ *     group)
+ *   tsgId
+ *     Output parameter.
+ *     This field return the Unique of TSG object if user specified a channel group handle
+ *     with hChannelOrTsg.
+ *   numChannels
+ *     Output parameter.
+ *     This field return the number of channels under TSG if user specify a
+ *     channel group handle or return 1 if user specify a channel handle.
+ *   channelUniqueID
+ *     Output parameter.
+ *     This array field returns unique Channel ID for each channel.
+ *   vasUniqueID
+ *     Output parameter.
+ *     This array field returns unique IDs of VA Space objects of channels under TSG or channel.
+ *   veid
+ *     Output parameter.
+ *     This array field returns VEID for channels under TSG or channel.
+ */
+#define NV2080_CTRL_CMD_FIFO_GET_CHANNEL_GROUP_UNIQUE_ID_INFO (0x20801123) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FIFO_INTERFACE_ID << 8) | NV2080_CTRL_FIFO_GET_CHANNEL_GROUP_UNIQUE_ID_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_FIFO_GET_CHANNEL_GROUP_UNIQUE_ID_INFO_PARAMS_MESSAGE_ID (0x23U)
+
+typedef struct NV2080_CTRL_FIFO_GET_CHANNEL_GROUP_UNIQUE_ID_INFO_PARAMS {
+    NvHandle hClient;
+    NvHandle hChannelOrTsg;
+    NvU32    tsgId;
+    NvU32    numChannels;
+    NvU32    channelUniqueID[NV2080_CTRL_CMD_FIFO_MAX_CHANNELS_PER_TSG];
+    NvU32    vasUniqueID[NV2080_CTRL_CMD_FIFO_MAX_CHANNELS_PER_TSG];
+    NvU32    veid[NV2080_CTRL_CMD_FIFO_MAX_CHANNELS_PER_TSG];
+} NV2080_CTRL_FIFO_GET_CHANNEL_GROUP_UNIQUE_ID_INFO_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_FIFO_QUERY_CHANNEL_UNIQUE_ID
+ * This command is used query the CID (channel ID) in batch
+ *   hClients
+ *      Input parameter
+ *      Array of Client handles
+ *   hChannels
+ *      Input parameter
+ *      Array of Channel handles
+ *   numChannels
+ *      Indicates the number of input client, channel handle pairs.
+ *   channelUniqueIDs
+ *     Output parameter.
+ *     This parameter returns an array of unique Channel IDs for each input pair.
+ *     channel handles.
+ */
+#define NV2080_CTRL_CMD_FIFO_QUERY_CHANNEL_UNIQUE_ID (0x20801124) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FIFO_INTERFACE_ID << 8) | NV2080_CTRL_FIFO_QUERY_CHANNEL_UNIQUE_ID_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_FIFO_QUERY_CHANNEL_UNIQUE_ID_PARAMS_MESSAGE_ID (0x24U)
+
+typedef struct NV2080_CTRL_FIFO_QUERY_CHANNEL_UNIQUE_ID_PARAMS {
+    NvHandle hClients[NV2080_CTRL_CMD_FIFO_MAX_CHANNELS_PER_TSG];
+    NvHandle hChannels[NV2080_CTRL_CMD_FIFO_MAX_CHANNELS_PER_TSG];
+    NvU32    numChannels;
+    NvU32    channelUniqueIDs[NV2080_CTRL_CMD_FIFO_MAX_CHANNELS_PER_TSG];
+} NV2080_CTRL_FIFO_QUERY_CHANNEL_UNIQUE_ID_PARAMS;
 /* _ctrl2080fifo_h_ */

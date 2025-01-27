@@ -300,9 +300,10 @@ profilerDevConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
+    ProfilerBase                *pProfBase        = staticCast(pProfDev, ProfilerBase);
     PROFILER_CLIENT_PERMISSIONS clientPermissions = {0};
 
-    if (!profilerDevQueryCapabilities_HAL(pProfDev, pCallContext, pParams,
+    if (!profilerBaseQueryCapabilities_HAL(pProfBase, pCallContext, pParams,
                                             &clientPermissions))
     {
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
@@ -312,21 +313,20 @@ profilerDevConstruct_IMPL
 }
 
 NvBool
-profilerDevQueryCapabilities_IMPL
+profilerBaseQueryCapabilities_IMPL
 (
-    ProfilerDev *pProfDev,
+    ProfilerBase *pProfBase,
     CALL_CONTEXT *pCallContext,
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams,
     PROFILER_CLIENT_PERMISSIONS *pClientPermissions
 )
 {
-    OBJGPU              *pGpu                   = GPU_RES_GET_GPU(pProfDev);
-    ProfilerBase        *pProfBase              = staticCast(pProfDev, ProfilerBase);
+    OBJGPU              *pGpu                   = GPU_RES_GET_GPU(pProfBase);
     API_SECURITY_INFO   *pSecInfo               = pParams->pSecInfo;
     NvBool               bAnyProfilingPermitted = NV_FALSE;
+    KernelHwpm *pKernelHwpm = GPU_GET_KERNEL_HWPM(pGpu);
 
-    // Assume that sys memory profiling is permitted if video memory profiling is permitted
-    // This assumption will be broken, see Bug 4508667 for more detail.
+    // SYS memory profiling is permitted if video memory profiling is permitted.
     pClientPermissions->bVideoMemoryProfilingPermitted = _isMemoryProfilingPermitted(pGpu, pProfBase);
     pClientPermissions->bSysMemoryProfilingPermitted = pClientPermissions->bVideoMemoryProfilingPermitted;
 
@@ -342,8 +342,14 @@ profilerDevQueryCapabilities_IMPL
     }
 
     pClientPermissions->bDevProfilingPermitted = _isProfilingPermitted(pGpu, pProfBase, pSecInfo);
+    pClientPermissions->bCtxProfilingPermitted = _isProfilingPermitted(pGpu, pProfBase, pSecInfo);
 
-    if (pClientPermissions->bDevProfilingPermitted)
+    if (pClientPermissions->bDevProfilingPermitted || pClientPermissions->bCtxProfilingPermitted)
+    {
+        bAnyProfilingPermitted = NV_TRUE;
+    }
+
+    if (pKernelHwpm->getProperty(pKernelHwpm, PDB_PROP_KHWPM_HES_CWD_SUPPORTED) && !IS_VIRTUAL(pGpu))
     {
         bAnyProfilingPermitted = NV_TRUE;
     }
@@ -479,12 +485,37 @@ profilerDevConstructStateInterlude_IMPL
     NvHandle        hClient     = RES_GET_CLIENT_HANDLE(pProfDev);
     NvHandle        hObject     = RES_GET_HANDLE(pProfDev);
 
-    // Assumption: The context and device permissions are the same.
-    // This assumption will be broken with HES permission release, the default context-level HES
-    // permission will be different from the device-level HES permission.
     NVB0CC_CTRL_INTERNAL_PERMISSIONS_INIT_PARAMS params = {0};
 
     params.bDevProfilingPermitted = clientPermissions.bDevProfilingPermitted;
+    params.bAdminProfilingPermitted = clientPermissions.bAdminProfilingPermitted;
+    params.bVideoMemoryProfilingPermitted = clientPermissions.bVideoMemoryProfilingPermitted;
+    params.bSysMemoryProfilingPermitted = clientPermissions.bSysMemoryProfilingPermitted;
+
+    return pRmApi->Control(pRmApi,
+                           hClient,
+                           hObject,
+                           NVB0CC_CTRL_CMD_INTERNAL_PERMISSIONS_INIT,
+                           &params, sizeof(params));
+}
+
+NV_STATUS
+profilerCtxConstructStateInterlude_IMPL
+(
+    ProfilerCtx *pProfCtx,
+    CALL_CONTEXT *pCallContext,
+    RS_RES_ALLOC_PARAMS_INTERNAL *pAllocParams,
+    PROFILER_CLIENT_PERMISSIONS clientPermissions
+)
+{
+    OBJGPU         *pGpu        = GPU_RES_GET_GPU(pProfCtx);
+    RM_API         *pRmApi      = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NvHandle        hClient     = RES_GET_CLIENT_HANDLE(pProfCtx);
+    NvHandle        hObject     = RES_GET_HANDLE(pProfCtx);
+
+    NVB0CC_CTRL_INTERNAL_PERMISSIONS_INIT_PARAMS params = {0};
+
+    params.bCtxProfilingPermitted = clientPermissions.bCtxProfilingPermitted;
     params.bAdminProfilingPermitted = clientPermissions.bAdminProfilingPermitted;
     params.bVideoMemoryProfilingPermitted = clientPermissions.bVideoMemoryProfilingPermitted;
     params.bSysMemoryProfilingPermitted = clientPermissions.bSysMemoryProfilingPermitted;
@@ -546,6 +577,24 @@ profilerDevDestructState_FWCLIENT
 }
 
 NV_STATUS
+profilerCtxConstructState_IMPL
+(
+    ProfilerCtx *pProfCtx,
+    CALL_CONTEXT *pCallContext,
+    RS_RES_ALLOC_PARAMS_INTERNAL *pAllocParams,
+    PROFILER_CLIENT_PERMISSIONS clientPermissions
+)
+{
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, profilerCtxConstructStatePrologue_HAL(pProfCtx,
+                            pCallContext, pAllocParams));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, profilerCtxConstructStateInterlude_HAL(pProfCtx,
+                            pCallContext, pAllocParams, clientPermissions));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, profilerCtxConstructStateEpilogue_HAL(pProfCtx,
+                            pCallContext, pAllocParams));
+    return NV_OK;
+}
+
+NV_STATUS
 profilerCtxConstruct_IMPL
 (
     ProfilerCtx *pProfCtx,
@@ -553,22 +602,16 @@ profilerCtxConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    OBJGPU            *pGpu       = GPU_RES_GET_GPU(pProfCtx);
     ProfilerBase      *pProfBase  = staticCast(pProfCtx, ProfilerBase);
-    API_SECURITY_INFO *pSecInfo   = pParams->pSecInfo;
+    PROFILER_CLIENT_PERMISSIONS clientPermissions = {0};
 
-    if (!_isProfilingPermitted(pGpu, pProfBase, pSecInfo))
+    if (!profilerBaseQueryCapabilities_HAL(pProfBase, pCallContext, pParams,
+                                            &clientPermissions))
     {
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, profilerCtxConstructStatePrologue_HAL(pProfCtx,
-                            pCallContext, pParams));
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, profilerCtxConstructStateInterlude_HAL(pProfCtx,
-                            pCallContext, pParams));
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, profilerCtxConstructStateEpilogue_HAL(pProfCtx,
-                            pCallContext, pParams));
-    return NV_OK;
+    return profilerCtxConstructState(pProfCtx, pCallContext, pParams, clientPermissions);
 }
 
 NV_STATUS
@@ -590,30 +633,6 @@ profilerCtxConstructStatePrologue_FWCLIENT
         pParams->pAllocParams, pParams->paramsSize, status);
 
     return status;
-}
-
-NV_STATUS
-profilerCtxConstructStateInterlude_IMPL
-(
-    ProfilerCtx *pProfCtx,
-    CALL_CONTEXT *pCallContext,
-    RS_RES_ALLOC_PARAMS_INTERNAL *pParams
-)
-{
-    OBJGPU           *pGpu        = GPU_RES_GET_GPU(pProfCtx);
-    RM_API           *pRmApi      = GPU_GET_PHYSICAL_RMAPI(pGpu);
-    NvHandle          hClient     = RES_GET_CLIENT_HANDLE(pProfCtx);
-    NvHandle          hObject     = RES_GET_HANDLE(pProfCtx);
-    API_SECURITY_INFO *pSecInfo   = pParams->pSecInfo;
-    NVB0CC_CTRL_INTERNAL_PERMISSIONS_INIT_PARAMS params = {0};
-
-    params.bAdminProfilingPermitted = pSecInfo->privLevel >= RS_PRIV_LEVEL_USER_ROOT ? NV_TRUE : NV_FALSE;
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, pRmApi->Control(pRmApi,
-                            hClient,
-                            hObject,
-                            NVB0CC_CTRL_CMD_INTERNAL_PERMISSIONS_INIT,
-                            &params, sizeof(params)));
-    return NV_OK;
 }
 
 void

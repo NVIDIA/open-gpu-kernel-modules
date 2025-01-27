@@ -45,6 +45,9 @@ extern void initializeHdmiPktInterface9571(NVHDMIPKT_CLASS*);
 extern void initializeHdmiPktInterfaceC371(NVHDMIPKT_CLASS*);
 extern void initializeHdmiPktInterfaceC671(NVHDMIPKT_CLASS*);
 extern void initializeHdmiPktInterfaceC771(NVHDMIPKT_CLASS*);
+extern void initializeHdmiPktInterfaceC871(NVHDMIPKT_CLASS*);
+extern void initializeHdmiPktInterfaceC971(NVHDMIPKT_CLASS*);
+extern void initializeHdmiPktInterfaceCA71(NVHDMIPKT_CLASS*);
 
 extern NvBool hdmiConstructor0073(NVHDMIPKT_CLASS*);
 extern void   hdmiDestructor0073 (NVHDMIPKT_CLASS*);
@@ -62,5 +65,18 @@ extern NvBool hdmiConstructorC671(NVHDMIPKT_CLASS*);
 extern void   hdmiDestructorC671 (NVHDMIPKT_CLASS*);
 extern NvBool hdmiConstructorC771(NVHDMIPKT_CLASS*);
 extern void   hdmiDestructorC771 (NVHDMIPKT_CLASS*);
+extern NvBool hdmiConstructorC871(NVHDMIPKT_CLASS*);
+extern void   hdmiDestructorC871 (NVHDMIPKT_CLASS*);
+extern NvBool isInfoframeOffsetAvailable(NvU32*     pBaseReg,
+                                         NvU32      head,
+                                         NvU32      requestedInfoframe);
+extern NVHDMIPKT_RESULT disableInfoframeC871(NVHDMIPKT_CLASS*  pThis,
+                                             NvU32*            pBaseReg,
+                                             NvU32             head,
+                                             NvU32             ifIndex);
+extern NvBool hdmiConstructorC971(NVHDMIPKT_CLASS*);
+extern void   hdmiDestructorC971 (NVHDMIPKT_CLASS*);
+extern NvBool hdmiConstructorCA71(NVHDMIPKT_CLASS*);
+extern void   hdmiDestructorCA71 (NVHDMIPKT_CLASS*);
 
 #endif //_NVHDMIPKT_INTERNAL_H_

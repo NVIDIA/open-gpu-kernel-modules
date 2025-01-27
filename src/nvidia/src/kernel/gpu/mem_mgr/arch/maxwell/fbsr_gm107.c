@@ -28,6 +28,7 @@
 #include "gpu/mem_mgr/fbsr.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/mem_desc.h"
+#include "gpu/gsp/kernel_gsp.h"
 #include "published/maxwell/gm107/dev_ram.h"
 #include "core/thread_state.h"
 #include "nvrm_registry.h"
@@ -107,6 +108,7 @@ static NV_STATUS _fbsrInitGsp
 )
 {
     MemoryManager     *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    KernelGsp         *pKernelGsp     = GPU_GET_KERNEL_GSP(pGpu);
     NvHandle           hSysMem        = NV01_NULL_OBJECT;
     RM_API            *pRmApi         = GPU_GET_PHYSICAL_RMAPI(pGpu);
     MEMORY_DESCRIPTOR *pGspSysMemDesc = pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_GSP_HEAP];
@@ -120,6 +122,7 @@ static NV_STATUS _fbsrInitGsp
     params.hClient    = pMemoryManager->hClient;
     params.hSysMem    = hSysMem;
     params.bEnteringGcoffState  = pGpu->getProperty(pGpu, PDB_PROP_GPU_GCOFF_STATE_ENTERING);
+    params.sysmemAddrOfSuspendResumeData = memdescGetPhysAddr(pKernelGsp->pSRMetaDescriptor, AT_GPU, 0);
 
     // Send S/R init information to GSP
     NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,

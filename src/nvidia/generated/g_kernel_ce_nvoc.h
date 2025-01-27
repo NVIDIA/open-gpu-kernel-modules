@@ -136,7 +136,7 @@ struct KernelCE {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__KernelCE *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
     struct IntrService __nvoc_base_IntrService;
 
@@ -146,11 +146,12 @@ struct KernelCE {
     struct IntrService *__nvoc_pbase_IntrService;    // intrserv super
     struct KernelCE *__nvoc_pbase_KernelCE;    // kce
 
-    // Vtable with 28 per-object function pointers
+    // Vtable with 30 per-object function pointers
     void (*__kceSetShimInstance__)(OBJGPU *, struct KernelCE * /*this*/);  // halified (2 hals) body
     NvBool (*__kceIsSecureCe__)(OBJGPU *, struct KernelCE * /*this*/);  // halified (2 hals) body
     NvBool (*__kceIsCeSysmemRead__)(OBJGPU *, struct KernelCE * /*this*/);  // halified (2 hals) body
     NvBool (*__kceIsCeSysmemWrite__)(OBJGPU *, struct KernelCE * /*this*/);  // halified (2 hals) body
+    NvBool (*__kceIsCeNvlinkP2P__)(OBJGPU *, struct KernelCE * /*this*/);  // halified (2 hals) body
     void (*__kceAssignCeCaps__)(OBJGPU *, struct KernelCE * /*this*/, NvU8 *);  // halified (2 hals) body
     NV_STATUS (*__kceGetP2PCes__)(struct KernelCE * /*this*/, OBJGPU *, NvU32, NvU32 *);  // halified (2 hals)
     void (*__kceGetSysmemRWLCEs__)(OBJGPU *, struct KernelCE * /*this*/, NvU32 *, NvU32 *);  // halified (2 hals)
@@ -158,23 +159,24 @@ struct KernelCE {
     NvBool (*__kceGetNvlinkMaxTopoForTable__)(OBJGPU *, struct KernelCE * /*this*/, struct NVLINK_TOPOLOGY_PARAMS *, void *, NvU32, NvU32 *);  // halified (2 hals) body
     NvBool (*__kceIsCurrentMaxTopology__)(OBJGPU *, struct KernelCE * /*this*/, struct NVLINK_TOPOLOGY_PARAMS *, NvU32 *, NvU32 *);  // halified (2 hals)
     NvBool (*__kceGetAutoConfigTableEntry__)(OBJGPU *, struct KernelCE * /*this*/, struct NVLINK_TOPOLOGY_PARAMS *, struct NVLINK_CE_AUTO_CONFIG_TABLE *, NvU32, NvU32 *, NvU32 *);  // halified (2 hals) body
-    NvU32 (*__kceGetGrceConfigSize1__)(struct KernelCE * /*this*/);  // halified (2 hals)
-    NvU32 (*__kceGetPce2lceConfigSize1__)(struct KernelCE * /*this*/);  // halified (5 hals)
-    NV_STATUS (*__kceGetMappings__)(OBJGPU *, struct KernelCE * /*this*/, NVLINK_TOPOLOGY_PARAMS *, NvU32 *, NvU32 *, NvU32 *);  // halified (4 hals) body
+    NvU32 (*__kceGetGrceConfigSize1__)(struct KernelCE * /*this*/);  // halified (3 hals)
+    NvU32 (*__kceGetPce2lceConfigSize1__)(struct KernelCE * /*this*/);  // halified (7 hals)
+    NV_STATUS (*__kceGetMappings__)(OBJGPU *, struct KernelCE * /*this*/, NVLINK_TOPOLOGY_PARAMS *, NvU32 *, NvU32 *, NvU32 *);  // halified (5 hals) body
     NV_STATUS (*__kceMapPceLceForC2C__)(OBJGPU *, struct KernelCE * /*this*/, NvU32 *, NvU32 *, NvU32 *);  // halified (3 hals) body
     NV_STATUS (*__kceMapPceLceForScrub__)(OBJGPU *, struct KernelCE * /*this*/, NvU32 *, NvU32 *);  // halified (2 hals) body
     void (*__kceMapPceLceForDecomp__)(OBJGPU *, struct KernelCE * /*this*/, NvU32 *, NvU32 *);  // halified (2 hals) body
     void (*__kceMapPceLceForPCIe__)(OBJGPU *, struct KernelCE * /*this*/, NvU32 *, NvU32 *);  // halified (2 hals) body
-    void (*__kceMapPceLceForGRCE__)(OBJGPU *, struct KernelCE * /*this*/, NvU32 *, NvU32 *, NvU32 *, NvU32 *, NvU32);  // halified (3 hals) body
+    void (*__kceMapPceLceForGRCE__)(OBJGPU *, struct KernelCE * /*this*/, NvU32 *, NvU32 *, NvU32 *, NvU32 *, NvU32);  // halified (4 hals) body
     NvU32 (*__kceGetLceMaskForShimInstance__)(OBJGPU *, struct KernelCE * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kceMapPceLceForSysmemLinks__)(OBJGPU *, struct KernelCE * /*this*/, NvU32 *, NvU32 *, NvU32 *, NvU32);  // halified (3 hals) body
     NV_STATUS (*__kceMapPceLceForNvlinkPeers__)(OBJGPU *, struct KernelCE * /*this*/, NvU32 *, NvU32 *, NvU32 *);  // halified (4 hals) body
     NvU32 (*__kceGetSysmemSupportedLceMask__)(OBJGPU *, struct KernelCE * /*this*/);  // halified (3 hals) body
-    NV_STATUS (*__kceMapAsyncLceDefault__)(OBJGPU *, struct KernelCE * /*this*/, NvU32 *, NvU32 *, NvU32 *, NvU32);  // halified (4 hals) body
+    NV_STATUS (*__kceMapAsyncLceDefault__)(OBJGPU *, struct KernelCE * /*this*/, NvU32 *, NvU32 *, NvU32 *, NvU32);  // halified (5 hals) body
     NvU32 (*__kceGetNvlinkPeerSupportedLceMask__)(OBJGPU *, struct KernelCE * /*this*/, NvU32);  // halified (3 hals) body
-    NvU32 (*__kceGetGrceSupportedLceMask__)(OBJGPU *, struct KernelCE * /*this*/);  // halified (3 hals) body
+    NvU32 (*__kceGetGrceSupportedLceMask__)(OBJGPU *, struct KernelCE * /*this*/);  // halified (4 hals) body
     NvBool (*__kceIsGenXorHigherSupported__)(OBJGPU *, struct KernelCE * /*this*/, NvU32);  // halified (3 hals) body
     void (*__kceApplyGen4orHigherMapping__)(OBJGPU *, struct KernelCE * /*this*/, NvU32 *, NvU32 *, NvU32, NvU32);  // halified (2 hals) body
+    NV_STATUS (*__kceGetGrceMaskReg__)(OBJGPU *, struct KernelCE * /*this*/, NvU32 *);  // halified (2 hals) body
 
     // Data members
     NvU32 publicID;
@@ -275,6 +277,8 @@ NV_STATUS __nvoc_objCreate_KernelCE(KernelCE**, Dynamic*, NvU32);
 #define kceSetShimInstance_FNPTR(pKCe) pKCe->__kceSetShimInstance__
 #define kceSetShimInstance(gpu, pKCe) kceSetShimInstance_DISPATCH(gpu, pKCe)
 #define kceSetShimInstance_HAL(gpu, pKCe) kceSetShimInstance_DISPATCH(gpu, pKCe)
+#define kceIsDecompLce(pGpu, lceIndex) kceIsDecompLce_STATIC_DISPATCH(pGpu, lceIndex)
+#define kceIsDecompLce_HAL(pGpu, lceIndex) kceIsDecompLce_STATIC_DISPATCH(pGpu, lceIndex)
 #define kceIsSecureCe_FNPTR(pKCe) pKCe->__kceIsSecureCe__
 #define kceIsSecureCe(pGpu, pKCe) kceIsSecureCe_DISPATCH(pGpu, pKCe)
 #define kceIsSecureCe_HAL(pGpu, pKCe) kceIsSecureCe_DISPATCH(pGpu, pKCe)
@@ -284,6 +288,9 @@ NV_STATUS __nvoc_objCreate_KernelCE(KernelCE**, Dynamic*, NvU32);
 #define kceIsCeSysmemWrite_FNPTR(pKCe) pKCe->__kceIsCeSysmemWrite__
 #define kceIsCeSysmemWrite(pGpu, pKCe) kceIsCeSysmemWrite_DISPATCH(pGpu, pKCe)
 #define kceIsCeSysmemWrite_HAL(pGpu, pKCe) kceIsCeSysmemWrite_DISPATCH(pGpu, pKCe)
+#define kceIsCeNvlinkP2P_FNPTR(pKCe) pKCe->__kceIsCeNvlinkP2P__
+#define kceIsCeNvlinkP2P(pGpu, pKCe) kceIsCeNvlinkP2P_DISPATCH(pGpu, pKCe)
+#define kceIsCeNvlinkP2P_HAL(pGpu, pKCe) kceIsCeNvlinkP2P_DISPATCH(pGpu, pKCe)
 #define kceAssignCeCaps_FNPTR(pKCe) pKCe->__kceAssignCeCaps__
 #define kceAssignCeCaps(pGpu, pKCe, pKCeCaps) kceAssignCeCaps_DISPATCH(pGpu, pKCe, pKCeCaps)
 #define kceAssignCeCaps_HAL(pGpu, pKCe, pKCeCaps) kceAssignCeCaps_DISPATCH(pGpu, pKCe, pKCeCaps)
@@ -356,6 +363,9 @@ NV_STATUS __nvoc_objCreate_KernelCE(KernelCE**, Dynamic*, NvU32);
 #define kceApplyGen4orHigherMapping_FNPTR(pCe) pCe->__kceApplyGen4orHigherMapping__
 #define kceApplyGen4orHigherMapping(pGpu, pCe, arg3, arg4, arg5, arg6) kceApplyGen4orHigherMapping_DISPATCH(pGpu, pCe, arg3, arg4, arg5, arg6)
 #define kceApplyGen4orHigherMapping_HAL(pGpu, pCe, arg3, arg4, arg5, arg6) kceApplyGen4orHigherMapping_DISPATCH(pGpu, pCe, arg3, arg4, arg5, arg6)
+#define kceGetGrceMaskReg_FNPTR(pKCe) pKCe->__kceGetGrceMaskReg__
+#define kceGetGrceMaskReg(pGpu, pKCe, pGrceMask) kceGetGrceMaskReg_DISPATCH(pGpu, pKCe, pGrceMask)
+#define kceGetGrceMaskReg_HAL(pGpu, pKCe, pGrceMask) kceGetGrceMaskReg_DISPATCH(pGpu, pKCe, pGrceMask)
 #define kceInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateInitMissing__
 #define kceInitMissing(pGpu, pEngstate) kceInitMissing_DISPATCH(pGpu, pEngstate)
 #define kceStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitLocked__
@@ -402,7 +412,7 @@ static inline void kceStateDestroy_DISPATCH(OBJGPU *arg1, struct KernelCE *arg_t
     arg_this->__nvoc_vtable->__kceStateDestroy__(arg1, arg_this);
 }
 
-static inline void kceRegisterIntrService_DISPATCH(OBJGPU *arg1, struct KernelCE *arg_this, IntrServiceRecord arg3[175]) {
+static inline void kceRegisterIntrService_DISPATCH(OBJGPU *arg1, struct KernelCE *arg_this, IntrServiceRecord arg3[177]) {
     arg_this->__nvoc_vtable->__kceRegisterIntrService__(arg1, arg_this, arg3);
 }
 
@@ -424,6 +434,10 @@ static inline NvBool kceIsCeSysmemRead_DISPATCH(OBJGPU *pGpu, struct KernelCE *p
 
 static inline NvBool kceIsCeSysmemWrite_DISPATCH(OBJGPU *pGpu, struct KernelCE *pKCe) {
     return pKCe->__kceIsCeSysmemWrite__(pGpu, pKCe);
+}
+
+static inline NvBool kceIsCeNvlinkP2P_DISPATCH(OBJGPU *pGpu, struct KernelCE *pKCe) {
+    return pKCe->__kceIsCeNvlinkP2P__(pGpu, pKCe);
 }
 
 static inline void kceAssignCeCaps_DISPATCH(OBJGPU *pGpu, struct KernelCE *pKCe, NvU8 *pKCeCaps) {
@@ -522,6 +536,10 @@ static inline void kceApplyGen4orHigherMapping_DISPATCH(OBJGPU *pGpu, struct Ker
     pCe->__kceApplyGen4orHigherMapping__(pGpu, pCe, arg3, arg4, arg5, arg6);
 }
 
+static inline NV_STATUS kceGetGrceMaskReg_DISPATCH(OBJGPU *pGpu, struct KernelCE *pKCe, NvU32 *pGrceMask) {
+    return pKCe->__kceGetGrceMaskReg__(pGpu, pKCe, pGrceMask);
+}
+
 static inline void kceInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelCE *pEngstate) {
     pEngstate->__nvoc_vtable->__kceInitMissing__(pGpu, pEngstate);
 }
@@ -591,20 +609,6 @@ static inline NV_STATUS kceUpdateClassDB(OBJGPU *pGpu, struct KernelCE *pKCe) {
 
 #define kceUpdateClassDB_HAL(pGpu, pKCe) kceUpdateClassDB(pGpu, pKCe)
 
-NvBool kceIsCeNvlinkP2P_GP100(OBJGPU *pGpu, struct KernelCE *pKCe);
-
-
-#ifdef __nvoc_kernel_ce_h_disabled
-static inline NvBool kceIsCeNvlinkP2P(OBJGPU *pGpu, struct KernelCE *pKCe) {
-    NV_ASSERT_FAILED_PRECOMP("KernelCE was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_kernel_ce_h_disabled
-#define kceIsCeNvlinkP2P(pGpu, pKCe) kceIsCeNvlinkP2P_GP100(pGpu, pKCe)
-#endif //__nvoc_kernel_ce_h_disabled
-
-#define kceIsCeNvlinkP2P_HAL(pGpu, pKCe) kceIsCeNvlinkP2P(pGpu, pKCe)
-
 void kceClearAssignedNvlinkPeerMasks_GV100(OBJGPU *pGpu, struct KernelCE *pKCe);
 
 
@@ -618,22 +622,6 @@ static inline void kceClearAssignedNvlinkPeerMasks(OBJGPU *pGpu, struct KernelCE
 
 #define kceClearAssignedNvlinkPeerMasks_HAL(pGpu, pKCe) kceClearAssignedNvlinkPeerMasks(pGpu, pKCe)
 
-static inline NvU32 kceGetGrceMaskReg_4a4dee(OBJGPU *pGpu, struct KernelCE *pKCe) {
-    return 0;
-}
-
-
-#ifdef __nvoc_kernel_ce_h_disabled
-static inline NvU32 kceGetGrceMaskReg(OBJGPU *pGpu, struct KernelCE *pKCe) {
-    NV_ASSERT_FAILED_PRECOMP("KernelCE was disabled!");
-    return 0;
-}
-#else //__nvoc_kernel_ce_h_disabled
-#define kceGetGrceMaskReg(pGpu, pKCe) kceGetGrceMaskReg_4a4dee(pGpu, pKCe)
-#endif //__nvoc_kernel_ce_h_disabled
-
-#define kceGetGrceMaskReg_HAL(pGpu, pKCe) kceGetGrceMaskReg(pGpu, pKCe)
-
 NV_STATUS kceConstructEngine_IMPL(OBJGPU *pGpu, struct KernelCE *pKCe, ENGDESCRIPTOR arg3);
 
 NvBool kceIsPresent_IMPL(OBJGPU *pGpu, struct KernelCE *pKCe);
@@ -646,7 +634,7 @@ NV_STATUS kceStateLoad_GP100(OBJGPU *arg1, struct KernelCE *arg2, NvU32 arg3);
 
 void kceStateDestroy_IMPL(OBJGPU *arg1, struct KernelCE *arg2);
 
-void kceRegisterIntrService_IMPL(OBJGPU *arg1, struct KernelCE *arg2, IntrServiceRecord arg3[175]);
+void kceRegisterIntrService_IMPL(OBJGPU *arg1, struct KernelCE *arg2, IntrServiceRecord arg3[177]);
 
 NV_STATUS kceServiceNotificationInterrupt_IMPL(OBJGPU *arg1, struct KernelCE *arg2, IntrServiceServiceNotificationInterruptArguments *arg3);
 
@@ -655,6 +643,12 @@ void kceSetShimInstance_GB100(OBJGPU *gpu, struct KernelCE *pKCe);
 static inline void kceSetShimInstance_b3696a(OBJGPU *gpu, struct KernelCE *pKCe) {
     return;
 }
+
+NvBool kceIsDecompLce_VF(OBJGPU *pGpu, NvU32 lceIndex);
+
+NvBool kceIsDecompLce_IMPL(OBJGPU *pGpu, NvU32 lceIndex);
+
+NvBool kceIsDecompLce_STATIC_DISPATCH(OBJGPU *pGpu, NvU32 lceIndex);
 
 NvBool kceIsSecureCe_GH100(OBJGPU *pGpu, struct KernelCE *pKCe);
 
@@ -669,6 +663,10 @@ NvBool kceIsCeSysmemRead_GB100(OBJGPU *pGpu, struct KernelCE *pKCe);
 NvBool kceIsCeSysmemWrite_GP100(OBJGPU *pGpu, struct KernelCE *pKCe);
 
 NvBool kceIsCeSysmemWrite_GB100(OBJGPU *pGpu, struct KernelCE *pKCe);
+
+NvBool kceIsCeNvlinkP2P_GP100(OBJGPU *pGpu, struct KernelCE *pKCe);
+
+NvBool kceIsCeNvlinkP2P_GB100(OBJGPU *pGpu, struct KernelCE *pKCe);
 
 void kceAssignCeCaps_GP100(OBJGPU *pGpu, struct KernelCE *pKCe, NvU8 *pKCeCaps);
 
@@ -708,6 +706,8 @@ NvU32 kceGetGrceConfigSize1_TU102(struct KernelCE *arg1);
 
 NvU32 kceGetGrceConfigSize1_GB100(struct KernelCE *arg1);
 
+NvU32 kceGetGrceConfigSize1_GB202(struct KernelCE *arg1);
+
 NvU32 kceGetPce2lceConfigSize1_TU102(struct KernelCE *arg1);
 
 NvU32 kceGetPce2lceConfigSize1_GA100(struct KernelCE *arg1);
@@ -718,11 +718,17 @@ NvU32 kceGetPce2lceConfigSize1_GH100(struct KernelCE *arg1);
 
 NvU32 kceGetPce2lceConfigSize1_GB100(struct KernelCE *arg1);
 
+NvU32 kceGetPce2lceConfigSize1_GB10B(struct KernelCE *arg1);
+
+NvU32 kceGetPce2lceConfigSize1_GB202(struct KernelCE *arg1);
+
 NV_STATUS kceGetMappings_GA100(OBJGPU *pGpu, struct KernelCE *pCe, NVLINK_TOPOLOGY_PARAMS *arg3, NvU32 *arg4, NvU32 *arg5, NvU32 *arg6);
 
 NV_STATUS kceGetMappings_GH100(OBJGPU *pGpu, struct KernelCE *pCe, NVLINK_TOPOLOGY_PARAMS *arg3, NvU32 *arg4, NvU32 *arg5, NvU32 *arg6);
 
 NV_STATUS kceGetMappings_GB100(OBJGPU *pGpu, struct KernelCE *pCe, NVLINK_TOPOLOGY_PARAMS *arg3, NvU32 *arg4, NvU32 *arg5, NvU32 *arg6);
+
+NV_STATUS kceGetMappings_GB202(OBJGPU *pGpu, struct KernelCE *pCe, NVLINK_TOPOLOGY_PARAMS *arg3, NvU32 *arg4, NvU32 *arg5, NvU32 *arg6);
 
 static inline NV_STATUS kceGetMappings_46f6a7(OBJGPU *pGpu, struct KernelCE *pCe, NVLINK_TOPOLOGY_PARAMS *arg3, NvU32 *arg4, NvU32 *arg5, NvU32 *arg6) {
     return NV_ERR_NOT_SUPPORTED;
@@ -755,6 +761,8 @@ static inline void kceMapPceLceForPCIe_b3696a(OBJGPU *pGpu, struct KernelCE *pKC
 }
 
 void kceMapPceLceForGRCE_GH100(OBJGPU *pGpu, struct KernelCE *pKCe, NvU32 *arg3, NvU32 *arg4, NvU32 *arg5, NvU32 *arg6, NvU32 arg7);
+
+void kceMapPceLceForGRCE_GB202(OBJGPU *pGpu, struct KernelCE *pKCe, NvU32 *arg3, NvU32 *arg4, NvU32 *arg5, NvU32 *arg6, NvU32 arg7);
 
 void kceMapPceLceForGRCE_GB100(OBJGPU *pGpu, struct KernelCE *pKCe, NvU32 *arg3, NvU32 *arg4, NvU32 *arg5, NvU32 *arg6, NvU32 arg7);
 
@@ -798,6 +806,8 @@ NV_STATUS kceMapAsyncLceDefault_GA100(OBJGPU *pGpu, struct KernelCE *pCe, NvU32 
 
 NV_STATUS kceMapAsyncLceDefault_GH100(OBJGPU *pGpu, struct KernelCE *pCe, NvU32 *arg3, NvU32 *arg4, NvU32 *arg5, NvU32 arg6);
 
+NV_STATUS kceMapAsyncLceDefault_GB202(OBJGPU *pGpu, struct KernelCE *pCe, NvU32 *arg3, NvU32 *arg4, NvU32 *arg5, NvU32 arg6);
+
 NV_STATUS kceMapAsyncLceDefault_GB100(OBJGPU *pGpu, struct KernelCE *pCe, NvU32 *arg3, NvU32 *arg4, NvU32 *arg5, NvU32 arg6);
 
 static inline NV_STATUS kceMapAsyncLceDefault_46f6a7(OBJGPU *pGpu, struct KernelCE *pCe, NvU32 *arg3, NvU32 *arg4, NvU32 *arg5, NvU32 arg6) {
@@ -816,6 +826,8 @@ NvU32 kceGetGrceSupportedLceMask_GA100(OBJGPU *pGpu, struct KernelCE *pCe);
 
 NvU32 kceGetGrceSupportedLceMask_GA102(OBJGPU *pGpu, struct KernelCE *pCe);
 
+NvU32 kceGetGrceSupportedLceMask_GB202(OBJGPU *pGpu, struct KernelCE *pCe);
+
 static inline NvU32 kceGetGrceSupportedLceMask_4a4dee(OBJGPU *pGpu, struct KernelCE *pCe) {
     return 0;
 }
@@ -832,6 +844,12 @@ void kceApplyGen4orHigherMapping_GA100(OBJGPU *pGpu, struct KernelCE *pCe, NvU32
 
 static inline void kceApplyGen4orHigherMapping_b3696a(OBJGPU *pGpu, struct KernelCE *pCe, NvU32 *arg3, NvU32 *arg4, NvU32 arg5, NvU32 arg6) {
     return;
+}
+
+NV_STATUS kceGetGrceMaskReg_GB202(OBJGPU *pGpu, struct KernelCE *pKCe, NvU32 *pGrceMask);
+
+static inline NV_STATUS kceGetGrceMaskReg_46f6a7(OBJGPU *pGpu, struct KernelCE *pKCe, NvU32 *pGrceMask) {
+    return NV_ERR_NOT_SUPPORTED;
 }
 
 NV_STATUS kceFindFirstInstance_IMPL(OBJGPU *pGpu, struct KernelCE **ppKCe);
@@ -899,9 +917,6 @@ static inline NV_STATUS kceGetPceConfigForLceType(OBJGPU *pGpu, struct KernelCE 
 #define kceGetPceConfigForLceType(pGpu, pKCe, lceType, pNumPcesPerLce, pNumLces, pSupportedPceMask, pSupportedLceMask, pPcesPerHshub) kceGetPceConfigForLceType_IMPL(pGpu, pKCe, lceType, pNumPcesPerLce, pNumLces, pSupportedPceMask, pSupportedLceMask, pPcesPerHshub)
 #endif //__nvoc_kernel_ce_h_disabled
 
-NvBool kceIsDecompLce_IMPL(OBJGPU *pGpu, NvU32 lceIndex);
-
-#define kceIsDecompLce(pGpu, lceIndex) kceIsDecompLce_IMPL(pGpu, lceIndex)
 NV_STATUS kceFindShimOwner_IMPL(OBJGPU *gpu, struct KernelCE *pKCe, struct KernelCE **ppKCe);
 
 #ifdef __nvoc_kernel_ce_h_disabled

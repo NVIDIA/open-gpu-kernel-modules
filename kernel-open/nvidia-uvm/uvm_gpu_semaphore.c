@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -30,12 +30,33 @@
 
 #define UVM_SEMAPHORE_SIZE 4
 #define UVM_SEMAPHORE_PAGE_SIZE PAGE_SIZE
-#define UVM_SEMAPHORE_COUNT_PER_PAGE (PAGE_SIZE / UVM_SEMAPHORE_SIZE)
+#define UVM_SEMAPHORE_COUNT_PER_PAGE (UVM_SEMAPHORE_PAGE_SIZE / UVM_SEMAPHORE_SIZE)
 
 // The top nibble of the canary base is intentionally 0. The rest of the value
 // is arbitrary. See the comments below on make_canary.
 #define UVM_SEMAPHORE_CANARY_BASE     0x0badc0de
 #define UVM_SEMAPHORE_CANARY_MASK     0xf0000000
+
+// In Confidential Computing, the representation of the semaphore payload
+// requires additional storage (fields), because it is encrypted.
+//
+// The payload fields are written by the GPU, and read by the CPU.
+typedef struct
+{
+    // The actual (encrypted) payload value.
+    NvU32 encrypted_payload;
+
+    // Plaintext number used to version a {encrypted_payload, auth_tag} pair.
+    // The notifier ensures that the CPU can decrypt a valid snapshot of those
+    // encryption materials.
+    uvm_gpu_semaphore_notifier_t notifier;
+
+    // Padding used to enforce 16-byte alignment of the authentication tag.
+    NvU64 unused;
+
+    // Authentication tag associated with the encrypted payload.
+    NvU8 auth_tag[UVM_CONF_COMPUTING_AUTH_TAG_SIZE];
+} uvm_gpu_encrypted_semaphore_payload_t;
 
 struct uvm_gpu_semaphore_pool_struct
 {
@@ -61,14 +82,9 @@ struct uvm_gpu_semaphore_pool_page_struct
     uvm_rm_mem_t *memory;
 
     struct {
-        // Unprotected sysmem storing encrypted value of semaphores
+        // Unprotected sysmem storing encrypted value of semaphores, in addition
+        // to other encryption-related data.
         uvm_rm_mem_t *encrypted_payload_memory;
-
-        // Unprotected sysmem storing encryption auth tags
-        uvm_rm_mem_t *auth_tag_memory;
-
-        // Unprotected sysmem storing plain text notifier values
-        uvm_rm_mem_t *notifier_memory;
     } conf_computing;
 
     // Pool the page is part of
@@ -131,7 +147,6 @@ static bool semaphore_uses_canary(uvm_gpu_semaphore_pool_t *pool)
     // A pool allocated in the CPR of vidmem cannot be read/written from the
     // CPU.
     return !gpu_semaphore_pool_is_secure(pool) && UVM_IS_DEBUG();
-    return UVM_IS_DEBUG();
 }
 
 // Can the GPU access the semaphore, i.e., can Host/Esched address the semaphore
@@ -146,65 +161,46 @@ static void pool_page_free_buffers(uvm_gpu_semaphore_pool_page_t *page)
     uvm_rm_mem_free(page->memory);
     page->memory = NULL;
 
-    if (gpu_semaphore_pool_is_secure(page->pool)) {
-        uvm_rm_mem_free(page->conf_computing.encrypted_payload_memory);
-        uvm_rm_mem_free(page->conf_computing.auth_tag_memory);
-        uvm_rm_mem_free(page->conf_computing.notifier_memory);
-
-        page->conf_computing.encrypted_payload_memory = NULL;
-        page->conf_computing.auth_tag_memory = NULL;
-        page->conf_computing.notifier_memory = NULL;
-    }
-    else {
+    if (!gpu_semaphore_pool_is_secure(page->pool))
         UVM_ASSERT(!page->conf_computing.encrypted_payload_memory);
-        UVM_ASSERT(!page->conf_computing.auth_tag_memory);
-        UVM_ASSERT(!page->conf_computing.notifier_memory);
-    }
+
+    uvm_rm_mem_free(page->conf_computing.encrypted_payload_memory);
+    page->conf_computing.encrypted_payload_memory = NULL;
 }
 
 static NV_STATUS pool_page_alloc_buffers(uvm_gpu_semaphore_pool_page_t *page)
 {
     NV_STATUS status;
     uvm_gpu_semaphore_pool_t *pool = page->pool;
+    uvm_gpu_t *gpu = pool->gpu;
     uvm_rm_mem_type_t memory_type = (pool->aperture == UVM_APERTURE_SYS) ? UVM_RM_MEM_TYPE_SYS : UVM_RM_MEM_TYPE_GPU;
-    size_t align = 0;
-    bool map_all = true;
-    align = gpu_semaphore_pool_is_secure(pool) ? UVM_CONF_COMPUTING_BUF_ALIGNMENT : 0;
-    map_all = gpu_semaphore_pool_is_secure(pool) ? false : true;
-
-    if (map_all)
-        status = uvm_rm_mem_alloc_and_map_all(pool->gpu, memory_type, UVM_SEMAPHORE_PAGE_SIZE, align, &page->memory);
-    else
-        status = uvm_rm_mem_alloc(pool->gpu, memory_type, UVM_SEMAPHORE_PAGE_SIZE, align, &page->memory);
-
-    if (status != NV_OK)
-        goto error;
+    size_t memory_size = UVM_SEMAPHORE_PAGE_SIZE;
 
     if (!gpu_semaphore_pool_is_secure(pool))
-        return NV_OK;
+        return uvm_rm_mem_alloc_and_map_all(gpu, memory_type, memory_size, 0, &page->memory);
 
-    status = uvm_rm_mem_alloc_and_map_cpu(pool->gpu,
+    status = uvm_rm_mem_alloc(gpu, memory_type, memory_size, UVM_CONF_COMPUTING_BUF_ALIGNMENT, &page->memory);
+    if (status != NV_OK)
+        goto error;
+
+    // TODO: Bug 4607874: This check can be removed once a more general solution
+    // to prevent reordering of CE writes is in place.
+    //
+    // The sysmem allocation backing the page's encrypted payload memory must be
+    // 32-bytes aligned (UVM_CONF_COMPUTING_BUF_ALIGNMENT). If each individual
+    // encrypted payload is 32 bytes, then it never spans more than a single,
+    // naturally aligned, segment of 32 bytes. This is required to prevent
+    // reordering issues that result on failures when decrypting the semaphore's
+    // payload on the CPU.
+    BUILD_BUG_ON(sizeof(uvm_gpu_encrypted_semaphore_payload_t) != UVM_CONF_COMPUTING_BUF_ALIGNMENT);
+
+    BUILD_BUG_ON(offsetof(uvm_gpu_encrypted_semaphore_payload_t, auth_tag) != UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT);
+
+    status = uvm_rm_mem_alloc_and_map_cpu(gpu,
                                           UVM_RM_MEM_TYPE_SYS,
-                                          UVM_SEMAPHORE_PAGE_SIZE,
+                                          UVM_SEMAPHORE_COUNT_PER_PAGE * sizeof(uvm_gpu_encrypted_semaphore_payload_t),
                                           UVM_CONF_COMPUTING_BUF_ALIGNMENT,
                                           &page->conf_computing.encrypted_payload_memory);
-    if (status != NV_OK)
-        goto error;
-
-    BUILD_BUG_ON(UVM_CONF_COMPUTING_AUTH_TAG_SIZE % UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT);
-    status = uvm_rm_mem_alloc_and_map_cpu(pool->gpu,
-                                          UVM_RM_MEM_TYPE_SYS,
-                                          UVM_SEMAPHORE_COUNT_PER_PAGE * UVM_CONF_COMPUTING_AUTH_TAG_SIZE,
-                                          UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT,
-                                          &page->conf_computing.auth_tag_memory);
-    if (status != NV_OK)
-        goto error;
-
-    status = uvm_rm_mem_alloc_and_map_cpu(pool->gpu,
-                                          UVM_RM_MEM_TYPE_SYS,
-                                          UVM_SEMAPHORE_COUNT_PER_PAGE * sizeof(NvU32),
-                                          0,
-                                          &page->conf_computing.notifier_memory);
     if (status != NV_OK)
         goto error;
 
@@ -492,51 +488,64 @@ NvU32 *uvm_gpu_semaphore_get_cpu_va(uvm_gpu_semaphore_t *semaphore)
     return (NvU32*)(base_va + semaphore->index * UVM_SEMAPHORE_SIZE);
 }
 
+static uvm_gpu_encrypted_semaphore_payload_t *encrypted_semaphore_payload(uvm_gpu_semaphore_t *semaphore)
+{
+    uvm_gpu_encrypted_semaphore_payload_t *encrypted_semaphore;
+
+    encrypted_semaphore = uvm_rm_mem_get_cpu_va(semaphore->page->conf_computing.encrypted_payload_memory);
+
+    return encrypted_semaphore + semaphore->index;
+}
+
+static NvU64 encrypted_semaphore_payload_gpu_va(uvm_gpu_semaphore_t *semaphore)
+{
+    uvm_gpu_semaphore_pool_page_t *page = semaphore->page;
+    NvU64 gpu_va_base = uvm_rm_mem_get_gpu_uvm_va(page->conf_computing.encrypted_payload_memory, page->pool->gpu);
+
+    return gpu_va_base + semaphore->index * sizeof(uvm_gpu_encrypted_semaphore_payload_t);
+}
+
 NvU32 *uvm_gpu_semaphore_get_encrypted_payload_cpu_va(uvm_gpu_semaphore_t *semaphore)
 {
-    char *encrypted_base_va = uvm_rm_mem_get_cpu_va(semaphore->page->conf_computing.encrypted_payload_memory);
-
-    return (NvU32*)(encrypted_base_va + semaphore->index * UVM_SEMAPHORE_SIZE);
+    return &encrypted_semaphore_payload(semaphore)->encrypted_payload;
 }
 
 uvm_gpu_address_t uvm_gpu_semaphore_get_encrypted_payload_gpu_va(uvm_gpu_semaphore_t *semaphore)
 {
-    NvU64 encrypted_base_va = uvm_rm_mem_get_gpu_uvm_va(semaphore->page->conf_computing.encrypted_payload_memory,
-                                                        semaphore->page->pool->gpu);
+    size_t offset = offsetof(uvm_gpu_encrypted_semaphore_payload_t, encrypted_payload);
+    NvU64 gpu_va = encrypted_semaphore_payload_gpu_va(semaphore) + offset;
 
-    return uvm_gpu_address_virtual_unprotected(encrypted_base_va + semaphore->index * UVM_SEMAPHORE_SIZE);
+    UVM_ASSERT(IS_ALIGNED(gpu_va, UVM_CONF_COMPUTING_BUF_ALIGNMENT));
+
+    return uvm_gpu_address_virtual_unprotected(gpu_va);
 }
 
 uvm_gpu_semaphore_notifier_t *uvm_gpu_semaphore_get_notifier_cpu_va(uvm_gpu_semaphore_t *semaphore)
 {
-    uvm_gpu_semaphore_notifier_t *notifier_base_va =
-        uvm_rm_mem_get_cpu_va(semaphore->page->conf_computing.notifier_memory);
-
-    return notifier_base_va + semaphore->index;
+    return &encrypted_semaphore_payload(semaphore)->notifier;
 }
 
 uvm_gpu_address_t uvm_gpu_semaphore_get_notifier_gpu_va(uvm_gpu_semaphore_t *semaphore)
 {
-    NvU64 notifier_base_va = uvm_rm_mem_get_gpu_uvm_va(semaphore->page->conf_computing.notifier_memory,
-                                                       semaphore->page->pool->gpu);
+    size_t offset = offsetof(uvm_gpu_encrypted_semaphore_payload_t, notifier);
+    NvU64 gpu_va = encrypted_semaphore_payload_gpu_va(semaphore) + offset;
 
-    return uvm_gpu_address_virtual_unprotected(notifier_base_va +
-                                               semaphore->index * sizeof(uvm_gpu_semaphore_notifier_t));
+    return uvm_gpu_address_virtual_unprotected(gpu_va);
 }
 
 void *uvm_gpu_semaphore_get_auth_tag_cpu_va(uvm_gpu_semaphore_t *semaphore)
 {
-    char *auth_tag_base_va = uvm_rm_mem_get_cpu_va(semaphore->page->conf_computing.auth_tag_memory);
-
-    return (void*)(auth_tag_base_va + semaphore->index * UVM_CONF_COMPUTING_AUTH_TAG_SIZE);
+    return encrypted_semaphore_payload(semaphore)->auth_tag;
 }
 
 uvm_gpu_address_t uvm_gpu_semaphore_get_auth_tag_gpu_va(uvm_gpu_semaphore_t *semaphore)
 {
-    NvU64 auth_tag_base_va = uvm_rm_mem_get_gpu_uvm_va(semaphore->page->conf_computing.auth_tag_memory,
-                                                       semaphore->page->pool->gpu);
+    size_t offset = offsetof(uvm_gpu_encrypted_semaphore_payload_t, auth_tag);
+    NvU64 gpu_va = encrypted_semaphore_payload_gpu_va(semaphore) + offset;
 
-    return uvm_gpu_address_virtual_unprotected(auth_tag_base_va + semaphore->index * UVM_CONF_COMPUTING_AUTH_TAG_SIZE);
+    UVM_ASSERT(IS_ALIGNED(gpu_va, UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT));
+
+    return uvm_gpu_address_virtual_unprotected(gpu_va);
 }
 
 NvU32 uvm_gpu_semaphore_get_payload(uvm_gpu_semaphore_t *semaphore)
@@ -595,7 +604,7 @@ static bool tracking_semaphore_uses_mutex(uvm_gpu_tracking_semaphore_t *tracking
 NV_STATUS uvm_gpu_tracking_semaphore_alloc(uvm_gpu_semaphore_pool_t *pool, uvm_gpu_tracking_semaphore_t *tracking_sem)
 {
     NV_STATUS status;
-    uvm_lock_order_t order = UVM_LOCK_ORDER_LEAF;
+    uvm_lock_order_t order;
 
     memset(tracking_sem, 0, sizeof(*tracking_sem));
 
@@ -607,6 +616,8 @@ NV_STATUS uvm_gpu_tracking_semaphore_alloc(uvm_gpu_semaphore_pool_t *pool, uvm_g
 
     if (g_uvm_global.conf_computing_enabled)
         order = UVM_LOCK_ORDER_SECURE_SEMAPHORE;
+    else
+        order = UVM_LOCK_ORDER_LEAF;
 
     if (tracking_semaphore_uses_mutex(tracking_sem))
         uvm_mutex_init(&tracking_sem->m_lock, order);

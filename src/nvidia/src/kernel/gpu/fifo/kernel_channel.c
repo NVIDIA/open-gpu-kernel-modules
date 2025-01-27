@@ -43,6 +43,7 @@
 #include "kernel/rmapi/event.h"
 #include "kernel/rmapi/rmapi.h"
 #include "kernel/rmapi/rs_utils.h"
+#include "kernel/rmapi/mapping_list.h"
 #include "kernel/virtualization/hypervisor/hypervisor.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
@@ -73,11 +74,16 @@
 #include "class/clc96f.h"   // BLACKWELL_CHANNEL_GPFIFO_A
 #include "class/clc96fsw.h" // BLACKWELL_CHANNEL_GPFIFO_A
 
+#include "class/clca6f.h"   // BLACKWELL_CHANNEL_GPFIFO_B
+#include "class/clca6fsw.h" // BLACKWELL_CHANNEL_GPFIFO_B
+
 #include "ctrl/ctrl906f.h"
 #include "ctrl/ctrlc46f.h"
 #include "ctrl/ctrlc86f.h"
 
 #include "ctrl/ctrlc96f.h"
+
+#include "ctrl/ctrlca6f.h"
 
 #include "Nvcm.h"
 #include "libraries/resserv/resserv.h"
@@ -200,9 +206,10 @@ kchannelConstruct_IMPL
     pKernelChannel->bIsContextBound = NV_FALSE;
     pKernelChannel->nextObjectClassID = 0;
     pKernelChannel->subctxId = 0;
+    pKernelChannel->vaSpaceId = 0;
     pKernelChannel->bSkipCtxBufferAlloc = FLD_TEST_DRF(OS04, _FLAGS,
                                                        _SKIP_CTXBUFFER_ALLOC, _TRUE, flags);
-    pKernelChannel->cid = portAtomicIncrementU32(&pSys->currentCid);
+    pKernelChannel->cid = portAtomicIncrementU32(&pSys->currentChannelUniqueId);
     pKernelChannel->runqueue = DRF_VAL(OS04, _FLAGS, _GROUP_CHANNEL_RUNQUEUE, flags);
     pKernelChannel->engineType = RM_ENGINE_TYPE_NULL;
     pChannelGpfifoParams->cid = pKernelChannel->cid;
@@ -769,8 +776,8 @@ kchannelConstruct_IMPL
                 goto cleanup;
             }
         }
-        status = kchannelRetrieveKmb_HAL(pGpu, pKernelChannel, ROTATE_IV_ALL_VALID,
-                                         NV_TRUE, &pKernelChannel->clientKmb);
+        status = kchannelDeriveAndRetrieveKmb_HAL(pGpu, pKernelChannel, ROTATE_IV_ALL_VALID,
+                                                  NV_TRUE, &pKernelChannel->clientKmb);
         NV_ASSERT_OR_GOTO(status == NV_OK, cleanup);
 
         portMemCopy(pChannelGpfifoParams->encryptIv,
@@ -1618,6 +1625,17 @@ CliGetChannelClassInfo
             pClassInfo->eventActionSingle  = NVA06F_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE;
             pClassInfo->eventActionRepeat  = NVA06F_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT;
             pClassInfo->rcNotifierIndex    = NVC96F_NOTIFIERS_RC;
+            pClassInfo->classType          = CHANNEL_CLASS_TYPE_GPFIFO;
+            break;
+        }
+
+        case BLACKWELL_CHANNEL_GPFIFO_B:
+        {
+            pClassInfo->notifiersMaxCount  = NVCA6F_NOTIFIERS_MAXCOUNT;
+            pClassInfo->eventActionDisable = NVA06F_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE;
+            pClassInfo->eventActionSingle  = NVA06F_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE;
+            pClassInfo->eventActionRepeat  = NVA06F_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT;
+            pClassInfo->rcNotifierIndex    = NVCA6F_NOTIFIERS_RC;
             pClassInfo->classType          = CHANNEL_CLASS_TYPE_GPFIFO;
             break;
         }
@@ -4622,7 +4640,7 @@ _kchannelUpdateFifoMapping
     pMapping->pContext            = (void*)(NvUPtr)pKernelChannel->ChID;
 }
 
-NV_STATUS kchannelRetrieveKmb_KERNEL
+NV_STATUS kchannelDeriveAndRetrieveKmb_KERNEL
 (
     OBJGPU *pGpu,
     KernelChannel *pKernelChannel,
@@ -4634,6 +4652,9 @@ NV_STATUS kchannelRetrieveKmb_KERNEL
     ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
 
     NV_ASSERT(pCC != NULL);
+
+    NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveViaChannel_HAL(pCC, pKernelChannel, rotateOperation,
+                                                                   bIncludeIvOrNonce, keyMaterialBundle));
 
     return (confComputeKeyStoreRetrieveViaChannel_HAL(pCC, pKernelChannel, rotateOperation,
                                                       bIncludeIvOrNonce, keyMaterialBundle));

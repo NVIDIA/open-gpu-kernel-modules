@@ -834,6 +834,27 @@ return_t deserialize_NV83DE_CTRL_DEBUG_EXEC_REG_OPS_PARAMS_v1A_06(NV83DE_CTRL_DE
 }
 
 static
+return_t deserialize_NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07(NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS *pParams,
+                                                                            NvU8 *buffer,
+                                                                            NvU32 bufferSize,
+                                                                            NvU32 *offset)
+{
+    NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07   *src  = (void*)(buffer);
+    NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS          *dest = pParams;
+
+    if (src && dest) {
+#ifdef COPY_INPUT_PARAMETERS
+        dest->action    = src->action;
+#endif
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
+
+static
 return_t deserialize_NV83DE_CTRL_DEBUG_SET_MODE_MMU_DEBUG_PARAMS_v1A_06(NV83DE_CTRL_DEBUG_SET_MODE_MMU_DEBUG_PARAMS *pParams,
                                                                         NvU8 *buffer,
                                                                         NvU32 bufferSize,
@@ -1091,6 +1112,85 @@ return_t deserialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v23_04(NV20
                         sizeof(deviceInfo_d->deviceUUID),
                         deviceInfo_s->deviceUUID,
                         sizeof(deviceInfo_s->deviceUUID));
+        }
+        FOR_EACH_INDEX_IN_MASK_END;
+#endif
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
+static
+return_t deserialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v28_09(NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS *pParams,
+                                                                            NvU8 *buffer,
+                                                                            NvU32 bufferSize,
+                                                                            NvU32 *offset)
+{
+    NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v28_09 *src  = (void*)(buffer);
+    NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS        *dest = pParams;
+
+    if (src && dest) {
+#ifdef COPY_OUTPUT_PARAMETERS
+        NvU32 i;
+
+        dest->enabledLinkMask = src->enabledLinkMask;
+
+        FOR_EACH_INDEX_IN_MASK(32, i, src->enabledLinkMask)
+        {
+            NV2080_CTRL_NVLINK_DEVICE_INFO        *deviceInfo_d = NULL;
+            NV2080_CTRL_NVLINK_DEVICE_INFO_v28_09 *deviceInfo_s = NULL;
+
+            if (i >= NV2080_CTRL_NVLINK_MAX_LINKS_v23_04)
+                break;
+
+            dest->linkInfo[i].capsTbl                   = src->linkInfo[i].capsTbl;
+            dest->linkInfo[i].phyType                   = src->linkInfo[i].phyType;
+            dest->linkInfo[i].subLinkWidth              = src->linkInfo[i].subLinkWidth;
+            dest->linkInfo[i].linkState                 = src->linkInfo[i].linkState;
+            dest->linkInfo[i].rxSublinkStatus           = src->linkInfo[i].rxSublinkStatus;
+            dest->linkInfo[i].txSublinkStatus           = src->linkInfo[i].txSublinkStatus;
+            dest->linkInfo[i].nvlinkVersion             = src->linkInfo[i].nvlinkVersion;
+            dest->linkInfo[i].nciVersion                = src->linkInfo[i].nciVersion;
+            dest->linkInfo[i].phyVersion                = src->linkInfo[i].phyVersion;
+            dest->linkInfo[i].nvlinkLinkClockKHz        = src->linkInfo[i].nvlinkLinkClockKHz;
+            dest->linkInfo[i].nvlinkLineRateMbps        = src->linkInfo[i].nvlinkLineRateMbps;
+            dest->linkInfo[i].connected                 = src->linkInfo[i].connected;
+            dest->linkInfo[i].remoteDeviceLinkNumber    = src->linkInfo[i].remoteDeviceLinkNumber;
+            dest->linkInfo[i].localDeviceLinkNumber     = src->linkInfo[i].localDeviceLinkNumber;
+
+            deviceInfo_d = &dest->linkInfo[i].remoteDeviceInfo;
+            deviceInfo_s = &src->linkInfo[i].remoteDeviceInfo;
+
+            deviceInfo_d->deviceIdFlags = deviceInfo_s->deviceIdFlags;
+            deviceInfo_d->domain        = deviceInfo_s->domain;
+            deviceInfo_d->bus           = deviceInfo_s->bus;
+            deviceInfo_d->device        = deviceInfo_s->device;
+            deviceInfo_d->function      = deviceInfo_s->function;
+            deviceInfo_d->pciDeviceId   = deviceInfo_s->pciDeviceId;
+            deviceInfo_d->deviceType    = deviceInfo_s->deviceType;
+            portMemCopy(deviceInfo_d->deviceUUID,
+                        sizeof(deviceInfo_d->deviceUUID),
+                        deviceInfo_s->deviceUUID,
+                        sizeof(deviceInfo_s->deviceUUID));
+            deviceInfo_d->fabricRecoveryStatusMask = deviceInfo_s->fabricRecoveryStatusMask;
+
+            deviceInfo_d = &dest->linkInfo[i].localDeviceInfo;
+            deviceInfo_s = &src->linkInfo[i].localDeviceInfo;
+
+            deviceInfo_d->deviceIdFlags = deviceInfo_s->deviceIdFlags;
+            deviceInfo_d->domain        = deviceInfo_s->domain;
+            deviceInfo_d->bus           = deviceInfo_s->bus;
+            deviceInfo_d->device        = deviceInfo_s->device;
+            deviceInfo_d->function      = deviceInfo_s->function;
+            deviceInfo_d->pciDeviceId   = deviceInfo_s->pciDeviceId;
+            deviceInfo_d->deviceType    = deviceInfo_s->deviceType;
+            portMemCopy(deviceInfo_d->deviceUUID,
+                        sizeof(deviceInfo_d->deviceUUID),
+                        deviceInfo_s->deviceUUID,
+                        sizeof(deviceInfo_s->deviceUUID));
+            deviceInfo_d->fabricRecoveryStatusMask = deviceInfo_s->fabricRecoveryStatusMask;
         }
         FOR_EACH_INDEX_IN_MASK_END;
 #endif
@@ -2556,12 +2656,42 @@ return_t deserialize_NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS_v21_03(NV2080_CTRL_B
 #ifdef COPY_INPUT_PARAMETERS
     NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS_v21_03 *src  = (void*)(buffer);
     NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS        *dest = pParams;
+
     if (src && dest)
     {
         dest->connectionType    = src->connectionType;
         dest->peerId            = src->peerId;
         dest->bSpaAccessOnly    = src->bSpaAccessOnly;
         dest->bUseUuid          = src->bUseUuid;
+
+        portMemCopy(dest->remoteGpuUuid,
+                    VM_UUID_SIZE_v21_02,
+                    src->remoteGpuUuid,
+                    VM_UUID_SIZE_v21_02);
+    }
+    else
+        return FAILURE_T;
+#endif
+    return SUCCESS_T;
+}
+
+return_t deserialize_NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS_v29_08(NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS *pParams,
+                                                                   NvU8 *buffer,
+                                                                   NvU32 bufferSize,
+                                                                   NvU32 *offset)
+{
+#ifdef COPY_INPUT_PARAMETERS
+    NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS_v29_08 *src  = (void*)(buffer);
+    NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS        *dest = pParams;
+
+    if (src && dest)
+    {
+        dest->connectionType    = src->connectionType;
+        dest->peerId            = src->peerId;
+        dest->bEgmPeer          = src->bEgmPeer;
+        dest->bSpaAccessOnly    = src->bSpaAccessOnly;
+        dest->bUseUuid          = src->bUseUuid;
+        dest->remoteGpuId       = src->remoteGpuId;
 
         portMemCopy(dest->remoteGpuUuid,
                     VM_UUID_SIZE_v21_02,
@@ -2744,6 +2874,26 @@ return_t deserialize_NVB0CC_CTRL_SET_HS_CREDITS_PARAMS_v21_08(NVB0CC_CTRL_SET_HS
         return FAILURE_T;
     return SUCCESS_T;
 }
+
+#ifndef UMED_BUILD
+return_t deserialize_NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07(NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS *pParams,
+                                                                            NvU8 *buffer,
+                                                                            NvU32 bufferSize,
+                                                                            NvU32 *offset)
+{
+    NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07    *src  = (void*)(buffer);
+    NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS           *dest = pParams;
+
+    if (src && dest) {
+        dest->value = src->value;
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+#endif
+
 
 #ifndef UMED_BUILD
 return_t deserialize_NV83DE_CTRL_DEBUG_GET_MODE_MMU_DEBUG_PARAMS_v25_04(NV83DE_CTRL_DEBUG_GET_MODE_MMU_DEBUG_PARAMS *pParams,
@@ -3523,6 +3673,26 @@ return_t serialize_NV83DE_CTRL_DEBUG_EXEC_REG_OPS_PARAMS_v1A_06(NV83DE_CTRL_DEBU
 }
 
 static
+return_t serialize_NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07(NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS *pParams,
+                                                                          NvU8 *buffer,
+                                                                          NvU32 bufferSize,
+                                                                          NvU32 *offset)
+{
+    NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS           *src  = pParams;
+    NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07    *dest = (void*)(buffer);
+
+    if (src && dest) {
+#ifdef COPY_INPUT_PARAMETERS
+        dest->action    = src->action;
+#endif
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
+static
 return_t serialize_NV83DE_CTRL_DEBUG_SET_MODE_MMU_DEBUG_PARAMS_v1A_06(NV83DE_CTRL_DEBUG_SET_MODE_MMU_DEBUG_PARAMS *pParams,
                                                                       NvU8 *buffer,
                                                                       NvU32 bufferSize,
@@ -3789,6 +3959,86 @@ return_t serialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v23_04(NV2080
 
     return SUCCESS_T;
 }
+
+static
+return_t serialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v28_09(NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS *pParams,
+                                                                          NvU8 *buffer,
+                                                                          NvU32 bufferSize,
+                                                                          NvU32 *offset)
+{
+    NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS        *src  = pParams;
+    NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v28_09 *dest = (void*)(buffer);
+
+    if (src && dest) {
+#ifdef COPY_OUTPUT_PARAMETERS
+        NvU32 i;
+
+        dest->enabledLinkMask = src->enabledLinkMask;
+
+        FOR_EACH_INDEX_IN_MASK(32, i, src->enabledLinkMask)
+        {
+            NV2080_CTRL_NVLINK_DEVICE_INFO        *deviceInfo_s = NULL;
+            NV2080_CTRL_NVLINK_DEVICE_INFO_v28_09 *deviceInfo_d = NULL;
+
+            if (i >= NV2080_CTRL_NVLINK_MAX_LINKS_v23_04)
+                break;
+
+            dest->linkInfo[i].capsTbl                   = src->linkInfo[i].capsTbl;
+            dest->linkInfo[i].phyType                   = src->linkInfo[i].phyType;
+            dest->linkInfo[i].subLinkWidth              = src->linkInfo[i].subLinkWidth;
+            dest->linkInfo[i].linkState                 = src->linkInfo[i].linkState;
+            dest->linkInfo[i].rxSublinkStatus           = src->linkInfo[i].rxSublinkStatus;
+            dest->linkInfo[i].txSublinkStatus           = src->linkInfo[i].txSublinkStatus;
+            dest->linkInfo[i].nvlinkVersion             = src->linkInfo[i].nvlinkVersion;
+            dest->linkInfo[i].nciVersion                = src->linkInfo[i].nciVersion;
+            dest->linkInfo[i].phyVersion                = src->linkInfo[i].phyVersion;
+            dest->linkInfo[i].nvlinkLinkClockKHz        = src->linkInfo[i].nvlinkLinkClockKHz;
+            dest->linkInfo[i].nvlinkLineRateMbps        = src->linkInfo[i].nvlinkLineRateMbps;
+            dest->linkInfo[i].connected                 = src->linkInfo[i].connected;
+            dest->linkInfo[i].remoteDeviceLinkNumber    = src->linkInfo[i].remoteDeviceLinkNumber;
+            dest->linkInfo[i].localDeviceLinkNumber     = src->linkInfo[i].localDeviceLinkNumber;
+
+            deviceInfo_d = &dest->linkInfo[i].localDeviceInfo;
+            deviceInfo_s = &src->linkInfo[i].localDeviceInfo;
+
+            deviceInfo_d->deviceIdFlags = deviceInfo_s->deviceIdFlags;
+            deviceInfo_d->domain        = deviceInfo_s->domain;
+            deviceInfo_d->bus           = deviceInfo_s->bus;
+            deviceInfo_d->device        = deviceInfo_s->device;
+            deviceInfo_d->function      = deviceInfo_s->function;
+            deviceInfo_d->pciDeviceId   = deviceInfo_s->pciDeviceId;
+            deviceInfo_d->deviceType    = deviceInfo_s->deviceType;
+            portMemCopy(deviceInfo_d->deviceUUID,
+                        sizeof(deviceInfo_d->deviceUUID),
+                        deviceInfo_s->deviceUUID,
+                        sizeof(deviceInfo_s->deviceUUID));
+            deviceInfo_d->fabricRecoveryStatusMask = deviceInfo_s->fabricRecoveryStatusMask;
+
+            deviceInfo_d = &dest->linkInfo[i].remoteDeviceInfo;
+            deviceInfo_s = &src->linkInfo[i].remoteDeviceInfo;
+
+            deviceInfo_d->deviceIdFlags = deviceInfo_s->deviceIdFlags;
+            deviceInfo_d->domain        = deviceInfo_s->domain;
+            deviceInfo_d->bus           = deviceInfo_s->bus;
+            deviceInfo_d->device        = deviceInfo_s->device;
+            deviceInfo_d->function      = deviceInfo_s->function;
+            deviceInfo_d->pciDeviceId   = deviceInfo_s->pciDeviceId;
+            deviceInfo_d->deviceType    = deviceInfo_s->deviceType;
+            portMemCopy(deviceInfo_d->deviceUUID,
+                        sizeof(deviceInfo_d->deviceUUID),
+                        deviceInfo_s->deviceUUID,
+                        sizeof(deviceInfo_s->deviceUUID));
+            deviceInfo_d->fabricRecoveryStatusMask = deviceInfo_s->fabricRecoveryStatusMask;
+        }
+        FOR_EACH_INDEX_IN_MASK_END;
+#endif
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
 
 static
 return_t serialize_NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS_v1F_0D(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS *pParams,
@@ -5260,6 +5510,37 @@ return_t serialize_NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS_v21_03(NV2080_CTRL_BUS
 #endif
 
 #ifdef BUILD_COMMON_RPCS
+return_t serialize_NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS_v29_08(NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS *pParams,
+                                                                 NvU8 *buffer,
+                                                                 NvU32 bufferSize,
+                                                                 NvU32 *offset)
+{
+#ifdef COPY_INPUT_PARAMETERS
+    NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS_v29_08 *dest = (void*)(buffer);
+    NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS        *src  = pParams;
+
+    if (src && dest)
+    {
+        dest->connectionType    = src->connectionType;
+        dest->peerId            = src->peerId;
+        dest->bEgmPeer          = src->bEgmPeer;
+        dest->bSpaAccessOnly    = src->bSpaAccessOnly;
+        dest->bUseUuid          = src->bUseUuid;
+        dest->remoteGpuId       = src->remoteGpuId;
+
+        portMemCopy(dest->remoteGpuUuid,
+                    VM_UUID_SIZE_v21_02,
+                    src->remoteGpuUuid,
+                    VM_UUID_SIZE_v21_02);
+    }
+    else
+        return FAILURE_T;
+#endif
+    return SUCCESS_T;
+}
+#endif
+
+#ifdef BUILD_COMMON_RPCS
 return_t serialize_NV2080_CTRL_BUS_UNSET_P2P_MAPPING_PARAMS_v21_03(NV2080_CTRL_BUS_UNSET_P2P_MAPPING_PARAMS *pParams,
                                                                    NvU8 *buffer,
                                                                    NvU32 bufferSize,
@@ -5431,6 +5712,25 @@ return_t serialize_NVB0CC_CTRL_SET_HS_CREDITS_PARAMS_v21_08(NVB0CC_CTRL_SET_HS_C
 }
 
 #ifndef UMED_BUILD
+return_t serialize_NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07(NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS *pParams,
+                                                                          NvU8 *buffer,
+                                                                          NvU32 bufferSize,
+                                                                          NvU32 *offset)
+{
+    NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS           *src  = pParams;
+    NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07    *dest = (void*)(buffer);
+
+    if (src && dest) {
+        dest->value = src->value;
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+#endif
+
+#ifndef UMED_BUILD
 return_t serialize_NV83DE_CTRL_DEBUG_GET_MODE_MMU_DEBUG_PARAMS_v25_04(NV83DE_CTRL_DEBUG_GET_MODE_MMU_DEBUG_PARAMS *pParams,
                                                                       NvU8 *buffer,
                                                                       NvU32 bufferSize,
@@ -5578,6 +5878,146 @@ return_t deserialize_NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v27_00(NV2080_CTRL_FB_GET
 }
 #endif // defined(BUILD_COMMON_RPCS)
 
+#if defined(BUILD_COMMON_RPCS) && !defined(UMED_BUILD)
+static
+return_t serialize_NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS_v28_03(NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS *pParams,
+                                                            NvU8 *buffer,
+                                                            NvU32 bufferSize,
+                                                            NvU32 *offset)
+{
+    NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS        *src = pParams;
+    NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS_v28_03 *dest = (void*)(buffer);
+
+    if (src && dest)
+    {
+        dest->allocatedSize = src->allocatedSize;
+        dest->peakAllocatedSize = src->peakAllocatedSize;
+        dest->managedSize = src->managedSize;
+        dest->allocationCount = src->allocationCount;
+        dest->peakAllocationCount = src->peakAllocationCount;
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
+static
+return_t deserialize_NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS_v28_03(NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS *pParams,
+                                                              NvU8 *buffer,
+                                                              NvU32 bufferSize,
+                                                              NvU32 *offset)
+{
+    NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS_v28_03 *src = (void*)(buffer);
+    NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS        *dest = pParams;
+
+    if (src && dest)
+    {
+        dest->allocatedSize = src->allocatedSize;
+        dest->peakAllocatedSize = src->peakAllocatedSize;
+        dest->managedSize = src->managedSize;
+        dest->allocationCount = src->allocationCount;
+        dest->peakAllocationCount = src->peakAllocationCount;
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
+static
+return_t serialize_NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS_v28_06(NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS *pParams,
+                                                            NvU8 *buffer,
+                                                            NvU32 bufferSize,
+                                                            NvU32 *offset)
+{
+    NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS        *src = pParams;
+    NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS_v28_06 *dest = (void*)(buffer);
+
+    if (src && dest)
+    {
+        dest->allocatedSize = src->allocatedSize;
+        dest->peakAllocatedSize = src->peakAllocatedSize;
+        dest->managedSize = src->managedSize;
+        dest->allocationCount = src->allocationCount;
+        dest->peakAllocationCount = src->peakAllocationCount;
+        dest->largestFreeChunkSize = src->largestFreeChunkSize;
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
+static
+return_t deserialize_NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS_v28_06(NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS *pParams,
+                                                              NvU8 *buffer,
+                                                              NvU32 bufferSize,
+                                                              NvU32 *offset)
+{
+    NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS_v28_06 *src = (void*)(buffer);
+    NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS        *dest = pParams;
+
+    if (src && dest)
+    {
+        dest->allocatedSize = src->allocatedSize;
+        dest->peakAllocatedSize = src->peakAllocatedSize;
+        dest->managedSize = src->managedSize;
+        dest->allocationCount = src->allocationCount;
+        dest->peakAllocationCount = src->peakAllocationCount;
+        dest->largestFreeChunkSize = src->largestFreeChunkSize;
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
+return_t serialize_NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS_PARAMS_v29_02(NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS_PARAMS *pParams,
+                                                            NvU8 *buffer,
+                                                            NvU32 bufferSize,
+                                                            NvU32 *offset)
+{
+    NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS_PARAMS        *src = pParams;
+    NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS_PARAMS_v29_02 *dest = (void*)(buffer);
+    NvU8 i;
+    if (src && dest && (src->poolCount <= NV2080_CTRL_GSP_LIBOS_POOL_COUNT_MAX_v29_02))
+    {
+        dest->poolCount = src->poolCount;
+        dest->totalHeapSize= src->totalHeapSize;
+        for (i = 0; i < dest->poolCount; ++i)
+        {
+            portMemCopy(&dest->poolStats[i], sizeof(dest->poolStats[i]), &src->poolStats[i], sizeof(src->poolStats[i]));
+        }
+    }
+    else
+        return FAILURE_T;
+    return SUCCESS_T;
+}
+static
+return_t deserialize_NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS_PARAMS_v29_02(NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS_PARAMS *pParams,
+                                                              NvU8 *buffer,
+                                                              NvU32 bufferSize,
+                                                              NvU32 *offset)
+{
+    NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS_PARAMS_v29_02 *src = (void*)(buffer);
+    NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS_PARAMS        *dest = pParams;
+    NvU8 i;
+    if (src && dest && (src->poolCount <= NV2080_CTRL_GSP_LIBOS_POOL_COUNT_MAX_v29_02))
+    {
+        dest->poolCount = src->poolCount;
+        dest->totalHeapSize= src->totalHeapSize;
+        for (i = 0; i < dest->poolCount; ++i)
+        {
+            portMemCopy(&dest->poolStats[i], sizeof(dest->poolStats[i]), &src->poolStats[i], sizeof(src->poolStats[i]));
+        }
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+#endif
 #ifdef BUILD_COMMON_RPCS
 
 static NV_STATUS static_data_copy(OBJRPCSTRUCTURECOPY *pObjRpcStructureCopy,
@@ -5952,7 +6392,7 @@ static NV_STATUS static_data_copy(OBJRPCSTRUCTURECOPY *pObjRpcStructureCopy,
     if (status != NVOS_STATUS_SUCCESS) {
         return status;
     }
-    
+
     if (getIpVersion() < 0x26010000) {
         goto end;
     }
@@ -5963,6 +6403,20 @@ static NV_STATUS static_data_copy(OBJRPCSTRUCTURECOPY *pObjRpcStructureCopy,
                                                           buffer,
                                                           bufferSize,
                                                           offset);
+    if (status != NVOS_STATUS_SUCCESS) {
+        return status;
+    }
+
+    if (getIpVersion() < 0x29050000) {
+        goto end;
+    }
+
+    NV_CHECK_AND_ALIGN_OFFSET(*offset, bAlignOffset)
+    status = serialize_deserialize(NV2080_CTRL_INTERNAL_CCU_SAMPLE_INFO_PARAMS)(pObjRpcStructureCopy,
+                                                                                &pVSI->ccuSampleInfo,
+                                                                                buffer,
+                                                                                bufferSize,
+                                                                                offset);
     if (status != NVOS_STATUS_SUCCESS) {
         return status;
     }

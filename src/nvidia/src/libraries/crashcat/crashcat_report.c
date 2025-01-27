@@ -84,8 +84,7 @@ void crashcatReportLog_IMPL(CrashCatReport *pReport)
     }
     FOR_EACH_INDEX_IN_MASK_END;
 
-    crashcatEnginePrintf(pReport->pEngine, NV_FALSE,
-                         CRASHCAT_LOG_PREFIX "------------[ end crash report ]------------");
+    CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport, "------------[ end crash report ]------------\n");
 }
 
 // xcause CSR format and codes are a backward-compatible part of the RISC-V standard

@@ -222,7 +222,15 @@ enum {
     X(RM, UPDATE_GPM_GUEST_BUFFER_INFO,                           212)
     X(RM, CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE,                    213)
     X(RM, CTRL_SET_ZBC_STENCIL_CLEAR,                             214)
-    X(RM, NUM_FUNCTIONS,                                          215)
+    X(RM, CTRL_SUBDEVICE_GET_VGPU_HEAP_STATS,                     215)
+    X(RM, CTRL_SUBDEVICE_GET_LIBOS_HEAP_STATS,                    216)
+    X(RM, CTRL_DBG_SET_MODE_MMU_GCC_DEBUG,                        217)
+    X(RM, CTRL_DBG_GET_MODE_MMU_GCC_DEBUG,                        218)
+    X(RM, CTRL_RESERVE_HES,                                       219)
+    X(RM, CTRL_RELEASE_HES,                                       220)
+    X(RM, CTRL_RESERVE_CCU_PROF,                                  221)
+    X(RM, CTRL_RELEASE_CCU_PROF,                                  222)
+    X(RM, NUM_FUNCTIONS,                                          223)
 #ifdef DEFINING_X_IN_RPC_GLOBAL_ENUMS_H
 };
 #   undef X

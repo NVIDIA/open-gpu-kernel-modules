@@ -1552,9 +1552,9 @@ parseDisplayId20Timing7Descriptor(
     pDescriptor = (const DISPLAYID_2_0_TIMING_7_DESCRIPTOR *)pVoidDescriptor;
 
     // pclk is in 1Khz
-    pTiming->pclk = ((pDescriptor->pixel_clock[2] << 16 |
-                      pDescriptor->pixel_clock[1] << 8  |
-                      pDescriptor->pixel_clock[0]) + 1);
+    pTiming->pclk1khz = ((pDescriptor->pixel_clock[2] << 16 |
+                          pDescriptor->pixel_clock[1] << 8  |
+                          pDescriptor->pixel_clock[0]) + 1);
 
     pTiming->HBorder = 0;
     pTiming->VBorder = 0;
@@ -1637,17 +1637,17 @@ parseDisplayId20Timing7Descriptor(
         pTiming->etc.aspect = 0;
     }
 
-    pTiming->etc.rr = NvTiming_CalcRR(pTiming->pclk,
+    pTiming->etc.rr = NvTiming_CalcRR(pTiming->pclk1khz,
         pTiming->interlaced,
         pTiming->HTotal,
         pTiming->VTotal) / 10;
-    pTiming->etc.rrx1k = NvTiming_CalcRRx1k(pTiming->pclk,
+    pTiming->etc.rrx1k = NvTiming_CalcRRx1k(pTiming->pclk1khz,
         pTiming->interlaced,
         pTiming->HTotal,
         pTiming->VTotal) / 10;
 
-    // pclk change to 10k
-    pTiming->pclk /= 10;
+    // pclk change to 10kHz
+    pTiming->pclk = pTiming->pclk1khz / 10;
 
     pTiming->etc.status = NVT_STATUS_DISPLAYID_7N(++count);
 

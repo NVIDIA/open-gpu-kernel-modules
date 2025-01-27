@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -92,7 +92,7 @@ struct ImexSessionApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__ImexSessionApi *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct RmResource __nvoc_base_RmResource;
 
     // Ancestor object pointers for `staticCast` feature
@@ -331,7 +331,8 @@ void imexsessionapiDestruct_IMPL(struct ImexSessionApi *pImexSessionApi);
 #undef PRIVATE_FIELD
 
 
-void rcAndDisableOutstandingClientsWithImportedMemory(OBJGPU *pGpu, NvU16 nodeId);
+// Returns true if at least one channel is RC'ed
+NvBool rcAndDisableOutstandingClientsWithImportedMemory(OBJGPU *pGpu, NvU16 nodeId);
 
 #endif // IMEX_SESSION_API_H
 

@@ -32,8 +32,6 @@
 
 #include "displayport.h"
 
-#define WAR_AUDIOCLAMPING_FREQ 48000    // Audio freq. more than 48KHz are currently clamped due to bug 925211
-
 namespace DisplayPort
 {
     class LinkConfiguration;
@@ -46,15 +44,17 @@ namespace DisplayPort
         NvU64 pixelClockHz;                 // Requested pixel clock for the mode
         unsigned rasterWidth;
         unsigned rasterHeight;
-        unsigned surfaceWidth;              // RasterBlankStartX - newRasterBlankEndX
+        unsigned surfaceWidth;              // RasterBlankStartX - RasterBlankEndX
         unsigned surfaceHeight;             // Active region height
         unsigned depth;
         unsigned rasterBlankStartX;
         unsigned rasterBlankEndX;
         unsigned bitsPerComponent;          // Bits per component
         bool     bEnableDsc;                // bEnableDsc=1 indicates DSC would be enabled for the mode
-        DSC_MODE mode;                      // DSC Mode
         bool     bEnablePassThroughForPCON;
+
+        DSC_MODE            mode;           // DSC Mode
+        DP_COLORFORMAT      colorFormat;
 
         ModesetInfo(): twoChannelAudioHz(0),
                        eightChannelAudioHz(0),
@@ -68,14 +68,16 @@ namespace DisplayPort
                        rasterBlankEndX(0),
                        bitsPerComponent(0),
                        bEnableDsc(false),
+                       bEnablePassThroughForPCON(false),
                        mode(DSC_SINGLE),
-                       bEnablePassThroughForPCON(false) {}
+                       colorFormat(dpColorFormat_Unknown)  {}
 
         ModesetInfo(unsigned newTwoChannelAudioHz, unsigned newEightChannelAudioHz, NvU64 newPixelClockHz,
                     unsigned newRasterWidth, unsigned newRasterHeight,
                     unsigned newSurfaceWidth, unsigned newSurfaceHeight, unsigned newDepth,
                     unsigned newRasterBlankStartX=0, unsigned newRasterBlankEndX=0, bool newBEnableDsc = false,
-                    DSC_MODE newMode = DSC_SINGLE, bool newBEnablePassThroughForPCON = false):
+                    DSC_MODE newMode = DSC_SINGLE, bool newBEnablePassThroughForPCON = false,
+                    DP_COLORFORMAT dpColorFormat = dpColorFormat_Unknown):
            twoChannelAudioHz(newTwoChannelAudioHz),
            eightChannelAudioHz(newEightChannelAudioHz),
            pixelClockHz(newPixelClockHz),
@@ -88,8 +90,9 @@ namespace DisplayPort
            rasterBlankEndX(newRasterBlankEndX),
            bitsPerComponent(0),
            bEnableDsc(newBEnableDsc),
+           bEnablePassThroughForPCON(newBEnablePassThroughForPCON),
            mode(newMode),
-           bEnablePassThroughForPCON(newBEnablePassThroughForPCON) {}
+           colorFormat(dpColorFormat) {}
     };
 
     struct Watermark
@@ -103,43 +106,35 @@ namespace DisplayPort
 
     bool isModePossibleSST
     (
-        const LinkConfiguration & linkConfig,
-        const ModesetInfo & modesetInfo,
+        const LinkConfiguration &linkConfig,
+        const ModesetInfo &modesetInfo,
         Watermark  * dpInfo,
         bool bUseIncreasedWatermarkLimits = false
     );
 
     bool isModePossibleMST
     (
-        const LinkConfiguration & linkConfig,
-        const ModesetInfo & modesetInfo,
+        const LinkConfiguration &linkConfig,
+        const ModesetInfo &modesetInfo,
         Watermark  * dpInfo
     );
 
     bool isModePossibleSSTWithFEC
     (
-        const LinkConfiguration & linkConfig,
-        const ModesetInfo & modesetInfo,
+        const LinkConfiguration &linkConfig,
+        const ModesetInfo &modesetInfo,
         Watermark  * dpInfo,
         bool bUseIncreasedWatermarkLimits = false
     );
 
     bool isModePossibleMSTWithFEC
     (
-        const LinkConfiguration & linkConfig,
-        const ModesetInfo & modesetInfo,
+        const LinkConfiguration &linkConfig,
+        const ModesetInfo &modesetInfo,
         Watermark  * dpInfo
     );
-
-    bool dp2xIsModePossibleMSTWithFEC
-    (
-        const LinkConfiguration & linkConfig,
-        const ModesetInfo & modesetInfo,
-        Watermark  * dpInfo
-    );
-
     // Return Payload Bandwidth Number(PBN)for requested mode
-    unsigned pbnForMode(const ModesetInfo & modesetInfo);
+    unsigned pbnForMode(const ModesetInfo &modesetInfo);
 }
 
 #endif //INCLUDED_DP_WATERMARK_H

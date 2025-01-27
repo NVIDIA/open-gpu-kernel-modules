@@ -37,6 +37,7 @@
 #include "platform/sli/sli.h"
 #include "nvdevid.h"
 #include "containers/eheap_old.h"
+#include "gpu/bus/p2p_api.h"
 
 #include "gpu/gsp/gsp_static_config.h"
 #include "vgpu/rpc.h"
@@ -192,6 +193,20 @@ kbusInitRegistryOverrides(OBJGPU *pGpu, KernelBus *pKernelBus)
     else
     {
         pKernelBus->staticBar1ForceType = NV_REG_STR_RM_FORCE_STATIC_BAR1_DEFAULT;
+    }
+
+    //
+    // NV_REG_STR_RM_GPUDIRECT_RDMA_FORCE_SPA regkey
+    // is only used on coherent systems with BAR1 enabled.
+    //
+    pKernelBus->bGrdmaForceSpa = NV_REG_STR_RM_GPUDIRECT_RDMA_FORCE_SPA_DEFAULT;
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_GPUDIRECT_RDMA_FORCE_SPA, &data32) == NV_OK)
+    {
+        if (data32 == NV_REG_STR_RM_GPUDIRECT_RDMA_FORCE_SPA_YES)
+        {
+            pKernelBus->bGrdmaForceSpa = NV_TRUE;
+        }
     }
 
     if (RMCFG_FEATURE_PLATFORM_WINDOWS && !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_TCC_MODE))
@@ -991,7 +1006,7 @@ kbusCheckEngineWithOrderList_KERNEL
             return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
                 RM_ENGINE_TYPE_COPY(GET_CE_IDX(engDesc)));
 
-        case ENG_CLASS_MSENC:
+        case ENG_CLASS_NVENC:
             return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
                 RM_ENGINE_TYPE_NVENC(GET_MSENC_IDX(engDesc)));
         case ENG_CLASS_SEC2:
@@ -1228,7 +1243,18 @@ kbusGetNvlinkP2PPeerId_VGPU
     NvU32      flags
 )
 {
-    *nvlinkPeer = kbusGetPeerId_HAL(pGpu0, pKernelBus0, pGpu1);
+    NvBool bEgmPeer = FLD_TEST_DRF(_P2PAPI, _ATTRIBUTES, _REMOTE_EGM, _YES, flags);
+    NvU32 status = NV_OK;
+
+    if (bEgmPeer)
+    {
+        *nvlinkPeer = kbusGetEgmPeerId_HAL(pGpu0, pKernelBus0, pGpu1);
+    }
+    else
+    {
+        *nvlinkPeer = kbusGetPeerId_HAL(pGpu0, pKernelBus0, pGpu1);
+    }
+
     if (*nvlinkPeer != BUS_INVALID_PEER)
     {
         return NV_OK;
@@ -1245,7 +1271,14 @@ kbusGetNvlinkP2PPeerId_VGPU
         return NV_ERR_GENERIC;
     }
     // Reserve the peer ID for NVLink use
-    return kbusReserveP2PPeerIds_HAL(pGpu0, pKernelBus0, NVBIT(*nvlinkPeer));
+    status = kbusReserveP2PPeerIds_HAL(pGpu0, pKernelBus0, NVBIT(*nvlinkPeer));
+
+    if (status == NV_OK)
+    {
+        pKernelBus0->p2p.bEgmPeer[*nvlinkPeer] = bEgmPeer;
+    }
+
+    return status;
 }
 
 /**
@@ -1351,6 +1384,38 @@ kbusUpdateRusdStatistics_IMPL
     MEM_WR32(&pSharedData->bar1Size, bar1Size);
     MEM_WR32(&pSharedData->bar1AvailSize, bar1AvailSize);
     gpushareddataWriteFinish(pGpu, bar1MemoryInfo);
+
+    return NV_OK;
+}
+
+NV_STATUS
+kbusGetGpuFbPhysAddressForRdma_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    NvBool     bForcePcie,
+    NvU64     *pPhysAddr
+)
+{
+    if((bForcePcie) &&
+       (!pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING)))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    //
+    // For forced PCIe mappings on coherent systems, use SPA by default instead of GPA
+    // if the RmGpuDirectRdmaForceSPA regkey is set.
+    // This is a stop-gap measure until hypervisor ensures GPA==SPA.
+    //
+    if (bForcePcie && pKernelBus->bGrdmaForceSpa)
+    {
+        *pPhysAddr = pKernelBus->grdmaBar1Spa;
+    }
+    else
+    {
+        *pPhysAddr = gpumgrGetGpuPhysFbAddr(pGpu);
+    }
 
     return NV_OK;
 }

@@ -34,6 +34,7 @@
 #include <linux/cpuset.h>
 
 #include <linux/pid.h>
+#include <linux/pid_namespace.h>
 #if defined(CONFIG_LOCKDEP)
 #include <linux/lockdep.h>
 #endif // CONFIG_LOCKDEP
@@ -2645,3 +2646,16 @@ NV_STATUS NV_API_CALL os_find_ns_pid(void *pid_info, NvU32 *ns_pid)
     return NV_OK;
 }
 
+NvBool NV_API_CALL os_is_init_ns(void)
+{
+    return (task_active_pid_ns(current) == &init_pid_ns);
+}
+
+NV_STATUS NV_API_CALL os_device_vm_present(void)
+{
+#if defined(NV_DEVICE_VM_BUILD)
+    return NV_OK;
+#else
+    return NV_ERR_NOT_SUPPORTED;
+#endif
+}

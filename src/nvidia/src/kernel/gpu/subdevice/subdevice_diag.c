@@ -92,7 +92,6 @@ diagapiControlFilter_IMPL
         switch (pRmCtrlParams->cmd)
         {
             // For Guest OS, only below RM controls are supported.
-            case NV208F_CTRL_CMD_FIFO_ENABLE_VIRTUAL_CONTEXT:
             case NV208F_CTRL_CMD_FIFO_CHECK_ENGINE_CONTEXT:
             case NV208F_CTRL_CMD_DMA_GET_VAS_BLOCK_DETAILS:
                 break;

@@ -61,6 +61,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += iommu_sva_bind_device_has_drvdata_arg
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += vm_fault_to_errno
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += find_next_bit_wrap
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += iommu_is_dma_domain
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += for_each_sgtable_dma_page
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += folio_test_swapcache
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += vm_ops_fault_removed_vma_arg
@@ -75,6 +76,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += mempolicy_has_home_node
 NV_CONFTEST_TYPE_COMPILE_TESTS += mpol_preferred_many_present
 NV_CONFTEST_TYPE_COMPILE_TESTS += mmu_interval_notifier
 NV_CONFTEST_TYPE_COMPILE_TESTS += fault_flag_remote_present
+NV_CONFTEST_TYPE_COMPILE_TESTS += sg_dma_page_iter
 NV_CONFTEST_TYPE_COMPILE_TESTS += struct_page_has_zone_device_data
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_int_active_memcg

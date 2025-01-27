@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -447,6 +447,9 @@ number of Downstream ports will be limited to 32.
 #define NV_DPCD_DOWNSPREAD_CTRL_SPREAD_AMP                                            4:4  /* RWXUF */
 #define NV_DPCD_DOWNSPREAD_CTRL_SPREAD_AMP_NONE                               (0x00000000) /* RWXUV */
 #define NV_DPCD_DOWNSPREAD_CTRL_SPREAD_AMP_LESS_THAN_0_5                      (0x00000001) /* RWXUV */
+#define NV_DPCD_DOWNSPREAD_CTRL_FIXED_VTOTAL_AS_SDP_EN_IN_PR_ACTIVE                   6:6  /* RWXUF */
+#define NV_DPCD_DOWNSPREAD_CTRL_FIXED_VTOTAL_AS_SDP_EN_IN_PR_ACTIVE_NO        (0x00000000) /* RWXUV */
+#define NV_DPCD_DOWNSPREAD_CTRL_FIXED_VTOTAL_AS_SDP_EN_IN_PR_ACTIVE_YES       (0x00000001) /* RWXUV */
 #define NV_DPCD_DOWNSPREAD_CTRL_MSA_TIMING_PAR_IGNORED                                7:7  /* RWXUF */
 #define NV_DPCD_DOWNSPREAD_CTRL_MSA_TIMING_PAR_IGNORED_FALSE                  (0x00000000) /* RWXUV */
 #define NV_DPCD_DOWNSPREAD_CTRL_MSA_TIMING_PAR_IGNORED_TRUE                   (0x00000001) /* RWXUV */
@@ -915,16 +918,20 @@ number of Downstream ports will be limited to 32.
 
 // 00283h - 002BFh: RESERVED. Read all 0s.
 
-#define NV_DPCD_PAYLOAD_TABLE_UPDATE_STATUS                      (0x000002C0) /* R-XUR */
-#define NV_DPCD_PAYLOAD_TABLE_UPDATE_STATUS_UPDATED                      0:0  /* R-XUF */
-#define NV_DPCD_PAYLOAD_TABLE_UPDATE_STATUS_UPDATED_NO           (0x00000000) /* R-XUV */
-#define NV_DPCD_PAYLOAD_TABLE_UPDATE_STATUS_UPDATED_YES          (0x00000001) /* R-XUV */
-#define NV_DPCD_PAYLOAD_TABLE_UPDATE_STATUS_ACT_HANDLED                  1:1  /* R-XUF */
-#define NV_DPCD_PAYLOAD_TABLE_UPDATE_STATUS_ACT_HANDLED_NO       (0x00000000) /* R-XUV */
-#define NV_DPCD_PAYLOAD_TABLE_UPDATE_STATUS_ACT_HANDLED_YES      (0x00000001) /* R-XUV */
+#define NV_DPCD_PAYLOAD_TABLE_UPDATE_STATUS                         (0x000002C0) /* R-XUR */
+#define NV_DPCD_PAYLOAD_TABLE_UPDATE_STATUS_UPDATED                         0:0  /* R-XUF */
+#define NV_DPCD_PAYLOAD_TABLE_UPDATE_STATUS_UPDATED_NO              (0x00000000) /* R-XUV */
+#define NV_DPCD_PAYLOAD_TABLE_UPDATE_STATUS_UPDATED_YES             (0x00000001) /* R-XUV */
+#define NV_DPCD_PAYLOAD_TABLE_UPDATE_STATUS_ACT_HANDLED                     1:1  /* R-XUF */
+#define NV_DPCD_PAYLOAD_TABLE_UPDATE_STATUS_ACT_HANDLED_NO          (0x00000000) /* R-XUV */
+#define NV_DPCD_PAYLOAD_TABLE_UPDATE_STATUS_ACT_HANDLED_YES         (0x00000001) /* R-XUV */
+#define NV_DPCD_PAYLOAD_TABLE_UPDATE_STATUS_VC_PAYLOAD_ID_SLOT0_5_0         7:2  /* R-XUF */
 
-#define NV_DPCD_VC_PAYLOAD_ID_SLOT(i)                        (0x000002C1+(i)) /* R--1A */
-#define NV_DPCD_VC_PAYLOAD_ID_SLOT__SIZE                                  63  /* R---S */
+#define NV_DPCD_VC_PAYLOAD_ID_SLOT1                                 (0x000002C1) /* R-XUR */
+#define NV_DPCD_VC_PAYLOAD_ID_SLOT1_VC_PAYLOAD_ID_SLOT0_6                   7:7  /* R-XUF */
+
+#define NV_DPCD_VC_PAYLOAD_ID_SLOT(i)                           (0x000002C1+(i)) /* R--1A */
+#define NV_DPCD_VC_PAYLOAD_ID_SLOT__SIZE                                     63  /* R---S */
 
 // Source Device-Specific Field, Burst write for 00300h-0030Bh
 // 6 hex digits: 0x300~0x302.

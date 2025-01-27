@@ -338,6 +338,7 @@ typedef struct NV_CHANNEL_ALLOC_PARAMS {
     NvU32    decryptIv[CC_CHAN_ALLOC_IV_SIZE_DWORD];          // reserved
     // Nonce used CPU-side signing / GPU-side signature verification.
     NvU32    hmacNonce[CC_CHAN_ALLOC_NONCE_SIZE_DWORD];       // reserved
+    NvU32    tpcConfigID; // TPC Configuration Id as supported by DTD-PG Feature
 } NV_CHANNEL_ALLOC_PARAMS;
 
 typedef NV_CHANNEL_ALLOC_PARAMS NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS;

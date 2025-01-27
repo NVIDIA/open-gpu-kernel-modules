@@ -50,7 +50,6 @@
 #include "nvlink_caps.h"
 
 #include "nv-hypervisor.h"
-#include "nv-ibmnpu.h"
 #include "nv-rsync.h"
 #include "nv-kthread-q.h"
 #include "nv-pat.h"
@@ -127,7 +126,11 @@ MODULE_ALIAS_CHARDEV_MAJOR(NV_MAJOR_DEVICE_NUMBER);
  * DMA_BUF namespace is added by commit id 16b0314aa746
  * ("dma-buf: move dma-buf symbols into the DMA_BUF module namespace") in 5.16
  */
+#if defined(NV_MODULE_IMPORT_NS_TAKES_CONSTANT)
 MODULE_IMPORT_NS(DMA_BUF);
+#else
+MODULE_IMPORT_NS("DMA_BUF");
+#endif  // defined(NV_MODULE_IMPORT_NS_TAKES_CONSTANT)
 #endif  // defined(MODULE_IMPORT_NS)
 
 const NvBool nv_is_rm_firmware_supported_os = NV_TRUE;
@@ -182,13 +185,11 @@ static void *nvidia_pte_t_cache;
 void *nvidia_stack_t_cache;
 static nvidia_stack_t *__nv_init_sp;
 
-static int nv_tce_bypass_mode = NV_TCE_BYPASS_MODE_DEFAULT;
-
 struct semaphore nv_linux_devices_lock;
 
-// True if all the successfully probed devices support ATS
+// True if at least one of the successfully probed devices support ATS
 // Assigned at device probe (module init) time
-NvBool nv_ats_supported = NV_TRUE;
+NvBool nv_ats_supported;
 
 // allow an easy way to convert all debug printfs related to events
 // back and forth between 'info' and 'errors'
@@ -589,20 +590,11 @@ nv_registry_keys_init(nv_stack_t *sp)
     NvU32 data;
 
     /*
-     * Determine the TCE bypass mode here so it can be used during
-     * device probe.  Also determine whether we should allow
-     * user-mode NUMA onlining of device memory.
+     * Determine whether we should allow user-mode NUMA onlining of device
+     * memory.
      */
     if (NVCPU_IS_PPC64LE)
     {
-        status = rm_read_registry_dword(sp, nv,
-                                        NV_REG_TCE_BYPASS_MODE,
-                                        &data);
-        if ((status == NV_OK) && ((int)data != NV_TCE_BYPASS_MODE_DEFAULT))
-        {
-            nv_tce_bypass_mode = data;
-        }
-
         if (NVreg_EnableUserNUMAManagement)
         {
             /* Force on the core RM registry key to match. */
@@ -1349,15 +1341,6 @@ static int nv_start_device(nv_state_t *nv, nvidia_stack_t *sp)
         power_ref = NV_TRUE;
     }
 
-    rc = nv_init_ibmnpu_devices(nv);
-    if (rc != 0)
-    {
-        nv_printf(NV_DBG_ERRORS,
-            "NVRM: failed to initialize ibmnpu devices attached to GPU with minor number %d\n",
-            nvl->minor_num);
-        goto failed;
-    }
-
     if (!(nv->flags & NV_FLAG_PERSISTENT_SW_STATE))
     {
         rc = nv_dev_alloc_stacks(nvl);
@@ -1557,8 +1540,6 @@ failed:
     }
 
     nv_dev_free_stacks(nvl);
-
-    nv_unregister_ibmnpu_devices(nv);
 
     if (power_ref)
     {
@@ -1975,6 +1956,20 @@ void nv_shutdown_adapter(nvidia_stack_t *sp,
 
     rm_shutdown_adapter(sp, nv);
 
+    if (nv->flags & NV_FLAG_TRIGGER_FLR)
+    {
+        if (nvl->pci_dev)
+        {
+            nv_printf(NV_DBG_INFO, "NVRM: Trigger FLR!\n");
+            os_pci_trigger_flr((void *)nvl->pci_dev);
+        }
+        else
+        {
+            nv_printf(NV_DBG_ERRORS, "NVRM: FLR not supported by the device!\n");
+        }
+        nv->flags &= ~NV_FLAG_TRIGGER_FLR;
+    }
+
     if (nv_platform_use_auto_online(nvl))
         nv_kthread_q_stop(&nvl->remove_numa_memory_q);
 }
@@ -2036,8 +2031,6 @@ static void nv_stop_device(nv_state_t *nv, nvidia_stack_t *sp)
 
     /* leave INIT flag alone so we don't reinit every time */
     nv->flags &= ~NV_FLAG_OPEN;
-
-    nv_unregister_ibmnpu_devices(nv);
 
     if (!(nv->flags & NV_FLAG_PERSISTENT_SW_STATE))
     {
@@ -3102,17 +3095,10 @@ nv_set_dma_address_size(
 )
 {
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
-    NvU64 start_addr = nv_get_dma_start_address(nv);
     NvU64 new_mask = (((NvU64)1) << phys_addr_bits) - 1;
 
-    nvl->dma_dev.addressable_range.limit = start_addr + new_mask;
+    nvl->dma_dev.addressable_range.limit = new_mask;
 
-    /*
-     * The only scenario in which we definitely should not update the DMA mask
-     * is on POWER, when using TCE bypass mode (see nv_get_dma_start_address()
-     * for details), since the meaning of the DMA mask is overloaded in that
-     * case.
-     */
     if (!nvl->tce_bypass_enabled)
     {
         dma_set_mask(&nvl->pci_dev->dev, new_mask);
@@ -3740,35 +3726,6 @@ NV_STATUS NV_API_CALL nv_alloc_pages(
 #endif
     if (unencrypted)
         at->flags.unencrypted = NV_TRUE;
-
-#if defined(NVCPU_PPC64LE)
-    /*
-     * Starting on Power9 systems, DMA addresses for NVLink are no longer the
-     * same as used over PCIe. There is an address compression scheme required
-     * for NVLink ONLY which impacts the upper address bits of the DMA address.
-     *
-     * This divergence between PCIe and NVLink DMA mappings breaks assumptions
-     * in the driver where during initialization we allocate system memory
-     * for the GPU to access over PCIe before NVLink is trained -- and some of
-     * these mappings persist on the GPU. If these persistent mappings are not
-     * equivalent they will cause invalid DMA accesses from the GPU once we
-     * switch to NVLink.
-     *
-     * To work around this we limit all system memory allocations from the driver
-     * during the period before NVLink is enabled to be from NUMA node 0 (CPU 0)
-     * which has a CPU real address with the upper address bits (above bit 42)
-     * set to 0. Effectively making the PCIe and NVLink DMA mappings equivalent
-     * allowing persistent system memory mappings already programmed on the GPU
-     * to remain valid after NVLink is enabled.
-     *
-     * See Bug 1920398 for more details.
-     */
-    if (nv && nvl->npu && !nvl->dma_dev.nvlink)
-    {
-        at->flags.node = NV_TRUE;
-        at->node_id = 0;
-    }
-#endif
 
     if (node_id != NUMA_NO_NODE)
     {
@@ -4873,154 +4830,6 @@ NV_STATUS NV_API_CALL nv_log_error(
     return status;
 }
 
-NvU64 NV_API_CALL nv_get_dma_start_address(
-    nv_state_t *nv
-)
-{
-#if defined(NVCPU_PPC64LE)
-    struct pci_dev *pci_dev;
-    dma_addr_t dma_addr;
-    NvU64 saved_dma_mask;
-    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
-
-    /*
-     * If TCE bypass is disabled via a module parameter, then just return
-     * the default (which is 0).
-     *
-     * Otherwise, the DMA start address only needs to be set once, and it
-     * won't change afterward. Just return the cached value if asked again,
-     * to avoid the kernel printing redundant messages to the kernel
-     * log when we call pci_set_dma_mask().
-     */
-    if ((nv_tce_bypass_mode == NV_TCE_BYPASS_MODE_DISABLE) ||
-        (nvl->tce_bypass_enabled))
-    {
-        return nvl->dma_dev.addressable_range.start;
-    }
-
-    pci_dev = nvl->pci_dev;
-
-    /*
-     * Linux on IBM POWER8 offers 2 different DMA set-ups, sometimes
-     * referred to as "windows".
-     *
-     * The "default window" provides a 2GB region of PCI address space
-     * located below the 32-bit line. The IOMMU is used to provide a
-     * "rich" mapping--any page in system memory can be mapped at an
-     * arbitrary address within this window. The mappings are dynamic
-     * and pass in and out of being as pci_map*()/pci_unmap*() calls
-     * are made.
-     *
-     * Dynamic DMA Windows (sometimes "Huge DDW") provides a linear
-     * mapping of the system's entire physical address space at some
-     * fixed offset above the 59-bit line. IOMMU is still used, and
-     * pci_map*()/pci_unmap*() are still required, but mappings are
-     * static. They're effectively set up in advance, and any given
-     * system page will always map to the same PCI bus address. I.e.
-     *   physical 0x00000000xxxxxxxx => PCI 0x08000000xxxxxxxx
-     *
-     * This driver does not support the 2G default window because
-     * of its limited size, and for reasons having to do with UVM.
-     *
-     * Linux on POWER8 will only provide the DDW-style full linear
-     * mapping when the driver claims support for 64-bit DMA addressing
-     * (a pre-requisite because the PCI addresses used in this case will
-     * be near the top of the 64-bit range). The linear mapping
-     * is not available in all system configurations.
-     *
-     * Detect whether the linear mapping is present by claiming
-     * 64-bit support and then mapping physical page 0. For historical
-     * reasons, Linux on POWER8 will never map a page to PCI address 0x0.
-     * In the "default window" case page 0 will be mapped to some
-     * non-zero address below the 32-bit line.  In the
-     * DDW/linear-mapping case, it will be mapped to address 0 plus
-     * some high-order offset.
-     *
-     * If the linear mapping is present and sane then return the offset
-     * as the starting address for all DMA mappings.
-     */
-    saved_dma_mask = pci_dev->dma_mask;
-    if (dma_set_mask(&pci_dev->dev, DMA_BIT_MASK(64)) != 0)
-    {
-        goto done;
-    }
-
-    dma_addr = dma_map_single(&pci_dev->dev, NULL, 1, DMA_BIDIRECTIONAL);
-    if (dma_mapping_error(&pci_dev->dev, dma_addr))
-    {
-        dma_set_mask(&pci_dev->dev, saved_dma_mask);
-        goto done;
-    }
-
-    dma_unmap_single(&pci_dev->dev, dma_addr, 1, DMA_BIDIRECTIONAL);
-
-    /*
-     * From IBM: "For IODA2, native DMA bypass or KVM TCE-based implementation
-     * of full 64-bit DMA support will establish a window in address-space
-     * with the high 14 bits being constant and the bottom up-to-50 bits
-     * varying with the mapping."
-     *
-     * Unfortunately, we don't have any good interfaces or definitions from
-     * the kernel to get information about the DMA offset assigned by OS.
-     * However, we have been told that the offset will be defined by the top
-     * 14 bits of the address, and bits 40-49 will not vary for any DMA
-     * mappings until 1TB of system memory is surpassed; this limitation is
-     * essential for us to function properly since our current GPUs only
-     * support 40 physical address bits. We are in a fragile place where we
-     * need to tell the OS that we're capable of 64-bit addressing, while
-     * relying on the assumption that the top 24 bits will not vary in this
-     * case.
-     *
-     * The way we try to compute the window, then, is mask the trial mapping
-     * against the DMA capabilities of the device. That way, devices with
-     * greater addressing capabilities will only take the bits it needs to
-     * define the window.
-     */
-    if ((dma_addr & DMA_BIT_MASK(32)) != 0)
-    {
-        /*
-         * Huge DDW not available - page 0 mapped to non-zero address below
-         * the 32-bit line.
-         */
-        nv_printf(NV_DBG_WARNINGS,
-            "NVRM: DMA window limited by platform\n");
-        dma_set_mask(&pci_dev->dev, saved_dma_mask);
-        goto done;
-    }
-    else if ((dma_addr & saved_dma_mask) != 0)
-    {
-        NvU64 memory_size = NV_NUM_PHYSPAGES * PAGE_SIZE;
-        if ((dma_addr & ~saved_dma_mask) !=
-            ((dma_addr + memory_size) & ~saved_dma_mask))
-        {
-            /*
-             * The physical window straddles our addressing limit boundary,
-             * e.g., for an adapter that can address up to 1TB, the window
-             * crosses the 40-bit limit so that the lower end of the range
-             * has different bits 63:40 than the higher end of the range.
-             * We can only handle a single, static value for bits 63:40, so
-             * we must fall back here.
-             */
-            nv_printf(NV_DBG_WARNINGS,
-                "NVRM: DMA window limited by memory size\n");
-            dma_set_mask(&pci_dev->dev, saved_dma_mask);
-            goto done;
-        }
-    }
-
-    nvl->tce_bypass_enabled = NV_TRUE;
-    nvl->dma_dev.addressable_range.start = dma_addr & ~(saved_dma_mask);
-
-    /* Update the coherent mask to match */
-    dma_set_coherent_mask(&pci_dev->dev, pci_dev->dma_mask);
-
-done:
-    return nvl->dma_dev.addressable_range.start;
-#else
-    return 0;
-#endif
-}
-
 NV_STATUS NV_API_CALL nv_set_primary_vga_status(
     nv_state_t *nv
 )
@@ -5039,38 +4848,6 @@ NV_STATUS NV_API_CALL nv_set_primary_vga_status(
 #else
     return NV_ERR_NOT_SUPPORTED;
 #endif
-}
-
-NV_STATUS NV_API_CALL nv_pci_trigger_recovery(
-     nv_state_t *nv
-)
-{
-    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
-#if defined(NV_PCI_ERROR_RECOVERY)
-    nv_linux_state_t *nvl       = NV_GET_NVL_FROM_NV_STATE(nv);
-
-    /*
-     * Calling readl() on PPC64LE will allow the kernel to check its state for
-     * the device and update it accordingly. This needs to be done before
-     * checking if the PCI channel is offline, so that we don't check stale
-     * state.
-     *
-     * This will also kick off the recovery process for the device.
-     */
-    if (NV_PCI_ERROR_RECOVERY_ENABLED())
-    {
-        if (readl(nv->regs->map) == 0xFFFFFFFF)
-        {
-            if (pci_channel_offline(nvl->pci_dev))
-            {
-                NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
-                              "PCI channel for the device is offline\n");
-                status = NV_OK;
-            }
-        }
-    }
-#endif
-    return status;
 }
 
 NvBool NV_API_CALL nv_requires_dma_remap(
@@ -5304,44 +5081,6 @@ NV_STATUS NV_API_CALL nv_get_device_memory_config(
 {
     NV_STATUS status = NV_ERR_NOT_SUPPORTED;
 
-#if defined(NVCPU_PPC64LE)
-    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
-
-    if (!nv_platform_supports_numa(nvl))
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
-    if (node_id != NULL)
-    {
-        *node_id = nvl->numa_info.node_id;
-    }
-
-    {
-        nv_npu_numa_info_t *numa_info;
-
-        numa_info = &nvl->npu->numa_info;
-
-        if (compr_addr_sys_phys != NULL)
-        {
-            *compr_addr_sys_phys =
-                numa_info->compr_sys_phys_addr;
-        }
-
-        if (addr_guest_phys != NULL)
-        {
-            *addr_guest_phys =
-                numa_info->guest_phys_addr;
-        }
-    }
-
-    if (addr_width != NULL)
-    {
-        *addr_width = nv_volta_dma_addr_size - nv_volta_addr_space_width;
-    }
-
-    status = NV_OK;
-#endif
 #if defined(NVCPU_AARCH64)
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
 
@@ -5373,68 +5112,6 @@ NV_STATUS NV_API_CALL nv_get_device_memory_config(
 
     return status;
 }
-
-#if defined(NVCPU_PPC64LE)
-
-NV_STATUS NV_API_CALL nv_get_nvlink_line_rate(
-    nv_state_t *nvState,
-    NvU32      *linerate
-)
-{
-#if defined(NV_PNV_PCI_GET_NPU_DEV_PRESENT)
-
-    nv_linux_state_t *nvl;
-    struct pci_dev   *npuDev;
-    NvU32            *pSpeedPtr = NULL;
-    NvU32            speed;
-    int              len;
-
-    if (nvState != NULL)
-        nvl = NV_GET_NVL_FROM_NV_STATE(nvState);
-    else
-        return NV_ERR_INVALID_ARGUMENT;
-
-    if (!nvl->npu)
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
-    npuDev = nvl->npu->devs[0];
-    if (!npuDev->dev.of_node)
-    {
-        nv_printf(NV_DBG_ERRORS, "NVRM: %s: OF Node not found in IBM-NPU device node\n",
-                  __FUNCTION__);
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
-    pSpeedPtr = (NvU32 *) of_get_property(npuDev->dev.of_node, "ibm,nvlink-speed", &len);
-
-    if (pSpeedPtr)
-    {
-        speed = (NvU32) be32_to_cpup(pSpeedPtr);
-    }
-    else
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
-    if (!speed)
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
-    else
-    {
-        *linerate = speed;
-    }
-
-    return NV_OK;
-
-#endif
-
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-#endif
 
 NV_STATUS NV_API_CALL nv_indicate_idle(
     nv_state_t *nv
@@ -5972,9 +5649,7 @@ void NV_API_CALL nv_disallow_runtime_suspend
 
 void NV_API_CALL nv_flush_coherent_cpu_cache_range(nv_state_t *nv, NvU64 cpu_virtual, NvU64 size)
 {
-#if NVCPU_IS_PPC64LE
-    return nv_ibmnpu_cache_flush_range(nv, cpu_virtual, size);
-#elif NVCPU_IS_AARCH64
+#if NVCPU_IS_AARCH64
     NvU64 va, cbsize;
     NvU64 end_cpu_virtual = cpu_virtual + size;
     
@@ -5983,8 +5658,6 @@ void NV_API_CALL nv_flush_coherent_cpu_cache_range(nv_state_t *nv, NvU64 cpu_vir
             cpu_virtual, end_cpu_virtual);
 
     cbsize = cache_line_size();
-    // Align address to line size
-    cpu_virtual = NV_ALIGN_UP(cpu_virtual, cbsize);
 
     // Force eviction of any cache lines from the NUMA-onlined region.
     for (va = cpu_virtual; va < end_cpu_virtual; va += cbsize)
@@ -6147,7 +5820,7 @@ void NV_API_CALL nv_get_screen_info(
                 *pFbHeight = registered_fb[i]->var.yres;
                 *pFbDepth = registered_fb[i]->var.bits_per_pixel;
                 *pFbPitch = registered_fb[i]->fix.line_length;
-                *pFbSize = (NvU64)(*pFbHeight) * (NvU64)(*pFbPitch);
+                *pFbSize = registered_fb[i]->fix.smem_len;
                 return;
             }
         }

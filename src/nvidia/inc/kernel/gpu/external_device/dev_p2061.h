@@ -35,7 +35,7 @@
 #define NV_P2061_STATUS6_INT_PORT_DIRECTION_OUTPUT  1    /* RWXVF */
 
 // Used in FW 3.00 and above
-#define NV_P2061_CONTROL5                                            0x33 /* RW-1R */
+#define NV_P2061_CONTROL5                                            0x15 /* RW-1R */
 #define NV_P2061_CONTROL5_RASTER_SYNC_DECODE_MODE                    1:0  /* RWXVF */
 #define NV_P2061_CONTROL5_RASTER_SYNC_DECODE_MODE_VSYNC_SHORT_PULSE  0 /* RWXVF */
 #define NV_P2061_CONTROL5_RASTER_SYNC_DECODE_MODE_VSYNC_SINGLE_PULSE 1 /* RWXVF */

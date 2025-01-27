@@ -68,6 +68,12 @@ typedef struct
     NvU32 ecidExtended;
 } EcidManufacturingInfo;
 
+typedef struct
+{
+    NvU64 nonWprHeapOffset;
+    NvU64 frtsOffset;
+} FW_WPR_LAYOUT_OFFSET;
+
 // Fetched from GSP-RM into CPU-RM
 typedef struct GspStaticConfigInfo_t
 {
@@ -103,8 +109,10 @@ typedef struct GspStaticConfigInfo_t
     NvBool bIsTesla;
     NvBool bIsMobile;
     NvBool bIsGc6Rtd3Allowed;
+    NvBool bIsGc8Rtd3Allowed;
     NvBool bIsGcOffRtd3Allowed;
     NvBool bIsGcoffLegacyAllowed;
+    NvBool bIsMigSupported;
 
     /* "Total Board Power" refers to power requirement of GPU,
      * while in GC6 state. Majority of this power will be used
@@ -154,6 +162,8 @@ typedef struct GspStaticConfigInfo_t
     NvBool bIsEfiInit;
 
     EcidManufacturingInfo ecidInfo[MAX_GROUP_COUNT];
+
+    FW_WPR_LAYOUT_OFFSET fwWprLayoutOffset;
 } GspStaticConfigInfo;
 
 // Pushed from CPU-RM to GSP-RM
@@ -182,6 +192,7 @@ typedef struct GspSystemInfo
     NvBool bFlrSupported;
     NvBool b64bBar0Supported;
     NvBool bMnocAvailable;
+    NvU32  chipsetL1ssEnable;
     NvBool bUpstreamL0sUnsupported;
     NvBool bUpstreamL1Unsupported;
     NvBool bUpstreamL1PorSupported;
@@ -204,6 +215,7 @@ typedef struct GspSystemInfo
     NvBool bFeatureStretchVblankCapable;
     NvBool bEnableDynamicGranularityPageArrays;
     NvBool bClockBoostSupported;
+    NvBool bRouteDispIntrsToCPU;
 } GspSystemInfo;
 
 

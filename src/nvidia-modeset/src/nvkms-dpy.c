@@ -2459,26 +2459,12 @@ void nvDpyAssignSDRInfoFramePayload(NVT_HDR_INFOFRAME_PAYLOAD *pPayload)
     pPayload->static_metadata_desc_id = NVT_CEA861_STATIC_METADATA_SM0;
 }
 
-static void UpdateDpHDRInfoFrame(const NVDispEvoRec *pDispEvo, const NvU32 head)
+static void ConstructHdrInfoFrameSdp(const NVDispEvoRec *pDispEvo,
+                                     const NvU32 head,
+                                     DPSDP_DESCRIPTOR *sdp)
 {
-    NvU32 ret;
     const NVDispHeadStateEvoRec *pHeadState =
                                 &pDispEvo->headState[head];
-    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-
-    NV0073_CTRL_SPECIFIC_SET_OD_PACKET_PARAMS params = {
-        .subDeviceInstance = pDispEvo->displayOwner,
-        .displayId = pHeadState->activeRmId
-    };
-
-    // DPSDP_DESCRIPTOR has a (dataSize, hb, db) layout, while
-    // NV0073_CTRL_SPECIFIC_SET_OD_PACKET_PARAMS.aPacket needs to contain
-    // (hb, db) without dataSize, so this makes sdp->hb align with aPacket.
-    DPSDP_DESCRIPTOR *sdp =
-        (DPSDP_DESCRIPTOR *)(params.aPacket -
-        offsetof(DPSDP_DESCRIPTOR, hb));
-
-    nvAssert((void *)&sdp->hb == (void *)params.aPacket);
 
     sdp->hb.hb0 = 0;
     sdp->hb.hb1 = dp_pktType_DynamicRangeMasteringInfoFrame;
@@ -2487,9 +2473,9 @@ static void UpdateDpHDRInfoFrame(const NVDispEvoRec *pDispEvo, const NvU32 head)
                       DP_INFOFRAME_SDP_V1_3_HB3_VERSION_SHIFT;
 
     sdp->db.db0 = NVT_VIDEO_INFOFRAME_VERSION_1;
-    sdp->db.db1 = sizeof(NVT_HDR_INFOFRAME) - sizeof(NVT_INFOFRAME_HEADER);
+    sdp->db.db1 = sizeof(NVT_HDR_INFOFRAME_PAYLOAD);
 
-    nvAssert((sizeof(sdp->db) - 2) >= sizeof(NVT_HDR_INFOFRAME_PAYLOAD));
+    nvAssert(sizeof(NVT_HDR_INFOFRAME_PAYLOAD) <= (sizeof(sdp->db) - 2));
 
     if (pHeadState->hdrInfoFrame.state == NVKMS_HDR_INFOFRAME_STATE_ENABLED) {
         NVT_HDR_INFOFRAME_PAYLOAD *payload =
@@ -2505,41 +2491,40 @@ static void UpdateDpHDRInfoFrame(const NVDispEvoRec *pDispEvo, const NvU32 head)
         nvkms_memcpy(&payload->type1,
                      &pHeadState->hdrInfoFrame.staticMetadata,
                      sizeof(NVT_HDR_INFOFRAME_MASTERING_DATA));
-
-        params.transmitControl =
-            DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _SINGLE_FRAME, _DISABLE);
     } else if (pHeadState->hdrInfoFrame.state ==
                NVKMS_HDR_INFOFRAME_STATE_TRANSITIONING) {
         nvDpyAssignSDRInfoFramePayload((NVT_HDR_INFOFRAME_PAYLOAD *) &sdp->db.db2);
-
-        params.transmitControl =
-            DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _SINGLE_FRAME, _DISABLE);
     } else {
         nvAssert(pHeadState->hdrInfoFrame.state == NVKMS_HDR_INFOFRAME_STATE_DISABLED);
 
         nvDpyAssignSDRInfoFramePayload((NVT_HDR_INFOFRAME_PAYLOAD *) &sdp->db.db2);
-
-        params.transmitControl =
-            DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _SINGLE_FRAME, _ENABLE);
     }
 
-    params.transmitControl |=
-        DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _OTHER_FRAME,  _DISABLE) |
-        DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _ENABLE,       _YES)     |
-        DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _GEN_INFOFRAME_MODE, _INFOFRAME1) |
-        DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _ON_HBLANK,    _DISABLE);
+    sdp->dataSize = sizeof(NVT_HDR_INFOFRAME_PAYLOAD) + 2;
+}
 
-    params.packetSize = sizeof(sdp->hb) + sizeof(NVT_HDR_INFOFRAME);
+static void UpdateDpHDRInfoFrame(const NVDispEvoRec *pDispEvo, const NvU32 head)
+{
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    const NVDispHeadStateEvoRec *pHeadState =
+                                &pDispEvo->headState[head];
+    DPSDP_DESCRIPTOR sdp = { };
+    NvEvoInfoFrameTransmitControl transmitCtrl =
+        NV_EVO_INFOFRAME_TRANSMIT_CONTROL_INIT;
 
-    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
-                         pDevEvo->displayCommonHandle,
-                         NV0073_CTRL_CMD_SPECIFIC_SET_OD_PACKET,
-                         &params,
-                         sizeof(params));
+    ConstructHdrInfoFrameSdp(pDispEvo, head, &sdp);
 
-    if (ret != NVOS_STATUS_SUCCESS) {
-        nvAssert(!"NV0073_CTRL_CMD_SPECIFIC_SET_OD_PACKET failed");
+    switch (pHeadState->hdrInfoFrame.state) {
+        case NVKMS_HDR_INFOFRAME_STATE_DISABLED:
+            transmitCtrl = NV_EVO_INFOFRAME_TRANSMIT_CONTROL_SINGLE_FRAME;
+            break;
+        case NVKMS_HDR_INFOFRAME_STATE_ENABLED:
+        case NVKMS_HDR_INFOFRAME_STATE_TRANSITIONING:
+            transmitCtrl = NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME;
+            break;
     }
+
+    pDevEvo->hal->SendDpInfoFrameSdp(pDispEvo, head, transmitCtrl, &sdp);
 }
 
 void nvConstructDpVscSdp(const NVDispHeadInfoFrameStateEvoRec *pInfoFrame,
@@ -2665,6 +2650,14 @@ static void UpdateDpVscSdpInfoFrame(
     NV0073_CTRL_SPECIFIC_SET_OD_PACKET_PARAMS params = { 0 };
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NvU32 ret;
+
+    /*
+     * If the hardware supports the VSC SDP programming using the core
+     * channel, the VSC SDP is already programmed during modeset.
+     */
+    if (pDevEvo->hal->SetDpVscSdp != NULL) {
+        return;
+    }
 
     params.subDeviceInstance = pDispEvo->displayOwner;
     params.displayId = pHeadState->activeRmId;
@@ -3107,6 +3100,7 @@ NvBool nvDpyGetDynamicData(
     pReply->isVirtualRealityHeadMountedDisplay = pDpyEvo->isVrHmd;
 
     pReply->vrrType = pDpyEvo->vrr.type;
+    pReply->supportsHDR = nvDpyIsHDRCapable(pDpyEvo);
 
     pReply->stereo3DVision.supported = pDpyEvo->stereo3DVision.supported;
     pReply->stereo3DVision.isDLP = pDpyEvo->stereo3DVision.isDLP;
@@ -3226,10 +3220,7 @@ void nvDpyUpdateCurrentAttributes(NVDpyEvoRec *pDpyEvo)
 // Returns TRUE if this display is capable of Adaptive-Sync
 NvBool nvDpyIsAdaptiveSync(const NVDpyEvoRec *pDpyEvo)
 {
-    return ((pDpyEvo->vrr.type ==
-             NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_DEFAULTLISTED) ||
-            (pDpyEvo->vrr.type ==
-             NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_NON_DEFAULTLISTED));
+    return nvIsAdaptiveSyncDpyVrrType(pDpyEvo->vrr.type);
 }
 
 // Returns TRUE if this display is in the Adaptive-Sync defaultlist
@@ -3505,7 +3496,8 @@ NvBool nvDpyIsHDRCapable(const NVDpyEvoRec *pDpyEvo)
             return FALSE;
         }
 
-        if ((major < 1) || (minor < 3)) {
+        nvAssert(major >= 1);
+        if ((major == 1) && (minor < 3)) {
             return FALSE;
         }
     } else if (!nvDpyIsHdmiEvo(pDpyEvo)) {

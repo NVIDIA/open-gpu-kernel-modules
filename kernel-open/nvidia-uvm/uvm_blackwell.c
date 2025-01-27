@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2022-2023 NVIDIA Corporation
+    Copyright (c) 2022-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -51,14 +51,16 @@ void uvm_hal_blackwell_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
     parent_gpu->rm_va_base = 0;
     parent_gpu->rm_va_size = 64 * UVM_SIZE_1PB;
 
+    parent_gpu->peer_va_base = parent_gpu->rm_va_base + parent_gpu->rm_va_size;
+    parent_gpu->peer_va_size = NV_MAX_DEVICES * UVM_PEER_IDENTITY_VA_SIZE;
+
     parent_gpu->uvm_mem_va_base = parent_gpu->rm_va_size + 384 * UVM_SIZE_1TB;
     parent_gpu->uvm_mem_va_size = UVM_MEM_VA_SIZE;
 
     // See uvm_mmu.h for mapping placement
     parent_gpu->flat_vidmem_va_base = (64 * UVM_SIZE_1PB) + (32 * UVM_SIZE_1TB);
 
-    // TODO: Bug 3953852: Set this to true pending Blackwell changes
-    parent_gpu->ce_phys_vidmem_write_supported = !uvm_parent_gpu_is_coherent(parent_gpu);
+    parent_gpu->ce_phys_vidmem_write_supported = true;
 
     parent_gpu->peer_copy_mode = g_uvm_global.peer_copy_mode;
 
@@ -102,4 +104,6 @@ void uvm_hal_blackwell_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
     parent_gpu->plc_supported = true;
 
     parent_gpu->no_ats_range_required = true;
+
+    parent_gpu->conf_computing.per_channel_key_rotation = true;
 }

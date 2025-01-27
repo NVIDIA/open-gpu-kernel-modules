@@ -62,7 +62,8 @@ gpuValidateRegOps
     NV2080_CTRL_GPU_REG_OP *pRegOps,
     NvU32 regOpCount,
     NvBool bNonTransactional,
-    NvBool isClientGspPlugin
+    NvBool isClientGspPlugin,
+    NvBool bSkipPermissionValidation
 )
 {
     NvU8   regStatus;
@@ -80,7 +81,7 @@ gpuValidateRegOps
         {
             NV_STATUS status;
 
-            status = gpuValidateRegOffset(pGpu, pRegOps[i].regOffset);
+            status = gpuValidateRegOffset(pGpu, pRegOps[i].regOffset, bSkipPermissionValidation);
             if (status != NV_OK)
             {
                 regStatus = NV2080_CTRL_GPU_REG_OP_STATUS_INVALID_OFFSET;
@@ -195,7 +196,7 @@ subdeviceCtrlCmdGpuExecRegOps_cmn
     }
 
     status = gpuValidateRegOps(pGpu, pRegOps, regOpCount, bNonTransactional,
-                               isClientGspPlugin);
+                               isClientGspPlugin, NV_FALSE);
     if (status != NV_OK)
     {
         return status;

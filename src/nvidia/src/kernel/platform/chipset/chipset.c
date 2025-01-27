@@ -570,55 +570,49 @@ clFindFHBAndGetChipsetInfoIndex_IMPL
     return NV_ERR_NOT_SUPPORTED;
 }
 
+/*!
+ * @brief Check if ASPM L1 is supported from upstream component
+ *
+ * @param[in] pGpu GPU object pointer
+ * @param[in] pCl  CL  object pointer
+ *
+ * @return NV_TRUE if L1 is supported
+ */
 NvBool
-clIsL1MaskEnabledForUpstreamPort_IMPL
+clIsL1SupportedForUpstreamPort_IMPL
 (
     OBJGPU *pGpu,
     OBJCL  *pCl
 )
 {
-    NvU32  linkCtrl;
-    NvBool bEnable = NV_FALSE;
+    NvU32     linkCap;
+    NvBool    bSupported = NV_FALSE;
+    NV_STATUS status     = NV_OK;
 
-    if (!pGpu->gpuClData.upstreamPort.addr.valid)
+    if (pGpu->gpuClData.upstreamPort.addr.valid)
     {
-        if (!pGpu->gpuClData.rootPort.addr.valid)
+        status = clPcieReadPortConfigReg(pGpu, pCl, &pGpu->gpuClData.upstreamPort, CL_PCIE_LINK_CAP, &linkCap);
+        if (status == NV_OK)
         {
-            bEnable = NV_TRUE;
-        }
-        else
-        {
-            if (clPcieReadPortConfigReg(pGpu, pCl, &pGpu->gpuClData.rootPort,
-                CL_PCIE_LINK_CTRL_STATUS, &linkCtrl) != NV_OK)
+            if ((CL_IS_L1_SUPPORTED(linkCap)))
             {
-                bEnable = NV_TRUE;
-            }
-            else
-            {
-                if (!(linkCtrl & CL_PCIE_LINK_CTRL_STATUS_ASPM_L1_BIT))
-                {
-                    bEnable = NV_TRUE;
-                }
+                bSupported = NV_TRUE;
             }
         }
     }
-    else
+    else if (pGpu->gpuClData.rootPort.addr.valid)
     {
-        if (clPcieReadPortConfigReg(pGpu, pCl, &pGpu->gpuClData.upstreamPort,
-            CL_PCIE_LINK_CTRL_STATUS, &linkCtrl) != NV_OK)
+        status = clPcieReadPortConfigReg(pGpu, pCl, &pGpu->gpuClData.rootPort, CL_PCIE_LINK_CAP, &linkCap);
+        if (status == NV_OK)
         {
-            bEnable = NV_TRUE;
-        }
-        else
-        {
-            if (!(linkCtrl & CL_PCIE_LINK_CTRL_STATUS_ASPM_L1_BIT))
+            if ((CL_IS_L1_SUPPORTED(linkCap)))
             {
-                bEnable = NV_TRUE;
+                bSupported = NV_TRUE;
             }
         }
     }
 
-    return bEnable;
+    return bSupported;
 }
 
 /*!
@@ -801,9 +795,10 @@ void clSyncWithGsp_IMPL(OBJCL *pCl, GspSystemInfo *pGSI)
     CL_SYNC_PDB(PDB_PROP_CL_IS_CHIPSET_IN_ASPM_POR_LIST);
     CL_SYNC_PDB(PDB_PROP_CL_ASPM_L0S_CHIPSET_DISABLED);
     CL_SYNC_PDB(PDB_PROP_CL_ASPM_L1_CHIPSET_DISABLED);
+    CL_SYNC_PDB(PDB_PROP_CL_WAR_4802761_ENABLED);
     CL_SYNC_PDB(PDB_PROP_CL_ASPM_L0S_CHIPSET_ENABLED_MOBILE_ONLY);
     CL_SYNC_PDB(PDB_PROP_CL_ASPM_L1_CHIPSET_ENABLED_MOBILE_ONLY);
-    CL_SYNC_PDB(PDB_PROP_CL_ASPM_UPSTREAM_PORT_L1_MASK_ENABLED);
+    CL_SYNC_PDB(PDB_PROP_CL_ASPM_L1_UPSTREAM_PORT_SUPPORTED);
     CL_SYNC_PDB(PDB_PROP_CL_PCIE_GEN1_GEN2_SWITCH_CHIPSET_DISABLED);
     CL_SYNC_PDB(PDB_PROP_CL_PCIE_GEN1_GEN2_SWITCH_CHIPSET_DISABLED_GEFORCE);
     CL_SYNC_PDB(PDB_PROP_CL_EXTENDED_TAG_FIELD_NOT_CAPABLE);

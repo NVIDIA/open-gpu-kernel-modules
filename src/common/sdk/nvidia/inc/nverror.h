@@ -134,6 +134,8 @@
 #define ROBUST_CHANNEL_OFA1_ERROR                       (139)
 #define UNRECOVERABLE_ECC_ERROR_ESCAPE                  (140)
 #define ROBUST_CHANNEL_FAST_PATH_ERROR                  (141)
+// Bug 4175886 - Use this new value for all chips once GB20X is released
+#define ROBUST_CHANNEL_NVENC3_ERROR                     (142)
 #define GPU_INIT_ERROR                                  (143)
 #define NVLINK_SAW_ERROR                                (144)
 #define NVLINK_RLW_ERROR                                (145)
@@ -146,7 +148,8 @@
 #define RESERVED7_ERROR                                 (152)
 #define RESERVED8_ERROR                                 (153)
 #define GPU_RECOVERY_ACTION_CHANGED                     (154)
-#define ROBUST_CHANNEL_LAST_ERROR                       (154)
+#define NVLINK_SW_DEFINED_ERROR                         (155)
+#define ROBUST_CHANNEL_LAST_ERROR                       (157)
 
 
 // Indexed CE reference
@@ -214,22 +217,27 @@
          (x - ROBUST_CHANNEL_NVDEC5_ERROR + 5))))
 
 // Indexed NVENC reference
+// Bug 4175886 - Use this new value for all chips once GB20X is released
 #define ROBUST_CHANNEL_NVENC_ERROR(x)                       \
     ((x == 0) ? (ROBUST_CHANNEL_NVENC0_ERROR) :             \
                 ((x == 1) ? (ROBUST_CHANNEL_NVENC1_ERROR) : \
-                            (ROBUST_CHANNEL_NVENC2_ERROR)))
+                ((x == 2) ? (ROBUST_CHANNEL_NVENC2_ERROR) : \
+                            (ROBUST_CHANNEL_NVENC3_ERROR))))
 
 #define ROBUST_CHANNEL_IS_NVENC_ERROR(x)   \
     ((x == ROBUST_CHANNEL_NVENC0_ERROR) || \
      (x == ROBUST_CHANNEL_NVENC1_ERROR) || \
-     (x == ROBUST_CHANNEL_NVENC2_ERROR))
+     (x == ROBUST_CHANNEL_NVENC2_ERROR) || \
+     (x == ROBUST_CHANNEL_NVENC3_ERROR))
 
-#define ROBUST_CHANNEL_NVENC_ERROR_IDX(x)             \
-    (((x == ROBUST_CHANNEL_NVENC0_ERROR)) ?           \
-         (x - ROBUST_CHANNEL_NVENC0_ERROR) :          \
-         (((x == ROBUST_CHANNEL_NVENC1_ERROR)) ?      \
-              (x - ROBUST_CHANNEL_NVENC1_ERROR + 1) : \
-              (x - ROBUST_CHANNEL_NVENC2_ERROR + 2)))
+#define ROBUST_CHANNEL_NVENC_ERROR_IDX(x)                       \
+    ((x == ROBUST_CHANNEL_NVENC0_ERROR) ?                       \
+         (x - ROBUST_CHANNEL_NVENC0_ERROR) :                    \
+         ((x == ROBUST_CHANNEL_NVENC1_ERROR) ?                  \
+              (x - ROBUST_CHANNEL_NVENC1_ERROR + 1) :           \
+                   ((x == ROBUST_CHANNEL_NVENC2_ERROR) ?        \
+                        (x - ROBUST_CHANNEL_NVENC2_ERROR + 2) : \
+                        (x - ROBUST_CHANNEL_NVENC3_ERROR + 3))))
 
 // Indexed NVJPG reference
 #define ROBUST_CHANNEL_NVJPG_ERROR(x)                   \

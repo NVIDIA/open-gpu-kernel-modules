@@ -103,7 +103,7 @@ memmgrGetMemTransferType
         // On Emulation we may lack CE support so preventing excessive debug spew.
         if (!IS_EMULATION(pGpu))
         {
-            NV_PRINTF(LEVEL_WARNING, "Can't copy using CE, falling back to other methods\n");
+            NV_PRINTF(LEVEL_INFO, "Can't copy using CE, falling back to other methods\n");
         }
     }
     else if (kbusIsBarAccessBlocked(pKernelBus) &&

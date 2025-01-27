@@ -73,6 +73,7 @@
 #include <class/clcbc0.h> // HOPPER_COMPUTE_A
 #include <class/clcba2.h> // HOPPER_SEC2_WORK_LAUNCH_A
 #include <class/clc9b5.h> // BLACKWELL_DMA_COPY_A
+#include <class/clcab5.h> // BLACKWELL_DMA_COPY_B
 #include <alloc/alloc_access_counter_buffer.h>
 
 #include <ctrl/ctrl0000/ctrl0000gpu.h>
@@ -116,6 +117,7 @@
 #include <kernel/gpu/mig_mgr/gpu_instance_subscription.h>
 #include <kernel/gpu/mig_mgr/kernel_mig_manager.h>
 #include <kernel/gpu/nvlink/kernel_nvlink.h>
+#include <kernel/rmapi/mapping_list.h>
 #include <mem_mgr/fabric_vaspace.h>
 #include <mem_mgr/fla_mem.h>
 #include <mem_mgr/gpu_vaspace.h>
@@ -138,6 +140,8 @@
 #include <pascal/gp100/dev_mmu.h>
 
 #include <kernel/gpu/conf_compute/ccsl.h>
+
+#include "gpu/gpu_fabric_probe.h"
 
 #define NV_GPU_OPS_NUM_GPFIFO_ENTRIES_DEFAULT 1024
 #define NV_GPU_SMALL_PAGESIZE (4 * 1024)
@@ -1967,8 +1971,9 @@ static NV_STATUS queryFbInfo(struct gpuDevice *device)
     if (nvStatus != NV_OK)
         goto out;
 
-    device->fbInfo.bStaticBar1Enabled = fbStaticBar1Params.bStaticBar1Enabled;
-    device->fbInfo.staticBar1Size     = fbStaticBar1Params.staticBar1Size;
+    device->fbInfo.bStaticBar1Enabled    = fbStaticBar1Params.bStaticBar1Enabled;
+    device->fbInfo.staticBar1StartOffset = fbStaticBar1Params.staticBar1StartOffset;
+    device->fbInfo.staticBar1Size        = fbStaticBar1Params.staticBar1Size;
 
 out:
     portMemFree(fbRegionInfoParams);
@@ -3031,15 +3036,14 @@ static NV_STATUS getNvlinkP2PCaps(struct gpuDevice *device1,
     }
 
     // NVLink1 devices cannot be mixed with other versions. NVLink3 supports
-    // mixing NVLink2 and NVLink3 devices. NVLink4 and NVLink 5 devices cannot
+    // mixing NVLink2 and NVLink3 devices. NVLink4 and NVLink5 devices cannot
     // be mixed with prior NVLink versions or with each other.
     if (nvlinkVersion1 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_1_0 ||
         nvlinkVersion2 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_1_0 ||
         nvlinkVersion1 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_4_0 ||
-        nvlinkVersion2 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_4_0
-        || nvlinkVersion1 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_5_0 ||
-        nvlinkVersion2 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_5_0
-       )
+        nvlinkVersion2 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_4_0 ||
+        nvlinkVersion1 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_5_0 ||
+        nvlinkVersion2 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_5_0)
     {
         NV_ASSERT(nvlinkVersion1 == nvlinkVersion2);
         NV_ASSERT(linkBandwidthMBps1 == linkBandwidthMBps2);
@@ -3183,18 +3187,23 @@ static NV_STATUS nvGpuOpsDestroyPeerInfo(struct gpuSession *session, NvU32 memOw
 }
 
 static NV_STATUS nvGpuOpsDestroyP2pInfoByP2pObjectHandle(struct gpuSession *session,
-                                                         NvHandle hP2pObject)
+                                                         NvHandle hP2pObject,
+                                                         NvBool bApiLockAcquired)
 {
-    NV_STATUS      status       = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU_OPS);
+    NV_STATUS      status;
     RsClient      *pClient      = NULL;
     RsResourceRef *pResourceRef = NULL;
     P2PApi        *pP2pApi      = NULL;
     NvU32          gpuId1       = 0;
     NvU32          gpuId2       = 0;
 
-    if (status != NV_OK)
+    if (!bApiLockAcquired)
     {
-        return status;
+        status = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU_OPS);
+        if (status != NV_OK)
+        {
+            return status;
+        }
     }
 
     status = serverGetClientUnderLock(&g_resServ, session->handle, &pClient);
@@ -3220,7 +3229,9 @@ static NV_STATUS nvGpuOpsDestroyP2pInfoByP2pObjectHandle(struct gpuSession *sess
 
     gpuId1 = pP2pApi->peer1->gpuId;
     gpuId2 = pP2pApi->peer2->gpuId;
-    rmapiLockRelease();
+
+    if (!bApiLockAcquired)
+        rmapiLockRelease();
 
     // Destroy info for link in both directions
     nvGpuOpsDestroyPeerInfo(session, gpuId1, gpuId2);
@@ -3910,8 +3921,8 @@ nvGpuOpsBuildExternalAllocPtes
     // it requires IOMMU mappings to be set up and these are different for each
     // GPU. The IOMMU mappings are currently added by nvGpuOpsDupMemory().
     //
-    memdescGetPhysAddrsForGpu(pMemDesc, pMappingGpu, AT_GPU, offset, mappingPageSize,
-                              pteCount, physicalAddresses);
+    memdescGetPtePhysAddrsForGpu(pMemDesc, pMappingGpu, AT_GPU, offset, mappingPageSize,
+                                 pteCount, physicalAddresses);
 
     kgmmuEncodePhysAddrs(pKernelGmmu, aperture, physicalAddresses, fabricBaseAddress, pteCount);
 
@@ -4175,6 +4186,9 @@ nvGpuOpsBuildExternalAllocPhysAddrs
     // same as the GPU owning the memdesc. This matters for sysmem as accessing
     // it requires IOMMU mappings to be set up and these are different for each
     // GPU. The IOMMU mappings are currently added by nvGpuOpsDupMemory().
+    //
+    // UVM will just use the physical address as visible through BAR1 here,
+    // not for PTEs, so just get the plain physical address
     //
     memdescGetPhysAddrsForGpu(pMemDesc, pMappingGpu, AT_GPU, offset, mappingPageSize,
                               physAddrCount, physicalAddresses);
@@ -6369,8 +6383,6 @@ void nvGpuOpsMemoryFree(struct gpuAddressSpace *vaSpace, NvU64 pointer)
     portMemFree(memDesc);
 }
 
-
-
 NV_STATUS nvGpuOpsQueryCesCaps(struct gpuDevice *device,
                                gpuCesCaps *cesCaps)
 {
@@ -6398,6 +6410,88 @@ NV_STATUS nvGpuOpsQueryCesCaps(struct gpuDevice *device,
     _nvGpuOpsLocksRelease(&acquiredLocks);
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     return status;
+}
+
+static NV_STATUS _convertSystemFabricStateToErrorCode
+(
+    NV0000_CTRL_SYSTEM_GET_FABRIC_STATUS_PARAMS fabricParams
+)
+{
+    switch (fabricParams.fabricStatus)
+    {
+        case NV0000_CTRL_GET_SYSTEM_FABRIC_STATUS_SKIP:
+        case NV0000_CTRL_GET_SYSTEM_FABRIC_STATUS_INITIALIZED:
+            return NV_OK;
+
+        case NV0000_CTRL_GET_SYSTEM_FABRIC_STATUS_IN_PROGRESS:
+        case NV0000_CTRL_GET_SYSTEM_FABRIC_STATUS_UNINITIALIZED:
+            return NV_ERR_NVLINK_FABRIC_NOT_READY;
+
+        default:
+            NV_PRINTF(LEVEL_ERROR, "Invalid Fabric State\n");
+            return NV_ERR_INVALID_STATE;
+    }
+}
+
+static NV_STATUS _convertGpuFabricProbeStateToErrorCode
+(
+    NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS fabricProbeParams
+)
+{
+    switch (fabricProbeParams.state)
+    {
+        case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_UNSUPPORTED:
+        case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_COMPLETE:
+            return NV_OK;
+
+        case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_IN_PROGRESS:
+        case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_NOT_STARTED:
+            return NV_ERR_NVLINK_FABRIC_NOT_READY;
+
+        default:
+            NV_PRINTF(LEVEL_ERROR, "Invalid Fabric Probe State\n");
+            return NV_ERR_INVALID_STATE;
+    }
+}
+
+static NV_STATUS _gpuGetFabricStatus
+(
+    struct gpuDevice *pDevice,
+    RM_API *pRmApi
+)
+{
+    // When MIG is enabled, P2P is not supported, hence return early
+    if (pDevice->info.smcEnabled)
+    {
+        return NV_OK;
+    }
+
+    if (isDeviceHopperPlus(pDevice))
+    {
+        NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS fabricProbeParams = {0};
+
+        NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                               pDevice->session->handle,
+                                               pDevice->subhandle,
+                                               NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO,
+                                               &fabricProbeParams,
+                                               sizeof(fabricProbeParams)));
+
+        return _convertGpuFabricProbeStateToErrorCode(fabricProbeParams);
+    }
+    else
+    {
+        NV0000_CTRL_SYSTEM_GET_FABRIC_STATUS_PARAMS fabricParams = {0};
+
+        NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                               pDevice->session->handle,
+                                               pDevice->session->handle,
+                                               NV0000_CTRL_CMD_SYSTEM_GET_FABRIC_STATUS,
+                                               &fabricParams,
+                                               sizeof(fabricParams)));
+
+        return _convertSystemFabricStateToErrorCode(fabricParams);
+    }
 }
 
 NV_STATUS nvGpuOpsQueryCaps(struct gpuDevice *device, gpuCaps *caps)
@@ -6432,6 +6526,8 @@ NV_STATUS nvGpuOpsQueryCaps(struct gpuDevice *device, gpuCaps *caps)
         caps->numaEnabled = NV_TRUE;
         caps->numaNodeId = infoParams.numaId;
     }
+
+    status = _gpuGetFabricStatus(device, pRmApi);
 
 cleanup:
     _nvGpuOpsLocksRelease(&acquiredLocks);
@@ -6664,28 +6760,18 @@ nvGpuOpsQueryGpuConfidentialComputeCaps(NvHandle hClient,
 {
     NV_CONFIDENTIAL_COMPUTE_ALLOC_PARAMS confComputeAllocParams = {0};
     NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_CAPABILITIES_PARAMS confComputeParams = {0};
-    NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS keyRotationParams = {0};
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
     NvHandle hConfCompute = 0;
     NV_STATUS status = NV_OK;
 
     confComputeAllocParams.hClient = hClient;
-    status = pRmApi->Alloc(pRmApi,
-                           hClient,
-                           hClient,
-                           &hConfCompute,
-                           NV_CONFIDENTIAL_COMPUTE,
-                           &confComputeAllocParams,
-                           sizeof(confComputeAllocParams));
-    if (status == NV_ERR_INVALID_CLASS)
-    {
-        pGpuConfComputeCaps->mode = UVM_GPU_CONF_COMPUTE_MODE_NONE;
-        return NV_OK;
-    }
-    else
-    {
-        NV_ASSERT_OK_OR_RETURN(status);
-    }
+    NV_ASSERT_OK_OR_RETURN(pRmApi->Alloc(pRmApi,
+                                         hClient,
+                                         hClient,
+                                         &hConfCompute,
+                                         NV_CONFIDENTIAL_COMPUTE,
+                                         &confComputeAllocParams,
+                                         sizeof(confComputeAllocParams)));
 
     NV_ASSERT_OK_OR_GOTO(status,
         pRmApi->Control(pRmApi,
@@ -6696,29 +6782,42 @@ nvGpuOpsQueryGpuConfidentialComputeCaps(NvHandle hClient,
                         sizeof(confComputeParams)),
         cleanup);
 
+    pGpuConfComputeCaps->bConfComputingEnabled = NV_FALSE;
+
     if (confComputeParams.ccFeature == NV_CONF_COMPUTE_SYSTEM_FEATURE_APM_ENABLED)
     {
-        pGpuConfComputeCaps->mode = UVM_GPU_CONF_COMPUTE_MODE_APM;
+        NV_ASSERT_OK_OR_GOTO(status, NV_ERR_NOT_SUPPORTED, cleanup);
     }
-    else if (confComputeParams.ccFeature == NV_CONF_COMPUTE_SYSTEM_FEATURE_HCC_ENABLED)
+    //
+    // Although protected pcie uses the same HW features as HCC, we don't advertise
+    // PPCIe as a multi-gpu extension of HCC. This is because PPCIe does not meet
+    // the security bar of a full blown HCC solution. For PPCIe, we have traded off
+    // security for higher performance. Hence, RM does not report both HCC and PPCIe
+    // ON at the same time. Internally however we use the same code paths for HCC and
+    // PPCIe.
+    //
+    else if (confComputeParams.ccFeature == NV_CONF_COMPUTE_SYSTEM_FEATURE_HCC_ENABLED ||
+             confComputeParams.multiGpuMode == NV_CONF_COMPUTE_SYSTEM_MULTI_GPU_MODE_PROTECTED_PCIE)
     {
-        pGpuConfComputeCaps->mode = UVM_GPU_CONF_COMPUTE_MODE_HCC;
-    }
+        NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS keyRotationParams = {0};
 
-    keyRotationParams.hSubDevice = hSubdevice;
-    NV_ASSERT_OK_OR_GOTO(status,
-        pRmApi->Control(pRmApi,
-                        hClient,
-                        hConfCompute,
-                        NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE,
-                        &keyRotationParams,
-                        sizeof(keyRotationParams)),
-        cleanup);
+        pGpuConfComputeCaps->bConfComputingEnabled = NV_TRUE;
 
-    if ((keyRotationParams.keyRotationState == NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_KERN_ENABLED) ||
-        (keyRotationParams.keyRotationState == NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_BOTH_ENABLED))
-    {
-        pGpuConfComputeCaps->bKeyRotationEnabled = NV_TRUE;
+        keyRotationParams.hSubDevice = hSubdevice;
+        NV_ASSERT_OK_OR_GOTO(status,
+            pRmApi->Control(pRmApi,
+                            hClient,
+                            hConfCompute,
+                            NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE,
+                            &keyRotationParams,
+                            sizeof(keyRotationParams)),
+            cleanup);
+
+        if ((keyRotationParams.keyRotationState == NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_KERN_ENABLED) ||
+            (keyRotationParams.keyRotationState == NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_BOTH_ENABLED))
+        {
+            pGpuConfComputeCaps->bKeyRotationEnabled = NV_TRUE;
+        }
     }
 cleanup:
     pRmApi->Free(pRmApi, hClient, hConfCompute);
@@ -6816,6 +6915,44 @@ static NV_STATUS getSysmemLinkInfo(NvHandle hClient,
     NV_ASSERT(pGpuInfo->sysmemLink != UVM_LINK_TYPE_NONE);
     return NV_OK;
 }
+
+static NV_STATUS getAtsInfo(OBJGPU *pGpu,
+                            NvHandle hClient,
+                            NvHandle hSubDevice,
+                            gpuInfo *pGpuInfo)
+{
+    NvU32 atsInfo;
+    NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *gpuInfoParams;
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+    NV_STATUS status;
+
+    gpuInfoParams = portMemAllocNonPaged(sizeof(*gpuInfoParams));
+    if (gpuInfoParams == NULL)
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+
+    portMemSet(gpuInfoParams, 0, sizeof(*gpuInfoParams));
+    gpuInfoParams->gpuInfoListSize = 1;
+    gpuInfoParams->gpuInfoList[0].index =
+        NV2080_CTRL_GPU_INFO_INDEX_GPU_ATS_CAPABILITY;
+    status = pRmApi->Control(pRmApi,
+                             hClient,
+                             hSubDevice,
+                             NV2080_CTRL_CMD_GPU_GET_INFO_V2,
+                             gpuInfoParams,
+                             sizeof(*gpuInfoParams));
+    atsInfo = gpuInfoParams->gpuInfoList[0].data;
+    portMemFree(gpuInfoParams);
+
+    if (status != NV_OK)
+        return status;
+
+    pGpuInfo->atsSupport = (atsInfo == NV2080_CTRL_GPU_INFO_INDEX_GPU_ATS_CAPABILITY_YES);
+
+    NV_PRINTF(LEVEL_INFO, "ATS supported: %d\n", pGpuInfo->atsSupport);
+
+    return NV_OK;
+}
+
 
 static NV_STATUS getEgmInfo(OBJGPU *pGpu,
                             NvHandle hClient,
@@ -7137,6 +7274,10 @@ NV_STATUS nvGpuOpsGetGpuInfo(const NvProcessorUuid *pUuid,
         goto cleanup;
 
     status = getEgmInfo(pGpu, clientHandle, subDeviceHandle, pGpuInfo);
+    if (status != NV_OK)
+        goto cleanup;
+
+    status = getAtsInfo(pGpu, clientHandle, subDeviceHandle, pGpuInfo);
     if (status != NV_OK)
         goto cleanup;
 
@@ -7913,6 +8054,7 @@ static NvBool isClassCE(NvU32 class)
         case AMPERE_DMA_COPY_B:
         case HOPPER_DMA_COPY_A:
         case BLACKWELL_DMA_COPY_A:
+        case BLACKWELL_DMA_COPY_B:
             return NV_TRUE;
 
         default:
@@ -10508,7 +10650,8 @@ static NV_STATUS _nvGpuOpsP2pObjectDestroy(struct gpuSession *session,
     RM_API *pRmApi = rmapiGetInterface(rmapiType);
     NV_ASSERT(session);
 
-    nvGpuOpsDestroyP2pInfoByP2pObjectHandle(session, hP2pObject);
+    nvGpuOpsDestroyP2pInfoByP2pObjectHandle(session, hP2pObject,
+        (rmapiType >= RMAPI_API_LOCK_INTERNAL));
 
     status = pRmApi->Free(pRmApi, session->handle, hP2pObject);
     NV_ASSERT(status == NV_OK);

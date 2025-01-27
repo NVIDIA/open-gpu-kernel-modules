@@ -212,7 +212,7 @@ typedef struct
 
         // Out mask of all processors involved in the migration either as
         // source, destination or the processor performing the copy.
-        // Used to perform ECC checks after the migration is done.
+        // Used to perform error checks after the migration is done.
         uvm_processor_mask_t all_involved_processors;
 
         // Page mask used to compute the set of CPU pages for each CPU node.

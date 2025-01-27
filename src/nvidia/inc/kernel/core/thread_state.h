@@ -199,6 +199,8 @@ NvU32       threadStateGetSetupFlags(void);
 void        threadStateInitISRLockless(THREAD_STATE_NODE *, OBJGPU*, NvU32);
 void        threadStateFreeISRLockless(THREAD_STATE_NODE *, OBJGPU*, NvU32);
 void        threadStateInitISRAndDeferredIntHandler(THREAD_STATE_NODE *, OBJGPU*, NvU32);
+void        threadStateOnlyProcessWorkISRAndDeferredIntHandler(THREAD_STATE_NODE *, OBJGPU*, NvU32);
+void        threadStateOnlyFreeISRAndDeferredIntHandler(THREAD_STATE_NODE *, OBJGPU*, NvU32);
 void        threadStateFreeISRAndDeferredIntHandler(THREAD_STATE_NODE *, OBJGPU*, NvU32);
 void        threadStateInit(THREAD_STATE_NODE *pThreadNode, NvU32 flags);
 void        threadStateFree(THREAD_STATE_NODE *pThreadNode, NvU32 flags);

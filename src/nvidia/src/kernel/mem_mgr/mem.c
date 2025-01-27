@@ -962,8 +962,8 @@ memCopyConstruct_IMPL
     //
     if (RES_GET_CLIENT_HANDLE(pMemoryDst) == RES_GET_PARENT_HANDLE(pMemoryDst))
     {
-        NV_ASSERT_OR_RETURN(RES_GET_CLIENT_HANDLE(pMemorySrc) ==
-                          RES_GET_PARENT_HANDLE(pMemorySrc),
+        NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                RES_GET_CLIENT_HANDLE(pMemorySrc) == RES_GET_PARENT_HANDLE(pMemorySrc),
                 NV_ERR_INVALID_OBJECT_PARENT);
         return NV_OK;
     }

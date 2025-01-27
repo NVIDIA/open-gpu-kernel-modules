@@ -295,10 +295,13 @@ static void EvoSetRasterParams90(NVDevEvoPtr pDevEvo, int head,
                         pTimings->rasterVertBlank2End));
     }
 
+    nvAssert((KHzToHz(pTimings->pixelClock) &
+        ~DRF_MASK(NV917D_HEAD_SET_PIXEL_CLOCK_FREQUENCY_HERTZ)) == 0x0);
+
     nvDmaSetStartEvoMethod(pChannel, NV917D_HEAD_SET_PIXEL_CLOCK_FREQUENCY(head), 1);
     nvDmaSetEvoMethodData(pChannel,
         DRF_NUM(917D, _HEAD_SET_PIXEL_CLOCK_FREQUENCY, _HERTZ,
-                pTimings->pixelClock * 1000) |
+                KHzToHz(pTimings->pixelClock)) |
         DRF_DEF(917D, _HEAD_SET_PIXEL_CLOCK_FREQUENCY, _ADJ1000DIV1001,_FALSE));
 
     nvDmaSetStartEvoMethod(pChannel, NV917D_HEAD_SET_PIXEL_CLOCK_CONFIGURATION(head), 1);
@@ -311,7 +314,7 @@ static void EvoSetRasterParams90(NVDevEvoPtr pDevEvo, int head,
     nvDmaSetStartEvoMethod(pChannel, NV917D_HEAD_SET_PIXEL_CLOCK_FREQUENCY_MAX(head), 1);
     nvDmaSetEvoMethodData(pChannel,
         DRF_NUM(917D, _HEAD_SET_PIXEL_CLOCK_FREQUENCY_MAX, _HERTZ,
-                pTimings->pixelClock * 1000) |
+                KHzToHz(pTimings->pixelClock)) |
         DRF_DEF(917D, _HEAD_SET_PIXEL_CLOCK_FREQUENCY_MAX, _ADJ1000DIV1001,_FALSE));
 }
 
@@ -4037,6 +4040,12 @@ NVEvoHAL nvEvo97 = {
     EvoComputeWindowScalingTaps91,                /* ComputeWindowScalingTaps */
     NULL,                                         /* GetWindowScalingCaps */
     NULL,                                         /* SetMergeMode */
+    nvEvo1SendHdmiInfoFrame,                      /* SendHdmiInfoFrame */
+    nvEvo1DisableHdmiInfoFrame,                   /* DisableHdmiInfoFrame */
+    nvEvo1SendDpInfoFrameSdp,                     /* SendDpInfoFrameSdp */
+    NULL,                                         /* SetDpVscSdp */
+    NULL,                                         /* InitHwHeadMultiTileConfig */
+    NULL,                                         /* SetMultiTileConfig */
     EvoAllocSurfaceDescriptor90,                  /* AllocSurfaceDescriptor */
     EvoFreeSurfaceDescriptor90,                   /* FreeSurfaceDescriptor */
     EvoBindSurfaceDescriptor90,                   /* BindSurfaceDescriptor */
@@ -4127,6 +4136,12 @@ NVEvoHAL nvEvo94 = {
     EvoComputeWindowScalingTaps91,                /* ComputeWindowScalingTaps */
     NULL,                                         /* GetWindowScalingCaps */
     NULL,                                         /* SetMergeMode */
+    nvEvo1SendHdmiInfoFrame,                      /* SendHdmiInfoFrame */
+    nvEvo1DisableHdmiInfoFrame,                   /* DisableHdmiInfoFrame */
+    nvEvo1SendDpInfoFrameSdp,                     /* SendDpInfoFrameSdp */
+    NULL,                                         /* SetDpVscSdp */
+    NULL,                                         /* InitHwHeadMultiTileConfig */
+    NULL,                                         /* SetMultiTileConfig */
     EvoAllocSurfaceDescriptor90,                  /* AllocSurfaceDescriptor */
     EvoFreeSurfaceDescriptor90,                   /* FreeSurfaceDescriptor */
     EvoBindSurfaceDescriptor90,                   /* BindSurfaceDescriptor */

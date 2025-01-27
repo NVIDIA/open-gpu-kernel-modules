@@ -8,7 +8,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig_private.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
 //
 
 #ifndef _G_RMCFG_PRIVATE_H_
@@ -298,9 +298,33 @@
 #define IsGB102(pGpu)                  rmcfg_IsGB102(pGpu)
 #define IsGB102orBetter(pGpu)          rmcfg_IsGB102orBetter(pGpu)
 
+#define IsGB10B(pGpu)                  rmcfg_IsGB10B(pGpu)
+#define IsGB10BorBetter(pGpu)          rmcfg_IsGB10BorBetter(pGpu)
+
 // Any GB10X chip?
 #define IsGB10X(pGpu)                  rmcfg_IsGB10X(pGpu)
 #define IsGB10XorBetter(pGpu)          rmcfg_IsGB10XorBetter(pGpu)
+
+
+// GB20X
+#define IsGB202(pGpu)                  rmcfg_IsGB202(pGpu)
+#define IsGB202orBetter(pGpu)          rmcfg_IsGB202orBetter(pGpu)
+
+#define IsGB203(pGpu)                  rmcfg_IsGB203(pGpu)
+#define IsGB203orBetter(pGpu)          rmcfg_IsGB203orBetter(pGpu)
+
+#define IsGB205(pGpu)                  rmcfg_IsGB205(pGpu)
+#define IsGB205orBetter(pGpu)          rmcfg_IsGB205orBetter(pGpu)
+
+#define IsGB206(pGpu)                  rmcfg_IsGB206(pGpu)
+#define IsGB206orBetter(pGpu)          rmcfg_IsGB206orBetter(pGpu)
+
+#define IsGB207(pGpu)                  rmcfg_IsGB207(pGpu)
+#define IsGB207orBetter(pGpu)          rmcfg_IsGB207orBetter(pGpu)
+
+// Any GB20X chip?
+#define IsGB20X(pGpu)                  rmcfg_IsGB20X(pGpu)
+#define IsGB20XorBetter(pGpu)          rmcfg_IsGB20XorBetter(pGpu)
 
 
 // T12X
@@ -567,9 +591,22 @@
 #define IsBLACKWELL_CLASSIC_GPUSorBetter(pGpu) rmcfg_IsBLACKWELL_CLASSIC_GPUSorBetter(pGpu)
 
 
+// Any GB10Y chip?
+#define IsGB10Y(pGpu)                  rmcfg_IsGB10Y(pGpu)
+
+
+// Any TEGRA_DGPU_BLACKWELL chip?
+#define IsTEGRA_DGPU_BLACKWELL(pGpu)   rmcfg_IsTEGRA_DGPU_BLACKWELL(pGpu)
+
+
 // Any TEGRA_DISP chip?
 #define IsTEGRA_DISP(pGpu)             (IsTEGRA_DISP_CLASSIC_GPUS(pGpu) || IsTEGRA_DISP_TEGRA_NVDISP_GPUS(pGpu))
 #define IsTEGRA_DISPorBetter(pGpu)     (IsTEGRA_DISP_CLASSIC_GPUSorBetter(pGpu) || IsTEGRA_DISP_TEGRA_NVDISP_GPUSorBetter(pGpu))
+
+
+// Any TEGRA_DISP_CLASSIC_GPUS chip?
+#define IsTEGRA_DISP_CLASSIC_GPUS(pGpu) rmcfg_IsTEGRA_DISP_CLASSIC_GPUS(pGpu)
+#define IsTEGRA_DISP_CLASSIC_GPUSorBetter(pGpu) rmcfg_IsTEGRA_DISP_CLASSIC_GPUSorBetter(pGpu)
 
 
 // Any TEGRA_BIG_GPUS chip?

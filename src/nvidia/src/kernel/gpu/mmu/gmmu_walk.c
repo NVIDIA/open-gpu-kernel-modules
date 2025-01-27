@@ -843,12 +843,25 @@ _gmmuWalkCBFillEntries
     NvU32              sizeOfEntries = (entryIndexHi - entryIndexLo + 1) *
                                         pLevelFmt->entrySize;
     NvU8              *pEntries;
+    NvU32              transferFlags = TRANSFER_FLAGS_SHADOW_ALLOC;
 
     pMemDesc[GMMU_USER_PAGE_DIR_INDEX] = (MEMORY_DESCRIPTOR*)pLevelMem;
     if (bMirror)
     {
         pMemDesc[GMMU_KERNEL_PAGE_DIR_INDEX] =
             (MEMORY_DESCRIPTOR*)pUserCtx->pGpuState->pMirroredRoot;
+    }
+
+    // FABRIC_VASPACE object of pGpu.
+    FABRIC_VASPACE *pFabricVAS = (pGpu->pFabricVAS != NULL) ? (dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE)) : NULL;
+    // GVASPACE object associated with this fabric vaspace.
+    OBJGVASPACE *pGVAS_FLA = (pFabricVAS != NULL) ? (dynamicCast(pFabricVAS->pGVAS, OBJGVASPACE)) : NULL;
+    // Apply the WAR to flush CPU cache if the VA space is of BAR1/FLA.
+    if (((pUserCtx->pGVAS->flags & VASPACE_FLAGS_BAR_BAR1) ||
+         (pUserCtx->pGVAS == pGVAS_FLA)) &&
+        pKernelGmmu->bBug4686457WAR)
+    {
+        transferFlags |= TRANSFER_FLAGS_FLUSH_CPU_CACHE_WAR_BUG4686457;
     }
 
     for (j = 0; j < maxPgDirs; j++)
@@ -864,7 +877,7 @@ _gmmuWalkCBFillEntries
         // path on Windows and shadow buffer allocation may fail there.
         //
         pEntries = memmgrMemBeginTransfer(pMemoryManager, &dest, sizeOfEntries,
-                                          TRANSFER_FLAGS_SHADOW_ALLOC);
+                                          transferFlags);
         NV_ASSERT_OR_RETURN_VOID(pEntries != NULL);
 
 #if NV_PRINTF_STRINGS_ALLOWED
@@ -982,7 +995,7 @@ _gmmuWalkCBFillEntries
         }
 
         memmgrMemEndTransfer(pMemoryManager, &dest, sizeOfEntries,
-                             TRANSFER_FLAGS_SHADOW_ALLOC);
+                             transferFlags);
     }
 
     *pProgress = entryIndexHi - entryIndexLo + 1;

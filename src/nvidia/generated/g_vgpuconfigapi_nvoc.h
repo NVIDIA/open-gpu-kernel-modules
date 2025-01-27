@@ -74,7 +74,7 @@ struct VgpuConfigApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__VgpuConfigApi *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct GpuResource __nvoc_base_GpuResource;
     struct Notifier __nvoc_base_Notifier;
 
@@ -111,7 +111,7 @@ struct VgpuConfigApi {
     NV_STATUS (*__vgpuconfigapiCtrlCmdGetVgpuDriversCaps__)(struct VgpuConfigApi * /*this*/, NVA081_CTRL_GET_VGPU_DRIVER_CAPS_PARAMS *);  // exported (id=0xa0810118)
     NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo__)(struct VgpuConfigApi * /*this*/, NVA081_CTRL_VGPU_CONFIG_SET_PGPU_INFO_PARAMS *);  // exported (id=0xa0810119)
     NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId__)(struct VgpuConfigApi * /*this*/, NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS *);  // exported (id=0xa081011a)
-    NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigUpdateHeterogeneousInfo__)(struct VgpuConfigApi * /*this*/, NVA081_CTRL_VGPU_CONFIG_UPDATE_HETEROGENEOUS_INFO_PARAMS *);  // exported (id=0xa081011b)
+    NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigUpdatePlacementInfo__)(struct VgpuConfigApi * /*this*/, NVA081_CTRL_VGPU_CONFIG_UPDATE_PLACEMENT_INFO_PARAMS *);  // exported (id=0xa081011b)
     NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuSetVmName__)(struct VgpuConfigApi * /*this*/, NVA081_CTRL_VGPU_SET_VM_NAME_PARAMS *);  // exported (id=0xa0810120)
     NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigGetMigrationBandwidth__)(struct VgpuConfigApi * /*this*/, NVA081_CTRL_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH_PARAMS *);  // exported (id=0xa0810122)
 
@@ -231,8 +231,8 @@ NV_STATUS __nvoc_objCreate_VgpuConfigApi(VgpuConfigApi**, Dynamic*, NvU32, struc
 #define vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId_FNPTR(pVgpuConfigApi) pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId__
 #define vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId_DISPATCH(pVgpuConfigApi, pParams)
-#define vgpuconfigapiCtrlCmdVgpuConfigUpdateHeterogeneousInfo_FNPTR(pVgpuConfigApi) pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuConfigUpdateHeterogeneousInfo__
-#define vgpuconfigapiCtrlCmdVgpuConfigUpdateHeterogeneousInfo(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigUpdateHeterogeneousInfo_DISPATCH(pVgpuConfigApi, pParams)
+#define vgpuconfigapiCtrlCmdVgpuConfigUpdatePlacementInfo_FNPTR(pVgpuConfigApi) pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuConfigUpdatePlacementInfo__
+#define vgpuconfigapiCtrlCmdVgpuConfigUpdatePlacementInfo(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigUpdatePlacementInfo_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiCtrlCmdVgpuSetVmName_FNPTR(pVgpuConfigApi) pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuSetVmName__
 #define vgpuconfigapiCtrlCmdVgpuSetVmName(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuSetVmName_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiCtrlCmdVgpuConfigGetMigrationBandwidth_FNPTR(pVgpuConfigApi) pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuConfigGetMigrationBandwidth__
@@ -387,8 +387,8 @@ static inline NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId_DISPATCH(s
     return pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId__(pVgpuConfigApi, pParams);
 }
 
-static inline NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigUpdateHeterogeneousInfo_DISPATCH(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_UPDATE_HETEROGENEOUS_INFO_PARAMS *pParams) {
-    return pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuConfigUpdateHeterogeneousInfo__(pVgpuConfigApi, pParams);
+static inline NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigUpdatePlacementInfo_DISPATCH(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_UPDATE_PLACEMENT_INFO_PARAMS *pParams) {
+    return pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuConfigUpdatePlacementInfo__(pVgpuConfigApi, pParams);
 }
 
 static inline NV_STATUS vgpuconfigapiCtrlCmdVgpuSetVmName_DISPATCH(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_SET_VM_NAME_PARAMS *pParams) {
@@ -563,7 +563,7 @@ NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo_IMPL(struct VgpuConfigApi *p
 
 NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId_IMPL(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS *pParams);
 
-NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigUpdateHeterogeneousInfo_IMPL(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_UPDATE_HETEROGENEOUS_INFO_PARAMS *pParams);
+NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigUpdatePlacementInfo_IMPL(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_UPDATE_PLACEMENT_INFO_PARAMS *pParams);
 
 NV_STATUS vgpuconfigapiCtrlCmdVgpuSetVmName_IMPL(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_SET_VM_NAME_PARAMS *pParams);
 

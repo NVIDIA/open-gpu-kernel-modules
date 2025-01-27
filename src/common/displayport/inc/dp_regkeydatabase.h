@@ -35,7 +35,7 @@
 
 // Regkey Names
 #define NV_DP_REGKEY_OVERRIDE_DPCD_REV                "OVERRIDE_DPCD_REV"
-#define NV_DP_REGKEY_DISABLE_SSC                      "DISABLE_SSC"
+#define NV_DP_REGKEY_DISABLE_SSC                      "DISABLE_SSC" // SSC (Stream Status Changed)
 #define NV_DP_REGKEY_ENABLE_FAST_LINK_TRAINING        "ENABLE_FAST_LINK_TRAINING"
 #define NV_DP_REGKEY_DISABLE_MST                      "DISABLE_MST"
 #define NV_DP_REGKEY_ENABLE_INBAND_STEREO_SIGNALING   "ENABLE_INBAND_STEREO_SIGNALING"
@@ -49,6 +49,7 @@
 #define NV_DP_REGKEY_SKIP_ASSESSLINK_FOR_EDP          "HP_WAR_2189772"
 #define NV_DP_REGKEY_HDCP_AUTH_ONLY_ON_DEMAND         "DP_HDCP_AUTH_ONLY_ON_DEMAND"
 #define NV_DP_REGKEY_ENABLE_MSA_OVER_MST              "ENABLE_MSA_OVER_MST"
+#define NV_DP_REGKEY_DISABLE_DOWNSPREAD               "DISABLE_DOWNSPREAD"
 
 // Keep link alive for SST and MST
 #define NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE              "DP_KEEP_OPT_LINK_ALIVE"
@@ -63,10 +64,29 @@
 #define NV_DP_REGKEY_POWER_DOWN_PHY                   "DP_POWER_DOWN_PHY"
 
 //
+// Regkey to re-assess max link if the first assessed link config
+// is lower than the panel max
+//
+#define NV_DP_REGKEY_REASSESS_MAX_LINK                "DP_REASSESS_MAX_LINK"
+
+//
 // DSC capability of downstream device should be decided based on device's own
 // and its parent's DSC capability.
 //
 #define NV_DP_DSC_MST_CAP_BUG_3143315                  "DP_DSC_MST_CAP_BUG_3143315"
+
+//
+// This regkey is controlling the if DPLib supports FPGA-specific Test UHBR.
+// The link rates are for internal test only.
+// This regkey is also used in RM. Both must be kept in sync.
+//
+#define NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT                "DP2X_FPGA_UHBR_SUPPORT"
+#define NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT_2_5G                           NVBIT(0)
+#define NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT_2_7G                           NVBIT(1)
+#define NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT_5_0G                           NVBIT(2)
+
+
+#define NV_DP2X_IGNORE_CABLE_ID_CAPS                    "DP2X_IGNORE_CABLE_ID_CAPS"
 
 //
 // Bug 4388987 : This regkey will disable reading PCON caps for MST.
@@ -74,6 +94,9 @@
 #define NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED       "DP_BUG_4388987_WAR"
 
 #define NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION      "DP_DISABLE_TUNNEL_BW_ALLOCATION"
+
+// Bug 4793112 : On eDP panel, do not cache source OUI if it reads zero
+#define NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE           "DP_SKIP_ZERO_OUI_CACHE"
 
 //
 // Data Base used to store all the regkey values.
@@ -106,8 +129,13 @@ struct DP_REGKEY_DATABASE
     bool  bBypassEDPRevCheck;
     bool  bDscMstCapBug3143315;
     bool  bPowerDownPhyBeforeD3;
+    bool  bReassessMaxLink;
+    NvU32 supportInternalUhbrOnFpga;
+    bool  bIgnoreCableIdCaps;
     bool  bMSTPCONCapsReadDisabled;
     bool  bForceDisableTunnelBwAllocation;
+    bool  bDownspreadDisabled;
+    bool  bSkipZeroOuiCache;
 };
 
 extern struct DP_REGKEY_DATABASE dpRegkeyDatabase;

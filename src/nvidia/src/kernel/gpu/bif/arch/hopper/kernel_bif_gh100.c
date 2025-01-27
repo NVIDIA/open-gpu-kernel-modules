@@ -42,11 +42,12 @@
 
 #include "os/os.h"
 
-static NV_STATUS    _kbifSavePcieConfigRegisters_GH100(OBJGPU *pGpu, KernelBif *pKernelBif, const PKBIF_XVE_REGMAP_REF pRegmapRef);
-static NV_STATUS    _kbifRestorePcieConfigRegisters_GH100(OBJGPU *pGpu, KernelBif *pKernelBif, const PKBIF_XVE_REGMAP_REF pRegmapRef);
+static NV_STATUS _kbifSavePcieConfigRegisters_GH100(OBJGPU *pGpu, KernelBif *pKernelBif, const PKBIF_XVE_REGMAP_REF pRegmapRef, NvU32 maxSize);
+static NV_STATUS _kbifRestorePcieConfigRegisters_GH100(OBJGPU *pGpu, KernelBif *pKernelBif, const PKBIF_XVE_REGMAP_REF pRegmapRef, NvU32 maxSize);
 
 // Size of PCIe config space
-#define PCIE_CONFIG_SPACE_MAX_SIZE     0x2FC
+#define PCIE_CONFIG_SPACE_FN0_MAX_SIZE     0x2FC
+#define PCIE_CONFIG_SPACE_FN1_MAX_SIZE     0x15C
 
 // Devinit completion timeout after FLR
 #define BIF_FLR_DEVINIT_COMPLETION_TIMEOUT_DEFAULT      900000
@@ -770,7 +771,8 @@ _kbifSavePcieConfigRegisters_GH100
 (
     OBJGPU    *pGpu,
     KernelBif *pKernelBif,
-    const PKBIF_XVE_REGMAP_REF pRegmapRef
+    const PKBIF_XVE_REGMAP_REF pRegmapRef,
+    NvU32      maxSize
 )
 {
     NV_STATUS status;
@@ -778,7 +780,7 @@ _kbifSavePcieConfigRegisters_GH100
     NvU32     bufOffset = 0;
 
     // Read and save entire config space
-    for (regOffset = 0x0; regOffset < PCIE_CONFIG_SPACE_MAX_SIZE; regOffset+=0x4)
+    for (regOffset = 0x0; regOffset < maxSize; regOffset+=0x4)
     {
         status = GPU_BUS_CFG_CYCLE_RD32(pGpu, regOffset,
                                         &pRegmapRef->bufBootConfigSpace[bufOffset]);
@@ -809,7 +811,8 @@ _kbifRestorePcieConfigRegisters_GH100
 (
     OBJGPU    *pGpu,
     KernelBif *pKernelBif,
-    const PKBIF_XVE_REGMAP_REF pRegmapRef
+    const PKBIF_XVE_REGMAP_REF pRegmapRef,
+    NvU32      maxSize
 )
 {
     NvU32     domain    = gpuGetDomain(pGpu);
@@ -824,7 +827,7 @@ _kbifRestorePcieConfigRegisters_GH100
     NV_ASSERT_OR_RETURN(pHandle, NV_ERR_INVALID_POINTER);
 
     // Restore entire config space
-    for (regOffset = 0x0; regOffset < PCIE_CONFIG_SPACE_MAX_SIZE; regOffset+=0x4)
+    for (regOffset = 0x0; regOffset < maxSize; regOffset+=0x4)
     {
         status = GPU_BUS_CFG_CYCLE_WR32(pGpu, regOffset,
                      pRegmapRef->bufBootConfigSpace[bufOffset]);
@@ -845,11 +848,9 @@ _kbifRestorePcieConfigRegisters_GH100
  *
  * @param[in]  pGpu         GPU object pointer
  * @param[in]  pKernelBif   KernelBif object pointer
- *
- * @return  'NV_OK' if successful, an RM error code otherwise.
  */
-NV_STATUS
-kbifSaveMsixTable_GH100
+static void
+_kbifSaveMsixTable
 (
     OBJGPU    *pGpu,
     KernelBif *pKernelBif
@@ -866,8 +867,6 @@ kbifSaveMsixTable_GH100
         pKernelBif->xveRegmapRef[0].bufMsixTable[(i*4) + 2] = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_DATA(i));
         pKernelBif->xveRegmapRef[0].bufMsixTable[(i*4) + 3] = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_VECTOR_CONTROL(i));
     }
-
-    return NV_OK;
 }
 
 /*!
@@ -875,11 +874,9 @@ kbifSaveMsixTable_GH100
  *
  * @param[in]  pGpu         GPU object pointer
  * @param[in]  pKernelBif   KernelBif object pointer
- *
- * @return  'NV_OK' if successful, an RM error code otherwise.
  */
-NV_STATUS
-kbifRestoreMsixTable_GH100
+static void
+_kbifRestoreMsixTable
 (
     OBJGPU    *pGpu,
     KernelBif *pKernelBif
@@ -900,8 +897,6 @@ kbifRestoreMsixTable_GH100
         osGpuWriteReg032(pGpu, vRegOffset + NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_DATA(i),           pKernelBif->xveRegmapRef[0].bufMsixTable[(i*4) + 2]);
         osGpuWriteReg032(pGpu, vRegOffset + NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_VECTOR_CONTROL(i), pKernelBif->xveRegmapRef[0].bufMsixTable[(i*4) + 3]);
     }
-
-    return NV_OK;
 }
 
 /*!
@@ -1001,12 +996,7 @@ kbifDoFunctionLevelReset_GH100
 
     if (bMSIXEnabled)
     {
-        status = kbifSaveMsixTable_HAL(pGpu, pKernelBif);
-        if (status != NV_OK)
-        {
-            NV_ASSERT_FAILED("MSIX Table save failed!\n");
-            goto kbifDoFunctionLevelReset_GH100_exit;
-        }
+        _kbifSaveMsixTable(pGpu, pKernelBif);
     }
 
     // Once we save required registers, we are done with prep. phase for FLR
@@ -1089,11 +1079,7 @@ kbifDoFunctionLevelReset_GH100
     if (bMSIXEnabled)
     {
         // TODO-NM: Check if this needed for other NVPM flows like GC6
-        status = kbifRestoreMsixTable_HAL(pGpu, pKernelBif);
-        if (status != NV_OK)
-        {
-            NV_ASSERT_FAILED("MSIX Table save failed!\n");
-        }
+        _kbifRestoreMsixTable(pGpu, pKernelBif);
     }
 
 kbifDoFunctionLevelReset_GH100_exit:
@@ -1400,12 +1386,21 @@ kbifSavePcieConfigRegisters_GH100
 
     // Save pcie config space for function 0
     status = _kbifSavePcieConfigRegisters_GH100(pGpu, pKernelBif,
-                                                &pKernelBif->xveRegmapRef[0]);
+                                                &pKernelBif->xveRegmapRef[0], PCIE_CONFIG_SPACE_FN0_MAX_SIZE);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Saving PCIe config space failed for gpu.\n");
         NV_ASSERT(0);
         return status;
+    }
+
+    // Save pcie config space for function 1
+    status = kbifSavePcieConfigRegistersFn1_HAL(pGpu, pKernelBif,
+                                                &pKernelBif->xveRegmapRef[1], PCIE_CONFIG_SPACE_FN1_MAX_SIZE);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Saving PCIe config space failed for azalia.\n");
+        NV_ASSERT(0);
     }
 
     return status;
@@ -1434,14 +1429,30 @@ kbifRestorePcieConfigRegisters_GH100
         return NV_OK;
     }
 
+    if (pKernelBif->xveRegmapRef[0].bufBootConfigSpace == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Config space buffer is NULL!\n");
+        NV_ASSERT(0);
+        return NV_ERR_OBJECT_NOT_FOUND;
+    }
+
     // Restore pcie config space for function 0
     status = _kbifRestorePcieConfigRegisters_GH100(pGpu, pKernelBif,
-                                                   &pKernelBif->xveRegmapRef[0]);
+                                                   &pKernelBif->xveRegmapRef[0], PCIE_CONFIG_SPACE_FN0_MAX_SIZE);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Restoring PCIe config space failed for gpu.\n");
         NV_ASSERT(0);
         return status;
+    }
+
+    // Restore pcie config space for function 1
+    status = kbifRestorePcieConfigRegistersFn1_HAL(pGpu, pKernelBif,
+                                                   &pKernelBif->xveRegmapRef[1], PCIE_CONFIG_SPACE_FN1_MAX_SIZE);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Restoring PCIe config space failed for azalia.\n");
+        NV_ASSERT(0);
     }
 
     return status;

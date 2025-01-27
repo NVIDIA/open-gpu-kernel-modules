@@ -44,11 +44,15 @@ static struct file_operations g_nv_caps_imex_fops =
     .release = nv_caps_imex_release
 };
 
-struct
+static struct class *g_nv_caps_imex_class;
+
+static struct
 {
     NvBool initialized;
     struct cdev cdev;
-    dev_t devno;
+    dev_t channel0;
+
+    struct device *dev_channel0;
 } g_nv_caps_imex;
 
 int NV_API_CALL nv_caps_imex_channel_get(int fd)
@@ -93,6 +97,72 @@ int NV_API_CALL nv_caps_imex_channel_count(void)
     return NVreg_ImexChannelCount;
 }
 
+static void nv_caps_imex_remove_channel0(void)
+{
+    if (g_nv_caps_imex_class == NULL)
+        return;
+
+    device_destroy(g_nv_caps_imex_class, g_nv_caps_imex.channel0);
+
+    class_destroy(g_nv_caps_imex_class);
+
+    g_nv_caps_imex_class = NULL;
+}
+
+#if defined(NV_CLASS_DEVNODE_HAS_CONST_ARG)
+static char *nv_caps_imex_devnode(const struct device *dev, umode_t *mode)
+#else
+static char *nv_caps_imex_devnode(struct device *dev, umode_t *mode)
+#endif
+{
+    if (!mode)
+        return NULL;
+
+    //
+    // Handle only world visible channel0, otherwise let the kernel apply
+    // defaults (root only access)
+    //
+    if (dev->devt == g_nv_caps_imex.channel0)
+        *mode = S_IRUGO | S_IWUGO;
+
+    return NULL;
+}
+
+static int nv_caps_imex_add_channel0(void)
+{
+
+#if defined(NV_CLASS_CREATE_HAS_NO_OWNER_ARG)
+    g_nv_caps_imex_class = class_create("nvidia-caps-imex-channels");
+#else
+    g_nv_caps_imex_class = class_create(THIS_MODULE, "nvidia-caps-imex-channels");
+#endif
+
+    if (IS_ERR(g_nv_caps_imex_class))
+    {
+        nv_printf(NV_DBG_ERRORS, "nv-caps-imex failed to register class.\n");
+        return -1;
+    }
+
+    // Install udev callback
+    g_nv_caps_imex_class->devnode = nv_caps_imex_devnode;
+
+    g_nv_caps_imex.dev_channel0 = device_create(g_nv_caps_imex_class, NULL,
+                                    g_nv_caps_imex.channel0, NULL,
+                                    "nvidia-caps-imex-channels!channel%d", 0);
+    if (IS_ERR(g_nv_caps_imex.dev_channel0))
+    {
+        nv_printf(NV_DBG_ERRORS, "nv-caps-imex failed to create channel0.\n");
+        class_destroy(g_nv_caps_imex_class);
+        g_nv_caps_imex_class = NULL;
+        return -1;
+    }
+
+    nv_printf(NV_DBG_ERRORS, "nv-caps-imex channel0 created. "
+                             "Make sure you are aware of the IMEX security model.\n");
+
+    return 0;
+}
+
 int NV_API_CALL nv_caps_imex_init(void)
 {
     int rc;
@@ -106,14 +176,13 @@ int NV_API_CALL nv_caps_imex_init(void)
     if (NVreg_ImexChannelCount == 0)
     {
         nv_printf(NV_DBG_INFO, "nv-caps-imex is disabled.\n");
-
-        // Disable channel creation as well
-        NVreg_CreateImexChannel0 = 0;
-
         return 0;
     }
 
-    rc = alloc_chrdev_region(&g_nv_caps_imex.devno, 0,
+    g_nv_caps_imex_class = NULL;
+    g_nv_caps_imex.dev_channel0 = NULL;
+
+    rc = alloc_chrdev_region(&g_nv_caps_imex.channel0, 0,
                              NVreg_ImexChannelCount,
                              "nvidia-caps-imex-channels");
     if (rc < 0)
@@ -126,7 +195,7 @@ int NV_API_CALL nv_caps_imex_init(void)
 
     g_nv_caps_imex.cdev.owner = THIS_MODULE;
 
-    rc = cdev_add(&g_nv_caps_imex.cdev, g_nv_caps_imex.devno,
+    rc = cdev_add(&g_nv_caps_imex.cdev, g_nv_caps_imex.channel0,
                   NVreg_ImexChannelCount);
     if (rc < 0)
     {
@@ -134,12 +203,22 @@ int NV_API_CALL nv_caps_imex_init(void)
         goto cdev_add_fail;
     }
 
+    if (NVreg_CreateImexChannel0 == 1)
+    {
+        rc = nv_caps_imex_add_channel0();
+        if (rc < 0)
+            goto channel0_add_fail;
+    }
+
     g_nv_caps_imex.initialized = NV_TRUE;
 
     return 0;
 
+channel0_add_fail:
+    cdev_del(&g_nv_caps_imex.cdev);
+
 cdev_add_fail:
-    unregister_chrdev_region(g_nv_caps_imex.devno, NVreg_ImexChannelCount);
+    unregister_chrdev_region(g_nv_caps_imex.channel0, NVreg_ImexChannelCount);
 
     return rc;
 }
@@ -151,9 +230,11 @@ void NV_API_CALL nv_caps_imex_exit(void)
         return;
     }
 
+    nv_caps_imex_remove_channel0();
+
     cdev_del(&g_nv_caps_imex.cdev);
 
-    unregister_chrdev_region(g_nv_caps_imex.devno, NVreg_ImexChannelCount);
+    unregister_chrdev_region(g_nv_caps_imex.channel0, NVreg_ImexChannelCount);
 
     g_nv_caps_imex.initialized = NV_FALSE;
 }

@@ -69,7 +69,7 @@ static const BINDATA_ARCHIVE __kgspGetBinArchiveConcatenatedFMCDesc_GH100 =
     1,  // entryNum
     {
         // entries[] : { "name", pBinStorage }
-        { "ucode_desc_prod"   , (const PBINDATA_STORAGE) &g_bindata_pvt.kgspBinArchiveConcatenatedFMCDesc_GH100_ucode_desc_prod_storage_pvt },
+        { "ucode_desc_prod"   , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveConcatenatedFMCDesc_GH100_ucode_desc_prod] },
     }
 };
 

@@ -533,6 +533,13 @@ NvBool nvDPLibDpyIsConnected(NVDpyEvoPtr pDpyEvo)
             pDpyEvo->dp.pDpLibDevice->isPlugged);
 }
 
+NvBool nvDPLibDpyIsYuv420ModeSupported(const NVDpyEvoRec *pDpyEvo)
+{
+    DisplayPort::Device *dev = (pDpyEvo->dp.pDpLibDevice != NULL) ?
+        pDpyEvo->dp.pDpLibDevice->device : NULL;
+    return (dev != NULL) && (dev->getSDPExtnForColorimetrySupported());
+}
+
 // Adaptive-Sync is enabled/disabled by setting the MSA_TIMING_PAR_IGNORE_EN
 // bit in the DOWNSPREAD_CTRL register (DP spec 1.4a appendix K)
 void nvDPLibSetAdaptiveSync(const NVDispEvoRec *pDispEvo, NvU32 head,
@@ -580,10 +587,8 @@ void nvDPLibUpdateDpyLinkConfiguration(NVDpyEvoPtr pDpyEvo)
         // configuration from the connector itself?
         connector->getCurrentLinkConfig(laneCount, linkRate);
 
-        // The DisplayPort library multiplies the link rate enum value by
-        // 27000000.  Convert back to NV-CONTROL's defines.
-        linkRate /= 27000000;
-        linkRate10MHz = linkRate * 27;
+        linkRate10MHz = linkRate;
+        linkRate /= 27;
 
         nvkmsDisplayPort::EnableVRR(pDpyEvo);
 

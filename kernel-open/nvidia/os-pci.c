@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -201,4 +201,36 @@ os_enable_pci_req_atomics(
     }
 #endif
     return NV_ERR_NOT_SUPPORTED;
+}
+
+void NV_API_CALL os_pci_trigger_flr(void *handle)
+{
+    struct pci_dev *pdev = (struct pci_dev *) handle;
+    int ret;
+
+    ret = pci_save_state(pdev);
+    if (ret)
+    {
+        nv_printf(NV_DBG_ERRORS,
+            "NVRM: %s() PCI save state failed, Skip FLR\n", __FUNCTION__);
+        return;
+    }
+#if defined(NV_PCIE_RESET_FLR_PRESENT)
+    // If PCI_RESET_DO_RESET is not defined in a particular kernel version
+    // define it as 0. Boolean value 0 will trigger a reset of the device.
+#ifndef PCI_RESET_DO_RESET
+#define PCI_RESET_DO_RESET 0
+#endif
+    ret = pcie_reset_flr(pdev, PCI_RESET_DO_RESET);
+    if (ret)
+    {
+        nv_printf(NV_DBG_ERRORS,
+            "NVRM: %s() PCI FLR might have failed\n", __FUNCTION__);
+    }
+#else
+    nv_printf(NV_DBG_ERRORS,
+        "NVRM: %s() PCI FLR not supported\n", __FUNCTION__);
+#endif
+    pci_restore_state(pdev);
+    return;
 }

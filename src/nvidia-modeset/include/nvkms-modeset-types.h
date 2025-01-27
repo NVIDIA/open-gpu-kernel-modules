@@ -57,6 +57,7 @@ typedef struct {
     HDMI_FRL_CONFIG hdmiFrlConfig;
     NVDPLibModesetStatePtr pDpLibModesetState;
     NVDispHeadAudioStateEvoRec audio;
+    NVHwHeadMultiTileConfigRec multiTileConfig;
 } NVProposedModeSetHwStateOneHead;
 
 typedef struct {

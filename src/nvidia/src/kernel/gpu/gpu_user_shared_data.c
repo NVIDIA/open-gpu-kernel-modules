@@ -219,6 +219,37 @@ _gpushareddataInitGsp
     return NV_OK;
 }
 
+static NV_STATUS
+_gpushareddataInitPollingFrequency
+(
+    OBJGPU *pGpu
+)
+{
+    NV2080_CTRL_INTERNAL_USER_SHARED_DATA_SET_DATA_POLL_PARAMS params = { 0 };
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+    //
+    // Let Kernel RM decide the polling frequency.
+    // RUSD currently does not support VGPU, skip the RMCTRL on vGPU.
+    //
+    if (!RMCFG_FEATURE_PLATFORM_GSP && !IS_VIRTUAL(pGpu))
+    {
+        if (!pGpu->userSharedData.bPollFrequencyOverridden && gpuIsTeslaBranded(pGpu))
+            pGpu->userSharedData.pollingFrequencyMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_TESLA;
+
+        params.polledDataMask = pGpu->userSharedData.lastPolledDataMask;
+        params.pollFrequencyMs = pGpu->userSharedData.pollingFrequencyMs;
+
+        NV_ASSERT_OK_OR_RETURN(
+            pRmApi->Control(pRmApi, pGpu->hInternalClient,
+                            pGpu->hInternalSubdevice,
+                            NV2080_CTRL_CMD_INTERNAL_USER_SHARED_DATA_SET_DATA_POLL,
+                            &params, sizeof(params)));
+    }
+
+    return NV_OK;
+}
+
 NV_STATUS
 gpuCreateRusdMemory_IMPL
 (
@@ -253,6 +284,8 @@ gpuCreateRusdMemory_IMPL
        // Init system memdesc on GSP
        _gpushareddataInitGsp(pGpu);
     }
+
+    _gpushareddataInitPollingFrequency(pGpu);
 
     return NV_OK;
 

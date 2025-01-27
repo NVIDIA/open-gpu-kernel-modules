@@ -50,10 +50,25 @@ void uvm_hal_maxwell_ce_offset_in_out(uvm_push_t *push, NvU64 offset_in, NvU64 o
                      OFFSET_OUT_LOWER, HWVALUE(B0B5, OFFSET_OUT_LOWER, VALUE, NvOffset_LO32(offset_out)));
 }
 
+bool uvm_hal_maxwell_semaphore_target_is_valid(uvm_push_t *push, NvU64 gpu_va)
+{
+    if (uvm_gpu_address_is_peer(uvm_push_get_gpu(push), uvm_gpu_address_virtual(gpu_va))) {
+        UVM_ERR_PRINT("Semaphore operation targetting peer addresses is not allowed!");
+        return false;
+    }
+
+    return true;
+}
+
 void uvm_hal_maxwell_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload)
 {
     NvU32 flush_value;
     bool use_flush;
+
+    UVM_ASSERT_MSG(uvm_push_get_gpu(push)->parent->ce_hal->semaphore_target_is_valid(push, gpu_va),
+                   "Semaphore target validation failed in channel %s, GPU %s.\n",
+                   push->channel->name,
+                   uvm_gpu_name(uvm_push_get_gpu(push)));
 
     use_flush = uvm_hal_membar_before_semaphore(push);
 
@@ -75,6 +90,11 @@ void uvm_hal_maxwell_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, 
 {
     NvU32 flush_value;
     bool use_flush;
+
+    UVM_ASSERT_MSG(uvm_push_get_gpu(push)->parent->ce_hal->semaphore_target_is_valid(push, gpu_va),
+                   "Semaphore target validation failed in channel %s, GPU %s.\n",
+                   push->channel->name,
+                   uvm_gpu_name(uvm_push_get_gpu(push)));
 
     use_flush = uvm_hal_membar_before_semaphore(push);
 
@@ -99,6 +119,11 @@ void uvm_hal_maxwell_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va)
 {
     NvU32 flush_value;
     bool use_flush;
+
+    UVM_ASSERT_MSG(uvm_push_get_gpu(push)->parent->ce_hal->semaphore_target_is_valid(push, gpu_va),
+                   "Semaphore target validation failed in channel %s, GPU %s.\n",
+                   push->channel->name,
+                   uvm_gpu_name(uvm_push_get_gpu(push)));
 
     use_flush = uvm_hal_membar_before_semaphore(push);
 
@@ -185,6 +210,34 @@ NvU32 uvm_hal_maxwell_ce_plc_mode(void)
     return 0;
 }
 
+bool uvm_hal_maxwell_ce_memset_is_valid(uvm_push_t *push,
+                                        uvm_gpu_address_t dst,
+                                        size_t num_elements,
+                                        size_t element_size)
+{
+    if (uvm_gpu_address_is_peer(uvm_push_get_gpu(push), dst)) {
+        UVM_ERR_PRINT("Memset to peer address (0x%llx) is not allowed!", dst.address);
+        return false;
+    }
+
+    return true;
+}
+
+bool uvm_hal_maxwell_ce_memcopy_is_valid(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src)
+{
+    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+    const bool peer_copy = uvm_gpu_address_is_peer(gpu, dst) || uvm_gpu_address_is_peer(gpu, src);
+
+    if (push->channel && peer_copy && !uvm_channel_is_p2p(push->channel)) {
+        UVM_ERR_PRINT("Peer copy from address (0x%llx) to address (0x%llx) should use designated p2p channels!",
+                      src.address,
+                      dst.address);
+        return false;
+    }
+
+    return true;
+}
+
 // Noop, since COPY_TYPE doesn't exist in Maxwell.
 NvU32 uvm_hal_maxwell_ce_memcopy_copy_type(uvm_gpu_address_t dst, uvm_gpu_address_t src)
 {
@@ -207,6 +260,12 @@ void uvm_hal_maxwell_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu
                    "Memcopy validation failed in channel %s, GPU %s.\n",
                    push->channel->name,
                    uvm_gpu_name(gpu));
+
+    // Check if the copy is over NVLINK and simulate dropped traffic if there's
+    // an NVLINK error.
+    // Src address cannot be peer as that wouldn't pass the valid check above.
+    if (uvm_gpu_address_is_peer(gpu, dst) && uvm_gpu_get_injected_nvlink_error(gpu) != NV_OK)
+        size = 0;
 
     gpu->parent->ce_hal->memcopy_patch_src(push, &src);
 

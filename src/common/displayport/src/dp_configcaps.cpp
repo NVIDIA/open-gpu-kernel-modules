@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,6 +33,7 @@
 #include "dp_auxdefs.h"
 #include "dp_printf.h"
 #include "displayport.h"
+#include "dp_configcaps2x.h"
 
 using namespace DisplayPort;
 
@@ -249,9 +250,24 @@ void DPCDHALImpl::parseAndReadCaps()
                         FLD_TEST_DRF(0073_CTRL_CMD_DP, _GET_CAPS_DP_VERSIONS_SUPPORTED, _DP1_2, _YES, gpuDPSupportedVersions));
 
 
+    // First find MAX_LINK_BANDWIDTH based on MAX_LINK_BANDWIDTH registers
+    if (FLD_TEST_DRF(_DPCD, _MAX_LINK_BANDWIDTH, _VAL, _1_62_GBPS, buffer[1]))
+        caps.maxLinkRate = dp2LinkRate_1_62Gbps;
+    else if (FLD_TEST_DRF(_DPCD, _MAX_LINK_BANDWIDTH, _VAL, _2_70_GBPS, buffer[1]))
+        caps.maxLinkRate = dp2LinkRate_2_70Gbps;
+    else if (FLD_TEST_DRF(_DPCD, _MAX_LINK_BANDWIDTH, _VAL, _5_40_GBPS, buffer[1]))
+        caps.maxLinkRate = dp2LinkRate_5_40Gbps;
+    else if (FLD_TEST_DRF(_DPCD14, _MAX_LINK_BANDWIDTH, _VAL, _8_10_GBPS, buffer[1]))
+        caps.maxLinkRate = dp2LinkRate_8_10Gbps;
+    else
+    {
+        DP_ASSERT(0 && "Unknown max link rate. Assuming DP 1.1 defaults");
+        caps.maxLinkRate = dp2LinkRate_2_70Gbps;
+    }
+
     if (caps.eDpRevision >= NV_DPCD_EDP_REV_VAL_1_4 || this->bBypassILREdpRevCheck)
     {
-        NvU16 linkRate = 0;
+        NvU16 maxILRLinkRate = 0;
         if (getRawLinkRateTable((NvU8*)&caps.linkRateTable[0]))
         {
             // First entry must be non-zero for validation
@@ -260,28 +276,14 @@ void DPCDHALImpl::parseAndReadCaps()
                 bIndexedLinkrateCapable = true;
                 for (int i = 0; (i < NV_DPCD_SUPPORTED_LINK_RATES__SIZE) && caps.linkRateTable[i]; i++)
                 {
-                    if (linkRate < caps.linkRateTable[i])
-                        linkRate = caps.linkRateTable[i];
+                    if (maxILRLinkRate < caps.linkRateTable[i])
+                        maxILRLinkRate = caps.linkRateTable[i];
                 }
-                if (linkRate)
-                    caps.maxLinkRate = LINK_RATE_200KHZ_TO_10MHZ((NvU64)linkRate);
+                if (maxILRLinkRate) {
+                    // If max ILR is higher than MAX_LINK_BANDWIDTH, then update overall maxLinkRate
+                    caps.maxLinkRate = DP_MAX(caps.maxLinkRate, LINK_RATE_200KHZ_TO_10MHZ((NvU64)maxILRLinkRate));
+                }
             }
-        }
-    }
-    if (!bIndexedLinkrateCapable)
-    {
-        if (FLD_TEST_DRF(_DPCD, _MAX_LINK_BANDWIDTH, _VAL, _1_62_GBPS, buffer[1]))
-            caps.maxLinkRate = dp2LinkRate_1_62Gbps;
-        else if (FLD_TEST_DRF(_DPCD, _MAX_LINK_BANDWIDTH, _VAL, _2_70_GBPS, buffer[1]))
-            caps.maxLinkRate = dp2LinkRate_2_70Gbps;
-        else if (FLD_TEST_DRF(_DPCD, _MAX_LINK_BANDWIDTH, _VAL, _5_40_GBPS, buffer[1]))
-            caps.maxLinkRate = dp2LinkRate_5_40Gbps;
-        else if (FLD_TEST_DRF(_DPCD14, _MAX_LINK_BANDWIDTH, _VAL, _8_10_GBPS, buffer[1]))
-            caps.maxLinkRate = dp2LinkRate_8_10Gbps;
-        else
-        {
-            DP_ASSERT(0 && "Unknown max link rate. Assuming DP 1.1 defaults");
-            caps.maxLinkRate = dp2LinkRate_2_70Gbps;
         }
     }
 
@@ -364,8 +366,8 @@ void DPCDHALImpl::parseAndReadCaps()
 
     if (bLttprSupported)
     {
-        // Burst read from 0xF0000 to 0xF0007
-        if (AuxRetry::ack == bus.read(NV_DPCD14_LT_TUNABLE_PHY_REPEATER_REV, &buffer[0], 0x8, retries))
+        // Burst read from 0xF0000 to 0xF0009
+        if (AuxRetry::ack == bus.read(NV_DPCD14_LT_TUNABLE_PHY_REPEATER_REV, &buffer[0], 10, retries))
         {
             caps.repeaterCaps.revisionMinor = DRF_VAL(_DPCD14, _LT_TUNABLE_PHY_REPEATER_REV, _MINOR, buffer[0x0]);
             caps.repeaterCaps.revisionMajor = DRF_VAL(_DPCD14, _LT_TUNABLE_PHY_REPEATER_REV, _MAJOR, buffer[0x0]);
@@ -419,6 +421,8 @@ void DPCDHALImpl::parseAndReadCaps()
                                             caps.repeaterCaps.bFECSupportedRepeater[lttprIdx];
                         }
                     }
+                    caps.repeaterCaps.bAuxlessALPMSupported =
+                        FLD_TEST_DRF(_DPCD20, _PHY_REPEATER_ALPM_CAPS, _AUX_LESS, _SUPPORTED, buffer[9]);
 
                 }
                 else
@@ -1234,6 +1238,15 @@ AuxRetry::status DPCDHALImpl::setLinkQualPatternSet
     }
 }
 
+AuxRetry::status DPCDHALImpl::setLinkQualPatternSet
+(
+    DP2xPatternInfo& patternInfo,
+    unsigned laneCount
+)
+{
+    return setLinkQualPatternSet(patternInfo.lqsPattern, laneCount);
+}
+
 AuxRetry::status DPCDHALImpl::setLinkQualLaneSet(unsigned lane, LinkQualityPatternType linkQualPattern)
 {
     NvU8 linkQuality = 0;
@@ -1298,13 +1311,14 @@ AuxRetry::status DPCDHALImpl::setMessagingEnable(bool _uprequestEnable, bool _up
 
     if (_uprequestEnable)
     {
-        bMultistream = FLD_TEST_DRF(_DPCD, _MSTM_CTRL, _EN, _YES, mstmCtrl);
+        bMultistream = caps.supportsMultistream;
     }
     else
     {
         bMultistream = false;
     }
     mstmCtrl = 0;
+
     if (bMultistream)
         mstmCtrl = FLD_SET_DRF(_DPCD, _MSTM_CTRL, _EN, _YES, mstmCtrl);
     if (uprequestEnable)
@@ -1656,19 +1670,21 @@ void DPCDHALImpl::resetIntrLaneStatus()
 
 void DPCDHALImpl::fetchLinkStatusESI()
 {
-    NvU8 buffer[16] = {0};
-    NvS32 rxIndex;
-
+    NvU8                    buffer[16]              = {0};
+    NvS32                   rxIndex;
+    MainLinkChannelCoding   mainLinkChannelCoding   = getMainLinkChannelCoding();
     // LINK_STATUS_ESI from 0x200C to 0x200E
     int bytesToRead = 3;
 
     // Reset all laneStatus to true.
     resetIntrLaneStatus();
-
     for (rxIndex = caps.phyRepeaterCount; rxIndex >= (NvS32) NV0073_CTRL_DP_DATA_TARGET_SINK; rxIndex--)
     {
         if (rxIndex != NV0073_CTRL_DP_DATA_TARGET_SINK)
         {
+            // Ignore LTTPR Link Status for 128b/132b
+            if (mainLinkChannelCoding == ChannelCoding128B132B)
+                continue;
             readLTTPRLinkStatus(rxIndex, &buffer[0xC]);
         }
         else
@@ -1696,8 +1712,10 @@ void DPCDHALImpl::fetchLinkStatusESI()
 
 void DPCDHALImpl::fetchLinkStatusLegacy()
 {
-    NvU8 buffer[16] = {0};
-    NvS32 rxIndex;
+    NvU8                    buffer[16]              = {0};
+    NvS32                   rxIndex;
+    MainLinkChannelCoding   mainLinkChannelCoding   = getMainLinkChannelCoding();
+
     // LINK_STATUS from 0x202 to 0x204
     int bytesToRead = 3;
 
@@ -1708,6 +1726,9 @@ void DPCDHALImpl::fetchLinkStatusLegacy()
     {
         if (rxIndex != NV0073_CTRL_DP_DATA_TARGET_SINK)
         {
+            // Ignore LTTPR Link Status for 128b/132b
+            if (mainLinkChannelCoding == ChannelCoding128B132B)
+                continue;
             readLTTPRLinkStatus(rxIndex, &buffer[2]);
         }
         else
@@ -1831,7 +1852,7 @@ bool DPCDHALImpl::setPowerState(PowerState newState)
                 NvU8    grant = 0;
                 // Grant extended sleep wake timeout before go D3.
                 grant = FLD_SET_DRF(_DPCD, _EXTENDED_DPRX_WAKE_TIMEOUT, _PERIOD_GRANTED, _YES, grant);
-                if (AuxRetry::ack == bus.write(NV_DPCD_EXTENDED_DPRX_WAKE_TIMEOUT, &grant, sizeof(grant)))
+                if (AuxRetry::ack != bus.write(NV_DPCD_EXTENDED_DPRX_WAKE_TIMEOUT, &grant, sizeof(grant)))
                 {
                     DP_PRINTF(DP_ERROR, "DisplayPort: Failed to grant extended sleep wake timeout before D3");
                 }
@@ -3037,6 +3058,15 @@ bool DPCDHALImpl::clearDpTunnelingBwAllocationCapStatus()
 
 DPCDHAL * DisplayPort::MakeDPCDHAL(AuxBus *  bus, Timer * timer, MainLink * main)
 {
-    return new DPCDHALImpl(bus, timer);
+    NvU32 dpVersionsSupported = main->getGpuDpSupportedVersions();
+    if (FLD_TEST_DRF(0073_CTRL_CMD_DP, _GET_CAPS_DP_VERSIONS_SUPPORTED,
+                     _DP2_0, _YES, dpVersionsSupported))
+    {
+        return new DPCDHALImpl2x(bus, timer);
+    }
+    else
+    {
+        return new DPCDHALImpl(bus, timer);
+    }
 }
 

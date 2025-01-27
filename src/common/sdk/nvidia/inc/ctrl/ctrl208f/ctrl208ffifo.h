@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -63,28 +63,6 @@ typedef struct NV208F_CTRL_FIFO_CHECK_ENGINE_CONTEXT_PARAMS {
     NvU32    engine;
     NvBool   exists;
 } NV208F_CTRL_FIFO_CHECK_ENGINE_CONTEXT_PARAMS;
-
-/*
- * NV208F_CTRL_CMD_FIFO_ENABLE_VIRTUAL_CONTEXT
- *
- * This command enables virtual context for a given channel (for all engines).
- * This API is intended for testing virtual context. For debug only.
- *
- *   hChannel
- *     The handle to the channel.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_DEVICE
- *   NV_ERR_INVALID_CHANNEL
- */
-#define NV208F_CTRL_CMD_FIFO_ENABLE_VIRTUAL_CONTEXT (0x208f0402) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_FIFO_INTERFACE_ID << 8) | NV208F_CTRL_FIFO_ENABLE_VIRTUAL_CONTEXT_PARAMS_MESSAGE_ID" */
-
-#define NV208F_CTRL_FIFO_ENABLE_VIRTUAL_CONTEXT_PARAMS_MESSAGE_ID (0x2U)
-
-typedef struct NV208F_CTRL_FIFO_ENABLE_VIRTUAL_CONTEXT_PARAMS {
-    NvHandle hChannel;
-} NV208F_CTRL_FIFO_ENABLE_VIRTUAL_CONTEXT_PARAMS;
 
 /*
  * NV208F_CTRL_CMD_FIFO_GET_CHANNEL_STATE

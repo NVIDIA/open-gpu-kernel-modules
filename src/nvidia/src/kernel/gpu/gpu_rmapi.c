@@ -328,16 +328,17 @@ _gpuFilterSubDeviceEventInfo
     status = kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref);
     if (status != NV_OK)
     {
-        NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+        RmClient *pRmClient = dynamicCast(RES_GET_CLIENT(pSubdevice), RmClient);
+        NV_ASSERT_OR_RETURN(NULL != pRmClient, NV_ERR_INVALID_CLIENT);
 
         //
         // Privileged or has the mig monitor capability, unsubscribed clients
         // may be notified with no filtering, but other unsubscribed clients
         // must not be notified
         //
-        RS_PRIV_LEVEL privLevel = rmclientGetCachedPrivilegeByHandle(hClient);
+        RS_PRIV_LEVEL privLevel = rmclientGetCachedPrivilege(pRmClient);
         NV_CHECK_OR_RETURN(LEVEL_INFO,
-                           rmclientIsCapableOrAdminByHandle(hClient, NV_RM_CAP_SYS_SMC_MONITOR, privLevel),
+                           rmclientIsCapableOrAdmin(pRmClient, NV_RM_CAP_SYS_SMC_MONITOR, privLevel),
                            NV_ERR_INSUFFICIENT_PERMISSIONS);
         return NV_OK;
     }
@@ -406,6 +407,21 @@ _gpuFilterSubDeviceEventInfo
             localIdx = RM_ENGINE_TYPE_NVENC_IDX(localRmEngineType);
             *pInfo32 = ROBUST_CHANNEL_NVENC_ERROR(localIdx);
         }
+        else if (ROBUST_CHANNEL_IS_OFA_ERROR(*pInfo32))
+        {
+            engineIdx = ROBUST_CHANNEL_OFA_ERROR_IDX(*pInfo32);
+            rmEngineType = RM_ENGINE_TYPE_OFA(engineIdx);
+
+            if (!kmigmgrIsEngineInInstance(pGpu, pKernelMIGManager, rmEngineType, ref))
+                return NV_ERR_OBJECT_NOT_FOUND;
+
+            NV_ASSERT_OK_OR_RETURN(
+                kmigmgrGetGlobalToLocalEngineType(pGpu, pKernelMIGManager, ref,
+                                                  rmEngineType,
+                                                  &localRmEngineType));
+            localIdx = RM_ENGINE_TYPE_OFA_IDX(localRmEngineType);
+            *pInfo32 = ROBUST_CHANNEL_OFA_ERROR(localIdx);
+        }
     }
     else if (NV2080_NOTIFIER_TYPE_IS_GR(*pNotifyType))
     {
@@ -466,6 +482,21 @@ _gpuFilterSubDeviceEventInfo
                                               &localRmEngineType));
         localIdx = RM_ENGINE_TYPE_NVENC_IDX(localRmEngineType);
         *pNotifyType = NV2080_NOTIFIERS_NVENC(localIdx);
+    }
+    else if (NV2080_NOTIFIER_TYPE_IS_OFA(*pNotifyType))
+    {
+        engineIdx = NV2080_NOTIFIERS_OFA_IDX(*pNotifyType);
+        rmEngineType = RM_ENGINE_TYPE_OFA(engineIdx);
+
+        if (!kmigmgrIsEngineInInstance(pGpu, pKernelMIGManager, rmEngineType, ref))
+            return NV_ERR_OBJECT_NOT_FOUND;
+
+        NV_ASSERT_OK_OR_RETURN(
+            kmigmgrGetGlobalToLocalEngineType(pGpu, pKernelMIGManager, ref,
+                                              rmEngineType,
+                                              &localRmEngineType));
+        localIdx = RM_ENGINE_TYPE_OFA_IDX(localRmEngineType);
+        *pNotifyType = NV2080_NOTIFIERS_OFAn(localIdx);
     }
     return NV_OK;
 }

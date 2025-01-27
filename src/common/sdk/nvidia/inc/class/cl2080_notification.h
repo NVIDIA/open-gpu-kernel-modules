@@ -221,7 +221,8 @@ extern "C" {
 #define NV2080_NOTIFIERS_OFA1                                      (180)
 #define NV2080_NOTIFIERS_AUX_POWER_EVENT                           (181)
 #define NV2080_NOTIFIERS_AUX_POWER_STATE_CHANGE                    (182)
-#define NV2080_NOTIFIERS_RESERVED_183                              (183) // Unused
+// Bug 4175886 - Use this new value for all chips once GB20X is released
+#define NV2080_NOTIFIERS_NVENC3                                    (183)
 #define NV2080_NOTIFIERS_GSP_PERF_TRACE                            (184)
 #define NV2080_NOTIFIERS_INBAND_RESPONSE                           (185)
 #define NV2080_NOTIFIERS_RESERVED_186                              (186) // Unused
@@ -233,7 +234,9 @@ extern "C" {
 #define NV2080_NOTIFIERS_GPU_RECOVERY_ACTION                       (192)
 #define NV2080_NOTIFIERS_POWER_SUSPEND                             (193)
 #define NV2080_NOTIFIERS_POWER_RESUME                              (194)
-#define NV2080_NOTIFIERS_MAXCOUNT                                  (195)
+#define NV2080_NOTIFIERS_CTXSW_UCODE_ERROR                         (195)
+#define NV2080_NOTIFIERS_USE_GC6_REDUCED_THRESHOLD                 (196)
+#define NV2080_NOTIFIERS_MAXCOUNT                                  (197)
 
 // Indexed GR notifier reference
 #define NV2080_NOTIFIERS_GR(x)         ((x == 0) ? (NV2080_NOTIFIERS_GR0) : (NV2080_NOTIFIERS_GR1 + (x - 1)))
@@ -247,9 +250,11 @@ extern "C" {
                                        (((x) >= NV2080_NOTIFIERS_CE10) && ((x) <= NV2080_NOTIFIERS_CE19)))
 
 // Indexed MSENC notifier reference
-#define NV2080_NOTIFIERS_NVENC(x)         (NV2080_NOTIFIERS_NVENC0 + (x))
-#define NV2080_NOTIFIERS_NVENC_IDX(x)     ((x) - NV2080_NOTIFIERS_NVENC0)
-#define NV2080_NOTIFIER_TYPE_IS_NVENC(x)  (((x) >= NV2080_NOTIFIERS_NVENC0) && ((x) <= NV2080_NOTIFIERS_NVENC2))
+// Bug 4175886 - Use this new value for all chips once GB20X is released
+#define NV2080_NOTIFIERS_NVENC(x)         (((x) < 3) ? (NV2080_NOTIFIERS_NVENC0 + (x)) : (NV2080_NOTIFIERS_NVENC3 + (x) - 3))
+#define NV2080_NOTIFIERS_NVENC_IDX(x)     (((x) <= NV2080_NOTIFIERS_NVENC2) ? ((x) - NV2080_NOTIFIERS_NVENC0) : ((x) - NV2080_NOTIFIERS_NVENC3 + 3))
+#define NV2080_NOTIFIER_TYPE_IS_NVENC(x)  ((((x) >= NV2080_NOTIFIERS_NVENC0) && ((x) <= NV2080_NOTIFIERS_NVENC2)) || \
+                                          (((x) == NV2080_NOTIFIERS_NVENC3)))
 // Indexed NVDEC notifier reference
 #define NV2080_NOTIFIERS_NVDEC(x)         (NV2080_NOTIFIERS_NVDEC0 + (x))
 #define NV2080_NOTIFIERS_NVDEC_IDX(x)     ((x) - NV2080_NOTIFIERS_NVDEC0)
@@ -344,7 +349,8 @@ extern "C" {
 #define NV2080_ENGINE_TYPE_COPY18                     (0x0000003c)
 #define NV2080_ENGINE_TYPE_COPY19                     (0x0000003d)
 #define NV2080_ENGINE_TYPE_OFA1                       (0x0000003e)
-#define NV2080_ENGINE_TYPE_RESERVED3f                 (0x0000003f)
+// Bug 4175886 - Use this new value for all chips once GB20X is released
+#define NV2080_ENGINE_TYPE_NVENC3                     (0x0000003f)
 // See TBD documentation for how these defines work with existing ENGINE_TYPE_COPYN defines
 #define NV2080_ENGINE_TYPE_COMP_DECOMP_COPY0          (0x00000040)
 #define NV2080_ENGINE_TYPE_COMP_DECOMP_COPY1          (0x00000041)
@@ -377,7 +383,8 @@ extern "C" {
 //
 #define NV2080_ENGINE_TYPE_COPY_SIZE 64
 
-#define NV2080_ENGINE_TYPE_NVENC_SIZE 3
+// Bug 4175886 - Use this new value for all chips once GB20X is released
+#define NV2080_ENGINE_TYPE_NVENC_SIZE 4
 #define NV2080_ENGINE_TYPE_NVJPEG_SIZE 8
 #define NV2080_ENGINE_TYPE_NVDEC_SIZE 8
 #define NV2080_ENGINE_TYPE_GR_SIZE 8
@@ -394,9 +401,12 @@ extern "C" {
 #define NV2080_ENGINE_TYPE_COPY_IDX(i) (((i) <= NV2080_ENGINE_TYPE_COPY9) ? \
                                         ((i) - NV2080_ENGINE_TYPE_COPY0) : ((i) - NV2080_ENGINE_TYPE_COPY10 + 10))
 
-#define NV2080_ENGINE_TYPE_NVENC(i)    (NV2080_ENGINE_TYPE_NVENC0+(i))
-#define NV2080_ENGINE_TYPE_IS_NVENC(i)  (((i) >= NV2080_ENGINE_TYPE_NVENC0) && ((i) < NV2080_ENGINE_TYPE_NVENC(NV2080_ENGINE_TYPE_NVENC_SIZE)))
-#define NV2080_ENGINE_TYPE_NVENC_IDX(i) ((i) - NV2080_ENGINE_TYPE_NVENC0)
+// Bug 4175886 - Use this new value for all chips once GB20X is released
+#define NV2080_ENGINE_TYPE_NVENC(i)     (((i) < 3) ? (NV2080_ENGINE_TYPE_NVENC0 + (i)) : (NV2080_ENGINE_TYPE_NVENC3 + (i) - 3))
+#define NV2080_ENGINE_TYPE_IS_NVENC(i)  ((((i) >= NV2080_ENGINE_TYPE_NVENC0) && ((i) <= NV2080_ENGINE_TYPE_NVENC2)) || \
+                                        (((i) == NV2080_ENGINE_TYPE_NVENC3)))
+#define NV2080_ENGINE_TYPE_NVENC_IDX(i) (((i) <= NV2080_ENGINE_TYPE_NVENC2) ? \
+                                        ((i)-NV2080_ENGINE_TYPE_NVENC0) : ((i)-NV2080_ENGINE_TYPE_NVENC3 + 3))
 
 #define NV2080_ENGINE_TYPE_NVDEC(i)    (NV2080_ENGINE_TYPE_NVDEC0+(i))
 #define NV2080_ENGINE_TYPE_IS_NVDEC(i)  (((i) >= NV2080_ENGINE_TYPE_NVDEC0) && ((i) < NV2080_ENGINE_TYPE_NVDEC(NV2080_ENGINE_TYPE_NVDEC_SIZE)))
@@ -557,6 +567,14 @@ typedef struct _NV2080_PLATFORM_POWER_MODE_CHANGE_STATUS {
     NvU8 platformPowerModeMask;
     NvU8 eventReason;
 } NV2080_PLATFORM_POWER_MODE_CHANGE_STATUS;
+
+/*
+ * Workload type update event information. Workload type is enumerated as per the
+ * NV2080_CTRL_PERF_PERF_CF_CONTROLLER_DLCC_WORKLOAD_TYPE_ENUM
+ */
+typedef struct _NV2080_NOTIFIERS_USE_GC6_REDUCED_THRESHOLD_UPDATE {
+    NvU8 workloadType;
+} NV2080_NOTIFIERS_USE_GC6_REDUCED_THRESHOLD_UPDATE;
 
 #define NV2080_PLATFORM_POWER_MODE_CHANGE_INFO_INDEX                         7:0
 #define NV2080_PLATFORM_POWER_MODE_CHANGE_INFO_MASK                          15:8

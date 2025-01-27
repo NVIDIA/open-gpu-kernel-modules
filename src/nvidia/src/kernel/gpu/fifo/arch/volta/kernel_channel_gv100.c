@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +23,7 @@
 
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/mem_mgr/mem.h"
+#include "kernel/mem_mgr/os_desc_mem.h"
 #include "kernel/gpu/mmu/kern_gmmu.h"
 #include "platform/sli/sli.h"
 
@@ -204,15 +205,6 @@ kchannelCreateUserdMemDesc_GV100
                                AT_GPU,
                                userdOffset);
 
-    // Adjust for the DMA window start address, if any
-    if (memdescGetAddressSpace(pUserdMemDescForSubDev) == ADDR_SYSMEM)
-    {
-        RmPhysAddr dmaWindowStart = gpuGetDmaStartAddress(pGpu); 
-        NV_ASSERT_OR_RETURN(userdAddr > dmaWindowStart, NV_ERR_INVALID_ADDRESS);
-
-        userdAddr -= dmaWindowStart;
-    }
-
     userdAddrLo = NvU64_LO32(userdAddr) >> userdShift;
     userdAddrHi = NvU64_HI32(userdAddr);
 
@@ -249,6 +241,16 @@ kchannelCreateUserdMemDesc_GV100
     if (status != NV_OK)
     {
         return status;
+    }
+
+    //
+    // For some memory types, just creating submem is not enough to ensure
+    // proper lifetimes. Make the channel dependant on this memory object,
+    // so that it gets released before memory itself.
+    //
+    if (dynamicCast(pUserdMemoryRef->pResource, OsDescMemory) != NULL)
+    {
+        refAddDependant(pUserdMemoryRef, RES_GET_REF(pKernelChannel));
     }
 
     // check alignment

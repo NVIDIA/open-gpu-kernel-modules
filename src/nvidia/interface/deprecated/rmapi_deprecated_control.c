@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,7 +31,6 @@
 #include "ctrl/ctrl2080/ctrl2080fb.h"
 #include "ctrl/ctrl2080/ctrl2080gpu.h" // NV2080_CTRL_CMD_GPU_GET_INFO
 #include "ctrl/ctrl2080/ctrl2080perf.h" // NV2080_CTRL_CMD_PERF_*
-#include "ctrl/ctrl0080/ctrl0080perf.h" // NV0080_CTRL_CMD_PERF_GET_CAPS
 #include "ctrl/ctrl0080/ctrl0080bsp.h" // NV0080_CTRL_CMD_BSP_GET_CAPS
 #include "ctrl/ctrl0080/ctrl0080msenc.h" // NV0080_CTRL_CMD_MSENC_GET_CAPS
 #include "ctrl/ctrl0073/ctrl0073dp.h" // NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES
@@ -776,7 +775,7 @@ static NV_STATUS V2_CONVERTER(_NV0080_CTRL_CMD_MSENC_GET_CAPS)
                      {
                         if (pParams->capsTblSize != NV0080_CTRL_MSENC_CAPS_TBL_SIZE)
                         {
-                            NV_PRINTF(LEVEL_ERROR, "pParams capsTblSize %d invalid\n",
+                            NV_PRINTF(LEVEL_NOTICE, "pParams capsTblSize %d invalid\n",
                                        pParams->capsTblSize);
                             portMemFree(pParams2);
                             ctrlparamRelease(pSecInfo, &token, pArgs);

@@ -78,7 +78,8 @@
 #define MC_ENGINE_IDX_NVENC                         38
 #define MC_ENGINE_IDX_NVENC1                        39
 #define MC_ENGINE_IDX_NVENC2                        40
-#define MC_ENGINE_IDX_RESERVED41                    41
+// Bug 4175886 - Use this new value for all chips once GB20X is released
+#define MC_ENGINE_IDX_NVENC3                        41
 #define MC_ENGINE_IDX_C2C                           42
 #define MC_ENGINE_IDX_LTC                           43
 #define MC_ENGINE_IDX_FBHUB                         44
@@ -152,12 +153,19 @@
 #define MC_ENGINE_IDX_PXUC                          168
 #define MC_ENGINE_IDX_SYSLTC                        169
 #define MC_ENGINE_IDX_LRCC                          170
-#define MC_ENGINE_IDX_RESERVED171                   171
-#define MC_ENGINE_IDX_RESERVED172                   172
-#define MC_ENGINE_IDX_RESERVED173                   173
-#define MC_ENGINE_IDX_RESERVED174                   174
+// Bug 4175886 - Use this new value for all chips once GB20X is released
+#define MC_ENGINE_IDX_GSPLITE                       171
+#define MC_ENGINE_IDX_GSPLITE0                      MC_ENGINE_IDX_GSPLITE
+#define MC_ENGINE_IDX_GSPLITE1                      172
+#define MC_ENGINE_IDX_GSPLITE2                      173
+#define MC_ENGINE_IDX_GSPLITE3                      174
+#define MC_ENGINE_IDX_GSPLITE_MAX                   MC_ENGINE_IDX_GSPLITE3
+#define MC_ENGINE_IDX_DPAUX                         175
+
+#define MC_ENGINE_IDX_DISP_LOW                      176
 // This must be kept as the max bit if we need to add more engines
-#define MC_ENGINE_IDX_MAX                           175
+#define MC_ENGINE_IDX_MAX                           177
+
 
 // Index GR reference
 #define MC_ENGINE_IDX_GRn(x)            (MC_ENGINE_IDX_GR0 + (x))
@@ -183,6 +191,12 @@
 
 // Index OFA reference
 #define MC_ENGINE_IDX_OFA(x)            (MC_ENGINE_IDX_OFA0 + (x))
+
+//
+// Bug 4175886 - Remove check once GB20X is released
+// Index GSPLITE reference
+//
+#define MC_ENGINE_IDX_GSPLITEn(x)       (MC_ENGINE_IDX_GSPLITE + (x))
 
 MAKE_BITVECTOR(MC_ENGINE_BITVECTOR, MC_ENGINE_IDX_MAX);
 typedef MC_ENGINE_BITVECTOR *PMC_ENGINE_BITVECTOR;

@@ -82,7 +82,10 @@ intrGetPendingStall_GM107
     if (pKernelDisplay != NULL && kdispGetDeferredVblankHeadMask(pKernelDisplay))
     {
         // Deferred vblank is pending which we need to handle
-        bitVectorSet(pEngines, MC_ENGINE_IDX_DISP);
+        if (pKernelDisplay->getProperty(pKernelDisplay, PDB_PROP_KDISP_HAS_SEPARATE_LOW_LATENCY_LINE))
+            bitVectorSet(pEngines, MC_ENGINE_IDX_DISP_LOW);
+        else
+            bitVectorSet(pEngines, MC_ENGINE_IDX_DISP);
     }
 
     if ((pKernelGraphicsManager != NULL) && (fecsGetCtxswLogConsumerCount(pGpu, pKernelGraphicsManager) > 0))

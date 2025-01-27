@@ -23,6 +23,7 @@
 
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/mem_mgr/virt_mem_allocator.h"
+#include "kernel/gpu/mmu/kern_gmmu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 
 #include "published/hopper/gh100/dev_fault.h"

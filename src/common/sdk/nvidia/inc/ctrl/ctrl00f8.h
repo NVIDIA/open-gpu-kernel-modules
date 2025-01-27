@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -276,34 +276,6 @@ typedef struct NV00F8_CTRL_GET_NUM_ATTACHED_MEM_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 offsetEnd, 8);
     NvU16 numMemInfos;
 } NV00F8_CTRL_GET_NUM_ATTACHED_MEM_PARAMS;
-
-/*
- * NV00F8_CTRL_CMD_GET_ATTACHED_MEM
- *
- * Queries attached physical memory info to the fabric object.
- *
- *  offsetStart [IN]
- *    Offsets at which memory was attached.
- *
- *  numMemInfos [IN]
- *    Number of memory infos to be filled.
- *
- *  memInfos [IN/OUT]
- *    Attached memory infos.
- *    Use must populate a non-zero `hMemory` handle. This handle will be used by
- *    RM for duping physical memory.
- */
-#define NV00F8_CTRL_CMD_GET_ATTACHED_MEM (0xf80106) /* finn: Evaluated from "(FINN_NV_MEMORY_FABRIC_FABRIC_INTERFACE_ID << 8) | NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS_MESSAGE_ID" */
-
-#define NV00F8_MAX_ATTACHED_MEM_INFOS    64
-
-#define NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS_MESSAGE_ID (0x6U)
-
-typedef struct NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS {
-    NV_DECLARE_ALIGNED(NvU64 offsetStart, 8);
-    NvU16 numMemInfos;
-    NV_DECLARE_ALIGNED(NV00F8_CTRL_ATTACH_MEM_INFO memInfos[NV00F8_MAX_ATTACHED_MEM_INFOS], 8);
-} NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS;
 
 /*
  * NV00F8_CTRL_CMD_GET_PAGE_LEVEL_INFO

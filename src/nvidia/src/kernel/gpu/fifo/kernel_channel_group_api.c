@@ -916,6 +916,8 @@ kchangrpapiSetLegacyMode_IMPL
 
     pKernelChannelGroup->pSubctxIdHeap->eheapDestruct(
         pKernelChannelGroup->pSubctxIdHeap);
+    pKernelChannelGroup->pVaSpaceIdHeap->eheapDestruct(
+        pKernelChannelGroup->pVaSpaceIdHeap);
     //
     // There should only be 1 (SYNC) or 2 legacy kctxshares (SYNC + ASYNC),
     // depending on chip
@@ -927,6 +929,8 @@ kchangrpapiSetLegacyMode_IMPL
     NV_ASSERT(maxSubctx == 1 || maxSubctx == 2);
 
     constructObjEHeap(pKernelChannelGroup->pSubctxIdHeap,
+                      0, maxSubctx, sizeof(KernelCtxShare *), 0);
+    constructObjEHeap(pKernelChannelGroup->pVaSpaceIdHeap,
                       0, maxSubctx, sizeof(KernelCtxShare *), 0);
 
     pKernelChannelGroup->bLegacyMode = NV_TRUE;

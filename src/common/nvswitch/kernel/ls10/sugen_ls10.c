@@ -936,6 +936,7 @@ nvswitch_nvs_top_prod_ls10
     NVSWITCH_ENG_WR32(device, SYS_PRI_RS_CTRL,  , 0, _PPRIV_RS_CTRL_SYS, _CG1,
                       DRF_DEF(_PPRIV_RS_CTRL_SYS, _CG1, _SLCG, __PROD));
     
+#if 0
     NVSWITCH_ENG_WR32(device, XAL,  , 0, _XAL_EP, _CG,
                       DRF_DEF(_XAL_EP, _CG, _IDLE_CG_DLY_CNT, __PROD) |
                       DRF_DEF(_XAL_EP, _CG, _IDLE_CG_EN, __PROD) |
@@ -961,7 +962,8 @@ nvswitch_nvs_top_prod_ls10
                       DRF_DEF(_XAL_EP, _CG1, _SLCG_TXMAP, __PROD) |
                       DRF_DEF(_XAL_EP, _CG1, _SLCG_UNROLL_MEM, __PROD) |
                       DRF_DEF(_XAL_EP, _CG1, _SLCG_UPARB, __PROD));
-    
+#endif  //0
+  
     NVSWITCH_ENG_WR32(device, XPL,  , 0, _XPL, _PL_PAD_CTL_PRI_XPL_RXCLK_CG,
                       DRF_DEF(_XPL, _PL_PAD_CTL_PRI_XPL_RXCLK_CG, _IDLE_CG_DLY_CNT, __PROD) |
                       DRF_DEF(_XPL, _PL_PAD_CTL_PRI_XPL_RXCLK_CG, _IDLE_CG_EN, __PROD) |

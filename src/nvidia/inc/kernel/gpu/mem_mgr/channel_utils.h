@@ -51,6 +51,8 @@
 
 #include "class/clc9b5.h"      // BLACKWELL_DMA_COPY_A
 
+#include "class/clcab5.h"      // BLACKWELL_DMA_COPY_B
+
 #include "gpu/conf_compute/ccsl.h"
 
 #include "nvctassert.h"

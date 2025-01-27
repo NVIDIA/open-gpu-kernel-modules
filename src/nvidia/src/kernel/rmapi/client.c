@@ -564,18 +564,6 @@ rmclientPostProcessPendingFreeList_IMPL
     return NV_OK;
 }
 
-RS_PRIV_LEVEL rmclientGetCachedPrivilegeByHandle(NvHandle hClient)
-{
-    RmClient *pClient = serverutilGetClientUnderLock(hClient);
-    return pClient ? rmclientGetCachedPrivilege(pClient) : RS_PRIV_LEVEL_USER;
-}
-
-NvBool rmclientIsAdminByHandle(NvHandle hClient, RS_PRIV_LEVEL privLevel)
-{
-    RmClient *pClient = serverutilGetClientUnderLock(hClient);
-    return pClient ? rmclientIsAdmin(pClient, privLevel) : NV_FALSE;
-}
-
 static inline NvBool rmclientIsKernelOnly(RmClient *pClient)
 {
     return (pClient->pSecurityToken == NULL);
@@ -912,26 +900,6 @@ NvBool rmclientIsCapableOrAdmin_IMPL
     }
 
     return _rmclientIsCapable(hClient, capability);
-}
-
-//
-// RS-TODO: Delete this function once the RM Capabilities framework is in place.
-// JIRA GR-139
-//
-NvBool rmclientIsCapableOrAdminByHandle
-(
-    NvHandle hClient,
-    NvU32 capability,
-    RS_PRIV_LEVEL privLevel
-)
-{
-    RmClient *pClient = serverutilGetClientUnderLock(hClient);
-    if (pClient == NULL)
-    {
-        return NV_FALSE;
-    }
-
-    return rmclientIsCapableOrAdmin(pClient, capability, privLevel);
 }
 
 NvBool rmclientIsCapable_IMPL

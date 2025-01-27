@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,7 +35,7 @@
 /*
  * NV2080_CTRL_CMD_DMABUF_EXPORT_OBJECTS_TO_FD
  *
- * Exports RM vidmem handles to a dma-buf fd.
+ * Exports RM vidmem and sysmem handles to a dma-buf fd.
  *
  * The objects in the 'handles' array are exported to the fd as range:
  * [index, index + numObjects).
@@ -63,12 +63,25 @@
  *   This size includes the memory that will be exported in future export calls
  *   for this dma-buf.
  *
+ * mappingType
+ *   The type of mapping that must be used for this dma-buf.
+ *   See NV2080_CTRL_DMABUF_EXPORT_MAPPING_TYPE_* for all possible values.
+ *
+ *   With type DEFAULT, the driver shall decide the type based on platform coherency:
+ *       C2C for coherent
+ *       PCIe BAR1 for non-coherent
+ *   Type FORCE_PCIE field is a workaround for platforms with Grace (PCIe Gen4/Gen5 RPs) paired with
+ *   Gen6 parts like Blackwell GPUs and CX8 NICs, requiring a separate Gen6 PCIe link to maximize RDMA
+ *   bandwidth. This type allows dma-buf to be mapped over this Gen6 PCIe link.
+ *
+ *   This call shall return NV_ERR_NOT_SUPPORTED if FORCE_PCIE type is used on non-Grace platforms.
+ *
  * handles
  *   An array of {handle, offset, size} that describes the dma-buf.
  *   The offsets and sizes must be OS page-size aligned.
  *
  * Limitations:
- *   1. This call only supports vidmem objects for now.
+ *   1. This call supports vidmem and sysmem objects.
  *   2. All memory handles should belong to the same GPU or the same GPU MIG instance.
  *
  * Possible status values returned are:
@@ -81,9 +94,12 @@
  *    NV_ERR_INVALID_OBJECT
  *    NV_ERR_INVALID_OBJECT_PARENT
  */
-#define NV2080_CTRL_CMD_DMABUF_EXPORT_OBJECTS_TO_FD (0x20803a01) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_DMABUF_INTERFACE_ID << 8) | NV2080_CTRL_DMABUF_EXPORT_MEM_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_DMABUF_EXPORT_OBJECTS_TO_FD       (0x20803a01) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_DMABUF_INTERFACE_ID << 8) | NV2080_CTRL_DMABUF_EXPORT_MEM_PARAMS_MESSAGE_ID" */
 
-#define NV2080_CTRL_DMABUF_MAX_HANDLES              128
+#define NV2080_CTRL_DMABUF_MAX_HANDLES                    128
+
+#define NV2080_CTRL_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT    (0x00000000U)
+#define NV2080_CTRL_DMABUF_EXPORT_MAPPING_TYPE_FORCE_PCIE (0x00000001U)
 
 typedef struct NV2080_CTRL_DMABUF_MEM_HANDLE_INFO {
     NvHandle hMemory;
@@ -99,6 +115,7 @@ typedef struct NV2080_CTRL_DMABUF_EXPORT_MEM_PARAMS {
     NvU32 numObjects;
     NvU32 index;
     NV_DECLARE_ALIGNED(NvU64 totalSize, 8);
+    NvU8  mappingType;
     NV_DECLARE_ALIGNED(NV2080_CTRL_DMABUF_MEM_HANDLE_INFO handles[NV2080_CTRL_DMABUF_MAX_HANDLES], 8);
 } NV2080_CTRL_DMABUF_EXPORT_MEM_PARAMS;
 

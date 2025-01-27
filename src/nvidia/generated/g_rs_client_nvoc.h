@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -98,7 +98,7 @@ struct RsClient {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__RsClient *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
 
     // Ancestor object pointers for `staticCast` feature
@@ -132,7 +132,7 @@ struct NVOC_VTABLE__RsClient {
     RS_PRIV_LEVEL (*__clientGetCachedPrivilege__)(struct RsClient * /*this*/);  // virtual
     NvBool (*__clientIsAdmin__)(struct RsClient * /*this*/, RS_PRIV_LEVEL);  // virtual
     NV_STATUS (*__clientFreeResource__)(struct RsClient * /*this*/, RsServer *, struct RS_RES_FREE_PARAMS_INTERNAL *);  // virtual
-    NV_STATUS (*__clientDestructResourceRef__)(struct RsClient * /*this*/, RsServer *, struct RsResourceRef *);  // virtual
+    NV_STATUS (*__clientDestructResourceRef__)(struct RsClient * /*this*/, RsServer *, struct RsResourceRef *, struct RS_LOCK_INFO *, API_SECURITY_INFO *);  // virtual
     NV_STATUS (*__clientUnmapMemory__)(struct RsClient * /*this*/, struct RsResourceRef *, struct RS_LOCK_INFO *, struct RsCpuMapping **, API_SECURITY_INFO *);  // virtual
     NV_STATUS (*__clientInterMap__)(struct RsClient * /*this*/, struct RsResourceRef *, struct RsResourceRef *, struct RS_INTER_MAP_PARAMS *);  // virtual
     NV_STATUS (*__clientInterUnmap__)(struct RsClient * /*this*/, struct RsResourceRef *, struct RS_INTER_UNMAP_PARAMS *);  // virtual
@@ -182,7 +182,7 @@ NV_STATUS __nvoc_objCreate_RsClient(RsClient**, Dynamic*, NvU32, struct PORT_MEM
 #define clientFreeResource_FNPTR(pClient) pClient->__nvoc_vtable->__clientFreeResource__
 #define clientFreeResource(pClient, pServer, pParams) clientFreeResource_DISPATCH(pClient, pServer, pParams)
 #define clientDestructResourceRef_FNPTR(pClient) pClient->__nvoc_vtable->__clientDestructResourceRef__
-#define clientDestructResourceRef(pClient, pServer, pResourceRef) clientDestructResourceRef_DISPATCH(pClient, pServer, pResourceRef)
+#define clientDestructResourceRef(pClient, pServer, pResourceRef, pLockInfo, pSecInfo) clientDestructResourceRef_DISPATCH(pClient, pServer, pResourceRef, pLockInfo, pSecInfo)
 #define clientUnmapMemory_FNPTR(pClient) pClient->__nvoc_vtable->__clientUnmapMemory__
 #define clientUnmapMemory(pClient, pResourceRef, pLockInfo, ppCpuMapping, pSecInfo) clientUnmapMemory_DISPATCH(pClient, pResourceRef, pLockInfo, ppCpuMapping, pSecInfo)
 #define clientInterMap_FNPTR(pClient) pClient->__nvoc_vtable->__clientInterMap__
@@ -217,8 +217,8 @@ static inline NV_STATUS clientFreeResource_DISPATCH(struct RsClient *pClient, Rs
     return pClient->__nvoc_vtable->__clientFreeResource__(pClient, pServer, pParams);
 }
 
-static inline NV_STATUS clientDestructResourceRef_DISPATCH(struct RsClient *pClient, RsServer *pServer, struct RsResourceRef *pResourceRef) {
-    return pClient->__nvoc_vtable->__clientDestructResourceRef__(pClient, pServer, pResourceRef);
+static inline NV_STATUS clientDestructResourceRef_DISPATCH(struct RsClient *pClient, RsServer *pServer, struct RsResourceRef *pResourceRef, struct RS_LOCK_INFO *pLockInfo, API_SECURITY_INFO *pSecInfo) {
+    return pClient->__nvoc_vtable->__clientDestructResourceRef__(pClient, pServer, pResourceRef, pLockInfo, pSecInfo);
 }
 
 static inline NV_STATUS clientUnmapMemory_DISPATCH(struct RsClient *pClient, struct RsResourceRef *pResourceRef, struct RS_LOCK_INFO *pLockInfo, struct RsCpuMapping **ppCpuMapping, API_SECURITY_INFO *pSecInfo) {
@@ -255,7 +255,7 @@ NvBool clientIsAdmin_IMPL(struct RsClient *pClient, RS_PRIV_LEVEL privLevel);
 
 NV_STATUS clientFreeResource_IMPL(struct RsClient *pClient, RsServer *pServer, struct RS_RES_FREE_PARAMS_INTERNAL *pParams);
 
-NV_STATUS clientDestructResourceRef_IMPL(struct RsClient *pClient, RsServer *pServer, struct RsResourceRef *pResourceRef);
+NV_STATUS clientDestructResourceRef_IMPL(struct RsClient *pClient, RsServer *pServer, struct RsResourceRef *pResourceRef, struct RS_LOCK_INFO *pLockInfo, API_SECURITY_INFO *pSecInfo);
 
 NV_STATUS clientUnmapMemory_IMPL(struct RsClient *pClient, struct RsResourceRef *pResourceRef, struct RS_LOCK_INFO *pLockInfo, struct RsCpuMapping **ppCpuMapping, API_SECURITY_INFO *pSecInfo);
 
@@ -539,7 +539,7 @@ struct RsClientResource {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__RsClientResource *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct RsResource __nvoc_base_RsResource;
 
     // Ancestor object pointers for `staticCast` feature

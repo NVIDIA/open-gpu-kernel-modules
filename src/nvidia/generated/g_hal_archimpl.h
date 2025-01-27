@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_hal_archimpl.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
 //
 
 #ifndef _G_RMCFG_HAL_ARCHIMPL_H_
@@ -86,6 +86,12 @@ const struct ChipID
     {                               0x0,                            0x0,   0x0 } , // GH202  (disabled)
     {  NV_PMC_BOOT_0_ARCHITECTURE_GB100, NV_PMC_BOOT_0_IMPLEMENTATION_0,   0x0 } , // GB100 
     {  NV_PMC_BOOT_0_ARCHITECTURE_GB100, NV_PMC_BOOT_0_IMPLEMENTATION_2,   0x0 } , // GB102 
+    {  NV_PMC_BOOT_0_ARCHITECTURE_GB100, NV_PMC_BOOT_0_IMPLEMENTATION_B,   0x0 } , // GB10B 
+    {  NV_PMC_BOOT_0_ARCHITECTURE_GB200, NV_PMC_BOOT_0_IMPLEMENTATION_2,   0x0 } , // GB202 
+    {  NV_PMC_BOOT_0_ARCHITECTURE_GB200, NV_PMC_BOOT_0_IMPLEMENTATION_3,   0x0 } , // GB203 
+    {  NV_PMC_BOOT_0_ARCHITECTURE_GB200, NV_PMC_BOOT_0_IMPLEMENTATION_5,   0x0 } , // GB205 
+    {  NV_PMC_BOOT_0_ARCHITECTURE_GB200, NV_PMC_BOOT_0_IMPLEMENTATION_6,   0x0 } , // GB206 
+    {  NV_PMC_BOOT_0_ARCHITECTURE_GB200, NV_PMC_BOOT_0_IMPLEMENTATION_7,   0x0 } , // GB207 
     {                               0x0,                            0x0,   0x0 } , // T001_FERMI_NOT_EXIST (disabled)
     {                               0x0,                            0x0,   0x0 } , // T124   (disabled)
     {                               0x0,                            0x0,   0x0 } , // T132   (disabled)

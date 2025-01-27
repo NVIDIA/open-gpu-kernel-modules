@@ -272,7 +272,7 @@ struct OBJVASPACE {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__OBJVASPACE *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
 
     // Ancestor object pointers for `staticCast` feature
@@ -286,6 +286,7 @@ struct OBJVASPACE {
     NvU32 vaspaceId;
     NvU64 vasStart;
     NvU64 vasLimit;
+    NvU32 vasUniqueId;
 };
 
 

@@ -491,6 +491,7 @@ NV_STATUS RmThirdPartyP2PBAR1GetPages
     NvU64       address,
     NvU64       length,
     NvU64       offset,
+    NvBool      bForcePcie,
     RsClient   *pClient,
     PCLI_THIRD_PARTY_P2P_VIDMEM_INFO pVidmemInfo,
     NvU64     **ppPhysicalAddresses,
@@ -507,6 +508,7 @@ NV_STATUS RmThirdPartyP2PBAR1GetPages
     PCLI_THIRD_PARTY_P2P_MAPPING_EXTENT_INFO pExtentInfoLoop = NULL;
     PCLI_THIRD_PARTY_P2P_MAPPING_EXTENT_INFO pExtentInfo     = NULL;
     MEMORY_DESCRIPTOR *pMemDesc;
+    KernelBus *pKernelBus;
     NvU64 mappingLength = 0;
     NvU64 mappingOffset = 0;
     NvU64 lengthReq = 0;
@@ -520,11 +522,14 @@ NV_STATUS RmThirdPartyP2PBAR1GetPages
     NV_ASSERT_OR_RETURN((ppPhysicalAddresses != NULL), NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN((pEntries != NULL), NV_ERR_INVALID_ARGUMENT);
 
-    physicalFbAddress = gpumgrGetGpuPhysFbAddr(pGpu);
+    pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+
+    NV_ASSERT_OK_OR_RETURN(kbusGetGpuFbPhysAddressForRdma(pGpu, pKernelBus,
+                                               bForcePcie, &physicalFbAddress));
 
     NV_PRINTF(LEVEL_INFO,
-              "Requesting Bar1 mappings for address: 0x%llx, length: 0x%llx\n",
-              address, length);
+              "Requesting Bar1 mappings for address: 0x%llx, length: 0x%llx, BAR1 base: 0x%llx\n",
+              address, length, physicalFbAddress);
     *pEntries = 0;
 
     pMappingInfo->length = 0;
@@ -693,6 +698,7 @@ NV_STATUS RmP2PGetPagesUsingVidmemInfo
     NvU64                             address,
     NvU64                             length,
     NvU64                             offset,
+    NvBool                            bForcePcie,
     ThirdPartyP2P                    *pThirdPartyP2P,
     NvU64                           **ppPhysicalAddresses,
     NvU32                           **ppWreqMbH,
@@ -727,24 +733,29 @@ NV_STATUS RmP2PGetPagesUsingVidmemInfo
         return status;
     }
 
-    switch(pThirdPartyP2PInfo->type)
+    //
+    // For coherent platforms supporting BAR1 mappings, the third party object
+    // of type CLI_THIRD_PARTY_P2P_TYPE_NVLINK is overloaded to also track BAR1
+    // mappings.
+    //
+    // Object type BAR1 is not supported with forced PCIe mappings and
+    // is already sanity-checked at this point.
+    //
+    if ((!bForcePcie) &&
+        (pThirdPartyP2PInfo->type == CLI_THIRD_PARTY_P2P_TYPE_NVLINK))
     {
-        case CLI_THIRD_PARTY_P2P_TYPE_BAR1:
-            status = RmThirdPartyP2PBAR1GetPages(address, length, offset, pClient,
-                                                 pVidmemInfo, ppPhysicalAddresses,
-                                                 ppWreqMbH, ppRreqMbH, pEntries,
-                                                 pGpu, pSubDevice, pMappingInfo,
-                                                 pThirdPartyP2PInfo);
-            break;
-        case CLI_THIRD_PARTY_P2P_TYPE_NVLINK:
-            status = RmThirdPartyP2PNVLinkGetPages(pGpu, address, length,
-                                                   offset, pMemDesc, ppWreqMbH,
-                                                   ppRreqMbH, ppPhysicalAddresses,
-                                                   pEntries);
-            break;
-        default:
-            status = NV_ERR_NOT_SUPPORTED;
-            break;
+        status = RmThirdPartyP2PNVLinkGetPages(pGpu, address, length,
+                                               offset, pMemDesc, ppWreqMbH,
+                                               ppRreqMbH, ppPhysicalAddresses,
+                                               pEntries);
+    }
+    else
+    {
+        status = RmThirdPartyP2PBAR1GetPages(address, length, offset, bForcePcie,
+                                             pClient, pVidmemInfo, ppPhysicalAddresses,
+                                             ppWreqMbH, ppRreqMbH, pEntries,
+                                             pGpu, pSubDevice, pMappingInfo,
+                                             pThirdPartyP2PInfo);
     }
 
     return status;
@@ -792,8 +803,9 @@ NV_STATUS RmP2PValidateAddressRangeOrGetPages
         return NV_OK;
     }
 
-    status = RmP2PGetPagesUsingVidmemInfo(address, length, offset, pThirdPartyP2P,
-                                          ppPhysicalAddresses, ppWreqMbH, ppRreqMbH,
+    status = RmP2PGetPagesUsingVidmemInfo(address, length, offset, NV_FALSE,
+                                          pThirdPartyP2P, ppPhysicalAddresses,
+                                          ppWreqMbH, ppRreqMbH,
                                           pEntries, pPlatformData, pFreeCallback,
                                           pData, pGpu, pSubDevice, pVASpaceInfo,
                                           pThirdPartyP2PInfo, pVidmemInfo);
@@ -1099,7 +1111,7 @@ static NV_STATUS _rmP2PGetPages(
 
     return NV_OK;
 failed:
-    thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2P, pPlatformData, NV_FALSE);
+    thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2P, pPlatformData);
 
     return status;
 }
@@ -1311,6 +1323,7 @@ NV_STATUS RmP2PGetPagesPersistent(
     void      **p2pObject,
     NvU64      *pPhysicalAddresses,
     NvU32      *pEntries,
+    NvBool      bForcePcie,
     void       *pPlatformData,
     void       *pGpuInfo,
     void      **ppGpuInstanceInfo
@@ -1336,6 +1349,23 @@ NV_STATUS RmP2PGetPagesPersistent(
     if(gpuIsApmFeatureEnabled(pGpu))
     {
         return NV_ERR_NOT_SUPPORTED;
+    }
+
+    //
+    // Forced PCIe mappings are to be used only on coherent systems with a
+    // direct PCIe connection between the exporter and importer.
+    // MIG is not a supported use-case on these systems.
+    //
+    if (bForcePcie)
+    {
+        KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+
+        if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) ||
+            pKernelBus->bBar1Disabled ||
+            IS_MIG_ENABLED(pGpu))
+        {
+            return NV_ERR_NOT_SUPPORTED;
+        }
     }
 
     status = RmP2PGetInfoWithoutToken(address, length, NULL,
@@ -1389,6 +1419,18 @@ NV_STATUS RmP2PGetPagesPersistent(
 
     pThirdPartyP2PInternal = dynamicCast(pResourceRef->pResource, ThirdPartyP2P);
 
+    //
+    // Forced PCIe mappings are not supported
+    // with third party object type BAR1.
+    //
+    if ((bForcePcie) &&
+        (pThirdPartyP2PInternal->type == CLI_THIRD_PARTY_P2P_TYPE_BAR1))
+    {
+        status = NV_ERR_NOT_SUPPORTED;
+
+        goto failed;
+    }
+
     pVidmemInfo = _createOrReuseVidmemInfoPersistent(pGpu, address, length, &offset,
                                                      hClientInternal,
                                                      pThirdPartyP2P,
@@ -1400,7 +1442,7 @@ NV_STATUS RmP2PGetPagesPersistent(
         goto failed;
     }
 
-    status = RmP2PGetPagesUsingVidmemInfo(address, length, offset,
+    status = RmP2PGetPagesUsingVidmemInfo(address, length, offset, bForcePcie,
                                           pThirdPartyP2PInternal,
                                           &pPhysicalAddresses, NULL, NULL,
                                           pEntries, pPlatformData, NULL, NULL,
@@ -1409,7 +1451,7 @@ NV_STATUS RmP2PGetPagesPersistent(
     if (status != NV_OK)
     {
         // Cleanup MappingInfo if it was allocated
-        thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2PInternal, pPlatformData, NV_FALSE);
+        thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2PInternal, pPlatformData);
 
         //
         // The cleanup with thirdpartyp2pDelMappingInfoByKey() above is not enough
@@ -1578,7 +1620,7 @@ NV_STATUS RmP2PPutPagesPersistent(
         return NV_ERR_INVALID_STATE;
     }
 
-    status = thirdpartyp2pDelPersistentMappingInfoByKey(pThirdPartyP2P, pPlatformData, NV_TRUE);
+    status = thirdpartyp2pDelPersistentMappingInfoByKey(pThirdPartyP2P, pPlatformData);
 
     NV_ASSERT(status == NV_OK);
 
@@ -1621,7 +1663,7 @@ NV_STATUS RmP2PPutPages(
         return NV_ERR_INVALID_STATE;
     }
 
-    status = thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2P, pPlatformData, NV_TRUE);
+    status = thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2P, pPlatformData);
     NV_ASSERT(status == NV_OK);
 
     return status;

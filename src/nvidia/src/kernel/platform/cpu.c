@@ -1401,12 +1401,14 @@ static void cpuidInfoAMD(OBJSYS *pSys, PCPUIDINFO pCpuidInfo)
                 // Zen, Zen+, Zen 2
             case 0x0A0:
                 // Zen 3, Zen 4
+            case 0x0B0:
+                // Zen 5
                 pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_RYZEN;
                 break;
             default:
-                NV_PRINTF(LEVEL_ERROR,
-                          "Unrecognized AMD processor in cpuidInfoAMD\n");
-                pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_K8;
+                NV_PRINTF(LEVEL_NOTICE,
+                          "Unrecognized AMD processor 0x%x in cpuidInfoAMD. Assuming new Ryzen\n", pCpuidInfo->Family);
+                pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_RYZEN;
                 break;
         }
     }

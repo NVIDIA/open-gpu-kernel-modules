@@ -24,6 +24,7 @@
 #include "uvm_api.h"
 #include "uvm_test.h"
 #include "uvm_test_ioctl.h"
+#include "uvm_channel.h"
 #include "uvm_global.h"
 #include "uvm_va_space.h"
 #include "uvm_va_space_mm.h"
@@ -194,13 +195,51 @@ static NV_STATUS uvm_test_cgroup_accounting_supported(UVM_TEST_CGROUP_ACCOUNTING
     return UVM_CGROUP_ACCOUNTING_SUPPORTED() ? NV_OK : NV_ERR_NOT_SUPPORTED;
 }
 
+static NV_STATUS uvm_test_set_p2p_suspended(UVM_TEST_SET_P2P_SUSPENDED_PARAMS *params, struct file *filp)
+{
+    uvm_gpu_t *gpu;
+    NV_STATUS status = NV_OK;
+
+    uvm_mutex_lock(&g_uvm_global.global_lock);
+
+    gpu = uvm_gpu_get_by_uuid(&params->gpu_uuid);
+    if (!gpu) {
+        status = NV_ERR_INVALID_DEVICE;
+        goto unlock;
+    }
+
+    if (params->suspended)
+        status = uvm_channel_manager_suspend_p2p(gpu->channel_manager);
+    else
+        uvm_channel_manager_resume_p2p(gpu->channel_manager);
+
+unlock:
+    uvm_mutex_unlock(&g_uvm_global.global_lock);
+    return status;
+}
+
+static NV_STATUS uvm_test_inject_nvlink_error(UVM_TEST_INJECT_NVLINK_ERROR_PARAMS *params, struct file *filp)
+{
+    uvm_gpu_t *gpu;
+    NV_STATUS status = NV_ERR_INVALID_DEVICE;
+
+    uvm_mutex_lock(&g_uvm_global.global_lock);
+
+    gpu = uvm_gpu_get_by_uuid(&params->gpu_uuid);
+    if (gpu)
+        status = uvm_gpu_inject_nvlink_error(gpu, params->error_type);
+
+    uvm_mutex_unlock(&g_uvm_global.global_lock);
+    return status;
+}
+
 long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
     // Disable all test entry points if the module parameter wasn't provided.
     // These should not be enabled in a production environment.
     if (!uvm_enable_builtin_tests) {
         UVM_INFO_PRINT("ioctl %d not found. Did you mean to insmod with uvm_enable_builtin_tests=1?\n", cmd);
-        return -EINVAL;
+        return -ENOSYS;
     }
 
     switch (cmd)
@@ -309,6 +348,8 @@ long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
                                        uvm_test_va_space_allow_movable_allocations);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SKIP_MIGRATE_VMA, uvm_test_skip_migrate_vma);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_INJECT_TOOLS_EVENT_V2,        uvm_test_inject_tools_event_v2);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SET_P2P_SUSPENDED,            uvm_test_set_p2p_suspended);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_INJECT_NVLINK_ERROR,          uvm_test_inject_nvlink_error);
     }
 
     return -EINVAL;

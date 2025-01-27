@@ -40,6 +40,9 @@
 #include <ctrl/ctrl0073/ctrl0073system.h>
 #include <ctrl/ctrl5070/ctrl5070or.h>
 
+#include "displayport2x.h"
+#include "dp_evoadapter2x.h"
+
 using namespace DisplayPort;
 
 //
@@ -93,8 +96,13 @@ const struct
     {NV_DP_REGKEY_FORCE_EDP_ILR,                    &dpRegkeyDatabase.bBypassEDPRevCheck,              DP_REG_VAL_BOOL},
     {NV_DP_DSC_MST_CAP_BUG_3143315,                 &dpRegkeyDatabase.bDscMstCapBug3143315,            DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_POWER_DOWN_PHY,                   &dpRegkeyDatabase.bPowerDownPhyBeforeD3,           DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_REASSESS_MAX_LINK,                &dpRegkeyDatabase.bReassessMaxLink,                DP_REG_VAL_BOOL},
+    {NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT,              &dpRegkeyDatabase.supportInternalUhbrOnFpga,       DP_REG_VAL_U32},
+    {NV_DP2X_IGNORE_CABLE_ID_CAPS,                  &dpRegkeyDatabase.bIgnoreCableIdCaps,              DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED,      &dpRegkeyDatabase.bMSTPCONCapsReadDisabled,        DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION,     &dpRegkeyDatabase.bForceDisableTunnelBwAllocation, DP_REG_VAL_BOOL}
+    {NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION,     &dpRegkeyDatabase.bForceDisableTunnelBwAllocation, DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_DOWNSPREAD,               &dpRegkeyDatabase.bDownspreadDisabled,             DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE,              &dpRegkeyDatabase.bSkipZeroOuiCache,               DP_REG_VAL_BOOL}
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :
@@ -237,17 +245,8 @@ bool EvoMainLink::getEdpPowerData(bool *panelPowerOn, bool *dpcdPowerStateD0)
     }
 }
 
-NvU32 EvoMainLink::streamToHead(NvU32 streamId, DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID streamIdentifier)
-{
-    NvU32 headIndex = 0;
-    NvU32 maxHeads = allHeadMask;
-    NUMSETBITS_32(maxHeads);
-    headIndex = DP_MST_STREAMID_TO_HEAD(streamId, streamIdentifier, maxHeads);
-
-    return headIndex;
-}
-
-NvU32 EvoMainLink::headToStream(NvU32 head, DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID streamIdentifier)
+NvU32 EvoMainLink::headToStream(NvU32 head, bool bSidebandMessageSupported,
+                                DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID streamIdentifier)
 {
     NvU32 streamIndex = 0;
 
@@ -282,6 +281,8 @@ bool EvoMainLink::queryGPUCapability()
     _isDownspreadSupported          = (dpParams.bSupportDPDownSpread == NV_TRUE) ? true : false;
 
     _gpuSupportedDpVersions         = dpParams.dpVersionsSupported;
+
+    _minPClkForCompressed           = dpParams.minPClkForCompressed;
 
     if (FLD_TEST_DRF(0073, _CTRL_CMD_DP_GET_CAPS, _MAX_LINK_RATE, _1_62, dpParams.maxLinkRate))
         _maxLinkRateSupportedGpu = dp2LinkRate_1_62Gbps; // in 10Mbps
@@ -912,6 +913,7 @@ void EvoMainLink::applyRegkeyOverrides()
     _applyLinkBwOverrideWarRegVal        = dpRegkeyDatabase.bLinkBwOverrideWarApplied;
     _enableMSAOverrideOverMST            = dpRegkeyDatabase.bMsaOverMstEnabled;
     _isMSTPCONCapsReadDisabled           = dpRegkeyDatabase.bMSTPCONCapsReadDisabled;
+    _isDownspreadDisabledByRegkey        = dpRegkeyDatabase.bDownspreadDisabled;
 }
 
 NvU32 EvoMainLink::getRegkeyValue(const char *key)
@@ -1029,7 +1031,7 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
         targetIndex = phyRepeaterCount;
     }
 
-    if (!this->isDownspreadSupported())
+    if (!this->isDownspreadSupported() || link.bDisableDownspread || _isDownspreadDisabledByRegkey)
     {
         // If GPU does not support downspread, disabling downspread.
         dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _USE_DOWNSPREAD_SETTING, _FORCE);
@@ -1069,6 +1071,7 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
             case dp2LinkRate_3_24Gbps:
             case dp2LinkRate_4_32Gbps:
             case dp2LinkRate_5_40Gbps:
+            case dp2LinkRate_6_75Gbps:
             case dp2LinkRate_8_10Gbps:
                 linkBw = LINK_RATE_10MHZ_TO_270MHZ(linkrate);
                 dpCtrlData = FLD_SET_DRF_NUM(0073_CTRL, _DP_DATA, _SET_LINK_BW,
@@ -1154,6 +1157,12 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
             // if LT failed when bSkipLT was marked, no point in falling back as the issue
             // is not with LinkConfig.
             //
+            break;
+        }
+
+        if (FLD_TEST_DRF(0073_CTRL_DP, _ERR, _LINK_STATUS, _DISCONNECTED, err))
+        {
+            // Don't fallback if the device is already gone.
             break;
         }
 
@@ -1308,35 +1317,6 @@ bool EvoMainLink::getDynamicMuxState(NvU32 *muxState)
     return bIsMuxCapable;
 }
 
-bool EvoMainLink::aquireSema()
-{
-    NV0073_CTRL_DP_AUXCH_SET_SEMA_PARAMS params;
-
-    dpMemZero(&params, sizeof(params));
-    params.subDeviceInstance       = subdeviceIndex;
-    params.displayId               = displayId;
-    params.owner                   = NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_RM;
-
-    NvU32 code = provider->rmControl0073(NV0073_CTRL_CMD_DP_AUXCH_SET_SEMA, &params, sizeof(params));
-
-    return code == NVOS_STATUS_SUCCESS;
-}
-
-void EvoMainLink::releaseSema()
-{
-    NV0073_CTRL_DP_AUXCH_SET_SEMA_PARAMS params;
-
-    dpMemZero(&params, sizeof(params));
-    params.subDeviceInstance       = subdeviceIndex;
-    params.displayId               = displayId;
-    params.owner                   = NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_RELEASE;
-
-    NvU32 code = provider->rmControl0073(NV0073_CTRL_CMD_DP_AUXCH_SET_SEMA, &params, sizeof(params));
-
-    DP_USED(code);
-    DP_ASSERT(code == NVOS_STATUS_SUCCESS);
-}
-
 void EvoMainLink::configurePowerState(bool bPowerUp)
 {
     NV0073_CTRL_DP_MAIN_LINK_CTRL_PARAMS params;
@@ -1368,7 +1348,8 @@ void EvoMainLink::getLinkConfig(unsigned &laneCount, NvU64 & linkRate)
 
         if (params.linkBW != 0)
         {
-            linkRate = ((NvU64)params.linkBW) * DP_LINK_BW_FREQ_MULTI_MBPS;
+            DP_ASSERT((params.dp2LinkBW == 0) && "dp2LinkBW should be zero if linkBw is not zero");
+            linkRate = LINK_RATE_270MHZ_TO_10MHZ((NvU64)params.linkBW);
         }
         else
         {
@@ -1756,7 +1737,27 @@ void EvoMainLink::configureTriggerAll(NvU32 head, bool enable)
 MainLink * DisplayPort::MakeEvoMainLink(EvoInterface * provider, Timer * timer)
 {
     MainLink *main;
-    main = new EvoMainLink(provider, timer);
+    NvU32 nvosStatus;
+    NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS dpParams = {0};
+
+    dpParams.subDeviceInstance = provider->getSubdeviceIndex();
+    nvosStatus = provider->rmControl0073(NV0073_CTRL_CMD_DP_GET_CAPS, &dpParams, sizeof dpParams);
+
+    if (nvosStatus != NVOS_STATUS_SUCCESS)
+    {
+        DP_ASSERT(0 && "Unable to get DP caps params");
+        return NULL;
+    }
+
+    if (FLD_TEST_DRF(0073_CTRL_CMD_DP, _GET_CAPS_DP_VERSIONS_SUPPORTED,
+                     _DP2_0, _YES, dpParams.dpVersionsSupported))
+    {
+        main = new EvoMainLink2x(provider, timer);
+    }
+    else
+    {
+        main = new EvoMainLink(provider, timer);
+    }
     return main;
 }
 

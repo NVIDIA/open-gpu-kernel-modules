@@ -200,6 +200,7 @@ typedef struct
     // num_tsgs is 1. Pre-Volta GPUs also have a single TSG object, but since HW
     // does not support TSG for CE engines, a HW TSG is not created, but a TSG
     // object is required to allocate channels.
+    //
     // When Confidential Computing mode is enabled, the WLC and LCIC channel
     // types require one TSG for each WLC/LCIC pair of channels. In this case,
     // we do not use a TSG per channel pool, but instead a TSG per WLC/LCIC
@@ -416,6 +417,8 @@ struct uvm_channel_struct
         struct list_head channel_list_node;
         NvU32 pending_event_count;
     } tools;
+
+    bool suspended_p2p;
 };
 
 struct uvm_channel_manager_struct
@@ -478,6 +481,12 @@ struct uvm_channel_manager_struct
     } conf_computing;
 };
 
+// Index of a channel pool within the manager
+static unsigned uvm_channel_pool_index_in_channel_manager(const uvm_channel_pool_t *pool)
+{
+    return pool - pool->manager->channel_pools;
+}
+
 // Create a channel manager for the GPU
 NV_STATUS uvm_channel_manager_create(uvm_gpu_t *gpu, uvm_channel_manager_t **manager_out);
 
@@ -532,6 +541,8 @@ NvU64 uvm_channel_get_static_pb_unprotected_sysmem_gpu_va(uvm_channel_t *channel
 
 char* uvm_channel_get_static_pb_unprotected_sysmem_cpu(uvm_channel_t *channel);
 
+bool uvm_channel_pool_is_p2p(uvm_channel_pool_t *pool);
+
 static bool uvm_channel_pool_is_proxy(uvm_channel_pool_t *pool)
 {
     UVM_ASSERT(uvm_pool_type_is_valid(pool->pool_type));
@@ -547,6 +558,11 @@ static bool uvm_channel_is_proxy(uvm_channel_t *channel)
 static bool uvm_channel_pool_is_ce(uvm_channel_pool_t *pool)
 {
     return !uvm_channel_pool_is_sec2(pool);
+}
+
+static bool uvm_channel_is_p2p(uvm_channel_t *channel)
+{
+    return uvm_channel_pool_is_p2p(channel->pool);
 }
 
 static bool uvm_channel_is_ce(uvm_channel_t *channel)
@@ -584,14 +600,25 @@ bool uvm_channel_is_privileged(uvm_channel_t *channel);
 // Destroy the channel manager
 void uvm_channel_manager_destroy(uvm_channel_manager_t *channel_manager);
 
+// Suspend p2p traffic on channels used for p2p operations.
+// This is used in STO recovery sequence to quiet nvlink traffic before the
+// links can be restored.
+NV_STATUS uvm_channel_manager_suspend_p2p(uvm_channel_manager_t *channel_manager);
+
+// Resume p2p traffic on channels used for p2p operations.
+// This is used at the end of the STO recovery sequence to resume suspended p2p
+// traffic on p2p channels.
+void uvm_channel_manager_resume_p2p(uvm_channel_manager_t *channel_manager);
+
 // Get the current status of the channel
-// Returns NV_OK if the channel is in a good state and NV_ERR_RC_ERROR
-// otherwise. Notably this never sets the global fatal error.
+// Returns NV_OK if the channel is in a good state,
+//         NV_ERR_RC_ERROR otherwise.
+// Notably this never sets the global fatal error.
 NV_STATUS uvm_channel_get_status(uvm_channel_t *channel);
 
 // Check for channel errors
-// Checks for channel errors by calling uvm_channel_get_status(). If an error
-// occurred, sets the global fatal error and prints errors.
+// Checks for channel errors by calling uvm_channel_get_status().
+// If a fatal error occurred, sets the global fatal error and prints errors.
 NV_STATUS uvm_channel_check_errors(uvm_channel_t *channel);
 
 // Check errors on all channels in the channel manager
@@ -625,6 +652,7 @@ static bool uvm_channel_manager_is_wlc_ready(uvm_channel_manager_t *manager)
 {
     return manager->conf_computing.wlc_ready;
 }
+
 // Get the GPU VA of semaphore_channel's tracking semaphore within the VA space
 // associated with access_channel.
 //

@@ -57,9 +57,9 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RsShared =
     /*pExportInfo=*/        &__nvoc_export_info_RsShared
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge RsShared methods from ancestors (if any)
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
+// Up-thunk(s) to bridge RsShared methods to ancestors (if any)
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_RsShared = 
 {
@@ -241,9 +241,9 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RsSession =
     /*pExportInfo=*/        &__nvoc_export_info_RsSession
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge RsSession methods from ancestors (if any)
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
+// Up-thunk(s) to bridge RsSession methods to ancestors (if any)
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_RsSession = 
 {

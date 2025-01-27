@@ -30,6 +30,7 @@
 #include "dp_wardatabase.h"
 #include "dp_edid.h"
 #include "dp_connectorimpl.h"
+#include "dp_connectorimpl2x.h"
 #include "dp_printf.h"
 
 using namespace DisplayPort;
@@ -93,9 +94,29 @@ void ConnectorImpl::applyOuiWARs()
     }
 }
 
+void ConnectorImpl2x::applyOuiWARs()
+{
+    switch (ouiId)
+    {
+        // Novatek Microelectronics Corp.
+        case 0x11EC38:
+            if((modelName[0] == 'N') && (modelName[1] == 'T') && (modelName[2] == '6'))
+            {
+                NvU8 portType;
+                if (hal->getSupportsMultistream() &&
+                    hal->isDp2xChannelCodingCapable() &&
+                    !hal->getDownstreamPort(&portType))
+                {
+                    bMstTimeslotBug4968411 = true;
+                    hal->setMainLinkChannelCoding(ChannelCoding128B132B);
+                }
+            }
+            break;
+    }
+}
+
 void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDenylistData)
 {
-
     unsigned ManufacturerID = this->getManufId();
     unsigned ProductID = this->getProductId();
     unsigned YearWeek = this->getYearWeek();
@@ -185,8 +206,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             if ((ProductID >= 0x0776 ) && (ProductID <= 0x0779)) // Product id's range from decimal 1910 to 1913
             {
                 // if detailed pixel clock frequency = 106.50MHz
-                if ( (buffer.data[0x36] == 0x9A) &&
-                     (buffer.data[0x37] == 0x29) )
+                if ((buffer.data[0x36] == 0x9A) &&
+                    (buffer.data[0x37] == 0x29) )
                 {
                     // then change detailed pixel clock frequency to 106.54MHz to fix bug 343870
                     buffer.data[0x36] = 0x9E;
@@ -252,7 +273,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 //    a "Monitor Description" of type FE = "ASCII Data String" which
                 //    has this panel's name = "LP171WX2-A4K5".
                 //
-                if ( (buffer.data[0x71] == 0x4C) &&
+                if ((buffer.data[0x71] == 0x4C) &&
                     (buffer.data[0x72] == 0x50) &&
                     (buffer.data[0x73] == 0x31) &&
                     (buffer.data[0x74] == 0x37) &&
@@ -290,7 +311,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 //    a "Monitor Description" of type FE = "ASCII Data String" which
                 //    has this panel's name = "LP154WX4-TLC3".
                 //
-                if ( (buffer.data[0x71] == 0x4C) &&
+                if ((buffer.data[0x71] == 0x4C) &&
                     (buffer.data[0x72] == 0x50) &&
                     (buffer.data[0x73] == 0x31) &&
                     (buffer.data[0x74] == 0x35) &&
@@ -569,11 +590,36 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
 
         // Asus
         case 0x6D1E:
-            if(ProductID == 0x7707)
+            if (ProductID == 0x7707)
             {
                 this->WARFlags.bIgnoreDscCap = true;
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Panel incorrectly exposing DSC capability. Ignoring it.");
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Bug 3543158");
+            }
+            break;
+        case 0xB306:
+            if (ProductID == 0x3228)
+            {
+                // ASUS PG32UQXR does not set DPCD 0x2217 to reflect correct CableID.
+                this->WARFlags.bSkipCableIdCheck = true;
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Panel does not expose cable capability. Ignoring it. Bug 4968411");
+            }
+            break;
+
+        // Samsung
+        case 0x2D4C:
+            if (ProductID == 0x7474)
+            {
+                //
+                // Samsung Odyssey Neo 57 G9 needs manual allocation of timeslots when directly connected to upstream source
+                // Do not allocate manual timeslot when under a separate branch. This is checked with branch OUI.
+                //
+                this->WARFlags.bAllocateManualTimeslots = true;
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Panel needs allocation of manual timeslot. Bug 4958974");
+            }
+            if (ProductID == 0x7256)
+            {
+                this->WARFlags.bDisableDownspread = true;
             }
             break;
 

@@ -76,7 +76,7 @@ struct DebugBufferApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__DebugBufferApi *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct GpuResource __nvoc_base_GpuResource;
 
     // Ancestor object pointers for `staticCast` feature

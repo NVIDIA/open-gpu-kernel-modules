@@ -420,10 +420,18 @@ kceIsGenXorHigherSupported_GH100
     NV_STATUS  status = NV_OK;
     NvBool     bIsGenXorHigher = NV_FALSE;
 
-    status = clPcieGetRootGenSpeed(pGpu, pCl, &genSpeed);
-    if (status != NV_OK)
+    if (!IS_PASSTHRU(pGpu))
     {
-        NV_PRINTF(LEVEL_ERROR, "Could not get root gen speed - check for GPU gen speed!\n");
+        status = clPcieGetRootGenSpeed(pGpu, pCl, &genSpeed);
+
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Could not get root gen speed - check for GPU gen speed!\n");
+        }
+    }
+
+    if (IS_PASSTHRU(pGpu) || status != NV_OK)
+    {
         // Check for GPU gen speed
         if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_EP_PCFG_GPU_LINK_CONTROL_STATUS, &busSpeed) != NV_OK)
         {
@@ -432,6 +440,7 @@ kceIsGenXorHigherSupported_GH100
         }
         genSpeed = GPU_DRF_VAL(_EP_PCFG_GPU, _LINK_CONTROL_STATUS, _CURRENT_LINK_SPEED, busSpeed);
     }
+
     NV_PRINTF(LEVEL_INFO, "Gen Speed = %d\n", genSpeed);
 
     if ((genSpeed >= checkGen))
@@ -1158,6 +1167,7 @@ NV_STATUS kceGetP2PCes_GH100(KernelCE *pKCe, OBJGPU *pGpu, NvU32 gpuMask, NvU32 
         // there is a tie, then LCE with the lower index is preferred.
         //
         KCE_ITER_BEGIN(pGpu, pKCe, pKCeLoop, minP2PLce)
+
             NvU32 localMaxPcePerHshub = 0;
             KernelCE *localMaxLcePerHshub = NULL;
             NvU32 localMaxHshub = NV_CE_MAX_HSHUBS;

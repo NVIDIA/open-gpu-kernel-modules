@@ -620,19 +620,12 @@ typedef struct UvmGpuClientInfo_tag
     NvHandle hSmcPartRef;
 } UvmGpuClientInfo;
 
-typedef enum
-{
-    UVM_GPU_CONF_COMPUTE_MODE_NONE,
-    UVM_GPU_CONF_COMPUTE_MODE_APM,
-    UVM_GPU_CONF_COMPUTE_MODE_HCC,
-    UVM_GPU_CONF_COMPUTE_MODE_COUNT
-} UvmGpuConfComputeMode;
-
 typedef struct UvmGpuConfComputeCaps_tag
 {
-    // Out: GPU's confidential compute mode
-    UvmGpuConfComputeMode mode;
-    // Is key rotation enabled for UVM keys
+    // Out: true if Confidential Computing is enabled on the GPU
+    NvBool bConfComputingEnabled;
+
+    // Out: true if key rotation is enabled (for UVM keys) on the GPU
     NvBool bKeyRotationEnabled;
 } UvmGpuConfComputeCaps;
 
@@ -746,6 +739,8 @@ typedef struct UvmGpuInfo_tag
     // to NVSwitch peers.
     NvU64 nvswitchEgmMemoryWindowStart;
 
+    // GPU supports ATS capability
+    NvBool atsSupport;
 } UvmGpuInfo;
 
 typedef struct UvmGpuFbInfo_tag
@@ -759,6 +754,7 @@ typedef struct UvmGpuFbInfo_tag
     NvBool bZeroFb;            // Zero FB mode enabled.
     NvU64  maxVidmemPageSize;  // Largest GPU page size to access vidmem.
     NvBool bStaticBar1Enabled; // Static BAR1 mode is enabled
+    NvU64  staticBar1StartOffset;  // The start offset of the the static mapping
     NvU64  staticBar1Size;     // The size of the static mapping
 } UvmGpuFbInfo;
 

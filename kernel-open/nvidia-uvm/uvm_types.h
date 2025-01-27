@@ -491,6 +491,7 @@ typedef enum
     UvmFaultTypeInvalidPte                                                     = 2,
     UvmFaultTypeWrite                                                          = 3,
     UvmFaultTypeAtomic                                                         = 4,
+
     // The next fault types are fatal and cannot be serviced by the UVM driver
     UvmFaultTypeFatal                                                          = 5,
     UvmFaultTypeInvalidPdeSize                                                 = UvmFaultTypeFatal,
@@ -505,6 +506,7 @@ typedef enum
     UvmFaultTypeRegionViolation                                                = 14,
     UvmFaultTypePoison                                                         = 15,
     UvmFaultTypeCcViolation                                                    = 16,
+
     // ---- Add new values above this line
     UvmEventNumFaultTypes
 } UvmEventFaultType;

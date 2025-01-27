@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2001-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2001-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -247,6 +247,8 @@ void nvDbgDumpBufferBytes(void *pBuffer, NvU32 length);
 
 void nvErrorLog(void *pVoid, NvU32 num, const char *pFormat, va_list arglist);
 void nvErrorLog_va(void * pGpu, NvU32 num, const char * pFormat, ...);
+void nvErrorLog2(void *pVoid, NvU32 num, NvBool oobLogging, const char *pFormat, va_list arglist);
+void nvErrorLog2_va(void * pGpu, NvU32 num, NvBool oobLogging, const char * pFormat, ...);
 
 #ifdef __cplusplus
 }

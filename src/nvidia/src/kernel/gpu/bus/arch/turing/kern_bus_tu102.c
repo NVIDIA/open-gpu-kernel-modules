@@ -27,6 +27,7 @@
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "vgpu/vgpu_events.h"
 #include "gpu/bif/kernel_bif.h"
+#include "gpu/fifo/kernel_fifo.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
 #include "nvrm_registry.h"
 
@@ -355,19 +356,26 @@ kbusGetBar1ResvdVA_TU102
  * @param pKernelBus
  * @param gfid
  *
- * @return NV_TRUE if it supports static BAR1
+ * @return NV_OK if it supports static BAR1
+ *         NV_ERR_NOT_SUPPORTED if not supported. This is an expected state
+ *         NV_ERR_INVALID_REGISTRY_KEY if insufficient BAR1 for the FB, but
+ *                             the regkeys specified are still attempting to
+ *                             force it
  */
-NvBool
+NV_STATUS
 kbusIsStaticBar1Supported_TU102
 (
     OBJGPU     *pGpu,
     KernelBus  *pKernelBus,
-    NvU32       gfid
+    NvU32       gfid,
+    NvU64       consoleSize,
+    NvU64       mailboxSize
 )
 {
     NvU64 bar1Size = kbusGetPciBarSize(pKernelBus, 1);
     KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
 
     //
     // Use fbAddrSpaceSizeMb in this function to make sure there's
@@ -375,49 +383,100 @@ kbusIsStaticBar1Supported_TU102
     // reserved region to be mapped through the dynamic section of
     // BAR1
     //
+    NvU64 fbSize            = pMemoryManager->Ram.fbAddrSpaceSizeMb << 20;
+    NvU64 fbSizeAligned     = RM_ALIGN_UP(fbSize, RM_PAGE_SIZE_2M);
+    NvU64 bar1VASize        = pKernelBus->bar1[gfid].mappableLength;
+    NvU64 bar1VASizeAligned = RM_ALIGN_DOWN(bar1VASize, RM_PAGE_SIZE_2M);
 
-    NvU64 fbSize = pMemoryManager->Ram.fbAddrSpaceSizeMb << 20;
-    NvU64 bar1VASize = pKernelBus->bar1[gfid].mappableLength;
+    //
+    // GPU BAR1 supports the SYSMEM mapping for the bar1 doorbell, RM needs
+    // to make sure that BAR1 VA has 128KB space left for such cases after all
+    // FB statically mapped in BAR1. Bug 3869651 #14.
+    // 64KB for doorbell
+    // 64KB for MMIO priv
+    //
+    NvU64 doorbellAndMmioPrivSize = 32 * RM_PAGE_SIZE;
+
+    if (gfid != 0)
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
 
     if ((fbSize == 0) || (bar1Size == 0))
-        return NV_FALSE;
+        return NV_ERR_NOT_SUPPORTED;
 
-    // TODO: Bug 3869651: check for compute SKU to enable AUTO
     if (pKernelBus->staticBar1ForceType == NV_REG_STR_RM_FORCE_STATIC_BAR1_DISABLE)
     {
-        return NV_FALSE;
+        return NV_ERR_NOT_SUPPORTED;
     }
     if (pKernelBus->staticBar1ForceType == NV_REG_STR_RM_FORCE_STATIC_BAR1_ENABLE)
     {
-        return NV_TRUE;
+        //
+        // Only check for at least client-visible FB size on the assumption the user
+        // really wants to enable static BAR1 regardless of the auto checks
+        //
+        NvU64 bar1MapSize =
+            RM_ALIGN_UP(memmgrGetClientFbAddrSpaceSize(pGpu, pMemoryManager),
+                        RM_PAGE_SIZE_2M);
+
+        if (bar1VASizeAligned < bar1MapSize)
+        {
+            NV_PRINTF(LEVEL_ERROR, "BAR1 size %lld is not large enough to map FB size"
+                                   "%lld to force static BAR1\n",
+                                    bar1VASizeAligned, bar1MapSize);
+            DBG_BREAKPOINT();
+
+            return NV_ERR_INVALID_REGISTRY_KEY;
+        }
+
+        return NV_OK;
     }
     else if (pKernelBus->staticBar1ForceType == NV_REG_STR_RM_FORCE_STATIC_BAR1_AUTO)
     {
-        // 2x the amount of FB to allow for both static and dynamic BAR1 mappings
-        if (RM_ALIGN_DOWN(bar1VASize, RM_PAGE_SIZE_2M) >= (RM_ALIGN_UP(fbSize, RM_PAGE_SIZE_2M) * 2))
+        //
+        // Auto-enable if there is enough space to map
+        // + all of FB once
+        // + enough to reserve enough space for userD BAR mappings
+        //       for every channel in the system
+        //       (whether userD is allocated by RM or by the user)
+        // + doorbell mapping mapped once globally (64KB)
+        // + mmio priv mapped once globally (64KB)
+        // + console reservation
+        // + mailbox BAR1 as fallback P2P until it is disabled
+        //
+        NvU32 userdSize = 0;
+        NvU32 numChannels = kfifoGetMaxChannelsInSystem(pGpu, pKernelFifo);
+        NvU64 requiredAutoBar1Size = fbSizeAligned;
+
+        kfifoGetUserdSizeAlign_HAL(pKernelFifo, &userdSize, NULL);
+
+        userdSize *= numChannels;
+
+        requiredAutoBar1Size += userdSize;
+        requiredAutoBar1Size += doorbellAndMmioPrivSize;
+        requiredAutoBar1Size += consoleSize;
+        requiredAutoBar1Size += mailboxSize;
+
+        if (bar1VASizeAligned >= requiredAutoBar1Size)
         {
-            return NV_TRUE;
+            NV_PRINTF(LEVEL_ERROR, "Enabling static BAR1 automatically!\n");
+            return NV_OK;
         }
         else
         {
-            return NV_FALSE;
+            return NV_ERR_NOT_SUPPORTED;
         }
     }
     // else NV_REG_STR_RM_FORCE_STATIC_BAR1_ONLY_GPU, continue on
 
     if (pKernelBif->forceP2PType != NV_REG_STR_RM_FORCE_P2P_TYPE_BAR1P2P)
-        return NV_FALSE;
+        return NV_ERR_NOT_SUPPORTED;
 
-    //
-    // GPU BAR1 supports the SYSMEM mapping for the bar1 doorbell, RM needs
-    // to make sure that BAR1 VA has 128KB space left for such cases after all
-    // FB statically mapped in BAR1. Bug 3869651 #14. 
-    //
-    if ((bar1VASize < (32 * RM_PAGE_SIZE)) ||
-        ((bar1VASize - (32 * RM_PAGE_SIZE)) < RM_ALIGN_UP(fbSize, RM_PAGE_SIZE_2M)))
-        return NV_FALSE;
+    if ((bar1VASize < (doorbellAndMmioPrivSize)) ||
+        ((bar1VASize - (doorbellAndMmioPrivSize)) < fbSizeAligned))
+        return NV_ERR_NOT_SUPPORTED;
 
-    return NV_TRUE;
+    return NV_OK;
 }
 
 /*!
@@ -467,28 +526,21 @@ kbusEnableStaticBar1Mapping_TU102
     // Set to use RM_PAGE_SIZE_HUGE, 2MB
     memdescSetPageSize(pMemDesc, AT_GPU, RM_PAGE_SIZE_HUGE);
 
+    pKernelBus->staticBar1DefaultKind = NV_MMU_PTE_KIND_GENERIC_MEMORY;
+
     // Setup GMK PTE type for this memory
-    memdescSetPteKind(pMemDesc, NV_MMU_PTE_KIND_GENERIC_MEMORY);
+    memdescSetPteKind(pMemDesc, pKernelBus->staticBar1DefaultKind);
 
     // Deploy the static mapping.
     NV_ASSERT_OK_OR_GOTO(status,
         kbusMapFbApertureSingle(pGpu, pKernelBus, pMemDesc, 0,
             &bar1Offset, &bar1MapSize,
-            BUS_MAP_FB_FLAGS_MAP_UNICAST |
-            BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED,
+            BUS_MAP_FB_FLAGS_MAP_UNICAST,
             NV01_NULL_OBJECT),
         cleanup_mem);
 
-    if(bar1Offset != 0)
-    {
-        // For static bar1 mapping, it should always be 0.
-        status = NV_ERR_INVALID_STATE;
-        NV_ASSERT(0);
-        goto cleanup_bus_map;
-    }
-
     // Get the system physical address of the Bar1
-    bar1BusAddr = gpumgrGetGpuPhysFbAddr(pGpu);
+    bar1BusAddr = gpumgrGetGpuPhysFbAddr(pGpu) + bar1Offset;
 
     //
     // Create a memory descriptor to describe a SYSMEM target of the GPU
@@ -510,6 +562,7 @@ kbusEnableStaticBar1Mapping_TU102
     pKernelBus->bar1[gfid].bStaticBar1Enabled = NV_TRUE;
     pKernelBus->bar1[gfid].staticBar1.pVidMemDesc = pMemDesc;
     pKernelBus->bar1[gfid].staticBar1.pDmaMemDesc = pDmaMemDesc;
+    pKernelBus->bar1[gfid].staticBar1.startOffset = bar1Offset;
     pKernelBus->bar1[gfid].staticBar1.size = bar1MapSize;
 
     NV_PRINTF(LEVEL_INFO, "Static bar1 mapped offset 0x%llx size 0x%llx\n",
@@ -520,8 +573,7 @@ kbusEnableStaticBar1Mapping_TU102
 cleanup_bus_map:
     NV_ASSERT_OK(kbusUnmapFbApertureSingle(pGpu, pKernelBus,
                                            pMemDesc, bar1Offset, bar1MapSize,
-                                           BUS_MAP_FB_FLAGS_MAP_UNICAST |
-                                           BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED));
+                                           BUS_MAP_FB_FLAGS_MAP_UNICAST));
 
 cleanup_mem:
     NV_PRINTF(LEVEL_ERROR, "Failed to create the static bar1 mapping offset"
@@ -562,10 +614,9 @@ kbusDisableStaticBar1Mapping_TU102
     NV_ASSERT_OK(
         kbusUnmapFbApertureSingle(pGpu, pKernelBus,
             pKernelBus->bar1[gfid].staticBar1.pVidMemDesc,
-            0,
+            pKernelBus->bar1[gfid].staticBar1.startOffset,
             pKernelBus->bar1[gfid].staticBar1.size,
-            BUS_MAP_FB_FLAGS_MAP_UNICAST |
-            BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED));
+            BUS_MAP_FB_FLAGS_MAP_UNICAST));
 
     memdescDestroy(pKernelBus->bar1[gfid].staticBar1.pVidMemDesc);
     pKernelBus->bar1[gfid].staticBar1.pVidMemDesc = NULL;
@@ -584,11 +635,14 @@ kbusDisableStaticBar1Mapping_TU102
  *        When to map a uncompressed kind memory, RM just return the static
  *        bar1 address which is mapped to the specified memory.
  *
- *        When to map a compressed kind memory, RM must call this function to
- *        change the static mapped bar1 range to the specified memory from GMK
- *        to the compressed kind. And RM needs to call this function to change
- *        it back to GMK from the compressed kind after this mapping is
+ *        When to map a non-GMK kind memory of page size >=2MB, RM must call this
+ *        function to change the static mapped bar1 range to the specified memory
+ *        from GMK to the non-GMK kind. And RM needs to call this function to
+ *        change it back to GMK from the compressed kind after this mapping is
  *        released.
+ * 
+ *        If a non-GMK mapping is page size <=2MB, it will be placed in the
+ *        dynamic region instead.
  *
  * @param[in]   pGpu            GPU pointer
  * @param[in]   pKernelBus      Kernel bus pointer
@@ -600,8 +654,9 @@ kbusDisableStaticBar1Mapping_TU102
  *
  * return NV_OK on success
  */
+static
 NV_STATUS
-kbusUpdateStaticBar1VAMapping_TU102
+_kbusUpdateStaticBar1VAMapping_TU102
 (
     OBJGPU             *pGpu,
     KernelBus          *pKernelBus,
@@ -618,7 +673,6 @@ kbusUpdateStaticBar1VAMapping_TU102
     NvU64               vaLo;
     NvU64               vaHi;
     NvU64               pageSize;
-    DMA_PAGE_ARRAY      pageArray = {0};
     COMPR_INFO          comprInfo = {0};
     NvU32               gfid;
     NvU64               mapSize;
@@ -633,6 +687,9 @@ kbusUpdateStaticBar1VAMapping_TU102
 
     NV_ASSERT_OR_RETURN(memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM,
                         NV_ERR_INVALID_ARGUMENT);
+
+    NV_ASSERT_OR_RETURN(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)),
+                        NV_ERR_INVALID_LOCK_STATE);
 
     pVAS = pKernelBus->bar1[gfid].pVAS;
     addressTranslation = VAS_ADDRESS_TRANSLATION(pVAS);
@@ -653,11 +710,10 @@ kbusUpdateStaticBar1VAMapping_TU102
     NV_ASSERT_OK_OR_RETURN(memmgrGetKindComprFromMemDesc(pMemoryManager,
                                pMemDesc, 0, &kind, &comprInfo));
 
-    // Static BAR1 mapping only support >=2MB page size for compressed memory
-    NV_CHECK_OR_RETURN(LEVEL_ERROR,
-        memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE, kind) &&
-        (pageSize >= RM_PAGE_SIZE_HUGE),
-        NV_ERR_INVALID_STATE);
+    // Static BAR1 mapping only support >=2MB page size
+    NV_CHECK_OR_RETURN(LEVEL_SILENT,
+        (bRelease || pageSize >= RM_PAGE_SIZE_HUGE),
+        NV_ERR_NOT_SUPPORTED);
 
     if (bRelease)
     {
@@ -668,20 +724,17 @@ kbusUpdateStaticBar1VAMapping_TU102
 
     for (offset = 0; offset < mapSize; offset += mapGranularity)
     {
-        // Under static BAR1 mapping, BAR1 VA equal to fb physAddr
+        // Under static BAR1 mapping, BAR1 VA equal to fb physAddr plus startOffset
         physAddr = memdescGetPhysAddr(pMemDesc, addressTranslation, offset);
-        vaLo     = physAddr;
+        vaLo     = physAddr + pKernelBus->bar1[gfid].staticBar1.startOffset;
         vaHi     = vaLo + mapGranularity - 1;
-
-        pageArray.count = 1;
-        pageArray.pData = &physAddr;
 
         status = dmaUpdateVASpace_HAL(pGpu, pDma, pVAS,
                                       pMemDesc, NULL,
                                       vaLo, vaHi,
                                       DMA_UPDATE_VASPACE_FLAGS_UPDATE_KIND |
                                       DMA_UPDATE_VASPACE_FLAGS_UPDATE_COMPR,
-                                      &pageArray, 0,
+                                      NULL, 0,
                                       &comprInfo, 0,
                                       NV_MMU_PTE_VALID_TRUE,
                                       NV_MMU_PTE_APERTURE_VIDEO_MEMORY,
@@ -698,15 +751,147 @@ kbusUpdateStaticBar1VAMapping_TU102
         NV_PRINTF(LEVEL_ERROR,
                   "Failed to update static bar1 VA space, error 0x%x.\n",
                   status);
+
+        //
+        // Callers expect NV_ERR_NOT_SUPPORTED under normal operation, so
+        // don't let it alias
+        // 
+        if (status == NV_ERR_NOT_SUPPORTED)
+        {
+            status = NV_ERR_INVALID_STATE;
+        }
     }
 
     return status;
 }
 
 /*!
+ * @brief Increase the refcount on the staticBar1 mapped
+ *        per memdesc or return error if it's already in use
+ *        and the mapping should be made in the dynamic region.
+ *        Automatically updates compression mapping.
+ *
+ * @param[in]   pGpu            GPU pointer
+ * @param[in]   pKernelBus      Kernel bus pointer
+ * @param[in]   pMemDesc        The memory to update
+ *
+ * return NV_OK on success
+ * return NV_ERR_NOT_SUPPORTED if staticBar1 not enabled or the memdesc should
+ *                             otherwise go in the dynamic region
+ * return other on error
+ */
+NV_STATUS kbusIncreaseStaticBar1Refcount_TU102
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus,
+    MEMORY_DESCRIPTOR *pMemDesc
+)
+{
+    NvU32               requestedKind;
+    NvU64               rootOffset;
+    MEMORY_DESCRIPTOR  *pRootMemDesc;
+    NV_STATUS           status = NV_OK;
+
+    NV_CHECK_OR_RETURN(LEVEL_SILENT, kbusIsStaticBar1Enabled(pGpu, pKernelBus),
+                        NV_ERR_NOT_SUPPORTED);
+
+    requestedKind = memdescGetPteKind(pMemDesc);
+    pRootMemDesc  = memdescGetRootMemDesc(pMemDesc, &rootOffset);
+
+    if (pRootMemDesc->staticBar1MappingRefCount != 0 &&
+        requestedKind != pRootMemDesc->staticBar1MappingKind)
+    {
+        // The mapping is being used with a different kind
+        return NV_ERR_IN_USE;
+    }
+
+    if (requestedKind != pKernelBus->staticBar1DefaultKind)
+    {
+        status = _kbusUpdateStaticBar1VAMapping_TU102(pGpu, pKernelBus,
+                                                     pRootMemDesc, NV_FALSE);
+    }
+
+    if (status == NV_OK)
+    {
+        pRootMemDesc->staticBar1MappingKind = requestedKind;
+        pRootMemDesc->staticBar1MappingRefCount++;
+    }
+
+    return status;
+}
+
+/*!
+ * @brief Decrease the refcount on the staticBar1 mapped
+ *        per memdesc or return error if it's unused
+ *        or the mapping should freed from the dynamic region
+ *        Automatically updates compression mapping.
+ *
+ * 
+ * @param[in]   pGpu            GPU pointer
+ * @param[in]   pKernelBus      Kernel bus pointer
+ * @param[in]   pMemDesc        The memory to update
+ * @param[in]   pMemArea        The Memory area the memdesc is mapped in according to kbus
+ *                              It is used to determine whether the mapping is
+ *                              in the dynamic BAR1
+ *
+ * return NV_OK on success
+ * return NV_ERR_NOT_SUPPORTED if staticBar1 not enabled or the memdesc should
+ *                             otherwise be freed from the dynamic region
+ * return other on error
+ */
+NV_STATUS kbusDecreaseStaticBar1Refcount_TU102
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus,
+    MEMORY_DESCRIPTOR *pMemDesc,
+    MemoryArea *pMemArea
+)
+{
+    NvU32 gfid;
+    MEMORY_DESCRIPTOR *pRootMemDesc;
+
+    NV_CHECK_OR_RETURN(LEVEL_SILENT, kbusIsStaticBar1Enabled(pGpu, pKernelBus),
+                        NV_ERR_NOT_SUPPORTED);
+
+    NV_ASSERT_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid) == NV_OK,
+                        NV_ERR_INVALID_STATE);
+
+    pRootMemDesc = memdescGetRootMemDesc(pMemDesc, NULL);
+
+    if (pMemArea != NULL)
+    {
+        // mappings in the dynamic range will be unmapped in normal unmap code
+        MemoryRange staticRange = {
+            .start = pKernelBus->bar1[gfid].staticBar1.startOffset,
+            .size = pKernelBus->bar1[gfid].staticBar1.size
+        };
+
+        NV_CHECK_OR_RETURN(LEVEL_SILENT,
+                           mrangeContains(staticRange, pMemArea->pRanges[0]),
+                           NV_ERR_NOT_SUPPORTED);
+    }
+    else
+    {
+        // this must be the last reference from memDestruct code, make sure it is
+        NV_ASSERT_OR_RETURN(pRootMemDesc->staticBar1MappingRefCount == 1, NV_ERR_INVALID_STATE);
+    }
+
+    NV_ASSERT_OR_RETURN(pRootMemDesc->staticBar1MappingRefCount != 0, NV_ERR_INVALID_STATE);
+
+    if (--pRootMemDesc->staticBar1MappingRefCount != 0 ||
+        pRootMemDesc->staticBar1MappingKind == pKernelBus->staticBar1DefaultKind)
+    {
+        return NV_OK;
+    }
+
+    NV_ASSERT_OK_OR_RETURN(
+        _kbusUpdateStaticBar1VAMapping_TU102(pGpu, pKernelBus, pRootMemDesc, NV_TRUE));
+
+    return NV_OK;
+}
+
+/*!
  * @brief To get FB aperture for the specified memory under the static mapping.
- *        Memdesc must already be verified that it should be mapped in static region
- *        by kbusShouldMapInStaticFbAperture_HAL
  *
  * @param[in]   pGpu            GPU pointer
  * @param[in]   pKernelBus      Kernel bus pointer
@@ -734,6 +919,7 @@ kbusGetStaticFbAperture_TU102
     NvU32       flags
 )
 {
+    NV_STATUS   status;
     NvU64       pageSize;
     OBJVASPACE *pVAS;
     NvU32       gfid;
@@ -758,6 +944,8 @@ kbusGetStaticFbAperture_TU102
 
     NV_ASSERT_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid) == NV_OK,
                         NV_ERR_INVALID_STATE);
+
+    NV_ASSERT_OR_RETURN(gfid == 0, NV_ERR_INVALID_STATE);
 
     NV_ASSERT_OR_RETURN(pMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
 
@@ -800,17 +988,13 @@ kbusGetStaticFbAperture_TU102
     if (bInDynamicRegion && bInStaticRegion)
     {
         NV_PRINTF(LEVEL_ERROR, "MemDesc spans both static and dynamic region,"
-                               "which is unsupported. Dumping memdesc:\n");
+                               "which is unsupported.\n");
         NV_PRINTF(LEVEL_ERROR, "static Bar1 map [0, 0x%llx]\n",
                   pKernelBus->bar1[gfid].staticBar1.size);
+        NV_PRINTF(LEVEL_ERROR, "Requested map range 0x%llx to 0x%llx, mapGranularity 0x%llx\n",
+                  mapRange.start, mapRangeEndPlus1 - 1, mapGranularity);
 
-        for (i = 0, offset = mapRange.start; offset < mapRangeEndPlus1; numRanges++)
-        {
-            testMapRange.start = memdescGetPhysAddr(pMemDesc, addressTranslation, offset);
-            testMapRange.size  = bContigDesc ? mapGranularity : NV_MIN(mapRangeEndPlus1, NV_ALIGN_UP(offset + 1, mapGranularity)) - offset;
-
-            offset = bContigDesc ? (offset + mapGranularity) : NV_ALIGN_DOWN(offset + mapGranularity, mapGranularity);
-        }
+        memdescPrintMemdesc(pMemDesc, NV_TRUE, MAKE_NV_PRINTF_STR("Dumping memdesc:"));
 
         return NV_ERR_INVALID_ARGUMENT;
     }
@@ -819,6 +1003,21 @@ kbusGetStaticFbAperture_TU102
     {
         // goes in dynamic region only
         return NV_ERR_NOT_SUPPORTED;
+    }
+
+    status = kbusIncreaseStaticBar1Refcount_HAL(pGpu, pKernelBus, pMemDesc);
+
+    if (status == NV_ERR_IN_USE || status == NV_ERR_NOT_SUPPORTED)
+    {
+        //
+        // This mapping is already in use or not supported,
+        // and we need to make a dynamic mapping instead
+        //
+        return NV_ERR_NOT_SUPPORTED;
+    }
+    else if (status != NV_OK)
+    {
+        return status;
     }
 
     //
@@ -833,7 +1032,7 @@ kbusGetStaticFbAperture_TU102
 
     for (i = 0, offset = mapRange.start; offset < mapRangeEndPlus1; i++)
     {
-        pMemArea->pRanges[i].start = memdescGetPhysAddr(pMemDesc, addressTranslation, offset);
+        pMemArea->pRanges[i].start = memdescGetPhysAddr(pMemDesc, addressTranslation, offset) + pKernelBus->bar1[gfid].staticBar1.startOffset;
         pMemArea->pRanges[i].size  = bContigDesc ? mapGranularity : NV_MIN(mapRangeEndPlus1, NV_ALIGN_UP(offset + 1, mapGranularity)) - offset;
 
         offset = bContigDesc ? (offset + mapGranularity) : NV_ALIGN_DOWN(offset + mapGranularity, mapGranularity);

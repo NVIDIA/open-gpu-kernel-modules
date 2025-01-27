@@ -1856,6 +1856,30 @@ cliresCtrlCmdEventGetSystemEventStatus_IMPL
     return CliGetSystemEventStatus(hClient, &pSystemEventStatusParams->event, &pSystemEventStatusParams->status);
 }
 
+// Find matching pClient and Return init ns pid
+NvU32 lookupPid(NvU32 pid)
+{
+    RmClient  **ppClient;
+    RmClient   *pClient;
+    NvU32       nsPid;
+
+    for (ppClient = serverutilGetFirstClientUnderLock();
+         ppClient;
+         ppClient = serverutilGetNextClientUnderLock(ppClient))
+    {
+        pClient = *ppClient;
+        if ((pClient->pOsPidInfo == NULL) ||
+            (osFindNsPid(pClient->pOsPidInfo, &nsPid) != NV_OK))
+            continue;
+
+        if (nsPid == pid)
+            return pClient->ProcID;
+    }
+
+    // If not found return pid
+    return pid;
+}
+
 NV_STATUS
 cliresCtrlCmdGpuAcctGetProcAccountingInfo_IMPL
 (
@@ -1878,6 +1902,10 @@ cliresCtrlCmdGpuAcctGetProcAccountingInfo_IMPL
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
+
+    // Only lookup pid for baremetal case
+    if (pAcctInfoParams->subPid == 0)
+        pAcctInfoParams->pid = lookupPid(pAcctInfoParams->pid);
 
     if (IS_VIRTUAL(pGpu))
     {
@@ -3576,11 +3604,6 @@ cliresCtrlCmdNvdGetNvlogInfo_IMPL
     if ((pParams->component == NVDUMP_COMPONENT_NVLOG_RM) || (pParams->component == NVDUMP_COMPONENT_NVLOG_ALL))
     {
         //
-        // Copy a snapshot of the GSP log buffers into the NvLog buffers for all
-        // GPUs.  This code assumes that GetNvlogInfo is called just before
-        // GetNvlogBufferInfo and GetNvlog.
-        //
-        //
         // If pRmCliRes==NULL, we are not called from the ResourceServer path, and
         // therefore cannot safely dereference OBJGPU in the below block.
         //
@@ -3599,11 +3622,17 @@ cliresCtrlCmdNvdGetNvlogInfo_IMPL
                 if (pGpu == NULL)
                     break;
 
+                //
+                // Copy a snapshot of the GSP log buffers into the NvLog buffers for all
+                // GPUs.  This code assumes that GetNvlogInfo is called just before
+                // GetNvlogBufferInfo and GetNvlog.
+                //
                 if (IS_GSP_CLIENT(pGpu))
                 {
                     KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
                     kgspDumpGspLogs(pKernelGsp, NV_TRUE);
                 }
+
             }
         }
         else
@@ -5257,15 +5286,16 @@ cliresCtrlCmdGpuDisableNvlinkInit_IMPL
     NV0000_CTRL_GPU_DISABLE_NVLINK_INIT_PARAMS *pParams
 )
 {
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pRmCliRes);
+    RmClient *pRmClient = dynamicCast(RES_GET_CLIENT(pRmCliRes), RmClient);
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
 
+    NV_ASSERT_OR_RETURN(NULL != pRmClient, NV_ERR_INVALID_CLIENT);
     NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
     NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
 
-    if (!rmclientIsCapableOrAdminByHandle(hClient,
-                                          NV_RM_CAP_EXT_FABRIC_MGMT,
-                                          pCallContext->secInfo.privLevel))
+    if (!rmclientIsCapableOrAdmin(pRmClient,
+                                  NV_RM_CAP_EXT_FABRIC_MGMT,
+                                  pCallContext->secInfo.privLevel))
     {
         NV_PRINTF(LEVEL_WARNING, "Non-privileged context issued privileged cmd\n");
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
@@ -5506,8 +5536,12 @@ NV_STATUS cliresCtrlCmdSystemGetClientDatabaseInfo_IMPL
     return NV_OK;
 }
 
+/*
+ * Helper function to cliresCtrlCmdPushUcode_IMPL to allocate memory and copy data.
+ */
+
 /*!
- * @brief Used to push the GSP ucode into RM. This function is used only on
+ * @brief Used to push the GSP ucode or bindata_image into RM. This function is used only on
  *        VMware
  *
  * @return
@@ -5517,10 +5551,10 @@ NV_STATUS cliresCtrlCmdSystemGetClientDatabaseInfo_IMPL
  *      NV_ERR_NOT_SUPPORTED    if function is invoked on non-GSP setup or any
  *                              setup other than VMware host
  */
-NV_STATUS cliresCtrlCmdPushGspUcode_IMPL
+NV_STATUS cliresCtrlCmdPushUcodeImage_IMPL
 (
     RmClientResource *pRmCliRes,
-    NV0000_CTRL_GPU_PUSH_GSP_UCODE_PARAMS *pParams
+    NV0000_CTRL_GPU_PUSH_UCODE_IMAGE_PARAMS *pParams
 )
 {
     return NV_ERR_NOT_SUPPORTED;

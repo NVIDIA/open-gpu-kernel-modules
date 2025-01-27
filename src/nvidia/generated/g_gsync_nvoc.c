@@ -57,9 +57,9 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGSYNCMGR =
     /*pExportInfo=*/        &__nvoc_export_info_OBJGSYNCMGR
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge OBJGSYNCMGR methods from ancestors (if any)
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
+// Up-thunk(s) to bridge OBJGSYNCMGR methods to ancestors (if any)
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJGSYNCMGR = 
 {
@@ -106,6 +106,27 @@ static void __nvoc_init_funcTable_OBJGSYNCMGR_1(OBJGSYNCMGR *pThis) {
 // Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_OBJGSYNCMGR(OBJGSYNCMGR *pThis) {
     __nvoc_init_funcTable_OBJGSYNCMGR_1(pThis);
+}
+
+NvBool gsyncmgrIsFirmwareGPUMismatch_STATIC_DISPATCH(struct OBJGPU *pGpu, OBJGSYNC *pGsync) {
+    ChipHal *chipHal = &staticCast(pGpu, RmHalspecOwner)->chipHal;
+    const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
+
+
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000ec1UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB202 | GB203 | GB205 | GB206 | GB207 */ 
+    {
+        return gsyncmgrIsFirmwareGPUMismatch_GB100(pGpu, pGsync);
+    }
+    // default
+    else
+    {
+        return gsyncmgrIsFirmwareGPUMismatch_4a4dee(pGpu, pGsync);
+    }
+
+    NV_ASSERT_FAILED("No hal impl found for gsyncmgrIsFirmwareGPUMismatch");
+
+    return NV_FALSE;
 }
 
 void __nvoc_init_Object(Object*);

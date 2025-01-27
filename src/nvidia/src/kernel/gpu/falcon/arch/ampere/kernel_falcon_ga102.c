@@ -42,7 +42,7 @@
  * Function to check if RISCV is active
  */
 NvBool
-kflcnIsRiscvActive_GA10X
+kflcnIsRiscvActive_GA102
 (
     OBJGPU *pGpu,
     KernelFalcon *pKernelFlcn
@@ -54,19 +54,43 @@ kflcnIsRiscvActive_GA10X
 }
 
 /*!
+ * Returns true if the RISC-V core is selected
+ */
+NvBool
+kflcnIsRiscvSelected_GA102
+(
+    OBJGPU *pGpu,
+    KernelFalcon *pKernelFalcon
+)
+{
+    const NvU32 privErrVal = 0xbadf0000;
+    const NvU32 privErrMask = 0xffff0000;
+    NvU32 val = kflcnRiscvRegRead_HAL(pGpu, pKernelFalcon, NV_PRISCV_RISCV_BCR_CTRL);
+
+    //
+    // If NV_PRISCV_RISCV_BCR_CTRL is locked out from reads (e.g., by PLM), assume the RISC-V core
+    // is in use. Nearly all ucodes set the RISCV_BCR PLM to allow RO for all sources.
+    //
+    return (FLD_TEST_DRF(_PRISCV, _RISCV_BCR_CTRL, _CORE_SELECT, _RISCV, val) ||
+            ((val & privErrMask) == privErrVal));
+}
+
+/*!
  * Reset falcon using secure reset, ready to run riscv.
  */
-void
+NV_STATUS
 kflcnResetIntoRiscv_GA102
 (
     OBJGPU *pGpu,
     KernelFalcon *pKernelFlcn
 )
 {
-    NV_ASSERT_OR_RETURN_VOID(kflcnPreResetWait_HAL(pGpu, pKernelFlcn) == NV_OK);
+    NV_ASSERT_OK_OR_RETURN(kflcnPreResetWait_HAL(pGpu, pKernelFlcn));
     NV_ASSERT_OK(kflcnResetHw(pGpu, pKernelFlcn));
-    kflcnWaitForResetToFinish_HAL(pGpu, pKernelFlcn);
+    NV_ASSERT_OK_OR_RETURN(kflcnWaitForResetToFinish_HAL(pGpu, pKernelFlcn));
     kflcnRiscvProgramBcr_HAL(pGpu, pKernelFlcn, NV_TRUE);
+    kflcnSetRiscvMode(pKernelFlcn, NV_TRUE);
+    return NV_OK;
 }
 
 /*!
@@ -97,7 +121,7 @@ kflcnRiscvProgramBcr_GA102
  * Switch the core to FALCON.  Releases priv lockdown.
  * Should not be called while in reset.  See bug 200586493.
  */
-void kflcnSwitchToFalcon_GA10X
+void kflcnSwitchToFalcon_GA102
 (
     OBJGPU *pGpu,
     KernelFalcon *pKernelFlcn
@@ -142,6 +166,10 @@ void kflcnSwitchToFalcon_GA10X
     {
         NV_ASSERT_OK_FAILED("Failed to switch core to Falcon mode", status);
     }
+    else
+    {
+        kflcnSetRiscvMode(pKernelFlcn, NV_FALSE);
+    }
 }
 
 /*!
@@ -151,7 +179,7 @@ void kflcnSwitchToFalcon_GA10X
  * Bug 3419321: This sometimes may not get set by HW, so use time out.
  */
 NV_STATUS
-kflcnPreResetWait_GA10X
+kflcnPreResetWait_GA102
 (
     OBJGPU *pGpu,
     KernelFalcon *pKernelFlcn

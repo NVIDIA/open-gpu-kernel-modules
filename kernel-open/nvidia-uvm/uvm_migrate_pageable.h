@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018 NVIDIA Corporation
+    Copyright (c) 2018-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -47,6 +47,9 @@ typedef struct
     bool                            populate_on_migrate_vma_failures : 1;
     NvU64                           *user_space_start;
     NvU64                           *user_space_length;
+
+    uvm_processor_mask_t            *gpus_to_check_for_nvlink_errors;
+    bool                            fail_on_unresolved_sto_errors;
 } uvm_migrate_args_t;
 
 #if defined(CONFIG_MIGRATE_VMA_HELPER)
@@ -219,7 +222,8 @@ static NV_STATUS uvm_migrate_pageable(uvm_migrate_args_t *uvm_migrate_args)
                                    uvm_migrate_args->length,
                                    0,
                                    uvm_migrate_args->touch,
-                                   uvm_migrate_args->populate_permissions);
+                                   uvm_migrate_args->populate_permissions,
+                                   0);
     if (status != NV_OK)
         return status;
 

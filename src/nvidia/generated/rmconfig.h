@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
 //
 
 #ifndef _RMCFG_H_
@@ -33,6 +33,7 @@
 #define RMCFG_CHIP_GH10X     1
 #define RMCFG_CHIP_GH20X     0
 #define RMCFG_CHIP_GB10X     1
+#define RMCFG_CHIP_GB20X     1
 #define RMCFG_CHIP_T12X      0
 #define RMCFG_CHIP_T13X      0
 #define RMCFG_CHIP_T21X      0
@@ -90,6 +91,13 @@
 
 #define RMCFG_CHIP_GB100     1
 #define RMCFG_CHIP_GB102     1
+#define RMCFG_CHIP_GB10B     1
+
+#define RMCFG_CHIP_GB202     1
+#define RMCFG_CHIP_GB203     1
+#define RMCFG_CHIP_GB205     1
+#define RMCFG_CHIP_GB206     1
+#define RMCFG_CHIP_GB207     1
 
 #define RMCFG_CHIP_T194      0
 
@@ -191,7 +199,10 @@
 #define RMCFG_CHIP_DBLACKWELL 1
 #define RMCFG_CHIP_BLACKWELL 1
 #define RMCFG_CHIP_BLACKWELL_CLASSIC_GPUS 1
-#define RMCFG_CHIP_TEGRA_DISP 0
+#define RMCFG_CHIP_GB10Y     1
+#define RMCFG_CHIP_TEGRA_DGPU_BLACKWELL 1
+#define RMCFG_CHIP_TEGRA_DISP 1
+#define RMCFG_CHIP_TEGRA_DISP_CLASSIC_GPUS 1
 #define RMCFG_CHIP_TEGRA_BIG_GPUS 0
 #define RMCFG_CHIP_FERMI_TEGRA_BIG_GPUS 0
 #define RMCFG_CHIP_TEGRA     0
@@ -256,7 +267,9 @@
 #define RMCFG_FEATURE_RMCORE_BASE                 1  // RMCORE Base
 #define RMCFG_FEATURE_KERNEL_RM                   1  // Kernel layer of RM
 #define RMCFG_FEATURE_ORIN_PHYSICAL_RM            1  // Physical layer of RM, disabled only on Orin
+#define RMCFG_FEATURE_GSPRM_BULLSEYE              0  // Bullseye GSP-RM
 #define RMCFG_FEATURE_GSP_MNOC_STOPGAP            1  // Stopgap for MNOC support using the baremetal driver
+#define RMCFG_FEATURE_GSP_TASK_RM_DMEM_STACK      1  // Utilize DMEM stack for GSP task RM if available
 #define RMCFG_FEATURE_SLINEXT                     1
 #define RMCFG_FEATURE_NOTEBOOK                    1  // Notebook support
 #define RMCFG_FEATURE_EXTDEV                      1  // Daughter boards connected to Quadro GPUs
@@ -265,7 +278,6 @@
 #define RMCFG_FEATURE_MXM                         0  // MXM Module Support (all versions)
 #define RMCFG_FEATURE_NBSI                        1  // NoteBook System Information Structure
 #define RMCFG_FEATURE_ONSEMI_NB7NQ621M            1  // ONSEMI_NB7NQ621M Redriver Support
-#define RMCFG_FEATURE_GPIO_EXPANDER               1  // Support for GPIO Expander emulated on FPGA
 #define RMCFG_FEATURE_DCB_0X                      1  // Fallback DCB routines
 #define RMCFG_FEATURE_DCB_4X                      1  // DCB4x (used on G8x and later)
 #define RMCFG_FEATURE_RMAPI_GRAVEYARD             1  // Use RMAPI Graveyard to translate deprecated APIs
@@ -305,12 +317,13 @@
 #define RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY_MINIMAL  0  // Enable only those parts of display code which are needed for Tegra SOC NvDisplay Driver
 #define RMCFG_FEATURE_HEAD_REGIONAL_CRC           0  // Display Head Regional CRC support
 #define RMCFG_FEATURE_FEATURE_GH180               1  // RMconfig to encapsulate GH180 features
+#define RMCFG_FEATURE_MIG_GFX                     1  // RMconfig to encapsulate MIG With GFX support (SMG)
 #define RMCFG_FEATURE_MULTICAST_FABRIC            1  // Support for MULTICAST_FABRIC
 #define RMCFG_FEATURE_NVLINK_ERROR_THRESHOLD      1  // Support for NVLINK_ERROR_THRESHOLD
 #define RMCFG_FEATURE_GSP_SEC2_ENC_CHNLMGMT_RC_WAR  1  // WAR required for RC handling. See comment #36 of bug 4406277
 #define RMCFG_FEATURE_FABRIC_LINEAR_ADDRESSING    1  // Unicast fabric memory management
 #define RMCFG_FEATURE_GSP_RM_TRACE_RATS           1
-#define RMCFG_FEATURE_TEGRA_BPMP                  0  // Tegra BPMP integration
+#define RMCFG_FEATURE_TEGRA_BPMP                  1  // Tegra BPMP integration
 #define RMCFG_FEATURE_BINDATA_IMAGE               0  // Extract bindata from RM binary during compilation and save it in bindata_image.bin
 #define RMCFG_FEATURE_BINDATA_EXTRACTION          0  // Load bindata from disk.(Needs BINDATA_IMAGE to be enabled)
 
@@ -350,7 +363,7 @@
 #define RMCFG_CLASS_NV1_MEMORY_SYSTEM_DYNAMIC     1  // aka NV01_MEMORY_VIRTUAL
 #define RMCFG_CLASS_NV_MEMORY_MAPPER              1
 #define RMCFG_CLASS_NV01_MEMORY_LOCAL_PHYSICAL    1
-#define RMCFG_CLASS_NV01_MEMORY_SYNCPOINT         0
+#define RMCFG_CLASS_NV01_MEMORY_SYNCPOINT         1
 #define RMCFG_CLASS_NV01_MEMORY_SYSTEM_OS_DESCRIPTOR  1
 #define RMCFG_CLASS_NV01_MEMORY_DEVICELESS        1
 #define RMCFG_CLASS_NV01_MEMORY_FRAMEBUFFER_CONSOLE  1
@@ -399,6 +412,7 @@
 #define RMCFG_CLASS_AMPERE_CHANNEL_GPFIFO_A       1
 #define RMCFG_CLASS_HOPPER_CHANNEL_GPFIFO_A       1
 #define RMCFG_CLASS_BLACKWELL_CHANNEL_GPFIFO_A    1
+#define RMCFG_CLASS_BLACKWELL_CHANNEL_GPFIFO_B    1
 #define RMCFG_CLASS_NV04_SOFTWARE_TEST            1
 #define RMCFG_CLASS_NV4_SOFTWARE_TEST             1  // aka NV04_SOFTWARE_TEST
 #define RMCFG_CLASS_NV30_GSYNC                    1
@@ -413,6 +427,7 @@
 #define RMCFG_CLASS_TURING_USERMODE_A             1
 #define RMCFG_CLASS_AMPERE_USERMODE_A             1
 #define RMCFG_CLASS_HOPPER_USERMODE_A             1
+#define RMCFG_CLASS_BLACKWELL_USERMODE_A          1
 #define RMCFG_CLASS_NVC370_DISPLAY                0
 #define RMCFG_CLASS_NVC371_DISP_SF_USER           1
 #define RMCFG_CLASS_NVC372_DISPLAY_SW             1
@@ -420,6 +435,8 @@
 #define RMCFG_CLASS_NVC573_DISP_CAPABILITIES      1
 #define RMCFG_CLASS_NVC673_DISP_CAPABILITIES      1
 #define RMCFG_CLASS_NVC773_DISP_CAPABILITIES      1
+#define RMCFG_CLASS_NVC973_DISP_CAPABILITIES      1
+#define RMCFG_CLASS_NVCA73_DISP_CAPABILITIES      1
 #define RMCFG_CLASS_NV04_DISPLAY_COMMON           1
 #define RMCFG_CLASS_NV50_DEFERRED_API_CLASS       1
 #define RMCFG_CLASS_MPS_COMPUTE                   1
@@ -450,6 +467,18 @@
 #define RMCFG_CLASS_NVC770_DISPLAY                1
 #define RMCFG_CLASS_NVC771_DISP_SF_USER           1
 #define RMCFG_CLASS_NVC77D_CORE_CHANNEL_DMA       1
+#define RMCFG_CLASS_NVC970_DISPLAY                1
+#define RMCFG_CLASS_NVC971_DISP_SF_USER           1
+#define RMCFG_CLASS_NVC97A_CURSOR_IMM_CHANNEL_PIO  1
+#define RMCFG_CLASS_NVC97B_WINDOW_IMM_CHANNEL_DMA  1
+#define RMCFG_CLASS_NVC97D_CORE_CHANNEL_DMA       1
+#define RMCFG_CLASS_NVC97E_WINDOW_CHANNEL_DMA     1
+#define RMCFG_CLASS_NVCA70_DISPLAY                1
+#define RMCFG_CLASS_NVCA71_DISP_SF_USER           1
+#define RMCFG_CLASS_NVCA7A_CURSOR_IMM_CHANNEL_PIO  1
+#define RMCFG_CLASS_NVCA7B_WINDOW_IMM_CHANNEL_DMA  1
+#define RMCFG_CLASS_NVCA7D_CORE_CHANNEL_DMA       1
+#define RMCFG_CLASS_NVCA7E_WINDOW_CHANNEL_DMA     1
 #define RMCFG_CLASS_NV9010_VBLANK_CALLBACK        1
 #define RMCFG_CLASS_GF100_PROFILER                1  // Profiler Client Support
 #define RMCFG_CLASS_MAXWELL_PROFILER              1  // Base Profiler Class
@@ -481,6 +510,7 @@
 #define RMCFG_CLASS_NVC7B0_VIDEO_DECODER          1  // Decoder Class for Ampere
 #define RMCFG_CLASS_NVC9B0_VIDEO_DECODER          1  // Decoder Class for Ada
 #define RMCFG_CLASS_NVCDB0_VIDEO_DECODER          1  // Decoder Class for Blackwell
+#define RMCFG_CLASS_NVCFB0_VIDEO_DECODER          1  // Decoder Class for GB20X
 #define RMCFG_CLASS_NVC0B7_VIDEO_ENCODER          0
 #define RMCFG_CLASS_NVD0B7_VIDEO_ENCODER          0
 #define RMCFG_CLASS_NVC1B7_VIDEO_ENCODER          0
@@ -490,15 +520,18 @@
 #define RMCFG_CLASS_NVB4B7_VIDEO_ENCODER          1
 #define RMCFG_CLASS_NVC7B7_VIDEO_ENCODER          1
 #define RMCFG_CLASS_NVC9B7_VIDEO_ENCODER          1
+#define RMCFG_CLASS_NVCFB7_VIDEO_ENCODER          1
 #define RMCFG_CLASS_NVB8D1_VIDEO_NVJPG            1
 #define RMCFG_CLASS_NVC4D1_VIDEO_NVJPG            1
 #define RMCFG_CLASS_NVC9D1_VIDEO_NVJPG            1
 #define RMCFG_CLASS_NVCDD1_VIDEO_NVJPG            1
+#define RMCFG_CLASS_NVCFD1_VIDEO_NVJPG            1
 #define RMCFG_CLASS_NVB8FA_VIDEO_OFA              1
 #define RMCFG_CLASS_NVC6FA_VIDEO_OFA              1
 #define RMCFG_CLASS_NVC7FA_VIDEO_OFA              1
 #define RMCFG_CLASS_NVC9FA_VIDEO_OFA              1
 #define RMCFG_CLASS_NVCDFA_VIDEO_OFA              1
+#define RMCFG_CLASS_NVCFFA_VIDEO_OFA              1
 #define RMCFG_CLASS_KEPLER_INLINE_TO_MEMORY_B     1  // Kepler inline to memory
 #define RMCFG_CLASS_FERMI_CONTEXT_SHARE_A         1  // Context Share class
 #define RMCFG_CLASS_KEPLER_CHANNEL_GROUP_A        1  // Channel Group Class
@@ -516,6 +549,7 @@
 #define RMCFG_CLASS_AMPERE_DMA_COPY_B             1
 #define RMCFG_CLASS_HOPPER_DMA_COPY_A             1
 #define RMCFG_CLASS_BLACKWELL_DMA_COPY_A          1
+#define RMCFG_CLASS_BLACKWELL_DMA_COPY_B          1
 #define RMCFG_CLASS_MAXWELL_DMA_COPY_A            1
 #define RMCFG_CLASS_MAXWELL_FAULT_BUFFER_A        0  // Maxwell Fault Buffer for Gr
 #define RMCFG_CLASS_ACCESS_COUNTER_NOTIFY_BUFFER  1  // Access Cntr Buffer for Gr
@@ -542,6 +576,8 @@
 #define RMCFG_CLASS_HOPPER_COMPUTE_A              1  // HopperComputeA (Graphics Compute)
 #define RMCFG_CLASS_BLACKWELL_A                   1  // BlackwellA (Graphics)
 #define RMCFG_CLASS_BLACKWELL_COMPUTE_A           1  // BlackwellComputeA (Graphics Compute)
+#define RMCFG_CLASS_BLACKWELL_B                   1  // BlackwellB (Graphics)
+#define RMCFG_CLASS_BLACKWELL_COMPUTE_B           1  // BlackwellComputeB (Graphics Compute)
 #define RMCFG_CLASS_BLACKWELL_INLINE_TO_MEMORY_A  1  // Blackwell inline to memory
 #define RMCFG_CLASS_NV40_DEBUG_BUFFER             1
 #define RMCFG_CLASS_RM_USER_SHARED_DATA           1
@@ -629,6 +665,7 @@
 #define RMCFG_MODULE_NV_DEBUG_DUMP                1  // NV Debug
 #define RMCFG_MODULE_SWENG                        1  // Software Engine for all SW classes
 #define RMCFG_MODULE_GPU                          1  // GPU Control Object
+#define RMCFG_MODULE_FSP_I2C                      1  // FSP i2c Serial Interface
 #define RMCFG_MODULE_I2C                          0  // i2c Serial Interface
 #define RMCFG_MODULE_KERNEL_I2C                   1  // Kernel controls for I2C
 #define RMCFG_MODULE_SPI                          0  // SPI Interface
@@ -677,6 +714,7 @@
 #define RMCFG_MODULE_EI                           1  // Engine Idle Framework Object Engine.
 #define RMCFG_MODULE_LPWR_SEQ                     1  // LPWR Unified Sequencer Feature for Power Gating
 #define RMCFG_MODULE_LPWR_MON                     1  // LPWR Mon Feature to get Statistics.
+#define RMCFG_MODULE_LPWR_CSD                     1  // LPWR_CSD Feature Object.
 #define RMCFG_MODULE_DPU                          0  // Display Falcon
 #define RMCFG_MODULE_PMGR                         0  // PCB Manager engine
 #define RMCFG_MODULE_KERNEL_PMGR                  1  // Kernel controls for Pmgr
@@ -752,6 +790,7 @@
 #define RMCFG_MODULE_DCB                          0  // Display Control Block for all display related data in VBIOS/DCB Image
 #define RMCFG_MODULE_DISPMACRO                    0  // DispMacro RM infrastructure for IED removal from VBIOS
 #define RMCFG_MODULE_CONF_COMPUTE                 1  // Confidential Compute
+#define RMCFG_MODULE_KERNEL_GSPLITE               1  // Required for interfacing with GSPLITE engine from Kernel-RM.
 #define RMCFG_MODULE_DISP_MGR                     0  // Lid- and dock-related disp code for NOTEBOOK
 #define RMCFG_MODULE_PLATFORM                     1  // Object for platform related features
 #define RMCFG_MODULE_KERNEL_CCU                   1  // Counter Collection Unit Kernel(CPU) RM

@@ -48,6 +48,7 @@
 #include "gpu/device/device.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
+#include "kernel/rmapi/mapping_list.h"
 #include "gpu/subdevice/subdevice.h"
 #include "core/locks.h"
 #include "mem_mgr/pool_alloc.h"
@@ -587,7 +588,6 @@ gvaspaceConstruct__IMPL
                                             &fullPdeCoverage, &partialPdeExpMax);
         if (NV_OK != status)
         {
-            DBG_BREAKPOINT();
             break;
         }
         bFirst = NV_FALSE;
@@ -1136,7 +1136,7 @@ _gvaspaceGpuStateConstruct
     else
     {
         // Otherwise ensure requested limit does not exeed max HW limit.
-        NV_CHECK_OR_RETURN(LEVEL_INFO, vaLimit <= vaLimitMax, NV_ERR_INVALID_ARGUMENT);
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, vaLimit <= vaLimitMax, NV_ERR_INVALID_ARGUMENT);
 
         vaLimitExt = vaLimit;
     }
@@ -1536,10 +1536,15 @@ gvaspaceAlloc_IMPL
     // Sanity check the range before applying to eheap since
     // eheapSetAllocRange auto-clips (silencing potential range bugs).
     //
+
+    // This first check isn't an assert to avoid log spam from trying to map an
+    // allocation too large for the provided (or locally modified) range.
+    NV_CHECK_OR_RETURN(LEVEL_NOTICE, size <= (rangeHi - rangeLo + 1), NV_ERR_INVALID_ARGUMENT);
+
+    // Everything else is expected to adhere to the assertion conditions.
     NV_ASSERT_OR_RETURN(origRangeLo <= rangeLo,          NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(rangeLo <= rangeHi,              NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(rangeHi <= origRangeHi,          NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(size <= (rangeHi - rangeLo + 1), NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OK_OR_RETURN(pHeap->eheapSetAllocRange(pHeap, rangeLo, rangeHi));
     // !!! All return paths after this point must "goto catch" to restore. !!!
 
@@ -2680,7 +2685,7 @@ gvaspaceGetPteInfo_IMPL
     // So we assert if this ctrl call is called with request to init page tables (skipVASpaceInit ==  NV_FALSE),
     // and the page tables are not already allocated.
     //
-    NV_ASSERT_OR_RETURN((pteBlockIndex > 0) || pParams->skipVASpaceInit, NV_ERR_INVALID_REQUEST);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, (pteBlockIndex > 0) || pParams->skipVASpaceInit, NV_ERR_INVALID_REQUEST);
 
     return status;
 }
@@ -4380,11 +4385,12 @@ vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes_IMPL
         _gvaspaceControl_Prolog(pVaspaceApi, pCopyServerReservedPdesParams->hSubDevice,
                                 pCopyServerReservedPdesParams->subDeviceId, &pGVAS, &pGpu));
 
-    if (((IsHOPPERorBetter(pGpu) && !RMCFG_FEATURE_PLATFORM_GSP && !IS_GSP_CLIENT(pGpu) && !RMCFG_FEATURE_PLATFORM_MODS &&
-        !(IS_VIRTUAL(pGpu) && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu)))) ||
-        pGVAS->vaLimitServerRMOwned == 0)
+    if (((pCopyServerReservedPdesParams->virtAddrHi < pCopyServerReservedPdesParams->virtAddrLo) &&
+             !(RMCFG_FEATURE_PLATFORM_GSP || IS_GSP_CLIENT(pGpu) ||
+                 (IS_VIRTUAL(pGpu) && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu)))) ||
+        (pGVAS->vaLimitServerRMOwned == 0))
     {
-        // BUG 4580145 WAR: make sure only GSP's context is updated
+        // BUG 4580145 WAR: make sure only GSP's context is updated; caller is WAR if (AddrHi < AddrLo)
         return NV_OK;
     }
 

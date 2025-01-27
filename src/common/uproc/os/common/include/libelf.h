@@ -109,6 +109,14 @@ typedef struct LibosElfImage{
     void *            (*map)(struct LibosElfImage *image, NvU64 offset, NvU64 size);
 } LibosElfImage;
 
+typedef struct
+{
+    NvU32 namesz; /* name size */
+    NvU32 descsz; /* descriptor size */
+    NvU32 type; /* descriptor type */
+    NvU8 data[0]; /* name + descriptor*/
+} LibosElfNoteHeader;
+
 LibosStatus               LibosElfImageConstruct(LibosElfImage * image, void * elf, NvU64 size);
 
 // Program headers

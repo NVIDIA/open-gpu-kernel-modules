@@ -175,6 +175,12 @@ void uvm_hal_maxwell_host_interrupt(uvm_push_t *push)
 void uvm_hal_maxwell_host_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload)
 {
     NvU32 sem_lo;
+
+    UVM_ASSERT_MSG(uvm_push_get_gpu(push)->parent->host_hal->semaphore_target_is_valid(push, gpu_va),
+                   "Semaphore target validation failed in channel %s, GPU %s.\n",
+                   push->channel->name,
+                   uvm_gpu_name(uvm_push_get_gpu(push)));
+
     UVM_ASSERT(!(NvOffset_LO32(gpu_va) & ~HWSHIFTMASK(A16F, SEMAPHOREB, OFFSET_LOWER)));
     sem_lo = READ_HWVALUE(NvOffset_LO32(gpu_va), A16F, SEMAPHOREB, OFFSET_LOWER);
 
@@ -191,6 +197,12 @@ void uvm_hal_maxwell_host_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU3
 void uvm_hal_maxwell_host_semaphore_acquire(uvm_push_t *push, NvU64 gpu_va, NvU32 payload)
 {
     NvU32 sem_lo;
+
+    UVM_ASSERT_MSG(uvm_push_get_gpu(push)->parent->host_hal->semaphore_target_is_valid(push, gpu_va),
+                   "Semaphore target validation failed in channel %s, GPU %s.\n",
+                   push->channel->name,
+                   uvm_gpu_name(uvm_push_get_gpu(push)));
+
     UVM_ASSERT(!(NvOffset_LO32(gpu_va) & ~HWSHIFTMASK(A16F, SEMAPHOREB, OFFSET_LOWER)));
     sem_lo = READ_HWVALUE(NvOffset_LO32(gpu_va), A16F, SEMAPHOREB, OFFSET_LOWER);
     NV_PUSH_4U(A16F, SEMAPHOREA, HWVALUE(A16F, SEMAPHOREA, OFFSET_UPPER, NvOffset_HI32(gpu_va)),
@@ -204,6 +216,12 @@ void uvm_hal_maxwell_host_semaphore_acquire(uvm_push_t *push, NvU64 gpu_va, NvU3
 void uvm_hal_maxwell_host_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va)
 {
     NvU32 sem_lo;
+
+    UVM_ASSERT_MSG(uvm_push_get_gpu(push)->parent->host_hal->semaphore_target_is_valid(push, gpu_va),
+                   "Semaphore target validation failed in channel %s, GPU %s.\n",
+                   push->channel->name,
+                   uvm_gpu_name(uvm_push_get_gpu(push)));
+
     UVM_ASSERT(!(NvOffset_LO32(gpu_va) & ~HWSHIFTMASK(A16F, SEMAPHOREB, OFFSET_LOWER)));
     sem_lo = READ_HWVALUE(NvOffset_LO32(gpu_va), A16F, SEMAPHOREB, OFFSET_LOWER);
 

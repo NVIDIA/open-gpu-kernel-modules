@@ -57,6 +57,7 @@ extern "C" {
 #include "gpu/gsp/gsp_static_config.h"
 #include "gpu/gsp/gsp_init_args.h"
 #include "gpu/gsp/gsp_fw_heap.h"
+#include "gpu/mem_mgr/rm_page_size.h"
 #include "nv-firmware.h"
 #include "nv_sriov_defines.h"
 #include "rmRiscvUcode.h"
@@ -257,6 +258,7 @@ typedef struct GSP_FIRMWARE
 #define GSP_IMAGE_SECTION_NAME             ".fwimage"
 #define GSP_LOGGING_SECTION_NAME           ".fwlogging"
 #define GSP_SIGNATURE_SECTION_NAME_PREFIX  ".fwsignature_"
+#define GSP_BUILD_ID_SECTION_NAME          ".note.gnu.build-id"
 #define GSP_CC_SIGNATURE_SECTION_NAME_PREFIX  ".fwsignature_cc_"
 
 /*!
@@ -316,6 +318,15 @@ typedef struct
     NvU64                               id8;
 } RM_LIBOS_LOG_MEM;
 
+typedef struct
+{
+    /* Memory for task coverage */
+    MEMORY_DESCRIPTOR                  *pTaskCoverageDescriptor;
+    NvU8                               *pTaskCoverageBuffer;
+    NvP64                               pTaskCoverageMappingPriv;
+    NvU64                               id8;
+} RM_LIBOS_COVERAGE_MEM;
+
 /*!
  * KernelGsp object definition
  */
@@ -343,7 +354,7 @@ struct KernelGsp {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__KernelGsp *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
     struct IntrService __nvoc_base_IntrService;
     struct KernelFalcon __nvoc_base_KernelFalcon;
@@ -357,7 +368,7 @@ struct KernelGsp {
     struct KernelFalcon *__nvoc_pbase_KernelFalcon;    // kflcn super
     struct KernelGsp *__nvoc_pbase_KernelGsp;    // kgsp
 
-    // Vtable with 57 per-object function pointers
+    // Vtable with 58 per-object function pointers
     void (*__kgspConfigureFalcon__)(struct OBJGPU *, struct KernelGsp * /*this*/);  // halified (3 hals) body
     NvBool (*__kgspIsDebugModeEnabled__)(struct OBJGPU *, struct KernelGsp * /*this*/);  // halified (3 hals) body
     NV_STATUS (*__kgspAllocBootArgs__)(struct OBJGPU *, struct KernelGsp * /*this*/);  // halified (3 hals) body
@@ -368,14 +379,14 @@ struct KernelGsp {
     NV_STATUS (*__kgspBootstrap__)(struct OBJGPU *, struct KernelGsp * /*this*/, KernelGspBootMode);  // halified (3 hals) body
     NV_STATUS (*__kgspTeardown__)(struct OBJGPU *, struct KernelGsp * /*this*/, KernelGspUnloadMode);  // halified (3 hals) body
     void (*__kgspGetGspRmBootUcodeStorage__)(struct OBJGPU *, struct KernelGsp * /*this*/, BINDATA_STORAGE **, BINDATA_STORAGE **);  // halified (5 hals) body
-    const BINDATA_ARCHIVE * (*__kgspGetBinArchiveGspRmBoot__)(struct KernelGsp * /*this*/);  // halified (7 hals) body
-    const BINDATA_ARCHIVE * (*__kgspGetBinArchiveConcatenatedFMCDesc__)(struct KernelGsp * /*this*/);  // halified (3 hals) body
-    const BINDATA_ARCHIVE * (*__kgspGetBinArchiveConcatenatedFMC__)(struct KernelGsp * /*this*/);  // halified (3 hals) body
-    const BINDATA_ARCHIVE * (*__kgspGetBinArchiveGspRmFmcGfwDebugSigned__)(struct KernelGsp * /*this*/);  // halified (4 hals) body
-    const BINDATA_ARCHIVE * (*__kgspGetBinArchiveGspRmFmcGfwProdSigned__)(struct KernelGsp * /*this*/);  // halified (4 hals) body
-    const BINDATA_ARCHIVE * (*__kgspGetBinArchiveGspRmCcFmcGfwProdSigned__)(struct KernelGsp * /*this*/);  // halified (3 hals) body
+    const BINDATA_ARCHIVE * (*__kgspGetBinArchiveGspRmBoot__)(struct KernelGsp * /*this*/);  // halified (8 hals) body
+    const BINDATA_ARCHIVE * (*__kgspGetBinArchiveConcatenatedFMCDesc__)(struct KernelGsp * /*this*/);  // halified (4 hals) body
+    const BINDATA_ARCHIVE * (*__kgspGetBinArchiveConcatenatedFMC__)(struct KernelGsp * /*this*/);  // halified (4 hals) body
+    const BINDATA_ARCHIVE * (*__kgspGetBinArchiveGspRmFmcGfwDebugSigned__)(struct KernelGsp * /*this*/);  // halified (5 hals) body
+    const BINDATA_ARCHIVE * (*__kgspGetBinArchiveGspRmFmcGfwProdSigned__)(struct KernelGsp * /*this*/);  // halified (5 hals) body
+    const BINDATA_ARCHIVE * (*__kgspGetBinArchiveGspRmCcFmcGfwProdSigned__)(struct KernelGsp * /*this*/);  // halified (4 hals) body
     NV_STATUS (*__kgspCalculateFbLayout__)(struct OBJGPU *, struct KernelGsp * /*this*/, GSP_FIRMWARE *);  // halified (3 hals) body
-    NvU32 (*__kgspGetNonWprHeapSize__)(struct OBJGPU *, struct KernelGsp * /*this*/);  // halified (3 hals) body
+    NvU32 (*__kgspGetNonWprHeapSize__)(struct OBJGPU *, struct KernelGsp * /*this*/);  // halified (4 hals) body
     NV_STATUS (*__kgspExecuteSequencerCommand__)(struct OBJGPU *, struct KernelGsp * /*this*/, NvU32, NvU32 *, NvU32);  // halified (3 hals) body
     NvU32 (*__kgspReadUcodeFuseVersion__)(struct OBJGPU *, struct KernelGsp * /*this*/, NvU32);  // halified (3 hals) body
     NV_STATUS (*__kgspResetHw__)(struct OBJGPU *, struct KernelGsp * /*this*/);  // virtual halified (4 hals) override (kflcn) base (kflcn) body
@@ -386,7 +397,7 @@ struct KernelGsp {
     void (*__kgspEccServiceUncorrError__)(struct OBJGPU *, struct KernelGsp * /*this*/);  // halified (3 hals) body
     NvBool (*__kgspIsWpr2Up__)(struct OBJGPU *, struct KernelGsp * /*this*/);  // halified (3 hals) body
     NvU32 (*__kgspGetFrtsSize__)(struct OBJGPU *, struct KernelGsp * /*this*/);  // halified (3 hals) body
-    NvU64 (*__kgspGetPrescrubbedTopFbSize__)(struct OBJGPU *, struct KernelGsp * /*this*/);  // halified (4 hals) body
+    NvU64 (*__kgspGetPrescrubbedTopFbSize__)(struct OBJGPU *, struct KernelGsp * /*this*/);  // halified (3 hals) body
     NV_STATUS (*__kgspExtractVbiosFromRom__)(struct OBJGPU *, struct KernelGsp * /*this*/, KernelGspVbiosImg **);  // halified (3 hals) body
     NV_STATUS (*__kgspPrepareForFwsecFrts__)(struct OBJGPU *, struct KernelGsp * /*this*/, KernelGspFlcnUcode *, const NvU64, KernelGspPreparedFwsecCmd *);  // halified (3 hals) body
     NV_STATUS (*__kgspPrepareForFwsecSb__)(struct OBJGPU *, struct KernelGsp * /*this*/, KernelGspFlcnUcode *, KernelGspPreparedFwsecCmd *);  // halified (3 hals) body
@@ -410,6 +421,7 @@ struct KernelGsp {
     const char * (*__kgspGetSignatureSectionNamePrefix__)(struct OBJGPU *, struct KernelGsp * /*this*/);  // halified (4 hals) body
     NV_STATUS (*__kgspSetupGspFmcArgs__)(struct OBJGPU *, struct KernelGsp * /*this*/, KernelGspBootMode);  // halified (3 hals) body
     void (*__kgspReadEmem__)(struct KernelGsp * /*this*/, NvU64, NvU64, void *);  // virtual halified (2 hals) override (kcrashcatEngine) base (kflcn) body
+    NvU64 (*__kgspGetCrashcatSysmemBufferSize__)(struct KernelGsp * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kgspIssueNotifyOp__)(struct OBJGPU *, struct KernelGsp * /*this*/, NvU32, NvU32 *, NvU32);  // halified (3 hals) body
     NV_STATUS (*__kgspCheckGspRmCcCleanup__)(struct OBJGPU *, struct KernelGsp * /*this*/);  // halified (3 hals) body
     NvU32 (*__kgspRegRead__)(struct OBJGPU *, struct KernelGsp * /*this*/, NvU32);  // virtual halified (2 hals) inherited (kflcn) base (kflcn) body
@@ -427,6 +439,8 @@ struct KernelGsp {
     MEMORY_DESCRIPTOR *pWprMetaDescriptor;
     GspFwWprMeta *pWprMeta;
     NvP64 pWprMetaMappingPriv;
+    NvU32 wprEndMarginOverride;
+    NvU32 heapSizeMBOverride;
     KernelGspPreparedFwsecCmd *pPreparedFwsecCmd;
     MEMORY_DESCRIPTOR *pSRMetaDescriptor;
     MEMORY_DESCRIPTOR *pSRRadix3Descriptor;
@@ -455,6 +469,8 @@ struct KernelGsp {
     NvBool bHasVgpuLogs;
     void *pLogElf;
     NvU64 logElfDataSize;
+    void *pBuildIdSection;
+    NvU64 buildIdSectionSize;
     volatile NvS32 logDumpLock;
     NvBool bLibosLogsPollingEnabled;
     NvU8 bootAttempts;
@@ -715,6 +731,9 @@ NV_STATUS __nvoc_objCreate_KernelGsp(KernelGsp**, Dynamic*, NvU32);
 #define kgspReadEmem_FNPTR(pKernelGsp) pKernelGsp->__kgspReadEmem__
 #define kgspReadEmem(pKernelGsp, offset, size, pBuf) kgspReadEmem_DISPATCH(pKernelGsp, offset, size, pBuf)
 #define kgspReadEmem_HAL(pKernelGsp, offset, size, pBuf) kgspReadEmem_DISPATCH(pKernelGsp, offset, size, pBuf)
+#define kgspGetCrashcatSysmemBufferSize_FNPTR(pKernelGsp) pKernelGsp->__kgspGetCrashcatSysmemBufferSize__
+#define kgspGetCrashcatSysmemBufferSize(pKernelGsp) kgspGetCrashcatSysmemBufferSize_DISPATCH(pKernelGsp)
+#define kgspGetCrashcatSysmemBufferSize_HAL(pKernelGsp) kgspGetCrashcatSysmemBufferSize_DISPATCH(pKernelGsp)
 #define kgspIssueNotifyOp_FNPTR(pKernelGsp) pKernelGsp->__kgspIssueNotifyOp__
 #define kgspIssueNotifyOp(pGpu, pKernelGsp, opCode, pArgs, argc) kgspIssueNotifyOp_DISPATCH(pGpu, pKernelGsp, opCode, pArgs, argc)
 #define kgspIssueNotifyOp_HAL(pGpu, pKernelGsp, opCode, pArgs, argc) kgspIssueNotifyOp_DISPATCH(pGpu, pKernelGsp, opCode, pArgs, argc)
@@ -793,7 +812,7 @@ static inline NV_STATUS kgspStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct
     return pKernelGsp->__nvoc_vtable->__kgspStateInitLocked__(pGpu, pKernelGsp);
 }
 
-static inline void kgspRegisterIntrService_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, IntrServiceRecord pRecords[175]) {
+static inline void kgspRegisterIntrService_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, IntrServiceRecord pRecords[177]) {
     pKernelGsp->__nvoc_vtable->__kgspRegisterIntrService__(pGpu, pKernelGsp, pRecords);
 }
 
@@ -1009,6 +1028,10 @@ static inline void kgspReadEmem_DISPATCH(struct KernelGsp *pKernelGsp, NvU64 off
     pKernelGsp->__kgspReadEmem__(pKernelGsp, offset, size, pBuf);
 }
 
+static inline NvU64 kgspGetCrashcatSysmemBufferSize_DISPATCH(struct KernelGsp *pKernelGsp) {
+    return pKernelGsp->__kgspGetCrashcatSysmemBufferSize__(pKernelGsp);
+}
+
 static inline NV_STATUS kgspIssueNotifyOp_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, NvU32 opCode, NvU32 *pArgs, NvU32 argc) {
     return pKernelGsp->__kgspIssueNotifyOp__(pGpu, pKernelGsp, opCode, pArgs, argc);
 }
@@ -1133,7 +1156,7 @@ NV_STATUS kgspConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKerne
 
 NV_STATUS kgspStateInitLocked_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp);
 
-void kgspRegisterIntrService_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, IntrServiceRecord pRecords[175]);
+void kgspRegisterIntrService_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, IntrServiceRecord pRecords[177]);
 
 NvU32 kgspServiceInterrupt_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, IntrServiceServiceInterruptArguments *pParams);
 
@@ -1229,17 +1252,23 @@ const BINDATA_ARCHIVE *kgspGetBinArchiveGspRmBoot_AD102(struct KernelGsp *pKerne
 
 const BINDATA_ARCHIVE *kgspGetBinArchiveGspRmBoot_GB100(struct KernelGsp *pKernelGsp);
 
+const BINDATA_ARCHIVE *kgspGetBinArchiveGspRmBoot_GB202(struct KernelGsp *pKernelGsp);
+
 static inline const BINDATA_ARCHIVE *kgspGetBinArchiveGspRmBoot_80f438(struct KernelGsp *pKernelGsp) {
     NV_ASSERT_OR_RETURN_PRECOMP(0, ((void *)0));
 }
 
 const BINDATA_ARCHIVE *kgspGetBinArchiveConcatenatedFMCDesc_GH100(struct KernelGsp *pKernelGsp);
 
+const BINDATA_ARCHIVE *kgspGetBinArchiveConcatenatedFMCDesc_GB100(struct KernelGsp *pKernelGsp);
+
 static inline const BINDATA_ARCHIVE *kgspGetBinArchiveConcatenatedFMCDesc_80f438(struct KernelGsp *pKernelGsp) {
     NV_ASSERT_OR_RETURN_PRECOMP(0, ((void *)0));
 }
 
 const BINDATA_ARCHIVE *kgspGetBinArchiveConcatenatedFMC_GH100(struct KernelGsp *pKernelGsp);
+
+const BINDATA_ARCHIVE *kgspGetBinArchiveConcatenatedFMC_GB100(struct KernelGsp *pKernelGsp);
 
 static inline const BINDATA_ARCHIVE *kgspGetBinArchiveConcatenatedFMC_80f438(struct KernelGsp *pKernelGsp) {
     NV_ASSERT_OR_RETURN_PRECOMP(0, ((void *)0));
@@ -1249,6 +1278,8 @@ const BINDATA_ARCHIVE *kgspGetBinArchiveGspRmFmcGfwDebugSigned_GH100(struct Kern
 
 const BINDATA_ARCHIVE *kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB100(struct KernelGsp *pKernelGsp);
 
+const BINDATA_ARCHIVE *kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB202(struct KernelGsp *pKernelGsp);
+
 static inline const BINDATA_ARCHIVE *kgspGetBinArchiveGspRmFmcGfwDebugSigned_80f438(struct KernelGsp *pKernelGsp) {
     NV_ASSERT_OR_RETURN_PRECOMP(0, ((void *)0));
 }
@@ -1257,11 +1288,15 @@ const BINDATA_ARCHIVE *kgspGetBinArchiveGspRmFmcGfwProdSigned_GH100(struct Kerne
 
 const BINDATA_ARCHIVE *kgspGetBinArchiveGspRmFmcGfwProdSigned_GB100(struct KernelGsp *pKernelGsp);
 
+const BINDATA_ARCHIVE *kgspGetBinArchiveGspRmFmcGfwProdSigned_GB202(struct KernelGsp *pKernelGsp);
+
 static inline const BINDATA_ARCHIVE *kgspGetBinArchiveGspRmFmcGfwProdSigned_80f438(struct KernelGsp *pKernelGsp) {
     NV_ASSERT_OR_RETURN_PRECOMP(0, ((void *)0));
 }
 
 const BINDATA_ARCHIVE *kgspGetBinArchiveGspRmCcFmcGfwProdSigned_GH100(struct KernelGsp *pKernelGsp);
+
+const BINDATA_ARCHIVE *kgspGetBinArchiveGspRmCcFmcGfwProdSigned_GB100(struct KernelGsp *pKernelGsp);
 
 static inline const BINDATA_ARCHIVE *kgspGetBinArchiveGspRmCcFmcGfwProdSigned_80f438(struct KernelGsp *pKernelGsp) {
     NV_ASSERT_OR_RETURN_PRECOMP(0, ((void *)0));
@@ -1281,6 +1316,10 @@ static inline NvU32 kgspGetNonWprHeapSize_ed6b8b(struct OBJGPU *pGpu, struct Ker
 
 static inline NvU32 kgspGetNonWprHeapSize_d505ea(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
     return 2097152;
+}
+
+static inline NvU32 kgspGetNonWprHeapSize_1bb8e3(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    return 2228224;
 }
 
 static inline NvU32 kgspGetNonWprHeapSize_5baef9(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
@@ -1503,8 +1542,8 @@ static inline NvU64 kgspGetMinWprHeapSizeMB_7185bf(struct OBJGPU *pGpu, struct K
     return (64U);
 }
 
-static inline NvU64 kgspGetMinWprHeapSizeMB_cc88c3(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
-    return pGpu->bVgpuGspPluginOffloadEnabled ? (565U) : (86U);
+static inline NvU64 kgspGetMinWprHeapSizeMB_647ce6(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    return pGpu->bVgpuGspPluginOffloadEnabled ? (581U) : (88U);
 }
 
 static inline NvU64 kgspGetMinWprHeapSizeMB_b2b553(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
@@ -1515,8 +1554,8 @@ static inline NvU64 kgspGetMaxWprHeapSizeMB_ad4e6a(struct OBJGPU *pGpu, struct K
     return (256U);
 }
 
-static inline NvU64 kgspGetMaxWprHeapSizeMB_55728f(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
-    return pGpu->bVgpuGspPluginOffloadEnabled ? (1040U) : (278U);
+static inline NvU64 kgspGetMaxWprHeapSizeMB_e7e092(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    return pGpu->bVgpuGspPluginOffloadEnabled ? (1040U) : (280U);
 }
 
 static inline NvU64 kgspGetMaxWprHeapSizeMB_b2b553(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
@@ -1575,6 +1614,14 @@ void kgspReadEmem_TU102(struct KernelGsp *pKernelGsp, NvU64 offset, NvU64 size, 
 
 static inline void kgspReadEmem_366c4c(struct KernelGsp *pKernelGsp, NvU64 offset, NvU64 size, void *pBuf) {
     NV_ASSERT(0);
+}
+
+static inline NvU64 kgspGetCrashcatSysmemBufferSize_b845ef(struct KernelGsp *pKernelGsp) {
+    return 4096;
+}
+
+static inline NvU64 kgspGetCrashcatSysmemBufferSize_4a4dee(struct KernelGsp *pKernelGsp) {
+    return 0;
 }
 
 NV_STATUS kgspIssueNotifyOp_GH100(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, NvU32 opCode, NvU32 *pArgs, NvU32 argc);
@@ -1646,15 +1693,15 @@ static inline NV_STATUS kgspPrepareBootBinaryImage(struct OBJGPU *pGpu, struct K
 #define kgspPrepareBootBinaryImage(pGpu, pKernelGsp) kgspPrepareBootBinaryImage_IMPL(pGpu, pKernelGsp)
 #endif //__nvoc_kernel_gsp_h_disabled
 
-NvU64 kgspGetFwHeapSize_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, NvU64 posteriorFbSize);
+NvU64 kgspGetFwHeapSize_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, NvU64 anteriorFbSize, NvU64 posteriorFbSize);
 
 #ifdef __nvoc_kernel_gsp_h_disabled
-static inline NvU64 kgspGetFwHeapSize(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, NvU64 posteriorFbSize) {
+static inline NvU64 kgspGetFwHeapSize(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, NvU64 anteriorFbSize, NvU64 posteriorFbSize) {
     NV_ASSERT_FAILED_PRECOMP("KernelGsp was disabled!");
     return 0;
 }
 #else //__nvoc_kernel_gsp_h_disabled
-#define kgspGetFwHeapSize(pGpu, pKernelGsp, posteriorFbSize) kgspGetFwHeapSize_IMPL(pGpu, pKernelGsp, posteriorFbSize)
+#define kgspGetFwHeapSize(pGpu, pKernelGsp, anteriorFbSize, posteriorFbSize) kgspGetFwHeapSize_IMPL(pGpu, pKernelGsp, anteriorFbSize, posteriorFbSize)
 #endif //__nvoc_kernel_gsp_h_disabled
 
 NvU64 kgspGetWprEndMargin_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp);
@@ -1721,24 +1768,14 @@ static inline NV_STATUS kgspStartLogPolling(struct OBJGPU *pGpu, struct KernelGs
 #define kgspStartLogPolling(pGpu, pKernelGsp) kgspStartLogPolling_IMPL(pGpu, pKernelGsp)
 #endif //__nvoc_kernel_gsp_h_disabled
 
-void kgspDumpGspLogs_IMPL(struct KernelGsp *pKernelGsp, NvBool arg2);
+void kgspDumpGspLogs_IMPL(struct KernelGsp *pKernelGsp, NvBool bSyncNvLog);
 
 #ifdef __nvoc_kernel_gsp_h_disabled
-static inline void kgspDumpGspLogs(struct KernelGsp *pKernelGsp, NvBool arg2) {
+static inline void kgspDumpGspLogs(struct KernelGsp *pKernelGsp, NvBool bSyncNvLog) {
     NV_ASSERT_FAILED_PRECOMP("KernelGsp was disabled!");
 }
 #else //__nvoc_kernel_gsp_h_disabled
-#define kgspDumpGspLogs(pKernelGsp, arg2) kgspDumpGspLogs_IMPL(pKernelGsp, arg2)
-#endif //__nvoc_kernel_gsp_h_disabled
-
-void kgspDumpGspLogsUnlocked_IMPL(struct KernelGsp *pKernelGsp, NvBool arg2);
-
-#ifdef __nvoc_kernel_gsp_h_disabled
-static inline void kgspDumpGspLogsUnlocked(struct KernelGsp *pKernelGsp, NvBool arg2) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGsp was disabled!");
-}
-#else //__nvoc_kernel_gsp_h_disabled
-#define kgspDumpGspLogsUnlocked(pKernelGsp, arg2) kgspDumpGspLogsUnlocked_IMPL(pKernelGsp, arg2)
+#define kgspDumpGspLogs(pKernelGsp, bSyncNvLog) kgspDumpGspLogs_IMPL(pKernelGsp, bSyncNvLog)
 #endif //__nvoc_kernel_gsp_h_disabled
 
 NV_STATUS kgspExecuteSequencerBuffer_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, void *pRunCpuSeqParams);

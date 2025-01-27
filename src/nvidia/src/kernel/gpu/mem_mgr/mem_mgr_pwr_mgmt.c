@@ -307,7 +307,8 @@ _memmgrAllocFbsrReservedRanges
          */
         if (IS_GSP_CLIENT(pGpu))
         {
-            KernelGsp *pKernelGsp              = GPU_GET_KERNEL_GSP(pGpu);
+            KernelGsp    *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+            GspFwWprMeta *pWprMeta   = pKernelGsp->pWprMeta;
 
             /*
              * Calculate sysmem required to save all GSP allocations
@@ -319,8 +320,8 @@ _memmgrAllocFbsrReservedRanges
              *
              * TODO: Query GSP for size of its allocation instead of this calculation
              */
-            NvU64 size = (pKernelGsp->pWprMeta->gspFwWprStart - rsvdMemEnd) + // GSP Heap start to end of NON WPR region
-                          pKernelGsp->pWprMeta->vgaWorkspaceSize;             // VGA Workspace
+            NvU64 size = ((pWprMeta->nonWprHeapOffset + pWprMeta->nonWprHeapSize) - rsvdMemEnd) + // GSP Heap start to end of NON WPR region
+                         pWprMeta->vgaWorkspaceSize;                                              // VGA Workspace
 
             // Check if CBC region needs to be saved
             if (GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu)->bPreserveComptagBackingStoreOnSuspend)

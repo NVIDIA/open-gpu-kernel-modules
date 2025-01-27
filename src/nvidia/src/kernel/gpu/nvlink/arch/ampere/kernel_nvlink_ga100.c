@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -79,7 +79,7 @@ knvlinkOverrideConfig_GA100
         return NV_OK;
     }
 
-    NV2080_CTRL_NVLINK_PROCESS_FORCED_CONFIGS_PARAMS forcedConfigParams;
+    NV2080_CTRL_INTERNAL_NVLINK_PROCESS_FORCED_CONFIGS_PARAMS forcedConfigParams;
     portMemSet(&forcedConfigParams, 0, sizeof(forcedConfigParams));
 
     forcedConfigParams.bLegacyForcedConfig = NV_FALSE;
@@ -91,7 +91,7 @@ knvlinkOverrideConfig_GA100
     // setting up of HSHUB state and programming the memory subsystem registers.
     //
     status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                                 NV2080_CTRL_CMD_NVLINK_PROCESS_FORCED_CONFIGS,
+                                 NV2080_CTRL_CMD_INTERNAL_NVLINK_PROCESS_FORCED_CONFIGS,
                                  (void *)&forcedConfigParams,
                                  sizeof(forcedConfigParams));
     if (status != NV_OK)
@@ -137,25 +137,25 @@ knvlinkRemoveMapping_GA100
     NvU32     peerId;
     NvBool    bBufferReady = NV_FALSE;
 
-    NV2080_CTRL_NVLINK_REMOVE_NVLINK_MAPPING_PARAMS params;
+    NV2080_CTRL_INTERNAL_NVLINK_REMOVE_NVLINK_MAPPING_PARAMS params;
     portMemSet(&params, 0, sizeof(params));
 
     params.bL2Entry = bL2Entry;
 
     if (bAllMapping)
     {
-        params.mapTypeMask = NV2080_CTRL_NVLINK_REMOVE_NVLINK_MAPPING_TYPE_SYSMEM |
-                             NV2080_CTRL_NVLINK_REMOVE_NVLINK_MAPPING_TYPE_PEER;
+        params.mapTypeMask = NV2080_CTRL_INTERNAL_NVLINK_REMOVE_NVLINK_MAPPING_TYPE_SYSMEM |
+                             NV2080_CTRL_INTERNAL_NVLINK_REMOVE_NVLINK_MAPPING_TYPE_PEER;
         params.peerMask    = (1 << NVLINK_MAX_PEERS_SW) - 1;
     }
     else
     {
-        params.mapTypeMask = NV2080_CTRL_NVLINK_REMOVE_NVLINK_MAPPING_TYPE_PEER;
+        params.mapTypeMask = NV2080_CTRL_INTERNAL_NVLINK_REMOVE_NVLINK_MAPPING_TYPE_PEER;
         params.peerMask    = peerMask;
     }
 
     status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                                 NV2080_CTRL_CMD_NVLINK_REMOVE_NVLINK_MAPPING,
+                                 NV2080_CTRL_CMD_INTERNAL_NVLINK_REMOVE_NVLINK_MAPPING,
                                  (void *)&params, sizeof(params));
     if (status != NV_OK)
         return status;

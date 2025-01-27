@@ -564,7 +564,6 @@ NV_STATUS CliDelThirdPartyP2PVidmemInfo
     PCLI_THIRD_PARTY_P2P_MAPPING_INFO pMappingInfo;
     PCLI_THIRD_PARTY_P2P_VIDMEM_INFO pVidmemInfo;
     void *pKey;
-    NvBool bPendingMappings = NV_FALSE;
 
     pVidmemInfo = mapFind(&pThirdPartyP2P->vidmemInfoMap, hMemory);
     if (pVidmemInfo == NULL)
@@ -583,18 +582,10 @@ NV_STATUS CliDelThirdPartyP2PVidmemInfo
             pMappingInfo->pFreeCallback(pMappingInfo->pData);
         }
 
-        status = thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2P, pKey, NV_FALSE);
+        status = thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2P, pKey);
         NV_ASSERT(status == NV_OK);
 
         pNode = pVidmemInfo->pMappingInfoList;
-
-        bPendingMappings = NV_TRUE;
-    }
-
-    // RSYNC is needed only if there are outstanding mappings.
-    if (bPendingMappings)
-    {
-        osWaitForIbmnpuRsync(pVidmemInfo->pMemDesc->pGpu->pOsGpuInfo);
     }
 
     mapRemove(&pThirdPartyP2P->vidmemInfoMap, pVidmemInfo);
@@ -787,7 +778,6 @@ static NV_STATUS _thirdpartyp2pDelMappingInfoByKey
 (
     ThirdPartyP2P                    *pThirdPartyP2P,
     void                             *pKey,
-    NvBool                            bIsRsyncNeeded,
     CLI_THIRD_PARTY_P2P_VIDMEM_INFO **ppVidmemInfo
 )
 {
@@ -893,11 +883,6 @@ static NV_STATUS _thirdpartyp2pDelMappingInfoByKey
                 portMemFree(pMappingInfo);
             }
 
-            if (bIsRsyncNeeded)
-            {
-                osWaitForIbmnpuRsync(pVidmemInfo->pMemDesc->pGpu->pOsGpuInfo);
-            }
-
             //
             // For persistent mappings, we return the VidmemInfo and clean up
             // the internal ThirdPartyP2P object and duped memory handle.
@@ -921,28 +906,25 @@ static NV_STATUS _thirdpartyp2pDelMappingInfoByKey
 NV_STATUS thirdpartyp2pDelMappingInfoByKey_IMPL
 (
     ThirdPartyP2P                    *pThirdPartyP2P,
-    void                             *pKey,
-    NvBool                            bIsRsyncNeeded
+    void                             *pKey
 )
 {
     return _thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2P,
                                              pKey,
-                                             bIsRsyncNeeded,
                                              NULL);
 }
 
 NV_STATUS thirdpartyp2pDelPersistentMappingInfoByKey_IMPL
 (
     ThirdPartyP2P                    *pThirdPartyP2P,
-    void                             *pKey,
-    NvBool                            bIsRsyncNeeded
+    void                             *pKey
 )
 {
     CLI_THIRD_PARTY_P2P_VIDMEM_INFO *pVidmemInfo = NULL;
 
     NV_ASSERT_OK_OR_RETURN(
         _thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2P, pKey,
-                                          bIsRsyncNeeded, &pVidmemInfo));
+                                          &pVidmemInfo));
 
     CliDelThirdPartyP2PVidmemInfoPersistent(pThirdPartyP2P, pVidmemInfo);
 

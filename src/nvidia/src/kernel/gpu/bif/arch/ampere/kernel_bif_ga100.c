@@ -32,8 +32,66 @@
 #include "platform/chipset/chipset.h"
 #include "published/ampere/ga100/dev_nv_xve.h"
 #include "published/ampere/ga100/dev_nv_xve_addendum.h"
+#include "published/ampere/ga100/dev_nv_pcfg_xve_regmap.h"
+#include "nvmisc.h"
 
 /* ------------------------ Public Functions -------------------------------- */
+
+// XVE register map for PCIe config space
+static const NvU32 xveRegMapValid[] = NV_PCFG_XVE_REGISTER_VALID_MAP;
+static const NvU32 xveRegMapWrite[] = NV_PCFG_XVE_REGISTER_WR_MAP;
+
+/* ------------------------ Public Functions -------------------------------- */
+
+/*!
+ * This function setups the xve register map pointers
+ *
+ * @param[in]  pGpu           GPU object pointer
+ * @param[in]  pKernelBif     Pointer to KernelBif object
+ * @param[in]  func           PCIe function number
+ *
+ * @return  'NV_OK' if successful, an RM error code otherwise.
+ */
+NV_STATUS
+kbifInitXveRegMap_GA100
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    NvU8       func
+)
+{
+    extern NvU32 kbifInitXveRegMap_GM107(OBJGPU *pGpu, KernelBif *pKernelBif, NvU8 func);
+    NV_STATUS  status      = NV_OK;
+    NvU32      controlSize = 0;
+
+    if (func == 0)
+    {
+        pKernelBif->xveRegmapRef[0].nFunc              = 0;
+        pKernelBif->xveRegmapRef[0].xveRegMapValid     = xveRegMapValid;
+        pKernelBif->xveRegmapRef[0].xveRegMapWrite     = xveRegMapWrite;
+        pKernelBif->xveRegmapRef[0].numXveRegMapValid  = NV_ARRAY_ELEMENTS(xveRegMapValid);
+        pKernelBif->xveRegmapRef[0].numXveRegMapWrite  = NV_ARRAY_ELEMENTS(xveRegMapWrite);
+        pKernelBif->xveRegmapRef[0].bufBootConfigSpace = pKernelBif->cacheData.gpuBootConfigSpace;
+        // Each MSIX table entry is 4 NvU32s
+        controlSize = kbifGetMSIXTableVectorControlSize_HAL(pGpu, pKernelBif);
+        if (pKernelBif->xveRegmapRef[0].bufMsixTable == NULL)
+            pKernelBif->xveRegmapRef[0].bufMsixTable = portMemAllocNonPaged(controlSize * 4 * sizeof(NvU32));
+        NV_ASSERT_OR_RETURN(pKernelBif->xveRegmapRef[0].bufMsixTable != NULL, NV_ERR_NO_MEMORY);
+    }
+    else if (func == 1)
+    {
+        // Init regmap for Fn1 using older HAL
+        status = kbifInitXveRegMap_GM107(pGpu, pKernelBif, 1);
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid argument, func: %d.\n", func);
+        NV_ASSERT(0);
+        status = NV_ERR_INVALID_ARGUMENT;
+    }
+
+    return status;
+}
 
 /*!
  * @brief Apply WAR for bug 3208922 - disable P2P on Ampere NB

@@ -49,9 +49,9 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_Ccsl =
     /*pExportInfo=*/        &__nvoc_export_info_Ccsl
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge Ccsl methods from ancestors (if any)
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
+// Up-thunk(s) to bridge Ccsl methods to ancestors (if any)
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_Ccsl = 
 {

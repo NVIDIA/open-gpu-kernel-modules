@@ -544,6 +544,9 @@ struct NvKmsKapiCreateSurfaceParams {
      *      explicit_layout is NV_TRUE and layout is
      *      NvKmsSurfaceMemoryLayoutBlockLinear */
     NvU8 log2GobsPerBlockY;
+
+    /* [IN] Whether a surface can be updated directly on the screen */
+    NvBool noDisplayCaching;
 };
 
 enum NvKmsKapiAllocationType {
@@ -1009,6 +1012,17 @@ struct NvKmsKapiFunctionsTable {
         const struct NvKmsKapiDevice *device,
         const struct NvKmsKapiMemory *memory, NvKmsKapiMappingType type,
         const void *pLinearAddress
+    );
+
+    /*!
+     * Check if memory object allocated is video memory.
+     *
+     * \param [in]  memory           Memory allocated using allocateMemory()
+     *
+     * \return NV_TRUE if memory is vidmem, NV_FALSE otherwise.
+     */
+    NvBool (*isVidmem)(
+        const struct NvKmsKapiMemory *memory
     );
 
     /*!

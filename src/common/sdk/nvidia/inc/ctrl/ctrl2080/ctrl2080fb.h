@@ -389,6 +389,8 @@ typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_FB_INFO;
 #define NV2080_CTRL_FB_INFO_RAM_TYPE_LPDDR5                        (0x00000013U) /* LPDDR (Low Power SDDR) used on T23x and later.*/
 #define NV2080_CTRL_FB_INFO_RAM_TYPE_HBM3                          (0x00000014U) /* HBM3 (High Bandwidth Memory) v3 */
 
+#define NV2080_CTRL_FB_INFO_RAM_TYPE_GDDR7                         (0x00000015U) /* GDDR7 */
+
 
 
 /* valid RAM LOCATION types */
@@ -2669,6 +2671,9 @@ typedef struct NV2080_CTRL_CMD_FB_STATS_GET_PARAMS {
  * @params [OUT] NvBool bStaticBar1Enabled:
  *      This field indicates the static BAR1 mode is enabled. All the following fields are valid
  *      only if static BAR1 mode is enabled.
+  * @params [OUT] NvU64 staticBar1StartOffset:
+ *      Static BAR1 may start at nonzero BAR1 address.
+ *      This field indicates the start offset of the static BAR1.
  * @params [OUT] NvU64 staticBar1Size:
  *      This field indicates the size of the static BAR1.
  *
@@ -2684,7 +2689,168 @@ typedef struct NV2080_CTRL_CMD_FB_STATS_GET_PARAMS {
 
 typedef struct NV2080_CTRL_FB_GET_STATIC_BAR1_INFO_PARAMS {
     NvBool bStaticBar1Enabled;
+    NV_DECLARE_ALIGNED(NvU64 staticBar1StartOffset, 8);
     NV_DECLARE_ALIGNED(NvU64 staticBar1Size, 8);
 } NV2080_CTRL_FB_GET_STATIC_BAR1_INFO_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_PENDING_CONFIGURATION
+ *
+ * This command returns the current DRAM encryption configuration
+ * setting for a GPU given its subdevice handle.  The value returned
+ * is the current DRAM encryption setting for the GPU stored in non-volatile
+ * memory on the board.
+ *
+ *   currentConfiguration
+ *      The current DRAM encryption configuration setting.
+ *
+ * Possible status return values are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ *   NV_ERR_INVALID_STATE
+ */
+#define NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_PENDING_CONFIGURATION      (0x20801355U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_PENDING_CONFIGURATION_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_PENDING_CONFIGURATION_DISABLED (0x00000000U)
+#define NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_PENDING_CONFIGURATION_ENABLED  (0x00000001U)
+
+#define NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_PENDING_CONFIGURATION_PARAMS_MESSAGE_ID (0x55U)
+
+typedef struct NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_PENDING_CONFIGURATION_PARAMS {
+    NvU32 currentConfiguration;
+} NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_PENDING_CONFIGURATION_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_FB_SET_DRAM_ENCRYPTION_CONFIGURATION
+ *
+ * This command changes the DRAM encryption configuration setting for
+ * a GPU given its subdevice handle.  The value specified is stored
+ * in non-volatile memory on the board and will take effect with the
+ * next GPU reset.
+ *
+ *   newConfiguration
+ *     The new configuration setting to take effect with
+ *     the next GPU reset.
+ *
+ * Possible status return values are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV2080_CTRL_CMD_FB_SET_DRAM_ENCRYPTION_CONFIGURATION     (0x20801356U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_SET_DRAM_ENCRYPTION_CONFIGURATION_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_FB_SET_DRAM_ENCRYPTION_CONFIGURATION_DISABLE (0x00000000U)
+#define NV2080_CTRL_FB_SET_DRAM_ENCRYPTION_CONFIGURATION_ENABLE  (0x00000001U)
+
+#define NV2080_CTRL_FB_SET_DRAM_ENCRYPTION_CONFIGURATION_PARAMS_MESSAGE_ID (0x56U)
+
+typedef struct NV2080_CTRL_FB_SET_DRAM_ENCRYPTION_CONFIGURATION_PARAMS {
+    NvU32 newConfiguration;
+} NV2080_CTRL_FB_SET_DRAM_ENCRYPTION_CONFIGURATION_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_FB_GET_STATUS
+ *
+ * This control command is used by clients to get the FB availabilty status,
+ * i.e whether the GPU Memory is ready for use or not for MIG and non-MIG cases
+ *
+ *  fbStatus[OUT]
+ *     This parameter returns the various values of FB availability status.
+ *     Valid values include:
+ *       NV2080_CTRL_FB_STATUS_FAILED
+ *          On Non Self hosted (Non NUMA) systems - this status is not expected since
+ *              FB memory is available as part of GPU initialization itself.
+ *          On Direct connected Self hosted systems - this status is not expected since
+ *              FB memory is available as part of GPU initialization itself.
+ *          On Nvswitch connected Self hosted systems - this status indicates that either
+ *              the memory onlining has failed or fabric probe response has failed.
+ *              GPU reset maybe required in such a case.
+ *       NV2080_CTRL_FB_STATUS_READY
+ *          On Non Self hosted systems - this status is always returned as memory is ready
+ *              after GPU initialization is complete.
+ *          On Self hosted systems - this status indicates that the FB memory has been onlined
+ *              successfully and is available for client/user allocations.
+ *       NV2080_CTRL_FB_STATUS_PENDING
+ *          On Non Self hosted systems - this status is not expected
+ *          On Direct connected Self hosted systems - this status is not expected since
+ *              FB memory is available as part of GPU initialization itself.
+ *          On Nvswitch connected Self hosted systems - This status indicates memory is yet to
+ *              be onlined or is in progress since we are either still waiting for a fabric
+ *              probe response or a fabric probe request hasn't been sent yet.
+ *       NV2080_CTRL_FB_STATUS_NOT_APPLICABLE
+ *          This status indicates that this is a system with no FB memory.
+ *
+ *
+ * @returns Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_STATE
+ *   NV_ERR_NOT_SUPPORTED
+ *   NV_ERR_NOT_READY
+ *   NV_ERR_INVALID_LOCK_STATE
+ */
+#define NV2080_CTRL_CMD_FB_GET_STATUS        (0x20801357U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_GET_STATUS_PARAMS_MESSAGE_ID" */
+
+// NUMA Memory Onlining Status
+#define NV2080_CTRL_FB_STATUS_FAILED         (0x00000000U)
+#define NV2080_CTRL_FB_STATUS_READY          (0x00000001U)
+#define NV2080_CTRL_FB_STATUS_PENDING        (0x00000002U)
+#define NV2080_CTRL_FB_STATUS_NOT_APPLICABLE (0x00000003U)
+
+#define NV2080_CTRL_FB_GET_STATUS_PARAMS_MESSAGE_ID (0x57U)
+
+typedef struct NV2080_CTRL_FB_GET_STATUS_PARAMS {
+
+    NvU32 fbStatus;
+} NV2080_CTRL_FB_GET_STATUS_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_INFOROM_SUPPORT
+ *
+ * This command returns whether or not DRAM encryption config object is supported via the InfoROM.
+ *
+ *  isSupported [OUT]
+ *     This parameter returns whether the DRAM Encryption inforom object is present in the inforom.
+ *     The various values of isSupported is:
+ *         1. NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_INFOROM_SUPPORT_DISABLED
+ *         2. NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_INFOROM_SUPPORT_ENABLED
+ *
+ * Possible status return values are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_INFOROM_SUPPORT          (0x20801358U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_DRAM_ENCRYPTION_INFOROM_SUPPORT_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_INFOROM_SUPPORT_DISABLED (0x00000000U)
+#define NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_INFOROM_SUPPORT_ENABLED  (0x00000001U)
+
+#define NV2080_CTRL_FB_DRAM_ENCRYPTION_INFOROM_SUPPORT_PARAMS_MESSAGE_ID (0x58U)
+
+typedef struct NV2080_CTRL_FB_DRAM_ENCRYPTION_INFOROM_SUPPORT_PARAMS {
+    NvU32 isSupported;
+} NV2080_CTRL_FB_DRAM_ENCRYPTION_INFOROM_SUPPORT_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_STATUS
+ *
+ * This command returns the current DRAM encryption status.
+ *
+ *   currentStatus
+ *      The current DRAM encryption status.
+ *
+ * Possible status return values are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ *   NV_ERR_INVALID_STATE
+ */
+#define NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_STATUS          (0x20801359U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_STATUS_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_STATUS_DISABLED (0x00000000U)
+#define NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_STATUS_ENABLED  (0x00000001U)
+
+#define NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_STATUS_PARAMS_MESSAGE_ID (0x59U)
+
+typedef struct NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_STATUS_PARAMS {
+    NvU32 currentStatus;
+} NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_STATUS_PARAMS;
 
 /* _ctrl2080fb_h_ */

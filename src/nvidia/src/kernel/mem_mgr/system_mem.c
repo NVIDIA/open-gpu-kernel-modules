@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,6 +41,51 @@
 
 #include "class/cl003e.h" // NV01_MEMORY_SYSTEM
 
+void sysmemSetCacheAttrib
+(
+    NV_MEMORY_ALLOCATION_PARAMS     *pAllocData,
+    NvU32                           *pCpuCacheAttrib,
+    NvU32                           *pGpuCacheAttrib
+)
+{
+    //
+    // For system memory default to GPU uncached. GPU caching is different from
+    // the expected default memory model since it is not coherent.  Clients must
+    // understand this and handle any coherency requirements explicitly.
+    //
+    if (DRF_VAL(OS32, _ATTR2, _GPU_CACHEABLE, pAllocData->attr2) ==
+        NVOS32_ATTR2_GPU_CACHEABLE_DEFAULT)
+    {
+        pAllocData->attr2 = FLD_SET_DRF(OS32, _ATTR2, _GPU_CACHEABLE, _NO,
+                                        pAllocData->attr2);
+    }
+
+    if (DRF_VAL(OS32, _ATTR2, _GPU_CACHEABLE, pAllocData->attr2) ==
+        NVOS32_ATTR2_GPU_CACHEABLE_YES)
+    {
+        *pGpuCacheAttrib = NV_MEMORY_CACHED;
+    }
+    else
+    {
+        *pGpuCacheAttrib = NV_MEMORY_UNCACHED;
+    }
+
+    if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_UNCACHED)
+        *pCpuCacheAttrib = NV_MEMORY_UNCACHED;
+    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_CACHED)
+        *pCpuCacheAttrib = NV_MEMORY_CACHED;
+    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_COMBINE)
+        *pCpuCacheAttrib = NV_MEMORY_WRITECOMBINED;
+    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_THROUGH)
+        *pCpuCacheAttrib = NV_MEMORY_CACHED;
+    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_PROTECT)
+        *pCpuCacheAttrib = NV_MEMORY_CACHED;
+    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_BACK)
+        *pCpuCacheAttrib = NV_MEMORY_CACHED;
+    else
+        *pCpuCacheAttrib = 0;
+}
+
 /*!
  * sysmemConstruct
  *
@@ -80,6 +125,7 @@ sysmemConstruct_IMPL
     NvU32 gpuCacheAttrib;
     NV_STATUS rmStatus = NV_OK;
     NvHandle hClient = pCallContext->pClient->hClient;
+    RmClient *pRmClient = dynamicCast(pCallContext->pClient, RmClient);
     NvHandle hParent = pCallContext->pResourceRef->pParentRef->hResource;
     NvU64 sizeOut;
     NvU64 offsetOut;
@@ -88,11 +134,13 @@ sysmemConstruct_IMPL
     NvU32 flags;
     StandardMemory *pStdMemory = staticCast(pSystemMemory, StandardMemory);
 
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+
     // Copy-construction has already been done by the base Memory class
     if (RS_IS_COPY_CTOR(pParams))
         return NV_OK;
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, stdmemValidateParams(pGpu, hClient, pAllocData));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, stdmemValidateParams(pGpu, pRmClient, pAllocData));
     NV_CHECK_OR_RETURN(LEVEL_ERROR,
                        DRF_VAL(OS32, _ATTR, _LOCATION, pAllocData->attr) != NVOS32_ATTR_LOCATION_VIDMEM &&
                            !(pAllocData->flags & NVOS32_ALLOC_FLAGS_VIRTUAL),
@@ -148,42 +196,7 @@ sysmemConstruct_IMPL
     sizeOut = pMemDesc->Size;
     pAllocData->limit = sizeOut - 1;
 
-    //
-    // For system memory default to GPU uncached.  GPU caching is different from
-    // the expected default memory model since it is not coherent.  Clients must
-    // understand this an handle any coherency requirements explicitly.
-    //
-    if (DRF_VAL(OS32, _ATTR2, _GPU_CACHEABLE, pAllocData->attr2) ==
-        NVOS32_ATTR2_GPU_CACHEABLE_DEFAULT)
-    {
-        pAllocData->attr2 = FLD_SET_DRF(OS32, _ATTR2, _GPU_CACHEABLE, _NO,
-                                        pAllocData->attr2);
-    }
-
-    if (DRF_VAL(OS32, _ATTR2, _GPU_CACHEABLE, pAllocData->attr2) ==
-        NVOS32_ATTR2_GPU_CACHEABLE_YES)
-    {
-        gpuCacheAttrib = NV_MEMORY_CACHED;
-    }
-    else
-    {
-        gpuCacheAttrib = NV_MEMORY_UNCACHED;
-    }
-
-    if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_UNCACHED)
-        Cache = NV_MEMORY_UNCACHED;
-    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_CACHED)
-        Cache = NV_MEMORY_CACHED;
-    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_COMBINE)
-        Cache = NV_MEMORY_WRITECOMBINED;
-    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_THROUGH)
-        Cache = NV_MEMORY_CACHED;
-    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_PROTECT)
-        Cache = NV_MEMORY_CACHED;
-    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_BACK)
-        Cache = NV_MEMORY_CACHED;
-    else
-        Cache = 0;
+    sysmemSetCacheAttrib(pAllocData, &Cache, &gpuCacheAttrib);
 
     ct_assert(NVOS32_ATTR_COHERENCY_UNCACHED      == NVOS02_FLAGS_COHERENCY_UNCACHED);
     ct_assert(NVOS32_ATTR_COHERENCY_CACHED        == NVOS02_FLAGS_COHERENCY_CACHED);

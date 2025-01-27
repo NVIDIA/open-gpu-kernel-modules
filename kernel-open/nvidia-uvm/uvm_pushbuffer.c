@@ -502,6 +502,7 @@ void uvm_pushbuffer_mark_completed(uvm_channel_t *channel, uvm_gpfifo_entry_t *g
 
     if (push_info->on_complete != NULL) {
         decrypt_push(channel, gpfifo);
+
         push_info->on_complete(push_info->on_complete_data);
         push_info->on_complete = NULL;
         push_info->on_complete_data = NULL;

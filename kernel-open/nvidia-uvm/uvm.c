@@ -680,6 +680,9 @@ static void uvm_vm_open_semaphore_pool(struct vm_area_struct *vma)
     // Semaphore pool vmas do not have vma wrappers, but some functions will
     // assume vm_private_data is a wrapper.
     vma->vm_private_data = NULL;
+#if defined(VM_WIPEONFORK)
+    nv_vm_flags_set(vma, VM_WIPEONFORK);
+#endif
 
     if (is_fork) {
         // If we forked, leave the parent vma alone.
@@ -772,6 +775,9 @@ static void uvm_vm_open_device_p2p(struct vm_area_struct *vma)
     // Device P2P vmas do not have vma wrappers, but some functions will
     // assume vm_private_data is a wrapper.
     vma->vm_private_data = NULL;
+#if defined(VM_WIPEONFORK)
+    nv_vm_flags_set(vma, VM_WIPEONFORK);
+#endif
 
     if (is_fork) {
         // If we forked, leave the parent vma alone.

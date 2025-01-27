@@ -167,7 +167,7 @@ knvlinkLogAliDebugMessages_GB100
     failure = 0;
     portMemSet(failures, 0x0, sizeof(failures));
 
-    FOR_EACH_INDEX_IN_MASK(32, link, pKernelNvlink->postRxDetLinkMask)
+    FOR_EACH_INDEX_IN_MASK(32, link, KNVLINK_GET_MASK(pKernelNvlink, postRxDetLinkMask, 32))
     {
         if ((pParams->linkErrInfo[link].DLStatMN00 & 0xffff) != 0x0)
         {
@@ -362,6 +362,34 @@ knvlinkGetSupportedBwMode_GB100
         }
     }
     pParams->rbmTotalModes = i;
+
+    return NV_OK;
+}
+
+/*!
+ * @brief   Validates fabric EGM base address.
+ *
+ * @param[in]  pGpu              OBJGPU pointer
+ * @param[in]  pKernelNvlink     KernelNvlink pointer
+ * @param[in]  fabricEgmBaseAddr Address to be validated
+ *
+ * @returns On success, NV_OK.
+ *          On failure, returns NV_ERR_XXX.
+ */
+NV_STATUS
+knvlinkValidateFabricEgmBaseAddress_GB100
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NvU64         fabricEgmBaseAddr
+)
+{
+    // SW WAR for HW bug 4851258 requires fabric address to use only bits 46:44
+    if ((fabricEgmBaseAddr & ~(((NvU64)0x7ULL) << 44)) != 0)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid EGM fabric address: 0x%llx\n", fabricEgmBaseAddr);
+        return NV_ERR_INVALID_ARGUMENT;
+    }
 
     return NV_OK;
 }

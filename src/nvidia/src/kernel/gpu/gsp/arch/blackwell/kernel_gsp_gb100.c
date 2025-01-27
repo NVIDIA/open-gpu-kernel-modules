@@ -160,7 +160,6 @@ kgspServiceFatalHwError_GB100
 )
 {
     NvU32 errorCode = GPU_REG_RD32(pGpu, NV_PGSP_RISCV_FAULT_CONTAINMENT_SRCSTAT);
-    NvU32 errorType = ROBUST_CHANNEL_CONTAINED_ERROR;
 
     if (!FLD_TEST_DRF(_PGSP_FALCON, _IRQSTAT, _FATAL_ERROR, _TRUE, intrStatus))
     {
@@ -184,22 +183,16 @@ kgspServiceFatalHwError_GB100
         if (!gpuIsGlobalPoisonFuseEnabled(pGpu))
         {
             NV_ASSERT_FAILED("GSP poison pending when poison is disabled");
-            return;
         }
 
         NV_ASSERT_OK(gpuUpdateErrorContainmentState_HAL(pGpu, NV_ERROR_CONT_ERR_ID_E24_GSP_POISON, loc, NULL));
     }
-    else if (gpuIsFlcnRiscvParityError(pGpu, errorCode))
-    {
-        errorType = ROBUST_CHANNEL_GPU_ECC_DBE;
-    }
-    // Log non-parity errors since parity errors are logged in the ECC handler
     else
     {
-        nvErrorLog_va((void *)pGpu, errorType, "GSP-RISCV fatal error");
+        nvErrorLog_va((void *)pGpu, ROBUST_CHANNEL_CONTAINED_ERROR, "GSP-RISCV instance 0 fatal error");
     }
 
     pKernelGsp->bFatalError = NV_TRUE;
-    kgspRcAndNotifyAllChannels(pGpu, pKernelGsp, errorType, NV_TRUE);
+    kgspRcAndNotifyAllChannels(pGpu, pKernelGsp, ROBUST_CHANNEL_CONTAINED_ERROR, NV_TRUE);
     NV_ASSERT_OK(gpuMarkDeviceForReset(pGpu));
 }

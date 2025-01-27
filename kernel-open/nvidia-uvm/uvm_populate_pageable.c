@@ -193,7 +193,8 @@ NV_STATUS uvm_populate_pageable(struct mm_struct *mm,
                                 const unsigned long length,
                                 int min_prot,
                                 bool touch,
-                                uvm_populate_permissions_t populate_permissions)
+                                uvm_populate_permissions_t populate_permissions,
+                                NvU32 flags)
 {
     struct vm_area_struct *vma;
     const unsigned long end = start + length;
@@ -211,8 +212,20 @@ NV_STATUS uvm_populate_pageable(struct mm_struct *mm,
     // different protection flags
     // Validation of VM_SPECIAL flags is delegated to get_user_pages
     for (; vma && vma->vm_start <= prev_end; vma = find_vma_intersection(mm, prev_end, end)) {
-        NV_STATUS status = uvm_populate_pageable_vma(vma, start, end - start, min_prot, touch, populate_permissions);
+        NV_STATUS status;
 
+        // Population of UVM-owned VMAs is only allowed for test purposes. The
+        // goal is to validate that it is possible to populate pageable ranges
+        // backed by VMAs with the VM_MIXEDMAP or VM_DONTEXPAND special flags
+        // set. But since there is no portable way to force allocation of such
+        // memory from user space, and it is not safe to change the flags of an
+        // already-created VMA from kernel space, we take advantage of the fact
+        // that managed ranges have both special flags set at creation time (see
+        // uvm_mmap)
+        if (!(flags & UVM_POPULATE_PAGEABLE_FLAG_ALLOW_MANAGED) && uvm_file_is_nvidia_uvm(vma->vm_file))
+            return NV_ERR_INVALID_ADDRESS;
+
+        status = uvm_populate_pageable_vma(vma, start, end - start, min_prot, touch, populate_permissions);
         if (status != NV_OK)
             return status;
 
@@ -229,10 +242,8 @@ NV_STATUS uvm_populate_pageable(struct mm_struct *mm,
 NV_STATUS uvm_api_populate_pageable(const UVM_POPULATE_PAGEABLE_PARAMS *params, struct file *filp)
 {
     NV_STATUS status;
-    bool allow_managed;
     bool skip_prot_check;
     int min_prot;
-    uvm_va_space_t *va_space = uvm_va_space_get(filp);
 
     if (params->flags & ~UVM_POPULATE_PAGEABLE_FLAGS_ALL)
         return NV_ERR_INVALID_ARGUMENT;
@@ -241,15 +252,6 @@ NV_STATUS uvm_api_populate_pageable(const UVM_POPULATE_PAGEABLE_PARAMS *params, 
         UVM_INFO_PRINT("Test flag set for UVM_POPULATE_PAGEABLE. Did you mean to insmod with uvm_enable_builtin_tests=1?\n");
         return NV_ERR_INVALID_ARGUMENT;
     }
-
-    // Population of managed ranges is only allowed for test purposes. The goal
-    // is to validate that it is possible to populate pageable ranges backed by
-    // VMAs with the VM_MIXEDMAP or VM_DONTEXPAND special flags set. But since
-    // there is no portable way to force allocation of such memory from user
-    // space, and it is not safe to change the flags of an already created
-    // VMA from kernel space, we take advantage of the fact that managed ranges
-    // have both special flags set at creation time (see uvm_mmap)
-    allow_managed = params->flags & UVM_POPULATE_PAGEABLE_FLAG_ALLOW_MANAGED;
 
     skip_prot_check = params->flags & UVM_POPULATE_PAGEABLE_FLAG_SKIP_PROT_CHECK;
     if (skip_prot_check)
@@ -265,19 +267,17 @@ NV_STATUS uvm_api_populate_pageable(const UVM_POPULATE_PAGEABLE_PARAMS *params, 
     // mmap_lock is needed to traverse the vmas in the input range and call
     // into get_user_pages. Unlike most UVM APIs, this one is defined to only
     // work on current->mm, not the mm associated with the VA space (if any).
+    // This means we do not need to take the VA space lock. The VA space of this
+    // file might not even be associated with this mm.
     uvm_down_read_mmap_lock(current->mm);
 
-    if (allow_managed || uvm_va_space_range_empty(va_space, params->base, params->base + params->length - 1)) {
-        status = uvm_populate_pageable(current->mm,
-                                       params->base,
-                                       params->length,
-                                       min_prot,
-                                       false,
-                                       UVM_POPULATE_PERMISSIONS_INHERIT);
-    }
-    else {
-        status = NV_ERR_INVALID_ADDRESS;
-    }
+    status = uvm_populate_pageable(current->mm,
+                                   params->base,
+                                   params->length,
+                                   min_prot,
+                                   false,
+                                   UVM_POPULATE_PERMISSIONS_INHERIT,
+                                   params->flags);
 
     uvm_up_read_mmap_lock(current->mm);
 

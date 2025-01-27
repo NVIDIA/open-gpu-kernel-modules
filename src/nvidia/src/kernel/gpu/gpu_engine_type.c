@@ -49,7 +49,12 @@ ct_assert(RM_ENGINE_TYPE_LAST == NV2080_ENGINE_TYPE_LAST);
  */
 RM_ENGINE_TYPE gpuGetRmEngineType_IMPL(NvU32 index)
 {
-    NV_ASSERT_OR_RETURN(index < NV2080_ENGINE_TYPE_LAST, RM_ENGINE_TYPE_LAST);
+    //
+    // The passed in index generally comes from outside RM itself w/o any checking. To
+    // avoid log spam, we no longer assert on the value per the new policy on parameter
+    // validation.
+    //
+    NV_CHECK_OR_RETURN(LEVEL_INFO, index < NV2080_ENGINE_TYPE_LAST, RM_ENGINE_TYPE_LAST);
 
     switch (index)
     {
@@ -83,6 +88,8 @@ RM_ENGINE_TYPE gpuGetRmEngineType_IMPL(NvU32 index)
         case NV2080_ENGINE_TYPE_NVENC0:                 return RM_ENGINE_TYPE_NVENC0;
         case NV2080_ENGINE_TYPE_NVENC1:                 return RM_ENGINE_TYPE_NVENC1;
         case NV2080_ENGINE_TYPE_NVENC2:                 return RM_ENGINE_TYPE_NVENC2;
+// Bug 4175886 - Use this new value for all chips once GB20X is released
+        case NV2080_ENGINE_TYPE_NVENC3:                 return RM_ENGINE_TYPE_NVENC3;
         case NV2080_ENGINE_TYPE_VP:                     return RM_ENGINE_TYPE_VP;
         case NV2080_ENGINE_TYPE_ME:                     return RM_ENGINE_TYPE_ME;
         case NV2080_ENGINE_TYPE_PPP:                    return RM_ENGINE_TYPE_PPP;
@@ -154,6 +161,10 @@ RM_ENGINE_TYPE gpuGetRmEngineType_IMPL(NvU32 index)
  */
 NvU32 gpuGetNv2080EngineType_IMPL(RM_ENGINE_TYPE index)
 {
+    //
+    // RM itself should never generate an out of range value, so we
+    // continue to assert here to catch internal RM programming errors.
+    //
     NV_ASSERT_OR_RETURN(index < RM_ENGINE_TYPE_LAST, NV2080_ENGINE_TYPE_LAST);
 
     switch (index)
@@ -198,6 +209,8 @@ NvU32 gpuGetNv2080EngineType_IMPL(RM_ENGINE_TYPE index)
         case RM_ENGINE_TYPE_NVENC0:     return NV2080_ENGINE_TYPE_NVENC0;
         case RM_ENGINE_TYPE_NVENC1:     return NV2080_ENGINE_TYPE_NVENC1;
         case RM_ENGINE_TYPE_NVENC2:     return NV2080_ENGINE_TYPE_NVENC2;
+// Bug 4175886 - Use this new value for all chips once GB20X is released
+        case RM_ENGINE_TYPE_NVENC3:     return NV2080_ENGINE_TYPE_NVENC3;
         case RM_ENGINE_TYPE_VP:         return NV2080_ENGINE_TYPE_VP;
         case RM_ENGINE_TYPE_ME:         return NV2080_ENGINE_TYPE_ME;
         case RM_ENGINE_TYPE_PPP:        return NV2080_ENGINE_TYPE_PPP;

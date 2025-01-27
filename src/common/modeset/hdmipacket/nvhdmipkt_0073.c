@@ -359,6 +359,33 @@ hdmiClearFRLConfigDummy(NVHDMIPKT_CLASS                   *pThis,
     return NVHDMIPKT_SUCCESS;
 }
 
+NVHDMIPKT_RESULT
+hdmiPacketReadDummy(NVHDMIPKT_CLASS*   pThis,
+                    NvU32              subDevice,
+                    NvU32              head,
+                    NVHDMIPKT_TYPE     packetReg,
+                    NvU32              bufferLen,
+                    NvU8 *const        pOutPktBuffer)
+{
+    NvHdmiPkt_Print(pThis, "ERROR - Dummy function hdmiPacketReadDummy called. "
+                           "Should never be called.");
+    NvHdmiPkt_Assert(0);
+    return NVHDMIPKT_SUCCESS;
+}
+
+NVHDMIPKT_RESULT
+programAdvancedInfoframeDummy(NVHDMIPKT_CLASS*          pThis,
+                              NvU32                     subDevice,
+                              NvU32                     head,
+                              NVHDMIPKT_TYPE            packetReg,
+                              const ADVANCED_INFOFRAME* pInfoframe)
+{
+    NvHdmiPkt_Print(pThis, "ERROR - Dummy function programAdvancedInfoframeDummy called. "
+                           "Should never be called.");
+    NvHdmiPkt_Assert(0);
+    return NVHDMIPKT_SUCCESS;
+}
+
 /*
  * initializeHdmiPktInterface0073
  */
@@ -389,4 +416,7 @@ initializeHdmiPktInterface0073(NVHDMIPKT_CLASS* pClass)
     pClass->hdmiSetFRLConfig            = hdmiSetFRLConfigDummy;
     pClass->hdmiClearFRLConfig          = hdmiClearFRLConfigDummy;
 
+    // More (generic) infoframe support on T239+
+    pClass->hdmiPacketRead              = hdmiPacketReadDummy;
+    pClass->programAdvancedInfoframe    = programAdvancedInfoframeDummy;
 }

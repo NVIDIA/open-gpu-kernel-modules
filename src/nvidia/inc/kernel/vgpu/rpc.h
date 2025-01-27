@@ -73,6 +73,7 @@ typedef struct ContextDma ContextDma;
                 {                                                                                  \
                     root_alloc_params.processID = pClient->ProcID;                                 \
                     NV_ASSERT(root_alloc_params.processID == osGetCurrentProcess());               \
+                    root_alloc_params.pOsPidInfo = (NvP64)(pClient->pOsPidInfo);                   \
                 }                                                                                  \
             }                                                                                      \
             else                                                                                   \

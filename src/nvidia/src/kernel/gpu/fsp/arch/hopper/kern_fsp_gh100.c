@@ -863,6 +863,19 @@ kfspGetGspUcodeArchive
         {
             if (gpuIsGspToBootInInstInSysMode_HAL(pGpu))
             {
+                NV_PRINTF(LEVEL_ERROR, "Loading GSP debug inst-in-sys image for monolithic RM using FSP.\n");
+
+                //
+                // GB20X inst-in-sys images will reset PMU, FBFALCON, FECS and GPCCS
+                // and then lower CPUCTL/reset PLM.
+                // Reason for that is that there is fuse configration
+                // changing source isolation of those registers (to GSP/FSP/SEC2).
+                //
+                if (IsGB20X(pGpu))
+                {
+                    pGsp->setProperty(pGsp, PDB_PROP_GSP_INST_IN_SYS_FMC_WILL_RESET_ENGINES, NV_TRUE);
+                }
+
                 return gspGetBinArchiveGspFmcInstInSysGfwDebugSigned_HAL(pGsp);
             }
             else
@@ -879,9 +892,7 @@ kfspGetGspUcodeArchive
                 if ((pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED)      == NV_TRUE) &&
                     (pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED) == NV_TRUE))
                 {
-                    {
-                        return gspGetBinArchiveGspFmcSpdmGfwDebugSigned_HAL(pGsp);
-                    }
+                    return gspGetBinArchiveGspFmcSpdmGfwDebugSigned_HAL(pGsp);
                 }
                 else
                 {
@@ -893,6 +904,19 @@ kfspGetGspUcodeArchive
         {
             if (gpuIsGspToBootInInstInSysMode_HAL(pGpu))
             {
+                NV_PRINTF(LEVEL_ERROR, "Loading GSP prod inst-in-sys image for monolithic RM using FSP.\n");
+
+                //
+                // GB20X inst-in-sys images will reset PMU, FBFALCON, FECS and GPCCS
+                // and then lower CPUCTL/reset PLM.
+                // Reason for that is that there is fuse configration
+                // changing source isolation of those registers (to GSP/FSP/SEC2).
+                //
+                if (IsGB20X(pGpu))
+                {
+                    pGsp->setProperty(pGsp, PDB_PROP_GSP_INST_IN_SYS_FMC_WILL_RESET_ENGINES, NV_TRUE);
+                }
+
                 return gspGetBinArchiveGspFmcInstInSysGfwProdSigned_HAL(pGsp);
             }
             else
@@ -1265,12 +1289,9 @@ kfspPrepareBootCommands_GH100
     NvU32 frtsSize = 0;
     NvP64 pVaKernel = NULL;
     NvP64 pPrivKernel = NULL;
-
-    status = kfspSafeToSendBootCommands(pGpu, pKernelFsp);
-    if (status != NV_OK)
-    {
-        return status;
-    }
+    NvBool bIsKeepWPRGc6D3Cold = pGpu->getProperty(pGpu, PDB_PROP_GPU_KEEP_WPR_ACROSS_GC6_SUPPORTED) &&
+                                 IS_GPU_GC6_STATE_EXITING(pGpu) &&
+                                 pKernelFsp->bUseKeepWPRGc6FSPCommand;
 
     statusBoot = kfspWaitForSecureBoot_HAL(pGpu, pKernelFsp);
 
@@ -1278,6 +1299,14 @@ kfspPrepareBootCommands_GH100
     if (statusBoot != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "FSP secure boot partition timed out.\n");
+        status = statusBoot;
+        goto failed;
+    }
+
+    statusBoot = kfspSafeToSendBootCommands(pGpu, pKernelFsp);
+    if (statusBoot != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "FSP secure boot GSP prechecks failed.\n");
         status = statusBoot;
         goto failed;
     }
@@ -1321,9 +1350,13 @@ kfspPrepareBootCommands_GH100
         }
     }
 
-    pKernelFsp->pCotPayload = portMemAllocNonPaged(sizeof(NVDM_PAYLOAD_COT));
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelFsp->pCotPayload != NULL, NV_ERR_NO_MEMORY);
-    portMemSet(pKernelFsp->pCotPayload, 0, sizeof(NVDM_PAYLOAD_COT));
+    // COT payload is freed in FSP state cleanup during state destroy.
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH))
+    {
+        pKernelFsp->pCotPayload = portMemAllocNonPaged(sizeof(NVDM_PAYLOAD_COT));
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, (pKernelFsp->pCotPayload == NULL) ? NV_ERR_NO_MEMORY : NV_OK, failed);
+        portMemSet(pKernelFsp->pCotPayload, 0, sizeof(NVDM_PAYLOAD_COT));
+    }
 
     frtsSize = NV_PGC6_AON_FRTS_INPUT_WPR_SIZE_SECURE_SCRATCH_GROUP_03_0_WPR_SIZE_1MB_IN_4K << 12;
     NV_ASSERT(frtsSize != 0);
@@ -1367,8 +1400,11 @@ kfspPrepareBootCommands_GH100
             failed);
     }
 
+    //
     // Set up vidmem for FRTS copy
-    if (!pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM))
+    // With Keep WPR feature, set Frts_In_Fb_Requested to False for VBIOS.
+    //
+    if (!pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM) && !bIsKeepWPRGc6D3Cold)
     {
         //
         // Since we are very early in the boot path, we cannot know how much
@@ -1416,18 +1452,30 @@ kfspPrepareBootCommands_GH100
         pKernelFsp->pCotPayload->frtsVidmemOffset = frtsOffsetFromEnd;
         pKernelFsp->pCotPayload->frtsVidmemSize = frtsSize;
     }
+    else
+    {
+        pKernelFsp->pCotPayload->frtsVidmemOffset = 0;
+        pKernelFsp->pCotPayload->frtsVidmemSize = 0;
+    }
 
-    pKernelFsp->pCotPayload->gspFmcSysmemOffset = (NvU64)-1;
-    pKernelFsp->pCotPayload->gspBootArgsSysmemOffset = (NvU64)-1;
+    if (!bIsKeepWPRGc6D3Cold)
+    {
+        pKernelFsp->pCotPayload->gspFmcSysmemOffset = (NvU64)-1;
+        pKernelFsp->pCotPayload->gspBootArgsSysmemOffset = (NvU64)-1;
+    }
 
     // Set up GSP-FMC for FSP to boot GSP
     if (!pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_GSPFMC))
     {
-        status = kfspSetupGspImages(pGpu, pKernelFsp, pKernelFsp->pCotPayload);
-        if (status!= NV_OK)
+        // With Keep WPR feature, we can reuse the GSP-FMC image in FB.
+        if (!bIsKeepWPRGc6D3Cold)
         {
-            NV_PRINTF(LEVEL_ERROR, "Ucode image preparation failed!\n");
-            goto failed;
+            status = kfspSetupGspImages(pGpu, pKernelFsp, pKernelFsp->pCotPayload);
+            if (status!= NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Ucode image preparation failed!\n");
+                goto failed;
+            }
         }
 
     }
@@ -1526,6 +1574,7 @@ kfspPrepareAndSendBootCommands_GH100
 {
     NV_STATUS status;
     status = kfspPrepareBootCommands_GH100(pGpu, pKernelFsp);
+    pKernelFsp->bUseKeepWPRGc6FSPCommand = NV_FALSE;
     if (status != NV_OK)
     {
         return (status == NV_WARN_NOTHING_TO_DO) ? NV_OK : status;

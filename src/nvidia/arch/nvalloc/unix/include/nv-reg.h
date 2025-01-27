@@ -387,32 +387,6 @@
 #define NV_REG_IGNORE_MMIO_CHECK NV_REG_STRING(__NV_IGNORE_MMIO_CHECK)
 
 /*
- * Option: TCEBypassMode
- *
- * Description:
- *
- * When this option is enabled, the NVIDIA kernel module will attempt to setup
- * all GPUs in "TCE bypass mode", in which DMA mappings of system memory bypass
- * the IOMMU/TCE remapping hardware on IBM POWER systems. This is typically
- * necessary for CUDA applications in which large system memory mappings may
- * exceed the default TCE remapping capacity when operated in non-bypass mode.
- *
- * This option has no effect on non-POWER platforms.
- *
- * Possible Values:
- *
- *  0: system default TCE mode on all GPUs
- *  1: enable TCE bypass mode on all GPUs
- *  2: disable TCE bypass mode on all GPUs
- */
-#define __NV_TCE_BYPASS_MODE TCEBypassMode
-#define NV_REG_TCE_BYPASS_MODE NV_REG_STRING(__NV_TCE_BYPASS_MODE)
-
-#define NV_TCE_BYPASS_MODE_DEFAULT  0
-#define NV_TCE_BYPASS_MODE_ENABLE   1
-#define NV_TCE_BYPASS_MODE_DISABLE  2
-
-/*
  * Option: pci
  *
  * Description:
@@ -899,7 +873,7 @@
  *
  * This option allows users to specify whether the NVIDIA driver must create
  * the IMEX channel 0 by default. The channel will be created automatically
- * when an application (e.g. nvidia-smi, nvidia-persistenced) is run.
+ * when the NVIDIA open GPU kernel module is loaded.
  *
  * Note that users are advised to enable this option only in trusted
  * environments where it is acceptable for applications to share the same
@@ -914,6 +888,26 @@
  */
 #define __NV_CREATE_IMEX_CHANNEL_0 CreateImexChannel0
 #define NV_CREATE_IMEX_CHANNEL_0 NV_REG_STRING(__CREATE_IMEX_CHANNEL_0)
+
+/*
+ * Option: NVreg_GrdmaPciTopoCheckOverride
+ *
+ * Description:
+ *
+ * This option is applicable only on coherent systems with BAR1 enabled to allow
+ * maximum bandwidth between GPU and a third party device over a dedicated
+ * PCIe link instead of over C2C for GPUDirect RDMA use-cases.
+ * Such a config is only supported for a specific topology which is checked by
+ * the GPU driver's dma-buf and nv-p2p subsystems.
+ *
+ * This option allows the user to override the driver's topology check.
+ *
+ * Possible values:
+ * 0 - Do not override topology check (default).
+ * 1 - Override topology check.
+ */
+#define __NV_GRDMA_PCI_TOPO_CHECK_OVERRIDE GrdmaPciTopoCheckOverride
+#define NV_GRDMA_PCI_TOPO_CHECK_OVERRIDE NV_REG_STRING(__NV_GRDMA_PCI_TOPO_CHECK_OVERRIDE)
 
 #if defined(NV_DEFINE_REGISTRY_KEY_TABLE)
 
@@ -931,7 +925,6 @@ NV_DEFINE_REG_ENTRY(__NV_INITIALIZE_SYSTEM_MEMORY_ALLOCATIONS, 1);
 NV_DEFINE_REG_ENTRY(__NV_USE_PAGE_ATTRIBUTE_TABLE, ~0);
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_PCIE_GEN3, 0);
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_MSI, 1);
-NV_DEFINE_REG_ENTRY(__NV_TCE_BYPASS_MODE, NV_TCE_BYPASS_MODE_DEFAULT);
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_STREAM_MEMOPS, 0);
 NV_DEFINE_REG_ENTRY(__NV_RM_PROFILING_ADMIN_ONLY_PARAMETER, 1);
 NV_DEFINE_REG_ENTRY(__NV_PRESERVE_VIDEO_MEMORY_ALLOCATIONS, 0);
@@ -966,6 +959,7 @@ NV_DEFINE_REG_STRING_ENTRY(__NV_RM_NVLINK_BW, NULL);
 NV_DEFINE_REG_ENTRY(__NV_RM_NVLINK_BW_LINK_COUNT, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_IMEX_CHANNEL_COUNT, 2048);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_CREATE_IMEX_CHANNEL_0, 0);
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_GRDMA_PCI_TOPO_CHECK_OVERRIDE, 0);
 
 /*
  *----------------registry database definition----------------------
@@ -993,7 +987,6 @@ nv_parm_t nv_parms[] = {
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_KMALLOC_HEAP_MAX_SIZE),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_VMALLOC_HEAP_MAX_SIZE),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_IGNORE_MMIO_CHECK),
-    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_TCE_BYPASS_MODE),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_STREAM_MEMOPS),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_USER_NUMA_MANAGEMENT),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_NVLINK_DISABLE),
@@ -1015,6 +1008,7 @@ nv_parm_t nv_parms[] = {
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_DMA_REMAP_PEER_MMIO),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_IMEX_CHANNEL_COUNT),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_CREATE_IMEX_CHANNEL_0),
+    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_GRDMA_PCI_TOPO_CHECK_OVERRIDE),
     {NULL, NULL}
 };
 

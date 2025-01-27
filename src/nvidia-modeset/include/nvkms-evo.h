@@ -65,6 +65,12 @@ nvConstructNvModeTimingsFromHwModeTimings(const NVHwModeTimingsEvo *pTimings,
                                           NvModeTimingsPtr pModeTimings);
 void nvEvoSetTimings(NVDispEvoPtr pDispEvo, const NvU32 head,
                      NVEvoUpdateState *updateState);
+void nvEvoSetDpVscSdp(NVDispEvoPtr pDispEvo,
+                      const NvU32 head,
+                      const NVDispHeadInfoFrameStateEvoRec *pInfoFrame,
+                      const NVDpyAttributeColor *pDpyColor,
+                      NVEvoUpdateState *updateState);
+
 void nvInitScalingUsageBounds(const NVDevEvoRec *pDevEvo,
                               struct NvKmsScalingUsageBounds *pScaling);
 NvBool nvComputeScalingUsageBounds(const NVEvoScalerCaps *pScalerCaps,
@@ -175,7 +181,7 @@ NvBool nvConstructHwModeTimingsEvo(const NVDpyEvoRec *pDpyEvo,
 NvBool nvConstructHwModeTimingsImpCheckEvo(
     const NVConnectorEvoRec                *pConnectorEvo,
     const NVHwModeTimingsEvo               *pTimings,
-    const NvBool                            enableDsc,
+    const NVDscInfoEvoRec                  *pDscInfo,
     const NvBool                            b2Heads1Or,
     const NVDpyAttributeColor              *pDpyColor,
     const struct NvKmsModeValidationParams *pParams,
@@ -213,17 +219,21 @@ typedef struct _NVValidateImpOneDispHeadParamsRec
     NvU32                 activeRmId;
     enum nvKmsPixelDepth  pixelDepth;
     NVHwModeTimingsEvoPtr pTimings;
+    NVHwHeadMultiTileConfigRec *pMultiTileConfig;
     NvBool enableDsc;
+    NvU32 dscSliceCount;
+    NvU32 possibleDscSliceCountMask;
     NvBool b2Heads1Or;
 } NVValidateImpOneDispHeadParamsRec;
 
 NvBool nvValidateImpOneDisp(
     NVDispEvoPtr                            pDispEvo,
-    const NVValidateImpOneDispHeadParamsRec timingsParams[NVKMS_MAX_HEADS_PER_DISP],
+    NVValidateImpOneDispHeadParamsRec       timingsParams[NVKMS_MAX_HEADS_PER_DISP],
     NvBool                                  requireBootClocks,
     NVEvoReallocateBandwidthMode            reallocBandwidth,
     NvU32                                   *pMinIsoBandwidthKBPS,
-    NvU32                                   *pMinDramFloorKBPS);
+    NvU32                                   *pMinDramFloorKBPS,
+    const NvU32                              modesetRequestedHeadsMask);
 
 NvBool nvAllocateDisplayBandwidth(
     NVDispEvoPtr pDispEvo,
@@ -232,10 +242,10 @@ NvBool nvAllocateDisplayBandwidth(
 
 NvBool nvValidateImpOneDispDowngrade(
     NVDispEvoPtr                            pDispEvo,
-    const NVValidateImpOneDispHeadParamsRec timingsParams[NVKMS_MAX_HEADS_PER_DISP],
+    NVValidateImpOneDispHeadParamsRec       timingsParams[NVKMS_MAX_HEADS_PER_DISP],
     NvBool                                  requireBootClocks,
     NVEvoReallocateBandwidthMode            reallocBandwidth,
-    NvU32                                   downgradePossibleHeadsBitMask);
+    NvU32                                   modesetRequestedHeadsMask);
 
 NvBool nvFrameLockServerPossibleEvo(const NVDpyEvoRec *pDpyEvo);
 NvBool nvFrameLockClientPossibleEvo(const NVDpyEvoRec *pDpyEvo);

@@ -50,44 +50,61 @@ typedef struct
     VM_ID guestVmId;
 } SET_GUEST_ID_PARAMS;
 
+/* This structure stores per vGPU instance supported placement information */
+typedef struct
+{
+    /* For Heterogeneous vGPU mode only */
+    NvU16       heterogeneousSupportedPlacementId;
+    NvU16       heterogeneousSupportedChidOffset;
+    /* For Homogeneous vGPU placement mode only */
+    NvU16       homogeneousSupportedPlacementId;
+    NvU16       homogeneousSupportedChidOffset;
+} VGPU_INSTANCE_SUPPORTED_PLACEMENT_INFO;
+
+/* This structure stores per vGPU type's placement information */
+typedef struct
+{
+    NvU32                                   placementSize;
+    NvU32                                   channelCount;
+    VGPU_INSTANCE_SUPPORTED_PLACEMENT_INFO  vgpuInstanceSupportedPlacementInfo[MAX_VGPU_DEVICES_PER_PGPU];
+    NvU16                                   heterogeneousPlacementCount;
+    NvU16                                   homogeneousPlacementCount;
+} VGPU_TYPE_SUPPORTED_PLACEMENT_INFO;
+
 /* This structure represents the vGPU type's attributes */
 typedef struct
 {
-    NvU32       vgpuTypeId;
-    NvU8        vgpuName[VGPU_STRING_BUFFER_SIZE];
-    NvU8        vgpuClass[VGPU_STRING_BUFFER_SIZE];
-    NvU8        license[NV_GRID_LICENSE_INFO_MAX_LENGTH];
-    NvU8        licensedProductName[NV_GRID_LICENSE_INFO_MAX_LENGTH];
-    NvU32       placementSize;
-    NvU16       supportedPlacementIds[MAX_VGPU_DEVICES_PER_PGPU];
-    NvU32       supportedChidOffsets[MAX_VGPU_DEVICES_PER_PGPU];
-    NvU32       channelCount;
-    NvU32       placementCount;
-    NvU32       maxInstance;
-    NvU32       numHeads;
-    NvU32       maxResolutionX;
-    NvU32       maxResolutionY;
-    NvU32       maxPixels;
-    NvU32       frlConfig;
-    NvU32       cudaEnabled;
-    NvU32       eccSupported;
-    NvU32       gpuInstanceSize;
-    NvU32       multiVgpuSupported;
-    NvU64       vdevId NV_ALIGN_BYTES(8);
-    NvU64       pdevId NV_ALIGN_BYTES(8);
-    NvU64       profileSize NV_ALIGN_BYTES(8);
-    NvU64       fbLength NV_ALIGN_BYTES(8);
-    NvU64       gspHeapSize NV_ALIGN_BYTES(8);
-    NvU64       fbReservation NV_ALIGN_BYTES(8);
-    NvU64       mappableVideoSize NV_ALIGN_BYTES(8);
-    NvU32       encoderCapacity;
-    NvU64       bar1Length NV_ALIGN_BYTES(8);
-    NvU32       frlEnable;
-    NvU32       gpuDirectSupported;
-    NvU32       nvlinkP2PSupported;
-    NvU32       multiVgpuExclusive;
-    NvU8        vgpuExtraParams[VGPU_CONFIG_PARAMS_MAX_LENGTH];
-    NvU8        vgpuSignature[VGPU_SIGNATURE_SIZE];
+    NvU32                               vgpuTypeId;
+    NvU8                                vgpuName[VGPU_STRING_BUFFER_SIZE];
+    NvU8                                vgpuClass[VGPU_STRING_BUFFER_SIZE];
+    NvU8                                license[NV_GRID_LICENSE_INFO_MAX_LENGTH];
+    NvU8                                licensedProductName[NV_GRID_LICENSE_INFO_MAX_LENGTH];
+    VGPU_TYPE_SUPPORTED_PLACEMENT_INFO  vgpuTypeSupportedPlacementInfo;
+    NvU32                               maxInstance;
+    NvU32                               numHeads;
+    NvU32                               maxResolutionX;
+    NvU32                               maxResolutionY;
+    NvU32                               maxPixels;
+    NvU32                               frlConfig;
+    NvU32                               cudaEnabled;
+    NvU32                               eccSupported;
+    NvU32                               gpuInstanceSize;
+    NvU32                               multiVgpuSupported;
+    NvU64                               vdevId NV_ALIGN_BYTES(8);
+    NvU64                               pdevId NV_ALIGN_BYTES(8);
+    NvU64                               profileSize NV_ALIGN_BYTES(8);
+    NvU64                               fbLength NV_ALIGN_BYTES(8);
+    NvU64                               gspHeapSize NV_ALIGN_BYTES(8);
+    NvU64                               fbReservation NV_ALIGN_BYTES(8);
+    NvU64                               mappableVideoSize NV_ALIGN_BYTES(8);
+    NvU32                               encoderCapacity;
+    NvU64                               bar1Length NV_ALIGN_BYTES(8);
+    NvU32                               frlEnable;
+    NvU32                               gpuDirectSupported;
+    NvU32                               nvlinkP2PSupported;
+    NvU32                               multiVgpuExclusive;
+    NvU8                                vgpuExtraParams[VGPU_CONFIG_PARAMS_MAX_LENGTH];
+    NvU8                                vgpuSignature[VGPU_SIGNATURE_SIZE];
 } VGPU_TYPE;
 
 MAKE_LIST(VGPU_TYPE_LIST, VGPU_TYPE);

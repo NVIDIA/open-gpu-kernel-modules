@@ -204,7 +204,7 @@ dispobjConstructHal_IMPL
     {
         rmStatus = _dispapiNotifierInit(pDisplayApi,
                                         NV5070_NOTIFIERS_MAXCOUNT,
-                                        NV5070_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE);
+                                        NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE);
     }
 
     return rmStatus;
@@ -497,7 +497,7 @@ dispcmnConstruct_IMPL
 
     return _dispapiNotifierInit(pDisplayApi,
                                 NV0073_NOTIFIERS_MAXCOUNT,
-                                NV5070_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE);
+                                NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE);
 }
 
 NV_STATUS
@@ -620,7 +620,7 @@ NV_STATUS
 dispapiCtrlCmdEventSetNotification_IMPL
 (
     DisplayApi *pDisplayApi,
-    NV5070_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams
+    NV0073_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams
 )
 {
     OBJGPU *pGpu = DISPAPI_GET_GPU(pDisplayApi);
@@ -631,7 +631,7 @@ dispapiCtrlCmdEventSetNotification_IMPL
     // NV01_EVENT must have been plugged into this subdevice
     if (pEventNotifications == NULL)
     {
-        NV_PRINTF(LEVEL_INFO, "cmd 0x%x: no event list\n", NV5070_CTRL_CMD_EVENT_SET_NOTIFICATION);
+        NV_PRINTF(LEVEL_INFO, "cmd 0x%x: no event list\n", NV0073_CTRL_CMD_EVENT_SET_NOTIFICATION);
         return NV_ERR_INVALID_STATE;
     }
 
@@ -654,11 +654,11 @@ dispapiCtrlCmdEventSetNotification_IMPL
 
     switch (pSetEventParams->action)
     {
-        case NV5070_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE:
-        case NV5070_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT:
+        case NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE:
+        case NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT:
         {
             // must be in disabled state to transition to an active state
-            if (pNotifyActions[pSetEventParams->event] != NV5070_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE)
+            if (pNotifyActions[pSetEventParams->event] != NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE)
             {
                 status = NV_ERR_INVALID_STATE;
                 break;
@@ -675,7 +675,7 @@ dispapiCtrlCmdEventSetNotification_IMPL
             break;
         }
 
-        case NV5070_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE:
+        case NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE:
         {
             pNotifyActions[pSetEventParams->event] = pSetEventParams->action;
             break;

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2001-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2001-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,5 +48,6 @@ typedef struct NV0000_ALLOC_PARAMETERS {
     NvHandle hClient; /* CORERM-2934: hClient must remain the first member until all allocations use these params */
     NvU32    processID;
     char     processName[NV_PROC_NAME_MAX_LENGTH];
+    NV_DECLARE_ALIGNED(NvP64 pOsPidInfo, 8);
 } NV0000_ALLOC_PARAMETERS;
 

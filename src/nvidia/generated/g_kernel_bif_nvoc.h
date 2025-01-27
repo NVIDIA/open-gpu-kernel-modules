@@ -172,7 +172,7 @@ struct KernelBif {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__KernelBif *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
 
     // Ancestor object pointers for `staticCast` feature
@@ -180,12 +180,16 @@ struct KernelBif {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct KernelBif *__nvoc_pbase_KernelBif;    // kbif
 
-    // Vtable with 60 per-object function pointers
+    // Vtable with 62 per-object function pointers
     NV_STATUS (*__kbifStatePostLoad__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU32);  // virtual halified (2 hals) override (engstate) base (engstate) body
     NvU32 (*__kbifGetBusIntfType__)(struct KernelBif * /*this*/);  // halified (2 hals) body
+    void (*__kbifInitLtr__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
     void (*__kbifInitDmaCaps__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals)
     NV_STATUS (*__kbifSavePcieConfigRegisters__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kbifRestorePcieConfigRegisters__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__kbifSavePcieConfigRegistersFn1__)(struct OBJGPU *, struct KernelBif * /*this*/, const PKBIF_XVE_REGMAP_REF, NvU32);  // halified (2 hals) body
+    NV_STATUS (*__kbifRestorePcieConfigRegistersFn1__)(struct OBJGPU *, struct KernelBif * /*this*/, const PKBIF_XVE_REGMAP_REF, NvU32);  // halified (2 hals) body
+    NV_STATUS (*__kbifPollBarFirewallDisengage__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kbifGetXveStatusBits__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU32 *, NvU32 *);  // halified (3 hals) body
     NV_STATUS (*__kbifClearXveStatus__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU32 *);  // halified (3 hals) body
     NV_STATUS (*__kbifGetXveAerBits__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU32 *);  // halified (3 hals) body
@@ -195,7 +199,7 @@ struct KernelBif {
     void (*__kbifRearmMSI__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
     NvBool (*__kbifIsMSIEnabledInHW__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (3 hals) body
     NvBool (*__kbifIsMSIXEnabledInHW__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (3 hals) body
-    NvBool (*__kbifIsPciIoAccessEnabled__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
+    NvBool (*__kbifIsPciIoAccessEnabled__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (3 hals) body
     NvBool (*__kbifIs3dController__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (3 hals) body
     void (*__kbifExecC73War__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
     void (*__kbifEnableExtendedTagSupport__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (3 hals) body
@@ -207,12 +211,10 @@ struct KernelBif {
     void (*__kbifProbePcieReqAtomicCaps__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (3 hals) body
     void (*__kbifEnablePcieAtomics__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (3 hals) body
     void (*__kbifProbePcieCplAtomicCaps__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (3 hals) body
-    void (*__kbifReadPcieCplCapsFromConfigSpace__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU32 *);  // halified (2 hals) body
+    void (*__kbifReadPcieCplCapsFromConfigSpace__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU32 *);  // halified (3 hals) body
     NV_STATUS (*__kbifDoFunctionLevelReset__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
-    NV_STATUS (*__kbifInitXveRegMap__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU8);  // halified (2 hals) body
+    NV_STATUS (*__kbifInitXveRegMap__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU8);  // halified (3 hals) body
     NvU32 (*__kbifGetMSIXTableVectorControlSize__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (3 hals) body
-    NV_STATUS (*__kbifSaveMsixTable__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
-    NV_STATUS (*__kbifRestoreMsixTable__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kbifConfigAccessWait__)(struct OBJGPU *, struct KernelBif * /*this*/, RMTIMEOUT *);  // halified (3 hals) body
     NV_STATUS (*__kbifGetPciConfigSpacePriMirror__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU32 *, NvU32 *);  // halified (2 hals) body
     NV_STATUS (*__kbifGetBusOptionsAddr__)(struct OBJGPU *, struct KernelBif * /*this*/, BUS_OPTIONS, NvU32 *);  // halified (3 hals) body
@@ -237,7 +239,7 @@ struct KernelBif {
     NvU32 (*__kbifGetValidDeviceEnginesToReset__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kbifGetMigrationBandwidth__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU32 *);  // halified (2 hals)
     NvU32 (*__kbifGetEccCounts__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
-    NvBool (*__kbifAllowGpuReqPcieAtomics__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (3 hals) body
+    NvBool (*__kbifAllowGpuReqPcieAtomics__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (4 hals) body
     NvBool (*__kbifAllowGpuCplPcieAtomics__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
     void (*__kbifClearDownstreamReadCounter__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kbifDoSecondaryBusHotReset__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
@@ -271,7 +273,6 @@ struct KernelBif {
 
     // Data members
     NvU32 dmaCaps;
-    RmPhysAddr dmaWindowStartAddress;
     NvU32 p2pOverride;
     NvU32 forceP2PType;
     NvBool peerMappingOverride;
@@ -285,6 +286,7 @@ struct KernelBif {
     NvU32 flrDevInitTimeoutScale;
     KBIF_XVE_REGMAP_REF xveRegmapRef[2];
     NvBool bMnocAvailable;
+    NvU32 chipsetL1ssEnable;
     NvU32 barRegOffsets[7];
     KBIF_CACHE_PCIE_CONFIG_REG pcieConfigReg;
 };
@@ -409,6 +411,9 @@ NV_STATUS __nvoc_objCreate_KernelBif(KernelBif**, Dynamic*, NvU32);
 #define kbifGetBusIntfType_FNPTR(pKernelBif) pKernelBif->__kbifGetBusIntfType__
 #define kbifGetBusIntfType(pKernelBif) kbifGetBusIntfType_DISPATCH(pKernelBif)
 #define kbifGetBusIntfType_HAL(pKernelBif) kbifGetBusIntfType_DISPATCH(pKernelBif)
+#define kbifInitLtr_FNPTR(pKernelBif) pKernelBif->__kbifInitLtr__
+#define kbifInitLtr(pGpu, pKernelBif) kbifInitLtr_DISPATCH(pGpu, pKernelBif)
+#define kbifInitLtr_HAL(pGpu, pKernelBif) kbifInitLtr_DISPATCH(pGpu, pKernelBif)
 #define kbifInitDmaCaps_FNPTR(pKernelBif) pKernelBif->__kbifInitDmaCaps__
 #define kbifInitDmaCaps(pGpu, pKernelBif) kbifInitDmaCaps_DISPATCH(pGpu, pKernelBif)
 #define kbifInitDmaCaps_HAL(pGpu, pKernelBif) kbifInitDmaCaps_DISPATCH(pGpu, pKernelBif)
@@ -418,6 +423,15 @@ NV_STATUS __nvoc_objCreate_KernelBif(KernelBif**, Dynamic*, NvU32);
 #define kbifRestorePcieConfigRegisters_FNPTR(pKernelBif) pKernelBif->__kbifRestorePcieConfigRegisters__
 #define kbifRestorePcieConfigRegisters(pGpu, pKernelBif) kbifRestorePcieConfigRegisters_DISPATCH(pGpu, pKernelBif)
 #define kbifRestorePcieConfigRegisters_HAL(pGpu, pKernelBif) kbifRestorePcieConfigRegisters_DISPATCH(pGpu, pKernelBif)
+#define kbifSavePcieConfigRegistersFn1_FNPTR(pKernelBif) pKernelBif->__kbifSavePcieConfigRegistersFn1__
+#define kbifSavePcieConfigRegistersFn1(pGpu, pKernelBif, pRegmapRef, maxSize) kbifSavePcieConfigRegistersFn1_DISPATCH(pGpu, pKernelBif, pRegmapRef, maxSize)
+#define kbifSavePcieConfigRegistersFn1_HAL(pGpu, pKernelBif, pRegmapRef, maxSize) kbifSavePcieConfigRegistersFn1_DISPATCH(pGpu, pKernelBif, pRegmapRef, maxSize)
+#define kbifRestorePcieConfigRegistersFn1_FNPTR(pKernelBif) pKernelBif->__kbifRestorePcieConfigRegistersFn1__
+#define kbifRestorePcieConfigRegistersFn1(pGpu, pKernelBif, pRegmapRef, maxSize) kbifRestorePcieConfigRegistersFn1_DISPATCH(pGpu, pKernelBif, pRegmapRef, maxSize)
+#define kbifRestorePcieConfigRegistersFn1_HAL(pGpu, pKernelBif, pRegmapRef, maxSize) kbifRestorePcieConfigRegistersFn1_DISPATCH(pGpu, pKernelBif, pRegmapRef, maxSize)
+#define kbifPollBarFirewallDisengage_FNPTR(pKernelBif) pKernelBif->__kbifPollBarFirewallDisengage__
+#define kbifPollBarFirewallDisengage(pGpu, pKernelBif) kbifPollBarFirewallDisengage_DISPATCH(pGpu, pKernelBif)
+#define kbifPollBarFirewallDisengage_HAL(pGpu, pKernelBif) kbifPollBarFirewallDisengage_DISPATCH(pGpu, pKernelBif)
 #define kbifGetXveStatusBits_FNPTR(pKernelBif) pKernelBif->__kbifGetXveStatusBits__
 #define kbifGetXveStatusBits(pGpu, pKernelBif, pBits, pStatus) kbifGetXveStatusBits_DISPATCH(pGpu, pKernelBif, pBits, pStatus)
 #define kbifGetXveStatusBits_HAL(pGpu, pKernelBif, pBits, pStatus) kbifGetXveStatusBits_DISPATCH(pGpu, pKernelBif, pBits, pStatus)
@@ -493,12 +507,6 @@ NV_STATUS __nvoc_objCreate_KernelBif(KernelBif**, Dynamic*, NvU32);
 #define kbifGetMSIXTableVectorControlSize_FNPTR(pKernelBif) pKernelBif->__kbifGetMSIXTableVectorControlSize__
 #define kbifGetMSIXTableVectorControlSize(pGpu, pKernelBif) kbifGetMSIXTableVectorControlSize_DISPATCH(pGpu, pKernelBif)
 #define kbifGetMSIXTableVectorControlSize_HAL(pGpu, pKernelBif) kbifGetMSIXTableVectorControlSize_DISPATCH(pGpu, pKernelBif)
-#define kbifSaveMsixTable_FNPTR(pKernelBif) pKernelBif->__kbifSaveMsixTable__
-#define kbifSaveMsixTable(pGpu, pKernelBif) kbifSaveMsixTable_DISPATCH(pGpu, pKernelBif)
-#define kbifSaveMsixTable_HAL(pGpu, pKernelBif) kbifSaveMsixTable_DISPATCH(pGpu, pKernelBif)
-#define kbifRestoreMsixTable_FNPTR(pKernelBif) pKernelBif->__kbifRestoreMsixTable__
-#define kbifRestoreMsixTable(pGpu, pKernelBif) kbifRestoreMsixTable_DISPATCH(pGpu, pKernelBif)
-#define kbifRestoreMsixTable_HAL(pGpu, pKernelBif) kbifRestoreMsixTable_DISPATCH(pGpu, pKernelBif)
 #define kbifConfigAccessWait_FNPTR(pKernelBif) pKernelBif->__kbifConfigAccessWait__
 #define kbifConfigAccessWait(pGpu, pKernelBif, pTimeout) kbifConfigAccessWait_DISPATCH(pGpu, pKernelBif, pTimeout)
 #define kbifConfigAccessWait_HAL(pGpu, pKernelBif, pTimeout) kbifConfigAccessWait_DISPATCH(pGpu, pKernelBif, pTimeout)
@@ -627,6 +635,10 @@ static inline NvU32 kbifGetBusIntfType_DISPATCH(struct KernelBif *pKernelBif) {
     return pKernelBif->__kbifGetBusIntfType__(pKernelBif);
 }
 
+static inline void kbifInitLtr_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
+    pKernelBif->__kbifInitLtr__(pGpu, pKernelBif);
+}
+
 static inline void kbifInitDmaCaps_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
     pKernelBif->__kbifInitDmaCaps__(pGpu, pKernelBif);
 }
@@ -637,6 +649,18 @@ static inline NV_STATUS kbifSavePcieConfigRegisters_DISPATCH(struct OBJGPU *pGpu
 
 static inline NV_STATUS kbifRestorePcieConfigRegisters_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
     return pKernelBif->__kbifRestorePcieConfigRegisters__(pGpu, pKernelBif);
+}
+
+static inline NV_STATUS kbifSavePcieConfigRegistersFn1_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, const PKBIF_XVE_REGMAP_REF pRegmapRef, NvU32 maxSize) {
+    return pKernelBif->__kbifSavePcieConfigRegistersFn1__(pGpu, pKernelBif, pRegmapRef, maxSize);
+}
+
+static inline NV_STATUS kbifRestorePcieConfigRegistersFn1_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, const PKBIF_XVE_REGMAP_REF pRegmapRef, NvU32 maxSize) {
+    return pKernelBif->__kbifRestorePcieConfigRegistersFn1__(pGpu, pKernelBif, pRegmapRef, maxSize);
+}
+
+static inline NV_STATUS kbifPollBarFirewallDisengage_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
+    return pKernelBif->__kbifPollBarFirewallDisengage__(pGpu, pKernelBif);
 }
 
 static inline NV_STATUS kbifGetXveStatusBits_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 *pBits, NvU32 *pStatus) {
@@ -737,14 +761,6 @@ static inline NV_STATUS kbifInitXveRegMap_DISPATCH(struct OBJGPU *pGpu, struct K
 
 static inline NvU32 kbifGetMSIXTableVectorControlSize_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
     return pKernelBif->__kbifGetMSIXTableVectorControlSize__(pGpu, pKernelBif);
-}
-
-static inline NV_STATUS kbifSaveMsixTable_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
-    return pKernelBif->__kbifSaveMsixTable__(pGpu, pKernelBif);
-}
-
-static inline NV_STATUS kbifRestoreMsixTable_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
-    return pKernelBif->__kbifRestoreMsixTable__(pGpu, pKernelBif);
 }
 
 static inline NV_STATUS kbifConfigAccessWait_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, RMTIMEOUT *pTimeout) {
@@ -953,34 +969,6 @@ static inline NV_STATUS kbifGetVFSparseMmapRegions(struct OBJGPU *pGpu, struct K
 
 #define kbifGetVFSparseMmapRegions_HAL(pGpu, pKernelBif, pKernelHostVgpuDevice, osPageSize, pNumAreas, pOffsets, pSizes) kbifGetVFSparseMmapRegions(pGpu, pKernelBif, pKernelHostVgpuDevice, osPageSize, pNumAreas, pOffsets, pSizes)
 
-NV_STATUS kbifSaveMSIXVectorControlMasks_TU102(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 *arg3);
-
-
-#ifdef __nvoc_kernel_bif_h_disabled
-static inline NV_STATUS kbifSaveMSIXVectorControlMasks(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 *arg3) {
-    NV_ASSERT_FAILED_PRECOMP("KernelBif was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_bif_h_disabled
-#define kbifSaveMSIXVectorControlMasks(pGpu, pKernelBif, arg3) kbifSaveMSIXVectorControlMasks_TU102(pGpu, pKernelBif, arg3)
-#endif //__nvoc_kernel_bif_h_disabled
-
-#define kbifSaveMSIXVectorControlMasks_HAL(pGpu, pKernelBif, arg3) kbifSaveMSIXVectorControlMasks(pGpu, pKernelBif, arg3)
-
-NV_STATUS kbifRestoreMSIXVectorControlMasks_TU102(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 arg3);
-
-
-#ifdef __nvoc_kernel_bif_h_disabled
-static inline NV_STATUS kbifRestoreMSIXVectorControlMasks(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 arg3) {
-    NV_ASSERT_FAILED_PRECOMP("KernelBif was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_bif_h_disabled
-#define kbifRestoreMSIXVectorControlMasks(pGpu, pKernelBif, arg3) kbifRestoreMSIXVectorControlMasks_TU102(pGpu, pKernelBif, arg3)
-#endif //__nvoc_kernel_bif_h_disabled
-
-#define kbifRestoreMSIXVectorControlMasks_HAL(pGpu, pKernelBif, arg3) kbifRestoreMSIXVectorControlMasks(pGpu, pKernelBif, arg3)
-
 NV_STATUS kbifDisableSysmemAccess_GM107(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvBool bDisable);
 
 
@@ -1047,6 +1035,12 @@ static inline NvU32 kbifGetBusIntfType_2f2c74(struct KernelBif *pKernelBif) {
     return (3);
 }
 
+static inline void kbifInitLtr_b3696a(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
+    return;
+}
+
+void kbifInitLtr_GB202(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
+
 void kbifInitDmaCaps_VF(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
 
 void kbifInitDmaCaps_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
@@ -1058,6 +1052,24 @@ NV_STATUS kbifSavePcieConfigRegisters_GH100(struct OBJGPU *pGpu, struct KernelBi
 NV_STATUS kbifRestorePcieConfigRegisters_GM107(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
 
 NV_STATUS kbifRestorePcieConfigRegisters_GH100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
+
+static inline NV_STATUS kbifSavePcieConfigRegistersFn1_56cd7a(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, const PKBIF_XVE_REGMAP_REF pRegmapRef, NvU32 maxSize) {
+    return NV_OK;
+}
+
+NV_STATUS kbifSavePcieConfigRegistersFn1_GB202(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, const PKBIF_XVE_REGMAP_REF pRegmapRef, NvU32 maxSize);
+
+static inline NV_STATUS kbifRestorePcieConfigRegistersFn1_56cd7a(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, const PKBIF_XVE_REGMAP_REF pRegmapRef, NvU32 maxSize) {
+    return NV_OK;
+}
+
+NV_STATUS kbifRestorePcieConfigRegistersFn1_GB202(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, const PKBIF_XVE_REGMAP_REF pRegmapRef, NvU32 maxSize);
+
+NV_STATUS kbifPollBarFirewallDisengage_GB202(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
+
+static inline NV_STATUS kbifPollBarFirewallDisengage_56cd7a(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
+    return NV_OK;
+}
 
 NV_STATUS kbifGetXveStatusBits_GM107(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 *pBits, NvU32 *pStatus);
 
@@ -1116,6 +1128,8 @@ NvBool kbifIsMSIXEnabledInHW_GH100(struct OBJGPU *pGpu, struct KernelBif *pKerne
 NvBool kbifIsMSIXEnabledInHW_GB100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
 
 NvBool kbifIsPciIoAccessEnabled_GM107(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
+
+NvBool kbifIsPciIoAccessEnabled_GH100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
 
 static inline NvBool kbifIsPciIoAccessEnabled_3dd2c9(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
     return NV_FALSE;
@@ -1193,6 +1207,8 @@ void kbifProbePcieCplAtomicCaps_GB100(struct OBJGPU *pGpu, struct KernelBif *pKe
 
 void kbifReadPcieCplCapsFromConfigSpace_GB100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 *bifAtomicsmask);
 
+void kbifReadPcieCplCapsFromConfigSpace_GB10B(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 *bifAtomicsmask);
+
 static inline void kbifReadPcieCplCapsFromConfigSpace_b3696a(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 *bifAtomicsmask) {
     return;
 }
@@ -1203,6 +1219,8 @@ NV_STATUS kbifDoFunctionLevelReset_GH100(struct OBJGPU *pGpu, struct KernelBif *
 
 NV_STATUS kbifInitXveRegMap_TU102(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU8 arg3);
 
+NV_STATUS kbifInitXveRegMap_GA100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU8 arg3);
+
 NV_STATUS kbifInitXveRegMap_GA102(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU8 arg3);
 
 NvU32 kbifGetMSIXTableVectorControlSize_TU102(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
@@ -1210,18 +1228,6 @@ NvU32 kbifGetMSIXTableVectorControlSize_TU102(struct OBJGPU *pGpu, struct Kernel
 NvU32 kbifGetMSIXTableVectorControlSize_GH100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
 
 NvU32 kbifGetMSIXTableVectorControlSize_GB100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
-
-NV_STATUS kbifSaveMsixTable_GH100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
-
-static inline NV_STATUS kbifSaveMsixTable_46f6a7(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS kbifRestoreMsixTable_GH100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
-
-static inline NV_STATUS kbifRestoreMsixTable_46f6a7(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NV_STATUS kbifConfigAccessWait_GH100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, RMTIMEOUT *pTimeout);
 
@@ -1379,6 +1385,8 @@ static inline NvBool kbifAllowGpuReqPcieAtomics_88bc07(struct OBJGPU *pGpu, stru
     return NV_TRUE;
 }
 
+NvBool kbifAllowGpuReqPcieAtomics_GB202(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
+
 static inline NvBool kbifAllowGpuReqPcieAtomics_3dd2c9(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
     return NV_FALSE;
 }
@@ -1518,6 +1526,16 @@ static inline NV_STATUS kbifGetPciLinkMaxSpeedByPciGenInfo(struct OBJGPU *pGpu, 
 }
 #else //__nvoc_kernel_bif_h_disabled
 #define kbifGetPciLinkMaxSpeedByPciGenInfo(pGpu, pKernelBif, pciLinkGenInfo, pciLinkMaxSpeed) kbifGetPciLinkMaxSpeedByPciGenInfo_IMPL(pGpu, pKernelBif, pciLinkGenInfo, pciLinkMaxSpeed)
+#endif //__nvoc_kernel_bif_h_disabled
+
+void kbifCacheChipsetL1SubstatesEnable_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
+
+#ifdef __nvoc_kernel_bif_h_disabled
+static inline void kbifCacheChipsetL1SubstatesEnable(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
+    NV_ASSERT_FAILED_PRECOMP("KernelBif was disabled!");
+}
+#else //__nvoc_kernel_bif_h_disabled
+#define kbifCacheChipsetL1SubstatesEnable(pGpu, pKernelBif) kbifCacheChipsetL1SubstatesEnable_IMPL(pGpu, pKernelBif)
 #endif //__nvoc_kernel_bif_h_disabled
 
 NV_STATUS kbifWaitForConfigAccessAfterReset_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);

@@ -25,8 +25,9 @@
 #include "kernel/gpu/intr/intr.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "gpu/gpu.h"
-#include "gpu/subdevice/subdevice.h"
 #include "vgpu/rpc.h"
+
+#include "ctrl/ctrl2080/ctrl2080mc.h"
 
 /**
  * @brief Gets the static interrupt table for a VF via RPC

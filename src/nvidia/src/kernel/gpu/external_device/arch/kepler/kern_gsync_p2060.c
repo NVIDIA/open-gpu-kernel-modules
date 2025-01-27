@@ -83,7 +83,7 @@ static NV_STATUS  gsyncResetFrameCountData_P2060(OBJGPU *, PDACP2060EXTERNALDEVI
 static NV_STATUS  gsyncGpuStereoHeadSync(OBJGPU *, NvU32, PDACEXTERNALDEVICE, NvU32);
 static NvBool     supportsMulDiv(DACEXTERNALDEVICE *);
 static NvBool     needsMasterBarrierWar(PDACEXTERNALDEVICE);
-static NvBool     isFirmwareRevMismatch(OBJGPU *, DAC_EXTERNAL_DEVICE_REVS);
+static NvBool     isFirmwareRevMismatch(OBJGPU *, OBJGSYNC *pGsync, DAC_EXTERNAL_DEVICE_REVS);
 
 static NvBool     isBoardWithNvlinkQsyncContention(OBJGPU *);
 static void       _extdevService(NvU32 , void *);
@@ -4115,19 +4115,22 @@ NV_STATUS
 gsyncGetRevision_P2060
 (
     OBJGPU *pGpu,
-    PDACEXTERNALDEVICE pExtDev,
+    OBJGSYNC *pGsync,
     GSYNCCAPSPARAMS *pParams
 )
 {
     OBJSYS  *pSys = SYS_GET_INSTANCE();
+    DACEXTERNALDEVICE *pExtDev;
     NV_STATUS status = NV_OK;
-    DAC_EXTERNAL_DEVICES deviceId = pExtDev->deviceId;
-    DAC_EXTERNAL_DEVICE_REVS deviceRev = pExtDev->deviceRev;
+    DAC_EXTERNAL_DEVICES deviceId;
+    DAC_EXTERNAL_DEVICE_REVS deviceRev;
 
-    if (!pGpu)
-    {
-        return NV_ERR_GENERIC; // something more descriptive, perhaps?
-    }
+    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_PARAMETER);
+    NV_ASSERT_OR_RETURN(pGsync != NULL, NV_ERR_INVALID_PARAMETER);
+    pExtDev = pGsync->pExtDev;
+    NV_ASSERT_OR_RETURN(pExtDev != NULL, NV_ERR_INVALID_PARAMETER);
+    deviceId = pExtDev->deviceId;
+    deviceRev = pExtDev->deviceRev;
 
     portMemSet(pParams, 0, sizeof(*pParams));
 
@@ -4146,7 +4149,7 @@ gsyncGetRevision_P2060
 
         if (!pSys->getProperty(pSys, PDB_PROP_SYS_IS_QSYNC_FW_REVISION_CHECK_DISABLED))
         {
-            pParams->isFirmwareRevMismatch = isFirmwareRevMismatch(pGpu, deviceRev);
+            pParams->isFirmwareRevMismatch = isFirmwareRevMismatch(pGpu, pGsync, deviceRev);
         }
         else
         {
@@ -5435,9 +5438,27 @@ static NvBool
 isFirmwareRevMismatch
 (
     OBJGPU *pGpu,
+    OBJGSYNC *pGsync,
     DAC_EXTERNAL_DEVICE_REVS currentRev
 )
 {
+    NvU32 i;
+
+    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_TRUE);
+    NV_ASSERT_OR_RETURN(pGsync != NULL, NV_TRUE);
+
+    // Check each GPU on this Gsync board for a firmware mismatch
+    for (i = 0; i < pGsync->gpuCount; i++)
+    {
+        OBJGPU *pOtherGpu = gpumgrGetGpuFromId(pGsync->gpus[i].gpuId);
+        NV_ASSERT_OR_RETURN(pOtherGpu != NULL, NV_TRUE);
+
+        if (gsyncmgrIsFirmwareGPUMismatch(pOtherGpu, pGsync))
+        {
+            return NV_TRUE;
+        }
+    }
+
     if (IsMAXWELL(pGpu))
     {
         return (currentRev < NV_P2060_MIN_REV);

@@ -661,6 +661,17 @@ typedef struct OsDescMemory OsDescMemory;
 #define __nvoc_class_id_OsDescMemory 0xb3dacd
 #endif /* __nvoc_class_id_OsDescMemory */
 
+struct SyncpointMemory;
+
+#ifndef __NVOC_CLASS_SyncpointMemory_TYPEDEF__
+#define __NVOC_CLASS_SyncpointMemory_TYPEDEF__
+typedef struct SyncpointMemory SyncpointMemory;
+#endif /* __NVOC_CLASS_SyncpointMemory_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_SyncpointMemory
+#define __nvoc_class_id_SyncpointMemory 0x529def
+#endif /* __nvoc_class_id_SyncpointMemory */
+
 struct NoDeviceMemory;
 
 #ifndef __NVOC_CLASS_NoDeviceMemory_TYPEDEF__
@@ -1307,6 +1318,7 @@ struct NVOCFwdDeclHack {
     struct KernelChannel *PRIVATE_FIELD(KernelChannel_AMPERE_CHANNEL_GPFIFO_A);
     struct KernelChannel *PRIVATE_FIELD(KernelChannel_HOPPER_CHANNEL_GPFIFO_A);
     struct KernelChannel *PRIVATE_FIELD(KernelChannel_BLACKWELL_CHANNEL_GPFIFO_A);
+    struct KernelChannel *PRIVATE_FIELD(KernelChannel_BLACKWELL_CHANNEL_GPFIFO_B);
     struct UvmChannelRetainer *PRIVATE_FIELD(UvmChannelRetainer_UVM_CHANNEL_RETAINER);
     struct KernelCtxShareApi *PRIVATE_FIELD(KernelCtxShareApi_FERMI_CONTEXT_SHARE_A);
     struct KernelGraphicsContext *PRIVATE_FIELD(KernelGraphicsContext_KERNEL_GRAPHICS_CONTEXT);
@@ -1323,6 +1335,7 @@ struct NVOCFwdDeclHack {
     struct VirtualMemoryRange *PRIVATE_FIELD(VirtualMemoryRange_NV01_MEMORY_VIRTUAL);
     struct MemoryMapper *PRIVATE_FIELD(MemoryMapper_NV_MEMORY_MAPPER);
     struct OsDescMemory *PRIVATE_FIELD(OsDescMemory_NV01_MEMORY_SYSTEM_OS_DESCRIPTOR);
+    struct SyncpointMemory *PRIVATE_FIELD(SyncpointMemory_NV01_MEMORY_SYNCPOINT);
     struct NoDeviceMemory *PRIVATE_FIELD(NoDeviceMemory_NV01_MEMORY_DEVICELESS);
     struct ConsoleMemory *PRIVATE_FIELD(ConsoleMemory_NV01_MEMORY_FRAMEBUFFER_CONSOLE);
     struct MemoryHwResources *PRIVATE_FIELD(MemoryHwResources_NV01_MEMORY_HW_RESOURCES);
@@ -1353,9 +1366,12 @@ struct NVOCFwdDeclHack {
     struct UserModeApi *PRIVATE_FIELD(UserModeApi_TURING_USERMODE_A);
     struct UserModeApi *PRIVATE_FIELD(UserModeApi_AMPERE_USERMODE_A);
     struct UserModeApi *PRIVATE_FIELD(UserModeApi_HOPPER_USERMODE_A);
+    struct UserModeApi *PRIVATE_FIELD(UserModeApi_BLACKWELL_USERMODE_A);
     struct DispSfUser *PRIVATE_FIELD(DispSfUser_NVC371_DISP_SF_USER);
     struct DispSfUser *PRIVATE_FIELD(DispSfUser_NVC671_DISP_SF_USER);
     struct DispSfUser *PRIVATE_FIELD(DispSfUser_NVC771_DISP_SF_USER);
+    struct DispSfUser *PRIVATE_FIELD(DispSfUser_NVC971_DISP_SF_USER);
+    struct DispSfUser *PRIVATE_FIELD(DispSfUser_NVCA71_DISP_SF_USER);
     struct MmuFaultBuffer *PRIVATE_FIELD(MmuFaultBuffer_MMU_FAULT_BUFFER);
     struct AccessCounterBuffer *PRIVATE_FIELD(AccessCounterBuffer_ACCESS_COUNTER_NOTIFY_BUFFER);
     struct VidmemAccessBitBuffer *PRIVATE_FIELD(VidmemAccessBitBuffer_MMU_VIDMEM_ACCESS_BIT_BUFFER);
@@ -1366,12 +1382,16 @@ struct NVOCFwdDeclHack {
     struct NvDispApi *PRIVATE_FIELD(NvDispApi_NVC570_DISPLAY);
     struct NvDispApi *PRIVATE_FIELD(NvDispApi_NVC670_DISPLAY);
     struct NvDispApi *PRIVATE_FIELD(NvDispApi_NVC770_DISPLAY);
+    struct NvDispApi *PRIVATE_FIELD(NvDispApi_NVC970_DISPLAY);
+    struct NvDispApi *PRIVATE_FIELD(NvDispApi_NVCA70_DISPLAY);
     struct DispSwObj *PRIVATE_FIELD(DispSwObj_NVC372_DISPLAY_SW);
     struct DispCommon *PRIVATE_FIELD(DispCommon_NV04_DISPLAY_COMMON);
     struct VblankCallback *PRIVATE_FIELD(VblankCallback_NV9010_VBLANK_CALLBACK);
     struct RgLineCallback *PRIVATE_FIELD(RgLineCallback_NV0092_RG_LINE_CALLBACK);
     struct DispChannelPio *PRIVATE_FIELD(DispChannelPio_NVC57A_CURSOR_IMM_CHANNEL_PIO);
     struct DispChannelPio *PRIVATE_FIELD(DispChannelPio_NVC67A_CURSOR_IMM_CHANNEL_PIO);
+    struct DispChannelPio *PRIVATE_FIELD(DispChannelPio_NVC97A_CURSOR_IMM_CHANNEL_PIO);
+    struct DispChannelPio *PRIVATE_FIELD(DispChannelPio_NVCA7A_CURSOR_IMM_CHANNEL_PIO);
     struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVC57B_WINDOW_IMM_CHANNEL_DMA);
     struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVC57D_CORE_CHANNEL_DMA);
     struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVC57E_WINDOW_CHANNEL_DMA);
@@ -1383,6 +1403,14 @@ struct NVOCFwdDeclHack {
     struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVC67E_WINDOW_CHANNEL_DMA);
     struct DispCapabilities *PRIVATE_FIELD(DispCapabilities_NVC673_DISP_CAPABILITIES);
     struct DispCapabilities *PRIVATE_FIELD(DispCapabilities_NVC773_DISP_CAPABILITIES);
+    struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVC97B_WINDOW_IMM_CHANNEL_DMA);
+    struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVC97D_CORE_CHANNEL_DMA);
+    struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVC97E_WINDOW_CHANNEL_DMA);
+    struct DispCapabilities *PRIVATE_FIELD(DispCapabilities_NVC973_DISP_CAPABILITIES);
+    struct DispCapabilities *PRIVATE_FIELD(DispCapabilities_NVCA73_DISP_CAPABILITIES);
+    struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVCA7B_WINDOW_IMM_CHANNEL_DMA);
+    struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVCA7D_CORE_CHANNEL_DMA);
+    struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVCA7E_WINDOW_CHANNEL_DMA);
     struct DispSwObject *PRIVATE_FIELD(DispSwObject_GF100_DISP_SW);
     struct TimedSemaSwObject *PRIVATE_FIELD(TimedSemaSwObject_GF100_TIMED_SEMAPHORE_SW);
     struct DeferredApiObject *PRIVATE_FIELD(DeferredApiObject_NV50_DEFERRED_API_CLASS);
@@ -1395,25 +1423,30 @@ struct NVOCFwdDeclHack {
     struct KernelCeContext *PRIVATE_FIELD(KernelCeContext_AMPERE_DMA_COPY_B);
     struct KernelCeContext *PRIVATE_FIELD(KernelCeContext_HOPPER_DMA_COPY_A);
     struct KernelCeContext *PRIVATE_FIELD(KernelCeContext_BLACKWELL_DMA_COPY_A);
+    struct KernelCeContext *PRIVATE_FIELD(KernelCeContext_BLACKWELL_DMA_COPY_B);
     struct NvdecContext *PRIVATE_FIELD(NvdecContext_NVB8B0_VIDEO_DECODER);
     struct NvdecContext *PRIVATE_FIELD(NvdecContext_NVC4B0_VIDEO_DECODER);
     struct NvdecContext *PRIVATE_FIELD(NvdecContext_NVC6B0_VIDEO_DECODER);
     struct NvdecContext *PRIVATE_FIELD(NvdecContext_NVC7B0_VIDEO_DECODER);
     struct NvdecContext *PRIVATE_FIELD(NvdecContext_NVC9B0_VIDEO_DECODER);
     struct NvdecContext *PRIVATE_FIELD(NvdecContext_NVCDB0_VIDEO_DECODER);
+    struct NvdecContext *PRIVATE_FIELD(NvdecContext_NVCFB0_VIDEO_DECODER);
     struct NvjpgContext *PRIVATE_FIELD(NvjpgContext_NVB8D1_VIDEO_NVJPG);
     struct NvjpgContext *PRIVATE_FIELD(NvjpgContext_NVC4D1_VIDEO_NVJPG);
     struct NvjpgContext *PRIVATE_FIELD(NvjpgContext_NVC9D1_VIDEO_NVJPG);
     struct NvjpgContext *PRIVATE_FIELD(NvjpgContext_NVCDD1_VIDEO_NVJPG);
+    struct NvjpgContext *PRIVATE_FIELD(NvjpgContext_NVCFD1_VIDEO_NVJPG);
     struct OfaContext *PRIVATE_FIELD(OfaContext_NVB8FA_VIDEO_OFA);
     struct OfaContext *PRIVATE_FIELD(OfaContext_NVC6FA_VIDEO_OFA);
     struct OfaContext *PRIVATE_FIELD(OfaContext_NVC7FA_VIDEO_OFA);
     struct OfaContext *PRIVATE_FIELD(OfaContext_NVC9FA_VIDEO_OFA);
     struct OfaContext *PRIVATE_FIELD(OfaContext_NVCDFA_VIDEO_OFA);
+    struct OfaContext *PRIVATE_FIELD(OfaContext_NVCFFA_VIDEO_OFA);
     struct MsencContext *PRIVATE_FIELD(MsencContext_NVC4B7_VIDEO_ENCODER);
     struct MsencContext *PRIVATE_FIELD(MsencContext_NVB4B7_VIDEO_ENCODER);
     struct MsencContext *PRIVATE_FIELD(MsencContext_NVC7B7_VIDEO_ENCODER);
     struct MsencContext *PRIVATE_FIELD(MsencContext_NVC9B7_VIDEO_ENCODER);
+    struct MsencContext *PRIVATE_FIELD(MsencContext_NVCFB7_VIDEO_ENCODER);
     struct Sec2Context *PRIVATE_FIELD(Sec2Context_HOPPER_SEC2_WORK_LAUNCH_A);
     struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_AMPERE_A);
     struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_AMPERE_COMPUTE_A);
@@ -1426,6 +1459,8 @@ struct NVOCFwdDeclHack {
     struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_BLACKWELL_A);
     struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_BLACKWELL_COMPUTE_A);
     struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_BLACKWELL_INLINE_TO_MEMORY_A);
+    struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_BLACKWELL_B);
+    struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_BLACKWELL_COMPUTE_B);
     struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_FERMI_TWOD_A);
     struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_KEPLER_INLINE_TO_MEMORY_B);
     struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_TURING_A);

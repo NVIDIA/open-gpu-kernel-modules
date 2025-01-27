@@ -1094,6 +1094,15 @@ kbusGetNvlinkP2PPeerId_GA100
         return NV_OK;
     }
 
+    // Separate peer id required for EGM even in Nvswitch systems.
+    if (bEgmPeer)
+    {
+        if (knvlinkIsGpuConnectedToNvswitch(pGpu0, pKernelNvlink0))
+        {
+            *nvlinkPeer = 1;
+            goto kbusGetNvlinkP2PPeerId_end;
+        }
+    }
     //
     // Peer ID 0 is used for the following use-cases:
     //     1. If the GPU is connected to itself through NVLink (loopback)
@@ -1104,7 +1113,8 @@ kbusGetNvlinkP2PPeerId_GA100
     //     2. Mix of direct NVLink and NVSwitch connections is supported
     //   None of the above hold true currently
     //
-    if (((pGpu0 == pGpu1) && !bEgmPeer) || knvlinkIsGpuConnectedToNvswitch(pGpu0, pKernelNvlink0))
+    else
+    if ((pGpu0 == pGpu1) || knvlinkIsGpuConnectedToNvswitch(pGpu0, pKernelNvlink0))
     {
         *nvlinkPeer = 0;
 
@@ -1133,8 +1143,7 @@ kbusGetNvlinkP2PPeerId_end:
     // Reserve the peer ID for NVLink use
     status = kbusReserveP2PPeerIds_HAL(pGpu0, pKernelBus0, NVBIT(*nvlinkPeer));
 
-    if ((status == NV_OK) &&
-        !knvlinkIsGpuConnectedToNvswitch(pGpu0, pKernelNvlink0))
+    if (status == NV_OK)
     {
         pKernelBus0->p2p.bEgmPeer[*nvlinkPeer] = bEgmPeer;
     }

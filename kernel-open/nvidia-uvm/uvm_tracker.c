@@ -307,6 +307,7 @@ static NV_STATUS wait_for_entry_with_spin(uvm_tracker_entry_t *tracker_entry, uv
             uvm_tracker_entry_print_pending_pushes(tracker_entry);
 
         status = uvm_channel_check_errors(tracker_entry->channel);
+
         if (status == NV_OK)
             status = uvm_global_get_status();
     }

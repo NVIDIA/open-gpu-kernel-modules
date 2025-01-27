@@ -93,7 +93,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_FlaMemory =
     /*pExportInfo=*/        &__nvoc_export_info_FlaMemory
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge FlaMemory methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^2
 NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super^2
 NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
@@ -113,11 +113,11 @@ NvBool __nvoc_down_thunk_FlaMemory_resCanCopy(struct RsResource *pFlaMemory);   
 
 // flamemCanCopy: virtual override (res) base (mem)
 NvBool __nvoc_down_thunk_FlaMemory_resCanCopy(struct RsResource *pFlaMemory) {
-    return flamemCanCopy((struct FlaMemory *)(((unsigned char *) pFlaMemory) - __nvoc_rtti_FlaMemory_RsResource.offset));
+    return flamemCanCopy((struct FlaMemory *)(((unsigned char *) pFlaMemory) - NV_OFFSETOF(FlaMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
+// Up-thunk(s) to bridge FlaMemory methods to ancestors (if any)
 NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^2
 NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super^2
 void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super^2
@@ -174,127 +174,127 @@ void __nvoc_up_thunk_RsResource_flamemAddAdditionalDependants(struct RsClient *p
 
 // flamemIsDuplicate: virtual inherited (mem) base (mem)
 NV_STATUS __nvoc_up_thunk_Memory_flamemIsDuplicate(struct FlaMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
-    return memIsDuplicate((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_FlaMemory_Memory.offset), hMemory, pDuplicate);
+    return memIsDuplicate((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory)), hMemory, pDuplicate);
 }
 
 // flamemGetMapAddrSpace: virtual inherited (mem) base (mem)
 NV_STATUS __nvoc_up_thunk_Memory_flamemGetMapAddrSpace(struct FlaMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return memGetMapAddrSpace((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_FlaMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
+    return memGetMapAddrSpace((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory)), pCallContext, mapFlags, pAddrSpace);
 }
 
 // flamemControl: virtual inherited (mem) base (mem)
 NV_STATUS __nvoc_up_thunk_Memory_flamemControl(struct FlaMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return memControl((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_FlaMemory_Memory.offset), pCallContext, pParams);
+    return memControl((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory)), pCallContext, pParams);
 }
 
 // flamemMap: virtual inherited (mem) base (mem)
 NV_STATUS __nvoc_up_thunk_Memory_flamemMap(struct FlaMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return memMap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_FlaMemory_Memory.offset), pCallContext, pParams, pCpuMapping);
+    return memMap((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory)), pCallContext, pParams, pCpuMapping);
 }
 
 // flamemUnmap: virtual inherited (mem) base (mem)
 NV_STATUS __nvoc_up_thunk_Memory_flamemUnmap(struct FlaMemory *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return memUnmap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_FlaMemory_Memory.offset), pCallContext, pCpuMapping);
+    return memUnmap((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory)), pCallContext, pCpuMapping);
 }
 
 // flamemGetMemInterMapParams: virtual inherited (mem) base (mem)
 NV_STATUS __nvoc_up_thunk_Memory_flamemGetMemInterMapParams(struct FlaMemory *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return memGetMemInterMapParams((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_FlaMemory_Memory.offset), pParams);
+    return memGetMemInterMapParams((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory)), pParams);
 }
 
 // flamemCheckMemInterUnmap: inline virtual inherited (mem) base (mem) body
 NV_STATUS __nvoc_up_thunk_Memory_flamemCheckMemInterUnmap(struct FlaMemory *pMemory, NvBool bSubdeviceHandleProvided) {
-    return memCheckMemInterUnmap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_FlaMemory_Memory.offset), bSubdeviceHandleProvided);
+    return memCheckMemInterUnmap((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory)), bSubdeviceHandleProvided);
 }
 
 // flamemGetMemoryMappingDescriptor: virtual inherited (mem) base (mem)
 NV_STATUS __nvoc_up_thunk_Memory_flamemGetMemoryMappingDescriptor(struct FlaMemory *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
-    return memGetMemoryMappingDescriptor((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_FlaMemory_Memory.offset), ppMemDesc);
+    return memGetMemoryMappingDescriptor((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory)), ppMemDesc);
 }
 
 // flamemCheckCopyPermissions: inline virtual inherited (mem) base (mem) body
 NV_STATUS __nvoc_up_thunk_Memory_flamemCheckCopyPermissions(struct FlaMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
-    return memCheckCopyPermissions((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_FlaMemory_Memory.offset), pDstGpu, pDstDevice);
+    return memCheckCopyPermissions((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory)), pDstGpu, pDstDevice);
 }
 
 // flamemIsReady: virtual inherited (mem) base (mem)
 NV_STATUS __nvoc_up_thunk_Memory_flamemIsReady(struct FlaMemory *pMemory, NvBool bCopyConstructorContext) {
-    return memIsReady((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_FlaMemory_Memory.offset), bCopyConstructorContext);
+    return memIsReady((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory)), bCopyConstructorContext);
 }
 
 // flamemIsGpuMapAllowed: inline virtual inherited (mem) base (mem) body
 NvBool __nvoc_up_thunk_Memory_flamemIsGpuMapAllowed(struct FlaMemory *pMemory, struct OBJGPU *pGpu) {
-    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_FlaMemory_Memory.offset), pGpu);
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory)), pGpu);
 }
 
 // flamemIsExportAllowed: inline virtual inherited (mem) base (mem) body
 NvBool __nvoc_up_thunk_Memory_flamemIsExportAllowed(struct FlaMemory *pMemory) {
-    return memIsExportAllowed((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_FlaMemory_Memory.offset));
+    return memIsExportAllowed((struct Memory *)(((unsigned char *) pMemory) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory)));
 }
 
 // flamemAccessCallback: virtual inherited (rmres) base (mem)
 NvBool __nvoc_up_thunk_RmResource_flamemAccessCallback(struct FlaMemory *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_FlaMemory_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory.__nvoc_base_RmResource)), pInvokingClient, pAllocParams, accessRight);
 }
 
 // flamemShareCallback: virtual inherited (rmres) base (mem)
 NvBool __nvoc_up_thunk_RmResource_flamemShareCallback(struct FlaMemory *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_FlaMemory_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory.__nvoc_base_RmResource)), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // flamemControlSerialization_Prologue: virtual inherited (rmres) base (mem)
 NV_STATUS __nvoc_up_thunk_RmResource_flamemControlSerialization_Prologue(struct FlaMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_FlaMemory_RmResource.offset), pCallContext, pParams);
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // flamemControlSerialization_Epilogue: virtual inherited (rmres) base (mem)
 void __nvoc_up_thunk_RmResource_flamemControlSerialization_Epilogue(struct FlaMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_FlaMemory_RmResource.offset), pCallContext, pParams);
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // flamemControl_Prologue: virtual inherited (rmres) base (mem)
 NV_STATUS __nvoc_up_thunk_RmResource_flamemControl_Prologue(struct FlaMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_FlaMemory_RmResource.offset), pCallContext, pParams);
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // flamemControl_Epilogue: virtual inherited (rmres) base (mem)
 void __nvoc_up_thunk_RmResource_flamemControl_Epilogue(struct FlaMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_FlaMemory_RmResource.offset), pCallContext, pParams);
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // flamemPreDestruct: virtual inherited (res) base (mem)
 void __nvoc_up_thunk_RsResource_flamemPreDestruct(struct FlaMemory *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FlaMemory_RsResource.offset));
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // flamemControlFilter: virtual inherited (res) base (mem)
 NV_STATUS __nvoc_up_thunk_RsResource_flamemControlFilter(struct FlaMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FlaMemory_RsResource.offset), pCallContext, pParams);
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams);
 }
 
 // flamemIsPartialUnmapSupported: inline virtual inherited (res) base (mem) body
 NvBool __nvoc_up_thunk_RsResource_flamemIsPartialUnmapSupported(struct FlaMemory *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FlaMemory_RsResource.offset));
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // flamemMapTo: virtual inherited (res) base (mem)
 NV_STATUS __nvoc_up_thunk_RsResource_flamemMapTo(struct FlaMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FlaMemory_RsResource.offset), pParams);
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
 }
 
 // flamemUnmapFrom: virtual inherited (res) base (mem)
 NV_STATUS __nvoc_up_thunk_RsResource_flamemUnmapFrom(struct FlaMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FlaMemory_RsResource.offset), pParams);
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
 }
 
 // flamemGetRefCount: virtual inherited (res) base (mem)
 NvU32 __nvoc_up_thunk_RsResource_flamemGetRefCount(struct FlaMemory *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FlaMemory_RsResource.offset));
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 // flamemAddAdditionalDependants: virtual inherited (res) base (mem)
 void __nvoc_up_thunk_RsResource_flamemAddAdditionalDependants(struct RsClient *pClient, struct FlaMemory *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FlaMemory_RsResource.offset), pReference);
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(FlaMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)), pReference);
 }
 
 

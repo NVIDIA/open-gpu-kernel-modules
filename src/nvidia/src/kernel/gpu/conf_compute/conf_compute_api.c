@@ -134,6 +134,8 @@ confComputeApiCtrlCmdSystemGetCapabilities_IMPL
 
     if (pCcCaps->bMultiGpuProtectedPcieModeEnabled)
     {
+        // Do not advertise HCC as ON to callers when PPCIe is ON
+        pParams->ccFeature = NV_CONF_COMPUTE_SYSTEM_FEATURE_DISABLED;
         pParams->multiGpuMode = NV_CONF_COMPUTE_SYSTEM_MULTI_GPU_MODE_PROTECTED_PCIE;
     }
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -471,6 +471,12 @@ typedef struct NV2080_CTRL_PERF_GPUMON_ENGINE_UTIL_SAMPLE {
      * the sample was taken. If no process is active then NULL will be returned.
      */
     char  subProcessName[NV_SUBPROC_NAME_MAX_LENGTH];
+    /*!
+     * PID struct pointer of the process that was active on the engine when the
+     * the sample was taken. If no process is active then NULL pointer
+     * will be returned
+     */
+    NV_DECLARE_ALIGNED(NvU64 pOsPidInfo, 8);
 } NV2080_CTRL_PERF_GPUMON_ENGINE_UTIL_SAMPLE;
 
 /*!
@@ -484,27 +490,27 @@ typedef struct NV2080_CTRL_PERF_GPUMON_PERFMON_UTIL_SAMPLE {
     /*!
      * FB bandwidth utilization sample.
      */
-    NV2080_CTRL_PERF_GPUMON_ENGINE_UTIL_SAMPLE fb;
+    NV_DECLARE_ALIGNED(NV2080_CTRL_PERF_GPUMON_ENGINE_UTIL_SAMPLE fb, 8);
     /*!
      * GR utilization sample.
      */
-    NV2080_CTRL_PERF_GPUMON_ENGINE_UTIL_SAMPLE gr;
+    NV_DECLARE_ALIGNED(NV2080_CTRL_PERF_GPUMON_ENGINE_UTIL_SAMPLE gr, 8);
     /*!
      * NV ENCODER utilization sample.
      */
-    NV2080_CTRL_PERF_GPUMON_ENGINE_UTIL_SAMPLE nvenc;
+    NV_DECLARE_ALIGNED(NV2080_CTRL_PERF_GPUMON_ENGINE_UTIL_SAMPLE nvenc, 8);
     /*!
      * NV DECODER utilization sample.
      */
-    NV2080_CTRL_PERF_GPUMON_ENGINE_UTIL_SAMPLE nvdec;
+    NV_DECLARE_ALIGNED(NV2080_CTRL_PERF_GPUMON_ENGINE_UTIL_SAMPLE nvdec, 8);
     /*!
      * NV JPEG utilization sample.
      */
-    NV2080_CTRL_PERF_GPUMON_ENGINE_UTIL_SAMPLE nvjpg;
+    NV_DECLARE_ALIGNED(NV2080_CTRL_PERF_GPUMON_ENGINE_UTIL_SAMPLE nvjpg, 8);
     /*!
      * NV OFA utilization sample.
      */
-    NV2080_CTRL_PERF_GPUMON_ENGINE_UTIL_SAMPLE nvofa;
+    NV_DECLARE_ALIGNED(NV2080_CTRL_PERF_GPUMON_ENGINE_UTIL_SAMPLE nvofa, 8);
 } NV2080_CTRL_PERF_GPUMON_PERFMON_UTIL_SAMPLE;
 
 /*!

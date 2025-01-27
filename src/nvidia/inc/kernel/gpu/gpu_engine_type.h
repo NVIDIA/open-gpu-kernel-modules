@@ -71,7 +71,8 @@ typedef enum
     RM_ENGINE_TYPE_NVENC0                          =       (0x00000025),
     RM_ENGINE_TYPE_NVENC1                          =       (0x00000026),
     RM_ENGINE_TYPE_NVENC2                          =       (0x00000027),
-    RM_ENGINE_TYPE_RESERVED28                      =       (0x00000028),
+    // Bug 4175886 - Use this new value for all chips once GB20X is released
+    RM_ENGINE_TYPE_NVENC3                          =       (0x00000028),
     RM_ENGINE_TYPE_VP                              =       (0x00000029),
     RM_ENGINE_TYPE_ME                              =       (0x0000002a),
     RM_ENGINE_TYPE_PPP                             =       (0x0000002b),
@@ -129,7 +130,8 @@ typedef enum
 #define RM_ENGINE_TYPE_NVJPG                    RM_ENGINE_TYPE_NVJPEG0
 
 #define RM_ENGINE_TYPE_COPY_SIZE 20
-#define RM_ENGINE_TYPE_NVENC_SIZE 3
+// Bug 4175886 - Use this new value for all chips once GB20X is released
+#define RM_ENGINE_TYPE_NVENC_SIZE 4
 #define RM_ENGINE_TYPE_NVJPEG_SIZE 8
 #define RM_ENGINE_TYPE_NVDEC_SIZE 8
 #define RM_ENGINE_TYPE_OFA_SIZE 2

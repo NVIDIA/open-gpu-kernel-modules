@@ -682,5 +682,28 @@ typedef struct NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS {
 } NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS;
 
 
+/*!
+ * NVB0CC_CTRL_CMD_RESERVE_CCU_PROF
+ *
+ * Reserves CCU Prof resource for use by the calling client.
+ * This CCU prof resource will be accessible only if this reservation is
+ * taken.
+ *
+ * This reservation can be released with @ref NVB0CC_CTRL_CMD_RELEASE_CCU_PROF.
+ *
+ */
+#define NVB0CC_CTRL_CMD_RESERVE_CCU_PROF (0xb0cc0119) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS_MESSAGE_ID" */
+#define NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS_MESSAGE_ID (0x19U)
+
+typedef struct NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS {
+    /*!
+     * [in] Enable ctxsw for CCU prof.
+     */
+    NvBool ctxsw;
+} NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS;
+
+#define NVB0CC_CTRL_CMD_RELEASE_CCU_PROF (0xb0cc011a) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | 0x1a" */
+
+
 
 /* _ctrlb0ccprofiler_h_ */

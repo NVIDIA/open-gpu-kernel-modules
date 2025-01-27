@@ -342,6 +342,9 @@ struct uvm_va_range_channel_struct
     // This is an ID assigned by RM to each resource descriptor.
     NvU32 rm_id;
 
+    // Hardware runlist ID, used for debugging and fault processing
+    NvU32 hw_runlist_id;
+
     // The TSG which owns this mapping. Sharing of VA ranges is only allowed
     // within the same TSG. If valid == false, no sharing is allowed because the
     // channel is not in a TSG.
@@ -755,7 +758,29 @@ static uvm_va_range_managed_t *uvm_va_space_iter_managed_first(uvm_va_space_t *v
                                                                NvU64 start,
                                                                NvU64 end)
 {
-    return uvm_va_range_to_managed_or_null(uvm_va_space_iter_first(va_space, start, end));
+    uvm_va_range_t *va_range;
+
+    for (va_range = uvm_va_space_iter_first(va_space, start, end);
+         va_range;
+         va_range = uvm_va_space_iter_next(va_range, end)) {
+            if (va_range->type == UVM_VA_RANGE_TYPE_MANAGED)
+                return uvm_va_range_to_managed(va_range);
+    }
+
+    return NULL;
+}
+
+static uvm_va_range_managed_t *uvm_va_space_iter_managed_first_contig(uvm_va_space_t *va_space,
+                                                                      NvU64 start,
+                                                                      NvU64 end)
+{
+    uvm_va_range_t *va_range = uvm_va_space_iter_first(va_space, start, end);
+    uvm_va_range_managed_t *managed_range = uvm_va_range_to_managed_or_null(va_range);
+
+    if (managed_range && managed_range->va_range.node.start <= start)
+        return managed_range;
+
+    return NULL;
 }
 
 static uvm_va_range_managed_t *uvm_va_space_iter_managed_next(uvm_va_range_managed_t *managed,
@@ -782,32 +807,36 @@ static uvm_va_range_managed_t *uvm_va_space_iter_managed_next(uvm_va_range_manag
 static uvm_va_range_managed_t *uvm_va_space_iter_managed_next_contig(uvm_va_range_managed_t *managed_range,
                                                                      NvU64 end)
 {
-    uvm_va_range_managed_t *next = uvm_va_space_iter_managed_next(managed_range, end);
+    uvm_va_range_t *next_va_range = uvm_va_space_iter_next(&managed_range->va_range, end);
+    uvm_va_range_managed_t *next = uvm_va_range_to_managed_or_null(next_va_range);
+
     if (next && next->va_range.node.start != managed_range->va_range.node.end + 1)
         return NULL;
     return next;
 }
 
-#define uvm_for_each_va_range_managed(managed_range, va_space)                      \
-    for ((managed_range) = uvm_va_space_iter_managed_first((va_space), 0, ~0ULL);   \
-         (managed_range);                                                           \
-         (managed_range) = uvm_va_space_iter_managed_next((managed_range), ~0ULL))
-
+// Iterator for all managed ranges overlapping [start, end]. This will skip over
+// non-managed ranges and holes where no va_range exists.
 #define uvm_for_each_va_range_managed_in(managed_range, va_space, start, end)           \
     for ((managed_range) = uvm_va_space_iter_managed_first((va_space), (start), (end)); \
          (managed_range);                                                               \
          (managed_range) = uvm_va_space_iter_managed_next((managed_range), (end)))
 
+// Iterator for all managed ranges. This will skip over non-managed ranges and
+// holes where no va_range exists.
+#define uvm_for_each_va_range_managed(managed_range, va_space)             \
+    uvm_for_each_va_range_managed_in(managed_range, va_space, 0ULL, ~0ULL)
+
 // Iterator for all contiguous managed ranges between [start, end]. If any part
 // of [start, end] is not covered by a managed range, iteration stops.
-#define uvm_for_each_va_range_managed_in_contig(managed_range, va_space, start, end)        \
-    for ((managed_range) = uvm_va_space_iter_managed_first((va_space), (start), (start));   \
-         (managed_range);                                                                   \
+#define uvm_for_each_va_range_managed_in_contig(managed_range, va_space, start, end)             \
+    for ((managed_range) = uvm_va_space_iter_managed_first_contig((va_space), (start), (start)); \
+         (managed_range);                                                                        \
          (managed_range) = uvm_va_space_iter_managed_next_contig((managed_range), (end)))
 
-#define uvm_for_each_va_range_managed_in_contig_from(managed_range, va_space, first_managed_range, end) \
-    for ((managed_range) = (first_managed_range);                                                       \
-         (managed_range);                                                                               \
+#define uvm_for_each_va_range_managed_in_contig_from(managed_range, first_managed_range, end) \
+    for ((managed_range) = (first_managed_range);                                             \
+         (managed_range);                                                                     \
          (managed_range) = uvm_va_space_iter_managed_next_contig((managed_range), (end)))
 
 #define uvm_for_each_va_range_managed_in_vma(managed_range, vma)        \

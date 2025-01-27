@@ -209,38 +209,43 @@ _nvswitch_mc_print_directives
 }
 #endif  // defined(NVSWITCH_MC_TRACE)
 
-//
-// Build column-port bitmap. Each 32-bit portmap in the array represents a column.
-// Each bit set in the portmap represents the column-relative port offset.
-//
+
+// build column-port array
 static NvlStatus
-_nvswitch_mc_build_cpb
+_nvswitch_mc_build_ports_array
 (
     nvswitch_device *device,
     NvU32 num_ports,
     NvU32 *spray_group,
-    NvU32 num_columns,
-    NvU32 *cpb,
+    NVSWITCH_COLUMN_PORT_OFFSET_LS10 *ports,
     NvU8 *vchop_array_sg,
     NvU8 vchop_map[NVSWITCH_MC_NUM_COLUMNS_LS10][NVSWITCH_MC_PORTS_PER_COLUMN_LS10]
 )
 {
+    NvU64 ports_used = 0;
     NvU32 i, ret;
     NVSWITCH_COLUMN_PORT_OFFSET_LS10 cpo;
-
-    if ((spray_group == NULL) || (cpb == NULL) || (num_ports == 0) ||
-        (num_ports > NVSWITCH_NUM_LINKS_LS10))
+    if ((spray_group == NULL) || (ports == NULL) || (num_ports == 0) ||
+        (num_ports > NVSWITCH_MC_TCP_LIST_SIZE_LS10))
     {
         NVSWITCH_PRINT(device, ERROR, "%s: invalid arguments\n", __FUNCTION__);
         return -NVL_BAD_ARGS;
     }
 
-    nvswitch_os_memset(cpb, 0, sizeof(*cpb) * num_columns);
     nvswitch_os_memset(vchop_map, 0, sizeof(NvU8) *
                         NVSWITCH_MC_NUM_COLUMNS_LS10 * NVSWITCH_MC_PORTS_PER_COLUMN_LS10);
 
     for (i = 0; i < num_ports; i++)
     {
+        // prevent duplicate ports
+        if (ports_used & NVBIT64(spray_group[i]))
+        {
+            NVSWITCH_PRINT(device, ERROR, "%s: duplicate port specified: %d\n", __FUNCTION__,
+                      spray_group[i]);
+            return -NVL_BAD_ARGS;
+        }
+        ports_used |= NVBIT64(spray_group[i]);
+
         ret = _nvswitch_get_column_port_offset_ls10(spray_group[i], &cpo);
         if (ret != NVL_SUCCESS)
         {
@@ -248,14 +253,7 @@ _nvswitch_mc_build_cpb
             return ret;
         }
 
-        if (nvswitch_test_flags(cpb[cpo.column], NVBIT(cpo.port_offset)))
-        {
-            NVSWITCH_PRINT(device, ERROR, "%s: duplicate port specified: %d\n", __FUNCTION__,
-                            spray_group[i]);
-            return -NVL_BAD_ARGS;
-        }
-
-        nvswitch_set_flags(&cpb[cpo.column], NVBIT(cpo.port_offset));
+        ports[i] = cpo;
 
         if (vchop_array_sg[i] > NVSWITCH_MC_VCHOP_FORCE1)
         {
@@ -263,8 +261,6 @@ _nvswitch_mc_build_cpb
                            vchop_array_sg[i]);
             return -NVL_BAD_ARGS;
         }
-
-
         vchop_map[cpo.column][cpo.port_offset] = vchop_array_sg[i];
     }
 
@@ -295,80 +291,6 @@ _is_primary_replica
         return NV_TRUE;
 
     return NV_FALSE;
-}
-
-//
-// This function compacts the directive list and updates port_list_size
-//
-static NvlStatus
-_nvswitch_mc_compact_portlist
-(
-    nvswitch_device *device,
-    NVSWITCH_TCP_DIRECTIVE_LS10 *port_list,
-    NvU32 *port_list_size
-)
-{
-    NvU32 cur_portlist_pos, new_portlist_pos;
-    NVSWITCH_TCP_DIRECTIVE_LS10 *cur_dir, *old_list;
-
-    if (port_list_size == NULL)
-    {
-        NVSWITCH_PRINT(device, ERROR, "%s: port list size ptr is null\n", __FUNCTION__);
-        return -NVL_BAD_ARGS;
-    }
-
-    if ((port_list == NULL) || (*port_list_size == 0))
-        return NVL_SUCCESS;
-
-    if ((*port_list_size) > NVSWITCH_MC_TCP_LIST_SIZE_LS10)
-    {
-        NVSWITCH_PRINT(device, ERROR, "%s: port list size out of range\n", __FUNCTION__);
-        return -NVL_BAD_ARGS;
-    }
-
-#ifdef NVSWITCH_MC_DEBUG
-    NVSWITCH_PRINT(device, INFO, "%s: old size: %d\n", __FUNCTION__, *port_list_size);
-#endif
-
-    // create temporary directive list
-    old_list = nvswitch_os_malloc(sizeof(NVSWITCH_TCP_DIRECTIVE_LS10) * (*port_list_size));
-
-    if (!old_list)
-    {
-        NVSWITCH_PRINT(device, ERROR, "%s: error allocating temporary portlist\n", __FUNCTION__);
-        return -NVL_NO_MEM;
-    }
-
-    nvswitch_os_memcpy(old_list, port_list, sizeof(NVSWITCH_TCP_DIRECTIVE_LS10) * (*port_list_size));
-
-    // rebuild list using only valid entries
-    new_portlist_pos = 0;
-
-    for (cur_portlist_pos = 0; cur_portlist_pos < (*port_list_size); cur_portlist_pos++)
-    {
-        cur_dir = &old_list[cur_portlist_pos];
-
-        if (cur_dir->tcp != NVSWITCH_MC_INVALID)
-        {
-#ifdef NVSWITCH_MC_TRACE
-            NVSWITCH_PRINT(device, INFO, "%s: valid directive:\n", __FUNCTION__);
-            _nvswitch_mc_print_directive(device, &old_list[cur_portlist_pos]);
-#endif
-            nvswitch_os_memcpy(&port_list[new_portlist_pos], &old_list[cur_portlist_pos],
-                    sizeof(NVSWITCH_TCP_DIRECTIVE_LS10));
-            new_portlist_pos++;
-        }
-    }
-
-    nvswitch_os_free(old_list);
-
-#ifdef NVSWITCH_MC_DEBUG
-    NVSWITCH_PRINT(device, INFO, "%s: new size:  %d\n", __FUNCTION__, new_portlist_pos);
-#endif
-
-    *port_list_size = new_portlist_pos;
-
-    return NVL_SUCCESS;
 }
 
 //
@@ -485,117 +407,12 @@ _nvswitch_mc_set_port_flags
 }
 
 //
-// This function "pops" the next port offset from the portlist bitmap.
-//
-static NV_INLINE NvU8
-_nvswitch_mc_get_next_port
-(
-    NvU32 *portmap
-)
-{
-    NvU32 port;
-
-    if (!portmap)
-    {
-        NVSWITCH_ASSERT(0);
-        return NVSWITCH_MC_NULL_PORT_LS10;
-    }
-
-    //
-    // We have to do some gymnastics here because LOWESTBITIDX_32 is
-    // destructive on the input variable, and the result is not assignable.
-    //
-    port = *portmap;
-    LOWESTBITIDX_32(port);
-    nvswitch_clear_flags(portmap, NVBIT(port));
-
-    if (port >= NVSWITCH_MC_PORTS_PER_COLUMN_LS10)
-    {
-        NVSWITCH_ASSERT(0);
-        return NVSWITCH_MC_NULL_PORT_LS10;
-    }
-
-    return (NvU8)port;
-}
-
-//
-// This helper function generates a map of directive list offsets indexed by tile/column pair
-// port offsets. This is used during construction of the directive list to point to where each
-// newly constructed directive will be placed in the list. This process has to account for the
-// fact that the middle two columns contain 10 ports each, while the rest have 11, all mapping
-// into a 32-entry directive list.
-//
-static NV_INLINE void
-_nvswitch_mc_build_mcplist_position_map
-(
-    NvU32 port_offsets_by_tcp[NVSWITCH_MC_NUM_COLUMN_PAIRS_LS10][NVSWITCH_MC_PORTS_PER_COLUMN_LS10]
-)
-{
-    NvU32 i, j, tcp;
-
-    if (!port_offsets_by_tcp)
-    {
-        NVSWITCH_ASSERT(0);
-        return;
-    }
-
-    for (tcp = 0; tcp < NVSWITCH_MC_NUM_COLUMN_PAIRS_LS10; tcp++)
-    {
-        if (tcp == 0)
-        {
-            j = 0;
-            for (i = 0; i < NVSWITCH_MC_PORTS_PER_COLUMN_LS10; i++)
-            {
-                port_offsets_by_tcp[tcp][i] = j;
-                j += NVSWITCH_MC_NUM_COLUMN_PAIRS_LS10;
-            }
-        }
-
-        if (tcp == 1)
-        {
-            j = 1;
-            for (i = 0; i < NVSWITCH_MC_PORTS_PER_COLUMN_LS10 - 1; i++)
-            {
-                port_offsets_by_tcp[tcp][i] = j;
-                j += NVSWITCH_MC_NUM_COLUMN_PAIRS_LS10;
-            }
-        }
-
-        if (tcp == 2)
-        {
-            j = 2;
-            for (i = 0; i < NVSWITCH_MC_PORTS_PER_COLUMN_LS10; i++)
-            {
-                port_offsets_by_tcp[tcp][i] = (j == NVSWITCH_MC_TCP_LIST_SIZE_LS10) ?
-                                                    (NVSWITCH_MC_TCP_LIST_SIZE_LS10 - 1) : j;
-                j += NVSWITCH_MC_NUM_COLUMN_PAIRS_LS10;
-            }
-        }
-    }
-}
-
-//
-// Wrapper for the NUMSETBITS_32 macro, which is destructive on input.
-//
-static NV_INLINE NvU32
-_nvswitch_mc_get_pop_count
-(
-    NvU32 i
-)
-{
-    NvU32 tmp = i;
-
-    NUMSETBITS_32(tmp);
-
-    return tmp;
-}
-
-//
 // Build a list of TCP directives. This is the main conversion function which is used to build a
 // TCP directive list for each spray group from a given column/port bitmap.
 //
 // @param device                [in]  pointer to the nvswitch device struct
-// @param cpb                   [in]  pointer to the column/port bitmap used to build directive list
+// @param num_ports             [in]  number of ports
+// @param ports                 [in]  ports array (pair of column and port offset)
 // @param primary_replica       [in]  the primary replica port for this spray group, if specified
 // @param vchop_map             [in]  array containing per-port vchop values in column/port format
 // @param port_list             [out] array where the newly built directive list is written
@@ -605,330 +422,66 @@ static NvlStatus
 _nvswitch_mc_build_portlist
 (
     nvswitch_device *device,
-    NvU32 *cpb,
+    NvU32 num_ports,
+    NVSWITCH_COLUMN_PORT_OFFSET_LS10 *ports,
     NvU32 primary_replica,
     NvU8 vchop_map[NVSWITCH_MC_NUM_COLUMNS_LS10][NVSWITCH_MC_PORTS_PER_COLUMN_LS10],
     NVSWITCH_TCP_DIRECTIVE_LS10 *port_list,
     NvU32 *entries_used
 )
 {
-    NvU32 ecol_idx, ocol_idx, ecol_portcount, ocol_portcount, ecol_portmap, ocol_portmap;
-    NvU32 cur_portlist_pos, j, cur_portlist_slot, last_portlist_pos;
-    NvU8 cur_eport, cur_oport, i;
-    NvS32 extra_ports;
-    NvU32 port_offsets_by_tcp[NVSWITCH_MC_NUM_COLUMN_PAIRS_LS10][NVSWITCH_MC_PORTS_PER_COLUMN_LS10];
+    NvU8 last_portlist_pos;
+    NvU8 i;
     NVSWITCH_TCP_DIRECTIVE_LS10 *cur_dir;
 
-    if ((cpb == NULL) || (port_list == NULL))
+    if ((ports == NULL) || (port_list == NULL))
     {
         NVSWITCH_PRINT(device, ERROR, "%s: Invalid arguments\n", __FUNCTION__);
         return -NVL_BAD_ARGS;
     }
 
-    _nvswitch_mc_build_mcplist_position_map(port_offsets_by_tcp);
-
-    //
-    // process columns pairwise. if one column is larger than the other by 2 or more entries,
-    // set the port as alt path
-    //
-
-    cur_portlist_pos = 0;
-    last_portlist_pos = 0;
-    cur_portlist_slot = 0;
-
-    for ( i = 0; i < NVSWITCH_MC_NUM_COLUMN_PAIRS_LS10;  i++ )
+    // 6.15.2. Route Interface Description
+    for (i = 0 ; i < num_ports ; ++i)
     {
-        ecol_idx = 2 * i;
-        ocol_idx = 2 * i + 1;
 
-        ecol_portmap = cpb[ecol_idx];
-        ocol_portmap = cpb[ocol_idx];
+        NvU8 cur_port = ports[i].port_offset;
+        NvU32 cur_col = ports[i].column;
 
-        ecol_portcount = _nvswitch_mc_get_pop_count(ecol_portmap);
-        ocol_portcount = _nvswitch_mc_get_pop_count(ocol_portmap);
-
-        extra_ports = ecol_portcount - ocol_portcount;
-
-        // Start current portlist position on column offset of the current column
-        cur_portlist_slot = 0;
-        cur_portlist_pos = port_offsets_by_tcp[i][cur_portlist_slot];
-
-        if ( extra_ports >= 0 )
-        {
-            //
-            // even column has more ports or both columns have an equal number
-            // iterate on odd column port count to go through both columns
-            //
-            for (j = 0; j < ocol_portcount; j++, cur_portlist_slot++)
+        // Populating either EVEN or ODD column but not both
+        cur_dir = &port_list[i];
+        cur_dir->primaryReplica = PRIMARY_REPLICA_NONE;
+        cur_dir->tcp = cur_col/2; // tile-column pair numbering
+        if (cur_col % 2 == 1)
+        { // odd column port
+            cur_dir->tcpOPort = cur_port;
+            cur_dir->tcpEPort = NVSWITCH_MC_NULL_PORT_LS10;
+            cur_dir->tcpOVCHop = vchop_map[cur_col][cur_port];
+            if (_is_primary_replica(cur_col, cur_port, primary_replica))
             {
-                cur_eport = _nvswitch_mc_get_next_port(&ecol_portmap);
-                cur_oport = _nvswitch_mc_get_next_port(&ocol_portmap);
-                if ((cur_eport == NVSWITCH_MC_NULL_PORT_LS10) ||
-                    (cur_oport == NVSWITCH_MC_NULL_PORT_LS10))
-                {
-                    return -NVL_ERR_GENERIC;
-                }
+                cur_dir->primaryReplica = PRIMARY_REPLICA_ODD;
 
-                // assign the ports to the current directive
-                cur_portlist_pos = port_offsets_by_tcp[i][cur_portlist_slot];
-                cur_dir = &port_list[cur_portlist_pos];
-                cur_dir->tcpEPort = cur_eport;
-                cur_dir->tcpOPort = cur_oport;
-
-                cur_dir->tcpEVCHop = vchop_map[ecol_idx][cur_eport];
-                cur_dir->tcpOVCHop = vchop_map[ocol_idx][cur_oport];
-
-                cur_dir->tcp = i;
-
-#ifdef NVSWITCH_MC_TRACE
-                NVSWITCH_PRINT(device, INFO, "%s: tcp: %d, extra: %d, cur_eport: %d, cur_oport %d\n",
-                                __FUNCTION__, i, extra_ports, cur_eport, cur_oport);
-                NVSWITCH_PRINT(device, INFO, "%s: cur_portlist_pos: %d\n", __FUNCTION__,
-                                cur_portlist_pos);
+#ifdef NVSWITCH_MC_DEBUG
+                NVSWITCH_PRINT(device, DEBUG, "%s: Odd column primary replica programmed: %d %d\n",
+                       __FUNCTION__, primary_replica, i);
 #endif
-                // set primary replica
-                if (_is_primary_replica(ocol_idx, cur_oport, primary_replica))
-                    cur_dir->primaryReplica = PRIMARY_REPLICA_ODD;
-
-                if (_is_primary_replica(ecol_idx, cur_eport, primary_replica))
-                    cur_dir->primaryReplica = PRIMARY_REPLICA_EVEN;
-
-            }
-
-            // if both columns had the same number of ports, move on to the next column pair
-            if (!extra_ports)
-            {
-                last_portlist_pos = NV_MAX(last_portlist_pos, cur_portlist_pos);
-                continue;
-            }
-
-            //
-            // otherwise, handle remaining ports in even column
-            // for the first extra port, assign it directly
-            // cur_portlist_slot is incremented by the last iteration, or 0
-            //
-            cur_eport = _nvswitch_mc_get_next_port(&ecol_portmap);
-            if (cur_eport == NVSWITCH_MC_NULL_PORT_LS10)
-            {
-                return -NVL_ERR_GENERIC;
-            }
-
-            cur_portlist_pos = port_offsets_by_tcp[i][cur_portlist_slot];
-            cur_dir = &port_list[cur_portlist_pos];
-            cur_dir->tcpEPort = cur_eport;
-
-            cur_dir->tcpEVCHop = vchop_map[ecol_idx][cur_eport];
-
-            cur_dir->tcp = i;
-
-#ifdef NVSWITCH_MC_TRACE
-            NVSWITCH_PRINT(device, INFO, "%s: tcp: %d, extra: %d, cur_eport: %d\n",
-                            __FUNCTION__, i, extra_ports, cur_eport);
-            NVSWITCH_PRINT(device, INFO, "%s: cur_portlist_pos: %d\n", __FUNCTION__,
-                            cur_portlist_pos);
-#endif
-
-            // if this is the primary replica port, mark it
-            if (_is_primary_replica(ecol_idx, cur_eport, primary_replica))
-                cur_dir->primaryReplica = PRIMARY_REPLICA_EVEN;
-
-            extra_ports--;
-
-            // if there are more, assign to altpath
-            while (extra_ports)
-            {
-                // get next port from even column
-                cur_eport = _nvswitch_mc_get_next_port(&ecol_portmap);
-                if (cur_eport == NVSWITCH_MC_NULL_PORT_LS10)
-                {
-                    return -NVL_ERR_GENERIC;
-                }
-
-                // assign it to odd port in current directive (altpath)
-                cur_dir->tcpOPort = cur_eport;
-                cur_dir->tcpOAltPath = NV_TRUE;
-
-                cur_dir->tcpOVCHop = vchop_map[ecol_idx][cur_eport];
-
-#ifdef NVSWITCH_MC_TRACE
-                NVSWITCH_PRINT(device, INFO, "%s: tcp: %d, extra: %d, cur_eport: %d (alt)\n",
-                                __FUNCTION__, i, extra_ports, cur_eport);
-                NVSWITCH_PRINT(device, INFO, "%s: cur_portlist_pos: %d\n", __FUNCTION__,
-                                cur_portlist_pos);
-#endif
-                // if this is the primary replica port, mark _ODD due to altpath
-                if (_is_primary_replica(ecol_idx, cur_eport, primary_replica))
-                    cur_dir->primaryReplica = PRIMARY_REPLICA_ODD;
-
-                extra_ports--;
-
-                // if there are more ports remaining, start the next entry
-                if (extra_ports)
-                {
-                    // advance the portlist entry
-                    cur_portlist_slot++;
-                    cur_portlist_pos = port_offsets_by_tcp[i][cur_portlist_slot];
-                    cur_dir = &port_list[cur_portlist_pos];
-
-                    cur_eport = _nvswitch_mc_get_next_port(&ecol_portmap);
-                    if (cur_eport == NVSWITCH_MC_NULL_PORT_LS10)
-                    {
-                        return -NVL_ERR_GENERIC;
-                    }
-
-                    cur_dir->tcpEPort = cur_eport;
-
-                    cur_dir->tcpEVCHop = vchop_map[ecol_idx][cur_eport];
-
-                    cur_dir->tcp = i;
-
-#ifdef NVSWITCH_MC_TRACE
-                    NVSWITCH_PRINT(device, INFO, "%s: tcp: %d, extra: %d, cur_eport: %d\n",
-                                    __FUNCTION__, i, extra_ports, cur_eport);
-                    NVSWITCH_PRINT(device, INFO, "%s: cur_portlist_pos: %d\n", __FUNCTION__,
-                                    cur_portlist_pos);
-#endif
-
-                    // if this is the primary replica port, mark it
-                    if (_is_primary_replica(ecol_idx, cur_eport, primary_replica))
-                        cur_dir->primaryReplica = PRIMARY_REPLICA_EVEN;
-
-                    extra_ports--;
-                }
             }
         }
         else
-        {
-            // odd column has more ports
-            extra_ports = -extra_ports;
-
-            // iterate over even column to go through port pairs
-            for (j = 0; j < ecol_portcount; j++, cur_portlist_slot++)
+        { // even column port
+            cur_dir->tcpEPort = cur_port;
+            cur_dir->tcpOPort = NVSWITCH_MC_NULL_PORT_LS10;
+            cur_dir->tcpEVCHop = vchop_map[cur_col][cur_port];
+            if (_is_primary_replica(cur_col, cur_port, primary_replica))
             {
-                cur_eport = _nvswitch_mc_get_next_port(&ecol_portmap);
-                cur_oport = _nvswitch_mc_get_next_port(&ocol_portmap);
-                if ((cur_eport == NVSWITCH_MC_NULL_PORT_LS10) ||
-                    (cur_oport == NVSWITCH_MC_NULL_PORT_LS10))
-                {
-                    return -NVL_ERR_GENERIC;
-                }
-
-                // assign the ports to the current directive
-                cur_portlist_pos = port_offsets_by_tcp[i][cur_portlist_slot];
-                cur_dir = &port_list[cur_portlist_pos];
-                cur_dir->tcpEPort = cur_eport;
-                cur_dir->tcpOPort = cur_oport;
-
-                cur_dir->tcpEVCHop = vchop_map[ecol_idx][cur_eport];
-                cur_dir->tcpOVCHop = vchop_map[ocol_idx][cur_oport];
-
-                cur_dir->tcp = i;
-
-#ifdef NVSWITCH_MC_TRACE
-                NVSWITCH_PRINT(device, INFO, "%s: tcp: %d, extra: %d, cur_eport: %d, cur_oport %d\n",
-                                __FUNCTION__, i, extra_ports, cur_eport, cur_oport);
-                NVSWITCH_PRINT(device, INFO, "%s: cur_portlist_pos: %d\n", __FUNCTION__,
-                                cur_portlist_pos);
+                cur_dir->primaryReplica = PRIMARY_REPLICA_EVEN;
+#ifdef NVSWITCH_MC_DEBUG
+                NVSWITCH_PRINT(device, DEBUG, "%s: Even column primary replica programmed: %d %d\n",
+                       __FUNCTION__, primary_replica, i);
 #endif
-                if (_is_primary_replica(ocol_idx, cur_oport, primary_replica))
-                    cur_dir->primaryReplica = PRIMARY_REPLICA_ODD;
-                if (_is_primary_replica(ecol_idx, cur_eport, primary_replica))
-                    cur_dir->primaryReplica = PRIMARY_REPLICA_EVEN;
-
-            }
-
-            // handle the leftover ports in odd column
-            cur_oport = _nvswitch_mc_get_next_port(&ocol_portmap);
-            if (cur_oport == NVSWITCH_MC_NULL_PORT_LS10)
-            {
-                return -NVL_ERR_GENERIC;
-            }
-
-            // cur_portlist_slot is incremented by the last iteration, or 0
-            cur_portlist_pos = port_offsets_by_tcp[i][cur_portlist_slot];
-            cur_dir = &port_list[cur_portlist_pos];
-
-            cur_dir->tcpOPort = cur_oport;
-
-            cur_dir->tcpOVCHop = vchop_map[ocol_idx][cur_oport];
-
-            cur_dir->tcp = i;
-
-#ifdef NVSWITCH_MC_TRACE
-             NVSWITCH_PRINT(device, INFO, "%s: tcp: %d, extra: %d, cur_oport %d\n",
-                            __FUNCTION__, i, extra_ports, cur_oport);
-             NVSWITCH_PRINT(device, INFO, "%s: cur_portlist_pos: %d\n", __FUNCTION__,
-                            cur_portlist_pos);
-#endif
-
-            if (_is_primary_replica(ocol_idx, cur_oport, primary_replica))
-                cur_dir->primaryReplica = PRIMARY_REPLICA_ODD;
-
-            extra_ports--;
-
-            // process any remaining ports in odd column
-            while (extra_ports)
-            {
-                // get next odd port
-                cur_oport = _nvswitch_mc_get_next_port(&ocol_portmap);
-                if (cur_oport == NVSWITCH_MC_NULL_PORT_LS10)
-                {
-                    return -NVL_ERR_GENERIC;
-                }
-
-                // set it as even altpath port in current directive
-                cur_dir->tcpEPort = cur_oport;
-                cur_dir->tcpEAltPath = NV_TRUE;
-
-                cur_dir->tcpEVCHop = vchop_map[ocol_idx][cur_oport];
-
-#ifdef NVSWITCH_MC_TRACE
-                NVSWITCH_PRINT(device, INFO, "%s: tcp: %d, extra: %d, cur_oport %d (alt)\n",
-                                __FUNCTION__, i, extra_ports, cur_oport);
-                NVSWITCH_PRINT(device, INFO, "%s: cur_portlist_pos: %d\n", __FUNCTION__,
-                                cur_portlist_pos);
-#endif
-                // if this is the primary replica port, mark _EVEN due to altpath
-                if (_is_primary_replica(ocol_idx, cur_oport, primary_replica))
-                    cur_dir->primaryReplica = PRIMARY_REPLICA_EVEN;
-
-                extra_ports--;
-
-                // if there is another port, it goes in the next directive
-                if (extra_ports)
-                {
-                    cur_portlist_slot++;
-                    cur_portlist_pos = port_offsets_by_tcp[i][cur_portlist_slot];
-                    cur_dir = &port_list[cur_portlist_pos];
-
-                    cur_oport = _nvswitch_mc_get_next_port(&ocol_portmap);
-                    if (cur_oport == NVSWITCH_MC_NULL_PORT_LS10)
-                    {
-                        return -NVL_ERR_GENERIC;
-                    }
-
-                    cur_dir->tcpOPort = cur_oport;
-
-                    cur_dir->tcpOVCHop = vchop_map[ocol_idx][cur_oport];
-
-                    cur_dir->tcp = i;
-
-#ifdef NVSWITCH_MC_TRACE
-                    NVSWITCH_PRINT(device, INFO, "%s: tcp: %d, extra: %d, cur_oport %d\n",
-                                    __FUNCTION__, i, extra_ports, cur_oport);
-                    NVSWITCH_PRINT(device, INFO, "%s: cur_portlist_pos: %d\n", __FUNCTION__,
-                                    cur_portlist_pos);
-#endif
-
-                    if (_is_primary_replica(ocol_idx, cur_oport, primary_replica))
-                        cur_dir->primaryReplica = PRIMARY_REPLICA_ODD;
-
-                    extra_ports--;
-                }
             }
         }
 
-        last_portlist_pos = NV_MAX(last_portlist_pos, cur_portlist_pos);
+        last_portlist_pos = i;
     }
 
     // set the lastRound flag for the last entry in the spray string
@@ -939,8 +492,8 @@ _nvswitch_mc_build_portlist
 
 #ifdef NVSWITCH_MC_DEBUG
     NVSWITCH_PRINT(device, INFO,
-                    "%s: entries_used: %d, cur_portlist_pos: %d last_portlist_pos: %d\n",
-                    __FUNCTION__, *entries_used, cur_portlist_pos, last_portlist_pos);
+                    "%s: entries_used: %d, last_portlist_pos: %d\n",
+                    __FUNCTION__, *entries_used, last_portlist_pos);
 #endif
 
     return NVL_SUCCESS;
@@ -1068,7 +621,7 @@ nvswitch_mc_build_mcp_list_ls10
     NvU32 dir_entries_used_sg = 0;
     NvU32 dir_entries_used = 0;
     NvU32 mcplist_offset = 0;
-    NvU32 cpb[NVSWITCH_MC_NUM_COLUMNS_LS10] = { 0 };
+    NVSWITCH_COLUMN_PORT_OFFSET_LS10 ports[NVSWITCH_NUM_LINKS_LS10];
     NvU8 vchop_map[NVSWITCH_MC_NUM_COLUMNS_LS10][NVSWITCH_MC_PORTS_PER_COLUMN_LS10];
     NVSWITCH_TCP_DIRECTIVE_LS10 tmp_mcp_list[NVSWITCH_MC_TCP_LIST_SIZE_LS10];
     NVSWITCH_TCP_DIRECTIVE_LS10 *mcp_list;
@@ -1108,7 +661,7 @@ nvswitch_mc_build_mcp_list_ls10
             return -NVL_BAD_ARGS;
         }
 
-        if (ports_per_spray_group[i] > NVSWITCH_NUM_LINKS_LS10)
+        if (ports_per_spray_group[i] > NVSWITCH_MC_TCP_LIST_SIZE_LS10)
         {
             NVSWITCH_PRINT(device, ERROR, "%s: Too many ports in spray group %d\n",
                             __FUNCTION__, i);
@@ -1118,7 +671,7 @@ nvswitch_mc_build_mcp_list_ls10
         j += ports_per_spray_group[i];
     }
 
-    if (j > NVSWITCH_NUM_LINKS_LS10)
+    if (j > NVSWITCH_MC_TCP_LIST_SIZE_LS10)
     {
          NVSWITCH_PRINT(device, ERROR, "%s: Too many ports specified in total spray groups: %d\n",
                         __FUNCTION__, j);
@@ -1143,14 +696,13 @@ nvswitch_mc_build_mcp_list_ls10
         if (ret != NVL_SUCCESS)
             return ret;
 
-        ret = _nvswitch_mc_build_cpb(device, spray_group_size, &port_list[spray_group_offset],
-                                        NVSWITCH_MC_NUM_COLUMNS_LS10, cpb,
-                                        &vchop_array[spray_group_offset], vchop_map);
+        ret = _nvswitch_mc_build_ports_array(device, spray_group_size, &port_list[spray_group_offset],
+                                             ports, &vchop_array[spray_group_offset], vchop_map);
 
         if (ret != NVL_SUCCESS)
         {
             NVSWITCH_PRINT(device, ERROR,
-                            "%s: error building column-port bitmap for spray group %d: %d\n",
+                            "%s: error building port-column array for spray group %d: %d\n",
                             __FUNCTION__, spray_group_idx, ret);
             return ret;
         }
@@ -1158,25 +710,6 @@ nvswitch_mc_build_mcp_list_ls10
         // Set the offset to this spray group in the mcp list.
         spray_group_ptrs[spray_group_idx] = (NvU8)dir_entries_used;
 
-#ifdef NVSWITCH_MC_TRACE
-        NVSWITCH_PRINT(device, INFO, "%s: spray group offset for group %d is %d\n",
-                       __FUNCTION__, spray_group_idx, dir_entries_used);
-
-        for (i = 0; i < NVSWITCH_MC_NUM_COLUMNS_LS10; i++)
-        {
-            NVSWITCH_PRINT(device, INFO, "%d Relative ports in column %d\n",
-                                        _nvswitch_mc_get_pop_count(cpb[i]), i);
-
-            for ( j = 0; j < 32; j++ )
-            {
-                if (nvswitch_test_flags(cpb[i], NVBIT(j)))
-                {
-                    NVSWITCH_PRINT(device, INFO, "%4d", j);
-                }
-            }
-            NVSWITCH_PRINT(device, INFO, "\n");
-        }
-#endif
         // if primary replica is specified for this spray group, find the port number
         if (replica_valid_array[spray_group_idx])
         {
@@ -1220,8 +753,7 @@ nvswitch_mc_build_mcp_list_ls10
         NVSWITCH_PRINT(device, INFO, "%s: building tmp mc portlist at mcp offset %d, size %d\n",
                         __FUNCTION__, mcplist_offset, spray_group_size);
 #endif
-
-        ret = _nvswitch_mc_build_portlist(device, cpb, primary_replica_port, vchop_map,
+        ret = _nvswitch_mc_build_portlist(device, spray_group_size, ports, primary_replica_port, vchop_map,
                                           tmp_mcp_list, &dir_entries_used_sg);
 
         if (ret != NVL_SUCCESS)
@@ -1234,14 +766,6 @@ nvswitch_mc_build_mcp_list_ls10
         NVSWITCH_PRINT(device, INFO, "%s: entries used after building portlist: %d\n",
                        __FUNCTION__, dir_entries_used_sg);
 #endif
-
-        ret = _nvswitch_mc_compact_portlist(device, tmp_mcp_list, &dir_entries_used_sg);
-        if (ret != NVL_SUCCESS)
-        {
-            NVSWITCH_PRINT(device, ERROR, "%s: error compacting MC portlist\n", __FUNCTION__);
-            return ret;
-        }
-
         _nvswitch_mc_set_round_flags(tmp_mcp_list, dir_entries_used_sg);
 
         _nvswitch_mc_set_port_flags(tmp_mcp_list, dir_entries_used_sg);
@@ -1306,7 +830,7 @@ nvswitch_mc_unwind_directives_ls10
 {
     NvU32 ret = NVL_SUCCESS;
     NvU32 i, port_idx, cur_sg, ports_in_cur_sg, port, primary_replica;
-    NVSWITCH_TCP_DIRECTIVE_LS10 cur_dir, prev_dir;
+    NVSWITCH_TCP_DIRECTIVE_LS10 cur_dir;
 
     cur_sg = 0;
     port_idx = 0;
@@ -1344,32 +868,29 @@ nvswitch_mc_unwind_directives_ls10
 
         }
         //
-        // If the previous TCP directive's portFlag = 0, and if it was not
-        // used to select the even or odd port of its predecessor, and this
-        // directive's portFlag == 1, this TCP directive contains the
+        // If directive's portFlag == 1, this TCP directive contains the
         // primary replica, and the next TCP directive's portFlag = 0/1
         // selects the even/odd port of this TCP directive.
         //
-
-        // If we don't have the first or last directive and portFlag == 1
-        else if ((i < (NVSWITCH_MC_TCP_LIST_SIZE_LS10 - 1)) && (i > 0) && (cur_dir.portFlag == 1))
+        else if ((i < (NVSWITCH_MC_TCP_LIST_SIZE_LS10 - 1)) && (cur_dir.portFlag == 1))
         {
-            prev_dir = directives[i - 1];
-
-            // Is the previous directive in the same sg and is the portFlag == 0?
-            if ((prev_dir.lastRound == 0) && (prev_dir.portFlag == 0))
-            {
-                // Check if there is no predecessor, or if the predecessor's portFlag == 0
-                if ((i < 2) || (directives[i - 2].portFlag == 0))
-                {
-                    // The next directive's portFlags specify even or odd
-                    if (directives[i + 1].portFlag)
-                        primary_replica = PRIMARY_REPLICA_ODD;
-                    else
-                        primary_replica = PRIMARY_REPLICA_EVEN;
-                }
-            }
+            // The next directive's portFlags specify even or odd
+            if (directives[i + 1].portFlag)
+                primary_replica = PRIMARY_REPLICA_ODD;
+            else
+                primary_replica = PRIMARY_REPLICA_EVEN;
         }
+
+#ifdef NVSWITCH_MC_TRACE
+        if (primary_replica == PRIMARY_REPLICA_ODD) {
+            NVSWITCH_PRINT(device, INFO, "%s: Odd primary replica detected: %d\n",
+                       __FUNCTION__, i);
+        }
+        if (primary_replica == PRIMARY_REPLICA_EVEN) {
+            NVSWITCH_PRINT(device, INFO, "%s: Even primary replica detected: %d\n",
+                       __FUNCTION__, i);
+        }
+#endif
 
         if (cur_dir.tcpEPort != NVSWITCH_MC_NULL_PORT_LS10)
         {
@@ -1862,4 +1383,3 @@ nvswitch_mc_read_mc_rid_entry_ls10
 
     return NVL_SUCCESS;
 }
-

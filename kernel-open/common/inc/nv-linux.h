@@ -231,12 +231,6 @@ NV_STATUS nvos_forward_error_to_cray(struct pci_dev *, NvU32,
         const char *, va_list);
 #endif
 
-#if defined(NVCPU_PPC64LE) && defined(CONFIG_EEH)
-#include <asm/eeh.h>
-#define NV_PCI_ERROR_RECOVERY_ENABLED() eeh_enabled()
-#define NV_PCI_ERROR_RECOVERY
-#endif
-
 #if defined(NV_ASM_SET_MEMORY_H_PRESENT)
 #include <asm/set_memory.h>
 #endif
@@ -609,7 +603,7 @@ static NvBool nv_numa_node_has_memory(int node_id)
 
 #define NV_ALLOC_PAGES_NODE(ptr, nid, order, gfp_mask) \
     { \
-        (ptr) = (unsigned long)page_address(alloc_pages_node(nid, gfp_mask, order)); \
+        (ptr) = (unsigned long) alloc_pages_node(nid, gfp_mask, order); \
     }
 
 #define NV_GET_FREE_PAGES(ptr, order, gfp_mask)      \
@@ -879,16 +873,6 @@ typedef void irqreturn_t;
 
 #ifndef PCI_CAP_ID_EXP
 #define PCI_CAP_ID_EXP 0x10
-#endif
-
-/*
- * On Linux on PPC64LE enable basic support for Linux PCI error recovery (see
- * Documentation/PCI/pci-error-recovery.txt). Currently RM only supports error
- * notification and data collection, not actual recovery of the device.
- */
-#if defined(NVCPU_PPC64LE) && defined(CONFIG_EEH)
-#include <asm/eeh.h>
-#define NV_PCI_ERROR_RECOVERY
 #endif
 
 /*
@@ -1419,8 +1403,6 @@ typedef struct nv_dma_map_s {
             0 ? NV_OK : NV_ERR_OPERATING_SYSTEM)
 #endif
 
-typedef struct nv_ibmnpu_info nv_ibmnpu_info_t;
-
 typedef struct nv_work_s {
     struct work_struct task;
     void *data;
@@ -1468,7 +1450,6 @@ struct nv_dma_device {
     } addressable_range;
 
     struct device *dev;
-    NvBool nvlink;
 };
 
 /* Properties of the coherent link */
@@ -1516,9 +1497,6 @@ typedef struct nv_linux_state_s {
 
     struct device  *dev;
     struct pci_dev *pci_dev;
-
-    /* IBM-NPU info associated with this GPU */
-    nv_ibmnpu_info_t *npu;
 
     /* coherent link information */
      coherent_link_info_t coherent_link_info;
@@ -1835,7 +1813,7 @@ static inline int nv_is_control_device(struct inode *inode)
     return (minor((inode)->i_rdev) == NV_MINOR_DEVICE_NUMBER_CONTROL_DEVICE);
 }
 
-#if defined(NV_DOM0_KERNEL_PRESENT) || defined(NV_VGPU_KVM_BUILD)
+#if defined(NV_DOM0_KERNEL_PRESENT) || defined(NV_VGPU_KVM_BUILD) || defined(NV_DEVICE_VM_BUILD)
 #define NV_VGX_HYPER
 #if defined(NV_XEN_IOEMU_INJECT_MSI)
 #include <xen/ioemu.h>
@@ -1871,59 +1849,6 @@ static inline NvBool nv_alloc_release(nv_linux_file_private_t *nvlfp, nv_alloc_t
 #if !defined(RB_EMPTY_ROOT)
 #define RB_EMPTY_ROOT(root) ((root)->rb_node == NULL)
 #endif
-
-/*
- * Starting on Power9 systems, DMA addresses for NVLink are no longer
- * the same as used over PCIe.
- *
- * Power9 supports a 56-bit Real Address. This address range is compressed
- * when accessed over NVLink to allow the GPU to access all of memory using
- * its 47-bit Physical address.
- *
- * If there is an NPU device present on the system, it implies that NVLink
- * sysmem links are present and we need to apply the required address
- * conversion for NVLink within the driver.
- *
- * See Bug 1920398 for further background and details.
- *
- * Note, a deviation from the documented compression scheme is that the
- * upper address bits (i.e. bit 56-63) instead of being set to zero are
- * preserved during NVLink address compression so the orignal PCIe DMA
- * address can be reconstructed on expansion. These bits can be safely
- * ignored on NVLink since they are truncated by the GPU.
- *
- * Bug 1968345: As a performance enhancement it is the responsibility of
- * the caller on PowerPC platforms to check for presence of an NPU device
- * before the address transformation is applied.
- */
-static inline NvU64 nv_compress_nvlink_addr(NvU64 addr)
-{
-    NvU64 addr47 = addr;
-
-#if defined(NVCPU_PPC64LE)
-    addr47 = addr & ((1ULL << 43) - 1);
-    addr47 |= (addr & (0x3ULL << 45)) >> 2;
-    WARN_ON(addr47 & (1ULL << 44));
-    addr47 |= (addr & (0x3ULL << 49)) >> 4;
-    addr47 |= addr & ~((1ULL << 56) - 1);
-#endif
-
-    return addr47;
-}
-
-static inline NvU64 nv_expand_nvlink_addr(NvU64 addr47)
-{
-    NvU64 addr = addr47;
-
-#if defined(NVCPU_PPC64LE)
-    addr = addr47 & ((1ULL << 43) - 1);
-    addr |= (addr47 & (3ULL << 43)) << 2;
-    addr |= (addr47 & (3ULL << 45)) << 4;
-    addr |= addr47 & ~((1ULL << 56) - 1);
-#endif
-
-    return addr;
-}
 
 // Default flags for ISRs
 static inline NvU32 nv_default_irq_flags(nv_state_t *nv)

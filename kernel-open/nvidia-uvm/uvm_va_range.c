@@ -1282,21 +1282,22 @@ uvm_va_range_t *uvm_va_range_find(uvm_va_space_t *va_space, NvU64 addr)
 
 uvm_va_range_t *uvm_va_space_iter_first(uvm_va_space_t *va_space, NvU64 start, NvU64 end)
 {
-    uvm_range_tree_node_t *node = uvm_range_tree_iter_first(&va_space->va_range_tree, start, end);
-    return uvm_va_range_container(node);
+    uvm_assert_rwsem_locked(&va_space->lock);
+    return uvm_va_range_container(uvm_range_tree_iter_first(&va_space->va_range_tree, start, end));
 }
 
 uvm_va_range_t *uvm_va_space_iter_next(uvm_va_range_t *va_range, NvU64 end)
 {
-    uvm_range_tree_node_t *node;
+    uvm_va_space_t *va_space;
 
     // Handling a NULL va_range here makes uvm_for_each_va_range_in_safe much
     // less messy
     if (!va_range)
         return NULL;
 
-    node = uvm_range_tree_iter_next(&va_range->va_space->va_range_tree, &va_range->node, end);
-    return uvm_va_range_container(node);
+    va_space = va_range->va_space;
+    uvm_assert_rwsem_locked(&va_space->lock);
+    return uvm_va_range_container(uvm_range_tree_iter_next(&va_space->va_range_tree, &va_range->node, end));
 }
 
 size_t uvm_va_range_num_blocks(uvm_va_range_managed_t *managed_range)

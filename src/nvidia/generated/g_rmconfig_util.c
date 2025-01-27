@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig_util.c
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
 //
 
 #include "gpu/gpu.h"
@@ -266,14 +266,84 @@ NvBool rmcfg_IsGB102orBetter(POBJGPU pGpu)
     return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GB102);
 }
 
+NvBool rmcfg_IsGB10B(POBJGPU pGpu)
+{
+    return gpuIsImplementation(pGpu, HAL_IMPL_GB10B);
+}
+
+NvBool rmcfg_IsGB10BorBetter(POBJGPU pGpu)
+{
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GB10B);
+}
+
 NvBool rmcfg_IsGB10X(POBJGPU pGpu)
 {
-    return IsGB100(pGpu) || IsGB102(pGpu);
+    return IsGB100(pGpu) || IsGB102(pGpu) || IsGB10B(pGpu);
 }
 
 NvBool rmcfg_IsGB10XorBetter(POBJGPU pGpu)
 {
     return IsGB100orBetter(pGpu);
+}
+
+NvBool rmcfg_IsGB202(POBJGPU pGpu)
+{
+    return gpuIsImplementation(pGpu, HAL_IMPL_GB202);
+}
+
+NvBool rmcfg_IsGB202orBetter(POBJGPU pGpu)
+{
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GB202);
+}
+
+NvBool rmcfg_IsGB203(POBJGPU pGpu)
+{
+    return gpuIsImplementation(pGpu, HAL_IMPL_GB203);
+}
+
+NvBool rmcfg_IsGB203orBetter(POBJGPU pGpu)
+{
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GB203);
+}
+
+NvBool rmcfg_IsGB205(POBJGPU pGpu)
+{
+    return gpuIsImplementation(pGpu, HAL_IMPL_GB205);
+}
+
+NvBool rmcfg_IsGB205orBetter(POBJGPU pGpu)
+{
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GB205);
+}
+
+NvBool rmcfg_IsGB206(POBJGPU pGpu)
+{
+    return gpuIsImplementation(pGpu, HAL_IMPL_GB206);
+}
+
+NvBool rmcfg_IsGB206orBetter(POBJGPU pGpu)
+{
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GB206);
+}
+
+NvBool rmcfg_IsGB207(POBJGPU pGpu)
+{
+    return gpuIsImplementation(pGpu, HAL_IMPL_GB207);
+}
+
+NvBool rmcfg_IsGB207orBetter(POBJGPU pGpu)
+{
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GB207);
+}
+
+NvBool rmcfg_IsGB20X(POBJGPU pGpu)
+{
+    return IsGB202(pGpu) || IsGB203(pGpu) || IsGB205(pGpu) || IsGB206(pGpu) || IsGB207(pGpu);
+}
+
+NvBool rmcfg_IsGB20XorBetter(POBJGPU pGpu)
+{
+    return IsGB202orBetter(pGpu);
 }
 
 NvBool rmcfg_IsDISPLAYLESS_CLASSIC_GPUS(POBJGPU pGpu)
@@ -363,7 +433,7 @@ NvBool rmcfg_IsHOPPER_CLASSIC_GPUSorBetter(POBJGPU pGpu)
 
 NvBool rmcfg_IsdBLACKWELL(POBJGPU pGpu)
 {
-    return IsGB100(pGpu) || IsGB102(pGpu);
+    return IsGB100(pGpu) || IsGB102(pGpu) || IsGB10B(pGpu) || IsGB202(pGpu) || IsGB203(pGpu) || IsGB205(pGpu) || IsGB206(pGpu) || IsGB207(pGpu);
 }
 
 NvBool rmcfg_IsdBLACKWELLorBetter(POBJGPU pGpu)
@@ -373,12 +443,32 @@ NvBool rmcfg_IsdBLACKWELLorBetter(POBJGPU pGpu)
 
 NvBool rmcfg_IsBLACKWELL_CLASSIC_GPUS(POBJGPU pGpu)
 {
-    return IsGB100(pGpu) || IsGB102(pGpu);
+    return IsGB100(pGpu) || IsGB102(pGpu) || IsGB10B(pGpu) || IsGB202(pGpu) || IsGB203(pGpu) || IsGB205(pGpu) || IsGB206(pGpu) || IsGB207(pGpu);
 }
 
 NvBool rmcfg_IsBLACKWELL_CLASSIC_GPUSorBetter(POBJGPU pGpu)
 {
     return IsGB100orBetter(pGpu);
+}
+
+NvBool rmcfg_IsGB10Y(POBJGPU pGpu)
+{
+    return IsGB10B(pGpu);
+}
+
+NvBool rmcfg_IsTEGRA_DGPU_BLACKWELL(POBJGPU pGpu)
+{
+    return IsGB10B(pGpu);
+}
+
+NvBool rmcfg_IsTEGRA_DISP_CLASSIC_GPUS(POBJGPU pGpu)
+{
+    return IsGB10B(pGpu);
+}
+
+NvBool rmcfg_IsTEGRA_DISP_CLASSIC_GPUSorBetter(POBJGPU pGpu)
+{
+    return IsGB10BorBetter(pGpu);
 }
 
 

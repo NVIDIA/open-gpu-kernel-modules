@@ -78,6 +78,14 @@ typedef enum
     NV_EVENT_BUFFER_VIDEO_CODEC_ID__LAST = NV_EVENT_BUFFER_VIDEO_CODEC_ID__AVD,
 } NV_EVENT_BUFFER_VIDEO_ENGINE_CODEC_ID;
 
+typedef enum
+{
+    NV_EVENT_BUFFER_VIDEO_ENGINE_LOG_DATA_TYPE__GENERIC = 0,  /* Generic opaque data */
+    NV_EVENT_BUFFER_VIDEO_ENGINE_LOG_DATA_TYPE__STR,          /* Log data can be interpreted as string */
+    NV_EVENT_BUFFER_VIDEO_ENGINE_LOG_DATA_TYPE__BIN,          /* Log data is binary data */
+    NV_EVENT_BUFFER_VIDEO_ENGINE_LOG_DATA_TYPE__NUM
+} NV_EVENT_BUFFER_VIDEO_ENGINE_LOG_DATA_TYPE;
+
 // V1 ------------------------------------------------------------------------
 typedef struct
 {
@@ -110,7 +118,7 @@ typedef struct
         {
             NvU8  engine_type;
             NvU8  engine_id;
-            NvU16 codec_id;
+            NvU16 type;
             NvU32 size;
         } logData;
     };

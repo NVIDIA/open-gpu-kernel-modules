@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: MIT
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,8 +39,10 @@ LIBSPDM_VERSION    := 3.1.1
 LIBSPDM_SOURCES += src/kernel/gpu/spdm/spdm.c
 LIBSPDM_SOURCES += src/kernel/gpu/spdm/arch/hopper/spdm_gh100.c
 LIBSPDM_SOURCES += src/kernel/gpu/spdm/arch/hopper/spdm_certs_gh100.c
+LIBSPDM_SOURCES += src/kernel/gpu/spdm/arch/blackwell/spdm_certs_gb100.c
 LIBSPDM_SOURCES += src/kernel/gpu/conf_compute/ccsl.c
 LIBSPDM_SOURCES += src/kernel/gpu/conf_compute/arch/hopper/conf_compute_keystore_gh100.c
+LIBSPDM_SOURCES += src/kernel/gpu/conf_compute/arch/blackwell/conf_compute_keystore_gb100.c
 
 # NVIDIA-authored platform code
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/nvidia/nvspdm_crypt_null.c

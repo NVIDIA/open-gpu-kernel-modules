@@ -443,6 +443,13 @@ typedef struct NV2080_CTRL_CMD_BIOS_GET_POST_TIME_PARAMS {
  *             This value indicates that UEFI is not running.
  *           NV2080_CTRL_BIOS_UEFI_SUPPORT_FLAGS_RUNNING_TRUE
  *             This value indicates that UEFI is running.
+ *       NV2080_CTRL_BIOS_UEFI_SUPPORT_FLAGS_IS_EFI_INIT
+ *         This field indicates the EFI running value. Legal values for
+ *         this parameter include:
+ *           NV2080_CTRL_BIOS_UEFI_SUPPORT_FLAGS_IS_EFI_INIT_FALSE
+ *             This value indicates that display is in vbios mode.
+ *           NV2080_CTRL_BIOS_UEFI_SUPPORT_FLAGS_IS_EFI_INIT_TRUE
+ *             This value indicates that display is in EFI mode.
  *
  * Possible status values returned are:
  *   NV_OK
@@ -468,6 +475,9 @@ typedef struct NV2080_CTRL_BIOS_GET_UEFI_SUPPORT_PARAMS {
 #define NV2080_CTRL_BIOS_UEFI_SUPPORT_FLAGS_RUNNING                2:2
 #define NV2080_CTRL_BIOS_UEFI_SUPPORT_FLAGS_RUNNING_FALSE        (0x00000000)
 #define NV2080_CTRL_BIOS_UEFI_SUPPORT_FLAGS_RUNNING_TRUE         (0x00000001)
+#define NV2080_CTRL_BIOS_UEFI_SUPPORT_FLAGS_IS_EFI_INIT            3:3
+#define NV2080_CTRL_BIOS_UEFI_SUPPORT_FLAGS_IS_EFI_INIT_FALSE    (0x00000000)
+#define NV2080_CTRL_BIOS_UEFI_SUPPORT_FLAGS_IS_EFI_INIT_TRUE     (0x00000001)
 
 
 

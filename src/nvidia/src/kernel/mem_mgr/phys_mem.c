@@ -66,7 +66,6 @@ physmemConstruct_IMPL
     NvU32                                 attr2          = 0;
     const MEMORY_SYSTEM_STATIC_CONFIG    *pMemorySystemConfig =
         kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
-    KernelBus                            *pKernelBus     = GPU_GET_KERNEL_BUS(pGpu);
 
     NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
 
@@ -103,19 +102,7 @@ physmemConstruct_IMPL
             attr2 |= DRF_DEF(OS32, _ATTR2, _PAGE_SIZE_HUGE, _2MB);
             break;
         default:
-            if (bCompressedKind && kbusIsStaticBar1Enabled(pGpu, pKernelBus))
-            {
-                NV_ASSERT_OR_RETURN(kgmmuIsHugePageSupported(pKernelGmmu), NV_ERR_INVALID_ARGUMENT);
-                attr |= DRF_DEF(OS32, _ATTR, _PAGE_SIZE, _HUGE);
-                attr2 |= DRF_DEF(OS32, _ATTR2, _PAGE_SIZE_HUGE, _2MB);
-
-                NV_PRINTF(LEVEL_INFO,
-                          "Default to use 2MB page size on this compressed vidmem for the static bar1\n");
-            }
-            else
-            {
-                attr |= DRF_DEF(OS32, _ATTR, _PAGE_SIZE, _BIG);
-            }
+            attr |= DRF_DEF(OS32, _ATTR, _PAGE_SIZE, _BIG);
             break;
     }
 
@@ -213,25 +200,7 @@ physmemConstruct_IMPL
         pMemory->bRpcAlloc = NV_TRUE;
     }
 
-    if (bCompressedKind && kbusIsStaticBar1Enabled(pGpu, pKernelBus))
-    {
-        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-                            kbusUpdateStaticBar1VAMapping_HAL(pGpu, pKernelBus,
-                                pMemDesc, NV_FALSE),
-                            cleanup_rpc);
-
-        memdescSetFlag(pMemDesc,
-                       MEMDESC_FLAGS_RESTORE_PTE_KIND_ON_FREE, NV_TRUE);
-    }
-
     return NV_OK;
-
-cleanup_rpc:
-    {
-        NV_STATUS rpcstatus = NV_OK;;
-        NV_RM_RPC_FREE(pGpu, hClient, hParent, hMemory, rpcstatus);
-        NV_ASSERT(rpcstatus == NV_OK);
-    }
 
 cleanup_common:
     memDestructCommon(pMemory);

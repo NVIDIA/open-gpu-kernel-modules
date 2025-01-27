@@ -379,6 +379,17 @@ NV_STATUS UvmIsPageableMemoryAccessSupportedOnGpu(const NvProcessorUuid *gpuUuid
 //         OS state required to register the GPU is malformed, or the partition
 //         identified by the user handles or its configuration changed.
 //
+//     NV_ERR_NVLINK_FABRIC_NOT_READY:
+//         (On NvSwitch-connected system) Indicates that the fabric has not been
+//         configured yet. Caller must retry GPU registration.
+//
+//     NV_ERR_NVLINK_FABRIC_FAILURE:
+//         (On NvSwitch-connected systems) Indicates that the NvLink fabric
+//         failed to be configured.
+//
+//     NV_ERR_GPU_MEMORY_ONLINING_FAULURE:
+//         (On coherent systems) The GPU's memory onlining failed.
+//
 //     NV_ERR_GENERIC:
 //         Unexpected error. We try hard to avoid returning this error code,
 //         because it is not very informative.
@@ -1317,9 +1328,8 @@ NV_STATUS UvmCleanUpZombieResources(void);
 //
 //     NV_ERR_INVALID_ARGUMENT:
 //         perGpuAttribs is NULL but gpuAttribsCount is non-zero or vice-versa,
-//         or caching is requested on more than one GPU.
-//         The Confidential Computing feature is enabled and the perGpuAttribs
-//         list is empty.
+//         or caching is requested on more than one GPU, or (in Confidential
+//         Computing only) the perGpuAttribs list is empty.
 //
 //     NV_ERR_NOT_SUPPORTED:
 //         The current process is not the one which called UvmInitialize, and
@@ -1469,7 +1479,9 @@ NV_STATUS UvmAllocDeviceP2P(NvProcessorUuid gpuUuid,
 // If read duplication is enabled on any pages in the VA range, then those pages
 // are read duplicated at the destination processor, leaving the source copy, if
 // present, intact with only its mapping changed to read-only if it wasn't
-// already mapped that way.
+// already mapped that way. The exception to this behavior is migrating pages
+// between different NUMA nodes, in which case the pages are migrated to the
+// destination node and a read-only mapping is created to the migrated pages.
 //
 // Pages in the VA range are migrated even if their preferred location is set to
 // a processor other than the destination processor.
@@ -2212,7 +2224,9 @@ NV_STATUS UvmMapDynamicParallelismRegion(void                  *base,
 //
 // If UvmMigrate, UvmMigrateAsync or UvmMigrateRangeGroup is called on any pages
 // in this VA range, then those pages will also be read duplicated on the
-// destination processor for the migration.
+// destination processor for the migration unless the migration is between CPU
+// NUMA nodes, in which case the pages are migrated to the destination NUMA
+// node and a read-only mapping to the migrated pages is created.
 //
 // Enabling read duplication on a VA range requires the CPU and all GPUs with
 // registered VA spaces to be fault-capable. Otherwise, the migration and
@@ -3945,9 +3959,7 @@ NV_STATUS UvmToolsDisableCounters(UvmToolsCountersHandle counters,
 // In-process scenario when targetVa address + size overlaps with buffer + size.
 //
 // This is essentially a UVM version of RM ctrl call
-// NV83DE_CTRL_CMD_DEBUG_READ_MEMORY. For implementation constraints (and more
-// information), please refer to the documentation:
-// //sw/docs/resman/components/compute/UVM/subsystems/UVM_8_Tools_API_Design.docx
+// NV83DE_CTRL_CMD_DEBUG_READ_MEMORY.
 //
 // Arguments:
 //     session: (INPUT)
@@ -4001,9 +4013,7 @@ NV_STATUS UvmToolsReadProcessMemory(UvmToolsSessionHandle  session,
 // buffer + size.
 //
 // This is essentially a UVM version of RM ctrl call
-// NV83DE_CTRL_CMD_DEBUG_READ_MEMORY. For implementation constraints (and more
-// information), please refer to the documentation:
-// //sw/docs/resman/components/compute/UVM/subsystems/UVM_8_Tools_API_Design.docx
+// NV83DE_CTRL_CMD_DEBUG_READ_MEMORY.
 //
 // Arguments:
 //     session: (INPUT)

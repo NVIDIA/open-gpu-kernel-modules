@@ -41,6 +41,8 @@ typedef struct GpuSharedDataMap {
     NvU64 lastPolledDataMask;
     NvU32 processId;
     NvU32 pollingRegistryOverride;
+    NvU32 pollingFrequencyMs;
+    NvBool bPollFrequencyOverridden;
 
     TMR_EVENT *pRusdRefreshTmrEvent;
 

@@ -1030,14 +1030,22 @@ osDestroyOsDescriptorPageArray
     nv_unregister_user_pages(NV_GET_NV_STATE(pGpu), osPageCount,
                              NULL /* import_priv */, &pPrivate);
 
-    if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_FOREIGN_PAGE) == NV_FALSE)
+    if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_FOREIGN_PAGE))
     {
-        status = os_unlock_user_pages(osPageCount, pPrivate);
-        NV_ASSERT(status == NV_OK);
+        os_free_mem(pPrivate);
     }
     else
     {
-        os_free_mem(pPrivate);
+        //
+        // We use MEMDESC_FLAGS_USER_READ_ONLY because this reflects the
+        // NVOS02_FLAGS_ALLOC_USER_READ_ONLY flag value passed into
+        // os_lock_user_pages(). That flag also results in
+        // MEMDESC_FLAGS_DEVICE_READ_ONLY being set.
+        //
+        NvBool writable = !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_USER_READ_ONLY);
+        NvU32 flags = DRF_NUM(_LOCK_USER_PAGES, _FLAGS, _WRITE, writable);
+        status = os_unlock_user_pages(osPageCount, pPrivate, flags);
+        NV_ASSERT(status == NV_OK);
     }
 }
 

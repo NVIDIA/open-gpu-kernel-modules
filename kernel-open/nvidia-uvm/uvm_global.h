@@ -171,6 +171,12 @@ NV_STATUS uvm_suspend_entry(void);
 // Recover after exit from a system sleep state
 NV_STATUS uvm_resume_entry(void);
 
+// Block all P2P traffic on the GPU's channels
+NV_STATUS uvm_suspend_and_drainP2P_entry(const NvProcessorUuid *uuid);
+
+// Resume P2P traffic on the GPU's channels
+NV_STATUS uvm_resumeP2P_entry(const NvProcessorUuid *uuid);
+
 // Add parent GPU to the global table.
 //
 // LOCKING: requires that you hold the global lock and gpu_table_lock
@@ -300,7 +306,7 @@ static uvm_gpu_t *uvm_processor_mask_find_first_gpu(const uvm_processor_mask_t *
     return gpu;
 }
 
-static uvm_gpu_t *__uvm_processor_mask_find_next_gpu(const uvm_processor_mask_t *gpus, uvm_gpu_t *gpu)
+static uvm_gpu_t *uvm_processor_mask_find_next_gpu(const uvm_processor_mask_t *gpus, uvm_gpu_t *gpu)
 {
     uvm_gpu_id_t gpu_id;
 
@@ -322,7 +328,45 @@ static uvm_gpu_t *__uvm_processor_mask_find_next_gpu(const uvm_processor_mask_t 
 #define for_each_gpu_in_mask(gpu, mask)                         \
     for (gpu = uvm_processor_mask_find_first_gpu(mask);         \
          gpu != NULL;                                           \
-         gpu = __uvm_processor_mask_find_next_gpu(mask, gpu))
+         gpu = uvm_processor_mask_find_next_gpu(mask, gpu))
+
+static uvm_parent_gpu_t *uvm_parent_processor_mask_find_first_gpu(const uvm_parent_processor_mask_t *mask)
+{
+    uvm_parent_gpu_t *parent_gpu;
+    uvm_parent_gpu_id_t parent_id = uvm_parent_processor_mask_find_first_gpu_id(mask);
+
+    if (UVM_PARENT_ID_IS_INVALID(parent_id))
+        return NULL;
+
+    parent_gpu = uvm_parent_gpu_get(parent_id);
+
+    // See comment in uvm_processor_mask_find_first_gpu().
+    UVM_ASSERT_MSG(parent_gpu, "parent_id %u\n", uvm_parent_id_value(parent_id));
+    return parent_gpu;
+}
+
+static uvm_parent_gpu_t *uvm_parent_processor_mask_find_next_gpu(const uvm_parent_processor_mask_t *mask,
+                                                                 uvm_parent_gpu_t *parent_gpu)
+{
+    uvm_parent_gpu_id_t parent_id;
+
+    UVM_ASSERT(parent_gpu);
+    parent_id = uvm_parent_processor_mask_find_next_gpu_id(mask, uvm_parent_id_next(parent_gpu->id));
+    if (UVM_PARENT_ID_IS_INVALID(parent_id))
+        return NULL;
+
+    parent_gpu = uvm_parent_gpu_get(parent_id);
+
+    // See comment in uvm_processor_mask_find_first_gpu().
+    UVM_ASSERT_MSG(parent_gpu, "parent_id %u\n", uvm_parent_id_value(parent_id));
+    return parent_gpu;
+}
+
+// Helper to iterate over all parent GPUs in the input mask
+#define for_each_parent_gpu_in_mask(parent_gpu, mask)                   \
+    for ((parent_gpu) = uvm_parent_processor_mask_find_first_gpu((mask)); \
+         (parent_gpu);                                                  \
+         (parent_gpu) = uvm_parent_processor_mask_find_next_gpu((mask), (parent_gpu)))
 
 // Helper to iterate over all GPUs retained by the UVM driver
 // (across all va spaces).
@@ -330,7 +374,7 @@ static uvm_gpu_t *__uvm_processor_mask_find_next_gpu(const uvm_processor_mask_t 
     for (({uvm_assert_mutex_locked(&g_uvm_global.global_lock);                         \
            gpu = uvm_processor_mask_find_first_gpu(&g_uvm_global.retained_gpus);});    \
            gpu != NULL;                                                                \
-           gpu = __uvm_processor_mask_find_next_gpu(&g_uvm_global.retained_gpus, gpu))
+           gpu = uvm_processor_mask_find_next_gpu(&g_uvm_global.retained_gpus, gpu))
 
 // LOCKING: Must hold either the global_lock or the gpu_table_lock
 static uvm_parent_gpu_t *uvm_global_find_next_parent_gpu(uvm_parent_gpu_t *parent_gpu)
@@ -406,6 +450,10 @@ void uvm_global_gpu_release(const uvm_processor_mask_t *mask);
 // Check for ECC errors for all GPUs in a mask
 // Notably this check cannot be performed where it's not safe to call into RM.
 NV_STATUS uvm_global_gpu_check_ecc_error(uvm_processor_mask_t *gpus);
+
+// Check for nvlink errors for all GPUs in a mask
+// Notably this check cannot be performed where it's not safe to call into RM.
+NV_STATUS uvm_global_gpu_check_nvlink_error(uvm_processor_mask_t *gpus);
 
 // Pre-allocate fault service contexts.
 NV_STATUS uvm_service_block_context_init(void);

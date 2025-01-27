@@ -78,19 +78,19 @@ krcSubdeviceCtrlGetErrorInfoCheckPermissions_KERNEL
 {
     OBJGPU       *pGpu         = GPU_RES_GET_GPU(pSubdevice);
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    RmClient     *pRmClient;
 
     NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
 
-    if (rmclientIsAdminByHandle(RES_GET_CLIENT_HANDLE(pSubdevice),
-                                pCallContext->secInfo.privLevel))
+    pRmClient = dynamicCast(pCallContext->pClient, RmClient);
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+
+    if (rmclientIsAdmin(pRmClient, pCallContext->secInfo.privLevel))
     {
         return NV_OK;
     }
 
-    if (IS_MIG_IN_USE(pGpu) &&
-        rmclientIsCapableOrAdminByHandle(RES_GET_CLIENT_HANDLE(pSubdevice),
-                                         NV_RM_CAP_SYS_SMC_MONITOR,
-                                         pCallContext->secInfo.privLevel))
+    if (IS_MIG_IN_USE(pGpu) && rmclientIsCapable(pRmClient, NV_RM_CAP_SYS_SMC_MONITOR))
     {
         return NV_OK;
     }

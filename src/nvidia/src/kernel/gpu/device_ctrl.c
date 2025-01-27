@@ -336,13 +336,19 @@ deviceCtrlCmdGpuSetVgpuHeterogeneousMode_IMPL
     NV0080_CTRL_GPU_SET_VGPU_HETEROGENEOUS_MODE_PARAMS *pParams
 )
 {
-    OBJGPU                  *pGpu           = GPU_RES_GET_GPU(pDevice);
-    OBJSYS                  *pSys           = SYS_GET_INSTANCE();
-    KernelVgpuMgr           *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
-    NvU32                    pgpuIndex;
-    KERNEL_PHYS_GPU_INFO    *pPgpuInfo;
-    NvU32                    i;
-    VGPU_TYPE               *pVgpuTypeInfo;
+    OBJGPU                                  *pGpu           = GPU_RES_GET_GPU(pDevice);
+    OBJSYS                                  *pSys           = SYS_GET_INSTANCE();
+    KernelVgpuMgr                           *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
+    NvU32                                    pgpuIndex;
+    KERNEL_PHYS_GPU_INFO                    *pPgpuInfo;
+    NvU32                                    i, j;
+    NvU32                                    vgpuCount      = 0;
+    VGPU_TYPE                               *pVgpuTypeInfo;
+    VGPU_TYPE_SUPPORTED_PLACEMENT_INFO      *pVgpuTypeSupportedPlacementInfo;
+    VGPU_INSTANCE_SUPPORTED_PLACEMENT_INFO  *pVgpuInstanceSupportedPlacementInfo;
+    KERNEL_VGPU_TYPE_PLACEMENT_INFO         *pKernelVgpuTypePlacementInfo;
+    VGPU_TYPE_PLACEMENT_INFO                *pVgpuTypePlacementInfo;
+    VGPU_INSTANCE_PLACEMENT_INFO            *pVgpuInstancePlacementInfo;
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
 
@@ -356,13 +362,20 @@ deviceCtrlCmdGpuSetVgpuHeterogeneousMode_IMPL
 
     pPgpuInfo = &pKernelVgpuMgr->pgpuInfo[pgpuIndex];
 
+    pKernelVgpuTypePlacementInfo = &pPgpuInfo->kernelVgpuTypePlacementInfo;
+
     if (pPgpuInfo->heterogeneousTimesliceSizesSupported == NV_FALSE)
     {
         NV_PRINTF(LEVEL_ERROR, "GPU does not support heterogenenous vGPU mode\n");
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    if (pPgpuInfo->numActiveVgpu != 0)
+    if (osIsVgpuVfioPresent() == NV_OK)
+        vgpuCount = pPgpuInfo->numCreatedVgpu;
+    else
+        vgpuCount = pPgpuInfo->numActiveVgpu;
+
+    if (vgpuCount != 0)
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Failed to set heterogeneous vGPU mode as vGPU instance is active\n");
@@ -370,6 +383,28 @@ deviceCtrlCmdGpuSetVgpuHeterogeneousMode_IMPL
     }
 
     kvgpumgrSetVgpuType(pGpu, pPgpuInfo, NVA081_CTRL_VGPU_CONFIG_INVALID_TYPE);
+
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        RM_API                                                          *pRmApi   = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        NV_STATUS                                                        rmStatus = NV_OK;
+        NV2080_CTRL_VGPU_MGR_INTERNAL_SET_VGPU_HETEROGENEOUS_MODE_PARAMS params   = {0};
+
+        params.bHeterogeneousMode = pParams->bHeterogeneousMode;
+
+        rmStatus = pRmApi->Control(pRmApi,
+                                   pGpu->hInternalClient,
+                                   pGpu->hInternalSubdevice,
+                                   NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_SET_VGPU_HETEROGENEOUS_MODE,
+                                   &params,
+                                   sizeof(NV2080_CTRL_VGPU_MGR_INTERNAL_SET_VGPU_HETEROGENEOUS_MODE_PARAMS));
+        if (rmStatus != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Failed to set heterogeneous vGPU mode in GSP RM. status: 0x%x\n", rmStatus);
+            return rmStatus;
+        }
+    }
 
     pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_VGPU_HETEROGENEOUS_MODE, pParams->bHeterogeneousMode);
 
@@ -382,18 +417,56 @@ deviceCtrlCmdGpuSetVgpuHeterogeneousMode_IMPL
             if (pVgpuTypeInfo == NULL)
                 continue;
 
-            /*
-             * When heterogeneous vGPU mode is enabled, initially all
-             * supported placement IDs are creatable placement IDs
-             */
-            portMemCopy(pPgpuInfo->creatablePlacementIds[i],
-                        sizeof(pPgpuInfo->creatablePlacementIds[i]),
-                        pVgpuTypeInfo->supportedPlacementIds,
-                        sizeof(pVgpuTypeInfo->supportedPlacementIds));
+            pVgpuTypeSupportedPlacementInfo = &pVgpuTypeInfo->vgpuTypeSupportedPlacementInfo;
+            pVgpuTypePlacementInfo = &pKernelVgpuTypePlacementInfo->vgpuTypePlacementInfo[i];
+
+            for (j = 0; j < pVgpuTypeSupportedPlacementInfo->heterogeneousPlacementCount; j++)
+            {
+                /*
+                 * When heterogeneous vGPU mode is enabled, initially all
+                 * supported placement IDs are creatable placement IDs
+                 */
+                pVgpuInstanceSupportedPlacementInfo = &pVgpuTypeSupportedPlacementInfo->vgpuInstanceSupportedPlacementInfo[j];
+                pVgpuInstancePlacementInfo = &pVgpuTypePlacementInfo->vgpuInstancePlacementInfo[j];
+
+                pVgpuInstancePlacementInfo->creatablePlacementId =
+                    pVgpuInstanceSupportedPlacementInfo->heterogeneousSupportedPlacementId; 
+           }
+
+            /* No vGPU instances running, so placement region is empty. */
+            bitVectorClrAll(&pKernelVgpuTypePlacementInfo->usedPlacementRegionMap);
+        }
+    }
+
+    /*
+     * When heterogeneous vGPU mode is disabled, if vGPU supports homogeneous
+     * placement ID, initially all homogeneous supported placement IDs are
+     * creatable placement IDs.
+     */
+    if (kvgpumgrCheckHomogeneousPlacementSupported(pGpu) == NV_OK)
+    {
+        for (i = 0; i < pPgpuInfo->numVgpuTypes; i++)
+        {
+            pVgpuTypeInfo = pPgpuInfo->vgpuTypes[i];
+
+            if (pVgpuTypeInfo == NULL)
+                continue;
+
+            pVgpuTypeSupportedPlacementInfo = &pVgpuTypeInfo->vgpuTypeSupportedPlacementInfo;
+            pVgpuTypePlacementInfo = &pKernelVgpuTypePlacementInfo->vgpuTypePlacementInfo[i];
+
+            for (j = 0; j < pVgpuTypeSupportedPlacementInfo->homogeneousPlacementCount; j++)
+            {
+                pVgpuInstanceSupportedPlacementInfo = &pVgpuTypeSupportedPlacementInfo->vgpuInstanceSupportedPlacementInfo[j];
+                pVgpuInstancePlacementInfo = &pVgpuTypePlacementInfo->vgpuInstancePlacementInfo[j];
+
+                pVgpuInstancePlacementInfo->creatablePlacementId =
+                    pVgpuInstanceSupportedPlacementInfo->homogeneousSupportedPlacementId;
+            }
         }
 
         /* No vGPU instances running, so placement region is empty. */
-        bitVectorClrAll(&pPgpuInfo->usedPlacementRegionMap);
+        bitVectorClrAll(&pKernelVgpuTypePlacementInfo->usedPlacementRegionMap);
     }
 
     return NV_OK;

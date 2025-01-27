@@ -212,6 +212,225 @@ typedef struct ADDRESS_TRANSLATION_ *ADDRESS_TRANSLATION;
 #define memdescTagAllocList(stat, tag, pMemdesc, pList)             {(pMemdesc)->allocTag = tag; stat = memdescAllocList(pMemdesc, pList);}
 
 //
+// Defines for commonly used transformations for page size
+//
+#define GET_PAGE_SHIFT(val) (BIT_IDX_32(val))
+#define GET_PAGE_MASK(val) ((1ULL << GET_PAGE_SHIFT(val)) - 1)
+#define GET_SIZE_FROM_PAGE_AND_COUNT(pageCount, pageSize) (((NvU64) pageCount) << (GET_PAGE_SHIFT(pageSize)))
+
+// Invalid PTE value
+#define MEMDESC_INVALID_PTE (~0ULL)
+
+//
+// External flags:
+//   ALLOC_PER_SUBDEVICE    Allocate independent system memory for each GPU
+//   LOST_ON_SUSPEND        PM code will skip this allocation during S/R
+//   LOCKLESS_SYSMEM_ALLOC  System memory should be allocated unprotected by
+//                          the  RM lock
+//   GPU_PRIVILEGED         This memory will be marked as privileged in the GPU
+//                          page tables.  When set only GPU requestors who are
+//                          "privileged" are allowed to access this memory.
+//                          This can be used for mapping sensitive memory into
+//                          a user's GPU address space (like context buffers).
+//                          Note support for this in our GPUs is limited, so
+//                          only use it if you know the HW accessing the memory
+//                          makes privileged requests.
+//
+// Internal flags:
+//   SET_KIND               Whether or not the kind was set a different value
+//                          than default.
+//   PRE_ALLOCATED          Caller provided memory descriptor memory
+//   FIXED_ADDRESS_ALLOCATE Allocate from the heap with a fixed address
+//   ALLOCATED              Has the memory been allocated yet?
+//   GUEST_ALLOCATED        Is the memory allocated by a guest VM?
+//                          We make aliased memory descriptors to guest
+//                          allocated memory and mark it so, so that we know
+//                          how to deal with it in memdescMap() etc.
+//   KERNEL_MODE            Is the memory for a user or kernel context?
+//                          XXX This is lame, and it would be best if we could
+//                          get rid of it.  Memory *storage* isn't either user
+//                          or kernel -- only mappings are user or kernel.
+//                          Unfortunately, osAllocPages requires that we
+//                          provide this information.
+//  PHYSICALLY_CONTIGUOUS   Are the underlying physical pages of this memory
+//                          allocation contiguous?
+//  ENCRYPTED               TurboCipher allocations need a bit in the PTE to
+//                          indicate encrypted
+//  UNICAST                 Memory descriptor was created via UC path
+//  PAGED_SYSMEM            Allocate the memory from paged system memory. When
+//                          this flag is used, memdescLock() should be called
+//                          to lock the memory in physical pages before we
+//                          access this memory descriptor.
+//  CPU_ONLY                Allocate memory only accessed by CPU.
+//
+#define MEMDESC_FLAGS_NONE                         ((NvU64)0x0)
+#define MEMDESC_FLAGS_ALLOC_PER_SUBDEVICE          NVBIT64(0)
+#define MEMDESC_FLAGS_SET_KIND                     NVBIT64(1)
+#define MEMDESC_FLAGS_LOST_ON_SUSPEND              NVBIT64(2)
+#define MEMDESC_FLAGS_PRE_ALLOCATED                NVBIT64(3)
+#define MEMDESC_FLAGS_FIXED_ADDRESS_ALLOCATE       NVBIT64(4)
+#define MEMDESC_FLAGS_LOCKLESS_SYSMEM_ALLOC        NVBIT64(5)
+#define MEMDESC_FLAGS_GPU_IN_RESET                 NVBIT64(6)
+#define MEMDESC_ALLOC_FLAGS_PROTECTED              NVBIT64(7)
+#define MEMDESC_FLAGS_GUEST_ALLOCATED              NVBIT64(8)
+#define MEMDESC_FLAGS_KERNEL_MODE                  NVBIT64(9)
+#define MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS        NVBIT64(10)
+#define MEMDESC_FLAGS_ENCRYPTED                    NVBIT64(11)
+#define MEMDESC_FLAGS_PAGED_SYSMEM                 NVBIT64(12)
+#define MEMDESC_FLAGS_GPU_PRIVILEGED               NVBIT64(13)
+#define MEMDESC_FLAGS_PRESERVE_CONTENT_ON_SUSPEND  NVBIT64(14)
+#define MEMDESC_FLAGS_DUMMY_TOPLEVEL               NVBIT64(15)
+
+// Don't use the below two flags. For memdesc internal use only.
+// These flags will be removed on memory allocation refactoring in RM
+#define MEMDESC_FLAGS_PROVIDE_IOMMU_MAP            NVBIT64(16)
+#define MEMDESC_FLAGS_SKIP_RESOURCE_COMPUTE        NVBIT64(17)
+
+#define MEMDESC_FLAGS_CUSTOM_HEAP_ACR              NVBIT64(18)
+
+// Allocate in "fast" or "slow" memory, if there are multiple grades of memory (like mixed density)
+#define MEMDESC_FLAGS_HIGH_PRIORITY                NVBIT64(19)
+#define MEMDESC_FLAGS_LOW_PRIORITY                 NVBIT64(20)
+
+// Flag to specify if requested size should be rounded to page size
+#define MEMDESC_FLAGS_PAGE_SIZE_ALIGN_IGNORE       NVBIT64(21)
+
+#define MEMDESC_FLAGS_CPU_ONLY                     NVBIT64(22)
+
+// This flags is used for a special SYSMEM descriptor that points to a memory
+// region allocated externally (e.g. malloc, kmalloc etc.)
+#define MEMDESC_FLAGS_EXT_PAGE_ARRAY_MEM           NVBIT64(23)
+
+// Owned by Physical Memory Allocator (PMA).
+#define MEMDESC_FLAGS_ALLOC_PMA_OWNED              NVBIT64(24)
+
+// This flag is added as part of Sub-Allocator feature meant to be used by VGPU clients.
+// Once VGPU clients allocate a large block of memory for their use, they carve-out a small
+// portion of it to be used for RM internal allocations originating from a given client. Each
+// allocation can choose to use this carved-out memory owned by client or be part of global heap.
+// This flag has to be used in RM internal allocation only when a particular allocation is tied to
+// the life-time of this client and will be freed before client gets destroyed.
+#define MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE      NVBIT64(25)
+
+// This flag is used to specify the pages are pinned using other kernel module or API
+// Currently, this flag is used for vGPU on KVM where RM calls vfio APIs to pin and unpin pages
+// instead of using os_lock_user_pages() and os_unlock_user_pages().
+#define MEMDESC_FLAGS_FOREIGN_PAGE                 NVBIT64(26)
+
+// These flags are used for SYSMEM descriptors that point to a physical BAR
+// range and do not take the usual memory mapping paths. Currently, these are used for vGPU.
+#define MEMDESC_FLAGS_BAR0_REFLECT                 NVBIT64(27)
+#define MEMDESC_FLAGS_BAR1_REFLECT                 NVBIT64(28)
+
+// This flag is used to create shared memory required for vGPU operation.
+// During RPC and all other shared memory allocations, VF RM will set this flag to instruct mods
+// layer to create shared memory between VF process and PF process.
+#define MEMDESC_FLAGS_MODS_SHARED_MEM              NVBIT64(29)
+
+// This flag is set in memdescs that describe client (currently MODS) managed VPR allocations.
+#define MEMDESC_FLAGS_VPR_REGION_CLIENT_MANAGED    NVBIT64(30)
+
+// This flags is used for a special SYSMEM descriptor that points to physical BAR
+// range of a third party device.
+#define MEMDESC_FLAGS_PEER_IO_MEM                  NVBIT64(31)
+
+// If the flag is set, the RM will only allow read-only CPU user-mappings
+// to the descriptor.
+#define MEMDESC_FLAGS_USER_READ_ONLY               NVBIT64(32)
+
+// If the flag is set, the RM will only allow read-only DMA mappings
+// to the descriptor.
+#define MEMDESC_FLAGS_DEVICE_READ_ONLY             NVBIT64(33)
+
+// This flag is used to denote the memory descriptor that is part of larger memory descriptor;
+// created using NV01_MEMORY_LIST_SYSTEM, NV01_MEMORY_LIST_FBMEM or NV01_MEMORY_LIST_OBJECT.
+#define MEMDESC_FLAGS_LIST_MEMORY                  NVBIT64(34)
+
+// This flag is used to configure the memory descriptor as SKED reflected for SYSMEM address spaces.
+// Memory accesses to these pages will be routed to SKED. Note that the memory aperture needs to be
+// non-coherent to enable the feature.
+#define MEMDESC_FLAGS_ALLOC_SKED_REFLECTED         NVBIT64(35)
+
+// This flag is used to denote that this memdesc is allocated from
+// a context buffer pool. When this flag is set, we expect a pointer
+// to this context buffer pool to be cached in memdesc.
+#define MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL        NVBIT64(36)
+
+//
+// This flag is used to skip privilege checks for the ADDR_REGMEM mapping type.
+// This flag is useful for cases like UserModeApi where we want to use this memory type
+// in a non-privileged user context
+#define MEMDESC_FLAGS_SKIP_REGMEM_PRIV_CHECK       NVBIT64(37)
+
+// This flag denotes the memory descriptor of type Display non iso
+#define MEMDESC_FLAGS_MEMORY_TYPE_DISPLAY_NISO     NVBIT64(38)
+
+// This flag is used to force mapping of coherent sysmem through
+// the GMMU over BAR1. This is useful when we need some form
+// of special translation of the SYSMEM_COH aperture by the GMMU.
+#define MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1         NVBIT64(39)
+
+// This flag is used to override system memory limit to be allocated
+// within override address width.
+#define MEMDESC_FLAGS_OVERRIDE_SYSTEM_ADDRESS_LIMIT   NVBIT64(40)
+
+//
+// If this flag is set, Linux RM will ensure that the allocated memory is
+// 32-bit addressable.
+#define MEMDESC_FLAGS_ALLOC_32BIT_ADDRESSABLE      NVBIT64(41)
+
+// unused                                          NVBIT64(42)
+
+//
+// If this flag is set then it indicates that the memory associated with
+// this descriptor was allocated from local EGM.
+//
+#define MEMDESC_FLAGS_ALLOC_FROM_EGM               NVBIT64(43)
+
+//
+// Indicates that this memdesc is tracking client sysmem allocation as
+// against RM internal sysmem allocation
+//
+#define MEMDESC_FLAGS_SYSMEM_OWNED_BY_CLIENT       NVBIT64(44)
+//
+// Clients (including RM) should set this flag to request allocations in
+// unprotected memory. This is required for Confidential Compute cases
+//
+#define MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY  NVBIT64(45)
+
+//
+// The following is a special use case for sharing memory between
+// the GPU and a WSL client. There is no IOMMU-compliant support
+// currently for this, so a WAR is required for r515. The intent
+// is to remove this by r525.
+//
+#define MEMDESC_FLAGS_WSL_SHARED_MEMORY            NVBIT64(46)
+
+//
+// Skip IOMMU mapping creation during alloc for sysmem.
+// A mapping might be requested later with custom parameters.
+//
+#define MEMDESC_FLAGS_SKIP_IOMMU_MAPPING           NVBIT64(47)
+
+//
+// Specical case to allocate the runlists for Guests from its GPA
+// In MODS, VM's GPA allocated from subheap so using this define to
+// Forcing memdesc to allocated from subheap
+//
+#define MEMDESC_FLAGS_FORCE_ALLOC_FROM_SUBHEAP     NVBIT64(48)
+
+//
+// Indicate if memdesc needs to restore pte kind in the static bar1 mode
+// when it is freed.
+//
+#define MEMDESC_FLAGS_RESTORE_PTE_KIND_ON_FREE     NVBIT64(49)
+
+#define MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT  NVBIT64(51)
+
+// Force-compress pte kind when mapping with virtual pte kind
+#define MEMDESC_FLAGS_MAP_FORCE_COMPRESSED_MAP     NVBIT64(52)
+
+//
 // RM internal allocations owner tags
 // Total 200 tags are introduced, out of which some are already
 // replaced with known verbose strings
@@ -423,7 +642,8 @@ typedef enum
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_174       = 207U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_175       = 208U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_176       = 209U,
-    NV_FB_ALLOC_RM_INTERNAL_OWNER__MAX                  = 210U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_COV_TASK_DESCRIPTOR   = 210U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER__MAX                  = 211U,
 } NV_FB_ALLOC_RM_INTERNAL_OWNER;
 
 //
@@ -471,6 +691,9 @@ typedef struct MEMORY_DESCRIPTOR
 
     // Size of the memory allocation in pages
     NvU64 PageCount;
+
+    // Total size of the page array. Used for overflow checks.
+    NvU64 pageArraySize;
 
     // Alignment of the memory allocation as size in bytes
     // XXX: would 32b work here?
@@ -622,6 +845,10 @@ typedef struct MEMORY_DESCRIPTOR
     void *_pInternalMapping;
     void *_pInternalMappingPriv;
     NvU32 _internalMappingRefCount;
+
+    // Static BAR1 mapping
+    NvU32 staticBar1MappingRefCount;
+    NvU32 staticBar1MappingKind;
 
     // Array to hold SPA addresses when memdesc is allocated from GPA. Valid only for SRIOV cases
     RmPhysAddr *pPteSpaMappings;
@@ -793,6 +1020,17 @@ void memdescGetPhysAddrsForGpu(MEMORY_DESCRIPTOR *pMemDesc,
                                NvU64 stride,
                                NvU64 count,
                                RmPhysAddr *pAddresses);
+
+// Compute count physical addresses to be encoded into PTEs within a
+// MEMORY_DESCRIPTOR for a specific GPU. Starting at the given offset
+// and advancing it by stride for each consecutive address.
+void memdescGetPtePhysAddrsForGpu(MEMORY_DESCRIPTOR *pMemDesc,
+                                  OBJGPU *pGpu,
+                                  ADDRESS_TRANSLATION addressTranslation,
+                                  NvU64 offset,
+                                  NvU64 stride,
+                                  NvU64 count,
+                                  RmPhysAddr *pAddresses);
 
 // Obtains one of the PTEs from the MEMORY_DESCRIPTOR.  Assumes 4KB pages,
 // and works for either contiguous or noncontiguous descriptors.
@@ -1220,211 +1458,32 @@ void memdescUnmapInternal(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc, NvU32 flags
  */
 void memdescSetName(OBJGPU*, MEMORY_DESCRIPTOR *pMemDesc, const char *name, const char *suffix);
 
-//
-// External flags:
-//   ALLOC_PER_SUBDEVICE    Allocate independent system memory for each GPU
-//   LOST_ON_SUSPEND        PM code will skip this allocation during S/R
-//   LOCKLESS_SYSMEM_ALLOC  System memory should be allocated unprotected by
-//                          the  RM lock
-//   GPU_PRIVILEGED         This memory will be marked as privileged in the GPU
-//                          page tables.  When set only GPU requestors who are
-//                          "privileged" are allowed to access this memory.
-//                          This can be used for mapping sensitive memory into
-//                          a user's GPU address space (like context buffers).
-//                          Note support for this in our GPUs is limited, so
-//                          only use it if you know the HW accessing the memory
-//                          makes privileged requests.
-//
-// Internal flags:
-//   SET_KIND               Whether or not the kind was set a different value
-//                          than default.
-//   PRE_ALLOCATED          Caller provided memory descriptor memory
-//   FIXED_ADDRESS_ALLOCATE Allocate from the heap with a fixed address
-//   ALLOCATED              Has the memory been allocated yet?
-//   GUEST_ALLOCATED        Is the memory allocated by a guest VM?
-//                          We make aliased memory descriptors to guest
-//                          allocated memory and mark it so, so that we know
-//                          how to deal with it in memdescMap() etc.
-//   KERNEL_MODE            Is the memory for a user or kernel context?
-//                          XXX This is lame, and it would be best if we could
-//                          get rid of it.  Memory *storage* isn't either user
-//                          or kernel -- only mappings are user or kernel.
-//                          Unfortunately, osAllocPages requires that we
-//                          provide this information.
-//  PHYSICALLY_CONTIGUOUS   Are the underlying physical pages of this memory
-//                          allocation contiguous?
-//  ENCRYPTED               TurboCipher allocations need a bit in the PTE to
-//                          indicate encrypted
-//  UNICAST                 Memory descriptor was created via UC path
-//  PAGED_SYSMEM            Allocate the memory from paged system memory. When
-//                          this flag is used, memdescLock() should be called
-//                          to lock the memory in physical pages before we
-//                          access this memory descriptor.
-//  CPU_ONLY                Allocate memory only accessed by CPU.
-//
-#define MEMDESC_FLAGS_NONE                         ((NvU64)0x0)
-#define MEMDESC_FLAGS_ALLOC_PER_SUBDEVICE          NVBIT64(0)
-#define MEMDESC_FLAGS_SET_KIND                     NVBIT64(1)
-#define MEMDESC_FLAGS_LOST_ON_SUSPEND              NVBIT64(2)
-#define MEMDESC_FLAGS_PRE_ALLOCATED                NVBIT64(3)
-#define MEMDESC_FLAGS_FIXED_ADDRESS_ALLOCATE       NVBIT64(4)
-#define MEMDESC_FLAGS_LOCKLESS_SYSMEM_ALLOC        NVBIT64(5)
-#define MEMDESC_FLAGS_GPU_IN_RESET                 NVBIT64(6)
-#define MEMDESC_ALLOC_FLAGS_PROTECTED              NVBIT64(7)
-#define MEMDESC_FLAGS_GUEST_ALLOCATED              NVBIT64(8)
-#define MEMDESC_FLAGS_KERNEL_MODE                  NVBIT64(9)
-#define MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS        NVBIT64(10)
-#define MEMDESC_FLAGS_ENCRYPTED                    NVBIT64(11)
-#define MEMDESC_FLAGS_PAGED_SYSMEM                 NVBIT64(12)
-#define MEMDESC_FLAGS_GPU_PRIVILEGED               NVBIT64(13)
-#define MEMDESC_FLAGS_PRESERVE_CONTENT_ON_SUSPEND  NVBIT64(14)
-#define MEMDESC_FLAGS_DUMMY_TOPLEVEL               NVBIT64(15)
+/*!
+ * @brief sets thet pageCount, granularity and actual size described by the memdesc
+ *
+ * @param[in] pMemDesc     MEMORY_DESCRIPTOR pointer of the memdesc being populated.
+ * @param[in] actualSize   Size of the allocation after accounting for tracking granularity.
+ * @param[in] granularity  Tracking granularity of the memory.
+ *
+ * @returns NV_OK on success, NV_ERR_BUFFER_TOO_SMALL if page array overflow is detected.
+ */
+static NV_INLINE NV_STATUS
+memdescSetAllocSizeFields(MEMORY_DESCRIPTOR *pMemDesc, NvU64 actualSize, NvU32 granularity)
+{
+    NvU64 pageCount = actualSize >> GET_PAGE_SHIFT(granularity);
 
-// Don't use the below two flags. For memdesc internal use only.
-// These flags will be removed on memory allocation refactoring in RM
-#define MEMDESC_FLAGS_PROVIDE_IOMMU_MAP            NVBIT64(16)
-#define MEMDESC_FLAGS_SKIP_RESOURCE_COMPUTE        NVBIT64(17)
+    if (!(pMemDesc->_flags & MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS) &&
+        pageCount > pMemDesc->pageArraySize)
+    {
+        return NV_ERR_BUFFER_TOO_SMALL;
+    }
 
-#define MEMDESC_FLAGS_CUSTOM_HEAP_ACR              NVBIT64(18)
+    pMemDesc->PageCount = pageCount;
+    pMemDesc->ActualSize = actualSize;
+    pMemDesc->pageArrayGranularity = granularity;
 
-// Allocate in "fast" or "slow" memory, if there are multiple grades of memory (like mixed density)
-#define MEMDESC_FLAGS_HIGH_PRIORITY                NVBIT64(19)
-#define MEMDESC_FLAGS_LOW_PRIORITY                 NVBIT64(20)
-
-// Flag to specify if requested size should be rounded to page size
-#define MEMDESC_FLAGS_PAGE_SIZE_ALIGN_IGNORE       NVBIT64(21)
-
-#define MEMDESC_FLAGS_CPU_ONLY                     NVBIT64(22)
-
-// This flags is used for a special SYSMEM descriptor that points to a memory
-// region allocated externally (e.g. malloc, kmalloc etc.)
-#define MEMDESC_FLAGS_EXT_PAGE_ARRAY_MEM           NVBIT64(23)
-
-// Owned by Physical Memory Allocator (PMA).
-#define MEMDESC_FLAGS_ALLOC_PMA_OWNED              NVBIT64(24)
-
-// This flag is added as part of Sub-Allocator feature meant to be used by VGPU clients.
-// Once VGPU clients allocate a large block of memory for their use, they carve-out a small
-// portion of it to be used for RM internal allocations originating from a given client. Each
-// allocation can choose to use this carved-out memory owned by client or be part of global heap.
-// This flag has to be used in RM internal allocation only when a particular allocation is tied to
-// the life-time of this client and will be freed before client gets destroyed.
-#define MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE      NVBIT64(25)
-
-// This flag is used to specify the pages are pinned using other kernel module or API
-// Currently, this flag is used for vGPU on KVM where RM calls vfio APIs to pin and unpin pages
-// instead of using os_lock_user_pages() and os_unlock_user_pages().
-#define MEMDESC_FLAGS_FOREIGN_PAGE                 NVBIT64(26)
-
-// These flags are used for SYSMEM descriptors that point to a physical BAR
-// range and do not take the usual memory mapping paths. Currently, these are used for vGPU.
-#define MEMDESC_FLAGS_BAR0_REFLECT                 NVBIT64(27)
-#define MEMDESC_FLAGS_BAR1_REFLECT                 NVBIT64(28)
-
-// This flag is used to create shared memory required for vGPU operation.
-// During RPC and all other shared memory allocations, VF RM will set this flag to instruct mods
-// layer to create shared memory between VF process and PF process.
-#define MEMDESC_FLAGS_MODS_SHARED_MEM              NVBIT64(29)
-
-// This flag is set in memdescs that describe client (currently MODS) managed VPR allocations.
-#define MEMDESC_FLAGS_VPR_REGION_CLIENT_MANAGED    NVBIT64(30)
-
-// This flags is used for a special SYSMEM descriptor that points to physical BAR
-// range of a third party device.
-#define MEMDESC_FLAGS_PEER_IO_MEM                  NVBIT64(31)
-
-// If the flag is set, the RM will only allow read-only CPU user-mappings
-// to the descriptor.
-#define MEMDESC_FLAGS_USER_READ_ONLY               NVBIT64(32)
-
-// If the flag is set, the RM will only allow read-only DMA mappings
-// to the descriptor.
-#define MEMDESC_FLAGS_DEVICE_READ_ONLY             NVBIT64(33)
-
-// This flag is used to denote the memory descriptor that is part of larger memory descriptor;
-// created using NV01_MEMORY_LIST_SYSTEM, NV01_MEMORY_LIST_FBMEM or NV01_MEMORY_LIST_OBJECT.
-#define MEMDESC_FLAGS_LIST_MEMORY                  NVBIT64(34)
-
-// This flag is used to configure the memory descriptor as SKED reflected for SYSMEM address spaces.
-// Memory accesses to these pages will be routed to SKED. Note that the memory aperture needs to be
-// non-coherent to enable the feature.
-#define MEMDESC_FLAGS_ALLOC_SKED_REFLECTED         NVBIT64(35)
-
-// This flag is used to denote that this memdesc is allocated from
-// a context buffer pool. When this flag is set, we expect a pointer
-// to this context buffer pool to be cached in memdesc.
-#define MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL        NVBIT64(36)
-
-//
-// This flag is used to skip privilege checks for the ADDR_REGMEM mapping type.
-// This flag is useful for cases like UserModeApi where we want to use this memory type
-// in a non-privileged user context
-#define MEMDESC_FLAGS_SKIP_REGMEM_PRIV_CHECK       NVBIT64(37)
-
-// This flag denotes the memory descriptor of type Display non iso
-#define MEMDESC_FLAGS_MEMORY_TYPE_DISPLAY_NISO     NVBIT64(38)
-
-// This flag is used to force mapping of coherent sysmem through
-// the GMMU over BAR1. This is useful when we need some form
-// of special translation of the SYSMEM_COH aperture by the GMMU.
-#define MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1         NVBIT64(39)
-
-// This flag is used to override system memory limit to be allocated
-// within override address width.
-#define MEMDESC_FLAGS_OVERRIDE_SYSTEM_ADDRESS_LIMIT   NVBIT64(40)
-
-//
-// If this flag is set, Linux RM will ensure that the allocated memory is
-// 32-bit addressable.
-#define MEMDESC_FLAGS_ALLOC_32BIT_ADDRESSABLE      NVBIT64(41)
-
-// unused                                          NVBIT64(42)
-
-//
-// If this flag is set then it indicates that the memory associated with
-// this descriptor was allocated from local EGM.
-//
-#define MEMDESC_FLAGS_ALLOC_FROM_EGM               NVBIT64(43)
-
-//
-// Indicates that this memdesc is tracking client sysmem allocation as
-// against RM internal sysmem allocation
-//
-#define MEMDESC_FLAGS_SYSMEM_OWNED_BY_CLIENT       NVBIT64(44)
-//
-// Clients (including RM) should set this flag to request allocations in
-// unprotected memory. This is required for Confidential Compute cases
-//
-#define MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY  NVBIT64(45)
-
-//
-// The following is a special use case for sharing memory between
-// the GPU and a WSL client. There is no IOMMU-compliant support
-// currently for this, so a WAR is required for r515. The intent
-// is to remove this by r525.
-//
-#define MEMDESC_FLAGS_WSL_SHARED_MEMORY            NVBIT64(46)
-
-//
-// Skip IOMMU mapping creation during alloc for sysmem.
-// A mapping might be requested later with custom parameters.
-//
-#define MEMDESC_FLAGS_SKIP_IOMMU_MAPPING           NVBIT64(47)
-
-//
-// Specical case to allocate the runlists for Guests from its GPA
-// In MODS, VM's GPA allocated from subheap so using this define to
-// Forcing memdesc to allocated from subheap
-//
-#define MEMDESC_FLAGS_FORCE_ALLOC_FROM_SUBHEAP     NVBIT64(48)
-
-//
-// Indicate if memdesc needs to restore pte kind in the static bar1 mode
-// when it is freed.
-//
-#define MEMDESC_FLAGS_RESTORE_PTE_KIND_ON_FREE     NVBIT64(49)
-
-#define MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT  NVBIT64(51)
+    return NV_OK;
+}
 
 #endif // _MEMDESC_H_
 

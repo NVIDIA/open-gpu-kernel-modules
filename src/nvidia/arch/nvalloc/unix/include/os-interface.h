@@ -166,7 +166,7 @@ NvU32       NV_API_CALL  os_get_grid_csp_support     (void);
 void        NV_API_CALL  os_bug_check                (NvU32, const char *);
 NV_STATUS   NV_API_CALL  os_lock_user_pages          (void *, NvU64, void **, NvU32);
 NV_STATUS   NV_API_CALL  os_lookup_user_io_memory    (void *, NvU64, NvU64 **);
-NV_STATUS   NV_API_CALL  os_unlock_user_pages        (NvU64, void *);
+NV_STATUS   NV_API_CALL  os_unlock_user_pages        (NvU64, void *, NvU32);
 NV_STATUS   NV_API_CALL  os_match_mmap_offset        (void *, NvU64, NvU64 *);
 NV_STATUS   NV_API_CALL  os_get_euid                 (NvU32 *);
 NV_STATUS   NV_API_CALL  os_get_smbios_header        (NvU64 *pSmbsAddr);
@@ -174,6 +174,7 @@ NV_STATUS   NV_API_CALL  os_get_acpi_rsdp_from_uefi  (NvU32 *);
 void        NV_API_CALL  os_add_record_for_crashLog  (void *, NvU32);
 void        NV_API_CALL  os_delete_record_for_crashLog (void *);
 NV_STATUS   NV_API_CALL  os_call_vgpu_vfio           (void *, NvU32);
+NV_STATUS   NV_API_CALL  os_device_vm_present        (void);
 NV_STATUS   NV_API_CALL  os_numa_memblock_size       (NvU64 *);
 NV_STATUS   NV_API_CALL  os_alloc_pages_node         (NvS32, NvU32, NvU32, NvU64 *);
 NV_STATUS   NV_API_CALL  os_get_page                 (NvU64 address);
@@ -209,6 +210,7 @@ enum os_pci_req_atomics_type {
     OS_INTF_PCIE_REQ_ATOMICS_128BIT
 };
 NV_STATUS   NV_API_CALL  os_enable_pci_req_atomics   (void *, enum os_pci_req_atomics_type);
+void        NV_API_CALL  os_pci_trigger_flr(void *handle);
 NV_STATUS   NV_API_CALL  os_get_numa_node_memory_usage (NvS32, NvU64 *, NvU64 *);
 NV_STATUS   NV_API_CALL  os_numa_add_gpu_memory      (void *, NvU64, NvU64, NvU32 *);
 NV_STATUS   NV_API_CALL  os_numa_remove_gpu_memory   (void *, NvU64, NvU64, NvU32); 
@@ -216,6 +218,7 @@ NV_STATUS   NV_API_CALL  os_offline_page_at_address(NvU64 address);
 void*       NV_API_CALL  os_get_pid_info(void);
 void        NV_API_CALL  os_put_pid_info(void *pid_info);
 NV_STATUS   NV_API_CALL  os_find_ns_pid(void *pid_info, NvU32 *ns_pid);
+NvBool      NV_API_CALL  os_is_init_ns(void);
 
 extern NvU32 os_page_size;
 extern NvU64 os_page_mask;

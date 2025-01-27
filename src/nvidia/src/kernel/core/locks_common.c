@@ -175,6 +175,13 @@ workItemLocksAcquire(NvU32 gpuInstance, NvU32 flags, NvU32 *pReleaseLocks, NvU32
         else // (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE)
             grp = GPU_LOCK_GRP_SUBDEVICE;
 
+        pGpu = gpumgrGetGpu(gpuInstance);
+        if (pGpu == NULL)
+        {
+            status = NV_ERR_INVALID_ARGUMENT;
+            goto done;
+        }
+
         status = rmGpuGroupLockAcquire(gpuInstance, grp, gpuLockFlags,
                                        RM_LOCK_MODULES_WORKITEM, pGpuMask);
         if (status != NV_OK)
@@ -182,13 +189,6 @@ workItemLocksAcquire(NvU32 gpuInstance, NvU32 flags, NvU32 *pReleaseLocks, NvU32
 
         // All of these call into the same function, just share the flag
         *pReleaseLocks |= OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS;
-
-        pGpu = gpumgrGetGpu(gpuInstance);
-        if (pGpu == NULL)
-        {
-            status = NV_ERR_INVALID_ARGUMENT;
-            goto done;
-        }
 
         if (flags & OS_QUEUE_WORKITEM_FLAGS_FULL_GPU_SANITY)
         {

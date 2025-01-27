@@ -1505,6 +1505,18 @@ typedef struct KernelCcu KernelCcu;
 #endif /* __nvoc_class_id_KernelCcu */
 
 
+struct KernelGsplite;
+
+#ifndef __NVOC_CLASS_KernelGsplite_TYPEDEF__
+#define __NVOC_CLASS_KernelGsplite_TYPEDEF__
+typedef struct KernelGsplite KernelGsplite;
+#endif /* __NVOC_CLASS_KernelGsplite_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_KernelGsplite
+#define __nvoc_class_id_KernelGsplite 0x927969
+#endif /* __nvoc_class_id_KernelGsplite */
+
+
 #define ENG_CLASS_INVALID              classId(OBJINVALID)
 #define ENG_CLASS_SW                   classId(OBJSWENG)
 #define ENG_CLASS_GPU                  classId(OBJGPU)
@@ -1554,7 +1566,7 @@ typedef struct KernelCcu KernelCcu;
 #define ENG_CLASS_VGA                  classId(OBJVGA)
 #define ENG_CLASS_STEREO               classId(Stereo)
 #define ENG_CLASS_OR                   classId(OBJOR)
-#define ENG_CLASS_BSP                  classId(OBJBSP)
+#define ENG_CLASS_NVDEC                classId(OBJBSP)
 #define ENG_CLASS_CIPHER               classId(OBJCIPHER)
 #define ENG_CLASS_FUSE                 classId(OBJFUSE)
 #define ENG_CLASS_HDCP                 classId(OBJHDCP)
@@ -1599,8 +1611,9 @@ typedef struct KernelCcu KernelCcu;
 #define ENG_CLASS_KERNEL_GMMU          classId(KernelGmmu)
 #define ENG_CLASS_CONF_COMPUTE         classId(ConfidentialCompute)
 #define ENG_CLASS_KERNEL_CCU           classId(KernelCcu)
+#define ENG_CLASS_KERNEL_GSPLITE       classId(KernelGsplite)
 #define ENG_CLASS_CE                   classId(OBJCE)
-#define ENG_CLASS_MSENC                classId(OBJMSENC)
+#define ENG_CLASS_NVENC                classId(OBJMSENC)
 #define ENG_CLASS_NVDEC                classId(OBJBSP)
 #define ENG_CLASS_GR                   classId(Graphics)
 #define ENG_CLASS_NVJPEG               classId(OBJNVJPG)
@@ -1667,7 +1680,6 @@ typedef struct KernelCcu KernelCcu;
 #define ENG_VGA                  MKENGDESC(ENG_CLASS_VGA,                  0)
 #define ENG_STEREO               MKENGDESC(ENG_CLASS_STEREO,               0)
 #define ENG_OR                   MKENGDESC(ENG_CLASS_OR,                   0)
-#define ENG_BSP                  MKENGDESC(ENG_CLASS_BSP,                  0)
 #define ENG_CIPHER               MKENGDESC(ENG_CLASS_CIPHER,               0)
 #define ENG_FUSE                 MKENGDESC(ENG_CLASS_FUSE,                 0)
 #define ENG_HDCP                 MKENGDESC(ENG_CLASS_HDCP,                 0)
@@ -1715,6 +1727,11 @@ typedef struct KernelCcu KernelCcu;
 
 // Indexed GSPLITE Engine Tag Reference
 
+#define ENG_KERNEL_GSPLITE(x)           MKENGDESC(ENG_CLASS_KERNEL_GSPLITE,         x)
+#define ENG_KERNEL_GSPLITE__SIZE_1      4
+#define IS_KERNEL_GSPLITE(engDesc)      (ENGDESC_FIELD(engDesc, _CLASS) == classId(KernelGsplite))
+#define GET_KERNEL_GSPLITE_IDX(engDesc) ENGDESC_FIELD(engDesc, _INST)
+
 // Indexed CE engine tag reference
 #define ENG_CE(x)                MKENGDESC(ENG_CLASS_CE,              x)
 #define ENG_CE__SIZE_1           20
@@ -1722,8 +1739,9 @@ typedef struct KernelCcu KernelCcu;
 #define GET_CE_IDX(engDesc)      ENGDESC_FIELD(engDesc, _INST)
 
 // Indexed MSENC Engine Tag Reference
-#define ENG_MSENC(x)             MKENGDESC(ENG_CLASS_MSENC,           x)
-#define ENG_MSENC__SIZE_1        3
+#define ENG_NVENC(x)             MKENGDESC(ENG_CLASS_NVENC,           x)
+// Bug 4175886 - Use this new value for all chips once GB20X is released
+#define ENG_NVENC__SIZE_1        4
 #define IS_MSENC(engDesc)        (ENGDESC_FIELD(engDesc, _CLASS) == classId(OBJMSENC))
 #define GET_MSENC_IDX(engDesc)   ENGDESC_FIELD(engDesc, _INST)
 

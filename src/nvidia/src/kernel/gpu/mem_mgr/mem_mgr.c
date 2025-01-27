@@ -284,6 +284,15 @@ _memmgrInitRegistryOverrides(OBJGPU *pGpu, MemoryManager *pMemoryManager)
         pMemoryManager->bDisableGlobalCeUtils = NV_TRUE;
     }
 
+    if (memmgrIsLocalEgmSupported(pMemoryManager))
+    {
+        if (osReadRegistryDword(pGpu, NV_REG_STR_RM_ENABLE_LOCAL_EGM_PEER_ID, &data32) == NV_OK)
+        {
+            pMemoryManager->localEgmOverride.bEnabled = NV_TRUE;
+            pMemoryManager->localEgmOverride.peerId = data32;
+        }
+    }
+
     pMemoryManager->bCePhysicalVidmemAccessNotSupported = gpuIsSelfHosted(pGpu);
 }
 
@@ -462,7 +471,7 @@ memmgrSuspendResumeCallback
 {
     RmClient **ppClient = serverutilGetFirstClientUnderLock();
 
-    NV_ASSERT_OR_RETURN_VOID(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN_VOID(rmapiLockIsOwner() || rmapiInRtd3PmPath());
 
     while (ppClient != NULL)
     {
@@ -491,7 +500,7 @@ memmgrRegisterSuspendCallbacks(MemoryManager *pMemoryManager)
     RM_API                                   *pRmApi                  = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     NV0005_ALLOC_PARAMETERS                   eventParams             = { 0 };
     NV2080_CTRL_EVENT_SET_NOTIFICATION_PARAMS eventNotificationParams = { 0 };
-    NvHandle                                  hEvent;
+    NvHandle                                  hEvent = 0;
 
     eventParams.hParentClient = pMemoryManager->hClient;
     eventParams.hClass        = NV01_EVENT_KERNEL_CALLBACK_EX;
@@ -603,6 +612,14 @@ memmgrStateInitLocked_IMPL
 
             if (pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) &&
                 (i == FBSR_TYPE_PAGED_DMA || i == FBSR_TYPE_DMA))
+            {
+                continue;
+            }
+
+            if (RMCFG_FEATURE_PLATFORM_GSP &&
+                (i == FBSR_TYPE_CPU ||
+                 i == FBSR_TYPE_WDDM_SLOW_CPU_PAGED ||
+                 i == FBSR_TYPE_FILE))
             {
                 continue;
             }
@@ -1200,7 +1217,9 @@ memmgrGetUsedRamSize_IMPL
     if (IS_GSP_CLIENT(pGpu))
     {
         KernelGsp *pKernelGsp       = GPU_GET_KERNEL_GSP(pGpu);
-        NvU64      gspWprRegionSize = pKernelGsp->pWprMeta->gspFwWprEnd - pKernelGsp->pWprMeta->gspFwWprStart;
+        GspFwWprMeta *pWprMeta      = pKernelGsp->pWprMeta;
+        NvU64      gspWprRegionSize = (pWprMeta->frtsOffset + pWprMeta->frtsSize) -
+                                      (pWprMeta->nonWprHeapOffset + pWprMeta->nonWprHeapSize);
 
         *pFbUsedSize = *pFbUsedSize - gspWprRegionSize;
 
@@ -3845,7 +3864,6 @@ memmgrStatePostLoad_IMPL
     {
         NvU64 egmPhysAddr, egmSize;
         NvS32 egmNodeId;
-        NvU32 data32;
         KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
 
         pMemoryManager->localEgmNodeId = -1;
@@ -3872,10 +3890,10 @@ memmgrStatePostLoad_IMPL
         // if one host system uses regkey to override the EGM peer id
         // and other host system doesn't.
         //
-        if (osReadRegistryDword(pGpu, NV_REG_STR_RM_ENABLE_LOCAL_EGM_PEER_ID, &data32) == NV_OK)
+        if (pMemoryManager->localEgmOverride.bEnabled)
         {
             pMemoryManager->bLocalEgmEnabled = NV_TRUE;
-            pMemoryManager->localEgmPeerId = data32;
+            pMemoryManager->localEgmPeerId = pMemoryManager->localEgmOverride.peerId;
         }
     }
 
@@ -3905,8 +3923,13 @@ memmgrStatePostLoad_IMPL
                                          sizeof(params));
                 if (status != NV_OK)
                 {
-                    NV_PRINTF(LEVEL_ERROR, "HSHUB programming failed for EGM Peer ID: %u\n",
-                              pMemoryManager->localEgmPeerId);
+                    if (status == NV_ERR_INVALID_ADDRESS)
+                    {
+                        NV_PRINTF(LEVEL_ERROR, "SBIOS allocated EGM address is incorrect.\n");
+                    }
+                    NV_PRINTF(LEVEL_ERROR, "HSHUB programming failed for EGM Peer ID: %u. status: %d\n",
+                              pMemoryManager->localEgmPeerId, status);
+
                     pMemoryManager->bLocalEgmEnabled = NV_FALSE;
                     pMemoryManager->localEgmPeerId = BUS_INVALID_PEER;
                     return status;
@@ -3938,6 +3961,8 @@ memmgrInitCeUtils_IMPL
 {
     OBJGPU *pGpu = ENG_GET_GPU(pMemoryManager);
     NV0050_ALLOCATION_PARAMETERS ceUtilsParams = {0};
+    const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig =
+                kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
 
     NV_ASSERT_OR_RETURN(pMemoryManager->pCeUtils == NULL, NV_ERR_INVALID_STATE);
 
@@ -3945,6 +3970,14 @@ memmgrInitCeUtils_IMPL
         ceUtilsParams.flags |= DRF_DEF(0050_CEUTILS, _FLAGS, _FIFO_LITE, _TRUE);
     else if(IsTURINGorBetter(pGpu))
         ceUtilsParams.flags |= DRF_DEF(0050_CEUTILS, _FLAGS, _NO_BAR1_USE, _TRUE);
+
+    if (!bFifoLite && !RMCFG_FEATURE_PLATFORM_GSP && IS_SILICON(pGpu) && !pMemorySystemConfig->bDisableCompbitBacking &&
+        ((pMemorySystemConfig->bUseRawModeComptaglineAllocation || pMemorySystemConfig->bOneToOneComptagLineAllocation) &&
+         IsdBLACKWELLorBetter(pGpu)))
+    {
+        // Turn on virtual mode to enable compressed allocation access
+        ceUtilsParams.flags |= DRF_DEF(0050_CEUTILS, _FLAGS, _VIRTUAL_MODE, _TRUE);
+    }
 
     if (pMemoryManager->bCePhysicalVidmemAccessNotSupported)
         ceUtilsParams.flags |= DRF_DEF(0050_CEUTILS, _FLAGS, _VIRTUAL_MODE, _TRUE);

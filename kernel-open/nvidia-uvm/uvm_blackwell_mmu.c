@@ -37,7 +37,6 @@
 #include "uvm_hal_types.h"
 #include "uvm_blackwell_fault_buffer.h"
 #include "hwref/blackwell/gb100/dev_fault.h"
-#include "hwref/blackwell/gb100/dev_mmu.h"
 
 static uvm_mmu_mode_hal_t blackwell_mmu_mode_hal;
 

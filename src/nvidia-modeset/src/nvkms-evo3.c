@@ -1191,6 +1191,16 @@ void nvEvoInitDefaultLutC5(NVDevEvoPtr pDevEvo)
     }
 }
 
+static NvU32 GetWindowOwnerHead(const NVDevEvoRec *pDevEvo, const NvU32 win)
+{
+    if (pDevEvo->headForWindow[win] == NV_INVALID_HEAD) {
+        return NVC37D_WINDOW_SET_CONTROL_OWNER_NONE;
+    }
+
+    nvAssert(pDevEvo->headForWindow[win] < pDevEvo->numHeads);
+    return pDevEvo->headForWindow[win];
+}
+
 static void EvoInitWindowMapping3(NVDevEvoPtr pDevEvo,
                                   NVEvoModesetUpdateState *pModesetUpdateState)
 {
@@ -1204,16 +1214,9 @@ static void EvoInitWindowMapping3(NVDevEvoPtr pDevEvo,
 
     /* Bind each window to a head.  On GV100, there is a fixed mapping. */
     for (win = 0; win < pDevEvo->numWindows; win++) {
-        NvU32 head = pDevEvo->headForWindow[win];
-
+        NvU32 head = GetWindowOwnerHead(pDevEvo, win);
         nvDmaSetStartEvoMethod(pChannel, NVC37D_WINDOW_SET_CONTROL(win), 1);
-        if ((head == NV_INVALID_HEAD) || (head >= pDevEvo->numHeads)) {
-            nvDmaSetEvoMethodData(pChannel,
-                                  DRF_NUM(C37D, _WINDOW_SET_CONTROL, _OWNER,
-                                          NVC37D_WINDOW_SET_CONTROL_OWNER_NONE));
-        } else {
-            nvDmaSetEvoMethodData(pChannel, DRF_NUM(C37D, _WINDOW_SET_CONTROL, _OWNER, head));
-        }
+        nvDmaSetEvoMethodData(pChannel, DRF_NUM(C37D, _WINDOW_SET_CONTROL, _OWNER, head));
     }
 
     pModesetUpdateState->windowMappingChanged = FALSE;
@@ -1250,11 +1253,9 @@ static void EvoInitWindowMapping3(NVDevEvoPtr pDevEvo,
 
         for (win = 0; win < pDevEvo->numWindows; win++) {
             NvU32 data = nvDmaLoadPioMethod(pCoreDma, NVC37D_WINDOW_SET_CONTROL(win));
+            NvU32 head = GetWindowOwnerHead(pDevEvo, win);
 
-            if (DRF_VAL(C37D,
-                        _WINDOW_SET_CONTROL, _OWNER, data) !=
-                pDevEvo->headForWindow[win]) {
-
+            if (DRF_VAL(C37D, _WINDOW_SET_CONTROL, _OWNER, data) != head) {
                 pModesetUpdateState->windowMappingChanged = TRUE;
 
                 nvPushEvoSubDevMask(pDevEvo, NVBIT(sd));
@@ -1431,10 +1432,13 @@ static void EvoSetRasterParams3(NVDevEvoPtr pDevEvo, int head,
         DRF_NUM(C37D, _HEAD_SET_MIN_FRAME_IDLE, _TRAILING_RASTER_LINES,
                 minFrameIdleTrailingRasterLines));
 
+    nvAssert((KHzToHz(pTimings->pixelClock) &
+        ~DRF_MASK(NVC37D_HEAD_SET_PIXEL_CLOCK_FREQUENCY_HERTZ)) == 0x0);
+
     nvDmaSetStartEvoMethod(pChannel, NVC37D_HEAD_SET_PIXEL_CLOCK_FREQUENCY(head), 1);
     nvDmaSetEvoMethodData(pChannel,
         DRF_NUM(C37D, _HEAD_SET_PIXEL_CLOCK_FREQUENCY, _HERTZ,
-                pTimings->pixelClock * 1000) |
+                KHzToHz(pTimings->pixelClock)) |
         DRF_DEF(C37D, _HEAD_SET_PIXEL_CLOCK_FREQUENCY, _ADJ1000DIV1001,_FALSE));
 
     nvDmaSetStartEvoMethod(pChannel, NVC37D_HEAD_SET_PIXEL_CLOCK_CONFIGURATION(head), 1);
@@ -1446,7 +1450,7 @@ static void EvoSetRasterParams3(NVDevEvoPtr pDevEvo, int head,
     nvDmaSetStartEvoMethod(pChannel, NVC37D_HEAD_SET_PIXEL_CLOCK_FREQUENCY_MAX(head), 1);
     nvDmaSetEvoMethodData(pChannel,
         DRF_NUM(C37D, _HEAD_SET_PIXEL_CLOCK_FREQUENCY_MAX, _HERTZ,
-                pTimings->pixelClock * 1000) |
+                KHzToHz(pTimings->pixelClock)) |
         DRF_DEF(C37D, _HEAD_SET_PIXEL_CLOCK_FREQUENCY_MAX, _ADJ1000DIV1001,_FALSE));
 
     nvDmaSetStartEvoMethod(pChannel,
@@ -3410,6 +3414,10 @@ nvEvoIsModePossibleC3(NVDispEvoPtr pDispEvo,
     result = TRUE;
 
 done:
+    for (NvU32 head = 0; head < pDevEvo->numHeads; head++) {
+        pOutput->head[head].dscSliceCount = pInput->head[head].dscSliceCount;
+    }
+
     nvEvoSetIsModePossibleDispOutput3(pImp, result, pOutput);
 
     nvPreallocRelease(pDevEvo, PREALLOC_TYPE_IMP_PARAMS);
@@ -8038,6 +8046,12 @@ NVEvoHAL nvEvoC3 = {
     EvoComputeWindowScalingTapsC3,                /* ComputeWindowScalingTaps */
     nvEvoGetWindowScalingCapsC3,                  /* GetWindowScalingCaps */
     NULL,                                         /* SetMergeMode */
+    nvEvo1SendHdmiInfoFrame,                      /* SendHdmiInfoFrame */
+    nvEvo1DisableHdmiInfoFrame,                   /* DisableHdmiInfoFrame */
+    nvEvo1SendDpInfoFrameSdp,                     /* SendDpInfoFrameSdp */
+    NULL,                                         /* SetDpVscSdp */
+    NULL,                                         /* InitHwHeadMultiTileConfig */
+    NULL,                                         /* SetMultiTileConfig */
     EvoAllocSurfaceDescriptorC3,                  /* AllocSurfaceDescriptor */
     EvoFreeSurfaceDescriptorC3,                   /* FreeSurfaceDescriptor */
     EvoBindSurfaceDescriptorC3,                   /* BindSurfaceDescriptor */
@@ -8128,6 +8142,12 @@ NVEvoHAL nvEvoC5 = {
     nvEvoComputeWindowScalingTapsC5,              /* ComputeWindowScalingTaps */
     nvEvoGetWindowScalingCapsC3,                  /* GetWindowScalingCaps */
     EvoSetMergeModeC5,                            /* SetMergeMode */
+    nvEvo1SendHdmiInfoFrame,                      /* SendHdmiInfoFrame */
+    nvEvo1DisableHdmiInfoFrame,                   /* DisableHdmiInfoFrame */
+    nvEvo1SendDpInfoFrameSdp,                     /* SendDpInfoFrameSdp */
+    NULL,                                         /* SetDpVscSdp */
+    NULL,                                         /* InitHwHeadMultiTileConfig */
+    NULL,                                         /* SetMultiTileConfig */
     EvoAllocSurfaceDescriptorC3,                  /* AllocSurfaceDescriptor */
     EvoFreeSurfaceDescriptorC3,                   /* FreeSurfaceDescriptor */
     EvoBindSurfaceDescriptorC3,                   /* BindSurfaceDescriptor */
@@ -8218,6 +8238,12 @@ NVEvoHAL nvEvoC6 = {
     nvEvoComputeWindowScalingTapsC5,              /* ComputeWindowScalingTaps */
     nvEvoGetWindowScalingCapsC3,                  /* GetWindowScalingCaps */
     EvoSetMergeModeC5,                            /* SetMergeMode */
+    nvEvo1SendHdmiInfoFrame,                      /* SendHdmiInfoFrame */
+    nvEvo1DisableHdmiInfoFrame,                   /* DisableHdmiInfoFrame */
+    nvEvo1SendDpInfoFrameSdp,                     /* SendDpInfoFrameSdp */
+    NULL,                                         /* SetDpVscSdp */
+    NULL,                                         /* InitHwHeadMultiTileConfig */
+    NULL,                                         /* SetMultiTileConfig */
     EvoAllocSurfaceDescriptorC3,                  /* AllocSurfaceDescriptor */
     EvoFreeSurfaceDescriptorC3,                   /* FreeSurfaceDescriptor */
     EvoBindSurfaceDescriptorC3,                   /* BindSurfaceDescriptor */

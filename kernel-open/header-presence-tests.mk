@@ -16,6 +16,7 @@ NV_HEADER_PRESENCE_TESTS = \
   drm/drm_drv.h \
   drm/drm_fbdev_generic.h \
   drm/drm_fbdev_ttm.h \
+  drm/drm_client_setup.h \
   drm/drm_framebuffer.h \
   drm/drm_connector.h \
   drm/drm_probe_helper.h \
@@ -34,6 +35,8 @@ NV_HEADER_PRESENCE_TESTS = \
   generated/autoconf.h \
   generated/compile.h \
   generated/utsrelease.h \
+  linux/aperture.h \
+  linux/dma-direct.h \
   linux/efi.h \
   linux/kconfig.h \
   linux/platform/tegra/mc_utils.h \
@@ -102,5 +105,6 @@ NV_HEADER_PRESENCE_TESTS = \
   asm/cpufeature.h \
   linux/mpi.h \
   asm/mshyperv.h \
+  crypto/sig.h \
   linux/pfn_t.h
 

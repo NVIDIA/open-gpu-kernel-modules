@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2021-2023 NVIDIA Corporation
+    Copyright (c) 2021-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -172,9 +172,9 @@ static NV_STATUS test_semaphore_timestamp(uvm_gpu_t *gpu)
     // The semaphore is 4 words long (16 bytes).
     const size_t size = 16;
 
-    // TODO: Bug 3804752: SEC2 semaphore timestamp is not implemented for
-    // Hopper
-    if (uvm_conf_computing_mode_is_hcc(gpu))
+    // TODO: Bug 3804752: SEC2 semaphore timestamp is not implemented in
+    // Hopper+ GPUs.
+    if (g_uvm_global.conf_computing_enabled)
         return NV_OK;
 
     status = test_semaphore_alloc_sem(gpu, size, &mem);

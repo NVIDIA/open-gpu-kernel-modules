@@ -45,6 +45,8 @@
 #include "dp_auxbus.h"
 #include "dpringbuffertypes.h"
 
+#include "dp_connectorimpl2x.h"
+
 #include "ctrl/ctrl0073/ctrl0073dfp.h"
 #include "ctrl/ctrl0073/ctrl0073dp.h"
 #include "dp_tracing.h"
@@ -56,6 +58,7 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
       auxBus(auxBus),
       timer(timer),
       sink(sink),
+      cachedSourceOUI(0),
       bOuiCached(false),
       bIgnoreSrcOuiHandshake(false),
       linkPolicy(),
@@ -172,11 +175,13 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     this->bEnableFastLT                    = dpRegkeyDatabase.bFastLinkTrainingEnabled;
     this->bDscMstCapBug3143315             = dpRegkeyDatabase.bDscMstCapBug3143315;
     this->bPowerDownPhyBeforeD3            = dpRegkeyDatabase.bPowerDownPhyBeforeD3;
+    this->bReassessMaxLink                 = dpRegkeyDatabase.bReassessMaxLink;
     if (dpRegkeyDatabase.applyMaxLinkRateOverrides)
     {
         this->maxLinkRateFromRegkey        = hal->mapLinkBandiwdthToLinkrate(dpRegkeyDatabase.applyMaxLinkRateOverrides); // BW to linkrate
     }
     this->bForceDisableTunnelBwAllocation  = dpRegkeyDatabase.bForceDisableTunnelBwAllocation;
+    this->bSkipZeroOuiCache                = dpRegkeyDatabase.bSkipZeroOuiCache;
 }
 
 void ConnectorImpl::setPolicyModesetOrderMitigation(bool enabled)
@@ -230,7 +235,7 @@ void ConnectorImpl::discoveryDetectComplete()
     }
 }
 
-void ConnectorImpl::applyEdidWARs(Edid & edid, DiscoveryManager::Device device)
+void ConnectorImpl::applyEdidWARs(Edid & edid, DiscoveryManager::Device & device)
 {
     DpMonitorDenylistData *pDenylistData = new DpMonitorDenylistData();
     NvU32 warFlag = 0;
@@ -238,6 +243,7 @@ void ConnectorImpl::applyEdidWARs(Edid & edid, DiscoveryManager::Device device)
 
     // Apply any edid overrides if required
     edid.applyEdidWorkArounds(warFlag, pDenylistData);
+    this->handleEdidWARs(edid, device);
 
     delete pDenylistData;
 }
@@ -518,6 +524,7 @@ create:
     // Apply any DPCD overrides if required
     newDev->dpcdOverrides();
 
+    this->setDisableDownspread(processedEdid.WARFlags.bDisableDownspread);
     //
     // Some 4K eDP panel needs HBR2 to support higher modes, Highest assessed LC
     // remains in a stale state after applying DPCD overrides here. So we need to
@@ -680,6 +687,8 @@ create:
 
     // Read panel replay capabilities
     newDev->getPanelReplayCaps();
+    // Read ALPM caps on panel
+    newDev->getAlpmCaps();
 
     // Get Panel FEC support only if GPU supports FEC
     if (this->isFECSupported())
@@ -700,10 +709,17 @@ create:
 
     if (main->isEDP() && !bOuiCached)
     {
-        // Save Source OUI information for eDP.
-        hal->getOuiSource(cachedSourceOUI, &cachedSourceModelName[0],
-                          sizeof(cachedSourceModelName), cachedSourceChipRevision);
-        bOuiCached = true;
+        //
+        // if the regkey is set, and the system is in discrete mode, skip OUI caching.
+        // i.e. cache OUI if regkey is not set OR system is in dynamic mode.
+        //
+        if ((!this->bSkipZeroOuiCache) || main->isInternalPanelDynamicMuxCapable())
+        {
+            // Save Source OUI information for eDP.
+            hal->getOuiSource(cachedSourceOUI, &cachedSourceModelName[0],
+                              sizeof(cachedSourceModelName), cachedSourceChipRevision);
+            this->bOuiCached = true;
+        }
     }
 
     fireEvents();
@@ -718,8 +734,6 @@ LinkRates* ConnectorImpl::importDpLinkRates()
     if (hal->isIndexedLinkrateCapable() &&
         main->configureLinkRateTable(hal->getLinkRateTable(), pConnectorLinkRates))
     {
-        // Maximal link rate is limited with link rate table
-        hal->overrideOptimalLinkRate(pConnectorLinkRates->getMaxRate());
         hal->setIndexedLinkrateEnabled(true);
     }
     else
@@ -730,26 +744,26 @@ LinkRates* ConnectorImpl::importDpLinkRates()
             main->configureLinkRateTable(NULL, NULL);
             hal->setIndexedLinkrateEnabled(false);
         }
-
-        // Get maximal link rate supported by GPU
-        linkRate = main->maxLinkRateSupported();
-        linkRate = DATA_RATE_8B_10B_TO_LINK_RATE(linkRate);
-
-        // Insert by order
         pConnectorLinkRates->clear();
-
-        if (linkRate >= dp2LinkRate_1_62Gbps)
-            pConnectorLinkRates->import((NvU16)dp2LinkRate_1_62Gbps);
-
-        if (linkRate >= dp2LinkRate_2_70Gbps)
-            pConnectorLinkRates->import((NvU16)dp2LinkRate_2_70Gbps);
-
-        if (linkRate >= dp2LinkRate_5_40Gbps)
-            pConnectorLinkRates->import((NvU16)dp2LinkRate_5_40Gbps);
-
-        if (linkRate >= dp2LinkRate_8_10Gbps)
-            pConnectorLinkRates->import((NvU16)dp2LinkRate_8_10Gbps);
     }
+
+    // Get maximal link rate supported by GPU
+    linkRate = main->maxLinkRateSupported();
+
+    // Insert in order any additional entries regardless of ILR Capability
+
+    if (linkRate >= dp2LinkRate_1_62Gbps)
+        pConnectorLinkRates->insert((NvU16)dp2LinkRate_1_62Gbps);
+
+    if (linkRate >= dp2LinkRate_2_70Gbps)
+        pConnectorLinkRates->insert((NvU16)dp2LinkRate_2_70Gbps);
+
+    if (linkRate >= dp2LinkRate_5_40Gbps)
+        pConnectorLinkRates->insert((NvU16)dp2LinkRate_5_40Gbps);
+
+    if (linkRate >= dp2LinkRate_8_10Gbps)
+        pConnectorLinkRates->insert((NvU16)dp2LinkRate_8_10Gbps);
+
     return pConnectorLinkRates;
 }
 
@@ -777,7 +791,7 @@ void ConnectorImpl::populateAllDpConfigs()
     //
     if (numPossibleLnkCfg)
     {
-        DP_PRINTF(DP_NOTICE, "DP> DPCONN> Rebuild possible link rate confgiurations");
+        DP_PRINTF(DP_NOTICE, "DPCONN> Rebuild possible link rate configurations");
         delete[] allPossibleLinkCfgs;
         numPossibleLnkCfg = 0;
     }
@@ -810,6 +824,7 @@ void ConnectorImpl::populateAllDpConfigs()
         for (unsigned j = 0; j < laneSets; j++)
         {
             allPossibleLinkCfgs[i * laneSets + j].setLaneRate(linkRate, laneCounts[j]);
+            allPossibleLinkCfgs[i * laneSets + j].bDisableDownspread = this->getDownspreadDisabled();
         }
         linkRate = pConnectorLinkRates->getLowerRate(linkRate);
     }
@@ -1001,7 +1016,6 @@ LinkConfiguration ConnectorImpl::getMaxLinkConfig()
     }
 
     gpuMaxLinkRate = main->maxLinkRateSupported();
-    gpuMaxLinkRate = DATA_RATE_8B_10B_TO_LINK_RATE(gpuMaxLinkRate);
 
     LinkRate linkRate = maxLinkRate ?
                         DP_MIN(maxLinkRate, gpuMaxLinkRate) :
@@ -1011,27 +1025,21 @@ LinkConfiguration ConnectorImpl::getMaxLinkConfig()
                          DP_MIN(hal->getMaxLaneCountSupportedAtLinkRate(linkRate), hal->getMaxLaneCount()) :
                          4U;
 
-    linkRate = LINK_RATE_TO_DATA_RATE_8B_10B(linkRate);
-
     return LinkConfiguration (&this->linkPolicy,
                               laneCount, linkRate,
                               this->hal->getEnhancedFraming(),
                               linkUseMultistream(),
                               false,  /* disablePostLTRequest */
-                              this->bFECEnable);
+                              this->bFECEnable,
+                              false,  /* disableLTTPR */
+                              this->getDownspreadDisabled());
 }
 
 LinkConfiguration ConnectorImpl::getActiveLinkConfig()
 {
     DP_ASSERT(hal);
 
-    return LinkConfiguration (&activeLinkConfig.policy,
-                              activeLinkConfig.lanes,
-                              (LINK_RATE_TO_DATA_RATE_8B_10B(activeLinkConfig.peakRate)),
-                              activeLinkConfig.enhancedFraming,
-                              activeLinkConfig.multistream,
-                              false,  /* disablePostLTRequest */
-                              activeLinkConfig.bEnableFEC);
+    return activeLinkConfig;
 }
 
 LinkConfiguration ConnectorImpl::initMaxLinkConfig()
@@ -1203,8 +1211,8 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
 }
 
 bool ConnectorImpl::compoundQueryAttach(Group * target,
-                                        const DpModesetParams &modesetParams,         // Modeset info
-                                        DscParams *pDscParams,                        // DSC parameters
+                                        const DpModesetParams &modesetParams,   // Modeset info
+                                        DscParams *pDscParams,                  // DSC parameters
                                         DP_IMP_ERROR *pErrorCode)
 {
     DP_ASSERT(compoundQueryActive);
@@ -1212,6 +1220,8 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
         *pErrorCode = DP_IMP_ERROR_NONE;
 
     compoundQueryCount++;
+    DpModesetParams _dpModesetParams = modesetParams;
+    _dpModesetParams.modesetInfo.colorFormat = modesetParams.colorFormat;
 
     if (!modesetParams.modesetInfo.depth || !modesetParams.modesetInfo.pixelClockHz)
     {
@@ -1223,18 +1233,18 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
 
     if (linkUseMultistream())
     {
-        compoundQueryResult = compoundQueryAttachMST(target, modesetParams,
+        compoundQueryResult = compoundQueryAttachMST(target, _dpModesetParams,
                                                      pDscParams, pErrorCode);
     }
     else    // SingleStream case
     {
-        compoundQueryResult = compoundQueryAttachSST(target, modesetParams,
+        compoundQueryResult = compoundQueryAttachSST(target, _dpModesetParams,
                                                      pDscParams, pErrorCode);
     }
 
     if (compoundQueryResult)
     {
-        compoundQueryResult = compoundQueryAttachTunneling(modesetParams, pDscParams, pErrorCode);
+        compoundQueryResult = compoundQueryAttachTunneling(_dpModesetParams, pDscParams, pErrorCode);
     }
 
     return compoundQueryResult;
@@ -1318,8 +1328,38 @@ bool ConnectorImpl::compoundQueryAttachMST(Group * target,
     else
         localInfo.lc = highestAssessedLC;
 
-    if (compoundQueryForceEnableFEC) {
+    if (compoundQueryForceEnableFEC)
+    {
         localInfo.lc.enableFEC(isFECCapable());
+    }
+
+    if (bDP2XPreferNonDSCForLowPClk &&
+        modesetParams.modesetInfo.pixelClockHz < main->getMinPClkForCompressed())
+    {
+        if(!compoundQueryAttachMSTGeneric(target, modesetParams, &localInfo,
+                                          pDscParams, pErrorCode))
+        {
+            if (compoundQueryAttachMSTIsDscPossible(target, modesetParams, pDscParams))
+            {
+                result = compoundQueryAttachMSTDsc(target, modesetParams, &localInfo,
+                                                   pDscParams, pErrorCode);
+                if (!result)
+                {
+                    return false;
+                }
+
+                return compoundQueryAttachMSTGeneric(target, modesetParams, &localInfo,
+                                                     pDscParams, pErrorCode);
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return true;
+        }
     }
 
     if (compoundQueryAttachMSTIsDscPossible(target, modesetParams, pDscParams))
@@ -1439,6 +1479,7 @@ bool ConnectorImpl::compoundQueryAttachMSTDsc(Group * target,
 
     dpMemZero(PPS, sizeof(unsigned) * DSC_MAX_PPS_SIZE_DWORD);
     dpMemZero(&dscInfo, sizeof(DSC_INFO));
+    dpMemZero(&warData, sizeof(WAR_DATA));
 
     // Populate DSC related info for PPS calculations
     populateDscCaps(&dscInfo, dev->devDoingDscDecompression, pDscParams->forcedParams);
@@ -1499,7 +1540,23 @@ bool ConnectorImpl::compoundQueryAttachMSTDsc(Group * target,
 
     availableBandwidthBitsPerSecond = localInfo->lc.convertMinRateToDataRate() * 8 * localInfo->lc.lanes;
 
-    warData.dpData.linkRateHz = localInfo->lc.convertLinkRateToDataRate(localInfo->lc.peakRate);
+    warData.dpData.linkRateHz = localInfo->lc.peakRate;
+    warData.dpData.bIs128b132bChannelCoding = localInfo->lc.bIs128b132bChannelCoding;
+
+    if (localInfo->lc.bIs128b132bChannelCoding)
+    {
+        //
+        // Dplib need to calculate effective bpp in case of 128b132b which will be more than bpp
+        // to accomodate padding and EOC and we need to use that to find the DSC bpp for the mode.
+        // Currenlty Dplib does not use effective bpp for PPS calculations. Needed changes are
+        // described in bug 5004872.
+        // As temporary WAR, are restricting available link BW to 96% of actually available link BW
+        // in 128b132b mode so that max DSC bpp calculated always leaves enough link bw
+        // to accomodate the needed effective bpp for the mode.
+        //
+        availableBandwidthBitsPerSecond = (availableBandwidthBitsPerSecond * 96)/100;
+    }
+
     warData.dpData.laneCount = localInfo->lc.lanes;
     warData.dpData.dpMode = DSC_DP_MST;
     warData.dpData.hBlank = modesetParams.modesetInfo.rasterWidth - modesetParams.modesetInfo.surfaceWidth;
@@ -1575,6 +1632,11 @@ bool ConnectorImpl::compoundQueryAttachMSTDsc(Group * target,
         compoundQueryResult = true;
         localInfo->localModesetInfo.bEnableDsc = true;
         localInfo->localModesetInfo.depth = bitsPerPixelX16;
+        if (modesetParams.colorFormat == dpColorFormat_YCbCr422 &&
+            dev->dscCaps.dscDecoderColorFormatCaps.bYCbCrNative422)
+        {
+            localInfo->localModesetInfo.colorFormat = dpColorFormat_YCbCr422_Native;
+        }
 
         if (dev->peerDevice == Dongle && dev->connectorType == connectorHDMI)
         {
@@ -1797,15 +1859,15 @@ bool ConnectorImpl::compoundQueryAttachSST(Group * target,
     // If do not found valid native device the force lagacy DP IMP
     if (!nativeDev)
     {
-        compoundQueryResult = this->willLinkSupportModeSST(lc, modesetParams.modesetInfo);
+        compoundQueryResult = this->willLinkSupportModeSST(lc, modesetParams.modesetInfo, pDscParams);
         if (!compoundQueryResult)
         {
             SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_WATERMARK_BLANKING)
         }
     }
-    else if ((pDscParams && (pDscParams->forceDsc == DSC_FORCE_ENABLE)) ||      // DD has forced DSC Enable
-                (modesetParams.modesetInfo.mode == DSC_DUAL) ||                    // DD decided to use 2 Head 1 OR mode
-                (!this->willLinkSupportModeSST(lc, modesetParams.modesetInfo)))    // Mode is not possible without DSC
+    else if ((pDscParams && (pDscParams->forceDsc == DSC_FORCE_ENABLE)) ||                      // DD has forced DSC Enable
+                (modesetParams.modesetInfo.mode == DSC_DUAL) ||                                 // DD decided to use 2 Head 1 OR mode
+                (!this->willLinkSupportModeSST(lc, modesetParams.modesetInfo, pDscParams)))     // Mode is not possible without DSC
     {
         // If DP IMP fails without DSC or client requested to force DSC
         if (pDscParams && pDscParams->forceDsc != DSC_FORCE_DISABLE)
@@ -1833,6 +1895,7 @@ bool ConnectorImpl::compoundQueryAttachSST(Group * target,
 
                 dpMemZero(PPS, sizeof(unsigned) * DSC_MAX_PPS_SIZE_DWORD);
                 dpMemZero(&dscInfo, sizeof(DSC_INFO));
+                dpMemZero(&warData, sizeof(WAR_DATA));
 
                 // Populate DSC related info for PPS calculations
                 populateDscCaps(&dscInfo, nativeDev->devDoingDscDecompression, pDscParams->forcedParams);
@@ -1851,11 +1914,31 @@ bool ConnectorImpl::compoundQueryAttachSST(Group * target,
 
                 availableBandwidthBitsPerSecond = lc.convertMinRateToDataRate() * 8 * lc.lanes;
 
-                warData.dpData.linkRateHz = lc.convertLinkRateToDataRate(lc.peakRate);
+                warData.dpData.linkRateHz = lc.peakRate;
+                warData.dpData.bIs128b132bChannelCoding = lc.bIs128b132bChannelCoding;
+
+                if (lc.bIs128b132bChannelCoding)
+                {
+                    //
+                    // Dplib need to calculate effective bpp in case of 128b132b which will be more than bpp
+                    // to accomodate padding and EOC and we need to use that to find the DSC bpp for the mode.
+                    // Currenlty Dplib does not use effective bpp for PPS calculations. Needed changes are
+                    // described in bug 5004872.
+                    // As temporary WAR, are restricting available link BW to 96% of actually available link BW
+                    // in 128b132b mode so that max DSC bpp calculated always leaves enough link bw
+                    // to accomodate the needed effective bpp for the mode.
+                    // Note 96.2% is 128b132b channel coding link efficiency.
+                    //
+                    availableBandwidthBitsPerSecond = (availableBandwidthBitsPerSecond * 96)/ 100;
+                }
                 warData.dpData.laneCount = lc.lanes;
                 warData.dpData.hBlank = modesetParams.modesetInfo.rasterWidth - modesetParams.modesetInfo.surfaceWidth;
                 warData.dpData.dpMode = DSC_DP_SST;
                 warData.connectorType = DSC_DP;
+                if (main->isEDP())
+                {
+                    warData.dpData.bIsEdp = true;
+                }
 
                 ppsStatus = DSC_GeneratePPSWithSliceCountMask(&dscInfo,
                                                               &modesetInfoDSC,
@@ -1877,12 +1960,16 @@ bool ConnectorImpl::compoundQueryAttachSST(Group * target,
                     localModesetInfo.depth = bitsPerPixelX16;
                     LinkConfiguration lowestSelected;
                     bool bIsModeSupported = false;
-
+                    if (modesetParams.colorFormat == dpColorFormat_YCbCr422 &&
+                        nativeDev->dscCaps.dscDecoderColorFormatCaps.bYCbCrNative422)
+                    {
+                        localModesetInfo.colorFormat = dpColorFormat_YCbCr422_Native;
+                    }
 
                     if (this->preferredLinkConfig.isValid())
                     {
                         // Check if mode is possible with preferred link config
-                        bIsModeSupported = willLinkSupportModeSST(lc, localModesetInfo);
+                        bIsModeSupported = willLinkSupportModeSST(lc, localModesetInfo, pDscParams);
                     }
                     else
                     {
@@ -1896,7 +1983,7 @@ bool ConnectorImpl::compoundQueryAttachSST(Group * target,
                         // symbols in SST. This may cause HW hang and so DP IMP rejects
                         // this mode. Refer Bug 200379426.
                         //
-                        bIsModeSupported = getValidLowestLinkConfig(lc, lowestSelected, localModesetInfo);
+                        bIsModeSupported = getValidLowestLinkConfig(lc, lowestSelected, localModesetInfo, pDscParams);
                     }
 
                     if (!bIsModeSupported)
@@ -2153,19 +2240,28 @@ void ConnectorImpl::populateDscSinkCaps(DSC_INFO* dscInfo, DeviceImpl * dev)
     dscInfo->sinkCaps.peakThroughputMode1 = dev->dscCaps.dscPeakThroughputMode1;
     dscInfo->sinkCaps.maxBitsPerPixelX16 = dev->dscCaps.maxBitsPerPixelX16;
 
-    if (main->isEDP())
+    // If panel does not populate peak DSC throughput, use _MODE0_340.
+    if (!dscInfo->sinkCaps.peakThroughputMode0)
     {
-        // If eDP panel does not populate peak DSC throughput, use _MODE0_340.
-        if (!dscInfo->sinkCaps.peakThroughputMode0)
-        {
-            dscInfo->sinkCaps.peakThroughputMode0 = NV_DPCD14_DSC_PEAK_THROUGHPUT_MODE0_340;
-        }
+        dscInfo->sinkCaps.peakThroughputMode0 =
+            NV_DPCD14_DSC_PEAK_THROUGHPUT_MODE0_340;
+    }
 
-        // If eDP panel does not populate max slice width, use 2560.
-        if (!dscInfo->sinkCaps.maxSliceWidth)
-        {
-            dscInfo->sinkCaps.maxSliceWidth = 2560;
-        }
+    // If panel does not populate max slice width, use 2560.
+    if (!dscInfo->sinkCaps.maxSliceWidth)
+    {
+        dscInfo->sinkCaps.maxSliceWidth = 2560;
+    }
+
+    //
+    // If panel support Native 422 mode  but does not populate peak DSC
+    // throughput, use _MODE0_340.
+    //
+    if (dev->dscCaps.dscDecoderColorFormatCaps.bYCbCrNative422 &&
+            !dscInfo->sinkCaps.peakThroughputMode1)
+    {
+        dscInfo->sinkCaps.peakThroughputMode1 =
+            NV_DPCD14_DSC_PEAK_THROUGHPUT_MODE1_340;
     }
 }
 
@@ -2575,8 +2671,6 @@ bool ConnectorImpl::isHeadShutDownNeeded(Group * target,               // Group 
     bool bSkipLowestConfigCheck = false;
     bool bIsModeSupported = false;
 
-    lowestSelected.peakRate         = DATA_RATE_8B_10B_TO_LINK_RATE(lowestSelected.peakRate);
-    lowestSelected.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(lowestSelected.peakRatePossible);
     GroupImpl* targetImpl = (GroupImpl*)target;
 
     // Certain panels only work when link train to highest linkConfig in SST mode.
@@ -2604,11 +2698,11 @@ bool ConnectorImpl::isHeadShutDownNeeded(Group * target,               // Group 
     {
         LinkConfiguration lConfig = lowestSelected;
 
-        bIsModeSupported = getValidLowestLinkConfig(lConfig, lowestSelected, modesetInfo);
+        bIsModeSupported = getValidLowestLinkConfig(lConfig, lowestSelected, modesetInfo, NULL);
     }
     else
     {
-        if (this->willLinkSupportModeSST(lowestSelected, modesetInfo))
+        if (this->willLinkSupportModeSST(lowestSelected, modesetInfo, NULL))
         {
             bIsModeSupported = true;
         }
@@ -2663,14 +2757,12 @@ bool ConnectorImpl::isHeadShutDownNeeded(Group * target,               // Group 
     return bHeadShutdownNeeded;
 }
 
-bool ConnectorImpl::isLinkTrainingNeededForModeset (ModesetInfo modesetInfo)
+bool ConnectorImpl::isLinkTrainingNeededForModeset(ModesetInfo modesetInfo)
 {
     // Force highestLink config in SST
     bool bSkipLowestConfigCheck      = false;
     bool bIsModeSupported            = false;
     LinkConfiguration lowestSelected = getMaxLinkConfig();
-    lowestSelected.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(lowestSelected.peakRate);
-    lowestSelected.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(lowestSelected.peakRatePossible);
 
     if (linkUseMultistream())
     {
@@ -2743,11 +2835,11 @@ bool ConnectorImpl::isLinkTrainingNeededForModeset (ModesetInfo modesetInfo)
     {
         LinkConfiguration lConfig = lowestSelected;
 
-        bIsModeSupported = getValidLowestLinkConfig(lConfig, lowestSelected, modesetInfo);
+        bIsModeSupported = getValidLowestLinkConfig(lConfig, lowestSelected, modesetInfo, NULL);
     }
     else
     {
-        if (this->willLinkSupportModeSST(lowestSelected, modesetInfo))
+        if (this->willLinkSupportModeSST(lowestSelected, modesetInfo, NULL))
         {
             bIsModeSupported = true;
         }
@@ -3029,18 +3121,21 @@ void ConnectorImpl::dpPostModeset(void)
 bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Group of panels we're attaching to this head
                                       const DpModesetParams       &modesetParams)
 {
-    unsigned twoChannelAudioHz         = modesetParams.modesetInfo.twoChannelAudioHz;
-    unsigned eightChannelAudioHz       = modesetParams.modesetInfo.eightChannelAudioHz;
-    NvU64    pixelClockHz              = modesetParams.modesetInfo.pixelClockHz;
-    unsigned rasterWidth               = modesetParams.modesetInfo.rasterWidth;
-    unsigned rasterHeight              = modesetParams.modesetInfo.rasterHeight;
-    unsigned rasterBlankStartX         = modesetParams.modesetInfo.rasterBlankStartX;
-    unsigned rasterBlankEndX           = modesetParams.modesetInfo.rasterBlankEndX;
-    unsigned depth                     = modesetParams.modesetInfo.depth;
-    bool     bLinkTrainingStatus       = true;
-    bool     bEnableDsc                = modesetParams.modesetInfo.bEnableDsc;
-    bool     bEnableFEC;
-    bool     bEnablePassThroughForPCON = modesetParams.modesetInfo.bEnablePassThroughForPCON;
+    unsigned   twoChannelAudioHz         = modesetParams.modesetInfo.twoChannelAudioHz;
+    unsigned   eightChannelAudioHz       = modesetParams.modesetInfo.eightChannelAudioHz;
+    NvU64      pixelClockHz              = modesetParams.modesetInfo.pixelClockHz;
+    unsigned   rasterWidth               = modesetParams.modesetInfo.rasterWidth;
+    unsigned   rasterHeight              = modesetParams.modesetInfo.rasterHeight;
+    unsigned   rasterBlankStartX         = modesetParams.modesetInfo.rasterBlankStartX;
+    unsigned   rasterBlankEndX           = modesetParams.modesetInfo.rasterBlankEndX;
+    unsigned   depth                     = modesetParams.modesetInfo.depth;
+    bool       bLinkTrainingStatus       = true;
+    bool       bEnableDsc                = modesetParams.modesetInfo.bEnableDsc;
+    bool       bEnableFEC;
+    bool       bEnablePassThroughForPCON = modesetParams.modesetInfo.bEnablePassThroughForPCON;
+    Device     *newDev                   = target->enumDevices(0);
+    DeviceImpl *dev                      = (DeviceImpl *)newDev;
+
 
     if (hal->isDpTunnelBwAllocationEnabled() &&
         ((allocatedDpTunnelBwShadow != 0) ||
@@ -3170,13 +3265,26 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
     activeGroups.insertBack(targetImpl);
     intransitionGroups.insertFront(targetImpl);
 
-    targetImpl->lastModesetInfo = ModesetInfo(twoChannelAudioHz, eightChannelAudioHz,
-        pixelClockHz, rasterWidth, rasterHeight,
-        (rasterBlankStartX - rasterBlankEndX), modesetParams.modesetInfo.surfaceHeight,
-        depth, rasterBlankStartX, rasterBlankEndX, bEnableDsc, modesetParams.modesetInfo.mode);
+    if (modesetParams.colorFormat == dpColorFormat_YCbCr422 &&
+        dev && dev->dscCaps.dscDecoderColorFormatCaps.bYCbCrNative422)
+    {
+        targetImpl->lastModesetInfo = ModesetInfo(twoChannelAudioHz, eightChannelAudioHz,
+                                      pixelClockHz, rasterWidth, rasterHeight,
+                                      (rasterBlankStartX - rasterBlankEndX), modesetParams.modesetInfo.surfaceHeight,
+                                      depth, rasterBlankStartX, rasterBlankEndX, bEnableDsc, modesetParams.modesetInfo.mode,
+                                      false, dpColorFormat_YCbCr422_Native);
+    }
+    else
+    {
+        targetImpl->lastModesetInfo = ModesetInfo(twoChannelAudioHz, eightChannelAudioHz,
+                                      pixelClockHz, rasterWidth, rasterHeight,
+                                      (rasterBlankStartX - rasterBlankEndX), modesetParams.modesetInfo.surfaceHeight,
+                                      depth, rasterBlankStartX, rasterBlankEndX, bEnableDsc, modesetParams.modesetInfo.mode,
+                                      false, modesetParams.colorFormat);
+    }
 
     targetImpl->headIndex = modesetParams.headIndex;
-    targetImpl->streamIndex = main->headToStream(modesetParams.headIndex, targetImpl->singleHeadMultiStreamID);
+    targetImpl->streamIndex = main->headToStream(modesetParams.headIndex, (messageManager != NULL), targetImpl->singleHeadMultiStreamID);
     targetImpl->colorFormat = modesetParams.colorFormat;
 
     DP_ASSERT(!this->isLinkQuiesced && "TMDS is attached, NABegin is impossible!");
@@ -3203,13 +3311,18 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
         }
         else
         {
-            DP_ASSERT("eDP Source OUI is not cached!");
+            if (!this->bSkipZeroOuiCache)
+            {
+                DP_ASSERT("eDP Source OUI is not cached!");
+            }
+            else
+            {
+                this->performIeeeOuiHandshake();
+            }
         }
     }
 
     LinkConfiguration maxLinkConfig = getMaxLinkConfig();
-    maxLinkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRate);
-    maxLinkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRatePossible);
 
     // if failed, we're guaranteed that assessed link rate didn't meet the mode requirements
     // isZombie() will catch this
@@ -3674,11 +3787,7 @@ bool ConnectorImpl::assessPCONLinkCapability(PCONLinkControl *pConControl)
 
     // Step 3: Assess DP Link capability.
     LinkConfiguration lConfig = getMaxLinkConfig();
-    lConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(lConfig.peakRate);
-    lConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(lConfig.peakRatePossible);
     highestAssessedLC = getMaxLinkConfig();
-    highestAssessedLC.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(highestAssessedLC.peakRate);
-    highestAssessedLC.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(highestAssessedLC.peakRatePossible);
 
     hal->updateDPCDOffline();
     if (hal->isDpcdOffline())
@@ -3745,8 +3854,12 @@ bool ConnectorImpl::performIeeeOuiHandshake()
     return false;
 }
 
-
-bool ConnectorImpl::willLinkSupportModeSST(const LinkConfiguration & linkConfig, const ModesetInfo & modesetInfo)
+bool ConnectorImpl::willLinkSupportModeSST
+(
+    const LinkConfiguration & linkConfig,
+    const ModesetInfo & modesetInfo,
+    const DscParams *pDscParams
+)
 {
     DP_ASSERT(!linkUseMultistream() && "IMP for SST only");
 
@@ -3786,8 +3899,6 @@ bool ConnectorImpl::willLinkSupportModeSST(const LinkConfiguration & linkConfig,
 void ConnectorImpl::forceLinkTraining()
 {
     LinkConfiguration forcedMaxConfig(getMaxLinkConfig());
-    forcedMaxConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(forcedMaxConfig.peakRate);
-    forcedMaxConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(forcedMaxConfig.peakRatePossible);
     train(forcedMaxConfig, true);
 }
 
@@ -3798,6 +3909,7 @@ void ConnectorImpl::powerdownLink(bool bPowerdownPanel)
     LinkConfiguration powerOff = getMaxLinkConfig();
     powerOff.lanes             = 0;
     powerOff.peakRate          = dp2LinkRate_1_62Gbps; // Set to lowest peakRate
+    powerOff.setChannelCoding();
 
     if (linkUseMultistream() && bPowerDownPhyBeforeD3)
     {
@@ -4092,8 +4204,6 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
     NvU32 retryCount = 0;
 
     LinkConfiguration _maxLinkConfig = getMaxLinkConfig();
-    _maxLinkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(_maxLinkConfig.peakRate);
-    _maxLinkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(_maxLinkConfig.peakRatePossible);
 
     // Cap system max link configuration to preferredLinkConfig
     if (preferredLinkConfig.isValid() && this->forcePreferredLinkConfig)
@@ -4199,16 +4309,23 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
                 highestAssessedLC = LinkConfiguration (&this->linkPolicy,
                                                        laneCount, linkRate,
                                                        this->hal->getEnhancedFraming(),
-                                                       linkUseMultistream());
+                                                       linkUseMultistream(),
+                                                       false, /* disablePostLTRequest */
+                                                       false, /* bEnableFEC */
+                                                       false, /* bDisableLTTPR */
+                                                       this->getDownspreadDisabled());
 
                 // Get the currently applied linkconfig and update SW state
                 getCurrentLinkConfig(laneCount, linkRate);
-                linkRate = DATA_RATE_8B_10B_TO_LINK_RATE(linkRate);
 
                 activeLinkConfig = LinkConfiguration (&this->linkPolicy,
                                                       laneCount, linkRate,
                                                       this->hal->getEnhancedFraming(),
-                                                      linkUseMultistream());
+                                                      linkUseMultistream(),
+                                                      false, /* disablePostLTRequest */
+                                                      false, /* bEnableFEC */
+                                                      false, /* bDisableLTTPR */
+                                                      this->getDownspreadDisabled());
             }
         }
         else
@@ -4287,36 +4404,46 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
     //
     bool bIsFlushModeEnabled = enableFlush();
 
-    if (!bIsFlushModeEnabled)
+    if (bIsFlushModeEnabled)
     {
-        goto done;
+        do
+        {
+            //
+            // if dpcd is offline; avoid assessing. Just consider max.
+            // keep lowering lane/rate config till train succeeds
+            //
+            hal->updateDPCDOffline();
+
+            // At first trial / when retraining, always start with _maxLinkConfig
+            // Protect with regkey for now
+            if (bReassessMaxLink)
+            {
+                lConfig = _maxLinkConfig;
+            }
+
+            if (hal->isDpcdOffline())
+            {
+                lConfig = _maxLinkConfig;
+                break;
+            }
+            if (!train(lConfig, false /* do not force LT */))
+            {
+                //
+                // Note that now train() handles fallback, activeLinkConfig
+                // has the max link config that was assessed.
+                //
+                lConfig = activeLinkConfig;
+            }
+            // Check if training completed at _maxLinkConfig, no need to retry
+            if (lConfig == _maxLinkConfig || lConfig.lanes == 0)
+            {
+                break;
+            }
+            timer->sleep(40);
+        } while (retryCount++ < WAR_MAX_REASSESS_ATTEMPT);
+
+        disableFlush();
     }
-    do
-    {
-        //
-        // if dpcd is offline; avoid assessing. Just consider max.
-        // keep lowering lane/rate config till train succeeds
-        //
-        hal->updateDPCDOffline();
-        if (hal->isDpcdOffline())
-        {
-            lConfig = _maxLinkConfig;
-            break;
-        }
-        if (!train(lConfig, false /* do not force LT */))
-        {
-            //
-            // Note that now train() handles fallback, activeLinkConfig
-            // has the max link config that was assessed.
-            //
-            lConfig = activeLinkConfig;
-        }
-        if (lConfig == _maxLinkConfig || lConfig.lanes == 0)
-        {
-            break;
-        }
-        timer->sleep(40);
-    } while (retryCount++ < WAR_MAX_REASSESS_ATTEMPT);
 
     if (lConfig != _maxLinkConfig)
     {
@@ -4339,7 +4466,13 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
             !willLinkSupportModeSST(lConfig, groupAttached->lastModesetInfo))
         {
             DP_ASSERT(0 && "DP> Maximum assessed link configuration is not capable driving existing raster!");
-            train(preFlushModeActiveLinkConfig, true);
+
+            bIsFlushModeEnabled = enableFlush();
+            if (bIsFlushModeEnabled)
+            {
+                train(preFlushModeActiveLinkConfig, true);
+                disableFlush();
+            }
             linkGuessed = true;
             goto done;
         }
@@ -4355,11 +4488,6 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
 done:
 
     NV_DPTRACE_INFO(LINK_ASSESSMENT, highestAssessedLC.peakRate, highestAssessedLC.lanes);
-
-    if (bIsFlushModeEnabled)
-    {
-        disableFlush();
-    }
 
     if (bLinkStateToggle)
     {
@@ -4589,6 +4717,8 @@ bool ConnectorImpl::isLinkLost()
                 return true;
             if (!hal->getLaneStatusClockRecoveryDone(i))
                 return true;
+            if (!hal->getLaneStatusChannelEqualizationDone(i))
+                return true;
         }
 
         if (!hal->getInterlaneAlignDone())
@@ -4680,8 +4810,13 @@ bool ConnectorImpl::trainLinkOptimizedSingleHeadMultipleSST(GroupImpl *pGroupAtt
     for (NvU8 i = 0; i < linkRateCount; i++)
     {
         LinkConfiguration linkCfg = LinkConfiguration(&this->linkPolicy,
-                                        laneCount_4, linkRateList[i],
-                                        hal->getEnhancedFraming(), false);
+                                                      laneCount_4, linkRateList[i],
+                                                      hal->getEnhancedFraming(),
+                                                      false, // MST
+                                                      false, /* disablePostLTRequest */
+                                                      false, /* bEnableFEC */
+                                                      false, /* bDisableLTTPR */
+                                                      this->getDownspreadDisabled());
         linkCfg.policy.setSkipFallBack(true);
         if (willLinkSupportModeSST(linkCfg, pGroupAttached->lastModesetInfo))
         {
@@ -4693,8 +4828,6 @@ bool ConnectorImpl::trainLinkOptimizedSingleHeadMultipleSST(GroupImpl *pGroupAtt
                 {
                     // Re-train max link config
                     linkCfg = getMaxLinkConfig();
-                    linkCfg.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(linkCfg.peakRate);
-                    linkCfg.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(linkCfg.peakRatePossible);
                     linkCfg.policy.setSkipFallBack(true);
                     if (!train(linkCfg, false))
                     {
@@ -4804,8 +4937,6 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
     }
 
     lowestSelected = getMaxLinkConfig();
-    lowestSelected.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(lowestSelected.peakRate);
-    lowestSelected.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(lowestSelected.peakRatePossible);
 
     if (!activeLinkConfig.multistream)
     {
@@ -4956,8 +5087,6 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
             if (!bLinkTrainingSuccessful)
             {
                 LinkConfiguration maxLinkConfig = getMaxLinkConfig();
-                maxLinkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRate);
-                maxLinkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRatePossible);
                 // If optimized link config fails, try max link config with fallback.
                 if (!train(maxLinkConfig, false))
                 {
@@ -5000,8 +5129,6 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
                     return false;
             }
             LinkConfiguration maxLinkConfig = getMaxLinkConfig();
-            maxLinkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRate);
-            maxLinkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRatePossible);
             // Mode wasn't possible at any assessed configuration.
             train(maxLinkConfig, true);
 
@@ -5087,8 +5214,6 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
             if (!activeLinkConfig.isValid())
             {
                 LinkConfiguration maxLinkConfig = getMaxLinkConfig();
-                maxLinkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRate);
-                maxLinkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRatePossible);
                 DP_PRINTF(DP_ERROR, "DPCONN> Unable to train link (at all).  Forcing training (picture won't show up)");
                 train(maxLinkConfig, true);
 
@@ -5125,9 +5250,10 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
 
 bool ConnectorImpl::getValidLowestLinkConfig
 (
-    LinkConfiguration &lConfig,
-    LinkConfiguration &lowestSelected,
-    ModesetInfo modesetInfo
+    LinkConfiguration      &lConfig,
+    LinkConfiguration      &lowestSelected,
+    ModesetInfo             modesetInfo,
+    const DscParams        *pDscParams
 )
 {
     bool bIsModeSupported = false;
@@ -5159,6 +5285,7 @@ bool ConnectorImpl::getValidLowestLinkConfig
     if (bIsModeSupported)
     {
         lowestSelected = selectedConfig;
+        lowestSelected.bDisableDownspread = lConfig.bDisableDownspread;
     }
     else
     {
@@ -5372,25 +5499,42 @@ bool ConnectorImpl::validateLinkConfiguration(const LinkConfiguration & lConfig)
     NvU64 linkRate10M = lConfig.peakRate;
 
     if (!IS_VALID_LANECOUNT(lConfig.lanes))
+    {
+        DP_PRINTF(DP_ERROR, "DPCONN> Invalid Lane Count=%d", lConfig.lanes);
         return false;
+    }
 
     if (lConfig.lanes > hal->getMaxLaneCount())
+    {
+        DP_PRINTF(DP_ERROR, "DPCONN> Requested Lane Count=%d is larger than sinkMaxLaneCount=%d",
+                  lConfig.lanes, hal->getMaxLaneCount());
         return false;
+    }
 
     if (lConfig.lanes != 0)
     {
         if (!IS_VALID_LINKBW_10M(linkRate10M))
+        {
+            DP_PRINTF(DP_ERROR, "DPCONN> Requested link rate=%d is not valid", linkRate10M);
             return false;
+        }
 
         if (linkRate10M > hal->getMaxLinkRate())
+        {
+            DP_PRINTF(DP_ERROR, "DPCONN> Requested link rate=%d is larger than sinkMaxLinkRate=%d",
+                      linkRate10M, hal->getMaxLinkRate());
             return false;
+        }
 
         if (IS_INTERMEDIATE_LINKBW_10M(linkRate10M))
         {
             NvU16 *ilrTable;
             NvU32 i;
             if (!hal->isIndexedLinkrateEnabled())
+            {
+                DP_PRINTF(DP_ERROR, "DPCONN> Indexed Link Rate=%d is Not Enabled in Sink", linkRate10M);
                 return false;
+            }
 
             ilrTable = hal->getLinkRateTable();
             for (i = 0; i < NV0073_CTRL_DP_MAX_INDEXED_LINK_RATES; i++)
@@ -5402,10 +5546,17 @@ bool ConnectorImpl::validateLinkConfiguration(const LinkConfiguration & lConfig)
                 if (LINK_RATE_200KHZ_TO_10MHZ(ilrTable[i]) == linkRate10M)
                     break;
                 if (ilrTable[i] == 0)
+                {
+                    DP_PRINTF(DP_ERROR, "DPCONN> Indexed Link Rate=%d is Not Found", linkRate10M);
                     return false;
+                }
             }
+
             if (i == NV0073_CTRL_DP_MAX_INDEXED_LINK_RATES)
+            {
+                DP_PRINTF(DP_ERROR, "DPCONN> Indexed Link Rate=%d is Not Found", linkRate10M);
                 return false;
+            }
         }
     }
     return true;
@@ -5498,6 +5649,7 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
         {
             // Total slot is 64, reserve slot 0 for header
             maximumSlots = 63;
+            freeSlots = maximumSlots;
             firstFreeSlot = 1;
         }
         bNoLtDoneAfterHeadDetach = false;
@@ -5512,7 +5664,9 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
         result = postLTAdjustment(activeLinkConfig, force);
     }
 
-    if((lConfig.lanes != 0) && result && activeLinkConfig.bEnableFEC)
+    if((lConfig.lanes != 0) && result && activeLinkConfig.bEnableFEC
+        && !activeLinkConfig.bIs128b132bChannelCoding
+    )
     {
         //
         // Extended latency from link-train end to FEC enable pattern
@@ -5816,6 +5970,8 @@ bool ConnectorImpl::allocateTimeslice(GroupImpl * targetGroup)
 
     activeLinkConfig.pbnRequired(targetGroup->lastModesetInfo, base_pbn, slot_count, slots_pbn);
 
+    applyTimeslotWAR(slot_count);
+
     // Check for available timeslots
     if (slot_count > freeSlots)
         return false;
@@ -5917,12 +6073,17 @@ void ConnectorImpl::beforeDeleteStream(GroupImpl * group, bool forFlushMode)
             freeTimeslice(group);
             flushTimeslotsToHardware();
             group->bWaitForDeAllocACT = false;
+            group->setTimeslotAllocated(false);
 
             return;
         }
     }
 
-    if (linkUseMultistream() && group && group->isHeadAttached() && (group->timeslot.count || group->timeslot.hardwareDirty))
+    if (linkUseMultistream() &&
+        group && group->isHeadAttached() &&
+        (group->isTimeslotAllocated() ||
+         group->timeslot.count ||
+         group->timeslot.hardwareDirty))
     {
         // Detach all the panels from payload
         for (Device * d = group->enumDevices(0); d; d = group->enumDevices(d))
@@ -5933,6 +6094,7 @@ void ConnectorImpl::beforeDeleteStream(GroupImpl * group, bool forFlushMode)
         freeTimeslice(group);
         flushTimeslotsToHardware();
         group->bWaitForDeAllocACT = true;
+        group->setTimeslotAllocated(false);
 
         // Delete the stream
         hal->payloadTableClearACT();
@@ -6122,6 +6284,7 @@ bool ConnectorImpl::beforeAddStreamMST(GroupImpl * group, bool test, bool forFlu
     if (allocateTimeslice(group))
     {
         flushTimeslotsToHardware();
+        group->setTimeslotAllocated(true);
         if (!forFlushMode && isPrimaryStream)
         {
             main->controlRateGoverning(group->headIndex, true /*enable*/);
@@ -6446,6 +6609,8 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
     bPConConnected = false;
     bSkipAssessLinkForPCon = false;
 
+    hal->initialize();
+
     //
     // Check if the panel is eDP and DPCD data for that is already parsed.
     // Passing this as a parameter inside notifyHPD to skip reading of DPCD
@@ -6516,7 +6681,9 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
         }
 
         // Apply Oui WARs here
-        applyOuiWARs();
+        this->applyOuiWARs();
+
+        hal->notifySDPErrDetectionCapability();
 
         // Tear down old message manager
         DP_ASSERT( !hal->getSupportsMultistream() || (hal->isAtLeastVersion(1, 2) && " Device supports multistream but not DP 1.2 !?!? "));
@@ -6574,6 +6741,7 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
         discoveryManager = 0;
 
         cancelHdcpCallbacks();
+
         if (hal->getSupportsMultistream() && main->hasMultistream())
         {
             bool bDeleteFirmwareVC = false;
@@ -6782,8 +6950,6 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
             }
 
             LinkConfiguration maxLinkConfig = getMaxLinkConfig();
-            maxLinkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRate);
-            maxLinkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRatePossible);
             if (bPConConnected ||
                 (main->isEDP() && this->bSkipAssessLinkForEDP) ||
                 (main->isInternalPanelDynamicMuxCapable()))
@@ -6838,6 +7004,8 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
         bKeepOptLinkAlive = false;
         bNoFallbackInPostLQA = false;
         bDscCapBasedOnParent = false;
+        linkState = DP_TRANSPORT_MODE_INIT;
+        linkAwaitingTransition = false;
 
     }
 completed:
@@ -7013,105 +7181,8 @@ void ConnectorImpl::notifyShortPulse()
         }
         else if (hal->getPendingTestRequestTraining())
         {
-            if (activeLinkConfig.multistream)
-            {
-                hal->setTestResponse(false);
-            }
-            else
-            {
-                LinkRate    requestedRate;
-                unsigned    requestedLanes;
-
-                hal->getTestRequestTraining(requestedRate, requestedLanes);
-                // if one of them is illegal; don't ack. let the box try again.
-                if (requestedRate == 0 || requestedLanes == 0)
-                {
-                    DP_ASSERT(0 && "illegal requestedRate/Lane, retry..");
-                    hal->setTestResponse(false);
-                }
-                else
-                {
-                    // Compliance shouldn't ask us to train above its caps
-                    if (requestedRate == 0 || requestedRate > hal->getMaxLinkRate())
-                    {
-                        DP_ASSERT(0 && "illegal requestedRate");
-                        requestedRate = hal->getMaxLinkRate();
-                    }
-
-                    if (requestedLanes == 0 || requestedLanes > hal->getMaxLaneCount())
-                    {
-                        DP_ASSERT(0 && "illegal requestedLanes");
-                        requestedLanes = hal->getMaxLaneCount();
-                    }
-
-                    DeviceImpl * dev = findDeviceInList(Address());
-                    if (!dev || !dev->plugged || dev->multistream)
-                    {
-                        hal->setTestResponse(false);
-                    }
-                    else
-                    {
-                        GroupImpl * groupAttached = this->getActiveGroupForSST();
-                        DP_ASSERT(groupAttached && groupAttached->isHeadAttached());
-
-                        if (!dev->activeGroup || (dev->activeGroup != groupAttached))
-                        {
-                            DP_ASSERT(0 && "Compliance: no group attached");
-                        }
-
-                        DP_PRINTF(DP_NOTICE, "DP> Compliance: LT on IRQ request: 0x%x, %d.", requestedRate, requestedLanes);
-                        // now see whether the current resolution is supported on the requested link config
-                        LinkConfiguration lc(&linkPolicy, requestedLanes, requestedRate, hal->getEnhancedFraming(), false);
-
-                        if (groupAttached && groupAttached->isHeadAttached())
-                        {
-                            if (willLinkSupportModeSST(lc, groupAttached->lastModesetInfo))
-                            {
-                                DP_PRINTF(DP_NOTICE, "DP> Compliance: Executing LT on IRQ: 0x%x, %d.", requestedRate, requestedLanes);
-                                // we need to force the requirement irrespective of whether is supported or not.
-                                if (!enableFlush())
-                                {
-                                    hal->setTestResponse(false);
-                                }
-                                else
-                                {
-                                    //
-                                    // Check if linkTraining fails, perform fake linktraining. This is required because
-                                    // if we simply fail linkTraining we will not configure the head which results in
-                                    // TDRs if any modset happens after this.
-                                    //
-                                    hal->setTestResponse(true);
-                                    if (!train(lc, false))
-                                        train(lc, true);
-                                    disableFlush();
-                                    // Don't force/commit. Only keep the request.
-                                    LinkConfiguration lc_dr(lc);
-                                    lc_dr.peakRate = LINK_RATE_TO_DATA_RATE_8B_10B(lc_dr.peakRate);
-                                    lc_dr.peakRatePossible = LINK_RATE_TO_DATA_RATE_8B_10B(lc_dr.peakRatePossible);
-                                    setPreferredLinkConfig(lc_dr, false, false);
-                                }
-                            }
-                            else // linkconfig is not supporting bandwidth. Fallback to default edid and notify DD.
-                            {
-                                // override the device with fallback edid and notify a bw change to DD.
-                                DP_PRINTF(DP_NOTICE, "DP> Compliance: Switching to compliance fallback EDID after IMP failure.");
-                                dev->switchToComplianceFallback();
-
-                                DP_PRINTF(DP_NOTICE, "DP> Compliance: Notifying bandwidth change to DD after IMP failure.");
-                                // notify a bandwidth change to DD
-                                sink->bandwidthChangeNotification(dev, true);
-                            }
-                        }
-                        else
-                        {
-                            hal->setTestResponse(true);
-                            DP_PRINTF(DP_NOTICE, "DP> Compliance: Link Training when the head is not attached.");
-                            if (!train(lc, false))
-                                train(lc, true);
-                        }
-                    }
-                }
-            }
+            // handleTestLinkTrainRequest will call hal->setTestResponse() once verified the request.
+            handleTestLinkTrainRequest();
         }
         else if (hal->getPendingTestRequestPhyCompliance())
         {
@@ -7202,7 +7273,27 @@ void ConnectorImpl::notifyShortPulse()
         //save the previous highest assessed LC
         LinkConfiguration previousAssessedLC = highestAssessedLC;
 
-        assessLink();
+        if (activeLinkConfig.isValid() && enableFlush())
+        {
+            LinkConfiguration originalActiveLinkConfig = activeLinkConfig;
+            if (!train(activeLinkConfig, false))
+            {
+                //
+                // If original link config could not be restored force
+                // original config, else SF will overflow when we come
+                // out of flush mode.
+                //
+                DP_PRINTF(DP_ERROR, "DP> After IRQ, original link config could not be restored. Forcing config");
+                train(originalActiveLinkConfig, true);
+            }
+            disableFlush();
+        }
+
+        // if link train fails, call assessLink() again.
+        if (!activeLinkConfig.isValid())
+        {
+            assessLink();
+        }
 
         //If the highest assessed LC has changed, send notification
         if(highestAssessedLC != previousAssessedLC)
@@ -7260,11 +7351,10 @@ bool ConnectorImpl::setPreferredLinkConfig(LinkConfiguration & lc, bool commit,
         return false;
     }
 
-    lc.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(lc.peakRatePossible);
-    lc.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(lc.peakRate);
     if (!validateLinkConfiguration(lc))
     {
-        DP_PRINTF(DP_ERROR, "Client requested bad LinkConfiguration.");
+        DP_PRINTF(DP_ERROR, "Client requested bad LinkConfiguration. peakRate=%d, lanes=%d, bIs128b132ChannelCoding=%d",
+            lc.peakRate, lc.lanes, lc.bIs128b132bChannelCoding);
         return false;
     }
 
@@ -7537,7 +7627,28 @@ Connector * DisplayPort::createConnector
 )
 {
     ConnectorImpl *connector;
-    connector = new ConnectorImpl(main, aux, timer, sink);
+    EvoInterface *provider = ((EvoMainLink *)main)->getProvider();
+    NvU32 nvosStatus;
+    NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS dpParams = {0};
+
+    dpParams.subDeviceInstance = provider->getSubdeviceIndex();
+    nvosStatus = provider->rmControl0073(NV0073_CTRL_CMD_DP_GET_CAPS, &dpParams, sizeof dpParams);
+
+    if (nvosStatus != NVOS_STATUS_SUCCESS)
+    {
+        DP_ASSERT(0 && "Unable to get DP caps params");
+        return NULL;
+    }
+
+    if (FLD_TEST_DRF(0073_CTRL_CMD_DP, _GET_CAPS_DP_VERSIONS_SUPPORTED,
+                     _DP2_0, _YES, dpParams.dpVersionsSupported))
+    {
+        connector = new ConnectorImpl2x(main, aux, timer, sink);
+    }
+    else
+    {
+        connector = new ConnectorImpl(main, aux, timer, sink);
+    }
 
     if (connector == NULL || connector->constructorFailed) {
         delete connector;
@@ -7663,8 +7774,6 @@ void ConnectorImpl::getCurrentLinkConfig(unsigned & laneCount, NvU64 & linkRate)
 unsigned ConnectorImpl::getPanelDataClockMultiplier()
 {
     LinkConfiguration linkConfig = getMaxLinkConfig();
-    linkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(linkConfig.peakRate);
-    linkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(linkConfig.peakRatePossible);
     return getDataClockMultiplier(linkConfig.convertLinkRateToDataRate(linkConfig.peakRatePossible), linkConfig.lanes);
 }
 
@@ -7674,6 +7783,7 @@ unsigned ConnectorImpl::getGpuDataClockMultiplier()
     NvU64 linkRate;
     // Need to get the GPU caps, not monitor caps.
     linkRate = maxLinkRateSupported();
+    linkRate = LINK_RATE_TO_DATA_RATE_8B_10B(linkRate);
     laneCount = laneCount_4;
 
     return getDataClockMultiplier(linkRate, laneCount);
@@ -7811,6 +7921,123 @@ bool ConnectorImpl::handlePhyPatternRequest()
     return status;
 }
 
+// return ACK/NACK result of the request
+bool ConnectorImpl::handleTestLinkTrainRequest()
+{
+    if (activeLinkConfig.multistream)
+    {
+        hal->setTestResponse(false);
+        return false;
+    }
+    else
+    {
+        LinkRate    requestedRate;
+        unsigned    requestedLanes;
+
+        hal->getTestRequestTraining(requestedRate, requestedLanes);
+        // if one of them is illegal; don't ack. let the box try again.
+        if (requestedRate == 0 || requestedLanes == 0)
+        {
+            DP_ASSERT(0 && "illegal requestedRate/Lane, retry..");
+            hal->setTestResponse(false);
+            return false;
+        }
+        else
+        {
+            // Compliance shouldn't ask us to train above its caps
+            if (requestedRate == 0 || requestedRate > hal->getMaxLinkRate())
+            {
+                DP_ASSERT(0 && "illegal requestedRate");
+                requestedRate = hal->getMaxLinkRate();
+            }
+
+            if (requestedLanes == 0 || requestedLanes > hal->getMaxLaneCount())
+            {
+                DP_ASSERT(0 && "illegal requestedLanes");
+                requestedLanes = hal->getMaxLaneCount();
+            }
+
+            DeviceImpl * dev = findDeviceInList(Address());
+            if (!dev || !dev->plugged || dev->multistream)
+            {
+                hal->setTestResponse(false);
+                return false;
+            }
+            else
+            {
+                GroupImpl * groupAttached = this->getActiveGroupForSST();
+                DP_ASSERT(groupAttached && groupAttached->isHeadAttached());
+
+                if (!dev->activeGroup || (dev->activeGroup != groupAttached))
+                {
+                    DP_ASSERT(0 && "Compliance: no group attached");
+                }
+
+                DP_PRINTF(DP_NOTICE, "DP> Compliance: LT on IRQ request: 0x%x, %d.", requestedRate, requestedLanes);
+                // now see whether the current resolution is supported on the requested link config
+                LinkConfiguration lc(&linkPolicy, requestedLanes, requestedRate,
+                                     hal->getEnhancedFraming(),
+                                     false, /* MST */
+                                     false, /* disablePostLTRequest */
+                                     false, /* bEnableFEC */
+                                     false, /* bDisableLTTPR */
+                                     this->getDownspreadDisabled());    // DisableDownspread
+
+                if (groupAttached && groupAttached->isHeadAttached())
+                {
+                    if (willLinkSupportModeSST(lc, groupAttached->lastModesetInfo))
+                    {
+                        DP_PRINTF(DP_NOTICE, "DP> Compliance: Executing LT on IRQ: 0x%x, %d.", requestedRate, requestedLanes);
+                        // we need to force the requirement irrespective of whether is supported or not.
+                        if (!enableFlush())
+                        {
+                            hal->setTestResponse(false);
+                            return false;
+                        }
+                        else
+                        {
+                            //
+                            // Check if linkTraining fails, perform fake linktraining. This is required because
+                            // if we simply fail linkTraining we will not configure the head which results in
+                            // TDRs if any modset happens after this.
+                            //
+                            hal->setTestResponse(true);
+                            if (!train(lc, false))
+                                train(lc, true);
+                            disableFlush();
+                            // Don't force/commit. Only keep the request.
+                            setPreferredLinkConfig(lc, false, false);
+                            return true;
+                        }
+                    }
+                    else // linkconfig is not supporting bandwidth. Fallback to default edid and notify DD.
+                    {
+                        // override the device with fallback edid and notify a bw change to DD.
+                        DP_PRINTF(DP_NOTICE, "DP> Compliance: Switching to compliance fallback EDID after IMP failure.");
+                        dev->switchToComplianceFallback();
+
+                        DP_PRINTF(DP_NOTICE, "DP> Compliance: Notifying bandwidth change to DD after IMP failure.");
+                        // notify a bandwidth change to DD
+                        sink->bandwidthChangeNotification(dev, true);
+
+                        return false;
+                    }
+                }
+                else
+                {
+                    DP_PRINTF(DP_NOTICE, "DP> Compliance: Link Training when the head is not attached.");
+                    hal->setTestResponse(true);
+                    if (!train(lc, false))
+                        train(lc, true);
+
+                    setPreferredLinkConfig(lc, false, false);
+                    return true;
+                }
+            }
+        }
+    }
+}
+
 //
 // This function is used to send dp test message.
 // requestSize indicates the buffer size pointed by pBuffer
@@ -7878,13 +8105,9 @@ void ConnectorImpl::notifyHBR2WAREngage()
 {
     bool peakBwChanged = false;
     LinkConfiguration preLc = getMaxLinkConfig();
-    preLc.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(preLc.peakRate);
-    preLc.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(preLc.peakRatePossible);
     // Update GPU capabilities
     this->notifyGPUCapabilityChange();
     LinkConfiguration postLc = getMaxLinkConfig();
-    postLc.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(postLc.peakRate);
-    postLc.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(postLc.peakRatePossible);
 
     peakBwChanged = (preLc.peakRatePossible != postLc.peakRatePossible);
 
@@ -7926,6 +8149,7 @@ void ConnectorImpl::configInit()
     bForceClearPendingMsg = false;
     allocatedDpTunnelBw = 0;
     allocatedDpTunnelBwShadow = 0;
+    bDP2XPreferNonDSCForLowPClk = false;
 }
 
 bool ConnectorImpl::dpUpdateDscStream(Group *target, NvU32 dscBpp)

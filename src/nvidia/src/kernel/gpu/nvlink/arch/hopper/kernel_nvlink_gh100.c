@@ -381,7 +381,7 @@ knvlinkLogAliDebugMessages_GH100
         return status;
     }
 
-    FOR_EACH_INDEX_IN_MASK(32, i, pKernelNvlink->postRxDetLinkMask)
+    FOR_EACH_INDEX_IN_MASK(32, i, KNVLINK_GET_MASK(pKernelNvlink, postRxDetLinkMask, 32))
     {
         nvErrorLog_va((void *)pGpu, ALI_TRAINING_FAIL,
                 "NVLink: Link training failed for link %u"

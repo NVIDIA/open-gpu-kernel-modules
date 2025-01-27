@@ -190,6 +190,12 @@ int nvidia_p2p_get_pages( uint64_t p2p_token, uint32_t va_space,
         void (*free_callback)(void *data), void *data);
 
 /*
+ * Flags to be used with persistent APIs
+ */
+#define NVIDIA_P2P_FLAGS_DEFAULT            0
+#define NVIDIA_P2P_FLAGS_FORCE_BAR1_MAPPING 1
+
+/*
  * @brief
  *   Pin and make the pages underlying a range of GPU virtual memory
  *   accessible to a third-party device. The pages will persist until
@@ -212,7 +218,11 @@ int nvidia_p2p_get_pages( uint64_t p2p_token, uint32_t va_space,
  * @param[out]    page_table
  *   A pointer to an array of structures with P2P PTEs.
  * @param[in]     flags
- *   Must be set to zero for now.
+ *   NVIDIA_P2P_FLAGS_DEFAULT:
+ *     Default value to be used if no specific behavior is expected.
+ *   NVIDIA_P2P_FLAGS_FORCE_BAR1_MAPPING:
+ *     Force BAR1 mappings on certain coherent platforms,
+ *     subject to capability and supported topology.
  *
  * @return
  *    0           upon successful completion.

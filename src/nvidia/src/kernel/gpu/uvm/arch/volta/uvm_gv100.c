@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -314,7 +314,8 @@ uvmInitAccessCntrBuffer_GV100
         memdescSetGpuCacheAttrib(pUvmAccessCntrBufferDesc, NV_MEMORY_UNCACHED);
     }
 
-    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_44, 
+    memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, pUvmAccessCntrBufferDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_44,
                     pUvmAccessCntrBufferDesc);
     if (status != NV_OK)
     {
@@ -323,7 +324,6 @@ uvmInitAccessCntrBuffer_GV100
     }
 
     memdescSetName(pGpu, pUvmAccessCntrBufferDesc, NV_RM_SURF_NAME_ACCESS_COUNTER_BUFFER, NULL);
-    memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, pUvmAccessCntrBufferDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
 
     status = memdescMap(pUvmAccessCntrBufferDesc, 0,
                         memdescGetSize(pUvmAccessCntrBufferDesc), NV_TRUE,

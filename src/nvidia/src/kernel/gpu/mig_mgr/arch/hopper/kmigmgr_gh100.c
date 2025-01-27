@@ -49,6 +49,8 @@ kmigmgrIsGPUInstanceFlagValid_GH100
                                 _MEMORY_SIZE, gpuInstanceFlag);
     NvU32 computeSizeFlag = DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG,
                                     _COMPUTE_SIZE, gpuInstanceFlag);
+    NvU32 gfxSizeFlag = DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG,
+                                    _GFX_SIZE, gpuInstanceFlag);
     switch (memSizeFlag)
     {
         case NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_FULL:
@@ -77,6 +79,23 @@ kmigmgrIsGPUInstanceFlagValid_GH100
         default:
             NV_PRINTF(LEVEL_ERROR, "Unrecognized GPU compute partitioning flag 0x%x\n",
                       computeSizeFlag);
+            return NV_FALSE;
+    }
+    switch (gfxSizeFlag)
+    {
+        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_NONE:
+            break;
+        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_FULL:
+        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_HALF:
+        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_MINI_HALF:
+        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_QUARTER:
+        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_EIGHTH:
+        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_RESERVED_INTERNAL_06:
+        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_RESERVED_INTERNAL_07:
+            return NV_FALSE;
+        default:
+            NV_PRINTF(LEVEL_ERROR, "Unrecognized GPU GFX partitioning flag 0x%x\n",
+                      gfxSizeFlag);
             return NV_FALSE;
     }
     return NV_TRUE;

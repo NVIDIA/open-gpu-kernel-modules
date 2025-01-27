@@ -636,6 +636,7 @@ static NV_STATUS fault_buffer_flush_locked(uvm_parent_gpu_t *parent_gpu,
         status = hw_fault_buffer_flush_locked(parent_gpu, HW_FAULT_BUFFER_FLUSH_MODE_DISCARD);
         if (status != NV_OK)
             return status;
+
         replayable_faults->cached_put = parent_gpu->fault_buffer_hal->read_put(parent_gpu);
     }
 
@@ -898,7 +899,7 @@ static NV_STATUS fetch_fault_buffer_entries(uvm_parent_gpu_t *parent_gpu,
             // We have some entry to work on. Let's do the rest later.
             if (fetch_mode == FAULT_FETCH_MODE_BATCH_READY && fault_index > 0)
                 goto done;
-            
+
             status = uvm_global_get_status();
             if (status != NV_OK)
                 goto done;
@@ -1715,7 +1716,7 @@ static NV_STATUS service_fault_batch_ats_sub_vma(uvm_gpu_va_space_t *gpu_va_spac
 
     status = uvm_ats_service_faults(gpu_va_space, vma, base, &batch_context->ats_context);
 
-    // Remove prefetched pages from the serviced mask since fault servicing
+    // Remove SW prefetched pages from the serviced mask since fault servicing
     // failures belonging to prefetch pages need to be ignored.
     uvm_page_mask_and(faults_serviced_mask, faults_serviced_mask, accessed_mask);
 
@@ -1777,6 +1778,7 @@ static void start_new_sub_batch(NvU64 *sub_batch_base,
 {
     uvm_page_mask_zero(&ats_context->faults.read_fault_mask);
     uvm_page_mask_zero(&ats_context->faults.write_fault_mask);
+    uvm_page_mask_zero(&ats_context->faults.prefetch_only_fault_mask);
 
     *sub_batch_fault_index = fault_index;
     *sub_batch_base = UVM_VA_BLOCK_ALIGN_DOWN(address);
@@ -1798,6 +1800,7 @@ static NV_STATUS service_fault_batch_ats_sub(uvm_gpu_va_space_t *gpu_va_space,
     uvm_ats_fault_context_t *ats_context = &batch_context->ats_context;
     uvm_page_mask_t *read_fault_mask = &ats_context->faults.read_fault_mask;
     uvm_page_mask_t *write_fault_mask = &ats_context->faults.write_fault_mask;
+    uvm_page_mask_t *prefetch_only_fault_mask = &ats_context->faults.prefetch_only_fault_mask;
     uvm_gpu_t *gpu = gpu_va_space->gpu;
     bool replay_per_va_block =
                         (gpu->parent->fault_buffer_info.replayable.replay_policy == UVM_PERF_FAULT_REPLAY_POLICY_BLOCK);
@@ -1829,7 +1832,9 @@ static NV_STATUS service_fault_batch_ats_sub(uvm_gpu_va_space_t *gpu_va_space,
 
         // End of sub-batch. Service faults gathered so far.
         if (fault_address >= (sub_batch_base + UVM_VA_BLOCK_SIZE)) {
-            UVM_ASSERT(!uvm_page_mask_empty(read_fault_mask) || !uvm_page_mask_empty(write_fault_mask));
+            UVM_ASSERT(!uvm_page_mask_empty(read_fault_mask) ||
+                       !uvm_page_mask_empty(write_fault_mask) ||
+                       !uvm_page_mask_empty(prefetch_only_fault_mask));
 
             status = service_fault_batch_ats_sub_vma(gpu_va_space,
                                                      vma,
@@ -1846,8 +1851,14 @@ static NV_STATUS service_fault_batch_ats_sub(uvm_gpu_va_space_t *gpu_va_space,
 
         page_index = (fault_address - sub_batch_base) / PAGE_SIZE;
 
-        if ((access_type <= UVM_FAULT_ACCESS_TYPE_READ) ||
-             uvm_fault_access_type_mask_test(current_entry->access_type_mask, UVM_FAULT_ACCESS_TYPE_READ))
+        // Do not check for coalesced access type. If there are multiple different
+        // accesses to an address, we can disregard the prefetch one.
+        if ((access_type == UVM_FAULT_ACCESS_TYPE_PREFETCH) &&
+            (uvm_fault_access_type_mask_highest(current_entry->access_type_mask) == UVM_FAULT_ACCESS_TYPE_PREFETCH))
+            uvm_page_mask_set(prefetch_only_fault_mask, page_index);
+
+        if ((access_type == UVM_FAULT_ACCESS_TYPE_READ) ||
+            uvm_fault_access_type_mask_test(current_entry->access_type_mask, UVM_FAULT_ACCESS_TYPE_READ))
             uvm_page_mask_set(read_fault_mask, page_index);
 
         if (access_type >= UVM_FAULT_ACCESS_TYPE_WRITE)
@@ -1861,7 +1872,10 @@ static NV_STATUS service_fault_batch_ats_sub(uvm_gpu_va_space_t *gpu_va_space,
              (previous_entry->va_space == current_entry->va_space));
 
     // Service the last sub-batch.
-    if ((status == NV_OK) && (!uvm_page_mask_empty(read_fault_mask) || !uvm_page_mask_empty(write_fault_mask))) {
+    if ((status == NV_OK) &&
+        (!uvm_page_mask_empty(read_fault_mask) ||
+         !uvm_page_mask_empty(write_fault_mask) ||
+         !uvm_page_mask_empty(prefetch_only_fault_mask))) {
         status = service_fault_batch_ats_sub_vma(gpu_va_space,
                                                  vma,
                                                  sub_batch_base,

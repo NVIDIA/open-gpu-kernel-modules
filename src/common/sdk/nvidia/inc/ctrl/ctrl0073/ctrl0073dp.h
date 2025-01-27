@@ -190,73 +190,7 @@ typedef struct NV0073_CTRL_DP_AUXCH_CTRL_PARAMS {
 //have invalid argument
 #define NV0073_CTRL_DP_AUXCH_REPLYTYPE_INVALID_ARGUMENT (0xffffffffU)
 
-/*
- * NV0073_CTRL_CMD_DP_AUXCH_SET_SEMA
- *
- * This command can be used to set the semaphore in order to gain control of
- * the aux channel.  This control is only used in HW verification.
- *
- *   subDeviceInstance
- *     This parameter specifies the subdevice instance within the
- *     NV04_DISPLAY_COMMON parent device to which the operation should be
- *     directed. This parameter must specify a value between zero and the
- *     total number of subdevices within the parent device.  This parameter
- *     should be set to zero for default behavior.
- *   displayId
- *     This parameter specifies the ID of the display for which the dfp
- *     caps should be returned.  The display ID must a dfp display
- *     as determined with the NV0073_CTRL_CMD_SPECIFIC_GET_TYPE command.
- *     If more than one displayId bit is set or the displayId is not a dfp,
- *     this call will return NV_ERR_INVALID_ARGUMENT.
- *   owner
- *     This parameter is an input to this command.
- *     Here are the current defined fields:
- *       NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_RM
- *         Write the aux channel semaphore for resource manager to own the
- *         the aux channel.
- *       NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_VBIOS
- *         Write the aux channel semaphore for vbios/efi to own the
- *         the aux channel.  This value is used only for HW verification
- *         and should not be used in normal driver operation.
- *       NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_PMU
- *         Write the aux channel semaphore for pmu to own the
- *         the aux channel.  This value is used only by pmu
- *         and should not be used in normal driver operation.
- *       NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_DPU
- *         Write the aux channel semaphore for dpu to own the
- *         the aux channel and should not be used in normal
- *         driver operation.
- *       NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_SEC2
- *         Write the aux channel semaphore for sec2 to own the
- *         the aux channel and should not be used in normal
- *         driver operation.
- *       NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_RELEASE
- *         Write the aux channel semaphore for hardware to own the
- *         the aux channel.  This value is used only for HW verification
- *         and should not be used in normal driver operation.
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_PARAM_STRUCT
- *   NV_ERR_INVALID_ARGUMENT
- */
 
-#define NV0073_CTRL_CMD_DP_AUXCH_SET_SEMA               (0x731342U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP_AUXCH_SET_SEMA_PARAMS_MESSAGE_ID" */
-
-#define NV0073_CTRL_DP_AUXCH_SET_SEMA_PARAMS_MESSAGE_ID (0x42U)
-
-typedef struct NV0073_CTRL_DP_AUXCH_SET_SEMA_PARAMS {
-    NvU32 subDeviceInstance;
-    NvU32 displayId;
-    NvU32 owner;
-} NV0073_CTRL_DP_AUXCH_SET_SEMA_PARAMS;
-
-#define NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER                 2:0
-#define NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_RELEASE (0x00000000U)
-#define NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_RM      (0x00000001U)
-#define NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_VBIOS   (0x00000002U)
-#define NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_PMU     (0x00000003U)
-#define NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_DPU     (0x00000004U)
-#define NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_SEC2    (0x00000005U)
 
 /*
  * NV0073_CTRL_CMD_DP_CTRL
@@ -489,6 +423,9 @@ typedef struct NV0073_CTRL_DP_AUXCH_SET_SEMA_PARAMS {
  *          If set to _ERR, the operation to Link Train repeater is failed.
  *        NV0073_CTRL_DP_ERR_ENABLE_FEC
  *          If set to _ERR, the operation to enable FEC is failed.
+ *        NV0073_CTRL_DP_ERR_LINK_STATUS
+ *          If set to _DISCONNECTED, link training failed and link is disconnected / unplugged.
+ *
  *   retryTimeMs
  *     This parameter is an output to this command.  In case of
  *     NVOS_STATUS_ERROR_RETRY return status, this parameter returns the time
@@ -501,7 +438,7 @@ typedef struct NV0073_CTRL_DP_AUXCH_SET_SEMA_PARAMS {
  *   NVOS_STATUS_ERROR_RETRY
  */
 
-#define NV0073_CTRL_CMD_DP_CTRL                     (0x731343U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP_CTRL_PARAMS_MESSAGE_ID" */
+#define NV0073_CTRL_CMD_DP_CTRL                         (0x731343U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP_CTRL_PARAMS_MESSAGE_ID" */
 
 #define NV0073_CTRL_DP_CTRL_PARAMS_MESSAGE_ID (0x43U)
 
@@ -633,10 +570,13 @@ typedef struct NV0073_CTRL_DP_CTRL_PARAMS {
 #define NV0073_CTRL_DP_ERR_EQ_DONE_LANE_2_LANE                          (0x00000002U)
 #define NV0073_CTRL_DP_ERR_EQ_DONE_LANE_4_LANE                          (0x00000004U)
 #define NV0073_CTRL_DP_ERR_EQ_DONE_LANE_8_LANE                          (0x00000008U)
-#define NV0073_CTRL_DP_ERR_INVALID_PARAMETER                      30:30
+#define NV0073_CTRL_DP_ERR_LINK_STATUS                             29:29
+#define NV0073_CTRL_DP_ERR_LINK_STATUS_CONNECTED                        (0x00000000U)
+#define NV0073_CTRL_DP_ERR_LINK_STATUS_DISCONNECTED                     (0x00000001U)
+#define NV0073_CTRL_DP_ERR_INVALID_PARAMETER                       30:30
 #define NV0073_CTRL_DP_ERR_INVALID_PARAMETER_NOERR                      (0x00000000U)
 #define NV0073_CTRL_DP_ERR_INVALID_PARAMETER_ERR                        (0x00000001U)
-#define NV0073_CTRL_DP_ERR_LINK_TRAINING                          31:31
+#define NV0073_CTRL_DP_ERR_LINK_TRAINING                           31:31
 #define NV0073_CTRL_DP_ERR_LINK_TRAINING_NOERR                          (0x00000000U)
 #define NV0073_CTRL_DP_ERR_LINK_TRAINING_ERR                            (0x00000001U)
 
@@ -768,6 +708,8 @@ typedef NV0073_CTRL_DP_LANE_DATA_PARAMS NV0073_CTRL_DP_GET_LANE_DATA_PARAMS;
 
 typedef NV0073_CTRL_DP_LANE_DATA_PARAMS NV0073_CTRL_DP_SET_LANE_DATA_PARAMS;
 
+#define NV0073_CTRL_CSTM_BUFFER_SIZE 9U
+
 /*
  * NV0073_CTRL_DP_CSTM
  *
@@ -782,7 +724,7 @@ typedef NV0073_CTRL_DP_LANE_DATA_PARAMS NV0073_CTRL_DP_SET_LANE_DATA_PARAMS;
  *        field_31_0     contains bits 31:0
  *        field_63_32    contains bits 63:32
  *        field_95_64    contains bits 95:64
- *        field_127_95   contains bits 127:95
+ *        field_127_96   contains bits 127:96
  *        field_159_128  contains bits 159:128
  *        field_191_160  contains bits 191:160
  *        field_223_192  contains bits 223:192
@@ -793,7 +735,7 @@ typedef struct NV0073_CTRL_DP_CSTM {
     NvU32 field_31_0;
     NvU32 field_63_32;
     NvU32 field_95_64;
-    NvU32 field_127_95;
+    NvU32 field_127_96;
     NvU32 field_159_128;
     NvU32 field_191_160;
     NvU32 field_223_192;
@@ -807,7 +749,7 @@ typedef struct NV0073_CTRL_DP_CSTM {
 /*
  * NV0073_CTRL_DP_TESTPATTERN
  *
- * This structure specifies the possible test patterns available in display port, 
+ * This structure specifies the possible test patterns available in display port,
  * and parameters for Square pattern.
  *
  */
@@ -815,7 +757,6 @@ typedef struct NV0073_CTRL_DP_CSTM {
 typedef struct NV0073_CTRL_DP_TESTPATTERN {
     NvU32 testPattern;
 } NV0073_CTRL_DP_TESTPATTERN;
-
 #define NV0073_CTRL_DP_TESTPATTERN_DATA                                               4:0
 #define NV0073_CTRL_DP_TESTPATTERN_DATA_NONE                       (0x00000000U)
 #define NV0073_CTRL_DP_TESTPATTERN_DATA_D10_2                      (0x00000001U)
@@ -829,6 +770,27 @@ typedef struct NV0073_CTRL_DP_TESTPATTERN {
 #define NV0073_CTRL_DP_TESTPATTERN_DATA_TRAINING3                  (0x00000009U)
 #define NV0073_CTRL_DP_TESTPATTERN_DATA_TRAINING4                  (0x0000000AU)
 #define NV0073_CTRL_DP_TESTPATTERN_DATA_CP2520PAT1                 (0x0000000BU)
+
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_128B132B_TPS1              (0x0000000CU)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_128B132B_TPS2              (0x0000000DU)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_PRBS_9                     (0x0000000EU)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_PRBS_11                    (0x0000000FU)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_PRBS_15                    (0x00000010U)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_PRBS_23                    (0x00000011U)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_PRBS_31                    (0x00000012U)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_SQNUM                      (0x00000013U)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_CSTM_264                   (0x00000014U)
+/*
+ *  The following three flags specify the parameters for SQ Pattern tests.
+ *      Only valid when testPattern is NV0073_CTRL_DP_TESTPATTERN_DATA_SQNUM
+ */
+#define NV0073_CTRL_DP_TESTPATTERN_SQ_PATTERN_PRESHOOT                                8:8
+#define NV0073_CTRL_DP_TESTPATTERN_SQ_PATTERN_PRESHOOT_DISABLED    (0x00000000U)
+#define NV0073_CTRL_DP_TESTPATTERN_SQ_PATTERN_PRESHOOT_ENABLED     (0x00000001U)
+#define NV0073_CTRL_DP_TESTPATTERN_SQ_PATTERN_DE_EMPHASIS                             9:9
+#define NV0073_CTRL_DP_TESTPATTERN_SQ_PATTERN_DE_EMPHASIS_DISABLED (0x00000000U)
+#define NV0073_CTRL_DP_TESTPATTERN_SQ_PATTERN_DE_EMPHASIS_ENABLED  (0x00000001U)
+#define NV0073_CTRL_DP_TESTPATTERN_SQ_PATTERN_NUM                                   23:16
 
 
 
@@ -938,8 +900,8 @@ typedef struct NV0073_CTRL_DP_GET_TESTPATTERN_PARAMS {
     NvU32                      subDeviceInstance;
     NvU32                      displayId;
     NV0073_CTRL_DP_TESTPATTERN testPattern;
+    NV0073_CTRL_DP_CSTM        cstm;
 } NV0073_CTRL_DP_GET_TESTPATTERN_PARAMS;
-
 
 #define NV0073_CTRL_CMD_DP_GET_TESTPATTERN  (0x731348U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP_GET_TESTPATTERN_PARAMS_MESSAGE_ID" */
 
@@ -1399,6 +1361,10 @@ typedef struct NV0073_CTRL_DP_GET_LINK_CONFIG_PARAMS {
 #define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW_4_32GBPS (0x000001B0U)
 #define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW_6_75GBPS (0x000002A3U)
 
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW_10_0GBPS (0x000003E8U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW_13_5GBPS (0x00000546U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW_20_0GBPS (0x000007D0U)
+
 
 /*
  * NV0073_CTRL_CMD_DP_GET_EDP_DATA
@@ -1716,6 +1682,8 @@ typedef struct NV0073_CTRL_CMD_DP_SEND_ACT_PARAMS {
  *     Specified the DP versions supported by the GPU
  *   UHBRSupportedByGpu
  *     Bitmask to specify the UHBR link rates supported by the GPU.
+ *   minPClkForCompressed
+ *     Pixel clock below which we should prefer non-DSC mode.
  *   bIsMultistreamSupported
  *     Returns NV_TRUE if MST is supported by the GPU else NV_FALSE
  *   bIsSCEnabled
@@ -1757,6 +1725,7 @@ typedef struct NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS {
     NvU32                          maxLinkRate;
     NvU32                          dpVersionsSupported;
     NvU32                          UHBRSupportedByGpu;
+    NvU32                          minPClkForCompressed;
     NvBool                         bIsMultistreamSupported;
     NvBool                         bIsSCEnabled;
     NvBool                         bHasIncreasedWatermarkLimits;
@@ -1777,6 +1746,10 @@ typedef struct NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS {
 #define NV0073_CTRL_CMD_DP_GET_CAPS_DP_VERSIONS_SUPPORTED_DP1_4_NO              (0x00000000U)
 #define NV0073_CTRL_CMD_DP_GET_CAPS_DP_VERSIONS_SUPPORTED_DP1_4_YES             (0x00000001U)
 
+#define NV0073_CTRL_CMD_DP_GET_CAPS_DP_VERSIONS_SUPPORTED_DP2_0                2:2
+#define NV0073_CTRL_CMD_DP_GET_CAPS_DP_VERSIONS_SUPPORTED_DP2_0_NO              (0x00000000U)
+#define NV0073_CTRL_CMD_DP_GET_CAPS_DP_VERSIONS_SUPPORTED_DP2_0_YES             (0x00000001U)
+
 
 #define NV0073_CTRL_CMD_DP_GET_CAPS_MAX_LINK_RATE                           2:0
 #define NV0073_CTRL_CMD_DP_GET_CAPS_MAX_LINK_RATE_NONE                          (0x00000000U)
@@ -1784,6 +1757,16 @@ typedef struct NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS {
 #define NV0073_CTRL_CMD_DP_GET_CAPS_MAX_LINK_RATE_2_70                          (0x00000002U)
 #define NV0073_CTRL_CMD_DP_GET_CAPS_MAX_LINK_RATE_5_40                          (0x00000003U)
 #define NV0073_CTRL_CMD_DP_GET_CAPS_MAX_LINK_RATE_8_10                          (0x00000004U)
+
+#define NV0073_CTRL_CMD_DP_GET_CAPS_UHBR_SUPPORTED_UHBR10_0                     0:0
+#define NV0073_CTRL_CMD_DP_GET_CAPS_UHBR_SUPPORTED_UHBR10_0_NO                  (0x00000000U)
+#define NV0073_CTRL_CMD_DP_GET_CAPS_UHBR_SUPPORTED_UHBR10_0_YES                 (0x00000001U)
+#define NV0073_CTRL_CMD_DP_GET_CAPS_UHBR_SUPPORTED_UHBR13_5                     1:1
+#define NV0073_CTRL_CMD_DP_GET_CAPS_UHBR_SUPPORTED_UHBR13_5_NO                  (0x00000000U)
+#define NV0073_CTRL_CMD_DP_GET_CAPS_UHBR_SUPPORTED_UHBR13_5_YES                 (0x00000001U)
+#define NV0073_CTRL_CMD_DP_GET_CAPS_UHBR_SUPPORTED_UHBR20_0                     2:2
+#define NV0073_CTRL_CMD_DP_GET_CAPS_UHBR_SUPPORTED_UHBR20_0_NO                  (0x00000000U)
+#define NV0073_CTRL_CMD_DP_GET_CAPS_UHBR_SUPPORTED_UHBR20_0_YES                 (0x00000001U)
 
 
 #define NV0073_CTRL_CMD_DP_GET_CAPS_DSC_ENCODER_COLOR_FORMAT_RGB                (0x00000001U)
@@ -2717,6 +2700,417 @@ typedef struct NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS {
     NV0073_CTRL_DP_MSA_PROPERTIES_VALUES featureDebugValues;
 } NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS;
 
+/*
+ * NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL
+ *
+ * This command is used to trigger link training on DP2.x device with 128b132b channel encoding.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *
+ *   displayId
+ *     This parameter specifies the ID of the display for which the dfp
+ *     caps should be returned.  The display ID must a dfp display.
+ *     If more than one displayId bit is set or the displayId is not a dfp,
+ *     this call will return NV_ERR_INVALID_ARGUMENT.
+ *
+ *   cmd
+ *     This parameter is an input to this command.
+ *     Here are the current defined fields:
+ *        1.Ask RM to enter specific stage
+ *          NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SETTING
+ *          NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SET
+ *              _PRE_LT  : Request RM to get ready for 128b/132b Link Training.
+ *              _CHNL_EQ : Request RM to start Channel Equalization phase.
+ *              _CDS     : Request RM to start Clock Data Switch phase.
+ *              _POST_LT : Request RM to clean up/sync up once 128b/132b LT is done.
+ *
+ *          _SET_* only valid if _SETTING_TRUE
+ *
+ *        2.Ask RM to check the completion of specific stage
+ *          NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLLING
+ *          NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLL_CHNL_EQ_DONE
+ *                                                 _CHNL_EQ_INTERLANE_ALIGN
+ *                                                 _CDS
+ *          _POLL_* only valid if _POLLING_TRUE
+ *
+ *        _SETTING_TRUE and _POLLING_TRUE are mutual exclusive.
+ *        RM will return NV_ERR_INVALID_ARGUMENT if both bit are set.
+ *
+ *        3.Downspread configuration
+ *          NV0073_CTRL_DP2X_CMD_FORCED_DOWNSPREAD
+ *            Specifies whether RM should be forced to enable or disable the DP
+ *            Downspread setting. This can be used along with the Fake link
+ *            training option so that we can configure the GPU to enable/disable
+ *            spread when a real display is not connected.
+ *
+ *              NV0073_CTRL_DP2X_CMD_FORCED_DOWNSPREAD_NO (default behavior)
+ *                  RM will enable Downspread when the display supports it.
+ *              NV0073_CTRL_DP2X_CMD_FORCED_DOWNSPREAD_YES
+ *                  RM will enable/disable Downspread according to _SET_DOWNSPREAD field.
+ *
+ *          NV0073_CTRL_DP2X_CMD_SET_DOWNSPREAD
+ *            Specifies if RM should enable or disable downspread.
+ *            Only valid when _FORCED_DOWNSPREAD is set to _YES
+ *
+ *              NV0073_CTRL_DP2X_CMD_SET_DOWNSPREAD_ENABLE
+ *                  RM will enable Downspread even if the display does not support it.
+ *              NV0073_CTRL_DP2X_CMD_SET_DOWNSPREAD_DISABLE
+ *                  RM will not enable Downspread even if the display does support it.
+ *
+ *        4.NV0073_CTRL_DP2X_CMD_FAKE_LINK_TRAINING
+ *          This field specifies if fake link training is to be done. This will
+ *          program enough of the hardware to avoid any hardware hangs and
+ *          depending upon option chosen by the client, OR will be enabled for
+ *          transmisssion.
+ *
+ *              NV0073_CTRL_DP2X_CMD_FAKE_LINK_TRAINING_NO
+ *                  No Fake LT will be performed
+ *              NV0073_CTRL_DP2X_CMD_FAKE_LINK_TRAINING_DONOT_TOGGLE_TRANSMISSION
+ *                  SOR will be not powered up during Fake LT
+ *              NV0073_CTRL_DP2X_CMD_FAKE_LINK_TRAINING_TOGGLE_TRANSMISSION_ON
+ *                  SOR will be powered up during Fake LT
+ *
+ *        5.NV0073_CTRL_DP2X_CMD_FALLBACK_CONFIG
+ *
+ *        6.NV0073_CTRL_DP2X_CMD_SKIP_HW_PROGRAMMING
+ *          Specifies whether RM should skip HW training of the link.
+ *          If this is the case then RM only updates its SW state without actually
+ *          touching any HW registers. Clients should use this ONLY if it has determined -
+ *              a. link is trained and not lost
+ *              b. desired link config is same as current trained link config
+ *              c. link is not in D3 (should be in D0)
+ *
+ *           NV0073_CTRL_DP2X_CMD_SKIP_HW_PROGRAMMING_NO
+ *              RM doesn't skip HW LT as the current Link Config is not the same as the
+ *              requested Link Config.
+ *           NV0073_CTRL_DP2X_CMD_SKIP_HW_PROGRAMMING_YES
+ *              RM skips HW LT and only updates its SW state as client has determined that
+ *              the current state of the link and the requested Link Config is the same.
+ *
+ *   data
+ *     This parameter is an input and output to this command.
+ *     Here are the current defined fields:
+ *          NV0073_CTRL_DP2X_DATA_LANE_COUNT
+ *              Valid values: 0, 1, 2, 4
+ *          NV0073_CTRL_DP2X_DATA_LINK_BW
+ *              Valid values: all standard link rates defined in DP2.x and ILRs defined in eDP spec.
+ *
+ *          NV0073_CTRL_DP2X_DATA_RESET_LINK_REASON
+ *              Only valid when NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SETTING and
+ *              NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SET_PRE_LT are both set.
+ *              Valid value:
+ *                  NV0073_CTRL_DP2X_DATA_RESET_REASON_START_LT:
+ *                      RM clears 0x102.
+ *                  NV0073_CTRL_DP2X_DATA_RESET_REASON_FALLBACK:
+ *                      RM clears 0x102 then clears 0x103-0x106.
+ *                  NV0073_CTRL_DP2X_DATA_RESET_REASON_CHANNEL_CODING:
+ *                      RM puts DPRX to D3 then clears 0x103-0x106.
+ *
+ *   pollingInfo
+ *     This parameter is an output to this command.
+ *     Here are the current defined fields:
+ *
+ *     NV0073_CTRL_DP2X_POLLING_INFO_TRAINING_AUX_RD_INTERVAL
+ *       For Channel equalization, the polling interval is defined in DPCD 0x2216.
+ *       RM report to DPLib when _SET_STAGE is set to _CHNL_EQ.
+ *       Polling interval for Channel Equalization is defined as
+ *       (128b132b_DP_TRAINING_AUX_RD_INTERVAL value + 1) * 128b132b_DP_TRAINING_AUX_RD_INTERVAL_UNIT.
+ *       The maximum is 256 ms.
+ *       (For CDS stage, the polling interval is fixed at 3ms.)
+ *
+ *     NV0073_CTRL_DP2X_POLLING_INFO_TRAINING_AUX_RD_INTERVAL_UNIT
+ *       Unit mapping for polling interval is
+ *         0 = 2ms
+ *         1 = 1ms
+ *
+ *     NV0073_CTRL_DP2X_POLLING_INFO_TRAINING_AUX_RD_INTERVAL_UNIT_2MS
+ *     NV0073_CTRL_DP2X_POLLING_INFO_TRAINING_AUX_RD_INTERVAL_UNIT_1MS
+ *
+ *     NV0073_CTRL_DP2X_POLLING_INFO_RESULT
+ *       _DONE:     if the specified stage is done.
+ *       _PENDING:  if the specified stage is still pending.
+ *
+ *   err
+ *     This parameter provides info regarding the outcome of this calling control call.
+ *     If zero, no errors were found.
+ *     Otherwise, this parameter will specify the error detected.
+ *     The valid parameter is broken down as follows:
+ *          NV0073_CTRL_DP2X_ERR_CHANNEL_EQ_DONE
+ *              If set to _ERR, link training failed at channel equalization phase.
+ *          NV0073_CTRL_DP2X_ERR_CDS_DONE
+ *              If set to _ERR, link training failed at CDS phase.
+ *          NV0073_CTRL_DP2X_ERR_TIMEOUT
+ *              If set to _ERR, link training failed because of timeout.
+ *          NV0073_CTRL_DP2X_ERR_LT_FAILED
+ *              If set to _ERR, link training failed.
+ *          NV0073_CTRL_DP2X_ERR_INVALID_PARAMETER
+ *              If set to _ERR, link configuration or displayID is invalid.
+ *          NV0073_CTRL_DP2X_ERR_SET_LANE_COUNT
+ *              If set to _ERR, link training failed when setting lane count.
+ *          NV0073_CTRL_DP2X_ERR_SET_LINK_BW
+ *              If set to _ERR, link training failed when setting link rate.
+ *          NV0073_CTRL_DP2X_ERR_ENABLE_FEC
+ *              If set to _ERR, link training failed when enabling FEC.
+ *          NV0073_CTRL_DP2X_ERR_CONFIG_LTTPR
+ *              If set to _ERR, link training failed when setting LTTPR.
+ *          NV0073_CTRL_DP2X_ERR_PRE_LT
+ *              If set to _ERR, link training failed before link training start.
+ *          NV0073_CTRL_DP2X_ERR_LINK_STATUS
+ *              If set to _DISCONNECTED, link training failed and link is disconnected / unplugged.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NVOS_STATUS_ERROR
+ */
+
+#define NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL (0x731383U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL_PARAMS_MESSAGE_ID (0x83U)
+
+typedef struct NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 displayId;
+    NvU32 cmd;
+    NvU32 data;
+    NvU32 pollingInfo;
+    NvU32 err;
+} NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL_PARAMS;
+
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SETTING                                        0:0
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SETTING_FALSE                  (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SETTING_TRUE                   (0x00000001U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SET                                            3:1
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SET_RESET_LINK                 (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SET_PRE_LT                     (0x00000001U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SET_CHNL_EQ                    (0x00000002U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SET_CDS                        (0x00000003U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SET_POST_LT                    (0x00000004U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLLING                                        8:8
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLLING_FALSE                  (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLLING_TRUE                   (0x00000001U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLL                                          10:9
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLL_RESET_LINK                (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLL_CHNL_EQ_DONE              (0x00000001U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLL_CHNL_EQ_INTERLANE_ALIGN   (0x00000002U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLL_CDS                       (0x00000003U)
+
+// Flags for link training.
+#define NV0073_CTRL_DP2X_CMD_FORCED_DOWNSPREAD                                          16:16
+#define NV0073_CTRL_DP2X_CMD_FORCED_DOWNSPREAD_NO                         (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_FORCED_DOWNSPREAD_YES                        (0x00000001U)
+#define NV0073_CTRL_DP2X_CMD_SET_DOWNSPREAD                                             17:17
+#define NV0073_CTRL_DP2X_CMD_SET_DOWNSPREAD_DISABLE                       (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_SET_DOWNSPREAD_ENABLE                        (0x00000001U)
+#define NV0073_CTRL_DP2X_CMD_SKIP_HW_PROGRAMMING                                        18:18
+#define NV0073_CTRL_DP2X_CMD_SKIP_HW_PROGRAMMING_NO                       (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_SKIP_HW_PROGRAMMING_YES                      (0x00000001U)
+#define NV0073_CTRL_DP2X_CMD_FAKE_LINK_TRAINING                                         20:19
+#define NV0073_CTRL_DP2X_CMD_FAKE_LINK_TRAINING_NO                        (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_FAKE_LINK_TRAINING_DONOT_TOGGLE_TRANSMISSION (0x00000001U)
+#define NV0073_CTRL_DP2X_CMD_FAKE_LINK_TRAINING_TOGGLE_TRANSMISSION_ON    (0x00000002U)
+#define NV0073_CTRL_DP2X_CMD_FALLBACK_CONFIG                                            21:21
+#define NV0073_CTRL_DP2X_CMD_FALLBACK_CONFIG_FALSE                        (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_FALLBACK_CONFIG_TRUE                         (0x00000001U)
+
+// Basic Data for Link training: Lane count and bandwidth.
+#define NV0073_CTRL_DP2X_DATA_LANE_COUNT                               3:0
+#define NV0073_CTRL_DP2X_DATA_LANE_COUNT_0                                (0x00000000U)
+#define NV0073_CTRL_DP2X_DATA_LANE_COUNT_1                                (0x00000001U)
+#define NV0073_CTRL_DP2X_DATA_LANE_COUNT_2                                (0x00000002U)
+#define NV0073_CTRL_DP2X_DATA_LANE_COUNT_4                                (0x00000004U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW                                  7:4
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_1_62GBPS                            (0x00000001U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_2_16GBPS                            (0x00000002U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_2_43GBPS                            (0x00000003U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_2_70GBPS                            (0x00000004U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_3_24GBPS                            (0x00000005U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_4_32GBPS                            (0x00000006U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_5_40GBPS                            (0x00000007U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_6_75GBPS                            (0x00000008U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_8_10GBPS                            (0x00000009U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_UHBR10_0                            (0x0000000AU)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_UHBR13_5                            (0x0000000BU)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_UHBR20_0                            (0x0000000CU)
+
+
+// Flag for SET_RESET_LINK
+#define NV0073_CTRL_DP2X_DATA_RESET_REASON                                9:8
+#define NV0073_CTRL_DP2X_DATA_RESET_REASON_START_LT                       (0x00000000U)
+#define NV0073_CTRL_DP2X_DATA_RESET_REASON_FALLBACK                       (0x00000001U)
+#define NV0073_CTRL_DP2X_DATA_RESET_REASON_CHANNEL_CODING                 (0x00000002U)
+
+#define NV0073_CTRL_DP2X_ERR_CHANNEL_EQ                                0:0
+#define NV0073_CTRL_DP2X_ERR_CHANNEL_EQ_DONE                              (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_CHANNEL_EQ_FAILED                            (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_CDS                                       1:1
+#define NV0073_CTRL_DP2X_ERR_CDS_DONE                                     (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_CDS_FAILED                                   (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_TIMEOUT                                   2:2
+#define NV0073_CTRL_DP2X_ERR_TIMEOUT_NO                                   (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_TIMEOUT_YES                                  (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_LT_FAILED                                 3:3
+#define NV0073_CTRL_DP2X_ERR_LT_FAILED_NO                                 (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_LT_FAILED_YES                                (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_INVALID_PARAMETER                         4:4
+#define NV0073_CTRL_DP2X_ERR_INVALID_PARAMETER_NOERR                      (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_INVALID_PARAMETER_ERR                        (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_SET_LANE_COUNT                            5:5
+#define NV0073_CTRL_DP2X_ERR_SET_LANE_COUNT_NOERR                         (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_SET_LANE_COUNT_ERR                           (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_SET_LINK_BW                               6:6
+#define NV0073_CTRL_DP2X_ERR_SET_LINK_BW_NOERR                            (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_SET_LINK_BW_ERR                              (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_ENABLE_FEC                                7:7
+#define NV0073_CTRL_DP2X_ERR_ENABLE_FEC_NOERR                             (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_ENABLE_FEC_ERR                               (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_CONFIG_LTTPR                              8:8
+#define NV0073_CTRL_DP2X_ERR_CONFIG_LTTPR_NOERR                           (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_CONFIG_LTTPR_ERR                             (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_PRE_LT                                    9:9
+#define NV0073_CTRL_DP2X_ERR_PRE_LT_NOERR                                 (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_PRE_LT_ERR                                   (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_POST_LT                                 10:10
+#define NV0073_CTRL_DP2X_ERR_POST_LT_NOERR                                (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_POST_LT_ERR                                  (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_RESET_LINK                              11:11
+#define NV0073_CTRL_DP2X_ERR_RESET_LINK_NOERR                             (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_RESET_LINK_ERR                               (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_LINK_STATUS                             12:12
+#define NV0073_CTRL_DP2X_ERR_LINK_STATUS_CONNECTED                        (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_LINK_STATUS_DISCONNECTED                     (0x00000001U)
+
+#define NV0073_CTRL_DP2X_POLLING_INFO_TRAINING_AUX_RD_INTERVAL                             6:0
+#define NV0073_CTRL_DP2X_POLLING_INFO_TRAINING_AUX_RD_INTERVAL_UNIT                        7:7
+#define NV0073_CTRL_DP2X_POLLING_INFO_TRAINING_AUX_RD_INTERVAL_UNIT_2MS   (0x00000000U)
+#define NV0073_CTRL_DP2X_POLLING_INFO_TRAINING_AUX_RD_INTERVAL_UNIT_1MS   (0x00000001U)
+#define NV0073_CTRL_DP2X_POLLING_INFO_RESULT                                             31:31
+#define NV0073_CTRL_DP2X_POLLING_INFO_RESULT_PENDING                      (0x00000001U)
+#define NV0073_CTRL_DP2X_POLLING_INFO_RESULT_DONE                         (0x00000000U)
+
+/*
+ * NV0073_CTRL_DP2X_LANE_DATA_PARAMS
+ *
+ * This structure provides DP2.x lane characteristics.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   displayId
+ *     This parameter specifies the ID of the display for which the dfp
+ *     caps should be returned.  The display ID must a dfp display.
+ *     If more than one displayId bit is set or the displayId is not a dfp,
+ *     this call will return NV_ERR_INVALID_ARGUMENT.
+ *   numLanes
+ *      Indicates number of lanes for which the data is valid.
+ *     For SET it's an input. For GET it's an output.
+ *
+ *   data
+ *     This parameter can be an input or output based on the usage.
+ *     For SET it's an input. For GET it's an output.
+ *
+ *     Here are the current defined fields:
+ *       NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL
+ *     Possible Values:
+ *         NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_0
+ *         ...
+ *         NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_15
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+
+#define NV0073_CTRL_DP2X_LANE_DATA_BUFFER_SIZE                            (0x20U) /* finn: Evaluated from "(4 * NV0073_CTRL_MAX_LANES)" */
+
+typedef struct NV0073_CTRL_DP2X_LANE_DATA_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 displayId;
+    NvU32 numLanes;
+    NvU32 data[NV0073_CTRL_MAX_LANES];
+} NV0073_CTRL_DP2X_LANE_DATA_PARAMS;
+
+#define NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL                    3:0
+#define NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_0  (0x00000000U)
+#define NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_1  (0x00000001U)
+#define NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_2  (0x00000002U)
+#define NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_3  (0x00000003U)
+#define NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_4  (0x00000004U)
+#define NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_5  (0x00000005U)
+#define NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_6  (0x00000006U)
+#define NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_7  (0x00000007U)
+#define NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_8  (0x00000008U)
+#define NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_9  (0x00000009U)
+#define NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_10 (0x0000000AU)
+#define NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_11 (0x0000000BU)
+#define NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_12 (0x0000000CU)
+#define NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_13 (0x0000000DU)
+#define NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_14 (0x0000000EU)
+#define NV0073_CTRL_DP2X_LANE_DATA_TXFFE_LEVEL_15 (0x0000000FU)
+
+/*
+ * NV0073_CTRL_CMD_GET_DP2X_LANE_DATA
+ *
+ * This command is used to get the current TxFFE pre-defined level values for
+ * the current actively trained number of lanes.
+ *
+ * The command takes a NV0073_CTRL_DP2X_LANE_DATA_PARAMS structure as the
+ * argument with the appropriate subDeviceInstance and displayId filled.
+ * The arguments of this structure and the format of TxFFE Levels are described above.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ *
+ * NOTE: This control call is only for testing purposes and should not be used
+ *       in normal DP operations. TxFFE level for each lane will be set during
+ *       Link training in normal DP operations
+ *
+ */
+
+#define NV0073_CTRL_CMD_DP2X_GET_LANE_DATA        (0x731384U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP2X_GET_LANE_DATA_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_DP2X_GET_LANE_DATA_PARAMS_MESSAGE_ID (0x84U)
+
+typedef NV0073_CTRL_DP2X_LANE_DATA_PARAMS NV0073_CTRL_DP2X_GET_LANE_DATA_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_SET_DP2X_LANE_DATA
+ *
+ * This command is used to set the TxFFE pre-defined level for the specified number of lanes.
+ *
+ * The command takes a NV0073_CTRL_DP2X_LANE_DATA_PARAMS structure as the
+ * argument with the appropriate subDeviceInstance, displayId, number of
+ * lanes, TxFFE levels for each lanes filled in.
+ * The arguments of this structure and the format of TxFFE Levels are described above.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ *
+ * NOTE: This control call is only for testing purposes and should not be used
+ *       in normal DP operations. TxFFE level for each lane will be set during
+ *       Link training in normal DP operations
+ *
+ */
+
+#define NV0073_CTRL_CMD_DP2X_SET_LANE_DATA (0x731385U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP2X_SET_LANE_DATA_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_DP2X_SET_LANE_DATA_PARAMS_MESSAGE_ID (0x85U)
+
+typedef NV0073_CTRL_DP2X_LANE_DATA_PARAMS NV0073_CTRL_DP2X_SET_LANE_DATA_PARAMS;
+
 
 
 /*
@@ -2779,4 +3173,332 @@ typedef struct NV0073_CTRL_CMD_DP_AUXCH_VBL_CTRL_PARAMS {
     NvBool bVblControlCapable;
     NvBool bVblStatus;
 } NV0073_CTRL_CMD_DP_AUXCH_VBL_CTRL_PARAMS;
+
+/*
+ * NV0073_CTRL_DP_LEVEL_INFO_TABLE_ENTRY
+ *
+ * This structure specifies the Pre-emphasis/Drive Current/preshoot/TxPu
+ * information for a DP device. These are the the current values that RM is
+ * using to map the levels for Pre-emphasis and Drive Current for Link Training.
+ *   preEmphasis
+ *     This field specifies the preemphasis values.
+ *   driveCurrent
+ *     This field specifies the driveCurrent values.
+ *   preshoot
+ *     This field specifies the preshoot values.
+ *   TxPu
+ *     This field specifies the pull-up current source drive values.
+ */
+#define NV0073_CTRL_DP2X_MAX_TXFFE_LEVELS 16
+typedef struct NV0073_CTRL_DP_LEVEL_INFO_TABLE_ENTRY {
+    NvU32 preEmphasis;
+    NvU32 driveCurrent;
+    NvU32 preShoot;
+    NvU32 txPu;
+} NV0073_CTRL_DP_LEVEL_INFO_TABLE_ENTRY;
+
+/*
+ * NV0073_CTRL_DP_SET_LEVEL_INFO_TABLE_DATA
+ *
+ * This command is used to override the Pre-emphasis/Drive Current/preshoot/TxPu
+ * data table in RM. This data is dependent on the target link rate.
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   displayId
+ *     This parameter specifies the ID of the digital display for which the
+ *     data should be returned.  The display ID must a digital display.
+ *     If more than one displayId bit is set or the displayId is not a DP,
+ *     this call will return NV_ERR_INVALID_ARGUMENT.
+ *   linkRate
+ *     The target link rate that the lane drive parameters will be used with,
+ *     using 10M convention. Refer to NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW
+ *     constants.
+ *     This control call only supports DP1.x link rates. For DP2.X UHBR link rates,
+ *     use NV0073_CTRL_DP2X_SET_LEVEL_INFO_TABLE_DATA
+ *   dpData
+ *     This parameter is of type NV0073_CTRL_DP_LEVEL_INFO_TABLE_DATA
+ *     and specifies the Pre-emphasis/Drive Current/Preshoot/TxPu information
+ *     for a DP device.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ *
+ */
+#define NV0073_CTRL_DP_SET_LEVEL_INFO_TABLE_DATA_PARAMS_MESSAGE_ID (0x87U)
+
+typedef struct NV0073_CTRL_DP_SET_LEVEL_INFO_TABLE_DATA_PARAMS {
+    NvU32                                 subDeviceInstance;
+    NvU32                                 displayId;
+    NvU32                                 padlinkIndex;
+    NvU32                                 linkRate;
+    NV0073_CTRL_DP_LEVEL_INFO_TABLE_ENTRY dpData[NV0073_CTRL_MAX_DRIVECURRENT_LEVELS][NV0073_CTRL_MAX_PREEMPHASIS_LEVELS];
+} NV0073_CTRL_DP_SET_LEVEL_INFO_TABLE_DATA_PARAMS;
+
+#define NV0073_CTRL_CMD_DP_SET_LEVEL_INFO_TABLE_DATA (0x731387U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP_SET_LEVEL_INFO_TABLE_DATA_PARAMS_MESSAGE_ID" */
+
+/*
+ * NV0073_CTRL_DP_GET_LEVEL_INFO_TABLE_DATA
+ *
+ * This command is used to fetch the Pre-emphasis/Drive Current/preshoot/TxPu
+ * data table in RM. This data is dependent on the target link rate.
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   displayId
+ *     This parameter specifies the ID of the digital display for which the
+ *     data should be returned.  The display ID must a digital display.
+ *     If more than one displayId bit is set or the displayId is not a DP,
+ *     this call will return NV_ERR_INVALID_ARGUMENT.
+ *   linkRate
+ *     The target link rate that the lane drive parameters will be used with,
+ *     using 10M convention. Refer to NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW
+ *     constants.
+ *     This control call only supports DP1.x link rates. For DP2.X UHBR link rates,
+ *     use NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA
+ *   dpData
+ *     This parameter is of type NV0073_CTRL_DP_LEVEL_INFO_TABLE_DATA
+ *     and specifies the Pre-emphasis/Drive Current/Preshoot/TxPu information
+ *     for a DP device.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ *
+ */
+#define NV0073_CTRL_DP_GET_LEVEL_INFO_TABLE_DATA_PARAMS_MESSAGE_ID (0x88U)
+
+typedef struct NV0073_CTRL_DP_GET_LEVEL_INFO_TABLE_DATA_PARAMS {
+    NvU32                                 subDeviceInstance;
+    NvU32                                 displayId;
+    NvU32                                 padlinkIndex;
+    NvU32                                 linkRate;
+    NV0073_CTRL_DP_LEVEL_INFO_TABLE_ENTRY dpData[NV0073_CTRL_MAX_DRIVECURRENT_LEVELS][NV0073_CTRL_MAX_PREEMPHASIS_LEVELS];
+} NV0073_CTRL_DP_GET_LEVEL_INFO_TABLE_DATA_PARAMS;
+
+#define NV0073_CTRL_CMD_DP_GET_LEVEL_INFO_TABLE_DATA (0x731388U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP_GET_LEVEL_INFO_TABLE_DATA_PARAMS_MESSAGE_ID" */
+
+/*
+ * NV0073_CTRL_DP2X_SET_LEVEL_INFO_TABLE_DATA
+ *
+ * This command is used to override the Pre-emphasis/Drive Current/preshoot/TxPu
+ * data table in RM. This data is dependent on the target link rate.
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   displayId
+ *     This parameter specifies the ID of the digital display for which the
+ *     data should be returned.  The display ID must a digital display.
+ *     If more than one displayId bit is set or the displayId is not a DP,
+ *     this call will return NV_ERR_INVALID_ARGUMENT.
+ *   linkRate
+ *     The target link rate that the lane drive parameters will be used with,
+ *     using 10M convention. Refer to NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW
+ *     constants.
+ *     This control call only supports UHBR link rates. For DP1.x legacy link rates,
+ *     use NV0073_CTRL_DP_SET_LEVEL_INFO_TABLE_DATA
+ *   dpData
+ *     This parameter is of type NV0073_CTRL_DP_LEVEL_INFO_TABLE_DATA
+ *     and specifies the Pre-emphasis/Drive Current/Preshoot/TxPu information
+ *     for a DP device.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ *
+ */
+#define NV0073_CTRL_DP2X_SET_LEVEL_INFO_TABLE_DATA_PARAMS_MESSAGE_ID (0x89U)
+
+typedef struct NV0073_CTRL_DP2X_SET_LEVEL_INFO_TABLE_DATA_PARAMS {
+    NvU32                                 subDeviceInstance;
+    NvU32                                 displayId;
+    NvU32                                 padlinkIndex;
+    NvU32                                 linkRate;
+    NV0073_CTRL_DP_LEVEL_INFO_TABLE_ENTRY dpData[NV0073_CTRL_DP2X_MAX_TXFFE_LEVELS];
+} NV0073_CTRL_DP2X_SET_LEVEL_INFO_TABLE_DATA_PARAMS;
+
+#define NV0073_CTRL_CMD_DP2X_SET_LEVEL_INFO_TABLE_DATA (0x731389U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP2X_SET_LEVEL_INFO_TABLE_DATA_PARAMS_MESSAGE_ID" */
+
+/*
+ * NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA
+ *
+ * This command is used to fetch the Pre-emphasis/Drive Current/preshoot/TxPu
+ * data table in RM. This data is dependent on the target link rate.
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   displayId
+ *     This parameter specifies the ID of the digital display for which the
+ *     data should be returned.  The display ID must a digital display.
+ *     If more than one displayId bit is set or the displayId is not a DP,
+ *     this call will return NV_ERR_INVALID_ARGUMENT.
+ *   linkRate
+ *     The target link rate that the lane drive parameters will be used with,
+ *     using 10M convention. Refer to NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW
+ *     constants.
+ *     This control call only supports UHBR link rates. For DP1.x legacy link rates,
+ *     use NV0073_CTRL_DP_SET_LEVEL_INFO_TABLE_DATA
+ *   dpData
+ *     This parameter is of type NV0073_CTRL_DP_LEVEL_INFO_TABLE_DATA
+ *     and specifies the Pre-emphasis/Drive Current/Preshoot/TxPu information
+ *     for a DP device.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ *
+ */
+#define NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA_PARAMS_MESSAGE_ID (0x8AU)
+
+typedef struct NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA_PARAMS {
+    NvU32                                 subDeviceInstance;
+    NvU32                                 displayId;
+    NvU32                                 padlinkIndex;
+    NvU32                                 linkRate;
+    NV0073_CTRL_DP_LEVEL_INFO_TABLE_ENTRY dpData[NV0073_CTRL_DP2X_MAX_TXFFE_LEVELS];
+} NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA_PARAMS;
+
+#define NV0073_CTRL_CMD_DP2X_GET_LEVEL_INFO_TABLE_DATA (0x73138aU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA_PARAMS_MESSAGE_ID" */
+
+
+
+/*
+ * NV0073_CTRL_CMD_CALCULATE_DP_IMP
+ *
+ * This command is used to query if a certain mode is supported by the DP IMP
+ * calculation. The command is required for NVD5 and later GPUs.
+ *
+ *   subDeviceInstance [in]
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   displayId [in]
+ *     This parameter specifies the ID of the DP display which owns
+ *     the Main Link to be adjusted.  The display ID must a DP display
+ *     as determined with the NV0073_CTRL_CMD_SPECIFIC_GET_TYPE command.
+ *     If more than one displayId bit is set or the displayId is not a DP,
+ *     this call will return NV_ERR_INVALID_ARGUMENT.
+ *   linkConfig [in]
+ *     This parameter specifies the link configuration used to validate the mode.
+ *       linkRate10M:
+ *         The link rate that will be used to validate the IMP. Using 10M convention.
+ *         Refer to NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW constants.
+ *       laneCount:
+ *         The lane count that will be used to validate the IMP.
+ *       bEnhancedFraming:
+ *         Specify if enhanced framing is enabled.
+ *       bDp2xChannelCoding:
+ *         Specify if it's using 8b/10b or 128b/132b channel coding.
+ *       bMultiStreamTopology:
+ *         Specify if it's on Multiple stream topology (the device direct connected is a branch).
+ *       bFECEnabled:
+ *         Specify if FEC is enabled.
+ *   modesetInfo [in]
+ *     This parameter specifies the target display mode to be validated.
+ *       rasterWidth:
+ *         The total width of the mode.
+ *       rasterHeight:
+ *         The total height of the mode.
+ *       surfaceWidth:
+ *         The active width of the mode.
+ *       surfaceHeight:
+ *         The active height of the mode.
+ *       rasterBlankStartX / rasterBlankEndX:
+ *         The pixel location of horizontal blank starts and ends.
+ *       depth:
+ *         Color depth represents the number of bits used to indicate the color of a single pixel.
+ *         The value will be different when DSC is enabled.
+ *       twoChannelAudioHz/eightChannelAudioHz:
+ *         The audio sample rate for different channels used.
+ *       pixelFrequencyKHz:
+ *         The pixel clock used by the mode.
+ *       colorFormat:
+ *         RGB/YCbCr444/YCbCr422/YCbCr420.
+ *       bDSCEnabled:
+ *         Specify if DSC is enabled.
+ *   watermark [out]
+ *     This parameter reflects the results of the calculation/verification.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV0073_CTRL_CMD_CALCULATE_DP_IMP               (0x73138bU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS_MESSAGE_ID" */
+
+typedef struct NV0073_CTRL_DP_IMP_LINK_CONFIGURATION {
+    NvU32  linkRate10M;
+    NvU32  laneCount;
+    NvBool bEnhancedFraming;
+    NvBool bDp2xChannelCoding;
+    NvBool bMultiStreamTopology;
+    NvBool bFECEnabled;
+} NV0073_CTRL_DP_IMP_LINK_CONFIGURATION;
+
+typedef struct NV0073_CTRL_DP_IMP_DSC_PARAMETERS {
+    NvU32 sliceCount;
+    NvU32 sliceWidth;
+    NvU32 sliceHeight;
+    NvU32 dscVersionMajor;
+    NvU32 dscVersionMinor;
+} NV0073_CTRL_DP_IMP_DSC_PARAMETERS;
+
+typedef struct NV0073_CTRL_DP_IMP_MODESET_DATA {
+    NvU32  rasterWidth;
+    NvU32  rasterHeight;
+    NvU32  surfaceWidth;
+    NvU32  surfaceHeight;
+    NvU32  rasterBlankStartX;
+    NvU32  rasterBlankEndX;
+    NvU32  depth;
+    NvU32  twoChannelAudioHz;
+    NvU32  eightChannelAudioHz;
+    NvU32  pixelFrequencyKHz;
+    NvU32  bitsPerComponent;
+    NvU32  colorFormat;
+    NvBool bDSCEnabled;
+} NV0073_CTRL_DP_IMP_MODESET_DATA;
+
+typedef struct NV0073_CTRL_DP_IMP_WATERMARK {
+    NvU32  waterMark;
+    NvU32  tuSize;
+    NvU32  minHBlank;
+    NvU32  hBlankSym;
+    NvU32  vBlankSym;
+    NvU32  effectiveBpp;
+    NvBool bIsModePossible;
+} NV0073_CTRL_DP_IMP_WATERMARK;
+
+#define NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS_MESSAGE_ID (0x8BU)
+
+typedef struct NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS {
+    NvU32                                 subDeviceInstance;
+    NvU32                                 displayId;
+    NvU32                                 headIndex;
+    NV0073_CTRL_DP_IMP_LINK_CONFIGURATION linkConfig;
+    NV0073_CTRL_DP_IMP_MODESET_DATA       modesetInfo;
+    NV0073_CTRL_DP_IMP_DSC_PARAMETERS     dscInfo;
+    NV0073_CTRL_DP_IMP_WATERMARK          watermark;
+} NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS;
+
 /* _ctrl0073dp_h_ */

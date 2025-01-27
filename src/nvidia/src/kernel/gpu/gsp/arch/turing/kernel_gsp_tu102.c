@@ -473,7 +473,7 @@ kgspBootstrap_TU102
         {
             NV_ASSERT_OR_RETURN(pKernelGsp->pPreparedFwsecCmd != NULL, NV_ERR_INVALID_STATE);
 
-            kflcnReset_HAL(pGpu, pKernelFalcon);
+            NV_ASSERT_OK_OR_RETURN(kflcnReset_HAL(pGpu, pKernelFalcon));
 
             status = kgspExecuteFwsec_HAL(pGpu, pKernelGsp, pKernelGsp->pPreparedFwsecCmd);
             portMemFree(pKernelGsp->pPreparedFwsecCmd);
@@ -482,7 +482,7 @@ kgspBootstrap_TU102
             NV_ASSERT_OK_OR_RETURN(status);
         }
 
-        kflcnResetIntoRiscv_HAL(pGpu, pKernelFalcon);
+        NV_ASSERT_OK_OR_RETURN(kflcnResetIntoRiscv_HAL(pGpu, pKernelFalcon));
 
         // Load init args into mailbox regs
         kgspProgramLibosBootArgsAddr_HAL(pGpu, pKernelGsp);
@@ -596,7 +596,7 @@ kgspTeardown_TU102
         KernelGspPreparedFwsecCmd preparedCmd;
 
         // Reset GSP so we can load FWSEC-SB
-        kflcnReset_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon));
+        NV_ASSERT_OK(kflcnReset_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon)));
 
         // Invoke FWSEC-SB to put back PreOsApps during driver unload
         status = kgspPrepareForFwsecSb_HAL(pGpu, pKernelGsp, pKernelGsp->pFwsecUcode, &preparedCmd);
@@ -747,11 +747,20 @@ kgspCalculateFbLayout_TU102
     //
     pWprMeta->gspFwOffset = NV_ALIGN_DOWN64(pWprMeta->bootBinOffset - pWprMeta->sizeOfRadix3Elf, 0x10000);
 
-    const NvU64 wprHeapSize = kgspGetFwHeapSize(pGpu, pKernelGsp, pWprMeta->fbSize - pWprMeta->gspFwOffset);
+    //
+    // The maximum size of the GSP-FW heap depends on the statically-sized regions before and after
+    // it in the pre-scrubbed region of FB.
+    //
+    const NvU64 MB = (1ULL << 20);
+    const NvU64 nonWprHeapSize = NV_ALIGN_UP64(kgspGetNonWprHeapSize(pGpu, pKernelGsp), MB);
+    const NvU64 wprMetaSize = NV_ALIGN_UP64(sizeof(*pWprMeta), MB);
+    const NvU64 preWprHeapSize = wprMetaSize + nonWprHeapSize;
+    const NvU64 postWprHeapSize = NV_ALIGN_UP64(pWprMeta->fbSize - pWprMeta->gspFwOffset, MB);
+    const NvU64 wprHeapSize = kgspGetFwHeapSize(pGpu, pKernelGsp, preWprHeapSize, postWprHeapSize);
 
     // GSP-RM heap in WPR, align to 1MB
-    pWprMeta->gspFwHeapOffset = NV_ALIGN_DOWN64(pWprMeta->gspFwOffset - wprHeapSize, 0x100000);
-    pWprMeta->gspFwHeapSize = NV_ALIGN_DOWN64(pWprMeta->gspFwOffset - pWprMeta->gspFwHeapOffset, 0x100000);
+    pWprMeta->gspFwHeapOffset = NV_ALIGN_DOWN64(pWprMeta->gspFwOffset - wprHeapSize, MB);
+    pWprMeta->gspFwHeapSize = NV_ALIGN_DOWN64(pWprMeta->gspFwOffset - pWprMeta->gspFwHeapOffset, MB);
 
     // Number of VF partitions allocating sub-heaps from the WPR heap
     pWprMeta->gspFwHeapVfPartitionCount = pGpu->bVgpuGspPluginOffloadEnabled ? MAX_PARTITIONS_WITH_GFID : 0;
@@ -761,11 +770,11 @@ kgspCalculateFbLayout_TU102
     // the extra padding sits in WPR instead of in between the end of the
     // non-WPR heap and the start of WPR).
     //
-    pWprMeta->gspFwWprStart = NV_ALIGN_DOWN64(pWprMeta->gspFwHeapOffset - sizeof *pWprMeta, 0x100000);
+    pWprMeta->gspFwWprStart = pWprMeta->gspFwHeapOffset - wprMetaSize;
 
     // Non WPR heap (1MB aligned)
-    pWprMeta->nonWprHeapSize = kgspGetNonWprHeapSize(pGpu, pKernelGsp);
-    pWprMeta->nonWprHeapOffset = NV_ALIGN_DOWN64(pWprMeta->gspFwWprStart - pWprMeta->nonWprHeapSize, 0x100000);
+    pWprMeta->nonWprHeapSize = nonWprHeapSize;
+    pWprMeta->nonWprHeapOffset = pWprMeta->gspFwWprStart - pWprMeta->nonWprHeapSize;
 
     pWprMeta->gspFwRsvdStart = pWprMeta->nonWprHeapOffset;
 
@@ -873,7 +882,7 @@ kgspExecuteSequencerCommand_TU102
         {
             KernelFalcon *pKernelSec2Falcon = staticCast(GPU_GET_KERNEL_SEC2(pGpu), KernelFalcon);
 
-            kflcnReset_HAL(pGpu, pKernelFalcon);
+            NV_ASSERT_OK_OR_RETURN(kflcnResetIntoRiscv_HAL(pGpu, pKernelFalcon));
             kgspProgramLibosBootArgsAddr_HAL(pGpu, pKernelGsp);
 
             NV_PRINTF(LEVEL_INFO, "---------------Starting SEC2 to resume GSP-RM------------\n");
@@ -1202,7 +1211,9 @@ kgspPrepareSuspendResumeData_TU102
     portMemSet(&gspfwSRMeta, 0, sizeof(gspfwSRMeta));
     gspfwSRMeta.magic                   = GSP_FW_SR_META_MAGIC;
     gspfwSRMeta.revision                = GSP_FW_SR_META_REVISION;
-    gspfwSRMeta.sizeOfSuspendResumeData = pKernelGsp->pWprMeta->gspFwWprEnd - pKernelGsp->pWprMeta->gspFwWprStart;
+    // Region to be saved is from start of WPR2 till end of frts.
+    gspfwSRMeta.sizeOfSuspendResumeData = (pKernelGsp->pWprMeta->frtsOffset + pKernelGsp->pWprMeta->frtsSize) -
+                                          (pKernelGsp->pWprMeta->nonWprHeapOffset + pKernelGsp->pWprMeta->nonWprHeapSize);
     gspfwSRMeta.flags                   = pKernelGsp->pWprMeta->flags;
 
     NV_ASSERT_OK_OR_GOTO(nvStatus,

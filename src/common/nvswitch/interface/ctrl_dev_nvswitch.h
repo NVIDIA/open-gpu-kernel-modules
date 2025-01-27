@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -831,6 +831,7 @@ typedef enum nvswitch_err_type
     NVSWITCH_ERR_HW_HOST_IO_FAILURE                                    = 10007,
     NVSWITCH_ERR_HW_HOST_FIRMWARE_INITIALIZATION_FAILURE               = 10008,
     NVSWITCH_ERR_HW_HOST_FIRMWARE_RECOVERY_MODE                        = 10009,
+    NVSWITCH_ERR_HW_HOST_TNVL_ERROR                                    = 10010,
     NVSWITCH_ERR_HW_HOST_LAST,
 
 

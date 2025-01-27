@@ -29,26 +29,33 @@
 #include "uvm_tlb_batch.h"
 #include "uvm_mmu.h"
 #include "uvm_kvmalloc.h"
+
 // MAXWELL_*
 #include "cla16f.h"
 #include "clb0b5.h"
+
 // PASCAL_*
 #include "clb069.h" // MAXWELL_FAULT_BUFFER_A
-#include "clc0b5.h"
 #include "clc06f.h"
+#include "clc0b5.h"
+
 // VOLTA_*
 #include "clc369.h" // MMU_FAULT_BUFFER
-#include "clc3b5.h"
 #include "clc36f.h"
+#include "clc3b5.h"
+
 // AMPERE_*
 #include "clc56f.h"
 #include "clc6b5.h"
+
 // HOPPER_*
-#include "clc8b5.h"
 #include "clc86f.h"
+#include "clc8b5.h"
+
 // BLACKWELL_*
 #include "clc96f.h"
 #include "clc9b5.h"
+
 // ARCHITECTURE_*
 #include "ctrl2080mc.h"
 

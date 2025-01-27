@@ -227,6 +227,8 @@ NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
     uvm_assert_mutex_locked(&va_block->lock);
     UVM_ASSERT(uvm_hmm_check_context_vma_is_valid(va_block, va_block_context->hmm.vma, region));
 
+    uvm_processor_mask_zero(&va_block_context->make_resident.all_involved_processors);
+
     if (uvm_va_block_is_hmm(va_block)) {
         status = uvm_hmm_va_block_migrate_locked(va_block,
                                                  va_block_retry,
@@ -268,6 +270,10 @@ NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
 
     if (out_tracker)
         tracker_status = uvm_tracker_add_tracker_safe(out_tracker, &va_block->tracker);
+
+    uvm_processor_mask_or(&service_context->gpus_to_check_for_nvlink_errors,
+                          &service_context->gpus_to_check_for_nvlink_errors,
+                          &va_block_context->make_resident.all_involved_processors);
 
     return status == NV_OK ? tracker_status : status;
 }
@@ -320,7 +326,7 @@ NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
 // The current logic checks that:
 // - We are in the first pass of the migration (see the explanation of the
 // two-pass strategy in uvm_migrate).
-// - The CPU has an NVLINK interconnect to the GPUs. Otherwise, we don't
+// - The CPU has an NVLINK or C2C interconnect to the GPUs. Otherwise, we don't
 // need this optimization since we are already limited by PCIe BW.
 // - If the migration spans several VA blocks, otherwise skip the preunmap to
 // avoid the overhead.
@@ -335,7 +341,7 @@ static bool migration_should_do_cpu_preunmap(uvm_va_space_t *va_space,
     if (pass != UVM_MIGRATE_PASS_FIRST || is_single_block)
         return false;
 
-    if (uvm_processor_mask_get_gpu_count(&va_space->has_nvlink[UVM_ID_CPU_VALUE]) == 0)
+    if (uvm_processor_mask_get_gpu_count(&va_space->has_fast_link[UVM_ID_CPU_VALUE]) == 0)
         return false;
 
     return true;
@@ -559,7 +565,7 @@ static NV_STATUS uvm_migrate_ranges(uvm_va_space_t *va_space,
     UVM_ASSERT(first_managed_range == uvm_va_space_iter_managed_first(va_space, base, base));
 
     managed_range_last = NULL;
-    uvm_for_each_va_range_managed_in_contig_from(managed_range, va_space, first_managed_range, end) {
+    uvm_for_each_va_range_managed_in_contig_from(managed_range, first_managed_range, end) {
         uvm_range_group_range_iter_t iter;
         uvm_va_policy_t *policy = &managed_range->policy;
 
@@ -624,7 +630,8 @@ static NV_STATUS uvm_migrate(uvm_va_space_t *va_space,
                              int dest_nid,
                              NvU32 migrate_flags,
                              uvm_va_range_managed_t *first_managed_range,
-                             uvm_tracker_t *out_tracker)
+                             uvm_tracker_t *out_tracker,
+                             uvm_processor_mask_t *gpus_to_check_for_nvlink_errors)
 {
     NV_STATUS status = NV_OK;
     uvm_service_block_context_t *service_context;
@@ -650,6 +657,8 @@ static NV_STATUS uvm_migrate(uvm_va_space_t *va_space,
         return NV_ERR_NO_MEMORY;
 
     service_context->block_context->make_resident.dest_nid = dest_nid;
+
+    uvm_processor_mask_zero(&service_context->gpus_to_check_for_nvlink_errors);
 
     // We perform two passes (unless the migration only covers a single VA
     // block or UVM_MIGRATE_FLAG_SKIP_CPU_MAP is passed). This helps in the
@@ -707,6 +716,7 @@ static NV_STATUS uvm_migrate(uvm_va_space_t *va_space,
                                     out_tracker);
     }
 
+    uvm_processor_mask_copy(gpus_to_check_for_nvlink_errors, &service_context->gpus_to_check_for_nvlink_errors);
     uvm_service_block_context_free(service_context);
 
     return status;
@@ -871,6 +881,7 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
     bool flush_events = false;
     const bool synchronous = !(params->flags & UVM_MIGRATE_FLAG_ASYNC);
     int cpu_numa_node = (int)params->cpuNumaNode;
+    uvm_processor_mask_t *gpus_to_check_for_nvlink_errors = NULL;
 
     // We temporarily allow 0 length in the IOCTL parameters as a signal to
     // only release the semaphore. This is because user-space is in charge of
@@ -891,6 +902,12 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
         UVM_INFO_PRINT("TEMP\n");
         return NV_ERR_INVALID_ARGUMENT;
     }
+
+    gpus_to_check_for_nvlink_errors = uvm_processor_mask_cache_alloc();
+    if (!gpus_to_check_for_nvlink_errors)
+        return NV_ERR_NO_MEMORY;
+ 
+    uvm_processor_mask_zero(gpus_to_check_for_nvlink_errors);
 
     // mmap_lock will be needed if we have to create CPU mappings
     mm = uvm_va_space_mm_or_current_retain_lock(va_space);
@@ -986,6 +1003,8 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
                 .populate_on_migrate_vma_failures   = true,
                 .user_space_start                   = &params->userSpaceStart,
                 .user_space_length                  = &params->userSpaceLength,
+                .gpus_to_check_for_nvlink_errors    = gpus_to_check_for_nvlink_errors,
+                .fail_on_unresolved_sto_errors      = false,
             };
 
             status = uvm_migrate_pageable(&uvm_migrate_args);
@@ -999,11 +1018,14 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
                                  (UVM_ID_IS_CPU(dest_id) ? cpu_numa_node : NUMA_NO_NODE),
                                  params->flags,
                                  uvm_va_space_iter_managed_first(va_space, params->base, params->base),
-                                 tracker_ptr);
+                                 tracker_ptr,
+                                 gpus_to_check_for_nvlink_errors);
         }
     }
 
 done:
+    uvm_global_gpu_retain(gpus_to_check_for_nvlink_errors);
+
     // We only need to hold mmap_lock to create new CPU mappings, so drop it if
     // we need to wait for the tracker to finish.
     //
@@ -1042,6 +1064,13 @@ done:
     uvm_va_space_up_read(va_space);
     uvm_va_space_mm_or_current_release(va_space, mm);
 
+    // Check for STO errors in case there was no other error until now.
+    if (status == NV_OK && !uvm_processor_mask_empty(gpus_to_check_for_nvlink_errors))
+        status = uvm_global_gpu_check_nvlink_error(gpus_to_check_for_nvlink_errors);
+
+    uvm_global_gpu_release(gpus_to_check_for_nvlink_errors);
+    uvm_processor_mask_cache_free(gpus_to_check_for_nvlink_errors);
+
     // If the migration is known to be complete, eagerly dispatch the migration
     // events, instead of processing them on a later event flush. Note that an
     // asynchronous migration could be complete by now, but the flush would not
@@ -1064,6 +1093,13 @@ NV_STATUS uvm_api_migrate_range_group(UVM_MIGRATE_RANGE_GROUP_PARAMS *params, st
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
     NvU32 migrate_flags = 0;
     uvm_gpu_t *gpu = NULL;
+    uvm_processor_mask_t *gpus_to_check_for_nvlink_errors = NULL;
+
+    gpus_to_check_for_nvlink_errors = uvm_processor_mask_cache_alloc();
+    if (!gpus_to_check_for_nvlink_errors)
+        return NV_ERR_NO_MEMORY;
+ 
+    uvm_processor_mask_zero(gpus_to_check_for_nvlink_errors);
 
     // mmap_lock will be needed if we have to create CPU mappings
     mm = uvm_va_space_mm_or_current_retain_lock(va_space);
@@ -1113,7 +1149,8 @@ NV_STATUS uvm_api_migrate_range_group(UVM_MIGRATE_RANGE_GROUP_PARAMS *params, st
                                  NUMA_NO_NODE,
                                  migrate_flags,
                                  first_managed_range,
-                                 &local_tracker);
+                                 &local_tracker,
+                                 gpus_to_check_for_nvlink_errors);
         }
 
         if (status != NV_OK)
@@ -1121,6 +1158,8 @@ NV_STATUS uvm_api_migrate_range_group(UVM_MIGRATE_RANGE_GROUP_PARAMS *params, st
     }
 
 done:
+    uvm_global_gpu_retain(gpus_to_check_for_nvlink_errors);
+
     // We only need to hold mmap_lock to create new CPU mappings, so drop it if
     // we need to wait for the tracker to finish.
     //
@@ -1137,6 +1176,13 @@ done:
 
     // This API is synchronous, so wait for migrations to finish
     uvm_tools_flush_events();
+
+    // Check for STO errors in case there was no other error until now.
+    if (status == NV_OK && tracker_status == NV_OK)
+        status = uvm_global_gpu_check_nvlink_error(gpus_to_check_for_nvlink_errors);
+
+    uvm_global_gpu_release(gpus_to_check_for_nvlink_errors);
+    uvm_processor_mask_cache_free(gpus_to_check_for_nvlink_errors);
 
     return status == NV_OK? tracker_status : status;
 }

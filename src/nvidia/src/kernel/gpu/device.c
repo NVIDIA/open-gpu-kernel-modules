@@ -431,7 +431,7 @@ _deviceInit
             // If gpuacctStartGpuAccounting() fails, just assert and print error.
             // gpuacctStartGpuAccounting() is not a major failure, we will continue with deviceInit() as normal.
             if ((pRsClient->type == CLIENT_TYPE_USER) && (gpuacctStartGpuAccounting(pGpuAcct,
-                pGpu->gpuInstance, pClient->ProcID, pClient->SubProcessID) != NV_OK))
+                pGpu->gpuInstance, pClient->ProcID, pClient->SubProcessID, pClient) != NV_OK))
             {
                 NV_ASSERT(0);
                 NV_PRINTF(LEVEL_ERROR,

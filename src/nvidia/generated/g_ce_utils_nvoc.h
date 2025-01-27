@@ -105,7 +105,7 @@ struct CeUtils {
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
 
     // Ancestor object pointers for `staticCast` feature
@@ -184,6 +184,17 @@ static inline NV_STATUS ceutilsMemcopy(struct CeUtils *pCeUtils, CEUTILS_MEMCOPY
 #define ceutilsMemcopy(pCeUtils, pParams) ceutilsMemcopy_IMPL(pCeUtils, pParams)
 #endif //__nvoc_ce_utils_h_disabled
 
+NV_STATUS ceutilsGetFirstAsyncCe_IMPL(struct CeUtils *pCeUtils, struct OBJGPU *pGpu, struct RsClient *pClient, NvHandle hDevice, NvU32 *pCeInstance, NvBool forceSkipMIG);
+
+#ifdef __nvoc_ce_utils_h_disabled
+static inline NV_STATUS ceutilsGetFirstAsyncCe(struct CeUtils *pCeUtils, struct OBJGPU *pGpu, struct RsClient *pClient, NvHandle hDevice, NvU32 *pCeInstance, NvBool forceSkipMIG) {
+    NV_ASSERT_FAILED_PRECOMP("CeUtils was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_ce_utils_h_disabled
+#define ceutilsGetFirstAsyncCe(pCeUtils, pGpu, pClient, hDevice, pCeInstance, forceSkipMIG) ceutilsGetFirstAsyncCe_IMPL(pCeUtils, pGpu, pClient, hDevice, pCeInstance, forceSkipMIG)
+#endif //__nvoc_ce_utils_h_disabled
+
 NvU64 ceutilsUpdateProgress_IMPL(struct CeUtils *pCeUtils);
 
 #ifdef __nvoc_ce_utils_h_disabled
@@ -230,7 +241,7 @@ struct CeUtilsApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__CeUtilsApi *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct GpuResource __nvoc_base_GpuResource;
 
     // Ancestor object pointers for `staticCast` feature

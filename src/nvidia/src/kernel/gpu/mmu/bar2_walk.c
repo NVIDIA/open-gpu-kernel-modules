@@ -196,7 +196,7 @@ _bar2WalkCBFillEntries
             MemoryManager   *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
             TRANSFER_SURFACE surf           = {0};
             NvU32            sizeOfEntries;
-
+            NvU32            transferFlags = TRANSFER_FLAGS_SHADOW_ALLOC;
             NV_ASSERT_OR_RETURN_VOID(pKernelBus->virtualBar2[gfid].pPageLevels == NULL);
 
             surf.pMemDesc = pMemDesc;
@@ -204,8 +204,12 @@ _bar2WalkCBFillEntries
 
             sizeOfEntries = (entryIndexHi - entryIndexLo + 1) * pLevelFmt->entrySize;
 
+            if (pKernelGmmu->bBug4686457WAR)
+            {
+                transferFlags |= TRANSFER_FLAGS_FLUSH_CPU_CACHE_WAR_BUG4686457;
+            }
             pMap = memmgrMemBeginTransfer(pMemoryManager, &surf, sizeOfEntries,
-                                          TRANSFER_FLAGS_SHADOW_ALLOC);
+                                          transferFlags);
 
             for (entryIndex = entryIndexLo; entryIndex <= entryIndexHi; entryIndex++)
             {
@@ -215,7 +219,7 @@ _bar2WalkCBFillEntries
             }
 
             memmgrMemEndTransfer(pMemoryManager, &surf, sizeOfEntries,
-                                 TRANSFER_FLAGS_SHADOW_ALLOC);
+                                 transferFlags);
         }
         else if (pKernelBus->bar2[gfid].bBootstrap)
         {
@@ -400,6 +404,7 @@ _bar2WalkCBUpdatePde
         {
             MemoryManager   *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
             TRANSFER_SURFACE surf           = {0};
+            NvU32            transferFlags = TRANSFER_FLAGS_NONE;
 
             NV_ASSERT_OR_RETURN(pKernelBus->virtualBar2[gfid].pPageLevels == NULL,
                                 NV_FALSE);
@@ -407,9 +412,14 @@ _bar2WalkCBUpdatePde
             surf.pMemDesc = pMemDesc;
             surf.offset = entryOffset;
 
+            if (pKernelGmmu->bBug4686457WAR)
+            {
+                transferFlags |= TRANSFER_FLAGS_FLUSH_CPU_CACHE_WAR_BUG4686457;
+            }
+
             NV_ASSERT_OR_RETURN(memmgrMemWrite(pMemoryManager, &surf,
                                                entry.v8, pLevelFmt->entrySize,
-                                               TRANSFER_FLAGS_NONE) ==  NV_OK,
+                                               transferFlags) ==  NV_OK,
                                 NV_FALSE);
         }
         // If we are setting up BAR2, we need special handling.
@@ -798,6 +808,7 @@ _bar2WalkCBWriteBuffer
 {
     OBJGPU            *pGpu               = pUserCtx->pGpu;
     KernelBus         *pKernelBus         = GPU_GET_KERNEL_BUS(pGpu);
+    KernelGmmu        *pKernelGmmu        = GPU_GET_KERNEL_GMMU(pGpu);
     NvU32              gfid;
     MEMORY_DESCRIPTOR *pStagingBufferDesc = (MEMORY_DESCRIPTOR*) pStagingBuffer;
     MEMORY_DESCRIPTOR *pOutputBufferDesc  = (MEMORY_DESCRIPTOR*) pLevelBuffer;
@@ -829,21 +840,27 @@ _bar2WalkCBWriteBuffer
     {
         MemoryManager   *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
         TRANSFER_SURFACE surf           = {0};
+        NvU32            transferFlags = TRANSFER_FLAGS_SHADOW_ALLOC;
 
         NV_ASSERT_OR_RETURN_VOID(pKernelBus->virtualBar2[gfid].pPageLevels == NULL);
 
         surf.pMemDesc = pOutputBufferDesc;
         surf.offset = firstEntryOffset;
 
+        if (pKernelGmmu->bBug4686457WAR)
+        {
+            transferFlags |= TRANSFER_FLAGS_FLUSH_CPU_CACHE_WAR_BUG4686457;
+        }
+
         pOutputBufferMapping = memmgrMemBeginTransfer(pMemoryManager, &surf,
                                                       entryRangeSize,
-                                                      TRANSFER_FLAGS_SHADOW_ALLOC);
+                                                      transferFlags);
 
         portMemCopy(pOutputBufferMapping, entryRangeSize,
                     pStagingBufferMapping, entryRangeSize);
 
         memmgrMemEndTransfer(pMemoryManager, &surf, entryRangeSize,
-                             TRANSFER_FLAGS_SHADOW_ALLOC);
+                             transferFlags);
 
         goto unmap_and_exit;
     }

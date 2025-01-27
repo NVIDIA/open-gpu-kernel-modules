@@ -46,5 +46,6 @@
 #define NVDM_TYPE_UEFI_XTL_DEBUG_INTR   0x1D
 #define NVDM_TYPE_TNVL                  0x1F
 #define NVDM_TYPE_CLOCK_BOOST           0x20
+#define NVDM_TYPE_FSP_GSP_COMM          0x21
 
 #endif // FSP_NVDM_FORMAT_H

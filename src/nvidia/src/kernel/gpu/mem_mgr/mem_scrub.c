@@ -63,6 +63,8 @@
 
 #include "class/clc9b5.h"      // BLACKWELL_DMA_COPY_A
 
+#include "class/clcab5.h"      // BLACKWELL_DMA_COPY_B
+
 static NvU64  _scrubCheckProgress(OBJMEMSCRUB *pScrubber);
 static NvU64  _searchScrubList(OBJMEMSCRUB *pScrubber, RmPhysAddr base, NvU64 size);
 static void   _waitForPayload(OBJMEMSCRUB  *pScrubber, RmPhysAddr  base, RmPhysAddr end);

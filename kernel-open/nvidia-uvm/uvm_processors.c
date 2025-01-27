@@ -137,3 +137,26 @@ bool uvm_processor_has_memory(uvm_processor_id_t id)
 
     return uvm_gpu_get(id)->mem_info.size > 0;
 }
+
+// Extract a portion of the processor mask in order to compute the sub-processor
+// mask for a particular parent GPU id.
+// We use direct bitmap operations in order to avoid having to allocate a new
+// uvm_processor_mask_t, which could fail.
+//
+// The size of the 'word' bitmap is two words in order to cover IDs that span
+// a word size due to the offset caused by the CPU ID.
+uvm_sub_processor_mask_t uvm_sub_processor_mask_from_processor_mask(const uvm_processor_mask_t *mask,
+                                                                    uvm_parent_gpu_id_t parent_id)
+{
+    uvm_sub_processor_mask_t sub_processor_mask;
+    uvm_gpu_id_t gpu_id = uvm_gpu_id_from_parent_gpu_id(parent_id);
+    size_t word_index = uvm_id_value(gpu_id) / BITS_PER_LONG;
+    DECLARE_BITMAP(words, BITS_PER_LONG * 2);
+
+    BUILD_BUG_ON(BITS_PER_LONG < UVM_PARENT_ID_MAX_SUB_PROCESSORS);
+
+    bitmap_copy(words, mask->bitmap + word_index, BITS_PER_LONG * 2);
+    bitmap_shift_right(words, words, uvm_id_value(gpu_id) % BITS_PER_LONG, BITS_PER_LONG * 2);
+    sub_processor_mask.bitmap = words[0] & ((1 << UVM_PARENT_ID_MAX_SUB_PROCESSORS) - 1);
+    return sub_processor_mask;
+}

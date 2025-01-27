@@ -102,7 +102,7 @@ struct OBJFBSR {
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
 
     // Ancestor object pointers for `staticCast` feature
@@ -244,6 +244,22 @@ static inline NV_STATUS fbsrExecuteSaveRestore(struct OBJGPU *pGpu, struct OBJFB
 #endif //__nvoc_fbsr_h_disabled
 
 #define fbsrExecuteSaveRestore_HAL(pGpu, pFbsr) fbsrExecuteSaveRestore(pGpu, pFbsr)
+
+static inline NV_STATUS fbsrRestoreNonWprRegion_46f6a7(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+
+#ifdef __nvoc_fbsr_h_disabled
+static inline NV_STATUS fbsrRestoreNonWprRegion(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
+    NV_ASSERT_FAILED_PRECOMP("OBJFBSR was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_fbsr_h_disabled
+#define fbsrRestoreNonWprRegion(pGpu, pFbsr) fbsrRestoreNonWprRegion_46f6a7(pGpu, pFbsr)
+#endif //__nvoc_fbsr_h_disabled
+
+#define fbsrRestoreNonWprRegion_HAL(pGpu, pFbsr) fbsrRestoreNonWprRegion(pGpu, pFbsr)
 
 NV_STATUS fbsrBegin_GA100(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, FBSR_OP_TYPE op);
 

@@ -49,7 +49,7 @@ const NvU32 NVT_CVT_H_SYNC_PER       = 8;  // HSYNC percentage (8%)
 const NvU32 NVT_CVT_RB_HBLANK_CELLS  = 20; // 160 fixed hblank for RB
 const NvU32 NVT_CVT_RB_HFPORCH_CELLS = 6;  // 48 fixed hfporch for RB
 const NvU32 NVT_CVT_RB_HSYNCW_CELLS  = 4;  // 32 fixed hsyncwidth for RB
-const NvU32 NVT_CVT_RB_MIN_VBLANK    = 23; // 460 lines (or 460 us?) [1000000:460 = 50000:23]
+const NvU32 NVT_CVT_RB_MIN_VBLANK    = 23; // 460 line s (or 460 us?) [1000000:460 = 50000:23]
 const NvU32 NVT_CVT_MIN_V_BPORCH     = 6;  // Minimum vertical back porch.
 
 
@@ -154,6 +154,7 @@ NVT_STATUS NvTiming_CalcCVT(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT
 
     pT->etc.status = NVT_STATUS_CVT;
 
+    // For 1, 2, 3, 4 in Computation of common parameters
     // H_PIXELS_RND = ROUNDDOWN(H_PIXELS / CELL_GRAN_RND,0) * CELL_GRAN_RND
     if ((width % NVT_CVT_CELL_GRAN)!=0)
     {
@@ -178,7 +179,8 @@ NVT_STATUS NvTiming_CalcCVT(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT
     dwIdealDutyCycle_DEN = dwHPeroidEstimate_DEN;
     dwIdealDutyCycle_NUM = NVT_CVT_C_PRIME * dwHPeroidEstimate_DEN - NVT_CVT_M_PRIME_D_20 * dwHPeriodEstimate_NUM;
 
-    if (dwIdealDutyCycle_NUM < dwIdealDutyCycle_DEN * 20)
+    if (dwIdealDutyCycle_NUM < dwIdealDutyCycle_DEN * 20 || 
+        (NVT_CVT_C_PRIME * dwHPeroidEstimate_DEN < NVT_CVT_M_PRIME_D_20 * dwHPeriodEstimate_NUM))
     {
         dwIdealDutyCycle_NUM=20;
         dwIdealDutyCycle_DEN=1;
@@ -211,7 +213,8 @@ NVT_STATUS NvTiming_CalcCVT(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT
     pT->VFrontPorch = (NvU16)(NVT_CVT_V_PORCH);
     pT->VSyncWidth = getCVTVSync(dwXCells * NVT_CVT_CELL_GRAN, height);
 
-    pT->pclk = dwPClk;
+    pT->pclk     = dwPClk;
+    pT->pclk1khz = (dwPClk << 3) + (dwPClk << 1); // *10
 
     pT->HSyncPol = NVT_H_SYNC_NEGATIVE;
     pT->VSyncPol = NVT_V_SYNC_POSITIVE;
@@ -411,6 +414,7 @@ NVT_STATUS NvTiming_CalcCVT_RB2(NvU32 width, NvU32 height, NvU32 rr, NvBool is10
     pT->VSyncWidth  = NVT_CVT_RB2_V_SYNC_WIDTH;
     pT->VFrontPorch = (NvU16)(act_vbi_lines - NVT_CVT_RB2_V_SYNC_WIDTH - NVT_CVT_RB2_MIN_V_BPORCH);
     pT->pclk        = (act_pixel_freq_khz + 5) / 10; //convert to 10Khz
+    pT->pclk1khz    = act_pixel_freq_khz;
     pT->HSyncPol    = NVT_H_SYNC_POSITIVE;
     pT->VSyncPol    = NVT_V_SYNC_NEGATIVE;
     pT->HBorder     = pT->VBorder = 0;  // not supported
@@ -610,6 +614,7 @@ NVT_STATUS NvTiming_CalcCVT_RB3(NvU32  width,
     pT->VSyncWidth   = NVT_CVT_RB3_V_SYNC_WIDTH;
     pT->VFrontPorch  = (NvU16)(act_v_blank_lines - NVT_CVT_RB3_V_SYNC_WIDTH - v_back_porch);
     pT->pclk         = ((NvU32)act_pixel_freq_khz + 5) / 10; //convert to 10Khz
+    pT->pclk1khz     = act_pixel_freq_khz;
     pT->HSyncPol     = NVT_H_SYNC_POSITIVE;
     pT->VSyncPol     = NVT_V_SYNC_NEGATIVE;
     pT->HBorder      = pT->VBorder = 0;  // not supported

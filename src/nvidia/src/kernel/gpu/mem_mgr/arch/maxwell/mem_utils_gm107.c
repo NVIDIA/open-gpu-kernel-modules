@@ -425,6 +425,10 @@ memmgrMemUtilsMapFbAlias
                         &vasCapsParams, sizeof(vasCapsParams)));
     NV_ASSERT_OR_RETURN(vasCapsParams.supportedPageSizeMask != 0, NV_ERR_INVALID_STATE);
 
+    // Bug 4737595: Clear 512MB and higher page supported mask
+    vasCapsParams.supportedPageSizeMask &= ~RM_PAGE_SIZE_512M;
+    vasCapsParams.supportedPageSizeMask &= ~RM_PAGE_SIZE_256G;
+
     NvU64 currentFbOffset = 0;
     NvU64 remainingMapSize = pChannel->fbSize;
     NvU64 currentVaddr = pChannel->vaStartOffset;
@@ -639,7 +643,7 @@ memmgrMemUtilsChannelInitialize_GM107
                 pVa->flags |= NV_VASPACE_ALLOCATION_FLAGS_PTETABLE_HEAP_MANAGED;
             }
 
-            if (rmDeviceGpuLockIsOwner(pGpu->gpuInstance))
+            if (rmDeviceGpuLockIsOwner(pGpu->gpuInstance) && !rmapiInRtd3PmPath())
             {
                 rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
                 bAcquireLock = NV_TRUE;

@@ -124,8 +124,10 @@ typedef struct NVA081_CTRL_VGPU_INFO {
     // used only by NVML
     NvU32 gpuInstanceProfileId;
     NvU32 placementSize;
-    NvU32 placementCount;
-    NvU32 placementIds[NVA081_MAX_VGPU_PER_PGPU];
+    NvU32 homogeneousPlacementCount;
+    NvU32 homogeneousPlacementIds[NVA081_MAX_VGPU_PER_PGPU];
+    NvU32 heterogeneousPlacementCount;
+    NvU32 heterogeneousPlacementIds[NVA081_MAX_VGPU_PER_PGPU];
 } NVA081_CTRL_VGPU_INFO;
 
 /*
@@ -730,10 +732,11 @@ typedef struct NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS {
 } NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS;
 
 /*
- * NVA081_CTRL_CMD_VGPU_CONFIG_UPDATE_HETEROGENEOUS_INFO
+ * NVA081_CTRL_CMD_VGPU_CONFIG_UPDATE_PLACEMENT_INFO
  *
  * This command is used to get a placement Id from RM for timesliced
- * heterogeneous vGPUs.
+ * heterogeneous or homogeneous vGPUs. The physical GPU shall be used
+ * in either heterogeneous or homogeneous mode at a time.
  *
  * isHeterogeneousEnabled [OUT]
  *  This param specific whether timesliced heterogeneous vGPU is enabled
@@ -745,6 +748,9 @@ typedef struct NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS {
  *
  * vgpuTypeId [IN]
  *  This param specifies the Type ID for VGPU profile
+ *
+ * vgpuDevName [IN]
+ *  This param specifies the VF BDF of the virtual GPU.
  *
  * guestFbLength [OUT]
  *  This param specifies the FB size assigned to the VM.
@@ -765,19 +771,20 @@ typedef struct NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS {
  *   NV_ERR_INVALID_STATE
  *   NV_ERR_INVALID_ARGUMENT
  */
-#define NVA081_CTRL_CMD_VGPU_CONFIG_UPDATE_HETEROGENEOUS_INFO (0xa081011b) /* finn: Evaluated from "(FINN_NVA081_VGPU_CONFIG_VGPU_CONFIG_INTERFACE_ID << 8) | NVA081_CTRL_VGPU_CONFIG_UPDATE_HETEROGENEOUS_INFO_PARAMS_MESSAGE_ID" */
+#define NVA081_CTRL_CMD_VGPU_CONFIG_UPDATE_PLACEMENT_INFO (0xa081011b) /* finn: Evaluated from "(FINN_NVA081_VGPU_CONFIG_VGPU_CONFIG_INTERFACE_ID << 8) | NVA081_CTRL_VGPU_CONFIG_UPDATE_PLACEMENT_INFO_PARAMS_MESSAGE_ID" */
 
-#define NVA081_CTRL_VGPU_CONFIG_UPDATE_HETEROGENEOUS_INFO_PARAMS_MESSAGE_ID (0x1bU)
+#define NVA081_CTRL_VGPU_CONFIG_UPDATE_PLACEMENT_INFO_PARAMS_MESSAGE_ID (0x1bU)
 
-typedef struct NVA081_CTRL_VGPU_CONFIG_UPDATE_HETEROGENEOUS_INFO_PARAMS {
+typedef struct NVA081_CTRL_VGPU_CONFIG_UPDATE_PLACEMENT_INFO_PARAMS {
     NvBool isHeterogeneousEnabled;
     NvU16  placementId;
     NvU32  vgpuTypeId;
+    NvU8   vgpuDevName[VM_UUID_SIZE];
     NV_DECLARE_ALIGNED(NvU64 guestFbLength, 8);
     NV_DECLARE_ALIGNED(NvU64 guestFbOffset, 8);
     NV_DECLARE_ALIGNED(NvU64 gspHeapOffset, 8);
     NV_DECLARE_ALIGNED(NvU64 guestBar1PFOffset, 8);
-} NVA081_CTRL_VGPU_CONFIG_UPDATE_HETEROGENEOUS_INFO_PARAMS;
+} NVA081_CTRL_VGPU_CONFIG_UPDATE_PLACEMENT_INFO_PARAMS;
 
 /*
  * NVA081_CTRL_CMD_VGPU_CONFIG_GET_CREATABLE_PLACEMENTS
@@ -846,6 +853,7 @@ typedef struct NVA081_CTRL_PGPU_GET_VGPU_STREAMING_CAPABILITY_PARAMS {
 #define NVA081_CTRL_VGPU_CAPABILITY_HETEROGENEOUS_TIMESLICE_SIZES    6
 #define NVA081_CTRL_VGPU_CAPABILITY_HETEROGENEOUS_TIMESLICE_PROFILES 7
 #define NVA081_CTRL_VGPU_CAPABILITY_FRACTIONAL_MULTI_VGPU            8
+#define NVA081_CTRL_VGPU_CAPABILITY_HOMOGENEOUS_PLACEMENT_ID         9
 
 /*
  * NVA081_CTRL_CMD_VGPU_SET_CAPABILITY

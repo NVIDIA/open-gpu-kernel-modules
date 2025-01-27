@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,7 +65,7 @@ kgspExecuteScrubberIfNeeded_AD102
     NV_PRINTF(LEVEL_INFO, "executing Scrubber\n");
     NV_ASSERT_OR_RETURN(pKernelGsp->pScrubberUcode != NULL, NV_ERR_INVALID_STATE);
 
-    kflcnReset_HAL(pGpu, staticCast(pKernelSec2, KernelFalcon));
+    NV_ASSERT_OK_OR_RETURN(kflcnReset_HAL(pGpu, staticCast(pKernelSec2, KernelFalcon)));
 
     status = kgspExecuteHsFalcon_HAL(pGpu, pKernelGsp,
                                      pKernelGsp->pScrubberUcode, staticCast(pKernelSec2, KernelFalcon),

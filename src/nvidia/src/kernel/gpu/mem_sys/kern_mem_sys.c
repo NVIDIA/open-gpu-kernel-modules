@@ -271,13 +271,20 @@ kmemsysStatePostLoad_IMPL
     }
 
     //
-    // VBIOS programs the peer ATS range register in Nvswitch case
+    // VBIOS programs the peer ATS range register in Nvswitch case.
     //
-    if (IS_SILICON(pGpu) &&
+    // For the SRIOV vGPU, the Guest RM chooses the peer id. Programming
+    // by default on the host could potentially create a wrong peer id
+    // being set as host has differnt understanding of the peer value
+    // than the guest. So skip for vGPU host.
+    //
+
+    if (IS_SILICON(pGpu) && !hypervisorIsVgxHyper() &&
         pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED) &&
         !GPU_IS_NVSWITCH_DETECTED(pGpu))
     {
         NV_STATUS status = kmemsysSetupAllAtsPeers_HAL(pGpu, pKernelMemorySystem);
+
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "ATS peer setup failed.\n");
@@ -296,8 +303,9 @@ kmemsysStatePreUnload_IMPL
     NvU32 flags
 )
 {
-    if (IS_SILICON(pGpu) &&
-        pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED))
+    if (IS_SILICON(pGpu) && !hypervisorIsVgxHyper() &&
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED) &&
+        !GPU_IS_NVSWITCH_DETECTED(pGpu))
     {
         kmemsysRemoveAllAtsPeers_HAL(pGpu, pKernelMemorySystem);
     }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,17 +47,15 @@
  */
 void vgpuFreeSysmemPfnBitMapNode(VGPU_SYSMEM_PFN_BITMAP_NODE_P node)
 {
-    if (node)
+    if (node && node->pMemDesc_sysmemPfnMap && node->pMemDesc_sysmemPfnMap->Allocated)
     {
-        if (node->sysmemPfnMap && node->pMemDesc_sysmemPfnMap)
-            memdescUnmapOld(node->pMemDesc_sysmemPfnMap,
-                            memdescGetFlag(node->pMemDesc_sysmemPfnMap, MEMDESC_FLAGS_KERNEL_MODE),
-                            osGetCurrentProcess(),
-                            (void *)node->sysmemPfnMap,
-                            (void *)node->sysmemPfnMap_priv);
+        memdescUnmapOld(node->pMemDesc_sysmemPfnMap,
+                        memdescGetFlag(node->pMemDesc_sysmemPfnMap, MEMDESC_FLAGS_KERNEL_MODE),
+                        osGetCurrentProcess(),
+                        (void *)node->sysmemPfnMap,
+                        (void *)node->sysmemPfnMap_priv);
 
-        if ((node->pMemDesc_sysmemPfnMap) && (node->pMemDesc_sysmemPfnMap->Allocated))
-            memdescFree(node->pMemDesc_sysmemPfnMap);
+        memdescFree(node->pMemDesc_sysmemPfnMap);
 
         memdescDestroy(node->pMemDesc_sysmemPfnMap);
 
@@ -107,10 +105,6 @@ NV_STATUS vgpuAllocSysmemPfnBitMapNode(OBJGPU *pGpu, VGPU_SYSMEM_PFN_BITMAP_NODE
     OBJVGPU *pVGpu = GPU_GET_VGPU(pGpu);
     VGPU_GSP_SYSMEM_BITMAP_ROOT_NODE *sysmemBitmapRootNode = NULL;
     NvU32 memFlags = 0;
-    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-
-    if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
-        memFlags = MEMDESC_FLAGS_CPU_ONLY;
 
     if (index != listCount(&(vgpuSysmemPfnInfo.listVgpuSysmemPfnBitmapHead)) ||
         node == NULL) {
@@ -253,6 +247,7 @@ static NV_STATUS vgpuExpandSysmemPfnBitMapList(OBJGPU *pGpu, NvU64 pfn)
     NvU16 *temp_pfn_ref_count = NULL;
     NvU64 old_max_pfn = vgpuSysmemPfnInfo.guestMaxPfn;
 
+    vgpuSysmemPfnInfo.bSysmemPfnInfoInitialized = NV_FALSE;
     do
     {
         node = NULL;
@@ -293,6 +288,7 @@ static NV_STATUS vgpuExpandSysmemPfnBitMapList(OBJGPU *pGpu, NvU64 pfn)
 
     portMemFree(vgpuSysmemPfnInfo.sysmemPfnRefCount);
     vgpuSysmemPfnInfo.sysmemPfnRefCount = temp_pfn_ref_count;
+    vgpuSysmemPfnInfo.bSysmemPfnInfoInitialized = NV_TRUE;
 
 done:
     if (status != NV_OK)
@@ -307,6 +303,29 @@ done:
             nodeNext = listNext(&(vgpuSysmemPfnInfo.listVgpuSysmemPfnBitmapHead), node);
             listRemove(&(vgpuSysmemPfnInfo.listVgpuSysmemPfnBitmapHead), node);
             vgpuFreeSysmemPfnBitMapNode(node);
+        }
+    }
+    else
+    {
+        if (node->pMemDesc_sysmemPfnMap != NULL &&
+            (memdescGetAddressSpace(node->pMemDesc_sysmemPfnMap) == ADDR_SYSMEM))
+        {
+            for (node = listHead(&(vgpuSysmemPfnInfo.listVgpuSysmemPfnBitmapHead));
+                 node != NULL;
+                 node = nodeNext)
+            {
+                nodeNext = listNext(&(vgpuSysmemPfnInfo.listVgpuSysmemPfnBitmapHead), node);
+                if (node->bAddedToBitmap)
+                    continue;
+
+                status = vgpuUpdateSysmemPfnBitMap(pGpu, node->pMemDesc_sysmemPfnMap, NV_TRUE);
+                if (status != NV_OK)
+                {
+                    NV_PRINTF(LEVEL_INFO, "Failed to update sysmemPfnMap info in PFN bitmap, error 0x%x\n", status);
+                    return status;
+                }
+                node->bAddedToBitmap = NV_TRUE;
+            }
         }
     }
 
@@ -428,6 +447,8 @@ NV_STATUS vgpuUpdateSysmemPfnBitMap
         {
             if (pfn > vgpuSysmemPfnInfo.guestMaxPfn)
             {
+                NV_PRINTF(LEVEL_INFO, "Update sysmem pfn bitmap for pfn: 0x%llx > guestMaxPfn: 0x%llx\n",
+                          pfn, vgpuSysmemPfnInfo.guestMaxPfn);
                 status = vgpuExpandSysmemPfnBitMapList(pGpu, pfn);
                 if (status != NV_OK)
                 {

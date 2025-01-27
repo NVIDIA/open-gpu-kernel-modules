@@ -36,6 +36,8 @@ bool uvm_hal_ampere_host_method_is_valid(uvm_push_t *push, NvU32 method_address,
     if (!uvm_parent_gpu_is_virt_mode_sriov_heavy(gpu->parent))
         return true;
 
+    UVM_ASSERT(push->channel);
+
     if (uvm_channel_is_privileged(push->channel)) {
         switch (method_address) {
             case NVC56F_SET_OBJECT:
@@ -84,6 +86,8 @@ bool uvm_hal_ampere_host_method_is_valid(uvm_push_t *push, NvU32 method_address,
 
 bool uvm_hal_ampere_host_sw_method_is_valid(uvm_push_t *push, NvU32 method_address, NvU32 method_data)
 {
+    UVM_ASSERT(push->channel);
+
     if (!uvm_channel_is_proxy(push->channel))
         return true;
 

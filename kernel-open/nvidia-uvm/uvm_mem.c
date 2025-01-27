@@ -451,8 +451,10 @@ static gfp_t sysmem_allocation_gfp_flags(int order, bool zero)
     return gfp_flags;
 }
 
+
 // This allocation is a non-protected memory allocation under Confidential
 // Computing.
+//
 //
 // There is a tighter coupling between allocation and mapping because of the
 // allocator UVM must use. Hence, this function does the equivalent of
@@ -708,7 +710,7 @@ static NV_STATUS mem_map_cpu_to_sysmem_kernel(uvm_mem_t *mem)
 {
     struct page **pages = mem->sysmem.pages;
     size_t num_pages = uvm_mem_physical_size(mem) / PAGE_SIZE;
-    pgprot_t prot = PAGE_KERNEL;
+    pgprot_t prot;
 
     UVM_ASSERT(uvm_mem_is_sysmem(mem));
 
@@ -725,6 +727,8 @@ static NV_STATUS mem_map_cpu_to_sysmem_kernel(uvm_mem_t *mem)
 
     if (g_uvm_global.conf_computing_enabled && uvm_mem_is_sysmem_dma(mem))
         prot = uvm_pgprot_decrypted(PAGE_KERNEL_NOENC);
+    else
+        prot = PAGE_KERNEL;
 
     mem->kernel.cpu_addr = vmap(pages, num_pages, VM_MAP, prot);
 
@@ -992,7 +996,7 @@ uvm_gpu_address_t uvm_mem_gpu_address_copy(uvm_mem_t *mem, uvm_gpu_t *accessing_
     // Peer GPUs may need to use some form of translation (identity mappings,
     // indirect peers) to copy.
     chunk = mem_get_chunk(mem, offset, &chunk_offset);
-    copy_addr = uvm_pmm_gpu_peer_copy_address(&mem->backing_gpu->pmm, chunk, accessing_gpu);
+    copy_addr = uvm_gpu_peer_copy_address(mem->backing_gpu, chunk->address, accessing_gpu);
     copy_addr.address += chunk_offset;
     return copy_addr;
 }

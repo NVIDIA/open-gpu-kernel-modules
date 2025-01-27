@@ -103,7 +103,7 @@ struct DispChannel {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__DispChannel *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct GpuResource __nvoc_base_GpuResource;
     struct Notifier __nvoc_base_Notifier;
 
@@ -456,7 +456,7 @@ struct DispChannelPio {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__DispChannelPio *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct DispChannel __nvoc_base_DispChannel;
 
     // Ancestor object pointers for `staticCast` feature
@@ -750,7 +750,7 @@ struct DispChannelDma {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__DispChannelDma *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct DispChannel __nvoc_base_DispChannel;
 
     // Ancestor object pointers for `staticCast` feature

@@ -133,6 +133,7 @@
 #define NV_PMC_BOOT_0_ARCHITECTURE_GH100                 0x00000018 /* R---V */
 #define NV_PMC_BOOT_0_ARCHITECTURE_AD100                 0x00000019 /* R---V */
 #define NV_PMC_BOOT_0_ARCHITECTURE_GB100                 0x0000001A /* R---V */
+#define NV_PMC_BOOT_0_ARCHITECTURE_GB200                 0x0000001B /* R---V */
 
 #define NV_PMC_BOOT_1                                    0x00000004 /* R--4R */
 #define NV_PMC_BOOT_1_VGPU8                                     8:8 /* R--VF */
@@ -152,11 +153,18 @@
 #define NV_PMC_BOOT_42_IMPLEMENTATION                         23:20 /*       */
 #define NV_PMC_BOOT_42_ARCHITECTURE                           29:24 /*       */
 #define NV_PMC_BOOT_42_CHIP_ID                                29:20 /* R-XVF */
+
+#define NV_PMC_BOOT_42_ARCHITECTURE_GM100                0x00000011 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_GM200                0x00000012 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_GP100                0x00000013 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_GV100                0x00000014 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_GV110                0x00000015 /*       */
 #define NV_PMC_BOOT_42_ARCHITECTURE_TU100                0x00000016 /*       */
 #define NV_PMC_BOOT_42_ARCHITECTURE_GA100                0x00000017 /*       */
 #define NV_PMC_BOOT_42_ARCHITECTURE_GH100                0x00000018 /*       */
 #define NV_PMC_BOOT_42_ARCHITECTURE_AD100                0x00000019 /*       */
 #define NV_PMC_BOOT_42_ARCHITECTURE_GB100                0x0000001A /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_GB200                0x0000001B /*       */
 #define NV_PMC_BOOT_42_ARCHITECTURE_AMODEL               0x0000001F /*       */
 
 #define NV_PMC_BOOT_42_CHIP_ID_GA100                     0x00000170 /*       */

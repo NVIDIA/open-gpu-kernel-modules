@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -119,6 +119,12 @@ namespace DisplayPort
         ITU709,
     } ;
 
+    enum MainLinkChannelCoding
+    {
+        ChannelCoding8B10B = 0,
+        ChannelCoding128B132B,
+    };
+
     #define HDCP_BCAPS_SIZE                 (0x1)
     #define HDCP_VPRIME_SIZE                (0x14)
     #define HDCP_KSV_FIFO_SIZE              (0xF)
@@ -162,6 +168,7 @@ namespace DisplayPort
         //
         virtual bool     getLaneStatusClockRecoveryDone(int lane) = 0;                // DPCD offset 202, 203
         virtual bool     getLaneStatusSymbolLock(int lane)= 0;
+        virtual bool     getLaneStatusChannelEqualizationDone(int lane)= 0;
         virtual bool     getInterlaneAlignDone() = 0;
         virtual bool     getDownStreamPortStatusChange() = 0;
     };
@@ -219,6 +226,7 @@ namespace DisplayPort
         virtual AuxRetry::status setIgnoreMSATimingParamters(bool msaTimingParamIgnoreEn) = 0;
         virtual AuxRetry::status setLinkQualLaneSet(unsigned lane, LinkQualityPatternType linkQualPattern) = 0;
         virtual AuxRetry::status setLinkQualPatternSet(LinkQualityPatternType linkQualPattern, unsigned laneCount = 0) = 0;
+        virtual AuxRetry::status setLinkQualPatternSet(DP2xPatternInfo& patternInfo, unsigned laneCount = 0) = 0;
     };
 
     class LinkCapabilities
@@ -230,6 +238,12 @@ namespace DisplayPort
         //
         virtual NvU64    getMaxLinkRate() = 0;                                // Maximum byte-block in Hz
         virtual unsigned getMaxLaneCount() = 0;                               // DPCD offset 0x0002h
+        //
+        // Bit mask for sink side (sink and LTTPR) supported UHBR Link Rates.
+        // Defines the same as NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS.UHBRSupportedByGpu and
+        //                     NV0073_CTRL_DFP_GET_INFO_PARAMS.UHBRSupportedByDfp
+        //
+        virtual NvU32    getUHBRSupported() = 0;                              // DPCD offset 0x2215h
         virtual unsigned getMaxLaneCountSupportedAtLinkRate(LinkRate linkRate) = 0;
         virtual bool     getEnhancedFraming() = 0;
         virtual bool     getSupportsNoHandshakeTraining() = 0;
@@ -331,7 +345,7 @@ namespace DisplayPort
             if (lttprGetRevisionMajor() > major)
                 return true;
 
-            if (lttprGetRevisionMinor() < major)
+            if (lttprGetRevisionMajor() < major)
                 return false;
 
             return lttprGetRevisionMinor() >= minor;
@@ -432,7 +446,7 @@ namespace DisplayPort
         //    If set to HPD mode we'll always receive an HPD whenever the topology changes.
         //    The library supports using both modes.
         //
-        virtual AuxRetry::status     setMultistreamHotplugMode(MultistreamHotplugMode notifyType) = 0;
+        virtual AuxRetry::status setMultistreamHotplugMode(MultistreamHotplugMode notifyType) = 0;
 
         //
         //  Interrupts
@@ -474,6 +488,10 @@ namespace DisplayPort
 
         // DPCD offset 250 - 259
         virtual void get80BitsCustomTestPattern(NvU8 *testPattern) = 0;
+        // DPCD offset 2230 - 2250
+        virtual void get264BitsCustomTestPattern(NvU8 *testPattern) = 0;
+        // DPCD offset 249
+        virtual void getSquarePatternNum(NvU8 *sqNum) = 0;
         //
         //  Message Boxes
         //
@@ -546,8 +564,12 @@ namespace DisplayPort
         virtual bool     clearDpTunnelingEstimatedBwStatus() = 0;
         virtual bool     clearDpTunnelingBwAllocationCapStatus() = 0;
 
+        virtual AuxRetry::status notifySDPErrDetectionCapability() = 0;
+        virtual bool isDp2xChannelCodingCapable() = 0;
+        virtual void setIgnoreCableIdCaps(bool bIgnore) = 0;
+        virtual void initialize() = 0;
+        virtual AuxRetry::status setMainLinkChannelCoding(MainLinkChannelCoding channelCoding) = 0;
         virtual ~DPCDHAL() {}
-
     };
 
     //
@@ -652,7 +674,7 @@ namespace DisplayPort
                 bool      bFECSupportedRepeater[NV_DPCD14_PHY_REPEATER_CNT_MAX];
                 // If all the LTTPRs supports FEC
                 bool      bFECSupported;
-
+                bool      bAuxlessALPMSupported;                    // DPCD offset F0009
             } repeaterCaps;
 
             struct
@@ -845,6 +867,10 @@ namespace DisplayPort
 
         virtual LinkRate getMaxLinkRate();
 
+        virtual NvU32   getUHBRSupported()
+        {
+            return 0;
+        }
         // DPCD offset 2
         virtual unsigned getMaxLaneCount();
 
@@ -997,6 +1023,7 @@ namespace DisplayPort
         virtual AuxRetry::status setIgnoreMSATimingParamters(bool msaTimingParamIgnoreEn);
 
         virtual AuxRetry::status setLinkQualPatternSet(LinkQualityPatternType linkQualPattern, unsigned laneCount);
+        virtual AuxRetry::status setLinkQualPatternSet(DP2xPatternInfo& patternInfo, unsigned laneCount);
         virtual AuxRetry::status setLinkQualLaneSet(unsigned lane, LinkQualityPatternType linkQualPattern);
 
         virtual AuxRetry::status setMessagingEnable(bool _uprequestEnable, bool _upstreamIsSource);
@@ -1171,6 +1198,11 @@ namespace DisplayPort
             return interrupts.laneStatusIntr.laneStatus[lane].clockRecoveryDone;
         }
 
+        virtual bool getLaneStatusChannelEqualizationDone(int lane)
+        {
+            return interrupts.laneStatusIntr.laneStatus[lane].channelEqualizationDone;
+        }
+
         virtual bool getInterlaneAlignDone()                                             // DPCD offset 204
         {
             return interrupts.laneStatusIntr.interlaneAlignDone;
@@ -1223,6 +1255,20 @@ namespace DisplayPort
             {
                 testPattern[i] = interrupts.cstm80Bits[i];
             }
+        }
+
+        // DPCD offset 2230 - 2250
+        virtual void get264BitsCustomTestPattern(NvU8 *testPattern)
+        {
+            DP_ASSERT(0 && "DP1x should never get this request.");
+            return;
+        }
+
+        // DPCD offset 249h
+        virtual void getSquarePatternNum(NvU8 *sqNum)
+        {
+            DP_ASSERT(0 && "DP1x should never get this request.");
+            return;
         }
 
         virtual bool getBKSV(NvU8 *bKSV);
@@ -1437,6 +1483,23 @@ namespace DisplayPort
         bool clearDpTunnelingEstimatedBwStatus();
         bool clearDpTunnelingBwAllocationCapStatus();
 
+        virtual AuxRetry::status notifySDPErrDetectionCapability()
+        {
+            return AuxRetry::ack;
+        }
+        virtual bool isDp2xChannelCodingCapable()
+        {
+            return false;
+        }
+        virtual void setIgnoreCableIdCaps(bool bIgnore)
+        {
+            return;
+        }
+
+        // implement this function if DPCDHALImpl needs updated state between hotunplug/plug
+        virtual void initialize(){};
+        virtual AuxRetry::status setMainLinkChannelCoding(MainLinkChannelCoding channelCoding){ return AuxRetry::ack; }
+        virtual MainLinkChannelCoding getMainLinkChannelCoding() { return ChannelCoding8B10B; }
     };
 
 }

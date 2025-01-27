@@ -32,8 +32,6 @@
 #include "industry_standard/spdm.h"
 #include "spdm/rmspdmrsakeys.h"
 
-#if LIBSPDM_ENABLE_CAPABILITY_MUT_AUTH_CAP
-
 bool libspdm_requester_data_sign
 (
     spdm_version_number_t spdm_version,
@@ -129,4 +127,3 @@ bool libspdm_requester_data_sign
     return false;
 #endif //LIBSPDM_RSA_PSS_SUPPORT
 }
-#endif //LIBSPDM_ENABLE_CAPABILITY_MUT_AUTH_CAP

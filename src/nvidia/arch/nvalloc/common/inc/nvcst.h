@@ -65,6 +65,8 @@ CHIPSET_SETUP_FUNC(Intel_0685_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_4381_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_7A82_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_7A04_setupFunc)
+CHIPSET_SETUP_FUNC(Intel_5795_setupFunc)
+CHIPSET_SETUP_FUNC(Intel_1B81_setupFunc)
 CHIPSET_SETUP_FUNC(SiS_656_setupFunc)
 CHIPSET_SETUP_FUNC(ATI_RS400_setupFunc)
 CHIPSET_SETUP_FUNC(ATI_RS480_setupFunc)
@@ -95,6 +97,8 @@ CHIPSET_SETUP_FUNC(Nvidia_T194_setupFunc)
 CHIPSET_SETUP_FUNC(Nvidia_TH500_setupFunc)
 CHIPSET_SETUP_FUNC(PLDA_XpressRichAXI_setupFunc)
 CHIPSET_SETUP_FUNC(Riscv_generic_setupFunc)
+CHIPSET_SETUP_FUNC(Intel_A70D_setupFunc)
+CHIPSET_SETUP_FUNC(AMD_14D8_setupFunc)
 
 
 // Keep string length <=32 (including termination) to avoid string copy overflow
@@ -188,11 +192,12 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_INTEL,       0x4385, CS_INTEL_4381,      "Intel-RocketLake",     Intel_4381_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x7A82, CS_INTEL_7A82,      "Intel-AlderLake",      Intel_7A82_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x7A84, CS_INTEL_7A82,      "Intel-AlderLake",      Intel_7A82_setupFunc},
-    {PCI_VENDOR_ID_INTEL,       0x1B81, CS_INTEL_1B81,      "Intel-SapphireRapids", NULL},
-    {PCI_VENDOR_ID_INTEL,       0x7A8A, CS_INTEL_1B81,      "Intel-SapphireRapids", NULL},
+    {PCI_VENDOR_ID_INTEL,       0x1B81, CS_INTEL_1B81,      "Intel-SapphireRapids", Intel_1B81_setupFunc},
+    {PCI_VENDOR_ID_INTEL,       0x7A8A, CS_INTEL_1B81,      "Intel-SapphireRapids", Intel_1B81_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x18DC, CS_INTEL_18DC,      "Intel-IceLake",        NULL},
     {PCI_VENDOR_ID_INTEL,       0x7A04, CS_INTEL_7A04,      "Intel-RaptorLake",     Intel_7A04_setupFunc},
-    {PCI_VENDOR_ID_INTEL,       0x5795, CS_INTEL_5795,      "Intel-GraniteRapids",  NULL},
+    {PCI_VENDOR_ID_INTEL,       0x5795, CS_INTEL_5795,      "Intel-GraniteRapids",  Intel_5795_setupFunc},
+    {PCI_VENDOR_ID_INTEL,       0xA70D, CS_INTEL_B660,      "Intel-B660",           Intel_A70D_setupFunc},
 
     {PCI_VENDOR_ID_NVIDIA,      0x0FAE, CS_NVIDIA_T210,      "T210",      Nvidia_T210_setupFunc},
     {PCI_VENDOR_ID_NVIDIA,      0x0FAF, CS_NVIDIA_T210,      "T210",      Nvidia_T210_setupFunc},
@@ -212,6 +217,10 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_NVIDIA,      0x22B4, CS_NVIDIA_TH500,     "TH500",     Nvidia_TH500_setupFunc},
     {PCI_VENDOR_ID_NVIDIA,      0x22B8, CS_NVIDIA_TH500,     "TH500",     Nvidia_TH500_setupFunc},
     {PCI_VENDOR_ID_NVIDIA,      0x22B9, CS_NVIDIA_TH500,     "TH500",     Nvidia_TH500_setupFunc},
+    {PCI_VENDOR_ID_NVIDIA,      0x22D6, CS_NVIDIA_T264,      "T264",      Nvidia_T194_setupFunc},
+    {PCI_VENDOR_ID_NVIDIA,      0x22D8, CS_NVIDIA_T264,      "T264",      Nvidia_T194_setupFunc},
+    {PCI_VENDOR_ID_NVIDIA,      0x22DA, CS_NVIDIA_T264,      "T264",      Nvidia_T194_setupFunc},
+    {PCI_VENDOR_ID_NVIDIA,      0x2B00, CS_NVIDIA_T264,      "T264",      Nvidia_T194_setupFunc},
 
     {PCI_VENDOR_ID_SIS,         0x0649, CS_SIS_649,          "649",          SiS_656_setupFunc},
     {PCI_VENDOR_ID_SIS,         0x0656, CS_SIS_656,          "656",          SiS_656_setupFunc},
@@ -231,6 +240,7 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_AMD,         0x9601, CS_AMD_GX890,        "GX890"        ,AMD_FX890_setupFunc},
     {PCI_VENDOR_ID_AMD,         0x9600, CS_AMD_RS780,        "RS780"        ,AMD_RS780_setupFunc},
     {PCI_VENDOR_ID_AMD,         0x790e, CS_AMD_X370,         "X370/X399/X470/ TRX40/X570/WRX80", AMD_X370_setupFunc },
+    {PCI_VENDOR_ID_AMD,         0x14d8, CS_AMD_RPH,          "AMD-Raphael",  AMD_14D8_setupFunc},
 
     {PCI_VENDOR_ID_VIA,         0x0308, CS_VIA_VT8369B,      "VT8369B",      NULL},
     {PCI_VENDOR_ID_VIA,         0x0410, CS_VIA_VX900,        "VX900",        VIA_VX900_setupFunc},
@@ -347,6 +357,10 @@ ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
     {PCI_VENDOR_ID_NVIDIA,      0x22B4, CS_NVIDIA_TH500},       // NVIDIA TH500 RP x1
     {PCI_VENDOR_ID_NVIDIA,      0x22B8, CS_NVIDIA_TH500},       // NVIDIA TH500 RP x8
     {PCI_VENDOR_ID_NVIDIA,      0x22B9, CS_NVIDIA_TH500},       // NVIDIA TH500 RP x2
+    {PCI_VENDOR_ID_NVIDIA,      0x22D6, CS_NVIDIA_T264},        // NVIDIA Tegra RP x8
+    {PCI_VENDOR_ID_NVIDIA,      0x22D8, CS_NVIDIA_T264},        // NVIDIA Tegra RP x4
+    {PCI_VENDOR_ID_NVIDIA,      0x22DA, CS_NVIDIA_T264},        // NVIDIA Tegra RP x2
+    {PCI_VENDOR_ID_NVIDIA,      0x2B00, CS_NVIDIA_T264},        // NVIDIA Tegra RP iGPU
 
     {PCI_VENDOR_ID_APM,         0xe004, CS_APM_STORM},          // Applied Micro X-Gene "Storm"
     {PCI_VENDOR_ID_MARVELL,     0xAF00, CS_MARVELL_THUNDERX2},  // Marvell ThunderX2

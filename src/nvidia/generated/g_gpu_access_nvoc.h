@@ -410,7 +410,7 @@ struct IoAperture {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__IoAperture *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
     struct RegisterAperture __nvoc_base_RegisterAperture;
 
@@ -582,7 +582,7 @@ struct SwBcAperture {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__SwBcAperture *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
     struct RegisterAperture __nvoc_base_RegisterAperture;
 

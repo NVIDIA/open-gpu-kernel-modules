@@ -77,10 +77,10 @@ def getbytes(filename, array):
                 compressed = False
             if "COMPRESSION: YES" in line:
                 compressed = True
-            m = re.search("DATA SIZE \(bytes\): (\d+)", line)
+            m = re.search(r"DATA SIZE \(bytes\): (\d+)", line)
             if m:
                 data_size = int(m.group(1))
-            m = re.search("COMPRESSED SIZE \(bytes\): (\d+)", line)
+            m = re.search(r"COMPRESSED SIZE \(bytes\): (\d+)", line)
             if m:
                 compressed_size = int(m.group(1))
             if "static BINDATA_CONST NvU8 " + array in line:

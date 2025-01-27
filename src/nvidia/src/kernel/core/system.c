@@ -58,6 +58,10 @@
 #include "gpu_mgr/gpu_db.h"
 #include "core/bin_data.h"
 
+#if RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
+#include "diagnostics/code_coverage_mgr.h"
+#endif
+
 // local static functions
 static NV_STATUS    _sysCreateOs(OBJSYS *);
 static NV_STATUS    _sysCreateChildObjects(OBJSYS *);
@@ -92,6 +96,9 @@ static sysChildObject sysChildObjects[] =
     { NV_OFFSETOF(OBJSYS, pGpuBoostMgr),    classInfo(OBJGPUBOOSTMGR),  NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pFabric),         classInfo(Fabric),          NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pGpuDb),          classInfo(GpuDb),           NV_TRUE },
+#if RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
+    { NV_OFFSETOF(OBJSYS, pCodeCovMgr),     classInfo(CodeCoverageManager),  NV_TRUE },
+#endif
 };
 
 static void

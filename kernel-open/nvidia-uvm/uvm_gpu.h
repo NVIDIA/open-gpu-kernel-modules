@@ -97,6 +97,11 @@ struct uvm_service_block_context_struct
     // been serviced
     uvm_processor_mask_t resident_processors;
 
+    // A mask of GPUs that need to be checked for NVLINK errors before the
+    // handler returns, but after the VA space lock has been unlocked
+    // to avoid RM/UVM VA space lock deadlocks.
+    uvm_processor_mask_t gpus_to_check_for_nvlink_errors;
+
     // VA block region that contains all the pages affected by the operation
     uvm_va_block_region_t region;
 
@@ -192,6 +197,10 @@ typedef struct
     {
         struct
         {
+            // Mask of prefetch faulted pages in a UVM_VA_BLOCK_SIZE aligned region
+            // of a SAM VMA. Used for batching ATS faults in a vma.
+            uvm_page_mask_t prefetch_only_fault_mask;
+
             // Mask of read faulted pages in a UVM_VA_BLOCK_SIZE aligned region
             // of a SAM VMA. Used for batching ATS faults in a vma.
             uvm_page_mask_t read_fault_mask;
@@ -202,7 +211,7 @@ typedef struct
 
             // Mask of all faulted pages in a UVM_VA_BLOCK_SIZE aligned region
             // of a SAM VMA. This is a logical or of read_fault_mask and
-            // write_mask.
+            // write_mask and prefetch_only_fault_mask.
             uvm_page_mask_t accessed_mask;
 
             // Mask of successfully serviced pages in a UVM_VA_BLOCK_SIZE
@@ -269,7 +278,6 @@ typedef struct
         // Prefetch temporary state.
         uvm_perf_prefetch_bitmap_tree_t bitmap_tree;
     } prefetch_state;
-
 } uvm_ats_fault_context_t;
 
 struct uvm_fault_service_batch_context_struct
@@ -701,7 +709,7 @@ struct uvm_gpu_struct
             // True if the platform supports HW coherence and the GPU's memory
             // is exposed as a NUMA node to the kernel.
             bool enabled;
-            unsigned int node_id;
+            int node_id;
         } numa;
 
         // Physical address of the start of statically mapped fb memory in BAR1
@@ -871,6 +879,38 @@ struct uvm_gpu_struct
         NvBool *error_notifier;
     } ecc;
 
+    // NVLINK STO recovery handling
+    // In order to trap STO errors as soon as possible the driver has the hw
+    // interrupt register mapped directly. If an STO interrupt is ever noticed
+    // to be pending, then the UVM driver needs to:
+    //
+    //   1) ask RM to service interrupts, and then
+    //   2) inspect the NVLINK error notifier state.
+    //
+    // Notably, checking for channel errors is not enough, because STO errors
+    // can be pending, even after a channel has become idle.
+    //
+    // See more details in uvm_gpu_check_nvlink_error().
+    struct
+    {
+        // Does the GPU have NVLINK STO recovery enabled?
+        bool enabled;
+
+        // Artificially injected error for testing
+        atomic_t injected_error;
+
+        // Direct mapping of the 32-bit part of the hw interrupt tree that has
+        // the NVLINK error bits.
+        volatile NvU32 *hw_interrupt_tree_location;
+
+        // Mask to get the NVLINK error interrupt bits from the 32-bits above.
+        NvU32 mask;
+
+        // Set to true by RM when a fatal NVLINK error is encountered (requires
+        // asking RM to service pending interrupts to be current).
+        NvBool *error_notifier;
+    } nvlink_status;
+
     struct
     {
         NvU32 swizz_id;
@@ -1001,6 +1041,8 @@ struct uvm_parent_gpu_struct
     // Whether CE supports physical addressing mode for writes to vidmem
     bool ce_phys_vidmem_write_supported;
 
+    // Addressing mode(s) supported for CE transfers between this GPU and its
+    // peers: none, physical only, physical and virtual, etc.
     uvm_gpu_peer_copy_mode_t peer_copy_mode;
 
     // Virtualization mode of the GPU.
@@ -1090,6 +1132,15 @@ struct uvm_parent_gpu_struct
     // Indicates whether the GPU can map sysmem with pages larger than 4k
     bool can_map_sysmem_with_large_pages;
 
+    struct
+    {
+        // If true, the granularity of key rotation is a single channel. If
+        // false, the key replacement affects all channels on the engine. The
+        // supported granularity is dependent on the number of key slots
+        // available in HW.
+        bool per_channel_key_rotation;
+    } conf_computing;
+
     // VA base and size of the RM managed part of the internal UVM VA space.
     //
     // The internal UVM VA is shared with RM by RM controlling some of the top
@@ -1101,6 +1152,11 @@ struct uvm_parent_gpu_struct
     // all RM allocations and leave enough space for UVM.
     NvU64 rm_va_base;
     NvU64 rm_va_size;
+
+    // Base and size of the GPU VA space used for peer identity mappings,
+    // it is used only if peer_copy_mode is UVM_GPU_PEER_COPY_MODE_VIRTUAL.
+    NvU64 peer_va_base;
+    NvU64 peer_va_size;
 
     // Base and size of the GPU VA used for uvm_mem_t allocations mapped in the
     // internal address_space_tree.
@@ -1260,6 +1316,22 @@ struct uvm_parent_gpu_struct
         unsigned long smmu_prod;
         unsigned long smmu_cons;
     } smmu_war;
+
+    struct
+    {
+        // Is EGM support enabled on this GPU.
+        bool enabled;
+
+        // Local EGM peer ID. This ID is used to route EGM memory accesses to
+        // the local CPU socket.
+        NvU8 local_peer_id;
+
+        // EGM base address of the EGM carveout for remote EGM accesses.
+        // The base address is used when computing PTE PA address values for
+        // accesses to the local CPU socket's EGM memory from other peer
+        // GPUs.
+        NvU64 base_address;
+    } egm;
 };
 
 static const char *uvm_parent_gpu_name(uvm_parent_gpu_t *parent_gpu)
@@ -1330,6 +1402,18 @@ typedef struct
     // peer_id[1] from max(gpu_id_1, gpu_id_2) -> min(gpu_id_1, gpu_id_2)
     NvU8 peer_ids[2];
 
+    // EGM peer Id associated with this device w.r.t. a peer GPU.
+    // Note: egmPeerId (A -> B) != egmPeerId (B -> A)
+    // egm_peer_id[0] from min(gpu_id_1, gpu_id_2) -> max(gpu_id_1, gpu_id_2)
+    // egm_peer_id[1] from max(gpu_id_1, gpu_id_2) -> min(gpu_id_1, gpu_id_2)
+    //
+    // Unlike VIDMEM peers, EGM peers are not symmetric. This means that if
+    // one of the GPUs is EGM-enabled, it does not automatically mean that
+    // the other is also EGM-enabled. Therefore, an EGM peer Ids are only
+    // valid if the peer GPU is EGM-enabled, i.e. egm_peer_id[0] is valid
+    // iff max(gpu_id_1, gpu_id_2) is EGM-enabled.
+    NvU8 egm_peer_ids[2];
+
     // The link type between the peer parent GPUs, currently either PCIe or
     // NVLINK.
     uvm_gpu_link_type_t link_type;
@@ -1372,7 +1456,9 @@ void uvm_gpu_exit_va_space(uvm_va_space_t *va_space);
 
 static unsigned int uvm_gpu_numa_node(uvm_gpu_t *gpu)
 {
-    UVM_ASSERT(gpu->mem_info.numa.enabled);
+    if (!gpu->mem_info.numa.enabled)
+        UVM_ASSERT(gpu->mem_info.numa.node_id == NUMA_NO_NODE);
+
     return gpu->mem_info.numa.node_id;
 }
 
@@ -1381,6 +1467,7 @@ static uvm_gpu_phys_address_t uvm_gpu_page_to_phys_address(uvm_gpu_t *gpu, struc
     unsigned long sys_addr = page_to_pfn(page) << PAGE_SHIFT;
     unsigned long gpu_offset = sys_addr - gpu->parent->system_bus.memory_window_start;
 
+    UVM_ASSERT(gpu->mem_info.numa.enabled);
     UVM_ASSERT(page_to_nid(page) == uvm_gpu_numa_node(gpu));
     UVM_ASSERT(sys_addr >= gpu->parent->system_bus.memory_window_start);
     UVM_ASSERT(sys_addr + PAGE_SIZE - 1 <= gpu->parent->system_bus.memory_window_end);
@@ -1459,6 +1546,18 @@ uvm_gpu_link_type_t uvm_parent_gpu_peer_link_type(uvm_parent_gpu_t *parent_gpu0,
 // They must not be the same gpu.
 uvm_aperture_t uvm_gpu_peer_aperture(uvm_gpu_t *local_gpu, uvm_gpu_t *remote_gpu);
 
+// Returns the physical address for use by accessing_gpu of a vidmem allocation
+// on the peer owning_gpu. This address can be used for making PTEs on
+// accessing_gpu, but not for copying between the two GPUs. For that, use
+// uvm_gpu_peer_copy_address.
+uvm_gpu_phys_address_t uvm_gpu_peer_phys_address(uvm_gpu_t *owning_gpu, NvU64 address, uvm_gpu_t *accessing_gpu);
+
+// Returns the physical or virtual address for use by accessing_gpu to copy to/
+// from a vidmem allocation on the peer owning_gpu. This may be different from
+// uvm_gpu_peer_phys_address to handle CE limitations in addressing peer
+// physical memory directly.
+uvm_gpu_address_t uvm_gpu_peer_copy_address(uvm_gpu_t *owning_gpu, NvU64 address, uvm_gpu_t *accessing_gpu);
+
 // Return the reference count for the P2P state between the given GPUs.
 // The two GPUs must have different parents.
 NvU64 uvm_gpu_peer_ref_count(const uvm_gpu_t *gpu0, const uvm_gpu_t *gpu1);
@@ -1466,6 +1565,13 @@ NvU64 uvm_gpu_peer_ref_count(const uvm_gpu_t *gpu0, const uvm_gpu_t *gpu1);
 // Get the processor id accessible by the given GPU for the given physical
 // address.
 uvm_processor_id_t uvm_gpu_get_processor_id_by_address(uvm_gpu_t *gpu, uvm_gpu_phys_address_t addr);
+
+// Get the EGM aperture for local_gpu to use to map memory resident on the CPU
+// NUMA node that remote_gpu is attached to.
+// Note that local_gpu can be equal to remote_gpu when memory is resident in
+// CPU NUMA node local to local_gpu. In this case, the local EGM peer ID will
+// be used.
+uvm_aperture_t uvm_gpu_egm_peer_aperture(uvm_parent_gpu_t *local_gpu, uvm_parent_gpu_t *remote_gpu);
 
 bool uvm_parent_gpus_are_nvswitch_connected(const uvm_parent_gpu_t *parent_gpu0, const uvm_parent_gpu_t *parent_gpu1);
 
@@ -1508,8 +1614,8 @@ static uvm_gpu_address_t uvm_parent_gpu_address_virtual_from_sysmem_phys(uvm_par
     return uvm_gpu_address_virtual(parent_gpu->flat_sysmem_va_base + pa);
 }
 
-// Given a GPU or CPU physical address (not peer), retrieve an address suitable
-// for CE access.
+// Given a GPU, CPU, or EGM PEER physical address (not VIDMEM peer), retrieve an
+// address suitable for CE access.
 static uvm_gpu_address_t uvm_gpu_address_copy(uvm_gpu_t *gpu, uvm_gpu_phys_address_t phys_addr)
 {
     UVM_ASSERT(phys_addr.aperture == UVM_APERTURE_VID || phys_addr.aperture == UVM_APERTURE_SYS);
@@ -1531,6 +1637,12 @@ static uvm_gpu_identity_mapping_t *uvm_gpu_get_peer_mapping(uvm_gpu_t *gpu, uvm_
     return &gpu->peer_mappings[uvm_id_gpu_index(peer_id)];
 }
 
+// Check whether the provided address points to peer memory:
+// * Physical address using one of the PEER apertures
+// * Physical address using SYS aperture that belongs to an exposed coherent memory
+// * Virtual address in the region [peer_va_base, peer_va_base + peer_va_size)
+bool uvm_gpu_address_is_peer(uvm_gpu_t *gpu, uvm_gpu_address_t address);
+
 // Check for ECC errors
 //
 // Notably this check cannot be performed where it's not safe to call into RM.
@@ -1542,6 +1654,23 @@ NV_STATUS uvm_gpu_check_ecc_error(uvm_gpu_t *gpu);
 // do. Returns NV_WARN_MORE_PROCESSING_REQUIRED if there might be an ECC error
 // and it's required to call uvm_gpu_check_ecc_error() to be sure.
 NV_STATUS uvm_gpu_check_ecc_error_no_rm(uvm_gpu_t *gpu);
+
+// Check for NVLINK errors
+//
+// Inject NVLINK error
+NV_STATUS uvm_gpu_inject_nvlink_error(uvm_gpu_t *gpu, UVM_TEST_NVLINK_ERROR_TYPE error_type);
+
+NV_STATUS uvm_gpu_get_injected_nvlink_error(uvm_gpu_t *gpu);
+
+// Notably this check cannot be performed where it's not safe to call into RM.
+NV_STATUS uvm_gpu_check_nvlink_error(uvm_gpu_t *gpu);
+
+// Check for NVLINK errors without calling into RM
+//
+// Calling into RM is problematic in many places, this check is always safe to
+// do. Returns NV_WARN_MORE_PROCESSING_REQUIRED if there might be an NVLINK error
+// and it's required to call uvm_gpu_check_nvlink_error() to be sure.
+NV_STATUS uvm_gpu_check_nvlink_error_no_rm(uvm_gpu_t *gpu);
 
 // Map size bytes of contiguous sysmem on the GPU for physical access
 //

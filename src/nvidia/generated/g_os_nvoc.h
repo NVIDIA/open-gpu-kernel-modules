@@ -485,6 +485,7 @@ void            osInternalReserveFreeCallback(NvU64 offset, NvU32 gpuId);
 //
 
 NV_STATUS          osRmInitRm(void);
+
 typedef NvU32           OSPollHotkeyState(OBJGPU *);
 
 typedef void            OSSyncWithRmDestroy(void);
@@ -540,7 +541,7 @@ struct OBJOS {
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
 
     // Ancestor object pointers for `staticCast` feature
@@ -565,6 +566,7 @@ struct OBJOS {
     // Data members
     NvU32 dynamicPowerSupportGpuMask;
     NvBool bIsSimMods;
+    NvBool bMuxUnsupportedOnOS;
 };
 
 #ifndef __NVOC_CLASS_OBJOS_TYPEDEF__
@@ -649,10 +651,10 @@ NV_STATUS osTegraSocPowerManagement(OS_GPU_INFO *pOsGpuInfo,
 // This file should only contain the most common OS functions that provide
 // direct call.  Ex. osDelay, osIsAdministrator
 //
-NV_STATUS osTegraSocPmPowergate(OS_GPU_INFO *pOsGpuInfo);
-NV_STATUS osTegraSocPmUnpowergate(OS_GPU_INFO *pOsGpuInfo);
+NV_STATUS osTegraSocPmPowergate(OBJGPU *pGpu);
+NV_STATUS osTegraSocPmUnpowergate(OBJGPU *pGpu);
 NV_STATUS osTegraSocDeviceReset(OS_GPU_INFO *pOsGpuInfo);
-NV_STATUS osTegraSocBpmpSendMrq(OS_GPU_INFO *pOsGpuInfo,
+NV_STATUS osTegraSocBpmpSendMrq(OBJGPU      *pGpu,
                                 NvU32        mrq,
                                 const void  *pRequestData,
                                 NvU32        requestDataSize,
@@ -660,6 +662,7 @@ NV_STATUS osTegraSocBpmpSendMrq(OS_GPU_INFO *pOsGpuInfo,
                                 NvU32        responseDataSize,
                                 NvS32       *pRet,
                                 NvS32       *pApiRet);
+NV_STATUS osMapGsc(NvU64 gsc_base, NvU64 *va);
 NV_STATUS osTegraSocGetImpImportData(TEGRA_IMP_IMPORT_DATA *pTegraImpImportData);
 NV_STATUS osTegraSocEnableDisableRfl(OS_GPU_INFO *pOsGpuInfo, NvBool bEnable);
 NV_STATUS osTegraAllocateDisplayBandwidth(OS_GPU_INFO *pOsGpuInfo,
@@ -755,7 +758,6 @@ NV_STATUS osGetForcedNVLinkConnection(OBJGPU *pGpu,
 NV_STATUS osGetForcedC2CConnection(OBJGPU *pGpu,
                                    NvU32   maxLinks,
                                    NvU32   *pLinkConnection);
-void osSetNVLinkSysmemLinkState(OBJGPU *pGpu,NvBool enabled);
 NV_STATUS osGetPlatformNvlinkLinerate(OBJGPU *pGpu,NvU32   *lineRate);
 const struct nvlink_link_handlers* osGetNvlinkLinkCallbacks(void);
 
@@ -770,7 +772,7 @@ NV_STATUS nv_vgpu_rm_get_bar_info(OBJGPU *pGpu, const NvU8 *pVgpuDevName, NvU64 
                                   NvU8 *configParams);
 NV_STATUS osIsVgpuVfioPresent(void);
 NV_STATUS osIsVfioPciCorePresent(void);
-
+NV_STATUS osIsVgpuDeviceVmPresent(void);
 void osWakeRemoveVgpu(NvU32, NvU32);
 NV_STATUS rm_is_vgpu_supported_device(OS_GPU_INFO *pNv, NvU32 pmc_boot_1,
                                       NvU32 pmc_boot_42);
@@ -826,6 +828,7 @@ void osReleaseCpuAddressSpaceUpperBound(void *pSectionHandle);
 void* osGetPidInfo(void);
 void osPutPidInfo(void *pOsPidInfo);
 NV_STATUS osFindNsPid(void *pOsPidInfo, NvU32 *pNsPid);
+NvBool osIsInitNs(void);
 
 // OS Tegra IPC functions
 NV_STATUS osTegraDceRegisterIpcClient(NvU32 interfaceType, void *usrCtx,
@@ -851,8 +854,8 @@ NV_STATUS osTegraSocSetParent(OS_GPU_INFO *pOsGpuInfo, OS_CLKWHICH whichClkRMsou
 NV_STATUS osTegraSocGetParent(OS_GPU_INFO *pOsGpuInfo, OS_CLKWHICH whichClkRMsource, OS_CLKWHICH *pWhichClkRMparent);
 
 NV_STATUS osTegraSocDeviceReset(OS_GPU_INFO *pOsGpuInfo);
-NV_STATUS osTegraSocPmPowergate(OS_GPU_INFO *pOsGpuInfo);
-NV_STATUS osTegraSocPmUnpowergate(OS_GPU_INFO *pOsGpuInfo);
+NV_STATUS osTegraSocPmPowergate(OBJGPU *pGpu);
+NV_STATUS osTegraSocPmUnpowergate(OBJGPU *pGpu);
 NV_STATUS osGetSyncpointAperture(OS_GPU_INFO *pOsGpuInfo,
                                  NvU32 syncpointId,
                                  NvU64 *physAddr,
@@ -943,15 +946,6 @@ NV_STATUS osInitGetAcpiTable(void);
 
 // Read NvGlobal regkey
 NV_STATUS osGetNvGlobalRegistryDword(OBJGPU *, const char *pRegParmStr, NvU32 *pData);
-
-NV_STATUS osGetIbmnpuGenregInfo(OS_GPU_INFO *pArg1,
-                                NvU64 *pArg2,
-                                NvU64 *pArg3);
-
-NV_STATUS osGetIbmnpuRelaxedOrderingMode(OS_GPU_INFO *pArg1,
-                                         NvBool *pArg2);
-
-void osWaitForIbmnpuRsync(OS_GPU_INFO *pArg1);
 
 NV_STATUS osGetAcpiRsdpFromUefi(NvU32 *pRsdpAddr);
 
@@ -1200,6 +1194,8 @@ void osNumaRemoveGpuMemory(OS_GPU_INFO *pOsGpuInfo, NvU64 offset,
                            NvU64 size, NvU32 numaNodeId);
 
 NV_STATUS osOfflinePageAtAddress(NvU64 address);
+
+NvBool osGpuSupportsAts(OBJGPU *pGpu);
 
 //
 // Os 1Hz timer callback functions

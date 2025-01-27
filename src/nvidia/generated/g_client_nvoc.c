@@ -66,9 +66,9 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_UserInfo =
     /*pExportInfo=*/        &__nvoc_export_info_UserInfo
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge UserInfo methods from ancestors (if any)
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
+// Up-thunk(s) to bridge UserInfo methods to ancestors (if any)
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_UserInfo = 
 {
@@ -251,7 +251,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RmClient =
     /*pExportInfo=*/        &__nvoc_export_info_RmClient
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge RmClient methods from ancestors (if any)
 NV_STATUS __nvoc_down_thunk_RmClient_clientValidate(struct RsClient *pClient, const API_SECURITY_INFO *pSecInfo);    // this
 NV_STATUS __nvoc_down_thunk_RmClient_clientValidateLocks(struct RsClient *pClient, struct RsServer *pServer, const struct CLIENT_ENTRY *pClientEntry);    // this
 NV_STATUS __nvoc_down_thunk_RmClient_clientFreeResource(struct RsClient *pClient, struct RsServer *pServer, struct RS_RES_FREE_PARAMS_INTERNAL *pParams);    // this
@@ -265,47 +265,47 @@ NvBool __nvoc_down_thunk_RmClient_clientIsAdmin(struct RsClient *pClient, RS_PRI
 
 // rmclientValidate: virtual override (client) base (client)
 NV_STATUS __nvoc_down_thunk_RmClient_clientValidate(struct RsClient *pClient, const API_SECURITY_INFO *pSecInfo) {
-    return rmclientValidate((struct RmClient *)(((unsigned char *) pClient) - __nvoc_rtti_RmClient_RsClient.offset), pSecInfo);
+    return rmclientValidate((struct RmClient *)(((unsigned char *) pClient) - NV_OFFSETOF(RmClient, __nvoc_base_RsClient)), pSecInfo);
 }
 
 // rmclientValidateLocks: virtual override (client) base (client)
 NV_STATUS __nvoc_down_thunk_RmClient_clientValidateLocks(struct RsClient *pClient, struct RsServer *pServer, const struct CLIENT_ENTRY *pClientEntry) {
-    return rmclientValidateLocks((struct RmClient *)(((unsigned char *) pClient) - __nvoc_rtti_RmClient_RsClient.offset), pServer, pClientEntry);
+    return rmclientValidateLocks((struct RmClient *)(((unsigned char *) pClient) - NV_OFFSETOF(RmClient, __nvoc_base_RsClient)), pServer, pClientEntry);
 }
 
 // rmclientFreeResource: virtual override (client) base (client)
 NV_STATUS __nvoc_down_thunk_RmClient_clientFreeResource(struct RsClient *pClient, struct RsServer *pServer, struct RS_RES_FREE_PARAMS_INTERNAL *pParams) {
-    return rmclientFreeResource((struct RmClient *)(((unsigned char *) pClient) - __nvoc_rtti_RmClient_RsClient.offset), pServer, pParams);
+    return rmclientFreeResource((struct RmClient *)(((unsigned char *) pClient) - NV_OFFSETOF(RmClient, __nvoc_base_RsClient)), pServer, pParams);
 }
 
 // rmclientInterMap: virtual override (client) base (client)
 NV_STATUS __nvoc_down_thunk_RmClient_clientInterMap(struct RsClient *pClient, struct RsResourceRef *pMapperRef, struct RsResourceRef *pMappableRef, struct RS_INTER_MAP_PARAMS *pParams) {
-    return rmclientInterMap((struct RmClient *)(((unsigned char *) pClient) - __nvoc_rtti_RmClient_RsClient.offset), pMapperRef, pMappableRef, pParams);
+    return rmclientInterMap((struct RmClient *)(((unsigned char *) pClient) - NV_OFFSETOF(RmClient, __nvoc_base_RsClient)), pMapperRef, pMappableRef, pParams);
 }
 
 // rmclientInterUnmap: virtual override (client) base (client)
 NV_STATUS __nvoc_down_thunk_RmClient_clientInterUnmap(struct RsClient *pClient, struct RsResourceRef *pMapperRef, struct RS_INTER_UNMAP_PARAMS *pParams) {
-    return rmclientInterUnmap((struct RmClient *)(((unsigned char *) pClient) - __nvoc_rtti_RmClient_RsClient.offset), pMapperRef, pParams);
+    return rmclientInterUnmap((struct RmClient *)(((unsigned char *) pClient) - NV_OFFSETOF(RmClient, __nvoc_base_RsClient)), pMapperRef, pParams);
 }
 
 // rmclientPostProcessPendingFreeList: virtual override (client) base (client)
 NV_STATUS __nvoc_down_thunk_RmClient_clientPostProcessPendingFreeList(struct RsClient *pClient, struct RsResourceRef **ppFirstLowPriRef) {
-    return rmclientPostProcessPendingFreeList((struct RmClient *)(((unsigned char *) pClient) - __nvoc_rtti_RmClient_RsClient.offset), ppFirstLowPriRef);
+    return rmclientPostProcessPendingFreeList((struct RmClient *)(((unsigned char *) pClient) - NV_OFFSETOF(RmClient, __nvoc_base_RsClient)), ppFirstLowPriRef);
 }
 
 // rmclientGetCachedPrivilege: virtual override (client) base (client)
 RS_PRIV_LEVEL __nvoc_down_thunk_RmClient_clientGetCachedPrivilege(struct RsClient *pClient) {
-    return rmclientGetCachedPrivilege((struct RmClient *)(((unsigned char *) pClient) - __nvoc_rtti_RmClient_RsClient.offset));
+    return rmclientGetCachedPrivilege((struct RmClient *)(((unsigned char *) pClient) - NV_OFFSETOF(RmClient, __nvoc_base_RsClient)));
 }
 
 // rmclientIsAdmin: virtual override (client) base (client)
 NvBool __nvoc_down_thunk_RmClient_clientIsAdmin(struct RsClient *pClient, RS_PRIV_LEVEL privLevel) {
-    return rmclientIsAdmin((struct RmClient *)(((unsigned char *) pClient) - __nvoc_rtti_RmClient_RsClient.offset), privLevel);
+    return rmclientIsAdmin((struct RmClient *)(((unsigned char *) pClient) - NV_OFFSETOF(RmClient, __nvoc_base_RsClient)), privLevel);
 }
 
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
-NV_STATUS __nvoc_up_thunk_RsClient_rmclientDestructResourceRef(struct RmClient *pClient, RsServer *pServer, struct RsResourceRef *pResourceRef);    // this
+// Up-thunk(s) to bridge RmClient methods to ancestors (if any)
+NV_STATUS __nvoc_up_thunk_RsClient_rmclientDestructResourceRef(struct RmClient *pClient, RsServer *pServer, struct RsResourceRef *pResourceRef, struct RS_LOCK_INFO *pLockInfo, API_SECURITY_INFO *pSecInfo);    // this
 NV_STATUS __nvoc_up_thunk_RsClient_rmclientUnmapMemory(struct RmClient *pClient, struct RsResourceRef *pResourceRef, struct RS_LOCK_INFO *pLockInfo, struct RsCpuMapping **ppCpuMapping, API_SECURITY_INFO *pSecInfo);    // this
 NV_STATUS __nvoc_up_thunk_RsClient_rmclientValidateNewResourceHandle(struct RmClient *pClient, NvHandle hResource, NvBool bRestrict);    // this
 NV_STATUS __nvoc_up_thunk_RsClient_rmclientShareResource(struct RmClient *pClient, struct RsResourceRef *pResourceRef, RS_SHARE_POLICY *pSharePolicy, struct CALL_CONTEXT *pCallContext);    // this
@@ -313,23 +313,23 @@ NV_STATUS __nvoc_up_thunk_RsClient_rmclientShareResource(struct RmClient *pClien
 // 4 up-thunk(s) defined to bridge methods in RmClient to superclasses
 
 // rmclientDestructResourceRef: virtual inherited (client) base (client)
-NV_STATUS __nvoc_up_thunk_RsClient_rmclientDestructResourceRef(struct RmClient *pClient, RsServer *pServer, struct RsResourceRef *pResourceRef) {
-    return clientDestructResourceRef((struct RsClient *)(((unsigned char *) pClient) + __nvoc_rtti_RmClient_RsClient.offset), pServer, pResourceRef);
+NV_STATUS __nvoc_up_thunk_RsClient_rmclientDestructResourceRef(struct RmClient *pClient, RsServer *pServer, struct RsResourceRef *pResourceRef, struct RS_LOCK_INFO *pLockInfo, API_SECURITY_INFO *pSecInfo) {
+    return clientDestructResourceRef((struct RsClient *)(((unsigned char *) pClient) + NV_OFFSETOF(RmClient, __nvoc_base_RsClient)), pServer, pResourceRef, pLockInfo, pSecInfo);
 }
 
 // rmclientUnmapMemory: virtual inherited (client) base (client)
 NV_STATUS __nvoc_up_thunk_RsClient_rmclientUnmapMemory(struct RmClient *pClient, struct RsResourceRef *pResourceRef, struct RS_LOCK_INFO *pLockInfo, struct RsCpuMapping **ppCpuMapping, API_SECURITY_INFO *pSecInfo) {
-    return clientUnmapMemory((struct RsClient *)(((unsigned char *) pClient) + __nvoc_rtti_RmClient_RsClient.offset), pResourceRef, pLockInfo, ppCpuMapping, pSecInfo);
+    return clientUnmapMemory((struct RsClient *)(((unsigned char *) pClient) + NV_OFFSETOF(RmClient, __nvoc_base_RsClient)), pResourceRef, pLockInfo, ppCpuMapping, pSecInfo);
 }
 
 // rmclientValidateNewResourceHandle: virtual inherited (client) base (client)
 NV_STATUS __nvoc_up_thunk_RsClient_rmclientValidateNewResourceHandle(struct RmClient *pClient, NvHandle hResource, NvBool bRestrict) {
-    return clientValidateNewResourceHandle((struct RsClient *)(((unsigned char *) pClient) + __nvoc_rtti_RmClient_RsClient.offset), hResource, bRestrict);
+    return clientValidateNewResourceHandle((struct RsClient *)(((unsigned char *) pClient) + NV_OFFSETOF(RmClient, __nvoc_base_RsClient)), hResource, bRestrict);
 }
 
 // rmclientShareResource: virtual inherited (client) base (client)
 NV_STATUS __nvoc_up_thunk_RsClient_rmclientShareResource(struct RmClient *pClient, struct RsResourceRef *pResourceRef, RS_SHARE_POLICY *pSharePolicy, struct CALL_CONTEXT *pCallContext) {
-    return clientShareResource((struct RsClient *)(((unsigned char *) pClient) + __nvoc_rtti_RmClient_RsClient.offset), pResourceRef, pSharePolicy, pCallContext);
+    return clientShareResource((struct RsClient *)(((unsigned char *) pClient) + NV_OFFSETOF(RmClient, __nvoc_base_RsClient)), pResourceRef, pSharePolicy, pCallContext);
 }
 
 

@@ -86,12 +86,12 @@ NV_STATUS RmGssLegacyRpcCmd
     bApiLockTaken = NV_TRUE;
 
     NV_CHECK_OK_OR_GOTO(status,
-                        LEVEL_ERROR,
+                        LEVEL_NOTICE,
                         serverGetClientUnderLock(&g_resServ, pArgs->hClient, &pClient),
                         done);
 
     NV_CHECK_OK_OR_GOTO(status,
-                        LEVEL_ERROR,
+                        LEVEL_NOTICE,
                         gpuGetByHandle(pClient, pArgs->hObject, NULL, &pGpu),
                         done);
 

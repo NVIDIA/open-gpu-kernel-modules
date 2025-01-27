@@ -180,7 +180,7 @@ typedef struct _NVHsChannelEvoRec {
     } nv3d;
 
     struct {
-        NvU32 handle;
+        NvU32 handle[1];
     } nv2d;
 
     /*

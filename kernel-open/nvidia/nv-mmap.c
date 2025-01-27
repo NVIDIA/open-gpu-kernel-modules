@@ -597,7 +597,8 @@ int nvidia_mmap_helper(
             // TODO: Refactor is needed as part of bug#2001704.
             //
             if ((nv_get_numa_status(nvl) == NV_NUMA_STATUS_ONLINE) &&
-                !IS_REG_OFFSET(nv, access_start, access_len))
+                !IS_REG_OFFSET(nv, access_start, access_len) &&
+                (mmap_context->num_pages != 0))
             {
                 ret = nvidia_mmap_numa(vma, mmap_context);
                 if (ret)

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -134,5 +134,38 @@ typedef struct NV208F_CTRL_GR_ECC_INJECTION_SUPPORTED_PARAMS {
 typedef struct NV208F_CTRL_GR_ECC_SET_TRANSIENT_CLEARING_POLICY_PARAMS {
     NvU32 policy;
 } NV208F_CTRL_GR_ECC_SET_TRANSIENT_CLEARING_POLICY_PARAMS;
+
+/*
+ * NV208F_CTRL_CMD_GR_INJECT_CTXSW_UCODE_ERROR
+ *
+ * Control command to inject a CTXSW ucode error
+ *
+ * Parameters:
+ *
+ * errorType
+ *   Warning, Partial GR Reset, Full GR Reset, or GPU Reset
+ *
+ * errorMethod
+ *   Main, Firmware, or Sideband error
+ *
+ * bInjectGpccs
+ *   TRUE  - inject into GPCCS
+ *   FALSE - inject into FECS
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+#define NV208F_CTRL_CMD_GR_INJECT_CTXSW_UCODE_ERROR (0x208f1206) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_GR_INTERFACE_ID << 8) | NV208F_CTRL_GR_INJECT_CTXSW_UCODE_ERROR_PARAMS_MESSAGE_ID" */
+
+#define NV208F_CTRL_GR_INJECT_CTXSW_UCODE_ERROR_PARAMS_MESSAGE_ID (0x6U)
+
+typedef struct NV208F_CTRL_GR_INJECT_CTXSW_UCODE_ERROR_PARAMS {
+    NvU32  errorType;
+    NvU32  errorMethod;
+    NvBool bInjectGpccs;
+} NV208F_CTRL_GR_INJECT_CTXSW_UCODE_ERROR_PARAMS;
+
 
 /* _ctrl208fgr_h_ */

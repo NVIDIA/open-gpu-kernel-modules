@@ -32,6 +32,12 @@
 #include "nvswitch/ls10/dev_nvlsaw_ip_addendum.h"
 #include "nvswitch/ls10/dev_ctrl_ip.h"
 #include "nvswitch/ls10/dev_ctrl_ip_addendum.h"
+#include "nvswitch/ls10/dev_cpr_ip.h"
+#include "nvswitch/ls10/dev_npg_ip.h"
+#include "nvswitch/ls10/dev_fsp_pri.h"
+#include "nvswitch/ls10/dev_soe_ip.h"
+#include "nvswitch/ls10/ptop_discovery_ip.h"
+#include "nvswitch/ls10/dev_minion_ip.h"
 
 #include <stddef.h>
 
@@ -1056,7 +1062,7 @@ nvswitch_tnvl_get_status_ls10
 }
 
 static NvBool
-_nvswitch_reg_cpu_write_allow_list_ls10
+_nvswitch_tnvl_eng_wr_cpu_allow_list_ls10
 (
     nvswitch_device *device,
     NVSWITCH_ENGINE_ID eng_id,
@@ -1070,15 +1076,43 @@ _nvswitch_reg_cpu_write_allow_list_ls10
         case NVSWITCH_ENGINE_ID_FSP:
             return NV_TRUE;
         case NVSWITCH_ENGINE_ID_SAW:
+        {
             if (offset == NV_NVLSAW_DRIVER_ATTACH_DETACH)
                 return NV_TRUE;
+            break;
+        }
+        case NVSWITCH_ENGINE_ID_NPG:
+        {
+            if ((offset == NV_NPG_INTR_RETRIGGER(0)) ||
+                (offset == NV_NPG_INTR_RETRIGGER(1)))
+                   return NV_TRUE;
+            break;
+        }
+        case NVSWITCH_ENGINE_ID_CPR:
+        {
+            if ((offset == NV_CPR_SYS_INTR_RETRIGGER(0)) ||
+                (offset == NV_CPR_SYS_INTR_RETRIGGER(1)))
+                   return NV_TRUE;
+            break;
+        }
+        case NVSWITCH_ENGINE_ID_MINION:
+        {
+            if ((offset == NV_MINION_NVLINK_DL_STAT(0)) ||
+                (offset == NV_MINION_NVLINK_DL_STAT(1)) ||
+                (offset == NV_MINION_NVLINK_DL_STAT(2)) ||
+                (offset == NV_MINION_NVLINK_DL_STAT(3)))
+                    return NV_TRUE;
+            break;
+        }
         default :
             return NV_FALSE;
     }
+
+    return NV_FALSE;
 }
 
 void
-nvswitch_tnvl_reg_wr_32_ls10
+nvswitch_tnvl_eng_wr_32_ls10
 (
     nvswitch_device *device,
     NVSWITCH_ENGINE_ID eng_id,
@@ -1089,45 +1123,124 @@ nvswitch_tnvl_reg_wr_32_ls10
     NvU32 data
 )
 {
-    if (!nvswitch_is_tnvl_mode_enabled(device))
+    if (device->nvlink_device->pciInfo.bars[0].pBar == NULL)
     {
         NVSWITCH_PRINT(device, ERROR,
-           "%s: TNVL mode is not enabled\n",
-           __FUNCTION__);
-        NVSWITCH_ASSERT(0);
+            "%s: register write failed at offset 0x%x\n",
+            __FUNCTION__, offset);
+        return;
+    }
+
+    if (!nvswitch_is_tnvl_mode_enabled(device))
+    {
+        NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_TNVL_ERROR,
+           "ENG reg-write failed. TNVL mode is not enabled\n");
+        return;
+    }
+
+    if (_nvswitch_tnvl_eng_wr_cpu_allow_list_ls10(device, eng_id, offset))
+    {
+        nvswitch_os_mem_write32((NvU8 *)device->nvlink_device->pciInfo.bars[0].pBar + base_addr + offset, data);
         return;
     }
 
     if (nvswitch_is_tnvl_mode_locked(device))
     {
+        NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_TNVL_ERROR,
+           "TNVL ENG_WR failure - 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n",
+            eng_id, eng_instance, eng_bcast, base_addr, offset, data);
+
+        NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_TNVL_ERROR,
+           "TNVL mode is locked\n");
+        return;
+    }
+
+    if (nvswitch_soe_eng_wr_32_ls10(device, eng_id, eng_bcast, eng_instance, base_addr, offset, data) != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_TNVL_ERROR,
+           "TNVL ENG_WR failure - 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n",
+            eng_id, eng_instance, eng_bcast, base_addr, offset, data);
+
         NVSWITCH_PRINT(device, ERROR,
-           "%s: TNVL mode is locked\n",
-           __FUNCTION__);
+            "%s: SOE ENG_WR failed for 0x%x[%d] %s @0x%08x+0x%06x = 0x%08x\n",
+            __FUNCTION__,
+            eng_id, eng_instance,
+            (
+                (eng_bcast == NVSWITCH_GET_ENG_DESC_TYPE_UNICAST) ? "UC" :
+                (eng_bcast == NVSWITCH_GET_ENG_DESC_TYPE_BCAST) ? "BC" :
+                (eng_bcast == NVSWITCH_GET_ENG_DESC_TYPE_MULTICAST) ? "MC" :
+                "??"
+            ),
+            base_addr, offset, data);
+    }
+}
+
+static NvBool
+_nvswitch_tnvl_reg_wr_cpu_allow_list_ls10
+(
+    nvswitch_device *device,
+    NvU32 offset
+)
+{
+    if ((offset >= DRF_BASE(NV_PFSP)) && 
+       (offset <= DRF_EXTENT(NV_PFSP)))
+    {
+        return NV_TRUE;
+    }
+
+    if ((offset >= NV_PTOP_UNICAST_SW_DEVICE_BASE_SOE_0 + DRF_BASE(NV_SOE)) && 
+       (offset <=  NV_PTOP_UNICAST_SW_DEVICE_BASE_SOE_0 + DRF_EXTENT(NV_SOE)))
+    {
+        return NV_TRUE;
+    }
+
+    return NV_FALSE;
+}
+
+void
+nvswitch_tnvl_reg_wr_32_ls10
+(
+    nvswitch_device *device,
+    NvU32 offset,
+    NvU32 data
+)
+{
+    if (device->nvlink_device->pciInfo.bars[0].pBar == NULL)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: register write failed at offset 0x%x\n",
+            __FUNCTION__, offset);
         NVSWITCH_ASSERT(0);
         return;
     }
 
-    if (_nvswitch_reg_cpu_write_allow_list_ls10(device, eng_id, offset))
+    if (!nvswitch_is_tnvl_mode_enabled(device))
     {
-        nvswitch_reg_write_32(device, base_addr + offset,  data);
+        NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_TNVL_ERROR,
+           "Reg-write failed. TNVL mode is not enabled\n");
+        return;
     }
-    else
+
+    if (_nvswitch_tnvl_reg_wr_cpu_allow_list_ls10(device, offset))
     {
-        if (nvswitch_soe_reg_wr_32_ls10(device, base_addr + offset, data) != NVL_SUCCESS)
-        {
-            NVSWITCH_PRINT(device, ERROR,
-                "%s: SOE ENG_WR failed for 0x%x[%d] %s @0x%08x+0x%06x = 0x%08x\n",
-                __FUNCTION__,
-                eng_id, eng_instance,
-                (
-                    (eng_bcast == NVSWITCH_GET_ENG_DESC_TYPE_UNICAST) ? "UC" :
-                    (eng_bcast == NVSWITCH_GET_ENG_DESC_TYPE_BCAST) ? "BC" :
-                    (eng_bcast == NVSWITCH_GET_ENG_DESC_TYPE_MULTICAST) ? "MC" :
-                    "??"
-                ),
-                base_addr, offset, data);
-            NVSWITCH_ASSERT(0);
-        }
+        nvswitch_os_mem_write32((NvU8 *)device->nvlink_device->pciInfo.bars[0].pBar + offset, data);
+        return;
+    }
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_TNVL_ERROR,
+           "TNVL REG_WR failure - 0x%08x, 0x%08x\n", offset, data);
+
+        NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_TNVL_ERROR,
+           "TNVL mode is locked\n");
+        return;
+    }
+
+    if (nvswitch_soe_reg_wr_32_ls10(device, offset, data) != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_TNVL_ERROR,
+           "TNVL REG_WR failure - 0x%08x, 0x%08x\n", offset, data);
     }
 }
 

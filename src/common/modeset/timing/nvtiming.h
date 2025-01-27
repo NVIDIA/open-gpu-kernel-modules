@@ -189,6 +189,7 @@ typedef struct tagNVT_TIMING
 
     NvU16 interlaced;       //1-interlaced, 0-progressive
     NvU32 pclk;             //pixel clock in 10KHz
+    NvU32 pclk1khz;         //pixel clock in 1kHz for Type7, CVT RB2, CVT RB3
 
     //other timing related extras
     NVT_TIMINGEXT etc;
@@ -774,6 +775,7 @@ typedef enum NVT_TV_FORMAT
 #define NVT_CTA861_RID_15360x8640p_16x9    26
 #define NVT_CTA861_RID_15360x8640p_64x27   27
 #define NVT_CTA861_RID_20480x8640p_64x27   28
+#define NVT_CTA861_RID_EXCEED_RESOLUTION   NVT_CTA861_RID_NONE
 
 // Table 12 - AVI InfoFrame Video Format Frame Rate
 #define NVT_CTA861_FR_NO_DATA              NVT_INFOFRAME_CTRL_DONTCARE
@@ -3060,7 +3062,7 @@ typedef struct tagNVT_AUDIO_INFOFRAME_CTRL
 typedef struct tagNVT_VENDOR_SPECIFIC_INFOFRAME_CTRL
 {
     NvU8            Enable;
-    NvU8            HDMIRevision;
+    NvU8            VSIFVersion;
     NvU8            HDMIFormat;
     NvU8            HDMI_VIC;
     NvBool          ALLMEnable;
@@ -3073,6 +3075,10 @@ typedef struct tagNVT_VENDOR_SPECIFIC_INFOFRAME_CTRL
 } NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL;
 #define NVT_3D_METADTATA_TYPE_PARALAX   0x00
 #define NVT_3D_METADTATA_PARALAX_LEN    0x08
+#define NVT_VSIF_VERSION_NONE              0
+#define NVT_VSIF_VERSION_H14B_VSIF        14
+#define NVT_VSIF_VERSION_HF_VSIF          20
+
 
 #define NVT_EXTENDED_METADATA_PACKET_INFOFRAME_VER_HDMI21      0x0
 #define NVT_EXTENDED_METADATA_PACKET_INFOFRAME_VER_HDMI21A     0x1
@@ -3210,6 +3216,7 @@ typedef struct tagNVT_VIDEO_INFOFRAME
 #define NVT_VIDEO_INFOFRAME_BYTE1_Y2Y1Y0_YCbCr444         2
 #define NVT_VIDEO_INFOFRAME_BYTE1_Y2Y1Y0_YCbCr420         3
 #define NVT_VIDEO_INFOFRAME_BYTE1_Y2Y1Y0_FUTURE           3 // nvlEscape still uses this line 4266
+// CTA-861I new requirement
 #define NVT_VIDEO_INFOFRAME_BYTE1_Y2Y1Y0_IDODEFINED       7
 // CEA-861-F - Unix still used this one
 #define NVT_VIDEO_INFOFRAME_BYTE1_Y1Y0_MASK               0x60
@@ -4005,7 +4012,7 @@ typedef struct tagNVT_EXTENDED_METADATA_PACKET_INFOFRAME
 #define NVT_DP_ADAPTIVE_SYNC_SDP_DB3_TARGET_RR_LSB_MASK                             0xff
 #define NVT_DP_ADAPTIVE_SYNC_SDP_DB3_TARGET_RR_LSB_SHIFT                            0
 
-#define NVT_DP_ADAPTIVE_SYNC_SDP_DB4_TARGET_RR_MSB_MASK                             0x01
+#define NVT_DP_ADAPTIVE_SYNC_SDP_DB4_TARGET_RR_MSB_MASK                             0x03
 #define NVT_DP_ADAPTIVE_SYNC_SDP_DB4_TARGET_RR_MSB_SHIFT                            0
 
 #define NVT_DP_ADAPTIVE_SYNC_SDP_DB4_RSVD_MASK                                      0x1c

@@ -356,4 +356,32 @@ typedef struct NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS {
     NvBool   bDeviceProfilingEnabled;
 } NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS;
 
+/*
+ * NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_SET_PLACEMENT_ID
+ *
+ * This command will set the placementId and reserve system channel Ids
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_CLIENT
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_INVALID_OBJECT_HANDLE
+ *   NV_ERR_OBJECT_NOT_FOUND
+ *   NV_ERR_NOT_SUPPORTED
+ *
+ * Parameters:
+ * numChannels      -> Used only when SRIOV is enabled.
+ * placementId      -> Used to provide placement Id of vGPU device with heterogeneous timesliced vGPUs.
+ *                     Also Ada onwards for Homogeneous GPUs as well.
+ *                     Otherwise set to NVA081_PLACEMENT_ID_INVALID.
+ */
+#define NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_SET_PLACEMENT_ID (0xa084010e) /* finn: Evaluated from "(FINN_NVA084_KERNEL_HOST_VGPU_DEVICE_KERNEL_HOST_VGPU_DEVICE_INTERFACE_ID << 8) | NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_SET_PLACEMENT_ID_PARAMS_MESSAGE_ID" */
+
+#define NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_SET_PLACEMENT_ID_PARAMS_MESSAGE_ID (0xEU)
+
+typedef struct NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_SET_PLACEMENT_ID_PARAMS {
+    NvU32 numChannels;
+    NvU16 placementId;
+} NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_SET_PLACEMENT_ID_PARAMS;
+
 /* _ctrla084_h_ */

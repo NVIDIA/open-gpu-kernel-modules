@@ -477,7 +477,6 @@ NvBool nvHsIoctlFlip(
     const struct NvKmsFlipRequestOneHead *pFlipHead,
     NvU32 numFlipHeads,
     NvBool commit,
-    NvBool allowVrr,
     struct NvKmsFlipReply *pReply)
 {
     NvU32 i;
@@ -517,7 +516,7 @@ NvBool nvHsIoctlFlip(
     if (nHsApiHeads == 0) {
         ret = nvFlipEvo(pDevEvo,
                         pOpenDev,
-                        pFlipHead, numFlipHeads, commit, allowVrr,
+                        pFlipHead, numFlipHeads, commit,
                         pReply,
                         FALSE /* skipUpdate */,
                         TRUE /* allowFlipLock */);
@@ -573,7 +572,7 @@ NvBool nvHsIoctlFlip(
 
         tmp = nvFlipEvo(pDevEvo,
                         pOpenDev,
-                        pFlipHeadLocal, nNonHsApiHeads, commit, allowVrr,
+                        pFlipHeadLocal, nNonHsApiHeads, commit,
                         pReply,
                         FALSE /* skipUpdate */,
                         TRUE /* allowFlipLock */);

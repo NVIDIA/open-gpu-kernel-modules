@@ -361,8 +361,7 @@
  *     This output is returned for each head and suggests to the clients
  *     if the mode will be possible or not on that head when OSLD is enabled. 
  *     The output is only valid if bGetOSLDOutput is set in the head input.
- *     Note that with OSLD output, RM will also return the legacy output
- *     values.
+ *     Note that bIsOSLDPossible is only valid if bIsPossible is true.
  *    
  *   minImpVPState
  *     minImpVPState returns the minimum v-pstate at which the mode is possible

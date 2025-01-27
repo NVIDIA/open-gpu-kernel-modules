@@ -244,13 +244,11 @@ const char *uvm_pmm_gpu_memory_type_string(uvm_pmm_gpu_memory_type_t type)
 {
     switch (type) {
         UVM_ENUM_STRING_CASE(UVM_PMM_GPU_MEMORY_TYPE_USER);
-        UVM_ENUM_STRING_CASE(UVM_PMM_GPU_MEMORY_TYPE_USER_UNPROTECTED);
         UVM_ENUM_STRING_CASE(UVM_PMM_GPU_MEMORY_TYPE_KERNEL);
-        UVM_ENUM_STRING_CASE(UVM_PMM_GPU_MEMORY_TYPE_KERNEL_UNPROTECTED);
         UVM_ENUM_STRING_DEFAULT();
     }
 
-    BUILD_BUG_ON(UVM_PMM_GPU_MEMORY_TYPE_COUNT != 4);
+    BUILD_BUG_ON(UVM_PMM_GPU_MEMORY_TYPE_COUNT != 2);
 }
 
 const char *uvm_pmm_gpu_chunk_state_string(uvm_pmm_gpu_chunk_state_t state)
@@ -453,30 +451,6 @@ static void chunk_unpin(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm_pmm_gpu_
     chunk->suballoc->pinned_leaf_chunks--;
 }
 
-bool uvm_pmm_gpu_memory_type_is_user(uvm_pmm_gpu_memory_type_t type)
-{
-    UVM_ASSERT(type < UVM_PMM_GPU_MEMORY_TYPE_COUNT);
-
-    switch (type) {
-        case UVM_PMM_GPU_MEMORY_TYPE_USER: // Alias UVM_PMM_GPU_MEMORY_TYPE_USER_PROTECTED
-        case UVM_PMM_GPU_MEMORY_TYPE_USER_UNPROTECTED:
-            return true;
-        default:
-            return false;
-    }
-}
-
-bool uvm_pmm_gpu_memory_type_is_protected(uvm_pmm_gpu_memory_type_t type)
-{
-    switch (type) {
-        case UVM_PMM_GPU_MEMORY_TYPE_USER: // Alias UVM_PMM_GPU_MEMORY_TYPE_USER_PROTECTED
-        case UVM_PMM_GPU_MEMORY_TYPE_KERNEL: // Alias UVM_PMM_GPU_MEMORY_TYPE_KERNEL_PROTECTED:
-            return true;
-        default:
-            return false;
-    }
-}
-
 static void uvm_gpu_chunk_set_in_eviction(uvm_gpu_chunk_t *chunk, bool in_eviction)
 {
     UVM_ASSERT(uvm_gpu_chunk_is_user(chunk));
@@ -535,20 +509,6 @@ void uvm_pmm_gpu_sync(uvm_pmm_gpu_t *pmm)
     }
 }
 
-static uvm_pmm_gpu_memory_type_t pmm_squash_memory_type(uvm_pmm_gpu_memory_type_t type)
-{
-    if (g_uvm_global.conf_computing_enabled)
-        return type;
-
-    // Enforce the contract that when the Confidential Computing feature is
-    // disabled, all user types are alike, as well as all kernel types,
-    // respectively. See uvm_pmm_gpu_memory_type_t.
-    if (uvm_pmm_gpu_memory_type_is_user(type))
-        return UVM_PMM_GPU_MEMORY_TYPE_USER;
-
-    return UVM_PMM_GPU_MEMORY_TYPE_KERNEL;
-}
-
 static NV_STATUS pmm_gpu_alloc(uvm_pmm_gpu_t *pmm,
                                size_t num_chunks,
                                uvm_chunk_size_t chunk_size,
@@ -573,7 +533,6 @@ static NV_STATUS pmm_gpu_alloc(uvm_pmm_gpu_t *pmm,
         uvm_assert_lockable_order(UVM_LOCK_ORDER_VA_BLOCK);
     }
 
-    mem_type = pmm_squash_memory_type(mem_type);
     for (i = 0; i < num_chunks; i++) {
         uvm_gpu_root_chunk_t *root_chunk;
 
@@ -1199,38 +1158,6 @@ void uvm_pmm_gpu_merge_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
     uvm_mutex_unlock(&pmm->lock);
 }
 
-uvm_gpu_phys_address_t uvm_pmm_gpu_peer_phys_address(uvm_pmm_gpu_t *pmm,
-                                                     uvm_gpu_chunk_t *chunk,
-                                                     uvm_gpu_t *accessing_gpu)
-{
-    uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
-    uvm_aperture_t aperture = uvm_gpu_peer_aperture(accessing_gpu, gpu);
-    NvU64 addr;
-
-    if (uvm_parent_gpus_are_nvswitch_connected(accessing_gpu->parent, gpu->parent))
-        addr = chunk->address + gpu->parent->nvswitch_info.fabric_memory_window_start;
-    else
-        addr = chunk->address;
-
-    return uvm_gpu_phys_address(aperture, addr);
-}
-
-uvm_gpu_address_t uvm_pmm_gpu_peer_copy_address(uvm_pmm_gpu_t *pmm,
-                                                uvm_gpu_chunk_t *chunk,
-                                                uvm_gpu_t *accessing_gpu)
-{
-    uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
-    uvm_gpu_identity_mapping_t *gpu_peer_mapping;
-
-    if (accessing_gpu->parent->peer_copy_mode == UVM_GPU_PEER_COPY_MODE_PHYSICAL)
-        return uvm_gpu_address_from_phys(uvm_pmm_gpu_peer_phys_address(pmm, chunk, accessing_gpu));
-
-    UVM_ASSERT(accessing_gpu->parent->peer_copy_mode == UVM_GPU_PEER_COPY_MODE_VIRTUAL);
-    gpu_peer_mapping = uvm_gpu_get_peer_mapping(accessing_gpu, gpu->id);
-
-    return uvm_gpu_address_virtual(gpu_peer_mapping->base + chunk->address);
-}
-
 static NV_STATUS evict_root_chunk_from_va_block(uvm_pmm_gpu_t *pmm,
                                                 uvm_gpu_root_chunk_t *root_chunk,
                                                 uvm_va_block_t *va_block)
@@ -1586,7 +1513,7 @@ static NV_STATUS pick_and_evict_root_chunk(uvm_pmm_gpu_t *pmm,
 
     chunk = &root_chunk->chunk;
 
-    if (uvm_pmm_gpu_memory_type_is_kernel(type)) {
+    if (type == UVM_PMM_GPU_MEMORY_TYPE_KERNEL) {
         NvU32 flags = 0;
         if (pmm_context == PMM_CONTEXT_PMA_EVICTION)
             flags |= UVM_PMA_CALLED_FROM_PMA_EVICTION;
@@ -1973,11 +1900,12 @@ NV_STATUS alloc_root_chunk(uvm_pmm_gpu_t *pmm,
     // Also, user pages that are about to be overwritten, don't need to be
     // zeroed, either. Add a flag to uvm_pmm_gpu_alloc_* to skip scrubbing.
     const bool skip_pma_scrubbing = gpu->mem_info.numa.enabled;
-    UVM_ASSERT(uvm_pmm_gpu_memory_type_is_user(type) || uvm_pmm_gpu_memory_type_is_kernel(type));
+
+    UVM_ASSERT(type < UVM_PMM_GPU_MEMORY_TYPE_COUNT);
 
     options.flags = UVM_PMA_ALLOCATE_DONT_EVICT;
 
-    if (uvm_pmm_gpu_memory_type_is_kernel(type) || !gpu_supports_pma_eviction(gpu))
+    if ((type == UVM_PMM_GPU_MEMORY_TYPE_KERNEL) || !gpu_supports_pma_eviction(gpu))
         options.flags |= UVM_PMA_ALLOCATE_PINNED;
 
     if (skip_pma_scrubbing)
@@ -1988,9 +1916,10 @@ NV_STATUS alloc_root_chunk(uvm_pmm_gpu_t *pmm,
     if (gpu->mem_info.numa.enabled)
         flags |= UVM_PMM_ALLOC_FLAGS_DONT_BATCH;
 
-    // When the Confidential Computing feature is enabled, allocate GPU memory
-    // in the protected region, unless specified otherwise.
-    if (g_uvm_global.conf_computing_enabled && uvm_pmm_gpu_memory_type_is_protected(type))
+    // In Confidential Computing, the PMA allocator exposes not only regular
+    // ("protected") vidmem, but also another type called ""unprotected" vidmem.
+    // UVM has no use for the latter type.
+    if (g_uvm_global.conf_computing_enabled)
         options.flags |= UVM_PMA_ALLOCATE_PROTECTED_REGION;
 
     if (!gpu->parent->rm_info.isSimulated &&
@@ -2245,11 +2174,7 @@ static bool check_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
     UVM_ASSERT(chunk_size & chunk_sizes);
     UVM_ASSERT(IS_ALIGNED(chunk->address, chunk_size));
     UVM_ASSERT(uvm_id_equal(uvm_gpu_id_from_index(chunk->gpu_index), gpu->id));
-
-
-    // See pmm_squash_memory_type().
-    if (!g_uvm_global.conf_computing_enabled)
-        UVM_ASSERT((chunk->type == UVM_PMM_GPU_MEMORY_TYPE_USER) || (chunk->type == UVM_PMM_GPU_MEMORY_TYPE_KERNEL));
+    UVM_ASSERT(chunk->type < UVM_PMM_GPU_MEMORY_TYPE_COUNT);
 
     if (chunk->state == UVM_PMM_GPU_CHUNK_STATE_IS_SPLIT)
         UVM_ASSERT(chunk_size > uvm_chunk_find_first_size(chunk_sizes));
@@ -2559,8 +2484,12 @@ static NV_STATUS uvm_pmm_gpu_pma_evict_pages(void *void_pmm,
     UVM_ASSERT(IS_ALIGNED(UVM_CHUNK_SIZE_MAX, page_size));
     UVM_ASSERT(UVM_CHUNK_SIZE_MAX >= page_size);
 
-    // Currently, when the Confidential Computing feature is enabled, the
-    // entirety of vidmem is protected.
+    // In Confidential Computing, RM should only request eviction of protected
+    // vidmem.
+    //
+    // TODO: Bug 4287430: there shouldn't be any memory type argument, because
+    // the callback can only relate to protected vidmem. This check can be
+    // removed alongside the parameter.
     if (g_uvm_global.conf_computing_enabled && (mem_type != UVM_PMA_GPU_MEMORY_TYPE_PROTECTED))
         return NV_ERR_INVALID_ARGUMENT;
 
@@ -2697,6 +2626,15 @@ static NV_STATUS uvm_pmm_gpu_pma_evict_range(void *void_pmm,
                    "range [0x%llx, 0x%llx]\n",
                    phys_begin,
                    phys_end);
+
+    // In Confidential Computing, RM should only request eviction of protected
+    // vidmem.
+    //
+    // TODO: Bug 4287430: there shouldn't be any memory type argument, because
+    // the callback can only relate to protected vidmem. This check can be
+    // removed alongside the parameter.
+    if (g_uvm_global.conf_computing_enabled && (mem_type != UVM_PMA_GPU_MEMORY_TYPE_PROTECTED))
+        return NV_ERR_INVALID_ARGUMENT;
 
     // Make sure that all pending allocations, that could have started before
     // the eviction callback was called, are done. This is required to guarantee
@@ -2990,7 +2928,7 @@ static NV_STATUS get_chunk_mappings_in_range(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t
     uvm_assert_mutex_locked(&pmm->lock);
 
     // Kernel chunks do not have assigned VA blocks so we can just skip them
-    if (uvm_pmm_gpu_memory_type_is_kernel(chunk->type))
+    if (chunk->type == UVM_PMM_GPU_MEMORY_TYPE_KERNEL)
         return NV_WARN_NOTHING_TO_DO;
 
     // This chunk is located before the requested physical range. Skip its
@@ -3434,11 +3372,8 @@ NV_STATUS uvm_pmm_gpu_init(uvm_pmm_gpu_t *pmm)
     uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
     const uvm_chunk_sizes_mask_t chunk_size_init[][UVM_PMM_GPU_MEMORY_TYPE_COUNT] =
     {
-        { gpu->parent->mmu_user_chunk_sizes,
-          gpu->parent->mmu_user_chunk_sizes,
-          gpu->parent->mmu_kernel_chunk_sizes,
-          gpu->parent->mmu_kernel_chunk_sizes },
-        { 0, 0, uvm_mem_kernel_chunk_sizes(gpu), uvm_mem_kernel_chunk_sizes(gpu)},
+        { gpu->parent->mmu_user_chunk_sizes, gpu->parent->mmu_kernel_chunk_sizes },
+        { 0, uvm_mem_kernel_chunk_sizes(gpu)},
     };
     NV_STATUS status = NV_OK;
     size_t i, j, k;

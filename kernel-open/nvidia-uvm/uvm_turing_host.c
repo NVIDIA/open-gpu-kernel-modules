@@ -29,6 +29,12 @@
 void uvm_hal_turing_host_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload)
 {
     NvU32 sem_lo;
+
+    UVM_ASSERT_MSG(uvm_push_get_gpu(push)->parent->host_hal->semaphore_target_is_valid(push, gpu_va),
+                   "Semaphore target validation failed in channel %s, GPU %s.\n",
+                   push->channel->name,
+                   uvm_gpu_name(uvm_push_get_gpu(push)));
+
     UVM_ASSERT(!(NvOffset_LO32(gpu_va) & ~HWSHIFTMASK(C46F, SEM_ADDR_LO, OFFSET)));
     sem_lo = READ_HWVALUE(NvOffset_LO32(gpu_va), C46F, SEM_ADDR_LO, OFFSET);
 
@@ -47,6 +53,12 @@ void uvm_hal_turing_host_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32
 void uvm_hal_turing_host_semaphore_acquire(uvm_push_t *push, NvU64 gpu_va, NvU32 payload)
 {
     NvU32 sem_lo;
+
+    UVM_ASSERT_MSG(uvm_push_get_gpu(push)->parent->host_hal->semaphore_target_is_valid(push, gpu_va),
+                   "Semaphore target validation failed in channel %s, GPU %s.\n",
+                   push->channel->name,
+                   uvm_gpu_name(uvm_push_get_gpu(push)));
+
     UVM_ASSERT(!(NvOffset_LO32(gpu_va) & ~HWSHIFTMASK(C46F, SEM_ADDR_LO, OFFSET)));
     sem_lo = READ_HWVALUE(NvOffset_LO32(gpu_va), C46F, SEM_ADDR_LO, OFFSET);
     NV_PUSH_5U(C46F, SEM_ADDR_LO,    HWVALUE(C46F, SEM_ADDR_LO, OFFSET, sem_lo),

@@ -225,7 +225,7 @@ _videoEventBufferAdd
             videoRecord.session.codec_id = pRecord->event_start.codec_id;
             break;
         case VIDEO_ENGINE_EVENT_ID__SESSION_END:
-            videoRecord.session.engine_type = pRecord->event_start.engine_type;
+            videoRecord.session.engine_type = pRecord->event_end.engine_type;
             videoRecord.session.engine_id = pRecord->event_end.engine_id;
             videoRecord.session.codec_id = pRecord->event_end.codec_id;
             videoRecord.session.status = pRecord->event_end.status;
@@ -235,12 +235,25 @@ _videoEventBufferAdd
             videoRecord.stateChange.from = pRecord->event_pstate_change.from;
             break;
         case VIDEO_ENGINE_EVENT_ID__LOG_DATA:
-            videoRecord.logData.engine_type = pRecord->event_start.engine_type;
-            videoRecord.logData.engine_id = pRecord->event_start.engine_id;
-            videoRecord.logData.codec_id = pRecord->event_start.codec_id;
+            videoRecord.logData.engine_type = pRecord->event_log_data.engine_type;
+            videoRecord.logData.engine_id = pRecord->event_log_data.engine_id;
+            videoRecord.logData.type = pRecord->event_log_data.type;
             videoRecord.logData.size = pRecord->event_log_data.size;
             notifyEvent.pVardata = NV_PTR_TO_NvP64(pLogData);
             notifyEvent.vardataSize = videoRecord.logData.size;
+
+#if defined(DEBUG) || defined(DEVELOP) || defined(NV_VERIF_FEATURES)
+            if (videoRecord.logData.type == VIDEO_ENGINE_EVENT_LOG_DATA_TYPE__STR)
+            {
+                NV_PRINTF(LEVEL_INFO, "[UCODE][%s%d] %s\n",
+                        (videoRecord.logData.engine_type == VIDEO_ENGINE_TYPE__NVDEC) ? "NVDEC" :
+                        ((videoRecord.logData.engine_type == VIDEO_ENGINE_TYPE__NVENC) ? "NVENC":
+                         ((videoRecord.logData.engine_type == VIDEO_ENGINE_TYPE__NVJPG) ? "NVJPG" :
+                          ((videoRecord.logData.engine_type == VIDEO_ENGINE_TYPE__OFA) ? "OFA" :
+                           "UNKNOWN"))),
+                        videoRecord.logData.engine_id, (NvU8*)pLogData);
+            }
+#endif
             break;
         default:
             videoRecord.event_data = pRecord->event_data;
@@ -329,7 +342,8 @@ static void _videoGetTraceEvents
                                               magicLo);
 
         // If the read pointer was not moved by us, this record may be invalid
-        if ((oldReadPtr + sizeof(VIDEO_ENGINE_EVENT__RECORD)) != pRingbuffer->readPtr)
+        if ((videoRecord.event_id != VIDEO_ENGINE_EVENT_ID__LOG_DATA) &&
+            ((oldReadPtr + sizeof(VIDEO_ENGINE_EVENT__RECORD)) != pRingbuffer->readPtr))
             continue;
 
         if (gotSize == 0)

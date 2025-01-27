@@ -132,7 +132,7 @@ void crashcatReportLogReporter_V1_LIBOS3(CrashCatReport *pReport)
     if (taskId == NV_CRASHCAT_REPORT_V1_REPORTER_ID_LIBOS3_TASK_ID_UNSPECIFIED)
     {
         CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport,
-            "Reported by libos partition:%u#%u kernel v%u.%u [%u] @ ts:%u",
+            "Reported by libos partition:%u#%u kernel v%u.%u [%u] @ ts:%u\n",
             crashcatReportV1ReporterPartition(pReportV1),
             crashcatReportV1ReporterUcodeId(pReportV1),
             crashcatReportV1ReporterVersionLibos3Major(pReportV1),
@@ -143,7 +143,7 @@ void crashcatReportLogReporter_V1_LIBOS3(CrashCatReport *pReport)
     else
     {
         CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport,
-            "Reported by libos partition:%u#%u task:%u v%u.%u [%u] @ ts:%u",
+            "Reported by libos partition:%u#%u task:%u v%u.%u [%u] @ ts:%u\n",
             crashcatReportV1ReporterPartition(pReportV1),
             crashcatReportV1ReporterUcodeId(pReportV1),
             taskId, crashcatReportV1ReporterVersionLibos3Major(pReportV1),

@@ -131,7 +131,7 @@ struct NotifShare {
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct RsShared __nvoc_base_RsShared;
 
     // Ancestor object pointers for `staticCast` feature
@@ -211,7 +211,7 @@ struct Event {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__Event *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct RmResource __nvoc_base_RmResource;
 
     // Ancestor object pointers for `staticCast` feature
@@ -581,7 +581,7 @@ struct Notifier {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__Notifier *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct INotifier __nvoc_base_INotifier;
 
     // Ancestor object pointers for `staticCast` feature

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2020-2023 NVIDIA Corporation
+    Copyright (c) 2020-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -91,6 +91,11 @@ void uvm_hal_hopper_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 p
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
     NvU32 launch_dma_plc_mode;
 
+    UVM_ASSERT_MSG(gpu->parent->ce_hal->semaphore_target_is_valid(push, gpu_va),
+                   "Semaphore target validation failed in channel %s, GPU %s.\n",
+                   push->channel ? push->channel->name : "'fake'",
+                   uvm_gpu_name(gpu));
+
     NV_PUSH_3U(C8B5, SET_SEMAPHORE_A, HWVALUE(C8B5, SET_SEMAPHORE_A, UPPER, NvOffset_HI32(gpu_va)),
                      SET_SEMAPHORE_B, HWVALUE(C8B5, SET_SEMAPHORE_B, LOWER, NvOffset_LO32(gpu_va)),
                      SET_SEMAPHORE_PAYLOAD, payload);
@@ -108,6 +113,11 @@ void uvm_hal_hopper_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, N
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
     NvU32 launch_dma_plc_mode;
+
+    UVM_ASSERT_MSG(gpu->parent->ce_hal->semaphore_target_is_valid(push, gpu_va),
+                   "Semaphore target validation failed in channel %s, GPU %s.\n",
+                   push->channel ? push->channel->name : "'fake'",
+                   uvm_gpu_name(gpu));
 
     NV_PUSH_3U(C8B5, SET_SEMAPHORE_A, HWVALUE(C8B5, SET_SEMAPHORE_A, UPPER, NvOffset_HI32(gpu_va)),
                      SET_SEMAPHORE_B, HWVALUE(C8B5, SET_SEMAPHORE_B, LOWER, NvOffset_LO32(gpu_va)),
@@ -127,14 +137,18 @@ void uvm_hal_hopper_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, N
 
 void uvm_hal_hopper_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va)
 {
-    uvm_gpu_t *gpu;
+    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
     NvU32 launch_dma_plc_mode;
+
+    UVM_ASSERT_MSG(gpu->parent->ce_hal->semaphore_target_is_valid(push, gpu_va),
+                   "Semaphore target validation failed in channel %s, GPU %s.\n",
+                   push->channel ? push->channel->name : "'fake'",
+                   uvm_gpu_name(gpu));
 
     NV_PUSH_3U(C8B5, SET_SEMAPHORE_A, HWVALUE(C8B5, SET_SEMAPHORE_A, UPPER, NvOffset_HI32(gpu_va)),
                      SET_SEMAPHORE_B, HWVALUE(C8B5, SET_SEMAPHORE_B, LOWER, NvOffset_LO32(gpu_va)),
                      SET_SEMAPHORE_PAYLOAD, 0xdeadbeef);
 
-    gpu = uvm_push_get_gpu(push);
     launch_dma_plc_mode = gpu->parent->ce_hal->plc_mode();
 
     NV_PUSH_1U(C8B5, LAUNCH_DMA, hopper_get_flush_value(push) |
@@ -186,6 +200,7 @@ static NvU32 hopper_memset_copy_type(uvm_gpu_address_t dst)
 {
     if (g_uvm_global.conf_computing_enabled && dst.is_unprotected)
         return HWCONST(C8B5, LAUNCH_DMA, COPY_TYPE, NONPROT2NONPROT);
+
     return HWCONST(C8B5, LAUNCH_DMA, COPY_TYPE, DEFAULT);
 }
 
@@ -345,13 +360,18 @@ bool uvm_hal_hopper_ce_memset_is_valid(uvm_push_t *push,
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
 
-    // In HCC, if a memset uses physical addressing for the destination, then
-    // it must write to (protected) vidmem. If the memset uses virtual
-    // addressing, and the backing storage is not vidmem, the access is only
-    // legal if the copy type is NONPROT2NONPROT, and the destination is
+    // In Confidential Computing, if a memset uses physical addressing for the
+    // destination, then it must write to (protected) vidmem. If the memset uses
+    // virtual addressing, and the backing storage is not vidmem, the access is
+    // only legal if the copy type is NONPROT2NONPROT, and the destination is
     // unprotected sysmem, but the validation does not detect it.
-    if (uvm_conf_computing_mode_is_hcc(gpu) && !dst.is_virtual && dst.aperture != UVM_APERTURE_VID)
+    if (g_uvm_global.conf_computing_enabled && !dst.is_virtual && dst.aperture != UVM_APERTURE_VID)
         return false;
+
+    if (uvm_gpu_address_is_peer(gpu, dst)) {
+        UVM_ERR_PRINT("Memset to peer address (0x%llx) is not allowed!", dst.address);
+        return false;
+    }
 
     if (!gpu->parent->ce_phys_vidmem_write_supported) {
         size_t size = num_elements * element_size;
@@ -373,14 +393,22 @@ bool uvm_hal_hopper_ce_memset_is_valid(uvm_push_t *push,
 bool uvm_hal_hopper_ce_memcopy_is_valid(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src)
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+    const bool peer_copy = uvm_gpu_address_is_peer(gpu, dst) || uvm_gpu_address_is_peer(gpu, src);
 
-    if (uvm_conf_computing_mode_is_hcc(gpu)) {
-        // In HCC, if a memcopy uses physical addressing for either the
-        // destination or the source, then the corresponding aperture must be
-        // vidmem. If virtual addressing is used, and the backing storage is
-        // sysmem the access is only legal if the copy type is NONPROT2NONPROT,
-        // but the validation does not detect it. In other words the copy
-        // source and destination is unprotected sysmem.
+    if (push->channel && peer_copy && !uvm_channel_is_p2p(push->channel)) {
+        UVM_ERR_PRINT("Peer copy from address (0x%llx) to address (0x%llx) should use designated p2p channels!",
+                      src.address,
+                      dst.address);
+        return false;
+    }
+
+    if (g_uvm_global.conf_computing_enabled) {
+        // In Confidential Computing, if a memcopy uses physical addressing for
+        // either the destination or the source, then the corresponding aperture
+        // must be vidmem. If virtual addressing is used, and the backing
+        // storage is sysmem the access is only legal if the copy type is
+        // NONPROT2NONPROT, but the validation does not detect it. In other
+        // words the copy source and destination is unprotected sysmem.
         if (!src.is_virtual && (src.aperture != UVM_APERTURE_VID))
             return false;
 
@@ -490,9 +518,8 @@ void uvm_hal_hopper_ce_encrypt(uvm_push_t *push,
     NvU32 auth_tag_address_hi32, auth_tag_address_lo32;
     NvU64 iv_address;
     NvU32 iv_address_hi32, iv_address_lo32;
-    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
 
-    UVM_ASSERT(uvm_conf_computing_mode_is_hcc(gpu));
+    UVM_ASSERT(g_uvm_global.conf_computing_enabled);
     UVM_ASSERT(IS_ALIGNED(auth_tag.address, UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT));
 
     if (!src.is_virtual)
@@ -537,9 +564,8 @@ void uvm_hal_hopper_ce_decrypt(uvm_push_t *push,
 {
 
     NvU32 auth_tag_address_hi32, auth_tag_address_lo32;
-    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
 
-    UVM_ASSERT(uvm_conf_computing_mode_is_hcc(gpu));
+    UVM_ASSERT(g_uvm_global.conf_computing_enabled);
     UVM_ASSERT(IS_ALIGNED(auth_tag.address, UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT));
 
     // The addressing mode (and aperture, if applicable) of the source and
@@ -565,4 +591,3 @@ void uvm_hal_hopper_ce_decrypt(uvm_push_t *push,
 
     encrypt_or_decrypt(push, dst, src, size);
 }
-

@@ -105,6 +105,11 @@ struct NvKmsKapiDevice {
     NvKmsDispIOCoherencyModes nisoIOCoherencyModes;
     NvBool supportsSyncpts;
 
+    /* SMG state */
+
+    NvU32 smgGpuInstSubscriptionHdl;
+    NvU32 smgComputeInstSubscriptionHdl;
+
     /* Device capabilities */
 
     struct {
@@ -148,6 +153,8 @@ struct NvKmsKapiMemory {
     NvU64 size;
 
     struct NvKmsKapiPrivSurfaceParams surfaceParams;
+
+    NvBool isVidmem;
 };
 
 struct NvKmsKapiSurface {

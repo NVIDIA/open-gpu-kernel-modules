@@ -57,9 +57,9 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJOS =
     /*pExportInfo=*/        &__nvoc_export_info_OBJOS
 };
 
-// Down-thunk(s) to bridge methods from ancestors (if any)
+// Down-thunk(s) to bridge OBJOS methods from ancestors (if any)
 
-// Up-thunk(s) to bridge methods to ancestors (if any)
+// Up-thunk(s) to bridge OBJOS methods to ancestors (if any)
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJOS = 
 {
@@ -76,6 +76,8 @@ void __nvoc_dtor_OBJOS(OBJOS *pThis) {
 void __nvoc_init_dataField_OBJOS(OBJOS *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
     pThis->setProperty(pThis, PDB_PROP_OS_SUPPORTS_DISPLAY_REMAPPER, !(1));
+
+    pThis->bMuxUnsupportedOnOS = (1);
 }
 
 NV_STATUS __nvoc_ctor_Object(Object* );

@@ -1104,7 +1104,10 @@ static void RevokePermissionsInternal(
 static void RestoreConsole(NVDevEvoPtr pDevEvo)
 {
     // Try to issue a modeset and flip to the framebuffer console surface.
-    if (!nvEvoRestoreConsole(pDevEvo, TRUE /* allowMST */)) {
+    const NvBool bFail = nvkms_test_fail_alloc_core_channel(
+                     FAIL_ALLOC_CORE_CHANNEL_RESTORE_CONSOLE);
+    
+    if (bFail || !nvEvoRestoreConsole(pDevEvo, TRUE /* allowMST */)) {
         // If that didn't work, free the core channel to trigger RM's console
         // restore code.
         FreeSurfaceCtxDmasForAllOpens(pDevEvo);
@@ -1114,7 +1117,7 @@ static void RestoreConsole(NVDevEvoPtr pDevEvo)
         // Reallocate the core channel right after freeing it. This makes sure
         // that it's allocated and ready right away if another NVKMS client is
         // started.
-        if (nvAllocCoreChannelEvo(pDevEvo)) {
+        if ((!bFail) && nvAllocCoreChannelEvo(pDevEvo)) {
             nvDPSetAllowMultiStreaming(pDevEvo, TRUE /* allowMST */);
             EnableAndSetupVblankSyncObjectForAllOpens(pDevEvo);
             AllocSurfaceCtxDmasForAllOpens(pDevEvo);
@@ -2653,7 +2656,7 @@ static NvBool Flip(struct NvKmsPerOpen *pOpen,
 
     return nvHsIoctlFlip(pDevEvo, pOpenDev,
                          pFlipHead, numFlipHeads,
-                         pRequest->commit, pRequest->allowVrr,
+                         pRequest->commit,
                          &pParams->reply);
 }
 

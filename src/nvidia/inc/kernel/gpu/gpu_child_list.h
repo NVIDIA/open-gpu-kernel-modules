@@ -306,6 +306,9 @@
 #if RMCFG_MODULE_KERNEL_CCU && GPU_CHILD_MODULE(KERNEL_CCU)
     GPU_CHILD_SINGLE_INST( KernelCcu,            GPU_GET_KERNEL_CCU,                  1,                NV_FALSE,        pKernelCcu        )
 #endif
+#if RMCFG_MODULE_KERNEL_GSPLITE && GPU_CHILD_MODULE(KERNEL_GSPLITE)
+    GPU_CHILD_MULTI_INST( KernelGsplite,         GPU_GET_KERNEL_GSPLITE,              GPU_MAX_GSPLITES, NV_FALSE,        pKernelGsplite    )
+#endif
 
 // Undefine the entry macros to simplify call sites
 #undef GPU_CHILD

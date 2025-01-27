@@ -1074,6 +1074,63 @@ os_ref_dynamic_power(
     return status;
 }
 
+/*
+ * @brief This function queries the dynamic boost support.
+ * This function returns -1 in case it failed to query the
+ * dynamic boost support. It returns 1 if dynamic boost is
+ * supported and returns 0 if dynamic boost is not supported.
+ *
+ * The caller must hold the API lock before calling this
+ * function.
+ *
+ * @param[in]   nv      nv_state_t pointer.
+ */
+static int os_get_dynamic_boost_support(
+    nv_state_t *nv    
+)
+{
+    NV_STATUS status = NV_OK;
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pNvpcfParams;
+    OBJGPU *pGpu;
+    int ret;
+
+    status = os_alloc_mem((void**)&pNvpcfParams, sizeof(*pNvpcfParams));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to allocate memory\n");
+        ret = -1;
+        goto end;
+    }
+
+    pGpu = NV_GET_NV_PRIV_PGPU(nv);
+    pNvpcfParams->gpuId = pGpu->gpuId;
+    pNvpcfParams->subFunc = 
+        NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_SUPPORTED_CASE;
+    status = pRmApi->Control(pRmApi,
+                           nv->rmapi.hClient,
+                           nv->rmapi.hClient,
+                           NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO,
+                           (void*)pNvpcfParams,
+                           sizeof(*pNvpcfParams));
+    if (status == NV_OK)
+    {
+        ret = 1;
+    }
+    else if (status == NV_ERR_NOT_SUPPORTED)
+    {
+        ret = 0;
+    }
+    else
+    {
+        ret = -1;
+    }
+
+    os_free_mem(pNvpcfParams);
+end:
+    return ret;
+}
+
 /*!
  * @brief Wrapper around os_ref_dynamic_power() suitable for use from the
  * per-OS layers.
@@ -2547,6 +2604,38 @@ void RmHandleDisplayChange(
 }
 
 /*!
+ * @brief RmGetDynamicBoostSupport() gets the notebook DB
+ * support. DB support is static information for vast majority
+ * of notebooks and hence we fetch it only once (during the first 
+ * call to this function). This way, the GPU remains in RTD3 state
+ * when procfs read is done.
+ *
+ *  @param[in]   nv    nv_state_t pointer.
+ */
+static const char* RmGetDynamicBoostSupport(
+    nv_state_t *pNv
+)
+{
+    nv_priv_t *pNvp = NV_GET_NV_PRIV(pNv);
+    const char* DbStatus = "?";
+
+    if (pNvp->db_supported == -1)
+    {
+        pNvp->db_supported = os_get_dynamic_boost_support(pNv);
+    }
+    
+    if (pNvp->db_supported == 0)
+    {
+        DbStatus = "Not Supported";
+    }
+    else if (pNvp->db_supported == 1)
+    { 
+        DbStatus = "Supported";
+    }
+    return DbStatus;
+}
+
+/*!
  * @brief: Function to query Dynamic Power Management
  *
  * @param[in]   nvp     nv_priv_t pointer.
@@ -2715,6 +2804,7 @@ void NV_API_CALL rm_get_power_info(
     const char       *pGcoffSupported = "?";
     const char       *pDynamicPowerStatus = "?";
     const char       *pS0ixStatus = "?";
+    const char       *pDbStatus = "?";
 
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -2738,7 +2828,7 @@ void NV_API_CALL rm_get_power_info(
             pGc6Supported = RmGetGpuGcxSupport(pGpu, NV_TRUE);
             pGcoffSupported = RmGetGpuGcxSupport(pGpu, NV_FALSE);
             pS0ixStatus = pNvp->s0ix_pm_enabled ? "Enabled" : "Disabled";
-
+            pDbStatus = RmGetDynamicBoostSupport(pNv);
             // UNLOCK: release per device lock
             rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
         }
@@ -2755,5 +2845,6 @@ void NV_API_CALL rm_get_power_info(
     powerInfo->gc6_support = pGc6Supported;
     powerInfo->gcoff_support = pGcoffSupported;
     powerInfo->s0ix_status = pS0ixStatus;
+    powerInfo->db_support = pDbStatus;
 }
 

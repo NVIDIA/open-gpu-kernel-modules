@@ -90,7 +90,7 @@ struct KernelGraphicsManager {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__KernelGraphicsManager *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
 
     // Ancestor object pointers for `staticCast` feature
@@ -99,7 +99,7 @@ struct KernelGraphicsManager {
     struct KernelGraphicsManager *__nvoc_pbase_KernelGraphicsManager;    // kgrmgr
 
     // Vtable with 1 per-object function pointer
-    NV_STATUS (*__kgrmgrGetVeidsFromGpcCount__)(OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32, NvU32 *);  // halified (3 hals)
+    NV_STATUS (*__kgrmgrGetVeidsFromGpcCount__)(OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32, NvU32 *);  // halified (4 hals)
 
     // Data members
     GRMGR_LEGACY_KGRAPHICS_STATIC_INFO PRIVATE_FIELD(legacyKgraphicsStaticInfo);
@@ -117,7 +117,7 @@ struct KernelGraphicsManager_PRIVATE {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__KernelGraphicsManager *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
 
     // Ancestor object pointers for `staticCast` feature
@@ -126,7 +126,7 @@ struct KernelGraphicsManager_PRIVATE {
     struct KernelGraphicsManager *__nvoc_pbase_KernelGraphicsManager;    // kgrmgr
 
     // Vtable with 1 per-object function pointer
-    NV_STATUS (*__kgrmgrGetVeidsFromGpcCount__)(OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32, NvU32 *);  // halified (3 hals)
+    NV_STATUS (*__kgrmgrGetVeidsFromGpcCount__)(OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32, NvU32 *);  // halified (4 hals)
 
     // Data members
     GRMGR_LEGACY_KGRAPHICS_STATIC_INFO legacyKgraphicsStaticInfo;
@@ -292,6 +292,8 @@ void kgrmgrStateDestroy_IMPL(OBJGPU *arg1, struct KernelGraphicsManager *arg2);
 NV_STATUS kgrmgrGetVeidsFromGpcCount_GA100(OBJGPU *arg1, struct KernelGraphicsManager *arg2, NvU32 gpcCount, NvU32 *pVeidCount);
 
 NV_STATUS kgrmgrGetVeidsFromGpcCount_GB100(OBJGPU *arg1, struct KernelGraphicsManager *arg2, NvU32 gpcCount, NvU32 *pVeidCount);
+
+NV_STATUS kgrmgrGetVeidsFromGpcCount_GB10B(OBJGPU *arg1, struct KernelGraphicsManager *arg2, NvU32 gpcCount, NvU32 *pVeidCount);
 
 static inline NV_STATUS kgrmgrGetVeidsFromGpcCount_46f6a7(OBJGPU *arg1, struct KernelGraphicsManager *arg2, NvU32 gpcCount, NvU32 *pVeidCount) {
     return NV_ERR_NOT_SUPPORTED;

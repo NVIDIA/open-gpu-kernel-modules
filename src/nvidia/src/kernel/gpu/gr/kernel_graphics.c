@@ -22,12 +22,14 @@
  */
 
 #define NVOC_KERNEL_GRAPHICS_H_PRIVATE_ACCESS_ALLOWED
+#define NVOC_KERNEL_MIG_MANAGER_H_PRIVATE_ACCESS_ALLOWED
 
 
 #include "rmconfig.h"
 
 #include "kernel/gpu/gr/kernel_graphics_manager.h"
 #include "kernel/gpu/gr/kernel_graphics.h"
+#include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/gpu_user_shared_data.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/device/device.h"
@@ -60,6 +62,7 @@
 #include "class/clc56f.h" // AMPERE_CHANNEL_GPFIFO_A
 #include "class/clc86f.h" // HOPPER_CHANNEL_GPFIFO_A
 #include "class/clc96f.h" // BLACKWELL_CHANNEL_GPFIFO_A
+#include "class/clca6f.h" // BLACKWELL_CHANNEL_GPFIFO_B
 #include "class/clc637.h"
 #include "class/clc638.h"
 
@@ -884,6 +887,18 @@ kgraphicsLoadStaticInfo_VF
                     sizeof(*pPrivate->staticInfo.pContextBuffersInfo),
                     &pVSI->ctxBuffInfo.engineContextBuffersInfo[grIdx],
                     sizeof(pVSI->ctxBuffInfo.engineContextBuffersInfo[grIdx]));
+
+        if (pKernelMIGManager->bIsSmgEnabled)
+        {
+           pPrivate->staticInfo.pZcullInfo = portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pZcullInfo));
+            if (pPrivate->staticInfo.pZcullInfo == NULL)
+            {
+                status = NV_ERR_NO_MEMORY;
+                goto cleanup;
+            }
+            portMemCopy(pPrivate->staticInfo.pZcullInfo, sizeof(*pPrivate->staticInfo.pZcullInfo),
+                        &pVSI->zcullInfoParams.engineZcullInfo[grIdx], sizeof(pVSI->zcullInfoParams.engineZcullInfo[grIdx]));
+        }
 
         pPrivate->staticInfo.fecsRecordSize.fecsRecordSize = pVSI->fecsRecordSize.fecsRecordSize[grIdx].fecsRecordSize;
 
@@ -2234,6 +2249,10 @@ kgraphicsCreateGoldenImageChannel_IMPL
         {
             ctrlSize = sizeof(Nvc96fControl);
         }
+        else if (gpuIsClassSupported(pGpu, BLACKWELL_CHANNEL_GPFIFO_B))
+        {
+            ctrlSize = sizeof(Nvca6fControl);
+        }
         else
         {
             status = NV_ERR_NOT_SUPPORTED;
@@ -2383,6 +2402,11 @@ kgraphicsCreateGoldenImageChannel_IMPL
     {
         objectType = GR_OBJECT_TYPE_COMPUTE;
 
+        {
+
+            if (kgraphicsIsGFXSupported(pGpu, pKernelGraphics))
+                objectType = GR_OBJECT_TYPE_3D;
+        }
     }
 
     // Get KernelGraphicsObject class Id

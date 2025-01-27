@@ -32,7 +32,7 @@
 typedef enum
 {
     NV_FIRMWARE_TYPE_GSP,
-    NV_FIRMWARE_TYPE_GSP_LOG
+    NV_FIRMWARE_TYPE_GSP_LOG,
 } nv_firmware_type_t;
 
 typedef enum
@@ -45,6 +45,7 @@ typedef enum
     NV_FIRMWARE_CHIP_FAMILY_AD10X = 5,
     NV_FIRMWARE_CHIP_FAMILY_GH100 = 6,
     NV_FIRMWARE_CHIP_FAMILY_GB10X = 8,
+    NV_FIRMWARE_CHIP_FAMILY_GB20X = 9,
     NV_FIRMWARE_CHIP_FAMILY_END,
 } nv_firmware_chip_family_t;
 
@@ -54,6 +55,7 @@ static inline const char *nv_firmware_chip_family_to_string(
 {
     switch (fw_chip_family) {
         case NV_FIRMWARE_CHIP_FAMILY_GB10X: return "gb10x";
+        case NV_FIRMWARE_CHIP_FAMILY_GB20X: return "gb20x";
         case NV_FIRMWARE_CHIP_FAMILY_GH100: return "gh100";
         case NV_FIRMWARE_CHIP_FAMILY_AD10X: return "ad10x";
         case NV_FIRMWARE_CHIP_FAMILY_GA10X: return "ga10x";
@@ -84,6 +86,7 @@ static inline const char *nv_firmware_for_chip_family(
         switch (fw_chip_family)
         {
             case NV_FIRMWARE_CHIP_FAMILY_GB10X:  // fall through
+            case NV_FIRMWARE_CHIP_FAMILY_GB20X:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_GH100:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_AD10X:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_GA10X:
@@ -104,6 +107,7 @@ static inline const char *nv_firmware_for_chip_family(
         switch (fw_chip_family)
         {
             case NV_FIRMWARE_CHIP_FAMILY_GB10X:  // fall through
+            case NV_FIRMWARE_CHIP_FAMILY_GB20X:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_GH100:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_AD10X:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_GA10X:
@@ -119,7 +123,6 @@ static inline const char *nv_firmware_for_chip_family(
                 return "";
         }
     }
-
     return "";
 }
 #endif  // defined(NV_FIRMWARE_FOR_NAME)

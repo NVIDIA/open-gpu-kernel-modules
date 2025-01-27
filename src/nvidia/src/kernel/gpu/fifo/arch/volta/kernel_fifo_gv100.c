@@ -128,6 +128,9 @@ kfifoEngineInfoXlate_GV100
     return kfifoEngineInfoXlate_GM107(pGpu, pKernelFifo, inType, inVal, outType, pOutVal);
 }
 
+// compile time check to ensure RM ctrl call does not support more than what the HW can.
+ct_assert(NV2080_CTRL_CMD_FIFO_MAX_CHANNELS_PER_TSG == NV_RAMRL_ENTRY_TSG_LENGTH_MAX);
+
 /*
  * @brief Gives the maxinum number of channels allowed per channel group
  */
@@ -251,7 +254,7 @@ kfifoGetSubctxType_GV100
 
     pKernelCtxShare = (KernelCtxShare *)pBlock->pData;
     subctxType = DRF_VAL(_CTXSHARE, _ALLOCATION_FLAGS, _SUBCONTEXT, pKernelCtxShare->flags);
-    if (subctxType == NV_CTXSHARE_ALLOCATION_FLAGS_SUBCONTEXT_SPECIFIED)
+    if (subctxType >= NV_CTXSHARE_ALLOCATION_FLAGS_SUBCONTEXT_SPECIFIED)
     {
         subctxType = NV_CTXSHARE_ALLOCATION_FLAGS_SUBCONTEXT_ASYNC;
     }

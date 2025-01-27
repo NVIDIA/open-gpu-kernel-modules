@@ -1200,7 +1200,7 @@ typedef struct
 #define NVOS32_ATTR2_SMMU_ON_GPU_ENABLE                  0x00000002
 
 // Used for allocating the memory from scanout carveout.
-#define NVOS32_ATTR2_USE_SCANOUT_CARVEOUT                    10:10 
+#define NVOS32_ATTR2_USE_SCANOUT_CARVEOUT                    10:10
 #define NVOS32_ATTR2_USE_SCANOUT_CARVEOUT_FALSE              0x00000000
 #define NVOS32_ATTR2_USE_SCANOUT_CARVEOUT_TRUE               0x00000001
 
@@ -2121,16 +2121,10 @@ typedef struct
 #define NVOS46_FLAGS_DMA_OFFSET_FIXED_FALSE                        (0x00000000)
 #define NVOS46_FLAGS_DMA_OFFSET_FIXED_TRUE                         (0x00000001)
 
-#define NVOS46_FLAGS_PTE_COALESCE_LEVEL_CAP                        19:16
-#define NVOS46_FLAGS_PTE_COALESCE_LEVEL_CAP_DEFAULT                (0x00000000)
-#define NVOS46_FLAGS_PTE_COALESCE_LEVEL_CAP_1                      (0x00000001)
-#define NVOS46_FLAGS_PTE_COALESCE_LEVEL_CAP_2                      (0x00000002)
-#define NVOS46_FLAGS_PTE_COALESCE_LEVEL_CAP_4                      (0x00000003)
-#define NVOS46_FLAGS_PTE_COALESCE_LEVEL_CAP_8                      (0x00000004)
-#define NVOS46_FLAGS_PTE_COALESCE_LEVEL_CAP_16                     (0x00000005)
-#define NVOS46_FLAGS_PTE_COALESCE_LEVEL_CAP_32                     (0x00000006)
-#define NVOS46_FLAGS_PTE_COALESCE_LEVEL_CAP_64                     (0x00000007)
-#define NVOS46_FLAGS_PTE_COALESCE_LEVEL_CAP_128                    (0x00000008)
+#define NVOS46_FLAGS_DISABLE_ENCRYPTION                            16:16
+#define NVOS46_FLAGS_DISABLE_ENCRYPTION_FALSE                      (0x00000000)
+#define NVOS46_FLAGS_DISABLE_ENCRYPTION_TRUE                       (0x00000001)
+
 #define NVOS46_FLAGS_P2P                                           27:20
 
 #define NVOS46_FLAGS_P2P_ENABLE                                    21:20
@@ -2149,6 +2143,15 @@ typedef struct
 #define NVOS46_FLAGS_DMA_UNICAST_REUSE_ALLOC                       29:29
 #define NVOS46_FLAGS_DMA_UNICAST_REUSE_ALLOC_FALSE                 (0x00000000)
 #define NVOS46_FLAGS_DMA_UNICAST_REUSE_ALLOC_TRUE                  (0x00000001)
+//
+// Force pte kind to compresssed for this and future mappings of the memory object
+// Only affects mappings using NVOS46_FLAGS_PAGE_KIND_VIRTUAL
+// Only has effect when physical allocation is compressed
+//
+#define NVOS46_FLAGS_ENABLE_FORCE_COMPRESSED_MAP                   30:30
+#define NVOS46_FLAGS_ENABLE_FORCE_COMPRESSED_MAP_FALSE             (0x00000000)
+#define NVOS46_FLAGS_ENABLE_FORCE_COMPRESSED_MAP_TRUE              (0x00000001)
+
 //
 // This flag must be used with caution. Improper use can leave stale entries in the TLB,
 // and allow access to memory no longer owned by the RM client or cause page faults.
@@ -2308,8 +2311,8 @@ typedef struct
     NvU8  bForcePowerStateFail;
     NvU32 errorStatus;           // [OUT] To tell client if there is bubble up errors
     NvU32 fastBootPowerState;
-    NvU8  reserved;
-    NvU8  reserved2;
+    NvU8  bGC8Transition;
+    NvU8  bGC8InputRailCutOff;   // [OUT] To tell client if input rail was cut off in GC8
 } NVPOWERSTATE_PARAMETERS, *PNVPOWERSTATE_PARAMETERS;
 
  /***************************************************************************\
@@ -2817,6 +2820,9 @@ typedef struct
  *              SPECIFIED
  *                  Force the VEID specified in the subctxId parameter.
  *                  This flag is intended for verif. i.e testing VEID reuse etc.
+ *              PREFER_LOWER
+ *                  Identical behavior to ASYNC, except lower VEIDs are preferred on VOLTA+ chips
+ *
  *
  * subctxId
  *          As input, it is used to specify the subcontext ID, when the _SPECIFIED flag is set.
@@ -2835,6 +2841,17 @@ typedef struct
 #define NV_CTXSHARE_ALLOCATION_FLAGS_SUBCONTEXT_SYNC                 (0x00000000)
 #define NV_CTXSHARE_ALLOCATION_FLAGS_SUBCONTEXT_ASYNC                (0x00000001)
 #define NV_CTXSHARE_ALLOCATION_FLAGS_SUBCONTEXT_SPECIFIED            (0x00000002)
+#define NV_CTXSHARE_ALLOCATION_FLAGS_SUBCONTEXT_ASYNC_PREFER_LOWER   (0x00000003)
+
+/*
+ * The high bit of NV_CTXSHARE_ALLOCATION_PARAMETERS.subctxId is used to indicate success or failure allocating
+ * a subcontext ID below an architecture specific value, which can be queried with
+ * NV2080_CTRL_FIFO_INFO_INDEX_MAX_LOWER_SUBCONTEXT. Remaining bits are currently reserved for the subcontext ID.
+ */
+#define NV_CTXSHARE_ALLOCATION_SUBCTXID_SUBCTXID                                 30:0
+#define NV_CTXSHARE_ALLOCATION_SUBCTXID_ASYNC_PREFER_LOWER_ALLOCATION            31:31
+#define NV_CTXSHARE_ALLOCATION_SUBCTXID_ASYNC_PREFER_LOWER_ALLOCATION_SUCCESS    (0x00000001)
+#define NV_CTXSHARE_ALLOCATION_SUBCTXID_ASYNC_PREFER_LOWER_ALLOCATION_FAIL       (0x00000000)
 
 /**
  * @brief RmTimeoutControl parameters

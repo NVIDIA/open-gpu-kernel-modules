@@ -77,6 +77,11 @@ extern "C" {
 #define SYS_GET_FABRIC(p)         ((p)->pFabric)
 #define SYS_GET_GPUDB(p)          ((p)->pGpuDb)
 #define SYS_GET_HALMGR(p)         ((p)->pHalMgr)
+#if RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
+#define SYS_GET_CODE_COV_MGR(p)   ((p)->pCodeCovMgr)
+#else
+#define SYS_GET_CODE_COV_MGR(p)   (NULL)
+#endif
 
 #define IsMobile(p)             ((p)->getProperty((p), PDB_PROP_GPU_IS_MOBILE))
 
@@ -303,6 +308,19 @@ typedef struct OBJOS OBJOS;
 
 
 
+struct CodeCoverageManager;
+
+#ifndef __NVOC_CLASS_CodeCoverageManager_TYPEDEF__
+#define __NVOC_CLASS_CodeCoverageManager_TYPEDEF__
+typedef struct CodeCoverageManager CodeCoverageManager;
+#endif /* __NVOC_CLASS_CodeCoverageManager_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_CodeCoverageManager
+#define __nvoc_class_id_CodeCoverageManager 0x62cbfb
+#endif /* __nvoc_class_id_CodeCoverageManager */
+
+
+
 typedef struct OBJRCDB Journal;
 
 /*!
@@ -391,7 +409,7 @@ struct OBJSYS {
     const struct NVOC_RTTI *__nvoc_rtti;
     const struct NVOC_VTABLE__OBJSYS *__nvoc_vtable;
 
-    // Parent (i.e. superclass or base class) object pointers
+    // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
     struct OBJTRACEABLE __nvoc_base_OBJTRACEABLE;
 
@@ -443,7 +461,6 @@ struct OBJSYS {
     NvU32 pwrTransitionTimeoutOverride;
     SYS_STATIC_CONFIG staticConfig;
     NvU32 debugFlags;
-    NvU32 backtraceStackDepth;
     SYS_CPU_INFO cpuInfo;
     SYS_VGA_POST_STATE vgaPostState;
     NvBool gpuHotPlugPollingActive[32];
@@ -451,7 +468,8 @@ struct OBJSYS {
     void *pSema;
     NvU32 binMask;
     NvU64 rmInstanceId;
-    NvU32 currentCid;
+    NvU32 currentChannelUniqueId;
+    NvU32 currentVasUniqueId;
     NvBool bUseDeferredClientListFree;
     NvU32 clientListDeferredFreeLimit;
     OS_RM_CAPS *pOsRmCaps;
@@ -477,6 +495,7 @@ struct OBJSYS {
     struct OBJHALMGR *pHalMgr;
     struct Fabric *pFabric;
     struct GpuDb *pGpuDb;
+    struct CodeCoverageManager *pCodeCovMgr;
     NvBool bIsGridBuild;
 };
 

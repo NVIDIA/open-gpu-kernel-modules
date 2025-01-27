@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -472,7 +472,7 @@ NV_STATUS osReadRegistryString
     return status;
 }
 
-void nvErrorLog(void *pVoid, NvU32 num, const char *pFormat, va_list arglist)
+void nvErrorLog2(void *pVoid, NvU32 num, NvBool oobLogging, const char *pFormat, va_list arglist)
 {
     if ((pFormat == NULL) || (*pFormat == '\0'))
     {
@@ -497,6 +497,11 @@ void nvErrorLog(void *pVoid, NvU32 num, const char *pFormat, va_list arglist)
     if (msglen == 0)
         goto done;
 
+    if (pGpu != NULL && oobLogging)
+    {
+        gpuLogOobXidMessage(pGpu, num, errorString, msglen);
+    }
+
     {
         KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
         if (pKernelRc != NULL)
@@ -511,11 +516,16 @@ done:
     osErrorLogV(pGpu, num, pFormat, arglist);
 }
 
+void nvErrorLog(void *pVoid, NvU32 num, const char *pFormat, va_list arglist)
+{
+    nvErrorLog2(pVoid, num, NV_TRUE, pFormat, arglist);
+}
+
 void
 nvErrorLog_va
 (
-    void * pVoid,
-    NvU32 num,
+    void       * pVoid,
+    NvU32        num,
     const char * pFormat,
     ...
 )
@@ -523,6 +533,23 @@ nvErrorLog_va
     va_list arglist;
 
     va_start(arglist, pFormat);
-    nvErrorLog(pVoid, num, pFormat, arglist);
+    nvErrorLog2(pVoid, num, NV_TRUE, pFormat, arglist);
+    va_end(arglist);
+}
+
+void
+nvErrorLog2_va
+(
+    void       * pVoid,
+    NvU32        num,
+    NvBool       oobLogging,
+    const char * pFormat,
+    ...
+)
+{
+    va_list arglist;
+
+    va_start(arglist, pFormat);
+    nvErrorLog2(pVoid, num, oobLogging, pFormat, arglist);
     va_end(arglist);
 }

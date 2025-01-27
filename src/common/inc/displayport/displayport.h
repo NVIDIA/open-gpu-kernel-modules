@@ -129,6 +129,7 @@ typedef enum
     linkBW_8_10Gbps                = 0x1E,
     linkBW_Supported
 } DP_LINK_BANDWIDTH;
+// TODO-@vduraisamy - below enum needs to be moved back to displayport2x.h
 typedef enum
 {
     // enum value unit = 10M
@@ -140,7 +141,12 @@ typedef enum
     dp2LinkRate_3_24Gbps          = 0x0144,   //  324
     dp2LinkRate_4_32Gbps          = 0x01B0,   //  432
     dp2LinkRate_5_40Gbps          = 0x021C,   //  540
+    dp2LinkRate_6_75Gbps          = 0x02A3,   //  675
     dp2LinkRate_8_10Gbps          = 0x032A,   //  810
+    dp2LinkRate_5_00Gbps          = 0x01F4,   // 500
+    dp2LinkRate_10_0Gbps          = 0x03E8,   // 1000
+    dp2LinkRate_13_5Gbps          = 0x0546,   // 1350
+    dp2LinkRate_20_0Gbps          = 0x07D0,   // 2000
     dp2LinkRate_Supported
 } DP2X_LINKRATE_10M;
 
@@ -159,14 +165,34 @@ typedef enum
     dataRate_8_10Gbps                = 810000000
 } DP_LINK_8B_10B_DATA_RATES;
 
-#define IS_8B_10B_CODING(dataRate) (((NvU64)(val)== dataRate_1_62Gbps) || \
-                                    ((NvU64)(val)== dataRate_2_16Gbps) || \
-                                    ((NvU64)(val)== dataRate_2_43Gbps) || \
-                                    ((NvU64)(val)== dataRate_2_70Gbps) || \
-                                    ((NvU64)(val)== dataRate_3_24Gbps) || \
-                                    ((NvU64)(val)== dataRate_4_32Gbps) || \
-                                    ((NvU64)(val)== dataRate_5_40Gbps) || \
-                                    ((NvU64)(val)== dataRate_8_10Gbps))
+#define IS_8B_10B_CODING(dataRate) (((NvU64)(dataRate)== dataRate_1_62Gbps) || \
+                                    ((NvU64)(dataRate)== dataRate_2_16Gbps) || \
+                                    ((NvU64)(dataRate)== dataRate_2_43Gbps) || \
+                                    ((NvU64)(dataRate)== dataRate_2_70Gbps) || \
+                                    ((NvU64)(dataRate)== dataRate_3_24Gbps) || \
+                                    ((NvU64)(dataRate)== dataRate_4_32Gbps) || \
+                                    ((NvU64)(dataRate)== dataRate_5_40Gbps) || \
+                                    ((NvU64)(dataRate)== dataRate_8_10Gbps))
+
+typedef enum
+{
+    // Uses 128b/132b channel encoding
+    // Link Data Rate = link rate * (128 / 132) / 8
+    //                = link rate * 4 / 33
+    dataRate_UHBR_2_50Gbps                = 303030303,
+    dataRate_UHBR_2_70Gbps                = 327272727,
+    dataRate_UHBR_5_00Gbps                = 606060606,
+    dataRate_UHBR_10_00Gbps               = 1212121212,
+    dataRate_UHBR_13_50Gbps               = 1636363636,
+    dataRate_UHBR_20_10Gbps               = 2424242424U
+} DP_LINK_128B_132B_DATA_RATES;
+
+#define IS_128B_132B_CODING(dataRate) (((NvU64)(dataRate)== dataRate_UHBR_2_50Gbps)  || \
+                                       ((NvU64)(dataRate)== dataRate_UHBR_2_70Gbps)  || \
+                                       ((NvU64)(dataRate)== dataRate_UHBR_5_00Gbps)  || \
+                                       ((NvU64)(dataRate)== dataRate_UHBR_10_00Gbps) || \
+                                       ((NvU64)(dataRate)== dataRate_UHBR_13_50Gbps) || \
+                                       ((NvU64)(dataRate)== dataRate_UHBR_20_10Gbps))
 
 typedef enum
 {
@@ -212,9 +238,18 @@ typedef enum
 {
     trainingPattern_Disabled        = 0x0,
     trainingPattern_1               = 0x1,
+//  trainingPattern_128B132B_TPS1   = 0x1, (use trainingPattern_1 enum as both are same)
     trainingPattern_2               = 0x2,
     trainingPattern_3               = 0x3,
-    trainingPattern_4               = 0xB
+    trainingPattern_4               = 0xB,
+    trainingPattern_128B132B_TPS2   = 0xD,
+    trainingPattern_PRBS_9          = 0xE,
+    trainingPattern_PRBS_11         = 0xF,
+    trainingPattern_PRBS_15         = 0x10,
+    trainingPattern_PRBS_23         = 0x11,
+    trainingPattern_PRBS_31         = 0x12,
+    trainingPattern_SqNum           = 0x13,
+    trainingPattern_CSTM_264        = 0x14
 } DP_TRAININGPATTERN;
 
 typedef enum
@@ -228,8 +263,9 @@ typedef enum
 {
     dpColorFormat_RGB              = 0,
     dpColorFormat_YCbCr444         = 0x1,
-    dpColorFormat_YCbCr422         = 0x2,
+    dpColorFormat_YCbCr422         = 0x2, // this is for simple 422
     dpColorFormat_YCbCr420         = 0x3,
+    dpColorFormat_YCbCr422_Native  = 0x4,
     dpColorFormat_Unknown          = 0xF
 } DP_COLORFORMAT;
 
@@ -509,10 +545,87 @@ typedef struct VesaPsrSinkCaps
 } vesaPsrSinkCaps;
 #pragma pack()
 
+typedef struct
+{
+    //
+    // If True, then DSC CRC of multiple SU regions supported irrespective
+    // of byte counts.
+    // If False, then DSC CRC of multiple SU regions supported only when
+    // the byte count is multiple of 6.
+    //
+    NvBool bDscCrcOfMultipleSuSupported;
+
+    //
+    // If True, then SU coordinates need to adhere granularity specified in
+    // 000B2h, 000B3h, 000B4h.
+    // If False, then  SU coordinates does not need to adhere any granularity.
+    //
+    NvBool bSelUpdateGranularityNeeded;
+
+    //
+    // If True, then source will use Y granularity specified in 000B5h, 000B6h
+    // for PR.
+    // If False, sink does not support Y granularity extended cap.
+    // Value in 000B4h shall be used for PR.
+    //
+    NvBool bSuYGranularityExtendedCap;
+
+    //
+    // Applicable to PR SU operation. Sets the grid pattern granularity in X axis.
+    // If non zero, X coordinate shall be even divisible by 000B2h, 000B3h
+    // If zero, no X coordinate granularity requirement exists.
+    //
+    NvU8   selUpdateXGranularityCap; // This represents 00B2h register
+    NvU8   selUpdateXGranularityCap1; // This represents 00B3h register
+
+    //
+    // Applicable to PR SU operation. Sets the grid pattern granularity in Y axis.
+    // If value is 00h or 01h, No restrictions to SU region Y coordinate.
+    // If value is 02h or higher, Y coordinate shall be evenly by divisible by 000B4h
+    //
+    NvU8   selUpdateYGranularityCap;
+
+    //
+    // Applicable to PR SU operation. when image compression is performed locally
+    // in sink device, this sets additional granularity in Y axis.
+    //
+    NvU8   selUpdateYGranularityExtCap;
+    NvU8   selUpdateYGranularityExtCap1;
+} SelectiveUpdateCaps;
+
 typedef struct PanelReplayCaps
 {
     // Indicates if Panel replay is supported or not
     NvBool bPanelReplaySupported;
+    // Indicates if selective updates is supported or not
+    NvBool bSelUpdateSupported;
+
+    // Indicates if Early region transport is supported or not
+    NvBool bEarlyRegionTpSupported;
+
+    // Tells whether sink supports DSC decode functionality in PR.
+    NvBool bDscDecodeNotSupportedInPr;
+
+    //
+    // If true, it indicates that sink device does not support Asynchronous
+    // Video Timing while in a PR Active state. Source device shall keep
+    // transmitting Adaptive-Sync SDPs during a PR Active state.
+    //
+    NvBool bAdaptiveSyncSdpNotSupportedInPr;
+
+    //
+    // Applicable to PR function operation using AUX-less ALPM when both
+    // an Adaptive-Sync SDP v2 (HB2[4:0] = 02h) and a selective update –or–
+    // full frame update occurred during a video frame.
+    // 0 = Main-Link shall remain turned ON following the Adaptive-Sync
+    // SDP transmission and until after the first selective update region –or–
+    // full frame update transmission is complete.
+    // 1 = Source device may optionally turn OFF the Main-Link after the
+    // Adaptive-Sync SDP transmission and then turn the Main-Link back ON
+    // in time for the selective update –or– full frame update.
+    //
+    NvBool bLinkOffSupportAfterAsSdpSent;
+    SelectiveUpdateCaps suCaps;
 } panelReplayCaps;
 
 typedef struct PanelReplayConfig
@@ -540,6 +653,62 @@ typedef struct PanelReplayConfig
     // CRC mismatch.
     //
     NvBool   bHpdOnRfbActiveFrameCrcError;
+
+    // Configure selective update feature on sink.
+    NvBool   bEnableSelectiveUpdate;
+
+    // Configure Early region transport on sink.
+    NvBool   bSuRegionEarlyTpEnable;
+
+    //
+    // Applicable only during a PR Active state with AUX-less ALPM enabled.
+    // Sink device ignores the setting when while receiving an Adaptive-Sync
+    // SDP with HB2[4:0] = 02h and DB0[2] = 0. After receiving an
+    // Adaptive-Sync SDP with HB2[4:0] = 02h and DB0[2] = 1, the bit value
+    // determines the Sink device’s refresh timing.
+    // 0 = Sink device shall use the coasting VTotal value in the last
+    // Adaptive-Sync SDP received.
+    // 1 = Sink device evice governs the display refresh rate and ignores the
+    // coasting VTotal value
+    //
+    NvBool   bSinkRrUnlockGranted;
+
+    //
+    // Applicable only to PR SU operation.
+    // 0 = Source device shall use the Y granularity value declared by the
+    // PANEL REPLAY SELECTIVE UPDATE Y GRANULARITY
+    // CAPABILITY register (DPCD 000B4h).
+    // 1 = Source device shall use a supported value listed in the
+    // SU Y GRANULARITY EXTENDED CAPABILITY register
+    // (DPCD 000B5h and 000B6h). The selected value shall be indicated
+    // by way of DPCD 001B1h[6:3].
+    //
+    NvBool   bSelUpdateYExtValEnable;
+
+    //
+    // Applicable only to the PR function.
+    // 0 = Sink device shall capture the SU region, starting with the active
+    // video image scan line immediately following the first BE control link
+    // symbol sequence after the VSC SDP.
+    // 1 = Sink device shall capture the SU region, starting with the active
+    // video image scan line immediately following the second BE control link
+    // symbol sequence after the VSC SDP.
+    //
+    NvBool   bSuRegionScanLineIndicate;
+
+    //
+    // Applicable only to PR SU operation.
+    // Used by the Source device to indicate which supported Y granularity
+    // extended capability value shall be used. Only a value declared to be
+    // supported by DPCD 000B5h and 000B6h may be chosen. Enabled
+    // when DPCD 001B1h[2] = 1, and may be used only when the SU Y
+    // Granularity Extended Capability Supported bit in the PANEL REPLAY
+    // CAPABILITY register is set (DPCD 000B1h[6] = 1).
+    //
+    NvU8     selUpdateYExtVal : 4;
+
+    //Adaptive-Sync SDP Setup Time Configuration during PR_State.
+    NvU8     asSdpSetUpTimePrActive: 2;
 } panelReplayConfig;
 
 // PR state
@@ -571,6 +740,68 @@ typedef struct
     PanelReplayState prState;
 } PanelReplayStatus;
 
+typedef struct
+{
+    //
+    // 0 = PM_State 2a (FW_STANDBY) is not supported.
+    // 1 = PM_State 2a (FW_STANDBY) is supported.
+    //
+    NvBool bFwStandbySupported;
+
+    //
+    // If Sink device reports this as TRUE then it supports AUX-less ALPM.
+    // PM_State 3b (ALW_SLEEP) is supported by default.
+    //
+    NvBool bAuxLessAlpmSupported;
+
+    //
+    // Indicates whether the Sink device supports the
+    // AUX_LESS_ALPM_ML_PHY_SLEEP_DETECTED debug bit in the
+    // RECEIVER_ALPM_ARP_STATUS register (DPCD 0200Bh[3]).
+    //
+    NvBool bAuxLessAlpmPhySleepSupported;
+} AlpmCaps;
+
+typedef struct
+{
+    // Source will use this to configure ALPM on sink side
+    NvBool bEnableAlpm;
+
+    //
+    // when this field is enabled Sink will trigger HPD to notify source
+    // the event of an AUX-less ALPM lock timeout error
+    //
+    NvBool bHpdOnAlpmLockError;
+
+    // This field needs to be set to True to enable Aux less ALPM
+    NvBool bSelectedAlpmMode;
+
+    //
+    // This is duration of ACDS phase.
+    // The Aux less exit sequence is composed of LFPS, followed by a
+    // PHY Establishment period and then the AUX-less ALPM Clock and
+    // Data Switch(ACDS) period.
+    //
+    NvBool bAcdsPeriodDuration;
+} AlpmConfig;
+
+typedef struct
+{
+    //
+    // Set by the Sink device if it does not achieve LANEx_CR_DONE,
+    // LANEx_CHANNEL_EQ_DONE, LANEx_SYMBOL_LOCKED, and
+    // INTERLANE_ALIGN_DONE, within the specified time period, after
+    // receiving the wake sequence signal (LFPS and Silence)
+    //
+    NvBool bAuxlessAlpmLockTimeout;
+
+    //
+    // Used for debug purposes. Set by the Sink device when
+    // two consecutive ML_PHY_SLEEP sequences are detected.
+    //
+    NvBool bAuxlessAlpmPhySleepDetected;
+} AlpmStatus;
+
 // Multiplier constant to get link frequency in KHZ
 // Maximum link rate of Main Link lanes = Value x 270M.
 // To get it to KHz unit, we need to multiply 270K.
@@ -588,6 +819,7 @@ typedef struct
 // a * 1000(KHz) / 10 * 1000 * 1000(10Mhz)
 //
 #define LINK_RATE_KHZ_TO_10MHZ(a)     ((a) / 10000)
+#define LINK_RATE_10MHZ_TO_KHZ(a)     ((a) * 10000)
 #define LINK_RATE_270MHZ_TO_10MHZ(a)  ((a) * 27)
 #define LINK_RATE_10MHZ_TO_270MHZ(a)  ((a) / 27)
 
@@ -599,7 +831,10 @@ typedef struct
 #define DP_LINK_BW_FREQ_MULTI_MBPS 27000000
 
 // Convert link rate in 10M to its value in bps
-#define DP_LINK_RATE_10M_TO_BPS(linkRate) (linkRate * 10000000)
+#define DP_LINK_RATE_10M_TO_BPS(linkRate)   (linkRate * 10000000)
+
+// Convert link rate in 270M to its value in bps
+#define DP_LINK_RATE_270M_TO_BPS(linkRate)  (linkRate * 270000000)
 
 // Convert link rate from bps to Bps
 #define DP_LINK_RATE_BITSPS_TO_BYTESPS(linkRate) (linkRate / 8)

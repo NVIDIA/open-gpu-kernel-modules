@@ -241,7 +241,7 @@ allocUpstreamTopPool
     {
         NvU64 *pPageStore = portMemAllocNonPaged(sizeof(NvU64) * numPages);
         NV_STATUS status = NV_OK;
-        NV_ASSERT_OK_OR_GOTO(status,
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
             pmaAllocatePages(pMemReserveInfo->pPma,
                 numPages,
                 pageSize,
@@ -595,8 +595,10 @@ rmMemPoolReserve
     // Reserve pages only in the topmost pool.
     if (NULL != pMemReserveInfo->pPool[pMemReserveInfo->topmostPoolIndex])
     {
-        NV_CHECK_OK(status, LEVEL_WARNING,
-            poolReserve(pMemReserveInfo->pPool[pMemReserveInfo->topmostPoolIndex], numChunks));
+        status = poolReserve(pMemReserveInfo->pPool[pMemReserveInfo->topmostPoolIndex], numChunks);
+
+        /* Assert should not be fired when either status is NV_OK or status is OOM but retry flag is set */
+        NV_ASSERT((status == NV_OK) || ((status == NV_ERR_NO_MEMORY) && (flags & VASPACE_FLAGS_RETRY_PTE_ALLOC_IN_SYS)));
     }
 
     if (flags & VASPACE_FLAGS_SKIP_SCRUB_MEMPOOL)

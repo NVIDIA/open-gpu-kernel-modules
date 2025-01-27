@@ -97,7 +97,7 @@ NV_STATUS _setupGspEventInfrastructure(OBJGPU *pGpu, OBJVGPU *pVGpu)
     NvU32 memFlags = 0;
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
 
-    if (IsGH100orBetter(pGpu) && (!kbusIsBar2Initialized(pKernelBus)))
+    if (!kbusIsBar2Initialized(pKernelBus))
         addressSpace = ADDR_SYSMEM;
 
     status = _allocRpcMemDesc(pGpu,

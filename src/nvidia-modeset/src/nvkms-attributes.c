@@ -1212,7 +1212,7 @@ static NvBool GetVrrMinRefreshRateValidValues(
     pTimings = &pDispEvo->headState[head].timings;
 
     nvGetDpyMinRefreshRateValidValues(pTimings,
-                                      pDpyEvo->vrr.type,
+                                      pTimings->vrr.type,
                                       pTimings->vrr.timeoutMicroseconds,
                                       &minMinRefreshRate,
                                       &maxMinRefreshRate);
@@ -1225,7 +1225,7 @@ static NvBool GetVrrMinRefreshRateValidValues(
             pTimings = &pDispEvo->headState[h].timings;
 
             nvGetDpyMinRefreshRateValidValues(pTimings,
-                                              pDpyEvo->vrr.type,
+                                              pTimings->vrr.type,
                                               pTimings->vrr.timeoutMicroseconds,
                                               &tmpMinMinRefreshRate,
                                               &tmpMaxMinRefreshRate);

@@ -96,22 +96,6 @@ typedef enum
     SPLIT_TEST_MODE_COUNT
 } split_test_mode_t;
 
-// This helper needs to stay in sync with the one in uvm_pmm_gpu.c
-// It is duplicated because we do not want to expose it as an API.
-static uvm_pmm_gpu_memory_type_t pmm_squash_memory_type(uvm_pmm_gpu_memory_type_t type)
-{
-    if (g_uvm_global.conf_computing_enabled)
-        return type;
-
-    // Enforce the contract that when the Confidential Computing feature is
-    // disabled, all user types are alike, as well as all kernel types,
-    // respectively. See uvm_pmm_gpu_memory_type_t.
-    if (uvm_pmm_gpu_memory_type_is_user(type))
-        return UVM_PMM_GPU_MEMORY_TYPE_USER;
-
-    return UVM_PMM_GPU_MEMORY_TYPE_KERNEL;
-}
-
 // Validate the chunk state upon allocation.
 static bool gpu_chunk_allocation_state_is_valid(uvm_gpu_chunk_t *chunk)
 {
@@ -129,7 +113,6 @@ static NV_STATUS check_chunks(uvm_gpu_chunk_t **chunks,
 {
     size_t i;
 
-    mem_type = pmm_squash_memory_type(mem_type);
 
     for (i = 0; i < num_chunks; i++) {
         TEST_CHECK_RET(chunks[i]);
@@ -208,14 +191,7 @@ static NV_STATUS chunk_alloc_check(uvm_pmm_gpu_t *pmm,
     if (gpu->mem_info.size == 0)
         return NV_ERR_NO_MEMORY;
 
-    // TODO: Bug 4287430: the calls to uvm_pmm_gpu_alloc_* request protected
-    // memory, ignoring the protection type in mem_type. But unprotected memory
-    // is currently not used in UVM, so the default protection (protected) is
-    // correct.
-    mem_type = pmm_squash_memory_type(mem_type);
-    TEST_CHECK_RET(uvm_pmm_gpu_memory_type_is_protected(mem_type));
-
-    if (uvm_pmm_gpu_memory_type_is_user(mem_type))
+    if (mem_type == UVM_PMM_GPU_MEMORY_TYPE_USER)
         status = uvm_pmm_gpu_alloc_user(pmm, num_chunks, chunk_size, flags, chunks, &local_tracker);
     else
         status = uvm_pmm_gpu_alloc_kernel(pmm, num_chunks, chunk_size, flags, chunks, &local_tracker);
@@ -229,7 +205,6 @@ static NV_STATUS chunk_alloc_check(uvm_pmm_gpu_t *pmm,
 static NV_STATUS chunk_alloc_user_check(uvm_pmm_gpu_t *pmm,
                                         size_t num_chunks,
                                         uvm_chunk_size_t chunk_size,
-                                        uvm_pmm_gpu_memory_type_t mem_type,
                                         uvm_pmm_alloc_flags_t flags,
                                         uvm_gpu_chunk_t **chunks,
                                         uvm_tracker_t *tracker)
@@ -237,25 +212,21 @@ static NV_STATUS chunk_alloc_user_check(uvm_pmm_gpu_t *pmm,
     NV_STATUS status;
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
 
-    // TODO: Bug 4287430: the call to uvm_pmm_gpu_alloc_user requests protected
-    // memory, ignoring the protection type in mem_type. But unprotected memory
-    // is currently not used in UVM, so the default protection (protected) is
-    // correct.
-    mem_type = pmm_squash_memory_type(mem_type);
-    TEST_CHECK_RET(uvm_pmm_gpu_memory_type_is_protected(mem_type));
-
     status = uvm_pmm_gpu_alloc_user(pmm, num_chunks, chunk_size, flags, chunks, &local_tracker);
     if (status != NV_OK)
         return status;
 
-    return chunk_alloc_check_common(pmm, num_chunks, chunk_size, mem_type, flags, chunks, &local_tracker, tracker);
+    return chunk_alloc_check_common(pmm,
+                                    num_chunks,
+                                    chunk_size,
+                                    UVM_PMM_GPU_MEMORY_TYPE_USER,
+                                    flags,
+                                    chunks,
+                                    &local_tracker,
+                                    tracker);
 }
 
-static NV_STATUS check_leak(uvm_gpu_t *gpu,
-                            uvm_chunk_size_t chunk_size,
-                            uvm_pmm_gpu_memory_type_t type,
-                            NvS64 limit,
-                            NvU64 *chunks)
+static NV_STATUS check_leak(uvm_gpu_t *gpu, uvm_chunk_size_t chunk_size, NvS64 limit, NvU64 *chunks)
 {
     NV_STATUS status = NV_OK;
     pmm_leak_bucket_t *bucket, *next;
@@ -274,7 +245,7 @@ static NV_STATUS check_leak(uvm_gpu_t *gpu,
             status = chunk_alloc_check(&gpu->pmm,
                                        1,
                                        chunk_size,
-                                       type,
+                                       UVM_PMM_GPU_MEMORY_TYPE_USER,
                                        UVM_PMM_ALLOC_FLAGS_NONE,
                                        &allocated->chunks[k],
                                        NULL);
@@ -344,14 +315,12 @@ static NV_STATUS gpu_mem_check(uvm_gpu_t *gpu,
     NvU32 *verif_cpu_addr = uvm_mem_get_cpu_addr_kernel(verif_mem);
     size_t i;
 
-    // TODO: Bug 3839176: [UVM][HCC][uvm_test] Update tests that assume GPU
-    //                     engines can directly access sysmem
-    // Skip this test for now. To enable this test in Confidential Computing,
-    // The GPU->CPU CE copy needs to be updated so it uses encryption when
-    // CC is enabled.
-    if (g_uvm_global.conf_computing_enabled)
-        return NV_OK;
     UVM_ASSERT(verif_mem->size >= size);
+
+    // The plaintext CE memcopy between GPU and CPU is disallowed in
+    // Confidential Computing.
+    TEST_CHECK_RET(!g_uvm_global.conf_computing_enabled);
+
     memset(verif_cpu_addr, 0, size);
 
     status = uvm_push_begin_acquire(gpu->channel_manager,
@@ -553,7 +522,8 @@ static NV_STATUS basic_test(uvm_va_space_t *va_space, uvm_gpu_t *gpu,
 
     if (mode == UvmTestPmmSanityModeBasic) {
         first_memory_type = UVM_PMM_GPU_MEMORY_TYPE_USER;
-        last_memory_type = UVM_PMM_GPU_MEMORY_TYPE_USER_UNPROTECTED;
+        last_memory_type = UVM_PMM_GPU_MEMORY_TYPE_USER;
+
         first_free_pattern = BASIC_TEST_FREE_PATTERN_EVERY_N;
         last_free_pattern = BASIC_TEST_FREE_PATTERN_EVERY_N;
     }
@@ -583,8 +553,7 @@ static NV_STATUS basic_test(uvm_va_space_t *va_space, uvm_gpu_t *gpu,
         // In SR-IOV heavy, virtual mappings will be created for each chunk
         // this test allocates before accessing it on the GPU. But currently
         // it is not allowed to map a kernel chunk, so skip those.
-        if (uvm_parent_gpu_is_virt_mode_sriov_heavy(gpu->parent) &&
-            uvm_pmm_gpu_memory_type_is_kernel(test_state.type))
+        if (uvm_parent_gpu_is_virt_mode_sriov_heavy(gpu->parent) && (test_state.type == UVM_PMM_GPU_MEMORY_TYPE_KERNEL))
             continue;
 
         chunk_sizes = gpu->pmm.chunk_sizes[test_state.type];
@@ -816,8 +785,7 @@ static NV_STATUS split_test(uvm_va_space_t *va_space, uvm_gpu_t *gpu)
         // In SR-IOV heavy, virtual mappings will be created for each chunk
         // this test allocates before accessing it on the GPU. But currently
         // it is not allowed to map a kernel chunk, so skip those.
-        if (uvm_parent_gpu_is_virt_mode_sriov_heavy(gpu->parent) &&
-            uvm_pmm_gpu_memory_type_is_kernel(type))
+        if (uvm_parent_gpu_is_virt_mode_sriov_heavy(gpu->parent) && (type == UVM_PMM_GPU_MEMORY_TYPE_KERNEL))
             continue;
 
         // Test every available parent size except the smallest, which obviously
@@ -909,11 +877,6 @@ NV_STATUS uvm_test_pmm_check_leak(UVM_TEST_PMM_CHECK_LEAK_PARAMS *params, struct
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
     NV_STATUS status = NV_OK;
     uvm_gpu_t *gpu;
-    uvm_pmm_gpu_memory_type_t first_user_mode = UVM_PMM_GPU_MEMORY_TYPE_USER;
-    uvm_pmm_gpu_memory_type_t last_user_mode = UVM_PMM_GPU_MEMORY_TYPE_USER;
-    uvm_pmm_gpu_memory_type_t current_user_mode = first_user_mode;
-
-    last_user_mode = UVM_PMM_GPU_MEMORY_TYPE_USER_UNPROTECTED;
 
     if (params->alloc_limit < -1)
         return NV_ERR_INVALID_ARGUMENT;
@@ -922,21 +885,16 @@ NV_STATUS uvm_test_pmm_check_leak(UVM_TEST_PMM_CHECK_LEAK_PARAMS *params, struct
     if (!gpu)
         return NV_ERR_INVALID_DEVICE;
 
-    for (; current_user_mode <= last_user_mode; current_user_mode++) {
-        status = check_leak(gpu, params->chunk_size, current_user_mode, params->alloc_limit, &params->allocated);
-        if (status != NV_OK)
-            break;
-    }
+    status = check_leak(gpu, params->chunk_size, params->alloc_limit, &params->allocated);
 
     uvm_gpu_release(gpu);
     return status;
 }
 
-static NV_STATUS __test_pmm_async_alloc_type(uvm_va_space_t *va_space,
-                                             uvm_gpu_t *gpu,
-                                             size_t num_chunks,
-                                             uvm_pmm_gpu_memory_type_t mem_type,
-                                             size_t work_iterations)
+static NV_STATUS test_pmm_async_alloc(uvm_va_space_t *va_space,
+                                      uvm_gpu_t *gpu,
+                                      size_t num_chunks,
+                                      size_t work_iterations)
 {
     NV_STATUS status;
     NV_STATUS tracker_status = NV_OK;
@@ -969,7 +927,6 @@ static NV_STATUS __test_pmm_async_alloc_type(uvm_va_space_t *va_space,
     status = chunk_alloc_user_check(&gpu->pmm,
                                     num_chunks,
                                     chunk_size,
-                                    mem_type,
                                     UVM_PMM_ALLOC_FLAGS_NONE,
                                     chunks,
                                     &tracker);
@@ -1012,13 +969,7 @@ static NV_STATUS __test_pmm_async_alloc_type(uvm_va_space_t *va_space,
     // Re-alloc chunks to verify that the returned trackers don't have work for
     // other GPUs (chunk_alloc_user_check() checks that).
     for (i = 0; i < num_chunks; i += 2) {
-        status = chunk_alloc_user_check(&gpu->pmm,
-                                        1,
-                                        chunk_size,
-                                        mem_type,
-                                        UVM_PMM_ALLOC_FLAGS_NONE,
-                                        &chunks[i],
-                                        NULL);
+        status = chunk_alloc_user_check(&gpu->pmm, 1, chunk_size, UVM_PMM_ALLOC_FLAGS_NONE, &chunks[i], NULL);
         if (status != NV_OK)
             goto out;
     }
@@ -1040,31 +991,18 @@ out:
 
 NV_STATUS uvm_test_pmm_async_alloc(UVM_TEST_PMM_ASYNC_ALLOC_PARAMS *params, struct file *filp)
 {
-    NV_STATUS status = NV_OK;
+    NV_STATUS status;
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
     uvm_gpu_t *gpu;
-    uvm_pmm_gpu_memory_type_t first_user_mode = UVM_PMM_GPU_MEMORY_TYPE_USER;
-    uvm_pmm_gpu_memory_type_t last_user_mode = UVM_PMM_GPU_MEMORY_TYPE_USER;
-    uvm_pmm_gpu_memory_type_t current_user_mode = first_user_mode;
-
-    last_user_mode = UVM_PMM_GPU_MEMORY_TYPE_USER_UNPROTECTED;
 
     uvm_va_space_down_read(va_space);
-    gpu = uvm_va_space_get_gpu_by_uuid(va_space, &params->gpu_uuid);
-    if (!gpu) {
-        uvm_va_space_up_read(va_space);
-        return NV_ERR_INVALID_DEVICE;
-    }
 
-    for (; current_user_mode <= last_user_mode; current_user_mode++) {
-        status = __test_pmm_async_alloc_type(va_space,
-                                             gpu,
-                                             params->num_chunks,
-                                             current_user_mode,
-                                             params->num_work_iterations);
-        if (status != NV_OK)
-            break;
-    }
+    gpu = uvm_va_space_get_gpu_by_uuid(va_space, &params->gpu_uuid);
+
+    if (gpu == NULL)
+        status = NV_ERR_INVALID_DEVICE;
+    else
+        status = test_pmm_async_alloc(va_space, gpu, params->num_chunks, params->num_work_iterations);
 
     uvm_va_space_up_read(va_space);
 

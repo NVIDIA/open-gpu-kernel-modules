@@ -1307,7 +1307,6 @@ static void HsFlipHelper(
                     pFlipHead,
                     1     /* numFlipHeads */,
                     TRUE  /* commit */,
-                    FALSE /* allowVrr */,
                     NULL  /* pReply */,
                     FALSE /* skipUpdate */,
                     allowFlipLock);
