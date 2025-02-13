@@ -1915,7 +1915,10 @@ static struct drm_driver nv_drm_driver = {
     .name                   = "nvidia-drm",
 
     .desc                   = "NVIDIA DRM driver",
-    .date                   = "20160202",
+/*Nicolas Baranger 20250213 */
+/*Removing '.date' because it had been removed from struct drm_driver in linux-6.14 */
+/*see https://github.com/torvalds/linux/commit/cb2e1c2136f71618142557ceca3a8802e87a44cd */
+/*    .date                   = "20160202", */
 
 #if defined(NV_DRM_DRIVER_HAS_DEVICE_LIST)
     .device_list            = LIST_HEAD_INIT(nv_drm_driver.device_list),
