@@ -46,8 +46,8 @@ static inline int nv_kref_put(nv_kref_t *nv_kref,
 {
     if (atomic_dec_and_test(&nv_kref->refcount))
     {
-	release(nv_kref);
-	return 1;
+        release(nv_kref);
+        return 1;
     }
 
     return 0;
