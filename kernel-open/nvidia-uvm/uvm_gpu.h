@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -696,6 +696,11 @@ struct uvm_gpu_struct
         // ZeroFB testing mode, this will be 0.
         NvU64 size;
 
+        // Physical start of heap, for SMC enabled GPUs, this is useful to
+        // partition PMM, it is used by HMM to figure out the right translation
+        // between HMM ranges and PMM offsets.
+        NvU64 phys_start;
+
         // Max (inclusive) physical address of this GPU's memory that the driver
         // can allocate through PMM (PMA).
         NvU64 max_allocatable_address;
@@ -1015,6 +1020,13 @@ struct uvm_parent_gpu_struct
     // Do not read this field directly, use uvm_gpu_device_handle instead.
     uvmGpuDeviceHandle rm_device;
 
+    // Total amount of physical memory available on the parent GPU.
+    NvU64 max_allocatable_address;
+
+#if UVM_IS_CONFIG_HMM()
+    uvm_pmm_gpu_devmem_t *devmem;
+#endif
+
     // The physical address range addressable by the GPU
     //
     // The GPU has its NV_PFB_XV_UPPER_ADDR register set by RM to
@@ -1288,6 +1300,10 @@ struct uvm_parent_gpu_struct
         // 47-bit fabric memory physical offset that peer gpus need to access
         // to read a peer's memory
         NvU64 fabric_memory_window_start;
+
+        // 47-bit fabric memory physical offset that peer gpus need to access
+        // to read remote EGM memory.
+        NvU64 egm_fabric_memory_window_start;
     } nvswitch_info;
 
     struct

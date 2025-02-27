@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -425,10 +425,7 @@ namespace DisplayPort
         bool freeDisplayId(NvU32 displayId);
         virtual bool queryAndUpdateDfpParams();
         virtual bool queryGPUCapability();
-        virtual void updateFallbackMap(NvU32 maxLaneCount, LinkRate maxLinkRate, NvU32 sinkUhbrCaps = 0)
-        {
-            return;
-        }
+
         bool getEdpPowerData(bool *panelPowerOn, bool *dpcdPowerStateD0);
         virtual bool vrrRunEnablementStage(unsigned stage, NvU32 *status);
 

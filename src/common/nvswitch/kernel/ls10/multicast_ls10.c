@@ -33,10 +33,10 @@ static const NVSWITCH_COLUMN_PORT_OFFSET_LS10 nvswitch_portmap_ls10[NVSWITCH_NUM
     { 0,  0 }, { 0,  1 }, { 0,  2 }, { 0,  3 },
     { 0,  4 }, { 0,  5 }, { 0,  6 }, { 0,  7 },
     { 0,  8 }, { 0,  9 }, { 0, 10 },
-    // ports 11 - 16
+    // ports 11 - 15
     { 2,  0 }, { 2,  3 }, { 2,  4 }, { 2,  5 },
     { 2,  8 },
-    //ports 16 - 26
+    // ports 16 - 26
     { 4, 10 }, { 4,  9 }, { 4,  8 }, { 4,  7 },
     { 4,  6 }, { 4,  5 }, { 4,  4 }, { 4,  3 },
     { 4,  2 }, { 4,  1 }, { 4,  0 },
@@ -297,18 +297,27 @@ _is_primary_replica
 // Set the round flags to indicate the size of each multicast round.
 // See IAS section "6.12. Consistent MC Semantics" for more info.
 //
-static void
-_nvswitch_mc_set_round_flags
-(
+// Make sure rounds have following properties:
+// - no more than 11 rounds
+// - no more than 3 directives per round
+// - no duplicate TCP# within same round
+//
+static NvlStatus
+_nvswitch_mc_set_round_flags(
+    nvswitch_device *device,
     NVSWITCH_TCP_DIRECTIVE_LS10 *port_list,
-    NvU32 port_list_size
-)
+    NvU32 port_list_size)
 {
     NvU32 cur_portlist_pos, round_size, round_start, round_end;
     NVSWITCH_TCP_DIRECTIVE_LS10 *cur_dir, *next_dir;
-
+    NvU32 round_tcp_mask = 0;
+    NvU32 round_count = 0;
     if ((port_list == NULL) || (port_list_size == 0))
-        return;
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: called with empty port list?\n",
+                       __FUNCTION__);
+        return -NVL_BAD_ARGS;
+    }
 
     round_start = 0;
     round_end = 0;
@@ -329,12 +338,16 @@ _nvswitch_mc_set_round_flags
             // set the round size in the first directive
             cur_dir = &port_list[round_start];
             cur_dir->roundSize = (NvU8)round_size;
+            round_count++;
         }
         else
         {
-            // if next tcp is less than or equal to the current, then current is end of round
+            round_tcp_mask |= (1 << cur_dir->tcp);
+
+            // if next tcp is tcp that is already in current round, then current directive is end of round
+            // if its third directive in current round, end round regardless of tcp assignments
             next_dir = &port_list[cur_portlist_pos + 1];
-            if (next_dir->tcp <= cur_dir->tcp)
+            if ((round_end - round_start == 2) || ((round_tcp_mask & (1 << next_dir->tcp)) != 0))
             {
                 cur_dir->continueRound = NV_FALSE;
 
@@ -347,9 +360,21 @@ _nvswitch_mc_set_round_flags
 
                 // advance round_start
                 round_start = cur_portlist_pos + 1;
+
+                round_tcp_mask = 0;
+                round_count++;
             }
         }
     }
+
+    if (round_count > 11)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: Round count exceeds 11: %d\n",
+                       __FUNCTION__, round_count);
+        return -NVL_BAD_ARGS;
+    }
+
+    return NVL_SUCCESS;
 }
 
 //
@@ -359,8 +384,8 @@ _nvswitch_mc_set_round_flags
 static void
 _nvswitch_mc_set_port_flags
 (
-        NVSWITCH_TCP_DIRECTIVE_LS10 *port_list,
-        NvU32 port_list_size
+    NVSWITCH_TCP_DIRECTIVE_LS10 *port_list,
+    NvU32 port_list_size
 )
 {
     NvU32 cur_portlist_pos;
@@ -766,7 +791,9 @@ nvswitch_mc_build_mcp_list_ls10
         NVSWITCH_PRINT(device, INFO, "%s: entries used after building portlist: %d\n",
                        __FUNCTION__, dir_entries_used_sg);
 #endif
-        _nvswitch_mc_set_round_flags(tmp_mcp_list, dir_entries_used_sg);
+        ret = _nvswitch_mc_set_round_flags(device, tmp_mcp_list, dir_entries_used_sg);
+        if (ret != NVL_SUCCESS)
+            return ret;
 
         _nvswitch_mc_set_port_flags(tmp_mcp_list, dir_entries_used_sg);
 

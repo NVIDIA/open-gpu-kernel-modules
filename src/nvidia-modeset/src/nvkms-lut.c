@@ -45,7 +45,8 @@ static void FreeLutSurfaceEvo(NVDevEvoPtr pDevEvo, NVSurfaceEvoPtr pSurfEvo)
     nvEvoUnregisterSurface(pDevEvo,
                            pDevEvo->pNvKmsOpenDev,
                            pSurfEvo->owner.surfaceHandle,
-                           TRUE /* skipUpdate */);
+                           TRUE /* skipUpdate */,
+                           FALSE /* skipSync */);
 }
 
 static NVSurfaceEvoPtr RegisterLutSurfaceEvo(NVDevEvoPtr pDevEvo, NvU32 memoryHandle)

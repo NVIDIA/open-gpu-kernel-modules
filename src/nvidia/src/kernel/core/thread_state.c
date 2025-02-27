@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -306,8 +306,8 @@ static NV_STATUS _threadNodeInitTime(THREAD_STATE_NODE *pThreadNode)
         // Note that MODS does not have interrupt timeout requirements and there are
         // existing code paths that violates the timeout
         //
-        computeTimeoutMsecs = 500;
-        nonComputeTimeoutMsecs = 500;
+        computeTimeoutMsecs = TIMEOUT_DPC_ISR_INTERVAL_MS;
+        nonComputeTimeoutMsecs = TIMEOUT_DPC_ISR_INTERVAL_MS;
     }
 
     osGetCurrentTick(&timeInNs);
@@ -1194,14 +1194,9 @@ NV_STATUS threadStateCheckTimeout(OBJGPU *pGpu, NvU64 *pElapsedTimeUs)
     return rmStatus;
 }
 
-//
-// Set override timeout value for specified thread
-//
-void threadStateSetTimeoutOverride(THREAD_STATE_NODE *pThreadNode, NvU64 newTimeoutMs)
+static void _threadStateSetTimeoutOverride(THREAD_STATE_NODE *pThreadNode, NvU64 newTimeoutMs)
 {
     NvU64 timeInNs;
-
-    pThreadNode->timeout.overrideTimeoutMsecs = newTimeoutMs;
 
     osGetCurrentTick(&timeInNs);
 
@@ -1218,6 +1213,24 @@ void threadStateSetTimeoutOverride(THREAD_STATE_NODE *pThreadNode, NvU64 newTime
         pThreadNode->timeout.nonComputeTime = newTimeoutMs * 1000;
         pThreadNode->timeout.computeTime = newTimeoutMs * 1000;
     }
+}
+
+//
+// Set override timeout value for specified thread
+//
+void threadStateSetTimeoutOverride(THREAD_STATE_NODE *pThreadNode, NvU64 newTimeoutMs)
+{
+    pThreadNode->timeout.overrideTimeoutMsecs = newTimeoutMs;
+    _threadStateSetTimeoutOverride(pThreadNode, newTimeoutMs);
+}
+
+//
+// One-time override timeout for specified thread; does not apply across timeout resets
+//
+void threadStateSetTimeoutSingleOverride(THREAD_STATE_NODE *pThreadNode, NvU64 newTimeoutMs)
+{
+    // Does not cache override in overrideTimeoutMsecs, so it is not re-applied upon reset.
+    _threadStateSetTimeoutOverride(pThreadNode, newTimeoutMs);
 }
 
 NV_STATUS threadStateEnqueueCallbackOnFree

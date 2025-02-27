@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -167,6 +167,7 @@ namespace DisplayPort
             bool useLegacyAddress;
             bool bIgnoreDscCap;           // Ignore DSC even if sink reports DSC capability
             bool bDisableDownspread;
+            bool bForceHeadShutdown;
             bool bSkipCableIdCheck;
             bool bAllocateManualTimeslots;
         }_WARFlags;

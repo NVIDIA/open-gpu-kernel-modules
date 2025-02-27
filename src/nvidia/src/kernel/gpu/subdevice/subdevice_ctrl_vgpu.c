@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -138,10 +138,13 @@ subdeviceCtrlCmdGpuResetEccErrorStatus_VF
     NV2080_CTRL_GPU_RESET_ECC_ERROR_STATUS_PARAMS *pParams
 )
 {
-    OBJGPU           *pGpu  = GPU_RES_GET_GPU(pSubdevice);
-    OBJVGPU          *pVGpu = GPU_GET_VGPU(pGpu);
-    VGPU_STATIC_INFO *pVSI  = GPU_GET_STATIC_INFO(pGpu);
+    OBJGPU           *pGpu        = GPU_RES_GET_GPU(pSubdevice);
+    OBJVGPU          *pVGpu       = GPU_GET_VGPU(pGpu);
+    VGPU_STATIC_INFO *pVSI        = GPU_GET_STATIC_INFO(pGpu);
+    NvBool            bMigEnabled = IS_MIG_ENABLED(pGpu);
     NvU32 i;
+
+    NV_CHECK_OR_RETURN(LEVEL_INFO, !bMigEnabled, NV_ERR_NOT_SUPPORTED);
 
     if ((pVGpu == NULL) || (!pVGpu->bECCSupported) ||
         (pParams->statuses & NV2080_CTRL_GPU_ECC_ERROR_STATUS_AGGREGATE))

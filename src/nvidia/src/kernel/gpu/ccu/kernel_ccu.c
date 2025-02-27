@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -468,6 +468,14 @@ NV_STATUS kccuStateUnload_IMPL
 )
 {
     NV_STATUS status = NV_OK;
+
+    // Skip for vGPU guest
+    // Buffer de-allocation is done in FB via kccuDeInitVgpuMigSharedBuffer at CI destroy
+    if (IS_VIRTUAL(pGpu))
+    {
+        return status;
+    }
+
     NV_PRINTF(LEVEL_INFO, "KernelCcu: State unload \n");
 
     // Disable ccu stream state

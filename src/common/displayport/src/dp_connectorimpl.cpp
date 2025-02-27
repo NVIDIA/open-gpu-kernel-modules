@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -147,6 +147,7 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
     this->applyRegkeyOverrides(dpRegkeyDatabase);
     hal->applyRegkeyOverrides(dpRegkeyDatabase);
 
+    hal->setConnectorTypeC(main->isConnectorUSBTypeC());
     highestAssessedLC = initMaxLinkConfig();
 }
 
@@ -182,6 +183,8 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     }
     this->bForceDisableTunnelBwAllocation  = dpRegkeyDatabase.bForceDisableTunnelBwAllocation;
     this->bSkipZeroOuiCache                = dpRegkeyDatabase.bSkipZeroOuiCache;
+    this->bDisable5019537Fix               = dpRegkeyDatabase.bDisable5019537Fix;
+    this->bForceHeadShutdownFromRegkey     = dpRegkeyDatabase.bForceHeadShutdown;
 }
 
 void ConnectorImpl::setPolicyModesetOrderMitigation(bool enabled)
@@ -2655,10 +2658,16 @@ bool ConnectorImpl::isHeadShutDownNeeded(Group * target,               // Group 
                                          unsigned headIndex,
                                          ModesetInfo modesetInfo)
 {
+    if (bForceHeadShutdownFromRegkey || bForceHeadShutdownPerMonitor)
+    {
+        return true;
+    }
+
     if (linkUseMultistream())
     {
          return true;
     }
+
     if (activeGroups.isEmpty())
     {
         return false;
@@ -4399,9 +4408,18 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
         }
     }
 
-    //
+    // Find the active group(s)
+    GroupImpl * groupAttached = 0;
+    if (!this->bDisable5019537Fix)
+    {
+        for (ListElement * e = activeGroups.begin(); e != activeGroups.end(); e = e->next)
+        {
+            DP_ASSERT(bIsUefiSystem || linkUseMultistream() || (!groupAttached && "Multiple attached heads"));
+            groupAttached = (GroupImpl * )e;
+        }
+    }
+
     //  Disconnect heads
-    //
     bool bIsFlushModeEnabled = enableFlush();
 
     if (bIsFlushModeEnabled)
@@ -4442,6 +4460,15 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
             timer->sleep(40);
         } while (retryCount++ < WAR_MAX_REASSESS_ATTEMPT);
 
+        if (!activeLinkConfig.isValid() && !(this->bDisable5019537Fix))
+        {
+            if (groupAttached && groupAttached->lastModesetInfo.pixelClockHz != 0)
+            {
+                // If there is no active link, force LT to max before disable flush
+                lConfig = _maxLinkConfig;
+                train(lConfig, true);
+            }
+        }
         disableFlush();
     }
 
@@ -4898,9 +4925,9 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
     bool bTwoHeadOneOrLinkRetrain = false;    // force link re-train if any attached
                                               // groups are in 2Head1OR mode.
 
-    // Power off the link if no stream are active
     if (isNoActiveStreamAndPowerdown())
     {
+        DP_PRINTF(DP_INFO, "Power off the link because no stream are active");
         return true;
     }
 
@@ -5059,7 +5086,7 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
                 bSkipLt = false;
             }
 
-            if (groupAttached && groupAttached->isHeadAttached())
+            if ((groupAttached && groupAttached->isHeadAttached()) || !(this->bDisable5019537Fix))
             {
                 // Enter flush mode/detach head before LT
                 if (!bSkipLt)
@@ -5077,7 +5104,7 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
             if (!bLinkTrainingSuccessful && bSkipLt)
             {
                 bSkipLt = false;
-                if (groupAttached && groupAttached->isHeadAttached())
+                if ((groupAttached && groupAttached->isHeadAttached()) || !(this->bDisable5019537Fix))
                 {
                     if (!(bEnteredFlushMode = this->enableFlush()))
                         return false;
@@ -5087,36 +5114,37 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
             if (!bLinkTrainingSuccessful)
             {
                 LinkConfiguration maxLinkConfig = getMaxLinkConfig();
+                //
                 // If optimized link config fails, try max link config with fallback.
-                if (!train(maxLinkConfig, false))
+                // Note: It's possible some link rates are dynamically invalidated
+                //       during failed link training. That means we can't assume
+                //       maxLinkConfig is always greater than the lowestSelected
+                //       link configuration.
+                //
+                train(maxLinkConfig, false);
+
+                //
+                // Note here that fallback might happen while attempting LT to max link config.
+                // activeLinkConfig will be set to that passing config.
+                //
+                if (!willLinkSupportModeSST(activeLinkConfig, groupAttached->lastModesetInfo))
                 {
                     //
-                    // Note here that if highest link config fails and a lower
-                    // link config passes, link training will be returned as
-                    // failure but activeLinkConfig will be set to that passing config.
+                    // If none of the link configs pass LT or a fall back link config passed LT
+                    // but cannot support the mode, then we will force the optimized link config
+                    // on the link and mark LT as fail.
                     //
-                    if (!willLinkSupportModeSST(activeLinkConfig, groupAttached->lastModesetInfo))
-                    {
-                        //
-                        // If none of the link configs pass LT or a fall back link config passed LT
-                        // but cannot support the mode, then we will force the optimized link config
-                        // on the link and mark LT as fail.
-                        //
-                        train(lowestSelected, true);
-                        bLinkTrainingSuccessful = false;
-                    }
-                    else
-                    {
-                        //
-                        // If a fallback link config pass LT and can support
-                        // the mode, mark LT as pass.
-                        //
-                        bLinkTrainingSuccessful = true;
-                    }
+
+                    // Force LT really should not fail!
+                    DP_ASSERT(train(lowestSelected, true));
+                    bLinkTrainingSuccessful = false;
                 }
                 else
                 {
-                    // If LT passes at max link config, mark LT as pass.
+                    //
+                    // If a fallback link config pass LT and can support
+                    // the mode, mark LT as pass.
+                    //
                     bLinkTrainingSuccessful = true;
                 }
             }
@@ -5798,10 +5826,15 @@ bool ConnectorImpl::enableFlush()
         return false;
 
     //
-    // Enabling flush mode shuts down the link, so the next link training
-    // call must not skip programming the hardware.  Otherwise, EVO will
-    // hang if the head is still active when flush mode is disabled.
+    // Enabling flush mode shuts down the link:
+    // 1. reset activeLinkConfig to indicate the link is now lost.
+    // 2. The next link training call must not skip programming the hardware.
+    //    Otherwise, EVO will hang if the head is still active when flush mode is disabled.
     //
+    if (!this->bDisable5019537Fix)
+    {
+        activeLinkConfig = LinkConfiguration();
+    }
     bSkipLt = false;
 
     sortActiveGroups(false);
@@ -6826,6 +6859,10 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
             {
                 preferredLinkConfig.multistream = false;
             }
+            if (AuxRetry::ack != hal->setMessagingEnable(false, true))
+            {
+                DP_PRINTF(DP_WARNING, "DP> Failed to clear messaging for singlestream panel");
+            }
 
             //  We will report a dongle as new device with videoSink flag as false.
             if (hal->getSinkCount() == 0)
@@ -7272,6 +7309,28 @@ void ConnectorImpl::notifyShortPulse()
         }
         //save the previous highest assessed LC
         LinkConfiguration previousAssessedLC = highestAssessedLC;
+
+        if (main->isConnectorUSBTypeC() &&
+            activeLinkConfig.bIs128b132bChannelCoding &&
+            activeLinkConfig.peakRate > dp2LinkRate_10_0Gbps)
+        {
+            if (activeLinkConfig.isValid() && enableFlush())
+            {
+                train(activeLinkConfig, true);
+                disableFlush();
+            }
+            main->invalidateLinkRatesInFallbackTable(activeLinkConfig.peakRate);
+            hal->overrideCableIdCap(activeLinkConfig.peakRate, false);
+
+            highestAssessedLC = getMaxLinkConfig();
+
+            DeviceImpl * dev = findDeviceInList(Address());
+            if (dev)
+            {
+                sink->bandwidthChangeNotification(dev, false);
+            }
+            return;
+        }
 
         if (activeLinkConfig.isValid() && enableFlush())
         {
@@ -8150,6 +8209,7 @@ void ConnectorImpl::configInit()
     allocatedDpTunnelBw = 0;
     allocatedDpTunnelBwShadow = 0;
     bDP2XPreferNonDSCForLowPClk = false;
+    bForceHeadShutdownPerMonitor = false;
 }
 
 bool ConnectorImpl::dpUpdateDscStream(Group *target, NvU32 dscBpp)

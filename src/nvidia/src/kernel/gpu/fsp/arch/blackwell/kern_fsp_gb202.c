@@ -72,9 +72,10 @@ kfspWaitForSecureBoot_GB202
     // but the default threadstate timeout on windows is 1800 ms. Increase to 4 seconds
     // for this wait to match MODS GetGFWBootTimeoutMs.
     // For flags, we must not use the GPU TMR since it is inaccessible.
+    // Increase to 5 seconds for WS SKUs especially needed for SKU's with larger VRAM.
     //
-    gpuSetTimeout(pGpu, NV_MAX(gpuScaleTimeout(pGpu, 4000000), pGpu->timeoutData.defaultus),
-                  &timeout, GPU_TIMEOUT_FLAGS_OSTIMER);
+    gpuSetTimeout(pGpu, NV_MAX(gpuScaleTimeout(pGpu, 5000000), pGpu->timeoutData.defaultus),
+                  &timeout, GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
 
     status = gpuTimeoutCondWait(pGpu, _kfspWaitBootCond_GB202, NULL, &timeout);
 

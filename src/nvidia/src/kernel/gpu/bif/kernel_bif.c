@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -87,9 +87,6 @@ kbifConstructEngine_IMPL
 
     // Cache GPU link capabilities
     kbifGetGpuLinkCapabilities(pGpu, pKernelBif);
-
-    // Cache L1SS enablement info from chipset side
-    kbifCacheChipsetL1SubstatesEnable(pGpu, pKernelBif);
 
     // Used to track when the link has gone into Recovery, which can cause CEs.
     pKernelBif->EnteredRecoverySinceErrorsLastChecked = NV_FALSE;
@@ -326,14 +323,14 @@ kbifCacheChipsetL1SubstatesEnable_IMPL
             }
             else
             {
-                NV_PRINTF(LEVEL_ERROR,
+                NV_PRINTF(LEVEL_INFO,
                           "L1 PM susbstates is not enabled in RootPort. L1 PM Control 1 Register 0x%x \n",
                           L1SsCap.Control1Reg);
             }
         }
         else
         {
-            NV_PRINTF(LEVEL_ERROR, "Failed to get L1 PM substates capabilites from Root Port\n");
+            NV_PRINTF(LEVEL_INFO, "Failed to get L1 PM substates capabilites from Root Port\n");
         }
     }
 }
@@ -858,6 +855,18 @@ _kbifInitRegistryOverrides
         }
     }
 
+    // RmWar5045021 added for bug5045021
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_WAR_5045021, &data32) == NV_OK)
+    {
+        if (data32)
+        {
+            pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_WAR_5045021_ENABLED, NV_TRUE);
+        }
+        else
+        {
+            pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_WAR_5045021_ENABLED, NV_FALSE);
+        }
+    }
 }
 
 /*!

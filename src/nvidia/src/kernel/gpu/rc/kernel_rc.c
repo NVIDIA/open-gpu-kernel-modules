@@ -267,7 +267,7 @@ krcReportXid_IMPL
 (
     OBJGPU     *pGpu,
     KernelRc   *pKernelRc,
-    NvU32       exceptType,
+    XidContext  context,
     const char *pMsg
 )
 {
@@ -326,20 +326,36 @@ krcReportXid_IMPL
         _krcLogUuidOnce(pGpu, pKernelRc);
 
         krcGetMigAttributionForError_HAL(pKernelRc,
-                                         exceptType,
+                                         context.xid,
                                          &gpuPartitionId,
                                          &computeInstanceId);
+
+        NvBool bPrintRootCause = (
+            (context.xid == ROBUST_CHANNEL_PREEMPTIVE_REMOVAL) &&
+            (context.rootCause.preemptiveRemovalPreviousXid != 0));
+
+        char rootCauseXidStr[64] = "";
+        if (bPrintRootCause)
+        {
+            nvDbgSnprintf(rootCauseXidStr,
+                          sizeof(rootCauseXidStr),
+            // this space -v- is intentional
+                          " caused by previous Xid %d",
+                          context.rootCause.preemptiveRemovalPreviousXid);
+        }
 
         // Code-generating macro to reduce duplication
         #define XID_PRINT_WITH_ATTR(attr, ...)                                          \
             do {                                                                        \
                 if (procName != NULL)                                                   \
-                    portDbgPrintf("NVRM: Xid (" attr "): %d, pid=%s, name=%s, %s\n",    \
-                                  __VA_ARGS__, exceptType, pidStr, procName,            \
-                                  pMsg != NULL ? pMsg : "");                            \
+                    portDbgPrintf("NVRM: Xid (" attr "): %d, pid=%s, name=%s, %s%s\n",  \
+                                  __VA_ARGS__, context.xid, pidStr, procName,           \
+                                  pMsg != NULL ? pMsg : "",                             \
+                                  rootCauseXidStr);                                     \
                 else                                                                    \
-                    portDbgPrintf("NVRM: Xid (" attr "): %d, %s\n",                     \
-                                  __VA_ARGS__, exceptType, pMsg != NULL ? pMsg : "");   \
+                    portDbgPrintf("NVRM: Xid (" attr "): %d, %s%s\n",                   \
+                                  __VA_ARGS__, context.xid, pMsg != NULL ? pMsg : "",   \
+                                  rootCauseXidStr);                                     \
             } while (0)
 
         if (gpuPartitionId    != KMIGMGR_INSTANCE_ATTRIBUTION_ID_INVALID &&

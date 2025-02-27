@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1394,6 +1394,23 @@ kbifSavePcieConfigRegisters_GH100
         return status;
     }
 
+
+    if (pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_WAR_5045021_ENABLED))
+    {
+        // No need to save/restore azalia config space if gpu is in GC6 cycle or if it is in FLR
+        if (IS_GPU_GC6_STATE_ENTERING(pGpu) ||
+            pKernelBif->bPreparingFunctionLevelReset)
+        {
+            return NV_OK;
+        }
+
+        // Return early if device is not multifunction (azalia is disabled or not present)
+        if (!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_DEVICE_IS_MULTIFUNCTION))
+        {
+            return NV_OK;
+        }
+    }
+
     // Save pcie config space for function 1
     status = kbifSavePcieConfigRegistersFn1_HAL(pGpu, pKernelBif,
                                                 &pKernelBif->xveRegmapRef[1], PCIE_CONFIG_SPACE_FN1_MAX_SIZE);
@@ -1444,6 +1461,61 @@ kbifRestorePcieConfigRegisters_GH100
         NV_PRINTF(LEVEL_ERROR, "Restoring PCIe config space failed for gpu.\n");
         NV_ASSERT(0);
         return status;
+    }
+
+    if (pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_WAR_5045021_ENABLED))
+    {
+        RMTIMEOUT timeout;
+        NvU64     timeStampStart;
+        NvU64     timeStampEnd;
+
+        // No need to save/restore azalia config space if gpu is in GC6 cycle or if it is in FLR
+        if (IS_GPU_GC6_STATE_EXITING(pGpu) ||
+            pKernelBif->bInFunctionLevelReset)
+        {
+            //
+            // Check that GPU is really accessible.
+            // Skip on pre-silicon because there can be timing issues in the test between device ready and this code.
+            // Todo: find a safe timeout for pre-silicon runs
+            //
+            if (IS_SILICON(pGpu))
+            {
+                // Check if GPU is actually accessible before continue
+                osGetPerformanceCounter(&timeStampStart);
+                gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+                NvU32 pmcBoot0 = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
+
+                while (pmcBoot0 != pGpu->chipId0)
+                {
+                    NV_PRINTF(LEVEL_INFO,
+                              "GPU not back on the bus after %s, 0x%x != 0x%x!\n",
+                              pKernelBif->bInFunctionLevelReset?"FLR":"GC6 exit", pmcBoot0, pGpu->chipId0);
+                    pmcBoot0 = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
+                    NV_ASSERT(0);
+                    status = gpuCheckTimeout(pGpu, &timeout);
+                    if (status == NV_ERR_TIMEOUT)
+                    {
+                        NV_PRINTF(LEVEL_ERROR,
+                                  "Timeout GPU not back on the bus after %s,\n", pKernelBif->bInFunctionLevelReset?"FLR":"GC6 exit");
+                        DBG_BREAKPOINT();
+                        return status;
+                    }
+                }
+
+                osGetPerformanceCounter(&timeStampEnd);
+                NV_PRINTF(LEVEL_ERROR,
+                          "Time spend on GPU back on bus is 0x%x ns,\n",
+                          (NvU32)NV_MIN(NV_U32_MAX, timeStampEnd - timeStampStart));
+            }
+
+            return NV_OK;
+        }
+
+        // Return early if device is not multifunction (azalia is disabled or not present)
+        if (!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_DEVICE_IS_MULTIFUNCTION))
+        {
+            return NV_OK;
+        }
     }
 
     // Restore pcie config space for function 1

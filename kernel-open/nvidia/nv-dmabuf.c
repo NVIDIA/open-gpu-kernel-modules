@@ -612,6 +612,42 @@ nv_dma_buf_unmap_pfns(
     }
 }
 
+static NvU32
+nv_dma_buf_get_sg_count (
+    struct device *dev,
+    nv_dma_buf_file_private_t *priv,
+    NvU32  *max_seg_size
+)
+{
+    NvU32 dma_max_seg_size, i;
+    NvU32 nents = 0;
+
+    dma_max_seg_size = NV_ALIGN_DOWN(dma_get_max_seg_size(dev), PAGE_SIZE);
+    if (dma_max_seg_size < PAGE_SIZE)
+    {
+        return 0;
+    }
+
+    // Calculate nents needed to allocate sg_table
+    for (i = 0; i < priv->num_objects; i++)
+    {
+        NvU32 range_count = priv->handles[i].memArea.numRanges;
+        NvU32 index;
+
+        for (index = 0; index < range_count; index++)
+        {
+            NvU64 length = priv->handles[i].memArea.pRanges[index].size;
+            NvU64 count = length + dma_max_seg_size - 1;
+            do_div(count, dma_max_seg_size);
+            nents += count;
+        }
+    }
+
+    *max_seg_size = dma_max_seg_size;
+
+    return nents;
+}
+
 static struct sg_table*
 nv_dma_buf_map_pages (
     struct device *dev,
@@ -620,15 +656,11 @@ nv_dma_buf_map_pages (
 {
     struct sg_table *sgt = NULL;
     struct scatterlist *sg;
-    NvU32 nents = 0;
-    NvU32 i;
+    NvU32 dma_max_seg_size = 0;
+    NvU32 i, nents;
     int rc;
 
-    // Calculate nents needed to allocate sg_table
-    for (i = 0; i < priv->num_objects; i++)
-    {
-        nents += priv->handles[i].memArea.numRanges;
-    }
+    nents = nv_dma_buf_get_sg_count(dev, priv, &dma_max_seg_size);
 
     NV_KZALLOC(sgt, sizeof(struct sg_table));
     if (sgt == NULL)
@@ -650,19 +682,29 @@ nv_dma_buf_map_pages (
         NvU32 index = 0;
         for (index = 0; index < range_count; index++)
         {
-            NvU64 addr = priv->handles[i].memArea.pRanges[index].start;
-            NvU64 len  = priv->handles[i].memArea.pRanges[index].size;
-            struct page *page = NV_GET_PAGE_STRUCT(addr);
+            NvU64 dma_addr = priv->handles[i].memArea.pRanges[index].start;
+            NvU64 dma_len  = priv->handles[i].memArea.pRanges[index].size;
 
-            if ((page == NULL) || (sg == NULL))
+            // Split each range into dma_max_seg_size chunks
+            while(dma_len != 0)
             {
-                goto free_table;
-            }
+                NvU32 sg_len = NV_MIN(dma_len, dma_max_seg_size);
+                struct page *page = NV_GET_PAGE_STRUCT(dma_addr);
 
-            sg_set_page(sg, page, len, NV_GET_OFFSET_IN_PAGE(addr));
-            sg = sg_next(sg);
+                if ((page == NULL) || (sg == NULL))
+                {
+                    goto free_table;
+                }
+
+                sg_set_page(sg, page, sg_len, NV_GET_OFFSET_IN_PAGE(dma_addr));
+                dma_addr += sg_len;
+                dma_len -= sg_len;
+                sg = sg_next(sg);
+            }
         }
     }
+
+    WARN_ON(sg != NULL);
 
     // DMA map the sg_table
     rc = dma_map_sg(dev, sgt->sgl, sgt->orig_nents, DMA_BIDIRECTIONAL);
@@ -693,36 +735,16 @@ nv_dma_buf_map_pfns (
     struct sg_table *sgt = NULL;
     struct scatterlist *sg;
     nv_dma_device_t peer_dma_dev = {{ 0 }};
-    NvU32 dma_max_seg_size;
-    NvU32 nents = 0;
+    NvU32 dma_max_seg_size = 0;
     NvU32 mapped_nents = 0;
     NvU32 i = 0;
+    NvU32 nents;
     int rc = 0;
 
     peer_dma_dev.dev = dev;
     peer_dma_dev.addressable_range.limit = (NvU64)dev->dma_mask;
 
-    dma_max_seg_size = NV_ALIGN_DOWN(dma_get_max_seg_size(dev), PAGE_SIZE);
-
-    if (dma_max_seg_size < PAGE_SIZE)
-    {
-        return NULL;
-    }
-
-    // Calculate nents needed to allocate sg_table
-    for (i = 0; i < priv->num_objects; i++)
-    {
-        NvU32 range_count = priv->handles[i].memArea.numRanges;
-        NvU32 index;
-
-        for (index = 0; index < range_count; index++)
-        {
-            NvU64 length = priv->handles[i].memArea.pRanges[index].size;
-            NvU64 count = length + dma_max_seg_size - 1;
-            do_div(count, dma_max_seg_size);
-            nents += count;
-        }
-    }
+    nents = nv_dma_buf_get_sg_count(dev, priv, &dma_max_seg_size);
 
     NV_KZALLOC(sgt, sizeof(struct sg_table));
     if (sgt == NULL)
@@ -777,6 +799,9 @@ nv_dma_buf_map_pfns (
             }
         }
     }
+
+    WARN_ON(sg != NULL);
+
     sgt->nents = mapped_nents;
 
     WARN_ON(sgt->nents != sgt->orig_nents);

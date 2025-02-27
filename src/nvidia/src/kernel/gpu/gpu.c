@@ -342,6 +342,7 @@ gpuPostConstruct_IMPL
     }
 
     pGpu->sriovState.virtualRegPhysOffset = gpuGetVirtRegPhysOffset_HAL(pGpu);
+    pGpu->simMode = NV_SIM_MODE_INVALID;
 
     gpuInitChipInfo(pGpu);
 

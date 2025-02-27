@@ -1068,7 +1068,8 @@ void nvEvoFreeClientSurfaces(NVDevEvoPtr pDevEvo,
 void nvEvoUnregisterSurface(NVDevEvoPtr pDevEvo,
                             struct NvKmsPerOpenDev *pOpenDev,
                             NvKmsSurfaceHandle surfaceHandle,
-                            NvBool skipUpdate)
+                            NvBool skipUpdate,
+                            NvBool skipSync)
 {
     NVEvoApiHandlesRec *pOpenDevSurfaceHandles =
         nvGetSurfaceHandlesFromOpenDev(pOpenDev);
@@ -1102,7 +1103,7 @@ void nvEvoUnregisterSurface(NVDevEvoPtr pDevEvo,
     /* Remove the handle from the calling client's namespace. */
     nvEvoDestroyApiHandle(pOpenDevSurfaceHandles, surfaceHandle);
 
-    nvEvoDecrementSurfaceRefCnts(pDevEvo, pSurfaceEvo);
+    nvEvoDecrementSurfaceRefCntsWithSync(pDevEvo, pSurfaceEvo, skipSync);
 }
 
 void nvEvoReleaseSurface(NVDevEvoPtr pDevEvo,
@@ -1143,6 +1144,13 @@ void nvEvoIncrementSurfaceRefCnts(NVSurfaceEvoPtr pSurfaceEvo)
 void nvEvoDecrementSurfaceRefCnts(NVDevEvoPtr pDevEvo,
                                   NVSurfaceEvoPtr pSurfaceEvo)
 {
+    nvEvoDecrementSurfaceRefCntsWithSync(pDevEvo, pSurfaceEvo, NV_FALSE);
+}
+
+void nvEvoDecrementSurfaceRefCntsWithSync(NVDevEvoPtr pDevEvo,
+                                          NVSurfaceEvoPtr pSurfaceEvo,
+                                          NvBool skipSync)
+{
     nvAssert(pSurfaceEvo->rmRefCnt >= 1);
     pSurfaceEvo->rmRefCnt--;
 
@@ -1154,7 +1162,7 @@ void nvEvoDecrementSurfaceRefCnts(NVDevEvoPtr pDevEvo,
          * GLS hasn't had the opportunity to release semaphores with pending
          * flips. (Bug 2050970)
          */
-        if (pSurfaceEvo->requireDisplayHardwareAccess) {
+        if (!skipSync && pSurfaceEvo->requireDisplayHardwareAccess) {
             nvEvoClearSurfaceUsage(pDevEvo, pSurfaceEvo);
         }
 

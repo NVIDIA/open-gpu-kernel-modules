@@ -906,7 +906,14 @@ typedef struct rpc_ctrl_pma_stream_update_get_put_v1A_14
     NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS_v1A_14 params;
 } rpc_ctrl_pma_stream_update_get_put_v1A_14;
 
-typedef rpc_ctrl_pma_stream_update_get_put_v1A_14 rpc_ctrl_pma_stream_update_get_put_v;
+typedef struct rpc_ctrl_pma_stream_update_get_put_v29_0B
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS_v29_0B params;
+} rpc_ctrl_pma_stream_update_get_put_v29_0B;
+
+typedef rpc_ctrl_pma_stream_update_get_put_v29_0B rpc_ctrl_pma_stream_update_get_put_v;
 
 typedef struct rpc_ctrl_fb_get_info_v2_v25_0A
 {
@@ -1228,6 +1235,24 @@ typedef struct rpc_ctrl_release_ccu_prof_v29_07
 
 typedef rpc_ctrl_release_ccu_prof_v29_07 rpc_ctrl_release_ccu_prof_v;
 
+typedef struct rpc_ctrl_cmd_get_chiplet_hs_credit_pool_v29_0A
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL_v29_0A params;
+} rpc_ctrl_cmd_get_chiplet_hs_credit_pool_v29_0A;
+
+typedef rpc_ctrl_cmd_get_chiplet_hs_credit_pool_v29_0A rpc_ctrl_cmd_get_chiplet_hs_credit_pool_v;
+
+typedef struct rpc_ctrl_cmd_get_hs_credits_mapping_v29_0A
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS_v29_0A params;
+} rpc_ctrl_cmd_get_hs_credits_mapping_v29_0A;
+
+typedef rpc_ctrl_cmd_get_hs_credits_mapping_v29_0A rpc_ctrl_cmd_get_hs_credits_mapping_v;
+
 typedef struct rpc_ctrl_set_hs_credits_v21_08
 {
     NvHandle   hClient;
@@ -1436,6 +1461,7 @@ typedef struct rpc_os_error_log_v17_00
     NvU32      runlistId;
     NvU32      chid;
     char       errString[0x100];
+    NvU32      preemptiveRemovalPreviousXid;
 } rpc_os_error_log_v17_00;
 
 typedef rpc_os_error_log_v17_00 rpc_os_error_log_v;
@@ -5626,6 +5652,43 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_pma_stream_update_get_put_v1A_14 =
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_ctrl_pma_stream_update_get_put_v29_0B
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_pma_stream_update_get_put_v29_0B[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_pma_stream_update_get_put_v29_0B, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_pma_stream_update_get_put_v29_0B, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS_v29_0B,
+        .offset               = NV_OFFSETOF(rpc_ctrl_pma_stream_update_get_put_v29_0B, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_pma_stream_update_get_put_v29_0B = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_pma_stream_update_get_put",
+    #endif
+    .header_length = sizeof(rpc_ctrl_pma_stream_update_get_put_v29_0B),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_pma_stream_update_get_put_v29_0B
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_ctrl_fb_get_info_v2_v27_00
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_fb_get_info_v2_v27_00[] = {
     {
@@ -6972,6 +7035,80 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_release_ccu_prof_v29_07 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_ctrl_cmd_get_chiplet_hs_credit_pool_v29_0A
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_cmd_get_chiplet_hs_credit_pool_v29_0A[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_cmd_get_chiplet_hs_credit_pool_v29_0A, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_cmd_get_chiplet_hs_credit_pool_v29_0A, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL_v29_0A,
+        .offset               = NV_OFFSETOF(rpc_ctrl_cmd_get_chiplet_hs_credit_pool_v29_0A, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_cmd_get_chiplet_hs_credit_pool_v29_0A = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_cmd_get_chiplet_hs_credit_pool",
+    #endif
+    .header_length = sizeof(rpc_ctrl_cmd_get_chiplet_hs_credit_pool_v29_0A),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_cmd_get_chiplet_hs_credit_pool_v29_0A
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_cmd_get_hs_credits_mapping_v29_0A
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_cmd_get_hs_credits_mapping_v29_0A[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_cmd_get_hs_credits_mapping_v29_0A, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_cmd_get_hs_credits_mapping_v29_0A, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS_v29_0A,
+        .offset               = NV_OFFSETOF(rpc_ctrl_cmd_get_hs_credits_mapping_v29_0A, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_cmd_get_hs_credits_mapping_v29_0A = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_cmd_get_hs_credits_mapping",
+    #endif
+    .header_length = sizeof(rpc_ctrl_cmd_get_hs_credits_mapping_v29_0A),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_cmd_get_hs_credits_mapping_v29_0A
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_ctrl_set_hs_credits_v21_08
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_set_hs_credits_v21_08[] = {
     {
@@ -7935,6 +8072,13 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_os_error_log_v17_00[] = {
         .array_length         = 0x100,
         #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "errString"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_os_error_log_v17_00, preemptiveRemovalPreviousXid),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "preemptiveRemovalPreviousXid"
         #endif
     },
     {
@@ -9924,6 +10068,13 @@ vmiopd_mdesc_t *rpcdebugCtrlPmaStreamUpdateGetPut_v1A_14(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_ctrl_pma_stream_update_get_put_v29_0B
+vmiopd_mdesc_t *rpcdebugCtrlPmaStreamUpdateGetPut_v29_0B(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_pma_stream_update_get_put_v29_0B;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_ctrl_fb_get_info_v2_v27_00
 vmiopd_mdesc_t *rpcdebugCtrlFbGetInfoV2_v27_00(void)
 {
@@ -10173,6 +10324,20 @@ vmiopd_mdesc_t *rpcdebugCtrlReserveCcuProf_v29_07(void)
 vmiopd_mdesc_t *rpcdebugCtrlReleaseCcuProf_v29_07(void)
 {
     return &vmiopd_mdesc_t_rpc_ctrl_release_ccu_prof_v29_07;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_cmd_get_chiplet_hs_credit_pool_v29_0A
+vmiopd_mdesc_t *rpcdebugCtrlCmdGetChipletHsCreditPool_v29_0A(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_cmd_get_chiplet_hs_credit_pool_v29_0A;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_cmd_get_hs_credits_mapping_v29_0A
+vmiopd_mdesc_t *rpcdebugCtrlCmdGetHsCreditsMapping_v29_0A(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_cmd_get_hs_credits_mapping_v29_0A;
 }
 #endif
 
@@ -10795,6 +10960,7 @@ typedef union rpc_generic_union {
     rpc_ctrl_alloc_pma_stream_v1A_14 ctrl_alloc_pma_stream_v1A_14;
     rpc_ctrl_alloc_pma_stream_v ctrl_alloc_pma_stream_v;
     rpc_ctrl_pma_stream_update_get_put_v1A_14 ctrl_pma_stream_update_get_put_v1A_14;
+    rpc_ctrl_pma_stream_update_get_put_v29_0B ctrl_pma_stream_update_get_put_v29_0B;
     rpc_ctrl_pma_stream_update_get_put_v ctrl_pma_stream_update_get_put_v;
     rpc_ctrl_fb_get_info_v2_v27_00 ctrl_fb_get_info_v2_v27_00;
     rpc_ctrl_fb_get_info_v2_v25_0A ctrl_fb_get_info_v2_v25_0A;
@@ -10865,6 +11031,10 @@ typedef union rpc_generic_union {
     rpc_ctrl_reserve_ccu_prof_v ctrl_reserve_ccu_prof_v;
     rpc_ctrl_release_ccu_prof_v29_07 ctrl_release_ccu_prof_v29_07;
     rpc_ctrl_release_ccu_prof_v ctrl_release_ccu_prof_v;
+    rpc_ctrl_cmd_get_chiplet_hs_credit_pool_v29_0A ctrl_cmd_get_chiplet_hs_credit_pool_v29_0A;
+    rpc_ctrl_cmd_get_chiplet_hs_credit_pool_v ctrl_cmd_get_chiplet_hs_credit_pool_v;
+    rpc_ctrl_cmd_get_hs_credits_mapping_v29_0A ctrl_cmd_get_hs_credits_mapping_v29_0A;
+    rpc_ctrl_cmd_get_hs_credits_mapping_v ctrl_cmd_get_hs_credits_mapping_v;
     rpc_ctrl_set_hs_credits_v21_08 ctrl_set_hs_credits_v21_08;
     rpc_ctrl_set_hs_credits_v ctrl_set_hs_credits_v;
     rpc_ctrl_pm_area_pc_sampler_v21_0B ctrl_pm_area_pc_sampler_v21_0B;

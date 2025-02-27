@@ -192,15 +192,27 @@ typedef struct uvm_pmm_gpu_chunk_suballoc_struct uvm_pmm_gpu_chunk_suballoc_t;
 
 #if UVM_IS_CONFIG_HMM()
 
-typedef struct uvm_pmm_gpu_struct uvm_pmm_gpu_t;
-
 typedef struct
 {
+    // For g_uvm_global.devmem_ranges
+    struct list_head list_node;
+
+    // Size that was requested when created this region. This may be less than
+    // the size actually allocated by the kernel due to alignment contraints.
+    // Figuring out the required alignment at compile time is difficult due to
+    // unexported macros, so just use the requested size as the search key.
+    unsigned long size;
+
     struct dev_pagemap pagemap;
 } uvm_pmm_gpu_devmem_t;
 
+typedef struct uvm_pmm_gpu_struct uvm_pmm_gpu_t;
+
 // Return the GPU chunk for a given device private struct page.
 uvm_gpu_chunk_t *uvm_pmm_devmem_page_to_chunk(struct page *page);
+
+// Return the va_space for a given device private struct page.
+uvm_va_space_t *uvm_pmm_devmem_page_to_va_space(struct page *page);
 
 // Return the GPU id for a given device private struct page.
 uvm_gpu_id_t uvm_pmm_devmem_page_to_gpu_id(struct page *page);
@@ -208,6 +220,13 @@ uvm_gpu_id_t uvm_pmm_devmem_page_to_gpu_id(struct page *page);
 // Return the PFN of the device private struct page for the given GPU chunk.
 unsigned long uvm_pmm_gpu_devmem_get_pfn(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk);
 
+// Free unused ZONE_DEVICE pages.
+void uvm_pmm_devmem_exit(void);
+
+#else
+static inline void uvm_pmm_devmem_exit(void)
+{
+}
 #endif
 
 #if defined(CONFIG_PCI_P2PDMA) && defined(NV_STRUCT_PAGE_HAS_ZONE_DEVICE_DATA)
@@ -348,10 +367,6 @@ typedef struct uvm_pmm_gpu_struct
         struct list_head va_block_lazy_free;
         nv_kthread_q_item_t va_block_lazy_free_q_item;
     } root_chunks;
-
-#if UVM_IS_CONFIG_HMM()
-    uvm_pmm_gpu_devmem_t devmem;
-#endif
 
     // Lock protecting PMA allocation, freeing and eviction
     uvm_rw_semaphore_t pma_lock;
@@ -603,6 +618,10 @@ static uvm_chunk_size_t uvm_chunk_find_prev_size(uvm_chunk_sizes_mask_t chunk_si
 // checking that the chunks are still there. Also, the VA block(s) are
 // retained, and it's up to the caller to release them.
 NvU32 uvm_pmm_gpu_phys_to_virt(uvm_pmm_gpu_t *pmm, NvU64 phys_addr, NvU64 region_size, uvm_reverse_map_t *out_mappings);
+
+// Allocate and initialise struct page data in the kernel to support HMM.
+NV_STATUS uvm_pmm_devmem_init(uvm_parent_gpu_t *gpu);
+void uvm_pmm_devmem_deinit(uvm_parent_gpu_t *parent_gpu);
 
 // Iterates over every size in the input mask from smallest to largest
 #define for_each_chunk_size(__size, __chunk_sizes)                                  \

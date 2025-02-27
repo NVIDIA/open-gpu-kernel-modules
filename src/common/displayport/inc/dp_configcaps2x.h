@@ -104,14 +104,17 @@ namespace DisplayPort
         virtual AuxRetry::status            setMainLinkChannelCoding(MainLinkChannelCoding channelCoding);
         virtual MainLinkChannelCoding       getMainLinkChannelCoding();
 
-        void                performCableIdHandshake();
-        virtual void        setGpuDPSupportedVersions(NvU32 _gpuDPSupportedVersions);
-        virtual bool        isDp2xChannelCodingCapable();
-        virtual void        parseAndReadCaps();
-        virtual LinkRate    getMaxLinkRate();
-        virtual NvU32       getUHBRSupported();
-        virtual void        setIgnoreCableIdCaps(bool bIgnore){ bIgnoreCableIdCaps = bIgnore; }
+        void                        performCableIdHandshake();
+        void                        performCableIdHandshakeForTypeC();
+        void                        parseAndSetCableId(NvU8 cableId);
 
+        virtual void                setGpuDPSupportedVersions(NvU32 _gpuDPSupportedVersions);
+        virtual bool                isDp2xChannelCodingCapable();
+        virtual void                parseAndReadCaps();
+        virtual LinkRate            getMaxLinkRate();
+        virtual NvU32               getUHBRSupported();
+        virtual void                setIgnoreCableIdCaps(bool bIgnore){ bIgnoreCableIdCaps = bIgnore; }
+        virtual void                overrideCableIdCap(LinkRate linkRate, bool bEnable);
         virtual bool                parseTestRequestPhy();
         virtual bool                parseTestRequestTraining(NvU8 * buffer);
         // DPCD offset 2230 - 2250
@@ -123,13 +126,16 @@ namespace DisplayPort
 
         // class fields that need re-initialization
         bool bIgnoreCableIdCaps;
+        bool bConnectorIsTypeC;
 
         virtual void initialize()
         {
             setIgnoreCableIdCaps(false);
         }
 
-        DPCDHALImpl2x(AuxBus * bus, Timer * timer) : DPCDHALImpl(bus, timer), bIgnoreCableIdCaps(false)
+        virtual void setConnectorTypeC(bool bTypeC);
+
+        DPCDHALImpl2x(AuxBus * bus, Timer * timer) : DPCDHALImpl(bus, timer), bIgnoreCableIdCaps(false), bConnectorIsTypeC(false)
         {
             dpMemZero(&caps2x, sizeof(caps2x));
             dpMemZero(&interrupts2x, sizeof(interrupts2x));

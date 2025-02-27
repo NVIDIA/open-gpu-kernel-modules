@@ -47,6 +47,7 @@
 
 #include "mem_mgr/io_vaspace.h"
 #include <diagnostics/journal.h>
+#include "kernel/diagnostics/xid_context.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "core/thread_state.h"
@@ -1661,7 +1662,7 @@ void osFlushGpuCoherentCpuCacheRange
     nv_flush_coherent_cpu_cache_range(pOsGpuInfo, cpuVirtual, size);
 }
 
-void osErrorLogV(OBJGPU *pGpu, NvU32 num, const char * pFormat, va_list arglist)
+void osErrorLogV(OBJGPU *pGpu, XidContext context, const char * pFormat, va_list arglist)
 {
     NV_STATUS        rmStatus;
     nv_state_t      *nv             = NV_GET_NV_STATE(pGpu);
@@ -1671,7 +1672,7 @@ void osErrorLogV(OBJGPU *pGpu, NvU32 num, const char * pFormat, va_list arglist)
         return;
     }
 
-    rmStatus = nv_log_error(nv, num, pFormat, arglist);
+    rmStatus = nv_log_error(nv, context.xid, pFormat, arglist);
     NV_ASSERT(rmStatus == NV_OK);
 }
 
@@ -1679,7 +1680,7 @@ void osErrorLog(OBJGPU *pGpu, NvU32 num, const char* pFormat, ...)
 {
     va_list arglist;
     va_start(arglist, pFormat);
-    osErrorLogV(pGpu, num, pFormat, arglist);
+    osErrorLogV(pGpu, (XidContext){.xid = num}, pFormat, arglist);
     va_end(arglist);
 }
 

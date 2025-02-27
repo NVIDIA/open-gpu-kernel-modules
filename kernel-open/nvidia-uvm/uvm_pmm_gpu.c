@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -3030,69 +3030,23 @@ NvU32 uvm_pmm_gpu_phys_to_virt(uvm_pmm_gpu_t *pmm, NvU64 phys_addr, NvU64 region
 
 #if UVM_IS_CONFIG_HMM()
 
-static uvm_pmm_gpu_t *devmem_page_to_pmm(struct page *page)
-{
-    return container_of(page->pgmap, uvm_pmm_gpu_t, devmem.pagemap);
-}
-
-static uvm_gpu_chunk_t *devmem_page_to_chunk_locked(struct page *page)
-{
-    uvm_pmm_gpu_t *pmm = devmem_page_to_pmm(page);
-    NvU64 chunk_addr = ((NvU64)page_to_pfn(page) << PAGE_SHIFT) - pmm->devmem.pagemap.range.start;
-    size_t index = chunk_addr / UVM_CHUNK_SIZE_MAX;
-    uvm_gpu_chunk_t *root_chunk;
-    uvm_gpu_chunk_t *chunk;
-    uvm_gpu_chunk_t *parent;
-    uvm_chunk_size_t chunk_size;
-
-    UVM_ASSERT(index < pmm->root_chunks.count);
-    root_chunk = &pmm->root_chunks.array[index].chunk;
-    UVM_ASSERT(root_chunk->address == UVM_ALIGN_DOWN(chunk_addr, UVM_CHUNK_SIZE_MAX));
-
-    // Find the uvm_gpu_chunk_t that corresponds to the device private struct
-    // page's PFN. The loop is only 0, 1, or 2 iterations.
-    for (chunk = root_chunk;
-         uvm_gpu_chunk_get_size(chunk) != page_size(page);
-         chunk = parent->suballoc->subchunks[index]) {
-
-        parent = chunk;
-        UVM_ASSERT(parent->state == UVM_PMM_GPU_CHUNK_STATE_IS_SPLIT);
-        UVM_ASSERT(parent->suballoc);
-
-        chunk_size = uvm_gpu_chunk_get_size(parent->suballoc->subchunks[0]);
-        index = (size_t)uvm_div_pow2_64(chunk_addr - parent->address, chunk_size);
-        UVM_ASSERT(index < num_subchunks(parent));
-    }
-
-    UVM_ASSERT(chunk->address = chunk_addr);
-    UVM_ASSERT(chunk->state == UVM_PMM_GPU_CHUNK_STATE_ALLOCATED);
-    UVM_ASSERT(chunk->is_referenced);
-
-    return chunk;
-}
-
 uvm_gpu_chunk_t *uvm_pmm_devmem_page_to_chunk(struct page *page)
 {
-    uvm_pmm_gpu_t *pmm = devmem_page_to_pmm(page);
-    uvm_gpu_chunk_t *chunk;
-
     UVM_ASSERT(is_device_private_page(page));
 
-    uvm_spin_lock(&pmm->list_lock);
-    chunk = devmem_page_to_chunk_locked(page);
-    uvm_spin_unlock(&pmm->list_lock);
-
-    return chunk;
+    return page->zone_device_data;
 }
 
-uvm_gpu_id_t uvm_pmm_devmem_page_to_gpu_id(struct page *page)
+uvm_va_space_t *uvm_pmm_devmem_page_to_va_space(struct page *page)
 {
-    uvm_pmm_gpu_t *pmm = devmem_page_to_pmm(page);
-    uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
+    uvm_gpu_chunk_t *gpu_chunk = uvm_pmm_devmem_page_to_chunk(page);
 
-    UVM_ASSERT(is_device_private_page(page));
+    // uvm_hmm_unregister_gpu() needs to do a racy check here so
+    // page->zone_device_data might be NULL.
+    if (!gpu_chunk || !gpu_chunk->va_block)
+        return NULL;
 
-    return gpu->id;
+    return gpu_chunk->va_block->hmm.va_space;
 }
 
 // Check there are no orphan pages. This should be only called as part of
@@ -3104,11 +3058,16 @@ static bool uvm_pmm_gpu_check_orphan_pages(uvm_pmm_gpu_t *pmm)
 {
     size_t i;
     bool ret = true;
+    uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
+    unsigned long devmem_start;
+    unsigned long devmem_end;
     unsigned long pfn;
-    struct range range = pmm->devmem.pagemap.range;
 
     if (!pmm->initialized || !uvm_hmm_is_enabled_system_wide())
         return ret;
+
+    devmem_start = gpu->parent->devmem->pagemap.range.start + gpu->mem_info.phys_start;
+    devmem_end = devmem_start + gpu->mem_info.size;
 
     // Scan all the root chunks looking for subchunks which are still
     // referenced.
@@ -3121,7 +3080,7 @@ static bool uvm_pmm_gpu_check_orphan_pages(uvm_pmm_gpu_t *pmm)
         root_chunk_unlock(pmm, root_chunk);
     }
 
-    for (pfn = __phys_to_pfn(range.start); pfn <= __phys_to_pfn(range.end); pfn++) {
+    for (pfn = __phys_to_pfn(devmem_start); pfn <= __phys_to_pfn(devmem_end); pfn++) {
         struct page *page = pfn_to_page(pfn);
 
         if (!is_device_private_page(page)) {
@@ -3140,9 +3099,8 @@ static bool uvm_pmm_gpu_check_orphan_pages(uvm_pmm_gpu_t *pmm)
 
 static void devmem_page_free(struct page *page)
 {
-    uvm_pmm_gpu_t *pmm = devmem_page_to_pmm(page);
-    uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
-    uvm_gpu_chunk_t *chunk;
+    uvm_gpu_chunk_t *chunk = uvm_pmm_devmem_page_to_chunk(page);
+    uvm_gpu_t *gpu = uvm_gpu_chunk_get_gpu(chunk);
 
     page->zone_device_data = NULL;
 
@@ -3150,23 +3108,22 @@ static void devmem_page_free(struct page *page)
     // we may be in an interrupt context where we can't do that. Instead,
     // do a lazy free. Note that we have to use a "normal" spin lock because
     // the UVM context is not available.
-    spin_lock(&pmm->list_lock.lock);
+    spin_lock(&gpu->pmm.list_lock.lock);
 
-    chunk = devmem_page_to_chunk_locked(page);
     UVM_ASSERT(chunk->is_referenced);
     chunk->is_referenced = false;
-    list_add_tail(&chunk->list, &pmm->root_chunks.va_block_lazy_free);
+    list_add_tail(&chunk->list, &gpu->pmm.root_chunks.va_block_lazy_free);
 
-    spin_unlock(&pmm->list_lock.lock);
+    spin_unlock(&gpu->pmm.list_lock.lock);
 
     nv_kthread_q_schedule_q_item(&gpu->parent->lazy_free_q,
-                                 &pmm->root_chunks.va_block_lazy_free_q_item);
+                                 &gpu->pmm.root_chunks.va_block_lazy_free_q_item);
 }
 
 // This is called by HMM when the CPU faults on a ZONE_DEVICE private entry.
 static vm_fault_t devmem_fault(struct vm_fault *vmf)
 {
-    uvm_va_space_t *va_space = vmf->page->zone_device_data;
+    uvm_va_space_t *va_space = uvm_pmm_devmem_page_to_va_space(vmf->page);
 
     if (!va_space)
         return VM_FAULT_SIGBUS;
@@ -3185,26 +3142,46 @@ static const struct dev_pagemap_ops uvm_pmm_devmem_ops =
     .migrate_to_ram = devmem_fault_entry,
 };
 
-static NV_STATUS devmem_init(uvm_pmm_gpu_t *pmm)
+// Allocating and initialising device private pages takes a significant amount
+// of time on very large systems. So rather than do that everytime a GPU is
+// registered we do it once and keep track of the range when the GPU is
+// unregistered for later reuse.
+//
+// This function tries to find an exsiting range of device private pages and if
+// available allocates and returns it for reuse.
+static uvm_pmm_gpu_devmem_t *devmem_reuse_pagemap(unsigned long size)
 {
-    unsigned long size = pmm->root_chunks.count * UVM_CHUNK_SIZE_MAX;
-    uvm_pmm_gpu_devmem_t *devmem = &pmm->devmem;
+    uvm_pmm_gpu_devmem_t *devmem;
+
+    list_for_each_entry(devmem, &g_uvm_global.devmem_ranges.list, list_node) {
+        if (devmem->size == size) {
+            list_del(&devmem->list_node);
+            return devmem;
+        }
+    }
+
+    return NULL;
+}
+
+static uvm_pmm_gpu_devmem_t *devmem_alloc_pagemap(unsigned long size)
+{
+    uvm_pmm_gpu_devmem_t *devmem;
     struct resource *res;
     void *ptr;
     NV_STATUS status;
-
-    if (!uvm_hmm_is_enabled_system_wide()) {
-        devmem->pagemap.owner = NULL;
-        return NV_OK;
-    }
 
     res = request_free_mem_region(&iomem_resource, size, "nvidia-uvm-hmm");
     if (IS_ERR(res)) {
         UVM_ERR_PRINT("request_free_mem_region() err %ld\n", PTR_ERR(res));
         status = errno_to_nv_status(PTR_ERR(res));
-        goto err;
+        return NULL;
     }
 
+    devmem = kzalloc(sizeof(*devmem), GFP_KERNEL);
+    if (!devmem)
+        goto err;
+
+    devmem->size = size;
     devmem->pagemap.type = MEMORY_DEVICE_PRIVATE;
     devmem->pagemap.range.start = res->start;
     devmem->pagemap.range.end = res->end;
@@ -3217,43 +3194,77 @@ static NV_STATUS devmem_init(uvm_pmm_gpu_t *pmm)
     if (IS_ERR(ptr)) {
         UVM_ERR_PRINT("memremap_pages() err %ld\n", PTR_ERR(ptr));
         status = errno_to_nv_status(PTR_ERR(ptr));
-        goto err_release;
+        goto err_free;
     }
 
-    return NV_OK;
+    return devmem;
 
-err_release:
-    release_mem_region(res->start, resource_size(res));
+err_free:
+    kfree(devmem);
+
 err:
-    devmem->pagemap.owner = NULL;
-    return status;
+    release_mem_region(res->start, resource_size(res));
+    return NULL;
 }
 
-static void devmem_deinit(uvm_pmm_gpu_t *pmm)
+NV_STATUS uvm_pmm_devmem_init(uvm_parent_gpu_t *gpu)
 {
-    uvm_pmm_gpu_devmem_t *devmem = &pmm->devmem;
+    // Create a DEVICE_PRIVATE page for every GPU page available on the parent.
+    unsigned long size = gpu->max_allocatable_address;
 
-    if (!devmem->pagemap.owner)
+    if (!uvm_hmm_is_enabled_system_wide()) {
+        gpu->devmem = NULL;
+        return NV_OK;
+    }
+
+    gpu->devmem = devmem_reuse_pagemap(size);
+    if (!gpu->devmem)
+        gpu->devmem = devmem_alloc_pagemap(size);
+
+    if (!gpu->devmem)
+        return NV_ERR_NO_MEMORY;
+
+    return NV_OK;
+}
+
+void uvm_pmm_devmem_deinit(uvm_parent_gpu_t *gpu)
+{
+    if (!gpu->devmem)
         return;
 
-    memunmap_pages(&devmem->pagemap);
-    release_mem_region(devmem->pagemap.range.start, range_len(&devmem->pagemap.range));
+    list_add_tail(&gpu->devmem->list_node, &g_uvm_global.devmem_ranges.list);
+    gpu->devmem = NULL;
+}
+
+void uvm_pmm_devmem_exit(void)
+{
+    uvm_pmm_gpu_devmem_t *devmem, *devmem_next;
+
+    list_for_each_entry_safe(devmem, devmem_next, &g_uvm_global.devmem_ranges.list, list_node) {
+        list_del(&devmem->list_node);
+        memunmap_pages(&devmem->pagemap);
+        release_mem_region(devmem->pagemap.range.start, range_len(&devmem->pagemap.range));
+        kfree(devmem);
+    }
 }
 
 unsigned long uvm_pmm_gpu_devmem_get_pfn(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
 {
-    return (pmm->devmem.pagemap.range.start + chunk->address) >> PAGE_SHIFT;
+    uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
+    unsigned long devmem_start = gpu->parent->devmem->pagemap.range.start;
+
+    return (devmem_start + chunk->address) >> PAGE_SHIFT;
 }
 
 #endif // UVM_IS_CONFIG_HMM()
 
 #if !UVM_IS_CONFIG_HMM()
-static NV_STATUS devmem_init(uvm_pmm_gpu_t *pmm)
+NV_STATUS uvm_pmm_devmem_init(uvm_parent_gpu_t *gpu)
 {
     return NV_OK;
 }
 
-static void devmem_deinit(uvm_pmm_gpu_t *pmm)
+void uvm_pmm_devmem_deinit(uvm_parent_gpu_t *gpu)
 {
 }
 
@@ -3469,10 +3480,6 @@ NV_STATUS uvm_pmm_gpu_init(uvm_pmm_gpu_t *pmm)
         }
     }
 
-    status = devmem_init(pmm);
-    if (status != NV_OK)
-        goto cleanup;
-
     return NV_OK;
 cleanup:
     uvm_pmm_gpu_deinit(pmm);
@@ -3542,8 +3549,6 @@ void uvm_pmm_gpu_deinit(uvm_pmm_gpu_t *pmm)
     uvm_kvfree(pmm->root_chunks.array);
 
     deinit_caches(pmm);
-
-    devmem_deinit(pmm);
 
     pmm->initialized = false;
 }

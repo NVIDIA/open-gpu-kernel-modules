@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -328,6 +328,12 @@ namespace DisplayPort
 
         // On eDP, do not cache the source OUI if it reads 0. See bug 4793112
         bool        bSkipZeroOuiCache;
+
+        bool        bDisable5019537Fix;
+
+        bool        bForceHeadShutdownFromRegkey;
+
+        bool        bForceHeadShutdownPerMonitor;
 
         //
         // Dual SST Partner connector object pointer

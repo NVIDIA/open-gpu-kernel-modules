@@ -1630,17 +1630,25 @@ static void nv_init_mapping_revocation(nv_linux_state_t *nvl,
                                        nv_linux_file_private_t *nvlfp,
                                        struct inode *inode)
 {
-    down(&nvl->mmap_lock);
-
     /* Set up struct address_space for use with unmap_mapping_range() */
     address_space_init_once(&nvlfp->mapping);
     nvlfp->mapping.host = inode;
     nvlfp->mapping.a_ops = inode->i_mapping->a_ops;
     file->f_mapping = &nvlfp->mapping;
+}
 
-    /* Add nvlfp to list of open files in nvl for mapping revocation */
+/* Adds nvlfp to list of open files for mapping revocation */
+static void nv_add_open_file(nv_linux_state_t *nvl,
+                             nv_linux_file_private_t *nvlfp)
+{
+    nvlfp->nvptr = nvl;
+
+    /*
+     * nvl->open_files and other mapping revocation members in nv_linux_state_t
+     * are protected by nvl->mmap_lock instead of nvl->ldata_lock.
+     */
+    down(&nvl->mmap_lock);
     list_add(&nvlfp->entry, &nvl->open_files);
-
     up(&nvl->mmap_lock);
 }
 
@@ -1690,11 +1698,12 @@ static void nvidia_open_deferred(void *nvlfp_raw)
      */
     down(&nvl->ldata_lock);
     rc = nv_open_device_for_nvlfp(NV_STATE_PTR(nvl), nvlfp->sp, nvlfp);
-    up(&nvl->ldata_lock);
 
-    /* Set nvptr only upon success (where nvl->usage_count is incremented) */
+    /* Only add open file tracking where nvl->usage_count is incremented */
     if (rc == 0)
-        nvlfp->nvptr = nvl;
+        nv_add_open_file(nvl, nvlfp);
+
+    up(&nvl->ldata_lock);
 
     complete_all(&nvlfp->open_complete);
 }
@@ -1813,6 +1822,7 @@ nvidia_open(
     }
 
     nv = NV_STATE_PTR(nvl);
+    nv_init_mapping_revocation(nvl, file, nvlfp, inode);
 
     if (nv_try_lock_foreground_open(file, nvl) == 0)
     {
@@ -1823,11 +1833,11 @@ nvidia_open(
 
         rc = nv_open_device_for_nvlfp(nv, nvlfp->sp, nvlfp);
 
-        up(&nvl->ldata_lock);
-
-        /* Set nvptr only upon success (where nvl->usage_count is incremented) */
+        /* Only add open file tracking where nvl->usage_count is incremented */
         if (rc == 0)
-            nvlfp->nvptr = nvl;
+            nv_add_open_file(nvl, nvlfp);
+
+        up(&nvl->ldata_lock);
 
         complete_all(&nvlfp->open_complete);
     }
@@ -1881,10 +1891,6 @@ failed:
             nv_free_file_private(nvlfp);
             NV_SET_FILE_PRIVATE(file, NULL);
         }
-    }
-    else
-    {
-        nv_init_mapping_revocation(nvl, file, nvlfp, inode);
     }
 
     return rc;

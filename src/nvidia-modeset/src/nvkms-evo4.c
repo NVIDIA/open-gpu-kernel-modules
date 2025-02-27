@@ -2504,6 +2504,7 @@ static NvBool ConstructAdvancedInfoFramePacket(
     const NVT_INFOFRAME_HEADER *pInfoFrameHeader,
     const NvU32 infoframeSize,
     const NvBool needChecksum,
+    const NvBool swChecksum,
     NvU8 *pPacket,
     const NvU32 packetLen)
 {
@@ -2535,7 +2536,7 @@ static NvBool ConstructAdvancedInfoFramePacket(
             (const NVT_EXTENDED_METADATA_PACKET_INFOFRAME_HEADER *)
             pInfoFrameHeader;
 
-        pPacket[1] = pExtMetadataHeader->type;           /* HB1 */
+        pPacket[1] = pExtMetadataHeader->firstLast;      /* HB1 */
         pPacket[2] = pExtMetadataHeader->sequenceIndex;  /* HB2 */
 
         pPayload = (const NvU8 *)(pExtMetadataHeader + 1);
@@ -2550,16 +2551,26 @@ static NvBool ConstructAdvancedInfoFramePacket(
     }
     pPacket[3] = 0; /* HB3, reserved */
 
-    nvkms_memcpy(&pPacket[5], pPayload, payloadLen); /* PB1~ */
-
-    pPacket[4] = 0; /* PB0: checksum */
     if (needChecksum) {
-        NvU8 checksum = 0;
+        pPacket[4] = 0; /* PB0: checksum */
 
-        for (NvU32 i = 0; i < packetLen; i++) {
-            checksum += pPacket[i];
+        /*
+         * XXX Redundant since we always call with swChecksum=FALSE and
+         * _HDMI_PKT_TRANSMIT_CTRL_CHKSUM_HW_EN
+         */
+        if (swChecksum) {
+            NvU8 checksum = 0;
+
+            for (NvU32 i = 0; i < packetLen; i++) {
+                checksum += pPacket[i];
+            }
+            pPacket[4] = ~checksum + 1;
         }
-        pPacket[4] = ~checksum + 1;
+
+        nvkms_memcpy(&pPacket[5], pPayload, payloadLen); /* PB1~ */
+    } else {
+        nvAssert(!swChecksum);
+        nvkms_memcpy(&pPacket[4], pPayload, payloadLen); /* PB0~ */
     }
 
     return TRUE;
@@ -2569,7 +2580,8 @@ static void SendHdmiInfoFrameCA(const NVDispEvoRec *pDispEvo,
                                 const NvU32 head,
                                 const NvEvoInfoFrameTransmitControl transmitCtrl,
                                 const NVT_INFOFRAME_HEADER *pInfoFrameHeader,
-                                const NvU32 infoFrameSize)
+                                const NvU32 infoFrameSize,
+                                NvBool needChecksum)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NVHDMIPKT_TYPE hdmiLibType;
@@ -2589,7 +2601,7 @@ static void SendHdmiInfoFrameCA(const NVDispEvoRec *pDispEvo,
     if (!NvtToHdmiLibGenericInfoFramePktType(pInfoFrameHeader->type,
                                              &hdmiLibType)) {
         nvEvo1SendHdmiInfoFrame(pDispEvo, head, transmitCtrl, pInfoFrameHeader,
-                                infoFrameSize);
+                                infoFrameSize, needChecksum);
         return;
     }
 
@@ -2602,12 +2614,12 @@ static void SendHdmiInfoFrameCA(const NVDispEvoRec *pDispEvo,
             break;
     }
     advancedInfoFrame.location = INFOFRAME_CTRL_LOC_VBLANK;
-    advancedInfoFrame.hwChecksum = TRUE;
+    advancedInfoFrame.hwChecksum = needChecksum;
 
     if (!ConstructAdvancedInfoFramePacket(pInfoFrameHeader,
                                           infoFrameSize,
-                                          !advancedInfoFrame.hwChecksum
-                                             /* needChecksum */,
+                                          needChecksum,
+                                          FALSE /* swChecksum */,
                                           packet,
                                           sizeof(packet))) {
         return;

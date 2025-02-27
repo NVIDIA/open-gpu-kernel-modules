@@ -321,12 +321,16 @@ void uvm_hmm_unregister_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu, struct mm_
 {
     uvm_range_tree_node_t *node;
     uvm_va_block_t *va_block;
-    struct range range = gpu->pmm.devmem.pagemap.range;
+    unsigned long devmem_start;
+    unsigned long devmem_end;
     unsigned long pfn;
     bool retry;
 
     if (!uvm_hmm_is_enabled(va_space))
         return;
+
+    devmem_start = gpu->parent->devmem->pagemap.range.start + gpu->mem_info.phys_start;
+    devmem_end = devmem_start + gpu->mem_info.size;
 
     if (mm)
         uvm_assert_mmap_lock_locked(mm);
@@ -341,7 +345,7 @@ void uvm_hmm_unregister_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu, struct mm_
     do {
         retry = false;
 
-        for (pfn = __phys_to_pfn(range.start); pfn <= __phys_to_pfn(range.end); pfn++) {
+        for (pfn = __phys_to_pfn(devmem_start); pfn <= __phys_to_pfn(devmem_end); pfn++) {
             struct page *page = pfn_to_page(pfn);
 
             UVM_ASSERT(is_device_private_page(page));
@@ -349,7 +353,7 @@ void uvm_hmm_unregister_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu, struct mm_
             // This check is racy because nothing stops the page being freed and
             // even reused. That doesn't matter though - worst case the
             // migration fails, we retry and find the va_space doesn't match.
-            if (page->zone_device_data == va_space)
+            if (uvm_pmm_devmem_page_to_va_space(page) == va_space)
                 if (uvm_hmm_pmm_gpu_evict_pfn(pfn) != NV_OK)
                     retry = true;
         }
@@ -1713,7 +1717,7 @@ static void gpu_chunk_remove(uvm_va_block_t *va_block,
     uvm_gpu_chunk_t *gpu_chunk;
     uvm_gpu_id_t id;
 
-    id = uvm_pmm_devmem_page_to_gpu_id(page);
+    id = uvm_gpu_chunk_get_gpu(uvm_pmm_devmem_page_to_chunk(page))->id;
     gpu_state = uvm_va_block_gpu_state_get(va_block, id);
     UVM_ASSERT(gpu_state);
 
@@ -1743,7 +1747,7 @@ static NV_STATUS gpu_chunk_add(uvm_va_block_t *va_block,
     uvm_gpu_id_t id;
     NV_STATUS status;
 
-    id = uvm_pmm_devmem_page_to_gpu_id(page);
+    id = uvm_gpu_chunk_get_gpu(uvm_pmm_devmem_page_to_chunk(page))->id;
     gpu_state = uvm_va_block_gpu_state_get(va_block, id);
 
     // It's possible that this is a fresh va_block we're trying to add an
@@ -1765,7 +1769,7 @@ static NV_STATUS gpu_chunk_add(uvm_va_block_t *va_block,
     gpu_chunk = uvm_pmm_devmem_page_to_chunk(page);
     UVM_ASSERT(gpu_chunk->state == UVM_PMM_GPU_CHUNK_STATE_ALLOCATED);
     UVM_ASSERT(gpu_chunk->is_referenced);
-    UVM_ASSERT(page->zone_device_data == va_block->hmm.va_space);
+    UVM_ASSERT(uvm_pmm_devmem_page_to_va_space(page) == va_block->hmm.va_space);
 
     if (gpu_state->chunks[page_index] == gpu_chunk)
         return NV_OK;
@@ -1992,7 +1996,7 @@ static void fill_dst_pfn(uvm_va_block_t *va_block,
     hmm_mark_gpu_chunk_referenced(va_block, gpu, gpu_chunk);
     UVM_ASSERT(!page_count(dpage));
     zone_device_page_init(dpage);
-    dpage->zone_device_data = va_block->hmm.va_space;
+    dpage->zone_device_data = gpu_chunk;
 
     dst_pfns[page_index] = migrate_pfn(pfn);
 }

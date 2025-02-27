@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -603,6 +603,15 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 // ASUS PG32UQXR does not set DPCD 0x2217 to reflect correct CableID.
                 this->WARFlags.bSkipCableIdCheck = true;
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Panel does not expose cable capability. Ignoring it. Bug 4968411");
+            }
+            else if(ProductID == 0x24b5 || ProductID == 0x32f2)
+            {
+                //
+                // Asus ROG PG248QP  (0x24b5) Bug 5100062
+                // Asus ROG PG32UCDM (0x32f2) Bug 5088957
+                //
+                this->WARFlags.bForceHeadShutdown = true;
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Force head shutdown.");
             }
             break;
 

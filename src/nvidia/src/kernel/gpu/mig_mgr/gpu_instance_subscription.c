@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -700,6 +700,7 @@ gisubscriptionCtrlCmdExecPartitionsGet_IMPL
         pOutInfo->gfxGpcCount = pMIGComputeInstance->resourceAllocation.gfxGpcCount;
         pOutInfo->veidCount = pMIGComputeInstance->resourceAllocation.veidCount;
 
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_SUPPORTS_SPLIT_CE_RANGES))
         {
             KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
             ENGTYPE_BIT_VECTOR globalEngines;
@@ -710,6 +711,12 @@ gisubscriptionCtrlCmdExecPartitionsGet_IMPL
             pOutInfo->ceCount = kmigmgrCountEnginesInRange(&globalEngines,
                                                            kmigmgrGetAsyncCERange_HAL(pGpu, pKernelMIGManager));
         }
+        else
+        {
+            pOutInfo->ceCount = kmigmgrCountEnginesOfType(&pMIGComputeInstance->resourceAllocation.engines,
+                                                          RM_ENGINE_TYPE_COPY(0));
+        }
+        
         pOutInfo->nvEncCount = kmigmgrCountEnginesOfType(&pMIGComputeInstance->resourceAllocation.engines,
                                                       RM_ENGINE_TYPE_NVENC(0));
         pOutInfo->nvDecCount = kmigmgrCountEnginesOfType(&pMIGComputeInstance->resourceAllocation.engines,

@@ -83,6 +83,7 @@ RpcCtrlDbgSetModeErrbarDebug       rpcCtrlDbgSetModeErrbarDebug_STUB;  // TU10X,
 
                                                // RPC:CTRL_PMA_STREAM_UPDATE_GET_PUT
 RpcCtrlPmaStreamUpdateGetPut       rpcCtrlPmaStreamUpdateGetPut_v1A_14;
+RpcCtrlPmaStreamUpdateGetPut       rpcCtrlPmaStreamUpdateGetPut_v29_0B;
 RpcCtrlPmaStreamUpdateGetPut       rpcCtrlPmaStreamUpdateGetPut_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
 
                                                // RPC:CTRL_FABRIC_MEMORY_DESCRIBE
@@ -165,6 +166,10 @@ RpcCtrlSetZbcStencilClear          rpcCtrlSetZbcStencilClear_STUB;  // TU10X, GA
 RpcCtrlVaspaceCopyServerReservedPdes   rpcCtrlVaspaceCopyServerReservedPdes_v1E_04;
 RpcCtrlVaspaceCopyServerReservedPdes   rpcCtrlVaspaceCopyServerReservedPdes_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
 
+                                               // RPC:CTRL_CMD_GET_CHIPLET_HS_CREDIT_POOL
+RpcCtrlCmdGetChipletHsCreditPool   rpcCtrlCmdGetChipletHsCreditPool_v29_0A;
+RpcCtrlCmdGetChipletHsCreditPool   rpcCtrlCmdGetChipletHsCreditPool_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
+
                                                // RPC:CTRL_GR_CTXSW_PREEMPTION_BIND
 RpcCtrlGrCtxswPreemptionBind       rpcCtrlGrCtxswPreemptionBind_v1A_0E;
 RpcCtrlGrCtxswPreemptionBind       rpcCtrlGrCtxswPreemptionBind_v28_07;
@@ -174,6 +179,10 @@ RpcCtrlGrCtxswPreemptionBind       rpcCtrlGrCtxswPreemptionBind_STUB;  // TU10X,
 RpcCtrlAllocPmaStream              rpcCtrlAllocPmaStream_v1A_14;
 RpcCtrlAllocPmaStream              rpcCtrlAllocPmaStream_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
 
+                                               // RPC:CTRL_CMD_GET_HS_CREDITS_MAPPING
+RpcCtrlCmdGetHsCreditsMapping      rpcCtrlCmdGetHsCreditsMapping_v29_0A;
+RpcCtrlCmdGetHsCreditsMapping      rpcCtrlCmdGetHsCreditsMapping_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
+
                                                // RPC:CTRL_RELEASE_HES
 RpcCtrlReleaseHes                  rpcCtrlReleaseHes_v29_07;
 RpcCtrlReleaseHes                  rpcCtrlReleaseHes_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
@@ -181,6 +190,10 @@ RpcCtrlReleaseHes                  rpcCtrlReleaseHes_STUB;   // TU10X, GA100, GA
                                                // RPC:CTRL_RESERVE_HWPM_LEGACY
 RpcCtrlReserveHwpmLegacy           rpcCtrlReserveHwpmLegacy_v1A_0F;
 RpcCtrlReserveHwpmLegacy           rpcCtrlReserveHwpmLegacy_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
+
+                                               // RPC:CTRL_PERF_RATED_TDP_GET_STATUS
+RpcCtrlPerfRatedTdpGetStatus       rpcCtrlPerfRatedTdpGetStatus_v1A_1F;
+RpcCtrlPerfRatedTdpGetStatus       rpcCtrlPerfRatedTdpGetStatus_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
 
                                                // RPC:CTRL_SUBDEVICE_GET_VGPU_HEAP_STATS
 RpcCtrlSubdeviceGetVgpuHeapStats   rpcCtrlSubdeviceGetVgpuHeapStats_v28_03;
@@ -190,10 +203,6 @@ RpcCtrlSubdeviceGetVgpuHeapStats   rpcCtrlSubdeviceGetVgpuHeapStats_STUB;  // TU
                                                // RPC:CTRL_INTERNAL_QUIESCE_PMA_CHANNEL
 RpcCtrlInternalQuiescePmaChannel   rpcCtrlInternalQuiescePmaChannel_v1C_08;
 RpcCtrlInternalQuiescePmaChannel   rpcCtrlInternalQuiescePmaChannel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
-
-                                               // RPC:CTRL_PERF_RATED_TDP_GET_STATUS
-RpcCtrlPerfRatedTdpGetStatus       rpcCtrlPerfRatedTdpGetStatus_v1A_1F;
-RpcCtrlPerfRatedTdpGetStatus       rpcCtrlPerfRatedTdpGetStatus_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
 
                                                // RPC:CTRL_BUS_SET_P2P_MAPPING
 RpcCtrlBusSetP2pMapping            rpcCtrlBusSetP2pMapping_v21_03;
@@ -2546,6 +2555,40 @@ static void rpc_iGrp_ipVersions_Install_v29_09(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 #endif // 
 }
 
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v29_0A(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v29_0B(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
 
 
 
@@ -2596,8 +2639,10 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcCtrlGpuMigratableOps = rpcCtrlGpuMigratableOps_v21_07;
     if (IsIPVersionInRange(pRpc, 0x1A100000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlDbgSetModeErrbarDebug = rpcCtrlDbgSetModeErrbarDebug_v1A_10;
-    if (IsIPVersionInRange(pRpc, 0x1A140000, 0xFFFFFFFF))
+    if (IsIPVersionInRange(pRpc, 0x1A140000, 0x290AFFFF))
        pRpcHal->rpcCtrlPmaStreamUpdateGetPut = rpcCtrlPmaStreamUpdateGetPut_v1A_14;
+    if (IsIPVersionInRange(pRpc, 0x290B0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlPmaStreamUpdateGetPut = rpcCtrlPmaStreamUpdateGetPut_v29_0B;
     if (IsIPVersionInRange(pRpc, 0x1E0C0000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlFabricMemoryDescribe = rpcCtrlFabricMemoryDescribe_v1E_0C;
     if (IsIPVersionInRange(pRpc, 0x1F040000, 0xFFFFFFFF))
@@ -2638,24 +2683,28 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcCtrlSetZbcStencilClear = rpcCtrlSetZbcStencilClear_v27_06;
     if (IsIPVersionInRange(pRpc, 0x1E040000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlVaspaceCopyServerReservedPdes = rpcCtrlVaspaceCopyServerReservedPdes_v1E_04;
+    if (IsIPVersionInRange(pRpc, 0x290A0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlCmdGetChipletHsCreditPool = rpcCtrlCmdGetChipletHsCreditPool_v29_0A;
     if (IsIPVersionInRange(pRpc, 0x1A0E0000, 0x2806FFFF))
        pRpcHal->rpcCtrlGrCtxswPreemptionBind = rpcCtrlGrCtxswPreemptionBind_v1A_0E;
     if (IsIPVersionInRange(pRpc, 0x28070000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlGrCtxswPreemptionBind = rpcCtrlGrCtxswPreemptionBind_v28_07;
     if (IsIPVersionInRange(pRpc, 0x1A140000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlAllocPmaStream = rpcCtrlAllocPmaStream_v1A_14;
+    if (IsIPVersionInRange(pRpc, 0x290A0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlCmdGetHsCreditsMapping = rpcCtrlCmdGetHsCreditsMapping_v29_0A;
     if (IsIPVersionInRange(pRpc, 0x29070000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlReleaseHes = rpcCtrlReleaseHes_v29_07;
     if (IsIPVersionInRange(pRpc, 0x1A0F0000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlReserveHwpmLegacy = rpcCtrlReserveHwpmLegacy_v1A_0F;
+    if (IsIPVersionInRange(pRpc, 0x1A1F0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlPerfRatedTdpGetStatus = rpcCtrlPerfRatedTdpGetStatus_v1A_1F;
     if (IsIPVersionInRange(pRpc, 0x28030000, 0x2805FFFF))
        pRpcHal->rpcCtrlSubdeviceGetVgpuHeapStats = rpcCtrlSubdeviceGetVgpuHeapStats_v28_03;
     if (IsIPVersionInRange(pRpc, 0x28060000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlSubdeviceGetVgpuHeapStats = rpcCtrlSubdeviceGetVgpuHeapStats_v28_06;
     if (IsIPVersionInRange(pRpc, 0x1C080000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlInternalQuiescePmaChannel = rpcCtrlInternalQuiescePmaChannel_v1C_08;
-    if (IsIPVersionInRange(pRpc, 0x1A1F0000, 0xFFFFFFFF))
-       pRpcHal->rpcCtrlPerfRatedTdpGetStatus = rpcCtrlPerfRatedTdpGetStatus_v1A_1F;
     if (IsIPVersionInRange(pRpc, 0x21030000, 0x2907FFFF))
        pRpcHal->rpcCtrlBusSetP2pMapping = rpcCtrlBusSetP2pMapping_v21_03;
     if (IsIPVersionInRange(pRpc, 0x29080000, 0xFFFFFFFF))
@@ -2932,13 +2981,15 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgSetExceptionMask);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlSetZbcStencilClear);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlVaspaceCopyServerReservedPdes);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlCmdGetChipletHsCreditPool);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGrCtxswPreemptionBind);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlAllocPmaStream);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlCmdGetHsCreditsMapping);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlReleaseHes);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlReserveHwpmLegacy);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlPerfRatedTdpGetStatus);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlSubdeviceGetVgpuHeapStats);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlInternalQuiescePmaChannel);
-    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlPerfRatedTdpGetStatus);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlBusSetP2pMapping);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGpuGetInfoV2);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGetHsCredits);
@@ -3381,6 +3432,12 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v29_09[] = {
         { 0x29090000, 0xFFFFFFFF, },          // 
     };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v29_0A[] = {
+        { 0x290A0000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v29_0B[] = {
+        { 0x290B0000, 0xFFFFFFFF, },          // 
+    };
 
 #define _RPC_HAL_IGRP_ENTRY_INIT(v) \
     { RPC_IGRP_IP_VERSIONS_RANGES_##v, NV_ARRAY_ELEMENTS(RPC_IGRP_IP_VERSIONS_RANGES_##v), rpc_iGrp_ipVersions_Install_##v, }
@@ -3499,6 +3556,8 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
         _RPC_HAL_IGRP_ENTRY_INIT(v29_07),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v29_08),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v29_09),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v29_0A),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v29_0B),               // 
     };
 
 #undef _RPC_HAL_IGRP_ENTRY_INIT
@@ -3561,13 +3620,15 @@ static void rpcHalIfacesSetup_TU102(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
         rpcCtrlSetZbcStencilClear_STUB,          // rpcCtrlSetZbcStencilClear
         rpcCtrlVaspaceCopyServerReservedPdes_STUB,   // rpcCtrlVaspaceCopyServerReservedPdes
+        rpcCtrlCmdGetChipletHsCreditPool_STUB,   // rpcCtrlCmdGetChipletHsCreditPool
         rpcCtrlGrCtxswPreemptionBind_STUB,       // rpcCtrlGrCtxswPreemptionBind
         rpcCtrlAllocPmaStream_STUB,              // rpcCtrlAllocPmaStream
+        rpcCtrlCmdGetHsCreditsMapping_STUB,      // rpcCtrlCmdGetHsCreditsMapping
         rpcCtrlReleaseHes_STUB,                  // rpcCtrlReleaseHes
         rpcCtrlReserveHwpmLegacy_STUB,           // rpcCtrlReserveHwpmLegacy
+        rpcCtrlPerfRatedTdpGetStatus_STUB,       // rpcCtrlPerfRatedTdpGetStatus
         rpcCtrlSubdeviceGetVgpuHeapStats_STUB,   // rpcCtrlSubdeviceGetVgpuHeapStats
         rpcCtrlInternalQuiescePmaChannel_STUB,   // rpcCtrlInternalQuiescePmaChannel
-        rpcCtrlPerfRatedTdpGetStatus_STUB,       // rpcCtrlPerfRatedTdpGetStatus
         rpcCtrlBusSetP2pMapping_STUB,            // rpcCtrlBusSetP2pMapping
         rpcCtrlGpuGetInfoV2_STUB,                // rpcCtrlGpuGetInfoV2
         rpcCtrlGetHsCredits_STUB,                // rpcCtrlGetHsCredits
@@ -3757,13 +3818,15 @@ static void rpcHalIfacesSetup_GA100(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
         rpcCtrlSetZbcStencilClear_STUB,          // rpcCtrlSetZbcStencilClear
         rpcCtrlVaspaceCopyServerReservedPdes_STUB,   // rpcCtrlVaspaceCopyServerReservedPdes
+        rpcCtrlCmdGetChipletHsCreditPool_STUB,   // rpcCtrlCmdGetChipletHsCreditPool
         rpcCtrlGrCtxswPreemptionBind_STUB,       // rpcCtrlGrCtxswPreemptionBind
         rpcCtrlAllocPmaStream_STUB,              // rpcCtrlAllocPmaStream
+        rpcCtrlCmdGetHsCreditsMapping_STUB,      // rpcCtrlCmdGetHsCreditsMapping
         rpcCtrlReleaseHes_STUB,                  // rpcCtrlReleaseHes
         rpcCtrlReserveHwpmLegacy_STUB,           // rpcCtrlReserveHwpmLegacy
+        rpcCtrlPerfRatedTdpGetStatus_STUB,       // rpcCtrlPerfRatedTdpGetStatus
         rpcCtrlSubdeviceGetVgpuHeapStats_STUB,   // rpcCtrlSubdeviceGetVgpuHeapStats
         rpcCtrlInternalQuiescePmaChannel_STUB,   // rpcCtrlInternalQuiescePmaChannel
-        rpcCtrlPerfRatedTdpGetStatus_STUB,       // rpcCtrlPerfRatedTdpGetStatus
         rpcCtrlBusSetP2pMapping_STUB,            // rpcCtrlBusSetP2pMapping
         rpcCtrlGpuGetInfoV2_STUB,                // rpcCtrlGpuGetInfoV2
         rpcCtrlGetHsCredits_STUB,                // rpcCtrlGetHsCredits
@@ -3965,13 +4028,15 @@ static void rpcHalIfacesSetup_AD102(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
         rpcCtrlSetZbcStencilClear_STUB,          // rpcCtrlSetZbcStencilClear
         rpcCtrlVaspaceCopyServerReservedPdes_STUB,   // rpcCtrlVaspaceCopyServerReservedPdes
+        rpcCtrlCmdGetChipletHsCreditPool_STUB,   // rpcCtrlCmdGetChipletHsCreditPool
         rpcCtrlGrCtxswPreemptionBind_STUB,       // rpcCtrlGrCtxswPreemptionBind
         rpcCtrlAllocPmaStream_STUB,              // rpcCtrlAllocPmaStream
+        rpcCtrlCmdGetHsCreditsMapping_STUB,      // rpcCtrlCmdGetHsCreditsMapping
         rpcCtrlReleaseHes_STUB,                  // rpcCtrlReleaseHes
         rpcCtrlReserveHwpmLegacy_STUB,           // rpcCtrlReserveHwpmLegacy
+        rpcCtrlPerfRatedTdpGetStatus_STUB,       // rpcCtrlPerfRatedTdpGetStatus
         rpcCtrlSubdeviceGetVgpuHeapStats_STUB,   // rpcCtrlSubdeviceGetVgpuHeapStats
         rpcCtrlInternalQuiescePmaChannel_STUB,   // rpcCtrlInternalQuiescePmaChannel
-        rpcCtrlPerfRatedTdpGetStatus_STUB,       // rpcCtrlPerfRatedTdpGetStatus
         rpcCtrlBusSetP2pMapping_STUB,            // rpcCtrlBusSetP2pMapping
         rpcCtrlGpuGetInfoV2_STUB,                // rpcCtrlGpuGetInfoV2
         rpcCtrlGetHsCredits_STUB,                // rpcCtrlGetHsCredits
@@ -4161,13 +4226,15 @@ static void rpcHalIfacesSetup_GH100(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
         rpcCtrlSetZbcStencilClear_STUB,          // rpcCtrlSetZbcStencilClear
         rpcCtrlVaspaceCopyServerReservedPdes_STUB,   // rpcCtrlVaspaceCopyServerReservedPdes
+        rpcCtrlCmdGetChipletHsCreditPool_STUB,   // rpcCtrlCmdGetChipletHsCreditPool
         rpcCtrlGrCtxswPreemptionBind_STUB,       // rpcCtrlGrCtxswPreemptionBind
         rpcCtrlAllocPmaStream_STUB,              // rpcCtrlAllocPmaStream
+        rpcCtrlCmdGetHsCreditsMapping_STUB,      // rpcCtrlCmdGetHsCreditsMapping
         rpcCtrlReleaseHes_STUB,                  // rpcCtrlReleaseHes
         rpcCtrlReserveHwpmLegacy_STUB,           // rpcCtrlReserveHwpmLegacy
+        rpcCtrlPerfRatedTdpGetStatus_STUB,       // rpcCtrlPerfRatedTdpGetStatus
         rpcCtrlSubdeviceGetVgpuHeapStats_STUB,   // rpcCtrlSubdeviceGetVgpuHeapStats
         rpcCtrlInternalQuiescePmaChannel_STUB,   // rpcCtrlInternalQuiescePmaChannel
-        rpcCtrlPerfRatedTdpGetStatus_STUB,       // rpcCtrlPerfRatedTdpGetStatus
         rpcCtrlBusSetP2pMapping_STUB,            // rpcCtrlBusSetP2pMapping
         rpcCtrlGpuGetInfoV2_STUB,                // rpcCtrlGpuGetInfoV2
         rpcCtrlGetHsCredits_STUB,                // rpcCtrlGetHsCredits
@@ -4321,13 +4388,15 @@ static void rpcHalIfacesSetup_GB100(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
         rpcCtrlSetZbcStencilClear_STUB,          // rpcCtrlSetZbcStencilClear
         rpcCtrlVaspaceCopyServerReservedPdes_STUB,   // rpcCtrlVaspaceCopyServerReservedPdes
+        rpcCtrlCmdGetChipletHsCreditPool_STUB,   // rpcCtrlCmdGetChipletHsCreditPool
         rpcCtrlGrCtxswPreemptionBind_STUB,       // rpcCtrlGrCtxswPreemptionBind
         rpcCtrlAllocPmaStream_STUB,              // rpcCtrlAllocPmaStream
+        rpcCtrlCmdGetHsCreditsMapping_STUB,      // rpcCtrlCmdGetHsCreditsMapping
         rpcCtrlReleaseHes_STUB,                  // rpcCtrlReleaseHes
         rpcCtrlReserveHwpmLegacy_STUB,           // rpcCtrlReserveHwpmLegacy
+        rpcCtrlPerfRatedTdpGetStatus_STUB,       // rpcCtrlPerfRatedTdpGetStatus
         rpcCtrlSubdeviceGetVgpuHeapStats_STUB,   // rpcCtrlSubdeviceGetVgpuHeapStats
         rpcCtrlInternalQuiescePmaChannel_STUB,   // rpcCtrlInternalQuiescePmaChannel
-        rpcCtrlPerfRatedTdpGetStatus_STUB,       // rpcCtrlPerfRatedTdpGetStatus
         rpcCtrlBusSetP2pMapping_STUB,            // rpcCtrlBusSetP2pMapping
         rpcCtrlGpuGetInfoV2_STUB,                // rpcCtrlGpuGetInfoV2
         rpcCtrlGetHsCredits_STUB,                // rpcCtrlGetHsCredits
@@ -4499,13 +4568,15 @@ static void rpcHalIfacesSetup_GB202(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
         rpcCtrlSetZbcStencilClear_STUB,          // rpcCtrlSetZbcStencilClear
         rpcCtrlVaspaceCopyServerReservedPdes_STUB,   // rpcCtrlVaspaceCopyServerReservedPdes
+        rpcCtrlCmdGetChipletHsCreditPool_STUB,   // rpcCtrlCmdGetChipletHsCreditPool
         rpcCtrlGrCtxswPreemptionBind_STUB,       // rpcCtrlGrCtxswPreemptionBind
         rpcCtrlAllocPmaStream_STUB,              // rpcCtrlAllocPmaStream
+        rpcCtrlCmdGetHsCreditsMapping_STUB,      // rpcCtrlCmdGetHsCreditsMapping
         rpcCtrlReleaseHes_STUB,                  // rpcCtrlReleaseHes
         rpcCtrlReserveHwpmLegacy_STUB,           // rpcCtrlReserveHwpmLegacy
+        rpcCtrlPerfRatedTdpGetStatus_STUB,       // rpcCtrlPerfRatedTdpGetStatus
         rpcCtrlSubdeviceGetVgpuHeapStats_STUB,   // rpcCtrlSubdeviceGetVgpuHeapStats
         rpcCtrlInternalQuiescePmaChannel_STUB,   // rpcCtrlInternalQuiescePmaChannel
-        rpcCtrlPerfRatedTdpGetStatus_STUB,       // rpcCtrlPerfRatedTdpGetStatus
         rpcCtrlBusSetP2pMapping_STUB,            // rpcCtrlBusSetP2pMapping
         rpcCtrlGpuGetInfoV2_STUB,                // rpcCtrlGpuGetInfoV2
         rpcCtrlGetHsCredits_STUB,                // rpcCtrlGetHsCredits

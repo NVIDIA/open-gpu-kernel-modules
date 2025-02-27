@@ -586,25 +586,38 @@ NvBool nvEvo1NvtToHdmiInfoFramePacketType(const NvU32 srcType, NvU8 *pDstType)
 }
 
 static NVHDMIPKT_TC EvoInfoFrameToHdmiLibTransmitCtrl(
-    NvEvoInfoFrameTransmitControl src)
+    NvEvoInfoFrameTransmitControl src,
+    NvBool needChecksum)
 {
+    NVHDMIPKT_TC hdmiLibTransmitCtrl =
+        NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_EVERY_FRAME;
+
     switch (src) {
         case NV_EVO_INFOFRAME_TRANSMIT_CONTROL_SINGLE_FRAME:
-            return NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_SINGLE_FRAME;
+            hdmiLibTransmitCtrl = NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_SINGLE_FRAME;
+            break;
         case NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME:
-            return NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_EVERY_FRAME;
+            hdmiLibTransmitCtrl = NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_EVERY_FRAME;
+            break;
     }
-    return NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_EVERY_FRAME;
+
+    if (!needChecksum) {
+        hdmiLibTransmitCtrl &=
+            ~DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _CHKSUM_HW, _EN);
+    }
+
+    return hdmiLibTransmitCtrl;
 }
 
 void nvEvo1SendHdmiInfoFrame(const NVDispEvoRec *pDispEvo,
                              const NvU32 head,
                              const NvEvoInfoFrameTransmitControl transmitCtrl,
                              const NVT_INFOFRAME_HEADER *pInfoFrameHeader,
-                             const NvU32 infoframeSize)
+                             const NvU32 infoframeSize,
+                             NvBool needChecksum)
 {
     NVHDMIPKT_TC hdmiLibTransmitCtrl =
-        EvoInfoFrameToHdmiLibTransmitCtrl(transmitCtrl);
+        EvoInfoFrameToHdmiLibTransmitCtrl(transmitCtrl, needChecksum);
     const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NVHDMIPKT_TYPE hdmiLibType;
@@ -614,8 +627,6 @@ void nvEvo1SendHdmiInfoFrame(const NVDispEvoRec *pDispEvo,
     NvU32 i;
     const NvU8 *pPayload;
     size_t headerSize;
-    NvBool needChecksum = (hdmiLibTransmitCtrl &
-        DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _CHKSUM_HW, _EN));
 
     /*
      * The 'type' the timing library is not the type that the HDMI
@@ -679,6 +690,11 @@ void nvEvo1SendHdmiInfoFrame(const NVDispEvoRec *pDispEvo,
     nvkms_memcpy(&infoframe[1], &((const NvU8*) pInfoFrameHeader)[1],
         headerSize - 1);
 
+    /*
+     * XXX Redundant since needsChecksum implies
+     * _HDMI_PKT_TRANSMIT_CTRL_CHKSUM_HW_EN via
+     * EvoInfoFrameToHdmiLibTransmitCtrl()?
+     */
     if (needChecksum) {
         /* PB0: checksum */
         checksum = 0;

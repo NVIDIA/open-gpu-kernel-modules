@@ -757,10 +757,17 @@ _kgspRpcOsErrorLog
         }
     }
 
+    XidContext context = {
+        .xid       = rpc_params->exceptType,
+        .rootCause = {
+            .preemptiveRemovalPreviousXid =
+                rpc_params->preemptiveRemovalPreviousXid
+        }
+    };
     pKernelRc->pPreviousChannelInError = pKernelChannel;
     // Since this is an XID message passed from GSP-RM, don't send the message
     // to OOB again as the GSP has done so already.
-    nvErrorLog2_va(pGpu, rpc_params->exceptType, /* oobLogging */ NV_FALSE, "%s", rpc_params->errString);
+    nvErrorLog2_va(pGpu, context, /* oobLogging */ NV_FALSE, "%s", rpc_params->errString);
     pKernelRc->pPreviousChannelInError = NULL;
 }
 

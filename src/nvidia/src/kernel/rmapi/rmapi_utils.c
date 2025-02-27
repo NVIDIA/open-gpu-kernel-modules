@@ -233,6 +233,8 @@ NvBool rmapiutilSkipErrorMessageForUnsupportedVgpuGuestControl(NvU32 cmd)
         case NV2080_CTRL_CMD_GPU_SET_ILLUM:
         case NV2080_CTRL_CMD_LPWR_DIFR_CTRL:
         case NV2080_CTRL_CMD_PMGR_GET_MODULE_INFO:
+        case NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_INFOROM_SUPPORT:
+        case NV2080_CTRL_CMD_NVLINK_GET_PLATFORM_INFO:
         case NV402C_CTRL_CMD_I2C_GET_PORT_SPEED:
         case NV90E7_CTRL_CMD_BBX_GET_LAST_FLUSH_TIME:
             return NV_TRUE;

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -151,8 +151,10 @@ void kcrashcatEngineVprintf_IMPL
                       pKernelCrashCatEng->pName, fmt);
 
         va_copy(argsCopy, args);
-        nvErrorLog(pKernelCrashCatEng->pGpu, pKernelCrashCatEng->errorId,
-                   pKernelCrashCatEng->fmtBuffer, argsCopy);
+        nvErrorLog(pKernelCrashCatEng->pGpu,
+                   (XidContext){.xid = pKernelCrashCatEng->errorId},
+                   pKernelCrashCatEng->fmtBuffer,
+                   argsCopy);
         va_end(argsCopy);
     }
 

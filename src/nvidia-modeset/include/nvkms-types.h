@@ -3194,7 +3194,8 @@ typedef const struct _nv_evo_hal {
                               const NvU32 head,
                               const NvEvoInfoFrameTransmitControl transmitCtrl,
                               const NVT_INFOFRAME_HEADER *pInfoFrameHeader,
-                              const NvU32 infoFrameSize);
+                              const NvU32 infoFrameSize,
+                              NvBool needChecksum);
     void (*DisableHdmiInfoFrame)(const NVDispEvoRec *pDispEvo,
                                  const NvU32 head,
                                  const NvU8 nvtInfoFrameType);

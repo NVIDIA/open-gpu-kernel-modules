@@ -647,6 +647,7 @@ SRCS += src/kernel/gpu/mig_mgr/mig_config_session.c
 SRCS += src/kernel/gpu/mig_mgr/mig_monitor_session.c
 SRCS += src/kernel/gpu/mmu/arch/ampere/kern_gmmu_fmt_ga10x.c
 SRCS += src/kernel/gpu/mmu/arch/ampere/kern_gmmu_ga100.c
+SRCS += src/kernel/gpu/mmu/arch/ampere/kern_gmmu_ga10b.c
 SRCS += src/kernel/gpu/mmu/arch/blackwell/kern_gmmu_fmt_gb10x.c
 SRCS += src/kernel/gpu/mmu/arch/blackwell/kern_gmmu_gb100.c
 SRCS += src/kernel/gpu/mmu/arch/hopper/kern_gmmu_fmt_gh10x.c

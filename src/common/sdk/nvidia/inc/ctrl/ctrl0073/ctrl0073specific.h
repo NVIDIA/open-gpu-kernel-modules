@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -449,6 +449,7 @@ typedef struct NV0073_CTRL_SPECIFIC_GET_CONNECTOR_DATA_PARAMS {
 #define NV0073_CTRL_SPECIFIC_CONNECTOR_DATA_TYPE_USB_C                                 0x00000071U
 #define NV0073_CTRL_SPECIFIC_CONNECTOR_DATA_TYPE_DSI                                   0x00000072U
 #define NV0073_CTRL_SPECIFIC_CONNECTOR_DATA_TYPE_STEREO_3PIN_DIN                       0x00000073U
+#define NV0073_CTRL_SPECIFIC_CONNECTOR_DATA_TYPE_USB_C_UHBR                            0x00000074U
 #define NV0073_CTRL_SPECIFIC_CONNECTOR_DATA_TYPE_UNKNOWN                               0xFFFFFFFFU
 
 /* defines for the platform field */
@@ -1994,9 +1995,9 @@ typedef struct NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS {
 /*
  * NV0073_CTRL_CMD_SPECIFIC_GET_DISPLAY_BRIGHTNESS_LTM
  * NV0073_CTRL_CMD_SPECIFIC_SET_DISPLAY_BRIGHTNESS_LTM
- * These commands retrieve and set the brightness level and Local Tone Mapping (LTM) settings for 
+ * These commands retrieve and set the brightness level and Local Tone Mapping (LTM) settings for
  * the specified display.
- * 
+ *
  * subDeviceInstance
  * This parameter specifies the subdevice instance within the
  * NV04_DISPLAY_COMMON parent device to which the operation should be

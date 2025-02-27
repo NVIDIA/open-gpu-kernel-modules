@@ -2720,9 +2720,16 @@ static NvBool UnregisterSurface(struct NvKmsPerOpen *pOpen,
         return FALSE;
     }
 
+    /* Fail the ioctl if a non-privileged client sets this */
+    if (pOpen->clientType != NVKMS_CLIENT_KERNEL_SPACE &&
+        pParams->request.skipSync) {
+        return FALSE;
+    }
+
     nvEvoUnregisterSurface(pOpenDev->pDevEvo, pOpenDev,
                            pParams->request.surfaceHandle,
-                           FALSE /* skipUpdate */);
+                           FALSE /* skipUpdate */,
+                           pParams->request.skipSync);
     return TRUE;
 }
 

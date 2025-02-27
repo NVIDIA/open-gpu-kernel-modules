@@ -126,6 +126,7 @@
  */
 typedef struct _NVDIFRStateEvoRec {
     NVDevEvoPtr pDevEvo;
+    NvU32 copyEngineClass;
     NvU32 copyEngineType;
 
     /*
@@ -471,11 +472,6 @@ static NvBool AllocDIFRCopyEngine(NVDIFRStateEvoPtr pDifr)
         return NV_FALSE;
     }
 
-    // XXX Disabled DIFR on GB20x due to bug 5026524 and bug 5002540
-    if (ceClass == BLACKWELL_DMA_COPY_B) {
-        return NV_FALSE;
-    }
-
     pDifr->prefetchEngine = nvGenerateUnixRmHandle(&pDevEvo->handleAllocator);
     if (pDifr->prefetchEngine == 0) {
         return NV_FALSE;
@@ -495,6 +491,9 @@ static NvBool AllocDIFRCopyEngine(NVDIFRStateEvoPtr pDifr)
         pDifr->prefetchEngine = 0;
         return NV_FALSE;
     }
+
+    // For Ampere vs Blackwell+ differentiation later
+    pDifr->copyEngineClass = ceClass;
 
     return NV_TRUE;
 }
@@ -523,6 +522,7 @@ static NvU32 PrefetchSingleSurface(NVDIFRStateEvoPtr pDifr,
     const NvKmsSurfaceMemoryFormatInfo *finfo =
         nvKmsGetSurfaceMemoryFormatInfo(pParams->surfFormat);
     NvU32 componentSizes;
+    NvU32 dataTransferType;
     NvU32 line_length_in;
     NvU32 line_count;
     NvU64 starttime;
@@ -626,10 +626,21 @@ static NvU32 PrefetchSingleSurface(NVDIFRStateEvoPtr pDifr,
     nvPushSetMethodData(p, line_count);
     nvAssert(pParams->surfPitchBytes * line_count == pParams->surfSizeBytes);
 
+    if (pDifr->copyEngineClass != AMPERE_DMA_COPY_B) {
+        nvPushMethod(p, NVA06F_SUBCHANNEL_COPY_ENGINE, NVCAB5_REQ_ATTR, 1);
+        nvPushSetMethodData
+            (p, DRF_DEF(CAB5, _REQ_ATTR,   _PREFETCH_L2_CLASS, _EVICT_LAST));
+
+        dataTransferType = DRF_DEF(CAB5, _LAUNCH_DMA, _DATA_TRANSFER_TYPE, _PREFETCH);
+    } else
+    {
+        dataTransferType = DRF_DEF(A0B5, _LAUNCH_DMA, _DATA_TRANSFER_TYPE, _PIPELINED);
+    }
+
     nvPushMethod(p, NVA06F_SUBCHANNEL_COPY_ENGINE, NVA0B5_LAUNCH_DMA, 1);
     nvPushSetMethodData
         (p,
-         DRF_DEF(A0B5, _LAUNCH_DMA, _DATA_TRANSFER_TYPE, _PIPELINED) |
+         dataTransferType                                            |
          DRF_DEF(A0B5, _LAUNCH_DMA, _FLUSH_ENABLE,       _TRUE)      |
          DRF_DEF(A0B5, _LAUNCH_DMA, _SEMAPHORE_TYPE,     _NONE)      |
          DRF_DEF(A0B5, _LAUNCH_DMA, _INTERRUPT_TYPE,     _NONE)      |

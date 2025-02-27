@@ -4765,7 +4765,8 @@ void nvRmUnmapFbConsoleMemory(NVDevEvoPtr pDevEvo)
     // Free the NVKMS surface.
     nvEvoUnregisterSurface(pDevEvo, pDevEvo->pNvKmsOpenDev,
                            pDevEvo->fbConsoleSurfaceHandle,
-                           TRUE /* skipUpdate */);
+                           TRUE /* skipUpdate */,
+                           FALSE /* skipSync */);
     pDevEvo->fbConsoleSurfaceHandle = 0;
 }
 

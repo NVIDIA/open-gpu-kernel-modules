@@ -8978,7 +8978,8 @@ NvBool nvFreeDevEvo(NVDevEvoPtr pDevEvo)
 
         nvEvoUnregisterSurface(pDevEvo, pDevEvo->pNvKmsOpenDev,
                                pDevEvo->fbConsoleSurfaceHandle,
-                               TRUE /* skipUpdate */);
+                               TRUE /* skipUpdate */,
+                               FALSE /* skipSync */);
         pDevEvo->fbConsoleSurfaceHandle = 0;
     }
 

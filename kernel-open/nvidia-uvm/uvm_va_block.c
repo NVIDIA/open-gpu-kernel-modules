@@ -2839,10 +2839,14 @@ static bool block_check_egm_peer(uvm_va_space_t *va_space, uvm_gpu_t *gpu, int n
     remote_node_info = uvm_va_space_get_egm_numa_node_info(va_space, nid);
     UVM_ASSERT(!uvm_parent_processor_mask_empty(&remote_node_info->parent_gpus));
     for_each_parent_gpu_in_mask(parent_gpu, &remote_node_info->parent_gpus) {
-        UVM_ASSERT(parent_gpu->egm.enabled);
+        NvU64 page_addr = phys_addr.address;
 
-        if (phys_addr.address + parent_gpu->egm.base_address >= remote_node_info->node_start &&
-            phys_addr.address + parent_gpu->egm.base_address < remote_node_info->node_end &&
+        UVM_ASSERT(parent_gpu->egm.enabled);
+        page_addr += parent_gpu->egm.base_address;
+        if (parent_gpu->nvswitch_info.is_nvswitch_connected && gpu->parent != parent_gpu)
+            page_addr -= parent_gpu->nvswitch_info.egm_fabric_memory_window_start;
+
+        if (page_addr >= remote_node_info->node_start && page_addr < remote_node_info->node_end &&
             remote_node_info->routing_table[uvm_parent_id_gpu_index(gpu->parent->id)] == parent_gpu) {
             return true;
         }
@@ -3229,8 +3233,15 @@ static uvm_gpu_phys_address_t block_phys_page_address(uvm_va_block_t *block,
 
         if (routing_gpu) {
             struct page *page = uvm_cpu_chunk_get_cpu_page(block, chunk, block_page.page_index);
+
             phys_addr = page_to_phys(page);
             aperture = uvm_gpu_egm_peer_aperture(gpu->parent, routing_gpu);
+
+            // Remote EGM routing is based on both the EGM base address and EGM
+            // fabric memory window.
+            if (routing_gpu->nvswitch_info.is_nvswitch_connected && routing_gpu != gpu->parent)
+                phys_addr += routing_gpu->nvswitch_info.egm_fabric_memory_window_start;
+
             uvm_page_mask_set(&accessing_gpu_state->egm_pages, block_page.page_index);
             return uvm_gpu_phys_address(aperture, phys_addr - routing_gpu->egm.base_address);
         }
@@ -13575,6 +13586,9 @@ NV_STATUS uvm_test_va_residency_info(UVM_TEST_VA_RESIDENCY_INFO_PARAMS *params, 
                         struct page *page = block_page_get(block, block_page);
 
                         phys_addr = page_to_phys(page) - egm_routing_gpu->egm.base_address;
+                        if (egm_routing_gpu->nvswitch_info.is_nvswitch_connected && egm_routing_gpu != gpu->parent)
+                            phys_addr += egm_routing_gpu->nvswitch_info.egm_fabric_memory_window_start;
+
                         params->is_egm_mapping[count] = true;
                     }
                 }

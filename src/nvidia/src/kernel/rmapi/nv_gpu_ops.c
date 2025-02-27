@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1919,8 +1919,9 @@ static NV_STATUS queryFbInfo(struct gpuDevice *device)
     fbInfoParams.fbInfoList[0].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_SIZE;
     fbInfoParams.fbInfoList[1].index = NV2080_CTRL_FB_INFO_INDEX_VISTA_RESERVED_HEAP_SIZE;
     fbInfoParams.fbInfoList[2].index = NV2080_CTRL_FB_INFO_INDEX_FB_IS_BROKEN;
+    fbInfoParams.fbInfoList[3].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_START;
 
-    fbInfoParams.fbInfoListSize = 3;
+    fbInfoParams.fbInfoListSize = 4;
 
     nvStatus = pRmApi->Control(pRmApi,
                                device->session->handle,
@@ -1952,6 +1953,7 @@ static NV_STATUS queryFbInfo(struct gpuDevice *device)
     device->fbInfo.heapSize          = fbInfoParams.fbInfoList[0].data;
     device->fbInfo.reservedHeapSize  = fbInfoParams.fbInfoList[1].data;
     device->fbInfo.bZeroFb           = (NvBool)fbInfoParams.fbInfoList[2].data;
+    device->fbInfo.heapStart         = fbInfoParams.fbInfoList[3].data;
     device->fbInfo.maxVidmemPageSize = gpuMaxSupportedPageSizeParams.maxSupportedPageSize;
 
     device->fbInfo.maxAllocatableAddress = 0;

@@ -35,47 +35,110 @@
 
 using namespace DisplayPort;
 
-void DPCDHALImpl2x::performCableIdHandshake()
+void DPCDHALImpl2x::parseAndSetCableId(NvU8 cableId)
 {
-    NvU8 byte = 0;
+    caps2x.cableCaps.bUHBR_10GSupported = true;
 
-    if (AuxRetry::ack ==
-        bus.read(NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPRX, &byte, sizeof byte))
+    caps2x.cableCaps.bUHBR_20GSupported =
+        FLD_TEST_DRF(_DPCD20, _CABLE_ATTRIBUTES_UPDATED_BY_DPRX, _UHBR20_10_CAPABILITY, _10_AND_20_GBPS_SUPPORTED, cableId);
+
+    caps2x.cableCaps.bUHBR_13_5GSupported =
+        FLD_TEST_DRF(_DPCD20, _CABLE_ATTRIBUTES_UPDATED_BY_DPRX, _13_5_GBPS_SUPPORTED, _YES, cableId);
+
+    switch (DRF_VAL(_DPCD20, _CABLE_ATTRIBUTES_UPDATED_BY_DPRX, _CABLE_TYPE, cableId))
     {
-        caps2x.cableCaps.bUHBR_10GSupported =
-            FLD_TEST_DRF(_DPCD20, _CABLE_ATTRIBUTES_UPDATED_BY_DPRX, _UHBR20_10_CAPABILITY, _10_0_GBPS_SUPPORTED, byte) ||
-            FLD_TEST_DRF(_DPCD20, _CABLE_ATTRIBUTES_UPDATED_BY_DPRX, _UHBR20_10_CAPABILITY, _10_AND_20_GBPS_SUPPORTED, byte);
+        case NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPRX_CABLE_TYPE_CABLE_TYPE_UNKNOWN:
+            caps2x.cableCaps.cableType = CableTypeUnknown;
+            break;
+        case NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPRX_CABLE_TYPE_PASSIVE:
+            caps2x.cableCaps.cableType = CableTypePassive;
+            break;
+        case NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPRX_CABLE_TYPE_LRD:
+            caps2x.cableCaps.cableType = CableTypeLRD;
+            break;
+        case NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPRX_CABLE_TYPE_ACTIVE_RETIMER:
+            caps2x.cableCaps.cableType = CableTypeActiveReTimer;
+            break;
+        default:
+            DP_PRINTF(DP_ERROR, "Unknown cable type\n");
+            break;
+    }
+}
 
-        caps2x.cableCaps.bUHBR_20GSupported =
-            FLD_TEST_DRF(_DPCD20, _CABLE_ATTRIBUTES_UPDATED_BY_DPRX, _UHBR20_10_CAPABILITY, _10_AND_20_GBPS_SUPPORTED, byte);
+void DPCDHALImpl2x::performCableIdHandshakeForTypeC()
+{
+    NvU8 txCableCaps = 0;
+    NvU8 rxCableCaps = 0;
 
-        caps2x.cableCaps.bUHBR_13_5GSupported =
-            FLD_TEST_DRF(_DPCD20, _CABLE_ATTRIBUTES_UPDATED_BY_DPRX, _13_5_GBPS_SUPPORTED, _YES, byte);
-
-        switch (DRF_VAL(_DPCD20, _CABLE_ATTRIBUTES_UPDATED_BY_DPRX, _CABLE_TYPE, byte))
-        {
-            case NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPRX_CABLE_TYPE_CABLE_TYPE_UNKNOWN:
-                caps2x.cableCaps.cableType = CableTypeUnknown;
-                break;
-            case NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPRX_CABLE_TYPE_PASSIVE:
-                caps2x.cableCaps.cableType = CableTypePassive;
-                break;
-            case NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPRX_CABLE_TYPE_LRD:
-                caps2x.cableCaps.cableType = CableTypeLRD;
-                break;
-            case NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPRX_CABLE_TYPE_ACTIVE_RETIMER:
-                caps2x.cableCaps.cableType = CableTypeActiveReTimer;
-                break;
-            default:
-                DP_PRINTF(DP_ERROR, "Unknown cable type\n");
-                break;
-        }
+    // Write sink caps to NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPTX first.
+    if (caps2x.bUHBR_20GSupported)
+    {
+        txCableCaps = FLD_SET_DRF(_DPCD20, _CABLE_ATTRIBUTES_UPDATED_BY_DPTX, _UHBR20_10_CAPABILITY,
+                                  _10_AND_20_GBPS_SUPPORTED, txCableCaps);
+    }
+    else
+    {
+        txCableCaps = FLD_SET_DRF(_DPCD20, _CABLE_ATTRIBUTES_UPDATED_BY_DPTX, _UHBR20_10_CAPABILITY,
+                                  _10_0_GBPS_SUPPORTED, txCableCaps);
+    }
+    if (caps2x.bUHBR_13_5GSupported)
+    {
+        txCableCaps = FLD_SET_DRF(_DPCD20, _CABLE_ATTRIBUTES_UPDATED_BY_DPTX, _13_5_GBPS_SUPPORTED,
+                                  _YES, txCableCaps);
     }
 
-    if (byte == 0)
+    // Set cable type based on if any LTTPR is detected.
+    if (!bLttprSupported || (this->caps.phyRepeaterCount == 0))
     {
-        caps2x.cableCaps.bUHBR_10GSupported = true;
-        return;
+        txCableCaps = FLD_SET_DRF(_DPCD20, _CABLE_ATTRIBUTES_UPDATED_BY_DPTX, _CABLE_TYPE,
+                                  _PASSIVE, txCableCaps);
+    }
+    else
+    {
+        txCableCaps = FLD_SET_DRF(_DPCD20, _CABLE_ATTRIBUTES_UPDATED_BY_DPTX, _CABLE_TYPE,
+                                  _ACTIVE_RETIMER, txCableCaps);
+    }
+
+    if (AuxRetry::ack != bus.write(NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPTX, &txCableCaps,
+                                   sizeof txCableCaps))
+    {
+        DP_PRINTF(DP_WARNING, "Failed to write NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPTX");
+    }
+
+    // Check Cable ID from DPRX
+    if (AuxRetry::ack !=
+        bus.read(NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPRX, &rxCableCaps, sizeof rxCableCaps))
+    {
+        DP_PRINTF(DP_WARNING, "Failed to read NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPRX for updated results");
+    }
+
+    parseAndSetCableId(rxCableCaps);
+
+    // If no matches, reflect that to the DPRX
+    if (txCableCaps != rxCableCaps)
+    {
+        if (AuxRetry::ack !=
+            bus.write(NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPTX, &rxCableCaps, sizeof rxCableCaps))
+        {
+            DP_PRINTF(DP_WARNING, "Failed to update NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPTX -> %02x", rxCableCaps);
+        }
+    }
+}
+
+void DPCDHALImpl2x::performCableIdHandshake()
+{
+    NvU8 rxCableCaps    = 0;
+
+    if (this->bConnectorIsTypeC)
+    {
+        return performCableIdHandshakeForTypeC();
+    }
+
+    // Read Cable ID from DPRX
+    if (AuxRetry::ack ==
+        bus.read(NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPRX, &rxCableCaps, sizeof rxCableCaps))
+    {
+        parseAndSetCableId(rxCableCaps);
     }
 }
 
@@ -183,7 +246,7 @@ void DPCDHALImpl2x::parseAndReadCaps()
         }
     }
 
-    if (!bIgnoreCableIdCaps)
+    if (caps2x.bDP2xChannelCodingSupported && !bIgnoreCableIdCaps)
     {
         performCableIdHandshake();
     }
@@ -229,6 +292,11 @@ void DPCDHALImpl2x::setGpuDPSupportedVersions(NvU32 _gpuDPSupportedVersions)
     }
 
     return DPCDHALImpl::setGpuDPSupportedVersions(_gpuDPSupportedVersions);
+}
+
+void DPCDHALImpl2x::setConnectorTypeC(bool bTypeC)
+{
+    this->bConnectorIsTypeC = bTypeC;
 }
 
 AuxRetry::status DPCDHALImpl2x::notifySDPErrDetectionCapability()
@@ -377,6 +445,24 @@ NvU32 DPCDHALImpl2x::getUHBRSupported()
     }
 
     return uhbrCaps;
+}
+
+void DPCDHALImpl2x::overrideCableIdCap(LinkRate linkRate, bool bEnable)
+{
+    switch (linkRate)
+    {
+        case dp2LinkRate_20_0Gbps:
+            caps2x.cableCaps.bUHBR_20GSupported = bEnable;
+            break;
+        case dp2LinkRate_13_5Gbps:
+            caps2x.cableCaps.bUHBR_13_5GSupported = bEnable;
+            break;
+        case dp2LinkRate_10_0Gbps:
+            caps2x.cableCaps.bUHBR_10GSupported = bEnable;
+            break;
+        default:
+            DP_PRINTF(DP_ERROR, "DPHAL> Invalid link rate (%d) to override.", linkRate);
+    }
 }
 
 bool DPCDHALImpl2x::parseTestRequestPhy()

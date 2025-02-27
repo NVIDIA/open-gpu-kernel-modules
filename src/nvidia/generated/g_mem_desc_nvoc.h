@@ -866,10 +866,6 @@ typedef struct MEMORY_DESCRIPTOR
     // We verified that memdesc is safe to be mapped as large pages
     NvBool bForceHugePages;
 
-    // Memory handle that libos 3+ returns for dynamically mapped sysmem
-    NvU32 libosRegionHandle;
-    NvU64 baseVirtualAddress;
-
     // Indicates granularity of mapping. Will be used to implement dynamic page sizes.
     NvU32 pageArrayGranularity;
 

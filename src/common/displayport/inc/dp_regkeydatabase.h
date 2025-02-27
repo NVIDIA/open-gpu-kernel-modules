@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -85,18 +85,21 @@
 #define NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT_2_7G                           NVBIT(1)
 #define NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT_5_0G                           NVBIT(2)
 
-
 #define NV_DP2X_IGNORE_CABLE_ID_CAPS                    "DP2X_IGNORE_CABLE_ID_CAPS"
 
 //
 // Bug 4388987 : This regkey will disable reading PCON caps for MST.
 //
-#define NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED       "DP_BUG_4388987_WAR"
-
-#define NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION      "DP_DISABLE_TUNNEL_BW_ALLOCATION"
+#define NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED    "DP_BUG_4388987_WAR"
+#define NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION   "DP_DISABLE_TUNNEL_BW_ALLOCATION"
 
 // Bug 4793112 : On eDP panel, do not cache source OUI if it reads zero
-#define NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE           "DP_SKIP_ZERO_OUI_CACHE"
+#define NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE            "DP_SKIP_ZERO_OUI_CACHE"
+
+#define NV_DP_REGKEY_DISABLE_FIX_FOR_5019537        "DP_DISABLE_5019537_FIX"
+
+// Bug 5088957 : Force head shutdown in DpLib
+#define NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN            "DP_WAR_5088957"
 
 //
 // Data Base used to store all the regkey values.
@@ -136,9 +139,10 @@ struct DP_REGKEY_DATABASE
     bool  bForceDisableTunnelBwAllocation;
     bool  bDownspreadDisabled;
     bool  bSkipZeroOuiCache;
+    bool  bDisable5019537Fix;
+    bool  bForceHeadShutdown;
 };
 
 extern struct DP_REGKEY_DATABASE dpRegkeyDatabase;
 
 #endif //INCLUDED_DP_REGKEYDATABASE_H
-

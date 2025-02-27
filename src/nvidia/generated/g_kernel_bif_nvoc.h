@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -244,7 +244,7 @@ struct KernelBif {
     void (*__kbifClearDownstreamReadCounter__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kbifDoSecondaryBusHotReset__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
 
-    // 25 PDB properties
+    // 26 PDB properties
     NvBool PDB_PROP_KBIF_CHECK_IF_GPU_EXISTS_DEF;
     NvBool PDB_PROP_KBIF_IS_MSI_ENABLED;
     NvBool PDB_PROP_KBIF_IS_MSI_CACHED;
@@ -270,6 +270,7 @@ struct KernelBif {
     NvBool PDB_PROP_KBIF_FORCE_PCIE_CONFIG_SAVE;
     NvBool PDB_PROP_KBIF_FLR_PRE_CONDITIONING_REQUIRED;
     NvBool PDB_PROP_KBIF_FLR_HANDLED_BY_OS;
+    NvBool PDB_PROP_KBIF_WAR_5045021_ENABLED;
 
     // Data members
     NvU32 dmaCaps;
@@ -344,6 +345,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelBif;
 #define PDB_PROP_KBIF_IS_MSI_ENABLED_BASE_NAME PDB_PROP_KBIF_IS_MSI_ENABLED
 #define PDB_PROP_KBIF_FORCE_PCIE_CONFIG_SAVE_BASE_CAST
 #define PDB_PROP_KBIF_FORCE_PCIE_CONFIG_SAVE_BASE_NAME PDB_PROP_KBIF_FORCE_PCIE_CONFIG_SAVE
+#define PDB_PROP_KBIF_WAR_5045021_ENABLED_BASE_CAST
+#define PDB_PROP_KBIF_WAR_5045021_ENABLED_BASE_NAME PDB_PROP_KBIF_WAR_5045021_ENABLED
 #define PDB_PROP_KBIF_PCIE_GEN4_CAPABLE_BASE_CAST
 #define PDB_PROP_KBIF_PCIE_GEN4_CAPABLE_BASE_NAME PDB_PROP_KBIF_PCIE_GEN4_CAPABLE
 #define PDB_PROP_KBIF_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.

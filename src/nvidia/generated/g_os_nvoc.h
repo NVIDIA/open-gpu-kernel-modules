@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -52,6 +52,7 @@ extern "C" {
 #include "core/core.h"
 #include "containers/btree.h"
 #include "ctrl/ctrl0073/ctrl0073dfp.h"
+#include "kernel/diagnostics/xid_context.h"
 
 /* ------------------------ SDK & Interface Includes ------------------------ */
 #include "nvsecurityinfo.h"
@@ -892,7 +893,7 @@ NV_STATUS osDereferenceObjectCount(void *pEvent);
 // osErrorLogV() call, create a copy of the va_list using va_copy().
 // The caller controls the lifetime of the va_list argument, and should free it using va_end.
 //
-void osErrorLogV(OBJGPU *pGpu, NvU32 num, const char * pFormat, va_list arglist);
+void osErrorLogV(OBJGPU *pGpu, XidContext context, const char * pFormat, va_list arglist);
 void osErrorLog(OBJGPU *pGpu, NvU32 num, const char* pFormat, ...);
 
 NV_STATUS osNvifInitialize(OBJGPU *pGpu);

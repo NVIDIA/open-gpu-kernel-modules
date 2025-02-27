@@ -567,8 +567,10 @@ namespace DisplayPort
         virtual AuxRetry::status notifySDPErrDetectionCapability() = 0;
         virtual bool isDp2xChannelCodingCapable() = 0;
         virtual void setIgnoreCableIdCaps(bool bIgnore) = 0;
+        virtual void overrideCableIdCap(LinkRate linkRate, bool bEnable) = 0;
         virtual void initialize() = 0;
         virtual AuxRetry::status setMainLinkChannelCoding(MainLinkChannelCoding channelCoding) = 0;
+        virtual void setConnectorTypeC(bool bTypeC) = 0;
         virtual ~DPCDHAL() {}
     };
 
@@ -1483,23 +1485,16 @@ namespace DisplayPort
         bool clearDpTunnelingEstimatedBwStatus();
         bool clearDpTunnelingBwAllocationCapStatus();
 
-        virtual AuxRetry::status notifySDPErrDetectionCapability()
-        {
-            return AuxRetry::ack;
-        }
-        virtual bool isDp2xChannelCodingCapable()
-        {
-            return false;
-        }
-        virtual void setIgnoreCableIdCaps(bool bIgnore)
-        {
-            return;
-        }
+        virtual AuxRetry::status notifySDPErrDetectionCapability() { return AuxRetry::ack; }
+        virtual bool isDp2xChannelCodingCapable() { return false; }
+        virtual void setIgnoreCableIdCaps(bool bIgnore) { return; }
+        virtual void overrideCableIdCap(LinkRate linkRate, bool bEnable) { return; }
 
         // implement this function if DPCDHALImpl needs updated state between hotunplug/plug
         virtual void initialize(){};
         virtual AuxRetry::status setMainLinkChannelCoding(MainLinkChannelCoding channelCoding){ return AuxRetry::ack; }
         virtual MainLinkChannelCoding getMainLinkChannelCoding() { return ChannelCoding8B10B; }
+        virtual void setConnectorTypeC(bool bTypeC) {};
     };
 
 }

@@ -1672,7 +1672,7 @@ NV_STATUS NV_API_CALL os_alloc_pages_node
     NV_STATUS status = NV_ERR_NOT_SUPPORTED;
 
 #if defined(__GFP_THISNODE) && defined(GFP_HIGHUSER_MOVABLE) && \
-    defined(__GFP_COMP) && defined(__GFP_NORETRY) && defined(__GFP_NOWARN)
+    defined(__GFP_COMP) && defined(__GFP_NOWARN)
     gfp_t gfp_mask;
     struct page *alloc_addr;
     unsigned int order = get_order(size);
@@ -1689,13 +1689,11 @@ NV_STATUS NV_API_CALL os_alloc_pages_node
      *                              pages, which is needed in order to use
      *                              vm_insert_page API.
      *
-     * 4. __GFP_NORETRY:            Used to avoid the Linux kernel OOM killer.
-     *
-     * 5. __GFP_NOWARN:             Used to avoid a WARN_ON in the slowpath if
+     * 4. __GFP_NOWARN:             Used to avoid a WARN_ON in the slowpath if
      *                              the requested order is too large (just fail
      *                              instead).
      *
-     * 6. (Optional) __GFP_RECLAIM: Used to allow/forbid reclaim.
+     * 5. (Optional) __GFP_RECLAIM: Used to allow/forbid reclaim.
      *                              This is part of GFP_USER and consequently
      *                              GFP_HIGHUSER_MOVABLE.
      *
@@ -1709,7 +1707,30 @@ NV_STATUS NV_API_CALL os_alloc_pages_node
      */
 
     gfp_mask = __GFP_THISNODE | GFP_HIGHUSER_MOVABLE | __GFP_COMP |
-               __GFP_NORETRY | __GFP_NOWARN;
+               __GFP_NOWARN;
+    
+#if defined(__GFP_RETRY_MAYFAIL)
+
+    /*
+     * __GFP_RETRY_MAYFAIL :  Used to avoid the Linux kernel OOM killer.
+     *                        To help PMA on paths where UVM might be
+     *                        in memory over subscription. This gives UVM 
+     *                        a chance to free memory before invoking any 
+     *                        action from the OOM killer.
+     *                        Freeing non-essential memory will also benefit 
+     *                        the system as a whole.
+     */
+
+    gfp_mask |= __GFP_RETRY_MAYFAIL;
+#elif defined(__GFP_NORETRY)
+
+    /*
+     *  __GFP_NORETRY :       Use __GFP_NORETRY on older kernels where
+     *                        __GFP_RETRY_MAYFAIL is not present.
+     */
+
+    gfp_mask |= __GFP_NORETRY;
+#endif
 
 #if defined(__GFP_RECLAIM)
     if (flag & NV_ALLOC_PAGES_NODE_SKIP_RECLAIM)

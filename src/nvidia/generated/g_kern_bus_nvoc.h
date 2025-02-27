@@ -61,8 +61,8 @@ extern "C" {
 //
 // Virtual BAR2 mapping info is shared by tesla and fermi code
 //
-#if defined(NV_UNIX) && (defined(NVCPU_X86_64) || defined(NVCPU_AARCH64))
-// 64-bit Unix can support many more mappings than some other operating systems:
+#if ((defined(NV_UNIX) && (defined(NVCPU_X86_64) || defined(NVCPU_AARCH64))) || (defined(NVCPU_X86_64) && defined(_WIN64))) 
+// 64-bit Unix and 64-bit Windows can support many more mappings than some other operating systems:
 #define BUS_BAR2_MAX_MAPPINGS       200
 #else
 #define BUS_BAR2_MAX_MAPPINGS       50

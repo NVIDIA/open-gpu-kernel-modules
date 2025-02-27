@@ -228,7 +228,8 @@ void nvHsFreeSurface(
         nvEvoUnregisterSurface(pDevEvo,
                                pDevEvo->pNvKmsOpenDev,
                                pHsSurface->nvKmsHandle,
-                               FALSE /* skipUpdate */);
+                               FALSE /* skipUpdate */,
+                               FALSE /* skipSync */);
     }
 
     nvFree(pHsSurface);
@@ -1078,7 +1079,8 @@ static void FreeNotifiers(NVHsDeviceEvoRec *pHsDevice)
         nvEvoUnregisterSurface(pDevEvo,
                                pDevEvo->pNvKmsOpenDev,
                                pNotifiers->nvKmsHandle,
-                               FALSE /* skipUpdate */);
+                               FALSE /* skipUpdate */,
+                               FALSE /* skipSync */);
         pNotifiers->pSurfaceEvo = NULL;
     }
 

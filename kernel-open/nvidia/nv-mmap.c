@@ -445,7 +445,9 @@ static int nvidia_mmap_sysmem(
         }
         else
         {
-            vma->vm_page_prot = nv_adjust_pgprot(vma->vm_page_prot, 0);
+            if (at->flags.unencrypted)
+                vma->vm_page_prot = nv_adjust_pgprot(vma->vm_page_prot, 0);
+
             ret = vm_insert_page(vma, start,
                                  NV_GET_PAGE_STRUCT(at->page_table[j]->phys_addr));
         }

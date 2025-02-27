@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -35,6 +35,7 @@
 #include "uvm_mmu.h"
 #include "uvm_perf_heuristics.h"
 #include "uvm_pmm_sysmem.h"
+#include "uvm_pmm_gpu.h"
 #include "uvm_migrate.h"
 #include "uvm_gpu_access_counters.h"
 #include "uvm_va_space_mm.h"
@@ -90,6 +91,8 @@ NV_STATUS uvm_global_init(void)
     uvm_spin_lock_irqsave_init(&g_uvm_global.gpu_table_lock, UVM_LOCK_ORDER_LEAF);
     uvm_mutex_init(&g_uvm_global.va_spaces.lock, UVM_LOCK_ORDER_VA_SPACES_LIST);
     INIT_LIST_HEAD(&g_uvm_global.va_spaces.list);
+    uvm_mutex_init(&g_uvm_global.devmem_ranges.lock, UVM_LOCK_ORDER_LEAF);
+    INIT_LIST_HEAD(&g_uvm_global.devmem_ranges.list);
 
     status = uvm_kvmalloc_init();
     if (status != NV_OK) {
@@ -231,6 +234,7 @@ void uvm_global_exit(void)
     uvm_va_policy_exit();
     uvm_mem_global_exit();
     uvm_pmm_sysmem_exit();
+    uvm_pmm_devmem_exit();
     uvm_gpu_exit();
     uvm_processor_mask_cache_exit();
 

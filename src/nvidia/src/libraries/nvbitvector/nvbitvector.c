@@ -862,3 +862,71 @@ bitVectorFromRaw_IMPL
     return NV_OK;
 }
 
+
+/**
+ * @brief Causes the least significant N raised bits in pBitVectorSrc to be
+ *        raised in pBitVectorDst.
+ *
+ * @param[out] pBitVectorDst Destination
+ * @param[in]  pBitVectorSrc Source
+ * @param[in]  n             Count of bits to copy
+ *
+ * @note it is invalid for the same bitvector to be both dest and source
+ * @note n cannot be larger than the size of the bitvector
+ */
+NV_STATUS
+bitVectorLowestNBits_IMPL
+(
+    NV_BITVECTOR *pBitVectorDst,
+    NvU16 bitVectorDstLast,
+    const NV_BITVECTOR *pBitVectorSrc,
+    NvU16 bitVectorSrcLast,
+    NvU16 n
+)
+{
+    NvU64 *qwordDst;
+    const NvU64 *qwordSrc;
+    NvU32 idx;
+    NvU32 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorSrcLast);
+    NvU32 qwordOffset = NV_BITVECTOR_OFFSET(bitVectorSrcLast - 1);
+    NvU64 mask;
+    NvU16 count;
+
+    NV_ASSERT_OR_RETURN(NULL != pBitVectorSrc, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(NULL != pBitVectorDst, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN((bitVectorSrcLast == bitVectorDstLast), NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pBitVectorDst != pBitVectorSrc, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(n < bitVectorSrcLast, NV_ERR_INVALID_ARGUMENT);
+
+    if (n == bitVectorSrcLast)
+        return bitVectorCopy_IMPL(pBitVectorDst, bitVectorDstLast, pBitVectorSrc, bitVectorSrcLast);
+
+    bitVectorClrAll_IMPL(pBitVectorDst, bitVectorDstLast);
+
+    if (n == 0)
+        return NV_OK;
+
+    count = 0;
+    qwordSrc = (const NvU64 *)&pBitVectorSrc->qword;
+    qwordDst = (NvU64 *)&pBitVectorDst->qword;
+    for (idx = 0; idx < arraySize; idx++)
+    {
+        NvU64 bit;
+
+        mask = (idx < arraySize - 1) ? NV_U64_MAX :
+               (NV_U64_MAX >> (63 - qwordOffset));
+
+        FOR_EACH_INDEX_IN_MASK(64, bit, qwordSrc[idx] & mask)
+        {
+            qwordDst[idx] |= NVBIT64(bit);
+
+            count++;
+            if (count == n)
+                return NV_OK;
+        }
+        FOR_EACH_INDEX_IN_MASK_END;
+    }
+
+    return NV_OK;
+}
+

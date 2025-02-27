@@ -689,6 +689,8 @@ knvlinkStateLoad_IMPL
 
     knvlinkDumpCallbackRegister_HAL(pGpu, pKernelNvlink);
 
+    knvlinkPostSchedulingEnableCallbackRegister_HAL(pGpu, pKernelNvlink);
+
     // Update list of HSHUB supported RBM modes
     knvlinkGetHshubSupportedRbmModes_HAL(pGpu, pKernelNvlink);
 
@@ -829,6 +831,8 @@ knvlinkStateUnload_IMPL
     {
         kbusDestroyFla_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu));
     }
+
+    knvlinkPostSchedulingEnableCallbackUnregister_HAL(pGpu, pKernelNvlink);
 
     return NV_OK;
 }
@@ -1124,13 +1128,6 @@ knvlinkShutdownLinks_WORKITEM
             NV_PRINTF(LEVEL_ERROR, "Failed to send disable link RPC on degraded GPU%d\n",
                 pGpu->gpuInstance);
         }
-
-        // Suspend and invalidate probe on degraded GPU.
-        if (gpuFabricProbeIsSupported(pGpu))
-        {
-            gpuFabricProbeSuspend(pGpu->pGpuFabricProbeInfoKernel);
-            gpuFabricProbeInvalidate(pGpu->pGpuFabricProbeInfoKernel);
-        }
     }
     else
     {
@@ -1157,8 +1154,6 @@ knvlinkSetDegradedMode_IMPL
     NvS32         linkId
 )
 {
-    NvU32 gpuInstance;
-    NvBool bShutdownLinks = NV_FALSE;
     NV_STATUS status = NV_OK;
 
     // Prevent invalid shift later
@@ -1178,65 +1173,20 @@ knvlinkSetDegradedMode_IMPL
         return;
     }
 
-    // Find the remote GPU/NVLink attached to this link, if any
-    for (gpuInstance = 0; gpuInstance < NV_MAX_DEVICES; gpuInstance++)
-    {
-        OBJGPU *pRemoteGpu = gpumgrGetGpu(gpuInstance);
-        KernelNvlink *pRemoteKernelNvlink;
-        NvU32 linkMask = (linkId == -1) ? pKernelNvlink->enabledLinks : NVBIT32(linkId);
+    pKernelNvlink->bIsGpuDegraded = NV_TRUE;
+    NV_PRINTF(LEVEL_ERROR,
+            "GPU%d marked Degraded. Error originated on linkId %d!\n",
+            pGpu->gpuInstance, linkId);
 
-        if ((pKernelNvlink->peerLinkMasks[gpuInstance] & linkMask) == 0x0)
-            continue;
+    // Queue a workitem to handle rest of the degraded mode handling
 
-        // Sanity checks
-        if (pRemoteGpu == NULL)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                    "Failed to get Remote GPU info for linkId %d to update Degraded GPU%d status\n",
-                    linkId, pGpu->gpuInstance);
+    NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR,
+        osQueueWorkItemWithFlags(pGpu, knvlinkShutdownLinks_WORKITEM,
+                                    NULL,
+                                    (OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RO |
+                                    OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE)),
+        return;);
 
-            continue;
-        }
-
-        pRemoteKernelNvlink = GPU_GET_KERNEL_NVLINK(pRemoteGpu);
-        if (pRemoteKernelNvlink == NULL)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                    "Failed to get Remote Nvlink info for linkId %d to update Degraded GPU%d status\n",
-                    linkId, pGpu->gpuInstance);
-
-            continue;
-        }
-
-        //
-        // Only mark the current GPU if the peer GPU is not degraded.
-        // In the case where the peer GPU is already degraded then there is no additional
-        // loss of connectivity in the fabric due to the link error that caused this
-        // path to be triggered.
-        //
-        if (!pRemoteKernelNvlink->bIsGpuDegraded)
-        {
-            pKernelNvlink->bIsGpuDegraded = NV_TRUE;
-            bShutdownLinks = NV_TRUE;
-            NV_PRINTF(LEVEL_ERROR,
-                    "GPU%d marked Degraded. Error originated on linkId %d!\n",
-                    pGpu->gpuInstance, linkId);
-
-
-        }
-    }
-
-    if (bShutdownLinks)
-    {
-        // Queue a workitem to handle rest of the degraded mode handling
-
-        NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR,
-            osQueueWorkItemWithFlags(pGpu, knvlinkShutdownLinks_WORKITEM,
-                                     NULL,
-                                     (OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RO |
-                                      OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE)),
-            return;);
-    }
 }
 
 /*!

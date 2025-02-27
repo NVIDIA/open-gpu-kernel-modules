@@ -393,3 +393,53 @@ knvlinkValidateFabricEgmBaseAddress_GB100
 
     return NV_OK;
 }
+
+/*!
+ * @brief callback after FIFO is done initializing and we are ready to handle RC
+ */
+static NV_STATUS
+_knvlinkHandlePostSchedulingEnableCallback_GB100
+(
+    OBJGPU *pGpu,
+    void *pUnusedData
+)
+{
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    // Trigger supressed error replay in gsp-rm
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                            NV2080_CTRL_CMD_INTERNAL_NVLINK_REPLAY_SUPPRESSED_ERRORS,
+                            NULL,
+                            0));
+    return NV_OK;
+}
+
+/*!
+ * @brief Registers Callback to process supressed link errors on boot
+ */
+void
+knvlinkPostSchedulingEnableCallbackRegister_GB100
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    NV_ASSERT_OK(
+        kfifoAddSchedulingHandler(pGpu, GPU_GET_KERNEL_FIFO(pGpu),
+            _knvlinkHandlePostSchedulingEnableCallback_GB100, NULL, NULL, NULL));
+}
+
+/*!
+ * @brief Unregisters Callback to process supressed link errors on boot
+ */
+void
+knvlinkPostSchedulingEnableCallbackUnregister_GB100
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    kfifoRemoveSchedulingHandler(pGpu, GPU_GET_KERNEL_FIFO(pGpu),
+        _knvlinkHandlePostSchedulingEnableCallback_GB100, NULL, NULL, NULL);
+}

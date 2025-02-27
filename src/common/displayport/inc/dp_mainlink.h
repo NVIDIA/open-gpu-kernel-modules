@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -280,16 +280,14 @@ namespace DisplayPort
         virtual bool queryGPUCapability() {return false;}
         virtual bool queryAndUpdateDfpParams() = 0;
         virtual void updateFallbackMap(NvU32 maxLaneCount, LinkRate maxLinkRate, NvU32 sinkUhbrCaps = 0) { return; }
+        virtual bool isConnectorUSBTypeC() { return false; }
+        virtual void invalidateLinkRatesInFallbackTable(const LinkRate linkRate) { return; }
+
         virtual bool setFlushMode(FlushModePhase phase) { return false; }
         virtual bool clearFlushMode(FlushModePhase phase, NvU32 attachFailedHeadMask = 0, NvU32 headIndex = 0) { return false; }
-        virtual bool getDp2xLaneData(NvU32 *numLanes, NvU32 *data)
-        {
-            return false;
-        }
-        virtual bool setDp2xLaneData(NvU32 numLanes, NvU32 *data)
-        {
-            return false;
-        }
+        virtual bool getDp2xLaneData(NvU32 *numLanes, NvU32 *data) { return false; }
+        virtual bool setDp2xLaneData(NvU32 numLanes, NvU32 *data) { return false; }
+        virtual bool isSupportedDPLinkConfig(LinkConfiguration &link) {return false; };
         virtual bool getEdpPowerData(bool *panelPowerOn, bool *bDPCDPowerStateD0) = 0;
         virtual bool vrrRunEnablementStage(unsigned stage, NvU32 *status) = 0;
 

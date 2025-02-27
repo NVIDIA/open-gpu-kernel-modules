@@ -381,9 +381,6 @@ memdescCreate
     pMemDesc->bDeferredFree        = NV_FALSE;
     pMemDesc->numaNode             = NV0000_CTRL_NO_NUMA_NODE;
 
-    pMemDesc->libosRegionHandle    = 0;
-    pMemDesc->baseVirtualAddress   = 0;
-
     // parameter to determine page granularity
     pMemDesc->pageArrayGranularity = RM_PAGE_SIZE;
 

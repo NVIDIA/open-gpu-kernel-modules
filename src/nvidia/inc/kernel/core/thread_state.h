@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -157,6 +157,11 @@ typedef struct THREAD_STATE_DB
 #define TIMEOUT_WDDM_POWER_TRANSITION_INTERVAL_MS       9800
 
 //
+// Thread state timeout for DPC or ISR handling
+//
+#define TIMEOUT_DPC_ISR_INTERVAL_MS 500
+
+//
 // Thread State flags used for threadStateInitSetupFlags
 //
 #define THREAD_STATE_SETUP_FLAGS_NONE                               0
@@ -213,6 +218,7 @@ NV_STATUS   threadStateResetTimeout(OBJGPU *pGpu);
 void        threadStateLogTimeout(OBJGPU *pGpu, NvU64 funcAddr, NvU32 lineNum);
 void        threadStateYieldCpuIfNecessary(OBJGPU *pGpu, NvBool bQuiet);
 void        threadStateSetTimeoutOverride(THREAD_STATE_NODE *, NvU64);
+void        threadStateSetTimeoutSingleOverride(THREAD_STATE_NODE *, NvU64);
 
 NV_STATUS   threadStateEnqueueCallbackOnFree(THREAD_STATE_NODE *pThreadNode,
                                              THREAD_STATE_FREE_CALLBACK *pCallback);

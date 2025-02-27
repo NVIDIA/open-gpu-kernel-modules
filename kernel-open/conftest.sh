@@ -6307,6 +6307,32 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_NUM_REGISTERED_FB_PRESENT" "" "types"
         ;;
 
+        acpi_video_register_backlight)
+            #
+            # Determine if acpi_video_register_backlight() function is present
+            #
+            # acpi_video_register_backlight was added by commit 3dbc80a3e4c55c
+            # (ACPI: video: Make backlight class device registration a separate
+            # step (v2)) for v6.0 (2022-09-02).
+            # Note: the include directive for <linux/types> in this conftest is
+            # necessary in order to support kernels between commit 0b9f7d93ca61
+            # ("ACPI / i915: ignore firmware requests backlight change") for
+            # v3.16 (2014-07-07) and commit 3bd6bce369f5 ("ACPI / video: Port
+            # to new backlight interface selection API") for v4.2 (2015-07-16).
+            # Kernels within this range use the 'bool' type and the related
+            # 'false' value in <acpi/video.h> without first including the
+            # definitions of that type and value.
+            #
+            CODE="
+            #include <linux/types.h>
+            #include <acpi/video.h>
+            void conftest_acpi_video_register_backlight(void) {
+                acpi_video_register_backlight(0);
+            }"
+
+            compile_check_conftest "$CODE" "NV_ACPI_VIDEO_REGISTER_BACKLIGHT" "" "functions"
+        ;;
+
         acpi_video_backlight_use_native)
             #
             # Determine if acpi_video_backlight_use_native() function is present
@@ -6690,13 +6716,18 @@ compile_test() {
             #
             # Determine whether drm_client_setup is present.
             #
-            # Added by commit d07fdf922592 ("drm/fbdev-ttm:
-            # Convert to client-setup") in v6.13.
+            # Added by commit d07fdf922592 ("drm/fbdev-ttm: Convert to
+            # client-setup") in v6.13 in drm/drm_client_setup.h, but then moved
+            # to drm/clients/drm_client_setup.h by commit b86711c6d6e2
+            # ("drm/client: Move public client header to clients/ subdirectory")
+            # in linux-next b86711c6d6e2.
             #
             CODE="
             #include <drm/drm_fb_helper.h>
             #if defined(NV_DRM_DRM_CLIENT_SETUP_H_PRESENT)
             #include <drm/drm_client_setup.h>
+            #elif defined(NV_DRM_CLIENTS_DRM_CLIENT_SETUP_H_PRESENT)
+            #include <drm/clients/drm_client_setup.h>
             #endif
             void conftest_drm_client_setup(void) {
                 drm_client_setup();
@@ -7507,6 +7538,31 @@ compile_test() {
             MODULE_IMPORT_NS(DMA_BUF);"
 
             compile_check_conftest "$CODE" "NV_MODULE_IMPORT_NS_TAKES_CONSTANT" "" "generic"
+        ;;
+
+
+        drm_driver_has_date)
+            #
+            # Determine if the 'drm_driver' structure has a 'date' field.
+            #
+            # Removed by commit cb2e1c2136f7 ("drm: remove driver date from
+            # struct drm_driver and all drivers") in linux-next, expected in
+            # v6.14.
+            #
+            CODE="
+            #if defined(NV_DRM_DRMP_H_PRESENT)
+            #include <drm/drmP.h>
+            #endif
+
+            #if defined(NV_DRM_DRM_DRV_H_PRESENT)
+            #include <drm/drm_drv.h>
+            #endif
+
+            int conftest_drm_driver_has_date(void) {
+                return offsetof(struct drm_driver, date);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_DRIVER_HAS_DATE" "" "types"
         ;;
 
         # When adding a new conftest entry, please use the correct format for

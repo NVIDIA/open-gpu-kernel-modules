@@ -50,7 +50,8 @@ void nvEvo1SendHdmiInfoFrame(const NVDispEvoRec *pDispEvo,
                              const NvU32 head,
                              const NvEvoInfoFrameTransmitControl transmitCtrl,
                              const NVT_INFOFRAME_HEADER *pInfoFrameHeader,
-                             const NvU32 infoframeSize);
+                             const NvU32 infoframeSize,
+                             NvBool needChecksum);
 
 void nvEvo1DisableHdmiInfoFrame(const NVDispEvoRec *pDispEvo,
                                 const NvU32 head,

@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -42,6 +42,7 @@ extern "C" {
 #ifndef KERNEL_RC_H
 #define KERNEL_RC_H 1
 
+#include "kernel/diagnostics/xid_context.h"
 #include "kernel/gpu/eng_desc.h"
 #include "kernel/gpu/eng_state.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
@@ -72,6 +73,7 @@ typedef enum {
     RC_NOTIFIER_SCOPE_CHANNEL = 0,
     RC_NOTIFIER_SCOPE_TSG,
 } RC_NOTIFIER_SCOPE;
+
 
 /*!
  * Kernel interface for RC (Robust Channels) and Watchdog
@@ -474,14 +476,14 @@ static inline NV_STATUS krcReadVirtMem(struct OBJGPU *pGpu, struct KernelRc *pKe
 #define krcReadVirtMem(pGpu, pKernelRc, pKernelChannel, virtAddr, bufPtr, bufSize) krcReadVirtMem_IMPL(pGpu, pKernelRc, pKernelChannel, virtAddr, bufPtr, bufSize)
 #endif //__nvoc_kernel_rc_h_disabled
 
-void krcReportXid_IMPL(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, NvU32 exceptType, const char *pMsg);
+void krcReportXid_IMPL(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, XidContext context, const char *pMsg);
 
 #ifdef __nvoc_kernel_rc_h_disabled
-static inline void krcReportXid(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, NvU32 exceptType, const char *pMsg) {
+static inline void krcReportXid(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, XidContext context, const char *pMsg) {
     NV_ASSERT_FAILED_PRECOMP("KernelRc was disabled!");
 }
 #else //__nvoc_kernel_rc_h_disabled
-#define krcReportXid(pGpu, pKernelRc, exceptType, pMsg) krcReportXid_IMPL(pGpu, pKernelRc, exceptType, pMsg)
+#define krcReportXid(pGpu, pKernelRc, context, pMsg) krcReportXid_IMPL(pGpu, pKernelRc, context, pMsg)
 #endif //__nvoc_kernel_rc_h_disabled
 
 NvBool krcTestAllowAlloc_IMPL(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, NvU32 failMask);

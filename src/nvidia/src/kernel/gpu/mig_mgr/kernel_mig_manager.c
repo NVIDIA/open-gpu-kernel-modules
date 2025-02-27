@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -7815,12 +7815,21 @@ subdeviceCtrlCmdGpuGetPartitions_IMPL
             kmigmgrCountEnginesOfType(&pResourceAllocation->engines, RM_ENGINE_TYPE_GR(0));
         pParams->queryPartitionInfo[i].smCount = ref.pKernelMIGGpuInstance->pProfile->smCount;
         pParams->queryPartitionInfo[i].veidCount = pResourceAllocation->veidCount;
-        //
-        // ceCount here will reflect the Async CEs
-        // GRCE count will be always equal to GFX GR Count in SMG instances.
-        //
-        pParams->queryPartitionInfo[i].ceCount = kmigmgrCountEnginesInRange(&pResourceAllocation->engines,
-                                                    kmigmgrGetAsyncCERange_HAL(pGpu, pKernelMIGManager));
+
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_SUPPORTS_SPLIT_CE_RANGES))
+        {
+            //
+            // ceCount here will reflect the Async CEs
+            // GRCE count will be always equal to GFX GR Count in SMG instances.
+            //
+            pParams->queryPartitionInfo[i].ceCount = kmigmgrCountEnginesInRange(&pResourceAllocation->engines,
+                                                        kmigmgrGetAsyncCERange_HAL(pGpu, pKernelMIGManager));
+        }
+        else
+        {
+            pParams->queryPartitionInfo[i].ceCount =
+                kmigmgrCountEnginesOfType(&pResourceAllocation->engines, RM_ENGINE_TYPE_COPY(0));
+        }
 
         pParams->queryPartitionInfo[i].gpcCount = pResourceAllocation->gpcCount;
         pParams->queryPartitionInfo[i].gfxGpcCount = pResourceAllocation->gfxGpcCount;

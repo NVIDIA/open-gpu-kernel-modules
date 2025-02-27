@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -107,6 +107,8 @@ namespace DisplayPort
         bool    bSupportUHBR2_70;               // Support UHBR2.7 for internal testing.
         bool    bSupportUHBR5_00;               // Support UHBR5.0 for internal testing.
 
+        bool    bConnectorIsUSBTypeC;
+
         // Start time of DP2.x LT Channel Eqaulization phase.
         NvU64   channelEqualizationStartTimeUs;
 
@@ -124,7 +126,7 @@ namespace DisplayPort
         // and with correct channel encoding.
         // Return false if not.
         //
-        bool  isSupportedDPLinkConfig(LinkConfiguration &link);
+        virtual bool  isSupportedDPLinkConfig(LinkConfiguration &link);
 
         // Before link training start, reset DPRX link and make sure it's ready.
         bool  resetDPRXLink(DP2XResetParam param);
@@ -144,7 +146,8 @@ namespace DisplayPort
         virtual bool clearFlushMode(FlushModePhase phase, NvU32 attachFailedHeadMask = 0, NvU32 headIndex = 0);
         virtual bool isRgFlushSequenceUsed() {return bUseRgFlushSequence;}
         void applyDP2xRegkeyOverrides();
-        virtual NvU32 headToStream(NvU32 head, bool bSidebandMessageSupported, DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID streamIdentifier = DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID_PRIMARY);
+        virtual NvU32 headToStream(NvU32 head, bool bSidebandMessageSupported,
+                                   DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID streamIdentifier = DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID_PRIMARY);
 
         // Link Rate will return the value with 10M convention!
         virtual void getLinkConfig(unsigned &laneCount, NvU64 & linkRate);
@@ -170,6 +173,12 @@ namespace DisplayPort
         virtual bool getDp2xLaneData(NvU32 *numLanes, NvU32 *data);
         virtual bool setDp2xLaneData(NvU32 numLanes, NvU32 *data);
         virtual bool physicalLayerSetDP2xTestPattern(DP2xPatternInfo *patternInfo);
+
+        virtual bool isConnectorUSBTypeC()
+        {
+            return bConnectorIsUSBTypeC;
+        }
+        virtual void invalidateLinkRatesInFallbackTable(const LinkRate linkRate);
     };
 
 }

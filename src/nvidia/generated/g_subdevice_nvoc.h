@@ -148,7 +148,7 @@ struct Subdevice {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct Subdevice *__nvoc_pbase_Subdevice;    // subdevice
 
-    // Vtable with 614 per-object function pointers
+    // Vtable with 615 per-object function pointers
     NV_STATUS (*__subdeviceCtrlCmdBiosGetInfoV2__)(struct Subdevice * /*this*/, NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS *);  // halified (2 hals) exported (id=0x20800810) body
     NV_STATUS (*__subdeviceCtrlCmdBiosGetNbsiV2__)(struct Subdevice * /*this*/, NV2080_CTRL_BIOS_GET_NBSI_V2_PARAMS *);  // exported (id=0x2080080e)
     NV_STATUS (*__subdeviceCtrlCmdBiosGetSKUInfo__)(struct Subdevice * /*this*/, NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS *);  // halified (2 hals) exported (id=0x20800808)
@@ -673,6 +673,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdInternalNvlinkGetAliEnabled__)(struct Subdevice * /*this*/, NV2080_CTRL_INTERNAL_NVLINK_GET_ALI_ENABLED_PARAMS *);  // exported (id=0x20800a29)
     NV_STATUS (*__subdeviceCtrlCmdInternalNvlinkSaveRestoreHshubState__)(struct Subdevice * /*this*/, NV2080_CTRL_INTERNAL_NVLINK_SAVE_RESTORE_HSHUB_STATE_PARAMS *);  // exported (id=0x20800a62)
     NV_STATUS (*__subdeviceCtrlCmdInternalNvlinkProgramBufferready__)(struct Subdevice * /*this*/, NV2080_CTRL_INTERNAL_NVLINK_PROGRAM_BUFFERREADY_PARAMS *);  // exported (id=0x20800a64)
+    NV_STATUS (*__subdeviceCtrlCmdInternalNvlinkReplaySuppressedErrors__)(struct Subdevice * /*this*/);  // exported (id=0x20800b01)
     NV_STATUS (*__subdeviceCtrlCmdInternalNvlinkUpdateCurrentConfig__)(struct Subdevice * /*this*/, NV2080_CTRL_INTERNAL_NVLINK_UPDATE_CURRENT_CONFIG_PARAMS *);  // exported (id=0x20800a78)
     NV_STATUS (*__subdeviceCtrlCmdInternalNvlinkUpdatePeerLinkMask__)(struct Subdevice * /*this*/, NV2080_CTRL_INTERNAL_NVLINK_UPDATE_PEER_LINK_MASK_PARAMS *);  // exported (id=0x20800a7d)
     NV_STATUS (*__subdeviceCtrlCmdInternalNvlinkUpdateLinkConnection__)(struct Subdevice * /*this*/, NV2080_CTRL_INTERNAL_NVLINK_UPDATE_LINK_CONNECTION_PARAMS *);  // exported (id=0x20800a82)
@@ -1968,6 +1969,8 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdInternalNvlinkSaveRestoreHshubState(pSubdevice, pParams) subdeviceCtrlCmdInternalNvlinkSaveRestoreHshubState_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalNvlinkProgramBufferready_FNPTR(pSubdevice) pSubdevice->__subdeviceCtrlCmdInternalNvlinkProgramBufferready__
 #define subdeviceCtrlCmdInternalNvlinkProgramBufferready(pSubdevice, pParams) subdeviceCtrlCmdInternalNvlinkProgramBufferready_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdInternalNvlinkReplaySuppressedErrors_FNPTR(pSubdevice) pSubdevice->__subdeviceCtrlCmdInternalNvlinkReplaySuppressedErrors__
+#define subdeviceCtrlCmdInternalNvlinkReplaySuppressedErrors(pSubdevice) subdeviceCtrlCmdInternalNvlinkReplaySuppressedErrors_DISPATCH(pSubdevice)
 #define subdeviceCtrlCmdInternalNvlinkUpdateCurrentConfig_FNPTR(pSubdevice) pSubdevice->__subdeviceCtrlCmdInternalNvlinkUpdateCurrentConfig__
 #define subdeviceCtrlCmdInternalNvlinkUpdateCurrentConfig(pSubdevice, pParams) subdeviceCtrlCmdInternalNvlinkUpdateCurrentConfig_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalNvlinkUpdatePeerLinkMask_FNPTR(pSubdevice) pSubdevice->__subdeviceCtrlCmdInternalNvlinkUpdatePeerLinkMask__
@@ -4313,6 +4316,10 @@ static inline NV_STATUS subdeviceCtrlCmdInternalNvlinkProgramBufferready_DISPATC
     return pSubdevice->__subdeviceCtrlCmdInternalNvlinkProgramBufferready__(pSubdevice, pParams);
 }
 
+static inline NV_STATUS subdeviceCtrlCmdInternalNvlinkReplaySuppressedErrors_DISPATCH(struct Subdevice *pSubdevice) {
+    return pSubdevice->__subdeviceCtrlCmdInternalNvlinkReplaySuppressedErrors__(pSubdevice);
+}
+
 static inline NV_STATUS subdeviceCtrlCmdInternalNvlinkUpdateCurrentConfig_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_UPDATE_CURRENT_CONFIG_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdInternalNvlinkUpdateCurrentConfig__(pSubdevice, pParams);
 }
@@ -6046,6 +6053,8 @@ NV_STATUS subdeviceCtrlCmdInternalNvlinkGetAliEnabled_IMPL(struct Subdevice *pSu
 NV_STATUS subdeviceCtrlCmdInternalNvlinkSaveRestoreHshubState_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_SAVE_RESTORE_HSHUB_STATE_PARAMS *pParams);
 
 NV_STATUS subdeviceCtrlCmdInternalNvlinkProgramBufferready_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_PROGRAM_BUFFERREADY_PARAMS *pParams);
+
+NV_STATUS subdeviceCtrlCmdInternalNvlinkReplaySuppressedErrors_IMPL(struct Subdevice *pSubdevice);
 
 NV_STATUS subdeviceCtrlCmdInternalNvlinkUpdateCurrentConfig_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_UPDATE_CURRENT_CONFIG_PARAMS *pParams);
 

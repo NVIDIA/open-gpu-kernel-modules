@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES.
  * All rights reserved.
  * SPDX-License-Identifier: MIT
  *
@@ -180,7 +180,8 @@ bool EvoMainLink2x::queryAndUpdateDfpParams()
     if (!EvoMainLink::queryAndUpdateDfpParams())
         return false;
 
-    dfpUhbrCaps = dfpParams.UHBRSupportedByDfp;
+    dfpUhbrCaps             = dfpParams.UHBRSupportedByDfp;
+    bConnectorIsUSBTypeC    = FLD_TEST_DRF(0073, _CTRL_DFP_FLAGS, _TYPE_C_TO_DP_CONNECTOR, _TRUE, dfpParams.flags);
 
     return true;
 }
@@ -197,7 +198,7 @@ bool EvoMainLink2x::queryAndUpdateDfpParams()
  * into this function.
  *
  * Output: EvoMainLink2x::fallbackMandateTable is updated for each entry to indicate
- *         is a specific link configuration is supported.
+ *         if a specific link configuration is supported.
  *
  */
 void EvoMainLink2x::updateFallbackMap
@@ -256,6 +257,32 @@ void EvoMainLink2x::updateFallbackMap
         else if (fallbackMandateTable[idx].linkRate > maxLinkRate)
         {
             fallbackMandateTable[idx].bSupported = NV_FALSE;
+        }
+    }
+}
+
+/*!
+ * @brief Invalidate all entries with specific link rate in fallbackMandateTable based on request.
+ *
+ * @param[in]      linkRate     The link rate to be removed.
+ *
+ * Caller of this function has to complete the capabilities probing before calling
+ * into this function.
+ *
+ * Output: EvoMainLink2x::fallbackMandateTable is updated for each entry to indicate
+ *         if a specific link configuration is supported.
+ */
+void EvoMainLink2x::invalidateLinkRatesInFallbackTable(const LinkRate linkRate)
+{
+    NvU32 idx;
+
+    for (idx = 0U; idx < NV_DP2X_VALID_LINK_CONFIGURATION_COUNT; idx++)
+    {
+        if (fallbackMandateTable[idx].linkRate == linkRate)
+        {
+            fallbackMandateTable[idx].bSupported = NV_FALSE;
+            if (fallbackMandateTable[idx].laneCount == 1)
+                return;
         }
     }
 }
@@ -412,11 +439,13 @@ bool EvoMainLink2x::train(const LinkConfiguration & link, bool force,
 
     LinkConfiguration requestRmLC = link;
 
+    //
     // Check if LinkConfiguration passed in is supported by the system
-    if (!isSupportedDPLinkConfig(requestRmLC))
+    // Skip the capability check if client forces the link training.
+    //
+    if (!force && !isSupportedDPLinkConfig(requestRmLC))
     {
-        DP_PRINTF(DP_ERROR, "DP2xEVO> EvoMainLink2x::train(): client requested link "
-                  "is not a supported link configuration!");
+        DP_PRINTF(DP_ERROR, "DP2xEVO> client requested link is not a supported link configuration!");
         return false;
     }
 
@@ -444,7 +473,7 @@ bool EvoMainLink2x::train(const LinkConfiguration & link, bool force,
         {
             if (!resetDPRXLink(resetParam))
             {
-                DP_PRINTF(DP_ERROR, "DP2xEVO> EvoMainLink2x::train(): Reset DP link before LT failed.");
+                DP_PRINTF(DP_ERROR, "DP2xEVO> Reset DP link before LT failed.");
                 return false;
             }
         }
@@ -479,7 +508,7 @@ bool EvoMainLink2x::train(const LinkConfiguration & link, bool force,
 
             if (FLD_TEST_DRF(0073_CTRL, _DP2X_ERR, _LINK_STATUS, _DISCONNECTED, ltRmParams.err))
             {
-                DP_PRINTF(DP_ERROR, "DP2xEVO> EvoMainLink2x::train(): Link Disconnected - stop LT / Fallback.");
+                DP_PRINTF(DP_ERROR, "DP2xEVO> Link Disconnected - stop LT / Fallback.");
                 // Do not fallback if link is disconnected.
                 bFallback = false;
             }
@@ -490,13 +519,23 @@ bool EvoMainLink2x::train(const LinkConfiguration & link, bool force,
             }
             else
             {
+                if (this->isConnectorUSBTypeC() &&
+                    requestRmLC.bIs128b132bChannelCoding &&
+                    requestRmLC.peakRate > dp2LinkRate_10_0Gbps)
+                {
+                    //
+                    // Invalidate the link rate from fallback table if the connector type is USB-C to DP.
+                    // Source will not retry the same link rate if fallback LT fails again.
+                    //
+                    invalidateLinkRatesInFallbackTable(requestRmLC.peakRate);
+                }
                 //
                 // Get next available link configuration based on DP2.1 spec, Table 3-31
                 // Break here if next link configuration is not available.
                 //
                 if (!this->getFallbackForDP2xLinkTraining(&requestRmLC))
                 {
-                    // No link configuration available for fallback.
+                    DP_PRINTF(DP_ERROR, "DP2xEVO> No link configuration available for fallback");
                     bFallback = false;
                 }
 
@@ -509,12 +548,12 @@ bool EvoMainLink2x::train(const LinkConfiguration & link, bool force,
                 bChannelCodingChanged = (requestRmLC.bIs128b132bChannelCoding != bCur128b132bChannelCoding);
                 if (bChannelCodingChanged)
                 {
-                    DP_PRINTF(DP_NOTICE, "DP2xEVO> EvoMainLink2x::train(): Fallback - Reset DP link before LT.");
+                    DP_PRINTF(DP_NOTICE, "DP2xEVO> Fallback - Reset DP link before LT.");
                     // Reset link due to changing the channel coding during LT
                     resetParam.reason = DP2X_ResetLinkForFallback;
                     if (!resetDPRXLink(resetParam))
                     {
-                        DP_PRINTF(DP_ERROR, "DP2xEVO> EvoMainLink2x::train(): Reset DP link for fallback failed.");
+                        DP_PRINTF(DP_ERROR, "DP2xEVO> Reset DP link for fallback failed.");
                         return false;
                     }
                 }
@@ -907,11 +946,6 @@ bool EvoMainLink2x::getFallbackForDP2xLinkTraining(LinkConfiguration *link)
 
     for (linkIdx = 0; linkIdx < NV_DP2X_VALID_LINK_CONFIGURATION_COUNT; linkIdx++)
     {
-        if (!(fallbackMandateTable[linkIdx].bSupported))
-        {
-            continue;
-        }
-
         if ((link->lanes                     == fallbackMandateTable[linkIdx].laneCount) &&
             (link->peakRate                  == fallbackMandateTable[linkIdx].linkRate)  &&
             (link->bIs128b132bChannelCoding  == (bool)fallbackMandateTable[linkIdx].bUseDP2xChannelCoding))

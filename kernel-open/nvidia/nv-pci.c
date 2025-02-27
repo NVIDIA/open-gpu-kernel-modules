@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -308,6 +308,15 @@ static NvU32 find_gpu_numa_nodes_in_srat(nv_linux_state_t *nvl)
     struct acpi_srat_generic_affinity *gi;
     NvU32 numa_node = NUMA_NO_NODE;
 
+    if (NV_PCI_DEVFN(nvl->pci_dev) != 0)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: Failing to parse SRAT GI for %04x:%02x:%02x.%x "
+                  "since non-zero device function is not supported.\n",
+                  NV_PCI_DOMAIN_NUMBER(nvl->pci_dev), NV_PCI_BUS_NUMBER(nvl->pci_dev),
+                  NV_PCI_SLOT_NUMBER(nvl->pci_dev), PCI_FUNC(nvl->pci_dev->devfn));
+        return 0;
+    }
+
     if (acpi_get_table(ACPI_SIG_SRAT, 0, &table_header)) {
         nv_printf(NV_DBG_INFO, "NVRM: Failed to parse the SRAT table.\n");
         return 0;
@@ -331,9 +340,14 @@ static NvU32 find_gpu_numa_nodes_in_srat(nv_linux_state_t *nvl)
            (((unsigned long)subtable_header) + subtable_header_length < table_end)) {
 
         if (subtable_header->type == ACPI_SRAT_TYPE_GENERIC_AFFINITY) {
+            NvU8 busAtByte2, busAtByte3;
             gi = (struct acpi_srat_generic_affinity *) subtable_header;
+            busAtByte2 = gi->device_handle[2];
+            busAtByte3 = gi->device_handle[3];
+
+            // Device and function should be zero enforced by above check
             gi_dbdf = *((NvU16 *)(&gi->device_handle[0])) << 16 |
-                      *((NvU16 *)(&gi->device_handle[2]));
+                (busAtByte2 != 0 ? busAtByte2 : busAtByte3) << 8;
             
             if (gi_dbdf == dev_dbdf) {
                 numa_node = pxm_to_node(gi->proximity_domain);
@@ -346,6 +360,31 @@ static NvU32 find_gpu_numa_nodes_in_srat(nv_linux_state_t *nvl)
                     nv_printf(NV_DBG_INFO, "NVRM: Invalid node-id found.\n");
                     pxm_count = 0;
                     goto exit;
+                }
+                nv_printf(NV_DBG_INFO,
+                          "NVRM: matching SRAT GI entry: 0x%x 0x%x 0x%x 0x%x  PXM: %d\n",
+                          gi->device_handle[3],
+                          gi->device_handle[2],
+                          gi->device_handle[1],
+                          gi->device_handle[0],
+                          gi->proximity_domain);
+                if ((busAtByte2) == 0 &&
+                    (busAtByte3) != 0)
+                {
+                    /*
+                     * TODO: Remove this WAR once Hypervisor stack is updated
+                     * to fix this bug and after all CSPs have moved to using
+                     * the updated Hypervisor stack with fix.
+                     */
+                    nv_printf(NV_DBG_WARNINGS,
+                              "NVRM: PCIe bus value picked from byte 3 offset in SRAT GI entry: 0x%x 0x%x 0x%x 0x%x  PXM: %d\n"
+                              "NVRM: Hypervisor stack is old and not following ACPI spec defined offset.\n"
+                              "NVRM: Please consider upgrading the Hypervisor stack as this workaround will be removed in future release.\n",
+                              gi->device_handle[3],
+                              gi->device_handle[2],
+                              gi->device_handle[1],
+                              gi->device_handle[0],
+                              gi->proximity_domain);
                 }
             }
         }
@@ -792,7 +831,10 @@ next_bar:
     NV_ATOMIC_SET(nvl->numa_info.status, NV_IOCTL_NUMA_STATUS_DISABLED);
     nvl->numa_info.node_id = NUMA_NO_NODE;
 
-    nv_init_coherent_link_info(nv);
+    if (pci_devid_is_self_hosted(pci_dev->device))
+    {
+        nv_init_coherent_link_info(nv);
+    }
 
 #if defined(NVCPU_PPC64LE)
     // Use HW NUMA support as a proxy for ATS support. This is true in the only

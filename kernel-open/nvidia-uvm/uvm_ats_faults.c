@@ -29,6 +29,7 @@
 #include <linux/nodemask.h>
 #include <linux/mempolicy.h>
 #include <linux/mmu_notifier.h>
+#include <linux/topology.h>
 
 #if UVM_HMM_RANGE_FAULT_SUPPORTED()
 #include <linux/hmm.h>
@@ -291,6 +292,27 @@ static const struct mmu_interval_notifier_ops uvm_ats_notifier_ops =
 
 #endif
 
+static bool resident_policy_match(struct vm_area_struct *vma, int dst_nid, int src_nid)
+{
+#if defined(NV_MEMPOLICY_HAS_UNIFIED_NODES)
+    struct mempolicy *vma_policy = vma_policy(vma);
+
+    // TODO: Bug 4981209: When migrations between CPU numa nodes are supported,
+    // add (dst_nid != closest_cpu_numa_node) to allow migrations between CPU
+    // NUMA nodes when destination is the closest_cpu_numa_node.
+    if (vma_policy &&
+        node_isset(src_nid, vma_policy->nodes) &&
+        node_isset(dst_nid, vma_policy->nodes) &&
+        !cpumask_empty(cpumask_of_node(src_nid)) &&
+        !cpumask_empty(cpumask_of_node(dst_nid))) {
+
+        return true;
+    }
+#endif
+
+    return false;
+}
+
 static NV_STATUS ats_compute_residency_mask(uvm_gpu_va_space_t *gpu_va_space,
                                             struct vm_area_struct *vma,
                                             NvU64 base,
@@ -370,9 +392,23 @@ static NV_STATUS ats_compute_residency_mask(uvm_gpu_va_space_t *gpu_va_space,
 
             if (pfn & HMM_PFN_VALID) {
                 struct page *page = hmm_pfn_to_page(pfn);
+                int resident_node = page_to_nid(page);
 
-                if (page_to_nid(page) == ats_context->residency_node)
+                // Set the residency_mask if:
+                // - The page is already resident at the intended destination.
+                //   or
+                // - If both the source and destination nodes are CPU nodes and
+                //   source node is already in the list of preferred nodes for
+                //   the vma. On multi-CPU NUMA node architectures, this avoids
+                //   unnecessary migrations between CPU nodes. Since the
+                //   specific ats_context->residency_node selected by
+                //   ats_batch_select_residency() is just a guess among the list
+                //   of preferred nodes, paying the cost of migration across the
+                //   CPU preferred nodes in this case can't be justified.
+                if ((resident_node == ats_context->residency_node) ||
+                    resident_policy_match(vma, ats_context->residency_node, resident_node)) {
                     uvm_page_mask_set(residency_mask, page_index);
+                }
 
                 ats_context->prefetch_state.first_touch = false;
             }

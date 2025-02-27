@@ -79,9 +79,10 @@ namespace DisplayPort
         {
             struct _Enum_Path
             {
-                unsigned availableStreams, total, free;
+                unsigned availableStreams, total, free, dfpLinkAvailable;
                 bool     bPathFECCapable;
                 bool     dataValid;                     // Is the cache valid?
+                bool     availablePbnUpdated;
             } enum_path;
 
             struct Compound_Query_State
@@ -110,6 +111,7 @@ namespace DisplayPort
 
         void                resetCacheInferredLink();
         LinkConfiguration * inferLeafLink(unsigned * totalLinkSlots);
+        void                inferPathConstraints();
 
 
         DeviceImpl      * parent;               // Upstream parent device
@@ -503,8 +505,8 @@ namespace DisplayPort
         unsigned getDscMaxSliceWidth();
         unsigned getDscDecoderColorDepthSupportMask();
         void setDscDecompressionDevice(bool bDscCapBasedOnParent);
-        virtual bool getDeviceSpecificData(NvU8 *oui, NvU8 *deviceIdString, 
-                                           NvU8 *hwRevision, NvU8 *swMajorRevision, 
+        virtual bool getDeviceSpecificData(NvU8 *oui, NvU8 *deviceIdString,
+                                           NvU8 *hwRevision, NvU8 *swMajorRevision,
                                            NvU8 *swMinorRevision);
 
         virtual bool setModeList(DisplayPort::DpModesetParams *pModeList, unsigned numModes);

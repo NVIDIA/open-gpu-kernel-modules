@@ -130,26 +130,11 @@ static NV_STATUS block_migrate_map_unmapped_pages(uvm_va_block_t *va_block,
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
     NV_STATUS status = NV_OK;
     NV_STATUS tracker_status;
+    uvm_prot_t prot = UVM_PROT_READ_WRITE_ATOMIC;
 
     // Get the mask of unmapped pages because it will change after the
     // first map operation
     uvm_va_block_unmapped_pages_get(va_block, region, &va_block_context->caller_page_mask);
-
-    if (uvm_va_block_is_hmm(va_block) && !UVM_ID_IS_CPU(dest_id)) {
-        // Do not map pages that are already resident on the CPU. This is in
-        // order to avoid breaking system-wide atomic operations on HMM. HMM's
-        // implementation of system-side atomic operations involves restricting
-        // mappings to one processor (CPU or a GPU) at a time. If we were to
-        // grant a GPU a mapping to system memory, this gets into trouble
-        // because, on the CPU side, Linux can silently upgrade PTE permissions
-        // (move from read-only, to read-write, without any MMU notifiers
-        // firing), thus breaking the model by allowing simultaneous read-write
-        // access from two separate processors. To avoid that, just don't map
-        // such pages at all, when migrating.
-        uvm_page_mask_andnot(&va_block_context->caller_page_mask,
-                             &va_block_context->caller_page_mask,
-                             uvm_va_block_resident_mask_get(va_block, UVM_ID_CPU, NUMA_NO_NODE));
-    }
 
     // Only map those pages that are not mapped anywhere else (likely due
     // to a first touch or a migration). We pass
@@ -166,6 +151,31 @@ static NV_STATUS block_migrate_map_unmapped_pages(uvm_va_block_t *va_block,
     if (status != NV_OK)
         goto out;
 
+    if (uvm_va_block_is_hmm(va_block) && UVM_ID_IS_CPU(dest_id)) {
+        uvm_processor_id_t id;
+
+        // Do not atomically map pages that are resident on the CPU. This is in
+        // order to avoid breaking system-wide atomic operations on HMM. HMM's
+        // implementation of system-side atomic operations involves restricting
+        // mappings to one processor (CPU or a GPU) at a time. If we were to
+        // grant a GPU a mapping to system memory, this gets into trouble
+        // because, on the CPU side, Linux can silently upgrade PTE permissions
+        // (move from read-only, to read-write, without any MMU notifiers
+        // firing), thus breaking the model by allowing simultaneous read-write
+        // access from two separate processors. To avoid that, don't remote map
+        // such pages atomically, after migrating.
+        // Also note that HMM sets CPU mapping for resident pages so the mask
+        // of pages to be mapped needs to be recomputed without including the
+        // CPU mapping.
+        prot = UVM_PROT_READ_WRITE;
+        uvm_page_mask_region_fill(&va_block_context->caller_page_mask, region);
+        for_each_gpu_id_in_mask(id, &va_block->mapped) {
+            uvm_page_mask_andnot(&va_block_context->caller_page_mask,
+                                 &va_block_context->caller_page_mask,
+                                 uvm_va_block_map_mask_get(va_block, id));
+        }
+    }
+
     // Add mappings for AccessedBy processors
     //
     // No mappings within this call will operate on dest_id, so we don't
@@ -176,7 +186,7 @@ static NV_STATUS block_migrate_map_unmapped_pages(uvm_va_block_t *va_block,
                                                        dest_id,
                                                        region,
                                                        &va_block_context->caller_page_mask,
-                                                       UVM_PROT_READ_WRITE_ATOMIC,
+                                                       prot,
                                                        NULL);
 
 out:

@@ -230,7 +230,10 @@ enum {
     X(RM, CTRL_RELEASE_HES,                                       220)
     X(RM, CTRL_RESERVE_CCU_PROF,                                  221)
     X(RM, CTRL_RELEASE_CCU_PROF,                                  222)
-    X(RM, NUM_FUNCTIONS,                                          223)
+    X(RM, RESERVED,                                               223)
+    X(RM, CTRL_CMD_GET_CHIPLET_HS_CREDIT_POOL,                    224)
+    X(RM, CTRL_CMD_GET_HS_CREDITS_MAPPING,                        225)
+    X(RM, NUM_FUNCTIONS,                                          226)
 #ifdef DEFINING_X_IN_RPC_GLOBAL_ENUMS_H
 };
 #   undef X

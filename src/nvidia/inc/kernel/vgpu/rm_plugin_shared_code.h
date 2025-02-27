@@ -1503,6 +1503,36 @@ return_t deserialize_NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS_v1A_14(NVB0CC_
 }
 
 static
+return_t deserialize_NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS_v29_0B(NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS *pParams,
+                                                                         NvU8 *buffer,
+                                                                         NvU32 bufferSize,
+                                                                         NvU32 *offset)
+{
+    NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS_v29_0B *src = (void*)(buffer);
+    NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS        *dest = pParams;
+
+    if (src && dest)
+    {
+#ifdef COPY_INPUT_PARAMETERS
+        dest->bytesConsumed         = src->bytesConsumed;
+        dest->bUpdateAvailableBytes = src->bUpdateAvailableBytes;
+        dest->bWait                 = src->bWait;
+        dest->bReturnPut            = src->bReturnPut;
+        dest->pmaChannelIdx         = src->pmaChannelIdx;
+#endif
+#ifdef COPY_OUTPUT_PARAMETERS
+        dest->bytesAvailable        = src->bytesAvailable;
+        dest->putPtr                = src->putPtr;
+        dest->bOverflowStatus       = src->bOverflowStatus;
+#endif
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
+static
 return_t deserialize_NV2080_CTRL_GPU_MIGRATABLE_OPS_PARAMS_v21_07(NV2080_CTRL_GPU_MIGRATABLE_OPS_PARAMS *pParams,
                                                                   NvU8 *buffer,
                                                                   NvU32 bufferSize,
@@ -2868,6 +2898,64 @@ return_t deserialize_NVB0CC_CTRL_SET_HS_CREDITS_PARAMS_v21_08(NVB0CC_CTRL_SET_HS
              dest->creditInfo[i].chipletIndex = src->creditInfo[i].chipletIndex;
              dest->creditInfo[i].numCredits   = src->creditInfo[i].numCredits;
         }
+#endif
+    }
+    else
+        return FAILURE_T;
+    return SUCCESS_T;
+}
+
+return_t deserialize_NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07(NVB0CC_CTRL_RESERVE_HES_PARAMS *pParams,
+                                                           NvU8 *buffer,
+                                                           NvU32 bufferSize,
+                                                           NvU32 *offset)
+{
+    NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07 *src  = (void*)(buffer);
+    NVB0CC_CTRL_RESERVE_HES_PARAMS        *dest = pParams;
+
+    if (src && dest)
+    {
+#ifdef COPY_INPUT_PARAMETERS
+        dest->type                      = src->type;
+        dest->reserveParams.cwd.ctxsw   = src->reserveParams.cwd.ctxsw;
+#endif
+    }
+    else
+        return FAILURE_T;
+    return SUCCESS_T;
+}
+
+return_t deserialize_NVB0CC_CTRL_RELEASE_HES_PARAMS_v29_07(NVB0CC_CTRL_RELEASE_HES_PARAMS *pParams,
+                                                           NvU8 *buffer,
+                                                           NvU32 bufferSize,
+                                                           NvU32 *offset)
+{
+    NVB0CC_CTRL_RELEASE_HES_PARAMS_v29_07 *src  = (void*)(buffer);
+    NVB0CC_CTRL_RELEASE_HES_PARAMS        *dest = pParams;
+
+    if (src && dest)
+    {
+#ifdef COPY_INPUT_PARAMETERS
+        dest->type = src->type;
+#endif
+    }
+    else
+        return FAILURE_T;
+    return SUCCESS_T;
+}
+
+return_t deserialize_NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS_v29_07(NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS *pParams,
+                                                               NvU8 *buffer,
+                                                               NvU32 bufferSize,
+                                                               NvU32 *offset)
+{
+    NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS_v29_07 *src  = (void*)(buffer);
+    NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS        *dest = pParams;
+
+    if (src && dest)
+    {
+#ifdef COPY_INPUT_PARAMETERS
+        dest->ctxsw = src->ctxsw;
 #endif
     }
     else
@@ -4342,6 +4430,36 @@ return_t serialize_NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS_v1A_14(NVB0CC_CT
 }
 
 static
+return_t serialize_NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS_v29_0B(NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS *pParams,
+                                                                       NvU8 *buffer,
+                                                                       NvU32 bufferSize,
+                                                                       NvU32 *offset)
+{
+    NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS_v29_0B *dest = (void*)(buffer);
+    NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS        *src  = pParams;
+
+    if (src && dest)
+    {
+#ifdef COPY_INPUT_PARAMETERS
+        dest->bytesConsumed         = src->bytesConsumed;
+        dest->bUpdateAvailableBytes = src->bUpdateAvailableBytes;
+        dest->bWait                 = src->bWait;
+        dest->bReturnPut            = src->bReturnPut;
+        dest->pmaChannelIdx         = src->pmaChannelIdx;
+#endif
+#ifdef COPY_OUTPUT_PARAMETERS
+        dest->bytesAvailable        = src->bytesAvailable;
+        dest->putPtr                = src->putPtr;
+        dest->bOverflowStatus       = src->bOverflowStatus;
+#endif
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
+static
 return_t serialize_NV2080_CTRL_GPU_MIGRATABLE_OPS_PARAMS_v21_07(NV2080_CTRL_GPU_MIGRATABLE_OPS_PARAMS *pParams,
                                                                 NvU8 *buffer,
                                                                 NvU32 bufferSize,
@@ -5711,6 +5829,61 @@ return_t serialize_NVB0CC_CTRL_SET_HS_CREDITS_PARAMS_v21_08(NVB0CC_CTRL_SET_HS_C
     return SUCCESS_T;
 }
 
+return_t serialize_NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07(NVB0CC_CTRL_RESERVE_HES_PARAMS *pParams,
+                                                         NvU8 *buffer,
+                                                         NvU32 bufferSize,
+                                                         NvU32 *offset)
+{
+    NVB0CC_CTRL_RESERVE_HES_PARAMS_v29_07 *dest = (void*)(buffer);
+    NVB0CC_CTRL_RESERVE_HES_PARAMS        *src  = pParams;
+    if (src && dest)
+    {
+#ifdef COPY_INPUT_PARAMETERS
+        dest->type                      = src->type;
+        dest->reserveParams.cwd.ctxsw   = src->reserveParams.cwd.ctxsw;
+#endif
+    }
+    else
+        return FAILURE_T;
+    return SUCCESS_T;
+}
+
+return_t serialize_NVB0CC_CTRL_RELEASE_HES_PARAMS_v29_07(NVB0CC_CTRL_RELEASE_HES_PARAMS *pParams,
+                                                         NvU8 *buffer,
+                                                         NvU32 bufferSize,
+                                                         NvU32 *offset)
+{
+    NVB0CC_CTRL_RELEASE_HES_PARAMS_v29_07 *dest = (void*)(buffer);
+    NVB0CC_CTRL_RELEASE_HES_PARAMS        *src  = pParams;
+    if (src && dest)
+    {
+#ifdef COPY_INPUT_PARAMETERS
+        dest->type = src->type;
+#endif
+    }
+    else
+        return FAILURE_T;
+    return SUCCESS_T;
+}
+
+return_t serialize_NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS_v29_07(NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS *pParams,
+                                                             NvU8 *buffer,
+                                                             NvU32 bufferSize,
+                                                             NvU32 *offset)
+{
+    NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS_v29_07 *dest = (void*)(buffer);
+    NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS        *src  = pParams;
+    if (src && dest)
+    {
+#ifdef COPY_INPUT_PARAMETERS
+        dest->ctxsw = src->ctxsw;
+#endif
+    }
+    else
+        return FAILURE_T;
+    return SUCCESS_T;
+}
+
 #ifndef UMED_BUILD
 return_t serialize_NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07(NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS *pParams,
                                                                           NvU8 *buffer,
@@ -6015,6 +6188,115 @@ return_t deserialize_NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS_PARAMS_v29_02(NV20
     else
         return FAILURE_T;
 
+    return SUCCESS_T;
+}
+
+static
+return_t serialize_NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL_v29_0A(NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL *pParams,
+                                                                 NvU8 *buffer,
+                                                                 NvU32 bufferSize,
+                                                                 NvU32 *offset)
+{
+    NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL        *src  = pParams;
+    NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL_v29_0A *dest = (void*)(buffer);
+
+    if (src && dest && (src->poolInfosCount <= NVB0CC_CREDIT_POOL_MAX_COUNT_v29_0A))
+    {
+        NvU32 i;
+        dest->poolInfosCount = src->poolInfosCount;
+        for (i = 0; i < dest->poolInfosCount; ++i)
+        {
+            dest->poolInfos[i].numCredits   = src->poolInfos[i].numCredits;
+            dest->poolInfos[i].poolIndex    = src->poolInfos[i].poolIndex;
+            dest->poolInfos[i].chipletType  = src->poolInfos[i].chipletType;
+        }
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
+static
+return_t deserialize_NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL_v29_0A(NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL *pParams,
+                                                                   NvU8 *buffer,
+                                                                   NvU32 bufferSize,
+                                                                   NvU32 *offset)
+{
+    NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL_v29_0A *src  = (void*)(buffer);
+    NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL        *dest = pParams;
+
+    if (src && dest && (src->poolInfosCount <= NVB0CC_CREDIT_POOL_MAX_COUNT_v29_0A))
+    {
+        NvU32 i;
+        dest->poolInfosCount = src->poolInfosCount;
+        for (i = 0; i < dest->poolInfosCount; ++i)
+        {
+            dest->poolInfos[i].numCredits   = src->poolInfos[i].numCredits;
+            dest->poolInfos[i].poolIndex    = src->poolInfos[i].poolIndex;
+            dest->poolInfos[i].chipletType  = src->poolInfos[i].chipletType;
+        }
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
+static
+return_t serialize_NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS_v29_0A(NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS *pParams,
+                                                                         NvU8 *buffer,
+                                                                         NvU32 bufferSize,
+                                                                         NvU32 *offset)
+{
+    NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS        *src  = pParams;
+    NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS_v29_0A *dest = (void*)(buffer);
+    NvU16 i;
+
+    if (src && dest && (src->numQueries <= NVB0CC_MAX_CREDIT_INFO_ENTRIES_v21_08))
+    {
+        dest->numQueries            = src->numQueries;
+        dest->statusInfo.status     = src->statusInfo.status;
+        dest->statusInfo.entryIndex = src->statusInfo.entryIndex;
+
+        for (i = 0; i < dest->numQueries; ++i)
+        {
+            dest->queries[i].chipletType  = src->queries[i].chipletType;
+            dest->queries[i].chipletIndex = src->queries[i].chipletIndex;
+            dest->queries[i].poolIndex    = src->queries[i].poolIndex;
+        }
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
+static
+return_t deserialize_NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS_v29_0A(NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS *pParams,
+                                                                           NvU8 *buffer,
+                                                                           NvU32 bufferSize,
+                                                                           NvU32 *offset)
+{
+    NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS_v29_0A *src  = (void*)(buffer);
+    NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS        *dest = pParams;
+    NvU16 i;
+
+    if (src && dest && (src->numQueries <= NVB0CC_MAX_CREDIT_INFO_ENTRIES_v21_08))
+    {
+        dest->numQueries            = src->numQueries;
+        dest->statusInfo.status     = src->statusInfo.status;
+        dest->statusInfo.entryIndex = src->statusInfo.entryIndex;
+
+        for (i = 0; i < dest->numQueries; ++i)
+        {
+            dest->queries[i].chipletType  = src->queries[i].chipletType;
+            dest->queries[i].chipletIndex = src->queries[i].chipletIndex;
+            dest->queries[i].poolIndex    = src->queries[i].poolIndex;
+        }
+    }
+    else
+        return FAILURE_T;
     return SUCCESS_T;
 }
 #endif

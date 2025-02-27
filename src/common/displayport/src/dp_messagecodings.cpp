@@ -227,11 +227,12 @@ EnumPathResMessage::EnumPathResMessage(const Address & target, unsigned port, bo
 
 ParseResponseStatus EnumPathResMessage::parseResponseAck(EncodedMessage * message, BitStreamReader * reader)
 {
-    reply.portNumber        = reader->readOrDefault(4 /*Port_Number*/, 0xF);
-    reply.availableStreams  = reader->readOrDefault(3 /*Available_Streams*/, 0);
-    reply.bFECCapability    = (reader->readOrDefault(1 /*FEC*/, 0x0) == 1) ? true : false;
-    reply.TotalPBN          = reader->readOrDefault(16 /*PBN*/, 0xFFFF);
-    reply.FreePBN           = reader->readOrDefault(16 /*PBN*/, 0xFFFF);
+    reply.portNumber           = reader->readOrDefault(4 /*Port_Number*/, 0xF);
+    reply.availableStreams     = reader->readOrDefault(3 /*Available_Streams*/, 0);
+    reply.bFECCapability       = (reader->readOrDefault(1 /*FEC*/, 0x0) == 1) ? true : false;
+    reply.TotalPBN             = reader->readOrDefault(16 /*PBN*/, 0xFFFF);
+    reply.FreePBN              = reader->readOrDefault(16 /*PBN*/, 0xFFFF);
+    reply.DFPLinkAvailablePBN  = reader->readOrDefault(16 /*PBN*/, 0xFFFF);
 
     if (this->getSinkPort() != reply.portNumber)
         return ParseResponseWrong;

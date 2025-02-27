@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -109,8 +109,10 @@ static void fill_parent_gpu_info(uvm_parent_gpu_t *parent_gpu, const UvmGpuInfo 
     // nvswitch is routed via physical pages, where the upper 13-bits of the
     // 47-bit address space holds the routing information for each peer.
     // Currently, this is limited to a 16GB framebuffer window size.
-    if (parent_gpu->nvswitch_info.is_nvswitch_connected)
+    if (parent_gpu->nvswitch_info.is_nvswitch_connected) {
         parent_gpu->nvswitch_info.fabric_memory_window_start = gpu_info->nvswitchMemoryWindowStart;
+        parent_gpu->nvswitch_info.egm_fabric_memory_window_start = gpu_info->nvswitchEgmMemoryWindowStart;
+    }
 
     uvm_uuid_string(uuid_buffer, &parent_gpu->uuid);
     snprintf(parent_gpu->name,
@@ -244,6 +246,7 @@ static NV_STATUS get_gpu_fb_info(uvm_gpu_t *gpu)
     if (!fb_info.bZeroFb) {
         gpu->mem_info.size = ((NvU64)fb_info.heapSize + fb_info.reservedHeapSize) * 1024;
         gpu->mem_info.max_allocatable_address = fb_info.maxAllocatableAddress;
+        gpu->mem_info.phys_start = (NvU64)fb_info.heapStart * 1024;
     }
 
     gpu->mem_info.max_vidmem_page_size = fb_info.maxVidmemPageSize;
@@ -568,6 +571,9 @@ static void gpu_info_print_common(uvm_gpu_t *gpu, struct seq_file *s)
     UVM_SEQ_OR_DBG_PRINT(s, "big_page_size                          %u\n", gpu->big_page.internal_size);
     UVM_SEQ_OR_DBG_PRINT(s, "rm_va_base                             0x%llx\n", gpu->parent->rm_va_base);
     UVM_SEQ_OR_DBG_PRINT(s, "rm_va_size                             0x%llx\n", gpu->parent->rm_va_size);
+    UVM_SEQ_OR_DBG_PRINT(s, "vidmem_start                           %llu (%llu MBs)\n",
+                         gpu->mem_info.phys_start,
+                         gpu->mem_info.phys_start / (1024 * 1024));
     UVM_SEQ_OR_DBG_PRINT(s, "vidmem_size                            %llu (%llu MBs)\n",
                          gpu->mem_info.size,
                          gpu->mem_info.size / (1024 * 1024));
@@ -1361,6 +1367,7 @@ static NV_STATUS init_parent_gpu(uvm_parent_gpu_t *parent_gpu,
                                  const UvmGpuPlatformInfo *gpu_platform_info)
 {
     NV_STATUS status;
+    UvmGpuFbInfo fb_info = {0};
 
     status = uvm_rm_locked_call(nvUvmInterfaceDeviceCreate(uvm_global_session_handle(),
                                                            gpu_info,
@@ -1384,7 +1391,14 @@ static NV_STATUS init_parent_gpu(uvm_parent_gpu_t *parent_gpu,
     parent_gpu->egm.local_peer_id = gpu_info->egmPeerId;
     parent_gpu->egm.base_address = gpu_info->egmBaseAddr;
 
+    status = uvm_rm_locked_call(nvUvmInterfaceGetFbInfo(parent_gpu->rm_device, &fb_info));
+    if (status != NV_OK)
+        return status;
+
     parent_gpu->sli_enabled = (gpu_info->subdeviceCount > 1);
+
+    if (!fb_info.bZeroFb)
+        parent_gpu->max_allocatable_address = fb_info.maxAllocatableAddress;
 
     parent_gpu->virt_mode = gpu_info->virtMode;
     if (parent_gpu->virt_mode == UVM_VIRT_MODE_LEGACY) {
@@ -1418,6 +1432,14 @@ static NV_STATUS init_parent_gpu(uvm_parent_gpu_t *parent_gpu,
     parent_gpu->smc.enabled = !!parent_gpu->rm_info.smcEnabled;
 
     uvm_mmu_init_gpu_chunk_sizes(parent_gpu);
+
+    status = uvm_pmm_devmem_init(parent_gpu);
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("failed to intialize device private memory: %s, GPU %s\n",
+                      nvstatusToString(status),
+                      uvm_parent_gpu_name(parent_gpu));
+        return status;
+    }
 
     status = uvm_ats_add_gpu(parent_gpu);
     if (status != NV_OK) {
@@ -1667,6 +1689,7 @@ static void deinit_parent_gpu(uvm_parent_gpu_t *parent_gpu)
 
     deinit_parent_procfs_files(parent_gpu);
 
+    uvm_pmm_devmem_deinit(parent_gpu);
     uvm_ats_remove_gpu(parent_gpu);
 
     UVM_ASSERT(atomic64_read(&parent_gpu->mapped_cpu_pages_size) == 0);

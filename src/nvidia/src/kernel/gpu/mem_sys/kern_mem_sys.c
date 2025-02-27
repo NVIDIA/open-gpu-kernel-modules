@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -885,31 +885,12 @@ kmemsysSetupCoherentCpuLink_IMPL
     NvU64          numaOnlineSize = 0;
     NvU64          fbSize         = (pMemoryManager->Ram.fbTotalMemSizeMb << 20);
     NvU32          data32;
-    NvBool         bCpuMapping    = NV_TRUE; // Default enable
     NvS32          numaNodeId     = NV0000_CTRL_NO_NUMA_NODE;
     NvU64          memblockSize   = 0;
     NvU64          rsvdFastSize   = 0;
     NvU64          rsvdSlowSize   = 0;
     NvU64          rsvdISOSize    = 0;
     NvU64          totalRsvdBytes = 0;
-
-    {
-        NV_ASSERT_OK_OR_RETURN(kmemsysGetFbNumaInfo_HAL(pGpu, pKernelMemorySystem,
-                                                        &pKernelMemorySystem->coherentCpuFbBase,
-                                                        &pKernelMemorySystem->coherentRsvdFbBase,
-                                                        &numaNodeId));
-        if (pKernelMemorySystem->coherentCpuFbBase != 0)
-        {
-            pKernelMemorySystem->coherentCpuFbEnd = pKernelMemorySystem->coherentCpuFbBase + fbSize;
-        }
-    }
-
-    if ((osReadRegistryDword(pGpu,
-                             NV_REG_STR_OVERRIDE_GPU_NUMA_NODE_ID, &data32)) == NV_OK)
-    {
-        numaNodeId = (NvS32)data32;
-        NV_PRINTF(LEVEL_ERROR, "Override GPU NUMA node ID %d!\n", numaNodeId);
-    }
 
     // Parse regkey here
     if ((osReadRegistryDword(pGpu,
@@ -918,14 +899,39 @@ kmemsysSetupCoherentCpuLink_IMPL
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Force disabling NVLINK/C2C mappings through regkey.\n");
-
-        bCpuMapping = NV_FALSE;
-    }
-
-    if ((pKernelMemorySystem->coherentCpuFbBase == 0) || !bCpuMapping)
-    {
         return NV_OK;
     }
+
+    NV_ASSERT_OK_OR_RETURN(kmemsysGetFbNumaInfo_HAL(pGpu, pKernelMemorySystem,
+                                                    &pKernelMemorySystem->coherentCpuFbBase,
+                                                    &pKernelMemorySystem->coherentRsvdFbBase,
+                                                    &numaNodeId));
+
+    if ((numaNodeId == NV0000_CTRL_NO_NUMA_NODE) && !hypervisorIsVgxHyper())
+    {
+        /*
+         * Do not fail for vGPU host as the device memory is not added to
+         * the kernel and it is expected for node id to not be set.
+         */
+        NV_PRINTF(LEVEL_ERROR, "Failed to get NUMA node id for GPU memory\n");
+        return NV_ERR_INVALID_STATE;
+    }
+
+    if (pKernelMemorySystem->coherentCpuFbBase == 0)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to get coherent GPU memory base address\n");
+        return NV_ERR_INVALID_STATE;
+    }
+
+    pKernelMemorySystem->coherentCpuFbEnd = pKernelMemorySystem->coherentCpuFbBase + fbSize;
+
+    if ((osReadRegistryDword(pGpu,
+                             NV_REG_STR_OVERRIDE_GPU_NUMA_NODE_ID, &data32)) == NV_OK)
+    {
+        numaNodeId = (NvS32)data32;
+        NV_PRINTF(LEVEL_ERROR, "Override GPU NUMA node ID %d!\n", numaNodeId);
+    }
+
 
     NV_ASSERT_OK_OR_RETURN(osNumaMemblockSize(&memblockSize));
 

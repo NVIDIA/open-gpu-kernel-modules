@@ -72,6 +72,9 @@ bool ConnectorImpl2x::willLinkSupportModeSST
     const DscParams *pDscParams
 )
 {
+    LinkConfiguration lc = linkConfig;
+    if (!main->isSupportedDPLinkConfig(lc))
+        return false;
     // no headIndex (default 0) for mode enumeration.
     return willLinkSupportMode(linkConfig, modesetInfo, 0, NULL, pDscParams);
 }
@@ -464,33 +467,55 @@ bool ConnectorImpl2x::compoundQueryAttachMSTGeneric(Group * target,
         return false;
     }
 
-    for(Device * d = target->enumDevices(0); d; d = target->enumDevices(d))
+    if (!hal->isDp2xChannelCodingCapable())
     {
-        DeviceImpl * i = (DeviceImpl *)d;
-
-        // Allocate bandwidth for the entire path to the root
-        //   NOTE: Above we're already handle the local link
-        DeviceImpl * tail = i;
-        while (tail && tail->getParent())
+        for(Device * d = target->enumDevices(0); d; d = target->enumDevices(d))
         {
-            // Have we already accounted for this stream?
+            DeviceImpl * i = (DeviceImpl *)d;
+
+            // Allocate bandwidth for the entire path to the root
+            //   NOTE: Above we're already handle the local link
+            DeviceImpl * tail = i;
+            while (tail && tail->getParent())
+            {
+                // Have we already accounted for this stream?
+                if (!(tail->bandwidth.compound_query_state.bandwidthAllocatedForIndex & (1 << compoundQueryCount)))
+                {
+                    tail->bandwidth.compound_query_state.bandwidthAllocatedForIndex |= (1 << compoundQueryCount);
+
+                    LinkConfiguration * linkConfig = tail->inferLeafLink(NULL);
+                    tail->bandwidth.compound_query_state.timeslots_used_by_query += linkConfig->slotsForPBN(base_pbn);
+
+                    if (tail->bandwidth.compound_query_state.timeslots_used_by_query >
+                        tail->bandwidth.compound_query_state.totalTimeSlots)
+                    {
+                        compoundQueryResult = false;
+                        SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH)
+                    }
+                }
+                tail = (DeviceImpl*)tail->getParent();
+            }
+        }
+    }
+    else
+    {
+        for(Device * d = target->enumDevices(0); d; d = target->enumDevices(d))
+        {
+            DeviceImpl * tail = (DeviceImpl *)d;
             if (!(tail->bandwidth.compound_query_state.bandwidthAllocatedForIndex & (1 << compoundQueryCount)))
             {
                 tail->bandwidth.compound_query_state.bandwidthAllocatedForIndex |= (1 << compoundQueryCount);
+                tail->inferPathConstraints();
 
-                LinkConfiguration * linkConfig = tail->inferLeafLink(NULL);
-                tail->bandwidth.compound_query_state.timeslots_used_by_query += linkConfig->slotsForPBN(base_pbn);
-
-                if (tail->bandwidth.compound_query_state.timeslots_used_by_query >
-                    tail->bandwidth.compound_query_state.totalTimeSlots)
+                if (slots_pbn > DP_MIN(tail->bandwidth.enum_path.total, tail->bandwidth.enum_path.dfpLinkAvailable))
                 {
                     compoundQueryResult = false;
                     SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH)
                 }
             }
-            tail = (DeviceImpl*)tail->getParent();
         }
     }
+
     return compoundQueryResult;
 }
 
@@ -1063,7 +1088,6 @@ void ConnectorImpl2x::beforeDeleteStream(GroupImpl * group, bool forFlushMode)
         // Delete the stream
         hal->payloadTableClearACT();
         hal->payloadAllocate(group->streamIndex, group->timeslot.begin, 0);
-        main->triggerACT();
     }
 }
 
@@ -1079,7 +1103,7 @@ void ConnectorImpl2x::afterDeleteStream(GroupImpl * group)
         return ConnectorImpl::afterDeleteStream(group);
 
     DP_ASSERT(!group->isTimeslotAllocated());
-
+    main->triggerACT();
     if (group->isHeadAttached() && group->bWaitForDeAllocACT)
     {
         if (!hal->payloadWaitForACTReceived())
@@ -1109,6 +1133,13 @@ bool ConnectorImpl2x::train(const LinkConfiguration &lConfig, bool force, LinkTr
         maximumSlots = 64;
         freeSlots = maximumSlots;
         firstFreeSlot = 0;
+    }
+
+    // Invalidate the UHBR if the connector is a USB-C to DP/USB-C.
+    if (!trainResult && main->isConnectorUSBTypeC() &&
+        lConfig.bIs128b132bChannelCoding && lConfig.peakRate > dp2LinkRate_10_0Gbps)
+    {
+        hal->overrideCableIdCap(lConfig.peakRate, false);
     }
     return trainResult;
 }
@@ -1303,6 +1334,7 @@ bool ConnectorImpl2x::enableFlush()
     // call must not skip programming the hardware.  Otherwise, EVO will
     // hang if the head is still active when flush mode is disabled.
     //
+
     bSkipLt = false;
 
     sortActiveGroups(false);
@@ -1333,6 +1365,12 @@ bool ConnectorImpl2x::enableFlush()
     {
         DP_PRINTF(DP_ERROR, "DP2xCONN> Set flush mode phase 2 failed\n");
         return false;
+    }
+
+    // Reset activeLinkConfig to indicate the link is now lost
+    if (!this->bDisable5019537Fix)
+    {
+        activeLinkConfig = LinkConfiguration();
     }
 
     return true;
@@ -1664,6 +1702,15 @@ void ConnectorImpl2x::handleEdidWARs(Edid & edid, DiscoveryManager::Device & dev
             // Samsung G9 Monitor is behind internal branch, allocate one more timeslot
             bApplyManualTimeslotBug4968411 = true;
             bDP2XPreferNonDSCForLowPClk = true;
+        }
+    }
+
+    if (edid.WARFlags.bForceHeadShutdown)
+    {
+        // SST mode
+        if (device.address.size() <= 1)
+        {
+            bForceHeadShutdownPerMonitor = true;
         }
     }
 }

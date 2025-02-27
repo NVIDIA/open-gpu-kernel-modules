@@ -78,6 +78,8 @@
 
 #if defined(NV_DRM_DRM_CLIENT_SETUP_H_PRESENT)
 #include <drm/drm_client_setup.h>
+#elif defined(NV_DRM_CLIENTS_DRM_CLIENT_SETUP_H_PRESENT)
+#include <drm/clients/drm_client_setup.h>
 #endif
 
 #if defined(NV_DRM_DRM_FBDEV_TTM_H_PRESENT)
@@ -1915,14 +1917,18 @@ static struct drm_driver nv_drm_driver = {
     .name                   = "nvidia-drm",
 
     .desc                   = "NVIDIA DRM driver",
+
+#if defined(NV_DRM_DRIVER_HAS_DATE)
     .date                   = "20160202",
+#endif
 
 #if defined(NV_DRM_DRIVER_HAS_DEVICE_LIST)
     .device_list            = LIST_HEAD_INIT(nv_drm_driver.device_list),
 #elif defined(NV_DRM_DRIVER_HAS_LEGACY_DEV_LIST)
     .legacy_dev_list        = LIST_HEAD_INIT(nv_drm_driver.legacy_dev_list),
 #endif
-#if defined(DRM_FBDEV_TTM_DRIVER_OPS)
+// XXX implement nvidia-drm's own .fbdev_probe callback that uses NVKMS kapi directly
+#if defined(NV_DRM_FBDEV_AVAILABLE) && defined(DRM_FBDEV_TTM_DRIVER_OPS)
     DRM_FBDEV_TTM_DRIVER_OPS,
 #endif
 };

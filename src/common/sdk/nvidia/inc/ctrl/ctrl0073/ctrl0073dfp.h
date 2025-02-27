@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -86,6 +86,8 @@
  *       NV0073_CTRL_DFP_FLAGS_FORMAT_YCBCR444_CAPABLE
  *         This specifies whether the displayId is capable of sending
  *         YCBCR444 color format out from the board.
+ *       NV0073_CTRL_DFP_FLAGS_TYPE_C_TO_DP_CONNECTOR
+ *         This specifies whether the displayId is a DP connector routed to an USB-TYPE-C port.
  *       NV0073_CTRL_DFP_FLAGS_DP_LINK_BANDWIDTH
  *         This specifies max link rate supported by the displayId, if the DFP is
  *         display port.
@@ -161,6 +163,9 @@ typedef struct NV0073_CTRL_DFP_GET_INFO_PARAMS {
 #define NV0073_CTRL_DFP_FLAGS_FORMAT_YCBCR444_CAPABLE                    12:12
 #define NV0073_CTRL_DFP_FLAGS_FORMAT_YCBCR444_CAPABLE_FALSE     (0x00000000U)
 #define NV0073_CTRL_DFP_FLAGS_FORMAT_YCBCR444_CAPABLE_TRUE      (0x00000001U)
+#define NV0073_CTRL_DFP_FLAGS_TYPE_C_TO_DP_CONNECTOR                     13:13
+#define NV0073_CTRL_DFP_FLAGS_TYPE_C_TO_DP_CONNECTOR_FALSE      (0x00000000U)
+#define NV0073_CTRL_DFP_FLAGS_TYPE_C_TO_DP_CONNECTOR_TRUE       (0x00000001U)
 #define NV0073_CTRL_DFP_FLAGS_HDMI_ALLOWED                               14:14
 #define NV0073_CTRL_DFP_FLAGS_HDMI_ALLOWED_FALSE                (0x00000000U)
 #define NV0073_CTRL_DFP_FLAGS_HDMI_ALLOWED_TRUE                 (0x00000001U)

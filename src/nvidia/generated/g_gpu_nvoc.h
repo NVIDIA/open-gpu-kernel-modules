@@ -1031,7 +1031,7 @@ struct OBJGPU {
     NvU8 (*__gpuGetChipSubRev__)(struct OBJGPU * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__gpuGetSkuInfo__)(struct OBJGPU * /*this*/, NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS *);  // halified (2 hals) body
     NV_STATUS (*__gpuGetRegBaseOffset__)(struct OBJGPU * /*this*/, NvU32, NvU32 *);  // halified (2 hals) body
-    void (*__gpuHandleSanityCheckRegReadError__)(struct OBJGPU * /*this*/, NvU32, NvU32);  // halified (2 hals) body
+    void (*__gpuHandleSanityCheckRegReadError__)(struct OBJGPU * /*this*/, NvU32, NvU32);  // halified (3 hals) body
     void (*__gpuHandleSecFault__)(struct OBJGPU * /*this*/);  // halified (5 hals) body
     NV_STATUS (*__gpuSanityCheckVirtRegAccess__)(struct OBJGPU * /*this*/, NvU32);  // halified (3 hals) body
     const GPUCHILDPRESENT * (*__gpuGetChildrenPresent__)(struct OBJGPU * /*this*/, NvU32 *);  // halified (11 hals)
@@ -1199,6 +1199,7 @@ struct OBJGPU {
     OS_RM_CAPS *pOsRmCaps;
     NvU32 halImpl;
     void *hPci;
+    void *hPciFn1;
     GpuEngineEventNotificationList *engineNonstallIntrEventNotifications[84];
     NvBool bIsSOC;
     NvU32 gpuInstance;
@@ -1255,6 +1256,7 @@ struct OBJGPU {
     NvU32 masterFromSLIConfig;
     NvU32 sliStatus;
     NvBool bIsRTD3Gc6D3HotTransition;
+    NvU32 simMode;
     struct OBJOS *pOS;
     struct OBJHAL *pHal;
     union __nvoc_inner_struc_OBJGPU_1__ children;
@@ -3491,6 +3493,10 @@ NV_STATUS gpuGetSkuInfo_VF(struct OBJGPU *pGpu, NV2080_CTRL_BIOS_GET_SKU_INFO_PA
 NV_STATUS gpuGetRegBaseOffset_FWCLIENT(struct OBJGPU *pGpu, NvU32 arg2, NvU32 *arg3);
 
 NV_STATUS gpuGetRegBaseOffset_TU102(struct OBJGPU *pGpu, NvU32 arg2, NvU32 *arg3);
+
+static inline void gpuHandleSanityCheckRegReadError_b3696a(struct OBJGPU *pGpu, NvU32 addr, NvU32 value) {
+    return;
+}
 
 void gpuHandleSanityCheckRegReadError_GM107(struct OBJGPU *pGpu, NvU32 addr, NvU32 value);
 

@@ -663,10 +663,16 @@ kvgpumgrAttachGpu(NvU32 gpuPciId)
 NV_STATUS
 kvgpumgrDetachGpu(NvU32 gpuPciId)
 {
-    NvU32 i;
+    NvU32 i , j;
     OBJSYS *pSys = SYS_GET_INSTANCE();
     KernelVgpuMgr *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
     KERNEL_PHYS_GPU_INFO *pPhysGpuInfo;
+    VGPU_TYPE *pVgpuTypeInfo;
+    KERNEL_VGPU_TYPE_PLACEMENT_INFO *pKernelVgpuTypePlacementInfo;
+    VGPU_TYPE_PLACEMENT_INFO *pVgpuTypePlacementInfo;
+    VGPU_INSTANCE_PLACEMENT_INFO *pVgpuInstancePlacementInfo;
+    VGPU_TYPE_SUPPORTED_PLACEMENT_INFO *pVgpuTypeSupportedPlacementInfo;
+    VGPU_INSTANCE_SUPPORTED_PLACEMENT_INFO *pVgpuInstanceSupportedPlacementInfo;
     REQUEST_VGPU_INFO_NODE *pRequestVgpu = NULL, *pRequestVgpuNext = NULL;
 
     NV_PRINTF(LEVEL_INFO, "Enter function\n");
@@ -677,6 +683,7 @@ kvgpumgrDetachGpu(NvU32 gpuPciId)
         return NV_ERR_OBJECT_NOT_FOUND;
 
     pPhysGpuInfo = &(pKernelVgpuMgr->pgpuInfo[i]);
+    pKernelVgpuTypePlacementInfo = &pPhysGpuInfo->kernelVgpuTypePlacementInfo;
 
     pPhysGpuInfo->createdVfMask = 0;
     pPhysGpuInfo->assignedSwizzIdMask = 0;
@@ -686,6 +693,34 @@ kvgpumgrDetachGpu(NvU32 gpuPciId)
     for (i = 0; i < MAX_VGPU_TYPES_PER_PGPU; i++)
         pPhysGpuInfo->supportedTypeIds[i] = NVA081_CTRL_VGPU_CONFIG_INVALID_TYPE;
 
+    /*
+     * When heterogeneous vGPU mode is disabled, if vGPU supports homogeneous
+     * placement ID, initially all homogeneous supported placement IDs are
+     * creatable placement IDs.
+     */
+    if (pPhysGpuInfo->homogeneousPlacementSupported == NV_TRUE)
+    {
+        for (i = 0; i < pPhysGpuInfo->numVgpuTypes; i++)
+        {
+            pVgpuTypeInfo = pPhysGpuInfo->vgpuTypes[i];
+
+            if (pVgpuTypeInfo == NULL)
+                continue;
+
+            pVgpuTypeSupportedPlacementInfo = &pVgpuTypeInfo->vgpuTypeSupportedPlacementInfo;
+            pVgpuTypePlacementInfo = &pKernelVgpuTypePlacementInfo->vgpuTypePlacementInfo[i];
+
+            for (j = 0; j < pVgpuTypeSupportedPlacementInfo->homogeneousPlacementCount; j++)
+            {
+                pVgpuInstanceSupportedPlacementInfo = &pVgpuTypeSupportedPlacementInfo->vgpuInstanceSupportedPlacementInfo[j];
+                pVgpuInstancePlacementInfo = &pVgpuTypePlacementInfo->vgpuInstancePlacementInfo[j];
+                pVgpuInstancePlacementInfo->creatablePlacementId = pVgpuInstanceSupportedPlacementInfo->homogeneousSupportedPlacementId;
+            }
+        }
+        /* No vGPU instances running, so placement region is empty. */
+        bitVectorClrAll(&pKernelVgpuTypePlacementInfo->usedPlacementRegionMap);
+    }
+        
     if (listCount(&(pKernelVgpuMgr->listRequestVgpuHead)) > 0)
     {
         for (pRequestVgpu = listHead(&(pKernelVgpuMgr->listRequestVgpuHead));

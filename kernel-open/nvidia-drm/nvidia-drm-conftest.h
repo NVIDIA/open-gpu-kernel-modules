@@ -65,8 +65,12 @@
 #if defined(NV_DRM_CLIENT_SETUP_PRESENT) &&                                    \
     (defined(NV_DRM_APERTURE_REMOVE_CONFLICTING_PCI_FRAMEBUFFERS_PRESENT) ||   \
      defined(NV_APERTURE_REMOVE_CONFLICTING_PCI_DEVICES_PRESENT))
+// XXX remove dependency on DRM_TTM_HELPER by implementing nvidia-drm's own
+// .fbdev_probe callback that uses NVKMS kapi
+#if IS_ENABLED(CONFIG_DRM_TTM_HELPER)
 #define NV_DRM_FBDEV_AVAILABLE
 #define NV_DRM_CLIENT_AVAILABLE
+#endif
 #endif
 
 /*

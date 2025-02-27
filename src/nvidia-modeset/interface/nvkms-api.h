@@ -2483,6 +2483,16 @@ struct NvKmsRegisterSurfaceParams {
 struct NvKmsUnregisterSurfaceRequest {
     NvKmsDeviceHandle deviceHandle;
     NvKmsSurfaceHandle surfaceHandle;
+    /*
+     * Normally, when a surface is unregistered, nvkms will sync any
+     * outstanding flips to ensure the surface is no longer referenced by
+     * display hardware before being torn down.
+     *
+     * To improve performance with GSP firmware, when checking if this sync is
+     * necessary a trusted kernel-mode client who knows it is safe to do so
+     * may indicate to nvkms that the sync is unneeded.
+     */
+    NvBool skipSync;
 };
 
 struct NvKmsUnregisterSurfaceReply {

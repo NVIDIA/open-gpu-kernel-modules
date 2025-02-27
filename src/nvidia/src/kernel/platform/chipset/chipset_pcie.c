@@ -249,18 +249,19 @@ objClBuildPcieAtomicsAllowList(OBJGPU *pGpu, OBJCL *pCl)
 NV_STATUS
 objClInitPcieChipset(OBJGPU *pGpu, OBJCL *pCl)
 {
-    OBJSYS   *pSys = SYS_GET_INSTANCE();
-    OBJOS    *pOS  = SYS_GET_OS(pSys);
-    OBJPFM   *pPfm = SYS_GET_PFM(pSys);
-    NvU32     i;
-    NvU32     domain;
-    NvU16     chipsetInfoIndex;
-    NvU32     devCap2;
-    NvU32     devCtrl2;
-    NvBool    rootPortLtrSupported;
-    NvBool    tempLtrSupported;
-    NvBool    needsNosnoopWAR = NV_FALSE;
-    NV_STATUS status;
+    OBJSYS    *pSys       = SYS_GET_INSTANCE();
+    OBJOS     *pOS        = SYS_GET_OS(pSys);
+    OBJPFM    *pPfm       = SYS_GET_PFM(pSys);
+    KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
+    NvU32      i;
+    NvU32      domain;
+    NvU16      chipsetInfoIndex;
+    NvU32      devCap2;
+    NvU32      devCtrl2;
+    NvBool     rootPortLtrSupported;
+    NvBool     tempLtrSupported;
+    NvBool     needsNosnoopWAR = NV_FALSE;
+    NV_STATUS  status;
 
     if (pGpu != NULL)
     {
@@ -514,6 +515,9 @@ objClInitPcieChipset(OBJGPU *pGpu, OBJCL *pCl)
             NV_PRINTF(LEVEL_INFO, "LTR capability not supported.\n");
         }
     }
+
+    // Cache L1SS enablement info from chipset side
+    kbifCacheChipsetL1SubstatesEnable(pGpu, pKernelBif);
 
     return NV_OK;
 }

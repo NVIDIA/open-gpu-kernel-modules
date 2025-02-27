@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -250,8 +250,8 @@ _knvlinkCheckFabricCliqueId
                                              &cliqueId);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "GPU %d failed to get fabric clique Id: 0x%x\n",
-                                gpuGetInstance(pGpu), status);
+        NV_PRINTF(LEVEL_INFO, "GPU %d failed to get fabric clique Id: 0x%x\n",
+                  gpuGetInstance(pGpu), status);
         return NV_FALSE;
     }
 
@@ -259,14 +259,14 @@ _knvlinkCheckFabricCliqueId
                                              &peerCliqueId);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "GPU %d failed to get fabric clique Id 0x%x\n",
-                                gpuGetInstance(pPeerGpu), status);
+        NV_PRINTF(LEVEL_INFO, "GPU %d failed to get fabric clique Id 0x%x\n",
+                  gpuGetInstance(pPeerGpu), status);
         return NV_FALSE;
     }
 
     if (cliqueId != peerCliqueId)
     {
-        NV_PRINTF(LEVEL_ERROR, "GPU %d and Peer GPU %d cliqueId doesn't match\n",
+        NV_PRINTF(LEVEL_INFO, "GPU %d and Peer GPU %d cliqueId doesn't match\n",
                   gpuGetInstance(pGpu), gpuGetInstance(pPeerGpu));
         return NV_FALSE;
     }

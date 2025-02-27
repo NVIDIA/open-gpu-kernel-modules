@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -157,6 +157,12 @@ struct uvm_global_struct
     // This field is set once during global initialization (uvm_global_init),
     // and can be read afterwards without acquiring any locks.
     bool conf_computing_enabled;
+
+    // List of all devmem ranges allocted on this GPU
+    struct {
+        uvm_mutex_t lock;
+        struct list_head list;
+    } devmem_ranges;
 };
 
 // Initialize global uvm state

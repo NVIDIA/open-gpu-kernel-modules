@@ -117,8 +117,8 @@ gpuReadPcieConfigCycle_GB202
     NvU32     domain   = gpuGetDomain(pGpu);
     NvU8      bus      = gpuGetBus(pGpu);
     NvU8      device   = gpuGetDevice(pGpu);
-    NvU8      function = 1;
     NV_STATUS status   = NV_OK;
+    void *    hPciToUse;
 
     status = gpuConfigAccessSanityCheck_HAL(pGpu);
     if (status != NV_OK)
@@ -126,12 +126,27 @@ gpuReadPcieConfigCycle_GB202
         return status;
     }
 
-    if (pGpu->hPci == NULL)
+    // GPU only has Fn0 and Fn1
+    if (func == 0)
     {
-        pGpu->hPci = osPciInitHandle(domain, bus, device, function, NULL, NULL);
+        if (pGpu->hPci == NULL)
+        {
+            pGpu->hPci = osPciInitHandle(domain, bus, device, func, NULL, NULL);
+        }
+
+        hPciToUse = pGpu->hPci;
+    }
+    else
+    {
+        if (pGpu->hPciFn1 == NULL)
+        {
+            pGpu->hPciFn1 = osPciInitHandle(domain, bus, device, func, NULL, NULL);
+        }
+
+        hPciToUse = pGpu->hPciFn1;
     }
 
-    *pData = osPciReadDword(pGpu->hPci, hwDefAddr);
+    *pData = osPciReadDword(hPciToUse, hwDefAddr);
 
     return NV_OK;
 }
@@ -158,8 +173,8 @@ gpuWritePcieConfigCycle_GB202
     NvU32     domain   = gpuGetDomain(pGpu);
     NvU8      bus      = gpuGetBus(pGpu);
     NvU8      device   = gpuGetDevice(pGpu);
-    NvU8      function = 1;
     NV_STATUS status   = NV_OK;
+    void *    hPciToUse;
 
     status = gpuConfigAccessSanityCheck_HAL(pGpu);
     if (status != NV_OK)
@@ -167,12 +182,27 @@ gpuWritePcieConfigCycle_GB202
         return status;
     }
 
-    if (pGpu->hPci == NULL)
+    // GPU only has Fn0 and Fn1
+    if (func == 0)
     {
-        pGpu->hPci = osPciInitHandle(domain, bus, device, function, NULL, NULL);
+        if (pGpu->hPci == NULL)
+        {
+            pGpu->hPci = osPciInitHandle(domain, bus, device, func, NULL, NULL);
+        }
+
+        hPciToUse = pGpu->hPci;
+    }
+    else
+    {
+        if (pGpu->hPciFn1 == NULL)
+        {
+            pGpu->hPciFn1 = osPciInitHandle(domain, bus, device, func, NULL, NULL);
+        }
+
+        hPciToUse = pGpu->hPciFn1;
     }
 
-    osPciWriteDword(pGpu->hPci, hwDefAddr, value);
+    osPciWriteDword(hPciToUse, hwDefAddr, value);
 
     return NV_OK;
 }

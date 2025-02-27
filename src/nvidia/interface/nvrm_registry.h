@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1997-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1997-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -2600,5 +2600,14 @@
 #define NV_REG_STR_RM_GSPLITE_DISABLE_ALL                         (0x00000000)
 #define NV_REG_STR_RM_GSPLITE_ENABLE_ALL                          (0xFFFFFFFF)
 #define NV_REG_STR_RM_GSPLITE_ENABLE_MASK_DEFAULT                 NV_REG_STR_RM_GSPLITE_DISABLE_ALL
+
+// Type DWORD:
+// This regkey control WAR for Bug 5045021 issue:
+// WAR adding checking before save/restore config space function 1
+//
+#define NV_REG_STR_RM_WAR_5045021                                 "RmWar5045021"
+#define NV_REG_STR_RM_WAR_5045021_ENABLE                           0x00000001
+#define NV_REG_STR_RM_WAR_5045021_DISABLE                          0x00000000
+#define NV_REG_STR_RM_WAR_5045021_DEFAULT                          0x00000000
 
 #endif // NVRM_REGISTRY_H

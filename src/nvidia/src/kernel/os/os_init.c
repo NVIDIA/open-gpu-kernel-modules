@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,6 +41,7 @@
 #include "core/locks.h"
 #include "gpu/gpu.h"
 #include "gpu/gpu_access.h"
+#include "kernel/diagnostics/xid_context.h"
 #include "nv_ref.h"
 #include "virtualization/hypervisor/hypervisor.h"
 
@@ -472,7 +473,7 @@ NV_STATUS osReadRegistryString
     return status;
 }
 
-void nvErrorLog2(void *pVoid, NvU32 num, NvBool oobLogging, const char *pFormat, va_list arglist)
+static void nvErrorLog2(void *pVoid, XidContext context, NvBool oobLogging, const char *pFormat, va_list arglist)
 {
     if ((pFormat == NULL) || (*pFormat == '\0'))
     {
@@ -499,13 +500,17 @@ void nvErrorLog2(void *pVoid, NvU32 num, NvBool oobLogging, const char *pFormat,
 
     if (pGpu != NULL && oobLogging)
     {
-        gpuLogOobXidMessage(pGpu, num, errorString, msglen);
+        gpuLogOobXidMessage(pGpu, context.xid, errorString, msglen);
     }
 
     {
         KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
         if (pKernelRc != NULL)
-            krcReportXid(pGpu, pKernelRc, num, errorString);
+        {
+            krcReportXid(pGpu, pKernelRc,
+                         context,
+                         errorString);
+        }
     }
 
 done:
@@ -513,12 +518,12 @@ done:
 #endif // RMCFG_MODULE_SMBPBI || (RMCFG_MODULE_KERNEL_RC &&
        // !RMCFG_FEATURE_PLATFORM_GSP)
 
-    osErrorLogV(pGpu, num, pFormat, arglist);
+    osErrorLogV(pGpu, context, pFormat, arglist);
 }
 
-void nvErrorLog(void *pVoid, NvU32 num, const char *pFormat, va_list arglist)
+void nvErrorLog(void *pVoid, XidContext context, const char *pFormat, va_list arglist)
 {
-    nvErrorLog2(pVoid, num, NV_TRUE, pFormat, arglist);
+    nvErrorLog2(pVoid, context, NV_TRUE, pFormat, arglist);
 }
 
 void
@@ -533,7 +538,7 @@ nvErrorLog_va
     va_list arglist;
 
     va_start(arglist, pFormat);
-    nvErrorLog2(pVoid, num, NV_TRUE, pFormat, arglist);
+    nvErrorLog2(pVoid, (XidContext){.xid = num}, NV_TRUE, pFormat, arglist);
     va_end(arglist);
 }
 
@@ -541,7 +546,7 @@ void
 nvErrorLog2_va
 (
     void       * pVoid,
-    NvU32        num,
+    XidContext   context,
     NvBool       oobLogging,
     const char * pFormat,
     ...
@@ -550,6 +555,6 @@ nvErrorLog2_va
     va_list arglist;
 
     va_start(arglist, pFormat);
-    nvErrorLog2(pVoid, num, oobLogging, pFormat, arglist);
+    nvErrorLog2(pVoid, context, oobLogging, pFormat, arglist);
     va_end(arglist);
 }

@@ -108,13 +108,15 @@ typedef NV_STATUS      RpcCtrlSubdeviceGetLibosHeapStats(POBJGPU, POBJRPC, void*
 typedef NV_STATUS      RpcCtrlDbgSetExceptionMask(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlSetZbcStencilClear(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlVaspaceCopyServerReservedPdes(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
+typedef NV_STATUS      RpcCtrlCmdGetChipletHsCreditPool(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlGrCtxswPreemptionBind(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlAllocPmaStream(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
+typedef NV_STATUS      RpcCtrlCmdGetHsCreditsMapping(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlReleaseHes(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlReserveHwpmLegacy(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
+typedef NV_STATUS      RpcCtrlPerfRatedTdpGetStatus(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlSubdeviceGetVgpuHeapStats(POBJGPU, POBJRPC, void*);
 typedef NV_STATUS      RpcCtrlInternalQuiescePmaChannel(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
-typedef NV_STATUS      RpcCtrlPerfRatedTdpGetStatus(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlBusSetP2pMapping(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlGpuGetInfoV2(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlGetHsCredits(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
@@ -269,13 +271,15 @@ typedef struct RPC_HAL_IFACES {
     RpcCtrlDbgSetExceptionMask  *rpcCtrlDbgSetExceptionMask;  /* CTRL_DBG_SET_EXCEPTION_MASK */
     RpcCtrlSetZbcStencilClear   *rpcCtrlSetZbcStencilClear;   /* CTRL_SET_ZBC_STENCIL_CLEAR */
     RpcCtrlVaspaceCopyServerReservedPdes  *rpcCtrlVaspaceCopyServerReservedPdes; /* CTRL_VASPACE_COPY_SERVER_RESERVED_PDES */
+    RpcCtrlCmdGetChipletHsCreditPool  *rpcCtrlCmdGetChipletHsCreditPool; /* GET_CHIPLET_HS_CREDIT_POOL */
     RpcCtrlGrCtxswPreemptionBind  *rpcCtrlGrCtxswPreemptionBind; /* CTRL_GR_CTXSW_PREEMPTION_BIND */
     RpcCtrlAllocPmaStream       *rpcCtrlAllocPmaStream;       /* CTRL_ALLOC_PMA_STREAM */
+    RpcCtrlCmdGetHsCreditsMapping  *rpcCtrlCmdGetHsCreditsMapping; /* GET_HS_CREDITS_MAPPING */
     RpcCtrlReleaseHes           *rpcCtrlReleaseHes;           /* RELEASE_HES */
     RpcCtrlReserveHwpmLegacy    *rpcCtrlReserveHwpmLegacy;    /* CTRL_RESERVE_HWPM_LEGACY */
+    RpcCtrlPerfRatedTdpGetStatus  *rpcCtrlPerfRatedTdpGetStatus; /* CTRL_PERF_RATED_TDP_GET_STATUS */
     RpcCtrlSubdeviceGetVgpuHeapStats  *rpcCtrlSubdeviceGetVgpuHeapStats; /* CTRL_SUBDEVICE_GET_VGPU_HEAP_STATS */
     RpcCtrlInternalQuiescePmaChannel  *rpcCtrlInternalQuiescePmaChannel; /* CTRL_INTERNAL_QUIESCE_PMA_CHANNEL */
-    RpcCtrlPerfRatedTdpGetStatus  *rpcCtrlPerfRatedTdpGetStatus; /* CTRL_PERF_RATED_TDP_GET_STATUS */
     RpcCtrlBusSetP2pMapping     *rpcCtrlBusSetP2pMapping;     /* CTRL_BUS_SET_P2P_MAPPING */
     RpcCtrlGpuGetInfoV2         *rpcCtrlGpuGetInfoV2;         /* CTRL_GPU_GET_INFO_V2 */
     RpcCtrlGetHsCredits         *rpcCtrlGetHsCredits;         /* CTRL_GET_HS_CREDITS */
@@ -458,20 +462,24 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcCtrlSetZbcStencilClear(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlVaspaceCopyServerReservedPdes_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlVaspaceCopyServerReservedPdes(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
+#define rpcCtrlCmdGetChipletHsCreditPool_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
+        (_pRpc)->_hal.rpcCtrlCmdGetChipletHsCreditPool(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlGrCtxswPreemptionBind_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlGrCtxswPreemptionBind(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlAllocPmaStream_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlAllocPmaStream(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
+#define rpcCtrlCmdGetHsCreditsMapping_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
+        (_pRpc)->_hal.rpcCtrlCmdGetHsCreditsMapping(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlReleaseHes_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlReleaseHes(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlReserveHwpmLegacy_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlReserveHwpmLegacy(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
+#define rpcCtrlPerfRatedTdpGetStatus_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
+        (_pRpc)->_hal.rpcCtrlPerfRatedTdpGetStatus(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlSubdeviceGetVgpuHeapStats_HAL(_pGpu, _pRpc, _pArg0)  \
         (_pRpc)->_hal.rpcCtrlSubdeviceGetVgpuHeapStats(_pGpu, _pRpc, _pArg0)
 #define rpcCtrlInternalQuiescePmaChannel_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlInternalQuiescePmaChannel(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
-#define rpcCtrlPerfRatedTdpGetStatus_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
-        (_pRpc)->_hal.rpcCtrlPerfRatedTdpGetStatus(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlBusSetP2pMapping_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlBusSetP2pMapping(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlGpuGetInfoV2_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \

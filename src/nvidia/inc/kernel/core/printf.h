@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2001-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2001-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,6 +37,9 @@ extern "C" {
 #include "nvport/nvport.h"
 #include "utils/nvprintf.h"
 #include "nvlog/nvlog.h"
+
+// TODO Bug 5078337: Move these away from kernel/core
+#include "kernel/diagnostics/xid_context.h"
 
 #define DBG_FILE_LINE_FUNCTION  NV_FILE_STR, __LINE__, NV_FUNCTION_STR
 
@@ -235,6 +238,10 @@ void nvDbgDumpBufferBytes(void *pBuffer, NvU32 length);
 #define DBG_VAL_PTR(p)
 #endif
 
+//
+// TODO Bug 5078337: Move these away from kernel/core and rename to indicate
+// that they emit XIDs
+//
 #define NV_ERROR_LOG(pGpu, num, fmt, ...)                               \
     nvErrorLog_va((void*)pGpu, num, fmt, ##__VA_ARGS__);                \
     NVLOG_PRINTF(NV_PRINTF_MODULE, NVLOG_ROUTE_RM, LEVEL_ERROR,         \
@@ -245,10 +252,9 @@ void nvDbgDumpBufferBytes(void *pBuffer, NvU32 length);
     NVLOG_PRINTF(NV_PRINTF_MODULE, NVLOG_ROUTE_RM, LEVEL_ERROR,         \
                  NV_PRINTF_ADD_PREFIX(fmt), ##__VA_ARGS__)
 
-void nvErrorLog(void *pVoid, NvU32 num, const char *pFormat, va_list arglist);
+void nvErrorLog(void *pVoid, XidContext context, const char *pFormat, va_list arglist);
 void nvErrorLog_va(void * pGpu, NvU32 num, const char * pFormat, ...);
-void nvErrorLog2(void *pVoid, NvU32 num, NvBool oobLogging, const char *pFormat, va_list arglist);
-void nvErrorLog2_va(void * pGpu, NvU32 num, NvBool oobLogging, const char * pFormat, ...);
+void nvErrorLog2_va(void * pGpu, XidContext context, NvBool oobLogging, const char * pFormat, ...);
 
 #ifdef __cplusplus
 }

@@ -2339,6 +2339,13 @@ static void DestroySurface
 
     paramsUnreg.request.deviceHandle  = device->hKmsDevice;
     paramsUnreg.request.surfaceHandle = surface->hKmsHandle;
+    /*
+     * Since we are unregistering this surface from KAPI we know that this is
+     * primarily happens from nv_drm_framebuffer_destroy and access to this
+     * framebuffer has been externally synchronized, we are done with it.
+     * Because of that we do not need to synchronize this unregister.
+     */
+    paramsUnreg.request.skipSync = NV_TRUE;
 
     status = nvkms_ioctl_from_kapi(device->pKmsOpen,
                                    NVKMS_IOCTL_UNREGISTER_SURFACE,

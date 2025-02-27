@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -335,7 +335,7 @@ static NvU64 _convertLinkRateToDataRate
 
     if (bIs128b132bChannelCoding)
     {
-        // 128b/132b Total Data BW efficiency considers FEC overhead 
+        // 128b/132b Total Data BW efficiency considers FEC overhead
         dataRateHz  = DP_LINK_RATE_BITSPS_TO_BYTESPS(DATA_BW_EFF_128B_132B(minRate));
     }
     else
@@ -536,7 +536,7 @@ kdispComputeDpModeSettings_v05_01
     }
     else
     {
-        // 8b/10b SST.  
+        // 8b/10b SST.
         // (VBID+MVID+MAUD)
         const NvU32 symbolCount             = 3U;
         // Per spec, each symbol will be repeated 4 times.
@@ -612,12 +612,20 @@ kdispComputeDpModeSettings_v05_01
             hBlankSym -= 3;
 
         }
+
+        // Bug 5042450 clamp min_hBlankSym value
+        NvS32 hBlankSymMin = pDpModesetData->laneCount==4 ? 12 : ( pDpModesetData->laneCount==2 ? 19 : 43 );
+        if (hBlankSym < hBlankSymMin)
+        {
+            hBlankSym = hBlankSymMin;
+        }
+
         if (hBlankSym > 0)
         {
             dpInfo->hBlankSym = hBlankSym;
         }
 
-        // Bug - 4300218 
+        // Bug - 4300218
         // Programmed the vBlankSym based on the alogirthm mentioned in the bug 4300218
         vBlankSym = (NvS32)(((hActive - 3*pclkFactor) * linkFreqHz * 994) / (pDpModesetData->PClkFreqHz*1000));
         msaSym    = (36 / pDpModesetData->laneCount) + 3;
@@ -629,7 +637,7 @@ kdispComputeDpModeSettings_v05_01
         }
 
         //added some margin
-        vBlankSym -= 3; 
+        vBlankSym -= 3;
 
         if(vBlankSym > 0)
         {

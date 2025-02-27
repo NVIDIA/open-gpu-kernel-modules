@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 570.86.16.
+version 570.124.04.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-570.86.16 driver release.  This can be achieved by installing
+570.124.04 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -185,7 +185,7 @@ table below).
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/570.86.16/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/570.124.04/README/kernel_open.html
 
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
@@ -938,10 +938,17 @@ Subsystem Device ID.
 | NVIDIA RTX 500 Ada Generation Laptop GPU        | 28BB           |
 | NVIDIA GeForce RTX 4060 Laptop GPU              | 28E0           |
 | NVIDIA GeForce RTX 4050 Laptop GPU              | 28E1           |
+| NVIDIA GeForce RTX 3050 A Laptop GPU            | 28E3           |
 | NVIDIA RTX 2000 Ada Generation Embedded GPU     | 28F8           |
 | NVIDIA B200                                     | 2901 10DE 1999 |
 | NVIDIA B200                                     | 2901 10DE 199B |
 | NVIDIA B200                                     | 2901 10DE 20DA |
+| HGX GB200                                       | 2941 10DE 2046 |
+| HGX GB200                                       | 2941 10DE 20CA |
+| HGX GB200                                       | 2941 10DE 20D5 |
+| HGX GB200                                       | 2941 10DE 21C9 |
+| HGX GB200                                       | 2941 10DE 21CA |
 | NVIDIA GeForce RTX 5090                         | 2B85           |
 | NVIDIA GeForce RTX 5090 D                       | 2B87           |
 | NVIDIA GeForce RTX 5080                         | 2C02           |
+| NVIDIA GeForce RTX 5070 Ti                      | 2C05           |

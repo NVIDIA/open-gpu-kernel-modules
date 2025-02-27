@@ -1356,16 +1356,9 @@ kceGetMappings_GB100
     }
     KCE_ITER_END;
 
-    //
-    // A) Assign Decomp PCEs
-    //
-    kceMapPceLceForDecomp_HAL(pGpu,
-                              pKCeShimOwner,
-                              availablePceMaskForConnectingHub,
-                              pExposedLceMask);
     // After assigninig the PCE, update CE CAPS mask
     //
-    // B) Next, assign PCEs for PCIe or C2C case
+    // A) Assign PCEs for PCIe or C2C case
     //
     if (gpuIsSelfHosted(pGpu) && bIsC2CEnabled)
     {
@@ -1382,6 +1375,15 @@ kceGetMappings_GB100
                                 availablePceMaskForConnectingHub,
                                 pExposedLceMask);
     }
+
+    //
+    // B) Assign Decomp PCEs
+    //
+    kceMapPceLceForDecomp_HAL(pGpu,
+                              pKCeShimOwner,
+                              availablePceMaskForConnectingHub,
+                              pExposedLceMask);
+
     //
     // C) First, assign PCEs to Peers if nvlink is enabled or NVswitch enabled
     //

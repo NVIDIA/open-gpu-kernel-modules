@@ -421,8 +421,9 @@ static void SendVideoInfoFrame(const NVDispEvoRec *pDispEvo,
         head,
         NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME,
         (NVT_INFOFRAME_HEADER *) &VideoInfoFrame,
-        /* header length */ sizeof(NVT_INFOFRAME_HEADER) +
-        /* payload length */ VideoInfoFrame.length);
+        (/* header length */ sizeof(NVT_INFOFRAME_HEADER) +
+         /* payload length */ VideoInfoFrame.length),
+        TRUE /* needChecksum */);
 }
 
 /*
@@ -477,8 +478,9 @@ SendHDMI3DVendorSpecificInfoFrame(const NVDispEvoRec *pDispEvo,
         head,
         NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME,
         &vendorInfoFrame.Header,
-        /* header length */ sizeof(vendorInfoFrame.Header) +
-        /* payload length */ vendorInfoFrame.Header.length);
+        (/* header length */ sizeof(vendorInfoFrame.Header) +
+         /* payload length */ vendorInfoFrame.Header.length),
+        TRUE /* needChecksum */);
 }
 
 static void
@@ -541,8 +543,9 @@ SendHDRInfoFrame(const NVDispEvoRec *pDispEvo, const NvU32 head,
         head,
         transmitCtrl,
         (NVT_INFOFRAME_HEADER *) &hdrInfoFrame.header,
-        /* header length */ sizeof(hdrInfoFrame.header) +
-        /* payload length */ hdrInfoFrame.header.length);
+        (/* header length */ sizeof(hdrInfoFrame.header) +
+         /* payload length */ hdrInfoFrame.header.length),
+        TRUE /* needChecksum */);
 }
 
 
@@ -1745,7 +1748,8 @@ void nvHdmiSetVRR(NVDispEvoPtr pDispEvo, NvU32 head, NvBool enable)
         head,
         transmitCtrl,
         (NVT_INFOFRAME_HEADER *) &empInfoFrame,
-        sizeof(empInfoFrame));
+        sizeof(empInfoFrame),
+        FALSE /* needChecksum */);
 }
 
 /*

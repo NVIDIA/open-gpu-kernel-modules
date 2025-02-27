@@ -1401,6 +1401,56 @@ LinkConfiguration * DeviceImpl::inferLeafLink(unsigned * totalLinkSlots)
     return &bandwidth.lastHopLinkConfig;
 }
 
+void DeviceImpl::inferPathConstraints()
+{
+    if (!bandwidth.enum_path.availablePbnUpdated)
+    {
+        if (plugged)
+        {
+            NakData nack;
+            for (unsigned retries = 0; retries < 7; retries++)
+            {
+                // Marking the EPR as a path message in 2x
+                EnumPathResMessage epr(getTopologyAddress().parent(), getTopologyAddress().tail(), false);
+                bool sendStatus = connector->messageManager->send(&epr, nack);
+                if (!sendStatus)
+                {
+                    if (nack.reason == NakDefer || nack.reason == NakTimeout)
+                        continue;
+
+                    bandwidth.enum_path.total = 0;
+                    bandwidth.enum_path.free = 0;
+                    bandwidth.enum_path.availableStreams = 0;
+                    bandwidth.enum_path.dfpLinkAvailable = 0;
+                    break;
+                }
+                else
+                {
+                    bandwidth.enum_path.total = epr.reply.TotalPBN;
+                    bandwidth.enum_path.free = epr.reply.FreePBN;
+                    bandwidth.enum_path.bPathFECCapable = epr.reply.bFECCapability;
+                    bandwidth.enum_path.availableStreams = epr.reply.availableStreams;
+                    // Include the new DFP available PBN only for 2x
+                    bandwidth.enum_path.dfpLinkAvailable = epr.reply.DFPLinkAvailablePBN;
+
+                    break;
+                }
+            }
+        }
+        else
+        {
+            bandwidth.enum_path.total = bandwidth.enum_path.free = bandwidth.enum_path.dfpLinkAvailable = 0;
+        }
+
+        bandwidth.enum_path.dataValid = true;
+        bandwidth.enum_path.availablePbnUpdated = true;
+        bandwidth.lastHopLinkConfig = LinkConfiguration(DP_MIN(bandwidth.enum_path.total, bandwidth.enum_path.dfpLinkAvailable));
+        // Update FEC support of the device after EPR
+        this->getFECSupport();
+    }
+    return;
+}
+
 bool DeviceImpl::isActive()
 {
     DP_ASSERT(!activeGroup || activeGroup->isHeadAttached());

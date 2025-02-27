@@ -1409,11 +1409,13 @@ static bool thrashing_processors_have_fast_access_to(uvm_va_space_t *va_space,
         uvm_processor_mask_set(fast_to, to);
     }
     else {
-        // Include registered SMC peers and the processor 'to'.
+        // Include all SMC peers and the processor 'to'.
+        // This includes SMC peers that are not registered.
+        // Since not-registered peers cannot be in page_thrashing->processors,
+        // the value of their respective bits in "fast_to" doesn't matter.
         uvm_processor_mask_range_fill(fast_to,
                                       uvm_gpu_id_from_sub_processor(uvm_parent_gpu_id_from_gpu_id(to), 0),
                                       UVM_PARENT_ID_MAX_SUB_PROCESSORS);
-        uvm_processor_mask_and(fast_to, fast_to, &va_space->registered_gpu_va_spaces);
     }
 
     return uvm_processor_mask_subset(&page_thrashing->processors, fast_to);

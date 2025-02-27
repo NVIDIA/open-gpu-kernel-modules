@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -756,6 +756,8 @@ typedef struct UvmGpuFbInfo_tag
     NvBool bStaticBar1Enabled; // Static BAR1 mode is enabled
     NvU64  staticBar1StartOffset;  // The start offset of the the static mapping
     NvU64  staticBar1Size;     // The size of the static mapping
+    NvU32  heapStart;          // The start offset of heap in KB, helpful for MIG
+                               // systems
 } UvmGpuFbInfo;
 
 typedef struct UvmGpuEccInfo_tag

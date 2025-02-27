@@ -226,6 +226,13 @@ struct NV_BITVECTOR
                           pRawMask,                                         \
                           rawMaskSize)
 
+#define bitVectorLowestNBits(pBitVectorDst, pBitVectorSrc,  N)              \
+    bitVectorLowestNBits_IMPL(&((pBitVectorDst)->real),                     \
+                          sizeof(((pBitVectorDst)->last->_)),               \
+                          &((pBitVectorSrc)->real),                         \
+                          sizeof(((pBitVectorSrc)->last->_)),               \
+                          N)
+
 #define FOR_EACH_IN_BITVECTOR(pBitVector, index)                            \
     {                                                                       \
         MAKE_ANON_BITVECTOR(sizeof(((pBitVector)->last->_))) localMask;     \
@@ -466,6 +473,16 @@ bitVectorFromRaw_IMPL
     NvU16 bitVectorLast,
     const void *pRawMask,
     NvU32 rawMaskSize
+);
+
+NV_STATUS
+bitVectorLowestNBits_IMPL
+(
+    NV_BITVECTOR *pBitVectorDst,
+    NvU16 bitVectorDstLast,
+    const NV_BITVECTOR *pBitVectorSrc,
+    NvU16 bitVectorSrcLast,
+    NvU16 n
 );
 
 #ifdef __cplusplus
