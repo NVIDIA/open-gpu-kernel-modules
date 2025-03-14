@@ -6067,7 +6067,6 @@ void ConnectorImpl::flushTimeslotsToHardware()
 
 void ConnectorImpl::beforeDeleteStream(GroupImpl * group, bool forFlushMode)
 {
-
     //
     // During flush entry, if the link is not trained, retrain
     // the link so that ACT can be ack'd by the sink.
@@ -6079,11 +6078,18 @@ void ConnectorImpl::beforeDeleteStream(GroupImpl * group, bool forFlushMode)
     // head is not actively driving pixels and this needs to be handled
     // differently .
     //
-    if(forFlushMode && linkUseMultistream())
+    if (forFlushMode && linkUseMultistream())
     {
         if(isLinkLost())
         {
-            train(activeLinkConfig, false);
+            if(!this->bDisable5019537Fix)
+            {
+                train(highestAssessedLC, false);
+            }
+            else
+            {
+                train(activeLinkConfig, false);
+            }
         }
     }
 
@@ -7307,8 +7313,11 @@ void ConnectorImpl::notifyShortPulse()
         {
             return;
         }
-        //save the previous highest assessed LC
+
+        // Save the previous highest assessed LC
         LinkConfiguration previousAssessedLC = highestAssessedLC;
+        // Save original active link configuration.
+        LinkConfiguration originalActiveLinkConfig = activeLinkConfig;
 
         if (main->isConnectorUSBTypeC() &&
             activeLinkConfig.bIs128b132bChannelCoding &&
@@ -7316,11 +7325,27 @@ void ConnectorImpl::notifyShortPulse()
         {
             if (activeLinkConfig.isValid() && enableFlush())
             {
-                train(activeLinkConfig, true);
+                if (!this->bDisable5019537Fix)
+                {
+                    train(originalActiveLinkConfig, true);
+                }
+                else
+                {
+                    train(activeLinkConfig, true);
+                }
                 disableFlush();
             }
-            main->invalidateLinkRatesInFallbackTable(activeLinkConfig.peakRate);
-            hal->overrideCableIdCap(activeLinkConfig.peakRate, false);
+            
+            if (!this->bDisable5019537Fix)
+            {
+                main->invalidateLinkRatesInFallbackTable(originalActiveLinkConfig.peakRate);
+                hal->overrideCableIdCap(originalActiveLinkConfig.peakRate, false);
+            }
+            else
+            {
+                main->invalidateLinkRatesInFallbackTable(activeLinkConfig.peakRate);
+                hal->overrideCableIdCap(activeLinkConfig.peakRate, false);
+            }
 
             highestAssessedLC = getMaxLinkConfig();
 
@@ -7334,8 +7359,16 @@ void ConnectorImpl::notifyShortPulse()
 
         if (activeLinkConfig.isValid() && enableFlush())
         {
-            LinkConfiguration originalActiveLinkConfig = activeLinkConfig;
-            if (!train(activeLinkConfig, false))
+            bool bTrainSuccess = false;
+            if (!this->bDisable5019537Fix)
+            {
+                bTrainSuccess = train(originalActiveLinkConfig, false);
+            }
+            else
+            {
+                bTrainSuccess = train(activeLinkConfig, false);
+            }
+            if (!bTrainSuccess)
             {
                 //
                 // If original link config could not be restored force
