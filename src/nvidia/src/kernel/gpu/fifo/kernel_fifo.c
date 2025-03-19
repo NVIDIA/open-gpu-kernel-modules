@@ -1367,6 +1367,7 @@ kfifoChidMgrAllocChannelGroupHwID_IMPL
 )
 {
     NvU32 maxChannelGroups;
+    char logMessage[256] = "";
 
     if (pChGrpID == NULL)
         return NV_ERR_INVALID_ARGUMENT;
@@ -1391,6 +1392,13 @@ kfifoChidMgrAllocChannelGroupHwID_IMPL
     {
         *pChGrpID = maxChannelGroups;
         NV_PRINTF(LEVEL_ERROR, "No allocatable FIFO available.\n");
+
+        // For vGPU, log the error message on host side as well
+        if (IS_VIRTUAL(pGpu))
+        {
+            nvDbgSnprintf(logMessage, sizeof(logMessage), "Guest attempted to allocate channel above its max per engine channel limit 0x%x", maxChannelGroups);
+            NV_RM_RPC_LOG(pGpu, (const char *)logMessage, NV_VGPU_LOG_LEVEL_ERROR);
+        }
         return NV_ERR_NO_FREE_FIFOS;
     }
     return NV_OK;

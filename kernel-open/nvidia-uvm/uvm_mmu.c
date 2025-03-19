@@ -90,9 +90,9 @@ NV_STATUS uvm_mmu_init(void)
         page_table_aperture = UVM_APERTURE_SYS;
     }
     else {
-        pr_info("Invalid uvm_page_table_location %s. Using %s instead.\n",
-                uvm_page_table_location,
-                uvm_aperture_string(page_table_aperture));
+        UVM_INFO_PRINT("Invalid uvm_page_table_location %s. Using %s instead.\n",
+                       uvm_page_table_location,
+                       uvm_aperture_string(page_table_aperture));
     }
 
     return NV_OK;

@@ -1627,9 +1627,9 @@ intrServiceStallList_IMPL
     NvBool              bPending;
     CALL_CONTEXT       *pOldContext = NULL;
 
-    if (gpumgrGetBcEnabledStatus(pGpu))
+    if (gpumgrGetBcEnabledStatus(pGpu) && !rmDeviceGpuLockIsOwner(pGpu->gpuInstance))
     {
-        NV_ASSERT_FAILED("intrServiceStallList_IMPL is expected to be unicast! Please post a stacktrace in bug 2003060!");
+        NV_ASSERT_FAILED("intrServiceStallList_IMPL is expected to be unicast or own all its locks! Please post a stacktrace in bug 2003060!");
     }
 
     if (!RMCFG_FEATURE_PLATFORM_GSP)

@@ -931,7 +931,7 @@ EXPORT_SYMBOL(nvUvmInterfaceInitAccessCntrInfo);
 
 NV_STATUS nvUvmInterfaceEnableAccessCntr(uvmGpuDeviceHandle device,
                                          UvmGpuAccessCntrInfo *pAccessCntrInfo,
-                                         UvmGpuAccessCntrConfig *pAccessCntrConfig)
+                                         const UvmGpuAccessCntrConfig *pAccessCntrConfig)
 {
     nvidia_stack_t *sp = NULL;
     NV_STATUS status;

@@ -2521,7 +2521,8 @@ static NvBool ConstructAdvancedInfoFramePacket(
      * XXX If required, add support for the large infoframe with
      * multiple infoframes grouped together.
      */
-    nvAssert((infoframeSize + (needChecksum ? 1 : 0)) <= packetLen);
+    nvAssert((infoframeSize + 1 /* + HB3 */ + (needChecksum ? 1 : 0)) <=
+             packetLen);
 
     pPacket[0] = hdmiPacketType; /* HB0 */
 
@@ -2554,10 +2555,8 @@ static NvBool ConstructAdvancedInfoFramePacket(
     if (needChecksum) {
         pPacket[4] = 0; /* PB0: checksum */
 
-        /*
-         * XXX Redundant since we always call with swChecksum=FALSE and
-         * _HDMI_PKT_TRANSMIT_CTRL_CHKSUM_HW_EN
-         */
+        nvkms_memcpy(&pPacket[5], pPayload, payloadLen); /* PB1~ */
+
         if (swChecksum) {
             NvU8 checksum = 0;
 
@@ -2566,8 +2565,6 @@ static NvBool ConstructAdvancedInfoFramePacket(
             }
             pPacket[4] = ~checksum + 1;
         }
-
-        nvkms_memcpy(&pPacket[5], pPayload, payloadLen); /* PB1~ */
     } else {
         nvAssert(!swChecksum);
         nvkms_memcpy(&pPacket[4], pPayload, payloadLen); /* PB0~ */
@@ -2587,6 +2584,7 @@ static void SendHdmiInfoFrameCA(const NVDispEvoRec *pDispEvo,
     NVHDMIPKT_TYPE hdmiLibType;
     NVHDMIPKT_RESULT ret;
     ADVANCED_INFOFRAME advancedInfoFrame = { };
+    NvBool swChecksum;
     /*
      * These structures are weird. The NVT_VIDEO_INFOFRAME,
      * NVT_VENDOR_SPECIFIC_INFOFRAME,
@@ -2616,10 +2614,21 @@ static void SendHdmiInfoFrameCA(const NVDispEvoRec *pDispEvo,
     advancedInfoFrame.location = INFOFRAME_CTRL_LOC_VBLANK;
     advancedInfoFrame.hwChecksum = needChecksum;
 
+    // Large infoframes are incompatible with hwChecksum
+    nvAssert(!(advancedInfoFrame.isLargeInfoframe &&
+               advancedInfoFrame.hwChecksum));
+
+    // XXX WAR bug 5124145 by always computing checksum in software if needed.
+    swChecksum = needChecksum;
+
+    // If we need a checksum: hwChecksum, swChecksum, or both must be enabled.
+    nvAssert(!needChecksum ||
+             (advancedInfoFrame.hwChecksum || swChecksum));
+
     if (!ConstructAdvancedInfoFramePacket(pInfoFrameHeader,
                                           infoFrameSize,
                                           needChecksum,
-                                          FALSE /* swChecksum */,
+                                          swChecksum,
                                           packet,
                                           sizeof(packet))) {
         return;

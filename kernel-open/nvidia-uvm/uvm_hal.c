@@ -217,7 +217,6 @@ static uvm_hal_class_ops_t host_table[] =
             .clear_faulted_channel_method = uvm_hal_maxwell_host_clear_faulted_channel_method_unsupported,
             .clear_faulted_channel_register = uvm_hal_maxwell_host_clear_faulted_channel_register_unsupported,
             .access_counter_clear_all = uvm_hal_maxwell_access_counter_clear_all_unsupported,
-            .access_counter_clear_type = uvm_hal_maxwell_access_counter_clear_type_unsupported,
             .access_counter_clear_targeted = uvm_hal_maxwell_access_counter_clear_targeted_unsupported,
             .get_time = uvm_hal_maxwell_get_time,
         }
@@ -254,9 +253,6 @@ static uvm_hal_class_ops_t host_table[] =
             .replay_faults = uvm_hal_volta_replay_faults,
             .cancel_faults_va = uvm_hal_volta_cancel_faults_va,
             .clear_faulted_channel_method = uvm_hal_volta_host_clear_faulted_channel_method,
-            .access_counter_clear_all = uvm_hal_volta_access_counter_clear_all,
-            .access_counter_clear_type = uvm_hal_volta_access_counter_clear_type,
-            .access_counter_clear_targeted = uvm_hal_volta_access_counter_clear_targeted,
             .semaphore_timestamp = uvm_hal_volta_host_semaphore_timestamp,
         }
     },
@@ -271,6 +267,8 @@ static uvm_hal_class_ops_t host_table[] =
             .tlb_invalidate_all = uvm_hal_turing_host_tlb_invalidate_all,
             .tlb_invalidate_va = uvm_hal_turing_host_tlb_invalidate_va,
             .tlb_invalidate_test = uvm_hal_turing_host_tlb_invalidate_test,
+            .access_counter_clear_all = uvm_hal_turing_access_counter_clear_all,
+            .access_counter_clear_targeted = uvm_hal_turing_access_counter_clear_targeted,
         }
     },
     {
@@ -537,22 +535,19 @@ static uvm_hal_class_ops_t access_counter_buffer_table[] =
     {
         .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GV100,
         .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GP100,
-        .u.access_counter_buffer_ops = {
-            .enable_access_counter_notifications  = uvm_hal_volta_enable_access_counter_notifications,
-            .disable_access_counter_notifications = uvm_hal_volta_disable_access_counter_notifications,
-            .clear_access_counter_notifications = uvm_hal_volta_clear_access_counter_notifications,
-            .parse_entry = uvm_hal_volta_access_counter_buffer_parse_entry,
-            .entry_is_valid = uvm_hal_volta_access_counter_buffer_entry_is_valid,
-            .entry_clear_valid = uvm_hal_volta_access_counter_buffer_entry_clear_valid,
-            .entry_size = uvm_hal_volta_access_counter_buffer_entry_size,
-        }
+        .u.access_counter_buffer_ops = {}
     },
     {
         .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_TU100,
         .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GV100,
         .u.access_counter_buffer_ops = {
+            .enable_access_counter_notifications  = uvm_hal_turing_enable_access_counter_notifications,
             .disable_access_counter_notifications = uvm_hal_turing_disable_access_counter_notifications,
             .clear_access_counter_notifications = uvm_hal_turing_clear_access_counter_notifications,
+            .parse_entry = uvm_hal_turing_access_counter_buffer_parse_entry,
+            .entry_is_valid = uvm_hal_turing_access_counter_buffer_entry_is_valid,
+            .entry_clear_valid = uvm_hal_turing_access_counter_buffer_entry_clear_valid,
+            .entry_size = uvm_hal_turing_access_counter_buffer_entry_size,
         }
     },
     {
@@ -843,10 +838,8 @@ static void hal_override_properties(uvm_parent_gpu_t *parent_gpu)
     // Computing.
     //
     // TODO: Bug 200692962: Add support for access counters in vGPU
-    if ((parent_gpu->virt_mode != UVM_VIRT_MODE_NONE) || g_uvm_global.conf_computing_enabled) {
+    if ((parent_gpu->virt_mode != UVM_VIRT_MODE_NONE) || g_uvm_global.conf_computing_enabled)
         parent_gpu->access_counters_supported = false;
-        parent_gpu->access_counters_can_use_physical_addresses = false;
-    }
 }
 
 void uvm_hal_init_properties(uvm_parent_gpu_t *parent_gpu)
@@ -1042,36 +1035,15 @@ void uvm_hal_print_fault_entry(const uvm_fault_buffer_entry_t *entry)
     UVM_DBG_PRINT("    timestamp:                    %llu\n", entry->timestamp);
 }
 
-const char *uvm_access_counter_type_string(uvm_access_counter_type_t access_counter_type)
-{
-    BUILD_BUG_ON(UVM_ACCESS_COUNTER_TYPE_MAX != 2);
-
-    switch (access_counter_type) {
-        UVM_ENUM_STRING_CASE(UVM_ACCESS_COUNTER_TYPE_MIMC);
-        UVM_ENUM_STRING_CASE(UVM_ACCESS_COUNTER_TYPE_MOMC);
-        UVM_ENUM_STRING_DEFAULT();
-    }
-}
-
 void uvm_hal_print_access_counter_buffer_entry(const uvm_access_counter_buffer_entry_t *entry)
 {
-    if (!entry->address.is_virtual) {
-        UVM_DBG_PRINT("physical address: {0x%llx:%s}\n",
-                      entry->address.address,
-                      uvm_aperture_string(entry->address.aperture));
-    }
-    else {
-        UVM_DBG_PRINT("virtual address: 0x%llx\n", entry->address.address);
-        UVM_DBG_PRINT("    instance_ptr    {0x%llx:%s}\n",
-                      entry->virtual_info.instance_ptr.address,
-                      uvm_aperture_string(entry->virtual_info.instance_ptr.aperture));
-        UVM_DBG_PRINT("    mmu_engine_type %s\n", uvm_mmu_engine_type_string(entry->virtual_info.mmu_engine_type));
-        UVM_DBG_PRINT("    mmu_engine_id   %u\n", entry->virtual_info.mmu_engine_id);
-        UVM_DBG_PRINT("    ve_id           %u\n", entry->virtual_info.ve_id);
-    }
-
-    UVM_DBG_PRINT("    is_virtual      %u\n", entry->address.is_virtual);
-    UVM_DBG_PRINT("    counter_type    %s\n", uvm_access_counter_type_string(entry->counter_type));
+    UVM_DBG_PRINT("virtual address: 0x%llx\n", entry->address);
+    UVM_DBG_PRINT("    instance_ptr    {0x%llx:%s}\n",
+                  entry->instance_ptr.address,
+                  uvm_aperture_string(entry->instance_ptr.aperture));
+    UVM_DBG_PRINT("    mmu_engine_type %s\n", uvm_mmu_engine_type_string(entry->mmu_engine_type));
+    UVM_DBG_PRINT("    mmu_engine_id   %u\n", entry->mmu_engine_id);
+    UVM_DBG_PRINT("    ve_id           %u\n", entry->ve_id);
     UVM_DBG_PRINT("    counter_value   %u\n", entry->counter_value);
     UVM_DBG_PRINT("    subgranularity  0x%08x\n", entry->sub_granularity);
     UVM_DBG_PRINT("    bank            %u\n", entry->bank);

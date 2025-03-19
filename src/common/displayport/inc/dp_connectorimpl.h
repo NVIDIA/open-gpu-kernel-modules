@@ -315,6 +315,12 @@ namespace DisplayPort
         //
         bool        bNoFallbackInPostLQA;
 
+        //
+        // Set to true when we do not want DSC to be limited
+        // to 16 BPP for multitile on Blackwell++
+        //
+        bool        bDisableDscMaxBppLimit;
+
         bool        bReportDeviceLostBeforeNew;
         bool        bDisableSSC;
         bool        bEnableFastLT;
@@ -334,6 +340,8 @@ namespace DisplayPort
         bool        bForceHeadShutdownFromRegkey;
 
         bool        bForceHeadShutdownPerMonitor;
+
+        bool        bEnableLowerBppCheckForDsc;
 
         //
         // Dual SST Partner connector object pointer

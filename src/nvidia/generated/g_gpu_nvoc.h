@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1073,7 +1073,7 @@ struct OBJGPU {
     NvBool (*__gpuIsInternalSkuFuseEnabled__)(struct OBJGPU * /*this*/);  // halified (2 hals) body
     NvBool (*__gpuGetIsCmpSku__)(struct OBJGPU * /*this*/);  // halified (2 hals) body
 
-    // 113 PDB properties
+    // 114 PDB properties
     NvBool PDB_PROP_GPU_HIGH_SPEED_BRIDGE_CONNECTED;
     NvBool PDB_PROP_GPU_IN_STANDBY;
     NvBool PDB_PROP_GPU_IN_HIBERNATE;
@@ -1111,6 +1111,7 @@ struct OBJGPU {
     NvBool PDB_PROP_GPU_ZERO_FB;
     NvBool PDB_PROP_GPU_CAN_OPTIMIZE_COMPUTE_USE_CASE;
     NvBool PDB_PROP_GPU_MIG_SUPPORTED;
+    NvBool PDB_PROP_GPU_MIG_MIRROR_HOST_CI_ON_GUEST;
     NvBool PDB_PROP_GPU_MIG_SUPPORTS_SPLIT_CE_RANGES;
     NvBool PDB_PROP_GPU_MIG_GFX_SUPPORTED;
     NvBool PDB_PROP_GPU_VC_CAPABILITY_SUPPORTED;
@@ -1199,7 +1200,6 @@ struct OBJGPU {
     OS_RM_CAPS *pOsRmCaps;
     NvU32 halImpl;
     void *hPci;
-    void *hPciFn1;
     GpuEngineEventNotificationList *engineNonstallIntrEventNotifications[84];
     NvBool bIsSOC;
     NvU32 gpuInstance;
@@ -1581,6 +1581,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGPU;
 #define PDB_PROP_GPU_IN_BUGCHECK_CALLBACK_ROUTINE_BASE_NAME PDB_PROP_GPU_IN_BUGCHECK_CALLBACK_ROUTINE
 #define PDB_PROP_GPU_VGPU_OFFLOAD_CAPABLE_BASE_CAST
 #define PDB_PROP_GPU_VGPU_OFFLOAD_CAPABLE_BASE_NAME PDB_PROP_GPU_VGPU_OFFLOAD_CAPABLE
+#define PDB_PROP_GPU_MIG_MIRROR_HOST_CI_ON_GUEST_BASE_CAST
+#define PDB_PROP_GPU_MIG_MIRROR_HOST_CI_ON_GUEST_BASE_NAME PDB_PROP_GPU_MIG_MIRROR_HOST_CI_ON_GUEST
 #define PDB_PROP_GPU_IN_HIBERNATE_BASE_CAST
 #define PDB_PROP_GPU_IN_HIBERNATE_BASE_NAME PDB_PROP_GPU_IN_HIBERNATE
 #define PDB_PROP_GPU_BROKEN_FB_BASE_CAST

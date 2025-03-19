@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2024 NVIDIA Corporation
+    Copyright (c) 2016-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -154,62 +154,73 @@ static unsigned schedule_non_replayable_faults_handler(uvm_parent_gpu_t *parent_
     return 1;
 }
 
-static unsigned schedule_access_counters_handler(uvm_parent_gpu_t *parent_gpu)
+static unsigned schedule_access_counters_handler(uvm_parent_gpu_t *parent_gpu, NvU32 notif_buf_index)
 {
     uvm_assert_spinlock_locked(&parent_gpu->isr.interrupts_lock);
+    UVM_ASSERT(notif_buf_index < parent_gpu->rm_info.accessCntrBufferCount);
+
+    // On Volta, accessCntrBufferCount is > 0, but we don't support access
+    // counters in UVM (access_counters_supported is cleared during HAL
+    // initialization.) This check prevents the top-half from accessing
+    // unallocated memory.
+    if (!parent_gpu->access_counters_supported)
+        return 0;
 
     if (parent_gpu->isr.is_suspended)
         return 0;
 
-    if (!parent_gpu->isr.access_counters.handling_ref_count)
+    if (!parent_gpu->isr.access_counters[notif_buf_index].handling_ref_count)
         return 0;
 
-    if (down_trylock(&parent_gpu->isr.access_counters.service_lock.sem) != 0)
+    if (down_trylock(&parent_gpu->isr.access_counters[notif_buf_index].service_lock.sem) != 0)
         return 0;
 
-    if (!uvm_parent_gpu_access_counters_pending(parent_gpu)) {
-        up(&parent_gpu->isr.access_counters.service_lock.sem);
+    if (!uvm_parent_gpu_access_counters_pending(parent_gpu, notif_buf_index)) {
+        up(&parent_gpu->isr.access_counters[notif_buf_index].service_lock.sem);
         return 0;
     }
 
     nv_kref_get(&parent_gpu->gpu_kref);
 
     // Interrupts need to be disabled to avoid an interrupt storm
-    uvm_parent_gpu_access_counters_intr_disable(parent_gpu);
+    uvm_access_counters_intr_disable(&parent_gpu->access_counter_buffer[notif_buf_index]);
 
     nv_kthread_q_schedule_q_item(&parent_gpu->isr.bottom_half_q,
-                                 &parent_gpu->isr.access_counters.bottom_half_q_item);
+                                 &parent_gpu->isr.access_counters[notif_buf_index].bottom_half_q_item);
 
     return 1;
 }
 
-// This is called from RM's top-half ISR (see: the nvidia_isr() function), and UVM is given a
-// chance to handle the interrupt, before most of the RM processing. UVM communicates what it
-// did, back to RM, via the return code:
+// This is called from RM's top-half ISR (see: the nvidia_isr() function), and
+// UVM is given a chance to handle the interrupt, before most of the RM
+// processing. UVM communicates what it did, back to RM, via the return code:
 //
 //     NV_OK:
 //         UVM handled an interrupt.
 //
 //     NV_WARN_MORE_PROCESSING_REQUIRED:
-//         UVM did not schedule a bottom half, because it was unable to get the locks it
-//         needed, but there is still UVM work to be done. RM will return "not handled" to the
-//         Linux kernel, *unless* RM handled other faults in its top half. In that case, the
-//         fact that UVM did not handle its interrupt is lost. However, life and interrupt
-//         processing continues anyway: the GPU will soon raise another interrupt, because
-//         that's what it does when there are replayable page faults remaining (GET != PUT in
-//         the fault buffer).
+//         UVM did not schedule a bottom half, because it was unable to get the
+//         locks it needed, but there is still UVM work to be done. RM will
+//         return "not handled" to the Linux kernel, *unless* RM handled other
+//         faults in its top half. In that case, the fact that UVM did not
+//         handle its interrupt is lost. However, life and interrupt processing
+//         continues anyway: the GPU will soon raise another interrupt, because
+//         that's what it does when there are replayable page faults remaining
+//         (GET != PUT in the fault buffer).
 //
 //     NV_ERR_NO_INTR_PENDING:
-//         UVM did not find any work to do. Currently this is handled in RM in exactly the same
-//         way as NV_WARN_MORE_PROCESSING_REQUIRED is handled. However, the extra precision is
-//         available for the future. RM's interrupt handling tends to evolve as new chips and
-//         new interrupts get created.
+//         UVM did not find any work to do. Currently this is handled in RM in
+//         exactly the same way as NV_WARN_MORE_PROCESSING_REQUIRED is handled.
+//         However, the extra precision is available for the future. RM's
+//         interrupt handling tends to evolve as new chips and new interrupts
+//         get created.
 
 static NV_STATUS uvm_isr_top_half(const NvProcessorUuid *gpu_uuid)
 {
     uvm_parent_gpu_t *parent_gpu;
     unsigned num_handlers_scheduled = 0;
     NV_STATUS status = NV_OK;
+    NvU32 i;
 
     if (!in_interrupt() && in_atomic()) {
         // Early-out if we're not in interrupt context, but memory allocations
@@ -243,14 +254,16 @@ static NV_STATUS uvm_isr_top_half(const NvProcessorUuid *gpu_uuid)
     nv_kref_get(&parent_gpu->gpu_kref);
     uvm_spin_unlock_irqrestore(&g_uvm_global.gpu_table_lock);
 
-    // Now that we got a GPU object, lock it so that it can't be removed without us noticing.
+    // Now that we got a GPU object, lock it so that it can't be removed without
+    // us noticing.
     uvm_spin_lock_irqsave(&parent_gpu->isr.interrupts_lock);
 
     ++parent_gpu->isr.interrupt_count;
 
     num_handlers_scheduled += schedule_replayable_faults_handler(parent_gpu);
     num_handlers_scheduled += schedule_non_replayable_faults_handler(parent_gpu);
-    num_handlers_scheduled += schedule_access_counters_handler(parent_gpu);
+    for (i = 0; i < parent_gpu->rm_info.accessCntrBufferCount; i++)
+        num_handlers_scheduled += schedule_access_counters_handler(parent_gpu, i);
 
     if (num_handlers_scheduled == 0) {
         if (parent_gpu->isr.is_suspended)
@@ -288,6 +301,55 @@ static NV_STATUS init_queue_on_node(nv_kthread_q_t *queue, const char *name, int
     return errno_to_nv_status(nv_kthread_q_init(queue, name));
 }
 
+static NV_STATUS uvm_isr_init_access_counters(uvm_parent_gpu_t *parent_gpu, NvU32 notif_buf_index)
+{
+    NV_STATUS status = NV_OK;
+    uvm_va_block_context_t *block_context;
+
+    UVM_ASSERT(parent_gpu->access_counters_supported);
+    UVM_ASSERT(notif_buf_index < parent_gpu->rm_info.accessCntrBufferCount);
+
+    uvm_sema_init(&parent_gpu->isr.access_counters[notif_buf_index].service_lock, 1, UVM_LOCK_ORDER_ISR);
+
+    status = uvm_parent_gpu_init_access_counters(parent_gpu, notif_buf_index);
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("Failed to initialize GPU access counters: %s, GPU: %s, notif buf index: %u\n",
+                      nvstatusToString(status),
+                      uvm_parent_gpu_name(parent_gpu),
+                      notif_buf_index);
+        return status;
+    }
+
+    if (uvm_enable_builtin_tests && parent_gpu->test.access_counters_alloc_block_context)
+        return NV_ERR_NO_MEMORY;
+
+    block_context = uvm_va_block_context_alloc(NULL);
+    if (!block_context)
+        return NV_ERR_NO_MEMORY;
+
+    parent_gpu->access_counter_buffer[notif_buf_index].batch_service_context.block_service_context.block_context =
+        block_context;
+
+    nv_kthread_q_item_init(&parent_gpu->isr.access_counters[notif_buf_index].bottom_half_q_item,
+                           access_counters_isr_bottom_half_entry,
+                           &parent_gpu->access_counter_buffer[notif_buf_index]);
+
+    // Access counters interrupts are initially disabled. They are
+    // dynamically enabled when the GPU is registered on a VA space.
+    parent_gpu->isr.access_counters[notif_buf_index].handling_ref_count = 0;
+
+    if (uvm_enable_builtin_tests && parent_gpu->test.isr_access_counters_alloc_stats_cpu)
+        return NV_ERR_NO_MEMORY;
+
+    parent_gpu->isr.access_counters[notif_buf_index].stats.cpu_exec_count =
+        uvm_kvmalloc_zero(sizeof(*parent_gpu->isr.access_counters[notif_buf_index].stats.cpu_exec_count) *
+                          num_possible_cpus());
+    if (!parent_gpu->isr.access_counters[notif_buf_index].stats.cpu_exec_count)
+        return NV_ERR_NO_MEMORY;
+
+    return NV_OK;
+}
+
 NV_STATUS uvm_parent_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
 {
     NV_STATUS status = NV_OK;
@@ -316,7 +378,7 @@ NV_STATUS uvm_parent_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
         if (!block_context)
             return NV_ERR_NO_MEMORY;
 
-        parent_gpu->fault_buffer_info.replayable.block_service_context.block_context = block_context;
+        parent_gpu->fault_buffer.replayable.block_service_context.block_context = block_context;
 
         parent_gpu->isr.replayable_faults.handling = true;
 
@@ -344,7 +406,7 @@ NV_STATUS uvm_parent_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
             if (!block_context)
                 return NV_ERR_NO_MEMORY;
 
-            parent_gpu->fault_buffer_info.non_replayable.block_service_context.block_context = block_context;
+            parent_gpu->fault_buffer.non_replayable.block_service_context.block_context = block_context;
 
             parent_gpu->isr.non_replayable_faults.handling = true;
 
@@ -361,32 +423,31 @@ NV_STATUS uvm_parent_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
         }
 
         if (parent_gpu->access_counters_supported) {
-            status = uvm_parent_gpu_init_access_counters(parent_gpu);
-            if (status != NV_OK) {
-                UVM_ERR_PRINT("Failed to initialize GPU access counters: %s, GPU: %s\n",
-                              nvstatusToString(status),
-                              uvm_parent_gpu_name(parent_gpu));
-                return status;
+            NvU32 index_count = parent_gpu->rm_info.accessCntrBufferCount;
+            NvU32 notif_buf_index;
+
+            UVM_ASSERT(index_count > 0);
+
+            if (uvm_enable_builtin_tests && parent_gpu->test.access_counters_alloc_buffer)
+                return NV_ERR_NO_MEMORY;
+
+            parent_gpu->access_counter_buffer = uvm_kvmalloc_zero(sizeof(*parent_gpu->access_counter_buffer) *
+                                                                  index_count);
+            if (!parent_gpu->access_counter_buffer)
+                return NV_ERR_NO_MEMORY;
+
+            if (uvm_enable_builtin_tests && parent_gpu->test.isr_access_counters_alloc)
+                return NV_ERR_NO_MEMORY;
+
+            parent_gpu->isr.access_counters = uvm_kvmalloc_zero(sizeof(*parent_gpu->isr.access_counters) * index_count);
+            if (!parent_gpu->isr.access_counters)
+                return NV_ERR_NO_MEMORY;
+
+            for (notif_buf_index = 0; notif_buf_index < index_count; notif_buf_index++) {
+                status = uvm_isr_init_access_counters(parent_gpu, notif_buf_index);
+                if (status != NV_OK)
+                    return status;
             }
-
-            block_context = uvm_va_block_context_alloc(NULL);
-            if (!block_context)
-                return NV_ERR_NO_MEMORY;
-
-            parent_gpu->access_counter_buffer_info.batch_service_context.block_service_context.block_context =
-                block_context;
-
-            nv_kthread_q_item_init(&parent_gpu->isr.access_counters.bottom_half_q_item,
-                                   access_counters_isr_bottom_half_entry,
-                                   parent_gpu);
-
-            // Access counters interrupts are initially disabled. They are
-            // dynamically enabled when the GPU is registered on a VA space.
-            parent_gpu->isr.access_counters.handling_ref_count = 0;
-            parent_gpu->isr.access_counters.stats.cpu_exec_count =
-                uvm_kvmalloc_zero(sizeof(*parent_gpu->isr.access_counters.stats.cpu_exec_count) * num_possible_cpus());
-            if (!parent_gpu->isr.access_counters.stats.cpu_exec_count)
-                return NV_ERR_NO_MEMORY;
         }
     }
 
@@ -401,7 +462,15 @@ void uvm_parent_gpu_flush_bottom_halves(uvm_parent_gpu_t *parent_gpu)
 
 void uvm_parent_gpu_disable_isr(uvm_parent_gpu_t *parent_gpu)
 {
-    UVM_ASSERT(parent_gpu->isr.access_counters.handling_ref_count == 0);
+    NvU32 notif_buf_index;
+
+    if (parent_gpu->isr.access_counters) {
+        for (notif_buf_index = 0; notif_buf_index < parent_gpu->rm_info.accessCntrBufferCount; notif_buf_index++) {
+            UVM_ASSERT_MSG(parent_gpu->isr.access_counters[notif_buf_index].handling_ref_count == 0,
+                           "notif buf index: %u\n",
+                           notif_buf_index);
+        }
+    }
 
     // Now that the GPU is safely out of the global table, lock the GPU and mark
     // it as no longer handling interrupts so the top half knows not to schedule
@@ -459,24 +528,38 @@ void uvm_parent_gpu_deinit_isr(uvm_parent_gpu_t *parent_gpu)
     }
 
     if (parent_gpu->access_counters_supported) {
-        // It is safe to deinitialize access counters even if they have not been
-        // successfully initialized.
-        uvm_parent_gpu_deinit_access_counters(parent_gpu);
-        block_context =
-            parent_gpu->access_counter_buffer_info.batch_service_context.block_service_context.block_context;
-        uvm_va_block_context_free(block_context);
+        NvU32 notif_buf_index;
+
+        for (notif_buf_index = 0; notif_buf_index < parent_gpu->rm_info.accessCntrBufferCount; notif_buf_index++) {
+            // It is safe to deinitialize access counters even if they have not
+            // been successfully initialized.
+            uvm_parent_gpu_deinit_access_counters(parent_gpu, notif_buf_index);
+
+            if (parent_gpu->access_counter_buffer) {
+                uvm_access_counter_buffer_t *access_counter = &parent_gpu->access_counter_buffer[notif_buf_index];
+                block_context = access_counter->batch_service_context.block_service_context.block_context;
+                uvm_va_block_context_free(block_context);
+            }
+
+            if (parent_gpu->isr.access_counters)
+                uvm_kvfree(parent_gpu->isr.access_counters[notif_buf_index].stats.cpu_exec_count);
+        }
+
+        uvm_kvfree(parent_gpu->isr.access_counters);
+        uvm_kvfree(parent_gpu->access_counter_buffer);
     }
 
     if (parent_gpu->non_replayable_faults_supported) {
-        block_context = parent_gpu->fault_buffer_info.non_replayable.block_service_context.block_context;
+        block_context = parent_gpu->fault_buffer.non_replayable.block_service_context.block_context;
         uvm_va_block_context_free(block_context);
+
+        uvm_kvfree(parent_gpu->isr.non_replayable_faults.stats.cpu_exec_count);
     }
 
-    block_context = parent_gpu->fault_buffer_info.replayable.block_service_context.block_context;
+    block_context = parent_gpu->fault_buffer.replayable.block_service_context.block_context;
     uvm_va_block_context_free(block_context);
+
     uvm_kvfree(parent_gpu->isr.replayable_faults.stats.cpu_exec_count);
-    uvm_kvfree(parent_gpu->isr.non_replayable_faults.stats.cpu_exec_count);
-    uvm_kvfree(parent_gpu->isr.access_counters.stats.cpu_exec_count);
 }
 
 uvm_gpu_t *uvm_parent_gpu_find_first_valid_gpu(uvm_parent_gpu_t *parent_gpu)
@@ -584,25 +667,29 @@ static void non_replayable_faults_isr_bottom_half_entry(void *args)
 
 static void access_counters_isr_bottom_half(void *args)
 {
-    uvm_parent_gpu_t *parent_gpu = (uvm_parent_gpu_t *)args;
+    uvm_access_counter_buffer_t *access_counters = (uvm_access_counter_buffer_t *)args;
+    uvm_parent_gpu_t *parent_gpu = access_counters->parent_gpu;
+    NvU32 notif_buf_index = access_counters->index;
     unsigned int cpu;
 
     UVM_ASSERT(parent_gpu->access_counters_supported);
+    UVM_ASSERT(notif_buf_index < parent_gpu->rm_info.accessCntrBufferCount);
 
-    uvm_record_lock(&parent_gpu->isr.access_counters.service_lock, UVM_LOCK_FLAGS_MODE_SHARED);
+    uvm_record_lock(&parent_gpu->isr.access_counters[notif_buf_index].service_lock, UVM_LOCK_FLAGS_MODE_SHARED);
 
     // Multiple bottom halves for counter notifications can be running
-    // concurrently, but only one can be running this function for a given GPU
-    // since we enter with the access_counters_isr_lock held.
+    // concurrently, but only one per-notification-buffer (i.e.,
+    // notif_buf_index) can be running this function for a given GPU since we
+    // enter with the per-notification-buffer access_counters_isr_lock held.
     cpu = get_cpu();
-    ++parent_gpu->isr.access_counters.stats.bottom_half_count;
-    cpumask_set_cpu(cpu, &parent_gpu->isr.access_counters.stats.cpus_used_mask);
-    ++parent_gpu->isr.access_counters.stats.cpu_exec_count[cpu];
+    ++parent_gpu->isr.access_counters[notif_buf_index].stats.bottom_half_count;
+    cpumask_set_cpu(cpu, &parent_gpu->isr.access_counters[notif_buf_index].stats.cpus_used_mask);
+    ++parent_gpu->isr.access_counters[notif_buf_index].stats.cpu_exec_count[cpu];
     put_cpu();
 
-    uvm_parent_gpu_service_access_counters(parent_gpu);
+    uvm_service_access_counters(access_counters);
 
-    uvm_parent_gpu_access_counters_isr_unlock(parent_gpu);
+    uvm_access_counters_isr_unlock(access_counters);
 
     uvm_parent_gpu_kref_put(parent_gpu);
 }
@@ -725,7 +812,7 @@ void uvm_parent_gpu_replayable_faults_isr_unlock(uvm_parent_gpu_t *parent_gpu)
         // clear_replayable_faults is a no-op for architectures that don't
         // support pulse-based interrupts.
         parent_gpu->fault_buffer_hal->clear_replayable_faults(parent_gpu,
-                                                              parent_gpu->fault_buffer_info.replayable.cached_get);
+                                                              parent_gpu->fault_buffer.replayable.cached_get);
     }
 
     // This unlock call has to be out-of-order unlock due to interrupts_lock
@@ -751,37 +838,41 @@ void uvm_parent_gpu_non_replayable_faults_isr_unlock(uvm_parent_gpu_t *parent_gp
     uvm_up(&parent_gpu->isr.non_replayable_faults.service_lock);
 }
 
-void uvm_parent_gpu_access_counters_isr_lock(uvm_parent_gpu_t *parent_gpu)
+void uvm_access_counters_isr_lock(uvm_access_counter_buffer_t *access_counters)
 {
     // See comments in uvm_parent_gpu_replayable_faults_isr_lock
+    uvm_parent_gpu_t *parent_gpu = access_counters->parent_gpu;
+    NvU32 notif_buf_index = access_counters->index;
 
     uvm_spin_lock_irqsave(&parent_gpu->isr.interrupts_lock);
 
-    uvm_parent_gpu_access_counters_intr_disable(parent_gpu);
+    uvm_access_counters_intr_disable(access_counters);
 
     uvm_spin_unlock_irqrestore(&parent_gpu->isr.interrupts_lock);
 
-    uvm_down(&parent_gpu->isr.access_counters.service_lock);
+    uvm_down(&parent_gpu->isr.access_counters[notif_buf_index].service_lock);
 }
 
-void uvm_parent_gpu_access_counters_isr_unlock(uvm_parent_gpu_t *parent_gpu)
+void uvm_access_counters_isr_unlock(uvm_access_counter_buffer_t *access_counters)
 {
+    uvm_parent_gpu_t *parent_gpu = access_counters->parent_gpu;
+    NvU32 notif_buf_index = access_counters->index;
+    uvm_access_counter_buffer_hal_t *ac_hal = parent_gpu->access_counter_buffer_hal;
+
     UVM_ASSERT(nv_kref_read(&parent_gpu->gpu_kref) > 0);
 
     // See comments in uvm_parent_gpu_replayable_faults_isr_unlock
 
     uvm_spin_lock_irqsave(&parent_gpu->isr.interrupts_lock);
 
-    uvm_parent_gpu_access_counters_intr_enable(parent_gpu);
+    uvm_access_counters_intr_enable(access_counters);
 
-    if (parent_gpu->isr.access_counters.handling_ref_count > 0) {
-        parent_gpu->access_counter_buffer_hal->clear_access_counter_notifications(parent_gpu,
-                                                                                  parent_gpu->access_counter_buffer_info.cached_get);
-    }
+    if (parent_gpu->isr.access_counters[notif_buf_index].handling_ref_count > 0)
+        ac_hal->clear_access_counter_notifications(access_counters, access_counters->cached_get);
 
     // This unlock call has to be out-of-order unlock due to interrupts_lock
     // still being held. Otherwise, it would result in a lock order violation.
-    uvm_up_out_of_order(&parent_gpu->isr.access_counters.service_lock);
+    uvm_up_out_of_order(&parent_gpu->isr.access_counters[notif_buf_index].service_lock);
 
     uvm_spin_unlock_irqrestore(&parent_gpu->isr.interrupts_lock);
 }
@@ -806,8 +897,11 @@ static void uvm_parent_gpu_replayable_faults_intr_enable(uvm_parent_gpu_t *paren
         parent_gpu->fault_buffer_hal->enable_replayable_faults(parent_gpu);
 }
 
-void uvm_parent_gpu_access_counters_intr_disable(uvm_parent_gpu_t *parent_gpu)
+void uvm_access_counters_intr_disable(uvm_access_counter_buffer_t *access_counters)
 {
+    uvm_parent_gpu_t *parent_gpu = access_counters->parent_gpu;
+    NvU32 notif_buf_index = access_counters->index;
+
     uvm_assert_spinlock_locked(&parent_gpu->isr.interrupts_lock);
 
     // The read of handling_ref_count could race with a write from
@@ -815,24 +909,27 @@ void uvm_parent_gpu_access_counters_intr_disable(uvm_parent_gpu_t *parent_gpu)
     // ISR lock. But those functions are invoked with the interrupt disabled
     // (disable_intr_ref_count > 0), so the check always returns false when the
     // race occurs
-    if (parent_gpu->isr.access_counters.handling_ref_count > 0 &&
-        parent_gpu->isr.access_counters.disable_intr_ref_count == 0) {
-        parent_gpu->access_counter_buffer_hal->disable_access_counter_notifications(parent_gpu);
+    if (parent_gpu->isr.access_counters[notif_buf_index].handling_ref_count > 0 &&
+        parent_gpu->isr.access_counters[notif_buf_index].disable_intr_ref_count == 0) {
+        parent_gpu->access_counter_buffer_hal->disable_access_counter_notifications(access_counters);
     }
 
-    ++parent_gpu->isr.access_counters.disable_intr_ref_count;
+    ++parent_gpu->isr.access_counters[notif_buf_index].disable_intr_ref_count;
 }
 
-void uvm_parent_gpu_access_counters_intr_enable(uvm_parent_gpu_t *parent_gpu)
+void uvm_access_counters_intr_enable(uvm_access_counter_buffer_t *access_counters)
 {
+    uvm_parent_gpu_t *parent_gpu = access_counters->parent_gpu;
+    NvU32 notif_buf_index = access_counters->index;
+
     uvm_assert_spinlock_locked(&parent_gpu->isr.interrupts_lock);
-    UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.access_counters.service_lock));
-    UVM_ASSERT(parent_gpu->isr.access_counters.disable_intr_ref_count > 0);
+    UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.access_counters[notif_buf_index].service_lock));
+    UVM_ASSERT(parent_gpu->isr.access_counters[notif_buf_index].disable_intr_ref_count > 0);
 
-    --parent_gpu->isr.access_counters.disable_intr_ref_count;
+    --parent_gpu->isr.access_counters[notif_buf_index].disable_intr_ref_count;
 
-    if (parent_gpu->isr.access_counters.handling_ref_count > 0 &&
-        parent_gpu->isr.access_counters.disable_intr_ref_count == 0) {
-        parent_gpu->access_counter_buffer_hal->enable_access_counter_notifications(parent_gpu);
+    if (parent_gpu->isr.access_counters[notif_buf_index].handling_ref_count > 0 &&
+        parent_gpu->isr.access_counters[notif_buf_index].disable_intr_ref_count == 0) {
+        parent_gpu->access_counter_buffer_hal->enable_access_counter_notifications(access_counters);
     }
 }

@@ -1056,7 +1056,7 @@ NV_STATUS nvUvmInterfaceDestroyAccessCntrInfo(uvmGpuDeviceHandle device,
 */
 NV_STATUS nvUvmInterfaceEnableAccessCntr(uvmGpuDeviceHandle device,
                                          UvmGpuAccessCntrInfo *pAccessCntrInfo,
-                                         UvmGpuAccessCntrConfig *pAccessCntrConfig);
+                                         const UvmGpuAccessCntrConfig *pAccessCntrConfig);
 
 /*******************************************************************************
     nvUvmInterfaceDisableAccessCntr

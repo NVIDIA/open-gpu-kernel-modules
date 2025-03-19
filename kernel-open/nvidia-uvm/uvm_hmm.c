@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2024 NVIDIA Corporation
+    Copyright (c) 2016-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -1602,7 +1602,7 @@ static NV_STATUS hmm_va_block_cpu_page_populate(uvm_va_block_t *va_block,
         return status;
     }
 
-    status = uvm_va_block_map_cpu_chunk_on_gpus(va_block, chunk, page_index);
+    status = uvm_va_block_map_cpu_chunk_on_gpus(va_block, chunk);
     if (status != NV_OK) {
         uvm_cpu_chunk_remove_from_block(va_block, page_to_nid(page), page_index);
         uvm_cpu_chunk_free(chunk);

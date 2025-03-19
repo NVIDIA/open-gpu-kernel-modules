@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -28,8 +28,7 @@
 #include "uvm_common.h"
 #include "uvm_test_ioctl.h"
 
-// Unlike UVM_INFO_PRINT, this prints on release builds
-#define UVM_TEST_PRINT(fmt, ...) UVM_PRINT_FUNC(pr_info, " " fmt, ##__VA_ARGS__)
+#define UVM_TEST_PRINT UVM_ERR_PRINT_ALWAYS
 
 // WARNING: This macro will return out of the current scope
 #define TEST_CHECK_RET(cond)                                                        \
@@ -160,30 +159,35 @@ NV_STATUS uvm_test_range_group_tree(UVM_TEST_RANGE_GROUP_TREE_PARAMS *params, st
 NV_STATUS uvm_test_range_group_range_info(UVM_TEST_RANGE_GROUP_RANGE_INFO_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_range_group_range_count(UVM_TEST_RANGE_GROUP_RANGE_COUNT_PARAMS *params, struct file *filp);
 
-NV_STATUS uvm_test_get_prefetch_faults_reenable_lapse(UVM_TEST_GET_PREFETCH_FAULTS_REENABLE_LAPSE_PARAMS *params, struct file *filp);
-NV_STATUS uvm_test_set_prefetch_faults_reenable_lapse(UVM_TEST_SET_PREFETCH_FAULTS_REENABLE_LAPSE_PARAMS *params, struct file *filp);
+NV_STATUS uvm_test_get_prefetch_faults_reenable_lapse(UVM_TEST_GET_PREFETCH_FAULTS_REENABLE_LAPSE_PARAMS *params,
+                                                      struct file *filp);
+NV_STATUS uvm_test_set_prefetch_faults_reenable_lapse(UVM_TEST_SET_PREFETCH_FAULTS_REENABLE_LAPSE_PARAMS *params,
+                                                      struct file *filp);
 
 NV_STATUS uvm_test_check_channel_va_space(UVM_TEST_CHECK_CHANNEL_VA_SPACE_PARAMS *params, struct file *filp);
 
-NV_STATUS uvm_test_pmm_sysmem(UVM_TEST_PMM_SYSMEM_PARAMS *params, struct file *filp);
-
 NV_STATUS uvm_test_pmm_reverse_map(UVM_TEST_PMM_REVERSE_MAP_PARAMS *params, struct file *filp);
 
-NV_STATUS uvm_test_pmm_chunk_with_elevated_page(UVM_TEST_PMM_CHUNK_WITH_ELEVATED_PAGE_PARAMS *params, struct file *filp);
+NV_STATUS uvm_test_pmm_chunk_with_elevated_page(UVM_TEST_PMM_CHUNK_WITH_ELEVATED_PAGE_PARAMS *params,
+                                                struct file *filp);
 NV_STATUS uvm_test_va_space_inject_error(UVM_TEST_VA_SPACE_INJECT_ERROR_PARAMS *params, struct file *filp);
 
 NV_STATUS uvm_test_get_gpu_time(UVM_TEST_GET_GPU_TIME_PARAMS *params, struct file *filp);
 
-NV_STATUS uvm_test_pmm_release_free_root_chunks(UVM_TEST_PMM_RELEASE_FREE_ROOT_CHUNKS_PARAMS *params, struct file *filp);
+NV_STATUS uvm_test_pmm_release_free_root_chunks(UVM_TEST_PMM_RELEASE_FREE_ROOT_CHUNKS_PARAMS *params,
+                                                struct file *filp);
 
 NV_STATUS uvm_test_drain_replayable_faults(UVM_TEST_DRAIN_REPLAYABLE_FAULTS_PARAMS *params, struct file *filp);
 
-NV_STATUS uvm_test_va_space_add_dummy_thread_contexts(UVM_TEST_VA_SPACE_ADD_DUMMY_THREAD_CONTEXTS_PARAMS *params, struct file *filp);
-NV_STATUS uvm_test_va_space_remove_dummy_thread_contexts(UVM_TEST_VA_SPACE_REMOVE_DUMMY_THREAD_CONTEXTS_PARAMS *params, struct file *filp);
+NV_STATUS uvm_test_va_space_add_dummy_thread_contexts(UVM_TEST_VA_SPACE_ADD_DUMMY_THREAD_CONTEXTS_PARAMS *params,
+                                                      struct file *filp);
+NV_STATUS uvm_test_va_space_remove_dummy_thread_contexts(UVM_TEST_VA_SPACE_REMOVE_DUMMY_THREAD_CONTEXTS_PARAMS *params,
+                                                         struct file *filp);
 NV_STATUS uvm_test_thread_context_sanity(UVM_TEST_THREAD_CONTEXT_SANITY_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_thread_context_perf(UVM_TEST_THREAD_CONTEXT_PERF_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_tools_flush_replay_events(UVM_TEST_TOOLS_FLUSH_REPLAY_EVENTS_PARAMS *params, struct file *filp);
-NV_STATUS uvm_test_register_unload_state_buffer(UVM_TEST_REGISTER_UNLOAD_STATE_BUFFER_PARAMS *params, struct file *filp);
+NV_STATUS uvm_test_register_unload_state_buffer(UVM_TEST_REGISTER_UNLOAD_STATE_BUFFER_PARAMS *params,
+                                                struct file *filp);
 NV_STATUS uvm_test_rb_tree_directed(UVM_TEST_RB_TREE_DIRECTED_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_rb_tree_random(UVM_TEST_RB_TREE_RANDOM_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_sec2_sanity(UVM_TEST_SEC2_SANITY_PARAMS *params, struct file *filp);

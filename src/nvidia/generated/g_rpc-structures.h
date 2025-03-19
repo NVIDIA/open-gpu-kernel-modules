@@ -1787,6 +1787,16 @@ typedef struct rpc_ctrl_subdevice_get_libos_heap_stats_v29_02
 
 typedef rpc_ctrl_subdevice_get_libos_heap_stats_v29_02 rpc_ctrl_subdevice_get_libos_heap_stats_v;
 
+typedef struct rpc_ctrl_exec_partitions_export_v29_0C
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NvU32      status;
+    NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS_v29_0C execPartitionsExport;
+} rpc_ctrl_exec_partitions_export_v29_0C;
+
+typedef rpc_ctrl_exec_partitions_export_v29_0C rpc_ctrl_exec_partitions_export_v;
+
 
 #endif
 
@@ -9347,6 +9357,50 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_subdevice_get_libos_heap_stats_v29
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_ctrl_exec_partitions_export_v29_0C
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_exec_partitions_export_v29_0C[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_exec_partitions_export_v29_0C, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_exec_partitions_export_v29_0C, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_ctrl_exec_partitions_export_v29_0C, status),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "status"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS_v29_0C,
+        .offset               = NV_OFFSETOF(rpc_ctrl_exec_partitions_export_v29_0C, execPartitionsExport),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "execPartitionsExport"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_exec_partitions_export_v29_0C = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_exec_partitions_export",
+    #endif
+    .header_length = sizeof(rpc_ctrl_exec_partitions_export_v29_0C),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_exec_partitions_export_v29_0C
+};
+#endif
+
 #endif
 
 #ifdef RPC_DEBUG_PRINT_FUNCTIONS
@@ -10775,6 +10829,13 @@ vmiopd_mdesc_t *rpcdebugCtrlSubdeviceGetLibosHeapStats_v29_02(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_ctrl_exec_partitions_export_v29_0C
+vmiopd_mdesc_t *rpcdebugCtrlExecPartitionsExport_v29_0C(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_exec_partitions_export_v29_0C;
+}
+#endif
+
 
 #endif
 
@@ -11154,6 +11215,8 @@ typedef union rpc_generic_union {
     rpc_recovery_action_v recovery_action_v;
     rpc_ctrl_subdevice_get_libos_heap_stats_v29_02 ctrl_subdevice_get_libos_heap_stats_v29_02;
     rpc_ctrl_subdevice_get_libos_heap_stats_v ctrl_subdevice_get_libos_heap_stats_v;
+    rpc_ctrl_exec_partitions_export_v29_0C ctrl_exec_partitions_export_v29_0C;
+    rpc_ctrl_exec_partitions_export_v ctrl_exec_partitions_export_v;
 } rpc_generic_union;
 
 #endif

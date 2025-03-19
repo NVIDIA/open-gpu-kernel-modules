@@ -233,7 +233,8 @@ enum {
     X(RM, RESERVED,                                               223)
     X(RM, CTRL_CMD_GET_CHIPLET_HS_CREDIT_POOL,                    224)
     X(RM, CTRL_CMD_GET_HS_CREDITS_MAPPING,                        225)
-    X(RM, NUM_FUNCTIONS,                                          226)
+    X(RM, CTRL_EXEC_PARTITIONS_EXPORT,                            226)
+    X(RM, NUM_FUNCTIONS,                                          227)
 #ifdef DEFINING_X_IN_RPC_GLOBAL_ENUMS_H
 };
 #   undef X

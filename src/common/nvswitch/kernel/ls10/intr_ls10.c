@@ -8230,6 +8230,12 @@ nvswitch_initialize_interrupt_tree_ls10
 
    // NVLIPT
     _nvswitch_initialize_nvlipt_interrupts_ls10(device);
+
+    // Disable non-fatal and legacy interrupts in TNVL mode
+    if (nvswitch_is_tnvl_mode_enabled(device))
+    {
+       nvswitch_tnvl_disable_interrupts(device);
+    }
 }
 
 //

@@ -168,6 +168,7 @@ namespace DisplayPort
             bool bIgnoreDscCap;           // Ignore DSC even if sink reports DSC capability
             bool bDisableDownspread;
             bool bForceHeadShutdown;
+            bool bDisableDscMaxBppLimit;
             bool bSkipCableIdCheck;
             bool bAllocateManualTimeslots;
         }_WARFlags;

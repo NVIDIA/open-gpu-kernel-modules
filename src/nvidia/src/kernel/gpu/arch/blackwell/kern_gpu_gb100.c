@@ -489,7 +489,7 @@ _gpuGetPcieCfgCapBaseAddr_GB100
     regVal = osPciReadDword(pGpu->hPci, capBaseAddr);
     if (regVal == 0xFFFFFFFF)
     {
-        NV_PRINTF(LEVEL_ERROR, "Register read failed : 0x%x\n", capBaseAddr);
+        NV_PRINTF(LEVEL_INFO, "Register read failed : 0x%x\n", capBaseAddr);
         status = NV_ERR_INVALID_STATE;
         NV_ASSERT(0);
         return status;
@@ -502,7 +502,7 @@ _gpuGetPcieCfgCapBaseAddr_GB100
         regVal = osPciReadDword(pGpu->hPci, capBaseAddr);
         if (regVal == 0xFFFFFFFF)
         {
-            NV_PRINTF(LEVEL_ERROR, "Register read failed : 0x%x\n", capBaseAddr);
+            NV_PRINTF(LEVEL_INFO, "Register read failed : 0x%x\n", capBaseAddr);
             status = NV_ERR_INVALID_STATE;
             NV_ASSERT(0);
             return status;
@@ -630,7 +630,7 @@ _gpuGetPcieExtCfgCapBaseAddr_GB100
         regVal = osPciReadDword(pGpu->hPci, capBaseAddr);
         if (regVal == 0xFFFFFFFF)
         {
-            NV_PRINTF(LEVEL_ERROR, "Register read failed : 0x%x\n", capBaseAddr);
+            NV_PRINTF(LEVEL_INFO, "Register read failed : 0x%x\n", capBaseAddr);
             status = NV_ERR_INVALID_STATE;
             NV_ASSERT(0);
             return status;
@@ -647,7 +647,7 @@ _gpuGetPcieExtCfgCapBaseAddr_GB100
                 regVal2   = osPciReadDword(pGpu->hPci, venIdAddr);
                 if (regVal == 0xFFFFFFFF)
                 {
-                    NV_PRINTF(LEVEL_ERROR, "Register read failed : 0x%x\n", venIdAddr);
+                    NV_PRINTF(LEVEL_INFO, "Register read failed : 0x%x\n", venIdAddr);
                     status = NV_ERR_INVALID_STATE;
                     NV_ASSERT(0);
                     return status;

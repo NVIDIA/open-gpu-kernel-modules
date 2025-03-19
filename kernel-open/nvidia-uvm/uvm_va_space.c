@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -558,7 +558,7 @@ void uvm_va_space_destroy(uvm_va_space_t *va_space)
             nv_kthread_q_flush(&gpu->parent->isr.kill_channel_q);
 
         if (gpu->parent->access_counters_supported)
-            uvm_parent_gpu_access_counters_disable(gpu->parent, va_space);
+            uvm_gpu_access_counters_disable(gpu, va_space);
 
     }
 
@@ -576,7 +576,7 @@ void uvm_va_space_destroy(uvm_va_space_t *va_space)
 
     uvm_deferred_free_object_list(&deferred_free_list);
 
-    // Normally we'd expect this to happen as part of uvm_mm_release()
+    // Normally we'd expect this to happen as part of uvm_release_mm()
     // but if userspace never initialized uvm_mm_fd that won't happen.
     // We don't have to take the va_space_mm spinlock and update state
     // here because we know no other thread can be in or subsequently
@@ -760,7 +760,7 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
     bool gpu_can_access_sysmem = true;
     uvm_processor_mask_t *peers_to_release = NULL;
 
-    status = uvm_gpu_retain_by_uuid(gpu_uuid, user_rm_device, &gpu);
+    status = uvm_gpu_retain_by_uuid(gpu_uuid, user_rm_device, &va_space->test.parent_gpu_error, &gpu);
     if (status != NV_OK)
         return status;
 
@@ -936,7 +936,7 @@ done:
         // registered GPU: the enablement step would have failed before even
         // discovering that the GPU is already registered.
         if (uvm_parent_gpu_access_counters_required(gpu->parent))
-            uvm_parent_gpu_access_counters_disable(gpu->parent, va_space);
+            uvm_gpu_access_counters_disable(gpu, va_space);
 
         uvm_gpu_release(gpu);
     }
@@ -1011,7 +1011,7 @@ NV_STATUS uvm_va_space_unregister_gpu(uvm_va_space_t *va_space, const NvProcesso
     // acquires the VA space lock after the unregistration does. Both outcomes
     // result on valid states.
     if (disable_access_counters)
-        uvm_parent_gpu_access_counters_disable(gpu->parent, va_space);
+        uvm_gpu_access_counters_disable(gpu, va_space);
 
     // mmap_lock is needed to establish CPU mappings to any pages evicted from
     // the GPU if accessed by CPU is set for them.
@@ -2206,6 +2206,17 @@ NV_STATUS uvm_test_va_space_inject_error(UVM_TEST_VA_SPACE_INJECT_ERROR_PARAMS *
 
     atomic_set(&va_space->test.migrate_vma_allocation_fail_nth, params->migrate_vma_allocation_fail_nth);
     atomic_set(&va_space->test.va_block_allocation_fail_nth, params->va_block_allocation_fail_nth);
+
+    va_space->test.parent_gpu_error.access_counters_alloc_buffer = params->gpu_access_counters_alloc_buffer;
+    va_space->test.parent_gpu_error.access_counters_alloc_block_context =
+        params->gpu_access_counters_alloc_block_context;
+    va_space->test.parent_gpu_error.access_counters_batch_context_notifications =
+        params->access_counters_batch_context_notifications;
+    va_space->test.parent_gpu_error.access_counters_batch_context_notification_cache =
+        params->access_counters_batch_context_notification_cache;
+    va_space->test.parent_gpu_error.isr_access_counters_alloc = params->gpu_isr_access_counters_alloc;
+    va_space->test.parent_gpu_error.isr_access_counters_alloc_stats_cpu =
+        params->gpu_isr_access_counters_alloc_stats_cpu;
 
     return NV_OK;
 }

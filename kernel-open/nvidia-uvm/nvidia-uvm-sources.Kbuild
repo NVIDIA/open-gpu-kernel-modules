@@ -59,7 +59,6 @@ NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_volta_host.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_volta_mmu.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_volta.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_volta_fault_buffer.c
-NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_volta_access_counter_buffer.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_turing.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_turing_access_counter_buffer.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_turing_fault_buffer.c

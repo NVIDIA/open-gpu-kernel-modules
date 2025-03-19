@@ -951,7 +951,7 @@ kbifGetGpuLinkControlStatus_IMPL
 
     if (NV_OK != GPU_BUS_CFG_RD32(pGpu, addrLinkControlStatus, &data ))
     {
-        NV_PRINTF(LEVEL_ERROR, "Unable to read %x\n", addrLinkControlStatus);
+        NV_PRINTF(LEVEL_INFO, "Unable to read %x\n", addrLinkControlStatus);
         return 0;
     }
 
@@ -983,7 +983,7 @@ kbifGetGpuDevControlStatus_IMPL
 
     if (NV_OK != GPU_BUS_CFG_RD32(pGpu, addrDevControlStatus, &data ))
     {
-        NV_PRINTF(LEVEL_ERROR, "Unable to read %x\n", addrDevControlStatus);
+        NV_PRINTF(LEVEL_INFO, "Unable to read %x\n", addrDevControlStatus);
         return 0;
     }
 
@@ -1015,7 +1015,7 @@ kbifGetGpuDevControlStatus2_IMPL
 
     if (NV_OK != GPU_BUS_CFG_RD32(pGpu, addrDevControlStatus2, &data ))
     {
-        NV_PRINTF(LEVEL_ERROR, "Unable to read %x\n", addrDevControlStatus2);
+        NV_PRINTF(LEVEL_INFO, "Unable to read %x\n", addrDevControlStatus2);
         return 0;
     }
 
@@ -1047,7 +1047,7 @@ kbifGetGpuL1PmSubstatesCtrl1_IMPL
 
     if (NV_OK != GPU_BUS_CFG_RD32(pGpu, addrL1PmSubstatesCtrl1, &data ))
     {
-        NV_PRINTF(LEVEL_ERROR, "Unable to read %x\n", addrL1PmSubstatesCtrl1);
+        NV_PRINTF(LEVEL_INFO, "Unable to read %x\n", addrL1PmSubstatesCtrl1);
         return 0;
     }
 

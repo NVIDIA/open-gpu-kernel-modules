@@ -143,6 +143,11 @@ nvidia_vma_access(
         return -EINVAL;
     }
 
+    if (write && !(mmap_context->prot & NV_PROTECT_WRITEABLE))
+    {
+        return -EACCES;
+    }
+
     if (nv->flags & NV_FLAG_CONTROL)
     {
         at = NV_VMA_PRIVATE(vma);

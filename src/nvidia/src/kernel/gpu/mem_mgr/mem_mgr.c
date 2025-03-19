@@ -3140,6 +3140,7 @@ _memmgrInitRUSDHeapSize
 
     pSharedData = gpushareddataWriteStart(pGpu, pmaMemoryInfo);
     MEM_WR64(&pSharedData->totalPmaMemory, bytesTotal);
+    MEM_WR64(&pSharedData->freePmaMemory, bytesTotal);
     gpushareddataWriteFinish(pGpu, pmaMemoryInfo);
 }
 

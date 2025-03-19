@@ -471,69 +471,34 @@ static uvm_membar_t uvm_membar_max(uvm_membar_t membar_1, uvm_membar_t membar_2)
     return max(membar_1, membar_2);
 }
 
-typedef enum
-{
-    UVM_ACCESS_COUNTER_TYPE_MIMC = 0,
-    UVM_ACCESS_COUNTER_TYPE_MOMC,
-
-    UVM_ACCESS_COUNTER_TYPE_MAX,
-} uvm_access_counter_type_t;
-
-const char *uvm_access_counter_type_string(uvm_access_counter_type_t access_counter_type);
-
 struct uvm_access_counter_buffer_entry_struct
 {
-    // Whether this counter refers to outbound accesses to remote GPUs or
-    // sysmem (MIMC), or it refers to inbound accesses from CPU or a non-peer
-    // GPU (whose accesses are routed through the CPU, too) to vidmem (MOMC)
-    uvm_access_counter_type_t counter_type;
-
     // Address of the region for which a notification was sent
-    uvm_gpu_address_t address;
+    NvU64 address;
 
-    union
-    {
-        // These fields are only valid if address.is_virtual is true
-        struct
-        {
-            // Instance pointer of one of the channels in the TSG that triggered
-            // the notification.
-            uvm_gpu_phys_address_t instance_ptr;
+    // Instance pointer of one of the channels in the TSG that triggered
+    // the notification.
+    uvm_gpu_phys_address_t instance_ptr;
 
-            uvm_mmu_engine_type_t mmu_engine_type;
+    uvm_mmu_engine_type_t mmu_engine_type;
 
-            NvU32 mmu_engine_id;
+    NvU32 mmu_engine_id;
 
-            // Identifier of the subcontext that performed the memory accesses
-            // that triggered the notification. This value, combined with the
-            // instance_ptr, is needed to obtain the GPU VA space of the process
-            // that triggered the notification.
-            NvU32 ve_id;
+    // Identifier of the subcontext that performed the memory accesses
+    // that triggered the notification. This value, combined with the
+    // instance_ptr, is needed to obtain the GPU VA space of the process
+    // that triggered the notification.
+    NvU32 ve_id;
 
-            // VA space for the address that triggered the notification
-            uvm_va_space_t *va_space;
-        } virtual_info;
+    // VA space for the address that triggered the notification
+    uvm_va_space_t *va_space;
 
-        // These fields are only valid if address.is_virtual is false
-        struct
-        {
-            // Processor id where data is resident
-            //
-            // Although this information is not tied to a VA space, we can use
-            // a regular processor id because P2P is not allowed between
-            // partitioned GPUs.
-            uvm_processor_id_t resident_id;
-
-        } physical_info;
-    };
-
-    // This is the GPU that triggered the notification. Note that physical
-    // address based notifications are only supported on non-MIG-capable GPUs.
+    // This is the GPU that triggered the notification.
     uvm_gpu_t *gpu;
 
     // Number of times the tracked region was accessed since the last time it
     // was cleared. Counter values saturate at the maximum value supported by
-    // the GPU (2^16 - 1 in Volta)
+    // the GPU (2^16 - 1 on Turing)
     NvU32 counter_value;
 
     // When the granularity of the tracked regions is greater than 64KB, the

@@ -144,6 +144,16 @@ vaspaceapiConstruct_IMPL
         gpuMask = gpumgrGetGpuMask(pGpu);
     }
 
+    if ((pMemoryManager != NULL) &&
+        memmgrIsPmaInitialized(pMemoryManager) &&
+        memmgrAreClientPageTablesPmaManaged(pMemoryManager) &&
+        !(allocFlags & NV_VASPACE_ALLOCATION_FLAGS_IS_EXTERNALLY_OWNED) &&
+        !(allocFlags & NV_VASPACE_ALLOCATION_FLAGS_IS_FLA) &&
+        !(allocFlags & NV_VASPACE_ALLOCATION_FLAGS_PTETABLE_HEAP_MANAGED))
+    {
+        flags |= VASPACE_FLAGS_PTETABLE_PMA_MANAGED;
+    }
+
     status = _vaspaceapiManagePageLevelsForSplitVaSpace(pGpu, pDevice, gpuMask, flags, VASPACEAPI_MANAGE_PAGE_LEVELS_RESERVE);
     NV_ASSERT_OR_RETURN(status == NV_OK, status);
 
@@ -317,16 +327,6 @@ vaspaceapiConstruct_IMPL
                 status = NV_ERR_NOT_SUPPORTED;
                 NV_ASSERT_OR_GOTO(0, done);
             }
-        }
-
-        if ((pMemoryManager != NULL) &&
-            memmgrIsPmaInitialized(pMemoryManager) &&
-            memmgrAreClientPageTablesPmaManaged(pMemoryManager) &&
-            !(allocFlags & NV_VASPACE_ALLOCATION_FLAGS_IS_EXTERNALLY_OWNED) &&
-            !(allocFlags & NV_VASPACE_ALLOCATION_FLAGS_IS_FLA) &&
-            !(allocFlags & NV_VASPACE_ALLOCATION_FLAGS_PTETABLE_HEAP_MANAGED))
-        {
-            flags |= VASPACE_FLAGS_PTETABLE_PMA_MANAGED;
         }
 
         // Get flags for the requested big page size
@@ -708,7 +708,7 @@ _vaspaceapiManagePageLevelsForSplitVaSpace
     if ((!IS_VIRTUAL_WITH_SRIOV(pGpu) && !IS_GSP_CLIENT(pGpu)) ||
         !RMCFG_FEATURE_PMA ||
         !memmgrIsPmaInitialized(pMemoryManager) ||
-        !memmgrAreClientPageTablesPmaManaged(pMemoryManager) ||
+        !(flags & VASPACE_FLAGS_PTETABLE_PMA_MANAGED) ||
         !!(flags & VASPACE_FLAGS_DISABLE_SPLIT_VAS))
     {
         return NV_OK;

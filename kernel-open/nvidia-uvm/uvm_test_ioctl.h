@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVidia Corporation
+    Copyright (c) 2015-2025 NVidia Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -926,31 +926,38 @@ typedef struct
 
 // Change configuration of access counters. This call will disable access
 // counters and reenable them using the new configuration. All previous
-// notifications will be lost
+// notifications will be lost.
 //
 // The reconfiguration affects all VA spaces that rely on the access
 // counters information for the same GPU. To avoid conflicting configurations,
 // only one VA space is allowed to reconfigure the GPU at a time.
 //
+// When the reconfiguration VA space is destroyed, the bottom-half control
+// settings are reset.
+//
 // Error returns:
 // NV_ERR_INVALID_STATE
-//  - The GPU has already been reconfigured in a different VA space
+//  - The GPU has already been reconfigured in a different VA space.
 #define UVM_TEST_RECONFIGURE_ACCESS_COUNTERS             UVM_TEST_IOCTL_BASE(56)
 typedef struct
 {
     NvProcessorUuid                 gpu_uuid;                                           // In
 
     // Type UVM_ACCESS_COUNTER_GRANULARITY from nv_uvm_types.h
-    NvU32                           mimc_granularity;                                   // In
-    NvU32                           momc_granularity;                                   // In
-
-    // Type UVM_ACCESS_COUNTER_USE_LIMIT from nv_uvm_types.h
-    NvU32                           mimc_use_limit;                                     // In
-    NvU32                           momc_use_limit;                                     // In
+    NvU32                           granularity;                                        // In
 
     NvU32                           threshold;                                          // In
-    NvBool                          enable_mimc_migrations;                             // In
-    NvBool                          enable_momc_migrations;                             // In
+    NvBool                          enable_migrations;                                  // In
+
+    // Settings to control how notifications are serviced by the access counters
+    // bottom-half. These settings help tests to exercise races in the driver,
+    // e.g., unregister a GPU while (valid) pending notifications remain in the
+    // notification buffer.
+    //
+    // 0 max_batch_size doesn't change driver's behavior.
+    NvU32                           max_batch_size;                                     // In
+    NvBool                          one_iteration_per_batch;                            // In
+    NvU32                           sleep_per_iteration_us;                             // In
 
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_RECONFIGURE_ACCESS_COUNTERS_PARAMS;
@@ -962,13 +969,6 @@ typedef enum
     UVM_TEST_ACCESS_COUNTER_RESET_MODE_MAX
 } UVM_TEST_ACCESS_COUNTER_RESET_MODE;
 
-typedef enum
-{
-    UVM_TEST_ACCESS_COUNTER_TYPE_MIMC = 0,
-    UVM_TEST_ACCESS_COUNTER_TYPE_MOMC,
-    UVM_TEST_ACCESS_COUNTER_TYPE_MAX
-} UVM_TEST_ACCESS_COUNTER_TYPE;
-
 // Clear the contents of the access counters. This call supports different
 // modes for targeted/global resets.
 #define UVM_TEST_RESET_ACCESS_COUNTERS                   UVM_TEST_IOCTL_BASE(57)
@@ -978,9 +978,6 @@ typedef struct
 
     // Type UVM_TEST_ACCESS_COUNTER_RESET_MODE
     NvU32                           mode;                                               // In
-
-    // Type UVM_TEST_ACCESS_COUNTER_TYPE
-    NvU32                           counter_type;                                       // In
 
     NvU32                           bank;                                               // In
     NvU32                           tag;                                                // In
@@ -1061,14 +1058,6 @@ typedef struct
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_SET_PAGE_THRASHING_POLICY_PARAMS;
 
-#define UVM_TEST_PMM_SYSMEM                              UVM_TEST_IOCTL_BASE(64)
-typedef struct
-{
-    NvU64                           range_address1                   NV_ALIGN_BYTES(8); // In
-    NvU64                           range_address2                   NV_ALIGN_BYTES(8); // In
-    NV_STATUS                       rmStatus;                                           // Out
-} UVM_TEST_PMM_SYSMEM_PARAMS;
-
 #define UVM_TEST_PMM_REVERSE_MAP                         UVM_TEST_IOCTL_BASE(65)
 typedef struct
 {
@@ -1142,18 +1131,46 @@ typedef struct
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_ACCESS_COUNTERS_ENABLED_BY_DEFAULT_PARAMS;
 
-// Inject an error into the VA space
+// Inject an error into the VA space or into a to-be registered GPU.
 //
 // If migrate_vma_allocation_fail_nth is greater than 0, the nth page
 // allocation within migrate_vma will fail.
 //
 // If va_block_allocation_fail_nth is greater than 0, the nth call to
 // uvm_va_block_find_create() will fail with NV_ERR_NO_MEMORY.
+//
+// If gpu_access_counters_alloc_buffer is set, the parent_gpu's access counters
+// buffer allocation will fail with NV_ERR_NO_MEMORY.
+//
+// If gpu_access_counters_alloc_block_context is set, the access counters
+// buffer's block_context allocation will fail with NV_ERR_NO_MEMORY.
+//
+// If gpu_isr_access_counters_alloc is set, the ISR access counters allocation
+// will fail with NV_ERR_NO_MEMORY.
+//
+// If gpu_isr_access_counters_alloc_stats_cpu is set, the ISR access counters
+// buffer's stats_cpu allocation will fail with NV_ERR_NO_MEMORY.
+//
+// If access_counters_batch_context_notifications is set, the access counters
+// batch_context's notifications allocation will fail with NV_ERR_NO_MEMORY.
+//
+// If access_counters_batch_context_notification_cache is set, the access
+// counters batch_context's notification cache allocation will fail with
+// NV_ERR_NO_MEMORY.
+//
+// Note that only one of the gpu_* or access_counters_* setting can be selected
+// at a time.
 #define UVM_TEST_VA_SPACE_INJECT_ERROR                   UVM_TEST_IOCTL_BASE(72)
 typedef struct
 {
     NvU32                           migrate_vma_allocation_fail_nth;                    // In
     NvU32                           va_block_allocation_fail_nth;                       // In
+    NvBool                          gpu_access_counters_alloc_buffer;                   // In
+    NvBool                          gpu_access_counters_alloc_block_context;            // In
+    NvBool                          gpu_isr_access_counters_alloc;                      // In
+    NvBool                          gpu_isr_access_counters_alloc_stats_cpu;            // In
+    NvBool                          access_counters_batch_context_notifications;        // In
+    NvBool                          access_counters_batch_context_notification_cache;   // In
 
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_VA_SPACE_INJECT_ERROR_PARAMS;
@@ -1504,6 +1521,16 @@ typedef struct
     NvU32           error_type;                         // In (UVM_TEST_NVLINK_ERROR_TYPE)
     NV_STATUS       rmStatus;                           // Out
 } UVM_TEST_INJECT_NVLINK_ERROR_PARAMS;
+
+#define UVM_TEST_QUERY_ACCESS_COUNTERS                   UVM_TEST_IOCTL_BASE(109)
+typedef struct
+{
+    NvProcessorUuid gpu_uuid;               // In
+    NvU8 num_notification_buffers;          // Out
+    NvU32 num_notification_entries;         // Out
+
+    NV_STATUS rmStatus;                     // Out
+} UVM_TEST_QUERY_ACCESS_COUNTERS_PARAMS;
 
 #ifdef __cplusplus
 }

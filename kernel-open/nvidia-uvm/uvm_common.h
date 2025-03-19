@@ -57,6 +57,7 @@ enum {
 // NULL.
 void uvm_uuid_string(char *buffer, const NvProcessorUuid *uuid);
 
+// Long prefix - typically for debugging and tests.
 #define UVM_PRINT_FUNC_PREFIX(func, prefix, fmt, ...) \
     func(prefix "%s:%u %s[pid:%d]" fmt,               \
          kbasename(__FILE__),                         \
@@ -65,10 +66,15 @@ void uvm_uuid_string(char *buffer, const NvProcessorUuid *uuid);
          current->pid,                                \
          ##__VA_ARGS__)
 
+// Short prefix - typically for information.
+#define UVM_PRINT_FUNC_SHORT_PREFIX(func, prefix, fmt, ...) \
+    func(prefix fmt, ##__VA_ARGS__)
+
+// No prefix - used by kernel panic messages.
 #define UVM_PRINT_FUNC(func, fmt, ...)  \
     UVM_PRINT_FUNC_PREFIX(func, "", fmt, ##__VA_ARGS__)
 
-// Check whether UVM_{ERR,DBG,INFO)_PRINT* should be enabled
+// Check whether UVM_{ERR,DBG)_PRINT* should be enabled.
 bool uvm_debug_prints_enabled(void);
 
 // A printing helper like UVM_PRINT_FUNC_PREFIX that only prints if
@@ -80,10 +86,10 @@ bool uvm_debug_prints_enabled(void);
         }                                                               \
     } while (0)
 
-#define UVM_ASSERT_PRINT(fmt, ...) \
+#define UVM_ERR_PRINT_ALWAYS(fmt, ...) \
     UVM_PRINT_FUNC_PREFIX(printk, KERN_ERR NVIDIA_UVM_PRETTY_PRINTING_PREFIX, " " fmt, ##__VA_ARGS__)
 
-#define UVM_ASSERT_PRINT_RL(fmt, ...) \
+#define UVM_ERR_PRINT_ALWAYS_RL(fmt, ...) \
     UVM_PRINT_FUNC_PREFIX(printk_ratelimited, KERN_ERR NVIDIA_UVM_PRETTY_PRINTING_PREFIX, " " fmt, ##__VA_ARGS__)
 
 #define UVM_ERR_PRINT(fmt, ...) \
@@ -95,13 +101,16 @@ bool uvm_debug_prints_enabled(void);
 #define UVM_DBG_PRINT(fmt, ...) \
     UVM_PRINT_FUNC_PREFIX_CHECK(printk, KERN_DEBUG NVIDIA_UVM_PRETTY_PRINTING_PREFIX, " " fmt, ##__VA_ARGS__)
 
-#define UVM_DBG_PRINT_RL(fmt, ...)                              \
+#define UVM_DBG_PRINT_RL(fmt, ...) \
     UVM_PRINT_FUNC_PREFIX_CHECK(printk_ratelimited, KERN_DEBUG NVIDIA_UVM_PRETTY_PRINTING_PREFIX, " " fmt, ##__VA_ARGS__)
 
+// UVM_INFO_PRINT prints in all modes (including in the release mode.) It is
+// used for relaying driver-level information, rather than detailed debugging
+// information; therefore, it does not add the "pretty long prefix".
 #define UVM_INFO_PRINT(fmt, ...) \
-    UVM_PRINT_FUNC_PREFIX_CHECK(printk, KERN_INFO NVIDIA_UVM_PRETTY_PRINTING_PREFIX, " " fmt, ##__VA_ARGS__)
+    UVM_PRINT_FUNC_SHORT_PREFIX(printk, KERN_INFO NVIDIA_UVM_PRETTY_PRINTING_PREFIX, " " fmt, ##__VA_ARGS__)
 
-#define UVM_ERR_PRINT_NV_STATUS(msg, rmStatus, ...)                        \
+#define UVM_ERR_PRINT_NV_STATUS(msg, rmStatus, ...) \
     UVM_ERR_PRINT("ERROR: %s : " msg "\n", nvstatusToString(rmStatus), ##__VA_ARGS__)
 
 #define UVM_PANIC()             UVM_PRINT_FUNC(panic, "\n")
@@ -134,13 +143,13 @@ void on_uvm_test_fail(void);
 // Unlike on_uvm_test_fail it provides 'panic' coverity semantics
 void on_uvm_assert(void);
 
-#define _UVM_ASSERT_MSG(expr, cond, fmt, ...)                                                   \
-    do {                                                                                        \
-        if (unlikely(!(expr))) {                                                                \
-            UVM_ASSERT_PRINT("Assert failed, condition %s not true" fmt, cond, ##__VA_ARGS__);  \
-            dump_stack();                                                                       \
-            on_uvm_assert();                                                                    \
-        }                                                                                       \
+#define _UVM_ASSERT_MSG(expr, cond, fmt, ...)                                                       \
+    do {                                                                                            \
+        if (unlikely(!(expr))) {                                                                    \
+            UVM_ERR_PRINT_ALWAYS("Assert failed, condition %s not true" fmt, cond, ##__VA_ARGS__);  \
+            dump_stack();                                                                           \
+            on_uvm_assert();                                                                        \
+        }                                                                                           \
     } while (0)
 
 // Prevent function calls in expr and the print argument list from being
@@ -151,7 +160,8 @@ void on_uvm_assert(void);
         UVM_NO_PRINT(fmt, ##__VA_ARGS__);       \
     } while (0)
 
-// UVM_ASSERT and UVM_ASSERT_MSG are only enabled on non-release and Coverity builds
+// UVM_ASSERT and UVM_ASSERT_MSG are only enabled on non-release and Coverity
+// builds.
 #if UVM_IS_DEBUG() || defined __COVERITY__
     #define UVM_ASSERT_MSG(expr, fmt, ...)  _UVM_ASSERT_MSG(expr, #expr, ": " fmt, ##__VA_ARGS__)
     #define UVM_ASSERT(expr)                _UVM_ASSERT_MSG(expr, #expr, "\n")
@@ -174,16 +184,16 @@ extern bool uvm_release_asserts_set_global_error_for_tests;
 // Given these are enabled for release builds, we need to be more cautious than
 // in UVM_ASSERT(). Use a ratelimited print and only dump the stack if a module
 // param is enabled.
-#define _UVM_ASSERT_MSG_RELEASE(expr, cond, fmt, ...)                                                   \
-    do {                                                                                                \
-        if (uvm_release_asserts && unlikely(!(expr))) {                                                 \
-            UVM_ASSERT_PRINT_RL("Assert failed, condition %s not true" fmt, cond, ##__VA_ARGS__);       \
-            if (uvm_release_asserts_set_global_error || uvm_release_asserts_set_global_error_for_tests) \
-                uvm_global_set_fatal_error(NV_ERR_INVALID_STATE);                                       \
-            if (uvm_release_asserts_dump_stack)                                                         \
-                dump_stack();                                                                           \
-            on_uvm_assert();                                                                            \
-        }                                                                                               \
+#define _UVM_ASSERT_MSG_RELEASE(expr, cond, fmt, ...)                                                       \
+    do {                                                                                                    \
+        if (uvm_release_asserts && unlikely(!(expr))) {                                                     \
+            UVM_ERR_PRINT_ALWAYS_RL("Assert failed, condition %s not true" fmt, cond, ##__VA_ARGS__);       \
+            if (uvm_release_asserts_set_global_error || uvm_release_asserts_set_global_error_for_tests)     \
+                uvm_global_set_fatal_error(NV_ERR_INVALID_STATE);                                           \
+            if (uvm_release_asserts_dump_stack)                                                             \
+                dump_stack();                                                                               \
+            on_uvm_assert();                                                                                \
+        }                                                                                                   \
     } while (0)
 
 #define UVM_ASSERT_MSG_RELEASE(expr, fmt, ...)  _UVM_ASSERT_MSG_RELEASE(expr, #expr, ": " fmt, ##__VA_ARGS__)

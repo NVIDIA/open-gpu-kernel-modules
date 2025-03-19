@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2021-2022 NVIDIA Corporation
+    Copyright (c) 2021-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -328,11 +328,6 @@ void uvm_hal_maxwell_host_clear_faulted_channel_register_unsupported(uvm_user_ch
 void uvm_hal_maxwell_access_counter_clear_all_unsupported(uvm_push_t *push)
 {
     UVM_ASSERT_MSG(false, "host access_counter_clear_all called on Maxwell GPU\n");
-}
-
-void uvm_hal_maxwell_access_counter_clear_type_unsupported(uvm_push_t *push, uvm_access_counter_type_t type)
-{
-    UVM_ASSERT_MSG(false, "host access_counter_clear_type called on Maxwell GPU\n");
 }
 
 void uvm_hal_maxwell_access_counter_clear_targeted_unsupported(uvm_push_t *push,

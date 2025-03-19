@@ -856,7 +856,7 @@ void teardownSysmemPfnBitMap(OBJGPU *pGpu, OBJVGPU *pVGpu)
         vgpuSysmemPfnInfo.guestMaxPfn = 0;
         vgpuSysmemPfnInfo.sizeInBytes = 0;
     }
-    else 
+    else
     {
         // Bug 4991902: War - set the pGpu to NULL if the deactivating pGpu is same
         // as one used to allocate the memory descriptors. This is to avoid guest VM
@@ -868,13 +868,13 @@ void teardownSysmemPfnBitMap(OBJGPU *pGpu, OBJVGPU *pVGpu)
             VGPU_SYSMEM_PFN_BITMAP_NODE_P nodeNext;
 
             vgpuSysmemPfnInfo.pMemDesc_sysmemPfnRing->pGpu = NULL;
-            
+
             for (node = listHead(&(vgpuSysmemPfnInfo.listVgpuSysmemPfnBitmapHead));
                  node != NULL;
                  node = nodeNext)
             {
                 nodeNext = listNext(&(vgpuSysmemPfnInfo.listVgpuSysmemPfnBitmapHead), node);
-                
+
                 if (node && node->pMemDesc_sysmemPfnMap)
                 {
                     node->pMemDesc_sysmemPfnMap->Allocated = NV_FALSE;
@@ -2538,7 +2538,7 @@ NV_STATUS _serializeClassParams_v29_06(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 hClass,
     }
 
     rpc_message->alloc_object_v29_06.param_len = param_length;
-    
+
    // all done.
     return NV_OK;
 }
@@ -2751,11 +2751,12 @@ NV_STATUS rpcLog_v03_00(OBJGPU *pGpu, OBJRPC *pRpc, const char *logstr, NvU32 lo
     NV_STATUS status;
     NvU32     length;
 
-    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_LOG, sizeof(rpc_log_v03_00));
+    length = (NvU32)portStringLength(logstr) + 1;
+
+    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_LOG, sizeof(rpc_log_v03_00) + length);
     if (status != NV_OK)
         return status;
 
-    length = (NvU32)portStringLength(logstr) + 1;
     if (length > sizeof(rpc_log_v03_00) + pRpc->maxRpcSize)
     {
         NV_PRINTF(LEVEL_ERROR, "LOG RPC - string too long\n");
@@ -4490,6 +4491,9 @@ NV_STATUS rpcDmaControl_wrapper(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, Nv
         case NVC637_CTRL_CMD_EXEC_PARTITIONS_CREATE:
             return rpcCtrlExecPartitionsCreate_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
 
+        case NVC637_CTRL_CMD_EXEC_PARTITIONS_EXPORT:
+            return rpcCtrlExecPartitionsExport_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
+
         case NV83DE_CTRL_CMD_DEBUG_GET_MODE_MMU_DEBUG:
             return rpcCtrlDbgGetModeMmuDebug_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
 
@@ -4510,7 +4514,7 @@ NV_STATUS rpcDmaControl_wrapper(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, Nv
 
         case NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS:
             return rpcCtrlSubdeviceGetVgpuHeapStats_HAL(pGpu, pRpc, pParamStructPtr);
-            
+
         case NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS:
             return rpcCtrlSubdeviceGetLibosHeapStats_HAL(pGpu, pRpc, pParamStructPtr);
 
@@ -4904,7 +4908,7 @@ NV_STATUS rpcCtrlCmdGetChipletHsCreditPool_v29_0A(OBJGPU *pGpu, OBJRPC *pRpc, Nv
     }
 
     // deserialize
-    status = deserialize_NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL_v29_0A(pParams, (NvU8 *)pParams_buf, 0, NULL); 
+    status = deserialize_NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL_v29_0A(pParams, (NvU8 *)pParams_buf, 0, NULL);
 
     return status;
 }
@@ -4940,7 +4944,7 @@ NV_STATUS rpcCtrlCmdGetHsCreditsMapping_v29_0A(OBJGPU *pGpu, OBJRPC *pRpc, NvHan
     }
 
     // deserialize
-    status = deserialize_NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS_v29_0A(pParams, (NvU8 *)pParams_buf, 0, NULL); 
+    status = deserialize_NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS_v29_0A(pParams, (NvU8 *)pParams_buf, 0, NULL);
 
     return status;
 }
@@ -6984,6 +6988,48 @@ NV_STATUS rpcCtrlExecPartitionsDelete_v1F_0A
     }
 
     status = deserialize_NVC637_CTRL_CMD_EXEC_PARTITIONS_DELETE_v1F_0A(pParams, (NvU8 *) &rpc_params->execPartitionsDelete, 0, NULL);
+    return status;
+}
+
+NV_STATUS rpcCtrlExecPartitionsExport_v29_0C
+(
+    OBJGPU     *pGpu,
+    OBJRPC     *pRpc,
+    NvHandle    hClient,
+    NvHandle    hObject,
+    void        *pParamStructPtr
+)
+{
+    NV_STATUS status;
+    NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *pParams =
+                                (NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *)pParamStructPtr;
+
+    rpc_ctrl_exec_partitions_export_v29_0C *rpc_params = &rpc_message->ctrl_exec_partitions_export_v29_0C;
+
+    status = rpcWriteCommonHeader(pGpu,
+                                  pRpc,
+                                  NV_VGPU_MSG_FUNCTION_CTRL_EXEC_PARTITIONS_EXPORT,
+                                  sizeof(rpc_ctrl_exec_partitions_export_v29_0C));
+    if (status != NV_OK)
+        return status;
+
+    rpc_params->hClient = hClient;
+    rpc_params->hObject = hObject;
+
+    status = serialize_NVC637_CTRL_CMD_EXEC_PARTITIONS_EXPORT_v29_0C(pParams, (NvU8 *) &rpc_params->execPartitionsExport, 0, NULL);
+    if (status != NV_OK)
+        return status;
+
+    status = _issueRpcAndWait(pGpu, pRpc);
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "RPC to export exec partitions failed with error 0x%x\n", status);
+        return status;
+    }
+
+    status = deserialize_NVC637_CTRL_CMD_EXEC_PARTITIONS_EXPORT_v29_0C(pParams, (NvU8 *) &rpc_params->execPartitionsExport, 0, NULL);
+
     return status;
 }
 
@@ -10362,7 +10408,7 @@ NV_STATUS rpcCtrlSubdeviceGetVgpuHeapStats_v28_03
     status = serialize_NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS_v28_03(params, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
     if (status != NV_OK)
         return status;
-    
+
     status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_CTRL_SUBDEVICE_GET_VGPU_HEAP_STATS,
                                     sizeof(rpc_ctrl_subdevice_get_vgpu_heap_stats_v28_03));
 
@@ -10402,7 +10448,7 @@ NV_STATUS rpcCtrlSubdeviceGetVgpuHeapStats_v28_06
     status = serialize_NV2080_CTRL_CMD_GSP_GET_VGPU_HEAP_STATS_PARAMS_v28_06(params, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
     if (status != NV_OK)
         return status;
-    
+
     status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_CTRL_SUBDEVICE_GET_VGPU_HEAP_STATS,
                                     sizeof(rpc_ctrl_subdevice_get_vgpu_heap_stats_v28_06));
 
@@ -10442,7 +10488,7 @@ NV_STATUS rpcCtrlSubdeviceGetLibosHeapStats_v29_02
     status = serialize_NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS_PARAMS_v29_02(params, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
     if (status != NV_OK)
         return status;
-    
+
     status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_CTRL_SUBDEVICE_GET_LIBOS_HEAP_STATS,
                                     sizeof(rpc_ctrl_subdevice_get_libos_heap_stats_v29_02));
 

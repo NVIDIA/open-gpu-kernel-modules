@@ -149,8 +149,11 @@
 #define RESERVED8_ERROR                                 (153)
 #define GPU_RECOVERY_ACTION_CHANGED                     (154)
 #define NVLINK_SW_DEFINED_ERROR                         (155)
-#define ROBUST_CHANNEL_LAST_ERROR                       (157)
-
+#define RESOURCE_RETIREMENT_EVENT                       (156)
+#define RESOURCE_RETIREMENT_FAILURE                     (157)
+#define CHANNEL_RETIREMENT_EVENT                        (160)
+#define CHANNEL_RETIREMENT_FAILURE                      (161)
+#define ROBUST_CHANNEL_LAST_ERROR                       (161)
 
 // Indexed CE reference
 #define ROBUST_CHANNEL_CE_ERROR(x)                                        \

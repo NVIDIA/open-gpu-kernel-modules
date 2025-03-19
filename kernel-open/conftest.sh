@@ -5289,6 +5289,45 @@ compile_test() {
 
             compile_check_conftest "$CODE" "NV_FOLLOW_PFN_PRESENT" "" "functions"
         ;;
+
+        follow_pte_arg_vma)
+            #
+            # Determine if the first argument of follow_pte is
+            # mm_struct or vm_area_struct.
+            #
+            # The first argument was changed from mm_struct to vm_area_struct by
+            # commit 29ae7d96d166 ("mm: pass VMA instead of MM to follow_pte()")
+            #
+            CODE="
+            #include <linux/mm.h>
+
+            typeof(follow_pte) conftest_follow_pte_has_vma_arg;
+            int conftest_follow_pte_has_vma_arg(struct vm_area_struct *vma,
+                                                unsigned long address,
+                                                pte_t **ptep,
+                                                spinlock_t **ptl) {
+                return 0;
+            }"
+
+            compile_check_conftest "$CODE" "NV_FOLLOW_PTE_ARG1_VMA" "" "types"
+        ;;
+
+        ptep_get)
+            #
+            # Determine if ptep_get() is present.
+            #
+            # ptep_get() was added by commit 481e980a7c19
+            # ("mm: Allow arches to provide ptep_get()")
+            #
+            CODE="
+            #include <linux/mm.h>
+            void conftest_ptep_get(void) {
+                ptep_get();
+            }"
+
+            compile_check_conftest "$CODE" "NV_PTEP_GET_PRESENT" "" "functions"
+        ;;
+
         drm_plane_atomic_check_has_atomic_state_arg)
             #
             # Determine if drm_plane_helper_funcs::atomic_check takes 'state'

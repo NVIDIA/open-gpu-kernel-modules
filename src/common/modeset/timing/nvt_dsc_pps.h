@@ -254,6 +254,7 @@ typedef struct
         DSC_DP_MODE dpMode;
         NvU32 hBlank;
         NvBool bIsEdp;
+        NvBool bDisableDscMaxBppLimit;
         NvBool bIs128b132bChannelCoding;
     }dpData;
 } WAR_DATA;

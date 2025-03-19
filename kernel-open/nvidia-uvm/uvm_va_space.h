@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -424,6 +424,8 @@ struct uvm_va_space_struct
         bool force_cpu_to_cpu_copy_with_ce;
 
         bool allow_allocation_from_movable;
+
+        uvm_test_parent_gpu_inject_error_t parent_gpu_error;
     } test;
 
     // Queue item for deferred f_ops->release() handling

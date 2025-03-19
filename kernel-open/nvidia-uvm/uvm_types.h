@@ -1323,14 +1323,11 @@ typedef struct
     NvU8 aperture;
     NvU8 instancePtrAperture;
 
-    NvU8 isVirtual;
-    NvU8 isFromCpu;
+    NvU8 padding8bits;
 
     NvU8 veId;
 
-    // The physical access counter notification was triggered on a managed
-    // memory region. This is not set for virtual access counter notifications.
-    NvU8 physOnManaged;
+    NvU16 padding16bits;
 
     NvU32 value;
     NvU32 subGranularity;
@@ -1348,26 +1345,21 @@ typedef struct
     // data in a queue.
     //
     NvU8 eventType;
+
     // See uvm_access_counter_buffer_entry_t for details
     NvU8 aperture;
     NvU8 instancePtrAperture;
-    NvU8 isVirtual;
-    NvU8 isFromCpu;
     NvU8 veId;
-
-    // The physical access counter notification was triggered on a managed
-    // memory region. This is not set for virtual access counter notifications.
-    NvU8 physOnManaged;
 
     //
     // This structure is shared between UVM kernel and tools.
     // Manually padding the structure so that compiler options like pragma pack
     // or malign-double will have no effect on the field offsets
     //
-    NvU8  padding8bits;
+    NvU16 padding16bits;
+
     NvU16 srcIndex;         // index of the gpu that received the access counter
                             // notification
-    NvU16 padding16bits;
     NvU32 value;
     NvU32 subGranularity;
     NvU32 tag;

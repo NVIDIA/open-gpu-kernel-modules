@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2023 NVIDIA Corporation
+    Copyright (c) 2024-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -139,9 +139,9 @@ static void flush_tlb_va_region(uvm_gpu_va_space_t *gpu_va_space,
     uvm_ats_fault_invalidate_t *ats_invalidate;
 
     if (client_type == UVM_FAULT_CLIENT_TYPE_GPC)
-        ats_invalidate = &gpu_va_space->gpu->parent->fault_buffer_info.replayable.ats_invalidate;
+        ats_invalidate = &gpu_va_space->gpu->parent->fault_buffer.replayable.ats_invalidate;
     else
-        ats_invalidate = &gpu_va_space->gpu->parent->fault_buffer_info.non_replayable.ats_invalidate;
+        ats_invalidate = &gpu_va_space->gpu->parent->fault_buffer.non_replayable.ats_invalidate;
 
     if (!ats_invalidate->tlb_batch_pending) {
         uvm_tlb_batch_begin(&gpu_va_space->page_tables, &ats_invalidate->tlb_batch);

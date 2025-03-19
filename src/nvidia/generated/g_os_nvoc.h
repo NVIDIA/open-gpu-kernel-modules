@@ -1216,6 +1216,8 @@ void      osRunQueued1HzCallbacksUnderLock(OBJGPU *pGpu);
 
 NV_STATUS osDoFunctionLevelReset(OBJGPU *pGpu);
 
+void      osDisableConsoleManagement(OBJGPU *pGpu);
+
 void vgpuDevWriteReg032(
         OBJGPU  *pGpu,
         NvU32    thisAddress,

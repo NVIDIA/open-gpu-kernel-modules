@@ -87,7 +87,7 @@ RmSaveDisplayState
     NV2080_CTRL_CMD_INTERNAL_DISPLAY_PRE_UNIX_CONSOLE_PARAMS  preUnixConsoleParams = {0};
     NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_UNIX_CONSOLE_PARAMS  postUnixConsoleParams = {0};
 
-    if (IS_VIRTUAL(pGpu) || pKernelDisplay == NULL)
+    if (IS_VIRTUAL(pGpu) || (pKernelDisplay == NULL) || nv->client_managed_console)
     {
         return;
     }
@@ -157,20 +157,12 @@ static void RmRestoreDisplayState
     NV2080_CTRL_CMD_INTERNAL_DISPLAY_PRE_UNIX_CONSOLE_PARAMS  preUnixConsoleParams   = {0};
     NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_UNIX_CONSOLE_PARAMS  postUnixConsoleParams = {0};
 
-    NV_ASSERT_OR_RETURN_VOID(pKernelDisplay != NULL);
-
     //
-    // vGPU:
+    // Since vGPU does all real hardware management in the host,
+    // there is nothing to do at this point in the guest OS.
     //
-    // Since vGPU does all real hardware management in the
-    // host, there is nothing to do at this point in the
-    // guest OS (where IS_VIRTUAL(pGpu) is true).
-    //
-    if (IS_VIRTUAL(pGpu))
+    if (IS_VIRTUAL(pGpu) || (pKernelDisplay == NULL) || nv->client_managed_console)
     {
-        // we don't have VGA state that's needing to be restored.
-        NV_PRINTF(LEVEL_INFO, "skipping RestoreDisplayState on VGPU (0x%x)\n",
-                  pGpu->gpuId);
         return;
     }
 

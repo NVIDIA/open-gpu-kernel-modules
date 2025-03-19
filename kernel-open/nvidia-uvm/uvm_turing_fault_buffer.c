@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2021-2024 NVIDIA Corporation
+    Copyright (c) 2021-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -32,8 +32,8 @@ static void clear_replayable_faults_interrupt(uvm_parent_gpu_t *parent_gpu)
     volatile NvU32 *reg;
     NvU32 mask;
 
-    reg = parent_gpu->fault_buffer_info.rm_info.replayable.pPmcIntr;
-    mask = parent_gpu->fault_buffer_info.rm_info.replayable.replayableFaultMask;
+    reg = parent_gpu->fault_buffer.rm_info.replayable.pPmcIntr;
+    mask = parent_gpu->fault_buffer.rm_info.replayable.replayableFaultMask;
 
     UVM_GPU_WRITE_ONCE(*reg, mask);
 }
@@ -54,8 +54,8 @@ void uvm_hal_turing_disable_replayable_faults(uvm_parent_gpu_t *parent_gpu)
     volatile NvU32 *reg;
     NvU32 mask;
 
-    reg = parent_gpu->fault_buffer_info.rm_info.replayable.pPmcIntrEnClear;
-    mask = parent_gpu->fault_buffer_info.rm_info.replayable.replayableFaultMask;
+    reg = parent_gpu->fault_buffer.rm_info.replayable.pPmcIntrEnClear;
+    mask = parent_gpu->fault_buffer.rm_info.replayable.replayableFaultMask;
 
     UVM_GPU_WRITE_ONCE(*reg, mask);
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -205,12 +205,12 @@ typedef struct
     //
     // The indices represent the corresponding big PTEs in the block's interior.
     // For example, a block with alignment and size of one 4k page on either
-    // side of a big page will only use bit 0. Use uvm_va_block_big_page_index to look
-    // the big_ptes index of a page.
+    // side of a big page will only use bit 0. Use uvm_va_block_big_page_index
+    // to look up the big_ptes index of a page.
     //
     // The block might not be able to fit any big PTEs, in which case this
-    // bitmap is always zero. Use uvm_va_block_gpu_num_big_pages to find the number of
-    // valid bits in this mask.
+    // bitmap is always zero. Use uvm_va_block_gpu_num_big_pages to find the
+    // number of valid bits in this mask.
     DECLARE_BITMAP(big_ptes, MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
 
     // See the comments for uvm_va_block_mmap_t::cpu.pte_bits.
@@ -565,8 +565,8 @@ struct uvm_va_block_wrapper_struct
         // testing only.
         bool inject_eviction_error;
 
-        // Force the next successful chunk allocation to then fail. Used for testing
-        // only to simulate driver metadata allocation failure.
+        // Force the next successful chunk allocation to then fail. Used for
+        // testing only to simulate driver metadata allocation failure.
         bool inject_populate_error;
 
         // Force the next split on this block to fail.
@@ -1250,8 +1250,8 @@ NV_STATUS uvm_va_block_cpu_fault(uvm_va_block_t *va_block,
 // context.
 //
 // service_context must not be NULL and policy for service_context->region must
-// match. See the comments for uvm_va_block_check_policy_is_valid().  If
-// va_block is a HMM block, va_block_context->hmm.vma must be valid.  See the
+// match. See the comments for uvm_va_block_check_policy_is_valid(). If
+// va_block is a HMM block, va_block_context->hmm.vma must be valid. See the
 // comments for uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
 // service_context->prefetch_hint is set by this function.
 //
@@ -1282,8 +1282,8 @@ NV_STATUS uvm_va_block_service_locked(uvm_processor_id_t processor_id,
 // pages to new_residency.
 //
 // service_context must not be NULL and policy for service_context->region must
-// match.  See the comments for uvm_va_block_check_policy_is_valid().  If
-// va_block is a HMM block, va_block_context->hmm.vma must be valid.  See the
+// match. See the comments for uvm_va_block_check_policy_is_valid(). If
+// va_block is a HMM block, va_block_context->hmm.vma must be valid. See the
 // comments for uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
 // service_context->prefetch_hint should be set before calling this function.
 //
@@ -1311,8 +1311,8 @@ NV_STATUS uvm_va_block_service_copy(uvm_processor_id_t processor_id,
 // to the new residency (which may be remote).
 //
 // service_context must not be NULL and policy for service_context->region must
-// match. See the comments for uvm_va_block_check_policy_is_valid().  If
-// va_block is a HMM block, va_block_context->hmm.vma must be valid.  See the
+// match. See the comments for uvm_va_block_check_policy_is_valid(). If
+// va_block is a HMM block, va_block_context->hmm.vma must be valid. See the
 // comments for uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
 // service_context must be initialized by calling uvm_va_block_service_copy()
 // before calling this function.
@@ -1499,8 +1499,8 @@ uvm_gpu_chunk_t *uvm_va_block_lookup_gpu_chunk(uvm_va_block_t *va_block, uvm_gpu
 //
 // service_context and service_context->block_context must not be NULL and
 // policy for the region must match. See the comments for
-// uvm_va_block_check_policy_is_valid().  If va_block is a HMM block,
-// service->block_context->hmm.vma must be valid.  See the comments for
+// uvm_va_block_check_policy_is_valid(). If va_block is a HMM block,
+// service->block_context->hmm.vma must be valid. See the comments for
 // uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
 //
 // LOCKING: The caller must hold the va_block lock. If
@@ -1550,7 +1550,8 @@ void uvm_va_block_retry_init(uvm_va_block_retry_t *uvm_va_block_retry);
 // Frees all the remaining free chunks and unpins all the used chunks.
 void uvm_va_block_retry_deinit(uvm_va_block_retry_t *uvm_va_block_retry, uvm_va_block_t *va_block);
 
-// Evict all chunks from the block that are subchunks of the passed in root_chunk.
+// Evict all chunks from the block that are subchunks of the passed in
+// root_chunk.
 //
 // Add all the work tracking the eviction to the tracker.
 //
@@ -2139,16 +2140,12 @@ struct page *uvm_cpu_chunk_get_cpu_page(uvm_va_block_t *va_block, uvm_cpu_chunk_
 struct page *uvm_va_block_get_cpu_page(uvm_va_block_t *va_block, uvm_page_index_t page_index);
 
 // Physically map a CPU chunk so it is DMA'able from all registered GPUs.
-// nid cannot be NUMA_NO_NODE.
 // Locking: The va_block lock must be held.
-NV_STATUS uvm_va_block_map_cpu_chunk_on_gpus(uvm_va_block_t *va_block,
-                                             uvm_cpu_chunk_t *chunk,
-                                             uvm_page_index_t page_index);
+NV_STATUS uvm_va_block_map_cpu_chunk_on_gpus(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk);
 
 // Physically unmap a CPU chunk from all registered GPUs.
 // Locking: The va_block lock must be held.
-void uvm_va_block_unmap_cpu_chunk_on_gpus(uvm_va_block_t *va_block,
-                                          uvm_cpu_chunk_t *chunk);
+void uvm_va_block_unmap_cpu_chunk_on_gpus(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk);
 
 // Remove any CPU chunks in the given region.
 // Locking: The va_block lock must be held.
@@ -2163,8 +2160,7 @@ NvU64 uvm_va_block_get_physical_size(uvm_va_block_t *block,
                                      uvm_page_index_t page_index);
 
 // Get CPU page size or 0 if it is not mapped
-NvU64 uvm_va_block_page_size_cpu(uvm_va_block_t *va_block,
-                                 uvm_page_index_t page_index);
+NvU64 uvm_va_block_page_size_cpu(uvm_va_block_t *va_block, uvm_page_index_t page_index);
 
 // Get GPU page size or 0 if it is not mapped on the given GPU
 NvU64 uvm_va_block_page_size_gpu(uvm_va_block_t *va_block, uvm_gpu_id_t gpu_id, uvm_page_index_t page_index);
@@ -2262,8 +2258,8 @@ NV_STATUS uvm_va_block_populate_page_cpu(uvm_va_block_t *va_block,
 // otherwise it will be initialized and deinitialized by the macro.
 //
 // The macro also locks and unlocks the block's lock internally as it's expected
-// that the block's lock has been unlocked and relocked whenever the function call
-// returns NV_ERR_MORE_PROCESSING_REQUIRED and this makes it clear that the
+// that the block's lock has been unlocked and relocked whenever the function
+// call returns NV_ERR_MORE_PROCESSING_REQUIRED and this makes it clear that the
 // block's state is not locked across these calls.
 #define UVM_VA_BLOCK_LOCK_RETRY(va_block, block_retry, call) ({     \
     NV_STATUS __status;                                             \

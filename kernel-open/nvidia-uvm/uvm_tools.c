@@ -1305,8 +1305,7 @@ void uvm_tools_broadcast_replay_sync(uvm_gpu_t *gpu, NvU32 batch_id, uvm_fault_c
 
 void uvm_tools_record_access_counter(uvm_va_space_t *va_space,
                                      uvm_gpu_id_t gpu_id,
-                                     const uvm_access_counter_buffer_entry_t *buffer_entry,
-                                     bool on_managed_phys)
+                                     const uvm_access_counter_buffer_entry_t *buffer_entry)
 {
     uvm_down_read(&va_space->tools.lock);
 
@@ -1318,18 +1317,10 @@ void uvm_tools_record_access_counter(uvm_va_space_t *va_space,
 
         info->eventType           = UvmEventTypeTestAccessCounter;
         info->srcIndex            = uvm_parent_id_value_from_processor_id(gpu_id);
-        info->address             = buffer_entry->address.address;
-        info->isVirtual           = buffer_entry->address.is_virtual? 1: 0;
-        if (buffer_entry->address.is_virtual) {
-            info->instancePtr         = buffer_entry->virtual_info.instance_ptr.address;
-            info->instancePtrAperture = g_hal_to_tools_aperture_table[buffer_entry->virtual_info.instance_ptr.aperture];
-            info->veId                = buffer_entry->virtual_info.ve_id;
-        }
-        else {
-            info->aperture            = g_hal_to_tools_aperture_table[buffer_entry->address.aperture];
-        }
-        info->isFromCpu           = buffer_entry->counter_type == UVM_ACCESS_COUNTER_TYPE_MOMC? 1: 0;
-        info->physOnManaged       = on_managed_phys? 1 : 0;
+        info->address             = buffer_entry->address;
+        info->instancePtr         = buffer_entry->instance_ptr.address;
+        info->instancePtrAperture = g_hal_to_tools_aperture_table[buffer_entry->instance_ptr.aperture];
+        info->veId                = buffer_entry->ve_id;
         info->value               = buffer_entry->counter_value;
         info->subGranularity      = buffer_entry->sub_granularity;
         info->bank                = buffer_entry->bank;
@@ -1345,18 +1336,10 @@ void uvm_tools_record_access_counter(uvm_va_space_t *va_space,
 
         info->eventType           = UvmEventTypeTestAccessCounter;
         info->srcIndex            = uvm_id_value(gpu_id);
-        info->address             = buffer_entry->address.address;
-        info->isVirtual           = buffer_entry->address.is_virtual? 1: 0;
-        if (buffer_entry->address.is_virtual) {
-            info->instancePtr         = buffer_entry->virtual_info.instance_ptr.address;
-            info->instancePtrAperture = g_hal_to_tools_aperture_table[buffer_entry->virtual_info.instance_ptr.aperture];
-            info->veId                = buffer_entry->virtual_info.ve_id;
-        }
-        else {
-            info->aperture            = g_hal_to_tools_aperture_table[buffer_entry->address.aperture];
-        }
-        info->isFromCpu           = buffer_entry->counter_type == UVM_ACCESS_COUNTER_TYPE_MOMC? 1: 0;
-        info->physOnManaged       = on_managed_phys? 1 : 0;
+        info->address             = buffer_entry->address;
+        info->instancePtr         = buffer_entry->instance_ptr.address;
+        info->instancePtrAperture = g_hal_to_tools_aperture_table[buffer_entry->instance_ptr.aperture];
+        info->veId                = buffer_entry->ve_id;
         info->value               = buffer_entry->counter_value;
         info->subGranularity      = buffer_entry->sub_granularity;
         info->bank                = buffer_entry->bank;
@@ -1368,18 +1351,13 @@ void uvm_tools_record_access_counter(uvm_va_space_t *va_space,
     uvm_up_read(&va_space->tools.lock);
 }
 
-void uvm_tools_broadcast_access_counter(uvm_gpu_t *gpu,
-                                        const uvm_access_counter_buffer_entry_t *buffer_entry,
-                                        bool on_managed_phys)
+void uvm_tools_broadcast_access_counter(uvm_gpu_t *gpu, const uvm_access_counter_buffer_entry_t *buffer_entry)
 {
     uvm_va_space_t *va_space;
 
     uvm_down_read(&g_tools_va_space_list_lock);
     list_for_each_entry(va_space, &g_tools_va_space_list, tools.node) {
-        uvm_tools_record_access_counter(va_space,
-                                        gpu->id,
-                                        buffer_entry,
-                                        on_managed_phys);
+        uvm_tools_record_access_counter(va_space, gpu->id, buffer_entry);
     }
     uvm_up_read(&g_tools_va_space_list_lock);
 }

@@ -1074,24 +1074,9 @@ typedef enum
     UVM_ACCESS_COUNTER_GRANULARITY_16G = 4,
 } UVM_ACCESS_COUNTER_GRANULARITY;
 
-typedef enum
-{
-    UVM_ACCESS_COUNTER_USE_LIMIT_NONE = 1,
-    UVM_ACCESS_COUNTER_USE_LIMIT_QTR  = 2,
-    UVM_ACCESS_COUNTER_USE_LIMIT_HALF = 3,
-    UVM_ACCESS_COUNTER_USE_LIMIT_FULL = 4,
-} UVM_ACCESS_COUNTER_USE_LIMIT;
-
 typedef struct UvmGpuAccessCntrConfig_tag
 {
-    NvU32 mimcGranularity;
-
-    NvU32 momcGranularity;
-
-    NvU32 mimcUseLimit;
-
-    NvU32 momcUseLimit;
-
+    NvU32 granularity;
     NvU32 threshold;
 } UvmGpuAccessCntrConfig;
 

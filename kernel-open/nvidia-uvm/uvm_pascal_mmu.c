@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -20,7 +20,6 @@
     DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
-
 
 // For Pascal, UVM page tree 'depth' maps to hardware as follows:
 //
@@ -377,7 +376,7 @@ uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_pascal(NvU64 big_page_size)
 
 static void mmu_set_prefetch_faults(uvm_parent_gpu_t *parent_gpu, bool enable)
 {
-    volatile NvU32 *prefetch_ctrl = parent_gpu->fault_buffer_info.rm_info.replayable.pPrefetchCtrl;
+    volatile NvU32 *prefetch_ctrl = parent_gpu->fault_buffer.rm_info.replayable.pPrefetchCtrl;
 
     // A null prefetch control mapping indicates that UVM should toggle the
     // register's value using the RM API, instead of performing a direct access.
@@ -388,7 +387,7 @@ static void mmu_set_prefetch_faults(uvm_parent_gpu_t *parent_gpu, bool enable)
         // Computing.
         UVM_ASSERT(g_uvm_global.conf_computing_enabled);
 
-        status = nvUvmInterfaceTogglePrefetchFaults(&parent_gpu->fault_buffer_info.rm_info, (NvBool)enable);
+        status = nvUvmInterfaceTogglePrefetchFaults(&parent_gpu->fault_buffer.rm_info, (NvBool)enable);
 
         UVM_ASSERT(status == NV_OK);
     }

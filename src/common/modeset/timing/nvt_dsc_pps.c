@@ -2347,6 +2347,7 @@ DSC_GeneratePPS
     in->bits_per_component   = pModesetInfo->bitsPerComponent;
     in->linebuf_depth        = MIN((pDscInfo->sinkCaps.lineBufferBitDepth), (pDscInfo->gpuCaps.lineBufferBitDepth));
     in->block_pred_enable    = pDscInfo->sinkCaps.bBlockPrediction;
+    in->multi_tile           = (pDscInfo->gpuCaps.maxNumHztSlices > 4U) ? 1 : 0;
 
     switch (pModesetInfo->colorFormat)
     {
@@ -2526,8 +2527,9 @@ DSC_GeneratePPS
         // because of architectural limitation we can't use bits_per_pixel 
         // more than 16.
         //
-        if ((pModesetInfo->bDualMode || (pDscInfo->gpuCaps.maxNumHztSlices > 4U)) && 
-            (in->bits_per_pixel > 256 /*bits_per_pixel = 16*/))
+        if ((pModesetInfo->bDualMode ||
+             (in->multi_tile && (!pWARData || (pWARData && !pWARData->dpData.bDisableDscMaxBppLimit))))
+            && (in->bits_per_pixel > 256 /*bits_per_pixel = 16*/))
         {
             ret = NVT_STATUS_INVALID_BPP;
             goto done;
@@ -2547,8 +2549,9 @@ DSC_GeneratePPS
         // because of architectural limitation we can't use bits_per_pixel more 
         // than 16. So forcing it to 16.
         //
-        if ((pModesetInfo->bDualMode || (pDscInfo->gpuCaps.maxNumHztSlices > 4U)) && 
-            (in->bits_per_pixel > 256 /*bits_per_pixel = 16*/))
+        if ((pModesetInfo->bDualMode ||
+             (in->multi_tile && (!pWARData || (pWARData && !pWARData->dpData.bDisableDscMaxBppLimit))))
+            && (in->bits_per_pixel > 256 /*bits_per_pixel = 16*/))
         {
             // ERROR - DSC Dual Mode, because of architectural limitation we can't use bits_per_pixel more than 16.
             // ERROR - Forcing it to 16.
@@ -2590,7 +2593,6 @@ DSC_GeneratePPS
     in->pixel_clkMHz = (NvU32)(pModesetInfo->pixelClockHz / 1000000L);
     in->dual_mode = pModesetInfo->bDualMode;
     in->drop_mode = pModesetInfo->bDropMode;
-    in->multi_tile = (pDscInfo->gpuCaps.maxNumHztSlices > 4U) ? 1 : 0;
     in->slice_count_mask = pDscInfo->sinkCaps.sliceCountSupportedMask;
     in->peak_throughput_mode0 = pDscInfo->sinkCaps.peakThroughputMode0;
     in->peak_throughput_mode1 = pDscInfo->sinkCaps.peakThroughputMode1;

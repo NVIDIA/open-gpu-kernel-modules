@@ -194,6 +194,12 @@ NV_STATUS uvm_global_init(void)
         goto error;
     }
 
+    status = uvm_access_counters_init();
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("uvm_access_counters_init failed: %s\n", nvstatusToString(status));
+        goto error;
+    }
+
     // This sets up the ISR (interrupt service routine), by hooking into RM's
     // top-half ISR callback. As soon as this call completes, GPU interrupts
     // will start arriving, so it's important to be prepared to receive
@@ -224,8 +230,8 @@ void uvm_global_exit(void)
     nv_kthread_q_stop(&g_uvm_global.deferred_release_q);
 
     uvm_unregister_callbacks();
+    uvm_access_counters_exit();
     uvm_service_block_context_exit();
-
     uvm_perf_heuristics_exit();
     uvm_perf_events_exit();
     uvm_migrate_exit();
@@ -287,7 +293,7 @@ static NV_STATUS uvm_suspend(void)
     //   * Flush relevant kthread queues (bottom half, etc.)
 
     // Some locks acquired by this function, such as pm.lock, are released
-    // by uvm_resume().  This is contrary to the lock tracking code's
+    // by uvm_resume(). This is contrary to the lock tracking code's
     // expectations, so lock tracking is disabled.
     uvm_thread_context_lock_disable_tracking();
 
@@ -304,7 +310,7 @@ static NV_STATUS uvm_suspend(void)
         gpu = uvm_gpu_get(gpu_id);
 
         // Since fault buffer state may be lost across sleep cycles, UVM must
-        // ensure any outstanding replayable faults are dismissed.  The RM
+        // ensure any outstanding replayable faults are dismissed. The RM
         // guarantees that all user channels have been preempted before
         // uvm_suspend() is called, which implies that no user channels can be
         // stalled on faults when this point is reached.
@@ -330,7 +336,7 @@ static NV_STATUS uvm_suspend(void)
     }
 
     // Acquire each VA space's lock in write mode to lock out VMA open and
-    // release callbacks.  These entry points do not have feasible early exit
+    // release callbacks. These entry points do not have feasible early exit
     // options, and so aren't suitable for synchronization with pm.lock.
     uvm_mutex_lock(&g_uvm_global.va_spaces.lock);
 
@@ -360,7 +366,7 @@ static NV_STATUS uvm_resume(void)
     g_uvm_global.pm.is_suspended = false;
 
     // Some locks released by this function, such as pm.lock, were acquired
-    // by uvm_suspend().  This is contrary to the lock tracking code's
+    // by uvm_suspend(). This is contrary to the lock tracking code's
     // expectations, so lock tracking is disabled.
     uvm_thread_context_lock_disable_tracking();
 
@@ -392,7 +398,7 @@ static NV_STATUS uvm_resume(void)
     uvm_thread_context_lock_enable_tracking();
 
     // Force completion of any release callbacks successfully queued for
-    // deferred completion while suspended.  The deferred release
+    // deferred completion while suspended. The deferred release
     // queue is not guaranteed to remain empty following this flush since
     // some threads that failed to acquire pm.lock in uvm_release() may
     // not have scheduled their handlers yet.
@@ -424,7 +430,8 @@ void uvm_global_set_fatal_error_impl(NV_STATUS error)
     }
     else {
         UVM_ERR_PRINT("Encountered a global fatal error: %s after a global error has been already set: %s\n",
-                nvstatusToString(error), nvstatusToString(previous_error));
+                nvstatusToString(error),
+                nvstatusToString(previous_error));
     }
 
     nvUvmInterfaceReportFatalError(error);

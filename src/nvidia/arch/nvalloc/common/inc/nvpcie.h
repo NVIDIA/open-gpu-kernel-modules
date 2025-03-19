@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -211,21 +211,18 @@
 // to any specific hardware.
 //
 //
-#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_0                            0x000000C8
-#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_0_ID                                7:0
-#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_0_NEXT                             15:8
-#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_0_LENGTH                          23:16
-#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_0_SIG_LO                          31:24
-#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_1                            0x000000CC
-#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_1_SIG_HI                           15:0
-#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_1_VERSION                         18:16
-#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_1_PEER_CLIQUE_ID                  22:19
-#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_1_RELAXED_ORDERING                23:23
-#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_1_RELAXED_ORDERING_DEFAULT   0x00000000
-#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_1_RELAXED_ORDERING_DISABLE   0x00000001
-#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_1_RSVD                            31:24
+#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_0                       0x000000C8
+#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_0_ID                           7:0
+#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_0_NEXT                        15:8
+#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_0_LENGTH                     23:16
+#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_0_SIG_LO                     31:24
+#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_1                       0x000000CC
+#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_1_SIG_HI                      15:0
+#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_1_VERSION                    18:16
+#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_1_PEER_CLIQUE_ID             22:19
+#define NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_1_RSVD                       31:23
 
-#define NV_PCI_VIRTUAL_P2P_APPROVAL_SIGNATURE                        0x00503250
+#define NV_PCI_VIRTUAL_P2P_APPROVAL_SIGNATURE                   0x00503250
 
 // Chipset-specific definitions.
 // Intel SantaRosa definitions

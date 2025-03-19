@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2021 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -134,64 +134,6 @@ void uvm_hal_volta_host_clear_faulted_channel_method(uvm_push_t *push,
 
     NV_PUSH_1U(C36F, CLEAR_FAULTED, HWVALUE(C36F, CLEAR_FAULTED, CHID, user_channel->hw_channel_id) |
                                     clear_type_value);
-}
-
-void uvm_hal_volta_access_counter_clear_all(uvm_push_t *push)
-{
-    NV_PUSH_4U(C36F, MEM_OP_A, 0,
-                     MEM_OP_B, 0,
-                     MEM_OP_C, 0,
-                     MEM_OP_D, HWCONST(C36F, MEM_OP_D, OPERATION, ACCESS_COUNTER_CLR) |
-                               HWCONST(C36F, MEM_OP_D, ACCESS_COUNTER_CLR_TYPE, ALL));
-}
-
-static NvU32 get_access_counter_type_value(uvm_access_counter_type_t type)
-{
-    if (type == UVM_ACCESS_COUNTER_TYPE_MIMC)
-        return NVC36F_MEM_OP_D_ACCESS_COUNTER_CLR_TYPE_MIMC;
-    else if (type == UVM_ACCESS_COUNTER_TYPE_MOMC)
-        return NVC36F_MEM_OP_D_ACCESS_COUNTER_CLR_TYPE_MOMC;
-    else
-        UVM_ASSERT_MSG(false, "Invalid access counter type %u\n", type);
-
-    return 0;
-}
-
-static NvU32 get_access_counter_targeted_type_value(uvm_access_counter_type_t type)
-{
-    if (type == UVM_ACCESS_COUNTER_TYPE_MIMC)
-        return NVC36F_MEM_OP_D_ACCESS_COUNTER_CLR_TARGETED_TYPE_MIMC;
-    else if (type == UVM_ACCESS_COUNTER_TYPE_MOMC)
-        return NVC36F_MEM_OP_D_ACCESS_COUNTER_CLR_TARGETED_TYPE_MOMC;
-    else
-        UVM_ASSERT_MSG(false, "Invalid access counter type %u\n", type);
-
-    return 0;
-}
-
-void uvm_hal_volta_access_counter_clear_type(uvm_push_t *push, uvm_access_counter_type_t type)
-{
-    NvU32 type_value = get_access_counter_type_value(type);
-
-    NV_PUSH_4U(C36F, MEM_OP_A, 0,
-                     MEM_OP_B, 0,
-                     MEM_OP_C, 0,
-                     MEM_OP_D, HWCONST(C36F, MEM_OP_D, OPERATION, ACCESS_COUNTER_CLR) |
-                               HWVALUE(C36F, MEM_OP_D, ACCESS_COUNTER_CLR_TYPE, type_value));
-}
-
-void uvm_hal_volta_access_counter_clear_targeted(uvm_push_t *push,
-                                                 const uvm_access_counter_buffer_entry_t *buffer_entry)
-{
-    NvU32 targeted_type_value = get_access_counter_targeted_type_value(buffer_entry->counter_type);
-
-    NV_PUSH_4U(C36F, MEM_OP_A, 0,
-                     MEM_OP_B, 0,
-                     MEM_OP_C, HWVALUE(C36F, MEM_OP_C, ACCESS_COUNTER_CLR_TARGETED_NOTIFY_TAG, buffer_entry->tag),
-                     MEM_OP_D, HWCONST(C36F, MEM_OP_D, OPERATION, ACCESS_COUNTER_CLR) |
-                               HWCONST(C36F, MEM_OP_D, ACCESS_COUNTER_CLR_TYPE, TARGETED) |
-                               HWVALUE(C36F, MEM_OP_D, ACCESS_COUNTER_CLR_TARGETED_TYPE, targeted_type_value) |
-                               HWVALUE(C36F, MEM_OP_D, ACCESS_COUNTER_CLR_TARGETED_BANK, buffer_entry->bank));
 }
 
 void uvm_hal_volta_host_tlb_invalidate_va(uvm_push_t *push,
