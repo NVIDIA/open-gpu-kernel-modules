@@ -1713,5 +1713,10 @@ void ConnectorImpl2x::handleEdidWARs(Edid & edid, DiscoveryManager::Device & dev
             bForceHeadShutdownPerMonitor = true;
         }
     }
+
+    if (edid.WARFlags.bDisableDscMaxBppLimit)
+    {
+        bDisableDscMaxBppLimit = true;
+    }
 }
 

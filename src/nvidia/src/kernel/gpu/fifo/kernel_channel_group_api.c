@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -248,15 +248,13 @@ kchangrpapiConstruct_IMPL
 
     if (!RMCFG_FEATURE_PLATFORM_GSP)
     {
-        NvHandle hRcWatchdog;
-
+        RmClient *pRmClient = dynamicCast(pClient, RmClient);
         //
-        // WAR for 4217716 - Force allocations made on behalf of watchdog client to
+        // WAR for 4217716 - Force allocations made on behalf of internal clients to
         // RM reserved heap. This avoids a constant memory allocation from appearing
         // due to the ctxBufPool reservation out of PMA.
         //
-        rmStatus = krcWatchdogGetClientHandle(GPU_GET_KERNEL_RC(pGpu), &hRcWatchdog);
-        if ((rmStatus != NV_OK) || (pParams->hClient != hRcWatchdog))
+        if ((pRmClient == NULL) || !(pRmClient->Flags & RMAPI_CLIENT_FLAG_RM_INTERNAL_CLIENT))
         {
             NV_ASSERT_OK_OR_GOTO(rmStatus,
                 ctxBufPoolInit(pGpu, pHeap, &pKernelChannelGroup->pCtxBufPool),

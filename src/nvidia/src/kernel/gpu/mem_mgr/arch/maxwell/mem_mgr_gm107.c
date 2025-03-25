@@ -552,7 +552,15 @@ memmgrFreeHal_GM107
     if (FLD_TEST_DRF(OS32, _ATTR2, _ZBC_SKIP_ZBCREFCOUNT, _NO, pFbAllocInfo->pageFormat->attr2) &&
         memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_ZBC, pFbAllocInfo->format))
     {
-        NV_ASSERT(pMemoryManager->zbcSurfaces !=0 );
+        //
+        // For vGPU, ZBC is used by the guest application. So for vGPU use case zbcsurface can
+        // be 0. Hence this ASSERT is not relevant for the VGPU HOST.
+        // For the long term fix, we will have to save the flags that are set at the time of
+        // object allocation and then while Free we will have to add assert based on the flags.
+        //
+        if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VIRTUALIZATION_MODE_HOST_VGPU))
+            NV_ASSERT(pMemoryManager->zbcSurfaces !=0 );
+
         if (pMemoryManager->zbcSurfaces != 0)
         {
             pMemoryManager->zbcSurfaces--;

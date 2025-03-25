@@ -95,5 +95,9 @@ NV_STATUS conmemCtrlCmdNotifyConsoleDisabled_IMPL(ConsoleMemory *pConsoleMemory)
 
     // Remove the BAR1 mapping of the framebuffer console.
     kbusUnmapPreservedConsole(pGpu, pKernelBus, gfid);
+
+    // Inform OS layer, to no longer save/restore console.
+    osDisableConsoleManagement(pGpu);
+
     return NV_OK;
 }

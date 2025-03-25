@@ -159,6 +159,7 @@ NV_STATUS_CODE(NV_ERR_NVLINK_FABRIC_NOT_READY,         0x00000081, "Nvlink Fabri
 NV_STATUS_CODE(NV_ERR_NVLINK_FABRIC_FAILURE,           0x00000082, "Nvlink Fabric Probe failed")
 NV_STATUS_CODE(NV_ERR_GPU_MEMORY_ONLINING_FAILURE,     0x00000083, "GPU Memory Onlining failed")
 NV_STATUS_CODE(NV_ERR_REDUCTION_MANAGER_NOT_AVAILABLE, 0x00000084, "Reduction Manager is not available")
+NV_STATUS_CODE(NV_ERR_RESOURCE_RETIREMENT_ERROR,       0x00000086, "An error occurred while trying to retire a resource")
 
 // Warnings:
 NV_STATUS_CODE(NV_WARN_HOT_SWITCH,                     0x00010001, "WARNING Hot switch")

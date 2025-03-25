@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2023 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -512,8 +512,9 @@ NV_STATUS uvm_perf_prefetch_init(void)
         g_uvm_perf_prefetch_threshold = uvm_perf_prefetch_threshold;
     }
     else {
-        pr_info("Invalid value %u for uvm_perf_prefetch_threshold. Using %u instead\n",
-                uvm_perf_prefetch_threshold, UVM_PREFETCH_THRESHOLD_DEFAULT);
+        UVM_INFO_PRINT("Invalid value %u for uvm_perf_prefetch_threshold. Using %u instead\n",
+                       uvm_perf_prefetch_threshold,
+                       UVM_PREFETCH_THRESHOLD_DEFAULT);
 
         g_uvm_perf_prefetch_threshold = UVM_PREFETCH_THRESHOLD_DEFAULT;
     }
@@ -523,8 +524,9 @@ NV_STATUS uvm_perf_prefetch_init(void)
         g_uvm_perf_prefetch_min_faults = uvm_perf_prefetch_min_faults;
     }
     else {
-        pr_info("Invalid value %u for uvm_perf_prefetch_min_faults. Using %u instead\n",
-                uvm_perf_prefetch_min_faults, UVM_PREFETCH_MIN_FAULTS_DEFAULT);
+        UVM_INFO_PRINT("Invalid value %u for uvm_perf_prefetch_min_faults. Using %u instead\n",
+                       uvm_perf_prefetch_min_faults,
+                       UVM_PREFETCH_MIN_FAULTS_DEFAULT);
 
         g_uvm_perf_prefetch_min_faults = UVM_PREFETCH_MIN_FAULTS_DEFAULT;
     }

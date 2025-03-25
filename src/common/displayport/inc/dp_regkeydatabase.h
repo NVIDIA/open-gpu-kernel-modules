@@ -101,7 +101,10 @@
 // Bug 5088957 : Force head shutdown in DpLib
 #define NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN            "DP_WAR_5088957"
 
-//
+// Bug 5041041 : Enable Lower BPP check for DSC
+#define NV_DP_REGKEY_ENABLE_LOWER_BPP_CHECK_FOR_DSC "DP_ENABLE_LOWER_BPP_CHECK"
+
+
 // Data Base used to store all the regkey values.
 // The actual data base is declared statically in dp_evoadapter.cpp.
 // All entries set to 0 before initialized by the first EvoMainLink constructor.
@@ -141,6 +144,7 @@ struct DP_REGKEY_DATABASE
     bool  bSkipZeroOuiCache;
     bool  bDisable5019537Fix;
     bool  bForceHeadShutdown;
+    bool  bEnableLowerBppCheckForDsc;
 };
 
 extern struct DP_REGKEY_DATABASE dpRegkeyDatabase;

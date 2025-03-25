@@ -240,7 +240,7 @@ static void uvm_release_deferred(void *data)
     // Since this function is only scheduled to run when uvm_release() fails
     // to trylock-acquire the pm.lock, the following acquisition attempt
     // is expected to block this thread, and cause it to remain blocked until
-    // uvm_resume() releases the lock.  As a result, the deferred release
+    // uvm_resume() releases the lock. As a result, the deferred release
     // kthread queue may stall for long periods of time.
     uvm_down_read(&g_uvm_global.pm.lock);
 
@@ -292,14 +292,14 @@ static int uvm_release(struct inode *inode, struct file *filp)
 
     // Because the kernel discards the status code returned from this release
     // callback, early exit in case of a pm.lock acquisition failure is not
-    // an option.  Instead, the teardown work normally performed synchronously
+    // an option. Instead, the teardown work normally performed synchronously
     // needs to be scheduled to run after uvm_resume() releases the lock.
     if (uvm_down_read_trylock(&g_uvm_global.pm.lock)) {
         uvm_va_space_destroy(va_space);
         uvm_up_read(&g_uvm_global.pm.lock);
     }
     else {
-        // Remove references to this inode from the address_space.  This isn't
+        // Remove references to this inode from the address_space. This isn't
         // strictly necessary, as any CPU mappings of this file have already
         // been destroyed, and va_space->mapping won't be used again. Still,
         // the va_space survives the inode if its destruction is deferred, in
@@ -867,8 +867,8 @@ static int uvm_mmap(struct file *filp, struct vm_area_struct *vma)
     }
 
     // If the PM lock cannot be acquired, disable the VMA and report success
-    // to the caller.  The caller is expected to determine whether the
-    // map operation succeeded via an ioctl() call.  This is necessary to
+    // to the caller. The caller is expected to determine whether the
+    // map operation succeeded via an ioctl() call. This is necessary to
     // safely handle MAP_FIXED, which needs to complete atomically to prevent
     // the loss of the virtual address range.
     if (!uvm_down_read_trylock(&g_uvm_global.pm.lock)) {
@@ -1233,19 +1233,8 @@ static int uvm_init(void)
         goto error;
     }
 
-    pr_info("Loaded the UVM driver, major device number %d.\n", MAJOR(g_uvm_base_dev));
-
     if (uvm_enable_builtin_tests)
-        pr_info("Built-in UVM tests are enabled. This is a security risk.\n");
-
-    // After Open RM is released, both the enclosing "#if" and this comment
-    // block should be removed, because the uvm_hmm_is_enabled_system_wide()
-    // check is both necessary and sufficient for reporting functionality.
-    // Until that time, however, we need to avoid advertisting UVM's ability to
-    // enable HMM functionality.
-
-    if (uvm_hmm_is_enabled_system_wide())
-        UVM_INFO_PRINT("HMM (Heterogeneous Memory Management) is enabled in the UVM driver.\n");
+        UVM_INFO_PRINT("Built-in UVM tests are enabled. This is a security risk.\n");
 
     return 0;
 
@@ -1274,8 +1263,6 @@ static void uvm_exit(void)
     uvm_global_exit();
 
     uvm_test_unload_state_exit();
-
-    pr_info("Unloaded the UVM driver.\n");
 }
 
 static void __exit uvm_exit_entry(void)

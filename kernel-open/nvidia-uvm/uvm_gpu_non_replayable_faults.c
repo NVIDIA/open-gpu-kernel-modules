@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2024 NVIDIA Corporation
+    Copyright (c) 2017-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -119,18 +119,18 @@
 // calling uvm_parent_gpu_fault_buffer_deinit_non_replayable_faults on failure.
 NV_STATUS uvm_parent_gpu_fault_buffer_init_non_replayable_faults(uvm_parent_gpu_t *parent_gpu)
 {
-    uvm_non_replayable_fault_buffer_info_t *non_replayable_faults = &parent_gpu->fault_buffer_info.non_replayable;
+    uvm_non_replayable_fault_buffer_t *non_replayable_faults = &parent_gpu->fault_buffer.non_replayable;
 
     UVM_ASSERT(parent_gpu->non_replayable_faults_supported);
 
     non_replayable_faults->shadow_buffer_copy = NULL;
     non_replayable_faults->fault_cache        = NULL;
 
-    non_replayable_faults->max_faults = parent_gpu->fault_buffer_info.rm_info.nonReplayable.bufferSize /
+    non_replayable_faults->max_faults = parent_gpu->fault_buffer.rm_info.nonReplayable.bufferSize /
                                         parent_gpu->fault_buffer_hal->entry_size(parent_gpu);
 
     non_replayable_faults->shadow_buffer_copy =
-        uvm_kvmalloc_zero(parent_gpu->fault_buffer_info.rm_info.nonReplayable.bufferSize);
+        uvm_kvmalloc_zero(parent_gpu->fault_buffer.rm_info.nonReplayable.bufferSize);
     if (!non_replayable_faults->shadow_buffer_copy)
         return NV_ERR_NO_MEMORY;
 
@@ -147,7 +147,7 @@ NV_STATUS uvm_parent_gpu_fault_buffer_init_non_replayable_faults(uvm_parent_gpu_
 
 void uvm_parent_gpu_fault_buffer_deinit_non_replayable_faults(uvm_parent_gpu_t *parent_gpu)
 {
-    uvm_non_replayable_fault_buffer_info_t *non_replayable_faults = &parent_gpu->fault_buffer_info.non_replayable;
+    uvm_non_replayable_fault_buffer_t *non_replayable_faults = &parent_gpu->fault_buffer.non_replayable;
 
     if (non_replayable_faults->fault_cache) {
         UVM_ASSERT(uvm_tracker_is_empty(&non_replayable_faults->clear_faulted_tracker));
@@ -170,7 +170,7 @@ bool uvm_parent_gpu_non_replayable_faults_pending(uvm_parent_gpu_t *parent_gpu)
 
     UVM_ASSERT(parent_gpu->isr.non_replayable_faults.handling);
 
-    status = nvUvmInterfaceHasPendingNonReplayableFaults(&parent_gpu->fault_buffer_info.rm_info,
+    status = nvUvmInterfaceHasPendingNonReplayableFaults(&parent_gpu->fault_buffer.rm_info,
                                                          &has_pending_faults);
     UVM_ASSERT(status == NV_OK);
 
@@ -182,14 +182,14 @@ static NV_STATUS fetch_non_replayable_fault_buffer_entries(uvm_parent_gpu_t *par
     NV_STATUS status;
     NvU32 i;
     NvU32 entry_size = parent_gpu->fault_buffer_hal->entry_size(parent_gpu);
-    uvm_non_replayable_fault_buffer_info_t *non_replayable_faults = &parent_gpu->fault_buffer_info.non_replayable;
+    uvm_non_replayable_fault_buffer_t *non_replayable_faults = &parent_gpu->fault_buffer.non_replayable;
     char *current_hw_entry = (char *)non_replayable_faults->shadow_buffer_copy;
     uvm_fault_buffer_entry_t *fault_entry = non_replayable_faults->fault_cache;
 
     UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.non_replayable_faults.service_lock));
     UVM_ASSERT(parent_gpu->non_replayable_faults_supported);
 
-    status = nvUvmInterfaceGetNonReplayableFaults(&parent_gpu->fault_buffer_info.rm_info,
+    status = nvUvmInterfaceGetNonReplayableFaults(&parent_gpu->fault_buffer.rm_info,
                                                   current_hw_entry,
                                                   cached_faults);
 
@@ -267,7 +267,7 @@ static NV_STATUS clear_faulted_method_on_gpu(uvm_user_channel_t *user_channel,
     uvm_gpu_t *gpu = user_channel->gpu;
     NV_STATUS status;
     uvm_push_t push;
-    uvm_non_replayable_fault_buffer_info_t *non_replayable_faults = &gpu->parent->fault_buffer_info.non_replayable;
+    uvm_non_replayable_fault_buffer_t *non_replayable_faults = &gpu->parent->fault_buffer.non_replayable;
 
     UVM_ASSERT(!fault_entry->is_fatal);
 
@@ -355,7 +355,7 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_va_block_t *va_block,
     uvm_processor_id_t new_residency;
     bool read_duplicate;
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
-    uvm_non_replayable_fault_buffer_info_t *non_replayable_faults = &gpu->parent->fault_buffer_info.non_replayable;
+    uvm_non_replayable_fault_buffer_t *non_replayable_faults = &gpu->parent->fault_buffer.non_replayable;
     const uvm_va_policy_t *policy;
 
     UVM_ASSERT(!fault_entry->is_fatal);
@@ -450,7 +450,7 @@ static NV_STATUS service_managed_fault_in_block(uvm_va_block_t *va_block,
     NV_STATUS status, tracker_status;
     uvm_va_block_retry_t va_block_retry;
     uvm_gpu_t *gpu = fault_entry->gpu;
-    uvm_service_block_context_t *service_context = &gpu->parent->fault_buffer_info.non_replayable.block_service_context;
+    uvm_service_block_context_t *service_context = &gpu->parent->fault_buffer.non_replayable.block_service_context;
 
     service_context->operation = UVM_SERVICE_OPERATION_NON_REPLAYABLE_FAULTS;
     service_context->num_retries = 0;
@@ -467,7 +467,7 @@ static NV_STATUS service_managed_fault_in_block(uvm_va_block_t *va_block,
                                                                              service_context,
                                                                              hmm_migratable));
 
-    tracker_status = uvm_tracker_add_tracker_safe(&gpu->parent->fault_buffer_info.non_replayable.fault_service_tracker,
+    tracker_status = uvm_tracker_add_tracker_safe(&gpu->parent->fault_buffer.non_replayable.fault_service_tracker,
                                                   &va_block->tracker);
 
     uvm_mutex_unlock(&va_block->lock);
@@ -507,7 +507,7 @@ static void schedule_kill_channel(uvm_fault_buffer_entry_t *fault_entry, uvm_use
 {
     uvm_va_space_t *va_space = fault_entry->va_space;
     uvm_parent_gpu_t *parent_gpu = fault_entry->gpu->parent;
-    uvm_non_replayable_fault_buffer_info_t *non_replayable_faults = &parent_gpu->fault_buffer_info.non_replayable;
+    uvm_non_replayable_fault_buffer_t *non_replayable_faults = &parent_gpu->fault_buffer.non_replayable;
     void *packet = (char *)non_replayable_faults->shadow_buffer_copy +
                    (fault_entry->non_replayable.buffer_index * parent_gpu->fault_buffer_hal->entry_size(parent_gpu));
 
@@ -551,7 +551,7 @@ static NV_STATUS service_non_managed_fault(uvm_gpu_va_space_t *gpu_va_space,
 {
     uvm_va_space_t *va_space = gpu_va_space->va_space;
     uvm_gpu_t *gpu = gpu_va_space->gpu;
-    uvm_non_replayable_fault_buffer_info_t *non_replayable_faults = &gpu->parent->fault_buffer_info.non_replayable;
+    uvm_non_replayable_fault_buffer_t *non_replayable_faults = &gpu->parent->fault_buffer.non_replayable;
     uvm_ats_fault_invalidate_t *ats_invalidate = &non_replayable_faults->ats_invalidate;
     NV_STATUS status = lookup_status;
     NV_STATUS fatal_fault_status = NV_ERR_INVALID_ADDRESS;
@@ -649,7 +649,7 @@ static NV_STATUS service_fault_once(uvm_parent_gpu_t *parent_gpu,
     struct mm_struct *mm;
     uvm_gpu_va_space_t *gpu_va_space;
     uvm_gpu_t *gpu;
-    uvm_non_replayable_fault_buffer_info_t *non_replayable_faults = &parent_gpu->fault_buffer_info.non_replayable;
+    uvm_non_replayable_fault_buffer_t *non_replayable_faults = &parent_gpu->fault_buffer.non_replayable;
     uvm_va_block_context_t *va_block_context = non_replayable_faults->block_service_context.block_context;
 
     status = uvm_parent_gpu_fault_entry_to_va_space(parent_gpu,
@@ -757,7 +757,7 @@ exit_no_channel:
 static NV_STATUS service_fault(uvm_parent_gpu_t *parent_gpu, uvm_fault_buffer_entry_t *fault_entry)
 {
     uvm_service_block_context_t *service_context =
-        &parent_gpu->fault_buffer_info.non_replayable.block_service_context;
+        &parent_gpu->fault_buffer.non_replayable.block_service_context;
     NV_STATUS status;
     bool hmm_migratable = true;
 
@@ -794,7 +794,7 @@ void uvm_parent_gpu_service_non_replayable_fault_buffer(uvm_parent_gpu_t *parent
         // non-replayable faults since getting multiple faults on the same
         // memory region is not very likely
         for (i = 0; i < cached_faults; ++i) {
-            status = service_fault(parent_gpu, &parent_gpu->fault_buffer_info.non_replayable.fault_cache[i]);
+            status = service_fault(parent_gpu, &parent_gpu->fault_buffer.non_replayable.fault_cache[i]);
             if (status != NV_OK)
                 return;
         }

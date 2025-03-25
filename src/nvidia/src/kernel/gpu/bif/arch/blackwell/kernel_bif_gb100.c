@@ -165,7 +165,7 @@ kbifEnableExtendedTagSupport_GB100
         if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_PF0_DEVICE_CONTROL_AND_STATUS,
                                    &regVal) != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_INFO,
                       "Unable to read NV_PF0_DEVICE_CONTROL_AND_STATUS\n");
             goto _kbifEnableExtendedTagSupport_GB100_exit;
         }
@@ -175,7 +175,7 @@ kbifEnableExtendedTagSupport_GB100
         if (GPU_BUS_CFG_CYCLE_WR32(pGpu, NV_PF0_DEVICE_CONTROL_AND_STATUS,
                                    regVal) != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_INFO,
                       "Unable to write NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS\n");
             goto _kbifEnableExtendedTagSupport_GB100_exit;
         }
@@ -210,7 +210,7 @@ kbifEnableNoSnoop_GB100
                                     &regVal);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "Failed to read NV_PF0_DEVICE_CONTROL_AND_STATUS.\n");
         goto _kbifEnableNoSnoop_GB100_exit;
     }
@@ -222,7 +222,7 @@ kbifEnableNoSnoop_GB100
                                       regVal);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "Failed to write NV_PF0_DEVICE_CONTROL_AND_STATUS.\n");
         goto _kbifEnableNoSnoop_GB100_exit;
     }
@@ -249,7 +249,7 @@ kbifPcieConfigEnableRelaxedOrdering_GB100
     if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_PF0_DEVICE_CONTROL_AND_STATUS,
                                &xveDevCtrlStatus) == NV_ERR_GENERIC)
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "Unable to read NV_PF0_DEVICE_CONTROL_AND_STATUS!\n");
     }
     else
@@ -278,7 +278,7 @@ kbifPcieConfigDisableRelaxedOrdering_GB100
     if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_PF0_DEVICE_CONTROL_AND_STATUS,
                                &xtlDevCtrlStatus) == NV_ERR_GENERIC)
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "Unable to read NV_PF0_DEVICE_CONTROL_AND_STATUS!\n");
     }
     else
@@ -316,7 +316,7 @@ kbifGetXveStatusBits_GB100
     if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_PF0_DEVICE_CONTROL_AND_STATUS,
                                &xtlDevCtrlStatus) != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "Unable to read NV_PF0_DEVICE_CONTROL_AND_STATUS!\n");
     }
     if (pBits == NULL)
@@ -403,7 +403,7 @@ kbifClearXveStatus_GB100
         if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_PF0_DEVICE_CONTROL_AND_STATUS,
                                    &xtlDevCtrlStatus) != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_INFO,
                       "Unable to read NV_PF0_DEVICE_CONTROL_AND_STATUS!\n");
         }
     }
@@ -448,14 +448,14 @@ kbifGetXveAerBits_GB100
     if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_PF0_UNCORRECTABLE_ERROR_STATUS,
                                &xtlAerUncorr) != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "Unable to read NV_PF0_UNCORRECTABLE_ERROR_STATUS\n");
         return NV_ERR_GENERIC;
     }
     if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_PF0_CORRECTABLE_ERROR_STATUS,
                                &xtlAerCorr) != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "Unable to read NV_PF0_CORRECTABLE_ERROR_STATUS\n");
         return NV_ERR_GENERIC;
     }

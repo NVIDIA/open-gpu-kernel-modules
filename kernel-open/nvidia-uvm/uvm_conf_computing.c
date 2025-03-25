@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2021-2024 NVIDIA Corporation
+    Copyright (c) 2021-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -532,7 +532,7 @@ NV_STATUS uvm_conf_computing_fault_decrypt(uvm_parent_gpu_t *parent_gpu,
 {
     NV_STATUS status;
     NvU32 fault_entry_size = parent_gpu->fault_buffer_hal->entry_size(parent_gpu);
-    UvmCslContext *csl_context = &parent_gpu->fault_buffer_info.rm_info.replayable.cslCtx;
+    UvmCslContext *csl_context = &parent_gpu->fault_buffer.rm_info.replayable.cslCtx;
 
     // There is no dedicated lock for the CSL context associated with replayable
     // faults. The mutual exclusion required by the RM CSL API is enforced by
@@ -571,7 +571,7 @@ void uvm_conf_computing_fault_increment_decrypt_iv(uvm_parent_gpu_t *parent_gpu)
 {
     NV_STATUS status;
     NvU32 fault_entry_size = parent_gpu->fault_buffer_hal->entry_size(parent_gpu);
-    UvmCslContext *csl_context = &parent_gpu->fault_buffer_info.rm_info.replayable.cslCtx;
+    UvmCslContext *csl_context = &parent_gpu->fault_buffer.rm_info.replayable.cslCtx;
 
     // See comment in uvm_conf_computing_fault_decrypt
     UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.replayable_faults.service_lock));

@@ -148,7 +148,7 @@ struct Subdevice {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct Subdevice *__nvoc_pbase_Subdevice;    // subdevice
 
-    // Vtable with 615 per-object function pointers
+    // Vtable with 616 per-object function pointers
     NV_STATUS (*__subdeviceCtrlCmdBiosGetInfoV2__)(struct Subdevice * /*this*/, NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS *);  // halified (2 hals) exported (id=0x20800810) body
     NV_STATUS (*__subdeviceCtrlCmdBiosGetNbsiV2__)(struct Subdevice * /*this*/, NV2080_CTRL_BIOS_GET_NBSI_V2_PARAMS *);  // exported (id=0x2080080e)
     NV_STATUS (*__subdeviceCtrlCmdBiosGetSKUInfo__)(struct Subdevice * /*this*/, NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS *);  // halified (2 hals) exported (id=0x20800808)
@@ -727,6 +727,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdInternalPerfPfmReqHndlrGetVpstateInfo__)(struct Subdevice * /*this*/, NV2080_CTRL_CMD_INTERNAL_PERF_PFM_REQ_HNDLR_GET_VPSTATE_INFO_PARAMS *);  // exported (id=0x20800ad4)
     NV_STATUS (*__subdeviceCtrlCmdInternalPerfPfmReqHndlrGetVpstateMapping__)(struct Subdevice * /*this*/, NV2080_CTRL_CMD_INTERNAL_PERF_PFM_REQ_HNDLR_GET_VPSTATE_MAPPING_PARAMS *);  // exported (id=0x20800ad5)
     NV_STATUS (*__subdeviceCtrlCmdInternalPerfPfmReqHndlrSetVpstate__)(struct Subdevice * /*this*/, NV2080_CTRL_CMD_INTERNAL_PERF_PFM_REQ_HNDLR_SET_VPSTATE_PARAMS *);  // exported (id=0x20800ad6)
+    NV_STATUS (*__subdeviceCtrlCmdInternalPerfPfmReqHndlrPrhDependencyCheck__)(struct Subdevice * /*this*/);  // exported (id=0x20800a18)
     NV_STATUS (*__subdeviceCtrlCmdInternalPmgrUnsetDynamicBoostLimit__)(struct Subdevice * /*this*/);  // exported (id=0x20800a7b)
     NV_STATUS (*__subdeviceCtrlCmdInternalDetectHsVideoBridge__)(struct Subdevice * /*this*/);  // exported (id=0x20800add)
     NV_STATUS (*__subdeviceCtrlCmdInternalConfComputeGetStaticInfo__)(struct Subdevice * /*this*/, NV2080_CTRL_INTERNAL_CONF_COMPUTE_GET_STATIC_INFO_PARAMS *);  // exported (id=0x20800af3)
@@ -2079,6 +2080,8 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdInternalPerfPfmReqHndlrGetVpstateMapping(pSubdevice, pParams) subdeviceCtrlCmdInternalPerfPfmReqHndlrGetVpstateMapping_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalPerfPfmReqHndlrSetVpstate_FNPTR(pSubdevice) pSubdevice->__subdeviceCtrlCmdInternalPerfPfmReqHndlrSetVpstate__
 #define subdeviceCtrlCmdInternalPerfPfmReqHndlrSetVpstate(pSubdevice, pParams) subdeviceCtrlCmdInternalPerfPfmReqHndlrSetVpstate_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdInternalPerfPfmReqHndlrPrhDependencyCheck_FNPTR(pSubdevice) pSubdevice->__subdeviceCtrlCmdInternalPerfPfmReqHndlrPrhDependencyCheck__
+#define subdeviceCtrlCmdInternalPerfPfmReqHndlrPrhDependencyCheck(pSubdevice) subdeviceCtrlCmdInternalPerfPfmReqHndlrPrhDependencyCheck_DISPATCH(pSubdevice)
 #define subdeviceCtrlCmdInternalPmgrUnsetDynamicBoostLimit_FNPTR(pSubdevice) pSubdevice->__subdeviceCtrlCmdInternalPmgrUnsetDynamicBoostLimit__
 #define subdeviceCtrlCmdInternalPmgrUnsetDynamicBoostLimit(pSubdevice) subdeviceCtrlCmdInternalPmgrUnsetDynamicBoostLimit_DISPATCH(pSubdevice)
 #define subdeviceCtrlCmdInternalDetectHsVideoBridge_FNPTR(pSubdevice) pSubdevice->__subdeviceCtrlCmdInternalDetectHsVideoBridge__
@@ -4532,6 +4535,10 @@ static inline NV_STATUS subdeviceCtrlCmdInternalPerfPfmReqHndlrSetVpstate_DISPAT
     return pSubdevice->__subdeviceCtrlCmdInternalPerfPfmReqHndlrSetVpstate__(pSubdevice, pParams);
 }
 
+static inline NV_STATUS subdeviceCtrlCmdInternalPerfPfmReqHndlrPrhDependencyCheck_DISPATCH(struct Subdevice *pSubdevice) {
+    return pSubdevice->__subdeviceCtrlCmdInternalPerfPfmReqHndlrPrhDependencyCheck__(pSubdevice);
+}
+
 static inline NV_STATUS subdeviceCtrlCmdInternalPmgrUnsetDynamicBoostLimit_DISPATCH(struct Subdevice *pSubdevice) {
     return pSubdevice->__subdeviceCtrlCmdInternalPmgrUnsetDynamicBoostLimit__(pSubdevice);
 }
@@ -6175,6 +6182,8 @@ NV_STATUS subdeviceCtrlCmdInternalPerfPfmReqHndlrGetVpstateInfo_IMPL(struct Subd
 NV_STATUS subdeviceCtrlCmdInternalPerfPfmReqHndlrGetVpstateMapping_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_INTERNAL_PERF_PFM_REQ_HNDLR_GET_VPSTATE_MAPPING_PARAMS *pParams);
 
 NV_STATUS subdeviceCtrlCmdInternalPerfPfmReqHndlrSetVpstate_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_INTERNAL_PERF_PFM_REQ_HNDLR_SET_VPSTATE_PARAMS *pParams);
+
+NV_STATUS subdeviceCtrlCmdInternalPerfPfmReqHndlrPrhDependencyCheck_IMPL(struct Subdevice *pSubdevice);
 
 NV_STATUS subdeviceCtrlCmdInternalPmgrUnsetDynamicBoostLimit_IMPL(struct Subdevice *pSubdevice);
 

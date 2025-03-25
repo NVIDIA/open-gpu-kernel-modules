@@ -2398,7 +2398,7 @@ NV_STATUS NV_API_CALL rm_power_management(
                     // For GPU driving console, disable console access here, to ensure no console
                     // writes through BAR1 can interfere with physical RM's setup of BAR1
                     //
-                    if (rm_get_uefi_console_status(pNv))
+                    if (pNv->client_managed_console)
                     {
                         os_disable_console_access();
                         bConsoleDisabled = NV_TRUE;

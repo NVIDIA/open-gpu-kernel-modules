@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2024 NVIDIA Corporation
+    Copyright (c) 2017-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -27,11 +27,11 @@
 #include "uvm_forward_decl.h"
 #include "uvm_test_ioctl.h"
 
-NV_STATUS uvm_parent_gpu_init_access_counters(uvm_parent_gpu_t *parent_gpu);
-void uvm_parent_gpu_deinit_access_counters(uvm_parent_gpu_t *parent_gpu);
-bool uvm_parent_gpu_access_counters_pending(uvm_parent_gpu_t *parent_gpu);
+NV_STATUS uvm_parent_gpu_init_access_counters(uvm_parent_gpu_t *parent_gpu, NvU32 index);
+void uvm_parent_gpu_deinit_access_counters(uvm_parent_gpu_t *parent_gpu, NvU32 index);
+bool uvm_parent_gpu_access_counters_pending(uvm_parent_gpu_t *parent_gpu, NvU32 index);
 
-void uvm_parent_gpu_service_access_counters(uvm_parent_gpu_t *parent_gpu);
+void uvm_service_access_counters(uvm_access_counter_buffer_t *access_counters);
 
 void uvm_parent_gpu_access_counter_buffer_flush(uvm_parent_gpu_t *parent_gpu);
 
@@ -46,17 +46,23 @@ void uvm_parent_gpu_access_counter_buffer_flush(uvm_parent_gpu_t *parent_gpu);
 //
 // When uningoring, the interrupt conditions will be re-evaluated to trigger
 // processing of buffered notifications, if any exist.
+//
+// All parent_gpu's notifications buffers are affected.
 void uvm_parent_gpu_access_counters_set_ignore(uvm_parent_gpu_t *parent_gpu, bool do_ignore);
 
 // Return whether the VA space has access counter migrations enabled. The
 // caller must ensure that the VA space cannot go away.
 bool uvm_va_space_has_access_counter_migrations(uvm_va_space_t *va_space);
 
-// Global perf initialization/cleanup functions
+// Global access counters initialization/cleanup functions.
+NV_STATUS uvm_access_counters_init(void);
+void uvm_access_counters_exit(void);
+
+// Global perf initialization/cleanup functions.
 NV_STATUS uvm_perf_access_counters_init(void);
 void uvm_perf_access_counters_exit(void);
 
-// VA space Initialization/cleanup functions. See comments in
+// VA space initialization/cleanup functions. See comments in
 // uvm_perf_heuristics.h
 NV_STATUS uvm_perf_access_counters_load(uvm_va_space_t *va_space);
 void uvm_perf_access_counters_unload(uvm_va_space_t *va_space);
@@ -72,17 +78,18 @@ bool uvm_parent_gpu_access_counters_required(const uvm_parent_gpu_t *parent_gpu)
 // counters are currently enabled. The hardware notifications and interrupts on
 // the GPU are enabled the first time any VA space invokes
 // uvm_gpu_access_counters_enable, and disabled when the last VA space invokes
-// uvm_parent_gpu_access_counters_disable().
+// uvm_gpu_access_counters_disable().
 //
 // Locking: the VA space lock must not be held by the caller since these
 // functions may take the access counters ISR lock.
 NV_STATUS uvm_gpu_access_counters_enable(uvm_gpu_t *gpu, uvm_va_space_t *va_space);
-void uvm_parent_gpu_access_counters_disable(uvm_parent_gpu_t *parent_gpu, uvm_va_space_t *va_space);
+void uvm_gpu_access_counters_disable(uvm_gpu_t *gpu, uvm_va_space_t *va_space);
 
 NV_STATUS uvm_test_access_counters_enabled_by_default(UVM_TEST_ACCESS_COUNTERS_ENABLED_BY_DEFAULT_PARAMS *params,
                                                       struct file *filp);
 NV_STATUS uvm_test_reconfigure_access_counters(UVM_TEST_RECONFIGURE_ACCESS_COUNTERS_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_reset_access_counters(UVM_TEST_RESET_ACCESS_COUNTERS_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_set_ignore_access_counters(UVM_TEST_SET_IGNORE_ACCESS_COUNTERS_PARAMS *params, struct file *filp);
+NV_STATUS uvm_test_query_access_counters(UVM_TEST_QUERY_ACCESS_COUNTERS_PARAMS *params, struct file *filp);
 
 #endif // __UVM_GPU_ACCESS_COUNTERS_H__

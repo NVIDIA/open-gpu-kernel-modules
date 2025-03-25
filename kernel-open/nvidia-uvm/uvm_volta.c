@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2024 NVIDIA Corporation
+    Copyright (c) 2016-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -37,10 +37,10 @@ void uvm_hal_volta_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->utlb_per_gpc_count = uvm_volta_get_utlbs_per_gpc(parent_gpu);
 
-    parent_gpu->fault_buffer_info.replayable.utlb_count = parent_gpu->rm_info.gpcCount * parent_gpu->utlb_per_gpc_count;
+    parent_gpu->fault_buffer.replayable.utlb_count = parent_gpu->rm_info.gpcCount * parent_gpu->utlb_per_gpc_count;
     {
         uvm_fault_buffer_entry_t *dummy;
-        UVM_ASSERT(parent_gpu->fault_buffer_info.replayable.utlb_count <= (1 << (sizeof(dummy->fault_source.utlb_id) * 8)));
+        UVM_ASSERT(parent_gpu->fault_buffer.replayable.utlb_count <= (1 << (sizeof(dummy->fault_source.utlb_id) * 8)));
     }
 
     // A single top level PDE on Volta covers 128 TB and that's the minimum
@@ -82,9 +82,9 @@ void uvm_hal_volta_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->non_replayable_faults_supported = true;
 
-    parent_gpu->access_counters_supported = true;
-
-    parent_gpu->access_counters_can_use_physical_addresses = true;
+    // Although access counters are supported in HW, it only notifies memory
+    // accesses using physical addresses, which is not supported in SW.
+    parent_gpu->access_counters_supported = false;
 
     parent_gpu->fault_cancel_va_supported = true;
 

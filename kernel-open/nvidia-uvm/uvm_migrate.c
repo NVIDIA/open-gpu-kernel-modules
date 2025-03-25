@@ -582,7 +582,7 @@ static NV_STATUS uvm_migrate_ranges(uvm_va_space_t *va_space,
         managed_range_last = managed_range;
 
         // For UVM-Lite GPUs, the CUDA driver may suballocate a single
-        // managed_range into many range groups.  For this reason, we iterate
+        // managed_range into many range groups. For this reason, we iterate
         // over each managed_range first then through the range groups within.
         uvm_range_group_for_each_migratability_in(&iter,
                                                   va_space,
@@ -865,9 +865,9 @@ NV_STATUS uvm_migrate_init(void)
         else {
             g_uvm_perf_migrate_cpu_preunmap_size = UVM_VA_BLOCK_SIZE << UVM_PERF_MIGRATE_CPU_PREUNMAP_BLOCK_ORDER_DEFAULT;
 
-            pr_info("Invalid value %u for uvm_perf_migrate_cpu_preunmap_block_order. Using %u instead\n",
-                    uvm_perf_migrate_cpu_preunmap_block_order,
-                    UVM_PERF_MIGRATE_CPU_PREUNMAP_BLOCK_ORDER_DEFAULT);
+            UVM_INFO_PRINT("Invalid value %u for uvm_perf_migrate_cpu_preunmap_block_order. Using %u instead\n",
+                           uvm_perf_migrate_cpu_preunmap_block_order,
+                           UVM_PERF_MIGRATE_CPU_PREUNMAP_BLOCK_ORDER_DEFAULT);
         }
     }
 
@@ -909,14 +909,13 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
 
     if ((params->flags & UVM_MIGRATE_FLAGS_TEST_ALL) && !uvm_enable_builtin_tests) {
         UVM_INFO_PRINT("Test flag set for UVM_MIGRATE. Did you mean to insmod with uvm_enable_builtin_tests=1?\n");
-        UVM_INFO_PRINT("TEMP\n");
         return NV_ERR_INVALID_ARGUMENT;
     }
 
     gpus_to_check_for_nvlink_errors = uvm_processor_mask_cache_alloc();
     if (!gpus_to_check_for_nvlink_errors)
         return NV_ERR_NO_MEMORY;
- 
+
     uvm_processor_mask_zero(gpus_to_check_for_nvlink_errors);
 
     // mmap_lock will be needed if we have to create CPU mappings

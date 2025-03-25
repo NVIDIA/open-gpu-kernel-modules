@@ -5555,3 +5555,21 @@ void osAllocatedRmClient(void *pOsInfo)
     if (nvfp != NULL)
         nvfp->bCleanupRmapi = NV_TRUE;
 }
+
+/*!
+ * @brief Update variable to indicate console managed by drm driver.
+ *
+ * @param[in]  OBJGPU  GPU object pointer
+ *
+ * @returns void
+ */
+void
+osDisableConsoleManagement
+(
+    OBJGPU *pGpu
+)
+{
+    nv_state_t *nv  = NV_GET_NV_STATE(pGpu);
+
+    nv->client_managed_console = NV_TRUE;
+}

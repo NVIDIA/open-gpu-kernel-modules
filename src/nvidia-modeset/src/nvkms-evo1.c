@@ -690,6 +690,10 @@ void nvEvo1SendHdmiInfoFrame(const NVDispEvoRec *pDispEvo,
     nvkms_memcpy(&infoframe[1], &((const NvU8*) pInfoFrameHeader)[1],
         headerSize - 1);
 
+    /* copy the payload, starting after the 3-byte header and checksum */
+    nvkms_memcpy(&infoframe[headerSize + (needChecksum ? sizeof(checksum) : 0)],
+                 pPayload, infoframeSize - headerSize /* payload size */);
+
     /*
      * XXX Redundant since needsChecksum implies
      * _HDMI_PKT_TRANSMIT_CTRL_CHKSUM_HW_EN via
@@ -704,10 +708,6 @@ void nvEvo1SendHdmiInfoFrame(const NVDispEvoRec *pDispEvo,
         }
         infoframe[headerSize] = ~checksum + 1;
     }
-
-    /* copy the payload, starting after the 3-byte header and checksum */
-    nvkms_memcpy(&infoframe[headerSize + (needChecksum ? sizeof(checksum) : 0)],
-                 pPayload, infoframeSize - headerSize /* payload size */);
 
     ret = NvHdmiPkt_PacketWrite(pDevEvo->hdmiLib.handle,
                                 pDispEvo->displayOwner,

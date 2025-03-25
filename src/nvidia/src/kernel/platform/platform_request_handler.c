@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -62,7 +62,8 @@ pfmreqhndlrConstruct_IMPL
  *
  * @param[in]   pPlatformRequestHandler        *PlatformRequestHandler pointer
  *
- * @return  NV_OK always succeeds
+ * @return  NV_ERR_NOT_SUPPORTED    If GPU does not support PRH
+ * @return  NV_OK                   If found a GPU that supports PRH
  */
 NV_STATUS
 pfmreqhndlrInitGpu
@@ -106,13 +107,24 @@ pfmreqhndlrInitGpu
 
             if (status == NV_OK)
             {
-                //
-                // Store the GPU index of the current GPU.
-                // gpumgrGetNextGpu() increments gpuIndex to point to the next
-                // GPU, so need to subtract 1 to get the current GPU index.
-                //
-                pPlatformRequestHandler->pfmreqhndlrSupportedGpuIdx = gpuIndex - 1;
-                break;
+                RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+                // Check if PRH dependent modules have been initialized and in a valid state
+                if (pRmApi->Control(pRmApi,
+                                    pGpu->hInternalClient,
+                                    pGpu->hInternalSubdevice,
+                                    NV2080_CTRL_CMD_INTERNAL_PERF_PFM_REQ_HNDLR_PRH_DEPENDENCY_CHECK,
+                                    NULL,
+                                    0) == NV_OK)
+                {
+                    //
+                    // Store the GPU index of the current GPU.
+                    // gpumgrGetNextGpu() increments gpuIndex to point to the next
+                    // GPU, so need to subtract 1 to get the current GPU index.
+                    //
+                    pPlatformRequestHandler->pfmreqhndlrSupportedGpuIdx = gpuIndex - 1;
+                    break;
+                }
             }
         }
     }
@@ -348,7 +360,7 @@ pfmreqhndlrPcontrol_IMPL(PlatformRequestHandler *pPlatformRequestHandler, NvU32 
                 // Setup a response PFM_REQ_HNDLR_FUNC_PCONTROL call to return the VP-State range
                 //
                 NV2080_CTRL_CMD_INTERNAL_PERF_PFM_REQ_HNDLR_GET_VPSTATE_MAPPING_PARAMS params = {0};
-                params.pStateIdx = DRF_VAL(_PB, _PFM_REQ_HNDLR_PCTRL, _INDEX_PSTATE, requestData);;
+                params.pStateIdx = DRF_VAL(_PB, _PFM_REQ_HNDLR_PCTRL, _INDEX_PSTATE, requestData);
 
                 status = pRmApi->Control(pRmApi,
                                          pGpu->hInternalClient,
@@ -360,7 +372,6 @@ pfmreqhndlrPcontrol_IMPL(PlatformRequestHandler *pPlatformRequestHandler, NvU32 
                 {
                     vpStateMapping = params.vPstateIdxMapping;
                 }
-
 
                 // Send response for v-Pstate information in response type.
                 responseData = FLD_SET_DRF_NUM (_PB, _PFM_REQ_HNDLR_PCTRL, _RES, NV_PB_PFM_REQ_HNDLR_PCTRL_RES_VPSTATE_INFO, responseData);

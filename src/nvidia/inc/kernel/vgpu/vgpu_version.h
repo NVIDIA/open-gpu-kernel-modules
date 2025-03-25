@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,7 +31,7 @@
 #define RPC_VERSION_FROM_VGX_VERSION(major, minor) (DRF_NUM(_RPC, _VERSION_NUMBER, _MAJOR, major) | \
                                                     DRF_NUM(_RPC, _VERSION_NUMBER, _MINOR, minor))
 #define VGX_MAJOR_VERSION_NUMBER 0x29
-#define VGX_MINOR_VERSION_NUMBER 0x0B
+#define VGX_MINOR_VERSION_NUMBER 0x0C
 
 #define VGX_MAJOR_VERSION_NUMBER_VGPU_12_0 0x1A
 #define VGX_MINOR_VERSION_NUMBER_VGPU_12_0 0x18
@@ -40,6 +40,7 @@
 #define VGX_MAJOR_VERSION_NUMBER_VGPU_16_0 0x23
 #define VGX_MAJOR_VERSION_NUMBER_VGPU_17_0 0x25
 #define VGX_MAJOR_VERSION_NUMBER_VGPU_18_0 0x29
+#define VGX_MINOR_VERSION_NUMBER_VGPU_18_0 0x0B
 
 #define VGX_MAJOR_VERSION_WITH_FB_COPY_LARGE_BLOCKSZ_SUPPORT 0x28
 
@@ -55,6 +56,7 @@
  */
 #define NV_VGPU_GRIDSW_INTERNAL_TO_EXTERNAL_VERSION_MAPPING \
     {{0x29, 0x00}, {0x29, 0x0B}, {0x18, 0x01}},             \
+    {{0x29, 0x0C}, {0x29, 0x0C}, {0x18, 0x02}},             \
     {{0x28, 0x00}, {0x28, 0x09}, {0x17, 0x01}},             \
     {{0x27, 0x00}, {0x27, 0x06}, {0x16, 0x01}},             \
     {{0x26, 0x00}, {0x26, 0x05}, {0x15, 0x01}},             \
@@ -107,7 +109,7 @@
 /* WARNING: Should be updated with each vGPU release, if there is a break in
  * migration compatibility during the development of that release. */
 #define NV_VGPU_MAX_SUPPORTED_GRIDSW_VERSION_EXTERNAL_MAJOR 0x18
-#define NV_VGPU_MAX_SUPPORTED_GRIDSW_VERSION_EXTERNAL_MINOR 0x1
+#define NV_VGPU_MAX_SUPPORTED_GRIDSW_VERSION_EXTERNAL_MINOR 0x2
 
 /* WARNING: Should be updated with each vGPU release, if minimum supported
  * version change on the host.

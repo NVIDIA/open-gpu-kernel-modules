@@ -189,6 +189,9 @@ struct uvm_service_block_context_struct
 
     // Prefetch temporary state.
     uvm_perf_prefetch_bitmap_tree_t prefetch_bitmap_tree;
+
+    // Access counters notification buffer index.
+    NvU32 access_counters_buffer_index;
 };
 
 typedef struct
@@ -197,8 +200,8 @@ typedef struct
     {
         struct
         {
-            // Mask of prefetch faulted pages in a UVM_VA_BLOCK_SIZE aligned region
-            // of a SAM VMA. Used for batching ATS faults in a vma.
+            // Mask of prefetch faulted pages in a UVM_VA_BLOCK_SIZE aligned
+            // region of a SAM VMA. Used for batching ATS faults in a vma.
             uvm_page_mask_t prefetch_only_fault_mask;
 
             // Mask of read faulted pages in a UVM_VA_BLOCK_SIZE aligned region
@@ -350,7 +353,7 @@ typedef struct
     // entries from the GPU buffer
     NvU32 max_batch_size;
 
-    struct uvm_replayable_fault_buffer_info_struct
+    struct uvm_replayable_fault_buffer_struct
     {
         // Maximum number of faults entries that can be stored in the buffer
         NvU32 max_faults;
@@ -414,7 +417,7 @@ typedef struct
         uvm_ats_fault_invalidate_t ats_invalidate;
     } replayable;
 
-    struct uvm_non_replayable_fault_buffer_info_struct
+    struct uvm_non_replayable_fault_buffer_struct
     {
         // Maximum number of faults entries that can be stored in the buffer
         NvU32 max_faults;
@@ -468,7 +471,7 @@ typedef struct
 
     // Timestamp when prefetch faults where disabled last time
     NvU64 disable_prefetch_faults_timestamp;
-} uvm_fault_buffer_info_t;
+} uvm_fault_buffer_t;
 
 struct uvm_access_counter_service_batch_context_struct
 {
@@ -476,30 +479,14 @@ struct uvm_access_counter_service_batch_context_struct
 
     NvU32 num_cached_notifications;
 
-    struct
-    {
-        uvm_access_counter_buffer_entry_t   **notifications;
+    uvm_access_counter_buffer_entry_t **notifications;
 
-        NvU32                             num_notifications;
+    NvU32 num_notifications;
 
-        // Boolean used to avoid sorting the fault batch by instance_ptr if we
-        // determine at fetch time that all the access counter notifications in
-        // the batch report the same instance_ptr
-        bool is_single_instance_ptr;
-    } virt;
-
-    struct
-    {
-        uvm_access_counter_buffer_entry_t    **notifications;
-        uvm_reverse_map_t                      *translations;
-
-        NvU32                              num_notifications;
-
-        // Boolean used to avoid sorting the fault batch by aperture if we
-        // determine at fetch time that all the access counter notifications in
-        // the batch report the same aperture
-        bool                              is_single_aperture;
-    } phys;
+    // Boolean used to avoid sorting the fault batch by instance_ptr if we
+    // determine at fetch time that all the access counter notifications in
+    // the batch report the same instance_ptr
+    bool is_single_instance_ptr;
 
     // Helper page mask to compute the accessed pages within a VA block
     uvm_page_mask_t accessed_pages;
@@ -514,30 +501,14 @@ struct uvm_access_counter_service_batch_context_struct
     NvU32 batch_id;
 };
 
-typedef struct
+struct uvm_access_counter_buffer_struct
 {
-    // Values used to configure access counters in RM
-    struct
-    {
-        UVM_ACCESS_COUNTER_GRANULARITY  granularity;
-        UVM_ACCESS_COUNTER_USE_LIMIT    use_limit;
-    } rm;
+    uvm_parent_gpu_t *parent_gpu;
 
-    // The following values are precomputed by the access counter notification
-    // handling code. See comments for UVM_MAX_TRANSLATION_SIZE in
-    // uvm_gpu_access_counters.c for more details.
-    NvU64 translation_size;
-
-    NvU64 translations_per_counter;
-
-    NvU64 sub_granularity_region_size;
-
-    NvU64 sub_granularity_regions_per_translation;
-} uvm_gpu_access_counter_type_config_t;
-
-typedef struct
-{
     UvmGpuAccessCntrInfo rm_info;
+
+    // Access counters may have multiple notification buffers.
+    NvU32 index;
 
     NvU32 max_notifications;
 
@@ -560,10 +531,22 @@ typedef struct
     // may override it to try different configuration values.
     struct
     {
-        uvm_gpu_access_counter_type_config_t mimc;
-        uvm_gpu_access_counter_type_config_t momc;
+        // Values used to configure access counters in RM
+        struct
+        {
+            UVM_ACCESS_COUNTER_GRANULARITY granularity;
+        } rm;
 
-        NvU32                                threshold;
+        // The following values are precomputed by the access counter
+        // notification handling code. See comments for UVM_MAX_TRANSLATION_SIZE
+        // in uvm_gpu_access_counters.c for more details.
+        NvU64 translation_size;
+
+        NvU64 sub_granularity_region_size;
+
+        NvU64 sub_granularity_regions_per_translation;
+
+        NvU32 threshold;
     } current_config;
 
     // Access counter statistics
@@ -575,7 +558,7 @@ typedef struct
     } stats;
 
     // Ignoring access counters means that notifications are left in the HW
-    // buffer without being serviced.  Requests to ignore access counters
+    // buffer without being serviced. Requests to ignore access counters
     // are counted since the suspend path inhibits access counter interrupts,
     // and the resume path needs to know whether to reenable them.
     NvU32 notifications_ignored_count;
@@ -583,13 +566,25 @@ typedef struct
     // Context structure used to service a GPU access counter batch
     uvm_access_counter_service_batch_context_t batch_service_context;
 
-    // VA space that reconfigured the access counters configuration, if any.
-    // Used in builtin tests only, to avoid reconfigurations from different
-    // processes
-    //
-    // Locking: both readers and writers must hold the access counters ISR lock
-    uvm_va_space_t *reconfiguration_owner;
-} uvm_access_counter_buffer_info_t;
+    struct
+    {
+        // VA space that reconfigured the access counters configuration, if any.
+        // Used in builtin tests only, to avoid reconfigurations from different
+        // processes.
+        //
+        // Locking: both readers and writers must hold the access counters ISR
+        // lock.
+        uvm_va_space_t *reconfiguration_owner;
+
+        // The service access counters loop breaks after processing the first
+        // batch. It will be retriggered if there are pending notifications, but
+        // it releases the ISR service lock to check certain races that would be
+        // difficult to hit otherwise.
+        bool one_iteration_per_batch;
+        NvU32 sleep_per_iteration_us;
+    } test;
+
+};
 
 typedef struct
 {
@@ -745,15 +740,11 @@ struct uvm_gpu_struct
 
     struct
     {
-        // Mask of peer_gpus set
+        // Mask of peer_gpus set.
         uvm_processor_mask_t peer_gpu_mask;
 
-        // lazily-populated array of peer GPUs, indexed by the peer's GPU index
-        uvm_gpu_t *peer_gpus[UVM_ID_MAX_GPUS];
-
-        // Leaf spinlock used to synchronize access to the peer_gpus table so
-        // that it can be safely accessed from the access counters bottom half
-        uvm_spinlock_t peer_gpus_lock;
+        // Leaf spinlock used to synchronize access to peer_gpu_mask.
+        uvm_spinlock_t peer_gpu_lock;
     } peer_info;
 
     // Maximum number of subcontexts supported
@@ -827,14 +818,6 @@ struct uvm_gpu_struct
         // Each bit in the bitlock protects a sysmem mapping.
         uvm_bit_locks_t bitlocks;
     } sysmem_mappings;
-
-    // Reverse lookup table used to query the user mapping associated with a
-    // sysmem (DMA) physical address.
-    //
-    // The system memory mapping information referred to by this field is
-    // different from that of sysmem_mappings, because it relates to user
-    // mappings (instead of kernel), and it is used in most configurations.
-    uvm_pmm_sysmem_mappings_t pmm_reverse_sysmem_mappings;
 
     struct
     {
@@ -957,6 +940,16 @@ struct uvm_gpu_struct
     uvm_mutex_t device_p2p_lock;
 };
 
+typedef struct
+{
+    bool access_counters_alloc_buffer;
+    bool access_counters_alloc_block_context;
+    bool isr_access_counters_alloc;
+    bool isr_access_counters_alloc_stats_cpu;
+    bool access_counters_batch_context_notifications;
+    bool access_counters_batch_context_notification_cache;
+} uvm_test_parent_gpu_inject_error_t;
+
 // In order to support SMC/MIG GPU partitions, we split UVM GPUs into two
 // parts: parent GPUs (uvm_parent_gpu_t) which represent unique PCIe devices
 // (including VFs), and sub/child GPUs (uvm_gpu_t) which represent individual
@@ -965,8 +958,8 @@ struct uvm_gpu_struct
 struct uvm_parent_gpu_struct
 {
     // Reference count for how many places are holding on to a parent GPU
-    // (internal to the UVM driver).  This includes any GPUs we know about, not
-    // just GPUs that are registered with a VA space.  Most GPUs end up being
+    // (internal to the UVM driver). This includes any GPUs we know about, not
+    // just GPUs that are registered with a VA space. Most GPUs end up being
     // registered, but there are brief periods when they are not registered,
     // such as during interrupt handling, and in add_gpu() or remove_gpu().
     nv_kref_t gpu_kref;
@@ -976,7 +969,7 @@ struct uvm_parent_gpu_struct
 
     uvm_gpu_t *gpus[UVM_PARENT_ID_MAX_SUB_PROCESSORS];
 
-    // Bitmap of valid child entries in the gpus[] table.  Used to retrieve a
+    // Bitmap of valid child entries in the gpus[] table. Used to retrieve a
     // usable child GPU in bottom-halves.
     DECLARE_BITMAP(valid_gpus, UVM_PARENT_ID_MAX_SUB_PROCESSORS);
 
@@ -1078,11 +1071,6 @@ struct uvm_parent_gpu_struct
     bool non_replayable_faults_supported;
 
     bool access_counters_supported;
-
-    // If this is true, physical address based access counter notifications are
-    // potentially generated. If false, only virtual address based notifications
-    // are generated (assuming access_counters_supported is true too).
-    bool access_counters_can_use_physical_addresses;
 
     bool fault_cancel_va_supported;
 
@@ -1205,17 +1193,17 @@ struct uvm_parent_gpu_struct
     // Interrupt handling state and locks
     uvm_isr_info_t isr;
 
-    // Fault buffer info. This is only valid if supports_replayable_faults is
-    // set to true.
-    uvm_fault_buffer_info_t fault_buffer_info;
+    // This is only valid if supports_replayable_faults is set to true.
+    uvm_fault_buffer_t fault_buffer;
 
     // PMM lazy free processing queue.
     // TODO: Bug 3881835: revisit whether to use nv_kthread_q_t or workqueue.
     nv_kthread_q_t lazy_free_q;
 
-    // Access counter buffer info. This is only valid if
-    // supports_access_counters is set to true.
-    uvm_access_counter_buffer_info_t access_counter_buffer_info;
+    // This is only valid if supports_access_counters is set to true. This array
+    // has rm_info.accessCntrBufferCount entries.
+    uvm_access_counter_buffer_t *access_counter_buffer;
+    uvm_mutex_t access_counters_enablement_lock;
 
     // Number of uTLBs per GPC. This information is only valid on Pascal+ GPUs.
     NvU32 utlb_per_gpc_count;
@@ -1348,6 +1336,8 @@ struct uvm_parent_gpu_struct
         // GPUs.
         NvU64 base_address;
     } egm;
+
+    uvm_test_parent_gpu_inject_error_t test;
 };
 
 static const char *uvm_parent_gpu_name(uvm_parent_gpu_t *parent_gpu)
@@ -1395,10 +1385,10 @@ typedef struct
     //   detected to be PCIe peers and uvm_gpu_retain_pcie_peer_access() was
     //   called.
     //
-    // - The peer_gpus_lock is held on one of the GPUs. In this case, the other
-    //   GPU must be read from the original GPU's peer_gpus table. The fields
-    //   will not change while the lock is held, but they may no longer be valid
-    //   because the other GPU might be in teardown.
+    // - The peer_gpu_lock is held on one of the GPUs. In this case, the other
+    //   GPU must be referred from the original GPU's peer_gpu_mask reference.
+    //   The fields will not change while the lock is held, but they may no
+    //   longer be valid because the other GPU might be in teardown.
 
     // This field is used to determine when this struct has been initialized
     // (ref_count != 0). NVLink peers are initialized at GPU registration time.
@@ -1510,7 +1500,7 @@ uvm_gpu_t *uvm_gpu_get_by_uuid(const NvProcessorUuid *gpu_uuid);
 uvm_parent_gpu_t *uvm_parent_gpu_get_by_uuid(const NvProcessorUuid *gpu_uuid);
 
 // Like uvm_parent_gpu_get_by_uuid(), but this variant does not assertion-check
-// that the caller is holding the global_lock.  This is a narrower-purpose
+// that the caller is holding the global_lock. This is a narrower-purpose
 // function, and is only intended for use by the top-half ISR, or other very
 // limited cases.
 uvm_parent_gpu_t *uvm_parent_gpu_get_by_uuid_locked(const NvProcessorUuid *gpu_uuid);
@@ -1521,6 +1511,7 @@ uvm_parent_gpu_t *uvm_parent_gpu_get_by_uuid_locked(const NvProcessorUuid *gpu_u
 // LOCKING: Takes and releases the global lock for the caller.
 NV_STATUS uvm_gpu_retain_by_uuid(const NvProcessorUuid *gpu_uuid,
                                  const uvm_rm_user_object_t *user_rm_device,
+                                 const uvm_test_parent_gpu_inject_error_t *parent_gpu_error,
                                  uvm_gpu_t **gpu_out);
 
 // Retain a gpu which is known to already be retained. Does NOT require the
@@ -1577,10 +1568,6 @@ uvm_gpu_address_t uvm_gpu_peer_copy_address(uvm_gpu_t *owning_gpu, NvU64 address
 // Return the reference count for the P2P state between the given GPUs.
 // The two GPUs must have different parents.
 NvU64 uvm_gpu_peer_ref_count(const uvm_gpu_t *gpu0, const uvm_gpu_t *gpu1);
-
-// Get the processor id accessible by the given GPU for the given physical
-// address.
-uvm_processor_id_t uvm_gpu_get_processor_id_by_address(uvm_gpu_t *gpu, uvm_gpu_phys_address_t addr);
 
 // Get the EGM aperture for local_gpu to use to map memory resident on the CPU
 // NUMA node that remote_gpu is attached to.
@@ -1655,7 +1642,8 @@ static uvm_gpu_identity_mapping_t *uvm_gpu_get_peer_mapping(uvm_gpu_t *gpu, uvm_
 
 // Check whether the provided address points to peer memory:
 // * Physical address using one of the PEER apertures
-// * Physical address using SYS aperture that belongs to an exposed coherent memory
+// * Physical address using SYS aperture that belongs to an exposed coherent
+//   memory
 // * Virtual address in the region [peer_va_base, peer_va_base + peer_va_size)
 bool uvm_gpu_address_is_peer(uvm_gpu_t *gpu, uvm_gpu_address_t address);
 
@@ -1684,8 +1672,8 @@ NV_STATUS uvm_gpu_check_nvlink_error(uvm_gpu_t *gpu);
 // Check for NVLINK errors without calling into RM
 //
 // Calling into RM is problematic in many places, this check is always safe to
-// do. Returns NV_WARN_MORE_PROCESSING_REQUIRED if there might be an NVLINK error
-// and it's required to call uvm_gpu_check_nvlink_error() to be sure.
+// do. Returns NV_WARN_MORE_PROCESSING_REQUIRED if there might be an NVLINK
+// error and it's required to call uvm_gpu_check_nvlink_error() to be sure.
 NV_STATUS uvm_gpu_check_nvlink_error_no_rm(uvm_gpu_t *gpu);
 
 // Map size bytes of contiguous sysmem on the GPU for physical access

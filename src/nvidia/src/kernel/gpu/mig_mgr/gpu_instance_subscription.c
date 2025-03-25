@@ -449,11 +449,48 @@ gisubscriptionCtrlCmdExecPartitionsCreate_IMPL
 
         if (IS_VIRTUAL(pGpu))
         {
-            status = kmigmgrCreateComputeInstances_HAL(pGpu, pKernelMIGManager, pKernelMIGGpuInstance,
-                                                       pParams->bQuery,
-                                                       request,
-                                                       pParams->execPartId,
-                                                       NV_TRUE /* create MIG compute instance capabilities */);
+            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_MIRROR_HOST_CI_ON_GUEST))
+            {
+                NvU32 i;
+                NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS export;
+                GPUMGR_SAVE_COMPUTE_INSTANCE save;
+
+                KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS restore =
+                {
+                    .type = KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS_TYPE_RESTORE,
+                    .inst.restore.pComputeInstanceSave = &save,
+                };
+
+                for (i = 0; i < pParams->execPartCount; i++)
+                {
+                    portMemSet(&export, 0, sizeof(export));
+                    export.id = pParams->execPartId[i];
+
+                    NV_RM_RPC_CONTROL(pGpu, pKernelMIGGpuInstance->instanceHandles.hClient,
+                        pKernelMIGGpuInstance->instanceHandles.hSubscription,
+                        NVC637_CTRL_CMD_EXEC_PARTITIONS_EXPORT,
+                        &export,
+                        sizeof(export), status);
+
+                    NV_ASSERT_OK_OR_RETURN(status);
+
+                    portMemSet(&save, 0, sizeof(save));
+                    save.bValid = NV_TRUE;
+                    save.id = pParams->execPartId[i];
+                    save.ciInfo = export.info;
+
+                    status = kmigmgrCreateComputeInstances_HAL(pGpu, pKernelMIGManager, pKernelMIGGpuInstance,
+                                                    pParams->bQuery, restore, &pParams->execPartId[i], NV_TRUE);
+                }
+            }
+            else
+            {
+                status = kmigmgrCreateComputeInstances_HAL(pGpu, pKernelMIGManager, pKernelMIGGpuInstance,
+                                                            pParams->bQuery,
+                                                            request,
+                                                            pParams->execPartId,
+                                                            NV_TRUE /* create MIG compute instance capabilities */);
+            }
         }
         else
         {
@@ -716,7 +753,7 @@ gisubscriptionCtrlCmdExecPartitionsGet_IMPL
             pOutInfo->ceCount = kmigmgrCountEnginesOfType(&pMIGComputeInstance->resourceAllocation.engines,
                                                           RM_ENGINE_TYPE_COPY(0));
         }
-        
+
         pOutInfo->nvEncCount = kmigmgrCountEnginesOfType(&pMIGComputeInstance->resourceAllocation.engines,
                                                       RM_ENGINE_TYPE_NVENC(0));
         pOutInfo->nvDecCount = kmigmgrCountEnginesOfType(&pMIGComputeInstance->resourceAllocation.engines,

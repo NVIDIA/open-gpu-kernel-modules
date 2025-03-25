@@ -8943,35 +8943,9 @@ getAccessCounterGranularityValue(UVM_ACCESS_COUNTER_GRANULARITY granularity, NvU
     return NV_OK;
 }
 
-static NV_STATUS
-getAccessCounterLimitValue(UVM_ACCESS_COUNTER_USE_LIMIT limit, NvU32 *value)
-{
-    *value = 0;
-
-    switch (limit)
-    {
-        case UVM_ACCESS_COUNTER_USE_LIMIT_NONE:
-            *value = NVC365_CTRL_ACCESS_COUNTER_USE_LIMIT_NONE;
-            break;
-        case UVM_ACCESS_COUNTER_USE_LIMIT_QTR:
-            *value = NVC365_CTRL_ACCESS_COUNTER_USE_LIMIT_QTR;
-            break;
-        case UVM_ACCESS_COUNTER_USE_LIMIT_HALF:
-            *value = NVC365_CTRL_ACCESS_COUNTER_USE_LIMIT_HALF;
-            break;
-        case UVM_ACCESS_COUNTER_USE_LIMIT_FULL:
-            *value = NVC365_CTRL_ACCESS_COUNTER_USE_LIMIT_FULL;
-            break;
-        default:
-            return NV_ERR_INVALID_ARGUMENT;
-    };
-
-    return NV_OK;
-}
-
 NV_STATUS nvGpuOpsEnableAccessCntr(struct gpuDevice *device,
                                    gpuAccessCntrInfo *pAccessCntrInfo,
-                                   gpuAccessCntrConfig *pAccessCntrConfig)
+                                   const gpuAccessCntrConfig *pAccessCntrConfig)
 {
     NV_STATUS status = NV_OK;
     NVC365_CTRL_ACCESS_CNTR_SET_CONFIG_PARAMS setConfigParams = { 0 };
@@ -8979,21 +8953,22 @@ NV_STATUS nvGpuOpsEnableAccessCntr(struct gpuDevice *device,
     struct gpuSession *session = device->session;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
 
-    status = getAccessCounterGranularityValue(pAccessCntrConfig->mimcGranularity, &setConfigParams.mimcGranularity);
+    status = getAccessCounterGranularityValue(pAccessCntrConfig->granularity, &setConfigParams.mimcGranularity);
     if (status != NV_OK)
         return status;
 
-    status = getAccessCounterGranularityValue(pAccessCntrConfig->momcGranularity, &setConfigParams.momcGranularity);
+    status = getAccessCounterGranularityValue(UVM_ACCESS_COUNTER_GRANULARITY_64K, &setConfigParams.momcGranularity);
     if (status != NV_OK)
         return status;
 
-    status = getAccessCounterLimitValue(pAccessCntrConfig->mimcUseLimit, &setConfigParams.mimcLimit);
-    if (status != NV_OK)
-        return status;
+    // TODO: Bug 4930956: [RM] NVC365_CTRL_CMD_ACCESS_CNTR_SET_CONFIG returns
+    //                    NV_OK even when it fails to set a config option.
+    //                    USE_LIMIT is not available on Blackwell+.
+    setConfigParams.mimcLimit = NVC365_CTRL_ACCESS_COUNTER_USE_LIMIT_FULL;
 
-    status = getAccessCounterLimitValue(pAccessCntrConfig->momcUseLimit, &setConfigParams.momcLimit);
-    if (status != NV_OK)
-        return status;
+    // UVM does not support the MOMC access counter type. It has been deprecated
+    // on Hopper+ GPUs and not used on pre-Hopper GPUs.
+    setConfigParams.momcLimit = NVC365_CTRL_ACCESS_COUNTER_USE_LIMIT_NONE;
 
     setConfigParams.threshold = pAccessCntrConfig->threshold;
     setConfigParams.cmd = NVC365_CTRL_ACCESS_COUNTER_SET_MIMC_GRANULARITY |

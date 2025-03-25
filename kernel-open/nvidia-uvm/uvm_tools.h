@@ -111,14 +111,11 @@ void uvm_tools_broadcast_replay(uvm_gpu_t *gpu, uvm_push_t *push, NvU32 batch_id
 
 void uvm_tools_broadcast_replay_sync(uvm_gpu_t *gpu, NvU32 batch_id, uvm_fault_client_type_t client_type);
 
-void uvm_tools_broadcast_access_counter(uvm_gpu_t *gpu,
-                                        const uvm_access_counter_buffer_entry_t *buffer_entry,
-                                        bool on_managed_phys);
+void uvm_tools_broadcast_access_counter(uvm_gpu_t *gpu, const uvm_access_counter_buffer_entry_t *buffer_entry);
 
 void uvm_tools_record_access_counter(uvm_va_space_t *va_space,
                                      uvm_gpu_id_t gpu_id,
-                                     const uvm_access_counter_buffer_entry_t *buffer_entry,
-                                     bool on_managed_phys);
+                                     const uvm_access_counter_buffer_entry_t *buffer_entry);
 
 void uvm_tools_test_hmm_split_invalidate(uvm_va_space_t *va_space);
 

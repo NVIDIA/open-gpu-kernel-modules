@@ -158,7 +158,8 @@ void DPCDHALImpl2x::parseAndReadCaps()
                                                           _ANSI_128B_132B, _YES,
                                                           buffer[0]);
 
-        if (caps2x.bDP2xChannelCodingSupported == true)
+        // Read this unconditionally when the connection is tunneled
+        if (caps2x.bDP2xChannelCodingSupported == true || caps.dpInTunnelingCaps.bIsSupported)
         {
             // 0x2215
             if (AuxRetry::ack == bus.read(NV_DPCD20_128B_132B_SUPPORTED_LINK_RATES, &buffer[0], 1))
@@ -264,7 +265,7 @@ void DPCDHALImpl2x::parseAndReadCaps()
     if (caps2x.dpInTunnelingCaps.bDP2xChannelCodingSupported)
     {
         if (AuxRetry::ack ==
-            bus.read(NV_DPCD20_DP_TUNNELING_MAIN_LINK_CHANNEL_CODING, &byte, sizeof byte))
+            bus.read(NV_DPCD20_DP_TUNNELING_128B132B_LINK_RATES, &byte, sizeof byte))
         {
             caps2x.dpInTunnelingCaps.bUHBR_10GSupported =
                 FLD_TEST_DRF(_DPCD20, _DP_TUNNELING_128B132B_LINK_RATES, _10_0_GPBS_SUPPORTED, _YES, byte);
@@ -342,12 +343,18 @@ AuxRetry::status DPCDHALImpl2x::notifySDPErrDetectionCapability()
 bool DPCDHALImpl2x::isDp2xChannelCodingCapable()
 {
     // return false if the device does not support 128b/132b.
-    if (!caps2x.bDP2xChannelCodingSupported)
-        return false;
-
-    // return false if DP-IN Tunneling is supported but not support 128b/132b.
-    if (caps.dpInTunnelingCaps.bIsSupported && !caps2x.dpInTunnelingCaps.bDP2xChannelCodingSupported)
-        return false;
+    // However when dpTunneling is enabled, read the tunneling cap instead
+    if (caps.dpInTunnelingCaps.bIsSupported)
+    {
+        // return false if DP-IN Tunneling is supported but not support 128b/132b.
+        if (!caps2x.dpInTunnelingCaps.bDP2xChannelCodingSupported)
+            return false;
+    }
+    else
+    {
+        if (!caps2x.bDP2xChannelCodingSupported)
+            return false;
+    }
 
     // return true if there is no LTTPR.
     if (!bLttprSupported || (caps.phyRepeaterCount == 0))
@@ -410,6 +417,14 @@ NvU32 DPCDHALImpl2x::getUHBRSupported()
     bool    bUHBR_13_5GSupported = caps2x.bUHBR_13_5GSupported;
     bool    bUHBR_20GSupported   = caps2x.bUHBR_20GSupported;
 
+    // When tunneling is supported and bw allocation is enabled, override the caps from tunneling caps
+    if (caps.dpInTunnelingCaps.bIsSupported && bIsDpTunnelBwAllocationEnabled)
+    {
+        bUHBR_10GSupported   = caps2x.dpInTunnelingCaps.bUHBR_10GSupported;
+        bUHBR_13_5GSupported = caps2x.dpInTunnelingCaps.bUHBR_13_5GSupported;
+        bUHBR_20GSupported   = caps2x.dpInTunnelingCaps.bUHBR_20GSupported;
+    }
+
     if (!bIgnoreCableIdCaps)
     {
         bUHBR_10GSupported   = bUHBR_10GSupported   && caps2x.cableCaps.bUHBR_10GSupported;
@@ -422,13 +437,6 @@ NvU32 DPCDHALImpl2x::getUHBRSupported()
         bUHBR_10GSupported   = bUHBR_10GSupported   && caps2x.repeaterCaps.bUHBR_10GSupported;
         bUHBR_13_5GSupported = bUHBR_13_5GSupported && caps2x.repeaterCaps.bUHBR_13_5GSupported;
         bUHBR_20GSupported   = bUHBR_20GSupported   && caps2x.repeaterCaps.bUHBR_20GSupported;
-    }
-
-    if (caps.dpInTunnelingCaps.bIsSupported && bIsDpTunnelBwAllocationEnabled)
-    {
-        bUHBR_10GSupported   = bUHBR_10GSupported   && caps2x.dpInTunnelingCaps.bUHBR_10GSupported;
-        bUHBR_13_5GSupported = bUHBR_13_5GSupported && caps2x.dpInTunnelingCaps.bUHBR_13_5GSupported;
-        bUHBR_20GSupported   = bUHBR_20GSupported   && caps2x.dpInTunnelingCaps.bUHBR_20GSupported;
     }
 
     if (bUHBR_10GSupported)

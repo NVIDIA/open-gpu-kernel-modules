@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -110,15 +110,21 @@ typedef enum
 bool uvm_channel_pool_is_p2p(uvm_channel_pool_t *pool)
 {
     uvm_channel_manager_t *manager = pool->manager;
+    uvm_gpu_t *gpu = manager->gpu;
     uvm_gpu_id_t id;
 
     if (manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_GPU_TO_GPU] == pool)
         return true;
 
-    for_each_gpu_id_in_mask(id, &manager->gpu->peer_info.peer_gpu_mask) {
-        if (manager->pool_to_use.gpu_to_gpu[uvm_id_gpu_index(id)] == pool)
+    uvm_spin_lock(&gpu->peer_info.peer_gpu_lock);
+    for_each_gpu_id_in_mask(id, &gpu->peer_info.peer_gpu_mask) {
+        if (manager->pool_to_use.gpu_to_gpu[uvm_id_gpu_index(id)] == pool) {
+            uvm_spin_unlock(&gpu->peer_info.peer_gpu_lock);
             return true;
+        }
     }
+
+    uvm_spin_unlock(&gpu->peer_info.peer_gpu_lock);
 
     return false;
 }
@@ -1974,6 +1980,7 @@ NV_STATUS uvm_channel_manager_suspend_p2p(uvm_channel_manager_t *channel_manager
 {
     uvm_channel_pool_t *pool;
     NV_STATUS status = NV_OK;
+    uvm_gpu_t *gpu = channel_manager->gpu;
     uvm_gpu_id_t gpu_id;
     DECLARE_BITMAP(suspended_pools, UVM_COPY_ENGINE_COUNT_MAX);
 
@@ -1981,7 +1988,9 @@ NV_STATUS uvm_channel_manager_suspend_p2p(uvm_channel_manager_t *channel_manager
     // Use bitmap to track which were suspended.
     bitmap_zero(suspended_pools, channel_manager->num_channel_pools);
 
-    for_each_gpu_id_in_mask(gpu_id, &channel_manager->gpu->peer_info.peer_gpu_mask) {
+    uvm_assert_mutex_locked(&g_uvm_global.global_lock);
+
+    for_each_gpu_id_in_mask(gpu_id, &gpu->peer_info.peer_gpu_mask) {
         pool = channel_manager->pool_to_use.gpu_to_gpu[uvm_id_gpu_index(gpu_id)];
         if (pool && !test_bit(uvm_channel_pool_index_in_channel_manager(pool), suspended_pools)) {
             status = channel_pool_suspend_p2p(pool);
@@ -2014,6 +2023,7 @@ NV_STATUS uvm_channel_manager_suspend_p2p(uvm_channel_manager_t *channel_manager
 void uvm_channel_manager_resume_p2p(uvm_channel_manager_t *channel_manager)
 {
     uvm_channel_pool_t *pool;
+    uvm_gpu_t *gpu = channel_manager->gpu;
     uvm_gpu_id_t gpu_id;
     DECLARE_BITMAP(resumed_pools, UVM_COPY_ENGINE_COUNT_MAX);
 
@@ -2021,7 +2031,9 @@ void uvm_channel_manager_resume_p2p(uvm_channel_manager_t *channel_manager)
     // Use bitmap to track which were suspended.
     bitmap_zero(resumed_pools, channel_manager->num_channel_pools);
 
-    for_each_gpu_id_in_mask(gpu_id, &channel_manager->gpu->peer_info.peer_gpu_mask) {
+    uvm_assert_mutex_locked(&g_uvm_global.global_lock);
+
+    for_each_gpu_id_in_mask(gpu_id, &gpu->peer_info.peer_gpu_mask) {
         pool = channel_manager->pool_to_use.gpu_to_gpu[uvm_id_gpu_index(gpu_id)];
         if (pool && !test_and_set_bit(uvm_channel_pool_index_in_channel_manager(pool), resumed_pools))
             channel_pool_resume_p2p(pool);
@@ -3243,9 +3255,9 @@ static void init_channel_manager_conf(uvm_channel_manager_t *manager)
         manager->conf.num_gpfifo_entries = UVM_CHANNEL_NUM_GPFIFO_ENTRIES_DEFAULT;
 
     if (manager->conf.num_gpfifo_entries != uvm_channel_num_gpfifo_entries) {
-        pr_info("Invalid value for uvm_channel_num_gpfifo_entries = %u, using %u instead\n",
-                uvm_channel_num_gpfifo_entries,
-                manager->conf.num_gpfifo_entries);
+        UVM_INFO_PRINT("Invalid value for uvm_channel_num_gpfifo_entries = %u, using %u instead\n",
+                       uvm_channel_num_gpfifo_entries,
+                       manager->conf.num_gpfifo_entries);
     }
 
     // 2- Allocation locations
@@ -3285,9 +3297,9 @@ static void init_channel_manager_conf(uvm_channel_manager_t *manager)
     pushbuffer_loc_value = uvm_channel_pushbuffer_loc;
     if (!is_string_valid_location(pushbuffer_loc_value)) {
         pushbuffer_loc_value = UVM_CHANNEL_PUSHBUFFER_LOC_DEFAULT;
-        pr_info("Invalid value for uvm_channel_pushbuffer_loc = %s, using %s instead\n",
-                uvm_channel_pushbuffer_loc,
-                pushbuffer_loc_value);
+        UVM_INFO_PRINT("Invalid value for uvm_channel_pushbuffer_loc = %s, using %s instead\n",
+                       uvm_channel_pushbuffer_loc,
+                       pushbuffer_loc_value);
     }
 
     // Override the default value if requested by the user
@@ -3297,8 +3309,8 @@ static void init_channel_manager_conf(uvm_channel_manager_t *manager)
         // so force the location to sys for now.
         // TODO: Bug 2904133: Remove the following "if" after the bug is fixed.
         if (NVCPU_IS_AARCH64) {
-            pr_info("uvm_channel_pushbuffer_loc = %s is not supported on AARCH64, using sys instead\n",
-                    pushbuffer_loc_value);
+            UVM_INFO_PRINT("uvm_channel_pushbuffer_loc = %s is not supported on AARCH64, using sys instead\n",
+                           pushbuffer_loc_value);
             manager->conf.pushbuffer_loc = UVM_BUFFER_LOCATION_SYS;
         }
         else {
@@ -3310,8 +3322,9 @@ static void init_channel_manager_conf(uvm_channel_manager_t *manager)
     // Only support the knobs for GPFIFO/GPPut on Volta+
     if (!gpu->parent->gpfifo_in_vidmem_supported) {
         if (manager->conf.gpput_loc == UVM_BUFFER_LOCATION_SYS) {
-            pr_info("CAUTION: allocating GPPut in sysmem is NOT supported and may crash the system, using %s instead\n",
-                    buffer_location_to_string(UVM_BUFFER_LOCATION_DEFAULT));
+            UVM_INFO_PRINT("CAUTION: allocating GPPut in sysmem is NOT supported and may crash the system, using %s "
+                           "instead\n",
+                           buffer_location_to_string(UVM_BUFFER_LOCATION_DEFAULT));
         }
 
         manager->conf.gpfifo_loc = UVM_BUFFER_LOCATION_DEFAULT;
@@ -3323,17 +3336,17 @@ static void init_channel_manager_conf(uvm_channel_manager_t *manager)
     gpfifo_loc_value = uvm_channel_gpfifo_loc;
     if (!is_string_valid_location(gpfifo_loc_value)) {
         gpfifo_loc_value = UVM_CHANNEL_GPFIFO_LOC_DEFAULT;
-        pr_info("Invalid value for uvm_channel_gpfifo_loc = %s, using %s instead\n",
-                uvm_channel_gpfifo_loc,
-                gpfifo_loc_value);
+        UVM_INFO_PRINT("Invalid value for uvm_channel_gpfifo_loc = %s, using %s instead\n",
+                       uvm_channel_gpfifo_loc,
+                       gpfifo_loc_value);
     }
 
     gpput_loc_value = uvm_channel_gpput_loc;
     if (!is_string_valid_location(gpput_loc_value)) {
         gpput_loc_value = UVM_CHANNEL_GPPUT_LOC_DEFAULT;
-        pr_info("Invalid value for uvm_channel_gpput_loc = %s, using %s instead\n",
-                uvm_channel_gpput_loc,
-                gpput_loc_value);
+        UVM_INFO_PRINT("Invalid value for uvm_channel_gpput_loc = %s, using %s instead\n",
+                       uvm_channel_gpput_loc,
+                       gpput_loc_value);
     }
 
     // On coherent platforms where the GPU does not cache sysmem but the CPU

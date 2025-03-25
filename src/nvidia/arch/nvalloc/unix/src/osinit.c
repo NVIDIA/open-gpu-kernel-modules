@@ -913,7 +913,6 @@ static void
 RmDeterminePrimaryDevice(OBJGPU *pGpu)
 {
     nv_state_t *nv = NV_GET_NV_STATE(pGpu);
-    NvBool bFrameBufferConsoleDevice = NV_FALSE;
 
     // Skip updating nv->primary_vga while RM is recovering after GPU reset
     if (nv->flags & NV_FLAG_IN_RECOVERY)
@@ -946,15 +945,15 @@ RmDeterminePrimaryDevice(OBJGPU *pGpu)
 
     //
     // If GPU is driving any frame buffer console(vesafb, efifb etc)
-    // mark the GPU as Primary.
+    // mark the console as client driven and GPU as Primary.
     //
-    bFrameBufferConsoleDevice = rm_get_uefi_console_status(nv);
+    nv->client_managed_console = rm_get_uefi_console_status(nv);
 
     NV_DEV_PRINTF(NV_DBG_SETUP, nv, " is %s UEFI console device\n",
-              bFrameBufferConsoleDevice ? "primary" : "not primary");
+              nv->client_managed_console ? "primary" : "not primary");
 
     pGpu->setProperty(pGpu, PDB_PROP_GPU_PRIMARY_DEVICE,
-                      (bFrameBufferConsoleDevice || !!nv->primary_vga));
+                      (nv->client_managed_console || !!nv->primary_vga));
 }
 
 static void
@@ -1839,7 +1838,7 @@ NvBool RmInitAdapter(
     // For GPU driving console, disable console access here, to ensure no console
     // writes through BAR1 can interfere with physical RM's setup of BAR1
     //
-    if (rm_get_uefi_console_status(nv))
+    if (nv->client_managed_console)
     {
         os_disable_console_access();
         consoleDisabled = NV_TRUE;

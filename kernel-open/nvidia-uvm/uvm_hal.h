@@ -686,54 +686,52 @@ void uvm_hal_print_fault_entry(const uvm_fault_buffer_entry_t *entry);
 void uvm_hal_print_access_counter_buffer_entry(const uvm_access_counter_buffer_entry_t *entry);
 
 // Access counters
-typedef void (*uvm_hal_enable_access_counter_notifications_t)(uvm_parent_gpu_t *parent_gpu);
-typedef void (*uvm_hal_disable_access_counter_notifications_t)(uvm_parent_gpu_t *parent_gpu);
-typedef void (*uvm_hal_clear_access_counter_notifications_t)(uvm_parent_gpu_t *parent_gpu, NvU32 get);
+typedef void (*uvm_hal_enable_access_counter_notifications_t)(uvm_access_counter_buffer_t *access_counters);
+typedef void (*uvm_hal_disable_access_counter_notifications_t)(uvm_access_counter_buffer_t *access_counters);
+typedef void (*uvm_hal_clear_access_counter_notifications_t)(uvm_access_counter_buffer_t *access_counters, NvU32 get);
 
 // Parse the entry on the given buffer index. This also clears the valid bit of
 // the entry in the buffer.
-typedef void (*uvm_hal_access_counter_buffer_parse_entry_t)(uvm_parent_gpu_t *parent_gpu,
+typedef void (*uvm_hal_access_counter_buffer_parse_entry_t)(uvm_access_counter_buffer_t *access_counters,
                                                             NvU32 index,
                                                             uvm_access_counter_buffer_entry_t *buffer_entry);
-typedef bool (*uvm_hal_access_counter_buffer_entry_is_valid_t)(uvm_parent_gpu_t *parent_gpu, NvU32 index);
-typedef void (*uvm_hal_access_counter_buffer_entry_clear_valid_t)(uvm_parent_gpu_t *parent_gpu, NvU32 index);
+typedef bool (*uvm_hal_access_counter_buffer_entry_is_valid_t)(uvm_access_counter_buffer_t *access_counters,
+                                                               NvU32 index);
+typedef void (*uvm_hal_access_counter_buffer_entry_clear_valid_t)(uvm_access_counter_buffer_t *access_counters,
+                                                                  NvU32 index);
 typedef NvU32 (*uvm_hal_access_counter_buffer_entry_size_t)(uvm_parent_gpu_t *parent_gpu);
 typedef void (*uvm_hal_access_counter_clear_all_t)(uvm_push_t *push);
-typedef void (*uvm_hal_access_counter_clear_type_t)(uvm_push_t *push, uvm_access_counter_type_t type);
 typedef void (*uvm_hal_access_counter_clear_targeted_t)(uvm_push_t *push,
                                                         const uvm_access_counter_buffer_entry_t *buffer_entry);
 
-void uvm_hal_maxwell_enable_access_counter_notifications_unsupported(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_maxwell_disable_access_counter_notifications_unsupported(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_maxwell_clear_access_counter_notifications_unsupported(uvm_parent_gpu_t *parent_gpu, NvU32 get);
-void uvm_hal_maxwell_access_counter_buffer_parse_entry_unsupported(uvm_parent_gpu_t *parent_gpu,
+void uvm_hal_maxwell_enable_access_counter_notifications_unsupported(uvm_access_counter_buffer_t *access_counters);
+void uvm_hal_maxwell_disable_access_counter_notifications_unsupported(uvm_access_counter_buffer_t *access_counters);
+void uvm_hal_maxwell_clear_access_counter_notifications_unsupported(uvm_access_counter_buffer_t *access_counters,
+                                                                    NvU32 get);
+void uvm_hal_maxwell_access_counter_buffer_parse_entry_unsupported(uvm_access_counter_buffer_t *access_counters,
                                                                    NvU32 index,
                                                                    uvm_access_counter_buffer_entry_t *buffer_entry);
-bool uvm_hal_maxwell_access_counter_buffer_entry_is_valid_unsupported(uvm_parent_gpu_t *parent_gpu, NvU32 index);
-void uvm_hal_maxwell_access_counter_buffer_entry_clear_valid_unsupported(uvm_parent_gpu_t *parent_gpu, NvU32 index);
+bool uvm_hal_maxwell_access_counter_buffer_entry_is_valid_unsupported(uvm_access_counter_buffer_t *access_counters,
+                                                                      NvU32 index);
+void uvm_hal_maxwell_access_counter_buffer_entry_clear_valid_unsupported(uvm_access_counter_buffer_t *access_counters,
+                                                                         NvU32 index);
 NvU32 uvm_hal_maxwell_access_counter_buffer_entry_size_unsupported(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_maxwell_access_counter_clear_all_unsupported(uvm_push_t *push);
-void uvm_hal_maxwell_access_counter_clear_type_unsupported(uvm_push_t *push, uvm_access_counter_type_t type);
 void uvm_hal_maxwell_access_counter_clear_targeted_unsupported(uvm_push_t *push,
                                                                const uvm_access_counter_buffer_entry_t *buffer_entry);
 
-void uvm_hal_volta_enable_access_counter_notifications(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_volta_disable_access_counter_notifications(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_volta_clear_access_counter_notifications(uvm_parent_gpu_t *parent_gpu, NvU32 get);
-void uvm_hal_volta_access_counter_buffer_parse_entry(uvm_parent_gpu_t *parent_gpu,
-                                                     NvU32 index,
-                                                     uvm_access_counter_buffer_entry_t *buffer_entry);
-bool uvm_hal_volta_access_counter_buffer_entry_is_valid(uvm_parent_gpu_t *parent_gpu, NvU32 index);
-void uvm_hal_volta_access_counter_buffer_entry_clear_valid(uvm_parent_gpu_t *parent_gpu, NvU32 index);
-NvU32 uvm_hal_volta_access_counter_buffer_entry_size(uvm_parent_gpu_t *parent_gpu);
-
-void uvm_hal_volta_access_counter_clear_all(uvm_push_t *push);
-void uvm_hal_volta_access_counter_clear_type(uvm_push_t *push, uvm_access_counter_type_t type);
-void uvm_hal_volta_access_counter_clear_targeted(uvm_push_t *push,
-                                                 const uvm_access_counter_buffer_entry_t *buffer_entry);
-
-void uvm_hal_turing_disable_access_counter_notifications(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_turing_clear_access_counter_notifications(uvm_parent_gpu_t *parent_gpu, NvU32 get);
+void uvm_hal_turing_enable_access_counter_notifications(uvm_access_counter_buffer_t *access_counters);
+void uvm_hal_turing_disable_access_counter_notifications(uvm_access_counter_buffer_t *access_counters);
+void uvm_hal_turing_clear_access_counter_notifications(uvm_access_counter_buffer_t *access_counters, NvU32 get);
+void uvm_hal_turing_access_counter_buffer_parse_entry(uvm_access_counter_buffer_t *access_counters,
+                                                      NvU32 index,
+                                                      uvm_access_counter_buffer_entry_t *buffer_entry);
+bool uvm_hal_turing_access_counter_buffer_entry_is_valid(uvm_access_counter_buffer_t *access_counters, NvU32 index);
+void uvm_hal_turing_access_counter_buffer_entry_clear_valid(uvm_access_counter_buffer_t *access_counters, NvU32 index);
+NvU32 uvm_hal_turing_access_counter_buffer_entry_size(uvm_parent_gpu_t *parent_gpu);
+void uvm_hal_turing_access_counter_clear_all(uvm_push_t *push);
+void uvm_hal_turing_access_counter_clear_targeted(uvm_push_t *push,
+                                                  const uvm_access_counter_buffer_entry_t *buffer_entry);
 
 // The source and destination addresses must be 16-byte aligned. Note that the
 // best performance is achieved with 256-byte alignment. The decrypt size must
@@ -786,7 +784,6 @@ struct uvm_host_hal_struct
     uvm_hal_host_clear_faulted_channel_method_t clear_faulted_channel_method;
     uvm_hal_host_clear_faulted_channel_register_t clear_faulted_channel_register;
     uvm_hal_access_counter_clear_all_t access_counter_clear_all;
-    uvm_hal_access_counter_clear_type_t access_counter_clear_type;
     uvm_hal_access_counter_clear_targeted_t access_counter_clear_targeted;
     uvm_hal_get_time_t get_time;
 };

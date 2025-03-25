@@ -498,6 +498,9 @@ typedef struct nv_state_t
         NvU32 dispIsoStreamId;
         NvU32 dispNisoStreamId;
     } iommus;
+
+    /* Console is managed by drm drivers or NVKMS */
+    NvBool client_managed_console;
 } nv_state_t;
 
 #define NVFP_TYPE_NONE       0x0
@@ -542,9 +545,9 @@ typedef struct UvmGpuNvlinkInfo_tag                 *nvgpuNvlinkInfo_t;
 typedef struct UvmGpuEccInfo_tag                    *nvgpuEccInfo_t;
 typedef struct UvmGpuFaultInfo_tag                  *nvgpuFaultInfo_t;
 typedef struct UvmGpuAccessCntrInfo_tag             *nvgpuAccessCntrInfo_t;
-typedef struct UvmGpuAccessCntrConfig_tag           *nvgpuAccessCntrConfig_t;
-typedef struct UvmGpuInfo_tag                       nvgpuInfo_t;
-typedef struct UvmGpuClientInfo_tag                 nvgpuClientInfo_t;
+typedef struct UvmGpuAccessCntrConfig_tag            nvgpuAccessCntrConfig_t;
+typedef struct UvmGpuInfo_tag                        nvgpuInfo_t;
+typedef struct UvmGpuClientInfo_tag                  nvgpuClientInfo_t;
 typedef struct UvmPmaAllocationOptions_tag          *nvgpuPmaAllocationOptions_t;
 typedef struct UvmPmaStatistics_tag                 *nvgpuPmaStatistics_t;
 typedef struct UvmGpuMemoryInfo_tag                 *nvgpuMemoryInfo_t;

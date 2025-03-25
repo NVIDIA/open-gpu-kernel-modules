@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -68,6 +68,17 @@
 //      and instance pointer mappings.
 //
 //      This should be taken whenever global GPU state might need to be modified.
+//
+// - Access counters VA space enablement state lock
+//      Order: UVM_LOCK_ORDER_ACCESS_COUNTERS
+//      Exclusive lock (mutex)
+//
+//      This protects VA space state associated with access counters enablement.
+//      Blackwell+ GPUs may have multiple access counters notification buffers
+//      and their "atomic" enablement is protected by this lock.
+//
+//      This should be taken whenever VA space access counters state might need
+//      to be modified.
 //
 // - GPU ISR lock
 //      Order: UVM_LOCK_ORDER_ISR
@@ -487,6 +498,7 @@ typedef enum
     UVM_LOCK_ORDER_INVALID = 0,
     UVM_LOCK_ORDER_GLOBAL_PM,
     UVM_LOCK_ORDER_GLOBAL,
+    UVM_LOCK_ORDER_ACCESS_COUNTERS,
     UVM_LOCK_ORDER_ISR,
     UVM_LOCK_ORDER_MMAP_LOCK,
     UVM_LOCK_ORDER_VA_SPACES_LIST,
@@ -742,7 +754,8 @@ bool __uvm_locking_initialized(void);
         ret;                                            \
     })
 
-// Helper for calling a UVM-RM interface function that returns void with lock recording
+// Helper for calling a UVM-RM interface function that returns void with lock
+// recording
 #define uvm_rm_locked_call_void(call) ({                \
         uvm_record_lock_rm_all();                       \
         call;                                           \

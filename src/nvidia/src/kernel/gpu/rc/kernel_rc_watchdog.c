@@ -548,6 +548,9 @@ krcWatchdogInit_IMPL
         bAcquireLock = NV_FALSE;
     }
 
+    // Due to the Bug 4088184 WAR above, watchdog has to be explicitly set to internal
+    rmclientSetClientFlagsByHandle(hClient, RMAPI_CLIENT_FLAG_RM_INTERNAL_CLIENT);
+
     // Alloc device
     {
         NV0080_ALLOC_PARAMETERS *pNv0080 = &pParams->nv0080;
@@ -956,6 +959,7 @@ krcWatchdogInit_IMPL
         // Using device handle since VGPU doesnt support subdevice memory
         // allocations
         //
+        pMem->attr |= DRF_DEF(OS32, _ATTR, _ALLOCATE_FROM_RESERVED_HEAP, _YES);
         status = pRmApi->AllocWithHandle(pRmApi,
             hClient                    /* hClient */,
             WATCHDOG_DEVICE_ID         /* hParent */,

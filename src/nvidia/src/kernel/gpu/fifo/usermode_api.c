@@ -84,10 +84,8 @@ usrmodeConstruct_IMPL
     // On platforms where BAR1 is disabled, such as coherent platforms, we don't support creating BAR1
     // mappings of the doorbell page, but we still support internal MMIO. This check transparently
     // returns a BAR0 CPU mapping on these platforms.
-    // TODO Bug 4932520: Remove IS_VIRTUAL case
     //
-    if ((IS_VIRTUAL(pGpu) ? pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING)
-            : kbusIsBar1Disabled(GPU_GET_KERNEL_BUS(pGpu))) ||
+    if (kbusIsBar1Disabled(GPU_GET_KERNEL_BUS(pGpu)) ||
         pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM))
     {
         bBar1Mapping = NV_FALSE;

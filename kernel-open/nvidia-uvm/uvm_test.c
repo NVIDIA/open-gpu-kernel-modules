@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -144,6 +144,9 @@ static NV_STATUS uvm_test_numa_check_affinity(UVM_TEST_NUMA_CHECK_AFFINITY_PARAM
     }
 
     if (gpu->parent->replayable_faults_supported) {
+        UVM_ASSERT(gpu->parent->isr.access_counters);
+        UVM_ASSERT(gpu->parent->access_counter_buffer);
+
         uvm_parent_gpu_replayable_faults_isr_lock(gpu->parent);
         status = uvm_test_verify_bh_affinity(&gpu->parent->isr.replayable_faults,
                                               gpu->parent->closest_cpu_numa_node);
@@ -161,10 +164,11 @@ static NV_STATUS uvm_test_numa_check_affinity(UVM_TEST_NUMA_CHECK_AFFINITY_PARAM
         }
 
         if (gpu->parent->access_counters_supported) {
-            uvm_parent_gpu_access_counters_isr_lock(gpu->parent);
-            status = uvm_test_verify_bh_affinity(&gpu->parent->isr.access_counters,
+            // We only need to test one notification buffer, we pick index 0.
+            uvm_access_counters_isr_lock(&gpu->parent->access_counter_buffer[0]);
+            status = uvm_test_verify_bh_affinity(&gpu->parent->isr.access_counters[0],
                                                   gpu->parent->closest_cpu_numa_node);
-            uvm_parent_gpu_access_counters_isr_unlock(gpu->parent);
+            uvm_access_counters_isr_unlock(&gpu->parent->access_counter_buffer[0]);
         }
     }
 
@@ -311,7 +315,6 @@ long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_DISABLE_NVLINK_PEER_ACCESS,   uvm_test_disable_nvlink_peer_access);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_GET_PAGE_THRASHING_POLICY,    uvm_test_get_page_thrashing_policy);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SET_PAGE_THRASHING_POLICY,    uvm_test_set_page_thrashing_policy);
-        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PMM_SYSMEM,                   uvm_test_pmm_sysmem);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PMM_REVERSE_MAP,              uvm_test_pmm_reverse_map);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_VA_SPACE_MM_RETAIN,           uvm_test_va_space_mm_retain);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PMM_CHUNK_WITH_ELEVATED_PAGE, uvm_test_pmm_chunk_with_elevated_page);
@@ -350,6 +353,7 @@ long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_INJECT_TOOLS_EVENT_V2,        uvm_test_inject_tools_event_v2);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SET_P2P_SUSPENDED,            uvm_test_set_p2p_suspended);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_INJECT_NVLINK_ERROR,          uvm_test_inject_nvlink_error);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_QUERY_ACCESS_COUNTERS,        uvm_test_query_access_counters);
     }
 
     return -EINVAL;

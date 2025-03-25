@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -2638,6 +2638,42 @@ return_t deserialize_NVC637_CTRL_CMD_EXEC_PARTITIONS_DELETE_v1F_0A(NVC637_CTRL_E
     return SUCCESS_T;
 }
 
+return_t deserialize_NVC637_CTRL_CMD_EXEC_PARTITIONS_EXPORT_v29_0C(NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *pParams,
+                                                                   NvU8 *buffer,
+                                                                   NvU32 bufferSize,
+                                                                   NvU32 *offset)
+{
+    NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS_v29_0C *src = (void *) buffer;
+    NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS        *dest  = pParams;
+
+    if (src && dest)
+    {
+#ifdef COPY_INPUT_PARAMETERS
+        dest->id = src->id;
+        dest->bCreateCap = src->bCreateCap;
+#endif
+
+#ifdef COPY_OUTPUT_PARAMETERS
+        for (int i = 0; i < NVC637_CTRL_EXEC_PARTITIONS_EXPORT_MAX_ENGINES_MASK_SIZE; i++) {
+            dest->info.enginesMask[i] = src->info.enginesMask[i];
+        }
+        dest->info.sharedEngFlags = src->info.sharedEngFlags;
+        dest->info.gpcMask = src->info.gpcMask;
+        dest->info.gfxGpcCount = src->info.gfxGpcCount;
+        dest->info.veidOffset = src->info.veidOffset;
+        dest->info.veidCount = src->info.veidCount;
+        dest->info.smCount = src->info.smCount;
+        dest->info.spanStart = src->info.spanStart;
+        dest->info.computeSize = src->info.computeSize;
+
+#endif
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
 return_t deserialize_NVC36F_CTRL_CMD_GPFIFO_GET_WORK_SUBMIT_TOKEN_v1F_0A(NVC36F_CTRL_CMD_GPFIFO_GET_WORK_SUBMIT_TOKEN_PARAMS *pParams,
                                                                          NvU8 *buffer,
                                                                          NvU32 bufferSize,
@@ -3527,7 +3563,7 @@ return_t serialize_NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS_v1E_04(N
 #ifndef UMED_BUILD
 static
 return_t serialize_GET_BRAND_CAPS_v25_12(NV0080_CTRL_GPU_GET_BRAND_CAPS_PARAMS *pParams,
-                                         NvU8 *buffer, 
+                                         NvU8 *buffer,
                                          NvU32 bufferSize,
                                          NvU32 *offset)
 {
@@ -5487,6 +5523,44 @@ return_t serialize_NVC637_CTRL_CMD_EXEC_PARTITIONS_DELETE_v1F_0A(NVC637_CTRL_EXE
     return SUCCESS_T;
 }
 
+return_t serialize_NVC637_CTRL_CMD_EXEC_PARTITIONS_EXPORT_v29_0C(NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *pParams,
+                                                                 NvU8 *buffer,
+                                                                 NvU32 bufferSize,
+                                                                 NvU32 *offset)
+{
+    NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS_v29_0C *dest = (void *) buffer;
+    NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS        *src  = pParams;
+
+    if (src && dest)
+    {
+#ifdef COPY_INPUT_PARAMETERS
+        dest->id = src->id;
+        dest->bCreateCap = src->bCreateCap;
+#endif
+
+#ifdef COPY_OUTPUT_PARAMETERS
+        for (int i = 0; i < NVC637_CTRL_EXEC_PARTITIONS_EXPORT_MAX_ENGINES_MASK_SIZE; i++) {
+            dest->info.enginesMask[i] = src->info.enginesMask[i];
+        }
+        dest->info.sharedEngFlags = src->info.sharedEngFlags;
+        dest->info.gpcMask = src->info.gpcMask;
+        dest->info.gfxGpcCount = src->info.gfxGpcCount;
+        dest->info.veidOffset = src->info.veidOffset;
+        dest->info.veidCount = src->info.veidCount;
+        dest->info.smCount = src->info.smCount;
+        dest->info.spanStart = src->info.spanStart;
+        dest->info.computeSize = src->info.computeSize;
+
+        // UUID will not be copied as Guest will choose uuid by itself.
+#endif
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
+
 return_t serialize_NVC36F_CTRL_CMD_GPFIFO_GET_WORK_SUBMIT_TOKEN_v1F_0A(NVC36F_CTRL_CMD_GPFIFO_GET_WORK_SUBMIT_TOKEN_PARAMS *pParams,
                                                                        NvU8 *buffer,
                                                                        NvU32 bufferSize,
@@ -6983,37 +7057,37 @@ NvU32 serialize_notifier(NvU32 inNotifier)
     if (vgx_internal_version_curr.major_number > 0x21) {
         return inNotifier;
     }
- 
+
     if (vgx_internal_version_curr.major_number == 0x21 &&
         (REF_VAL(NV0005_NOTIFY_INDEX_INDEX, inNotifier) >= NV2080_NOTIFIERS_MAXCOUNT_R525)) {
         return NV2080_NOTIFIERS_MAXCOUNT_R525;
     }
- 
+
     if (vgx_internal_version_curr.major_number == 0x1C &&
         (REF_VAL(NV0005_NOTIFY_INDEX_INDEX, inNotifier) >= NV2080_NOTIFIERS_MAXCOUNT_R470)) {
         return NV2080_NOTIFIERS_MAXCOUNT_R470;
     }
-    
+
     return inNotifier;
 }
- 
+
 // Convert a guest notifier index to a host notifier index.
 NvU32 deserialize_notifier(NvU32 inNotifier)
 {
     if (vgx_internal_version_curr.major_number > 0x21) {
         return inNotifier;
     }
- 
+
     if (vgx_internal_version_curr.major_number == 0x21 &&
         (REF_VAL(NV0005_NOTIFY_INDEX_INDEX, inNotifier) >= NV2080_NOTIFIERS_MAXCOUNT_R525)) {
         return NV2080_NOTIFIERS_MAXCOUNT;
     }
- 
+
     if (vgx_internal_version_curr.major_number == 0x1C &&
         (REF_VAL(NV0005_NOTIFY_INDEX_INDEX, inNotifier) >= NV2080_NOTIFIERS_MAXCOUNT_R470)) {
         return NV2080_NOTIFIERS_MAXCOUNT;
     }
- 
+
     return inNotifier;
 }
 

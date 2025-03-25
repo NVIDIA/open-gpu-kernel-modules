@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -27,12 +27,13 @@
 
 const char *uvm_lock_order_to_string(uvm_lock_order_t lock_order)
 {
-    BUILD_BUG_ON(UVM_LOCK_ORDER_COUNT != 36);
+    BUILD_BUG_ON(UVM_LOCK_ORDER_COUNT != 37);
 
     switch (lock_order) {
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_INVALID);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_GLOBAL_PM);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_GLOBAL);
+        UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_ACCESS_COUNTERS);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_ISR);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_MMAP_LOCK);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_VA_SPACES_LIST);

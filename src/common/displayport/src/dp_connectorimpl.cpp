@@ -185,6 +185,7 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     this->bSkipZeroOuiCache                = dpRegkeyDatabase.bSkipZeroOuiCache;
     this->bDisable5019537Fix               = dpRegkeyDatabase.bDisable5019537Fix;
     this->bForceHeadShutdownFromRegkey     = dpRegkeyDatabase.bForceHeadShutdown;
+    this->bEnableLowerBppCheckForDsc       = dpRegkeyDatabase.bEnableLowerBppCheckForDsc;
 }
 
 void ConnectorImpl::setPolicyModesetOrderMitigation(bool enabled)
@@ -1367,12 +1368,38 @@ bool ConnectorImpl::compoundQueryAttachMST(Group * target,
 
     if (compoundQueryAttachMSTIsDscPossible(target, modesetParams, pDscParams))
     {
+        unsigned int forceDscBitsPerPixelX16 = pDscParams->bitsPerPixelX16;
         result = compoundQueryAttachMSTDsc(target, modesetParams, &localInfo,
                                            pDscParams, pErrorCode);
         if (!result)
         {
             return false;
         }
+        
+        compoundQueryResult = compoundQueryAttachMSTGeneric(target, modesetParams, &localInfo,
+                                                            pDscParams, pErrorCode);                                  
+        //
+        // compoundQueryAttachMST Generic might fail due to the insufficient bandwidth ,
+        // We only check whether bpp can be fit in the available bandwidth based on the tranied link config in compoundQueryAttachMSTDsc function.
+        // There might be cases where the default 10 bpp might fit in the available bandwidth based on the trained link config, 
+        // however, the bandwidth might be insufficient at the actual bottleneck link between source and sink to drive the mode, causing CompoundQueryAttachMSTGeneric to fail.
+        // Incase of CompoundQueryAttachMSTGeneric failure, instead of returning false, check whether the mode can be supported with the max dsc compression bpp
+        // and return true if it can be supported.
+
+        if (!compoundQueryResult && forceDscBitsPerPixelX16 == 0U && this->bEnableLowerBppCheckForDsc)
+        {
+            pDscParams->bitsPerPixelX16 = MAX_DSC_COMPRESSION_BPPX16;
+            result = compoundQueryAttachMSTDsc(target, modesetParams, &localInfo,
+                                               pDscParams, pErrorCode);
+            if (!result)
+            {
+                return false;
+            }
+
+            return compoundQueryAttachMSTGeneric(target, modesetParams, &localInfo,
+                                                 pDscParams, pErrorCode);
+        }
+        return compoundQueryResult;
     }
 
     return compoundQueryAttachMSTGeneric(target, modesetParams, &localInfo,
@@ -1564,6 +1591,7 @@ bool ConnectorImpl::compoundQueryAttachMSTDsc(Group * target,
     warData.dpData.dpMode = DSC_DP_MST;
     warData.dpData.hBlank = modesetParams.modesetInfo.rasterWidth - modesetParams.modesetInfo.surfaceWidth;
     warData.connectorType = DSC_DP;
+    warData.dpData.bDisableDscMaxBppLimit = bDisableDscMaxBppLimit;
 
     //
     // Dplib needs to pass sliceCountMask to clients
@@ -1636,7 +1664,9 @@ bool ConnectorImpl::compoundQueryAttachMSTDsc(Group * target,
         localInfo->localModesetInfo.bEnableDsc = true;
         localInfo->localModesetInfo.depth = bitsPerPixelX16;
         if (modesetParams.colorFormat == dpColorFormat_YCbCr422 &&
-            dev->dscCaps.dscDecoderColorFormatCaps.bYCbCrNative422)
+            dev->dscCaps.dscDecoderColorFormatCaps.bYCbCrNative422 && 
+            (dscInfo.gpuCaps.encoderColorFormatMask & DSC_ENCODER_COLOR_FORMAT_Y_CB_CR_NATIVE_422) &&
+            (dscInfo.sinkCaps.decoderColorFormatMask & DSC_DECODER_COLOR_FORMAT_Y_CB_CR_NATIVE_422))
         {
             localInfo->localModesetInfo.colorFormat = dpColorFormat_YCbCr422_Native;
         }
@@ -1790,12 +1820,24 @@ bool ConnectorImpl::compoundQueryAttachMSTGeneric(Group * target,
                 if ( tail->bandwidth.compound_query_state.timeslots_used_by_query > tail->bandwidth.compound_query_state.totalTimeSlots)
                 {
                     compoundQueryResult = false;
-                    SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH)
+                    if(this->bEnableLowerBppCheckForDsc)
+                    {
+                        tail->bandwidth.compound_query_state.timeslots_used_by_query -= linkConfig->slotsForPBN(base_pbn);
+                        tail->bandwidth.compound_query_state.bandwidthAllocatedForIndex &= ~(1 << compoundQueryCount);
+                    }
+                    SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH);
                 }
             }
             tail = (DeviceImpl*)tail->getParent();
         }
     }
+
+    // If the compoundQueryResult is false, we need to reset the compoundQueryLocalLinkPBN
+    if (!compoundQueryResult && this->bEnableLowerBppCheckForDsc)   
+    {
+        compoundQueryLocalLinkPBN -= slots_pbn;
+    }
+    
     return compoundQueryResult;
 }
 bool ConnectorImpl::compoundQueryAttachSST(Group * target,
@@ -1938,6 +1980,8 @@ bool ConnectorImpl::compoundQueryAttachSST(Group * target,
                 warData.dpData.hBlank = modesetParams.modesetInfo.rasterWidth - modesetParams.modesetInfo.surfaceWidth;
                 warData.dpData.dpMode = DSC_DP_SST;
                 warData.connectorType = DSC_DP;
+                warData.dpData.bDisableDscMaxBppLimit = bDisableDscMaxBppLimit;
+
                 if (main->isEDP())
                 {
                     warData.dpData.bIsEdp = true;
@@ -8243,6 +8287,7 @@ void ConnectorImpl::configInit()
     allocatedDpTunnelBwShadow = 0;
     bDP2XPreferNonDSCForLowPClk = false;
     bForceHeadShutdownPerMonitor = false;
+    bDisableDscMaxBppLimit = false;
 }
 
 bool ConnectorImpl::dpUpdateDscStream(Group *target, NvU32 dscBpp)

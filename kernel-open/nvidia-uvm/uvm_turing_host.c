@@ -361,3 +361,24 @@ void uvm_hal_turing_host_tlb_invalidate_test(uvm_push_t *push,
     if (params->membar == UvmInvalidateTlbMemBarLocal)
         uvm_push_get_gpu(push)->parent->host_hal->membar_gpu(push);
 }
+
+void uvm_hal_turing_access_counter_clear_all(uvm_push_t *push)
+{
+    NV_PUSH_4U(C46F, MEM_OP_A, 0,
+                     MEM_OP_B, 0,
+                     MEM_OP_C, 0,
+                     MEM_OP_D, HWCONST(C46F, MEM_OP_D, OPERATION, ACCESS_COUNTER_CLR) |
+                               HWCONST(C46F, MEM_OP_D, ACCESS_COUNTER_CLR_TYPE, ALL));
+}
+
+void uvm_hal_turing_access_counter_clear_targeted(uvm_push_t *push,
+                                                  const uvm_access_counter_buffer_entry_t *buffer_entry)
+{
+    NV_PUSH_4U(C46F, MEM_OP_A, 0,
+                     MEM_OP_B, 0,
+                     MEM_OP_C, HWVALUE(C46F, MEM_OP_C, ACCESS_COUNTER_CLR_TARGETED_NOTIFY_TAG, buffer_entry->tag),
+                     MEM_OP_D, HWCONST(C46F, MEM_OP_D, OPERATION, ACCESS_COUNTER_CLR) |
+                               HWCONST(C46F, MEM_OP_D, ACCESS_COUNTER_CLR_TYPE, TARGETED) |
+                               HWCONST(C46F, MEM_OP_D, ACCESS_COUNTER_CLR_TARGETED_TYPE, MIMC) |
+                               HWVALUE(C46F, MEM_OP_D, ACCESS_COUNTER_CLR_TARGETED_BANK, buffer_entry->bank));
+}

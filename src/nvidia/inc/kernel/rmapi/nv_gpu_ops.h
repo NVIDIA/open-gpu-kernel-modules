@@ -217,7 +217,7 @@ NV_STATUS nvGpuOpsOwnAccessCntrIntr(struct gpuSession *session,
 
 NV_STATUS nvGpuOpsEnableAccessCntr(struct gpuDevice *device,
                                    gpuAccessCntrInfo *pAccessCntrInfo,
-                                   gpuAccessCntrConfig *pAccessCntrConfig);
+                                   const gpuAccessCntrConfig *pAccessCntrConfig);
 
 NV_STATUS nvGpuOpsDisableAccessCntr(struct gpuDevice *device, gpuAccessCntrInfo *pAccessCntrInfo);
 

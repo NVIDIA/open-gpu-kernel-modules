@@ -596,6 +596,11 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Panel incorrectly exposing DSC capability. Ignoring it.");
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Bug 3543158");
             }
+            else if (ProductID == 0x5B9A)
+            {
+                this->WARFlags.bDisableDscMaxBppLimit = true;
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Disable DSC max BPP limit of 16 for DSC.");
+            }
             break;
         case 0xB306:
             if (ProductID == 0x3228)

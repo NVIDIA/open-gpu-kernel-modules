@@ -238,6 +238,11 @@ destroyKernelHostVgpuDeviceShare(OBJGPU *pGpu, KernelHostVgpuDeviceShr* pShare)
         RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
         NV2080_CTRL_VGPU_MGR_INTERNAL_SHUTDOWN_GSP_VGPU_PLUGIN_TASK_PARAMS shutdownParams = { 0 };
         NV2080_CTRL_VGPU_MGR_INTERNAL_VGPU_PLUGIN_CLEANUP_PARAMS cleanupResourcesParams = {0};
+        // Extend timeout to 30s for these calls to account for long-running mass client free (bug 4928590)
+        // Otherwise this can hit XID 119 and orphan all remaining clients on GSP side
+        NvU32 defaultus = pGpu->timeoutData.defaultus;
+
+        pGpu->timeoutData.defaultus = 30*1000*1000;
 
         shutdownParams.gfid = pKernelHostVgpuDevice->gfid;
 
@@ -251,6 +256,7 @@ destroyKernelHostVgpuDeviceShare(OBJGPU *pGpu, KernelHostVgpuDeviceShr* pShare)
         status = pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
                                  NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_VGPU_PLUGIN_CLEANUP,
                                  &cleanupResourcesParams, sizeof(cleanupResourcesParams));
+        pGpu->timeoutData.defaultus = defaultus;
         if (status != NV_OK)
             NV_PRINTF(LEVEL_ERROR, "Failed to call cleanup plugin resources\n");
 

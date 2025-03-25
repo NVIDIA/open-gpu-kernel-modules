@@ -338,28 +338,28 @@ static unsigned g_uvm_perf_thrashing_max_resets;
 // parameter _d. The user value is read from _v, and the final value is stored
 // in a variable named g_##_v, so it must be declared, too. Only unsigned
 // parameters are supported.
-#define INIT_THRASHING_PARAMETER_MIN_MAX(_v, _d, _mi, _ma)                      \
-    do {                                                                        \
-        unsigned v = (_v);                                                      \
-        unsigned d = (_d);                                                      \
-        unsigned mi = (_mi);                                                    \
-        unsigned ma = (_ma);                                                    \
-                                                                                \
-        BUILD_BUG_ON(sizeof(_v) > sizeof(unsigned));                            \
-        BUILD_BUG_ON(THRASHING_PARAMETER_IS_SIGNED(_v));                        \
-                                                                                \
-        UVM_ASSERT(mi <= ma);                                                   \
-        UVM_ASSERT(d >= mi);                                                    \
-        UVM_ASSERT(d <= ma);                                                    \
-                                                                                \
-        if (v >= mi && v <= ma) {                                               \
-            g_##_v = v;                                                         \
-        }                                                                       \
-        else {                                                                  \
-            pr_info("Invalid value %u for " #_v ". Using %u instead\n", v, d);  \
-                                                                                \
-            g_##_v = d;                                                         \
-        }                                                                       \
+#define INIT_THRASHING_PARAMETER_MIN_MAX(_v, _d, _mi, _ma)                            \
+    do {                                                                              \
+        unsigned v = (_v);                                                            \
+        unsigned d = (_d);                                                            \
+        unsigned mi = (_mi);                                                          \
+        unsigned ma = (_ma);                                                          \
+                                                                                      \
+        BUILD_BUG_ON(sizeof(_v) > sizeof(unsigned));                                  \
+        BUILD_BUG_ON(THRASHING_PARAMETER_IS_SIGNED(_v));                              \
+                                                                                      \
+        UVM_ASSERT(mi <= ma);                                                         \
+        UVM_ASSERT(d >= mi);                                                          \
+        UVM_ASSERT(d <= ma);                                                          \
+                                                                                      \
+        if (v >= mi && v <= ma) {                                                     \
+            g_##_v = v;                                                               \
+        }                                                                             \
+        else {                                                                        \
+            UVM_INFO_PRINT("Invalid value %u for " #_v ". Using %u instead\n", v, d); \
+                                                                                      \
+            g_##_v = d;                                                               \
+        }                                                                             \
     } while (0)
 
 #define INIT_THRASHING_PARAMETER(v, d)                 INIT_THRASHING_PARAMETER_MIN_MAX(v, d, 0u, UINT_MAX)
