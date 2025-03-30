@@ -113,6 +113,8 @@ struct NvKmsKapiDevice {
     /* Device capabilities */
 
     struct {
+        NvBool mainLayerSupportsWindowMode;
+
         struct NvKmsCompositionCapabilities cursorCompositionCaps;
         struct NvKmsCompositionCapabilities overlayCompositionCaps;
 
