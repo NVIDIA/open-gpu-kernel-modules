@@ -143,6 +143,10 @@ nvidia_vma_access(
         return -EINVAL;
     }
 
+    if (write && !(mmap_context->prot & NV_PROTECT_WRITEABLE))
+    {
+        return -EACCES;
+    }
     offset = mmap_context->mmap_start;
 
     if (nv->flags & NV_FLAG_CONTROL)

@@ -7411,33 +7411,18 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) subdeviceCtrlCmdEccGetEciCounters_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
-        /*flags=*/      0x210u,
-        /*accessRight=*/0x0u,
-        /*methodId=*/   0x20803401u,
-        /*paramSize=*/  sizeof(NV2080_CTRL_ECC_GET_ECI_COUNTERS_PARAMS),
-        /*pClassInfo=*/ &(__nvoc_class_def_Subdevice.classInfo),
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*func=*/       "subdeviceCtrlCmdEccGetEciCounters"
-#endif
-    },
-    {               /*  [479] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
-        /*pFunc=*/      (void (*)(void)) NULL,
-#else
         /*pFunc=*/      (void (*)(void)) subdeviceCtrlCmdEccGetVolatileCounts_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
         /*flags=*/      0x210u,
         /*accessRight=*/0x0u,
-        /*methodId=*/   0x20803402u,
+        /*methodId=*/   0x20803401u,
         /*paramSize=*/  sizeof(NV2080_CTRL_ECC_GET_VOLATILE_COUNTS_PARAMS),
         /*pClassInfo=*/ &(__nvoc_class_def_Subdevice.classInfo),
 #if NV_PRINTF_STRINGS_ALLOWED
         /*func=*/       "subdeviceCtrlCmdEccGetVolatileCounts"
 #endif
     },
-    {               /*  [480] */
+    {               /*  [479] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x810u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7452,7 +7437,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdFlaRange"
 #endif
     },
-    {               /*  [481] */
+    {               /*  [480] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x102204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7467,7 +7452,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdFlaSetupInstanceMemBlock"
 #endif
     },
-    {               /*  [482] */
+    {               /*  [481] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x100004u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7482,7 +7467,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdFlaGetRange"
 #endif
     },
-    {               /*  [483] */
+    {               /*  [482] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x1810u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7497,7 +7482,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdFlaGetFabricMemStats"
 #endif
     },
-    {               /*  [484] */
+    {               /*  [483] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4211u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7512,7 +7497,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdGspGetFeatures"
 #endif
     },
-    {               /*  [485] */
+    {               /*  [484] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7527,7 +7512,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdGspGetRmHeapStats"
 #endif
     },
-    {               /*  [486] */
+    {               /*  [485] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7542,7 +7527,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdGrmgrGetGrFsInfo"
 #endif
     },
-    {               /*  [487] */
+    {               /*  [486] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x3u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7557,7 +7542,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdOsUnixGc6BlockerRefCnt"
 #endif
     },
-    {               /*  [488] */
+    {               /*  [487] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x11u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7572,7 +7557,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdOsUnixAllowDisallowGcoff"
 #endif
     },
-    {               /*  [489] */
+    {               /*  [488] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x1u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7587,7 +7572,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdOsUnixAudioDynamicPower"
 #endif
     },
-    {               /*  [490] */
+    {               /*  [489] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x13u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7602,7 +7587,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdOsUnixVidmemPersistenceStatus"
 #endif
     },
-    {               /*  [491] */
+    {               /*  [490] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x7u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7617,7 +7602,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdOsUnixUpdateTgpStatus"
 #endif
     },
-    {               /*  [492] */
+    {               /*  [491] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x600u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7632,7 +7617,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdVgpuMgrInternalBootloadGspVgpuPluginTask"
 #endif
     },
-    {               /*  [493] */
+    {               /*  [492] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x600u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7647,7 +7632,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdVgpuMgrInternalShutdownGspVgpuPluginTask"
 #endif
     },
-    {               /*  [494] */
+    {               /*  [493] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x600u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7662,7 +7647,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdVgpuMgrInternalPgpuAddVgpuType"
 #endif
     },
-    {               /*  [495] */
+    {               /*  [494] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x600u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7677,7 +7662,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdVgpuMgrInternalEnumerateVgpuPerPgpu"
 #endif
     },
-    {               /*  [496] */
+    {               /*  [495] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x600u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7692,7 +7677,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdVgpuMgrInternalClearGuestVmInfo"
 #endif
     },
-    {               /*  [497] */
+    {               /*  [496] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x600u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7707,7 +7692,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdVgpuMgrInternalGetVgpuFbUsage"
 #endif
     },
-    {               /*  [498] */
+    {               /*  [497] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x600u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7722,7 +7707,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdVgpuMgrInternalSetVgpuEncoderCapacity"
 #endif
     },
-    {               /*  [499] */
+    {               /*  [498] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x600u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7737,7 +7722,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdVgpuMgrInternalCleanupGspVgpuPluginResources"
 #endif
     },
-    {               /*  [500] */
+    {               /*  [499] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x600u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7752,7 +7737,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdVgpuMgrInternalGetPgpuFsEncoding"
 #endif
     },
-    {               /*  [501] */
+    {               /*  [500] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x600u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7767,7 +7752,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdVgpuMgrInternalGetPgpuMigrationSupport"
 #endif
     },
-    {               /*  [502] */
+    {               /*  [501] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x600u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7782,7 +7767,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdVgpuMgrInternalSetVgpuMgrConfig"
 #endif
     },
-    {               /*  [503] */
+    {               /*  [502] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xa50u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7797,7 +7782,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdGetAvailableHshubMask"
 #endif
     },
-    {               /*  [504] */
+    {               /*  [503] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7812,7 +7797,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
         /*func=*/       "subdeviceCtrlCmdPerfGetGpumonPerfmonUtilSamples"
 #endif
     },
-    {               /*  [505] */
+    {               /*  [504] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x600u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -7832,7 +7817,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_Subdevice = 
 {
-    /*numEntries=*/     506,
+    /*numEntries=*/     505,
     /*pExportEntries=*/ __nvoc_exported_method_def_Subdevice
 };
 
@@ -9296,10 +9281,6 @@ static void __nvoc_init_funcTable_Subdevice_2(Subdevice *pThis, RmHalspecOwner *
 #endif
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
-    pThis->__subdeviceCtrlCmdEccGetEciCounters__ = &subdeviceCtrlCmdEccGetEciCounters_IMPL;
-#endif
-
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
     pThis->__subdeviceCtrlCmdEccGetVolatileCounts__ = &subdeviceCtrlCmdEccGetVolatileCounts_IMPL;
 #endif
 
@@ -9956,6 +9937,8 @@ static void __nvoc_init_funcTable_Subdevice_2(Subdevice *pThis, RmHalspecOwner *
     pThis->__subdeviceControl__ = &__nvoc_thunk_GpuResource_subdeviceControl;
 
     pThis->__subdeviceUnmap__ = &__nvoc_thunk_GpuResource_subdeviceUnmap;
+
+    pThis->__subdeviceGetMemInterMapParams__ = &__nvoc_thunk_RmResource_subdeviceGetMemInterMapParams;
 }
 
 static void __nvoc_init_funcTable_Subdevice_3(Subdevice *pThis, RmHalspecOwner *pRmhalspecowner) {
@@ -9965,8 +9948,6 @@ static void __nvoc_init_funcTable_Subdevice_3(Subdevice *pThis, RmHalspecOwner *
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
-
-    pThis->__subdeviceGetMemInterMapParams__ = &__nvoc_thunk_RmResource_subdeviceGetMemInterMapParams;
 
     pThis->__subdeviceGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_subdeviceGetMemoryMappingDescriptor;
 

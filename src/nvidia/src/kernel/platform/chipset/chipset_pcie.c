@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -72,7 +72,7 @@ static void      objClGpuUnmapRootPort(OBJGPU *);
 static void      objClGpuMapEnhCfgSpace(OBJGPU *, OBJCL *);
 static void      objClGpuUnmapEnhCfgSpace(OBJGPU *);
 static NV_STATUS objClGpuIs3DController(OBJGPU *);
-static void      objClLoadPcieVirtualP2PApproval(OBJGPU *, OBJCL *);
+static void      objClLoadPcieVirtualP2PApproval(OBJGPU *);
 static void      objClCheckForExternalGpu(OBJGPU *, OBJCL *);
 static void      _objClAdjustTcVcMap(OBJGPU *, OBJCL *, PORTDATA *);
 static void      _objClGetDownstreamAtomicsEnabledMask(void  *, NvU32, NvU32 *);
@@ -951,7 +951,7 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
     }
 
     // Load PCI Express virtual P2P approval config
-    objClLoadPcieVirtualP2PApproval(pGpu, pCl);
+    objClLoadPcieVirtualP2PApproval(pGpu);
 
     //
     // Disable NOSNOOP bit for Passthrough.
@@ -4259,13 +4259,12 @@ clFreePcieConfigSpaceBase_IMPL(OBJCL *pCl)
 // other.
 //
 static void
-objClLoadPcieVirtualP2PApproval(OBJGPU *pGpu, OBJCL *pCl)
+objClLoadPcieVirtualP2PApproval(OBJGPU *pGpu)
 {
     void *handle;
     NvU32 data32;
     NvU8  version;
     NvU8  cap;
-    NvU8  rlxdOrderingCfg = 0;
     NvU8  bus = gpuGetBus(pGpu);
     NvU8  device = gpuGetDevice(pGpu);
     NvU32 domain = gpuGetDomain(pGpu);
@@ -4324,19 +4323,6 @@ objClLoadPcieVirtualP2PApproval(OBJGPU *pGpu, OBJCL *pCl)
     pGpu->pciePeerClique.id = (NvU8)DRF_VAL(_PCI, _VIRTUAL_P2P_APPROVAL_CAP_1,
                                             _PEER_CLIQUE_ID, data32);
     pGpu->pciePeerClique.bValid = NV_TRUE;
-
-    rlxdOrderingCfg = (NvU8)DRF_VAL(_PCI, _VIRTUAL_P2P_APPROVAL_CAP_1,
-                                    _RELAXED_ORDERING, data32);
-
-    if (rlxdOrderingCfg == NV_PCI_VIRTUAL_P2P_APPROVAL_CAP_1_RELAXED_ORDERING_DISABLE)
-    {
-        // Unset relaxed ordering based on hypervisor's request
-        pCl->setProperty(pCl, PDB_PROP_CL_RELAXED_ORDERING_NOT_CAPABLE, NV_TRUE);
-
-        NV_PRINTF(LEVEL_INFO,
-                  "Hypervisor has disabled relaxed ordering on GPU%u\n",
-                  gpuGetInstance(pGpu));
-    }
 
     NV_PRINTF(LEVEL_INFO,
               "Hypervisor has assigned GPU%u to peer clique %u\n",

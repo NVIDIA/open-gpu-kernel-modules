@@ -123,7 +123,9 @@
 #define ROBUST_CHANNEL_FAST_PATH_ERROR                  (139)
 #define UNRECOVERABLE_ECC_ERROR_ESCAPE                  (140)
 #define GPU_INIT_ERROR                                  (143)
-#define ROBUST_CHANNEL_LAST_ERROR                       (GPU_INIT_ERROR)
+#define RESOURCE_RETIREMENT_EVENT                       (156)
+#define RESOURCE_RETIREMENT_FAILURE                     (157)
+#define ROBUST_CHANNEL_LAST_ERROR                       (RESOURCE_RETIREMENT_FAILURE)
 
 
 // Indexed CE reference

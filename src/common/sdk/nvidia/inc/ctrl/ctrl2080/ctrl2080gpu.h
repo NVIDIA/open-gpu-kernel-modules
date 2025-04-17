@@ -4284,4 +4284,29 @@ typedef struct NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2_PARAMS {
 
 #define NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2 (0x208001afU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2_PARAMS_MESSAGE_ID" */
 
+/*
+ * NV2080_CTRL_CMD_GPU_GET_TPC_RECONFIG_MASK
+ *
+ * This command returns the TPC reconfig mask for a specific GPC
+ *
+ *  gpc[IN]
+ *      The GPC for which the TPC reconfig mask needs to be queried.
+ *      The GPC should be specified as a logical index.
+ *
+ *  tpcReconfigMask[OUT]
+ *     Mask of reconfigurable TPCs in the specified GPC
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV2080_CTRL_CMD_GPU_GET_TPC_RECONFIG_MASK    (0x208001e7U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_TPC_RECONFIG_MASK_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_GPU_GET_TPC_RECONFIG_MASK_PARAMS_MESSAGE_ID (0xe7U)
+
+typedef struct NV2080_CTRL_GPU_GET_TPC_RECONFIG_MASK_PARAMS {
+    NvU32 gpc;
+    NvU32 tpcReconfigMask;
+} NV2080_CTRL_GPU_GET_TPC_RECONFIG_MASK_PARAMS;
+
 /* _ctrl2080gpu_h_ */

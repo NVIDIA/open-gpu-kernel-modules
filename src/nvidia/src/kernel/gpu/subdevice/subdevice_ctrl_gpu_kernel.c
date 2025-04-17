@@ -1355,6 +1355,47 @@ subdeviceCtrlCmdGpuGetFermiTpcInfo_IMPL
     return NV_OK;
 }
 
+#if (defined(DEBUG) || defined(DEVELOP))
+//
+// subdeviceCtrlCmdGpuGetTpcReconfigMask
+//
+// Lock Requirements:
+//      Assert that API lock and GPUs lock held on entry
+//
+NV_STATUS
+subdeviceCtrlCmdGpuGetTpcReconfigMask_IMPL
+(
+    Subdevice                                    *pSubdevice,
+    NV2080_CTRL_GPU_GET_TPC_RECONFIG_MASK_PARAMS *pParams
+)
+{
+    OBJGPU   *pGpu       = GPU_RES_GET_GPU(pSubdevice);
+    RM_API   *pRmApi     = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NvHandle  hClient    = RES_GET_CLIENT_HANDLE(pSubdevice);
+    NvHandle  hSubdevice = RES_GET_HANDLE(pSubdevice);
+
+    NV2080_CTRL_GR_GET_TPC_RECONFIG_MASK_PARAMS tpcReconfigMaskParams;
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
+
+    portMemSet(&tpcReconfigMaskParams, 0, sizeof(tpcReconfigMaskParams));
+    tpcReconfigMaskParams.gpc = pParams->gpc;
+
+    NV_CHECK_OK_OR_RETURN(
+        LEVEL_ERROR,
+        pRmApi->Control(pRmApi,
+                        hClient,
+                        hSubdevice,
+                        NV2080_CTRL_CMD_GR_GET_TPC_RECONFIG_MASK,
+                        &tpcReconfigMaskParams,
+                        sizeof(tpcReconfigMaskParams)));
+
+    pParams->tpcReconfigMask = tpcReconfigMaskParams.tpcReconfigMask;
+    return NV_OK;
+}
+#endif // defined(DEBUG) || defined(DEVELOP)
+
 //
 // subdeviceCtrlCmdGpuGetFermiZcullInfo
 //

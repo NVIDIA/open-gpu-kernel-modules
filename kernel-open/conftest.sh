@@ -5231,6 +5231,45 @@ compile_test() {
 
             compile_check_conftest "$CODE" "NV_FOLLOW_PFN_PRESENT" "" "functions"
         ;;
+
+        follow_pte_arg_vma)
+            #
+            # Determine if the first argument of follow_pte is
+            # mm_struct or vm_area_struct.
+            #
+            # The first argument was changed from mm_struct to vm_area_struct by
+            # commit 29ae7d96d166 ("mm: pass VMA instead of MM to follow_pte()")
+            #
+            CODE="
+            #include <linux/mm.h>
+
+            typeof(follow_pte) conftest_follow_pte_has_vma_arg;
+            int conftest_follow_pte_has_vma_arg(struct vm_area_struct *vma,
+                                                unsigned long address,
+                                                pte_t **ptep,
+                                                spinlock_t **ptl) {
+                return 0;
+            }"
+
+            compile_check_conftest "$CODE" "NV_FOLLOW_PTE_ARG1_VMA" "" "types"
+        ;;
+
+        ptep_get)
+            #
+            # Determine if ptep_get() is present.
+            #
+            # ptep_get() was added by commit 481e980a7c19
+            # ("mm: Allow arches to provide ptep_get()")
+            #
+            CODE="
+            #include <linux/mm.h>
+            void conftest_ptep_get(void) {
+                ptep_get();
+            }"
+
+            compile_check_conftest "$CODE" "NV_PTEP_GET_PRESENT" "" "functions"
+        ;;
+
         drm_plane_atomic_check_has_atomic_state_arg)
             #
             # Determine if drm_plane_helper_funcs::atomic_check takes 'state'
@@ -6125,6 +6164,32 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_NUM_REGISTERED_FB_PRESENT" "" "types"
         ;;
 
+        acpi_video_register_backlight)
+            #
+            # Determine if acpi_video_register_backlight() function is present
+            #
+            # acpi_video_register_backlight was added by commit 3dbc80a3e4c55c
+            # (ACPI: video: Make backlight class device registration a separate
+            # step (v2)) for v6.0 (2022-09-02).
+            # Note: the include directive for <linux/types> in this conftest is
+            # necessary in order to support kernels between commit 0b9f7d93ca61
+            # ("ACPI / i915: ignore firmware requests backlight change") for
+            # v3.16 (2014-07-07) and commit 3bd6bce369f5 ("ACPI / video: Port
+            # to new backlight interface selection API") for v4.2 (2015-07-16).
+            # Kernels within this range use the 'bool' type and the related
+            # 'false' value in <acpi/video.h> without first including the
+            # definitions of that type and value.
+            #
+            CODE="
+            #include <linux/types.h>
+            #include <acpi/video.h>
+            void conftest_acpi_video_register_backlight(void) {
+                acpi_video_register_backlight(0);
+            }"
+
+            compile_check_conftest "$CODE" "NV_ACPI_VIDEO_REGISTER_BACKLIGHT" "" "functions"
+        ;;
+
         acpi_video_backlight_use_native)
             #
             # Determine if acpi_video_backlight_use_native() function is present
@@ -6378,6 +6443,25 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MEMORY_FAILURE_MF_SW_SIMULATED_DEFINED" "" "types"
         ;;
 
+        drm_client_setup)
+            #
+            # Determine whether drm_client_setup is present.
+            #
+            # Added by commit d07fdf922592 ("drm/fbdev-ttm:
+            # Convert to client-setup") in v6.13.
+            #
+            CODE="
+            #include <drm/drm_fb_helper.h>
+            #if defined(NV_DRM_DRM_CLIENT_SETUP_H_PRESENT)
+            #include <drm/drm_client_setup.h>
+            #endif
+            void conftest_drm_client_setup(void) {
+                drm_client_setup();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_CLIENT_SETUP_PRESENT" "" "functions"
+        ;;
+
         drm_output_poll_changed)
             #
             # Determine whether drm_mode_config_funcs.output_poll_changed
@@ -6401,6 +6485,38 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_OUTPUT_POLL_CHANGED_PRESENT" "" "types"
         ;;
 
+        aperture_remove_conflicting_devices)
+            #
+            # Determine whether aperture_remove_conflicting_devices is present.
+            # 
+            # Added by commit 7283f862bd991 ("drm: Implement DRM aperture
+            # helpers under video/") in v6.0
+            CODE="
+            #if defined(NV_LINUX_APERTURE_H_PRESENT)
+            #include <linux/aperture.h>
+            #endif
+            void conftest_aperture_remove_conflicting_devices(void) {
+                aperture_remove_conflicting_devices();
+            }"
+            compile_check_conftest "$CODE" "NV_APERTURE_REMOVE_CONFLICTING_DEVICES_PRESENT" "" "functions"
+        ;;
+
+        aperture_remove_conflicting_pci_devices)
+            #
+            # Determine whether aperture_remove_conflicting_pci_devices is present.
+            #
+            # Added by commit 7283f862bd991 ("drm: Implement DRM aperture
+            # helpers under video/") in v6.0
+            CODE="
+            #if defined(NV_LINUX_APERTURE_H_PRESENT)
+            #include <linux/aperture.h>
+            #endif
+            void conftest_aperture_remove_conflicting_pci_devices(void) {
+                aperture_remove_conflicting_pci_devices();
+            }"
+            compile_check_conftest "$CODE" "NV_APERTURE_REMOVE_CONFLICTING_PCI_DEVICES_PRESENT" "" "functions"
+        ;;
+
         crypto_tfm_ctx_aligned)
             # Determine if 'crypto_tfm_ctx_aligned' is defined.
             #
@@ -6422,17 +6538,17 @@ compile_test() {
             # This test is not complete and may return false positive.
             #
             CODE="
-	    #include <crypto/akcipher.h>
-	    #include <crypto/algapi.h>
-	    #include <crypto/ecc_curve.h>
-	    #include <crypto/ecdh.h>
-	    #include <crypto/hash.h>
-	    #include <crypto/internal/ecc.h>
-	    #include <crypto/kpp.h>
-	    #include <crypto/public_key.h>
-	    #include <crypto/sm3.h>
-	    #include <keys/asymmetric-type.h>
-	    #include <linux/crypto.h>
+            #include <crypto/akcipher.h>
+            #include <crypto/algapi.h>
+            #include <crypto/ecc_curve.h>
+            #include <crypto/ecdh.h>
+            #include <crypto/hash.h>
+            #include <crypto/internal/ecc.h>
+            #include <crypto/kpp.h>
+            #include <crypto/public_key.h>
+            #include <crypto/sm3.h>
+            #include <keys/asymmetric-type.h>
+            #include <linux/crypto.h>
             void conftest_crypto(void) {
                 struct shash_desc sd;
                 struct crypto_shash cs;
@@ -6440,6 +6556,47 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_CRYPTO_PRESENT" "" "symbols"
+        ;;
+
+        crypto_akcipher_verify)
+            #
+            # Determine whether the crypto_akcipher_verify API is still present.
+            # It was removed by commit 6b34562 ('crypto: akcipher - Drop sign/verify operations')
+            # in v6.13-rc1 (2024-10-04).
+            #
+            # This test is dependent on the crypto conftest to determine whether crypto should be
+            # enabled at all. That means that if the kernel is old enough such that crypto_akcipher_verify
+            #
+            # The test merely checks for the presence of the API, as it assumes that if the API
+            # is no longer present, the new API to replace it (crypto_sig_verify) must be present.
+            # If the kernel version is too old to have crypto_akcipher_verify, it will fail the crypto
+            # conftest above and all crypto code will be compiled out.
+            #
+            CODE="
+            #include <crypto/akcipher.h>
+            #include <linux/crypto.h>
+            void conftest_crypto_akcipher_verify(void) {
+                (void)crypto_akcipher_verify;
+            }"
+
+            compile_check_conftest "$CODE" "NV_CRYPTO_AKCIPHER_VERIFY_PRESENT" "" "symbols"
+            ;;
+
+        ecc_digits_from_bytes)
+            #
+            # Determine whether ecc_digits_from_bytes is present.
+            # It was added in commit c6ab5c915da4 ('crypto: ecc - Prevent ecc_digits_from_bytes from
+            # reading too many bytes') in v6.10.
+            #
+            # This functionality is needed when crypto_akcipher_verify is not present.
+            #
+            CODE="
+            #include <crypto/internal/ecc.h>
+            void conftest_ecc_digits_from_bytes(void) {
+                (void)ecc_digits_from_bytes;
+            }"
+
+            compile_check_conftest "$CODE" "NV_ECC_DIGITS_FROM_BYTES_PRESENT" "" "symbols"
         ;;
 
         mempolicy_has_unified_nodes)
@@ -6544,6 +6701,47 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_FOLIO_TEST_SWAPCACHE_PRESENT" "" "functions"
+        ;;
+
+        module_import_ns_takes_constant)
+            #
+            # Determine if the MODULE_IMPORT_NS macro takes a string literal
+            # or constant.
+            #
+            # Commit cdd30ebb1b9f ("module: Convert symbol namespace to
+            # string literal") changed MODULE_IMPORT_NS to take a string
+            # literal in Linux kernel v6.13.
+            #
+            CODE="
+            #include <linux/module.h>
+
+            MODULE_IMPORT_NS(DMA_BUF);"
+
+            compile_check_conftest "$CODE" "NV_MODULE_IMPORT_NS_TAKES_CONSTANT" "" "generic"
+        ;;
+
+        drm_driver_has_date)
+            #
+            # Determine if the 'drm_driver' structure has a 'date' field.
+            #
+            # Removed by commit cb2e1c2136f7 ("drm: remove driver date from
+            # struct drm_driver and all drivers") in linux-next, expected in
+            # v6.14.
+            #
+            CODE="
+            #if defined(NV_DRM_DRMP_H_PRESENT)
+            #include <drm/drmP.h>
+            #endif
+
+            #if defined(NV_DRM_DRM_DRV_H_PRESENT)
+            #include <drm/drm_drv.h>
+            #endif
+
+            int conftest_drm_driver_has_date(void) {
+                return offsetof(struct drm_driver, date);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_DRIVER_HAS_DATE" "" "types"
         ;;
 
         # When adding a new conftest entry, please use the correct format for

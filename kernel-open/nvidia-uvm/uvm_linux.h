@@ -226,7 +226,7 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
 #define __GFP_NORETRY 0
 #endif
 
-#define NV_UVM_GFP_FLAGS (GFP_KERNEL)
+#define NV_UVM_GFP_FLAGS (GFP_KERNEL | __GFP_NOMEMALLOC)
 
 // Develop builds define DEBUG but enable optimization
 #if defined(DEBUG) && !defined(NVIDIA_UVM_DEVELOP)

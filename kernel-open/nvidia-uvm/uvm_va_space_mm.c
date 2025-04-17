@@ -291,8 +291,12 @@ NV_STATUS uvm_va_space_mm_register(uvm_va_space_t *va_space)
             // allocates memory which is attached to the mm_struct and freed
             // when the mm_struct is freed.
             ret = __mmu_notifier_register(NULL, current->mm);
-            if (ret)
+            if (ret) {
+                // Inform uvm_va_space_mm_unregister() that it has nothing to do.
+                uvm_mmdrop(va_space_mm->mm);
+                va_space_mm->mm = NULL;
                 return errno_to_nv_status(ret);
+            }
         #else
             UVM_ASSERT(0);
         #endif

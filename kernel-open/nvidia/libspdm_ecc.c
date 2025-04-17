@@ -1,5 +1,5 @@
 /*
-* SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+* SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 * SPDX-License-Identifier: MIT
 *
 * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,14 +30,26 @@ MODULE_SOFTDEP("pre: ecdh_generic,ecdsa_generic");
 #include <crypto/akcipher.h>
 #include <crypto/ecdh.h>
 #include <crypto/internal/ecc.h>
+#ifndef NV_CRYPTO_AKCIPHER_VERIFY_PRESENT
+#include <crypto/sig.h>
+
+struct signature
+{
+    u64 r[ECC_MAX_DIGITS];
+    u64 s[ECC_MAX_DIGITS];
+};
+#endif // NV_CRYPTO_AKCIPHER_VERIFY_PRESENT
+
+#define ECDSA_PUBKEY_HEADER_XY_PRESENT (0x4)
 
 struct ecc_ctx {
     unsigned int curve_id;
     u64 priv_key[ECC_MAX_DIGITS]; // In big endian
 
     struct {
-        // ecdsa wants byte preceding pub_key to be set to '4'
-        u64 pub_key_prefix;
+        // ecdsa pubkey has header indicating length of pubkey
+        u8  padding[7];
+        u8  pub_key_prefix;
         u64 pub_key[2 * ECC_MAX_DIGITS];
     };
 
@@ -46,7 +58,7 @@ struct ecc_ctx {
     char const *name;
     int size;
 };
-#endif
+#endif // USE_LKCA
 
 void *libspdm_ec_new_by_nid(size_t nid)
 {
@@ -77,7 +89,7 @@ void *libspdm_ec_new_by_nid(size_t nid)
     ctx->priv_key_set = false;
 
     return ctx;
-#endif
+#endif // USE_LKCA
 }
 
 void libspdm_ec_free(void *ec_context)
@@ -109,7 +121,7 @@ bool lkca_ecdsa_set_priv_key(void *context, uint8_t *key, size_t key_size)
     ctx->pub_key_set = true;
     ctx->priv_key_set = true;
     return true;
-#endif
+#endif // USE_LKCA
 }
 
 bool lkca_ec_set_pub_key(void *ec_context, const uint8_t *public_key,
@@ -139,7 +151,7 @@ bool lkca_ec_set_pub_key(void *ec_context, const uint8_t *public_key,
     memcpy(ctx->pub_key, public_key, public_key_size);
     ctx->pub_key_set = true;
     return true;
-#endif
+#endif // USE_LKCA
 }
 
 bool lkca_ec_get_pub_key(void *ec_context, uint8_t *public_key,
@@ -158,7 +170,7 @@ bool lkca_ec_get_pub_key(void *ec_context, uint8_t *public_key,
 
     memcpy(public_key, ctx->pub_key, ctx->size);
     return true;
-#endif
+#endif // USE_LKCA
 }
 
 bool lkca_ec_generate_key(void *ec_context, uint8_t *public_data,
@@ -185,7 +197,7 @@ bool lkca_ec_generate_key(void *ec_context, uint8_t *public_data,
     ctx->pub_key_set = true;
 
     return true;
-#endif
+#endif // USE_LKCA
 }
 
 bool lkca_ec_compute_key(void *ec_context, const uint8_t *peer_public,
@@ -218,28 +230,87 @@ bool lkca_ec_compute_key(void *ec_context, const uint8_t *peer_public,
 
     *key_size = ctx->size / 2;
     return true;
-#endif
+#endif // USE_LKCA
 }
 
-bool lkca_ecdsa_verify(void *ec_context, size_t hash_nid,
-                       const uint8_t *message_hash, size_t hash_size,
-                       const uint8_t *signature, size_t sig_size)
+#ifndef NV_CRYPTO_AKCIPHER_VERIFY_PRESENT
+static bool lkca_ecdsa_verify_crypto_sig(void *ec_context, size_t hash_nid,
+                                         const uint8_t *message_hash, size_t hash_size,
+                                         const uint8_t *signature, size_t sig_size)
 {
 #ifndef USE_LKCA
     return false;
-#else
+#else // USE_LKCA
     struct ecc_ctx *ctx = ec_context;
+    u8 *pub_key;
+    int err;
+    DECLARE_CRYPTO_WAIT(wait);
+    struct crypto_sig * tfm = NULL;
+    struct signature sig;
+
+    if (sig_size != ctx->size || !ctx->pub_key_set)
+    {
+        return false;
+    }
+
+    tfm = crypto_alloc_sig(ctx->name, CRYPTO_ALG_TYPE_SIG, 0);
+    if (IS_ERR(tfm)) {
+        pr_info("crypto_alloc_sig failed in lkca_ecdsa_verify\n");
+        return false;
+    }
+
+    // modify header of pubkey to indicate size
+    pub_key = (u8 *) &(ctx->pub_key_prefix);
+    *pub_key = ECDSA_PUBKEY_HEADER_XY_PRESENT;
+    err = crypto_sig_set_pubkey(tfm, pub_key, ctx->size + 1);
+    if (err != 0)
+    {
+        pr_info("crypto_sig_set_pubkey failed in lkca_ecdsa_verify: %d", -err);
+        goto failTfm;
+    }
+
+    //
+    // Compared to the way we receive the signature, we need to:
+    // - swap order of all digits
+    // - swap endianness for each digit
+    //
+    memset(&sig, 0, sizeof(sig));
+    ecc_digits_from_bytes(signature, ctx->size/2, sig.r, ECC_MAX_DIGITS);
+    ecc_digits_from_bytes(signature + ctx->size/2, ctx->size/2, sig.s, ECC_MAX_DIGITS);
+
+    err = crypto_sig_verify(tfm, (void *)&sig, sizeof(sig), message_hash, hash_size);
+    if (err != 0)
+    {
+        pr_info("crypto_sig_verify failed in lkca_ecdsa_verify %d\n", -err);
+    }
+
+failTfm:
+    crypto_free_sig(tfm);
+
+    return err == 0;
+#endif // USE_LKCA
+}
+
+#else // NV_CRYPTO_AKCIPHER_VERIFY_PRESENT
+static bool lkca_ecdsa_verify_akcipher(void *ec_context, size_t hash_nid,
+                                       const uint8_t *message_hash, size_t hash_size,
+                                       const uint8_t *signature, size_t sig_size)
+{
+#ifndef USE_LKCA
+    return false;
+#else // USE_LKCA
+    struct ecc_ctx *ctx = ec_context;
+    u8 *pub_key;
+    int err;
+    DECLARE_CRYPTO_WAIT(wait);
 
     // Roundabout way
     u64 ber_max_len = 3 + 2 * (4 + (ECC_MAX_BYTES));
     u64 ber_len = 0;
     u8 *ber = NULL;
-    u8 *pub_key;
     struct akcipher_request *req = NULL;
     struct crypto_akcipher *tfm = NULL;
     struct scatterlist sg;
-    DECLARE_CRYPTO_WAIT(wait);
-    int err;
 
     if (sig_size != ctx->size) {
         return false;
@@ -251,21 +322,21 @@ bool lkca_ecdsa_verify(void *ec_context, size_t hash_nid,
 
     tfm = crypto_alloc_akcipher(ctx->name, CRYPTO_ALG_TYPE_AKCIPHER, 0);
     if (IS_ERR(tfm)) {
-        pr_info("ALLOC FAILED\n");
+        pr_info("crypto_alloc_akcipher failed in lkca_ecdsa_verify\n");
         return false;
     }
 
-    pub_key = (u8 *) ctx->pub_key;
-    pub_key--; // Go back into byte of pub_key_prefix
-    *pub_key = 4; // And set it to 4 to placate kernel
+    // modify header of pubkey to indicate size
+    pub_key = (u8 *) &(ctx->pub_key_prefix);
+    *pub_key = ECDSA_PUBKEY_HEADER_XY_PRESENT;
     if ((err = crypto_akcipher_set_pub_key(tfm, pub_key, ctx->size + 1)) != 0) {
-        pr_info("SET PUB KEY FAILED: %d\n", -err);
+        pr_info("crypto_akcipher_set_pub_key failed in lkca_ecdsa_verify: %d\n", -err);
         goto failTfm;
     }
 
     req = akcipher_request_alloc(tfm, GFP_KERNEL);
     if (IS_ERR(req)) {
-        pr_info("REQUEST ALLOC FAILED\n");
+        pr_info("akcipher_request_alloc failed in lkca_ecdsa_verify\n");
         goto failTfm;
     }
 
@@ -310,9 +381,8 @@ bool lkca_ecdsa_verify(void *ec_context, size_t hash_nid,
                                   CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
     akcipher_request_set_crypt(req, &sg, NULL, ber_len, hash_size);
     err = crypto_wait_req(crypto_akcipher_verify(req), &wait);
-
     if (err != 0){
-        pr_info("Verify FAILED %d\n", -err);
+        pr_info("crypto_akcipher_verify failed in lkca_ecdsa_verify %d\n", -err);
     }
 
     kfree(ber);
@@ -322,5 +392,19 @@ failTfm:
     crypto_free_akcipher(tfm);
 
     return err == 0;
-#endif
+#endif // USE_LKCA
+}
+#endif // NV_CRYPTO_AKCIPHER_VERIFY_PRESENT
+
+bool lkca_ecdsa_verify(void *ec_context, size_t hash_nid,
+                       const uint8_t *message_hash, size_t hash_size,
+                       const uint8_t *signature, size_t sig_size)
+{
+#ifndef NV_CRYPTO_AKCIPHER_VERIFY_PRESENT
+    return lkca_ecdsa_verify_crypto_sig(ec_context, hash_nid, message_hash, hash_size,
+                                        signature, sig_size);
+#else // NV_CRYPTO_AKCIPHER_VERIFY_PRESENT
+    return lkca_ecdsa_verify_akcipher(ec_context, hash_nid, message_hash, hash_size,
+                                      signature, sig_size);
+#endif // NV_CRYPTO_AKCIPHER_VERIFY_PRESENT
 }
