@@ -183,7 +183,7 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
             printk(fmt, ##__VA_ARGS__); \
     } while (0)
 
-#define NV_UVM_GFP_FLAGS (GFP_KERNEL)
+#define NV_UVM_GFP_FLAGS (GFP_KERNEL | __GFP_NOMEMALLOC)
 
 #if defined(NVCPU_X86)
 /* Some old IA32 kernels don't have 64/64 division routines,

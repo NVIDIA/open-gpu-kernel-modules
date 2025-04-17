@@ -448,8 +448,8 @@ krcCheckBusError_KERNEL
                                 &clDevCtrlStatus) == NV_OK &&
         clDevCtrlStatusFlags != 0)
     {
-        NV_PRINTF(LEVEL_ERROR,
-            "PCI-E corelogic status has pending errors (CL_PCIE_DEV_CTRL_STATUS = %08X):\n",
+        NV_PRINTF(LEVEL_INFO,
+            "PCI-E corelogic: Pending errors in DEV_CTRL_STATUS = %08X\n",
             clDevCtrlStatus);
 
         clDevCtrlStatusFlags_Org = clDevCtrlStatusFlags;
@@ -457,7 +457,7 @@ krcCheckBusError_KERNEL
         if (clDevCtrlStatusFlags &
             NV2080_CTRL_BUS_INFO_PCIE_LINK_ERRORS_CORR_ERROR)
         {
-            NV_PRINTF(LEVEL_ERROR, "     _CORR_ERROR_DETECTED\n");
+            NV_PRINTF(LEVEL_INFO, "PCI-E corelogic: CORR_ERROR_DETECTED\n");
             // not much interested in this one
             clDevCtrlStatusFlags &=
                 ~NV2080_CTRL_BUS_INFO_PCIE_LINK_ERRORS_CORR_ERROR;
@@ -465,26 +465,27 @@ krcCheckBusError_KERNEL
         if (clDevCtrlStatusFlags &
             NV2080_CTRL_BUS_INFO_PCIE_LINK_ERRORS_NON_FATAL_ERROR)
         {
-            NV_PRINTF(LEVEL_ERROR, "     _NON_FATAL_ERROR_DETECTED\n");
+            NV_PRINTF(LEVEL_INFO, "PCI-E corelogic: NON_FATAL_ERROR_DETECTED\n");
         }
         if (clDevCtrlStatusFlags &
             NV2080_CTRL_BUS_INFO_PCIE_LINK_ERRORS_FATAL_ERROR)
         {
-            NV_PRINTF(LEVEL_ERROR, "     _FATAL_ERROR_DETECTED\n");
+            NV_PRINTF(LEVEL_ERROR, "PCI-E corelogic: FATAL_ERROR_DETECTED\n");
         }
         if (clDevCtrlStatusFlags &
             NV2080_CTRL_BUS_INFO_PCIE_LINK_ERRORS_UNSUPP_REQUEST)
         {
-            NV_PRINTF(LEVEL_ERROR, "     _UNSUPP_REQUEST_DETECTED\n");
+            NV_PRINTF(LEVEL_INFO, "PCI-E corelogic: UNSUPP_REQUEST_DETECTED\n");
         }
     }
 
     // Corelogic AER
     if (pCl != NULL && clPcieReadAerCapability(pGpu, pCl, &clAer) == NV_OK &&
-        (clAer.UncorrErrStatusReg != 0 || clAer.RooErrStatus != 0))
+        (clAer.UncorrErrStatusReg != 0 || 
+         (clAer.RooErrStatus & ~CL_AER_ROOT_ERROR_STATUS_ERR_COR_SUBCLASS_MASK) != 0))
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "PCE-I Advanced Error Reporting Corelogic Info:\n");
+                  "PCI-E Advanced Error Reporting Corelogic Info:\n");
         NV_PRINTF(LEVEL_ERROR,
                   "     Uncorr Error Status Register    : %08X\n",
                   clAer.UncorrErrStatusReg);
