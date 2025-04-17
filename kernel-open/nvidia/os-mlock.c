@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,14 +32,27 @@
 #define NV_NUM_PIN_PAGES_PER_ITERATION 0x80000
 #endif
 
-static inline int nv_follow_pfn(struct vm_area_struct *vma,
-                                unsigned long address,
-                                unsigned long *pfn)
+static inline int nv_follow_flavors(struct vm_area_struct *vma,
+                                    unsigned long address,
+                                    unsigned long *pfn)
 {
-#if defined(NV_FOLLOW_PFN_PRESENT)
-    return follow_pfn(vma, address, pfn);
-#else
-#if NV_IS_EXPORT_SYMBOL_PRESENT_follow_pte
+#if NV_IS_EXPORT_SYMBOL_PRESENT_follow_pfnmap_start
+    struct follow_pfnmap_args args = {};
+    int rc;
+
+    args.address = address;
+    args.vma = vma;
+
+    rc = follow_pfnmap_start(&args);
+    if (rc)
+        return rc;
+
+    *pfn = args.pfn;
+
+    follow_pfnmap_end(&args);
+
+    return 0;
+#elif NV_IS_EXPORT_SYMBOL_PRESENT_follow_pte
     int status = 0;
     spinlock_t *ptl;
     pte_t *ptep;
@@ -47,17 +60,40 @@ static inline int nv_follow_pfn(struct vm_area_struct *vma,
     if (!(vma->vm_flags & (VM_IO | VM_PFNMAP)))
         return status;
 
+    //
+    // The first argument of follow_pte() was changed from
+    // mm_struct to vm_area_struct in kernel 6.10.
+    //
+#if defined(NV_FOLLOW_PTE_ARG1_VMA)
     status = follow_pte(vma, address, &ptep, &ptl);
+#else
+    status = follow_pte(vma->vm_mm, address, &ptep, &ptl);
+#endif
     if (status)
         return status;
+
+#if defined(NV_PTEP_GET_PRESENT)
     *pfn = pte_pfn(ptep_get(ptep));
+#else
+    *pfn = pte_pfn(READ_ONCE(*ptep));
+#endif
 
     // The lock is acquired inside follow_pte()
     pte_unmap_unlock(ptep, ptl);
     return 0;
-#else // NV_IS_EXPORT_SYMBOL_PRESENT_follow_pte
+#else
     return -1;
-#endif // NV_IS_EXPORT_SYMBOL_PRESENT_follow_pte
+#endif // NV_IS_EXPORT_SYMBOL_PRESENT_follow_pfnmap_start
+}
+
+static inline int nv_follow_pfn(struct vm_area_struct *vma,
+                                unsigned long address,
+                                unsigned long *pfn)
+{
+#if defined(NV_FOLLOW_PFN_PRESENT)
+    return follow_pfn(vma, address, pfn);
+#else
+    return nv_follow_flavors(vma, address, pfn);
 #endif
 }
 

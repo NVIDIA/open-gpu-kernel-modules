@@ -2808,6 +2808,10 @@ static inline NV_STATUS gpuGetRegBaseOffset_DISPATCH(struct OBJGPU *pGpu, NvU32 
     return pGpu->__gpuGetRegBaseOffset__(pGpu, arg0, arg1);
 }
 
+static inline void gpuHandleSanityCheckRegReadError_b3696a(struct OBJGPU *pGpu, NvU32 addr, NvU32 value) {
+    return;
+}
+
 void gpuHandleSanityCheckRegReadError_GM107(struct OBJGPU *pGpu, NvU32 addr, NvU32 value);
 
 void gpuHandleSanityCheckRegReadError_GH100(struct OBJGPU *pGpu, NvU32 addr, NvU32 value);

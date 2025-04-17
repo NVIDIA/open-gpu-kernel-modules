@@ -996,6 +996,11 @@ nvkms_register_backlight(NvU32 gpu_id, NvU32 display_id, void *drv_priv,
 
 #if defined(NV_ACPI_VIDEO_BACKLIGHT_USE_NATIVE)
     if (!acpi_video_backlight_use_native()) {
+#if defined(NV_ACPI_VIDEO_REGISTER_BACKLIGHT)
+        nvkms_log(NVKMS_LOG_LEVEL_INFO, NVKMS_LOG_PREFIX,
+                  "ACPI reported no NVIDIA native backlight available; attempting to use ACPI backlight.");
+        acpi_video_register_backlight();
+#endif
         return NULL;
     }
 #endif

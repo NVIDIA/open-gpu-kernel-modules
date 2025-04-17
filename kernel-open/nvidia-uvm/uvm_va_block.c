@@ -1768,7 +1768,7 @@ static NV_STATUS block_alloc_cpu_chunk(uvm_va_block_t *block,
         if (status == NV_OK)
             break;
 
-        if (flags & UVM_CPU_CHUNK_ALLOC_FLAGS_STRICT) {
+        if ((flags & UVM_CPU_CHUNK_ALLOC_FLAGS_STRICT) && (num_possible_nodes() > 1)) {
             flags &= ~UVM_CPU_CHUNK_ALLOC_FLAGS_STRICT;
             numa_fallback = true;
             status = block_alloc_cpu_chunk_inject_error(block, alloc_size, flags, NUMA_NO_NODE, chunk);

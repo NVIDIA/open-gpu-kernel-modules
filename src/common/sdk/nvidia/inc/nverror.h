@@ -125,7 +125,9 @@
 #define ROBUST_CHANNEL_FAST_PATH_ERROR                  (141)
 #define GPU_INIT_ERROR                                  (143)
 #define ROBUST_CHANNEL_KEY_ROTATION_ERROR               (144)
-#define ROBUST_CHANNEL_LAST_ERROR                       (ROBUST_CHANNEL_KEY_ROTATION_ERROR)
+#define RESOURCE_RETIREMENT_EVENT                       (156)
+#define RESOURCE_RETIREMENT_FAILURE                     (157)
+#define ROBUST_CHANNEL_LAST_ERROR                       (RESOURCE_RETIREMENT_FAILURE)
 
 
 // Indexed CE reference

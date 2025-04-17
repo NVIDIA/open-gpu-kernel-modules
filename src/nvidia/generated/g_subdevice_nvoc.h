@@ -500,7 +500,6 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdInternalFlcnSetVideoEventBufferFlags__)(struct Subdevice *, NV2080_CTRL_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_FLAGS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalFlcnSetVideoEventBufferMemory__)(struct Subdevice *, NV2080_CTRL_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdEccGetClientExposedCounters__)(struct Subdevice *, NV2080_CTRL_ECC_GET_CLIENT_EXPOSED_COUNTERS_PARAMS *);
-    NV_STATUS (*__subdeviceCtrlCmdEccGetEciCounters__)(struct Subdevice *, NV2080_CTRL_ECC_GET_ECI_COUNTERS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdEccGetVolatileCounts__)(struct Subdevice *, NV2080_CTRL_ECC_GET_VOLATILE_COUNTS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuQueryEccConfiguration__)(struct Subdevice *, NV2080_CTRL_GPU_QUERY_ECC_CONFIGURATION_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuSetEccConfiguration__)(struct Subdevice *, NV2080_CTRL_GPU_SET_ECC_CONFIGURATION_PARAMS *);
@@ -1152,7 +1151,6 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdInternalFlcnSetVideoEventBufferFlags(pSubdevice, pParams) subdeviceCtrlCmdInternalFlcnSetVideoEventBufferFlags_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalFlcnSetVideoEventBufferMemory(pSubdevice, pParams) subdeviceCtrlCmdInternalFlcnSetVideoEventBufferMemory_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdEccGetClientExposedCounters(pSubdevice, pParams) subdeviceCtrlCmdEccGetClientExposedCounters_DISPATCH(pSubdevice, pParams)
-#define subdeviceCtrlCmdEccGetEciCounters(pSubdevice, pParams) subdeviceCtrlCmdEccGetEciCounters_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdEccGetVolatileCounts(pSubdevice, pParams) subdeviceCtrlCmdEccGetVolatileCounts_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGpuQueryEccConfiguration(pSubdevice, pConfig) subdeviceCtrlCmdGpuQueryEccConfiguration_DISPATCH(pSubdevice, pConfig)
 #define subdeviceCtrlCmdGpuQueryEccConfiguration_HAL(pSubdevice, pConfig) subdeviceCtrlCmdGpuQueryEccConfiguration_DISPATCH(pSubdevice, pConfig)
@@ -3718,12 +3716,6 @@ NV_STATUS subdeviceCtrlCmdEccGetClientExposedCounters_IMPL(struct Subdevice *pSu
 
 static inline NV_STATUS subdeviceCtrlCmdEccGetClientExposedCounters_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_ECC_GET_CLIENT_EXPOSED_COUNTERS_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdEccGetClientExposedCounters__(pSubdevice, pParams);
-}
-
-NV_STATUS subdeviceCtrlCmdEccGetEciCounters_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_ECC_GET_ECI_COUNTERS_PARAMS *pParams);
-
-static inline NV_STATUS subdeviceCtrlCmdEccGetEciCounters_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_ECC_GET_ECI_COUNTERS_PARAMS *pParams) {
-    return pSubdevice->__subdeviceCtrlCmdEccGetEciCounters__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdEccGetVolatileCounts_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_ECC_GET_VOLATILE_COUNTS_PARAMS *pParams);

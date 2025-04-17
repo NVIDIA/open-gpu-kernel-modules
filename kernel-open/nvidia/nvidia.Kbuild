@@ -161,6 +161,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += cc_attr_guest_sev_snp
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += hv_get_isolation_type
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += seq_read_iter
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += follow_pfn
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += ptep_get
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_gem_object_get
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_gem_object_put_unlocked
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += add_memory_driver_managed
@@ -230,6 +231,8 @@ NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_memory_block_size_b
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += crypto
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += crypto_akcipher_verify
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_follow_pte
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += follow_pte_arg_vma
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_follow_pfnmap_start
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_pci_ats_supported
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += ecc_digits_from_bytes
 

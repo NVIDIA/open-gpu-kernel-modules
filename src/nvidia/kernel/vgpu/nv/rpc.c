@@ -2716,11 +2716,12 @@ NV_STATUS rpcLog_v03_00(OBJGPU *pGpu, OBJRPC *pRpc, const char *logstr, NvU32 lo
     NV_STATUS status;
     NvU32     length;
 
-    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_LOG, sizeof(rpc_log_v03_00));
+    length = (NvU32)portStringLength(logstr) + 1;
+
+    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_LOG, sizeof(rpc_log_v03_00) + length);
     if (status != NV_OK)
         return status;
 
-    length = (NvU32)portStringLength(logstr) + 1;
     if (length > sizeof(rpc_log_v03_00) + pRpc->maxRpcSize)
     {
         NV_PRINTF(LEVEL_ERROR, "LOG RPC - string too long\n");
@@ -7893,7 +7894,8 @@ done:
     return status;
 }
 
-NV_STATUS rpcCleanupSurface_v03_00(OBJGPU *pGpu, OBJRPC *pRpc, NVA080_CTRL_VGPU_DISPLAY_CLEANUP_SURFACE_PARAMS *pParams)
+NV_STATUS rpcCleanupSurface_v03_00(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient,
+                                   NVA080_CTRL_VGPU_DISPLAY_CLEANUP_SURFACE_PARAMS *pParams)
 {
     NV_STATUS status = NV_OK;
     OBJVGPU *pVgpu = GPU_GET_VGPU(pGpu);
@@ -7904,7 +7906,8 @@ NV_STATUS rpcCleanupSurface_v03_00(OBJGPU *pGpu, OBJRPC *pRpc, NVA080_CTRL_VGPU_
     if (pVgpu && !pVgpu->bVncSupported)
         return status;
 
-    if (pVgpu && (pVgpu->last_surface_info.last_surface.headIndex == pParams->headIndex))
+    if (pVgpu && (pVgpu->last_surface_info.last_surface.headIndex == pParams->headIndex) &&
+                 (pVgpu->last_surface_info.hClient == hClient))
     {
         /* remove last surface information */
         portMemSet((void *)&(pVgpu->last_surface_info), 0, sizeof (pVgpu->last_surface_info));

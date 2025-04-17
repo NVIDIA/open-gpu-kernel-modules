@@ -1903,4 +1903,30 @@ typedef struct NV2080_CTRL_GR_GET_GFX_GPC_AND_TPC_INFO_PARAMS {
     NvU32 numGfxTpc;
 } NV2080_CTRL_GR_GET_GFX_GPC_AND_TPC_INFO_PARAMS;
 
+/*
+ * NV2080_CTRL_CMD_GR_GET_TPC_RECONFIG_MASK
+ *
+ * This command returns the TPC reconfig mask for a specific GPC
+ *
+ *  gpc[IN]
+ *      The GPC for which the TPC reconfig mask needs to be queried.
+ *      The GPC should be specified as a logical index.
+ *
+ *  tpcReconfigMask[OUT]
+ *     Mask of reconfigurable TPCs in the specified GPC
+ *
+ *  grRouteInfo[IN]
+ *     This parameter specifies the routing information used to
+ *     disambiguate the target GR engine.
+ */
+#define NV2080_CTRL_CMD_GR_GET_TPC_RECONFIG_MASK (0x2080123bU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GR_INTERFACE_ID << 8) | NV2080_CTRL_GR_GET_TPC_RECONFIG_MASK_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_GR_GET_TPC_RECONFIG_MASK_PARAMS_MESSAGE_ID (0x3bU)
+
+typedef struct NV2080_CTRL_GR_GET_TPC_RECONFIG_MASK_PARAMS {
+    NvU32 gpc;
+    NvU32 tpcReconfigMask;
+    NV_DECLARE_ALIGNED(NV2080_CTRL_GR_ROUTE_INFO grRouteInfo, 8);
+} NV2080_CTRL_GR_GET_TPC_RECONFIG_MASK_PARAMS;
+
 /* _ctrl2080gr_h_ */

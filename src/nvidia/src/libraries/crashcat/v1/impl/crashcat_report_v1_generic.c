@@ -74,7 +74,7 @@ void crashcatReportLogReporter_V1_GENERIC(CrashCatReport *pReport)
     // macro to get the correct prefix/indentation for the reporter information.
     //
     CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport,
-        "Reported by partition:%u ucode:%u [%c-mode] version:%u @ %u",
+        "Reported by partition:%u ucode:%u [%c-mode] version:%u @ %u\n",
         partition, ucodeId, crashcatReportModeToChar_GENERIC(riscvMode),
         crashcatReportV1ReporterVersion(pReportV1),
         crashcatReportV1ReporterTimestamp(pReportV1));

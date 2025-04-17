@@ -5321,6 +5321,45 @@ compile_test() {
 
             compile_check_conftest "$CODE" "NV_FOLLOW_PFN_PRESENT" "" "functions"
         ;;
+
+        follow_pte_arg_vma)
+            #
+            # Determine if the first argument of follow_pte is
+            # mm_struct or vm_area_struct.
+            #
+            # The first argument was changed from mm_struct to vm_area_struct by
+            # commit 29ae7d96d166 ("mm: pass VMA instead of MM to follow_pte()")
+            #
+            CODE="
+            #include <linux/mm.h>
+
+            typeof(follow_pte) conftest_follow_pte_has_vma_arg;
+            int conftest_follow_pte_has_vma_arg(struct vm_area_struct *vma,
+                                                unsigned long address,
+                                                pte_t **ptep,
+                                                spinlock_t **ptl) {
+                return 0;
+            }"
+
+            compile_check_conftest "$CODE" "NV_FOLLOW_PTE_ARG1_VMA" "" "types"
+        ;;
+
+        ptep_get)
+            #
+            # Determine if ptep_get() is present.
+            #
+            # ptep_get() was added by commit 481e980a7c19
+            # ("mm: Allow arches to provide ptep_get()")
+            #
+            CODE="
+            #include <linux/mm.h>
+            void conftest_ptep_get(void) {
+                ptep_get();
+            }"
+
+            compile_check_conftest "$CODE" "NV_PTEP_GET_PRESENT" "" "functions"
+        ;;
+
         drm_plane_atomic_check_has_atomic_state_arg)
             #
             # Determine if drm_plane_helper_funcs::atomic_check takes 'state'
@@ -6269,6 +6308,32 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_NUM_REGISTERED_FB_PRESENT" "" "types"
         ;;
 
+        acpi_video_register_backlight)
+            #
+            # Determine if acpi_video_register_backlight() function is present
+            #
+            # acpi_video_register_backlight was added by commit 3dbc80a3e4c55c
+            # (ACPI: video: Make backlight class device registration a separate
+            # step (v2)) for v6.0 (2022-09-02).
+            # Note: the include directive for <linux/types> in this conftest is
+            # necessary in order to support kernels between commit 0b9f7d93ca61
+            # ("ACPI / i915: ignore firmware requests backlight change") for
+            # v3.16 (2014-07-07) and commit 3bd6bce369f5 ("ACPI / video: Port
+            # to new backlight interface selection API") for v4.2 (2015-07-16).
+            # Kernels within this range use the 'bool' type and the related
+            # 'false' value in <acpi/video.h> without first including the
+            # definitions of that type and value.
+            #
+            CODE="
+            #include <linux/types.h>
+            #include <acpi/video.h>
+            void conftest_acpi_video_register_backlight(void) {
+                acpi_video_register_backlight(0);
+            }"
+
+            compile_check_conftest "$CODE" "NV_ACPI_VIDEO_REGISTER_BACKLIGHT" "" "functions"
+        ;;
+
         acpi_video_backlight_use_native)
             #
             # Determine if acpi_video_backlight_use_native() function is present
@@ -6652,13 +6717,18 @@ compile_test() {
             #
             # Determine whether drm_client_setup is present.
             #
-            # Added by commit d07fdf922592 ("drm/fbdev-ttm:
-            # Convert to client-setup") in v6.13.
+            # Added by commit d07fdf922592 ("drm/fbdev-ttm: Convert to
+            # client-setup") in v6.13 in drm/drm_client_setup.h, but then moved
+            # to drm/clients/drm_client_setup.h by commit b86711c6d6e2
+            # ("drm/client: Move public client header to clients/ subdirectory")
+            # in linux-next b86711c6d6e2.
             #
             CODE="
             #include <drm/drm_fb_helper.h>
             #if defined(NV_DRM_DRM_CLIENT_SETUP_H_PRESENT)
             #include <drm/drm_client_setup.h>
+            #elif defined(NV_DRM_CLIENTS_DRM_CLIENT_SETUP_H_PRESENT)
+            #include <drm/clients/drm_client_setup.h>
             #endif
             void conftest_drm_client_setup(void) {
                 drm_client_setup();
@@ -7036,6 +7106,58 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_FOLIO_TEST_SWAPCACHE_PRESENT" "" "functions"
+        ;;
+
+
+        drm_driver_has_date)
+            #
+            # Determine if the 'drm_driver' structure has a 'date' field.
+            #
+            # Removed by commit cb2e1c2136f7 ("drm: remove driver date from
+            # struct drm_driver and all drivers") in linux-next, expected in
+            # v6.14.
+            #
+            CODE="
+            #if defined(NV_DRM_DRMP_H_PRESENT)
+            #include <drm/drmP.h>
+            #endif
+
+            #if defined(NV_DRM_DRM_DRV_H_PRESENT)
+            #include <drm/drm_drv.h>
+            #endif
+
+            int conftest_drm_driver_has_date(void) {
+                return offsetof(struct drm_driver, date);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_DRIVER_HAS_DATE" "" "types"
+        ;;
+
+        drm_connector_helper_funcs_mode_valid_has_const_mode_arg)
+            #
+            # Determine if the 'mode' pointer argument is const in
+            # drm_connector_helper_funcs::mode_valid.
+            #
+            # The 'mode' pointer argument in
+            # drm_connector_helper_funcs::mode_valid was made const by commit
+            # 26d6fd81916e ("drm/connector: make mode_valid take a const struct
+            # drm_display_mode") in linux-next, expected in v6.15.
+            #
+            CODE="
+            #if defined(NV_DRM_DRM_ATOMIC_HELPER_H_PRESENT)
+            #include <drm/drm_atomic_helper.h>
+            #endif
+
+            static int conftest_drm_connector_mode_valid(struct drm_connector *connector,
+                                                         const struct drm_display_mode *mode) {
+                return 0;
+            }
+
+            const struct drm_connector_helper_funcs conftest_drm_connector_helper_funcs = {
+                .mode_valid = conftest_drm_connector_mode_valid,
+            };"
+
+            compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_HELPER_FUNCS_MODE_VALID_HAS_CONST_MODE_ARG" "" "types"
         ;;
 
         # When adding a new conftest entry, please use the correct format for

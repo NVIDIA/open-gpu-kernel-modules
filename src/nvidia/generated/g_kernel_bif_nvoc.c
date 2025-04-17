@@ -546,6 +546,10 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
     {
         pThis->__kbifInitXveRegMap__ = &kbifInitXveRegMap_TU102;
     }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 */ 
+    {
+        pThis->__kbifInitXveRegMap__ = &kbifInitXveRegMap_AD102;
+    }
     else
     {
         pThis->__kbifInitXveRegMap__ = &kbifInitXveRegMap_GA102;

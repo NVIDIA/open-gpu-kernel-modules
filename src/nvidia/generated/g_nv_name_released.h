@@ -1080,6 +1080,7 @@ static const CHIPS_RELEASED sChipsReleased[] = {
     { 0x28BB, 0x0000, 0x0000, "NVIDIA RTX 500 Ada Generation Laptop GPU" },
     { 0x28E0, 0x0000, 0x0000, "NVIDIA GeForce RTX 4060 Laptop GPU" },
     { 0x28E1, 0x0000, 0x0000, "NVIDIA GeForce RTX 4050 Laptop GPU" },
+    { 0x28E3, 0x0000, 0x0000, "NVIDIA GeForce RTX 3050 A Laptop GPU" },
     { 0x28F8, 0x0000, 0x0000, "NVIDIA RTX 2000 Ada Generation Embedded GPU" },
     { 0x13BD, 0x11cc, 0x10DE, "GRID M10-0B" },
     { 0x13BD, 0x11cd, 0x10DE, "GRID M10-1B" },

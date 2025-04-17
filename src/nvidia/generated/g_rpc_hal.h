@@ -117,7 +117,7 @@ typedef NV_STATUS      RpcCtrlGrSetCtxswPreemptionMode(POBJGPU, POBJRPC, NvHandl
 typedef NV_STATUS      RpcCtrlB0ccExecRegOps(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlGrmgrGetGrFsInfo(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlGetZbcClearTable(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
-typedef NV_STATUS      RpcCleanupSurface(POBJGPU, POBJRPC,
+typedef NV_STATUS      RpcCleanupSurface(POBJGPU, POBJRPC, NvHandle,
                                     NVA080_CTRL_VGPU_DISPLAY_CLEANUP_SURFACE_PARAMS*);
 typedef NV_STATUS      RpcCtrlSetTimeslice(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlGpuQueryEccStatus(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
@@ -454,8 +454,8 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcCtrlGrmgrGetGrFsInfo(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlGetZbcClearTable_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlGetZbcClearTable(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
-#define rpcCleanupSurface_HAL(_pGpu, _pRpc, _pArg0)  \
-        (_pRpc)->_hal.rpcCleanupSurface(_pGpu, _pRpc, _pArg0)
+#define rpcCleanupSurface_HAL(_pGpu, _pRpc, _arg0, _pArg1)  \
+        (_pRpc)->_hal.rpcCleanupSurface(_pGpu, _pRpc, _arg0, _pArg1)
 #define rpcCtrlSetTimeslice_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlSetTimeslice(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlGpuQueryEccStatus_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \

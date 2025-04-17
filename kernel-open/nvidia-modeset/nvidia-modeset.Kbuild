@@ -102,3 +102,4 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += list_is_first
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += ktime_get_real_ts64
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += ktime_get_raw_ts64
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += acpi_video_backlight_use_native
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += acpi_video_register_backlight
