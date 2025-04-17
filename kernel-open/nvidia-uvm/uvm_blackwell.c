@@ -81,8 +81,6 @@ void uvm_hal_blackwell_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->non_replayable_faults_supported = true;
 
-    parent_gpu->access_counters_supported = true;
-
     parent_gpu->fault_cancel_va_supported = true;
 
     parent_gpu->scoped_atomics_supported = true;
@@ -102,4 +100,15 @@ void uvm_hal_blackwell_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
     parent_gpu->no_ats_range_required = true;
 
     parent_gpu->conf_computing.per_channel_key_rotation = true;
+
+    // TODO: Bug 5023085: this should be queried from RM instead of determined
+    // by UVM.
+    if (parent_gpu->rm_info.gpuArch == NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100 &&
+        parent_gpu->rm_info.gpuImplementation ==
+            NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB10B)
+        parent_gpu->is_integrated_gpu = true;
+    if (parent_gpu->rm_info.gpuArch == NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB200 &&
+        parent_gpu->rm_info.gpuImplementation ==
+            NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB20B)
+        parent_gpu->is_integrated_gpu = true;
 }

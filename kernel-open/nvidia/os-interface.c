@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,6 +26,8 @@
 #include "os-interface.h"
 #include "nv-linux.h"
 #include "nv-caps-imex.h"
+
+#include "nv-platform.h"
 
 #include "nv-time.h"
 
@@ -56,6 +58,7 @@ NvBool os_cc_enabled = 0;
 NvBool os_cc_sev_snp_enabled = 0;
 NvBool os_cc_snp_vtom_enabled = 0;
 NvBool os_cc_tdx_enabled = 0;
+NvBool os_cc_sme_enabled = 0;
 
 #if defined(CONFIG_DMA_SHARED_BUFFER)
 NvBool os_dma_buf_enabled = NV_TRUE;
@@ -2117,6 +2120,31 @@ void NV_API_CALL os_wake_up
 )
 {
     complete_all(&wq->q);
+}
+
+NV_STATUS NV_API_CALL os_get_tegra_platform
+(
+    NvU32 *mode
+)
+{
+#if defined(NV_SOC_TEGRA_FUSE_HELPER_H_PRESENT) && NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE
+    if (tegra_platform_is_fpga())
+    {
+        *mode = NV_OS_TEGRA_PLATFORM_FPGA;
+    }
+    else if (tegra_platform_is_vdk())
+    {
+        *mode = NV_OS_TEGRA_PLATFORM_SIM;
+    }
+    else
+    {
+        *mode = NV_OS_TEGRA_PLATFORM_SILICON;
+    }
+
+    return NV_OK;
+#else
+    return NV_ERR_NOT_SUPPORTED;
+#endif
 }
 
 nv_cap_t* NV_API_CALL os_nv_cap_init

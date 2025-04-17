@@ -1,4 +1,11 @@
 #define NVOC_KERN_HWPM_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,81 +14,30 @@
 #include "utils/nvassert.h"
 #include "g_kern_hwpm_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0xc8c00f = 1;
+char __nvoc_class_id_uniqueness_check__0xc8c00f = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelHwpm;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE;
 
-void __nvoc_init_KernelHwpm(KernelHwpm*, RmHalspecOwner* );
-void __nvoc_init_funcTable_KernelHwpm(KernelHwpm*, RmHalspecOwner* );
-NV_STATUS __nvoc_ctor_KernelHwpm(KernelHwpm*, RmHalspecOwner* );
-void __nvoc_init_dataField_KernelHwpm(KernelHwpm*, RmHalspecOwner* );
+// Forward declarations for KernelHwpm
+void __nvoc_init__OBJENGSTATE(OBJENGSTATE*);
+void __nvoc_init__KernelHwpm(KernelHwpm*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_funcTable_KernelHwpm(KernelHwpm*, RmHalspecOwner *pRmhalspecowner);
+NV_STATUS __nvoc_ctor_KernelHwpm(KernelHwpm*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_dataField_KernelHwpm(KernelHwpm*, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_KernelHwpm(KernelHwpm*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelHwpm;
 
-static const struct NVOC_RTTI __nvoc_rtti_KernelHwpm_KernelHwpm = {
-    /*pClassDef=*/          &__nvoc_class_def_KernelHwpm,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_KernelHwpm,
-    /*offset=*/             0,
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_KernelHwpm_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(KernelHwpm, __nvoc_base_OBJENGSTATE.__nvoc_base_Object),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_KernelHwpm_OBJENGSTATE = {
-    /*pClassDef=*/          &__nvoc_class_def_OBJENGSTATE,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(KernelHwpm, __nvoc_base_OBJENGSTATE),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_KernelHwpm = {
-    /*numRelatives=*/       3,
-    /*relatives=*/ {
-        &__nvoc_rtti_KernelHwpm_KernelHwpm,
-        &__nvoc_rtti_KernelHwpm_OBJENGSTATE,
-        &__nvoc_rtti_KernelHwpm_Object,
-    },
-};
-
-const struct NVOC_CLASS_DEF __nvoc_class_def_KernelHwpm = 
-{
-    /*classInfo=*/ {
-        /*size=*/               sizeof(KernelHwpm),
-        /*classId=*/            classId(KernelHwpm),
-        /*providerId=*/         &__nvoc_rtti_provider,
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "KernelHwpm",
-#endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_KernelHwpm,
-    /*pCastInfo=*/          &__nvoc_castinfo_KernelHwpm,
-    /*pExportInfo=*/        &__nvoc_export_info_KernelHwpm
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__KernelHwpm;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelHwpm;
 
 // Down-thunk(s) to bridge KernelHwpm methods from ancestors (if any)
 NV_STATUS __nvoc_down_thunk_KernelHwpm_engstateStateInitUnlocked(OBJGPU *pGpu, struct OBJENGSTATE *pKernelHwpm);    // this
 void __nvoc_down_thunk_KernelHwpm_engstateStateDestroy(OBJGPU *pGpu, struct OBJENGSTATE *pKernelHwpm);    // this
-
-// 2 down-thunk(s) defined to bridge methods in KernelHwpm from superclasses
-
-// khwpmStateInitUnlocked: virtual override (engstate) base (engstate)
-NV_STATUS __nvoc_down_thunk_KernelHwpm_engstateStateInitUnlocked(OBJGPU *pGpu, struct OBJENGSTATE *pKernelHwpm) {
-    return khwpmStateInitUnlocked(pGpu, (struct KernelHwpm *)(((unsigned char *) pKernelHwpm) - NV_OFFSETOF(KernelHwpm, __nvoc_base_OBJENGSTATE)));
-}
-
-// khwpmStateDestroy: virtual override (engstate) base (engstate)
-void __nvoc_down_thunk_KernelHwpm_engstateStateDestroy(OBJGPU *pGpu, struct OBJENGSTATE *pKernelHwpm) {
-    khwpmStateDestroy(pGpu, (struct KernelHwpm *)(((unsigned char *) pKernelHwpm) - NV_OFFSETOF(KernelHwpm, __nvoc_base_OBJENGSTATE)));
-}
-
 
 // Up-thunk(s) to bridge KernelHwpm methods to ancestors (if any)
 NV_STATUS __nvoc_up_thunk_OBJENGSTATE_khwpmConstructEngine(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate, ENGDESCRIPTOR arg3);    // this
@@ -96,6 +52,88 @@ NV_STATUS __nvoc_up_thunk_OBJENGSTATE_khwpmStatePreUnload(struct OBJGPU *pGpu, s
 NV_STATUS __nvoc_up_thunk_OBJENGSTATE_khwpmStateUnload(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate, NvU32 arg3);    // this
 NV_STATUS __nvoc_up_thunk_OBJENGSTATE_khwpmStatePostUnload(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate, NvU32 arg3);    // this
 NvBool __nvoc_up_thunk_OBJENGSTATE_khwpmIsPresent(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate);    // this
+
+const struct NVOC_CLASS_DEF __nvoc_class_def_KernelHwpm = 
+{
+    /*classInfo=*/ {
+        /*size=*/               sizeof(KernelHwpm),
+        /*classId=*/            classId(KernelHwpm),
+        /*providerId=*/         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*name=*/               "KernelHwpm",
+#endif
+    },
+    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_KernelHwpm,
+    /*pCastInfo=*/          &__nvoc_castinfo__KernelHwpm,
+    /*pExportInfo=*/        &__nvoc_export_info__KernelHwpm
+};
+
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__KernelHwpm __nvoc_metadata__KernelHwpm = {
+    .rtti.pClassDef = &__nvoc_class_def_KernelHwpm,    // (khwpm) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_KernelHwpm,
+    .rtti.offset    = 0,
+    .metadata__OBJENGSTATE.rtti.pClassDef = &__nvoc_class_def_OBJENGSTATE,    // (engstate) super
+    .metadata__OBJENGSTATE.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__OBJENGSTATE.rtti.offset    = NV_OFFSETOF(KernelHwpm, __nvoc_base_OBJENGSTATE),
+    .metadata__OBJENGSTATE.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^2
+    .metadata__OBJENGSTATE.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__OBJENGSTATE.metadata__Object.rtti.offset    = NV_OFFSETOF(KernelHwpm, __nvoc_base_OBJENGSTATE.__nvoc_base_Object),
+
+    .vtable.__khwpmStateInitUnlocked__ = &khwpmStateInitUnlocked_IMPL,    // virtual override (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStateInitUnlocked__ = &__nvoc_down_thunk_KernelHwpm_engstateStateInitUnlocked,    // virtual
+    .vtable.__khwpmStateDestroy__ = &khwpmStateDestroy_IMPL,    // virtual override (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStateDestroy__ = &__nvoc_down_thunk_KernelHwpm_engstateStateDestroy,    // virtual
+    .vtable.__khwpmConstructEngine__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmConstructEngine,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateConstructEngine__ = &engstateConstructEngine_IMPL,    // virtual
+    .vtable.__khwpmInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmInitMissing,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
+    .vtable.__khwpmStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStatePreInitLocked,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
+    .vtable.__khwpmStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStatePreInitUnlocked,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
+    .vtable.__khwpmStateInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStateInitLocked,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStateInitLocked__ = &engstateStateInitLocked_IMPL,    // virtual
+    .vtable.__khwpmStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStatePreLoad,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
+    .vtable.__khwpmStateLoad__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStateLoad,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStateLoad__ = &engstateStateLoad_IMPL,    // virtual
+    .vtable.__khwpmStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStatePostLoad,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
+    .vtable.__khwpmStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStatePreUnload,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
+    .vtable.__khwpmStateUnload__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStateUnload,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStateUnload__ = &engstateStateUnload_IMPL,    // virtual
+    .vtable.__khwpmStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStatePostUnload,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
+    .vtable.__khwpmIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmIsPresent,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__KernelHwpm = {
+    .numRelatives = 3,
+    .relatives = {
+        &__nvoc_metadata__KernelHwpm.rtti,    // [0]: (khwpm) this
+        &__nvoc_metadata__KernelHwpm.metadata__OBJENGSTATE.rtti,    // [1]: (engstate) super
+        &__nvoc_metadata__KernelHwpm.metadata__OBJENGSTATE.metadata__Object.rtti,    // [2]: (obj) super^2
+    }
+};
+
+// 2 down-thunk(s) defined to bridge methods in KernelHwpm from superclasses
+
+// khwpmStateInitUnlocked: virtual override (engstate) base (engstate)
+NV_STATUS __nvoc_down_thunk_KernelHwpm_engstateStateInitUnlocked(OBJGPU *pGpu, struct OBJENGSTATE *pKernelHwpm) {
+    return khwpmStateInitUnlocked(pGpu, (struct KernelHwpm *)(((unsigned char *) pKernelHwpm) - NV_OFFSETOF(KernelHwpm, __nvoc_base_OBJENGSTATE)));
+}
+
+// khwpmStateDestroy: virtual override (engstate) base (engstate)
+void __nvoc_down_thunk_KernelHwpm_engstateStateDestroy(OBJGPU *pGpu, struct OBJENGSTATE *pKernelHwpm) {
+    khwpmStateDestroy(pGpu, (struct KernelHwpm *)(((unsigned char *) pKernelHwpm) - NV_OFFSETOF(KernelHwpm, __nvoc_base_OBJENGSTATE)));
+}
+
 
 // 12 up-thunk(s) defined to bridge methods in KernelHwpm to superclasses
 
@@ -160,7 +198,7 @@ NvBool __nvoc_up_thunk_OBJENGSTATE_khwpmIsPresent(struct OBJGPU *pGpu, struct Ke
 }
 
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelHwpm = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelHwpm = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -185,7 +223,8 @@ void __nvoc_init_dataField_KernelHwpm(KernelHwpm *pThis, RmHalspecOwner *pRmhals
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
     // NVOC Property Hal field -- PDB_PROP_KHWPM_MULTIPLE_PMA_SUPPORTED
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x40000000UL) )) /* ChipHal: GB100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x20000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* ChipHal: GB100 | GB110 */ 
     {
         pThis->setProperty(pThis, PDB_PROP_KHWPM_MULTIPLE_PMA_SUPPORTED, NV_TRUE);
     }
@@ -196,8 +235,8 @@ void __nvoc_init_dataField_KernelHwpm(KernelHwpm *pThis, RmHalspecOwner *pRmhals
     }
 
     // NVOC Property Hal field -- PDB_PROP_KHWPM_HES_CWD_SUPPORTED
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000ec1UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB202 | GB203 | GB205 | GB206 | GB207 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xe0000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e6UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B */ 
     {
         pThis->setProperty(pThis, PDB_PROP_KHWPM_HES_CWD_SUPPORTED, NV_TRUE);
     }
@@ -205,6 +244,15 @@ void __nvoc_init_dataField_KernelHwpm(KernelHwpm *pThis, RmHalspecOwner *pRmhals
     else
     {
         pThis->setProperty(pThis, PDB_PROP_KHWPM_HES_CWD_SUPPORTED, NV_FALSE);
+    }
+
+    // NVOC Property Hal field -- PDB_PROP_KHWPM_EXTENDED_BUFFER_ENABLED
+    pThis->setProperty(pThis, PDB_PROP_KHWPM_EXTENDED_BUFFER_ENABLED, NV_FALSE);
+
+    // NVOC Property Hal field -- PDB_PROP_KHWPM_EXTENDED_BUFFER_SUPPORTED
+    // default
+    {
+        pThis->setProperty(pThis, PDB_PROP_KHWPM_EXTENDED_BUFFER_SUPPORTED, NV_FALSE);
     }
 }
 
@@ -235,14 +283,18 @@ static void __nvoc_init_funcTable_KernelHwpm_1(KernelHwpm *pThis, RmHalspecOwner
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
-    // khwpmGetCblockInfo -- halified (4 hals) body
+    // khwpmGetCblockInfo -- halified (5 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__khwpmGetCblockInfo__ = &khwpmGetCblockInfo_GH100;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* ChipHal: GB10B */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) )) /* ChipHal: GB10B */ 
     {
         pThis->__khwpmGetCblockInfo__ = &khwpmGetCblockInfo_GB10B;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB20B */ 
+    {
+        pThis->__khwpmGetCblockInfo__ = &khwpmGetCblockInfo_GB20B;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
@@ -252,58 +304,33 @@ static void __nvoc_init_funcTable_KernelHwpm_1(KernelHwpm *pThis, RmHalspecOwner
     {
         pThis->__khwpmGetCblockInfo__ = &khwpmGetCblockInfo_GB100;
     }
-} // End __nvoc_init_funcTable_KernelHwpm_1 with approximately 4 basic block(s).
+} // End __nvoc_init_funcTable_KernelHwpm_1 with approximately 5 basic block(s).
 
 
 // Initialize vtable(s) for 15 virtual method(s).
 void __nvoc_init_funcTable_KernelHwpm(KernelHwpm *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__KernelHwpm vtable = {
-        .__khwpmStateInitUnlocked__ = &khwpmStateInitUnlocked_IMPL,    // virtual override (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStateInitUnlocked__ = &__nvoc_down_thunk_KernelHwpm_engstateStateInitUnlocked,    // virtual
-        .__khwpmStateDestroy__ = &khwpmStateDestroy_IMPL,    // virtual override (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStateDestroy__ = &__nvoc_down_thunk_KernelHwpm_engstateStateDestroy,    // virtual
-        .__khwpmConstructEngine__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmConstructEngine,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateConstructEngine__ = &engstateConstructEngine_IMPL,    // virtual
-        .__khwpmInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmInitMissing,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
-        .__khwpmStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStatePreInitLocked,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
-        .__khwpmStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStatePreInitUnlocked,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
-        .__khwpmStateInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStateInitLocked,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStateInitLocked__ = &engstateStateInitLocked_IMPL,    // virtual
-        .__khwpmStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStatePreLoad,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
-        .__khwpmStateLoad__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStateLoad,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStateLoad__ = &engstateStateLoad_IMPL,    // virtual
-        .__khwpmStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStatePostLoad,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
-        .__khwpmStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStatePreUnload,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
-        .__khwpmStateUnload__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStateUnload,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStateUnload__ = &engstateStateUnload_IMPL,    // virtual
-        .__khwpmStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmStatePostUnload,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
-        .__khwpmIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_khwpmIsPresent,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_base_OBJENGSTATE.__nvoc_vtable = &vtable.OBJENGSTATE;    // (engstate) super
-    pThis->__nvoc_vtable = &vtable;    // (khwpm) this
-
     // Initialize vtable(s) with 1 per-object function pointer(s).
     __nvoc_init_funcTable_KernelHwpm_1(pThis, pRmhalspecowner);
 }
 
-void __nvoc_init_OBJENGSTATE(OBJENGSTATE*);
-void __nvoc_init_KernelHwpm(KernelHwpm *pThis, RmHalspecOwner *pRmhalspecowner) {
-    pThis->__nvoc_pbase_KernelHwpm = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object;
-    pThis->__nvoc_pbase_OBJENGSTATE = &pThis->__nvoc_base_OBJENGSTATE;
-    __nvoc_init_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
+// Initialize newly constructed object.
+void __nvoc_init__KernelHwpm(KernelHwpm *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object;    // (obj) super^2
+    pThis->__nvoc_pbase_OBJENGSTATE = &pThis->__nvoc_base_OBJENGSTATE;    // (engstate) super
+    pThis->__nvoc_pbase_KernelHwpm = pThis;    // (khwpm) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__KernelHwpm.metadata__OBJENGSTATE.metadata__Object;    // (obj) super^2
+    pThis->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr = &__nvoc_metadata__KernelHwpm.metadata__OBJENGSTATE;    // (engstate) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__KernelHwpm;    // (khwpm) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_KernelHwpm(pThis, pRmhalspecowner);
 }
 
@@ -321,9 +348,6 @@ NV_STATUS __nvoc_objCreate_KernelHwpm(KernelHwpm **ppThis, Dynamic *pParent, NvU
 
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(KernelHwpm));
-
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_KernelHwpm);
 
     pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = createFlags;
 
@@ -345,7 +369,7 @@ NV_STATUS __nvoc_objCreate_KernelHwpm(KernelHwpm **ppThis, Dynamic *pParent, NvU
         pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
     NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init_KernelHwpm(pThis, pRmhalspecowner);
+    __nvoc_init__KernelHwpm(pThis, pRmhalspecowner);
     status = __nvoc_ctor_KernelHwpm(pThis, pRmhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_KernelHwpm_cleanup;
 

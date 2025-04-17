@@ -256,6 +256,7 @@ typedef struct
         NvBool bIsEdp;
         NvBool bDisableDscMaxBppLimit;
         NvBool bIs128b132bChannelCoding;
+        NvBool bDisableEffBppSST8b10b;
     }dpData;
 } WAR_DATA;
 

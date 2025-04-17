@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -557,4 +557,23 @@ kfifoGetClientIdString_GH100
                 return kfifoGetClientIdStringCommon_HAL(pGpu, pKernelFifo, pMmuExceptionInfo);
         }
     }
+}
+
+/*!
+ * @brief Update the usermode doorbell register with work submit token to notify
+ *        host that work is available on this channel.
+ *
+ * @param[in] pGpu
+ * @param[in] pFifo
+ * @param[in] pKernelChannel  Channel to ring the doorbell for
+ */
+NV_STATUS
+kfifoRingChannelDoorBell_GH100
+(
+    OBJGPU          *pGpu,
+    KernelFifo      *pKernelFifo,
+    KernelChannel   *pKernelChannel
+)
+{
+    return kfifoRingChannelDoorBell_GV100(pGpu, pKernelFifo, pKernelChannel);
 }

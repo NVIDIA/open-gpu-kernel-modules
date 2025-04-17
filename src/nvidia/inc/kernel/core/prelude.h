@@ -39,7 +39,7 @@
 
 /* ------------------------ RM library and utils ---------------------------- */
 #include "nvport/nvport.h"
-#include "nvoc/runtime.h"
+#include "nvoc/object.h"
 #include "core/printf.h"
 #include "core/strict.h"
 #include "utils/nvassert.h"

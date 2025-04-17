@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,30 +31,33 @@
 #include "ctrl/ctrlxxxx.h"
 /* NV20_SUBDEVICE_DIAG: diagnostic class control commands and parameters */
 
-#define NV208F_CTRL_CMD(cat,idx)          NVXXXX_CTRL_CMD(0x208F, NV208F_CTRL_##cat, idx)
+#define NV208F_CTRL_CMD(cat, idx)          NVXXXX_CTRL_CMD(0x208F, NV208F_CTRL_##cat, idx)
 
-/* Subdevice diag command categories (6bits) */
-#define NV208F_CTRL_RESERVED     (0x00)
-#define NV208F_CTRL_POWER        (0x01)
-#define NV208F_CTRL_THERMAL      (0x02)
-#define NV208F_CTRL_SEQ          (0x03)
-#define NV208F_CTRL_FIFO         (0x04)
-#define NV208F_CTRL_FB           (0x05)
-#define NV208F_CTRL_MC           (0x06)
-#define NV208F_CTRL_BIF          (0x07)
-#define NV208F_CTRL_CLK          (0x08)
-#define NV208F_CTRL_PERF         (0x09)
-#define NV208F_CTRL_FBIO         (0x0A)
-#define NV208F_CTRL_MMU          (0x0B)
-#define NV208F_CTRL_PMU          (0x0C)
-#define NV208F_CTRL_EVENT        (0x10)
-#define NV208F_CTRL_GPU          (0x11)
-#define NV208F_CTRL_GR           (0x12)
-#define NV208F_CTRL_PMGR         (0x13)
-#define NV208F_CTRL_DMA          (0x14)
+/* Subdevice diag command categories (6 bits) */
+#define NV208F_CTRL_RESERVED       (0x00)
+#define NV208F_CTRL_POWER          (0x01)
+#define NV208F_CTRL_THERMAL        (0x02)
+#define NV208F_CTRL_SEQ            (0x03)
+#define NV208F_CTRL_FIFO           (0x04)
+#define NV208F_CTRL_FB             (0x05)
+#define NV208F_CTRL_MC             (0x06)
+#define NV208F_CTRL_BIF            (0x07)
+#define NV208F_CTRL_CLK            (0x08)
+#define NV208F_CTRL_PERF           (0x09)
+#define NV208F_CTRL_FBIO           (0x0A)
+#define NV208F_CTRL_MMU            (0x0B)
+#define NV208F_CTRL_PMU            (0x0C)
+#define NV208F_CTRL_EVENT          (0x10)
+#define NV208F_CTRL_GPU            (0x11)
+#define NV208F_CTRL_GR             (0x12)
+#define NV208F_CTRL_PMGR           (0x13)
+#define NV208F_CTRL_DMA            (0x14)
 // const NV208F_CTRL_TMR = (0x15); // not supported
-#define NV208F_CTRL_GSPMSGTIMING (0x16)
-#define NV208F_CTRL_BUS          (0x17)
+#define NV208F_CTRL_SEC2           (0x16)
+#define NV208F_CTRL_GSPMSGTIMING   (0x17)
+#define NV208F_CTRL_BUS            (0x18)
+#define NV208F_CTRL_UCODE_COVERAGE (0x19)
+#define NV208F_CTRL_NVLINK         (0x1A)
 
 /*
  * NV208F_CTRL_CMD_NULL
@@ -65,6 +68,6 @@
  * Possible status values returned are:
  *     NV_OK
  */
-#define NV208F_CTRL_CMD_NULL     (0x208f0000) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_RESERVED_INTERFACE_ID << 8) | 0x0" */
+#define NV208F_CTRL_CMD_NULL       (0x208f0000) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_RESERVED_INTERFACE_ID << 8) | 0x0" */
 
 /* _ctrl208fbase_h_ */

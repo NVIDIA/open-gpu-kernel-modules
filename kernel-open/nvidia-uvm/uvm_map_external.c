@@ -947,13 +947,15 @@ static NV_STATUS uvm_map_external_allocation_on_gpu(uvm_va_range_external_t *ext
         goto error;
     }
 
-    // Check for the maximum page size for the mapping of vidmem allocations,
-    // the vMMU segment size may limit the range of page sizes.
-    biggest_mapping_page_size = uvm_mmu_biggest_page_size_up_to(&gpu_va_space->page_tables,
-                                                                mapping_gpu->mem_info.max_vidmem_page_size);
-    if (!ext_gpu_map->is_sysmem && (ext_gpu_map->gpu == ext_gpu_map->owning_gpu) &&
-        (mapping_page_size > biggest_mapping_page_size))
-        mapping_page_size = biggest_mapping_page_size;
+    if (mapping_gpu->mem_info.size) {
+        // Check for the maximum page size for the mapping of vidmem
+        // allocations, the vMMU segment size may limit the range of page sizes.
+        biggest_mapping_page_size = uvm_mmu_biggest_page_size_up_to(&gpu_va_space->page_tables,
+                                                                    mapping_gpu->mem_info.max_vidmem_page_size);
+        if (!ext_gpu_map->is_sysmem && (ext_gpu_map->gpu == ext_gpu_map->owning_gpu) &&
+            (mapping_page_size > biggest_mapping_page_size))
+            mapping_page_size = biggest_mapping_page_size;
+    }
 
     mem_info.pageSize = mapping_page_size;
 

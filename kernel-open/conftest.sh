@@ -662,27 +662,6 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PCI_GET_DOMAIN_BUS_AND_SLOT_PRESENT" "" "functions"
         ;;
 
-        hash__remap_4k_pfn)
-            #
-            # Determine if the hash__remap_4k_pfn() function is
-            # present.
-            #
-            # Added by commit 6cc1a0ee4ce2 ("powerpc/mm/radix: Add radix
-            # callback for pmd accessors") in v4.7 (committed 2016-04-29).
-            # Present only in arch/powerpc
-            #
-            CODE="
-            #if defined(NV_ASM_BOOK3S_64_HASH_64K_H_PRESENT)
-            #include <linux/mm.h>
-            #include <asm/book3s/64/hash-64k.h>
-            #endif
-            void conftest_hash__remap_4k_pfn(void) {
-                hash__remap_4k_pfn();
-            }"
-
-            compile_check_conftest "$CODE" "NV_HASH__REMAP_4K_PFN_PRESENT" "" "functions"
-        ;;
-
         register_cpu_notifier)
             #
             # Determine if register_cpu_notifier() is present
@@ -1633,7 +1612,6 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PHYS_TO_DMA_PRESENT" "" "functions"
         ;;
 
-
         dma_attr_macros)
            #
            # Determine if the NV_DMA_ATTR_SKIP_CPU_SYNC_PRESENT macro present.
@@ -2439,6 +2417,45 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_ATOMIC_HELPER_LEGACY_GAMMA_SET_PRESENT" "" "functions"
+        ;;
+
+        drm_plane_create_color_properties)
+            #
+            # Determine if the function drm_plane_create_color_properties() is
+            # present.
+            #
+            # Added by commit 80f690e9e3a6 ("drm: Add optional COLOR_ENCODING
+            # and COLOR_RANGE properties to drm_plane") in v4.17 (2018-02-19).
+            #
+            CODE="
+            #include <linux/types.h>
+            #if defined(NV_DRM_DRM_COLOR_MGMT_H_PRESENT)
+            #include <drm/drm_color_mgmt.h>
+            #endif
+            void conftest_drm_plane_create_color_properties(void) {
+                drm_plane_create_color_properties();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_PLANE_CREATE_COLOR_PROPERTIES_PRESENT" "" "functions"
+        ;;
+
+        drm_format_info_has_is_yuv)
+            #
+            # Determine if struct drm_format_info has .is_yuv member.
+            #
+            # Added by commit ce2d54619a10 ("drm/fourcc: Add is_yuv field to
+            # drm_format_info to denote if format is yuv") in v4.19
+            # (2018-07-17).
+            #
+            CODE="
+            #if defined(NV_DRM_DRM_FOURCC_H_PRESENT)
+            #include <drm/drm_fourcc.h>
+            #endif
+            int conftest_drm_format_info_has_is_yuv(void) {
+                return offsetof(struct drm_format_info, is_yuv);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_FORMAT_INFO_HAS_IS_YUV" "" "types"
         ;;
 
         pci_stop_and_remove_bus_device)
@@ -3517,60 +3534,6 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_VM_OPS_FAULT_REMOVED_VMA_ARG" "" "types"
-        ;;
-
-        pnv_npu2_init_context)
-            #
-            # Determine if the pnv_npu2_init_context() function is
-            # present and the signature of its callback.
-            #
-            # Added by commit 1ab66d1fbada ("powerpc/powernv: Introduce
-            # address translation services for Nvlink2") in v4.12
-            # (2017-04-03).
-            #
-            echo "$CONFTEST_PREAMBLE
-            #if defined(NV_ASM_POWERNV_H_PRESENT)
-            #include <linux/pci.h>
-            #include <asm/powernv.h>
-            #endif
-            void conftest_pnv_npu2_init_context(void) {
-                pnv_npu2_init_context();
-            }" > conftest$$.c
-
-            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
-            rm -f conftest$$.c
-            if [ -f conftest$$.o ]; then
-                echo "#undef NV_PNV_NPU2_INIT_CONTEXT_PRESENT" | append_conftest "functions"
-                echo "#undef NV_PNV_NPU2_INIT_CONTEXT_CALLBACK_RETURNS_VOID" | append_conftest "functions"
-                rm -f conftest$$.o
-                return
-            fi
-
-            echo "#define NV_PNV_NPU2_INIT_CONTEXT_PRESENT" | append_conftest "functions"
-
-            # Check the callback signature
-            echo "$CONFTEST_PREAMBLE
-            #if defined(NV_ASM_POWERNV_H_PRESENT)
-            #include <linux/pci.h>
-            #include <asm/powernv.h>
-            #endif
-
-            struct npu_context *pnv_npu2_init_context(struct pci_dev *gpdev,
-                unsigned long flags,
-                void (*cb)(struct npu_context *, void *),
-                void *priv) {
-                return NULL;
-            }" > conftest$$.c
-
-            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
-            rm -f conftest$$.c
-            if [ -f conftest$$.o ]; then
-                echo "#define NV_PNV_NPU2_INIT_CONTEXT_CALLBACK_RETURNS_VOID" | append_conftest "functions"
-                rm -f conftest$$.o
-                return
-            fi
-
-            echo "#undef NV_PNV_NPU2_INIT_CONTEXT_CALLBACK_RETURNS_VOID" | append_conftest "functions"
         ;;
 
         of_get_ibm_chip_id)
@@ -5517,6 +5480,31 @@ compile_test() {
             fi
         ;;
 
+        of_property_for_each_u32_has_internal_args)
+            #
+            # Determine if the internal arguments for the macro
+            # of_property_for_each_u32() are present.
+            #
+            # Commit 9722c3b66e21 ("of: remove internal arguments from
+            # of_property_for_each_u32()") removes two arguments from
+            # of_property_for_each_u32() which are used internally within
+            # the macro and so do not need to be passed. This change was
+            # made for Linux v6.11.
+            #
+            CODE="
+            #include <linux/of.h>
+            void conftest_of_property_for_each_u32(struct device_node *np,
+                                                   char *propname) {
+                struct property *iparam1;
+                const __be32 *iparam2;
+                u32 val;
+
+                of_property_for_each_u32(np, propname, iparam1, iparam2, val);
+            }"
+
+            compile_check_conftest "$CODE" "NV_OF_PROPERTY_FOR_EACH_U32_HAS_INTERNAL_ARGS" "" "types"
+        ;;
+
         of_property_read_variable_u8_array)
             #
             # Determine if of_property_read_variable_u8_array is present
@@ -5613,8 +5601,8 @@ compile_test() {
 
         of_dma_configure)
             #
-            # Determine if of_dma_configure() function is present, and how
-            # many arguments it takes.
+            # Determine if of_dma_configure() function is present, if it
+            # returns int, and how many arguments it takes.
             #
             # Added by commit 591c1ee465ce ("of: configure the platform
             # device dma parameters") in v3.16.  However, it was a static,
@@ -5623,6 +5611,10 @@ compile_test() {
             # It was moved from platform.c to device.c and made public by
             # commit 1f5c69aa51f9 ("of: Move of_dma_configure() to device.c
             # to help re-use") in v4.1.
+            #
+            # Its return type was changed from void to int by commit
+            # 7b07cbefb68d ("iommu: of: Handle IOMMU lookup failure with
+            # deferred probing or error") in v4.12.
             #
             # It subsequently began taking a third parameter with commit
             # 3d6ce86ee794 ("drivers: remove force dma flag from buses")
@@ -5648,6 +5640,7 @@ compile_test() {
 
                 echo "#undef NV_OF_DMA_CONFIGURE_PRESENT" | append_conftest "functions"
                 echo "#undef NV_OF_DMA_CONFIGURE_ARGUMENT_COUNT" | append_conftest "functions"
+                echo "#undef NV_OF_DMA_CONFIGURE_HAS_INT_RETURN_TYPE" | append_conftest "functions"
             else
                 echo "#define NV_OF_DMA_CONFIGURE_PRESENT" | append_conftest "functions"
 
@@ -5666,6 +5659,26 @@ compile_test() {
                 if [ -f conftest$$.o ]; then
                     rm -f conftest$$.o
                     echo "#define NV_OF_DMA_CONFIGURE_ARGUMENT_COUNT 3" | append_conftest "functions"
+
+                    echo "$CONFTEST_PREAMBLE
+                    #if defined(NV_LINUX_OF_DEVICE_H_PRESENT)
+                    #include <linux/of_device.h>
+                    #endif
+
+                    int conftest_of_dma_configure_has_int_return_type(void) {
+                        return of_dma_configure(NULL, NULL, false);
+                    }" > conftest$$.c
+
+                    $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+                    rm -f conftest$$.c
+
+                    if [ -f conftest$$.o ]; then
+                        rm -f conftest$$.o
+                        echo "#define NV_OF_DMA_CONFIGURE_HAS_INT_RETURN_TYPE" | append_conftest "functions"
+                    else
+                        echo "#undef NV_OF_DMA_CONFIGURE_HAS_INT_RETURN_TYPE" | append_conftest "functions"
+                    fi
+
                     return
                 fi
 
@@ -5684,6 +5697,26 @@ compile_test() {
                 if [ -f conftest$$.o ]; then
                     rm -f conftest$$.o
                     echo "#define NV_OF_DMA_CONFIGURE_ARGUMENT_COUNT 2" | append_conftest "functions"
+
+                    echo "$CONFTEST_PREAMBLE
+                    #if defined(NV_LINUX_OF_DEVICE_H_PRESENT)
+                    #include <linux/of_device.h>
+                    #endif
+
+                    int conftest_of_dma_configure_has_int_return_type(void) {
+                        return of_dma_configure(NULL, NULL);
+                    }" > conftest$$.c
+
+                    $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+                    rm -f conftest$$.c
+
+                    if [ -f conftest$$.o ]; then
+                        rm -f conftest$$.o
+                        echo "#define NV_OF_DMA_CONFIGURE_HAS_INT_RETURN_TYPE" | append_conftest "functions"
+                    else
+                        echo "#undef NV_OF_DMA_CONFIGURE_HAS_INT_RETURN_TYPE" | append_conftest "functions"
+                    fi
+
                     return
                 fi
             fi
@@ -7562,6 +7595,34 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_FOLIO_TEST_SWAPCACHE_PRESENT" "" "functions"
         ;;
 
+        platform_driver_struct_remove_returns_void)
+            #
+            # Determine if the 'platform_driver' structure 'remove' function
+            # pointer returns void.
+            #
+            # Commit 0edb555a65d1 ("platform: Make platform_driver::remove()
+            # return void") updated the platform_driver structure 'remove'
+            # callback to return void instead of int in Linux v6.11-rc1.
+            #
+            echo "$CONFTEST_PREAMBLE
+            #include <linux/platform_device.h>
+            int conftest_platform_driver_struct_remove_returns_void(struct platform_device *pdev,
+                                                                    struct platform_driver *driver) {
+                return driver->remove(pdev);
+            }" > conftest$$.c
+
+            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+            rm -f conftest$$.c
+
+            if [ -f conftest$$.o ]; then
+                rm -f conftest$$.o
+
+                echo "#undef NV_PLATFORM_DRIVER_STRUCT_REMOVE_RETURNS_VOID" | append_conftest "types"
+            else
+                echo "#define NV_PLATFORM_DRIVER_STRUCT_REMOVE_RETURNS_VOID" | append_conftest "types"
+            fi
+            ;;
+
         module_import_ns_takes_constant)
             #
             # Determine if the MODULE_IMPORT_NS macro takes a string literal
@@ -7579,6 +7640,62 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MODULE_IMPORT_NS_TAKES_CONSTANT" "" "generic"
         ;;
 
+        assign_str)
+            #
+            # Determine whether the __assign_str() macro, used in tracepoint
+            # event definitions, has the 'src' parameter.
+            #
+            # The 'src' parameter was removed by commit 2c92ca849fcc
+            # ("tracing/treewide: Remove second parameter of __assign_str()") in
+            # v6.10.
+            #
+            # The expected usage of __assign_str() inside the TRACE_EVENT()
+            # macro, which involves multiple include passes and assumes it is
+            # in a header file, requires a non-standard conftest approach of
+            # producing both a header and a C file.
+            #
+            echo "$CONFTEST_PREAMBLE
+            #undef TRACE_SYSTEM
+            #define TRACE_SYSTEM conftest
+
+            #if !defined(_TRACE_CONFTEST_H) || defined(TRACE_HEADER_MULTI_READ)
+            #define _TRACE_CONFTEST_H
+            #include <linux/tracepoint.h>
+            TRACE_EVENT(conftest,
+                TP_PROTO(const char *s),
+                TP_ARGS(s),
+                TP_STRUCT__entry(__string(s, s)),
+                TP_fast_assign(__assign_str(s);),
+                TP_printk(\"%s\", __get_str(s))
+            );
+            #endif
+
+            #undef TRACE_INCLUDE_PATH
+            #define TRACE_INCLUDE_PATH .
+            #define TRACE_INCLUDE_FILE conftest$$
+            #include <trace/define_trace.h>
+            " > conftest$$.h
+
+            echo "$CONFTEST_PREAMBLE
+            #define CREATE_TRACE_POINTS
+            #include \"conftest$$.h\"
+
+            void conftest_assign_str(void) {
+                trace_conftest(\"conftest\");
+            }
+            " > conftest$$.c
+
+            $CC $CFLAGS -c conftest$$.c >/dev/null 2>&1
+            rm -f conftest$$.c conftest$$.h
+
+            if [ -f conftest$$.o ]; then
+                rm -f conftest$$.o
+
+                echo "#define NV_ASSIGN_STR_ARGUMENT_COUNT 1" | append_conftest "functions"
+            else
+                echo "#define NV_ASSIGN_STR_ARGUMENT_COUNT 2" | append_conftest "functions"
+            fi
+        ;;
 
         drm_driver_has_date)
             #
@@ -7602,6 +7719,33 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_DRIVER_HAS_DATE" "" "types"
+        ;;
+
+        drm_connector_helper_funcs_mode_valid_has_const_mode_arg)
+            #
+            # Determine if the 'mode' pointer argument is const in
+            # drm_connector_helper_funcs::mode_valid.
+            #
+            # The 'mode' pointer argument in
+            # drm_connector_helper_funcs::mode_valid was made const by commit
+            # 26d6fd81916e ("drm/connector: make mode_valid take a const struct
+            # drm_display_mode") in linux-next, expected in v6.15.
+            #
+            CODE="
+            #if defined(NV_DRM_DRM_ATOMIC_HELPER_H_PRESENT)
+            #include <drm/drm_atomic_helper.h>
+            #endif
+
+            static int conftest_drm_connector_mode_valid(struct drm_connector *connector,
+                                                         const struct drm_display_mode *mode) {
+                return 0;
+            }
+
+            const struct drm_connector_helper_funcs conftest_drm_connector_helper_funcs = {
+                .mode_valid = conftest_drm_connector_mode_valid,
+            };"
+
+            compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_HELPER_FUNCS_MODE_VALID_HAS_CONST_MODE_ARG" "" "types"
         ;;
 
         # When adding a new conftest entry, please use the correct format for

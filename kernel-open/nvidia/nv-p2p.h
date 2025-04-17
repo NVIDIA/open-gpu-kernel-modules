@@ -453,35 +453,19 @@ typedef struct nvidia_p2p_rsync_reg_info {
 
 /*
  * @brief
- *   Gets rsync (GEN-ID) register information associated with the supported
- *   NPUs.
- *
- *   The caller would use the returned information {GPU device, NPU device,
- *   socket-id, cluster-id} to pick the optimal generation registers to issue
- *   RSYNC (NVLink HW flush).
- *
- *   The interface allocates structures to return the information, hence
- *   nvidia_p2p_put_rsync_registers() must be called to free the structures.
- *
- *   Note, cluster-id is hardcoded to zero as early system configurations would
- *   only support cluster mode i.e. all devices would share the same cluster-id
- *   (0). In the future, appropriate kernel support would be needed to query
- *   cluster-ids.
- *
- * @param[out]     reg_info
- *   A pointer to the rsync reg info structure.
+ *   This interface is no longer supported and will always return an error.  It
+ *   is left in place (for now) to allow third-party callers to build without
+ *   any errors.
  *
  * @Returns
- *   0 Upon successful completion. Otherwise, returns negative value.
+ *   -ENODEV
  */
 int nvidia_p2p_get_rsync_registers(nvidia_p2p_rsync_reg_info_t **reg_info);
 
 /*
  * @brief
- *   Frees the structures allocated by nvidia_p2p_get_rsync_registers().
- *
- * @param[in]     reg_info
- *   A pointer to the rsync reg info structure.
+ *   This interface is no longer supported.  It is left in place (for now) to
+ *   allow third-party callers to build without any errors.
  */
 void nvidia_p2p_put_rsync_registers(nvidia_p2p_rsync_reg_info_t *reg_info);
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,7 @@
 #include "gpu/bus/p2p_api.h"
 #include "gpu/nvlink/kernel_nvlink.h"
 #include "published/volta/gv100/dev_mmu.h"
+#include "published/volta/gv100/dev_graphics_nobundle.h"
 
 /*!
  * @brief Get physical address of the FB memory on systems where GPU memory
@@ -397,6 +398,9 @@ kmemsysRemoveAllAtsPeers_GV100
         if (gpuIsGpuFullPower(pRemoteGpu) == NV_FALSE)
             continue;
 
+        if (GPU_GET_KERNEL_MEMORY_SYSTEM(pRemoteGpu) == NULL)
+            continue;
+
         status = _kmemsysRemoveAtsPeers(pGpu, pKernelMemorySystem, pRemoteGpu);
         if (status != NV_OK)
         {
@@ -406,3 +410,13 @@ kmemsysRemoveAllAtsPeers_GV100
     }
 }
 
+NvBool
+kmemsysCheckReadoutEccEnablement_GV100
+(
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem
+)
+{
+    NvU32 fuse = GPU_REG_RD32(pGpu, NV_PGRAPH_PRI_FECS_FEATURE_READOUT);
+    return FLD_TEST_DRF(_PGRAPH, _PRI_FECS_FEATURE_READOUT, _ECC_DRAM, _ENABLED, fuse);
+}

@@ -113,7 +113,7 @@ s_allocateGenericBlUcode
     NV_ASSERT_OR_GOTO(pBinArchive != NULL, out);
 
     // allocate desc
-    pBinDesc = bindataArchiveGetStorage(pBinArchive, "ucode_desc");
+    pBinDesc = bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_UCODE_DESC);
     NV_ASSERT_OR_GOTO(pBinDesc != NULL, out);
 
     descSizeAligned = RM_ALIGN_UP(bindataGetBufferSize(pBinDesc), FLCN_BLK_ALIGNMENT);
@@ -128,7 +128,7 @@ s_allocateGenericBlUcode
         bindataWriteToBuffer(pBinDesc, (NvU8 *) pGenericBlUcodeDesc, descSizeAligned), out);
 
     // allocate img
-    pBinImg = bindataArchiveGetStorage(pBinArchive, "ucode_image");
+    pBinImg = bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_UCODE_IMAGE);
     imgSizeAligned = RM_ALIGN_UP(bindataGetBufferSize(pBinImg), FLCN_BLK_ALIGNMENT);
 
     if (pGenericBlUcodeDesc->blImgHeader.blCodeSize > imgSizeAligned)

@@ -29,7 +29,8 @@
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
-#include "gpu/bus/kern_bus.h"
+#include "gpu/mem_mgr/mem_mgr.h"
+#include "gpu/mem_mgr/ce_utils.h"
 #include "gpu/ce/kernel_ce.h"
 #include "gpu/ce/kernel_ce_private.h"
 #include "nvmisc.h"
@@ -210,11 +211,10 @@ ceIsPartneredWithGr
 
 NvU32 ceCountGrCe(OBJGPU *pGpu)
 {
-    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvU32      engIdx;
     NvU32      grCeCount;
 
-    if (pKernelBus == NULL || IsAMODEL(pGpu))
+    if (IsAMODEL(pGpu))
         return 0;
 
     grCeCount = 0;
@@ -225,7 +225,7 @@ NvU32 ceCountGrCe(OBJGPU *pGpu)
     //
     for (engIdx = 0; engIdx < GPU_MAX_CES; ++engIdx)
     {
-        if (kbusCheckEngine_HAL(pGpu, pKernelBus, ENG_CE(engIdx)) &&
+        if (gpuCheckEngine_HAL(pGpu, ENG_CE(engIdx)) &&
             ceIsCeGrce(pGpu, RM_ENGINE_TYPE_COPY(engIdx)))
         {
             grCeCount++;
@@ -333,4 +333,34 @@ subdeviceCtrlCmdCeGetAllCaps_IMPL
     }
 
     return NV_OK;
+}
+
+void cePauseCeUtilsScheduling(OBJGPU *pGpu)
+{
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+
+    if (pMemoryManager->pCeUtils != NULL)
+    {
+        // Mark CeUtils as paused to prevent RM from trying to use it until remap is complete
+        ceutilsPauseSubmission(pMemoryManager->pCeUtils, NV_TRUE);
+    }
+}
+
+void ceResumeCeUtilsScheduling(OBJGPU *pGpu)
+{
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+
+    if (pMemoryManager->pCeUtils != NULL)
+    {
+        if (!ceutilsUsesPreferredCe(pMemoryManager->pCeUtils))
+        {
+            // LCE is missing or not preferred; CeUtils will pick new one on creation
+            memmgrDestroyCeUtils(pMemoryManager);
+            NV_ASSERT_OK(memmgrInitCeUtils(GPU_GET_MEMORY_MANAGER(pGpu), NV_FALSE, NV_TRUE));
+        }
+        else
+        {
+            ceutilsResumeSubmission(pMemoryManager->pCeUtils);
+        }
+    }
 }

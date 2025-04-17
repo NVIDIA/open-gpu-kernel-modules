@@ -133,6 +133,7 @@ typedef struct
     uvm_gpu_phys_address_t addr;
 
     NvU64 size;
+
     union
     {
         struct page *page;
@@ -294,6 +295,11 @@ struct uvm_page_tree_struct
     uvm_aperture_t location;
     bool location_sys_fallback;
 
+    // When the pagetables are located in sysmem, RM is responsible for the DMA
+    // mapping used as the pdb. This address is returned from
+    // nvUvmInterfaceSetPageDirectory().
+    uvm_gpu_phys_address_t pdb_rm_dma_address;
+
     struct
     {
         // Page table where all entries are invalid small-page entries.
@@ -306,9 +312,9 @@ struct uvm_page_tree_struct
     } map_remap;
 
     // On ATS-enabled systems where the CPU VA width is smaller than the GPU VA
-    // width, the excess address range is set with ATS_NOT_ALLOWED on all  leaf
-    // PDEs covering that range. We have at most 2 no_ats_ranges, due to
-    // canonical form address systems.
+    // width, the excess address range is set with ATS_NOT_ALLOWED on all leaf
+    // PDEs covering that range. We have 2 no_ats_ranges due to low/high
+    // canonical form addresses.
     uvm_page_table_range_t no_ats_ranges[2];
 
     // Tracker for all GPU operations on the tree
@@ -466,7 +472,15 @@ void uvm_page_tree_put_ptes_async(uvm_page_tree_t *tree, uvm_page_table_range_t 
 NV_STATUS uvm_page_tree_wait(uvm_page_tree_t *tree);
 
 // Returns the physical allocation that contains the root directory.
-static uvm_mmu_page_table_alloc_t *uvm_page_tree_pdb(uvm_page_tree_t *tree)
+static uvm_gpu_phys_address_t uvm_page_tree_pdb_address(uvm_page_tree_t *tree)
+{
+    if (tree->root->phys_alloc.addr.aperture == UVM_APERTURE_VID)
+        return tree->root->phys_alloc.addr;
+    else
+        return tree->pdb_rm_dma_address;
+}
+
+static uvm_mmu_page_table_alloc_t *uvm_page_tree_pdb_internal(uvm_page_tree_t *tree)
 {
     return &tree->root->phys_alloc;
 }

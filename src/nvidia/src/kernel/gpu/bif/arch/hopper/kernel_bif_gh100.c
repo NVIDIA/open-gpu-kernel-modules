@@ -30,6 +30,7 @@
 #include "platform/chipset/chipset.h"
 #include "ctrl/ctrl2080/ctrl2080bus.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
+#include "gpu_mgr/gpu_mgr.h"
 
 #include "published/hopper/gh100/dev_xtl_ep_pcfg_gpu.h"
 
@@ -973,6 +974,8 @@ kbifDoFunctionLevelReset_GH100
     NvU32      flrDevInitTimeout;
     NvU32      flrDevInitTimeoutScale = pKernelBif->flrDevInitTimeoutScale;
 
+    KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
+
     // If this is non-windows platform or non-ESXi, we already use OS based interface
     {
         pKernelBif->bInFunctionLevelReset = NV_TRUE;
@@ -1028,6 +1031,18 @@ kbifDoFunctionLevelReset_GH100
     flrDevInitTimeout = BIF_FLR_DEVINIT_COMPLETION_TIMEOUT_DEFAULT *
                         flrDevInitTimeoutScale;
 
+    if (!gpumgrWaitForBarFirewall(
+            gpuGetDomain(pGpu),
+            gpuGetBus(pGpu),
+            gpuGetDevice(pGpu),
+            0,
+            pGpu->idInfo.PCIDeviceID))
+    {
+        status = NV_ERR_INVALID_STATE;
+        NV_ASSERT_FAILED("Timed out waiting for devinit to complete\n");
+        goto kbifDoFunctionLevelReset_GH100_exit;
+    }
+
     //
     // After CRS_TIMEOUT, HW will auto-clear SEND_CRS bit which means config cycles
     // will succeed but it is still possible that devinit is not complete yet.
@@ -1061,7 +1076,15 @@ kbifDoFunctionLevelReset_GH100
             NV_PRINTF(LEVEL_ERROR, "Entering secure boot completion wait.\n");
         }
 
-        status = NV_ERR_NOT_SUPPORTED;
+        if (pKernelFsp == NULL ||
+            pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_IS_MISSING))
+        {
+            status = NV_ERR_NOT_SUPPORTED;
+        }
+        else
+        {
+            status = kfspWaitForSecureBoot_HAL(pGpu, pKernelFsp);
+        }
         if (status != NV_OK)
         {
             DBG_BREAKPOINT();
@@ -1394,21 +1417,17 @@ kbifSavePcieConfigRegisters_GH100
         return status;
     }
 
-
-    if (pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_WAR_5045021_ENABLED))
+    // No need to save/restore azalia config space if gpu is in GC6 cycle or if it is in FLR
+    if (IS_GPU_GC6_STATE_ENTERING(pGpu) ||
+        pKernelBif->bPreparingFunctionLevelReset)
     {
-        // No need to save/restore azalia config space if gpu is in GC6 cycle or if it is in FLR
-        if (IS_GPU_GC6_STATE_ENTERING(pGpu) ||
-            pKernelBif->bPreparingFunctionLevelReset)
-        {
-            return NV_OK;
-        }
+        return NV_OK;
+    }
 
-        // Return early if device is not multifunction (azalia is disabled or not present)
-        if (!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_DEVICE_IS_MULTIFUNCTION))
-        {
-            return NV_OK;
-        }
+    // Return early if device is not multifunction (azalia is disabled or not present)
+    if (!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_DEVICE_IS_MULTIFUNCTION))
+    {
+        return NV_OK;
     }
 
     // Save pcie config space for function 1
@@ -1439,6 +1458,9 @@ kbifRestorePcieConfigRegisters_GH100
 )
 {
     NV_STATUS status = NV_OK;
+    RMTIMEOUT timeout;
+    NvU64     timeStampStart;
+    NvU64     timeStampEnd;
 
     // Skip config restore on FMODEL (200684952), move to regmap (200700271)
     if (IS_FMODEL(pGpu))
@@ -1463,59 +1485,52 @@ kbifRestorePcieConfigRegisters_GH100
         return status;
     }
 
-    if (pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_WAR_5045021_ENABLED))
+    // No need to save/restore azalia config space if gpu is in GC6 cycle or if it is in FLR
+    if (IS_GPU_GC6_STATE_EXITING(pGpu) ||
+        pKernelBif->bInFunctionLevelReset)
     {
-        RMTIMEOUT timeout;
-        NvU64     timeStampStart;
-        NvU64     timeStampEnd;
-
-        // No need to save/restore azalia config space if gpu is in GC6 cycle or if it is in FLR
-        if (IS_GPU_GC6_STATE_EXITING(pGpu) ||
-            pKernelBif->bInFunctionLevelReset)
+        //
+        // Check that GPU is really accessible.
+        // Skip on pre-silicon because there can be timing issues in the test between device ready and this code.
+        // Todo: find a safe timeout for pre-silicon runs
+        //
+        if (IS_SILICON(pGpu))
         {
-            //
-            // Check that GPU is really accessible.
-            // Skip on pre-silicon because there can be timing issues in the test between device ready and this code.
-            // Todo: find a safe timeout for pre-silicon runs
-            //
-            if (IS_SILICON(pGpu))
+            // Check if GPU is actually accessible before continue
+            osGetPerformanceCounter(&timeStampStart);
+            gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+            NvU32 pmcBoot0 = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
+
+            while (pmcBoot0 != pGpu->chipId0)
             {
-                // Check if GPU is actually accessible before continue
-                osGetPerformanceCounter(&timeStampStart);
-                gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
-                NvU32 pmcBoot0 = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
-
-                while (pmcBoot0 != pGpu->chipId0)
+                NV_PRINTF(LEVEL_INFO,
+                          "GPU not back on the bus after %s, 0x%x != 0x%x!\n",
+                          pKernelBif->bInFunctionLevelReset?"FLR":"GC6 exit", pmcBoot0, pGpu->chipId0);
+                pmcBoot0 = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
+                NV_ASSERT(0);
+                status = gpuCheckTimeout(pGpu, &timeout);
+                if (status == NV_ERR_TIMEOUT)
                 {
-                    NV_PRINTF(LEVEL_INFO,
-                              "GPU not back on the bus after %s, 0x%x != 0x%x!\n",
-                              pKernelBif->bInFunctionLevelReset?"FLR":"GC6 exit", pmcBoot0, pGpu->chipId0);
-                    pmcBoot0 = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
-                    NV_ASSERT(0);
-                    status = gpuCheckTimeout(pGpu, &timeout);
-                    if (status == NV_ERR_TIMEOUT)
-                    {
-                        NV_PRINTF(LEVEL_ERROR,
-                                  "Timeout GPU not back on the bus after %s,\n", pKernelBif->bInFunctionLevelReset?"FLR":"GC6 exit");
-                        DBG_BREAKPOINT();
-                        return status;
-                    }
+                    NV_PRINTF(LEVEL_ERROR,
+                              "Timeout GPU not back on the bus after %s,\n", pKernelBif->bInFunctionLevelReset?"FLR":"GC6 exit");
+                    DBG_BREAKPOINT();
+                    return status;
                 }
-
-                osGetPerformanceCounter(&timeStampEnd);
-                NV_PRINTF(LEVEL_ERROR,
-                          "Time spend on GPU back on bus is 0x%x ns,\n",
-                          (NvU32)NV_MIN(NV_U32_MAX, timeStampEnd - timeStampStart));
             }
 
-            return NV_OK;
+            osGetPerformanceCounter(&timeStampEnd);
+            NV_PRINTF(LEVEL_ERROR,
+                      "Time spend on GPU back on bus is 0x%x ns,\n",
+                      (NvU32)NV_MIN(NV_U32_MAX, timeStampEnd - timeStampStart));
         }
 
-        // Return early if device is not multifunction (azalia is disabled or not present)
-        if (!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_DEVICE_IS_MULTIFUNCTION))
-        {
-            return NV_OK;
-        }
+        return NV_OK;
+    }
+
+    // Return early if device is not multifunction (azalia is disabled or not present)
+    if (!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_DEVICE_IS_MULTIFUNCTION))
+    {
+        return NV_OK;
     }
 
     // Restore pcie config space for function 1

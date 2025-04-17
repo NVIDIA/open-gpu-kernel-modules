@@ -1348,6 +1348,8 @@ typedef struct NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS {
  *       NV_TRUE if the C2C links are present and the links are up.
  *       The below remaining fields are valid only if return value is
  *       NV_OK and bIsLinkUp is NV_TRUE.
+ *   bLinkInHS[OUT]
+ *       NV_TRUE if the C2C links are in high speed mode.
  *   nrLinks[OUT]
  *       Total number of C2C links that are up.
  *   maxNrLinks[OUT]
@@ -1382,6 +1384,7 @@ typedef struct NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS {
 
 typedef struct NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS {
     NvBool bIsLinkUp;
+    NvBool bLinkInHS;
     NvU32  nrLinks;
     NvU32  maxNrLinks;
     NvU32  linkMask;
@@ -1392,6 +1395,8 @@ typedef struct NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS {
 
 #define NV2080_CTRL_BUS_GET_C2C_INFO_REMOTE_TYPE_CPU 1
 #define NV2080_CTRL_BUS_GET_C2C_INFO_REMOTE_TYPE_GPU 2
+
+
 
 /*
  * NV2080_CTRL_CMD_BUS_SYSMEM_ACCESS
@@ -1417,7 +1422,44 @@ typedef struct NV2080_CTRL_BUS_SYSMEM_ACCESS_PARAMS {
     NvBool bDisable;
 } NV2080_CTRL_BUS_SYSMEM_ACCESS_PARAMS;
 
+/*
+ * NV2080_CTRL_CMD_BUS_GET_C2C_ERR_INFO
+ *
+ * This command returns the C2C error info for a C2C links.
+ *
+ * errCnts[OUT]
+ *  Array of structure that contains the error counts for
+ *  number of times one of C2C fatal error interrupt has happened.
+ *  The array size should be NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_NUM_C2C_INSTANCES
+ *  * NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_C2C_LINKS_PER_INSTANCE.
+ *
+ *  nrCrcErrIntr[OUT]
+ *   Number of times CRC error interrupt triggered.
+ *  nrReplayErrIntr[OUT]
+ *   Number of times REPLAY error interrupt triggered.
+ *  nrReplayB2bErrIntr[OUT]
+ *   Number of times REPLAY_B2B error interrupt triggered.
+ *
+ * Possible status values returned are:
+ *  NV_OK
+ *  NV_ERR_INVALID_STATE
+ *  NV_ERR_NOT_SUPPORTED
+ */
 
+#define NV2080_CTRL_CMD_BUS_GET_C2C_ERR_INFO                        (0x2080182d) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_BUS_GET_C2C_ERR_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_NUM_C2C_INSTANCES      2
+#define NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_C2C_LINKS_PER_INSTANCE 7
+
+#define NV2080_CTRL_BUS_GET_C2C_ERR_INFO_PARAMS_MESSAGE_ID (0x2DU)
+
+typedef struct NV2080_CTRL_BUS_GET_C2C_ERR_INFO_PARAMS {
+    struct {
+        NvU32 nrCrcErrIntr;
+        NvU32 nrReplayErrIntr;
+        NvU32 nrReplayB2bErrIntr;
+    } errCnts[NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_NUM_C2C_INSTANCES * NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_C2C_LINKS_PER_INSTANCE];
+} NV2080_CTRL_BUS_GET_C2C_ERR_INFO_PARAMS;
 
 /*
  * NV2080_CTRL_CMD_BUS_SET_P2P_MAPPING
@@ -1552,3 +1594,103 @@ typedef struct NV2080_CTRL_CMD_BUS_GET_PCIE_CPL_ATOMICS_CAPS_PARAMS {
 #define NV2080_CTRL_CMD_BUS_GET_PCIE_CPL_ATOMICS_CAPS_CAS_128_YES     (0x00000001)
 #define NV2080_CTRL_CMD_BUS_GET_PCIE_CPL_ATOMICS_CAPS_CAS_128_NO      (0x00000000)
 
+/*
+ * NV2080_CTRL_CMD_BUS_GET_C2C_LPWR_STATS
+ *
+ * This command returns C2C low power statistics.
+ * Units for residency and latency are in microsceconds.
+ *   c2cStateSupportMask[OUT]
+        Support Mask of supplrted C2C State. CL0 will always be supported (FULL_POWER)
+ *   cl3EntryCount[OUT]
+ *       Count of the number of times CL3 state has been entered.
+ *   cl3ResidentTimeUs[OUT]
+ *       Total/Average resident time in CL3 state.
+ *   cl3AvgEntryLatencyUs[OUT]
+ *       Average entry latency for CL3 state.
+ *   cl3AvgExitLatencyUs[OUT]
+ *       Average exit latency for CL3 state.
+ *   cl3PstateSupportMask[OUT]
+        Pstate Support Mask for CL3 state
+ *   cl4EntryCount[OUT]
+ *       Count of the number of times CL4 state has been entered.
+ *   cl4ResidentTimeUs[OUT]
+ *       Total/Average resident time in CL4 state.
+ *   cl4AvgEntryLatencyUs[OUT]
+ *       Average entry latency for CL4 state.
+ *   cl4AvgExitLatencyUs[OUT]
+ *       Average exit latency for CL4 state.
+ *   cl4PstateSupportMask[OUT]
+        Pstate Support Mask for CL4 state
+ *   localPowerState[OUT]
+ *       Power state of the local end of the C2C link.
+ *       Valid values are :
+ *       NV2080_CTRL_CMD_BUS_GET_C2C_STATE_FULL_POWER - Full power state
+ *       NV2080_CTRL_CMD_BUS_GET_C2C_STATE_CL3 - Low power state
+ *       NV2080_CTRL_CMD_BUS_GET_C2C_STATE_CL4 - Low power state
+ *   remotePowerState[OUT]
+ *       Power state of the remote end of the C2C link.
+ *       Valid values are :
+ *       NV2080_CTRL_CMD_BUS_GET_C2C_STATE_FULL_POWER - Full power state
+ *       NV2080_CTRL_CMD_BUS_GET_C2C_STATE_CL3 - Low power state
+ *       NV2080_CTRL_CMD_BUS_GET_C2C_STATE_CL4 - Low power state
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_STATE
+ *
+ * Please also review the information below for additional information on
+ * select fields:
+ *
+ *   cl3EntryCount/cl4EntryCount[OUT]
+ *       These may not represent current exact count, as low power transitions could have
+ *       occured after reading the counter register.
+ */
+
+#define NV2080_CTRL_CMD_BUS_GET_C2C_LPWR_STATS                        (0x20801831) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_CMD_BUS_GET_C2C_LPWR_STATS_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_CMD_BUS_GET_C2C_LPWR_STATS_PARAMS_MESSAGE_ID (0x31U)
+
+typedef struct NV2080_CTRL_CMD_BUS_GET_C2C_LPWR_STATS_PARAMS {
+    NvU32  c2cStateSupportMask;
+    NvBool bCl3Support;
+    NvU32  cl3EntryCount;
+    NvU32  cl3ExitCount;
+    NvU32  cl3ResidentTimeUs;
+    NvU32  cl3AvgEntryLatencyUs;
+    NvU32  cl3AvgExitLatencyUs;
+    NvU32  cl3PstateSupportMask;
+    NvU32  cl3DisallowReasonMask;
+    NvBool bCl4Support;
+    NvU32  cl4EntryCount;
+    NvU32  cl4ExitCount;
+    NvU32  cl4ResidentTimeUs;
+    NvU32  cl4AvgEntryLatencyUs;
+    NvU32  cl4AvgExitLatencyUs;
+    NvU32  cl4PstateSupportMask;
+    NvU32  cl4DisallowReasonMask;
+    NvU32  c2cLpwrStateAllowedMask;
+    NvU32  localPowerState;
+    NvU32  remotePowerState;
+} NV2080_CTRL_CMD_BUS_GET_C2C_LPWR_STATS_PARAMS;
+
+#define NV2080_CTRL_CMD_BUS_GET_C2C_STATE_FULL_POWER 0x0
+#define NV2080_CTRL_CMD_BUS_GET_C2C_STATE_CL3        0x1
+#define NV2080_CTRL_CMD_BUS_GET_C2C_STATE_CL4        0x2
+
+/*
+ * NV2080_CTRL_CMD_BUS_SET_C2C_LPWR_STATE_VOTE
+ *
+ * This command sets the allow vote for C2C Lpwr States.
+ *   c2cLpwrStateId[IN]
+ *      C2C LowPower State Id : NV2080_CTRL_LPWR_C2C_STATE_ID_CLx
+ *   bAllowed[in]
+ *      State Allowed/disallowed flag
+ */
+#define NV2080_CTRL_CMD_BUS_SET_C2C_LPWR_STATE_VOTE  (0x20801832) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_CMD_BUS_SET_C2C_LPWR_STATE_VOTE_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_CMD_BUS_SET_C2C_LPWR_STATE_VOTE_PARAMS_MESSAGE_ID (0x32U)
+
+typedef struct NV2080_CTRL_CMD_BUS_SET_C2C_LPWR_STATE_VOTE_PARAMS {
+    NvU32  c2cLpwrStateId;
+    NvBool bAllowed;
+} NV2080_CTRL_CMD_BUS_SET_C2C_LPWR_STATE_VOTE_PARAMS;

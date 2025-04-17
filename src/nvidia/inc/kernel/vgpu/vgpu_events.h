@@ -129,6 +129,7 @@ typedef struct
 typedef struct vgpu_hibernation_data
 {
     NvU32 size;
+    NvU32 offset;
     NvU8 *buffer;
 }VGPU_HIBERNATION_DATA;
 
@@ -145,6 +146,7 @@ struct _object_vgpu
     VGPU_MEM_INFO gspCtrlBufInfo;
     VGPU_MEM_INFO gspResponseBufInfo;
     VGPU_MEM_INFO gspMessageBuf;
+    VGPU_MEM_INFO gspHibernateShrdBufInfo;
 
     // CPU plugin shared memory buffer
     NvU32 *shared_memory;
@@ -190,6 +192,8 @@ struct _object_vgpu
     NvBool bRpcInitialized;
     /* GSP buffers initialized */
     NvBool bGspBuffersInitialized;
+    /* Alloc GSP buffer in SYSMEM */
+    NvBool bAllocGspBufferInSysmem;
 
     /* RPC HAL objects */
     struct OBJRPC *pRpc;

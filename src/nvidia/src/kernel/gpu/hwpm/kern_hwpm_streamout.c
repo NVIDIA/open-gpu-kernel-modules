@@ -47,7 +47,7 @@
 #include "nvrm_registry.h"
 
 /* ------------------------ Macros ----------------------------------------- */
-#define PERF_PER_CTX_VASPACE_SIZE   (4*1024*1024*1024ULL)
+#define MODS_MULTI_VA_MAPPING_BUFFER_SIZE_LIMIT        (32 * 1024 * 1024)
 
 /* ------------------------ Public Functions  ------------------------------ */
 
@@ -169,6 +169,7 @@ khwpmStreamoutAllocPmaStream_IMPL
 {
     OBJVASPACE       *pPmaVAS;
     NvU64             virtSize;
+    NvU64             virtualAddressIter = 0;
     NvU64             virtualAddress = 0;
     NvU64             virtualAddress2 = 0;
     NvU64             vaAlign;
@@ -182,6 +183,8 @@ khwpmStreamoutAllocPmaStream_IMPL
     const NvU32       bpcIdx = pmaChIdx / pKernelHwpm->maxChannelPerCblock;
     OBJREFCNT        *pRefcnt;
     NvBool            bRefCnted = NV_FALSE;
+    NvU32             i;
+    NvU32             recordMappingCount = 1;
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, (bpcIdx < pKernelHwpm->maxCblocks), NV_ERR_INVALID_ARGUMENT);
 
@@ -209,17 +212,16 @@ khwpmStreamoutAllocPmaStream_IMPL
 
     pageSize = vaspaceGetBigPageSize(pPmaVAS);
     vaSizeRequested = RM_ALIGN_UP(pRecordBufDesc->Size, pageSize) + RM_ALIGN_UP(pNumBytesBufDesc->Size, pageSize);
-    if (vaSizeRequested > PERF_PER_CTX_VASPACE_SIZE)
+    if (vaSizeRequested > pKernelHwpm->perCtxSize)
     {
         status = NV_ERR_INVALID_ARGUMENT;
         goto hwpmStreamoutAllocPmaStream_fail;
     }
 
     allocFlags.bLazy = NV_TRUE;
-    virtSize = PERF_PER_CTX_VASPACE_SIZE;
+    virtSize = pKernelHwpm->perCtxSize;
     vaAlign = virtSize;
-    status = vaspaceAlloc(pPmaVAS, virtSize, vaAlign,
-                          vaspaceGetVaStart(pPmaVAS), vaspaceGetVaLimit(pPmaVAS),
+    status = vaspaceAlloc(pPmaVAS, virtSize, vaAlign, vaspaceGetVaStart(pPmaVAS), vaspaceGetVaLimit(pPmaVAS),
                           0, allocFlags, &virtualAddress);
     if (status != NV_OK)
     {
@@ -227,17 +229,22 @@ khwpmStreamoutAllocPmaStream_IMPL
         goto hwpmStreamoutAllocPmaStream_fail;
     }
 
-    status = _hwpmStreamoutAllocPmaMapping(pGpu, pKernelHwpm, pPmaVAS, pRecordBufDesc, virtualAddress);
-    if (status != NV_OK)
+    virtualAddressIter = virtualAddress;
+    for (i = 0; i < recordMappingCount; i++)
     {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Failed to map records buffer to pma vaspace: 0x%08x\n",
-                  status);
-        goto hwpmStreamoutAllocPmaStream_fail;
+        status = _hwpmStreamoutAllocPmaMapping(pGpu, pKernelHwpm, pPmaVAS, pRecordBufDesc, virtualAddressIter);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                    "Failed to map records buffer to pma vaspace: 0x%08x\n",
+                    status);
+            goto hwpmStreamoutAllocPmaStream_fail;
+        }
+        virtualAddressIter += RM_ALIGN_UP(pRecordBufDesc->Size, pageSize);
     }
 
     // memBytes va start right after record buffer va.
-    virtualAddress2 = virtualAddress + RM_ALIGN_UP(pRecordBufDesc->Size, pageSize);
+    virtualAddress2 = virtualAddressIter;
     status = _hwpmStreamoutAllocPmaMapping(pGpu, pKernelHwpm, pPmaVAS, pNumBytesBufDesc, virtualAddress2);
     if (status != NV_OK)
     {
@@ -285,7 +292,6 @@ khwpmStreamoutAllocPmaStream_IMPL
     pPmaStream->pNumBytesBufDesc = pNumBytesBufDesc;
     pPmaStream->pNumBytesCpuAddr = pCpuAddr;
     pPmaStream->pNumBytesCpuAddrPriv = pPriv;
-    pPmaStream->vaddr = virtualAddress;
     pPmaStream->vaddrRecordBuf = virtualAddress;
     pPmaStream->vaddrNumBytesBuf = virtualAddress2;
     pPmaStream->size = pRecordBufDesc->Size;
@@ -366,16 +372,15 @@ khwpmStreamoutFreePmaStream_IMPL
     pPmaStream->pNumBytesCpuAddr = NvP64_NULL;
     pPmaStream->pNumBytesCpuAddrPriv = NvP64_NULL;
 
-    if (pPmaStream->vaddr != 0)
+    if (pPmaStream->vaddrRecordBuf != 0)
     {
-        vaspaceFree(pPmaVAS, pPmaStream->vaddr);
+        vaspaceFree(pPmaVAS, pPmaStream->vaddrRecordBuf);
+        pPmaStream->vaddrRecordBuf = 0;
     }
-    pPmaStream->vaddr = 0;
     pPmaStream->size = 0;
 
     memdescDestroy(pPmaStream->pRecordBufDesc);
     pPmaStream->pRecordBufDesc = NULL;
-    pPmaStream->vaddrRecordBuf = 0;
 
     memdescDestroy(pPmaStream->pNumBytesBufDesc);
     pPmaStream->pNumBytesBufDesc = NULL;

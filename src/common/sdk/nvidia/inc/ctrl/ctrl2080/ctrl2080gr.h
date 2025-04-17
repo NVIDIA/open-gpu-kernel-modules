@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -317,7 +317,19 @@ typedef NV0080_CTRL_GR_INFO NV2080_CTRL_GR_INFO;
 #define NV2080_CTRL_GR_INFO_SM_VERSION_10_01                            (0x00000A01U)
 
 
+#define NV2080_CTRL_GR_INFO_SM_VERSION_10_03                            (0x00000A03U)
+
+
+/*
+ * TODO Bug 4333440 is introducing versions 12_*.
+ * Eventually once 12_* is tested and validated, another
+ * follow up change will be needed to remove 10_04 support.
+ */
 #define NV2080_CTRL_GR_INFO_SM_VERSION_10_04                            (0x00000A04U)
+#define NV2080_CTRL_GR_INFO_SM_VERSION_12_00                            (0x00000C00U)
+
+
+#define NV2080_CTRL_GR_INFO_SM_VERSION_12_01                            (0x00000C01U)
 
 
 
@@ -338,6 +350,9 @@ typedef NV0080_CTRL_GR_INFO NV2080_CTRL_GR_INFO;
 #define NV2080_CTRL_GR_INFO_SM_VERSION_9_0                              (NV2080_CTRL_GR_INFO_SM_VERSION_9_00)
 #define NV2080_CTRL_GR_INFO_SM_VERSION_10_0                             (NV2080_CTRL_GR_INFO_SM_VERSION_10_00)
 #define NV2080_CTRL_GR_INFO_SM_VERSION_10_1                             (NV2080_CTRL_GR_INFO_SM_VERSION_10_01)
+
+
+#define NV2080_CTRL_GR_INFO_SM_VERSION_10_3                             (NV2080_CTRL_GR_INFO_SM_VERSION_10_03)
 
 
 #define NV2080_CTRL_GR_INFO_SM_VERSION_10_4                             (NV2080_CTRL_GR_INFO_SM_VERSION_10_04)
@@ -1172,6 +1187,9 @@ typedef struct NV2080_CTRL_GR_GET_CTX_BUFFER_INFO_PARAMS {
  *         This parameter specifies the routing information used to
  *         disambiguate the target GR engine.
  *
+ *     ugpuId
+ *         Specifies the uGPU ID on Hopper+.
+ *
  */
 #define NV2080_CTRL_CMD_GR_GET_GLOBAL_SM_ORDER              (0x2080121bU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GR_INTERFACE_ID << 8) | NV2080_CTRL_GR_GET_GLOBAL_SM_ORDER_PARAMS_MESSAGE_ID" */
 
@@ -1189,6 +1207,7 @@ typedef struct NV2080_CTRL_GR_GET_GLOBAL_SM_ORDER_PARAMS {
         NvU16 globalTpcId;
         NvU16 virtualGpcId;
         NvU16 migratableTpcId;
+        NvU16 ugpuId;
     } globalSmId[NV2080_CTRL_CMD_GR_GET_GLOBAL_SM_ORDER_MAX_SM_COUNT];
 
     NvU16 numSm;
@@ -1654,6 +1673,47 @@ typedef struct NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS {
     NvU8 imla3;
     NvU8 imla4;
 } NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS;
+
+#define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_MAX_LIST_SIZE (0xFFU)
+#define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_FMLA16        (0x0U)
+#define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_DP            (0x1U)
+#define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_FMLA32        (0x2U)
+#define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_FFMA          (0x3U)
+#define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_IMLA0         (0x4U)
+#define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_IMLA1         (0x5U)
+#define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_IMLA2         (0x6U)
+#define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_IMLA3         (0x7U)
+#define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_IMLA4         (0x8U)
+#define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_FP16          (0x9U)
+#define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_FP32          (0xAU)
+#define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_DFMA          (0xBU)
+#define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_DMLA          (0xCU)
+
+/*
+ * NV2080_CTRL_CMD_GR_GET_SM_ISSUE_RATE_MODIFIER_V2
+ *
+ * This command provides an interface to retrieve the speed select values of
+ * various instruction types.
+ *
+ *   smIssueRateModifierListSize
+ *     This field specifies the number of entries on the caller's
+ *     smIssueRateModifierList.
+ *     When caller passes smIssueRateModifierListSize = 0, all fuse
+ *     values are returned.
+ *   smIssueRateModifierList
+ *     This field specifies a pointer in the caller's address space
+ *     to the buffer into which the speed select values are to be returned.
+ */
+#define NV2080_CTRL_CMD_GR_GET_SM_ISSUE_RATE_MODIFIER_V2       (0x2080123cU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GR_INTERFACE_ID << 8) | NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_MESSAGE_ID" */
+
+typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2;
+
+#define NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_MESSAGE_ID (0x3CU)
+
+typedef struct NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS {
+    NvU32                                    smIssueRateModifierListSize;
+    NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2 smIssueRateModifierList[NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_MAX_LIST_SIZE];
+} NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS;
 
 /*
  * NV2080_CTRL_CMD_GR_FECS_BIND_EVTBUF_FOR_UID

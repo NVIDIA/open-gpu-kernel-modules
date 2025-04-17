@@ -437,17 +437,6 @@ static inline void NV_RM_RPC_SIM_FREE_INFRA(OBJGPU *pGpu, ...) { return; }
             status = NV_ERR_INSUFFICIENT_RESOURCES;                     \
     } while(0)
 
-#define NV_RM_RPC_SET_SYSMEM_DIRTY_PAGE_TRACKING_BUFFER(pGpu, status, bitmapInfo)    \
-    do                                                                               \
-    {                                                                                \
-        OBJRPC *pRpc = GPU_GET_RPC(pGpu);                                            \
-        NV_ASSERT(pRpc != NULL);                                                     \
-        if ((status == NV_OK) && (pRpc != NULL))                                     \
-            status = rpcSetSysmemDirtyPageTrackingBuffer_HAL(pGpu, pRpc, bitmapInfo);\
-        else if (pRpc == NULL)                                                       \
-            status = NV_ERR_INSUFFICIENT_RESOURCES;                                  \
-    } while(0)
-
 #define NV_RM_RPC_UNLOADING_GUEST_DRIVER(pGpu, status, bInPMTransition, bGc6Entering, newPMLevel)        \
     do                                                                                            \
     {                                                                                             \

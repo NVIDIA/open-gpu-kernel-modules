@@ -1,13 +1,15 @@
 
 #ifndef _G_GPU_RESOURCE_NVOC_H_
 #define _G_GPU_RESOURCE_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -107,15 +109,19 @@ typedef struct Subdevice Subdevice;
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__GpuResource;
+struct NVOC_METADATA__RmResource;
 struct NVOC_VTABLE__GpuResource;
 
 
 struct GpuResource {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__GpuResource *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__GpuResource *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct RmResource __nvoc_base_RmResource;
@@ -136,10 +142,8 @@ struct GpuResource {
 };
 
 
-// Metadata including vtable with 25 function pointers plus superclass metadata
+// Vtable with 25 per-class function pointers
 struct NVOC_VTABLE__GpuResource {
-    const struct NVOC_VTABLE__RmResource RmResource;    // (rmres) 21 function pointers
-
     NV_STATUS (*__gpuresControl__)(struct GpuResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (rmres)
     NV_STATUS (*__gpuresMap__)(struct GpuResource * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual override (res) base (rmres)
     NV_STATUS (*__gpuresUnmap__)(struct GpuResource * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual override (res) base (rmres)
@@ -167,6 +171,13 @@ struct NVOC_VTABLE__GpuResource {
     void (*__gpuresAddAdditionalDependants__)(struct RsClient *, struct GpuResource * /*this*/, RsResourceRef *);  // virtual inherited (res) base (rmres)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__GpuResource {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__RmResource metadata__RmResource;
+    const struct NVOC_VTABLE__GpuResource vtable;
+};
+
 #ifndef __NVOC_CLASS_GpuResource_TYPEDEF__
 #define __NVOC_CLASS_GpuResource_TYPEDEF__
 typedef struct GpuResource GpuResource;
@@ -183,170 +194,170 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResource;
     ((pThis)->__nvoc_pbase_GpuResource)
 
 #ifdef __nvoc_gpu_resource_h_disabled
-#define __dynamicCast_GpuResource(pThis) ((GpuResource*)NULL)
+#define __dynamicCast_GpuResource(pThis) ((GpuResource*) NULL)
 #else //__nvoc_gpu_resource_h_disabled
 #define __dynamicCast_GpuResource(pThis) \
-    ((GpuResource*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(GpuResource)))
+    ((GpuResource*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(GpuResource)))
 #endif //__nvoc_gpu_resource_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_GpuResource(GpuResource**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_GpuResource(GpuResource**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_GpuResource(GpuResource**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_GpuResource(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_GpuResource((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
 // Wrapper macros
-#define gpuresControl_FNPTR(pGpuResource) pGpuResource->__nvoc_vtable->__gpuresControl__
+#define gpuresControl_FNPTR(pGpuResource) pGpuResource->__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define gpuresControl(pGpuResource, pCallContext, pParams) gpuresControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define gpuresMap_FNPTR(pGpuResource) pGpuResource->__nvoc_vtable->__gpuresMap__
+#define gpuresMap_FNPTR(pGpuResource) pGpuResource->__nvoc_metadata_ptr->vtable.__gpuresMap__
 #define gpuresMap(pGpuResource, pCallContext, pParams, pCpuMapping) gpuresMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define gpuresUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_vtable->__gpuresUnmap__
+#define gpuresUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_metadata_ptr->vtable.__gpuresUnmap__
 #define gpuresUnmap(pGpuResource, pCallContext, pCpuMapping) gpuresUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define gpuresShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_vtable->__gpuresShareCallback__
+#define gpuresShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
 #define gpuresShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) gpuresShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define gpuresGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
+#define gpuresGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define gpuresGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) gpuresGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define gpuresGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_vtable->__gpuresGetMapAddrSpace__
+#define gpuresGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__
 #define gpuresGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) gpuresGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define gpuresInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_vtable->__gpuresInternalControlForward__
+#define gpuresInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__
 #define gpuresInternalControlForward(pGpuResource, command, pParams, size) gpuresInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define gpuresGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_vtable->__gpuresGetInternalObjectHandle__
+#define gpuresGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define gpuresGetInternalObjectHandle(pGpuResource) gpuresGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define gpuresAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define gpuresAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define gpuresAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) gpuresAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define gpuresGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
+#define gpuresGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define gpuresGetMemInterMapParams(pRmResource, pParams) gpuresGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define gpuresCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
+#define gpuresCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define gpuresCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) gpuresCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define gpuresGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
+#define gpuresGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define gpuresGetMemoryMappingDescriptor(pRmResource, ppMemDesc) gpuresGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define gpuresControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define gpuresControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define gpuresControlSerialization_Prologue(pResource, pCallContext, pParams) gpuresControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define gpuresControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define gpuresControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define gpuresControlSerialization_Epilogue(pResource, pCallContext, pParams) gpuresControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define gpuresControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
+#define gpuresControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
 #define gpuresControl_Prologue(pResource, pCallContext, pParams) gpuresControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define gpuresControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
+#define gpuresControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
 #define gpuresControl_Epilogue(pResource, pCallContext, pParams) gpuresControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define gpuresCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define gpuresCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define gpuresCanCopy(pResource) gpuresCanCopy_DISPATCH(pResource)
-#define gpuresIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define gpuresIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define gpuresIsDuplicate(pResource, hMemory, pDuplicate) gpuresIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define gpuresPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define gpuresPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define gpuresPreDestruct(pResource) gpuresPreDestruct_DISPATCH(pResource)
-#define gpuresControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define gpuresControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define gpuresControlFilter(pResource, pCallContext, pParams) gpuresControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define gpuresIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define gpuresIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define gpuresIsPartialUnmapSupported(pResource) gpuresIsPartialUnmapSupported_DISPATCH(pResource)
-#define gpuresMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define gpuresMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define gpuresMapTo(pResource, pParams) gpuresMapTo_DISPATCH(pResource, pParams)
-#define gpuresUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define gpuresUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define gpuresUnmapFrom(pResource, pParams) gpuresUnmapFrom_DISPATCH(pResource, pParams)
-#define gpuresGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define gpuresGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define gpuresGetRefCount(pResource) gpuresGetRefCount_DISPATCH(pResource)
-#define gpuresAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define gpuresAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define gpuresAddAdditionalDependants(pClient, pResource, pReference) gpuresAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
 static inline NV_STATUS gpuresControl_DISPATCH(struct GpuResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_vtable->__gpuresControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__gpuresControl__(pGpuResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS gpuresMap_DISPATCH(struct GpuResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_vtable->__gpuresMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__gpuresMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS gpuresUnmap_DISPATCH(struct GpuResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_vtable->__gpuresUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__gpuresUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool gpuresShareCallback_DISPATCH(struct GpuResource *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_vtable->__gpuresShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__gpuresShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS gpuresGetRegBaseOffsetAndSize_DISPATCH(struct GpuResource *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS gpuresGetMapAddrSpace_DISPATCH(struct GpuResource *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__nvoc_vtable->__gpuresGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS gpuresInternalControlForward_DISPATCH(struct GpuResource *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_vtable->__gpuresInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
 static inline NvHandle gpuresGetInternalObjectHandle_DISPATCH(struct GpuResource *pGpuResource) {
-    return pGpuResource->__nvoc_vtable->__gpuresGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NvBool gpuresAccessCallback_DISPATCH(struct GpuResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__gpuresAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpuresAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS gpuresGetMemInterMapParams_DISPATCH(struct GpuResource *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_vtable->__gpuresGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__gpuresGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS gpuresCheckMemInterUnmap_DISPATCH(struct GpuResource *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_vtable->__gpuresCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__gpuresCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS gpuresGetMemoryMappingDescriptor_DISPATCH(struct GpuResource *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_vtable->__gpuresGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__gpuresGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS gpuresControlSerialization_Prologue_DISPATCH(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__gpuresControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpuresControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void gpuresControlSerialization_Epilogue_DISPATCH(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__gpuresControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__gpuresControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS gpuresControl_Prologue_DISPATCH(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__gpuresControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpuresControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void gpuresControl_Epilogue_DISPATCH(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__gpuresControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__gpuresControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool gpuresCanCopy_DISPATCH(struct GpuResource *pResource) {
-    return pResource->__nvoc_vtable->__gpuresCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpuresCanCopy__(pResource);
 }
 
 static inline NV_STATUS gpuresIsDuplicate_DISPATCH(struct GpuResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__gpuresIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpuresIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void gpuresPreDestruct_DISPATCH(struct GpuResource *pResource) {
-    pResource->__nvoc_vtable->__gpuresPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__gpuresPreDestruct__(pResource);
 }
 
 static inline NV_STATUS gpuresControlFilter_DISPATCH(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__gpuresControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpuresControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool gpuresIsPartialUnmapSupported_DISPATCH(struct GpuResource *pResource) {
-    return pResource->__nvoc_vtable->__gpuresIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpuresIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS gpuresMapTo_DISPATCH(struct GpuResource *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__gpuresMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpuresMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS gpuresUnmapFrom_DISPATCH(struct GpuResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__gpuresUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpuresUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 gpuresGetRefCount_DISPATCH(struct GpuResource *pResource) {
-    return pResource->__nvoc_vtable->__gpuresGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpuresGetRefCount__(pResource);
 }
 
 static inline void gpuresAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct GpuResource *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__gpuresAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__gpuresAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NV_STATUS gpuresControl_IMPL(struct GpuResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);

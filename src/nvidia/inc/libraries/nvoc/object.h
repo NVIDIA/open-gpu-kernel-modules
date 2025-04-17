@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,6 +26,9 @@
  */
 
 #pragma once
+
+#include "nvoc/prelude.h"
+
 #include "g_object_nvoc.h"
 
 #ifndef _NVOC_OBJECT_H_
@@ -34,7 +37,7 @@
 #include "nvtypes.h"
 #include "nvstatus.h"
 
-#include "nvoc/prelude.h"
+
 
 class Object;
 struct NVOC_CLASS_INFO;

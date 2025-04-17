@@ -453,7 +453,7 @@ static NV_STATUS cancel_fault_precise_va(uvm_fault_buffer_entry_t *fault_entry,
 
     gpu_va_space = uvm_gpu_va_space_get(va_space, gpu);
     UVM_ASSERT(gpu_va_space);
-    pdb = uvm_page_tree_pdb(&gpu_va_space->page_tables)->addr;
+    pdb = uvm_page_tree_pdb_address(&gpu_va_space->page_tables);
 
     // Record fatal fault event
     uvm_tools_record_gpu_fatal_fault(gpu->id, va_space, fault_entry, fault_entry->fatal_reason);
@@ -1964,12 +1964,12 @@ static NV_STATUS service_fault_batch_dispatch(uvm_va_space_t *va_space,
 
     (*block_faults) = 0;
 
-    va_range_next = uvm_va_space_iter_first(va_space, fault_address, ~0ULL);
+    va_range_next = uvm_va_space_iter_gmmu_mappable_first(va_space, fault_address);
     if (va_range_next && (fault_address >= va_range_next->node.start)) {
         UVM_ASSERT(fault_address < va_range_next->node.end);
 
         va_range = va_range_next;
-        va_range_next = uvm_va_space_iter_next(va_range_next, ~0ULL);
+        va_range_next = uvm_va_range_gmmu_mappable_next(va_range);
     }
 
     if (va_range)

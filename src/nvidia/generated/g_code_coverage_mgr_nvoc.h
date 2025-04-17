@@ -1,13 +1,15 @@
 
 #ifndef _G_CODE_COVERAGE_MGR_NVOC_H_
 #define _G_CODE_COVERAGE_MGR_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,10 +80,18 @@ MAKE_LIST(GSP_BULLSEYE_COVERAGE_DATA_LIST, GSP_BULLSEYE_COVERAGE_DATA);
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__CodeCoverageManager;
+struct NVOC_METADATA__Object;
+
+
 struct CodeCoverageManager {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__CodeCoverageManager *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -93,6 +103,13 @@ struct CodeCoverageManager {
     // Data members
     GSP_BULLSEYE_COVERAGE_DATA_LIST covDataList;
     GSP_BULLSEYE_OUTPUT_BUFFER bullseyeOutputBuffer;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__CodeCoverageManager {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
 };
 
 #ifndef __NVOC_CLASS_CodeCoverageManager_TYPEDEF__
@@ -111,10 +128,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_CodeCoverageManager;
     ((pThis)->__nvoc_pbase_CodeCoverageManager)
 
 #ifdef __nvoc_code_coverage_mgr_h_disabled
-#define __dynamicCast_CodeCoverageManager(pThis) ((CodeCoverageManager*)NULL)
+#define __dynamicCast_CodeCoverageManager(pThis) ((CodeCoverageManager*) NULL)
 #else //__nvoc_code_coverage_mgr_h_disabled
 #define __dynamicCast_CodeCoverageManager(pThis) \
-    ((CodeCoverageManager*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(CodeCoverageManager)))
+    ((CodeCoverageManager*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(CodeCoverageManager)))
 #endif //__nvoc_code_coverage_mgr_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_CodeCoverageManager(CodeCoverageManager**, Dynamic*, NvU32, va_list);

@@ -1,20 +1,22 @@
 
 #ifndef _G_GPU_ACCESS_NVOC_H_
 #define _G_GPU_ACCESS_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -42,6 +44,7 @@ extern "C" {
 #define _GPU_ACCESS_H_
 
 #include "core/core.h"
+#include "nvoc/object.h"
 #include "ioaccess/ioaccess.h"
 #include "gpu/gpu_device_mapping.h"
 
@@ -400,15 +403,20 @@ void  gpuRegWr32Uc_dumpinfo(const char *func, const char *addrStr, const char *v
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__IoAperture;
+struct NVOC_METADATA__Object;
+struct NVOC_METADATA__RegisterAperture;
 struct NVOC_VTABLE__IoAperture;
 
 
 struct IoAperture {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__IoAperture *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__IoAperture *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -430,10 +438,8 @@ struct IoAperture {
 };
 
 
-// Metadata including vtable with 8 function pointers plus superclass metadata
+// Vtable with 8 per-class function pointers
 struct NVOC_VTABLE__IoAperture {
-    const struct NVOC_VTABLE__RegisterAperture RegisterAperture;    // (regaprt) 8 function pointers
-
     NvU8 (*__ioaprtReadReg08__)(struct IoAperture * /*this*/, NvU32);  // virtual override (regaprt) base (regaprt)
     NvU16 (*__ioaprtReadReg16__)(struct IoAperture * /*this*/, NvU32);  // virtual override (regaprt) base (regaprt)
     NvU32 (*__ioaprtReadReg32__)(struct IoAperture * /*this*/, NvU32);  // virtual override (regaprt) base (regaprt)
@@ -442,6 +448,14 @@ struct NVOC_VTABLE__IoAperture {
     void (*__ioaprtWriteReg32__)(struct IoAperture * /*this*/, NvU32, NvV32);  // virtual override (regaprt) base (regaprt)
     void (*__ioaprtWriteReg32Uc__)(struct IoAperture * /*this*/, NvU32, NvV32);  // virtual override (regaprt) base (regaprt)
     NvBool (*__ioaprtIsRegValid__)(struct IoAperture * /*this*/, NvU32);  // virtual override (regaprt) base (regaprt)
+};
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__IoAperture {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
+    const struct NVOC_METADATA__RegisterAperture metadata__RegisterAperture;
+    const struct NVOC_VTABLE__IoAperture vtable;
 };
 
 #ifndef __NVOC_CLASS_IoAperture_TYPEDEF__
@@ -460,68 +474,68 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_IoAperture;
     ((pThis)->__nvoc_pbase_IoAperture)
 
 #ifdef __nvoc_gpu_access_h_disabled
-#define __dynamicCast_IoAperture(pThis) ((IoAperture*)NULL)
+#define __dynamicCast_IoAperture(pThis) ((IoAperture*) NULL)
 #else //__nvoc_gpu_access_h_disabled
 #define __dynamicCast_IoAperture(pThis) \
-    ((IoAperture*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(IoAperture)))
+    ((IoAperture*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(IoAperture)))
 #endif //__nvoc_gpu_access_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_IoAperture(IoAperture**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_IoAperture(IoAperture**, Dynamic*, NvU32, struct IoAperture * arg_pParentAperture, OBJGPU * arg_pGpu, NvU32 arg_deviceIndex, NvU32 arg_deviceInstance, DEVICE_MAPPING * arg_pMapping, NvU32 arg_mappingStartAddr, NvU32 arg_offset, NvU32 arg_length);
+NV_STATUS __nvoc_objCreate_IoAperture(IoAperture**, Dynamic*, NvU32, struct IoAperture *arg_pParentAperture, OBJGPU *arg_pGpu, NvU32 arg_deviceIndex, NvU32 arg_deviceInstance, DEVICE_MAPPING *arg_pMapping, NvU32 arg_mappingStartAddr, NvU32 arg_offset, NvU32 arg_length);
 #define __objCreate_IoAperture(ppNewObj, pParent, createFlags, arg_pParentAperture, arg_pGpu, arg_deviceIndex, arg_deviceInstance, arg_pMapping, arg_mappingStartAddr, arg_offset, arg_length) \
     __nvoc_objCreate_IoAperture((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pParentAperture, arg_pGpu, arg_deviceIndex, arg_deviceInstance, arg_pMapping, arg_mappingStartAddr, arg_offset, arg_length)
 
 
 // Wrapper macros
-#define ioaprtReadReg08_FNPTR(pAperture) pAperture->__nvoc_vtable->__ioaprtReadReg08__
+#define ioaprtReadReg08_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__ioaprtReadReg08__
 #define ioaprtReadReg08(pAperture, addr) ioaprtReadReg08_DISPATCH(pAperture, addr)
-#define ioaprtReadReg16_FNPTR(pAperture) pAperture->__nvoc_vtable->__ioaprtReadReg16__
+#define ioaprtReadReg16_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__ioaprtReadReg16__
 #define ioaprtReadReg16(pAperture, addr) ioaprtReadReg16_DISPATCH(pAperture, addr)
-#define ioaprtReadReg32_FNPTR(pAperture) pAperture->__nvoc_vtable->__ioaprtReadReg32__
+#define ioaprtReadReg32_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__ioaprtReadReg32__
 #define ioaprtReadReg32(pAperture, addr) ioaprtReadReg32_DISPATCH(pAperture, addr)
-#define ioaprtWriteReg08_FNPTR(pAperture) pAperture->__nvoc_vtable->__ioaprtWriteReg08__
+#define ioaprtWriteReg08_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__ioaprtWriteReg08__
 #define ioaprtWriteReg08(pAperture, addr, value) ioaprtWriteReg08_DISPATCH(pAperture, addr, value)
-#define ioaprtWriteReg16_FNPTR(pAperture) pAperture->__nvoc_vtable->__ioaprtWriteReg16__
+#define ioaprtWriteReg16_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__ioaprtWriteReg16__
 #define ioaprtWriteReg16(pAperture, addr, value) ioaprtWriteReg16_DISPATCH(pAperture, addr, value)
-#define ioaprtWriteReg32_FNPTR(pAperture) pAperture->__nvoc_vtable->__ioaprtWriteReg32__
+#define ioaprtWriteReg32_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__ioaprtWriteReg32__
 #define ioaprtWriteReg32(pAperture, addr, value) ioaprtWriteReg32_DISPATCH(pAperture, addr, value)
-#define ioaprtWriteReg32Uc_FNPTR(pAperture) pAperture->__nvoc_vtable->__ioaprtWriteReg32Uc__
+#define ioaprtWriteReg32Uc_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__ioaprtWriteReg32Uc__
 #define ioaprtWriteReg32Uc(pAperture, addr, value) ioaprtWriteReg32Uc_DISPATCH(pAperture, addr, value)
-#define ioaprtIsRegValid_FNPTR(pAperture) pAperture->__nvoc_vtable->__ioaprtIsRegValid__
+#define ioaprtIsRegValid_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__ioaprtIsRegValid__
 #define ioaprtIsRegValid(pAperture, addr) ioaprtIsRegValid_DISPATCH(pAperture, addr)
 
 // Dispatch functions
 static inline NvU8 ioaprtReadReg08_DISPATCH(struct IoAperture *pAperture, NvU32 addr) {
-    return pAperture->__nvoc_vtable->__ioaprtReadReg08__(pAperture, addr);
+    return pAperture->__nvoc_metadata_ptr->vtable.__ioaprtReadReg08__(pAperture, addr);
 }
 
 static inline NvU16 ioaprtReadReg16_DISPATCH(struct IoAperture *pAperture, NvU32 addr) {
-    return pAperture->__nvoc_vtable->__ioaprtReadReg16__(pAperture, addr);
+    return pAperture->__nvoc_metadata_ptr->vtable.__ioaprtReadReg16__(pAperture, addr);
 }
 
 static inline NvU32 ioaprtReadReg32_DISPATCH(struct IoAperture *pAperture, NvU32 addr) {
-    return pAperture->__nvoc_vtable->__ioaprtReadReg32__(pAperture, addr);
+    return pAperture->__nvoc_metadata_ptr->vtable.__ioaprtReadReg32__(pAperture, addr);
 }
 
 static inline void ioaprtWriteReg08_DISPATCH(struct IoAperture *pAperture, NvU32 addr, NvV8 value) {
-    pAperture->__nvoc_vtable->__ioaprtWriteReg08__(pAperture, addr, value);
+    pAperture->__nvoc_metadata_ptr->vtable.__ioaprtWriteReg08__(pAperture, addr, value);
 }
 
 static inline void ioaprtWriteReg16_DISPATCH(struct IoAperture *pAperture, NvU32 addr, NvV16 value) {
-    pAperture->__nvoc_vtable->__ioaprtWriteReg16__(pAperture, addr, value);
+    pAperture->__nvoc_metadata_ptr->vtable.__ioaprtWriteReg16__(pAperture, addr, value);
 }
 
 static inline void ioaprtWriteReg32_DISPATCH(struct IoAperture *pAperture, NvU32 addr, NvV32 value) {
-    pAperture->__nvoc_vtable->__ioaprtWriteReg32__(pAperture, addr, value);
+    pAperture->__nvoc_metadata_ptr->vtable.__ioaprtWriteReg32__(pAperture, addr, value);
 }
 
 static inline void ioaprtWriteReg32Uc_DISPATCH(struct IoAperture *pAperture, NvU32 addr, NvV32 value) {
-    pAperture->__nvoc_vtable->__ioaprtWriteReg32Uc__(pAperture, addr, value);
+    pAperture->__nvoc_metadata_ptr->vtable.__ioaprtWriteReg32Uc__(pAperture, addr, value);
 }
 
 static inline NvBool ioaprtIsRegValid_DISPATCH(struct IoAperture *pAperture, NvU32 addr) {
-    return pAperture->__nvoc_vtable->__ioaprtIsRegValid__(pAperture, addr);
+    return pAperture->__nvoc_metadata_ptr->vtable.__ioaprtIsRegValid__(pAperture, addr);
 }
 
 NvU8 ioaprtReadReg08_IMPL(struct IoAperture *pAperture, NvU32 addr);
@@ -572,15 +586,20 @@ NV_STATUS ioaprtInit(struct IoAperture *pAperture, struct IoAperture *pParentApe
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__SwBcAperture;
+struct NVOC_METADATA__Object;
+struct NVOC_METADATA__RegisterAperture;
 struct NVOC_VTABLE__SwBcAperture;
 
 
 struct SwBcAperture {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__SwBcAperture *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__SwBcAperture *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -597,10 +616,8 @@ struct SwBcAperture {
 };
 
 
-// Metadata including vtable with 8 function pointers plus superclass metadata
+// Vtable with 8 per-class function pointers
 struct NVOC_VTABLE__SwBcAperture {
-    const struct NVOC_VTABLE__RegisterAperture RegisterAperture;    // (regaprt) 8 function pointers
-
     NvU8 (*__swbcaprtReadReg08__)(struct SwBcAperture * /*this*/, NvU32);  // virtual override (regaprt) base (regaprt)
     NvU16 (*__swbcaprtReadReg16__)(struct SwBcAperture * /*this*/, NvU32);  // virtual override (regaprt) base (regaprt)
     NvU32 (*__swbcaprtReadReg32__)(struct SwBcAperture * /*this*/, NvU32);  // virtual override (regaprt) base (regaprt)
@@ -609,6 +626,14 @@ struct NVOC_VTABLE__SwBcAperture {
     void (*__swbcaprtWriteReg32__)(struct SwBcAperture * /*this*/, NvU32, NvV32);  // virtual override (regaprt) base (regaprt)
     void (*__swbcaprtWriteReg32Uc__)(struct SwBcAperture * /*this*/, NvU32, NvV32);  // virtual override (regaprt) base (regaprt)
     NvBool (*__swbcaprtIsRegValid__)(struct SwBcAperture * /*this*/, NvU32);  // virtual override (regaprt) base (regaprt)
+};
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__SwBcAperture {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
+    const struct NVOC_METADATA__RegisterAperture metadata__RegisterAperture;
+    const struct NVOC_VTABLE__SwBcAperture vtable;
 };
 
 #ifndef __NVOC_CLASS_SwBcAperture_TYPEDEF__
@@ -627,68 +652,68 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_SwBcAperture;
     ((pThis)->__nvoc_pbase_SwBcAperture)
 
 #ifdef __nvoc_gpu_access_h_disabled
-#define __dynamicCast_SwBcAperture(pThis) ((SwBcAperture*)NULL)
+#define __dynamicCast_SwBcAperture(pThis) ((SwBcAperture*) NULL)
 #else //__nvoc_gpu_access_h_disabled
 #define __dynamicCast_SwBcAperture(pThis) \
-    ((SwBcAperture*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(SwBcAperture)))
+    ((SwBcAperture*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(SwBcAperture)))
 #endif //__nvoc_gpu_access_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_SwBcAperture(SwBcAperture**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_SwBcAperture(SwBcAperture**, Dynamic*, NvU32, struct IoAperture * arg_pApertures, NvU32 arg_numApertures);
+NV_STATUS __nvoc_objCreate_SwBcAperture(SwBcAperture**, Dynamic*, NvU32, struct IoAperture *arg_pApertures, NvU32 arg_numApertures);
 #define __objCreate_SwBcAperture(ppNewObj, pParent, createFlags, arg_pApertures, arg_numApertures) \
     __nvoc_objCreate_SwBcAperture((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pApertures, arg_numApertures)
 
 
 // Wrapper macros
-#define swbcaprtReadReg08_FNPTR(pAperture) pAperture->__nvoc_vtable->__swbcaprtReadReg08__
+#define swbcaprtReadReg08_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtReadReg08__
 #define swbcaprtReadReg08(pAperture, addr) swbcaprtReadReg08_DISPATCH(pAperture, addr)
-#define swbcaprtReadReg16_FNPTR(pAperture) pAperture->__nvoc_vtable->__swbcaprtReadReg16__
+#define swbcaprtReadReg16_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtReadReg16__
 #define swbcaprtReadReg16(pAperture, addr) swbcaprtReadReg16_DISPATCH(pAperture, addr)
-#define swbcaprtReadReg32_FNPTR(pAperture) pAperture->__nvoc_vtable->__swbcaprtReadReg32__
+#define swbcaprtReadReg32_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtReadReg32__
 #define swbcaprtReadReg32(pAperture, addr) swbcaprtReadReg32_DISPATCH(pAperture, addr)
-#define swbcaprtWriteReg08_FNPTR(pAperture) pAperture->__nvoc_vtable->__swbcaprtWriteReg08__
+#define swbcaprtWriteReg08_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtWriteReg08__
 #define swbcaprtWriteReg08(pAperture, addr, value) swbcaprtWriteReg08_DISPATCH(pAperture, addr, value)
-#define swbcaprtWriteReg16_FNPTR(pAperture) pAperture->__nvoc_vtable->__swbcaprtWriteReg16__
+#define swbcaprtWriteReg16_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtWriteReg16__
 #define swbcaprtWriteReg16(pAperture, addr, value) swbcaprtWriteReg16_DISPATCH(pAperture, addr, value)
-#define swbcaprtWriteReg32_FNPTR(pAperture) pAperture->__nvoc_vtable->__swbcaprtWriteReg32__
+#define swbcaprtWriteReg32_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtWriteReg32__
 #define swbcaprtWriteReg32(pAperture, addr, value) swbcaprtWriteReg32_DISPATCH(pAperture, addr, value)
-#define swbcaprtWriteReg32Uc_FNPTR(pAperture) pAperture->__nvoc_vtable->__swbcaprtWriteReg32Uc__
+#define swbcaprtWriteReg32Uc_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtWriteReg32Uc__
 #define swbcaprtWriteReg32Uc(pAperture, addr, value) swbcaprtWriteReg32Uc_DISPATCH(pAperture, addr, value)
-#define swbcaprtIsRegValid_FNPTR(pAperture) pAperture->__nvoc_vtable->__swbcaprtIsRegValid__
+#define swbcaprtIsRegValid_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtIsRegValid__
 #define swbcaprtIsRegValid(pAperture, addr) swbcaprtIsRegValid_DISPATCH(pAperture, addr)
 
 // Dispatch functions
 static inline NvU8 swbcaprtReadReg08_DISPATCH(struct SwBcAperture *pAperture, NvU32 addr) {
-    return pAperture->__nvoc_vtable->__swbcaprtReadReg08__(pAperture, addr);
+    return pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtReadReg08__(pAperture, addr);
 }
 
 static inline NvU16 swbcaprtReadReg16_DISPATCH(struct SwBcAperture *pAperture, NvU32 addr) {
-    return pAperture->__nvoc_vtable->__swbcaprtReadReg16__(pAperture, addr);
+    return pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtReadReg16__(pAperture, addr);
 }
 
 static inline NvU32 swbcaprtReadReg32_DISPATCH(struct SwBcAperture *pAperture, NvU32 addr) {
-    return pAperture->__nvoc_vtable->__swbcaprtReadReg32__(pAperture, addr);
+    return pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtReadReg32__(pAperture, addr);
 }
 
 static inline void swbcaprtWriteReg08_DISPATCH(struct SwBcAperture *pAperture, NvU32 addr, NvV8 value) {
-    pAperture->__nvoc_vtable->__swbcaprtWriteReg08__(pAperture, addr, value);
+    pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtWriteReg08__(pAperture, addr, value);
 }
 
 static inline void swbcaprtWriteReg16_DISPATCH(struct SwBcAperture *pAperture, NvU32 addr, NvV16 value) {
-    pAperture->__nvoc_vtable->__swbcaprtWriteReg16__(pAperture, addr, value);
+    pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtWriteReg16__(pAperture, addr, value);
 }
 
 static inline void swbcaprtWriteReg32_DISPATCH(struct SwBcAperture *pAperture, NvU32 addr, NvV32 value) {
-    pAperture->__nvoc_vtable->__swbcaprtWriteReg32__(pAperture, addr, value);
+    pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtWriteReg32__(pAperture, addr, value);
 }
 
 static inline void swbcaprtWriteReg32Uc_DISPATCH(struct SwBcAperture *pAperture, NvU32 addr, NvV32 value) {
-    pAperture->__nvoc_vtable->__swbcaprtWriteReg32Uc__(pAperture, addr, value);
+    pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtWriteReg32Uc__(pAperture, addr, value);
 }
 
 static inline NvBool swbcaprtIsRegValid_DISPATCH(struct SwBcAperture *pAperture, NvU32 addr) {
-    return pAperture->__nvoc_vtable->__swbcaprtIsRegValid__(pAperture, addr);
+    return pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtIsRegValid__(pAperture, addr);
 }
 
 NvU8 swbcaprtReadReg08_IMPL(struct SwBcAperture *pAperture, NvU32 addr);

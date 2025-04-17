@@ -1,4 +1,11 @@
 #define NVOC_HDA_CODEC_API_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,91 +14,29 @@
 #include "utils/nvassert.h"
 #include "g_hda_codec_api_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0xf59a20 = 1;
+char __nvoc_class_id_uniqueness_check__0xf59a20 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Hdacodec;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResource;
 
-void __nvoc_init_Hdacodec(Hdacodec*);
+// Forward declarations for Hdacodec
+void __nvoc_init__GpuResource(GpuResource*);
+void __nvoc_init__Hdacodec(Hdacodec*);
 void __nvoc_init_funcTable_Hdacodec(Hdacodec*);
-NV_STATUS __nvoc_ctor_Hdacodec(Hdacodec*, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_ctor_Hdacodec(Hdacodec*, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 void __nvoc_init_dataField_Hdacodec(Hdacodec*);
 void __nvoc_dtor_Hdacodec(Hdacodec*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_Hdacodec;
 
-static const struct NVOC_RTTI __nvoc_rtti_Hdacodec_Hdacodec = {
-    /*pClassDef=*/          &__nvoc_class_def_Hdacodec,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_Hdacodec,
-    /*offset=*/             0,
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_Hdacodec_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(Hdacodec, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_Hdacodec_RsResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RsResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(Hdacodec, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_Hdacodec_RmResourceCommon = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResourceCommon,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(Hdacodec, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_Hdacodec_RmResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(Hdacodec, __nvoc_base_GpuResource.__nvoc_base_RmResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_Hdacodec_GpuResource = {
-    /*pClassDef=*/          &__nvoc_class_def_GpuResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(Hdacodec, __nvoc_base_GpuResource),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_Hdacodec = {
-    /*numRelatives=*/       6,
-    /*relatives=*/ {
-        &__nvoc_rtti_Hdacodec_Hdacodec,
-        &__nvoc_rtti_Hdacodec_GpuResource,
-        &__nvoc_rtti_Hdacodec_RmResource,
-        &__nvoc_rtti_Hdacodec_RmResourceCommon,
-        &__nvoc_rtti_Hdacodec_RsResource,
-        &__nvoc_rtti_Hdacodec_Object,
-    },
-};
-
-const struct NVOC_CLASS_DEF __nvoc_class_def_Hdacodec = 
-{
-    /*classInfo=*/ {
-        /*size=*/               sizeof(Hdacodec),
-        /*classId=*/            classId(Hdacodec),
-        /*providerId=*/         &__nvoc_rtti_provider,
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "Hdacodec",
-#endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_Hdacodec,
-    /*pCastInfo=*/          &__nvoc_castinfo_Hdacodec,
-    /*pExportInfo=*/        &__nvoc_export_info_Hdacodec
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__Hdacodec;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__Hdacodec;
 
 // Down-thunk(s) to bridge Hdacodec methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^2
@@ -160,6 +105,148 @@ NV_STATUS __nvoc_up_thunk_RsResource_hdacodecMapTo(struct Hdacodec *pResource, R
 NV_STATUS __nvoc_up_thunk_RsResource_hdacodecUnmapFrom(struct Hdacodec *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
 NvU32 __nvoc_up_thunk_RsResource_hdacodecGetRefCount(struct Hdacodec *pResource);    // this
 void __nvoc_up_thunk_RsResource_hdacodecAddAdditionalDependants(struct RsClient *pClient, struct Hdacodec *pResource, RsResourceRef *pReference);    // this
+
+const struct NVOC_CLASS_DEF __nvoc_class_def_Hdacodec = 
+{
+    /*classInfo=*/ {
+        /*size=*/               sizeof(Hdacodec),
+        /*classId=*/            classId(Hdacodec),
+        /*providerId=*/         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*name=*/               "Hdacodec",
+#endif
+    },
+    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_Hdacodec,
+    /*pCastInfo=*/          &__nvoc_castinfo__Hdacodec,
+    /*pExportInfo=*/        &__nvoc_export_info__Hdacodec
+};
+
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__Hdacodec __nvoc_metadata__Hdacodec = {
+    .rtti.pClassDef = &__nvoc_class_def_Hdacodec,    // (hdacodec) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_Hdacodec,
+    .rtti.offset    = 0,
+    .metadata__GpuResource.rtti.pClassDef = &__nvoc_class_def_GpuResource,    // (gpures) super
+    .metadata__GpuResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.rtti.offset    = NV_OFFSETOF(Hdacodec, __nvoc_base_GpuResource),
+    .metadata__GpuResource.metadata__RmResource.rtti.pClassDef = &__nvoc_class_def_RmResource,    // (rmres) super^2
+    .metadata__GpuResource.metadata__RmResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.metadata__RmResource.rtti.offset    = NV_OFFSETOF(Hdacodec, __nvoc_base_GpuResource.__nvoc_base_RmResource),
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.pClassDef = &__nvoc_class_def_RsResource,    // (res) super^3
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.offset    = NV_OFFSETOF(Hdacodec, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^4
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.offset    = NV_OFFSETOF(Hdacodec, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
+    .metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.pClassDef = &__nvoc_class_def_RmResourceCommon,    // (rmrescmn) super^3
+    .metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.offset    = NV_OFFSETOF(Hdacodec, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
+
+    .vtable.__hdacodecControl__ = &__nvoc_up_thunk_GpuResource_hdacodecControl,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControl__ = &gpuresControl_IMPL,    // virtual override (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
+    .vtable.__hdacodecMap__ = &__nvoc_up_thunk_GpuResource_hdacodecMap,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
+    .vtable.__hdacodecUnmap__ = &__nvoc_up_thunk_GpuResource_hdacodecUnmap,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
+    .vtable.__hdacodecShareCallback__ = &__nvoc_up_thunk_GpuResource_hdacodecShareCallback,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+    .vtable.__hdacodecGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_hdacodecGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetRegBaseOffsetAndSize__ = &gpuresGetRegBaseOffsetAndSize_IMPL,    // virtual
+    .vtable.__hdacodecGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_hdacodecGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
+    .vtable.__hdacodecInternalControlForward__ = &__nvoc_up_thunk_GpuResource_hdacodecInternalControlForward,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
+    .vtable.__hdacodecGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_hdacodecGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
+    .vtable.__hdacodecAccessCallback__ = &__nvoc_up_thunk_RmResource_hdacodecAccessCallback,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+    .vtable.__hdacodecGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_hdacodecGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+    .vtable.__hdacodecCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_hdacodecCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+    .vtable.__hdacodecGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_hdacodecGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+    .vtable.__hdacodecControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_hdacodecControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+    .vtable.__hdacodecControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_hdacodecControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+    .vtable.__hdacodecControl_Prologue__ = &__nvoc_up_thunk_RmResource_hdacodecControl_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+    .vtable.__hdacodecControl_Epilogue__ = &__nvoc_up_thunk_RmResource_hdacodecControl_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+    .vtable.__hdacodecCanCopy__ = &__nvoc_up_thunk_RsResource_hdacodecCanCopy,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+    .vtable.__hdacodecIsDuplicate__ = &__nvoc_up_thunk_RsResource_hdacodecIsDuplicate,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+    .vtable.__hdacodecPreDestruct__ = &__nvoc_up_thunk_RsResource_hdacodecPreDestruct,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+    .vtable.__hdacodecControlFilter__ = &__nvoc_up_thunk_RsResource_hdacodecControlFilter,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+    .vtable.__hdacodecIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_hdacodecIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
+    .metadata__GpuResource.vtable.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+    .vtable.__hdacodecMapTo__ = &__nvoc_up_thunk_RsResource_hdacodecMapTo,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMapTo__ = &resMapTo_IMPL,    // virtual
+    .vtable.__hdacodecUnmapFrom__ = &__nvoc_up_thunk_RsResource_hdacodecUnmapFrom,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+    .vtable.__hdacodecGetRefCount__ = &__nvoc_up_thunk_RsResource_hdacodecGetRefCount,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+    .vtable.__hdacodecAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_hdacodecAddAdditionalDependants,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__Hdacodec = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__Hdacodec.rtti,    // [0]: (hdacodec) this
+        &__nvoc_metadata__Hdacodec.metadata__GpuResource.rtti,    // [1]: (gpures) super
+        &__nvoc_metadata__Hdacodec.metadata__GpuResource.metadata__RmResource.rtti,    // [2]: (rmres) super^2
+        &__nvoc_metadata__Hdacodec.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti,    // [3]: (res) super^3
+        &__nvoc_metadata__Hdacodec.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti,    // [4]: (obj) super^4
+        &__nvoc_metadata__Hdacodec.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti,    // [5]: (rmrescmn) super^3
+    }
+};
 
 // 25 up-thunk(s) defined to bridge methods in Hdacodec to superclasses
 
@@ -289,7 +376,7 @@ void __nvoc_up_thunk_RsResource_hdacodecAddAdditionalDependants(struct RsClient 
 }
 
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_Hdacodec = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__Hdacodec = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -332,117 +419,32 @@ static void __nvoc_init_funcTable_Hdacodec_1(Hdacodec *pThis) {
 
 // Initialize vtable(s) for 25 virtual method(s).
 void __nvoc_init_funcTable_Hdacodec(Hdacodec *pThis) {
-
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__Hdacodec vtable = {
-        .__hdacodecControl__ = &__nvoc_up_thunk_GpuResource_hdacodecControl,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresControl__ = &gpuresControl_IMPL,    // virtual override (res) base (rmres)
-        .GpuResource.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
-        .__hdacodecMap__ = &__nvoc_up_thunk_GpuResource_hdacodecMap,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
-        .GpuResource.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
-        .__hdacodecUnmap__ = &__nvoc_up_thunk_GpuResource_hdacodecUnmap,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
-        .GpuResource.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
-        .__hdacodecShareCallback__ = &__nvoc_up_thunk_GpuResource_hdacodecShareCallback,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
-        .GpuResource.RmResource.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
-        .__hdacodecGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_hdacodecGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresGetRegBaseOffsetAndSize__ = &gpuresGetRegBaseOffsetAndSize_IMPL,    // virtual
-        .__hdacodecGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_hdacodecGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
-        .__hdacodecInternalControlForward__ = &__nvoc_up_thunk_GpuResource_hdacodecInternalControlForward,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
-        .__hdacodecGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_hdacodecGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
-        .__hdacodecAccessCallback__ = &__nvoc_up_thunk_RmResource_hdacodecAccessCallback,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
-        .__hdacodecGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_hdacodecGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
-        .__hdacodecCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_hdacodecCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
-        .__hdacodecGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_hdacodecGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
-        .__hdacodecControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_hdacodecControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
-        .__hdacodecControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_hdacodecControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
-        .__hdacodecControl_Prologue__ = &__nvoc_up_thunk_RmResource_hdacodecControl_Prologue,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
-        .__hdacodecControl_Epilogue__ = &__nvoc_up_thunk_RmResource_hdacodecControl_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
-        .__hdacodecCanCopy__ = &__nvoc_up_thunk_RsResource_hdacodecCanCopy,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
-        .__hdacodecIsDuplicate__ = &__nvoc_up_thunk_RsResource_hdacodecIsDuplicate,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
-        .__hdacodecPreDestruct__ = &__nvoc_up_thunk_RsResource_hdacodecPreDestruct,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
-        .__hdacodecControlFilter__ = &__nvoc_up_thunk_RsResource_hdacodecControlFilter,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
-        .__hdacodecIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_hdacodecIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
-        .GpuResource.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
-        .GpuResource.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
-        .GpuResource.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
-        .__hdacodecMapTo__ = &__nvoc_up_thunk_RsResource_hdacodecMapTo,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
-        .__hdacodecUnmapFrom__ = &__nvoc_up_thunk_RsResource_hdacodecUnmapFrom,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
-        .__hdacodecGetRefCount__ = &__nvoc_up_thunk_RsResource_hdacodecGetRefCount,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
-        .__hdacodecAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_hdacodecAddAdditionalDependants,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.GpuResource.RmResource.RsResource;    // (res) super^3
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable = &vtable.GpuResource.RmResource;    // (rmres) super^2
-    pThis->__nvoc_base_GpuResource.__nvoc_vtable = &vtable.GpuResource;    // (gpures) super
-    pThis->__nvoc_vtable = &vtable;    // (hdacodec) this
     __nvoc_init_funcTable_Hdacodec_1(pThis);
 }
 
-void __nvoc_init_GpuResource(GpuResource*);
-void __nvoc_init_Hdacodec(Hdacodec *pThis) {
-    pThis->__nvoc_pbase_Hdacodec = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;
-    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;
-    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;
-    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource;
-    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_GpuResource;
-    __nvoc_init_GpuResource(&pThis->__nvoc_base_GpuResource);
+// Initialize newly constructed object.
+void __nvoc_init__Hdacodec(Hdacodec *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;    // (obj) super^4
+    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;    // (res) super^3
+    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;    // (rmrescmn) super^3
+    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource;    // (rmres) super^2
+    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_GpuResource;    // (gpures) super
+    pThis->__nvoc_pbase_Hdacodec = pThis;    // (hdacodec) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuResource(&pThis->__nvoc_base_GpuResource);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__Hdacodec.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object;    // (obj) super^4
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr = &__nvoc_metadata__Hdacodec.metadata__GpuResource.metadata__RmResource.metadata__RsResource;    // (res) super^3
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon.__nvoc_metadata_ptr = &__nvoc_metadata__Hdacodec.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon;    // (rmrescmn) super^3
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr = &__nvoc_metadata__Hdacodec.metadata__GpuResource.metadata__RmResource;    // (rmres) super^2
+    pThis->__nvoc_base_GpuResource.__nvoc_metadata_ptr = &__nvoc_metadata__Hdacodec.metadata__GpuResource;    // (gpures) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__Hdacodec;    // (hdacodec) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_Hdacodec(pThis);
 }
 
@@ -460,9 +462,6 @@ NV_STATUS __nvoc_objCreate_Hdacodec(Hdacodec **ppThis, Dynamic *pParent, NvU32 c
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(Hdacodec));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_Hdacodec);
-
     pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -476,7 +475,7 @@ NV_STATUS __nvoc_objCreate_Hdacodec(Hdacodec **ppThis, Dynamic *pParent, NvU32 c
         pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_Hdacodec(pThis);
+    __nvoc_init__Hdacodec(pThis);
     status = __nvoc_ctor_Hdacodec(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_Hdacodec_cleanup;
 

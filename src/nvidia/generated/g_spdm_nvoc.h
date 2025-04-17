@@ -1,20 +1,22 @@
 
 #ifndef _G_SPDM_NVOC_H_
 #define _G_SPDM_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,8 +46,13 @@ extern "C" {
 // SPDM_H may conflict with libspdm headers.
 
 #include "gpu/gpu.h"
+#include "gpu/eng_state.h"
 #include "nvport/nvport.h"
 #include "gpu/timer/objtmr.h"
+#include "ctrl/ctrl2080/ctrl2080spdm.h"
+#include "ctrl/ctrl2080/ctrl2080internal.h"
+#include "core/bin_data.h"
+
 
 /****************************************************************************\
  *                                                                           *
@@ -70,6 +77,8 @@ extern "C" {
 
 #define NV_SPDM_RESPONDER_CERT_COUNT_MAX  (2)
 
+#define SPDM_MAX_ENCODED_CERT_CHAIN_SIZE  (0x1400)
+
 typedef struct _NV_SPDM_CERT_CONTEXT
 {
     size_t   certSize;
@@ -79,6 +88,9 @@ typedef struct _NV_SPDM_CERT_CONTEXT
 #define NV_SPDM_REQ_L1_CERTIFICATE_ID (0)
 #define NV_SPDM_REQ_L2_CERTIFICATE_ID (NV_SPDM_REQ_L1_CERTIFICATE_ID + 1)
 #define NV_SPDM_REQ_L3_CERTIFICATE_ID (NV_SPDM_REQ_L1_CERTIFICATE_ID + 2)
+
+#define NV_SPDM_REQUESTER_ID_NULL          (0)
+#define NV_SPDM_REQUESTER_ID_CONF_COMPUTE  (1)
 
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
@@ -91,19 +103,31 @@ typedef struct _NV_SPDM_CERT_CONTEXT
 #endif
 
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__Spdm;
+struct NVOC_METADATA__OBJENGSTATE;
+struct NVOC_VTABLE__Spdm;
+
+
 struct Spdm {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__Spdm *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
-    struct Object __nvoc_base_Object;
+    struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
 
     // Ancestor object pointers for `staticCast` feature
-    struct Object *__nvoc_pbase_Object;    // obj super
+    struct Object *__nvoc_pbase_Object;    // obj super^2
+    struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct Spdm *__nvoc_pbase_Spdm;    // spdm
 
-    // Vtable with 16 per-object function pointers
+    // Vtable with 21 per-object function pointers
+    NV_STATUS (*__spdmStatePostLoad__)(OBJGPU *, struct Spdm * /*this*/, NvU32);  // virtual halified (2 hals) override (engstate) base (engstate) body
+    NV_STATUS (*__spdmStatePreUnload__)(OBJGPU *, struct Spdm * /*this*/, NvU32);  // virtual halified (2 hals) override (engstate) base (engstate) body
     NV_STATUS (*__spdmGetCertChains__)(OBJGPU *, struct Spdm * /*this*/, void *, NvU32 *, void *, NvU32 *);  // halified (2 hals) body
     NV_STATUS (*__spdmGetAttestationReport__)(OBJGPU *, struct Spdm * /*this*/, NvU8 *, void *, NvU32 *, NvBool *, void *, NvU32 *);  // halified (2 hals) body
     NV_STATUS (*__spdmCheckAndExecuteKeyUpdate__)(OBJGPU *, struct Spdm * /*this*/, NvU32);  // halified (2 hals) body
@@ -111,6 +135,7 @@ struct Spdm {
     NV_STATUS (*__spdmRegisterForHeartbeats__)(OBJGPU *, struct Spdm * /*this*/, NvU32);  // halified (2 hals) body
     NV_STATUS (*__spdmUnregisterFromHeartbeats__)(OBJGPU *, struct Spdm * /*this*/);  // halified (2 hals) body
     NvBool (*__spdmMutualAuthSupported__)(OBJGPU *, struct Spdm * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__spdmSendCtrlCall__)(OBJGPU *, struct Spdm * /*this*/, NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS *);  // halified (2 hals) body
     NV_STATUS (*__spdmDeviceInit__)(OBJGPU *, struct Spdm * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__spdmDeviceDeinit__)(OBJGPU *, struct Spdm * /*this*/, NvBool);  // halified (2 hals) body
     NV_STATUS (*__spdmDeviceSecuredSessionSupported__)(OBJGPU *, struct Spdm * /*this*/);  // halified (2 hals) body
@@ -119,7 +144,12 @@ struct Spdm {
     NV_STATUS (*__spdmGetCertificates__)(OBJGPU *, struct Spdm * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__spdmGetReqEncapCertificates__)(OBJGPU *, struct Spdm * /*this*/, NvU8 **, NvU32 *);  // halified (2 hals) body
     NV_STATUS (*__spdmGetRequesterCertificateCount__)(OBJGPU *, struct Spdm * /*this*/, NvU32 *);  // halified (3 hals) body
+    const BINDATA_ARCHIVE * (*__spdmGetBinArchiveIndividualL2Certificate__)(struct Spdm * /*this*/);  // halified (3 hals) body
+    const BINDATA_ARCHIVE * (*__spdmGetBinArchiveIndividualL3Certificate__)(struct Spdm * /*this*/);  // halified (6 hals) body
     NV_STATUS (*__spdmGetIndividualCertificate__)(OBJGPU *, struct Spdm * /*this*/, NvU32, NvBool, void *, NvU64 *);  // halified (3 hals) body
+
+    // 1 PDB property
+    NvBool PDB_PROP_SPDM_ENABLED;
 
     // Data members
     void *pLibspdmContext;
@@ -147,6 +177,31 @@ struct Spdm {
     NvU8 *pTransportBuffer;
     NvU32 transportBufferSize;
     NvU32 pendingResponseSize;
+    NvU32 nvSpdmRequesterId;
+};
+
+
+// Vtable with 12 per-class function pointers
+struct NVOC_VTABLE__Spdm {
+    NV_STATUS (*__spdmConstructEngine__)(OBJGPU *, struct Spdm * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
+    void (*__spdmInitMissing__)(struct OBJGPU *, struct Spdm * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__spdmStatePreInitLocked__)(struct OBJGPU *, struct Spdm * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__spdmStatePreInitUnlocked__)(struct OBJGPU *, struct Spdm * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__spdmStateInitLocked__)(struct OBJGPU *, struct Spdm * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__spdmStateInitUnlocked__)(struct OBJGPU *, struct Spdm * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__spdmStatePreLoad__)(struct OBJGPU *, struct Spdm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__spdmStateLoad__)(struct OBJGPU *, struct Spdm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__spdmStateUnload__)(struct OBJGPU *, struct Spdm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__spdmStatePostUnload__)(struct OBJGPU *, struct Spdm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    void (*__spdmStateDestroy__)(struct OBJGPU *, struct Spdm * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__spdmIsPresent__)(struct OBJGPU *, struct Spdm * /*this*/);  // virtual inherited (engstate) base (engstate)
+};
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__Spdm {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
+    const struct NVOC_VTABLE__Spdm vtable;
 };
 
 #ifndef __NVOC_CLASS_Spdm_TYPEDEF__
@@ -165,11 +220,17 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Spdm;
     ((pThis)->__nvoc_pbase_Spdm)
 
 #ifdef __nvoc_spdm_h_disabled
-#define __dynamicCast_Spdm(pThis) ((Spdm*)NULL)
+#define __dynamicCast_Spdm(pThis) ((Spdm*) NULL)
 #else //__nvoc_spdm_h_disabled
 #define __dynamicCast_Spdm(pThis) \
-    ((Spdm*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(Spdm)))
+    ((Spdm*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(Spdm)))
 #endif //__nvoc_spdm_h_disabled
+
+// Property macros
+#define PDB_PROP_SPDM_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
+#define PDB_PROP_SPDM_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
+#define PDB_PROP_SPDM_ENABLED_BASE_CAST
+#define PDB_PROP_SPDM_ENABLED_BASE_NAME PDB_PROP_SPDM_ENABLED
 
 NV_STATUS __nvoc_objCreateDynamic_Spdm(Spdm**, Dynamic*, NvU32, va_list);
 
@@ -179,6 +240,14 @@ NV_STATUS __nvoc_objCreate_Spdm(Spdm**, Dynamic*, NvU32);
 
 
 // Wrapper macros
+#define spdmConstructEngine_FNPTR(pSpdm) pSpdm->__nvoc_metadata_ptr->vtable.__spdmConstructEngine__
+#define spdmConstructEngine(pGpu, pSpdm, engDesc) spdmConstructEngine_DISPATCH(pGpu, pSpdm, engDesc)
+#define spdmStatePostLoad_FNPTR(pSpdm) pSpdm->__spdmStatePostLoad__
+#define spdmStatePostLoad(pGpu, pSpdm, flags) spdmStatePostLoad_DISPATCH(pGpu, pSpdm, flags)
+#define spdmStatePostLoad_HAL(pGpu, pSpdm, flags) spdmStatePostLoad_DISPATCH(pGpu, pSpdm, flags)
+#define spdmStatePreUnload_FNPTR(pSpdm) pSpdm->__spdmStatePreUnload__
+#define spdmStatePreUnload(pGpu, pSpdm, flags) spdmStatePreUnload_DISPATCH(pGpu, pSpdm, flags)
+#define spdmStatePreUnload_HAL(pGpu, pSpdm, flags) spdmStatePreUnload_DISPATCH(pGpu, pSpdm, flags)
 #define spdmGetCertChains_FNPTR(pSpdm) pSpdm->__spdmGetCertChains__
 #define spdmGetCertChains(pGpu, pSpdm, pKeyExCertChain, pKeyExCertChainSize, pAttestationCertChain, pAttestationCertChainSize) spdmGetCertChains_DISPATCH(pGpu, pSpdm, pKeyExCertChain, pKeyExCertChainSize, pAttestationCertChain, pAttestationCertChainSize)
 #define spdmGetCertChains_HAL(pGpu, pSpdm, pKeyExCertChain, pKeyExCertChainSize, pAttestationCertChain, pAttestationCertChainSize) spdmGetCertChains_DISPATCH(pGpu, pSpdm, pKeyExCertChain, pKeyExCertChainSize, pAttestationCertChain, pAttestationCertChainSize)
@@ -200,6 +269,9 @@ NV_STATUS __nvoc_objCreate_Spdm(Spdm**, Dynamic*, NvU32);
 #define spdmMutualAuthSupported_FNPTR(pSpdm) pSpdm->__spdmMutualAuthSupported__
 #define spdmMutualAuthSupported(pGpu, pSpdm) spdmMutualAuthSupported_DISPATCH(pGpu, pSpdm)
 #define spdmMutualAuthSupported_HAL(pGpu, pSpdm) spdmMutualAuthSupported_DISPATCH(pGpu, pSpdm)
+#define spdmSendCtrlCall_FNPTR(pSpdm) pSpdm->__spdmSendCtrlCall__
+#define spdmSendCtrlCall(pGpu, pSpdm, pParams) spdmSendCtrlCall_DISPATCH(pGpu, pSpdm, pParams)
+#define spdmSendCtrlCall_HAL(pGpu, pSpdm, pParams) spdmSendCtrlCall_DISPATCH(pGpu, pSpdm, pParams)
 #define spdmDeviceInit_FNPTR(pSpdm) pSpdm->__spdmDeviceInit__
 #define spdmDeviceInit(pGpu, pSpdm) spdmDeviceInit_DISPATCH(pGpu, pSpdm)
 #define spdmDeviceInit_HAL(pGpu, pSpdm) spdmDeviceInit_DISPATCH(pGpu, pSpdm)
@@ -224,11 +296,51 @@ NV_STATUS __nvoc_objCreate_Spdm(Spdm**, Dynamic*, NvU32);
 #define spdmGetRequesterCertificateCount_FNPTR(pSpdm) pSpdm->__spdmGetRequesterCertificateCount__
 #define spdmGetRequesterCertificateCount(pGpu, pSpdm, pCertCount) spdmGetRequesterCertificateCount_DISPATCH(pGpu, pSpdm, pCertCount)
 #define spdmGetRequesterCertificateCount_HAL(pGpu, pSpdm, pCertCount) spdmGetRequesterCertificateCount_DISPATCH(pGpu, pSpdm, pCertCount)
+#define spdmGetBinArchiveIndividualL2Certificate_FNPTR(pSpdm) pSpdm->__spdmGetBinArchiveIndividualL2Certificate__
+#define spdmGetBinArchiveIndividualL2Certificate(pSpdm) spdmGetBinArchiveIndividualL2Certificate_DISPATCH(pSpdm)
+#define spdmGetBinArchiveIndividualL2Certificate_HAL(pSpdm) spdmGetBinArchiveIndividualL2Certificate_DISPATCH(pSpdm)
+#define spdmGetBinArchiveIndividualL3Certificate_FNPTR(pSpdm) pSpdm->__spdmGetBinArchiveIndividualL3Certificate__
+#define spdmGetBinArchiveIndividualL3Certificate(pSpdm) spdmGetBinArchiveIndividualL3Certificate_DISPATCH(pSpdm)
+#define spdmGetBinArchiveIndividualL3Certificate_HAL(pSpdm) spdmGetBinArchiveIndividualL3Certificate_DISPATCH(pSpdm)
 #define spdmGetIndividualCertificate_FNPTR(pSpdm) pSpdm->__spdmGetIndividualCertificate__
 #define spdmGetIndividualCertificate(pGpu, pSpdm, certId, bDerFormat, pCert, pCertSize) spdmGetIndividualCertificate_DISPATCH(pGpu, pSpdm, certId, bDerFormat, pCert, pCertSize)
 #define spdmGetIndividualCertificate_HAL(pGpu, pSpdm, certId, bDerFormat, pCert, pCertSize) spdmGetIndividualCertificate_DISPATCH(pGpu, pSpdm, certId, bDerFormat, pCert, pCertSize)
+#define spdmInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
+#define spdmInitMissing(pGpu, pEngstate) spdmInitMissing_DISPATCH(pGpu, pEngstate)
+#define spdmStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
+#define spdmStatePreInitLocked(pGpu, pEngstate) spdmStatePreInitLocked_DISPATCH(pGpu, pEngstate)
+#define spdmStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__
+#define spdmStatePreInitUnlocked(pGpu, pEngstate) spdmStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
+#define spdmStateInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__
+#define spdmStateInitLocked(pGpu, pEngstate) spdmStateInitLocked_DISPATCH(pGpu, pEngstate)
+#define spdmStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__
+#define spdmStateInitUnlocked(pGpu, pEngstate) spdmStateInitUnlocked_DISPATCH(pGpu, pEngstate)
+#define spdmStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__
+#define spdmStatePreLoad(pGpu, pEngstate, arg3) spdmStatePreLoad_DISPATCH(pGpu, pEngstate, arg3)
+#define spdmStateLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateLoad__
+#define spdmStateLoad(pGpu, pEngstate, arg3) spdmStateLoad_DISPATCH(pGpu, pEngstate, arg3)
+#define spdmStateUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateUnload__
+#define spdmStateUnload(pGpu, pEngstate, arg3) spdmStateUnload_DISPATCH(pGpu, pEngstate, arg3)
+#define spdmStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__
+#define spdmStatePostUnload(pGpu, pEngstate, arg3) spdmStatePostUnload_DISPATCH(pGpu, pEngstate, arg3)
+#define spdmStateDestroy_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__
+#define spdmStateDestroy(pGpu, pEngstate) spdmStateDestroy_DISPATCH(pGpu, pEngstate)
+#define spdmIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__
+#define spdmIsPresent(pGpu, pEngstate) spdmIsPresent_DISPATCH(pGpu, pEngstate)
 
 // Dispatch functions
+static inline NV_STATUS spdmConstructEngine_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, ENGDESCRIPTOR engDesc) {
+    return pSpdm->__nvoc_metadata_ptr->vtable.__spdmConstructEngine__(pGpu, pSpdm, engDesc);
+}
+
+static inline NV_STATUS spdmStatePostLoad_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 flags) {
+    return pSpdm->__spdmStatePostLoad__(pGpu, pSpdm, flags);
+}
+
+static inline NV_STATUS spdmStatePreUnload_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 flags) {
+    return pSpdm->__spdmStatePreUnload__(pGpu, pSpdm, flags);
+}
+
 static inline NV_STATUS spdmGetCertChains_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, void *pKeyExCertChain, NvU32 *pKeyExCertChainSize, void *pAttestationCertChain, NvU32 *pAttestationCertChainSize) {
     return pSpdm->__spdmGetCertChains__(pGpu, pSpdm, pKeyExCertChain, pKeyExCertChainSize, pAttestationCertChain, pAttestationCertChainSize);
 }
@@ -255,6 +367,10 @@ static inline NV_STATUS spdmUnregisterFromHeartbeats_DISPATCH(OBJGPU *pGpu, stru
 
 static inline NvBool spdmMutualAuthSupported_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm) {
     return pSpdm->__spdmMutualAuthSupported__(pGpu, pSpdm);
+}
+
+static inline NV_STATUS spdmSendCtrlCall_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS *pParams) {
+    return pSpdm->__spdmSendCtrlCall__(pGpu, pSpdm, pParams);
 }
 
 static inline NV_STATUS spdmDeviceInit_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm) {
@@ -289,14 +405,62 @@ static inline NV_STATUS spdmGetRequesterCertificateCount_DISPATCH(OBJGPU *pGpu, 
     return pSpdm->__spdmGetRequesterCertificateCount__(pGpu, pSpdm, pCertCount);
 }
 
+static inline const BINDATA_ARCHIVE * spdmGetBinArchiveIndividualL2Certificate_DISPATCH(struct Spdm *pSpdm) {
+    return pSpdm->__spdmGetBinArchiveIndividualL2Certificate__(pSpdm);
+}
+
+static inline const BINDATA_ARCHIVE * spdmGetBinArchiveIndividualL3Certificate_DISPATCH(struct Spdm *pSpdm) {
+    return pSpdm->__spdmGetBinArchiveIndividualL3Certificate__(pSpdm);
+}
+
 static inline NV_STATUS spdmGetIndividualCertificate_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 certId, NvBool bDerFormat, void *pCert, NvU64 *pCertSize) {
     return pSpdm->__spdmGetIndividualCertificate__(pGpu, pSpdm, certId, bDerFormat, pCert, pCertSize);
 }
 
-NV_STATUS spdmConstruct_IMPL(struct Spdm *arg_pSpdm);
+static inline void spdmInitMissing_DISPATCH(struct OBJGPU *pGpu, struct Spdm *pEngstate) {
+    pEngstate->__nvoc_metadata_ptr->vtable.__spdmInitMissing__(pGpu, pEngstate);
+}
 
+static inline NV_STATUS spdmStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct Spdm *pEngstate) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__spdmStatePreInitLocked__(pGpu, pEngstate);
+}
 
-#define __nvoc_spdmConstruct(arg_pSpdm) spdmConstruct_IMPL(arg_pSpdm)
+static inline NV_STATUS spdmStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct Spdm *pEngstate) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__spdmStatePreInitUnlocked__(pGpu, pEngstate);
+}
+
+static inline NV_STATUS spdmStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct Spdm *pEngstate) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__spdmStateInitLocked__(pGpu, pEngstate);
+}
+
+static inline NV_STATUS spdmStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct Spdm *pEngstate) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__spdmStateInitUnlocked__(pGpu, pEngstate);
+}
+
+static inline NV_STATUS spdmStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct Spdm *pEngstate, NvU32 arg3) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__spdmStatePreLoad__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS spdmStateLoad_DISPATCH(struct OBJGPU *pGpu, struct Spdm *pEngstate, NvU32 arg3) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__spdmStateLoad__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS spdmStateUnload_DISPATCH(struct OBJGPU *pGpu, struct Spdm *pEngstate, NvU32 arg3) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__spdmStateUnload__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS spdmStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct Spdm *pEngstate, NvU32 arg3) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__spdmStatePostUnload__(pGpu, pEngstate, arg3);
+}
+
+static inline void spdmStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct Spdm *pEngstate) {
+    pEngstate->__nvoc_metadata_ptr->vtable.__spdmStateDestroy__(pGpu, pEngstate);
+}
+
+static inline NvBool spdmIsPresent_DISPATCH(struct OBJGPU *pGpu, struct Spdm *pEngstate) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__spdmIsPresent__(pGpu, pEngstate);
+}
+
 void spdmDestruct_IMPL(struct Spdm *pSpdm);
 
 
@@ -399,6 +563,34 @@ static inline NV_STATUS spdmBuildCertChainPem(OBJGPU *pGpu, struct Spdm *pSpdm, 
 
 #define spdmBuildCertChainPem_HAL(pGpu, pSpdm, pCertRespCtx, certCountResp, pCertChainOut, pCertChainOutSize) spdmBuildCertChainPem(pGpu, pSpdm, pCertRespCtx, certCountResp, pCertChainOut, pCertChainOutSize)
 
+NV_STATUS spdmEstablishSession_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 requesterId);
+
+
+#ifdef __nvoc_spdm_h_disabled
+static inline NV_STATUS spdmEstablishSession(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 requesterId) {
+    NV_ASSERT_FAILED_PRECOMP("Spdm was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_spdm_h_disabled
+#define spdmEstablishSession(pGpu, pSpdm, requesterId) spdmEstablishSession_IMPL(pGpu, pSpdm, requesterId)
+#endif //__nvoc_spdm_h_disabled
+
+#define spdmEstablishSession_HAL(pGpu, pSpdm, requesterId) spdmEstablishSession(pGpu, pSpdm, requesterId)
+
+NV_STATUS spdmCheckRequesterIdValid_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 requesterId);
+
+
+#ifdef __nvoc_spdm_h_disabled
+static inline NV_STATUS spdmCheckRequesterIdValid(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 requesterId) {
+    NV_ASSERT_FAILED_PRECOMP("Spdm was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_spdm_h_disabled
+#define spdmCheckRequesterIdValid(pGpu, pSpdm, requesterId) spdmCheckRequesterIdValid_IMPL(pGpu, pSpdm, requesterId)
+#endif //__nvoc_spdm_h_disabled
+
+#define spdmCheckRequesterIdValid_HAL(pGpu, pSpdm, requesterId) spdmCheckRequesterIdValid(pGpu, pSpdm, requesterId)
+
 NV_STATUS spdmRetrieveExportSecret_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 keySize, NvU8 *pKeyOut);
 
 
@@ -426,6 +618,34 @@ static inline NV_STATUS spdmSendApplicationMessage(OBJGPU *pGpu, struct Spdm *pS
 #endif //__nvoc_spdm_h_disabled
 
 #define spdmSendApplicationMessage_HAL(pGpu, pSpdm, pRequest, requestSize, pResponse, pResponseSize) spdmSendApplicationMessage(pGpu, pSpdm, pRequest, requestSize, pResponse, pResponseSize)
+
+const BINDATA_ARCHIVE *spdmGetBinArchiveL1Certificate_IMPL(struct Spdm *pSpdm);
+
+
+#ifdef __nvoc_spdm_h_disabled
+static inline const BINDATA_ARCHIVE *spdmGetBinArchiveL1Certificate(struct Spdm *pSpdm) {
+    NV_ASSERT_FAILED_PRECOMP("Spdm was disabled!");
+    return NULL;
+}
+#else //__nvoc_spdm_h_disabled
+#define spdmGetBinArchiveL1Certificate(pSpdm) spdmGetBinArchiveL1Certificate_IMPL(pSpdm)
+#endif //__nvoc_spdm_h_disabled
+
+#define spdmGetBinArchiveL1Certificate_HAL(pSpdm) spdmGetBinArchiveL1Certificate(pSpdm)
+
+NV_STATUS spdmConstructEngine_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, ENGDESCRIPTOR engDesc);
+
+NV_STATUS spdmStatePostLoad_KERNEL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 flags);
+
+static inline NV_STATUS spdmStatePostLoad_56cd7a(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 flags) {
+    return NV_OK;
+}
+
+NV_STATUS spdmStatePreUnload_KERNEL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 flags);
+
+static inline NV_STATUS spdmStatePreUnload_56cd7a(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 flags) {
+    return NV_OK;
+}
 
 NV_STATUS spdmGetCertChains_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, void *pKeyExCertChain, NvU32 *pKeyExCertChainSize, void *pAttestationCertChain, NvU32 *pAttestationCertChainSize);
 
@@ -469,6 +689,12 @@ static inline NvBool spdmMutualAuthSupported_88bc07(OBJGPU *pGpu, struct Spdm *p
 
 static inline NvBool spdmMutualAuthSupported_3dd2c9(OBJGPU *pGpu, struct Spdm *pSpdm) {
     return NV_FALSE;
+}
+
+NV_STATUS spdmSendCtrlCall_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS *pParams);
+
+static inline NV_STATUS spdmSendCtrlCall_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm, NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS *pParams) {
+    return NV_ERR_NOT_SUPPORTED;
 }
 
 NV_STATUS spdmDeviceInit_GH100(OBJGPU *pGpu, struct Spdm *pSpdm);
@@ -519,6 +745,28 @@ NV_STATUS spdmGetRequesterCertificateCount_GB100(OBJGPU *pGpu, struct Spdm *pSpd
 
 static inline NV_STATUS spdmGetRequesterCertificateCount_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 *pCertCount) {
     return NV_ERR_NOT_SUPPORTED;
+}
+
+const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL2Certificate_GH100(struct Spdm *pSpdm);
+
+const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL2Certificate_GB100(struct Spdm *pSpdm);
+
+static inline const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL2Certificate_fa6e19(struct Spdm *pSpdm) {
+    return ((void *)0);
+}
+
+const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL3Certificate_GH100(struct Spdm *pSpdm);
+
+const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL3Certificate_GB100(struct Spdm *pSpdm);
+
+const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL3Certificate_GB102(struct Spdm *pSpdm);
+
+const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL3Certificate_GB110(struct Spdm *pSpdm);
+
+const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL3Certificate_GB112(struct Spdm *pSpdm);
+
+static inline const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL3Certificate_fa6e19(struct Spdm *pSpdm) {
+    return ((void *)0);
 }
 
 NV_STATUS spdmGetIndividualCertificate_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 certId, NvBool bDerFormat, void *pCert, NvU64 *pCertSize);

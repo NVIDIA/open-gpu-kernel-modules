@@ -174,7 +174,7 @@ NV_STATUS kvidengInitLogging_KERNEL
     /*!
      * Random number generator used for generate noisy timestamp
      */
-    osGetCurrentTick(&seed);
+    seed = osGetCurrentTick();
     pKernelVideoEngine->videoTraceInfo.pVideoLogPrng = portCryptoPseudoRandomGeneratorCreate(seed);
 
     pKernelVideoEngine->bVideoTraceEnabled = NV_TRUE;

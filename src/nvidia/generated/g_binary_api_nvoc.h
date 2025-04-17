@@ -1,13 +1,15 @@
 
 #ifndef _G_BINARY_API_NVOC_H_
 #define _G_BINARY_API_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,15 +61,19 @@ extern "C" {
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__BinaryApi;
+struct NVOC_METADATA__GpuResource;
 struct NVOC_VTABLE__BinaryApi;
 
 
 struct BinaryApi {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__BinaryApi *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__BinaryApi *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct GpuResource __nvoc_base_GpuResource;
@@ -82,10 +88,8 @@ struct BinaryApi {
 };
 
 
-// Metadata including vtable with 25 function pointers plus superclass metadata
+// Vtable with 25 per-class function pointers
 struct NVOC_VTABLE__BinaryApi {
-    const struct NVOC_VTABLE__GpuResource GpuResource;    // (gpures) 25 function pointers
-
     NV_STATUS (*__binapiControl__)(struct BinaryApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (gpures)
     NV_STATUS (*__binapiMap__)(struct BinaryApi * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__binapiUnmap__)(struct BinaryApi * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
@@ -113,6 +117,13 @@ struct NVOC_VTABLE__BinaryApi {
     void (*__binapiAddAdditionalDependants__)(struct RsClient *, struct BinaryApi * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__BinaryApi {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuResource metadata__GpuResource;
+    const struct NVOC_VTABLE__BinaryApi vtable;
+};
+
 #ifndef __NVOC_CLASS_BinaryApi_TYPEDEF__
 #define __NVOC_CLASS_BinaryApi_TYPEDEF__
 typedef struct BinaryApi BinaryApi;
@@ -129,170 +140,170 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_BinaryApi;
     ((pThis)->__nvoc_pbase_BinaryApi)
 
 #ifdef __nvoc_binary_api_h_disabled
-#define __dynamicCast_BinaryApi(pThis) ((BinaryApi*)NULL)
+#define __dynamicCast_BinaryApi(pThis) ((BinaryApi*) NULL)
 #else //__nvoc_binary_api_h_disabled
 #define __dynamicCast_BinaryApi(pThis) \
-    ((BinaryApi*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(BinaryApi)))
+    ((BinaryApi*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(BinaryApi)))
 #endif //__nvoc_binary_api_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_BinaryApi(BinaryApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_BinaryApi(BinaryApi**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_BinaryApi(BinaryApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_BinaryApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_BinaryApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
 // Wrapper macros
-#define binapiControl_FNPTR(pResource) pResource->__nvoc_vtable->__binapiControl__
+#define binapiControl_FNPTR(pResource) pResource->__nvoc_metadata_ptr->vtable.__binapiControl__
 #define binapiControl(pResource, pCallContext, pParams) binapiControl_DISPATCH(pResource, pCallContext, pParams)
-#define binapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresMap__
+#define binapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
 #define binapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) binapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define binapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresUnmap__
+#define binapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
 #define binapiUnmap(pGpuResource, pCallContext, pCpuMapping) binapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define binapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresShareCallback__
+#define binapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
 #define binapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) binapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define binapiGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
+#define binapiGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define binapiGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) binapiGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define binapiGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetMapAddrSpace__
+#define binapiGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__
 #define binapiGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) binapiGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define binapiInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresInternalControlForward__
+#define binapiInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__
 #define binapiInternalControlForward(pGpuResource, command, pParams, size) binapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define binapiGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetInternalObjectHandle__
+#define binapiGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define binapiGetInternalObjectHandle(pGpuResource) binapiGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define binapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define binapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define binapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) binapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define binapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
+#define binapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define binapiGetMemInterMapParams(pRmResource, pParams) binapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define binapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
+#define binapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define binapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) binapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define binapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
+#define binapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define binapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) binapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define binapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define binapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define binapiControlSerialization_Prologue(pResource, pCallContext, pParams) binapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define binapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define binapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define binapiControlSerialization_Epilogue(pResource, pCallContext, pParams) binapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define binapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
+#define binapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
 #define binapiControl_Prologue(pResource, pCallContext, pParams) binapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define binapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
+#define binapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
 #define binapiControl_Epilogue(pResource, pCallContext, pParams) binapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define binapiCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define binapiCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define binapiCanCopy(pResource) binapiCanCopy_DISPATCH(pResource)
-#define binapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define binapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define binapiIsDuplicate(pResource, hMemory, pDuplicate) binapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define binapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define binapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define binapiPreDestruct(pResource) binapiPreDestruct_DISPATCH(pResource)
-#define binapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define binapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define binapiControlFilter(pResource, pCallContext, pParams) binapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define binapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define binapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define binapiIsPartialUnmapSupported(pResource) binapiIsPartialUnmapSupported_DISPATCH(pResource)
-#define binapiMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define binapiMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define binapiMapTo(pResource, pParams) binapiMapTo_DISPATCH(pResource, pParams)
-#define binapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define binapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define binapiUnmapFrom(pResource, pParams) binapiUnmapFrom_DISPATCH(pResource, pParams)
-#define binapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define binapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define binapiGetRefCount(pResource) binapiGetRefCount_DISPATCH(pResource)
-#define binapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define binapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define binapiAddAdditionalDependants(pClient, pResource, pReference) binapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
 static inline NV_STATUS binapiControl_DISPATCH(struct BinaryApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__binapiControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiControl__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS binapiMap_DISPATCH(struct BinaryApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_vtable->__binapiMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__binapiMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS binapiUnmap_DISPATCH(struct BinaryApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_vtable->__binapiUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__binapiUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool binapiShareCallback_DISPATCH(struct BinaryApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_vtable->__binapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__binapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS binapiGetRegBaseOffsetAndSize_DISPATCH(struct BinaryApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_vtable->__binapiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__binapiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS binapiGetMapAddrSpace_DISPATCH(struct BinaryApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__nvoc_vtable->__binapiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__binapiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS binapiInternalControlForward_DISPATCH(struct BinaryApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_vtable->__binapiInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__binapiInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
 static inline NvHandle binapiGetInternalObjectHandle_DISPATCH(struct BinaryApi *pGpuResource) {
-    return pGpuResource->__nvoc_vtable->__binapiGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__binapiGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NvBool binapiAccessCallback_DISPATCH(struct BinaryApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__binapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS binapiGetMemInterMapParams_DISPATCH(struct BinaryApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_vtable->__binapiGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__binapiGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS binapiCheckMemInterUnmap_DISPATCH(struct BinaryApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_vtable->__binapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__binapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS binapiGetMemoryMappingDescriptor_DISPATCH(struct BinaryApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_vtable->__binapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__binapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS binapiControlSerialization_Prologue_DISPATCH(struct BinaryApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__binapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void binapiControlSerialization_Epilogue_DISPATCH(struct BinaryApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__binapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__binapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS binapiControl_Prologue_DISPATCH(struct BinaryApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__binapiControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void binapiControl_Epilogue_DISPATCH(struct BinaryApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__binapiControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__binapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool binapiCanCopy_DISPATCH(struct BinaryApi *pResource) {
-    return pResource->__nvoc_vtable->__binapiCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiCanCopy__(pResource);
 }
 
 static inline NV_STATUS binapiIsDuplicate_DISPATCH(struct BinaryApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__binapiIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void binapiPreDestruct_DISPATCH(struct BinaryApi *pResource) {
-    pResource->__nvoc_vtable->__binapiPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__binapiPreDestruct__(pResource);
 }
 
 static inline NV_STATUS binapiControlFilter_DISPATCH(struct BinaryApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__binapiControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool binapiIsPartialUnmapSupported_DISPATCH(struct BinaryApi *pResource) {
-    return pResource->__nvoc_vtable->__binapiIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS binapiMapTo_DISPATCH(struct BinaryApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__binapiMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS binapiUnmapFrom_DISPATCH(struct BinaryApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__binapiUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 binapiGetRefCount_DISPATCH(struct BinaryApi *pResource) {
-    return pResource->__nvoc_vtable->__binapiGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiGetRefCount__(pResource);
 }
 
 static inline void binapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct BinaryApi *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__binapiAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__binapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NV_STATUS binapiControl_IMPL(struct BinaryApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
@@ -314,15 +325,19 @@ NV_STATUS binapiConstruct_IMPL(struct BinaryApi *arg_pResource, struct CALL_CONT
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__BinaryApiPrivileged;
+struct NVOC_METADATA__BinaryApi;
 struct NVOC_VTABLE__BinaryApiPrivileged;
 
 
 struct BinaryApiPrivileged {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__BinaryApiPrivileged *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__BinaryApiPrivileged *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct BinaryApi __nvoc_base_BinaryApi;
@@ -338,10 +353,8 @@ struct BinaryApiPrivileged {
 };
 
 
-// Metadata including vtable with 25 function pointers plus superclass metadata
+// Vtable with 25 per-class function pointers
 struct NVOC_VTABLE__BinaryApiPrivileged {
-    const struct NVOC_VTABLE__BinaryApi BinaryApi;    // (binapi) 25 function pointers
-
     NV_STATUS (*__binapiprivControl__)(struct BinaryApiPrivileged * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (binapi)
     NV_STATUS (*__binapiprivMap__)(struct BinaryApiPrivileged * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (binapi)
     NV_STATUS (*__binapiprivUnmap__)(struct BinaryApiPrivileged * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (binapi)
@@ -369,6 +382,13 @@ struct NVOC_VTABLE__BinaryApiPrivileged {
     void (*__binapiprivAddAdditionalDependants__)(struct RsClient *, struct BinaryApiPrivileged * /*this*/, RsResourceRef *);  // virtual inherited (res) base (binapi)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__BinaryApiPrivileged {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__BinaryApi metadata__BinaryApi;
+    const struct NVOC_VTABLE__BinaryApiPrivileged vtable;
+};
+
 #ifndef __NVOC_CLASS_BinaryApiPrivileged_TYPEDEF__
 #define __NVOC_CLASS_BinaryApiPrivileged_TYPEDEF__
 typedef struct BinaryApiPrivileged BinaryApiPrivileged;
@@ -385,170 +405,170 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_BinaryApiPrivileged;
     ((pThis)->__nvoc_pbase_BinaryApiPrivileged)
 
 #ifdef __nvoc_binary_api_h_disabled
-#define __dynamicCast_BinaryApiPrivileged(pThis) ((BinaryApiPrivileged*)NULL)
+#define __dynamicCast_BinaryApiPrivileged(pThis) ((BinaryApiPrivileged*) NULL)
 #else //__nvoc_binary_api_h_disabled
 #define __dynamicCast_BinaryApiPrivileged(pThis) \
-    ((BinaryApiPrivileged*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(BinaryApiPrivileged)))
+    ((BinaryApiPrivileged*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(BinaryApiPrivileged)))
 #endif //__nvoc_binary_api_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_BinaryApiPrivileged(BinaryApiPrivileged**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_BinaryApiPrivileged(BinaryApiPrivileged**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_BinaryApiPrivileged(BinaryApiPrivileged**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_BinaryApiPrivileged(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_BinaryApiPrivileged((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
 // Wrapper macros
-#define binapiprivControl_FNPTR(pResource) pResource->__nvoc_vtable->__binapiprivControl__
+#define binapiprivControl_FNPTR(pResource) pResource->__nvoc_metadata_ptr->vtable.__binapiprivControl__
 #define binapiprivControl(pResource, pCallContext, pParams) binapiprivControl_DISPATCH(pResource, pCallContext, pParams)
-#define binapiprivMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresMap__
+#define binapiprivMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
 #define binapiprivMap(pGpuResource, pCallContext, pParams, pCpuMapping) binapiprivMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define binapiprivUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresUnmap__
+#define binapiprivUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
 #define binapiprivUnmap(pGpuResource, pCallContext, pCpuMapping) binapiprivUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define binapiprivShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresShareCallback__
+#define binapiprivShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
 #define binapiprivShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) binapiprivShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define binapiprivGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
+#define binapiprivGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define binapiprivGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) binapiprivGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define binapiprivGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetMapAddrSpace__
+#define binapiprivGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__
 #define binapiprivGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) binapiprivGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define binapiprivInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresInternalControlForward__
+#define binapiprivInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__
 #define binapiprivInternalControlForward(pGpuResource, command, pParams, size) binapiprivInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define binapiprivGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetInternalObjectHandle__
+#define binapiprivGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define binapiprivGetInternalObjectHandle(pGpuResource) binapiprivGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define binapiprivAccessCallback_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define binapiprivAccessCallback_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define binapiprivAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) binapiprivAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define binapiprivGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
+#define binapiprivGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define binapiprivGetMemInterMapParams(pRmResource, pParams) binapiprivGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define binapiprivCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
+#define binapiprivCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define binapiprivCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) binapiprivCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define binapiprivGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
+#define binapiprivGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define binapiprivGetMemoryMappingDescriptor(pRmResource, ppMemDesc) binapiprivGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define binapiprivControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define binapiprivControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define binapiprivControlSerialization_Prologue(pResource, pCallContext, pParams) binapiprivControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define binapiprivControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define binapiprivControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define binapiprivControlSerialization_Epilogue(pResource, pCallContext, pParams) binapiprivControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define binapiprivControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
+#define binapiprivControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
 #define binapiprivControl_Prologue(pResource, pCallContext, pParams) binapiprivControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define binapiprivControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
+#define binapiprivControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
 #define binapiprivControl_Epilogue(pResource, pCallContext, pParams) binapiprivControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define binapiprivCanCopy_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define binapiprivCanCopy_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define binapiprivCanCopy(pResource) binapiprivCanCopy_DISPATCH(pResource)
-#define binapiprivIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define binapiprivIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define binapiprivIsDuplicate(pResource, hMemory, pDuplicate) binapiprivIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define binapiprivPreDestruct_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define binapiprivPreDestruct_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define binapiprivPreDestruct(pResource) binapiprivPreDestruct_DISPATCH(pResource)
-#define binapiprivControlFilter_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define binapiprivControlFilter_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define binapiprivControlFilter(pResource, pCallContext, pParams) binapiprivControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define binapiprivIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define binapiprivIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define binapiprivIsPartialUnmapSupported(pResource) binapiprivIsPartialUnmapSupported_DISPATCH(pResource)
-#define binapiprivMapTo_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define binapiprivMapTo_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define binapiprivMapTo(pResource, pParams) binapiprivMapTo_DISPATCH(pResource, pParams)
-#define binapiprivUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define binapiprivUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define binapiprivUnmapFrom(pResource, pParams) binapiprivUnmapFrom_DISPATCH(pResource, pParams)
-#define binapiprivGetRefCount_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define binapiprivGetRefCount_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define binapiprivGetRefCount(pResource) binapiprivGetRefCount_DISPATCH(pResource)
-#define binapiprivAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define binapiprivAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define binapiprivAddAdditionalDependants(pClient, pResource, pReference) binapiprivAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
 static inline NV_STATUS binapiprivControl_DISPATCH(struct BinaryApiPrivileged *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__binapiprivControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiprivControl__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS binapiprivMap_DISPATCH(struct BinaryApiPrivileged *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_vtable->__binapiprivMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__binapiprivMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS binapiprivUnmap_DISPATCH(struct BinaryApiPrivileged *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_vtable->__binapiprivUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__binapiprivUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool binapiprivShareCallback_DISPATCH(struct BinaryApiPrivileged *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_vtable->__binapiprivShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__binapiprivShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS binapiprivGetRegBaseOffsetAndSize_DISPATCH(struct BinaryApiPrivileged *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_vtable->__binapiprivGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__binapiprivGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS binapiprivGetMapAddrSpace_DISPATCH(struct BinaryApiPrivileged *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__nvoc_vtable->__binapiprivGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__binapiprivGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS binapiprivInternalControlForward_DISPATCH(struct BinaryApiPrivileged *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_vtable->__binapiprivInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__binapiprivInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
 static inline NvHandle binapiprivGetInternalObjectHandle_DISPATCH(struct BinaryApiPrivileged *pGpuResource) {
-    return pGpuResource->__nvoc_vtable->__binapiprivGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__binapiprivGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NvBool binapiprivAccessCallback_DISPATCH(struct BinaryApiPrivileged *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__binapiprivAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiprivAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS binapiprivGetMemInterMapParams_DISPATCH(struct BinaryApiPrivileged *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_vtable->__binapiprivGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__binapiprivGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS binapiprivCheckMemInterUnmap_DISPATCH(struct BinaryApiPrivileged *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_vtable->__binapiprivCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__binapiprivCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS binapiprivGetMemoryMappingDescriptor_DISPATCH(struct BinaryApiPrivileged *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_vtable->__binapiprivGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__binapiprivGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS binapiprivControlSerialization_Prologue_DISPATCH(struct BinaryApiPrivileged *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__binapiprivControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiprivControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void binapiprivControlSerialization_Epilogue_DISPATCH(struct BinaryApiPrivileged *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__binapiprivControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__binapiprivControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS binapiprivControl_Prologue_DISPATCH(struct BinaryApiPrivileged *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__binapiprivControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiprivControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void binapiprivControl_Epilogue_DISPATCH(struct BinaryApiPrivileged *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__binapiprivControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__binapiprivControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool binapiprivCanCopy_DISPATCH(struct BinaryApiPrivileged *pResource) {
-    return pResource->__nvoc_vtable->__binapiprivCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiprivCanCopy__(pResource);
 }
 
 static inline NV_STATUS binapiprivIsDuplicate_DISPATCH(struct BinaryApiPrivileged *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__binapiprivIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiprivIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void binapiprivPreDestruct_DISPATCH(struct BinaryApiPrivileged *pResource) {
-    pResource->__nvoc_vtable->__binapiprivPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__binapiprivPreDestruct__(pResource);
 }
 
 static inline NV_STATUS binapiprivControlFilter_DISPATCH(struct BinaryApiPrivileged *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__binapiprivControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiprivControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool binapiprivIsPartialUnmapSupported_DISPATCH(struct BinaryApiPrivileged *pResource) {
-    return pResource->__nvoc_vtable->__binapiprivIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiprivIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS binapiprivMapTo_DISPATCH(struct BinaryApiPrivileged *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__binapiprivMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiprivMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS binapiprivUnmapFrom_DISPATCH(struct BinaryApiPrivileged *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__binapiprivUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiprivUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 binapiprivGetRefCount_DISPATCH(struct BinaryApiPrivileged *pResource) {
-    return pResource->__nvoc_vtable->__binapiprivGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__binapiprivGetRefCount__(pResource);
 }
 
 static inline void binapiprivAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct BinaryApiPrivileged *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__binapiprivAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__binapiprivAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NV_STATUS binapiprivControl_IMPL(struct BinaryApiPrivileged *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);

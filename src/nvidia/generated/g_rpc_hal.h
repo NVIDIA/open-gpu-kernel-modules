@@ -183,6 +183,7 @@ typedef NV_STATUS      RpcCtrlFabricMemStats(POBJGPU, POBJRPC, NvHandle, NvHandl
 typedef NV_STATUS      RpcCtrlCmdNvlinkInbandSendData(POBJGPU, POBJRPC, NV2080_CTRL_NVLINK_INBAND_SEND_DATA_PARAMS*);
 typedef NV_STATUS      RpcCtrlGrCtxswZcullBind(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlInternalMemsysSetZbcReferenced(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
+typedef NV_STATUS      RpcSetupHibernationBuffer(POBJGPU, POBJRPC);
 typedef NV_STATUS      RpcCtrlPerfRatedTdpSetControl(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlExecPartitionsCreate(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlGpfifoGetWorkSubmitToken(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
@@ -340,6 +341,7 @@ typedef struct RPC_HAL_IFACES {
     RpcCtrlCmdNvlinkInbandSendData  *rpcCtrlCmdNvlinkInbandSendData; /* CTRL_CMD_NVLINK_INBAND_SEND_DATA */
     RpcCtrlGrCtxswZcullBind     *rpcCtrlGrCtxswZcullBind;     /* CTRL_GR_CTXSW_ZCULL_BIND */
     RpcCtrlInternalMemsysSetZbcReferenced  *rpcCtrlInternalMemsysSetZbcReferenced; /* CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED */
+    RpcSetupHibernationBuffer   *rpcSetupHibernationBuffer;   /* SETUP_HIBERNATION_BUFFER */
     RpcCtrlPerfRatedTdpSetControl  *rpcCtrlPerfRatedTdpSetControl; /* CTRL_PERF_RATED_TDP_SET_CONTROL */
     RpcCtrlExecPartitionsCreate  *rpcCtrlExecPartitionsCreate; /* CTRL_EXEC_PARTITIONS_CREATE */
     RpcCtrlGpfifoGetWorkSubmitToken  *rpcCtrlGpfifoGetWorkSubmitToken; /* CTRL_GPFIFO_GET_WORK_SUBMIT_TOKEN */
@@ -600,6 +602,8 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcCtrlGrCtxswZcullBind(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlInternalMemsysSetZbcReferenced_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlInternalMemsysSetZbcReferenced(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
+#define rpcSetupHibernationBuffer_HAL(_pGpu, _pRpc)  \
+        (_pRpc)->_hal.rpcSetupHibernationBuffer(_pGpu, _pRpc)
 #define rpcCtrlPerfRatedTdpSetControl_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlPerfRatedTdpSetControl(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlExecPartitionsCreate_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \

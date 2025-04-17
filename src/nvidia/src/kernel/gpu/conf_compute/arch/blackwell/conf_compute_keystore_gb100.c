@@ -117,6 +117,7 @@ confComputeKeyStoreDeriveViaChannel_GB100
                                             pKey,
                                             keySize))
             {
+                portMemSet(pKey, 0, sizeof(pConfCompute->channelKeySeed));
                 return NV_ERR_FATAL_ERROR;
             }
 
@@ -265,6 +266,7 @@ confComputeGetAndUpdateCurrentKeySeed_GB100
                                 (confComputeGetCurrentKeySeed_HAL(pConfCompute)),
                                 sizeof(pConfCompute->channelKeySeed)))
     {
+        portMemSet(pKey, 0, sizeof(pConfCompute->channelKeySeed));
         return NV_ERR_FATAL_ERROR;
     }
     return NV_OK;

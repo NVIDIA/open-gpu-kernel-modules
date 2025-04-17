@@ -31,7 +31,8 @@
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
 #include "gpu/gpu_resource_desc.h"
-#include "gpu/subdevice/subdevice.h"
+#include "kernel/gpu/device/device.h"
+#include "kernel/gpu/subdevice/subdevice.h"
 #include "platform/chipset/chipset.h"
 #include "ctrl/ctrl0080/ctrl0080fb.h"
 #include "ctrl/ctrl2080/ctrl2080fb.h"
@@ -179,9 +180,12 @@ _kmemsysGetFbInfos
     // Populate indices with runtime-specific logic
     // Return early if this computed all requested indices
     //
-    status = kmemsysGetFbInfos_HAL(pGpu, pKernelMemorySystem, pClient, pDevice, hObject, pParams, &fbInfoListIndicesUnset);
-    if (status == NV_OK && nvPopCount64(fbInfoListIndicesUnset) == 0)
-        return NV_OK;
+    if (pKernelMemorySystem != NULL)
+    {
+        status = kmemsysGetFbInfos_HAL(pGpu, pKernelMemorySystem, pClient, pDevice, hObject, pParams, &fbInfoListIndicesUnset);
+        if (status == NV_OK && nvPopCount64(fbInfoListIndicesUnset) == 0)
+            return NV_OK;
+    }
 
     // Load the per-GPU instance heap if MIG is enabled.
     FOR_EACH_INDEX_IN_MASK(64, i, fbInfoListIndicesUnset)
@@ -1200,130 +1204,6 @@ subdeviceCtrlCmdFbGetNumaInfo_IMPL
 }
 
 /*!
- * @brief This call can be used to get the FB availability status.
- *
- * Lock Requirements:
- *      Assert that API and GPUs lock held on entry
- *
- * @param[in] pSubdevice Subdevice
- * @param[in] pParams    pointer to FB_GET_STATUS_PARAMS parameters
- *
- * @return NV_OK When successful
- *         Otherwise
- *         NV_ERR_INVALID_STATE or
- *         NV_ERR_NOT_SUPPORTED or
- *         NV_ERR_NOT_READY or
- *         NV_ERR_INVALID_LOCK_STATE
- *
- */
-NV_STATUS
-subdeviceCtrlCmdFbGetStatus_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_FB_GET_STATUS_PARAMS *pParams
-)
-{
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
-    NvU64 fbSize = 0;
-    NvU32 swizzId = 0;
-
-    // If FB size is zero, FB availability status is not applicable
-    NV_ASSERT_OK_OR_RETURN(kmemsysGetUsableFbSize_HAL(pGpu, pKernelMemorySystem, &fbSize));
-    if (fbSize == 0)
-    {
-        pParams->fbStatus = NV2080_CTRL_FB_STATUS_NOT_APPLICABLE;
-        return NV_OK;
-    }
-
-    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
-
-    //
-    // First check if this is a Self Hosted system. If yes, get the swizzId
-    // and finally set the fbStatus based on Switch or direct connected system.
-    //
-    if (gpuIsSelfHosted(pGpu))
-    {
-        if (IS_MIG_IN_USE(pGpu))
-        {
-            KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-            Device           *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
-            MIG_INSTANCE_REF  ref;
-
-            if (kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref) == NV_OK)
-            {
-                swizzId = ref.pKernelMIGGpuInstance->swizzId;
-            }
-            else
-            {
-                return NV_ERR_INVALID_STATE;
-            }
-        }
-        else
-        {
-            // Self Hosted but no MIG, hence swizzId = 0
-            swizzId = 0;
-        }
-
-        //
-        // kmemsysIsNumaPartitionInUse works for MIG and non-MIG cases too.
-        // We should be ideally return from here for both direct connected
-        // and nvswitch self hosted systems.
-        //
-        if (kmemsysIsNumaPartitionInUse_HAL(pGpu, pKernelMemorySystem, swizzId))
-        {
-            pParams->fbStatus = NV2080_CTRL_FB_STATUS_READY;
-            return NV_OK;
-        }
-
-        if (GPU_IS_NVSWITCH_DETECTED(pGpu))
-        {
-            NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS fabricParams = {0};
-            NV_ASSERT_OK_OR_RETURN(
-                subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL(pGpu->pCachedSubdevice, &fabricParams));
-
-            switch (fabricParams.state)
-            {
-                case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_IN_PROGRESS:
-                case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_NOT_STARTED:
-                    pParams->fbStatus = NV2080_CTRL_FB_STATUS_PENDING;
-                    return NV_OK;
-                case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_COMPLETE:
-                {
-                    //
-                    // We should reach here only when fabric probe failed since memory
-                    // onlining would have succeeded by now otherwise.
-                    //
-                    NV_ASSERT_OR_RETURN(fabricParams.status != NV_OK, NV_ERR_INVALID_STATE);
-                    pParams->fbStatus = NV2080_CTRL_FB_STATUS_FAILED;
-                    return NV_OK;
-                }
-
-                default:
-                    NV_PRINTF(LEVEL_ERROR, "Invalid Fabric State\n");
-                    return NV_ERR_INVALID_STATE;
-            }
-        }
-        else
-        {
-            //
-            // For Direct connected self hosted system, we should not have reached this point.
-            // Hence assert and return.
-            //
-            NV_ASSERT(0);
-            return NV_ERR_INVALID_STATE;
-        }
-    }
-    else
-    {
-        // GPU is not self hosted, but it has FB
-        pParams->fbStatus = NV2080_CTRL_FB_STATUS_READY;
-    }
-
-    return NV_OK;
-}
-
-/*!
  * @brief This call can be used to get static Bar1 related information.
  *
  * Lock Requirements:
@@ -1369,6 +1249,40 @@ subdeviceCtrlCmdFbGetStaticBar1Info_IMPL
 }
 
 NV_STATUS
+deviceCtrlCmdFbSetZbcReferenced_IMPL
+(
+    Device *pDevice,
+    NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS *pParams
+)
+{
+    OBJGPU       *pGpu = GPU_RES_GET_GPU(pDevice);
+    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    NvU32         gfid;
+    NV_STATUS     status = NV_OK;
+
+    NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, IS_GFID_VF(gfid) || pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL, NV_ERR_INSUFFICIENT_PERMISSIONS);
+
+    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
+    {
+        RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
+
+        NV_RM_RPC_CONTROL(pGpu,
+                          pRmCtrlParams->hClient,
+                          pRmCtrlParams->hObject,
+                          pRmCtrlParams->cmd,
+                          pRmCtrlParams->pParams,
+                          pRmCtrlParams->paramsSize,
+                          status);
+
+        return status;
+    }
+
+    return status;
+}
+
+NV_STATUS
 subdeviceCtrlCmdFbSetZbcReferenced_IMPL
 (
     Subdevice *pSubdevice,
@@ -1402,41 +1316,18 @@ subdeviceCtrlCmdFbSetZbcReferenced_IMPL
     return status;
 }
 
-/*!
- * @brief This call can be used to flush L2 followed by FB or
- * just the FB.
- *
- * If L2 ops are needed, either _INVALIDATE or _WRITE_BACK
- * or both flags set to _YES is required. Specifying both
- * to _YES implies EVICT.
- *
- * If only the FB flush is needed, only the
- * _APERTURE and _FB_FLUSH_YES are needed.
- *
- * If only L2 ops are needed (i.e. no FB flush following
- * it), _FB_FLUSH_NO is needed in addition to the other
- * L2 ops flags.
- *
- * Lock Requirements:
- *      Assert that API and GPUs lock held on entry
- *
- * @param[in] pSubdevice Subdevice
- * @param[in] pCacheFlushParams Various flush flags
- *
- */
 NV_STATUS
-subdeviceCtrlCmdFbFlushGpuCache_IMPL
+kmemsysFlushGpuCache_IMPL
 (
-    Subdevice *pSubdevice,
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem,
+    KernelBus *pKernelBus,
     NV2080_CTRL_FB_FLUSH_GPU_CACHE_PARAMS *pCacheFlushParams
 )
 {
-    OBJGPU             *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     NV_STATUS           status = NV_OK;
     FB_CACHE_MEMTYPE    memType = FB_CACHE_MEM_UNDEFINED;
     FB_CACHE_OP         cacheOp = FB_CACHE_OP_UNDEFINED;
-    KernelBus          *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvBool              bWriteback = NV_FALSE;
     NvBool              bInvalidate = NV_FALSE;
 
@@ -1538,6 +1429,41 @@ subdeviceCtrlCmdFbFlushGpuCache_IMPL
     }
 
     return status;
+}
+
+/*!
+ * @brief This call can be used to flush L2 followed by FB or
+ * just the FB.
+ *
+ * If L2 ops are needed, either _INVALIDATE or _WRITE_BACK
+ * or both flags set to _YES is required. Specifying both
+ * to _YES implies EVICT.
+ *
+ * If only the FB flush is needed, only the
+ * _APERTURE and _FB_FLUSH_YES are needed.
+ *
+ * If only L2 ops are needed (i.e. no FB flush following
+ * it), _FB_FLUSH_NO is needed in addition to the other
+ * L2 ops flags.
+ *
+ * Lock Requirements:
+ *      Assert that API and GPUs lock held on entry
+ *
+ * @param[in] pSubdevice Subdevice
+ * @param[in] pCacheFlushParams Various flush flags
+ *
+ */
+NV_STATUS
+subdeviceCtrlCmdFbFlushGpuCache_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FB_FLUSH_GPU_CACHE_PARAMS *pCacheFlushParams
+)
+{
+    OBJGPU             *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+    return kmemsysFlushGpuCache(pGpu, pKernelMemorySystem, pKernelBus, pCacheFlushParams);
 }
 
 //

@@ -94,6 +94,7 @@ vgpuMgrFillVgpuType(NVA081_CTRL_VGPU_INFO *pVgpuInfo, VGPU_TYPE *pVgpuTypeNode)
     pVgpuTypeNode->bar1Length         = pVgpuInfo->bar1Length;
     pVgpuTypeNode->gpuDirectSupported = pVgpuInfo->gpuDirectSupported;
     pVgpuTypeNode->nvlinkP2PSupported = pVgpuInfo->nvlinkP2PSupported;
+    pVgpuTypeNode->maxInstancePerGI   = pVgpuInfo->maxInstancePerGI;
     pVgpuTypeNode->multiVgpuExclusive = pVgpuInfo->multiVgpuExclusive;
     pVgpuTypeNode->frlEnable          = pVgpuInfo->frlEnable;
 
@@ -143,6 +144,7 @@ vgpuMgrReserveSystemChannelIDs
     NvU32 i;
     NvU32 flags = NVOS32_ALLOC_FLAGS_FORCE_MEM_GROWS_DOWN; // allocate from the end
     NvU64 heapOffset = 0;
+    NvU32 swizzId = KMIGMGR_SWIZZID_INVALID;
 
     NV_ASSERT_OR_RETURN(engineFifoListNumEntries != 0, NV_ERR_INVALID_STATE);
 
@@ -153,20 +155,31 @@ vgpuMgrReserveSystemChannelIDs
 
     if (!RMCFG_FEATURE_PLATFORM_GSP && (placementId != NVA081_PLACEMENT_ID_INVALID))
     {
+        NvBool bHeterogeneousModeEnabled;
         /*
          * Heterogeneous and Homogeneous vGPU modes are mutually exclusive.
          * Query chidOffset based on placement ID and vGPU typeId based on the
          * placement ID mode set.
          */
-        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VGPU_HETEROGENEOUS_MODE))
+        if (IS_MIG_IN_USE(pGpu) && kvgpumgrIsMigTimeslicingModeEnabled(pGpu))
+        {
+            swizzId = kvgpuMgrGetSwizzIdFromDevice(pGpu, pMigDevice);
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                kvgpuMgrGetHeterogeneousModePerGI(pGpu, swizzId, &bHeterogeneousModeEnabled));
+        }
+        else
+        {
+            bHeterogeneousModeEnabled = pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VGPU_HETEROGENEOUS_MODE);
+        }
+        if (bHeterogeneousModeEnabled)
         {
             NV_ASSERT_OK_OR_RETURN(kvgpumgrHeterogeneousGetChidOffset(vgpuTypeInfo->vgpuTypeId,
                                                                       placementId,
                                                                       numChannels,
                                                                       &heapOffset));
             flags |= NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE;
-        } 
-        else if (kvgpumgrCheckHomogeneousPlacementSupported(pGpu) == NV_OK)
+        }
+        else if (kvgpumgrCheckHomogeneousPlacementSupported(pGpu, swizzId) == NV_OK)
         {
             NV_ASSERT_OK_OR_RETURN(kvgpumgrHomogeneousGetChidOffset(vgpuTypeInfo->vgpuTypeId,
                                                                     placementId,
@@ -309,4 +322,28 @@ vgpuMgrFreeSystemChannelIDs
         if (pKernelFifo->numChidMgrs == 1)
              break;
     }
+}
+
+
+NvU32 vgpuMgrGetSwrlCountToAllocate(OBJGPU *pGpu)
+{
+    NvU32 num_swrl;
+
+    if (IS_MIG_IN_USE(pGpu))
+    {
+        if (IsGB20XorBetter(pGpu))
+        {
+            num_swrl = OBJSCHED_SW_MIG_TIMESLICE_RUNLIST_COUNT;
+        }
+        else
+        {
+            num_swrl = OBJSCHED_SW_MIG_NO_TIMESLICE_RUNLIST_COUNT;
+        }
+    }
+    else
+    {
+        num_swrl = OBJSCHED_SW_RUNLIST_COUNT;
+    }
+
+    return num_swrl;
 }

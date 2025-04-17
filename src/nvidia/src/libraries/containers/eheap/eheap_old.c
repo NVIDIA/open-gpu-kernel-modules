@@ -48,7 +48,6 @@ static NV_STATUS  eheapSetAllocRange(OBJEHEAP *, NvU64, NvU64);
 static NV_STATUS  eheapTraverse(OBJEHEAP *, void *, EHeapTraversalFn, NvS32);
 static NV_STATUS  _eheapBlockFree(OBJEHEAP *pHeap, EMEMBLOCK *block);
 static NvU32      eheapGetNumBlocks(OBJEHEAP *);
-static NV_STATUS  eheapGetBlockInfo(OBJEHEAP *, NvU32, NVOS32_HEAP_DUMP_BLOCK *);
 static NV_STATUS  eheapSetOwnerIsolation(OBJEHEAP *, NvBool, NvU32);
 static NvBool     _eheapCheckOwnership(OBJEHEAP *, void*, NvU64, NvU64, EMEMBLOCK *, EHeapOwnershipComparator*);
 
@@ -75,7 +74,6 @@ initPublicObjectFunctionPointers_EHeap(OBJEHEAP *pHeap)
     pHeap->eheapSetAllocRange         = eheapSetAllocRange;
     pHeap->eheapTraverse              = eheapTraverse;
     pHeap->eheapGetNumBlocks          = eheapGetNumBlocks;
-    pHeap->eheapGetBlockInfo          = eheapGetBlockInfo;
     pHeap->eheapSetOwnerIsolation     = eheapSetOwnerIsolation;
 }
 
@@ -1269,55 +1267,6 @@ eheapGetNumBlocks
 )
 {
     return pHeap->numBlocks;
-}
-
-/*!
- * @brief Copies over block information for each block
- * in the heap into the provided buffer.
- *
- * @param[in] pHeap: pointer to eHeap struct to get data from
- * @param[in] numBlocks: number of blocks passed in block buffer
- * @param[out] pBlockBuffer: pointer to buffer where info will be copied to
- *
- * @return 'NV_OK' Operation completed successfully
- *         'NV_ERR_INVALID_ARGUMENT' size of buffer passed in is
- *          incorrect
- *         'NV_ERR_INVALID_STATE' if the blocklist doesn't match the
- *          heapSize
- */
-static NV_STATUS
-eheapGetBlockInfo
-(
-    OBJEHEAP *pHeap,
-    NvU32 numBlocks,
-    NVOS32_HEAP_DUMP_BLOCK *pBlockBuffer
-)
-{
-    EMEMBLOCK *pBlock;
-    NvU32 heapSize, i;
-    NV_STATUS rmStatus = NV_OK;
-
-    // ensure buffer is the same numBlocks
-    heapSize = eheapGetNumBlocks(pHeap);
-    NV_ASSERT_OR_RETURN(heapSize == numBlocks, NV_ERR_INVALID_ARGUMENT);
-
-    pBlock = pHeap->pBlockList;
-    for (i = 0; i < heapSize; i++)
-    {
-        pBlockBuffer->begin = pBlock->begin;
-        pBlockBuffer->align = pBlock->align;
-        pBlockBuffer->end = pBlock->end;
-        pBlockBuffer->owner = pBlock->owner;
-        pBlockBuffer->format = 0; // EMEMBLOCK does not have format, ignore for now
-        pBlock = pBlock->next;
-        if (pBlock == NULL)
-        {
-            return NV_ERR_INVALID_STATE;
-        }
-        pBlockBuffer++;
-    }
-
-    return rmStatus;
 }
 
 /**

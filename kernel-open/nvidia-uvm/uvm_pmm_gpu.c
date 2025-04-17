@@ -175,6 +175,10 @@
 #include "uvm_test.h"
 #include "uvm_linux.h"
 
+#if defined(CONFIG_PCI_P2PDMA) && defined(NV_STRUCT_PAGE_HAS_ZONE_DEVICE_DATA)
+#include <linux/pci-p2pdma.h>
+#endif
+
 static int uvm_global_oversubscription = 1;
 module_param(uvm_global_oversubscription, int, S_IRUGO);
 MODULE_PARM_DESC(uvm_global_oversubscription, "Enable (1) or disable (0) global oversubscription support.");
@@ -3349,6 +3353,25 @@ void uvm_pmm_gpu_device_p2p_deinit(uvm_gpu_t *gpu)
 
     gpu->device_p2p_initialised = false;
 }
+#else // CONFIG_PCI_P2PDMA
+
+// Coherent platforms can do P2PDMA without CONFIG_PCI_P2PDMA
+void uvm_pmm_gpu_device_p2p_init(uvm_gpu_t *gpu)
+{
+    gpu->device_p2p_initialised = false;
+    uvm_mutex_init(&gpu->device_p2p_lock, UVM_LOCK_ORDER_GLOBAL);
+
+    if (uvm_parent_gpu_is_coherent(gpu->parent)) {
+        // A coherent system uses normal struct pages.
+        gpu->device_p2p_initialised = true;
+        return;
+    }
+}
+
+void uvm_pmm_gpu_device_p2p_deinit(uvm_gpu_t *gpu)
+{
+    gpu->device_p2p_initialised = false;
+}
 #endif // CONFIG_PCI_P2PDMA
 
 static void process_lazy_free(uvm_pmm_gpu_t *pmm)
@@ -3898,8 +3921,14 @@ NV_STATUS uvm_test_pmm_query_pma_stats(UVM_TEST_PMM_QUERY_PMA_STATS_PARAMS *para
     if (!gpu)
         return NV_ERR_INVALID_DEVICE;
 
-    params->pma_stats.numFreePages64k = READ_ONCE(gpu->pmm.pma_stats->numFreePages64k);
-    params->pma_stats.numFreePages2m = READ_ONCE(gpu->pmm.pma_stats->numFreePages2m);
+    if (gpu->mem_info.size != 0) {
+        params->pma_stats.numFreePages64k = READ_ONCE(gpu->pmm.pma_stats->numFreePages64k);
+        params->pma_stats.numFreePages2m = READ_ONCE(gpu->pmm.pma_stats->numFreePages2m);
+    }
+    else {
+        params->pma_stats.numFreePages64k = 0;
+        params->pma_stats.numFreePages2m = 0;
+    }
 
     uvm_gpu_release(gpu);
     return NV_OK;

@@ -53,7 +53,7 @@ kgrmgrGetVeidsFromGpcCount_GB10B
     NV_PRINTF(LEVEL_INFO, "Max SysPipes:%d, Max GPCs:%d, Max VEIDs:%d.\n", maxSyspipes, maxPartitionableGpcs, maxVeids);
 
     /*
-     * GB10B/IG003 has Maximum 2 Syspipes and 3 GPCs. All 64(maxVeids) are allocated if the requested
+     * GB10B has Maximum 2 Syspipes and 3 GPCs. All 64(maxVeids) are allocated if the requested
      * GPC count matches the maximum GPCs. For any other GPC count(2 or 1), 32 VEIDs are allocated.
      * So, a FULL partition would get 64 VEIDs and both the HALF partitions would get 32 VEIDs each.
      * If the GPCs are Floorswept down to a value less than 3, the VEIDs allocated would be 32 even for

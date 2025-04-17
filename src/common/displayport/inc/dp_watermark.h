@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -133,8 +133,9 @@ namespace DisplayPort
         const ModesetInfo &modesetInfo,
         Watermark  * dpInfo
     );
+
     // Return Payload Bandwidth Number(PBN)for requested mode
-    unsigned pbnForMode(const ModesetInfo &modesetInfo);
+    unsigned pbnForMode(const ModesetInfo &modesetInfo, bool bAccountSpread = true);
 }
 
 #endif //INCLUDED_DP_WATERMARK_H

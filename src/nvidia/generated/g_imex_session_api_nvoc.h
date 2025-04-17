@@ -1,13 +1,15 @@
 
 #ifndef _G_IMEX_SESSION_API_NVOC_H_
 #define _G_IMEX_SESSION_API_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -82,15 +84,19 @@ extern "C" {
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__ImexSessionApi;
+struct NVOC_METADATA__RmResource;
 struct NVOC_VTABLE__ImexSessionApi;
 
 
 struct ImexSessionApi {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__ImexSessionApi *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__ImexSessionApi *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct RmResource __nvoc_base_RmResource;
@@ -113,10 +119,8 @@ struct ImexSessionApi {
 };
 
 
-// Metadata including vtable with 21 function pointers plus superclass metadata
+// Vtable with 21 per-class function pointers
 struct NVOC_VTABLE__ImexSessionApi {
-    const struct NVOC_VTABLE__RmResource RmResource;    // (rmres) 21 function pointers
-
     NvBool (*__imexsessionapiAccessCallback__)(struct ImexSessionApi * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (rmres)
     NvBool (*__imexsessionapiShareCallback__)(struct ImexSessionApi * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (rmres)
     NV_STATUS (*__imexsessionapiGetMemInterMapParams__)(struct ImexSessionApi * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (rmres)
@@ -140,6 +144,13 @@ struct NVOC_VTABLE__ImexSessionApi {
     void (*__imexsessionapiAddAdditionalDependants__)(struct RsClient *, struct ImexSessionApi * /*this*/, RsResourceRef *);  // virtual inherited (res) base (rmres)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__ImexSessionApi {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__RmResource metadata__RmResource;
+    const struct NVOC_VTABLE__ImexSessionApi vtable;
+};
+
 #ifndef __NVOC_CLASS_ImexSessionApi_TYPEDEF__
 #define __NVOC_CLASS_ImexSessionApi_TYPEDEF__
 typedef struct ImexSessionApi ImexSessionApi;
@@ -156,15 +167,15 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_ImexSessionApi;
     ((pThis)->__nvoc_pbase_ImexSessionApi)
 
 #ifdef __nvoc_imex_session_api_h_disabled
-#define __dynamicCast_ImexSessionApi(pThis) ((ImexSessionApi*)NULL)
+#define __dynamicCast_ImexSessionApi(pThis) ((ImexSessionApi*) NULL)
 #else //__nvoc_imex_session_api_h_disabled
 #define __dynamicCast_ImexSessionApi(pThis) \
-    ((ImexSessionApi*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(ImexSessionApi)))
+    ((ImexSessionApi*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(ImexSessionApi)))
 #endif //__nvoc_imex_session_api_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_ImexSessionApi(ImexSessionApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_ImexSessionApi(ImexSessionApi**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_ImexSessionApi(ImexSessionApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_ImexSessionApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_ImexSessionApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
@@ -176,47 +187,47 @@ NV_STATUS __nvoc_objCreate_ImexSessionApi(ImexSessionApi**, Dynamic*, NvU32, str
 #define imexsessionapiCtrlCmdFinishMemUnimport(pImexSessionApi, pParams) imexsessionapiCtrlCmdFinishMemUnimport_DISPATCH(pImexSessionApi, pParams)
 #define imexsessionapiCtrlCmdDisableImporters_FNPTR(pImexSessionApi) pImexSessionApi->__imexsessionapiCtrlCmdDisableImporters__
 #define imexsessionapiCtrlCmdDisableImporters(pImexSessionApi, pParams) imexsessionapiCtrlCmdDisableImporters_DISPATCH(pImexSessionApi, pParams)
-#define imexsessionapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define imexsessionapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define imexsessionapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) imexsessionapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define imexsessionapiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresShareCallback__
+#define imexsessionapiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
 #define imexsessionapiShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) imexsessionapiShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define imexsessionapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
+#define imexsessionapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define imexsessionapiGetMemInterMapParams(pRmResource, pParams) imexsessionapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define imexsessionapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
+#define imexsessionapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define imexsessionapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) imexsessionapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define imexsessionapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
+#define imexsessionapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define imexsessionapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) imexsessionapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define imexsessionapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define imexsessionapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define imexsessionapiControlSerialization_Prologue(pResource, pCallContext, pParams) imexsessionapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define imexsessionapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define imexsessionapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define imexsessionapiControlSerialization_Epilogue(pResource, pCallContext, pParams) imexsessionapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define imexsessionapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
+#define imexsessionapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
 #define imexsessionapiControl_Prologue(pResource, pCallContext, pParams) imexsessionapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define imexsessionapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
+#define imexsessionapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
 #define imexsessionapiControl_Epilogue(pResource, pCallContext, pParams) imexsessionapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define imexsessionapiCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define imexsessionapiCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define imexsessionapiCanCopy(pResource) imexsessionapiCanCopy_DISPATCH(pResource)
-#define imexsessionapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define imexsessionapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define imexsessionapiIsDuplicate(pResource, hMemory, pDuplicate) imexsessionapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define imexsessionapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define imexsessionapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define imexsessionapiPreDestruct(pResource) imexsessionapiPreDestruct_DISPATCH(pResource)
-#define imexsessionapiControl_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControl__
+#define imexsessionapiControl_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define imexsessionapiControl(pResource, pCallContext, pParams) imexsessionapiControl_DISPATCH(pResource, pCallContext, pParams)
-#define imexsessionapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define imexsessionapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define imexsessionapiControlFilter(pResource, pCallContext, pParams) imexsessionapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define imexsessionapiMap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMap__
+#define imexsessionapiMap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define imexsessionapiMap(pResource, pCallContext, pParams, pCpuMapping) imexsessionapiMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
-#define imexsessionapiUnmap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmap__
+#define imexsessionapiUnmap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define imexsessionapiUnmap(pResource, pCallContext, pCpuMapping) imexsessionapiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
-#define imexsessionapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define imexsessionapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define imexsessionapiIsPartialUnmapSupported(pResource) imexsessionapiIsPartialUnmapSupported_DISPATCH(pResource)
-#define imexsessionapiMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define imexsessionapiMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define imexsessionapiMapTo(pResource, pParams) imexsessionapiMapTo_DISPATCH(pResource, pParams)
-#define imexsessionapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define imexsessionapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define imexsessionapiUnmapFrom(pResource, pParams) imexsessionapiUnmapFrom_DISPATCH(pResource, pParams)
-#define imexsessionapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define imexsessionapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define imexsessionapiGetRefCount(pResource) imexsessionapiGetRefCount_DISPATCH(pResource)
-#define imexsessionapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define imexsessionapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define imexsessionapiAddAdditionalDependants(pClient, pResource, pReference) imexsessionapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
@@ -233,87 +244,87 @@ static inline NV_STATUS imexsessionapiCtrlCmdDisableImporters_DISPATCH(struct Im
 }
 
 static inline NvBool imexsessionapiAccessCallback_DISPATCH(struct ImexSessionApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__imexsessionapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool imexsessionapiShareCallback_DISPATCH(struct ImexSessionApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_vtable->__imexsessionapiShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS imexsessionapiGetMemInterMapParams_DISPATCH(struct ImexSessionApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_vtable->__imexsessionapiGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__imexsessionapiGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS imexsessionapiCheckMemInterUnmap_DISPATCH(struct ImexSessionApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_vtable->__imexsessionapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__imexsessionapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS imexsessionapiGetMemoryMappingDescriptor_DISPATCH(struct ImexSessionApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_vtable->__imexsessionapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__imexsessionapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS imexsessionapiControlSerialization_Prologue_DISPATCH(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__imexsessionapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void imexsessionapiControlSerialization_Epilogue_DISPATCH(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__imexsessionapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS imexsessionapiControl_Prologue_DISPATCH(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__imexsessionapiControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void imexsessionapiControl_Epilogue_DISPATCH(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__imexsessionapiControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool imexsessionapiCanCopy_DISPATCH(struct ImexSessionApi *pResource) {
-    return pResource->__nvoc_vtable->__imexsessionapiCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiCanCopy__(pResource);
 }
 
 static inline NV_STATUS imexsessionapiIsDuplicate_DISPATCH(struct ImexSessionApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__imexsessionapiIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void imexsessionapiPreDestruct_DISPATCH(struct ImexSessionApi *pResource) {
-    pResource->__nvoc_vtable->__imexsessionapiPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiPreDestruct__(pResource);
 }
 
 static inline NV_STATUS imexsessionapiControl_DISPATCH(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__imexsessionapiControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiControl__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS imexsessionapiControlFilter_DISPATCH(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__imexsessionapiControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS imexsessionapiMap_DISPATCH(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__imexsessionapiMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiMap__(pResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS imexsessionapiUnmap_DISPATCH(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__imexsessionapiUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool imexsessionapiIsPartialUnmapSupported_DISPATCH(struct ImexSessionApi *pResource) {
-    return pResource->__nvoc_vtable->__imexsessionapiIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS imexsessionapiMapTo_DISPATCH(struct ImexSessionApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__imexsessionapiMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS imexsessionapiUnmapFrom_DISPATCH(struct ImexSessionApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__imexsessionapiUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 imexsessionapiGetRefCount_DISPATCH(struct ImexSessionApi *pResource) {
-    return pResource->__nvoc_vtable->__imexsessionapiGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiGetRefCount__(pResource);
 }
 
 static inline void imexsessionapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct ImexSessionApi *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__imexsessionapiAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NV_STATUS imexsessionapiCtrlCmdGetFabricEvents_IMPL(struct ImexSessionApi *pImexSessionApi, NV00F1_CTRL_GET_FABRIC_EVENTS_PARAMS *pParams);

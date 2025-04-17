@@ -35,15 +35,15 @@
 #include "nvkms-rm.h"
 
 /*!
- * Check whether the flipPermissions for pOpenDev allow the flipping
- * requested by NvKmsFlipCommonParams.
+ * Check whether the permissions for pOpenDev allow changing the
+ * changedLayersMask.
  */
-NvBool nvCheckFlipPermissions(
+NvBool nvCheckLayerPermissions(
     const struct NvKmsPerOpenDev *pOpenDev,
     const NVDevEvoRec *pDevEvo,
     const NvU32 sd,
     const NvU32 apiHead,
-    const struct NvKmsFlipCommonParams *pParams)
+    const NvU8 changedLayersMask)
 {
     const int dispIndex = pDevEvo->gpus[sd].pDispEvo->displayOwner;
     const struct NvKmsFlipPermissions *pFlipPermissions =
@@ -52,11 +52,6 @@ NvBool nvCheckFlipPermissions(
         nvGetModesetPermissionsFromOpenDev(pOpenDev);
     const NvU8 allLayersMask = NVBIT(pDevEvo->apiHead[apiHead].numLayers) - 1;
     NvU8 layerMask = 0;
-    NvU32 layer;
-
-    nvAssert(pOpenDev != NULL);
-    nvAssert(pFlipPermissions != NULL);
-    nvAssert(pModesetPermissions != NULL);
 
     layerMask = pFlipPermissions->disp[dispIndex].head[apiHead].layerMask;
 
@@ -69,22 +64,57 @@ NvBool nvCheckFlipPermissions(
         layerMask = allLayersMask;
     }
 
-    /* Changing viewPortIn or output LUT requires permission to alter all layers. */
+    /*
+     * This one-liner picks out any layers which are changed but don't have
+     * permission (lM == layerMask, cLM == changedLayersMask):
+     *
+     * Scenario                    | lM | cLM | ~lM & cLM
+     * ----------------------------|----|-----|----------
+     * Permission and changed      | 1  | 1   | 0
+     * Permission and unchanged    | 1  | 0   | 0
+     * No permission and changed   | 0  | 1   | 1
+     * No permission and unchanged | 0  | 0   | 0
+     *
+     * If the result is anything other than 0, we have a change that violates
+     * permissions.
+     */
+    return (~layerMask & changedLayersMask) == 0;
+}
 
-    if ((layerMask != allLayersMask) && ((pParams->viewPortIn.specified) ||
-                                         (pParams->olut.specified) ||
-                                         (pParams->lut.input.specified)  ||
-                                         (pParams->lut.output.specified))) {
-        return FALSE;
+/*!
+ * Check whether the flipPermissions for pOpenDev allow the flipping
+ * requested by NvKmsFlipCommonParams.
+ */
+NvBool nvCheckFlipPermissions(
+    const struct NvKmsPerOpenDev *pOpenDev,
+    const NVDevEvoRec *pDevEvo,
+    const NvU32 sd,
+    const NvU32 apiHead,
+    const struct NvKmsFlipCommonParams *pParams)
+{
+    const NvU8 allLayersMask = NVBIT(pDevEvo->apiHead[apiHead].numLayers) - 1;
+    NvU8 changedLayersMask = 0;
+    NvU32 layer;
+
+    /* Changing viewPortIn or output LUT requires permission to alter all layers. */
+    if ((pParams->viewPortIn.specified) ||
+        (pParams->olut.specified) ||
+        (pParams->lut.input.specified)  ||
+        (pParams->lut.output.specified)) {
+        return nvCheckLayerPermissions(pOpenDev, pDevEvo,
+                                       sd, apiHead,
+                                       allLayersMask);
     }
 
     for (layer = 0; layer < pDevEvo->apiHead[apiHead].numLayers; layer++) {
-        if (nvIsLayerDirty(pParams, layer) && ((layerMask & NVBIT(layer)) == 0)) {
-            return FALSE;
+        if (nvIsLayerDirty(pParams, layer)) {
+            changedLayersMask |= NVBIT(layer);
         }
     }
 
-    return TRUE;
+    return nvCheckLayerPermissions(pOpenDev, pDevEvo,
+                                   sd, apiHead,
+                                   changedLayersMask);
 }
 
 static void FillPostSyncptReplyOneApiHead(

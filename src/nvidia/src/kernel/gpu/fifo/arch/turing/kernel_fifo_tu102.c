@@ -40,15 +40,13 @@
  * @param[in] pGpu
  * @param[in] pKernelFifo
  * @param[in] workSubmitToken Token to update the doorbell with
- * @param[in] runlistId       Runlist ID
  */
 NV_STATUS
 kfifoUpdateUsermodeDoorbell_TU102
 (
     OBJGPU     *pGpu,
     KernelFifo *pKernelFifo,
-    NvU32       workSubmitToken,
-    NvU32       runlistId
+    NvU32       workSubmitToken
 )
 {
     NV_PRINTF(LEVEL_INFO, "Poking workSubmitToken 0x%x\n", workSubmitToken);

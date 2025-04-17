@@ -1,13 +1,15 @@
 
 #ifndef _G_GSYNC_NVOC_H_
 #define _G_GSYNC_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -154,6 +156,8 @@ typedef NV_STATUS GsyncGetHouseSyncMode  (struct OBJGPU *, PDACEXTERNALDEVICE, N
 typedef NV_STATUS GsyncSetHouseSyncMode  (struct OBJGPU *, PDACEXTERNALDEVICE, NvU8);
 typedef NV_STATUS GsyncGetMulDiv         (struct OBJGPU *, DACEXTERNALDEVICE *, NV30F1_CTRL_GSYNC_MULTIPLY_DIVIDE_SETTINGS *);
 typedef NV_STATUS GsyncSetMulDiv         (struct OBJGPU *, DACEXTERNALDEVICE *, NV30F1_CTRL_GSYNC_MULTIPLY_DIVIDE_SETTINGS *);
+typedef NV_STATUS GsyncGetVRR            (struct OBJGPU *, DACEXTERNALDEVICE *, NvU32 *);
+typedef NV_STATUS GsyncSetVRR            (struct OBJGPU *, DACEXTERNALDEVICE *, NvU32);
 typedef NV_STATUS GsyncSetRasterSyncDecodeMode (struct OBJGPU *, DACEXTERNALDEVICE *);
 
 typedef struct GSYNC_HAL_IFACES {
@@ -192,6 +196,8 @@ typedef struct GSYNC_HAL_IFACES {
     GsyncSetHouseSyncMode   *gsyncSetHouseSyncMode;
     GsyncGetMulDiv          *gsyncGetMulDiv;
     GsyncSetMulDiv          *gsyncSetMulDiv;
+    GsyncGetVRR             *gsyncGetVRR;
+    GsyncSetVRR             *gsyncSetVRR;
     GsyncSetRasterSyncDecodeMode *gsyncSetRasterSyncDecodeMode;
 
 } GSYNC_HAL_IFACES;
@@ -241,10 +247,18 @@ typedef struct _def_gsync {
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJGSYNCMGR;
+struct NVOC_METADATA__Object;
+
+
 struct OBJGSYNCMGR {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__OBJGSYNCMGR *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -256,6 +270,13 @@ struct OBJGSYNCMGR {
     // Data members
     NvU32 gsyncCount;
     OBJGSYNC gsyncTable[4];
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJGSYNCMGR {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
 };
 
 #ifndef __NVOC_CLASS_OBJGSYNCMGR_TYPEDEF__
@@ -274,10 +295,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGSYNCMGR;
     ((pThis)->__nvoc_pbase_OBJGSYNCMGR)
 
 #ifdef __nvoc_gsync_h_disabled
-#define __dynamicCast_OBJGSYNCMGR(pThis) ((OBJGSYNCMGR*)NULL)
+#define __dynamicCast_OBJGSYNCMGR(pThis) ((OBJGSYNCMGR*) NULL)
 #else //__nvoc_gsync_h_disabled
 #define __dynamicCast_OBJGSYNCMGR(pThis) \
-    ((OBJGSYNCMGR*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJGSYNCMGR)))
+    ((OBJGSYNCMGR*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJGSYNCMGR)))
 #endif //__nvoc_gsync_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_OBJGSYNCMGR(OBJGSYNCMGR**, Dynamic*, NvU32, va_list);

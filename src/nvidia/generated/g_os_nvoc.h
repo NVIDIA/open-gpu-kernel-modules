@@ -1,13 +1,15 @@
 
 #ifndef _G_OS_NVOC_H_
 #define _G_OS_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,6 +52,7 @@ extern "C" {
 
 /* ------------------------ Core & Library Includes ------------------------- */
 #include "core/core.h"
+#include "nvoc/object.h"
 #include "containers/btree.h"
 #include "ctrl/ctrl0073/ctrl0073dfp.h"
 #include "kernel/diagnostics/xid_context.h"
@@ -537,10 +540,18 @@ typedef NV_STATUS       OSReadPFPciConfigInVF(NvU32, NvU32*);
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJOS;
+struct NVOC_METADATA__Object;
+
+
 struct OBJOS {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__OBJOS *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -567,7 +578,13 @@ struct OBJOS {
     // Data members
     NvU32 dynamicPowerSupportGpuMask;
     NvBool bIsSimMods;
-    NvBool bMuxUnsupportedOnOS;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJOS {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
 };
 
 #ifndef __NVOC_CLASS_OBJOS_TYPEDEF__
@@ -586,10 +603,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJOS;
     ((pThis)->__nvoc_pbase_OBJOS)
 
 #ifdef __nvoc_os_h_disabled
-#define __dynamicCast_OBJOS(pThis) ((OBJOS*)NULL)
+#define __dynamicCast_OBJOS(pThis) ((OBJOS*) NULL)
 #else //__nvoc_os_h_disabled
 #define __dynamicCast_OBJOS(pThis) \
-    ((OBJOS*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJOS)))
+    ((OBJOS*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJOS)))
 #endif //__nvoc_os_h_disabled
 
 // Property macros
@@ -637,6 +654,7 @@ NV_STATUS       addProbe(OBJGPU *, NvU32);
 
 
 typedef NV_STATUS  OSFlushCpuCache(void);
+
 typedef void       OSAddRecordForCrashLog(void *, NvU32);
 typedef void       OSDeleteRecordForCrashLog(void *);
 
@@ -674,7 +692,7 @@ NV_STATUS osGetCurrentProcessGfid(NvU32 *pGfid);
 NvBool osIsAdministrator(void);
 NvBool osCheckAccess(RsAccessRight accessRight);
 NV_STATUS osGetCurrentTime(NvU32 *pSec,NvU32 *puSec);
-NV_STATUS osGetCurrentTick(NvU64 *pTimeInNs);
+NvU64 osGetCurrentTick(void);
 NvU64 osGetTickResolution(void);
 NvU64 osGetTimestamp(void);
 NvU64 osGetTimestampFreq(void);
@@ -867,8 +885,6 @@ NV_STATUS osTegraSocParseFixedModeTimings(OS_GPU_INFO *pOsGpuInfo,
                                           NvU32 dcbIndex,
                                           NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS *pTimingsPerStream,
                                           NvU8 *pNumTimings);
-
-NV_STATUS osTegraSocGetScanoutCarveout(OS_GPU_INFO *pOsGpuInfo, NvU64 *pBase, NvU64 *pSize);
 
 NV_STATUS osGetVersion(NvU32 *pMajorVer,
                        NvU32 *pMinorVer,

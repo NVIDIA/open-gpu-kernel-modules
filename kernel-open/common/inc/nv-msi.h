@@ -26,8 +26,7 @@
 
 #include "nv-linux.h"
 
-#if (defined(CONFIG_X86_LOCAL_APIC) || defined(NVCPU_AARCH64) || \
-     defined(NVCPU_PPC64LE)) && \
+#if (defined(CONFIG_X86_LOCAL_APIC) || defined(NVCPU_AARCH64)) && \
     (defined(CONFIG_PCI_MSI) || defined(CONFIG_PCI_USE_VECTOR))
 #define NV_LINUX_PCIE_MSI_SUPPORTED
 #endif

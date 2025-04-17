@@ -265,6 +265,15 @@ _vidmemPmaAllocate
     allocOptions.flags |= PMA_ALLOCATE_FORCE_ALIGNMENT;
     allocOptions.alignment = NV_MAX(sizeAlign, pageSize);
 
+    if (FLD_TEST_DRF(OS32, _ATTR2, _ENABLE_LOCALIZED_MEMORY, _UGPU0, pAllocData->attr2))
+    {
+        allocOptions.flags |= PMA_ALLOCATE_LOCALIZED_UGPU0;
+    }
+    else if (FLD_TEST_DRF(OS32, _ATTR2, _ENABLE_LOCALIZED_MEMORY, _UGPU1, pAllocData->attr2))
+    {
+        allocOptions.flags |= PMA_ALLOCATE_LOCALIZED_UGPU1;
+    }
+
     // Get the number of pages to be allocated by PMA
     NV_CHECK_OR_RETURN(LEVEL_ERROR,
         (NV_DIV_AND_CEIL(size, pageSize) <= NV_U32_MAX),
@@ -455,6 +464,24 @@ vidmemCopyConstruct
     OBJGPU            *pGpu         = pMemorySrc->pGpu;
     MEMORY_DESCRIPTOR *pMemDesc     = pMemorySrc->pMemDesc;
     NV_STATUS          status       = NV_ERR_INVALID_ARGUMENT;
+    KernelBus         *pKernelBus    = GPU_GET_KERNEL_BUS(pGpu);
+
+    // No flags specified on the initial static BAR1 mapping 
+    status = kbusIncreaseStaticBar1Refcount_HAL(pGpu, pKernelBus,
+                   pMemDesc, BUS_MAP_FB_FLAGS_NONE);
+
+    if (status == NV_OK)
+    {
+        // nothing
+    }
+    else if (status == NV_ERR_NOT_SUPPORTED)
+    {
+        status = NV_OK;
+    }
+    else
+    {
+        return status;
+    }
 
     switch (memdescGetCustomHeap(pMemDesc))
     {
@@ -631,6 +658,16 @@ vidmemConstruct_IMPL
     NV_CHECK_OR_RETURN(LEVEL_WARNING,
         !memmgrIsScrubOnFreeEnabled(pMemoryManager) || bIsPmaAlloc || bSubheap || bRsvdHeap,
         NV_ERR_INVALID_STATE);
+
+    if (!FLD_TEST_DRF(OS32, _ATTR2, _ENABLE_LOCALIZED_MEMORY, _DEFAULT, pAllocData->attr2))
+    {
+        if (!bIsPmaAlloc)
+        {
+            // heap does not support localized allocations
+            rmStatus = NV_ERR_NOT_SUPPORTED;
+            goto done;
+        }
+    }
 
     // Get the allocation from PMA if enabled.
     if (bIsPmaAlloc)
@@ -1000,11 +1037,13 @@ vidmemConstruct_IMPL
         }
     }
 
-    rmStatus = kbusIncreaseStaticBar1Refcount_HAL(pGpu, pKernelBus, pMemory->pMemDesc);
+    // No flags specified on the initial static BAR1 mapping 
+    rmStatus = kbusIncreaseStaticBar1Refcount_HAL(pGpu, pKernelBus,
+                   pMemory->pMemDesc, BUS_MAP_FB_FLAGS_NONE);
 
     if (rmStatus == NV_OK)
     {
-        memdescSetFlag(pMemory->pMemDesc, MEMDESC_FLAGS_RESTORE_PTE_KIND_ON_FREE, NV_TRUE);
+        // nothing
     }
     else if (rmStatus == NV_ERR_NOT_SUPPORTED)
     {
@@ -1072,6 +1111,15 @@ vidmemDestruct_IMPL
     CliUnregisterMemoryFromThirdPartyP2P(pMemory);
 
     memDestructCommon(pMemory);
+
+    //
+    // static BAR1: memory must be released from the static BAR1 mapping
+    // to restore the static BAR1 mapping to a default state since it can
+    // immediately be allocated by UVM after PMA free
+    //
+    (void)kbusDecreaseStaticBar1Refcount_HAL(pGpu,
+                    GPU_GET_KERNEL_BUS(pGpu), pMemDesc,
+                    NULL);
 
     // free the video memory based on how it was alloced ... a non-zero
     // heapOwner indicates it was heapAlloc-ed.
@@ -1275,6 +1323,23 @@ vidmemAllocResources
                          pAllocRequest->pPmaAllocInfo[subdeviceInst]->pageArray,
                          pAllocRequest->pPmaAllocInfo[subdeviceInst]->pageCount,
                          pAllocRequest->pPmaAllocInfo[subdeviceInst]->pageSize);
+        }
+        if (!FLD_TEST_DRF(OS32, _ATTR2, _ENABLE_LOCALIZED_MEMORY, _DEFAULT, pVidHeapAlloc->attr2))
+        {
+            KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+            NvBool bIsMIGMemPartitioningEnabled = (pKernelMIGManager != NULL) && kmigmgrIsMIGMemPartitioningEnabled(pGpu, pKernelMIGManager);
+
+            if (pMemoryManager->bLocalizedMemorySupported &&
+                !bIsMIGMemPartitioningEnabled)
+            {
+                memdescSetFlag(pAllocRequest->pMemDesc, MEMDESC_FLAGS_ALLOC_AS_LOCALIZED, NV_TRUE);
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_ERROR, "Localized memory requested when localized memory not enabled\n");
+                status = NV_ERR_INVALID_ARGUMENT;
+                goto failed;
+            }
         }
     }
     else

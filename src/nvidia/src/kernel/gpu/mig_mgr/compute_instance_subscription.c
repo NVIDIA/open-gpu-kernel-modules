@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -217,8 +217,9 @@ cisubscriptionCtrlCmdGetUuid_IMPL
     portMemCopy(pParams->uuid, NVC638_UUID_LEN,
                 pComputeInstanceSubscription->pMIGComputeInstance->uuid.uuid, NV_UUID_LEN);
 
-    nvGetSmcUuidString(&pComputeInstanceSubscription->pMIGComputeInstance->uuid,
-                       pParams->uuidStr);
+    nvGetUuidString(&pComputeInstanceSubscription->pMIGComputeInstance->uuid,
+                    RM_UUID_PREFIX_MIG,
+                    pParams->uuidStr);
 
     return NV_OK;
 }

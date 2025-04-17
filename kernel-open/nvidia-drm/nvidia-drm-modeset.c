@@ -677,6 +677,33 @@ int nv_drm_atomic_commit(struct drm_device *dev,
                     "Flip event timeout on head %u", nv_crtc->head);
             }
         }
+
+#if defined(NV_DRM_COLOR_MGMT_AVAILABLE)
+        /*
+         * If the legacy LUT needs to be updated, ensure that the previous LUT
+         * update is complete first.
+         */
+        if (crtc_state->color_mgmt_changed) {
+            NvBool complete = nvKms->checkLutNotifier(nv_dev->pDevice,
+                                                      nv_crtc->head,
+                                                      !nonblock /* waitForCompletion */);
+
+            /* If checking the LUT notifier failed, assume no LUT notifier is set. */
+            if (!complete) {
+                if (nonblock) {
+                    return -EBUSY;
+                } else {
+                    /*
+                     * checkLutNotifier should wait on the notifier in this
+                     * case, so we should only get here if the wait timed out.
+                     */
+                    NV_DRM_DEV_LOG_ERR(
+                        nv_dev,
+                        "LUT notifier timeout on head %u", nv_crtc->head);
+                }
+            }
+        }
+#endif
     }
 
 #if defined(NV_DRM_ATOMIC_HELPER_SWAP_STATE_HAS_STALL_ARG)
@@ -803,6 +830,19 @@ int nv_drm_atomic_commit(struct drm_device *dev,
                     __nv_drm_handle_flip_event(nv_crtc);
                 }
             }
+
+#if defined(NV_DRM_COLOR_MGMT_AVAILABLE)
+            if (crtc_state->color_mgmt_changed) {
+                NvBool complete = nvKms->checkLutNotifier(nv_dev->pDevice,
+                                                          nv_crtc->head,
+                                                          true /* waitForCompletion */);
+                if (!complete) {
+                    NV_DRM_DEV_LOG_ERR(
+                        nv_dev,
+                        "LUT notifier timeout on head %u", nv_crtc->head);
+                }
+            }
+#endif
         }
     }
 

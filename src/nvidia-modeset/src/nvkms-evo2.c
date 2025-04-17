@@ -2165,7 +2165,7 @@ EvoPushUpdateCompositionIfNeeded(NVDevEvoPtr pDevEvo,
                   pDevEvo->pSubDevices[sd]->baseSurfFormat[head] ||
               nvkms_memcmp(&pHwState->composition.colorKey,
                            &pDevEvo->pSubDevices[sd]->baseComp[head].colorKey,
-                           sizeof(&pHwState->composition.colorKey)) != 0))) {
+                           sizeof(pHwState->composition.colorKey)) != 0))) {
 
             pDevEvo->pSubDevices[sd]->baseComp[head].initialized = TRUE;
             pDevEvo->pSubDevices[sd]->baseComp[head].colorKeySelect =
@@ -3060,6 +3060,8 @@ NvBool nvEvoGetHeadSetControlCursorValue90(const NVDevEvoRec *pDevEvo,
                                            const NVSurfaceEvoRec *pSurfaceEvo,
                                            NvU32 *pValue)
 {
+    NvU32 plane, numPlanes;
+    NvU64 minRequiredSize = 0;
     NvU32 value = 0;
 
     if (pSurfaceEvo == NULL) {
@@ -3085,25 +3087,43 @@ NvBool nvEvoGetHeadSetControlCursorValue90(const NVDevEvoRec *pDevEvo,
         return FALSE;
     }
 
+    numPlanes = nvKmsGetSurfaceMemoryFormatInfo(pSurfaceEvo->format)->numPlanes;
+
     /*
      * The cursor only supports a few image sizes.
+     *
+     * Compute minRequiredSize as widthInPixels x heightInPixels x 4 bytes per
+     * pixel, except for 32x32: we require a minimum pitch of 256, so we use
+     * that instead of widthInPixels x 4.
      */
     if ((pSurfaceEvo->widthInPixels == 32) &&
         (pSurfaceEvo->heightInPixels == 32)) {
         value |= DRF_DEF(927D, _HEAD_SET_CONTROL_CURSOR, _SIZE, _W32_H32);
+        minRequiredSize = 256 * 32;
     } else if ((pSurfaceEvo->widthInPixels == 64) &&
                (pSurfaceEvo->heightInPixels == 64)) {
         value |= DRF_DEF(927D, _HEAD_SET_CONTROL_CURSOR, _SIZE, _W64_H64);
+        minRequiredSize = 64 * 64 * 4;
     } else if ((pDevEvo->cursorHal->caps.maxSize >= 128) &&
                (pSurfaceEvo->widthInPixels == 128) &&
                (pSurfaceEvo->heightInPixels == 128)) {
         value |= DRF_DEF(927D, _HEAD_SET_CONTROL_CURSOR, _SIZE, _W128_H128);
+        minRequiredSize = 128 * 128 * 4;
     } else if ((pDevEvo->cursorHal->caps.maxSize >= 256) &&
                (pSurfaceEvo->widthInPixels == 256) &&
                (pSurfaceEvo->heightInPixels == 256)) {
         value |= DRF_DEF(927D, _HEAD_SET_CONTROL_CURSOR, _SIZE, _W256_H256);
+        minRequiredSize = 256 * 256 * 4;
     } else {
         return FALSE;
+    }
+
+    /* The surface size cannot be smaller than the required minimum. */
+
+    for (plane = 0; plane < numPlanes; plane++) {
+        if (pSurfaceEvo->planes[plane].rmObjectSizeInBytes < minRequiredSize) {
+            return FALSE;
+        }
     }
 
     /*
@@ -4075,6 +4095,8 @@ NVEvoHAL nvEvo97 = {
         FALSE,                                    /* supportsMergeMode */
         FALSE,                                    /* supportsHDMI10BPC */
         FALSE,                                    /* supportsDPAudio192KHz */
+        FALSE,                                    /* supportsInputColorSpace */
+        FALSE,                                    /* supportsInputColorRange */
         NV_EVO2_SUPPORTED_DITHERING_MODES,        /* supportedDitheringModes */
         sizeof(NV5070_CTRL_CMD_IS_MODE_POSSIBLE_PARAMS), /* impStructSize */
         NV_EVO_SCALER_1TAP,                       /* minScalerTaps */
@@ -4171,6 +4193,8 @@ NVEvoHAL nvEvo94 = {
         FALSE,                                    /* supportsMergeMode */
         FALSE,                                    /* supportsHDMI10BPC */
         FALSE,                                    /* supportsDPAudio192KHz */
+        FALSE,                                    /* supportsInputColorSpace */
+        FALSE,                                    /* supportsInputColorRange */
         NV_EVO2_SUPPORTED_DITHERING_MODES,        /* supportedDitheringModes */
         sizeof(NV5070_CTRL_CMD_IS_MODE_POSSIBLE_PARAMS), /* impStructSize */
         NV_EVO_SCALER_1TAP,                       /* minScalerTaps */

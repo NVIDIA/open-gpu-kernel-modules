@@ -1,20 +1,22 @@
 
 #ifndef _G_MEM_DESC_NVOC_H_
 #define _G_MEM_DESC_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -420,10 +422,9 @@ typedef struct ADDRESS_TRANSLATION_ *ADDRESS_TRANSLATION;
 #define MEMDESC_FLAGS_FORCE_ALLOC_FROM_SUBHEAP     NVBIT64(48)
 
 //
-// Indicate if memdesc needs to restore pte kind in the static bar1 mode
-// when it is freed.
+// Indicate if memdesc is allocated as localized memory or not.
 //
-#define MEMDESC_FLAGS_RESTORE_PTE_KIND_ON_FREE     NVBIT64(49)
+#define MEMDESC_FLAGS_ALLOC_AS_LOCALIZED           NVBIT64(50)
 
 #define MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT  NVBIT64(51)
 
@@ -611,12 +612,12 @@ typedef enum
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_148       = 181U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_PMU_ACR_SHADOW_COPY   = 182U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_FLCN_BACKING_STORE    = 183U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_151       = 184U,
 
     //
     // Unused tags from here, for any new use-case it's required 
     // to replace the below tags with known verbose strings
     //
-    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_151       = 184U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_152       = 185U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_153       = 186U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_154       = 187U,
@@ -849,6 +850,7 @@ typedef struct MEMORY_DESCRIPTOR
     // Static BAR1 mapping
     NvU32 staticBar1MappingRefCount;
     NvU32 staticBar1MappingKind;
+    NvU32 staticBar1DmaFlags;
 
     // Array to hold SPA addresses when memdesc is allocated from GPA. Valid only for SRIOV cases
     RmPhysAddr *pPteSpaMappings;
@@ -996,6 +998,9 @@ NV_STATUS memdescCreateSubMem(MEMORY_DESCRIPTOR **ppMemDescNew,
 
 // Compute the physical address of a byte within a MEMORY_DESCRIPTOR
 RmPhysAddr memdescGetPhysAddr(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation, NvU64 offset);
+
+// Compute the physical address of a byte within a MEMORY_DESCRIPTOR for a PTE or HW
+RmPhysAddr memdescGetPtePhysAddr(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation, NvU64 offset);
 
 // Compute count physical addresses within a MEMORY_DESCRIPTOR. Starting at the
 // given offset and advancing it by stride for each consecutive address.
@@ -1155,6 +1160,7 @@ NV_STATUS memdescFillMemdescForPhysAttr(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRA
                                         NvU64 *pOffset,NvU32 *pMemAperture, NvU32 *pMemKind, NvU32 *pZCullId,
                                         NvU32 *pGpuCacheAttr, NvU32 *pGpuP2PCacheAttr, NvU64 *contigSegmentSize);
 NvBool memdescIsEgm(MEMORY_DESCRIPTOR *pMemDesc);
+NvU64 memdescGetAdjustedPageSize(MEMORY_DESCRIPTOR *pMemDesc);
 
 /*!
  *  @brief Get PTE kind

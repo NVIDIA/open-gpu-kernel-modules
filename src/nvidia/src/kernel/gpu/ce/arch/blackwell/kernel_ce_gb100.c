@@ -564,6 +564,7 @@ kceMapPceLceForGRCE_GB100
     NvU32         hshubIndex;
     NvU32         pceIndex;
     KernelCE     *pKCeIter;
+    NvU32         pceExcludeMaskForSharedGrce;
 
     KCE_ITER_SHIM_BEGIN(pGpu, pKCeIter)
     {
@@ -576,6 +577,28 @@ kceMapPceLceForGRCE_GB100
         }
 
         hshubIndex = CE_GET_LOWEST_AVAILABLE_IDX(pKCeIter->shimConnectingHubMask);
+
+        pceExcludeMaskForSharedGrce = pKCeIter->decompPceMask;
+
+        if (gpuIsCCFeatureEnabled(pGpu))
+        {
+            NvU32 numPcesPerLce;
+            NvU32 numLces;
+            NvU32 supportedPceMask;
+            NvU32 supportedLceMask;
+            NvU32 pcesPerHshub;
+
+            kceGetPceConfigForLceType(pGpu,
+                                      pKCe,
+                                      NV2080_CTRL_CE_LCE_TYPE_PCIE,
+                                      &numPcesPerLce,
+                                      &numLces,
+                                      &supportedPceMask,
+                                      &supportedLceMask,
+                                      &pcesPerHshub);
+
+            pceExcludeMaskForSharedGrce = pceExcludeMaskForSharedGrce | supportedPceMask;
+        }
 
         // Some PCEs have not been assigned. Pick one and use that for GRCE.
         if ((pAvailablePceMaskForConnectingHub[hshubIndex] & ~(pKCeIter->decompPceMask)) != 0)
@@ -602,7 +625,7 @@ kceMapPceLceForGRCE_GB100
 
             for (pceIndex = 0; pceIndex < size; ++pceIndex)
             {
-                if ((NVBIT32(pceIndex) & pKCeIter->decompPceMask) == 0)
+                if ((NVBIT32(pceIndex) & pceExcludeMaskForSharedGrce) == 0)
                 {
                     if (pKCeIter->pPceLceMap[pceIndex] != NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_INVALID_LCE)
                     {

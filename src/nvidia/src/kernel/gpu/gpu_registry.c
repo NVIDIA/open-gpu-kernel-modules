@@ -246,7 +246,7 @@ gpuInitInstLocOverrides_IMPL
          FLD_TEST_DRF(_REG_STR, _RM_CONFIDENTIAL_COMPUTE, _ENABLED, _YES, data32) &&
          pGpu->getProperty(pGpu, PDB_PROP_GPU_CC_FEATURE_CAPABLE)) ||
         gpuIsCCEnabledInHw_HAL(pGpu) ||
-        gpuIsProtectedPcieEnabledInHw_HAL(pGpu))
+        gpuIsMultiGpuNvleEnabledInHw_HAL(pGpu))
     {
 
         pGpu->instLocOverrides  = NV_REG_STR_RM_INST_LOC_ALL_VID;
@@ -347,7 +347,7 @@ gpuInitInstLocOverrides_IMPL
     {
         pGpu->instLocOverrides = FLD_SET_DRF(_REG, _STR_RM_INST_LOC, _BAR_PTE, _DEFAULT, pGpu->instLocOverrides);
         pGpu->instLocOverrides = FLD_SET_DRF(_REG, _STR_RM_INST_LOC, _BAR_PDE, _DEFAULT, pGpu->instLocOverrides);
-        NV_PRINTF(LEVEL_WARNING, "Ignoring regkeys to place BAR PTE/PDE in SYSMEM\n");
+        NV_PRINTF(LEVEL_INFO, "Ignoring regkeys to place BAR PTE/PDE in SYSMEM\n");
     }
 
     return NV_OK;

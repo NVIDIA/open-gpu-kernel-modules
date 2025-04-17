@@ -30,7 +30,7 @@
 #include "nvport/nvport.h"
 #include "resserv/resserv.h"
 #include "resserv/rs_client.h"
-#include "nvoc/runtime.h"
+#include "nvoc/object.h"
 
 #ifdef __cplusplus
 extern "C" {

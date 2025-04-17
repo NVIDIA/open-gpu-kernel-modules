@@ -256,6 +256,8 @@ bool uvm_mem_is_physically_contiguous(uvm_mem_t *mem, NvU64 offset, NvU64 size);
 //
 // Unless a specific page size is needed, or the physical pages need to be
 // zeroed, the caller can use the appropriate uvm_mem_alloc* helper instead.
+//
+// If an error is returned, mem_out is guaranteed to not have been modified.
 NV_STATUS uvm_mem_alloc(const uvm_mem_alloc_params_t *params, uvm_mem_t **mem_out);
 
 // Clear all mappings and free the memory

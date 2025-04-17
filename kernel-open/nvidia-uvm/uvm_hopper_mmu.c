@@ -212,7 +212,13 @@ static NvU64 make_pte_hopper(uvm_aperture_t aperture, NvU64 address, uvm_prot_t 
 
 static NvU64 make_sked_reflected_pte_hopper(void)
 {
+    // On discrete GPUs, SKED Reflected PTEs may use either the local aperture
+    // or the system non coherent aperture. However, integrated GPUs may only
+    // use the system non-coherent aperture. We always use the system
+    // non-coherent aperture as that is common to both discrete and integrated
+    // GPUs.
     return HWCONST64(_MMU_VER3, PTE, VALID, TRUE) |
+           HWCONST64(_MMU_VER3, PTE, APERTURE, SYSTEM_NON_COHERENT_MEMORY) |
            HWVALUE64(_MMU_VER3, PTE, PCF, pte_pcf(UVM_PROT_READ_WRITE_ATOMIC, UVM_MMU_PTE_FLAGS_NONE)) |
            HWVALUE64(_MMU_VER3, PTE, KIND, NV_MMU_PTE_KIND_SMSKED_MESSAGE);
 }
@@ -322,11 +328,6 @@ static NvU32 pde_pcf(bool valid, pde_type_t pde_type, uvm_page_directory_t *dir,
     // On non-ATS systems, PDE PCF only sets the valid and volatile/cache bits.
     if (!g_uvm_global.ats.enabled)
         return pcf[pde_type][ATS_ALLOWED];
-
-    // We assume all supported ATS platforms use canonical form address.
-    // See comments in uvm_gpu.c:uvm_gpu_can_address() and in
-    // uvm_mmu.c:page_tree_ats_init();
-    UVM_ASSERT(uvm_platform_uses_canonical_form_address());
 
     // Hopper GPUs on ATS-enabled systems, perform a parallel lookup on both
     // ATS and GMMU page tables. For managed memory we need to prevent this

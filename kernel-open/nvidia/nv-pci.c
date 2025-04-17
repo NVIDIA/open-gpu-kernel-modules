@@ -337,7 +337,7 @@ static NvU32 find_gpu_numa_nodes_in_srat(nv_linux_state_t *nvl)
      * supports.
      */
     while (subtable_header_length &&
-           (((unsigned long)subtable_header) + subtable_header_length < table_end)) {
+           (((unsigned long)subtable_header) + subtable_header_length <= table_end)) {
 
         if (subtable_header->type == ACPI_SRAT_TYPE_GENERIC_AFFINITY) {
             NvU8 busAtByte2, busAtByte3;
@@ -532,12 +532,6 @@ nv_init_coherent_link_info
         NV_DEV_PRINTF(NV_DBG_INFO, nv, "\tNVRM: GPU memory NUMA node: %u\n", node);
     }
 
-#if NV_IS_EXPORT_SYMBOL_GPL_pci_ats_supported
-    nv->ats_support = pci_ats_supported(nvl->pci_dev);
-#elif defined(NV_PCI_DEV_HAS_ATS_ENABLED)
-    nv->ats_support = nvl->pci_dev->ats_enabled;
-#endif
-
     if (NVreg_EnableUserNUMAManagement && !os_is_vgx_hyper())
     {
         NV_ATOMIC_SET(nvl->numa_info.status, NV_IOCTL_NUMA_STATUS_OFFLINE);
@@ -620,6 +614,19 @@ nv_pci_probe
     }
 #endif /* NV_PCI_SRIOV_SUPPORT */
 
+    if (!rm_wait_for_bar_firewall(
+                sp,
+                NV_PCI_DOMAIN_NUMBER(pci_dev),
+                NV_PCI_BUS_NUMBER(pci_dev),
+                NV_PCI_SLOT_NUMBER(pci_dev),
+                PCI_FUNC(pci_dev->devfn),
+                pci_dev->device))
+    {
+        nv_printf(NV_DBG_ERRORS,
+            "NVRM: failed to wait for bar firewall to lower\n");
+        goto failed;
+    }
+
     if (!rm_is_supported_pci_device(
                 (pci_dev->class >> 16) & 0xFF,
                 (pci_dev->class >> 8) & 0xFF,
@@ -658,63 +665,12 @@ nv_pci_probe
     {
         if (NV_PCI_RESOURCE_VALID(pci_dev, i))
         {
-#if defined(NV_PCI_MAX_MMIO_BITS_SUPPORTED)
-            if ((NV_PCI_RESOURCE_FLAGS(pci_dev, i) & PCI_BASE_ADDRESS_MEM_TYPE_64) &&
-                ((NV_PCI_RESOURCE_START(pci_dev, i) >> NV_PCI_MAX_MMIO_BITS_SUPPORTED)))
-            {
-                nv_printf(NV_DBG_ERRORS,
-                    "NVRM: This is a 64-bit BAR mapped above %dGB by the system\n"
-                    "NVRM: BIOS or the %s kernel. This PCI I/O region assigned\n"
-                    "NVRM: to your NVIDIA device is not supported by the kernel.\n"
-                    "NVRM: BAR%d is %dM @ 0x%llx (PCI:%04x:%02x:%02x.%x)\n",
-                    (1 << (NV_PCI_MAX_MMIO_BITS_SUPPORTED - 30)),
-                    NV_KERNEL_NAME, i,
-                    (NV_PCI_RESOURCE_SIZE(pci_dev, i) >> 20),
-                    (NvU64)NV_PCI_RESOURCE_START(pci_dev, i),
-                    NV_PCI_DOMAIN_NUMBER(pci_dev),
-                    NV_PCI_BUS_NUMBER(pci_dev), NV_PCI_SLOT_NUMBER(pci_dev),
-                    PCI_FUNC(pci_dev->devfn));
-                goto failed;
-            }
-#endif
             if ((NV_PCI_RESOURCE_FLAGS(pci_dev, i) & PCI_BASE_ADDRESS_MEM_TYPE_64) &&
                 (NV_PCI_RESOURCE_FLAGS(pci_dev, i) & PCI_BASE_ADDRESS_MEM_PREFETCH))
             {
-                struct pci_dev *bridge = pci_dev->bus->self;
-                NvU32 base_upper, limit_upper;
-
                 last_bar_64bit = NV_TRUE;
-
-                if (bridge == NULL)
-                    goto next_bar;
-
-                pci_read_config_dword(pci_dev, NVRM_PCICFG_BAR_OFFSET(i) + 4,
-                                      &base_upper);
-                if (base_upper == 0)
-                    goto next_bar;
-
-                pci_read_config_dword(bridge, PCI_PREF_BASE_UPPER32,
-                        &base_upper);
-                pci_read_config_dword(bridge, PCI_PREF_LIMIT_UPPER32,
-                        &limit_upper);
-
-                if ((base_upper != 0) && (limit_upper != 0))
-                    goto next_bar;
-
-                nv_printf(NV_DBG_ERRORS,
-                    "NVRM: This is a 64-bit BAR mapped above 4GB by the system\n"
-                    "NVRM: BIOS or the %s kernel, but the PCI bridge\n"
-                    "NVRM: immediately upstream of this GPU does not define\n"
-                    "NVRM: a matching prefetchable memory window.\n",
-                    NV_KERNEL_NAME);
-                nv_printf(NV_DBG_ERRORS,
-                    "NVRM: This may be due to a known Linux kernel bug.  Please\n"
-                    "NVRM: see the README section on 64-bit BARs for additional\n"
-                    "NVRM: information.\n");
-                goto failed;
             }
 
-next_bar:
             //
             // If we are here, then we have found a valid BAR -- 32 or 64-bit.
             //
@@ -831,25 +787,33 @@ next_bar:
     NV_ATOMIC_SET(nvl->numa_info.status, NV_IOCTL_NUMA_STATUS_DISABLED);
     nvl->numa_info.node_id = NUMA_NO_NODE;
 
+#if NV_IS_EXPORT_SYMBOL_GPL_pci_ats_supported
+    nv->ats_support = pci_ats_supported(nvl->pci_dev);
+#elif defined(NV_PCI_DEV_HAS_ATS_ENABLED)
+    nv->ats_support = nvl->pci_dev->ats_enabled;
+#endif
+
     if (pci_devid_is_self_hosted(pci_dev->device))
     {
         nv_init_coherent_link_info(nv);
     }
 
-#if defined(NVCPU_PPC64LE)
-    // Use HW NUMA support as a proxy for ATS support. This is true in the only
-    // PPC64LE platform where ATS is currently supported (IBM P9).
-    nv->ats_support = nv_platform_supports_numa(nvl);
-#endif
     if (nv->ats_support)
     {
         NV_DEV_PRINTF(NV_DBG_INFO, nv, "ATS supported by this GPU!\n");
     }
     nv_ats_supported |= nv->ats_support;
 
+    if (nv->pci_info.vendor_id == 0x10de && nv->pci_info.device_id == 0x2e2a) {
+        /* Disable advertising ATS support to UVM when GB20B is present */
+        nv_ats_supported = NV_FALSE;
+    }
+
+    nv_clk_get_handles(nv);
+
     pci_set_master(pci_dev);
 
-#if defined(CONFIG_VGA_ARB) && !defined(NVCPU_PPC64LE)
+#if defined(CONFIG_VGA_ARB)
 #if defined(VGA_DEFAULT_DEVICE)
 #if defined(NV_VGA_TRYGET_PRESENT)
     vga_tryget(VGA_DEFAULT_DEVICE, VGA_RSRC_LEGACY_MASK);
@@ -945,6 +909,12 @@ next_bar:
      * after enabling dynamic power management.
      */
     rm_enable_dynamic_power_management(sp, nv);
+
+    /*
+     * This must be the last action in nv_pci_probe(). Do not add code after this line.
+     */
+    rm_notify_gpu_addition(sp, nv);
+
     nv_kmem_cache_free_stack(sp);
 
     return 0;
@@ -963,6 +933,7 @@ err_add_device:
 err_zero_dev:
     rm_free_private_state(sp, nv);
 err_not_supported:
+    nv_clk_clear_handles(nv);
     nv_ats_supported = prev_nv_ats_supported;
     nv_lock_destroy_locks(sp, nv);
     if (nvl != NULL)
@@ -1024,6 +995,9 @@ nv_pci_remove(struct pci_dev *pci_dev)
 
     LOCK_NV_LINUX_DEVICES();
     down(&nvl->ldata_lock);
+    nv->flags |= NV_FLAG_PCI_REMOVE_IN_PROGRESS;
+
+    rm_notify_gpu_removal(sp, nv);
 
     /*
      * Sanity check: A removed device shouldn't have a non-zero usage_count.
@@ -1082,6 +1056,8 @@ nv_pci_remove(struct pci_dev *pci_dev)
 
     /* Remove proc entry for this GPU */
     nv_procfs_remove_gpu(nvl);
+
+    nv_clk_clear_handles(nv);
 
     rm_cleanup_dynamic_power_management(sp, nv);
 

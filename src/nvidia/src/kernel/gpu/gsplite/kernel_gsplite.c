@@ -62,11 +62,8 @@ kgspliteStateInitUnlocked_IMPL
     return NV_OK;
 }
 
-
-void
-kgspliteStateDestroy_IMPL
+void kgspliteDestruct_IMPL
 (
-    OBJGPU        *pGpu,
     KernelGsplite *pKernelGsplite
 )
 {

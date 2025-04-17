@@ -215,8 +215,8 @@ typedef struct GspSystemInfo
     NvBool bFeatureStretchVblankCapable;
     NvBool bEnableDynamicGranularityPageArrays;
     NvBool bClockBoostSupported;
-    NvBool bRouteDispIntrsToCPU;
     NvU64  hostPageSize;
+    NvBool bIsCmcBasedHws;
 } GspSystemInfo;
 
 

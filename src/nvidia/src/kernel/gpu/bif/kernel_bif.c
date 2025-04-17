@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -788,6 +788,12 @@ _kbifInitRegistryOverrides
         pKernelBif->forceP2PType = data32;
     }
 
+    pKernelBif->pcieP2PType = NV_REG_STR_RM_PCIEP2P_TYPE_DEFAULT;
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_PCIEP2P_TYPE, &data32) == NV_OK)
+    {
+        pKernelBif->pcieP2PType = data32;
+    }
+
     // Peer Mapping override
     pKernelBif->peerMappingOverride = NV_REG_STR_PEERMAPPING_OVERRIDE_DEFAULT;
     if (osReadRegistryDword(pGpu, NV_REG_STR_PEERMAPPING_OVERRIDE, &data32) == NV_OK)
@@ -855,18 +861,6 @@ _kbifInitRegistryOverrides
         }
     }
 
-    // RmWar5045021 added for bug5045021
-    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_WAR_5045021, &data32) == NV_OK)
-    {
-        if (data32)
-        {
-            pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_WAR_5045021_ENABLED, NV_TRUE);
-        }
-        else
-        {
-            pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_WAR_5045021_ENABLED, NV_FALSE);
-        }
-    }
 }
 
 /*!

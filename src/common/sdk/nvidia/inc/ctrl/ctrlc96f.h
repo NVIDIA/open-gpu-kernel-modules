@@ -37,8 +37,6 @@
 /* BLACKWELL_CHANNEL_GPFIFO_A control commands and parameters */
 
 #include "ctrl/ctrlxxxx.h"
-#include "ctrl/ctrl906f.h"          /* C36F is partially derived from 906F */
-#include "ctrl/ctrla06f.h"          /* C36F is partially derived from a06F */
 #include "ctrl/ctrlc36f.h" // This control call interface is an ALIAS of C36F
 
 #define NVC96F_CTRL_CMD(cat,idx)  \
@@ -47,7 +45,6 @@
 /* BLACKWELL_CHANNEL_GPFIFO_A command categories (6bits) */
 #define NVC96F_CTRL_RESERVED (0x00)
 #define NVC96F_CTRL_GPFIFO   (0x01)
-#define NVC96F_CTRL_EVENT    (0x02)
 
 /*
  * NVC96F_CTRL_CMD_NULL

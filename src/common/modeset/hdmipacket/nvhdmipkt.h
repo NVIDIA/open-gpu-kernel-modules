@@ -278,8 +278,10 @@ typedef struct _tagNVHDMIPKT_CALLBACK
                         ;
 
     void
-    (*assert)          (NvHdmiPkt_CBHandle handle,
-                        NvBool             expression);
+    (*assert)          (const char        *expression,
+                        const char        *filename,
+                        const char        *function,
+                        unsigned int       line);
 } NVHDMIPKT_CALLBACK;
 
 

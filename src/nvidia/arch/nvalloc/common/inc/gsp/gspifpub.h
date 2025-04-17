@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -101,6 +101,12 @@ typedef struct GSP_SPDM_PARAMS
     NvU32 payloadBufferSize;
 } GSP_SPDM_PARAMS;
 
+typedef struct GSP_RM_MEM_PARAMS
+{
+    NvU32 flushSysmemAddrValLo;
+    NvU32 flushSysmemAddrValHi;
+} GSP_RM_MEM_PARAMS;
+
 /*!
  * @brief GSP-CC Microcode Parameters for Boot Partitions
  */
@@ -110,6 +116,32 @@ typedef struct GSP_FMC_BOOT_PARAMS
     GSP_ACR_BOOT_GSP_RM_PARAMS  bootGspRmParams;
     GSP_RM_PARAMS               gspRmParams;
     GSP_SPDM_PARAMS             gspSpdmParams;
+    GSP_RM_MEM_PARAMS           gspRmMemParams;
 } GSP_FMC_BOOT_PARAMS;
+
+/*!
+ * @brief Definitions for messages to GSP which will convey NVLE programming keys
+ */
+#define RM_GSP_NVLE_CMD_ID_UPDATE_SESSION_KEYS  (0x80)
+#define RM_GSP_NVLE_SESSION_KEY_ENTRY_SET_COUNT (1)
+#define RM_GSP_NVLE_AES_256_GCM_KEY_SIZE_BYTES  (32)
+#define RM_GSP_NVLE_AES_256_GCM_KEY_SIZE_DWORDS (RM_GSP_NVLE_AES_256_GCM_KEY_SIZE_BYTES / sizeof(NvU32))
+#define RM_GSP_NVLE_CMD_TAG_SIZE_BYTES          (16)
+#define RM_GSP_NVLE_CMD_TAG_SIZE_DWORDS         (RM_GSP_NVLE_CMD_TAG_SIZE_BYTES / sizeof(NvU32))
+
+typedef struct
+{
+    NvU32  remoteScfDcfGpuId;
+    NvU32  key[RM_GSP_NVLE_AES_256_GCM_KEY_SIZE_DWORDS];
+    NvBool bValid;
+} RM_GSP_NVLE_SESSION_KEY_ENTRY;
+
+typedef struct
+{
+    NvU32                         cmdId;
+    NvBool                        bForKeyRotation;
+    RM_GSP_NVLE_SESSION_KEY_ENTRY wrappedKeyEntries[RM_GSP_NVLE_SESSION_KEY_ENTRY_SET_COUNT];
+    NvU32                         keyEntriesTag[RM_GSP_NVLE_CMD_TAG_SIZE_DWORDS];
+} RM_GSP_NVLE_UPDATE_SESSION_KEYS;
 
 #endif // GSPIFPUB_H

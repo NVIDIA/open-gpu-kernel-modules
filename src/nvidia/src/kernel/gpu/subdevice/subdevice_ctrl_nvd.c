@@ -131,7 +131,7 @@ static NvU64 createTimestampFromTimer(NvU64 timerVal)
     NvU64 timestampMs;
 
     // get all the current time info.
-    osGetCurrentTick(&timeSinceBootNsec);           // get the time since boot in ns
+    timeSinceBootNsec = osGetCurrentTick();           // get the time since boot in ns
     osGetCurrentTime(&currTimeSec, &currTimeUsec);  // get the current time
     timerFreq = osGetTimestampFreq();               // get the ticks/second.
 

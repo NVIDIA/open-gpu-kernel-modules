@@ -1,13 +1,15 @@
 
 #ifndef _G_DISP_INST_MEM_NVOC_H_
 #define _G_DISP_INST_MEM_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -103,10 +105,18 @@ typedef struct
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__DisplayInstanceMemory;
+struct NVOC_METADATA__Object;
+
+
 struct DisplayInstanceMemory {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__DisplayInstanceMemory *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -138,6 +148,13 @@ struct DisplayInstanceMemory {
     OBJEHEAP *pInstHeap;
 };
 
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__DisplayInstanceMemory {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
+};
+
 #ifndef __NVOC_CLASS_DisplayInstanceMemory_TYPEDEF__
 #define __NVOC_CLASS_DisplayInstanceMemory_TYPEDEF__
 typedef struct DisplayInstanceMemory DisplayInstanceMemory;
@@ -154,10 +171,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_DisplayInstanceMemory;
     ((pThis)->__nvoc_pbase_DisplayInstanceMemory)
 
 #ifdef __nvoc_disp_inst_mem_h_disabled
-#define __dynamicCast_DisplayInstanceMemory(pThis) ((DisplayInstanceMemory*)NULL)
+#define __dynamicCast_DisplayInstanceMemory(pThis) ((DisplayInstanceMemory*) NULL)
 #else //__nvoc_disp_inst_mem_h_disabled
 #define __dynamicCast_DisplayInstanceMemory(pThis) \
-    ((DisplayInstanceMemory*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(DisplayInstanceMemory)))
+    ((DisplayInstanceMemory*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(DisplayInstanceMemory)))
 #endif //__nvoc_disp_inst_mem_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_DisplayInstanceMemory(DisplayInstanceMemory**, Dynamic*, NvU32, va_list);

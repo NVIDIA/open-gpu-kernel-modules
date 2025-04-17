@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -159,7 +159,11 @@ NV_STATUS_CODE(NV_ERR_NVLINK_FABRIC_NOT_READY,         0x00000081, "Nvlink Fabri
 NV_STATUS_CODE(NV_ERR_NVLINK_FABRIC_FAILURE,           0x00000082, "Nvlink Fabric Probe failed")
 NV_STATUS_CODE(NV_ERR_GPU_MEMORY_ONLINING_FAILURE,     0x00000083, "GPU Memory Onlining failed")
 NV_STATUS_CODE(NV_ERR_REDUCTION_MANAGER_NOT_AVAILABLE, 0x00000084, "Reduction Manager is not available")
+NV_STATUS_CODE(NV_ERR_THRESHOLD_CROSSED,               0x00000085, "A fatal threshold has been crossed")
 NV_STATUS_CODE(NV_ERR_RESOURCE_RETIREMENT_ERROR,       0x00000086, "An error occurred while trying to retire a resource")
+NV_STATUS_CODE(NV_ERR_FABRIC_STATE_OUT_OF_SYNC,        0x00000087, "NVLink fabric state cached by the driver is out of sync")
+NV_STATUS_CODE(NV_ERR_BUFFER_FULL,                     0x00000088, "Buffer is full")
+NV_STATUS_CODE(NV_ERR_BUFFER_EMPTY,                    0x00000089, "Buffer is empty")
 
 // Warnings:
 NV_STATUS_CODE(NV_WARN_HOT_SWITCH,                     0x00010001, "WARNING Hot switch")
@@ -170,5 +174,6 @@ NV_STATUS_CODE(NV_WARN_MORE_PROCESSING_REQUIRED,       0x00010005, "WARNING More
 NV_STATUS_CODE(NV_WARN_NOTHING_TO_DO,                  0x00010006, "WARNING Nothing to do")
 NV_STATUS_CODE(NV_WARN_NULL_OBJECT,                    0x00010007, "WARNING NULL object found")
 NV_STATUS_CODE(NV_WARN_OUT_OF_RANGE,                   0x00010008, "WARNING value out of range")
+NV_STATUS_CODE(NV_WARN_THRESHOLD_CROSSED,              0x00010009, "WARNING Threshold has been crossed")
 
 #endif /* SDK_NVSTATUSCODES_H */

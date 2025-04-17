@@ -24,8 +24,10 @@
 #if !defined(__NVKMS_KAPI_H__)
 
 #include "nvtypes.h"
+#include "nv_mig_types.h"
 
 #include "nv-gpu-info.h"
+#include "nv_dpy_id.h"
 #include "nvkms-api-types.h"
 #include "nvkms-format.h"
 
@@ -173,12 +175,18 @@ struct NvKmsKapiDeviceResourcesInfo {
         NvBool  supportsSyncpts;
 
         NvBool requiresVrrSemaphores;
+
+        NvBool  supportsInputColorRange;
+        NvBool  supportsInputColorSpace;
     } caps;
 
     NvU64 supportedSurfaceMemoryFormats[NVKMS_KAPI_LAYER_MAX];
     NvBool supportsICtCp[NVKMS_KAPI_LAYER_MAX];
 
     struct NvKmsKapiLutCaps lutCaps;
+
+    NvU64 vtFbBaseAddress;
+    NvU64 vtFbSize;
 };
 
 #define NVKMS_KAPI_LAYER_MASK(layerType) (1 << (layerType))
@@ -204,6 +212,7 @@ struct NvKmsKapiConnectorInfo {
     NvU32        numIncompatibleConnectors;
     NvKmsKapiConnector incompatibleConnectorHandles[NVKMS_KAPI_MAX_CONNECTORS];
 
+    NVDpyIdList dynamicDpyIdList;
 };
 
 struct NvKmsKapiStaticDisplayInfo {
@@ -222,6 +231,8 @@ struct NvKmsKapiStaticDisplayInfo {
     NvKmsKapiDisplay possibleCloneHandles[NVKMS_KAPI_MAX_CLONE_DISPLAYS];
 
     NvU32 headMask;
+
+    NvBool isDpMST;
 };
 
 struct NvKmsKapiSyncParams {
@@ -260,7 +271,8 @@ struct NvKmsKapiLayerConfig {
         NvBool enabled;
     } hdrMetadata;
 
-    enum NvKmsOutputTf tf;
+    enum NvKmsInputTf inputTf;
+    enum NvKmsOutputTf outputTf;
 
     NvU8 minPresentInterval;
     NvBool tearing;
@@ -272,6 +284,7 @@ struct NvKmsKapiLayerConfig {
     NvU16 dstWidth, dstHeight;
 
     enum NvKmsInputColorSpace inputColorSpace;
+    enum NvKmsInputColorRange inputColorRange;
 
     struct {
         NvBool enabled;
@@ -315,7 +328,10 @@ struct NvKmsKapiLayerRequestedConfig {
         NvBool dstXYChanged            : 1;
         NvBool dstWHChanged            : 1;
         NvBool cscChanged              : 1;
-        NvBool tfChanged               : 1;
+        NvBool inputTfChanged          : 1;
+        NvBool outputTfChanged         : 1;
+        NvBool inputColorSpaceChanged  : 1;
+        NvBool inputColorRangeChanged  : 1;
         NvBool hdrMetadataChanged      : 1;
         NvBool matrixOverridesChanged  : 1;
         NvBool ilutChanged             : 1;
@@ -481,6 +497,8 @@ struct NvKmsKapiEvent {
 struct NvKmsKapiAllocateDeviceParams {
     /* [IN] GPU ID obtained from enumerateGpus() */
     NvU32 gpuId;
+    /* [IN] MIG device if requested */
+    MIGDeviceId migDevice;
 
     /* [IN] Private data of device allocator */
     void *privateData;
@@ -563,6 +581,11 @@ typedef enum NvKmsKapiRegisterWaiterResultRec {
 
 typedef void NvKmsKapiSuspendResumeCallbackFunc(NvBool suspend);
 
+struct NvKmsKapiGpuInfo {
+    nv_gpu_info_t gpuInfo;
+    MIGDeviceId   migDevice;
+};
+
 struct NvKmsKapiFunctionsTable {
 
     /*!
@@ -586,7 +609,7 @@ struct NvKmsKapiFunctionsTable {
      *
      * \return  Count of enumerated gpus.
      */
-    NvU32 (*enumerateGpus)(nv_gpu_info_t *gpuInfo);
+    NvU32 (*enumerateGpus)(struct NvKmsKapiGpuInfo *kapiGpuInfo);
 
     /*!
      * Allocate an NVK device using which you can query/allocate resources on
@@ -1557,6 +1580,26 @@ struct NvKmsKapiFunctionsTable {
     (
         struct NvKmsKapiDevice *device,
         NvS32 index
+    );
+
+    /*!
+     * Check or wait on a head's LUT notifier.
+     *
+     * \param [in]  device              A device allocated using allocateDevice().
+     *
+     * \param [in]  head                The head to check for LUT completion.
+     *
+     * \param [in]  waitForCompletion   If true, wait for the notifier in NvKms
+     *                                  before returning.
+     *
+     * \param [out] complete            Returns whether the notifier has completed.
+     */
+    NvBool
+    (*checkLutNotifier)
+    (
+        struct NvKmsKapiDevice *device,
+        NvU32 head,
+        NvBool waitForCompletion
     );
 
     /*

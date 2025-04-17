@@ -37,13 +37,13 @@ ct_assert(NVOC_CLASS_ID_MAX_WIDTH <= SF_WIDTH(ENGDESC_CLASS));
 NV_STATUS
 gpuBuildClassDB_IMPL(OBJGPU *pGpu)
 {
-    PGPU_ENGINE_ORDER      pEngineOrder = &pGpu->engineOrder;
+    GpuEngineOrder        *pEngineOrder = &pGpu->engineOrder;
     CLASSDESCRIPTOR       *pClassDynamic;
     const CLASSDESCRIPTOR *pClassStatic;
     NvU32                  numClasses;
     NvU32                  i, j;
     NV_STATUS              status;
-    PGPUCLASSDB            pClassDB = &pGpu->classDB;
+    GpuClassDb            *pClassDB = &pGpu->classDB;
 
     //
     // Calculate number of classes supported by this device.
@@ -129,7 +129,7 @@ gpuIsClassSupported_IMPL(OBJGPU *pGpu, NvU32 externalClassId)
 NV_STATUS
 gpuGetClassByClassId_IMPL(OBJGPU *pGpu, NvU32 externalClassId, CLASSDESCRIPTOR **ppClassDesc)
 {
-    PGPUCLASSDB pClassDB = &pGpu->classDB;
+    GpuClassDb *pClassDB = &pGpu->classDB;
     NvU32 i;
 
     for (i = 0; i < pClassDB->numClasses; i++)
@@ -150,7 +150,7 @@ gpuGetClassByClassId_IMPL(OBJGPU *pGpu, NvU32 externalClassId, CLASSDESCRIPTOR *
 NV_STATUS
 gpuGetClassByEngineAndClassId_IMPL(OBJGPU *pGpu, NvU32 externalClassId, NvU32 engDesc, CLASSDESCRIPTOR **ppClassDesc)
 {
-    PGPUCLASSDB pClassDB = &pGpu->classDB;
+    GpuClassDb *pClassDB = &pGpu->classDB;
     NvU32 i;
 
     for (i = 0; i < pClassDB->numClasses; i++)
@@ -354,10 +354,10 @@ gpuGetClassList_IMPL(OBJGPU *pGpu, NvU32 *pNumClasses, NvU32 *pClassList, NvU32 
 static NV_STATUS
 _gpuAddClassToClassDBByEngTagClassId(OBJGPU *pGpu, ENGDESCRIPTOR *pEngDesc, NvU32 *pExternalClassId)
 {
-    PGPU_ENGINE_ORDER      pEngineOrder = &pGpu->engineOrder;
+    GpuEngineOrder        *pEngineOrder = &pGpu->engineOrder;
     const CLASSDESCRIPTOR *pClassDesc = &pEngineOrder->pClassDescriptors[0];
     const CLASSDESCRIPTOR *pClassDescToCopy = NULL;
-    PGPUCLASSDB            pClassDB   = &pGpu->classDB;
+    GpuClassDb            *pClassDB   = &pGpu->classDB;
     NvU32                  numClasses = pClassDB->numClasses;
     NvBool                 bMatchingClassIdFound = NV_FALSE;
     NvU32                  matchingClassIdIndex;
@@ -508,7 +508,7 @@ NV_STATUS gpuAddClassToClassDBByClassId_IMPL(OBJGPU *pGpu, NvU32 externalClassId
 static NV_STATUS
 _gpuDeleteClassFromClassDBByEngTagClassId(OBJGPU *pGpu, ENGDESCRIPTOR *pEngDesc, NvU32 *pExternalClassId)
 {
-    PGPUCLASSDB pClassDB = &pGpu->classDB;
+    GpuClassDb *pClassDB = &pGpu->classDB;
     NvU32 i, j;
 
     NV_CHECK_OR_RETURN(LEVEL_INFO, (NULL != pEngDesc) || (NULL != pExternalClassId), NV_ERR_INVALID_ARGUMENT);

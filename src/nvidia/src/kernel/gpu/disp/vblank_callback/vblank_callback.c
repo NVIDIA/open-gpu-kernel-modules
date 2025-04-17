@@ -95,6 +95,8 @@ vblcbConstruct_IMPL
     pVblankCallback->CallBack.bIsVblankNotifyEnable = NV_TRUE;
     pVblankCallback->CallBack.Next = NULL;
 
+    pKernelDisplay->pRgVblankCb = (void *)&pVblankCallback->CallBack;
+
     kheadAddVblankCallback(pGpu, pKernelHead, &pVblankCallback->CallBack);
     status = osSetupVBlank(pGpu, pAllocParams->pProc, pAllocParams->pParm1, pAllocParams->pParm2, pAllocParams->LogicalHead, &pVblankCallback->CallBack);
 

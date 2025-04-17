@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@
 #include "ctrl/ctrl2080/ctrl2080fb.h"
 
 #include "published/ampere/ga100/dev_fb.h"
+#include "published/ampere/ga100/dev_fuse.h"
 #include "published/ampere/ga100/hwproject.h"
 
 /*!
@@ -460,4 +461,15 @@ kmemsysGetMaxFbpas_GA100
 )
 {
     return NV_SCAL_LITTER_NUM_FBPAS;
+}
+
+NvBool
+kmemsysCheckReadoutEccEnablement_GA100
+(
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem
+)
+{
+    NvU32 fuse = GPU_REG_RD32(pGpu, NV_FUSE_FEATURE_READOUT);
+    return FLD_TEST_DRF(_FUSE, _FEATURE_READOUT, _ECC_DRAM, _ENABLED, fuse);
 }

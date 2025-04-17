@@ -1,4 +1,11 @@
 #define NVOC_HAL_MGR_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,40 +14,29 @@
 #include "utils/nvassert.h"
 #include "g_hal_mgr_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0xbf26de = 1;
+char __nvoc_class_id_uniqueness_check__0xbf26de = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHALMGR;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
-void __nvoc_init_OBJHALMGR(OBJHALMGR*);
+// Forward declarations for OBJHALMGR
+void __nvoc_init__Object(Object*);
+void __nvoc_init__OBJHALMGR(OBJHALMGR*);
 void __nvoc_init_funcTable_OBJHALMGR(OBJHALMGR*);
 NV_STATUS __nvoc_ctor_OBJHALMGR(OBJHALMGR*);
 void __nvoc_init_dataField_OBJHALMGR(OBJHALMGR*);
 void __nvoc_dtor_OBJHALMGR(OBJHALMGR*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJHALMGR;
 
-static const struct NVOC_RTTI __nvoc_rtti_OBJHALMGR_OBJHALMGR = {
-    /*pClassDef=*/          &__nvoc_class_def_OBJHALMGR,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_OBJHALMGR,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__OBJHALMGR;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJHALMGR;
 
-static const struct NVOC_RTTI __nvoc_rtti_OBJHALMGR_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(OBJHALMGR, __nvoc_base_Object),
-};
+// Down-thunk(s) to bridge OBJHALMGR methods from ancestors (if any)
 
-static const struct NVOC_CASTINFO __nvoc_castinfo_OBJHALMGR = {
-    /*numRelatives=*/       2,
-    /*relatives=*/ {
-        &__nvoc_rtti_OBJHALMGR_OBJHALMGR,
-        &__nvoc_rtti_OBJHALMGR_Object,
-    },
-};
+// Up-thunk(s) to bridge OBJHALMGR methods to ancestors (if any)
 
 const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHALMGR = 
 {
@@ -53,15 +49,32 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHALMGR =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_OBJHALMGR,
-    /*pCastInfo=*/          &__nvoc_castinfo_OBJHALMGR,
-    /*pExportInfo=*/        &__nvoc_export_info_OBJHALMGR
+    /*pCastInfo=*/          &__nvoc_castinfo__OBJHALMGR,
+    /*pExportInfo=*/        &__nvoc_export_info__OBJHALMGR
 };
 
-// Down-thunk(s) to bridge OBJHALMGR methods from ancestors (if any)
 
-// Up-thunk(s) to bridge OBJHALMGR methods to ancestors (if any)
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__OBJHALMGR __nvoc_metadata__OBJHALMGR = {
+    .rtti.pClassDef = &__nvoc_class_def_OBJHALMGR,    // (halmgr) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_OBJHALMGR,
+    .rtti.offset    = 0,
+    .metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super
+    .metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Object.rtti.offset    = NV_OFFSETOF(OBJHALMGR, __nvoc_base_Object),
+};
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJHALMGR = 
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__OBJHALMGR = {
+    .numRelatives = 2,
+    .relatives = {
+        &__nvoc_metadata__OBJHALMGR.rtti,    // [0]: (halmgr) this
+        &__nvoc_metadata__OBJHALMGR.metadata__Object.rtti,    // [1]: (obj) super
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJHALMGR = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -108,11 +121,21 @@ void __nvoc_init_funcTable_OBJHALMGR(OBJHALMGR *pThis) {
     __nvoc_init_funcTable_OBJHALMGR_1(pThis);
 }
 
-void __nvoc_init_Object(Object*);
-void __nvoc_init_OBJHALMGR(OBJHALMGR *pThis) {
-    pThis->__nvoc_pbase_OBJHALMGR = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;
-    __nvoc_init_Object(&pThis->__nvoc_base_Object);
+// Initialize newly constructed object.
+void __nvoc_init__OBJHALMGR(OBJHALMGR *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;    // (obj) super
+    pThis->__nvoc_pbase_OBJHALMGR = pThis;    // (halmgr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__Object(&pThis->__nvoc_base_Object);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__OBJHALMGR.metadata__Object;    // (obj) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__OBJHALMGR;    // (halmgr) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_OBJHALMGR(pThis);
 }
 
@@ -130,9 +153,6 @@ NV_STATUS __nvoc_objCreate_OBJHALMGR(OBJHALMGR **ppThis, Dynamic *pParent, NvU32
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(OBJHALMGR));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_OBJHALMGR);
-
     pThis->__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -146,7 +166,7 @@ NV_STATUS __nvoc_objCreate_OBJHALMGR(OBJHALMGR **ppThis, Dynamic *pParent, NvU32
         pThis->__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_OBJHALMGR(pThis);
+    __nvoc_init__OBJHALMGR(pThis);
     status = __nvoc_ctor_OBJHALMGR(pThis);
     if (status != NV_OK) goto __nvoc_objCreate_OBJHALMGR_cleanup;
 

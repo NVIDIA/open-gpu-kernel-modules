@@ -867,6 +867,17 @@
 #define NV_REG_STR_RM_ENABLE_PMA_MANAGED_PTABLES_DEFAULT   (0x00000001)
 
 //
+// TYPE DWORD
+// This regkey enables localized memory changes
+// 0 - (default disabled)
+// 1 - Enables localized memory changes
+//
+#define NV_REG_STR_RM_LOCALIZED_MEMORY                 "RmEnableLocalizedMemory"
+#define NV_REG_STR_RM_LOCALIZED_MEMORY_DISABLE         0x00000000
+#define NV_REG_STR_RM_LOCALIZED_MEMORY_ENABLE          0x00000001
+#define NV_REG_STR_RM_LOCALIZED_MEMORY_DEFAULT         NV_REG_STR_RM_LOCALIZED_MEMORY_ENABLE
+
+//
 // Type DWORD
 // Disable global CeUtils instance creation after fifo scheduling enablement
 //
@@ -999,16 +1010,31 @@
 //
 // TYPE_C2C to use C2C P2P if it supports
 // TYPE_NVLINK to use NVLINK P2P, including INDIRECT_NVLINK_P2P if it supports
-// TYPE_BAR1P2P to use BAR1 P2P if it supports
-// TYPE_MAILBOXP2P to use mailbox p2p if it supports
+// TYPE_PCIEP2P to use PCIE P2P if it supports. To be used in conjunction with
+//              NV_REG_STR_RM_PCIEP2P_TYPE.
 //
 #define NV_REG_STR_RM_FORCE_P2P_TYPE                           "RMForceP2PType"
 #define NV_REG_STR_RM_FORCE_P2P_TYPE_DEFAULT                   (0x00000000)
-#define NV_REG_STR_RM_FORCE_P2P_TYPE_MAILBOXP2P                (0x00000001)
-#define NV_REG_STR_RM_FORCE_P2P_TYPE_BAR1P2P                   (0x00000002)
-#define NV_REG_STR_RM_FORCE_P2P_TYPE_NVLINK                    (0x00000003)
-#define NV_REG_STR_RM_FORCE_P2P_TYPE_C2C                       (0x00000004)
+#define NV_REG_STR_RM_FORCE_P2P_TYPE_PCIEP2P                   (0x00000001)
+#define NV_REG_STR_RM_FORCE_P2P_TYPE_NVLINK                    (0x00000002)
+#define NV_REG_STR_RM_FORCE_P2P_TYPE_C2C                       (0x00000003)
 #define NV_REG_STR_RM_FORCE_P2P_TYPE_MAX                       NV_REG_STR_RM_FORCE_P2P_TYPE_C2C
+
+//
+// Type: DWORD
+// Allows the choice of which PCIe P2P method to use
+//
+// TYPE_DEFAULT   mailbox P2P is to be used by default until UVM supports BAR1 P2P
+//
+// TYPE_MAILBOX   forces mailbox P2P to be used if supported
+// TYPE_BAR1      forces BAR1 P2P to be used if supported
+// TYPE_AUTO      allows automatic selection of BAR1/mailbox depending on if BAR1P2P is supported
+//
+#define NV_REG_STR_RM_PCIEP2P_TYPE                          "RMPcieP2PType"
+#define NV_REG_STR_RM_PCIEP2P_TYPE_MAILBOX                  (0x00000000)
+#define NV_REG_STR_RM_PCIEP2P_TYPE_BAR1                     (0x00000001)
+#define NV_REG_STR_RM_PCIEP2P_TYPE_AUTO                     (0x00000002)
+#define NV_REG_STR_RM_PCIEP2P_TYPE_DEFAULT                  NV_REG_STR_RM_PCIEP2P_TYPE_MAILBOX
 
 //
 // Type: DWORD
@@ -1085,15 +1111,13 @@
 //        BAR1 exhaustion later. Use with caution.
 // AUTO   will only map static BAR1 if static BAR1 size is calculated to be big enough
 //        to map all of FB once plus a calculated amount for other expected BAR1 mappings
-// ONLY_GPU will only map static BAR1 for existing GPU BAR1P2P use cases only
 //
 #define NV_REG_STR_RM_FORCE_STATIC_BAR1                          "RMForceStaticBar1"
 #define NV_REG_STR_RM_FORCE_STATIC_BAR1_DISABLE                   0x00000000
 #define NV_REG_STR_RM_FORCE_STATIC_BAR1_ENABLE                    0x00000001
 #define NV_REG_STR_RM_FORCE_STATIC_BAR1_AUTO                      0x00000002
-#define NV_REG_STR_RM_FORCE_STATIC_BAR1_ONLY_GPU                  0x00000003
-#define NV_REG_STR_RM_FORCE_STATIC_BAR1_MAX                       0x00000004
-#define NV_REG_STR_RM_FORCE_STATIC_BAR1_DEFAULT                   NV_REG_STR_RM_FORCE_STATIC_BAR1_ONLY_GPU
+#define NV_REG_STR_RM_FORCE_STATIC_BAR1_MAX                       0x00000003
+#define NV_REG_STR_RM_FORCE_STATIC_BAR1_DEFAULT                   NV_REG_STR_RM_FORCE_STATIC_BAR1_DISABLE
 
 #define NV_REG_STR_RM_BAR2_APERTURE_SIZE_MB                  "RMBar2ApertureSizeMB"
 // Type DWORD
@@ -1103,6 +1127,27 @@
 // of BAR2).  When this regkey is present we cap the total aperture size to the
 // RM aperture size. This can result in undefined beahvior in environments that
 // rely on a virtual bar2 aperture shared between RM and VBIOS for VESA support.
+
+//
+// This is used to control C2C low power features.
+//
+#define NV_REG_STR_RM_LPWR_C2C_STATE                         "RmLpwrC2CState"
+#define NV_REG_STR_RM_LPWR_C2C_STATE_CL3            0:0
+#define NV_REG_STR_RM_LPWR_C2C_STATE_CL3_DISABLE    0
+#define NV_REG_STR_RM_LPWR_C2C_STATE_CL3_ENABLE     1
+#define NV_REG_STR_RM_LPWR_C2C_STATE_CL3_DEFAULT    NV_REG_STR_RM_LPWR_C2C_STATE_CL3_DISABLE
+#define NV_REG_STR_RM_LPWR_C2C_STATE_CL4            1:1
+#define NV_REG_STR_RM_LPWR_C2C_STATE_CL4_DISABLE    0
+#define NV_REG_STR_RM_LPWR_C2C_STATE_CL4_ENABLE     1
+#define NV_REG_STR_RM_LPWR_C2C_STATE_CL4_DEFAULT    NV_REG_STR_RM_LPWR_C2C_STATE_CL4_DISABLE
+
+//
+// Type DWORD:
+// This regkey overrides C2C CL3/CL4 idle thresholds set by vbios.
+// Encoding - Value of CL3/CL4 idle threshold in microseconds. Zero means that vbios values will be used.
+//
+#define NV_REG_STR_RM_LPWR_C2C_CL3_IDLE_THRESHOLD_US          "RmLpwrC2cCl3IdleThresholdUs"
+#define NV_REG_STR_RM_LPWR_C2C_CL4_IDLE_THRESHOLD_US          "RmLpwrC2cCl4IdleThresholdUs"
 
 #if defined(DEVELOP) || defined(DEBUG) || (defined(RMCFG_FEATURE_MODS_FEATURES) && RMCFG_FEATURE_MODS_FEATURES)
 //
@@ -1347,6 +1392,13 @@
 #define NV_REG_STR_RM_WATCHDOG_INTERVAL_LOW                   0x00000007
 #define NV_REG_STR_RM_WATCHDOG_INTERVAL_HI                    0x0000000C
 #define NV_REG_STR_RM_WATCHDOG_INTERVAL_DEFAULT               NV_REG_STR_RM_WATCHDOG_INTERVAL_LOW
+
+// Enable/Disable watchcat in GSP-RM partition
+// Default is Enabled
+#define NV_REG_STR_TASK_RM_WATCHCAT                          "RmEnableRmTaskWatchcat"
+#define NV_REG_STR_TASK_RM_WATCHCAT_ENABLE                    0x00000001
+#define NV_REG_STR_TASK_RM_WATCHCAT_DISABLE                   0x00000000
+#define NV_REG_STR_TASK_RM_WATCHCAT_DEFAULT                   NV_REG_STR_TASK_RM_WATCHCAT_ENABLE
 
 // Enable/Disable watchcat in GSP-Plugin for Guest RPC
 // Default is Enabled
@@ -1773,6 +1825,14 @@
 // Type DWORD (Boolean)
 // Disable the specified commands as part of Chain-Of-Trust feature
 
+#define NV_REG_STR_RM_FSP_USE_MNOC                          "RmFspUseMnoc"
+#define NV_REG_STR_RM_FSP_USE_MNOC_DEFAULT                  (0x00000000)
+#define NV_REG_STR_RM_FSP_USE_MNOC_CPU                      (0x00000001)
+#define NV_REG_STR_RM_FSP_USE_MNOC_GSP                      (0x00000002)
+#define NV_REG_STR_RM_FSP_USE_MNOC_BOTH                     (0x00000003)
+// Type DWORD
+// Use MNOC (mailbox on CPU / MCTP on GSP) interface to communicate with FSP
+
 #define NV_REG_STR_PCI_LATENCY_TIMER_CONTROL                "PciLatencyTimerControl"
 // Type Dword
 // Encoding Numeric Value
@@ -2165,6 +2225,17 @@
 #define NV_REG_STR_GSP_FIRMWARE_HEAP_SIZE_MB_DEFAULT  0
 
 //
+// Sets the size of the sysmem heap for GSP-RM, only for use with 0FB chips.
+// On 0FB chips, a segment of sysmem is allocated for use by GSP-RM in place of
+// where FB would be used.
+//
+// NOTE: This is different from the above "RmGspFirmwareHeapSizeMB", which
+// is used for the WPR heap. The sysmem heap is used for memdescAlloc() calls
+//
+#define NV_REG_STR_GSP_SYSMEM_HEAP_SIZE_MB          "RmGspSysmemHeapSizeMB"
+#define NV_REG_STR_GSP_SYSMEM_HEAP_SIZE_MB_DEFAULT  512
+
+//
 // Type DWORD
 // This regkey can be used to enable GSP owned fault buffers
 //
@@ -2335,6 +2406,16 @@
 #define NV_REG_STR_RM_PPCIE_ENABLED_NO                      0x00000000
 #define NV_REG_STR_RM_PPCIE_ENABLED_YES                     0x00000001
 
+//
+// Type: DWORD
+// Encoding:
+// 0 - Disable CC multi gpu mode with NVLE
+// 1 - Enable  CC multi gpu mode with NVLE
+//
+#define NV_REG_STR_RM_CC_MULTI_GPU_NVLE_MODE_ENABLED                        "RmCCMultiGpuNvle"
+#define NV_REG_STR_RM_CC_MULTI_GPU_NVLE_MODE_ENABLED_NO                      0x00000000
+#define NV_REG_STR_RM_CC_MULTI_GPU_NVLE_MODE_ENABLED_YES                     0x00000001
+
 // This regkey allows RM to access CPR vidmem over BARs when HCC devtools mode is ON
 #define NV_REG_STR_RM_FORCE_BAR_ACCESS_ON_HCC               "RmForceBarAccessOnHcc"
 #define NV_REG_STR_RM_FORCE_BAR_ACCESS_ON_HCC_NO            0x00000000
@@ -2408,6 +2489,37 @@
 #define NV_REG_RM_GSP_WPR_END_MARGIN_APPLY                  31:31
 #define NV_REG_RM_GSP_WPR_END_MARGIN_APPLY_ON_RETRY         0x00000000
 #define NV_REG_RM_GSP_WPR_END_MARGIN_APPLY_ALWAYS           0x00000001
+
+//
+// Type DWORD
+// Regkey to set the initial number of firmware shifts for GSP-RM boot.
+//
+// Depending on where and when GSP-RM bootup fails, re-attempts may fail.
+// This regkey allows the driver to pre-emptively shift GSP-RM firmware
+// on the first boot, breaking a cycle of: attempting boot, failing,
+// re-attempts barred, rebooting system, attempting boot, etc...
+//
+// The value, n, of this this regkey represents n shifts of size RmGspWprEndMargin.
+//
+// On Windows, the driver increments this key after each failed attempt and
+//             the value rolls over to default after hitting max.
+// On Linux, the user must manually set this regkey when re-attempts fail.
+//
+// Note, this regkey is still bounded by NV_REG_STR_RM_GSP_BOOT_RETRY_ATTEMPTS.
+// Any value greater than max attempts will be modulo-ed.
+//
+#define NV_REG_STR_RM_GSP_BOOT_INITIAL_SHIFT              "RmGspBootInitialShift"
+#define NV_REG_STR_RM_GSP_BOOT_INITIAL_SHIFT_DEFAULT      0
+
+//
+// Type DWORD
+// Regkey to toggle memory integrity scan during GSP-RM bootup
+// for GeForce/non-ECC config.
+//
+#define NV_REG_STR_RM_GSP_SCAN_WPR_END_MARGIN             "RmGspScanWprEndMargin"
+#define NV_REG_STR_RM_GSP_SCAN_WPR_END_MARGIN_DEFAULT     0x00000001
+#define NV_REG_STR_RM_GSP_SCAN_WPR_END_MARGIN_ENABLE      0x00000001
+#define NV_REG_STR_RM_GSP_SCAN_WPR_END_MARGIN_DISABLE     0x00000000
 
 //
 // Type DWORD
@@ -2601,13 +2713,44 @@
 #define NV_REG_STR_RM_GSPLITE_ENABLE_ALL                          (0xFFFFFFFF)
 #define NV_REG_STR_RM_GSPLITE_ENABLE_MASK_DEFAULT                 NV_REG_STR_RM_GSPLITE_DISABLE_ALL
 
-// Type DWORD:
-// This regkey control WAR for Bug 5045021 issue:
-// WAR adding checking before save/restore config space function 1
+// Type DWORD (Boolean)
+// Forcefully enables the HWPM VA space multiple mapping for MODS testing purpose.
+#define NV_REG_STR_RM_HWPM_MUTI_VA_MAPPING                     "RmHwpmForceMultiMapping"
+#define NV_REG_STR_RM_HWPM_MUTI_VA_MAPPING_TRUE                 (0x00000001)
+#define NV_REG_STR_RM_HWPM_MUTI_VA_MAPPING_FALSE                (0x00000000)
+
+// Type DWORD (Boolean)
+// Enable the extended buffer for HWPM PMA channel.
+#define NV_REG_STR_RM_HWPM_EXTENDED_BUFFER                     "RmHwpmExtendedBuffer"
+#define NV_REG_STR_RM_HWPM_EXTENDED_BUFFER_TRUE                 (0x00000001)
+#define NV_REG_STR_RM_HWPM_EXTENDED_BUFFER_FALSE                (0x00000000)
+
+
 //
-#define NV_REG_STR_RM_WAR_5045021                                 "RmWar5045021"
-#define NV_REG_STR_RM_WAR_5045021_ENABLE                           0x00000001
-#define NV_REG_STR_RM_WAR_5045021_DISABLE                          0x00000000
-#define NV_REG_STR_RM_WAR_5045021_DEFAULT                          0x00000000
+// Type DWORD:
+// Secure bootflow is needed to bootstrap DEVINIT in LS mode where IFR is suppressed
+// This is achieved by executing DEVINIT by SECURE_BOOT command of FWSECLIC
+// _ENABLE: Enable Secure Boot flow
+// _DISABLE: Disable Secure Boot flow
+// default is _DISABLE
+#define NV_REG_STR_RM_DEVINIT_BY_SECURE_BOOT                     "RMDevinitBySecureBoot"
+#define NV_REG_STR_RM_DEVINIT_BY_SECURE_BOOT_ENABLE              1
+#define NV_REG_STR_RM_DEVINIT_BY_SECURE_BOOT_DISABLE             0
+
+//
+// Type: DWORD
+// Regkey to enable/disable FB sanity check after FSP secure boot complete
+// _ENABLE: Enable FB sanity check
+// _DISABLE: Disable FB sanity check
+// default is _DISABLE
+//
+#define NV_REG_STR_RM_FB_SANITY_CHECK                             "RmFbSanityCheck"
+#define NV_REG_STR_RM_FB_SANITY_CHECK_ENABLE                      (0x00000001)
+#define NV_REG_STR_RM_FB_SANITY_CHECK_DISABLE                     (0x00000000)
+#define NV_REG_STR_RM_FB_SANITY_CHECK_DEFAULT                     NV_REG_STR_RM_FB_SANITY_CHECK_DISABLE
+
+// Type DWORD
+// If set, RM will Align the circular buffer size up to 64k
+#define NV_REG_STR_RM_64K_BUG_5123775_WAR                         "RM64kBug5123775War"
 
 #endif // NVRM_REGISTRY_H

@@ -528,321 +528,267 @@ ValidateModeIndexEdid(NVDpyEvoPtr pDpyEvo,
 // 1400x1050, 1440x900, 1680x1050, 1920x1200
 
 static const NvModeTimings VesaModesTable[] = {
-    /*
-     * { RRx1k, PClkHz;
-     *   hVisible, hSyncStart, hSyncEnd, hTotal,
-     *   hSkew,
-     *   vVisible, vSyncStart, vSyncEnd, vTotal,
-     *   { widthMM, heightMM },
-     *   interlaced, doubleScan,
-     *   hSyncPos, hSyncNeg, vSyncPos, vSyncNeg, hdmi3D, yuv420 },
-     */
+#define VESA_MODES_TABLE_ENTRY(_RRx1k,                   \
+                               _pixelClockHz,            \
+                               _hVisible, _hSyncStart,   \
+                               _hSyncEnd, _hTotal,       \
+                               _vVisible, _vSyncStart,   \
+                               _vSyncEnd, _vTotal,       \
+                               _hSyncPos, _hSyncNeg,     \
+                               _vSyncPos, _vSyncNeg)     \
+     { .pixelClockHz = _pixelClockHz,                    \
+       .RRx1k = _RRx1k,                                  \
+       .hVisible = _hVisible, .hSyncStart = _hSyncStart, \
+       .hSyncEnd = _hSyncEnd, .hTotal = _hTotal,         \
+       .hSkew = 0,                                       \
+       .vVisible = _vVisible, .vSyncStart = _vSyncStart, \
+       .vSyncEnd = _vSyncEnd, .vTotal = _vTotal,         \
+       .sizeMM = {                                       \
+           .w = 0, .h = 0 },                             \
+       .interlaced = FALSE, .doubleScan = FALSE,         \
+       .hSyncPos = _hSyncPos, .hSyncNeg = _hSyncNeg,     \
+       .vSyncPos = _vSyncPos, .vSyncNeg = _vSyncNeg,     \
+       .hdmi3D = FALSE,                                  \
+       .yuv420Mode = NV_YUV420_MODE_NONE, }
 
     // VESA Standard 640x350 @ 85Hz
-    { 85080, 31500000,
+    VESA_MODES_TABLE_ENTRY(
+      85080, 31500000,
       640, 672, 736, 832,
-      0,
       350, 382, 385, 445,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, FALSE, TRUE, FALSE, FALSE },
+      TRUE, FALSE, FALSE, TRUE ),
 
     // VESA Standard 640x400 @ 85Hz
-    { 85080, 31500000,
+    VESA_MODES_TABLE_ENTRY(
+      85080, 31500000,
       640, 672, 736, 832,
-      0,
       400, 401, 404, 445,
-      { 0, 0 },
-      FALSE, FALSE,
-      FALSE, TRUE, TRUE, FALSE, FALSE, FALSE },
+      FALSE, TRUE, TRUE, FALSE ),
 
     // VESA Standard 720x400 @ 85Hz
-    { 85039, 35500000,
+    VESA_MODES_TABLE_ENTRY(
+      85039, 35500000,
       720, 756, 828, 936,
-      0,
       400, 401, 404, 446,
-      { 0, 0 },
-      FALSE, FALSE,
-      FALSE, TRUE, TRUE, FALSE, FALSE, FALSE },
+      FALSE, TRUE, TRUE, FALSE ),
 
     // Industry Standard 640x480 @ 60Hz
-    { 59940, 25175000,
+    VESA_MODES_TABLE_ENTRY(
+      59940, 25175000,
       640, 656, 752, 800,
-      0,
       480, 490, 492, 525,
-      { 0, 0 },
-      FALSE, FALSE,
-      FALSE, TRUE, FALSE, TRUE, FALSE, FALSE },
+      FALSE, TRUE, FALSE, TRUE ),
 
     // VESA Standard 640x480 @ 72Hz
-    { 72809, 31500000,
+    VESA_MODES_TABLE_ENTRY(
+      72809, 31500000,
       640, 664, 704, 832,
-      0,
       480, 489, 492, 520,
-      { 0, 0 },
-      FALSE, FALSE,
-      FALSE, TRUE, FALSE, TRUE, FALSE, FALSE },
+      FALSE, TRUE, FALSE, TRUE ),
 
     // VESA Standard 640x480 @ 75Hz
-    { 75000, 31500000,
+    VESA_MODES_TABLE_ENTRY(
+      75000, 31500000,
       640, 656, 720, 840,
-      0,
       480, 481, 484, 500,
-      { 0, 0 },
-      FALSE, FALSE,
-      FALSE, TRUE, FALSE, TRUE, FALSE, FALSE },
+      FALSE, TRUE, FALSE, TRUE ),
 
     // VESA Standard 640x480 @ 85Hz
-    { 85008, 36000000,
+    VESA_MODES_TABLE_ENTRY(
+      85008, 36000000,
       640, 696, 752, 832,
-      0,
       480, 481, 484, 509,
-      { 0, 0 },
-      FALSE, FALSE,
-      FALSE, TRUE, FALSE, TRUE, FALSE, FALSE },
+      FALSE, TRUE, FALSE, TRUE ),
 
     // VESA Standard 800x600 @ 56Hz
-    { 56250, 36000000,
+    VESA_MODES_TABLE_ENTRY(
+      56250, 36000000,
       800, 824, 896, 1024,
-      0,
       600, 601, 603, 625,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 800x600 @ 60Hz
-    { 60317, 40000000,
+    VESA_MODES_TABLE_ENTRY(
+      60317, 40000000,
       800, 840, 968, 1056,
-      0,
       600, 601, 605, 628,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 800x600 @ 72Hz
-    { 72188, 50000000,
+    VESA_MODES_TABLE_ENTRY(
+      72188, 50000000,
       800, 856, 976, 1040,
-      0,
       600, 637, 643, 666,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 800x600 @ 75Hz
-    { 75000, 49500000,
+    VESA_MODES_TABLE_ENTRY(
+      75000, 49500000,
       800, 816, 896, 1056,
-      0,
       600, 601, 604, 625,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 800x600 @ 85Hz
-    { 85137, 56300000,
+    VESA_MODES_TABLE_ENTRY(
+      85137, 56300000,
       800, 832, 896, 1048,
-      0,
       600, 601, 604, 631,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 1024x768i @ 87Hz
-    { 86958, 44900000,
+    VESA_MODES_TABLE_ENTRY(
+      86958, 44900000,
       1024, 1032, 1208, 1264,
-      0,
       768, 768, 776, 817,
-      { 0, 0 },
-      TRUE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 1024x768 @ 60Hz
-    { 60004, 65000000,
+    VESA_MODES_TABLE_ENTRY(
+      60004, 65000000,
       1024, 1048, 1184, 1344,
-      0,
       768, 771, 777, 806,
-      { 0, 0 },
-      FALSE, FALSE,
-      FALSE, TRUE, FALSE, TRUE, FALSE, FALSE },
+      FALSE, TRUE, FALSE, TRUE ),
 
     // VESA Standard 1024x768 @ 70Hz
-    { 70069, 75000000,
+    VESA_MODES_TABLE_ENTRY(
+      70069, 75000000,
       1024, 1048, 1184, 1328,
-      0,
       768, 771, 777, 806,
-      { 0, 0 },
-      FALSE, FALSE,
-      FALSE, TRUE, FALSE, TRUE, FALSE, FALSE },
+      FALSE, TRUE, FALSE, TRUE ),
 
     // VESA Standard 1024x768 @ 75Hz
-    { 75029, 78750000,
+    VESA_MODES_TABLE_ENTRY(
+      75029, 78750000,
       1024, 1040, 1136, 1312,
-      0,
       768, 769, 772, 800,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 1024x768 @ 85Hz
-    { 84997, 94500000,
+    VESA_MODES_TABLE_ENTRY(
+      84997, 94500000,
       1024, 1072, 1168, 1376,
-      0,
       768, 769, 772, 808,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 1152x864 @ 75Hz
-    { 75000, 108000000,
+    VESA_MODES_TABLE_ENTRY(
+      75000, 108000000,
       1152, 1216, 1344, 1600,
-      0,
       864, 865, 868, 900,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 1280x960 @ 60Hz
-    { 60000, 108000000,
+    VESA_MODES_TABLE_ENTRY(
+      60000, 108000000,
       1280, 1376, 1488, 1800,
-      0,
       960, 961, 964, 1000,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 1280x960 @ 85Hz
-    { 85002, 148500000,
+    VESA_MODES_TABLE_ENTRY(
+      85002, 148500000,
       1280, 1344, 1504, 1728,
-      0,
       960, 961, 964, 1011,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 1280x1024 @ 60Hz
-    { 60020, 108000000,
+    VESA_MODES_TABLE_ENTRY(
+      60020, 108000000,
       1280, 1328, 1440, 1688,
-      0,
       1024, 1025, 1028, 1066,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 1280x1024 @ 75Hz
-    { 75025, 135000000,
+    VESA_MODES_TABLE_ENTRY(
+      75025, 135000000,
       1280, 1296, 1440, 1688,
-      0,
       1024, 1025, 1028, 1066,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 1280x1024 @ 85Hz
-    { 85024, 157500000,
+    VESA_MODES_TABLE_ENTRY(
+      85024, 157500000,
       1280, 1344, 1504, 1728,
-      0,
       1024, 1025, 1028, 1072,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 1600x1200 @ 60Hz
-    { 60000, 162000000,
+    VESA_MODES_TABLE_ENTRY(
+      60000, 162000000,
       1600, 1664, 1856, 2160,
-      0,
       1200, 1201, 1204, 1250,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 1600x1200 @ 65Hz
-    { 65000, 175500000,
+    VESA_MODES_TABLE_ENTRY(
+      65000, 175500000,
       1600, 1664, 1856, 2160,
-      0,
       1200, 1201, 1204, 1250,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 1600x1200 @ 70Hz
-    { 70000, 189000000,
+    VESA_MODES_TABLE_ENTRY(
+      70000, 189000000,
       1600, 1664, 1856, 2160,
-      0,
       1200, 1201, 1204, 1250,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 1600x1200 @ 75Hz
-    { 75000, 202500000,
+    VESA_MODES_TABLE_ENTRY(
+      75000, 202500000,
       1600, 1664, 1856, 2160,
-      0,
       1200, 1201, 1204, 1250,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 1600x1200 @ 85Hz
-    { 85000, 229500000,
+    VESA_MODES_TABLE_ENTRY(
+      85000, 229500000,
       1600, 1664, 1856, 2160,
-      0,
       1200, 1201, 1204, 1250,
-      { 0, 0 },
-      FALSE, FALSE,
-      TRUE, FALSE, TRUE, FALSE, FALSE, FALSE },
+      TRUE, FALSE, TRUE, FALSE ),
 
     // VESA Standard 1792x1344 @ 60Hz
-    { 60014, 204800000,
+    VESA_MODES_TABLE_ENTRY(
+      60014, 204800000,
       1792, 1920, 2120, 2448,
-      0,
       1344, 1345, 1348, 1394,
-      { 0, 0 },
-      FALSE, FALSE,
-      FALSE, TRUE, TRUE, FALSE, FALSE, FALSE },
+      FALSE, TRUE, TRUE, FALSE ),
 
     // VESA Standard 1792x1344 @ 75Hz
-    { 74997, 261000000,
+    VESA_MODES_TABLE_ENTRY(
+      74997, 261000000,
       1792, 1888, 2104, 2456,
-      0,
       1344, 1345, 1348, 1417,
-      { 0, 0 },
-      FALSE, FALSE,
-      FALSE, TRUE, TRUE, FALSE, FALSE, FALSE },
+      FALSE, TRUE, TRUE, FALSE ),
 
     // VESA Standard 1856x1392 @ 60Hz
-    { 60009, 218300000,
+    VESA_MODES_TABLE_ENTRY(
+      60009, 218300000,
       1856, 1952, 2176, 2528,
-      0,
       1392, 1393, 1396, 1439,
-      { 0, 0 },
-      FALSE, FALSE,
-      FALSE, TRUE, TRUE, FALSE, FALSE, FALSE },
+      FALSE, TRUE, TRUE, FALSE ),
 
     // VESA Standard 1856x1392 @ 75Hz
-    { 75000, 288000000,
+    VESA_MODES_TABLE_ENTRY(
+      75000, 288000000,
       1856, 1984, 2208, 2560,
-      0,
       1392, 1393, 1396, 1500,
-      { 0, 0 },
-      FALSE, FALSE,
-      FALSE, TRUE, TRUE, FALSE, FALSE, FALSE },
+      FALSE, TRUE, TRUE, FALSE ),
 
     // VESA Standard 1920x1440 @ 60Hz
-    { 60000, 234000000,
+    VESA_MODES_TABLE_ENTRY(
+      60000, 234000000,
       1920, 2048, 2256, 2600,
-      0,
       1440, 1441, 1444, 1500,
-      { 0, 0 },
-      FALSE, FALSE,
-      FALSE, TRUE, TRUE, FALSE, FALSE, FALSE },
+      FALSE, TRUE, TRUE, FALSE ),
 
     // VESA Standard 1920x1440 @ 75Hz
-    { 75000, 297000000,
+    VESA_MODES_TABLE_ENTRY(
+      75000, 297000000,
       1920, 2064, 2288, 2640,
-      0,
       1440, 1441, 1444, 1500,
-      { 0, 0 },
-      FALSE, FALSE,
-      FALSE, TRUE, TRUE, FALSE, FALSE, FALSE },
+      FALSE, TRUE, TRUE, FALSE ),
+#undef VESA_MODES_TABLE_ENTRY
 };
 
 

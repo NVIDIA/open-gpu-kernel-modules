@@ -33,5 +33,7 @@
 NvBool ceIsCeGrce(OBJGPU *pGpu, RM_ENGINE_TYPE ceEngineType);
 NvBool ceIsPartneredWithGr(OBJGPU *pGpu, RM_ENGINE_TYPE ceEngineType, RM_ENGINE_TYPE grEngineType);
 NvU32  ceCountGrCe(OBJGPU *pGpu);
+void cePauseCeUtilsScheduling(OBJGPU *pGpu);
+void ceResumeCeUtilsScheduling(OBJGPU *pGpu);
 
 #endif

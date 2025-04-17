@@ -1,4 +1,11 @@
 #define NVOC_BINARY_API_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,91 +14,29 @@
 #include "utils/nvassert.h"
 #include "g_binary_api_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0xb7a47c = 1;
+char __nvoc_class_id_uniqueness_check__0xb7a47c = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_BinaryApi;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResource;
 
-void __nvoc_init_BinaryApi(BinaryApi*);
+// Forward declarations for BinaryApi
+void __nvoc_init__GpuResource(GpuResource*);
+void __nvoc_init__BinaryApi(BinaryApi*);
 void __nvoc_init_funcTable_BinaryApi(BinaryApi*);
-NV_STATUS __nvoc_ctor_BinaryApi(BinaryApi*, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_ctor_BinaryApi(BinaryApi*, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 void __nvoc_init_dataField_BinaryApi(BinaryApi*);
 void __nvoc_dtor_BinaryApi(BinaryApi*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_BinaryApi;
 
-static const struct NVOC_RTTI __nvoc_rtti_BinaryApi_BinaryApi = {
-    /*pClassDef=*/          &__nvoc_class_def_BinaryApi,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_BinaryApi,
-    /*offset=*/             0,
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_BinaryApi_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(BinaryApi, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_BinaryApi_RsResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RsResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(BinaryApi, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_BinaryApi_RmResourceCommon = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResourceCommon,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(BinaryApi, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_BinaryApi_RmResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(BinaryApi, __nvoc_base_GpuResource.__nvoc_base_RmResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_BinaryApi_GpuResource = {
-    /*pClassDef=*/          &__nvoc_class_def_GpuResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(BinaryApi, __nvoc_base_GpuResource),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_BinaryApi = {
-    /*numRelatives=*/       6,
-    /*relatives=*/ {
-        &__nvoc_rtti_BinaryApi_BinaryApi,
-        &__nvoc_rtti_BinaryApi_GpuResource,
-        &__nvoc_rtti_BinaryApi_RmResource,
-        &__nvoc_rtti_BinaryApi_RmResourceCommon,
-        &__nvoc_rtti_BinaryApi_RsResource,
-        &__nvoc_rtti_BinaryApi_Object,
-    },
-};
-
-const struct NVOC_CLASS_DEF __nvoc_class_def_BinaryApi = 
-{
-    /*classInfo=*/ {
-        /*size=*/               sizeof(BinaryApi),
-        /*classId=*/            classId(BinaryApi),
-        /*providerId=*/         &__nvoc_rtti_provider,
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "BinaryApi",
-#endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_BinaryApi,
-    /*pCastInfo=*/          &__nvoc_castinfo_BinaryApi,
-    /*pExportInfo=*/        &__nvoc_export_info_BinaryApi
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__BinaryApi;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__BinaryApi;
 
 // Down-thunk(s) to bridge BinaryApi methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^2
@@ -105,14 +50,6 @@ NV_STATUS __nvoc_down_thunk_GpuResource_resMap(struct RsResource *pGpuResource, 
 NV_STATUS __nvoc_down_thunk_GpuResource_resUnmap(struct RsResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping);    // super
 NvBool __nvoc_down_thunk_GpuResource_rmresShareCallback(struct RmResource *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super
 NV_STATUS __nvoc_down_thunk_BinaryApi_gpuresControl(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
-
-// 1 down-thunk(s) defined to bridge methods in BinaryApi from superclasses
-
-// binapiControl: virtual override (res) base (gpures)
-NV_STATUS __nvoc_down_thunk_BinaryApi_gpuresControl(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return binapiControl((struct BinaryApi *)(((unsigned char *) pResource) - NV_OFFSETOF(BinaryApi, __nvoc_base_GpuResource)), pCallContext, pParams);
-}
-
 
 // Up-thunk(s) to bridge BinaryApi methods to ancestors (if any)
 NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^2
@@ -168,6 +105,156 @@ NV_STATUS __nvoc_up_thunk_RsResource_binapiMapTo(struct BinaryApi *pResource, RS
 NV_STATUS __nvoc_up_thunk_RsResource_binapiUnmapFrom(struct BinaryApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
 NvU32 __nvoc_up_thunk_RsResource_binapiGetRefCount(struct BinaryApi *pResource);    // this
 void __nvoc_up_thunk_RsResource_binapiAddAdditionalDependants(struct RsClient *pClient, struct BinaryApi *pResource, RsResourceRef *pReference);    // this
+
+const struct NVOC_CLASS_DEF __nvoc_class_def_BinaryApi = 
+{
+    /*classInfo=*/ {
+        /*size=*/               sizeof(BinaryApi),
+        /*classId=*/            classId(BinaryApi),
+        /*providerId=*/         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*name=*/               "BinaryApi",
+#endif
+    },
+    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_BinaryApi,
+    /*pCastInfo=*/          &__nvoc_castinfo__BinaryApi,
+    /*pExportInfo=*/        &__nvoc_export_info__BinaryApi
+};
+
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__BinaryApi __nvoc_metadata__BinaryApi = {
+    .rtti.pClassDef = &__nvoc_class_def_BinaryApi,    // (binapi) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_BinaryApi,
+    .rtti.offset    = 0,
+    .metadata__GpuResource.rtti.pClassDef = &__nvoc_class_def_GpuResource,    // (gpures) super
+    .metadata__GpuResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.rtti.offset    = NV_OFFSETOF(BinaryApi, __nvoc_base_GpuResource),
+    .metadata__GpuResource.metadata__RmResource.rtti.pClassDef = &__nvoc_class_def_RmResource,    // (rmres) super^2
+    .metadata__GpuResource.metadata__RmResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.metadata__RmResource.rtti.offset    = NV_OFFSETOF(BinaryApi, __nvoc_base_GpuResource.__nvoc_base_RmResource),
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.pClassDef = &__nvoc_class_def_RsResource,    // (res) super^3
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.offset    = NV_OFFSETOF(BinaryApi, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^4
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.offset    = NV_OFFSETOF(BinaryApi, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
+    .metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.pClassDef = &__nvoc_class_def_RmResourceCommon,    // (rmrescmn) super^3
+    .metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.offset    = NV_OFFSETOF(BinaryApi, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
+
+    .vtable.__binapiControl__ = &binapiControl_IMPL,    // virtual override (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControl__ = &__nvoc_down_thunk_BinaryApi_gpuresControl,    // virtual override (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
+    .vtable.__binapiMap__ = &__nvoc_up_thunk_GpuResource_binapiMap,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
+    .vtable.__binapiUnmap__ = &__nvoc_up_thunk_GpuResource_binapiUnmap,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
+    .vtable.__binapiShareCallback__ = &__nvoc_up_thunk_GpuResource_binapiShareCallback,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+    .vtable.__binapiGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_binapiGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetRegBaseOffsetAndSize__ = &gpuresGetRegBaseOffsetAndSize_IMPL,    // virtual
+    .vtable.__binapiGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_binapiGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
+    .vtable.__binapiInternalControlForward__ = &__nvoc_up_thunk_GpuResource_binapiInternalControlForward,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
+    .vtable.__binapiGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_binapiGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
+    .vtable.__binapiAccessCallback__ = &__nvoc_up_thunk_RmResource_binapiAccessCallback,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+    .vtable.__binapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_binapiGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+    .vtable.__binapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_binapiCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+    .vtable.__binapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_binapiGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+    .vtable.__binapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_binapiControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+    .vtable.__binapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_binapiControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+    .vtable.__binapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_binapiControl_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+    .vtable.__binapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_binapiControl_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+    .vtable.__binapiCanCopy__ = &__nvoc_up_thunk_RsResource_binapiCanCopy,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+    .vtable.__binapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_binapiIsDuplicate,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+    .vtable.__binapiPreDestruct__ = &__nvoc_up_thunk_RsResource_binapiPreDestruct,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+    .vtable.__binapiControlFilter__ = &__nvoc_up_thunk_RsResource_binapiControlFilter,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+    .vtable.__binapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_binapiIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
+    .metadata__GpuResource.vtable.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+    .vtable.__binapiMapTo__ = &__nvoc_up_thunk_RsResource_binapiMapTo,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMapTo__ = &resMapTo_IMPL,    // virtual
+    .vtable.__binapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_binapiUnmapFrom,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+    .vtable.__binapiGetRefCount__ = &__nvoc_up_thunk_RsResource_binapiGetRefCount,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+    .vtable.__binapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_binapiAddAdditionalDependants,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__BinaryApi = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__BinaryApi.rtti,    // [0]: (binapi) this
+        &__nvoc_metadata__BinaryApi.metadata__GpuResource.rtti,    // [1]: (gpures) super
+        &__nvoc_metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.rtti,    // [2]: (rmres) super^2
+        &__nvoc_metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti,    // [3]: (res) super^3
+        &__nvoc_metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti,    // [4]: (obj) super^4
+        &__nvoc_metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti,    // [5]: (rmrescmn) super^3
+    }
+};
+
+// 1 down-thunk(s) defined to bridge methods in BinaryApi from superclasses
+
+// binapiControl: virtual override (res) base (gpures)
+NV_STATUS __nvoc_down_thunk_BinaryApi_gpuresControl(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return binapiControl((struct BinaryApi *)(((unsigned char *) pResource) - NV_OFFSETOF(BinaryApi, __nvoc_base_GpuResource)), pCallContext, pParams);
+}
+
 
 // 24 up-thunk(s) defined to bridge methods in BinaryApi to superclasses
 
@@ -292,7 +379,7 @@ void __nvoc_up_thunk_RsResource_binapiAddAdditionalDependants(struct RsClient *p
 }
 
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_BinaryApi = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__BinaryApi = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -335,117 +422,32 @@ static void __nvoc_init_funcTable_BinaryApi_1(BinaryApi *pThis) {
 
 // Initialize vtable(s) for 25 virtual method(s).
 void __nvoc_init_funcTable_BinaryApi(BinaryApi *pThis) {
-
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__BinaryApi vtable = {
-        .__binapiControl__ = &binapiControl_IMPL,    // virtual override (res) base (gpures)
-        .GpuResource.__gpuresControl__ = &__nvoc_down_thunk_BinaryApi_gpuresControl,    // virtual override (res) base (rmres)
-        .GpuResource.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
-        .__binapiMap__ = &__nvoc_up_thunk_GpuResource_binapiMap,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
-        .GpuResource.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
-        .__binapiUnmap__ = &__nvoc_up_thunk_GpuResource_binapiUnmap,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
-        .GpuResource.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
-        .__binapiShareCallback__ = &__nvoc_up_thunk_GpuResource_binapiShareCallback,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
-        .GpuResource.RmResource.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
-        .__binapiGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_binapiGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresGetRegBaseOffsetAndSize__ = &gpuresGetRegBaseOffsetAndSize_IMPL,    // virtual
-        .__binapiGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_binapiGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
-        .__binapiInternalControlForward__ = &__nvoc_up_thunk_GpuResource_binapiInternalControlForward,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
-        .__binapiGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_binapiGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
-        .__binapiAccessCallback__ = &__nvoc_up_thunk_RmResource_binapiAccessCallback,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
-        .__binapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_binapiGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
-        .__binapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_binapiCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
-        .__binapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_binapiGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
-        .__binapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_binapiControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
-        .__binapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_binapiControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
-        .__binapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_binapiControl_Prologue,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
-        .__binapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_binapiControl_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
-        .__binapiCanCopy__ = &__nvoc_up_thunk_RsResource_binapiCanCopy,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
-        .__binapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_binapiIsDuplicate,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
-        .__binapiPreDestruct__ = &__nvoc_up_thunk_RsResource_binapiPreDestruct,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
-        .__binapiControlFilter__ = &__nvoc_up_thunk_RsResource_binapiControlFilter,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
-        .__binapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_binapiIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
-        .GpuResource.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
-        .GpuResource.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
-        .GpuResource.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
-        .__binapiMapTo__ = &__nvoc_up_thunk_RsResource_binapiMapTo,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
-        .__binapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_binapiUnmapFrom,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
-        .__binapiGetRefCount__ = &__nvoc_up_thunk_RsResource_binapiGetRefCount,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
-        .__binapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_binapiAddAdditionalDependants,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.GpuResource.RmResource.RsResource;    // (res) super^3
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable = &vtable.GpuResource.RmResource;    // (rmres) super^2
-    pThis->__nvoc_base_GpuResource.__nvoc_vtable = &vtable.GpuResource;    // (gpures) super
-    pThis->__nvoc_vtable = &vtable;    // (binapi) this
     __nvoc_init_funcTable_BinaryApi_1(pThis);
 }
 
-void __nvoc_init_GpuResource(GpuResource*);
-void __nvoc_init_BinaryApi(BinaryApi *pThis) {
-    pThis->__nvoc_pbase_BinaryApi = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;
-    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;
-    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;
-    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource;
-    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_GpuResource;
-    __nvoc_init_GpuResource(&pThis->__nvoc_base_GpuResource);
+// Initialize newly constructed object.
+void __nvoc_init__BinaryApi(BinaryApi *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;    // (obj) super^4
+    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;    // (res) super^3
+    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;    // (rmrescmn) super^3
+    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource;    // (rmres) super^2
+    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_GpuResource;    // (gpures) super
+    pThis->__nvoc_pbase_BinaryApi = pThis;    // (binapi) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuResource(&pThis->__nvoc_base_GpuResource);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object;    // (obj) super^4
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr = &__nvoc_metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource;    // (res) super^3
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon.__nvoc_metadata_ptr = &__nvoc_metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon;    // (rmrescmn) super^3
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr = &__nvoc_metadata__BinaryApi.metadata__GpuResource.metadata__RmResource;    // (rmres) super^2
+    pThis->__nvoc_base_GpuResource.__nvoc_metadata_ptr = &__nvoc_metadata__BinaryApi.metadata__GpuResource;    // (gpures) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__BinaryApi;    // (binapi) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_BinaryApi(pThis);
 }
 
@@ -463,9 +465,6 @@ NV_STATUS __nvoc_objCreate_BinaryApi(BinaryApi **ppThis, Dynamic *pParent, NvU32
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(BinaryApi));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_BinaryApi);
-
     pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -479,7 +478,7 @@ NV_STATUS __nvoc_objCreate_BinaryApi(BinaryApi **ppThis, Dynamic *pParent, NvU32
         pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_BinaryApi(pThis);
+    __nvoc_init__BinaryApi(pThis);
     status = __nvoc_ctor_BinaryApi(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_BinaryApi_cleanup;
 
@@ -517,100 +516,30 @@ NV_STATUS __nvoc_objCreateDynamic_BinaryApi(BinaryApi **ppThis, Dynamic *pParent
     return status;
 }
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x1c0579 = 1;
+char __nvoc_class_id_uniqueness_check__0x1c0579 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_BinaryApiPrivileged;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_BinaryApi;
 
-void __nvoc_init_BinaryApiPrivileged(BinaryApiPrivileged*);
+// Forward declarations for BinaryApiPrivileged
+void __nvoc_init__BinaryApi(BinaryApi*);
+void __nvoc_init__BinaryApiPrivileged(BinaryApiPrivileged*);
 void __nvoc_init_funcTable_BinaryApiPrivileged(BinaryApiPrivileged*);
-NV_STATUS __nvoc_ctor_BinaryApiPrivileged(BinaryApiPrivileged*, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_ctor_BinaryApiPrivileged(BinaryApiPrivileged*, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 void __nvoc_init_dataField_BinaryApiPrivileged(BinaryApiPrivileged*);
 void __nvoc_dtor_BinaryApiPrivileged(BinaryApiPrivileged*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_BinaryApiPrivileged;
 
-static const struct NVOC_RTTI __nvoc_rtti_BinaryApiPrivileged_BinaryApiPrivileged = {
-    /*pClassDef=*/          &__nvoc_class_def_BinaryApiPrivileged,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_BinaryApiPrivileged,
-    /*offset=*/             0,
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_BinaryApiPrivileged_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(BinaryApiPrivileged, __nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_BinaryApiPrivileged_RsResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RsResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(BinaryApiPrivileged, __nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_BinaryApiPrivileged_RmResourceCommon = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResourceCommon,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(BinaryApiPrivileged, __nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_BinaryApiPrivileged_RmResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(BinaryApiPrivileged, __nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_BinaryApiPrivileged_GpuResource = {
-    /*pClassDef=*/          &__nvoc_class_def_GpuResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(BinaryApiPrivileged, __nvoc_base_BinaryApi.__nvoc_base_GpuResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_BinaryApiPrivileged_BinaryApi = {
-    /*pClassDef=*/          &__nvoc_class_def_BinaryApi,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(BinaryApiPrivileged, __nvoc_base_BinaryApi),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_BinaryApiPrivileged = {
-    /*numRelatives=*/       7,
-    /*relatives=*/ {
-        &__nvoc_rtti_BinaryApiPrivileged_BinaryApiPrivileged,
-        &__nvoc_rtti_BinaryApiPrivileged_BinaryApi,
-        &__nvoc_rtti_BinaryApiPrivileged_GpuResource,
-        &__nvoc_rtti_BinaryApiPrivileged_RmResource,
-        &__nvoc_rtti_BinaryApiPrivileged_RmResourceCommon,
-        &__nvoc_rtti_BinaryApiPrivileged_RsResource,
-        &__nvoc_rtti_BinaryApiPrivileged_Object,
-    },
-};
-
-const struct NVOC_CLASS_DEF __nvoc_class_def_BinaryApiPrivileged = 
-{
-    /*classInfo=*/ {
-        /*size=*/               sizeof(BinaryApiPrivileged),
-        /*classId=*/            classId(BinaryApiPrivileged),
-        /*providerId=*/         &__nvoc_rtti_provider,
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "BinaryApiPrivileged",
-#endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_BinaryApiPrivileged,
-    /*pCastInfo=*/          &__nvoc_castinfo_BinaryApiPrivileged,
-    /*pExportInfo=*/        &__nvoc_export_info_BinaryApiPrivileged
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__BinaryApiPrivileged;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__BinaryApiPrivileged;
 
 // Down-thunk(s) to bridge BinaryApiPrivileged methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^3
@@ -625,14 +554,6 @@ NV_STATUS __nvoc_down_thunk_GpuResource_resUnmap(struct RsResource *pGpuResource
 NvBool __nvoc_down_thunk_GpuResource_rmresShareCallback(struct RmResource *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super^2
 NV_STATUS __nvoc_down_thunk_BinaryApi_gpuresControl(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
 NV_STATUS __nvoc_down_thunk_BinaryApiPrivileged_binapiControl(struct BinaryApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
-
-// 1 down-thunk(s) defined to bridge methods in BinaryApiPrivileged from superclasses
-
-// binapiprivControl: virtual override (res) base (binapi)
-NV_STATUS __nvoc_down_thunk_BinaryApiPrivileged_binapiControl(struct BinaryApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return binapiprivControl((struct BinaryApiPrivileged *)(((unsigned char *) pResource) - NV_OFFSETOF(BinaryApiPrivileged, __nvoc_base_BinaryApi)), pCallContext, pParams);
-}
-
 
 // Up-thunk(s) to bridge BinaryApiPrivileged methods to ancestors (if any)
 NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^3
@@ -712,6 +633,185 @@ NV_STATUS __nvoc_up_thunk_RsResource_binapiprivMapTo(struct BinaryApiPrivileged 
 NV_STATUS __nvoc_up_thunk_RsResource_binapiprivUnmapFrom(struct BinaryApiPrivileged *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
 NvU32 __nvoc_up_thunk_RsResource_binapiprivGetRefCount(struct BinaryApiPrivileged *pResource);    // this
 void __nvoc_up_thunk_RsResource_binapiprivAddAdditionalDependants(struct RsClient *pClient, struct BinaryApiPrivileged *pResource, RsResourceRef *pReference);    // this
+
+const struct NVOC_CLASS_DEF __nvoc_class_def_BinaryApiPrivileged = 
+{
+    /*classInfo=*/ {
+        /*size=*/               sizeof(BinaryApiPrivileged),
+        /*classId=*/            classId(BinaryApiPrivileged),
+        /*providerId=*/         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*name=*/               "BinaryApiPrivileged",
+#endif
+    },
+    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_BinaryApiPrivileged,
+    /*pCastInfo=*/          &__nvoc_castinfo__BinaryApiPrivileged,
+    /*pExportInfo=*/        &__nvoc_export_info__BinaryApiPrivileged
+};
+
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__BinaryApiPrivileged __nvoc_metadata__BinaryApiPrivileged = {
+    .rtti.pClassDef = &__nvoc_class_def_BinaryApiPrivileged,    // (binapipriv) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_BinaryApiPrivileged,
+    .rtti.offset    = 0,
+    .metadata__BinaryApi.rtti.pClassDef = &__nvoc_class_def_BinaryApi,    // (binapi) super
+    .metadata__BinaryApi.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__BinaryApi.rtti.offset    = NV_OFFSETOF(BinaryApiPrivileged, __nvoc_base_BinaryApi),
+    .metadata__BinaryApi.metadata__GpuResource.rtti.pClassDef = &__nvoc_class_def_GpuResource,    // (gpures) super^2
+    .metadata__BinaryApi.metadata__GpuResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__BinaryApi.metadata__GpuResource.rtti.offset    = NV_OFFSETOF(BinaryApiPrivileged, __nvoc_base_BinaryApi.__nvoc_base_GpuResource),
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.rtti.pClassDef = &__nvoc_class_def_RmResource,    // (rmres) super^3
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.rtti.offset    = NV_OFFSETOF(BinaryApiPrivileged, __nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource),
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.pClassDef = &__nvoc_class_def_RsResource,    // (res) super^4
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.offset    = NV_OFFSETOF(BinaryApiPrivileged, __nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.offset    = NV_OFFSETOF(BinaryApiPrivileged, __nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.pClassDef = &__nvoc_class_def_RmResourceCommon,    // (rmrescmn) super^4
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.offset    = NV_OFFSETOF(BinaryApiPrivileged, __nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
+
+    .vtable.__binapiprivControl__ = &binapiprivControl_IMPL,    // virtual override (res) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiControl__ = &__nvoc_down_thunk_BinaryApiPrivileged_binapiControl,    // virtual override (res) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresControl__ = &__nvoc_down_thunk_BinaryApi_gpuresControl,    // virtual override (res) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
+    .vtable.__binapiprivMap__ = &__nvoc_up_thunk_GpuResource_binapiprivMap,    // virtual inherited (gpures) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiMap__ = &__nvoc_up_thunk_GpuResource_binapiMap,    // virtual inherited (gpures) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
+    .vtable.__binapiprivUnmap__ = &__nvoc_up_thunk_GpuResource_binapiprivUnmap,    // virtual inherited (gpures) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiUnmap__ = &__nvoc_up_thunk_GpuResource_binapiUnmap,    // virtual inherited (gpures) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
+    .vtable.__binapiprivShareCallback__ = &__nvoc_up_thunk_GpuResource_binapiprivShareCallback,    // virtual inherited (gpures) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiShareCallback__ = &__nvoc_up_thunk_GpuResource_binapiShareCallback,    // virtual inherited (gpures) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+    .vtable.__binapiprivGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_binapiprivGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_binapiGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresGetRegBaseOffsetAndSize__ = &gpuresGetRegBaseOffsetAndSize_IMPL,    // virtual
+    .vtable.__binapiprivGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_binapiprivGetMapAddrSpace,    // virtual inherited (gpures) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_binapiGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
+    .vtable.__binapiprivInternalControlForward__ = &__nvoc_up_thunk_GpuResource_binapiprivInternalControlForward,    // virtual inherited (gpures) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiInternalControlForward__ = &__nvoc_up_thunk_GpuResource_binapiInternalControlForward,    // virtual inherited (gpures) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
+    .vtable.__binapiprivGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_binapiprivGetInternalObjectHandle,    // virtual inherited (gpures) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_binapiGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
+    .vtable.__binapiprivAccessCallback__ = &__nvoc_up_thunk_RmResource_binapiprivAccessCallback,    // virtual inherited (rmres) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiAccessCallback__ = &__nvoc_up_thunk_RmResource_binapiAccessCallback,    // virtual inherited (rmres) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+    .vtable.__binapiprivGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_binapiprivGetMemInterMapParams,    // virtual inherited (rmres) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_binapiGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+    .vtable.__binapiprivCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_binapiprivCheckMemInterUnmap,    // virtual inherited (rmres) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_binapiCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+    .vtable.__binapiprivGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_binapiprivGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_binapiGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+    .vtable.__binapiprivControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_binapiprivControlSerialization_Prologue,    // virtual inherited (rmres) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_binapiControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+    .vtable.__binapiprivControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_binapiprivControlSerialization_Epilogue,    // virtual inherited (rmres) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_binapiControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+    .vtable.__binapiprivControl_Prologue__ = &__nvoc_up_thunk_RmResource_binapiprivControl_Prologue,    // virtual inherited (rmres) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_binapiControl_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+    .vtable.__binapiprivControl_Epilogue__ = &__nvoc_up_thunk_RmResource_binapiprivControl_Epilogue,    // virtual inherited (rmres) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_binapiControl_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+    .vtable.__binapiprivCanCopy__ = &__nvoc_up_thunk_RsResource_binapiprivCanCopy,    // virtual inherited (res) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiCanCopy__ = &__nvoc_up_thunk_RsResource_binapiCanCopy,    // virtual inherited (res) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+    .vtable.__binapiprivIsDuplicate__ = &__nvoc_up_thunk_RsResource_binapiprivIsDuplicate,    // virtual inherited (res) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_binapiIsDuplicate,    // virtual inherited (res) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+    .vtable.__binapiprivPreDestruct__ = &__nvoc_up_thunk_RsResource_binapiprivPreDestruct,    // virtual inherited (res) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiPreDestruct__ = &__nvoc_up_thunk_RsResource_binapiPreDestruct,    // virtual inherited (res) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+    .vtable.__binapiprivControlFilter__ = &__nvoc_up_thunk_RsResource_binapiprivControlFilter,    // virtual inherited (res) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiControlFilter__ = &__nvoc_up_thunk_RsResource_binapiControlFilter,    // virtual inherited (res) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+    .vtable.__binapiprivIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_binapiprivIsPartialUnmapSupported,    // inline virtual inherited (res) base (binapi) body
+    .metadata__BinaryApi.vtable.__binapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_binapiIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+    .vtable.__binapiprivMapTo__ = &__nvoc_up_thunk_RsResource_binapiprivMapTo,    // virtual inherited (res) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiMapTo__ = &__nvoc_up_thunk_RsResource_binapiMapTo,    // virtual inherited (res) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMapTo__ = &resMapTo_IMPL,    // virtual
+    .vtable.__binapiprivUnmapFrom__ = &__nvoc_up_thunk_RsResource_binapiprivUnmapFrom,    // virtual inherited (res) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_binapiUnmapFrom,    // virtual inherited (res) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+    .vtable.__binapiprivGetRefCount__ = &__nvoc_up_thunk_RsResource_binapiprivGetRefCount,    // virtual inherited (res) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiGetRefCount__ = &__nvoc_up_thunk_RsResource_binapiGetRefCount,    // virtual inherited (res) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+    .vtable.__binapiprivAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_binapiprivAddAdditionalDependants,    // virtual inherited (res) base (binapi)
+    .metadata__BinaryApi.vtable.__binapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_binapiAddAdditionalDependants,    // virtual inherited (res) base (gpures)
+    .metadata__BinaryApi.metadata__GpuResource.vtable.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.vtable.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+    .metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__BinaryApiPrivileged = {
+    .numRelatives = 7,
+    .relatives = {
+        &__nvoc_metadata__BinaryApiPrivileged.rtti,    // [0]: (binapipriv) this
+        &__nvoc_metadata__BinaryApiPrivileged.metadata__BinaryApi.rtti,    // [1]: (binapi) super
+        &__nvoc_metadata__BinaryApiPrivileged.metadata__BinaryApi.metadata__GpuResource.rtti,    // [2]: (gpures) super^2
+        &__nvoc_metadata__BinaryApiPrivileged.metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.rtti,    // [3]: (rmres) super^3
+        &__nvoc_metadata__BinaryApiPrivileged.metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti,    // [4]: (res) super^4
+        &__nvoc_metadata__BinaryApiPrivileged.metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti,    // [5]: (obj) super^5
+        &__nvoc_metadata__BinaryApiPrivileged.metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti,    // [6]: (rmrescmn) super^4
+    }
+};
+
+// 1 down-thunk(s) defined to bridge methods in BinaryApiPrivileged from superclasses
+
+// binapiprivControl: virtual override (res) base (binapi)
+NV_STATUS __nvoc_down_thunk_BinaryApiPrivileged_binapiControl(struct BinaryApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return binapiprivControl((struct BinaryApiPrivileged *)(((unsigned char *) pResource) - NV_OFFSETOF(BinaryApiPrivileged, __nvoc_base_BinaryApi)), pCallContext, pParams);
+}
+
 
 // 24 up-thunk(s) defined to bridge methods in BinaryApiPrivileged to superclasses
 
@@ -836,7 +936,7 @@ void __nvoc_up_thunk_RsResource_binapiprivAddAdditionalDependants(struct RsClien
 }
 
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_BinaryApiPrivileged = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__BinaryApiPrivileged = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -879,144 +979,34 @@ static void __nvoc_init_funcTable_BinaryApiPrivileged_1(BinaryApiPrivileged *pTh
 
 // Initialize vtable(s) for 25 virtual method(s).
 void __nvoc_init_funcTable_BinaryApiPrivileged(BinaryApiPrivileged *pThis) {
-
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__BinaryApiPrivileged vtable = {
-        .__binapiprivControl__ = &binapiprivControl_IMPL,    // virtual override (res) base (binapi)
-        .BinaryApi.__binapiControl__ = &__nvoc_down_thunk_BinaryApiPrivileged_binapiControl,    // virtual override (res) base (gpures)
-        .BinaryApi.GpuResource.__gpuresControl__ = &__nvoc_down_thunk_BinaryApi_gpuresControl,    // virtual override (res) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
-        .BinaryApi.GpuResource.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
-        .__binapiprivMap__ = &__nvoc_up_thunk_GpuResource_binapiprivMap,    // virtual inherited (gpures) base (binapi)
-        .BinaryApi.__binapiMap__ = &__nvoc_up_thunk_GpuResource_binapiMap,    // virtual inherited (gpures) base (gpures)
-        .BinaryApi.GpuResource.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
-        .BinaryApi.GpuResource.RmResource.RsResource.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
-        .__binapiprivUnmap__ = &__nvoc_up_thunk_GpuResource_binapiprivUnmap,    // virtual inherited (gpures) base (binapi)
-        .BinaryApi.__binapiUnmap__ = &__nvoc_up_thunk_GpuResource_binapiUnmap,    // virtual inherited (gpures) base (gpures)
-        .BinaryApi.GpuResource.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
-        .BinaryApi.GpuResource.RmResource.RsResource.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
-        .__binapiprivShareCallback__ = &__nvoc_up_thunk_GpuResource_binapiprivShareCallback,    // virtual inherited (gpures) base (binapi)
-        .BinaryApi.__binapiShareCallback__ = &__nvoc_up_thunk_GpuResource_binapiShareCallback,    // virtual inherited (gpures) base (gpures)
-        .BinaryApi.GpuResource.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
-        .BinaryApi.GpuResource.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
-        .__binapiprivGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_binapiprivGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (binapi)
-        .BinaryApi.__binapiGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_binapiGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (gpures)
-        .BinaryApi.GpuResource.__gpuresGetRegBaseOffsetAndSize__ = &gpuresGetRegBaseOffsetAndSize_IMPL,    // virtual
-        .__binapiprivGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_binapiprivGetMapAddrSpace,    // virtual inherited (gpures) base (binapi)
-        .BinaryApi.__binapiGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_binapiGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
-        .BinaryApi.GpuResource.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
-        .__binapiprivInternalControlForward__ = &__nvoc_up_thunk_GpuResource_binapiprivInternalControlForward,    // virtual inherited (gpures) base (binapi)
-        .BinaryApi.__binapiInternalControlForward__ = &__nvoc_up_thunk_GpuResource_binapiInternalControlForward,    // virtual inherited (gpures) base (gpures)
-        .BinaryApi.GpuResource.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
-        .__binapiprivGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_binapiprivGetInternalObjectHandle,    // virtual inherited (gpures) base (binapi)
-        .BinaryApi.__binapiGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_binapiGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
-        .BinaryApi.GpuResource.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
-        .__binapiprivAccessCallback__ = &__nvoc_up_thunk_RmResource_binapiprivAccessCallback,    // virtual inherited (rmres) base (binapi)
-        .BinaryApi.__binapiAccessCallback__ = &__nvoc_up_thunk_RmResource_binapiAccessCallback,    // virtual inherited (rmres) base (gpures)
-        .BinaryApi.GpuResource.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
-        .BinaryApi.GpuResource.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
-        .__binapiprivGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_binapiprivGetMemInterMapParams,    // virtual inherited (rmres) base (binapi)
-        .BinaryApi.__binapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_binapiGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
-        .BinaryApi.GpuResource.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
-        .__binapiprivCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_binapiprivCheckMemInterUnmap,    // virtual inherited (rmres) base (binapi)
-        .BinaryApi.__binapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_binapiCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
-        .BinaryApi.GpuResource.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
-        .__binapiprivGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_binapiprivGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (binapi)
-        .BinaryApi.__binapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_binapiGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
-        .BinaryApi.GpuResource.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
-        .__binapiprivControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_binapiprivControlSerialization_Prologue,    // virtual inherited (rmres) base (binapi)
-        .BinaryApi.__binapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_binapiControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
-        .BinaryApi.GpuResource.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
-        .BinaryApi.GpuResource.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
-        .__binapiprivControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_binapiprivControlSerialization_Epilogue,    // virtual inherited (rmres) base (binapi)
-        .BinaryApi.__binapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_binapiControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .BinaryApi.GpuResource.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
-        .BinaryApi.GpuResource.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
-        .__binapiprivControl_Prologue__ = &__nvoc_up_thunk_RmResource_binapiprivControl_Prologue,    // virtual inherited (rmres) base (binapi)
-        .BinaryApi.__binapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_binapiControl_Prologue,    // virtual inherited (rmres) base (gpures)
-        .BinaryApi.GpuResource.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
-        .BinaryApi.GpuResource.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
-        .__binapiprivControl_Epilogue__ = &__nvoc_up_thunk_RmResource_binapiprivControl_Epilogue,    // virtual inherited (rmres) base (binapi)
-        .BinaryApi.__binapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_binapiControl_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .BinaryApi.GpuResource.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
-        .BinaryApi.GpuResource.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
-        .__binapiprivCanCopy__ = &__nvoc_up_thunk_RsResource_binapiprivCanCopy,    // virtual inherited (res) base (binapi)
-        .BinaryApi.__binapiCanCopy__ = &__nvoc_up_thunk_RsResource_binapiCanCopy,    // virtual inherited (res) base (gpures)
-        .BinaryApi.GpuResource.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
-        .BinaryApi.GpuResource.RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
-        .__binapiprivIsDuplicate__ = &__nvoc_up_thunk_RsResource_binapiprivIsDuplicate,    // virtual inherited (res) base (binapi)
-        .BinaryApi.__binapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_binapiIsDuplicate,    // virtual inherited (res) base (gpures)
-        .BinaryApi.GpuResource.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
-        .BinaryApi.GpuResource.RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
-        .__binapiprivPreDestruct__ = &__nvoc_up_thunk_RsResource_binapiprivPreDestruct,    // virtual inherited (res) base (binapi)
-        .BinaryApi.__binapiPreDestruct__ = &__nvoc_up_thunk_RsResource_binapiPreDestruct,    // virtual inherited (res) base (gpures)
-        .BinaryApi.GpuResource.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
-        .BinaryApi.GpuResource.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
-        .__binapiprivControlFilter__ = &__nvoc_up_thunk_RsResource_binapiprivControlFilter,    // virtual inherited (res) base (binapi)
-        .BinaryApi.__binapiControlFilter__ = &__nvoc_up_thunk_RsResource_binapiControlFilter,    // virtual inherited (res) base (gpures)
-        .BinaryApi.GpuResource.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
-        .BinaryApi.GpuResource.RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
-        .__binapiprivIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_binapiprivIsPartialUnmapSupported,    // inline virtual inherited (res) base (binapi) body
-        .BinaryApi.__binapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_binapiIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
-        .BinaryApi.GpuResource.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
-        .BinaryApi.GpuResource.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
-        .BinaryApi.GpuResource.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
-        .__binapiprivMapTo__ = &__nvoc_up_thunk_RsResource_binapiprivMapTo,    // virtual inherited (res) base (binapi)
-        .BinaryApi.__binapiMapTo__ = &__nvoc_up_thunk_RsResource_binapiMapTo,    // virtual inherited (res) base (gpures)
-        .BinaryApi.GpuResource.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
-        .BinaryApi.GpuResource.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
-        .__binapiprivUnmapFrom__ = &__nvoc_up_thunk_RsResource_binapiprivUnmapFrom,    // virtual inherited (res) base (binapi)
-        .BinaryApi.__binapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_binapiUnmapFrom,    // virtual inherited (res) base (gpures)
-        .BinaryApi.GpuResource.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
-        .BinaryApi.GpuResource.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
-        .__binapiprivGetRefCount__ = &__nvoc_up_thunk_RsResource_binapiprivGetRefCount,    // virtual inherited (res) base (binapi)
-        .BinaryApi.__binapiGetRefCount__ = &__nvoc_up_thunk_RsResource_binapiGetRefCount,    // virtual inherited (res) base (gpures)
-        .BinaryApi.GpuResource.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
-        .BinaryApi.GpuResource.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
-        .__binapiprivAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_binapiprivAddAdditionalDependants,    // virtual inherited (res) base (binapi)
-        .BinaryApi.__binapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_binapiAddAdditionalDependants,    // virtual inherited (res) base (gpures)
-        .BinaryApi.GpuResource.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
-        .BinaryApi.GpuResource.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
-        .BinaryApi.GpuResource.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.BinaryApi.GpuResource.RmResource.RsResource;    // (res) super^4
-    pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable = &vtable.BinaryApi.GpuResource.RmResource;    // (rmres) super^3
-    pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_vtable = &vtable.BinaryApi.GpuResource;    // (gpures) super^2
-    pThis->__nvoc_base_BinaryApi.__nvoc_vtable = &vtable.BinaryApi;    // (binapi) super
-    pThis->__nvoc_vtable = &vtable;    // (binapipriv) this
     __nvoc_init_funcTable_BinaryApiPrivileged_1(pThis);
 }
 
-void __nvoc_init_BinaryApi(BinaryApi*);
-void __nvoc_init_BinaryApiPrivileged(BinaryApiPrivileged *pThis) {
-    pThis->__nvoc_pbase_BinaryApiPrivileged = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;
-    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;
-    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;
-    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource;
-    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource;
-    pThis->__nvoc_pbase_BinaryApi = &pThis->__nvoc_base_BinaryApi;
-    __nvoc_init_BinaryApi(&pThis->__nvoc_base_BinaryApi);
+// Initialize newly constructed object.
+void __nvoc_init__BinaryApiPrivileged(BinaryApiPrivileged *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;    // (res) super^4
+    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;    // (rmrescmn) super^4
+    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource;    // (rmres) super^3
+    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource;    // (gpures) super^2
+    pThis->__nvoc_pbase_BinaryApi = &pThis->__nvoc_base_BinaryApi;    // (binapi) super
+    pThis->__nvoc_pbase_BinaryApiPrivileged = pThis;    // (binapipriv) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__BinaryApi(&pThis->__nvoc_base_BinaryApi);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__BinaryApiPrivileged.metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr = &__nvoc_metadata__BinaryApiPrivileged.metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RsResource;    // (res) super^4
+    pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon.__nvoc_metadata_ptr = &__nvoc_metadata__BinaryApiPrivileged.metadata__BinaryApi.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon;    // (rmrescmn) super^4
+    pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr = &__nvoc_metadata__BinaryApiPrivileged.metadata__BinaryApi.metadata__GpuResource.metadata__RmResource;    // (rmres) super^3
+    pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_metadata_ptr = &__nvoc_metadata__BinaryApiPrivileged.metadata__BinaryApi.metadata__GpuResource;    // (gpures) super^2
+    pThis->__nvoc_base_BinaryApi.__nvoc_metadata_ptr = &__nvoc_metadata__BinaryApiPrivileged.metadata__BinaryApi;    // (binapi) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__BinaryApiPrivileged;    // (binapipriv) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_BinaryApiPrivileged(pThis);
 }
 
@@ -1034,9 +1024,6 @@ NV_STATUS __nvoc_objCreate_BinaryApiPrivileged(BinaryApiPrivileged **ppThis, Dyn
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(BinaryApiPrivileged));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_BinaryApiPrivileged);
-
     pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -1050,7 +1037,7 @@ NV_STATUS __nvoc_objCreate_BinaryApiPrivileged(BinaryApiPrivileged **ppThis, Dyn
         pThis->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_BinaryApiPrivileged(pThis);
+    __nvoc_init__BinaryApiPrivileged(pThis);
     status = __nvoc_ctor_BinaryApiPrivileged(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_BinaryApiPrivileged_cleanup;
 

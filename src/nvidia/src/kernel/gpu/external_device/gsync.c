@@ -286,6 +286,8 @@ gsyncP2061StartupProvider(OBJGSYNC *pGsync)
     if (P2061_FW_REV(pGsync->pExtDev) >= 0x300)
     {
         pGsync->gsyncHal.gsyncSetRasterSyncDecodeMode  = gsyncSetRasterSyncDecodeMode_P2061_V300;
+        pGsync->gsyncHal.gsyncGetVRR = gsyncGetVRR_P2061_V300;
+        pGsync->gsyncHal.gsyncSetVRR = gsyncSetVRR_P2061_V300;
     }
 
     return status;
@@ -1275,6 +1277,11 @@ gsyncGetStatusParams(OBJGSYNC *pGsync,
         NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_INFO, pGsync->gsyncHal.gsyncGetMulDiv(pGpu, pGsync->pExtDev, &pParams->syncMulDiv));
     }
 
+    if ( pParams->which & NV30F1_CTRL_GSYNC_GET_CONTROL_SYNC_VRR )
+    {
+        NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_INFO, pGsync->gsyncHal.gsyncGetVRR(pGpu, pGsync->pExtDev, &pParams->syncVRR));
+    }
+
     return status;
 }
 
@@ -1326,6 +1333,11 @@ gsyncSetControlParams(OBJGSYNC *pGsync,
     if ( pParams->which & NV30F1_CTRL_GSYNC_SET_CONTROL_SYNC_MULTIPLY_DIVIDE )
     {
         status |= pGsync->gsyncHal.gsyncSetMulDiv(pGpu, pGsync->pExtDev, &pParams->syncMulDiv);
+    }
+
+    if ( pParams->which & NV30F1_CTRL_GSYNC_SET_CONTROL_SYNC_VRR )
+    {
+        status |= pGsync->gsyncHal.gsyncSetVRR(pGpu, pGsync->pExtDev, pParams->syncVRR);
     }
 
     return status;
@@ -2495,6 +2507,28 @@ gsyncNullSetMulDiv
 }
 
 static NV_STATUS
+gsyncNullGetVRR
+(
+    OBJGPU       *pGpu,
+    DACEXTERNALDEVICE *pExtDev,
+    NvU32 *pVrr
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static NV_STATUS
+gsyncNullSetVRR
+(
+    OBJGPU       *pGpu,
+    DACEXTERNALDEVICE *pExtDev,
+    NvU32 vrr
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static NV_STATUS
 gsyncNullSetRasterSyncDecodeMode
 (
     OBJGPU            *pGpu,
@@ -2568,6 +2602,8 @@ gsyncSetupNullProvider(OBJGSYNCMGR *pGsyncMgr, NvU32 gsyncInst)
     pGsync->gsyncHal.gsyncSetHouseSyncMode     = gsyncNullSetHouseSyncMode;
     pGsync->gsyncHal.gsyncGetMulDiv            = gsyncNullGetMulDiv;
     pGsync->gsyncHal.gsyncSetMulDiv            = gsyncNullSetMulDiv;
+    pGsync->gsyncHal.gsyncGetVRR               = gsyncNullGetVRR;
+    pGsync->gsyncHal.gsyncSetVRR               = gsyncNullSetVRR;
     pGsync->gsyncHal.gsyncSetRasterSyncDecodeMode = gsyncNullSetRasterSyncDecodeMode;
 
     return status;

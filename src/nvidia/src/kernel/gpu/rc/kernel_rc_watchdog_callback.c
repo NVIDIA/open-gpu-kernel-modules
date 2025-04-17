@@ -386,7 +386,7 @@ void krcWatchdogCallbackVblankRecovery_IMPL
     // Determine the interrupt type for kdispServiceLowLatencyIntrs_HAL
     // to know what interrupt type it is
     //
-    intrGetPendingDisplayIntr_HAL(pGpu, pIntr, &intrDispPending, NULL);
+    intrGetPendingLowLatencyHwDisplayIntr_HAL(pGpu, pIntr, &intrDispPending, NULL);
 
     for (head = 0; head < kdispGetNumHeads(pKernelDisplay); head++)
     {
@@ -435,7 +435,6 @@ void krcWatchdogCallbackVblankRecovery_IMPL
                 //
                 // Have the VBlank Service run through in IMMEDIATE mode and
                 // process all queues
-                // XXX: Do we need to clear the low latency interrupt bit here?
                 //
                 kdispServiceLowLatencyIntrs_HAL(pGpu, pKernelDisplay,
                                                 NVBIT(head),

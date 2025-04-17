@@ -91,6 +91,11 @@
 #include "class/clca7d.h"
 #include "class/clca7e.h"
 
+#include "class/clcb7a.h"
+#include "class/clcb7b.h"
+#include "class/clcb7d.h"
+#include "class/clcb7e.h"
+
 #include "gpu/disp/rg_line_callback/rg_line_callback.h"
 
 #include "rmapi/rmapi_utils.h"
@@ -481,12 +486,9 @@ kdispStateInitLocked_IMPL(OBJGPU        *pGpu,
         }
     }
 
-    if (pKernelDisplay->getProperty(pKernelDisplay, PDB_PROP_KDISP_IMP_ENABLE))
-    {
-        // NOTE: Fills IMP parameters and populate those to disp object in Tegra
-        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-                kdispImportImpData_HAL(pKernelDisplay), exit);
-    }
+    // NOTE: Fills IMP parameters and populate those to disp object in Tegra
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                        kdispImportImpData_HAL(pKernelDisplay), exit);
 
 exit:
     portMemFree(pStaticInfo);
@@ -669,20 +671,7 @@ kdispImportImpData_IMPL(KernelDisplay *pKernelDisplay)
     NvU32   hClient = pGpu->hInternalClient;
     NvU32   hSubdevice = pGpu->hInternalSubdevice;
     NV2080_CTRL_INTERNAL_DISPLAY_SET_IMP_INIT_INFO_PARAMS params;
-    NvU32   simulationMode;
     NV_STATUS nvStatus;
-
-    //
-    // FPGA has different latency characteristics, and the current code latency
-    // models that IMP uses for silicon will not work for FPGA, so keep IMP
-    // disabled by default on Tegra FPGA.
-    //
-    simulationMode = osGetSimulationMode();
-    if (simulationMode == NV_SIM_MODE_TEGRA_FPGA)
-    {
-        pKernelDisplay->setProperty(pKernelDisplay, PDB_PROP_KDISP_IMP_ENABLE, NV_FALSE);
-        return NV_OK;
-    }
 
     //
     // osTegraSocGetImpImportData was originally called to collect memory and
@@ -733,6 +722,7 @@ kdispGetIntChnClsForHwCls_IMPL
         case NVC67A_CURSOR_IMM_CHANNEL_PIO:
         case NVC97A_CURSOR_IMM_CHANNEL_PIO:
         case NVCA7A_CURSOR_IMM_CHANNEL_PIO:
+        case NVCB7A_CURSOR_IMM_CHANNEL_PIO:
             *pDispChnClass = dispChnClass_Curs;
             break;
 
@@ -754,6 +744,7 @@ kdispGetIntChnClsForHwCls_IMPL
         case NVC77D_CORE_CHANNEL_DMA:
         case NVC97D_CORE_CHANNEL_DMA:
         case NVCA7D_CORE_CHANNEL_DMA:
+        case NVCB7D_CORE_CHANNEL_DMA:
             *pDispChnClass = dispChnClass_Core;
             break;
 
@@ -766,6 +757,7 @@ kdispGetIntChnClsForHwCls_IMPL
         case NVC67B_WINDOW_IMM_CHANNEL_DMA:
         case NVC97B_WINDOW_IMM_CHANNEL_DMA:
         case NVCA7B_WINDOW_IMM_CHANNEL_DMA:
+        case NVCB7B_WINDOW_IMM_CHANNEL_DMA:
             *pDispChnClass = dispChnClass_Winim;
             break;
 
@@ -774,6 +766,7 @@ kdispGetIntChnClsForHwCls_IMPL
         case NVC67E_WINDOW_CHANNEL_DMA:
         case NVC97E_WINDOW_CHANNEL_DMA:
         case NVCA7E_WINDOW_CHANNEL_DMA:
+        case NVCB7E_WINDOW_CHANNEL_DMA:
             *pDispChnClass = dispChnClass_Win;
             break;
 
@@ -858,22 +851,6 @@ kdispNotifyCommonEvent_IMPL
             continue;
         }
 
-        if (pDisplayApi->hNotifierMemory != NV01_NULL_OBJECT &&
-            pDisplayApi->pNotifierMemory != NULL)
-        {
-            NvV32 Info32 = 0;
-            NvV16 Info16 = 0;
-
-            if (pParams != NULL)
-            {
-                Info32 = pParams->OtherInfo32;
-                Info16 = pParams->Info16Status.Info16Status_16.OtherInfo16;
-            }
-
-            notifyFillNotifierMemory(pGpu, pDisplayApi->pNotifierMemory, Info32, Info16,
-                                     NV0073_NOTIFICATION_STATUS_DONE_SUCCESS, notifyIndex);
-        }
-
         // ping events bound to subdevice associated with pGpu
         osEventNotification(pGpu, pEventNotifications,
                             (notifyIndex | OS_EVENT_NOTIFICATION_INDEX_MATCH_SUBDEV),
@@ -956,13 +933,6 @@ kdispNotifyEvent_IMPL
         if (pNotifyActions[notifyIndex] == disableCmd)
         {
             continue;
-        }
-
-        if (pDisplayApi->hNotifierMemory != NV01_NULL_OBJECT &&
-            pDisplayApi->pNotifierMemory != NULL)
-        {
-            notifyFillNotifierMemory(pGpu, pDisplayApi->pNotifierMemory, info32, info16,
-                                     NV0073_NOTIFICATION_STATUS_DONE_SUCCESS, notifyIndex);
         }
 
         // ping events bound to subdevice associated with pGpu
@@ -1109,7 +1079,7 @@ kdispServiceLowLatencyIntrs_KERNEL
     NvU32      i, skippedcallbacks;
     NvU32      maskCallbacksStillPending = 0;
     KernelHead    *pKernelHead = NULL;
-    NvU32 head, headIntrMask, deferredVblank = kdispGetDeferredVblankHeadMask(pKernelDisplay);;
+    NvU32 head, headIntrMask, deferredVblank = kdispGetDeferredVblankHeadMask(pKernelDisplay);
     NvBool        bIsLowLatencyInterruptLine;
     Intr         *pIntr = GPU_GET_INTR(pGpu);
 
@@ -1150,31 +1120,41 @@ kdispServiceLowLatencyIntrs_KERNEL
     // handle win_sem interrupt
     kdispHandleWinSemEvt_HAL(pGpu, pKernelDisplay, pThreadState);
 
-    if (IS_GSP_CLIENT(pGpu) || RMCFG_FEATURE_PLATFORM_WINDOWS)
+    // handle awaken interrupt
+    kdispServiceAwakenIntr_HAL(pGpu, pKernelDisplay, pThreadState);
+
+    for (head = 0; head < kdispGetNumHeads(pKernelDisplay); ++head)
     {
-        kdispServiceAwakenIntr_HAL(pGpu, pKernelDisplay, pThreadState);
+        KernelHead *pKernelHead = KDISP_GET_HEAD(pKernelDisplay, head);
 
-    // handle RG line interrupt, if it is forwared from GSP.
-        for (head = 0; head < kdispGetNumHeads(pKernelDisplay); ++head)
+        headIntrMask = kheadReadPendingRgLineIntr_HAL(pGpu, pKernelHead, pThreadState);
+        if (headIntrMask != 0)
         {
-            KernelHead *pKernelHead = KDISP_GET_HEAD(pKernelDisplay, head);
+            NvU32 clearIntrMask = 0;
 
-            headIntrMask = kheadReadPendingRgLineIntr_HAL(pGpu, pKernelHead, pThreadState);
-            if (headIntrMask != 0)
+            kheadProcessRgLineCallbacks_HAL(pGpu,
+                                            pKernelHead,
+                                            head,
+                                            &headIntrMask,
+                                            &clearIntrMask,
+                                            osIsISR());
+            if (clearIntrMask != 0)
             {
-                NvU32 clearIntrMask = 0;
-
-                kheadProcessRgLineCallbacks_HAL(pGpu,
-                                                pKernelHead,
-                                                head,
-                                                &headIntrMask,
-                                                &clearIntrMask,
-                                                osIsISR());
-                if (clearIntrMask != 0)
-                {
-                    kheadResetRgLineIntrMask_HAL(pGpu, pKernelHead, clearIntrMask, pThreadState);
-                }
+                kheadResetRgLineIntrMask_HAL(pGpu, pKernelHead, clearIntrMask, pThreadState);
             }
+        }
+    }
+
+    // handle rg_sem interrupt
+    for (head = 0; head < kdispGetNumHeads(pKernelDisplay); ++head)
+    {
+        HEADINTRMASK headMask = 0;
+        KernelHead  *pKernelHead = KDISP_GET_HEAD(pKernelDisplay, head);
+
+        kheadReadPendingRgSemIntr_HAL(pGpu, pKernelHead, &headMask, pThreadState, NULL);
+        if (headMask != 0)
+        {
+            kheadHandleRgSemIntr_HAL(pGpu, pKernelHead, &headMask, pThreadState);
         }
     }
 
@@ -1494,7 +1474,6 @@ kdispServiceInterrupt_KERNEL
 )
 {
     MC_ENGINE_BITVECTOR intrPending;
-
     NV_ASSERT_OR_RETURN(pParams != NULL, 0);
     NV_ASSERT_OR_RETURN(pParams->engineIdx == MC_ENGINE_IDX_DISP ||
                         pParams->engineIdx == MC_ENGINE_IDX_DISP_LOW, 0);

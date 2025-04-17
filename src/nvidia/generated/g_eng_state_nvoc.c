@@ -1,4 +1,11 @@
 #define NVOC_ENG_STATE_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,40 +14,29 @@
 #include "utils/nvassert.h"
 #include "g_eng_state_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x7a7ed6 = 1;
+char __nvoc_class_id_uniqueness_check__0x7a7ed6 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
-void __nvoc_init_OBJENGSTATE(OBJENGSTATE*);
+// Forward declarations for OBJENGSTATE
+void __nvoc_init__Object(Object*);
+void __nvoc_init__OBJENGSTATE(OBJENGSTATE*);
 void __nvoc_init_funcTable_OBJENGSTATE(OBJENGSTATE*);
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE*);
 void __nvoc_init_dataField_OBJENGSTATE(OBJENGSTATE*);
 void __nvoc_dtor_OBJENGSTATE(OBJENGSTATE*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJENGSTATE;
 
-static const struct NVOC_RTTI __nvoc_rtti_OBJENGSTATE_OBJENGSTATE = {
-    /*pClassDef=*/          &__nvoc_class_def_OBJENGSTATE,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_OBJENGSTATE,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__OBJENGSTATE;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJENGSTATE;
 
-static const struct NVOC_RTTI __nvoc_rtti_OBJENGSTATE_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(OBJENGSTATE, __nvoc_base_Object),
-};
+// Down-thunk(s) to bridge OBJENGSTATE methods from ancestors (if any)
 
-static const struct NVOC_CASTINFO __nvoc_castinfo_OBJENGSTATE = {
-    /*numRelatives=*/       2,
-    /*relatives=*/ {
-        &__nvoc_rtti_OBJENGSTATE_OBJENGSTATE,
-        &__nvoc_rtti_OBJENGSTATE_Object,
-    },
-};
+// Up-thunk(s) to bridge OBJENGSTATE methods to ancestors (if any)
 
 const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE = 
 {
@@ -53,15 +49,47 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_OBJENGSTATE,
-    /*pCastInfo=*/          &__nvoc_castinfo_OBJENGSTATE,
-    /*pExportInfo=*/        &__nvoc_export_info_OBJENGSTATE
+    /*pCastInfo=*/          &__nvoc_castinfo__OBJENGSTATE,
+    /*pExportInfo=*/        &__nvoc_export_info__OBJENGSTATE
 };
 
-// Down-thunk(s) to bridge OBJENGSTATE methods from ancestors (if any)
 
-// Up-thunk(s) to bridge OBJENGSTATE methods to ancestors (if any)
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__OBJENGSTATE __nvoc_metadata__OBJENGSTATE = {
+    .rtti.pClassDef = &__nvoc_class_def_OBJENGSTATE,    // (engstate) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_OBJENGSTATE,
+    .rtti.offset    = 0,
+    .metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super
+    .metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Object.rtti.offset    = NV_OFFSETOF(OBJENGSTATE, __nvoc_base_Object),
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJENGSTATE = 
+    .vtable.__engstateConstructEngine__ = &engstateConstructEngine_IMPL,    // virtual
+    .vtable.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
+    .vtable.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
+    .vtable.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
+    .vtable.__engstateStateInitLocked__ = &engstateStateInitLocked_IMPL,    // virtual
+    .vtable.__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
+    .vtable.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
+    .vtable.__engstateStateLoad__ = &engstateStateLoad_IMPL,    // virtual
+    .vtable.__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
+    .vtable.__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
+    .vtable.__engstateStateUnload__ = &engstateStateUnload_IMPL,    // virtual
+    .vtable.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
+    .vtable.__engstateStateDestroy__ = &engstateStateDestroy_IMPL,    // virtual
+    .vtable.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__OBJENGSTATE = {
+    .numRelatives = 2,
+    .relatives = {
+        &__nvoc_metadata__OBJENGSTATE.rtti,    // [0]: (engstate) this
+        &__nvoc_metadata__OBJENGSTATE.metadata__Object.rtti,    // [1]: (obj) super
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJENGSTATE = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -100,35 +128,24 @@ static void __nvoc_init_funcTable_OBJENGSTATE_1(OBJENGSTATE *pThis) {
 
 // Initialize vtable(s) for 14 virtual method(s).
 void __nvoc_init_funcTable_OBJENGSTATE(OBJENGSTATE *pThis) {
-
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__OBJENGSTATE vtable = {
-        .__engstateConstructEngine__ = &engstateConstructEngine_IMPL,    // virtual
-        .__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
-        .__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
-        .__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
-        .__engstateStateInitLocked__ = &engstateStateInitLocked_IMPL,    // virtual
-        .__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
-        .__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
-        .__engstateStateLoad__ = &engstateStateLoad_IMPL,    // virtual
-        .__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
-        .__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
-        .__engstateStateUnload__ = &engstateStateUnload_IMPL,    // virtual
-        .__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
-        .__engstateStateDestroy__ = &engstateStateDestroy_IMPL,    // virtual
-        .__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_vtable = &vtable;    // (engstate) this
     __nvoc_init_funcTable_OBJENGSTATE_1(pThis);
 }
 
-void __nvoc_init_Object(Object*);
-void __nvoc_init_OBJENGSTATE(OBJENGSTATE *pThis) {
-    pThis->__nvoc_pbase_OBJENGSTATE = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;
-    __nvoc_init_Object(&pThis->__nvoc_base_Object);
+// Initialize newly constructed object.
+void __nvoc_init__OBJENGSTATE(OBJENGSTATE *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;    // (obj) super
+    pThis->__nvoc_pbase_OBJENGSTATE = pThis;    // (engstate) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__Object(&pThis->__nvoc_base_Object);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__OBJENGSTATE.metadata__Object;    // (obj) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__OBJENGSTATE;    // (engstate) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_OBJENGSTATE(pThis);
 }
 
@@ -146,9 +163,6 @@ NV_STATUS __nvoc_objCreate_OBJENGSTATE(OBJENGSTATE **ppThis, Dynamic *pParent, N
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(OBJENGSTATE));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_OBJENGSTATE);
-
     pThis->__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -162,7 +176,7 @@ NV_STATUS __nvoc_objCreate_OBJENGSTATE(OBJENGSTATE **ppThis, Dynamic *pParent, N
         pThis->__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_OBJENGSTATE(pThis);
+    __nvoc_init__OBJENGSTATE(pThis);
     status = __nvoc_ctor_OBJENGSTATE(pThis);
     if (status != NV_OK) goto __nvoc_objCreate_OBJENGSTATE_cleanup;
 

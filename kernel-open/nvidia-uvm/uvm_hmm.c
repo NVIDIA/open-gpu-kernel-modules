@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2025 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -34,8 +34,9 @@ MODULE_PARM_DESC(uvm_disable_hmm,
                  "enabled if is not supported in this driver build "
                  "configuration, or if ATS settings conflict with HMM.");
 #else
-// So far, we've only tested HMM on x86_64, so disable it by default everywhere
-// else.
+// TODO: Bug 4103580: UVM: HMM: implement HMM support on ARM64 (aarch64)
+// So far, we've only tested HMM on x86_64 and aarch64 and it is broken on
+// aarch64 so disable it by default everywhere except x86_64.
 static bool uvm_disable_hmm = true;
 MODULE_PARM_DESC(uvm_disable_hmm,
                  "Force-disable HMM functionality in the UVM driver. "
@@ -186,7 +187,7 @@ static NV_STATUS hmm_copy_devmem_page(struct page *dst_page, struct page *src_pa
     if (status != NV_OK)
         goto out;
 
-    status = uvm_parent_gpu_map_cpu_pages(gpu->parent, dst_page, PAGE_SIZE, &dma_addr);
+    status = uvm_gpu_map_cpu_page(gpu, dst_page, &dma_addr);
     if (status != NV_OK)
         goto out_unmap_gpu;
 
@@ -1602,7 +1603,7 @@ static NV_STATUS hmm_va_block_cpu_page_populate(uvm_va_block_t *va_block,
         return status;
     }
 
-    status = uvm_va_block_map_cpu_chunk_on_gpus(va_block, chunk);
+    status = uvm_va_block_map_cpu_chunk_on_gpus(va_block, chunk, page_index);
     if (status != NV_OK) {
         uvm_cpu_chunk_remove_from_block(va_block, page_to_nid(page), page_index);
         uvm_cpu_chunk_free(chunk);

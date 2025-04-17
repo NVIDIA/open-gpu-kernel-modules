@@ -92,7 +92,7 @@ static const RmDeprecatedControlEntry rmDeprecatedControlTable[] =
  * Check whether the cmd is part of the GSS legacy
  * commands.
  */
-static NvBool IsGssLegacyCall(NvU32 cmd)
+NvBool IsGssLegacyCall(NvU32 cmd)
 {
     return !!(cmd & RM_GSS_LEGACY_MASK);
 }

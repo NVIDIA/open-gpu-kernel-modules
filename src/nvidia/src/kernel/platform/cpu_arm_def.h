@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,19 +45,19 @@ extern void CP_WRITE_CSSELR_REGISTER(NvU32 val);
 
 #define GET_BITMASK(f, v) ((v) >> DRF_SHIFT(CP_ ## f) & DRF_MASK(CP_ ## f))
 
-#define CP_MIDR_IMPLEMENTER           31:24
-#define CP_MIDR_PRIMARY_PART_NUM      15:4
+#define CP_MIDR_IMPLEMENTER           	31:24
+#define CP_MIDR_PRIMARY_PART_NUM      	15:4
 
-#define CP_MIDR_IMPLEMENTER_BROADCOM  0x42
-#define CP_MIDR_IMPLEMENTER_NVIDIA    0x4e
-#define CP_MIDR_IMPLEMENTER_AMCC      0x50
-#define CP_MIDR_IMPLEMENTER_ARM       0x41
-#define CP_MIDR_IMPLEMENTER_MARVELL   0x43
-#define CP_MIDR_IMPLEMENTER_HUAWEI    0x48
-#define CP_MIDR_IMPLEMENTER_FUJITSU   0x46
-#define CP_MIDR_IMPLEMENTER_PHYTIUM   0x70
-#define CP_MIDR_IMPLEMENTER_AMPERE    0x81
-#define CP_MIDR_IMPLEMENTER_AMPERE_2  0XC0
+#define CP_MIDR_IMPLEMENTER_BROADCOM  	0x42
+#define CP_MIDR_IMPLEMENTER_NVIDIA    	0x4e
+#define CP_MIDR_IMPLEMENTER_AMCC      	0x50
+#define CP_MIDR_IMPLEMENTER_ARM       	0x41
+#define CP_MIDR_IMPLEMENTER_MARVELL   	0x43
+#define CP_MIDR_IMPLEMENTER_HUAWEI    	0x48
+#define CP_MIDR_IMPLEMENTER_FUJITSU   	0x46
+#define CP_MIDR_IMPLEMENTER_PHYTIUM   	0x70
+#define CP_MIDR_IMPLEMENTER_AMPERE    	0x81
+#define CP_MIDR_IMPLEMENTER_AMPEREONE_X 0xC0
 
 #define CP_CSSELR_DATA_CACHE          0
 #define CP_CSSELR_INSTRUCTION_CACHE   1
@@ -93,7 +93,8 @@ extern void CP_WRITE_CSSELR_REGISTER(NvU32 val);
 #define CP_MIDR_PRIMARY_PART_NUM_OCTEON_CN96XX 0x0b2
 #define CP_MIDR_PRIMARY_PART_NUM_OCTEON_CN98XX 0x0b1
 #define CP_MIDR_PRIMARY_PART_NUM_NEOVERSE_N2   0xd49
-#define CP_MIDR_PRIMARY_PART_NUM_AMPEREONE     0xac3
+#define CP_MIDR_PRIMARY_PART_NUM_AMPEREONE160  0xac3
+#define CP_MIDR_PRIMARY_PART_NUM_AMPEREONE192  0xac4
 
 // Cache Size Identification Register
 #define CP_CCSIDR                     "ccsidr_el1"

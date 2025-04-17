@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,165 @@
 #include "gpu/nvlink/kernel_nvlink.h"
 #include "gpu_mgr/gpu_mgr_sli.h"
 #include "pascal/gp100/dev_bus_addendum.h"
+
+
+/***************************** HW State Routines ***************************\
+*                                                                           *
+*         Pascal specific Descriptor List management functions              *
+*                                                                           *
+\***************************************************************************/
+
+
+//
+// List of GPU children that are sequenced through engine state transitions (StateInit,
+// StateLoad, StateUnload and StateDestroy). This list controls only engine presence. Ordered is
+// defined by gpuGetChildrenOrder_HAL.
+//
+// IMPORTANT: This function is to be deleted. Engine removal should instead handled by
+// <eng>ConstructEngine returning NV_ERR_NOT_SUPPORTED. PLEASE DO NOT FORK THIS LIST!
+//
+// List entries contain {CLASS-ID, # of instances} pairs.
+//
+static const GPUCHILDPRESENT gpuChildrenPresent_GP100[] =
+{
+    GPU_CHILD_PRESENT(OBJTMR, 1),
+    GPU_CHILD_PRESENT(KernelMIGManager, 1),
+    GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelRc, 1),
+    GPU_CHILD_PRESENT(Intr, 1),
+    GPU_CHILD_PRESENT(NvDebugDump, 1),
+    GPU_CHILD_PRESENT(OBJSWENG, 1),
+    GPU_CHILD_PRESENT(OBJUVM, 1),
+    GPU_CHILD_PRESENT(KernelBif, 1),
+    GPU_CHILD_PRESENT(KernelBus, 1),
+    GPU_CHILD_PRESENT(KernelCE, 6),
+    GPU_CHILD_PRESENT(KernelDisplay, 1),
+    GPU_CHILD_PRESENT(VirtMemAllocator, 1),
+    GPU_CHILD_PRESENT(KernelMemorySystem, 1),
+    GPU_CHILD_PRESENT(MemoryManager, 1),
+    GPU_CHILD_PRESENT(KernelFifo, 1),
+    GPU_CHILD_PRESENT(KernelGmmu, 1),
+    GPU_CHILD_PRESENT(KernelGraphics, 1),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
+    GPU_CHILD_PRESENT(KernelMc, 1),
+    GPU_CHILD_PRESENT(SwIntr, 1),
+    GPU_CHILD_PRESENT(KernelNvlink, 1),
+    GPU_CHILD_PRESENT(KernelPerf, 1),
+    GPU_CHILD_PRESENT(KernelPmu, 1),
+};
+
+const GPUCHILDPRESENT *
+gpuGetChildrenPresent_GP100(OBJGPU *pGpu, NvU32 *pNumEntries)
+{
+    *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GP100);
+    return gpuChildrenPresent_GP100;
+}
+
+// See gpuChildrenPresent_GM200 for documentation on GPUCHILDPRESENT
+static const GPUCHILDPRESENT gpuChildrenPresent_GP102[] =
+{
+    GPU_CHILD_PRESENT(OBJTMR, 1),
+    GPU_CHILD_PRESENT(KernelMIGManager, 1),
+    GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelRc, 1),
+    GPU_CHILD_PRESENT(Intr, 1),
+    GPU_CHILD_PRESENT(NvDebugDump, 1),
+    GPU_CHILD_PRESENT(OBJSWENG, 1),
+    GPU_CHILD_PRESENT(OBJUVM, 1),
+    GPU_CHILD_PRESENT(KernelBif, 1),
+    GPU_CHILD_PRESENT(KernelBus, 1),
+    GPU_CHILD_PRESENT(KernelCE, 6),
+    GPU_CHILD_PRESENT(KernelDisplay, 1),
+    GPU_CHILD_PRESENT(VirtMemAllocator, 1),
+    GPU_CHILD_PRESENT(KernelMemorySystem, 1),
+    GPU_CHILD_PRESENT(MemoryManager, 1),
+    GPU_CHILD_PRESENT(KernelFifo, 1),
+    GPU_CHILD_PRESENT(KernelGmmu, 1),
+    GPU_CHILD_PRESENT(KernelGraphics, 1),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
+    GPU_CHILD_PRESENT(KernelMc, 1),
+    GPU_CHILD_PRESENT(SwIntr, 1),
+    GPU_CHILD_PRESENT(KernelPerf, 1),
+    GPU_CHILD_PRESENT(KernelPmu, 1),
+};
+
+const GPUCHILDPRESENT *
+gpuGetChildrenPresent_GP102(OBJGPU *pGpu, NvU32 *pNumEntries)
+{
+    *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GP102);
+    return gpuChildrenPresent_GP102;
+}
+
+// See gpuChildrenPresent_GM200 for documentation on GPUCHILDPRESENT
+static const GPUCHILDPRESENT gpuChildrenPresent_GP106[] =
+{
+    GPU_CHILD_PRESENT(OBJTMR, 1),
+    GPU_CHILD_PRESENT(KernelMIGManager, 1),
+    GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelRc, 1),
+    GPU_CHILD_PRESENT(Intr, 1),
+    GPU_CHILD_PRESENT(NvDebugDump, 1),
+    GPU_CHILD_PRESENT(OBJSWENG, 1),
+    GPU_CHILD_PRESENT(OBJUVM, 1),
+    GPU_CHILD_PRESENT(KernelBif, 1),
+    GPU_CHILD_PRESENT(KernelBus, 1),
+    GPU_CHILD_PRESENT(KernelCE, 6),
+    GPU_CHILD_PRESENT(KernelDisplay, 1),
+    GPU_CHILD_PRESENT(VirtMemAllocator, 1),
+    GPU_CHILD_PRESENT(KernelMemorySystem, 1),
+    GPU_CHILD_PRESENT(MemoryManager, 1),
+    GPU_CHILD_PRESENT(KernelFifo, 1),
+    GPU_CHILD_PRESENT(KernelGmmu, 1),
+    GPU_CHILD_PRESENT(KernelGraphics, 1),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
+    GPU_CHILD_PRESENT(KernelMc, 1),
+    GPU_CHILD_PRESENT(SwIntr, 1),
+    GPU_CHILD_PRESENT(KernelPerf, 1),
+    GPU_CHILD_PRESENT(KernelPmu, 1),
+};
+
+const GPUCHILDPRESENT *
+gpuGetChildrenPresent_GP106(OBJGPU *pGpu, NvU32 *pNumEntries)
+{
+    *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GP106);
+    return gpuChildrenPresent_GP106;
+}
+
+// See gpuChildrenPresent_GM200 for documentation on GPUCHILDPRESENT
+static const GPUCHILDPRESENT gpuChildrenPresent_GP108[] =
+{
+    GPU_CHILD_PRESENT(OBJTMR, 1),
+    GPU_CHILD_PRESENT(KernelMIGManager, 1),
+    GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelRc, 1),
+    GPU_CHILD_PRESENT(Intr, 1),
+    GPU_CHILD_PRESENT(NvDebugDump, 1),
+    GPU_CHILD_PRESENT(OBJSWENG, 1),
+    GPU_CHILD_PRESENT(OBJUVM, 1),
+    GPU_CHILD_PRESENT(KernelBif, 1),
+    GPU_CHILD_PRESENT(KernelBus, 1),
+    GPU_CHILD_PRESENT(KernelCE, 6),
+    GPU_CHILD_PRESENT(KernelDisplay, 1),
+    GPU_CHILD_PRESENT(VirtMemAllocator, 1),
+    GPU_CHILD_PRESENT(KernelMemorySystem, 1),
+    GPU_CHILD_PRESENT(MemoryManager, 1),
+    GPU_CHILD_PRESENT(KernelFifo, 1),
+    GPU_CHILD_PRESENT(KernelGmmu, 1),
+    GPU_CHILD_PRESENT(KernelGraphics, 1),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
+    GPU_CHILD_PRESENT(KernelMc, 1),
+    GPU_CHILD_PRESENT(SwIntr, 1),
+    GPU_CHILD_PRESENT(KernelPerf, 1),
+    GPU_CHILD_PRESENT(KernelPmu, 1),
+};
+
+const GPUCHILDPRESENT *
+gpuGetChildrenPresent_GP108(OBJGPU *pGpu, NvU32 *pNumEntries)
+{
+    *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GP108);
+    return gpuChildrenPresent_GP108;
+}
+
 
 /*!
  * @brief   checks for NvLink connections between the GPUs specified in the gpuMaskArg,

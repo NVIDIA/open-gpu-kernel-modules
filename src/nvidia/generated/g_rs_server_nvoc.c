@@ -1,4 +1,11 @@
 #define NVOC_RS_SERVER_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,40 +14,29 @@
 #include "utils/nvassert.h"
 #include "g_rs_server_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x830542 = 1;
+char __nvoc_class_id_uniqueness_check__0x830542 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsShared;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
-void __nvoc_init_RsShared(RsShared*);
+// Forward declarations for RsShared
+void __nvoc_init__Object(Object*);
+void __nvoc_init__RsShared(RsShared*);
 void __nvoc_init_funcTable_RsShared(RsShared*);
 NV_STATUS __nvoc_ctor_RsShared(RsShared*);
 void __nvoc_init_dataField_RsShared(RsShared*);
 void __nvoc_dtor_RsShared(RsShared*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_RsShared;
 
-static const struct NVOC_RTTI __nvoc_rtti_RsShared_RsShared = {
-    /*pClassDef=*/          &__nvoc_class_def_RsShared,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_RsShared,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__RsShared;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__RsShared;
 
-static const struct NVOC_RTTI __nvoc_rtti_RsShared_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(RsShared, __nvoc_base_Object),
-};
+// Down-thunk(s) to bridge RsShared methods from ancestors (if any)
 
-static const struct NVOC_CASTINFO __nvoc_castinfo_RsShared = {
-    /*numRelatives=*/       2,
-    /*relatives=*/ {
-        &__nvoc_rtti_RsShared_RsShared,
-        &__nvoc_rtti_RsShared_Object,
-    },
-};
+// Up-thunk(s) to bridge RsShared methods to ancestors (if any)
 
 const struct NVOC_CLASS_DEF __nvoc_class_def_RsShared = 
 {
@@ -53,15 +49,32 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RsShared =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_RsShared,
-    /*pCastInfo=*/          &__nvoc_castinfo_RsShared,
-    /*pExportInfo=*/        &__nvoc_export_info_RsShared
+    /*pCastInfo=*/          &__nvoc_castinfo__RsShared,
+    /*pExportInfo=*/        &__nvoc_export_info__RsShared
 };
 
-// Down-thunk(s) to bridge RsShared methods from ancestors (if any)
 
-// Up-thunk(s) to bridge RsShared methods to ancestors (if any)
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__RsShared __nvoc_metadata__RsShared = {
+    .rtti.pClassDef = &__nvoc_class_def_RsShared,    // (shr) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_RsShared,
+    .rtti.offset    = 0,
+    .metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super
+    .metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Object.rtti.offset    = NV_OFFSETOF(RsShared, __nvoc_base_Object),
+};
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_RsShared = 
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__RsShared = {
+    .numRelatives = 2,
+    .relatives = {
+        &__nvoc_metadata__RsShared.rtti,    // [0]: (shr) this
+        &__nvoc_metadata__RsShared.metadata__Object.rtti,    // [1]: (obj) super
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__RsShared = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -108,11 +121,21 @@ void __nvoc_init_funcTable_RsShared(RsShared *pThis) {
     __nvoc_init_funcTable_RsShared_1(pThis);
 }
 
-void __nvoc_init_Object(Object*);
-void __nvoc_init_RsShared(RsShared *pThis) {
-    pThis->__nvoc_pbase_RsShared = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;
-    __nvoc_init_Object(&pThis->__nvoc_base_Object);
+// Initialize newly constructed object.
+void __nvoc_init__RsShared(RsShared *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;    // (obj) super
+    pThis->__nvoc_pbase_RsShared = pThis;    // (shr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__Object(&pThis->__nvoc_base_Object);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__RsShared.metadata__Object;    // (obj) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__RsShared;    // (shr) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_RsShared(pThis);
 }
 
@@ -130,9 +153,6 @@ NV_STATUS __nvoc_objCreate_RsShared(RsShared **ppThis, Dynamic *pParent, NvU32 c
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(RsShared));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_RsShared);
-
     pThis->__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -146,7 +166,7 @@ NV_STATUS __nvoc_objCreate_RsShared(RsShared **ppThis, Dynamic *pParent, NvU32 c
         pThis->__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_RsShared(pThis);
+    __nvoc_init__RsShared(pThis);
     status = __nvoc_ctor_RsShared(pThis);
     if (status != NV_OK) goto __nvoc_objCreate_RsShared_cleanup;
 
@@ -182,49 +202,30 @@ NV_STATUS __nvoc_objCreateDynamic_RsShared(RsShared **ppThis, Dynamic *pParent, 
     return status;
 }
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x830d90 = 1;
+char __nvoc_class_id_uniqueness_check__0x830d90 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsSession;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsShared;
 
-void __nvoc_init_RsSession(RsSession*);
+// Forward declarations for RsSession
+void __nvoc_init__RsShared(RsShared*);
+void __nvoc_init__RsSession(RsSession*);
 void __nvoc_init_funcTable_RsSession(RsSession*);
 NV_STATUS __nvoc_ctor_RsSession(RsSession*);
 void __nvoc_init_dataField_RsSession(RsSession*);
 void __nvoc_dtor_RsSession(RsSession*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_RsSession;
 
-static const struct NVOC_RTTI __nvoc_rtti_RsSession_RsSession = {
-    /*pClassDef=*/          &__nvoc_class_def_RsSession,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_RsSession,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__RsSession;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__RsSession;
 
-static const struct NVOC_RTTI __nvoc_rtti_RsSession_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(RsSession, __nvoc_base_RsShared.__nvoc_base_Object),
-};
+// Down-thunk(s) to bridge RsSession methods from ancestors (if any)
 
-static const struct NVOC_RTTI __nvoc_rtti_RsSession_RsShared = {
-    /*pClassDef=*/          &__nvoc_class_def_RsShared,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(RsSession, __nvoc_base_RsShared),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_RsSession = {
-    /*numRelatives=*/       3,
-    /*relatives=*/ {
-        &__nvoc_rtti_RsSession_RsSession,
-        &__nvoc_rtti_RsSession_RsShared,
-        &__nvoc_rtti_RsSession_Object,
-    },
-};
+// Up-thunk(s) to bridge RsSession methods to ancestors (if any)
 
 const struct NVOC_CLASS_DEF __nvoc_class_def_RsSession = 
 {
@@ -237,15 +238,39 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RsSession =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_RsSession,
-    /*pCastInfo=*/          &__nvoc_castinfo_RsSession,
-    /*pExportInfo=*/        &__nvoc_export_info_RsSession
+    /*pCastInfo=*/          &__nvoc_castinfo__RsSession,
+    /*pExportInfo=*/        &__nvoc_export_info__RsSession
 };
 
-// Down-thunk(s) to bridge RsSession methods from ancestors (if any)
 
-// Up-thunk(s) to bridge RsSession methods to ancestors (if any)
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__RsSession __nvoc_metadata__RsSession = {
+    .rtti.pClassDef = &__nvoc_class_def_RsSession,    // (session) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_RsSession,
+    .rtti.offset    = 0,
+    .metadata__RsShared.rtti.pClassDef = &__nvoc_class_def_RsShared,    // (shr) super
+    .metadata__RsShared.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__RsShared.rtti.offset    = NV_OFFSETOF(RsSession, __nvoc_base_RsShared),
+    .metadata__RsShared.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^2
+    .metadata__RsShared.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__RsShared.metadata__Object.rtti.offset    = NV_OFFSETOF(RsSession, __nvoc_base_RsShared.__nvoc_base_Object),
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_RsSession = 
+    .vtable.__sessionRemoveDependant__ = &sessionRemoveDependant_IMPL,    // virtual
+    .vtable.__sessionRemoveDependency__ = &sessionRemoveDependency_IMPL,    // virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__RsSession = {
+    .numRelatives = 3,
+    .relatives = {
+        &__nvoc_metadata__RsSession.rtti,    // [0]: (session) this
+        &__nvoc_metadata__RsSession.metadata__RsShared.rtti,    // [1]: (shr) super
+        &__nvoc_metadata__RsSession.metadata__RsShared.metadata__Object.rtti,    // [2]: (obj) super^2
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__RsSession = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -289,24 +314,26 @@ static void __nvoc_init_funcTable_RsSession_1(RsSession *pThis) {
 
 // Initialize vtable(s) for 2 virtual method(s).
 void __nvoc_init_funcTable_RsSession(RsSession *pThis) {
-
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__RsSession vtable = {
-        .__sessionRemoveDependant__ = &sessionRemoveDependant_IMPL,    // virtual
-        .__sessionRemoveDependency__ = &sessionRemoveDependency_IMPL,    // virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_vtable = &vtable;    // (session) this
     __nvoc_init_funcTable_RsSession_1(pThis);
 }
 
-void __nvoc_init_RsShared(RsShared*);
-void __nvoc_init_RsSession(RsSession *pThis) {
-    pThis->__nvoc_pbase_RsSession = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_RsShared.__nvoc_base_Object;
-    pThis->__nvoc_pbase_RsShared = &pThis->__nvoc_base_RsShared;
-    __nvoc_init_RsShared(&pThis->__nvoc_base_RsShared);
+// Initialize newly constructed object.
+void __nvoc_init__RsSession(RsSession *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_RsShared.__nvoc_base_Object;    // (obj) super^2
+    pThis->__nvoc_pbase_RsShared = &pThis->__nvoc_base_RsShared;    // (shr) super
+    pThis->__nvoc_pbase_RsSession = pThis;    // (session) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__RsShared(&pThis->__nvoc_base_RsShared);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_RsShared.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__RsSession.metadata__RsShared.metadata__Object;    // (obj) super^2
+    pThis->__nvoc_base_RsShared.__nvoc_metadata_ptr = &__nvoc_metadata__RsSession.metadata__RsShared;    // (shr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__RsSession;    // (session) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_RsSession(pThis);
 }
 
@@ -324,9 +351,6 @@ NV_STATUS __nvoc_objCreate_RsSession(RsSession **ppThis, Dynamic *pParent, NvU32
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(RsSession));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_RsSession);
-
     pThis->__nvoc_base_RsShared.__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -340,7 +364,7 @@ NV_STATUS __nvoc_objCreate_RsSession(RsSession **ppThis, Dynamic *pParent, NvU32
         pThis->__nvoc_base_RsShared.__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_RsSession(pThis);
+    __nvoc_init__RsSession(pThis);
     status = __nvoc_ctor_RsSession(pThis);
     if (status != NV_OK) goto __nvoc_objCreate_RsSession_cleanup;
 

@@ -131,5 +131,5 @@ memmgrGetGrHeapReservationSize_VF
     VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
     NV_ASSERT_OR_RETURN((pVSI != NULL), 0);
 
-    return pVSI->grBufferSize[RPC_GR_BUFFER_TYPE_GRAPHICS_ATTRIBUTE_CB];
+    return pVSI->ctxBuffInfo.engineContextBuffersInfo[0].engine[NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_ATTRIBUTE_CB].size;
 }

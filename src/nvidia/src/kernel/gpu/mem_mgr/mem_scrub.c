@@ -70,11 +70,11 @@ static NvU64  _searchScrubList(OBJMEMSCRUB *pScrubber, RmPhysAddr base, NvU64 si
 static void   _waitForPayload(OBJMEMSCRUB  *pScrubber, RmPhysAddr  base, RmPhysAddr end);
 static void   _scrubAddWorkToList(OBJMEMSCRUB  *pScrubber, RmPhysAddr  base, NvU64  size, NvU64  newId);
 static NvU32  _scrubMemory(OBJMEMSCRUB  *pScrubber, RmPhysAddr base, NvU64 size,
-                           NvU32 dstCpuCacheAttrib, NvU32 freeToken);
+                           NvU32 dstCpuCacheAttrib, NvU32 freeToken, NvU32 flags);
 static void   _scrubWaitAndSave(OBJMEMSCRUB *pScrubber, PSCRUB_NODE pList, NvLength  itemsToSave);
 static NvU64  _scrubGetFreeEntries(OBJMEMSCRUB *pScrubber);
 static NvU64  _scrubCheckAndSubmit(OBJMEMSCRUB *pScrubber, NvU64 pageCount, PSCRUB_NODE  pList,
-                                   PSCRUB_NODE pScrubListCopy, NvLength  pagesToScrubCheck);
+                                   PSCRUB_NODE pScrubListCopy, NvLength  pagesToScrubCheck, NvU32 flags);
 static void   _scrubCopyListItems(OBJMEMSCRUB *pScrubber, PSCRUB_NODE pList, NvLength itemsToSave);
 
 static NV_STATUS _scrubCheckLocked(OBJMEMSCRUB  *pScrubber, PSCRUB_NODE *ppList, NvU64 *pSize);
@@ -405,7 +405,8 @@ scrubSubmitPages
     NvU64       *pPages,
     NvU64        pageCount,
     PSCRUB_NODE *ppList,
-    NvU64       *pSize
+    NvU64       *pSize,
+    NvU32        flags
 )
 {
     NvU64       curPagesSaved     = 0;
@@ -467,7 +468,8 @@ scrubSubmitPages
             numFinished = _scrubCheckAndSubmit(pScrubber, scrubCount,
                                                &pScrubList[totalSubmitted],
                                                &pScrubListCopy[curPagesSaved],
-                                               pagesToScrubCheck);
+                                               pagesToScrubCheck,
+                                               flags);
 
             scrubListSize     -= numFinished;
             curPagesSaved     += pagesToScrubCheck;
@@ -481,7 +483,7 @@ scrubSubmitPages
     else
     {
         totalSubmitted = _scrubCheckAndSubmit(pScrubber, scrubListSize,
-                                              pScrubList, NULL, 0);
+                                              pScrubList, NULL, 0, flags);
         *ppList = NULL;
         *pSize  = 0;
     }
@@ -704,7 +706,8 @@ _scrubCheckAndSubmit
     NvU64        pageCount,
     PSCRUB_NODE  pList,
     PSCRUB_NODE  pScrubListCopy,
-    NvLength     pagesToScrubCheck
+    NvLength     pagesToScrubCheck,
+    NvU32        flags
 )
 {
     NvU64     iter = 0;
@@ -730,7 +733,7 @@ _scrubCheckAndSubmit
 
         {
             status =_scrubMemory(pScrubber, pList[iter].base, pList[iter].size, NV_MEMORY_DEFAULT,
-                                 (NvU32)newId);
+                                 (NvU32)newId, flags);
         }
 
         if(status != NV_OK)
@@ -960,7 +963,8 @@ _scrubMemory
     RmPhysAddr   base,
     NvU64        size,
     NvU32        dstCpuCacheAttrib,
-    NvU32        payload
+    NvU32        payload,
+    NvU32        flags
 )
 {
     NV_STATUS status = NV_OK;
@@ -969,6 +973,11 @@ _scrubMemory
                                           ADDR_FBMEM, dstCpuCacheAttrib, MEMDESC_FLAGS_NONE));
 
     memdescDescribe(pMemDesc, ADDR_FBMEM, base, size);
+
+    if ((flags & SCRUBBER_SUBMIT_FLAGS_LOCALIZED_SCRUB) != 0)
+    {
+        memdescSetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_AS_LOCALIZED, NV_TRUE);
+    }
 
     if (pScrubber->bIsEngineTypeSec2)
     {

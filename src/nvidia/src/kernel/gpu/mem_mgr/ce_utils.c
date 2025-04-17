@@ -71,14 +71,12 @@ ceutilsGetFirstAsyncCe_IMPL
     }
     else
     {
-        KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, gpuUpdateEngineTable(pGpu));
 
         KernelCE  *pKCe = NULL;
 
         KCE_ITER_ALL_BEGIN(pGpu, pKCe, 0)
-            if (kbusCheckEngine_HAL(pGpu, pKernelBus, ENG_CE(pKCe->publicID)) &&
+            if (gpuCheckEngine_HAL(pGpu, ENG_CE(pKCe->publicID)) &&
                !ceIsCeGrce(pGpu, RM_ENGINE_TYPE_COPY(pKCe->publicID)) &&
                gpuCheckEngineTable(pGpu, RM_ENGINE_TYPE_COPY(pKCe->publicID)))
             {
@@ -102,7 +100,7 @@ ceutilsConstruct_IMPL
 {
     NV_STATUS status = NV_OK;
     NvU64 allocFlags = pAllocParams->flags;
-    NvBool bForceCeId = FLD_TEST_DRF(0050_CEUTILS, _FLAGS, _FORCE_CE_ID, _TRUE, allocFlags);
+    pCeUtils->bForcedCeId = FLD_TEST_DRF(0050_CEUTILS, _FLAGS, _FORCE_CE_ID, _TRUE, allocFlags);
     NV_ASSERT_OR_RETURN(pGpu, NV_ERR_INVALID_STATE);
 
     NvBool bMIGInUse = IS_MIG_IN_USE(pGpu);
@@ -204,7 +202,7 @@ ceutilsConstruct_IMPL
 
     NV_ASSERT_OK_OR_GOTO(status, channelAllocSubdevice(pGpu, pChannel), free_client);
 
-    if (bForceCeId)
+    if (pCeUtils->bForcedCeId)
     {
         pChannel->ceId = pAllocParams->forceCeId;
     }
@@ -472,6 +470,8 @@ ceutilsMemset_IMPL
 
     NvBool bPipelined = pParams->flags & NV0050_CTRL_MEMSET_FLAGS_PIPELINED;
 
+    NV_ASSERT_OR_RETURN(!ceutilsIsSubmissionPaused(pCeUtils), NV_ERR_BUSY_RETRY);
+
     if (pMemDesc == NULL)
     {
         NV_PRINTF(LEVEL_ERROR, "Invalid memdesc for CeUtils memset.\n");
@@ -515,16 +515,25 @@ ceutilsMemset_IMPL
     memsetLength = pParams->length;
     offset = pParams->offset;
 
+    //
+    // We need not just the physical address,
+    // but the physical address to be used by the engine
+    // ce2utils is only used for AT_GPU
+    //
+
     do
     {
-        NvU64 maxContigSize = bContiguous ? memsetLength : (pageGranularity - offset % pageGranularity);
+        //
+        // Use the memdesc phys addr for calculations, but the pte address for the value
+        // programmed into CE
+        //
+        NvU64 dstAddr = memdescGetPhysAddr(pMemDesc, AT_GPU, offset);
+        NvU64 maxContigSize = bContiguous ? memsetLength : (pageGranularity - dstAddr % pageGranularity);
         NvU32 memsetSizeContig = (NvU32)NV_MIN(NV_MIN(memsetLength, maxContigSize), CE_MAX_BYTES_PER_LINE);
 
-        channelPbInfo.dstAddr = memdescGetPhysAddr(pMemDesc, AT_GPU, offset);
+        NV_PRINTF(LEVEL_INFO, "CeUtils Memset dstAddr: %llx,  size: %x\n", dstAddr, memsetSizeContig);
 
-        NV_PRINTF(LEVEL_INFO, "CeUtils Memset dstAddr: %llx,  size: %x\n",
-                  channelPbInfo.dstAddr, memsetSizeContig);
-
+        channelPbInfo.dstAddr = memdescGetPtePhysAddr(pMemDesc, AT_GPU, offset);
         channelPbInfo.size = memsetSizeContig;
         status = _ceutilsSubmitPushBuffer(pChannel, bPipelined, memsetSizeContig == memsetLength, &channelPbInfo);
         if (status != NV_OK)
@@ -580,6 +589,8 @@ ceutilsMemcopy_IMPL
     NvU64 dstOffset = pParams->dstOffset;
 
     NvBool bPipelined = pParams->flags & NV0050_CTRL_MEMCOPY_FLAGS_PIPELINED;
+
+    NV_ASSERT_OR_RETURN(!ceutilsIsSubmissionPaused(pCeUtils), NV_ERR_BUSY_RETRY);
 
     // Validate params
     if ((pSrcMemDesc == NULL) || (pDstMemDesc == NULL))
@@ -639,16 +650,17 @@ ceutilsMemcopy_IMPL
         // This algorithm finds the maximum contig region from both src and dst
         // for each copy and iterate until we submitted the whole range to CE
         //
-        NvU64 maxContigSizeSrc = bSrcContig ? copyLength : (srcPageGranularity - srcOffset % srcPageGranularity);
-        NvU64 maxContigSizeDst = bDstContig ? copyLength : (dstPageGranularity - dstOffset % dstPageGranularity);
+        NvU64 srcAddr = memdescGetPhysAddr(pSrcMemDesc, AT_GPU, srcOffset);
+        NvU64 dstAddr = memdescGetPhysAddr(pDstMemDesc, AT_GPU, dstOffset);
+        NvU64 maxContigSizeSrc = bSrcContig ? copyLength : (srcPageGranularity - srcAddr % srcPageGranularity);
+        NvU64 maxContigSizeDst = bDstContig ? copyLength : (dstPageGranularity - dstAddr % dstPageGranularity);
         NvU32 copySizeContig = (NvU32)NV_MIN(NV_MIN(copyLength, NV_MIN(maxContigSizeSrc, maxContigSizeDst)), CE_MAX_BYTES_PER_LINE);
 
-        channelPbInfo.srcAddr = memdescGetPhysAddr(pSrcMemDesc, AT_GPU, srcOffset);
-        channelPbInfo.dstAddr = memdescGetPhysAddr(pDstMemDesc, AT_GPU, dstOffset);
-
         NV_PRINTF(LEVEL_INFO, "CeUtils Memcopy dstAddr: %llx, srcAddr: %llx, size: %x\n",
-                  channelPbInfo.dstAddr, channelPbInfo.srcAddr, copySizeContig);
+                  dstAddr, srcAddr, copySizeContig);
 
+        channelPbInfo.srcAddr = srcAddr;
+        channelPbInfo.dstAddr = dstAddr;
         channelPbInfo.size = copySizeContig;
         status = _ceutilsSubmitPushBuffer(pChannel, bPipelined, copySizeContig == copyLength, &channelPbInfo);
         if (status != NV_OK)
@@ -721,6 +733,56 @@ ceutilsUpdateProgress_IMPL
 
     pCeUtils->lastCompletedPayload = swLastCompletedPayload;
     return swLastCompletedPayload;
+}
+
+void
+ceutilsPauseSubmission_IMPL
+(
+    CeUtils *pCeUtils,
+    NvBool bWaitForWorkCompletion
+)
+{
+    if (bWaitForWorkCompletion)
+    {
+        channelWaitForFinishPayload(pCeUtils->pChannel, pCeUtils->lastSubmittedPayload);
+    }
+
+    pCeUtils->submissionPausedRefCount++;
+}
+
+void
+ceutilsResumeSubmission_IMPL
+(
+    CeUtils *pCeUtils
+)
+{
+    NV_ASSERT_OR_RETURN_VOID(ceutilsIsSubmissionPaused(pCeUtils));
+    NV_ASSERT(ceutilsUsesPreferredCe(pCeUtils));
+
+    pCeUtils->submissionPausedRefCount--;
+}
+
+NvBool
+ceutilsUsesPreferredCe_IMPL
+(
+    CeUtils *pCeUtils
+)
+{
+    OBJGPU *pGpu = pCeUtils->pGpu;
+    OBJCHANNEL *pChannel = pCeUtils->pChannel;
+    NvU32 ceId;
+
+    if (pCeUtils->bForcedCeId || pCeUtils->pLiteKernelChannel != NULL)
+    {
+        // short-lived objects, should not have to change CE
+        NV_ASSERT_OR_RETURN(0, NV_TRUE);
+    }
+
+    NV_ASSERT_OR_RETURN(
+        ceutilsGetFirstAsyncCe(pCeUtils, pGpu, pChannel->pRsClient, pChannel->deviceId, &ceId, NV_FALSE) == NV_OK,
+        NV_FALSE);
+
+    return (ceId == pChannel->ceId);
 }
 
 NV_STATUS

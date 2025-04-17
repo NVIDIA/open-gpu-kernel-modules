@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,8 @@
 #include "utils/nvassert.h"
 #include "nv-crashcat-decoder.h"
 #include "utils/nvprintf.h"
+
+#include "g_all_dcl_pb.h"
 
 
 static NV_INLINE NvUPtr ptrDiff(void *pStart, void *pEnd)
@@ -547,4 +549,186 @@ void crashcatReportLogIo32State_V1(CrashCatReport *pReport)
         default:
             break;
     }
+}
+
+void crashcatReportLogToProtobuf_V1(CrashCatReport *pReport, PRB_ENCODER *pCrashcatProtobufData)
+{
+    NV_STATUS status = NV_OK;
+    NvCrashCatReport_V1 *pReportV1 = &pReport->v1.report;
+    NvCrashCatRiscv64CsrState_V1 *pCsrStateV1 = &pReport->v1.riscv64CsrState;
+    NvCrashCatRiscv64GprState_V1 *pGprStateV1 = &pReport->v1.riscv64GprState;
+
+    status = prbEncNestedStart(pCrashcatProtobufData, GSP_XIDREPORT_CRASHCATREPORT);
+    if (status != NV_OK)
+        return;
+
+    prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_REPORT_PC, pReportV1->sourcePc);
+    prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_REPORT_TIMESTAMP, crashcatReportV1ReporterTimestamp(pReportV1));
+
+    switch (crashcatReportV1SourceMode(pReportV1))
+    {
+        case NV_CRASHCAT_RISCV_MODE_M:
+            status = prbEncAddEnum(pCrashcatProtobufData, CRASHCAT_REPORT_MODE, CRASHCAT_REPORT_MODE_M);
+            break;
+        case NV_CRASHCAT_RISCV_MODE_S:
+            status = prbEncAddEnum(pCrashcatProtobufData, CRASHCAT_REPORT_MODE, CRASHCAT_REPORT_MODE_S);
+            break;
+        case NV_CRASHCAT_RISCV_MODE_U:
+            status = prbEncAddEnum(pCrashcatProtobufData, CRASHCAT_REPORT_MODE, CRASHCAT_REPORT_MODE_U);
+            break;
+        default:
+            status = prbEncAddEnum(pCrashcatProtobufData, CRASHCAT_REPORT_MODE, CRASHCAT_REPORT_MODE_X);
+    }
+
+    crashcatReportLogVersionProtobuf_HAL(pReport, pCrashcatProtobufData);
+
+    switch (crashcatReportV1SourceCauseType(pReportV1))
+    {
+        case NV_CRASHCAT_CAUSE_TYPE_EXCEPTION:
+        {
+            if (status == NV_OK)
+                status = prbEncAddEnum(pCrashcatProtobufData, CRASHCAT_REPORT_CAUSE, CRASHCAT_REPORT_EXCEPTION);
+            break;
+        }
+        case NV_CRASHCAT_CAUSE_TYPE_TIMEOUT:
+        {
+            if (status == NV_OK)
+                status = prbEncAddEnum(pCrashcatProtobufData, CRASHCAT_REPORT_CAUSE, CRASHCAT_REPORT_TIMEOUT);
+            break;
+        }
+        case NV_CRASHCAT_CAUSE_TYPE_PANIC:
+        {
+            if (status == NV_OK)
+                status = prbEncAddEnum(pCrashcatProtobufData, CRASHCAT_REPORT_CAUSE, CRASHCAT_REPORT_PANIC);
+            break;
+        }
+        default:
+            if (status == NV_OK)
+                status = prbEncAddEnum(pCrashcatProtobufData, CRASHCAT_REPORT_CAUSE, CRASHCAT_REPORT_UNKNOWN);
+    }
+
+    prbEncAddUInt32(pCrashcatProtobufData, CRASHCAT_REPORT_SOURCEPARTITION, crashcatReportV1SourcePartition(pReportV1));
+    prbEncAddUInt32(pCrashcatProtobufData, CRASHCAT_REPORT_SOURCEUCODEID, crashcatReportV1SourceUcodeId(pReportV1));
+    prbEncAddUInt32(pCrashcatProtobufData, CRASHCAT_REPORT_REPORTERPARTITION, crashcatReportV1ReporterPartition(pReportV1));
+    prbEncAddUInt32(pCrashcatProtobufData, CRASHCAT_REPORT_REPORTERUCODEID, crashcatReportV1ReporterUcodeId(pReportV1));
+
+    status = prbEncNestedStart(pCrashcatProtobufData, CRASHCAT_REPORT_CSRSTATE);
+    if (status == NV_OK)
+    {
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64CSRSTATE_XSTATUS, pCsrStateV1->xstatus);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64CSRSTATE_XIE, pCsrStateV1->xie);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64CSRSTATE_XIP, pCsrStateV1->xip);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64CSRSTATE_XEPC, pCsrStateV1->xepc);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64CSRSTATE_XTVAL, pCsrStateV1->xtval);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64CSRSTATE_XCAUSE, pCsrStateV1->xcause);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64CSRSTATE_XSCRATCH, pCsrStateV1->xscratch);
+        prbEncNestedEnd(pCrashcatProtobufData);
+    }
+
+    status = prbEncNestedStart(pCrashcatProtobufData, CRASHCAT_REPORT_GPRSTATE);
+    if (status == NV_OK)
+    {
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_RA, pGprStateV1->ra);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_SP, pGprStateV1->sp);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_GP, pGprStateV1->gp);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_TP, pGprStateV1->tp);
+
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_A0, pGprStateV1->a0);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_A1, pGprStateV1->a1);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_A2, pGprStateV1->a2);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_A3, pGprStateV1->a3);
+
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_A4, pGprStateV1->a4);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_A5, pGprStateV1->a5);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_A6, pGprStateV1->a6);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_A7, pGprStateV1->a7);
+
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_S0, pGprStateV1->s0);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_S1, pGprStateV1->s1);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_S2, pGprStateV1->s2);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_S3, pGprStateV1->s3);
+
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_S4, pGprStateV1->s4);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_S5, pGprStateV1->s5);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_S6, pGprStateV1->s6);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_S7, pGprStateV1->s7);
+
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_S8, pGprStateV1->s8);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_S9, pGprStateV1->s9);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_S10, pGprStateV1->s10);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_S11, pGprStateV1->s11);
+
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_T0, pGprStateV1->t0);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_T1, pGprStateV1->t1);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_T2, pGprStateV1->t2);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_T3, pGprStateV1->t3);
+
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_T4, pGprStateV1->t4);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_T5, pGprStateV1->t5);
+        prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_RISCV64GPRSTATE_T6, pGprStateV1->t6);
+
+        prbEncNestedEnd(pCrashcatProtobufData);
+    }
+
+    if (pReport->v1.pIo32State != NULL)
+    {
+        NvCrashCatIo32State_V1 *pIo32StateV1 = pReport->v1.pIo32State;
+        NvU16 entries = crashcatPacketHeaderPayloadSize(pIo32StateV1->header) >> 3;
+
+        for (NvU16 idx = 0; idx < entries; idx++)
+        {
+            status = prbEncNestedStart(pCrashcatProtobufData, CRASHCAT_REPORT_LOCALIOREGISTER);
+            if (status == NV_OK)
+            {
+                status = prbEncAddUInt32(pCrashcatProtobufData, CRASHCAT_LOCALIOREGISTER_ADDRESS, pIo32StateV1->regs[idx].offset);
+                status = prbEncAddUInt32(pCrashcatProtobufData, CRASHCAT_LOCALIOREGISTER_VALUE, pIo32StateV1->regs[idx].value);
+                status = prbEncNestedEnd(pCrashcatProtobufData);
+            }
+        }
+    }
+
+    if (pReport->v1.pRiscv64StackTrace != NULL)
+    {
+        NvCrashCatRiscv64Trace_V1 *pRiscv64StackTrace = pReport->v1.pRiscv64StackTrace;
+        NvU16 entries = crashcatPacketHeaderPayloadSize(pRiscv64StackTrace->header) >> 3;
+
+        for (NvU16 idx = 0; idx < entries; idx++)
+        {
+            if (status == NV_OK)
+            {
+                status = prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_REPORT_STACKTRACE, pRiscv64StackTrace->addr[idx]);
+            }
+        }
+    }
+
+    if (pReport->v1.pRiscv64PcTrace != NULL)
+    {
+        NvCrashCatRiscv64Trace_V1 *pRiscv64PcTrace = pReport->v1.pRiscv64PcTrace;
+        NvU16 entries = crashcatPacketHeaderPayloadSize(pRiscv64PcTrace->header) >> 3;
+
+        for (NvU16 idx = 0; idx < entries; idx++)
+        {
+            if (status == NV_OK)
+            {
+                status = prbEncAddUInt64(pCrashcatProtobufData, CRASHCAT_REPORT_PCTRACE, pRiscv64PcTrace->addr[idx]);
+            }
+        }
+    }
+
+    status = prbEncNestedEnd(pCrashcatProtobufData);
+}
+
+NvU64 crashcatReportRa_V1(CrashCatReport *pReport)
+{
+    return pReport->v1.riscv64GprState.ra;
+}
+
+NvU64 crashcatReportXcause_V1(CrashCatReport *pReport)
+{
+    return pReport->v1.riscv64CsrState.xcause;
+}
+
+NvU64 crashcatReportXtval_V1(CrashCatReport *pReport)
+{
+    return pReport->v1.riscv64CsrState.xtval;
 }

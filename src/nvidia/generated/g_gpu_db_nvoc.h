@@ -1,20 +1,22 @@
 
 #ifndef _G_GPU_DB_NVOC_H_
 #define _G_GPU_DB_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -42,6 +44,7 @@ extern "C" {
 #define GPU_DB_H
 
 #include "core/core.h"
+#include "nvoc/object.h"
 #include "containers/list.h"
 #include "gpu/gpu_uuid.h"
 
@@ -110,10 +113,18 @@ MAKE_LIST(GpuInfoList, GPU_INFO_LIST_NODE);
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__GpuDb;
+struct NVOC_METADATA__Object;
+
+
 struct GpuDb {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__GpuDb *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -125,6 +136,13 @@ struct GpuDb {
     // Data members
     GpuInfoList gpuList;
     PORT_MUTEX *pLock;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__GpuDb {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
 };
 
 #ifndef __NVOC_CLASS_GpuDb_TYPEDEF__
@@ -143,10 +161,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuDb;
     ((pThis)->__nvoc_pbase_GpuDb)
 
 #ifdef __nvoc_gpu_db_h_disabled
-#define __dynamicCast_GpuDb(pThis) ((GpuDb*)NULL)
+#define __dynamicCast_GpuDb(pThis) ((GpuDb*) NULL)
 #else //__nvoc_gpu_db_h_disabled
 #define __dynamicCast_GpuDb(pThis) \
-    ((GpuDb*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(GpuDb)))
+    ((GpuDb*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(GpuDb)))
 #endif //__nvoc_gpu_db_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_GpuDb(GpuDb**, Dynamic*, NvU32, va_list);

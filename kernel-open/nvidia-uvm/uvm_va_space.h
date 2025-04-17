@@ -33,6 +33,7 @@
 #include "uvm_mmu.h"
 #include "uvm_linux.h"
 #include "uvm_common.h"
+#include "uvm_fd_type.h"
 #include "nv-kref.h"
 #include "nv-linux.h"
 #include "uvm_perf_events.h"
@@ -198,6 +199,9 @@ struct uvm_va_space_struct
     // This is a count of non fault capable processors with a GPU VA space
     // registered.
     NvU32 num_non_faultable_gpu_va_spaces;
+
+    // Count of integrated GPUs in a VA space.
+    NvU32 num_integrated_gpus;
 
     // Semaphore protecting the state of the va space
     uvm_rw_semaphore_t lock;
@@ -613,25 +617,13 @@ static uvm_egm_numa_node_info_t *uvm_va_space_get_first_egm_numa_node_info_for_g
 // does not point to a va_space.
 static uvm_va_space_t *uvm_fd_va_space(struct file *filp)
 {
-    uvm_va_space_t *va_space;
-    uvm_fd_type_t type;
-
-    type = uvm_fd_type(filp, (void **) &va_space);
-    if (type != UVM_FD_VA_SPACE)
-        return NULL;
-
-    return va_space;
+    return uvm_fd_get_type(filp, UVM_FD_VA_SPACE);
 }
 
 static uvm_va_space_t *uvm_va_space_get(struct file *filp)
 {
-    uvm_fd_type_t fd_type;
-    uvm_va_space_t *va_space;
-
-    fd_type = uvm_fd_type(filp, (void **)&va_space);
-    UVM_ASSERT(uvm_file_is_nvidia_uvm(filp));
-    UVM_ASSERT_MSG(fd_type == UVM_FD_VA_SPACE, "filp: 0x%llx", (NvU64)filp);
-
+    uvm_va_space_t *va_space = uvm_fd_va_space(filp);
+    UVM_ASSERT(va_space);
     return va_space;
 }
 
@@ -897,5 +889,11 @@ vm_fault_t uvm_va_space_cpu_fault_managed(uvm_va_space_t *va_space,
 vm_fault_t uvm_va_space_cpu_fault_hmm(uvm_va_space_t *va_space,
                                       struct vm_area_struct *vma,
                                       struct vm_fault *vmf);
+
+static bool uvm_va_space_has_integrated_gpu(uvm_va_space_t *va_space)
+{
+    uvm_assert_rwsem_locked(&va_space->lock);
+    return va_space->num_integrated_gpus  > 0;
+}
 
 #endif // __UVM_VA_SPACE_H__

@@ -2311,21 +2311,6 @@ kgrctxUnmapCtxZcullBuffer_IMPL
 }
 
 /**
- * @brief unmap the memory for the setup context buffer
- */
-void
-kgrctxUnmapCtxSetupBuffer_IMPL
-(
-    OBJGPU *pGpu,
-    KernelGraphicsContext *pKernelGraphicsContext,
-    KernelGraphics *pKernelGraphics,
-    OBJVASPACE *pVAS
-)
-{
-    // TODO Bug 4153224: fill in function
-}
-
-/**
  * @brief unmap the memory for the preemption context buffers
  */
 void
@@ -2832,20 +2817,6 @@ kgrctxFreeZcullBuffer_IMPL
     memdescDestroy(pMemDesc);
     pKernelGraphicsContextUnicast->zcullCtxswBuffer.pMemDesc = NULL;
 }
-
-/**
- * @brief free the memory for the setup context buffer
- */
-void
-kgrctxFreeSetupBuffer_IMPL
-(
-    OBJGPU *pGpu,
-    KernelGraphicsContext *pKernelGraphicsContext
-)
-{
-    // TODO Bug 4153224: fill in function
-}
-
 
 /**
  * @brief free the memory for the preemption context buffers

@@ -67,6 +67,8 @@ enum
     CC_LKEYID_GSP_CPU_NON_REPLAYABLE_FAULT,
     CC_LKEYID_SEC2_GSP_LOCKED_RPC,
     CC_LKEYID_GSP_SEC2_LOCKED_RPC,
+    CC_LKEYID_CPU_GSP_NVLE_P2P_WRAPPING,
+    CC_LKEYID_GSP_CPU_RESERVED_1,
     CC_KEYSPACE_GSP_SIZE // This is always the last element.
 };
 // The fault buffers only support GPU-to-CPU encryption, so the CPU-to-GPU encryption slot
@@ -78,6 +80,7 @@ enum
 #define CC_LKEYID_CPU_GSP_DMA_STR                  "cpu_gsp_dma"
 #define CC_LKEYID_GSP_CPU_REPLAYABLE_FAULT_STR     "gsp_cpu_replayable_fault"
 #define CC_LKEYID_GSP_CPU_NON_REPLAYABLE_FAULT_STR "gsp_cpu_non_replayable_fault"
+#define CC_LKEYID_CPU_GSP_NVLE_P2P_WRAPPING_STR    "cpu_gsp_nvle_p2p_wrapping"
 
 enum
 {
@@ -249,7 +252,9 @@ enum
         (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_GSP_CPU_REPLAYABLE_FAULT) ? \
             CC_LKEYID_GSP_CPU_REPLAYABLE_FAULT_STR : \
         (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_GSP_CPU_NON_REPLAYABLE_FAULT) ? \
-            CC_LKEYID_GSP_CPU_NON_REPLAYABLE_FAULT_STR : NULL : \
+            CC_LKEYID_GSP_CPU_NON_REPLAYABLE_FAULT_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_GSP_NVLE_P2P_WRAPPING) ? \
+            CC_LKEYID_CPU_GSP_NVLE_P2P_WRAPPING_STR : NULL : \
     (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_SEC2) ? \
         (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_SEC2_DATA_USER) ? \
             CC_LKEYID_CPU_SEC2_DATA_USER_STR : \

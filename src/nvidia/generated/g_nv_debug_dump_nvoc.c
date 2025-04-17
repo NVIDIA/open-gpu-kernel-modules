@@ -1,4 +1,11 @@
 #define NVOC_NV_DEBUG_DUMP_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,81 +14,30 @@
 #include "utils/nvassert.h"
 #include "g_nv_debug_dump_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x7e80a2 = 1;
+char __nvoc_class_id_uniqueness_check__0x7e80a2 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_NvDebugDump;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE;
 
-void __nvoc_init_NvDebugDump(NvDebugDump*);
-void __nvoc_init_funcTable_NvDebugDump(NvDebugDump*);
-NV_STATUS __nvoc_ctor_NvDebugDump(NvDebugDump*);
-void __nvoc_init_dataField_NvDebugDump(NvDebugDump*);
+// Forward declarations for NvDebugDump
+void __nvoc_init__OBJENGSTATE(OBJENGSTATE*);
+void __nvoc_init__NvDebugDump(NvDebugDump*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_funcTable_NvDebugDump(NvDebugDump*, RmHalspecOwner *pRmhalspecowner);
+NV_STATUS __nvoc_ctor_NvDebugDump(NvDebugDump*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_dataField_NvDebugDump(NvDebugDump*, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_NvDebugDump(NvDebugDump*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_NvDebugDump;
 
-static const struct NVOC_RTTI __nvoc_rtti_NvDebugDump_NvDebugDump = {
-    /*pClassDef=*/          &__nvoc_class_def_NvDebugDump,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_NvDebugDump,
-    /*offset=*/             0,
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_NvDebugDump_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(NvDebugDump, __nvoc_base_OBJENGSTATE.__nvoc_base_Object),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_NvDebugDump_OBJENGSTATE = {
-    /*pClassDef=*/          &__nvoc_class_def_OBJENGSTATE,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(NvDebugDump, __nvoc_base_OBJENGSTATE),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_NvDebugDump = {
-    /*numRelatives=*/       3,
-    /*relatives=*/ {
-        &__nvoc_rtti_NvDebugDump_NvDebugDump,
-        &__nvoc_rtti_NvDebugDump_OBJENGSTATE,
-        &__nvoc_rtti_NvDebugDump_Object,
-    },
-};
-
-const struct NVOC_CLASS_DEF __nvoc_class_def_NvDebugDump = 
-{
-    /*classInfo=*/ {
-        /*size=*/               sizeof(NvDebugDump),
-        /*classId=*/            classId(NvDebugDump),
-        /*providerId=*/         &__nvoc_rtti_provider,
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "NvDebugDump",
-#endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_NvDebugDump,
-    /*pCastInfo=*/          &__nvoc_castinfo_NvDebugDump,
-    /*pExportInfo=*/        &__nvoc_export_info_NvDebugDump
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__NvDebugDump;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__NvDebugDump;
 
 // Down-thunk(s) to bridge NvDebugDump methods from ancestors (if any)
 NV_STATUS __nvoc_down_thunk_NvDebugDump_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pNvd, ENGDESCRIPTOR arg3);    // this
 NV_STATUS __nvoc_down_thunk_NvDebugDump_engstateStateInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pNvd);    // this
-
-// 2 down-thunk(s) defined to bridge methods in NvDebugDump from superclasses
-
-// nvdConstructEngine: virtual override (engstate) base (engstate)
-NV_STATUS __nvoc_down_thunk_NvDebugDump_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pNvd, ENGDESCRIPTOR arg3) {
-    return nvdConstructEngine(pGpu, (struct NvDebugDump *)(((unsigned char *) pNvd) - NV_OFFSETOF(NvDebugDump, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// nvdStateInitLocked: virtual override (engstate) base (engstate)
-NV_STATUS __nvoc_down_thunk_NvDebugDump_engstateStateInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pNvd) {
-    return nvdStateInitLocked(pGpu, (struct NvDebugDump *)(((unsigned char *) pNvd) - NV_OFFSETOF(NvDebugDump, __nvoc_base_OBJENGSTATE)));
-}
-
 
 // Up-thunk(s) to bridge NvDebugDump methods to ancestors (if any)
 void __nvoc_up_thunk_OBJENGSTATE_nvdInitMissing(struct OBJGPU *pGpu, struct NvDebugDump *pEngstate);    // this
@@ -96,6 +52,88 @@ NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStateUnload(struct OBJGPU *pGpu, struct
 NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStatePostUnload(struct OBJGPU *pGpu, struct NvDebugDump *pEngstate, NvU32 arg3);    // this
 void __nvoc_up_thunk_OBJENGSTATE_nvdStateDestroy(struct OBJGPU *pGpu, struct NvDebugDump *pEngstate);    // this
 NvBool __nvoc_up_thunk_OBJENGSTATE_nvdIsPresent(struct OBJGPU *pGpu, struct NvDebugDump *pEngstate);    // this
+
+const struct NVOC_CLASS_DEF __nvoc_class_def_NvDebugDump = 
+{
+    /*classInfo=*/ {
+        /*size=*/               sizeof(NvDebugDump),
+        /*classId=*/            classId(NvDebugDump),
+        /*providerId=*/         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*name=*/               "NvDebugDump",
+#endif
+    },
+    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_NvDebugDump,
+    /*pCastInfo=*/          &__nvoc_castinfo__NvDebugDump,
+    /*pExportInfo=*/        &__nvoc_export_info__NvDebugDump
+};
+
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__NvDebugDump __nvoc_metadata__NvDebugDump = {
+    .rtti.pClassDef = &__nvoc_class_def_NvDebugDump,    // (nvd) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_NvDebugDump,
+    .rtti.offset    = 0,
+    .metadata__OBJENGSTATE.rtti.pClassDef = &__nvoc_class_def_OBJENGSTATE,    // (engstate) super
+    .metadata__OBJENGSTATE.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__OBJENGSTATE.rtti.offset    = NV_OFFSETOF(NvDebugDump, __nvoc_base_OBJENGSTATE),
+    .metadata__OBJENGSTATE.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^2
+    .metadata__OBJENGSTATE.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__OBJENGSTATE.metadata__Object.rtti.offset    = NV_OFFSETOF(NvDebugDump, __nvoc_base_OBJENGSTATE.__nvoc_base_Object),
+
+    .vtable.__nvdConstructEngine__ = &nvdConstructEngine_IMPL,    // virtual override (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateConstructEngine__ = &__nvoc_down_thunk_NvDebugDump_engstateConstructEngine,    // virtual
+    .vtable.__nvdStateInitLocked__ = &nvdStateInitLocked_IMPL,    // virtual override (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStateInitLocked__ = &__nvoc_down_thunk_NvDebugDump_engstateStateInitLocked,    // virtual
+    .vtable.__nvdInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_nvdInitMissing,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
+    .vtable.__nvdStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStatePreInitLocked,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
+    .vtable.__nvdStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStatePreInitUnlocked,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
+    .vtable.__nvdStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStateInitUnlocked,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
+    .vtable.__nvdStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStatePreLoad,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
+    .vtable.__nvdStateLoad__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStateLoad,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStateLoad__ = &engstateStateLoad_IMPL,    // virtual
+    .vtable.__nvdStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStatePostLoad,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
+    .vtable.__nvdStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStatePreUnload,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
+    .vtable.__nvdStateUnload__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStateUnload,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStateUnload__ = &engstateStateUnload_IMPL,    // virtual
+    .vtable.__nvdStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStatePostUnload,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
+    .vtable.__nvdStateDestroy__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStateDestroy,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStateDestroy__ = &engstateStateDestroy_IMPL,    // virtual
+    .vtable.__nvdIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_nvdIsPresent,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__NvDebugDump = {
+    .numRelatives = 3,
+    .relatives = {
+        &__nvoc_metadata__NvDebugDump.rtti,    // [0]: (nvd) this
+        &__nvoc_metadata__NvDebugDump.metadata__OBJENGSTATE.rtti,    // [1]: (engstate) super
+        &__nvoc_metadata__NvDebugDump.metadata__OBJENGSTATE.metadata__Object.rtti,    // [2]: (obj) super^2
+    }
+};
+
+// 2 down-thunk(s) defined to bridge methods in NvDebugDump from superclasses
+
+// nvdConstructEngine: virtual override (engstate) base (engstate)
+NV_STATUS __nvoc_down_thunk_NvDebugDump_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pNvd, ENGDESCRIPTOR arg3) {
+    return nvdConstructEngine(pGpu, (struct NvDebugDump *)(((unsigned char *) pNvd) - NV_OFFSETOF(NvDebugDump, __nvoc_base_OBJENGSTATE)), arg3);
+}
+
+// nvdStateInitLocked: virtual override (engstate) base (engstate)
+NV_STATUS __nvoc_down_thunk_NvDebugDump_engstateStateInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pNvd) {
+    return nvdStateInitLocked(pGpu, (struct NvDebugDump *)(((unsigned char *) pNvd) - NV_OFFSETOF(NvDebugDump, __nvoc_base_OBJENGSTATE)));
+}
+
 
 // 12 up-thunk(s) defined to bridge methods in NvDebugDump to superclasses
 
@@ -160,7 +198,7 @@ NvBool __nvoc_up_thunk_OBJENGSTATE_nvdIsPresent(struct OBJGPU *pGpu, struct NvDe
 }
 
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_NvDebugDump = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__NvDebugDump = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -173,16 +211,27 @@ void __nvoc_dtor_NvDebugDump(NvDebugDump *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_NvDebugDump(NvDebugDump *pThis) {
+void __nvoc_init_dataField_NvDebugDump(NvDebugDump *pThis, RmHalspecOwner *pRmhalspecowner) {
+    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+    const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(chipHal);
+    PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
+
+    // NVOC Property Hal field -- PDB_PROP_NVD_IS_MISSING
+    // default
+    {
+        pThis->setProperty(pThis, PDB_PROP_NVD_IS_MISSING, NV_FALSE);
+    }
 }
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
-NV_STATUS __nvoc_ctor_NvDebugDump(NvDebugDump *pThis) {
+NV_STATUS __nvoc_ctor_NvDebugDump(NvDebugDump *pThis, RmHalspecOwner *pRmhalspecowner) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
     if (status != NV_OK) goto __nvoc_ctor_NvDebugDump_fail_OBJENGSTATE;
-    __nvoc_init_dataField_NvDebugDump(pThis);
+    __nvoc_init_dataField_NvDebugDump(pThis, pRmhalspecowner);
     goto __nvoc_ctor_NvDebugDump_exit; // Success
 
 __nvoc_ctor_NvDebugDump_fail_OBJENGSTATE:
@@ -192,59 +241,39 @@ __nvoc_ctor_NvDebugDump_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_NvDebugDump_1(NvDebugDump *pThis) {
+static void __nvoc_init_funcTable_NvDebugDump_1(NvDebugDump *pThis, RmHalspecOwner *pRmhalspecowner) {
+    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+    const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(chipHal);
+    PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 } // End __nvoc_init_funcTable_NvDebugDump_1
 
 
 // Initialize vtable(s) for 14 virtual method(s).
-void __nvoc_init_funcTable_NvDebugDump(NvDebugDump *pThis) {
-
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__NvDebugDump vtable = {
-        .__nvdConstructEngine__ = &nvdConstructEngine_IMPL,    // virtual override (engstate) base (engstate)
-        .OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_down_thunk_NvDebugDump_engstateConstructEngine,    // virtual
-        .__nvdStateInitLocked__ = &nvdStateInitLocked_IMPL,    // virtual override (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_down_thunk_NvDebugDump_engstateStateInitLocked,    // virtual
-        .__nvdInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_nvdInitMissing,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
-        .__nvdStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStatePreInitLocked,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
-        .__nvdStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStatePreInitUnlocked,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
-        .__nvdStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStateInitUnlocked,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
-        .__nvdStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStatePreLoad,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
-        .__nvdStateLoad__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStateLoad,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStateLoad__ = &engstateStateLoad_IMPL,    // virtual
-        .__nvdStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStatePostLoad,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
-        .__nvdStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStatePreUnload,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
-        .__nvdStateUnload__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStateUnload,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStateUnload__ = &engstateStateUnload_IMPL,    // virtual
-        .__nvdStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStatePostUnload,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
-        .__nvdStateDestroy__ = &__nvoc_up_thunk_OBJENGSTATE_nvdStateDestroy,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateStateDestroy__ = &engstateStateDestroy_IMPL,    // virtual
-        .__nvdIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_nvdIsPresent,    // virtual inherited (engstate) base (engstate)
-        .OBJENGSTATE.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_base_OBJENGSTATE.__nvoc_vtable = &vtable.OBJENGSTATE;    // (engstate) super
-    pThis->__nvoc_vtable = &vtable;    // (nvd) this
-    __nvoc_init_funcTable_NvDebugDump_1(pThis);
+void __nvoc_init_funcTable_NvDebugDump(NvDebugDump *pThis, RmHalspecOwner *pRmhalspecowner) {
+    __nvoc_init_funcTable_NvDebugDump_1(pThis, pRmhalspecowner);
 }
 
-void __nvoc_init_OBJENGSTATE(OBJENGSTATE*);
-void __nvoc_init_NvDebugDump(NvDebugDump *pThis) {
-    pThis->__nvoc_pbase_NvDebugDump = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object;
-    pThis->__nvoc_pbase_OBJENGSTATE = &pThis->__nvoc_base_OBJENGSTATE;
-    __nvoc_init_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
-    __nvoc_init_funcTable_NvDebugDump(pThis);
+// Initialize newly constructed object.
+void __nvoc_init__NvDebugDump(NvDebugDump *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object;    // (obj) super^2
+    pThis->__nvoc_pbase_OBJENGSTATE = &pThis->__nvoc_base_OBJENGSTATE;    // (engstate) super
+    pThis->__nvoc_pbase_NvDebugDump = pThis;    // (nvd) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__NvDebugDump.metadata__OBJENGSTATE.metadata__Object;    // (obj) super^2
+    pThis->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr = &__nvoc_metadata__NvDebugDump.metadata__OBJENGSTATE;    // (engstate) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__NvDebugDump;    // (nvd) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_NvDebugDump(pThis, pRmhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_NvDebugDump(NvDebugDump **ppThis, Dynamic *pParent, NvU32 createFlags)
@@ -252,6 +281,7 @@ NV_STATUS __nvoc_objCreate_NvDebugDump(NvDebugDump **ppThis, Dynamic *pParent, N
     NV_STATUS status;
     Object *pParentObj = NULL;
     NvDebugDump *pThis;
+    RmHalspecOwner *pRmhalspecowner;
 
     // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(NvDebugDump), (void**)&pThis, (void**)ppThis);
@@ -261,13 +291,13 @@ NV_STATUS __nvoc_objCreate_NvDebugDump(NvDebugDump **ppThis, Dynamic *pParent, N
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(NvDebugDump));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_NvDebugDump);
-
     pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = createFlags;
 
-    // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    // pParent must be a valid object that derives from a halspec owner class.
+    NV_ASSERT_OR_RETURN(pParent != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Link the child into the parent unless flagged not to do so.
+    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
         objAddChild(pParentObj, &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
@@ -277,8 +307,12 @@ NV_STATUS __nvoc_objCreate_NvDebugDump(NvDebugDump **ppThis, Dynamic *pParent, N
         pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_NvDebugDump(pThis);
-    status = __nvoc_ctor_NvDebugDump(pThis);
+    if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
+        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
+    NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    __nvoc_init__NvDebugDump(pThis, pRmhalspecowner);
+    status = __nvoc_ctor_NvDebugDump(pThis, pRmhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_NvDebugDump_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

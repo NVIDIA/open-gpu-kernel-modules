@@ -240,7 +240,7 @@ timeoutSet
         //
         timeoutNs += osGetTickResolution();
 
-        osGetCurrentTick(&timeInNs);
+        timeInNs = osGetCurrentTick();
 
         pTimeout->pTmrGpu = NULL;
         pTimeout->timeout = timeInNs + timeoutNs;
@@ -311,7 +311,7 @@ _checkTimeout
 
     if (pTimeout->flags & GPU_TIMEOUT_FLAGS_OSTIMER)
     {
-        osGetCurrentTick(&timeInNs);
+        timeInNs = osGetCurrentTick();
         if (timeInNs >= pTimeout->timeout)
         {
             if (!(pTimeout->flags & GPU_TIMEOUT_FLAGS_BYPASS_JOURNAL_LOG))

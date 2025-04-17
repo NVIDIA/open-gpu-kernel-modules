@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,6 +32,8 @@
 #ifndef _NVPORT_MEMORY_INTERNAL_H_
 #define _NVPORT_MEMORY_INTERNAL_H_
 
+#include "nvtypes.h"
+
 #define portMemExTrackingGetActiveStats_SUPPORTED       PORT_MEM_TRACK_USE_COUNTER
 #define portMemExTrackingGetTotalStats_SUPPORTED        PORT_MEM_TRACK_USE_COUNTER
 #define portMemExTrackingGetPeakStats_SUPPORTED         PORT_MEM_TRACK_USE_COUNTER
@@ -61,10 +63,19 @@ void portMemInitializeAllocatorTrackingLimit(NvU32 gfid, NvLength limit, NvBool 
 void portMemGfidTrackingInit(NvU32 gfid);
 /** @brief Free per Gfid mem tracking **/
 void portMemGfidTrackingFree(NvU32 gfid);
+/** @brief Increment per Gfid LibOS mem tracking **/
+void portMemLibosLimitInc(NvU32 gfid, NvLength size);
+/** @brief Decrement per Gfid LibOS mem tracking **/
+void portMemLibosLimitDec(NvU32 gfid, NvLength size);
+/** @brief Check if per Gfid LibOS mem limit is exceeded by allocation **/
+NvBool portMemLibosLimitExceeded(NvU32 gfid, NvLength size);
+/** @brief Initialize per Gfid LibOS tracking limit **/
+void portMemInitializeAllocatorTrackingLibosLimit(NvU32 gfid, NvLength limit);
 #endif
 
 #if PORT_MEM_TRACK_USE_LIMIT
-#define PORT_MEM_LIMIT_MAX_GFID 64
+#define PORT_MEM_LIMIT_MAX_GFID                 64
+#define LIBOS_RW_LOCK_SIZE                      144
 #endif
 
 typedef struct PORT_MEM_COUNTER
@@ -237,6 +248,8 @@ struct PORT_MEM_ALLOCATOR_TRACKING
     NvLength                            limitGfid;
     NvLength                            counterGfid;
     NvU32                               gfid;
+    NvLength                            limitLibosGfid;
+    NvLength                            counterLibosGfid;
 #endif
 };
 

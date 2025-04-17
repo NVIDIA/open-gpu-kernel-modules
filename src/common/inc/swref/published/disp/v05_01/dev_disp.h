@@ -32,12 +32,6 @@
 #define NV_PDISP_POSTCOMP_LOADV_COUNTER_VALUE_HW                         0x00000000 /* R---V */
 #define NV_PDISP_POSTCOMP_LOADV_COUNTER_VALUE_SW                         0x00000000 /* -W--V */
 
-#define NV_PDISP_FE_RM_INTR_EN1_HEAD_TIMING(i)                                         (0x00611EF0+(i)*4) /* RW-4A */
-#define NV_PDISP_FE_RM_INTR_EN1_HEAD_TIMING_LAST_DATA                                                 1:1 /* RWIVF */
-#define NV_PDISP_FE_RM_INTR_EN1_HEAD_TIMING_LAST_DATA_INIT                                     0x00000000 /* RWI-V */
-#define NV_PDISP_FE_RM_INTR_EN1_HEAD_TIMING_LAST_DATA_DISABLE                                  0x00000000 /* RW--V */
-#define NV_PDISP_FE_RM_INTR_EN1_HEAD_TIMING_LAST_DATA_ENABLE                                   0x00000001 /* RW--V */
-
 #define NV_PDISP_FE_INTR_RETRIGGER(i)                                                 (0x00611F30+(i)*4) /* RW-4A */
 #define NV_PDISP_FE_INTR_RETRIGGER_TRIGGER                                                           0:0 /* RWIVF */
 #define NV_PDISP_FE_INTR_RETRIGGER_TRIGGER_NONE                                               0x00000000 /* RWI-V */

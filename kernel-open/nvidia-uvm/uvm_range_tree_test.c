@@ -431,6 +431,7 @@ static NV_STATUS rtt_check_node(rtt_state_t *state, uvm_range_tree_node_t *node)
         TEST_CHECK_RET(uvm_range_tree_next(&state->tree, prev) == node);
     }
     else {
+        TEST_CHECK_RET(uvm_range_tree_iter_prev(&state->tree, node, 0) == NULL);
         TEST_CHECK_RET(uvm_range_tree_iter_first(&state->tree, 0, ULLONG_MAX) == node);
     }
 

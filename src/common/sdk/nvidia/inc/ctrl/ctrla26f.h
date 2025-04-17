@@ -34,15 +34,11 @@
 /* GK20A_GPFIFO control commands and parameters */
 
 #include "ctrl/ctrlxxxx.h"
-#include "ctrl/ctrla06f.h"          /* A26F is partially derived from A06F */
-#include "ctrl/ctrl906f.h"          /* A26F is partially derived from 906F */
 #define NVA26F_CTRL_CMD(cat,idx)  \
     NVXXXX_CTRL_CMD(0xA26F, NVA26F_CTRL_##cat, idx)
 
 /* GK20A_GPFIFO command categories (6bits) */
 #define NVA26F_CTRL_RESERVED (0x00)
-#define NVA26F_CTRL_GPFIFO   (0x01)
-#define NVA26F_CTRL_EVENT    (0x02)
 
 /*
  * NVA26F_CTRL_CMD_NULL
@@ -55,13 +51,3 @@
  */
 #define NVA26F_CTRL_CMD_NULL (0xa26f0000) /* finn: Evaluated from "(FINN_KEPLER_CHANNEL_GPFIFO_C_RESERVED_INTERFACE_ID << 8) | 0x0" */
 
-
-
-/*
- * NVA26F_CTRL_CMD_EVENT_SET_TRIGGER
- *
- * Please see description of NVA06F_CTRL_CMD_EVENT_SET_TRIGGER for more information.
- */
-#define NVA26F_CTRL_CMD_EVENT_SET_TRIGGER (0xa26f0106) /* finn: Evaluated from "(FINN_KEPLER_CHANNEL_GPFIFO_C_EVENT_INTERFACE_ID << 8) | 0x6" */
-
-/* _ctrla26f.h_ */

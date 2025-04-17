@@ -31,7 +31,6 @@
 #include "gpu/bus/kern_bus.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
-#include "kernel/gpu/nvbitmask.h"
 #include "platform/chipset/chipset.h"
 #include "rmapi/client.h"
 #include "platform/sli/sli.h"
@@ -311,12 +310,15 @@ kbusSetupPeerBarAccess_IMPL
             (memdescGetSize(pMemDesc) == size), ~0ULL);
     }
 
-    //
-    // Even if IOMMU-remapping fails (which it shouldn't), try to continue
-    // using the CPU physical address. In most cases, this is still sufficient.
-    //
-    status = memdescMapIommu(pMemDesc, pRemoteGpu->busInfo.iovaspaceId);
-    NV_ASSERT(status == NV_OK);
+    if (pLocalGpu != pRemoteGpu)
+    {
+        status = memdescMapIommu(pMemDesc, pRemoteGpu->busInfo.iovaspaceId);
+        if (status != NV_OK)
+        {
+            memdescDestroy(pMemDesc);
+        }
+        NV_ASSERT_OR_RETURN(status == NV_OK, ~0ULL);
+    }
 
     pIovaMapping = memdescGetIommuMap(pMemDesc, pRemoteGpu->busInfo.iovaspaceId);
 
@@ -880,198 +882,6 @@ kbusPatchBar2Pdb_GSPCLIENT
     return NV_OK;
 }
 
-NvBool
-kbusCheckEngine_KERNEL
-(
-    OBJGPU        *pGpu,
-    KernelBus     *pKernelBus,
-    ENGDESCRIPTOR  engDesc
-)
-{
-    return kbusCheckEngineWithOrderList_KERNEL(pGpu, pKernelBus, engDesc, NV_TRUE);
-}
-
-/*!
- * @brief Checks whether an engine is available or not.
- *
- * The 'engine' is an engine descriptor
- * This function is different from busProbeRegister in a sense that it doesn't
- * rely on timeouts after a read of a register in the reg space for engine.
- * Instead, it
- *  - Return TRUE for all engines which are must present in GPU.
- *  - Get information about CE, MSENC, NVJPG and OFA engines from plugin or GSP-RM.
- *  - If bCheckEngineOrder is true, the remaining engines are searched for in gpuChildOrderList_HAL.
- *
- * @param[in] pGpu       OBJGPU pointer
- * @param[in] pKernelBus KernelBus pointer
- * @param[in] engDesc    ENGDESCRIPTOR pointer used to check Engine presence
- * @param[in] bCheckEngineOrder If true, check gpuChildOrderList_HAL for engDesc as well
- *
- * @returns NV_TRUE if engine is available.
- *          NV_FALSE if engine is not available or floorswept.
- *
- */
-NvBool
-kbusCheckEngineWithOrderList_KERNEL
-(
-    OBJGPU        *pGpu,
-    KernelBus     *pKernelBus,
-    ENGDESCRIPTOR  engDesc,
-    NvBool         bCheckEngineOrder
-)
-{
-    NvU32     rmEngineCaps[NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX] = {0};
-    NvU32     nv2080EngineCaps[NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX] = {0};
-    NvBool    bSupported;
-    NV_STATUS status;
-
-    if (IS_VIRTUAL(pGpu))
-    {
-        NvU32             i     = 0;
-        NvU32             j     = 0;
-        VGPU_STATIC_INFO *pVSI  = GPU_GET_STATIC_INFO(pGpu);
-
-        if (pVSI == NULL)
-        {
-            return NV_FALSE;
-        }
-
-        //
-        // vGPU Enginelist can accommodate maximum of NVGPU_VGPU_ENGINE_LIST_LAST engine mask.
-        // Currently, vGPU plugin advertises the same in NvU64 bitmask.
-        //
-        ct_assert(RM_ENGINE_TYPE_LAST <= NVGPU_VGPU_ENGINE_LIST_LAST);
-        ct_assert(NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX <= (NVGPU_VGPU_ENGINE_LIST_MASK_ARRAY_MAX * 2));
-
-        for (i = 0; i < (NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX/2); i++)
-        {
-            nv2080EngineCaps[j++] = NvU64_LO32(pVSI->engineList[i]);
-            nv2080EngineCaps[j++] = NvU64_HI32(pVSI->engineList[i]);
-        }
-    }
-    else
-    {
-        NvU32 i;
-        GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
-        if (pGSCI == NULL)
-        {
-            return NV_FALSE;
-        }
-
-        for (i = 0; i < NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX; i++)
-        {
-            nv2080EngineCaps[i] = pGSCI->engineCaps[i];
-        }
-    }
-
-    NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR,
-        gpuGetRmEngineTypeCapMask(nv2080EngineCaps,
-                                  NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX,
-                                  rmEngineCaps),
-        return NV_FALSE);
-
-    switch (ENGDESC_FIELD(engDesc, _CLASS))
-    {
-        case ENG_CLASS_LSFM:
-        case ENG_CLASS_PMU:
-        case ENG_CLASS_CLK:
-        case ENG_CLASS_ACR:
-        case ENG_CLASS_DISP:
-            return NV_FALSE;
-        //
-        // This function is used in two environments:
-        // (a) vGPU where display is not yet supported.
-        // (b) RM offload (Kernel RM) where display is supported.
-        //
-        case ENG_CLASS_KERNEL_DISPLAY:
-            return IS_GSP_CLIENT(pGpu);
-
-        case ENG_CLASS_BIF:
-        case ENG_CLASS_KERNEL_BIF:
-        case ENG_CLASS_MC:
-        case ENG_CLASS_KERNEL_MC:
-        case ENG_CLASS_PRIV_RING:
-        case ENG_CLASS_SW_INTR:
-        case ENG_CLASS_TMR:
-        case ENG_CLASS_DMA:
-        case ENG_CLASS_BUS:
-        case ENG_CLASS_CIPHER:
-        case ENG_CLASS_INTR:
-        case ENG_CLASS_GPULOG:
-        case ENG_CLASS_GPUMON:
-        case ENG_CLASS_FIFO:
-            return NV_TRUE;
-
-        case ENG_CLASS_CE:
-            return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
-                RM_ENGINE_TYPE_COPY(GET_CE_IDX(engDesc)));
-
-        case ENG_CLASS_NVENC:
-            return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
-                RM_ENGINE_TYPE_NVENC(GET_MSENC_IDX(engDesc)));
-        case ENG_CLASS_SEC2:
-            return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
-                                                RM_ENGINE_TYPE_SEC2);
-        case ENG_CLASS_NVDEC:
-            return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
-                RM_ENGINE_TYPE_NVDEC(GET_NVDEC_IDX(engDesc)));
-
-        case ENG_CLASS_OFA:
-            return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
-                RM_ENGINE_TYPE_OFA(GET_OFA_IDX(engDesc)));
-
-        case ENG_CLASS_NVJPEG:
-            return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
-                RM_ENGINE_TYPE_NVJPEG(GET_NVJPEG_IDX(engDesc)));
-
-        case ENG_CLASS_GR:
-        {
-            if (engDesc == ENG_GR(0))
-            {
-                return NV_TRUE;
-            }
-
-            KernelFifo *pKernelFifo  = GPU_GET_KERNEL_FIFO(pGpu);
-
-            NV_ASSERT_OR_RETURN(pKernelFifo != NULL, NV_FALSE);
-
-            return (kfifoCheckEngine_HAL(pGpu, pKernelFifo,
-                                         engDesc,
-                                         &bSupported) == NV_OK &&
-                    bSupported);
-        }
-
-        case ENG_CLASS_INVALID:
-            NV_PRINTF(LEVEL_ERROR,
-                      "Query for ENG_INVALID considered erroneous: %d\n",
-                      engDesc);
-            return NV_TRUE;
-        //
-        // Check if engine descriptor is supported by current GPU.
-        // Callee must not send engine descriptor which are not on
-        // HAL lists of GPU. So Add ASSERT there.
-        //
-        default:
-        {
-            if (bCheckEngineOrder)
-            {
-                bSupported = gpuIsEngDescSupported(pGpu, engDesc);
-
-                if (!bSupported)
-                {
-                    NV_PRINTF(LEVEL_ERROR, "Unable to check engine ID: 0x%x\n",
-                              engDesc);
-                    NV_ASSERT(bSupported);
-                }
-            }
-            else
-                bSupported = NV_FALSE;
-
-            return bSupported;
-        }
-    }
-}
-
 //
 // kbusGetDeviceCaps
 //
@@ -1126,6 +936,47 @@ kbusGetDeviceCaps_IMPL
 
     return;
 }
+
+NvU32
+kbusConvertBusMapFlagsToDmaFlags(KernelBus *pKernelBus, MEMORY_DESCRIPTOR *pMemDesc, NvU32 busMapFlags)
+{
+    NvU32 dmaFlags = DRF_DEF(OS46, _FLAGS, _DMA_UNICAST_REUSE_ALLOC, _FALSE);
+
+    if (busMapFlags & BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED)
+    {
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _DMA_OFFSET_FIXED, _TRUE, dmaFlags);
+    }
+
+    if (memdescGetCpuCacheAttrib(pMemDesc) == NV_MEMORY_CACHED)
+    {
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _CACHE_SNOOP, _ENABLE, dmaFlags);
+    }
+
+    if (busMapFlags & BUS_MAP_FB_FLAGS_MAP_DOWNWARDS)
+    {
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _DMA_OFFSET_GROWS, _DOWN, dmaFlags);
+    }
+
+    // Disable the encryption if DIRECT mapping is requested, currently it is just for testing purpose
+    if (busMapFlags & BUS_MAP_FB_FLAGS_DISABLE_ENCRYPTION)
+    {
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _DISABLE_ENCRYPTION, _TRUE, dmaFlags);
+    }
+
+    NV_ASSERT(!((busMapFlags & BUS_MAP_FB_FLAGS_READ_ONLY) &&
+                (busMapFlags & BUS_MAP_FB_FLAGS_WRITE_ONLY)));
+    if (busMapFlags & BUS_MAP_FB_FLAGS_READ_ONLY)
+    {
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _ACCESS, _READ_ONLY, dmaFlags);
+    }
+    else if (busMapFlags & BUS_MAP_FB_FLAGS_WRITE_ONLY)
+    {
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _ACCESS, _WRITE_ONLY, dmaFlags);
+    }
+
+    return dmaFlags;
+}
+
 
 NV_STATUS
 kbusMapFbApertureSingle_IMPL
@@ -1416,6 +1267,15 @@ kbusGetGpuFbPhysAddressForRdma_IMPL
     {
         *pPhysAddr = gpumgrGetGpuPhysFbAddr(pGpu);
     }
+
+    return NV_OK;
+}
+
+NV_STATUS kbusGetEffectiveAddressSpace_SOC(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc, NvU32 mapFlags,
+                                       NV_ADDRESS_SPACE *pAddrSpace)
+{
+    if (pAddrSpace != NULL)
+        *pAddrSpace = memdescGetAddressSpace(pMemDesc);
 
     return NV_OK;
 }

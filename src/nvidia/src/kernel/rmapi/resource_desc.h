@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,7 +24,7 @@
 #define _RESOURCE_DESC_H_
 
 #include "nvtypes.h"
-#include "nvoc/runtime.h"
+#include "nvoc/object.h"
 #include "resserv/rs_access_rights.h"
 #include "resource_desc_flags.h"
 

@@ -535,7 +535,7 @@ skip_destroy:
     if ((IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu)) && !bBar1VA && !bFlaVA)
     {
         NV_RM_RPC_FREE(pGpu, hClient, hParent, hVASpace, status);
-        NV_ASSERT(NV_OK == status);
+        NV_ASSERT((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET));
     }
 
     NV_PRINTF(LEVEL_INFO,

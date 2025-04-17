@@ -49,7 +49,6 @@ static NV_STATUS _nvos32FunctionAllocSizeRange(DEPRECATED_CONTEXT *, NVOS32_PARA
 static NV_STATUS _nvos32FunctionAllocTiledPitchHeight(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 static NV_STATUS _nvos32FunctionFree(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 static NV_STATUS _nvos32FunctionInfo(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
-static NV_STATUS _nvos32FunctionDump(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 static NV_STATUS _nvos32FunctionReleaseReacquireCompr(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 static NV_STATUS _nvos32FunctionGetMemAlignment(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 static NV_STATUS _nvos32FunctionHwAlloc(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
@@ -63,7 +62,6 @@ static const RmVidHeapControlEntry rmVidHeapControlTable[] = {
     { NVOS32_FUNCTION_ALLOC_TILED_PITCH_HEIGHT,  _nvos32FunctionAllocTiledPitchHeight },
     { NVOS32_FUNCTION_FREE,                      _nvos32FunctionFree },
     { NVOS32_FUNCTION_INFO,                      _nvos32FunctionInfo },
-    { NVOS32_FUNCTION_DUMP,                      _nvos32FunctionDump },
     { NVOS32_FUNCTION_RELEASE_COMPR,             _nvos32FunctionReleaseReacquireCompr },
     { NVOS32_FUNCTION_REACQUIRE_COMPR,           _nvos32FunctionReleaseReacquireCompr },
     { NVOS32_FUNCTION_GET_MEM_ALIGNMENT,         _nvos32FunctionGetMemAlignment },
@@ -391,17 +389,6 @@ _nvos32FunctionInfo
 }
 
 static NV_STATUS
-_nvos32FunctionDump
-(
-    DEPRECATED_CONTEXT *pContext,
-    NVOS32_PARAMETERS  *pArgs
-)
-{
-    // Not supported since PMA
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-static NV_STATUS
 _nvos32FunctionReleaseReacquireCompr
 (
     DEPRECATED_CONTEXT *pContext,
@@ -458,14 +445,6 @@ _nvos32FunctionGetMemAlignment
     _IN_OUT(alignPitch, AllocHintAlignment.alignPitch) \
     _IN_OUT(alignPad, AllocHintAlignment.alignPad) \
     _IN_OUT(alignMask, AllocHintAlignment.alignMask) \
-    _IN_OUT(alignOutputFlags[0], AllocHintAlignment.alignOutputFlags[0]) \
-    _IN_OUT(alignOutputFlags[1], AllocHintAlignment.alignOutputFlags[1]) \
-    _IN_OUT(alignOutputFlags[2], AllocHintAlignment.alignOutputFlags[2]) \
-    _IN_OUT(alignOutputFlags[3], AllocHintAlignment.alignOutputFlags[3]) \
-    _IN_OUT(alignBank[0], AllocHintAlignment.alignBank[0]) \
-    _IN_OUT(alignBank[1], AllocHintAlignment.alignBank[1]) \
-    _IN_OUT(alignBank[2], AllocHintAlignment.alignBank[2]) \
-    _IN_OUT(alignBank[3], AllocHintAlignment.alignBank[3]) \
     _IN_OUT(alignKind, AllocHintAlignment.alignKind) \
     _IN_OUT(alignAdjust, AllocHintAlignment.alignAdjust) \
     _IN_OUT(alignAttr2, AllocHintAlignment.alignAttr2)

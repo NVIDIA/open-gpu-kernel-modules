@@ -68,10 +68,6 @@ typedef struct NV0000_CTRL_SYSTEM_GET_FEATURES_PARAMS {
 #define NV0000_CTRL_SYSTEM_GET_FEATURES_SLI_FALSE                       (0x00000000U)
 #define NV0000_CTRL_SYSTEM_GET_FEATURES_SLI_TRUE                        (0x00000001U)
 
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT                         2:2
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT_FALSE               (0x00000000U)
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT_TRUE                (0x00000001U)
-
 #define NV0000_CTRL_SYSTEM_GET_FEATURES_UUID_BASED_MEM_SHARING              3:3
 #define NV0000_CTRL_SYSTEM_GET_FEATURES_UUID_BASED_MEM_SHARING_FALSE    (0x00000000U)
 #define NV0000_CTRL_SYSTEM_GET_FEATURES_UUID_BASED_MEM_SHARING_TRUE     (0x00000001U)
@@ -2116,7 +2112,7 @@ typedef struct NV0000_CTRL_SYSTEM_GET_RM_INSTANCE_ID_PARAMS {
  *   NV_ERR_INVALID_REQUEST
  *   NV_ERR_NOT_SUPPORTED
  */
-#define NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO (0x13bU) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS_MESSAGE_ID" */
+#define NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO (0x13bU) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS_MESSAGE_ID" */
 #define NVPCF_CTRL_SYSPWRLIMIT_TYPE_BASE                 1U
 #define NV0000_CTRL_SYSTEM_POWER_INFO_INDEX_MAX_SIZE     32U
 
@@ -2143,9 +2139,12 @@ typedef struct NV0000_CTRL_CMD_SYSTEM_GET_SYSTEM_POWER_LIMIT {
     NvU32 shortTimescaleBatteryCurrentLimitmA;
 } NV0000_CTRL_CMD_SYSTEM_GET_SYSTEM_POWER_LIMIT;
 
-#define NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS_MESSAGE_ID (0x3BU)
+#define NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS_MESSAGE_ID (0x3BU)
 
-typedef struct NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS {
+typedef struct NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS {
+    /*Buffer to get all the supported functions*/
+    NvU32  supportedFuncs;
+
     /* GPU ID */
     NvU32  gpuId;
 
@@ -2177,6 +2176,16 @@ typedef struct NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS {
     NvS32  targetTppBattOffsetmW;
 
     /*
+     * Maximum allowed output on battery, offset, in milli-Watts.
+     */
+    NvS32  maxOutputBattOffsetmW;
+
+    /*
+     * Minimum allowed output on battery, offset, in milli-Watts.
+     */
+    NvS32  minOutputBattOffsetmW;
+
+    /*
      * If value specified is larger than the statically assigned ROS reserve in
      * the system power limits table, this will take affect.
      *
@@ -2196,15 +2205,6 @@ typedef struct NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS {
     * honored by RM/PMU
     */
     NvU32  dcTspShortTimescaleLimitmA;
-
-    /* Require DB on DC to use system power limits table */
-    NvBool bRequireDcSysPowerLimitsTable;
-
-    /* Dynamic params can override ROS reserve used in DB-DC */
-    NvBool bAllowDcRestOfSystemReserveOverride;
-
-    /* Is DC-TSP supported? */
-    NvBool bSupportDcTsp;
 
     /* Dynamic Boost AC support */
     NvBool bEnableForAC;
@@ -2277,9 +2277,7 @@ typedef struct NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS {
 
     /* CPU TDP Limit to be set (milliwatts) */
     NvU32                                         cpuTdpmw;
-} NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS;
-
-typedef NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS;
+} NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS;
 
 /* Define the filter types */
 #define CONTROLLER_FILTER_TYPE_EMWA                                        0U
@@ -2305,9 +2303,16 @@ typedef NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS NV0000_CTRL_SYST
 /*
  *  Defines for get supported sub functions bit fields
  */
-#define NVPCF0100_CTRL_CONFIG_DSM_FUNC_GET_SUPPORTED_IS_SUPPORTED        0:0
-#define NVPCF0100_CTRL_CONFIG_DSM_FUNC_GET_SUPPORTED_IS_SUPPORTED_YES    1
-#define NVPCF0100_CTRL_CONFIG_DSM_FUNC_GET_SUPPORTED_IS_SUPPORTED_NO     0
+#define NVPCF0100_CTRL_CONFIG_DSM_FUNC_GET_SUPPORTED_IS_SUPPORTED                     0:0
+#define NVPCF0100_CTRL_CONFIG_DSM_FUNC_GET_SUPPORTED_IS_SUPPORTED_YES                 1
+#define NVPCF0100_CTRL_CONFIG_DSM_FUNC_GET_SUPPORTED_IS_SUPPORTED_NO                  0
+#define NVPCF0100_CTRL_CONFIG_DSM_FUNC_GET_DC_SYSTEM_POWER_LIMITS_IS_SUPPORTED        8:8
+#define NVPCF0100_CTRL_CONFIG_DSM_FUNC_GET_DC_SYSTEM_POWER_LIMITS_IS_SUPPORTED_YES    1
+#define NVPCF0100_CTRL_CONFIG_DSM_FUNC_GET_DC_SYSTEM_POWER_LIMITS_IS_SUPPORTED_NO     0
+#define NVPCF0100_CTRL_CONFIG_DSM_FUNC_CPU_TDP_LIMIT_CONTROL_IS_SUPPORTED             9:9
+#define NVPCF0100_CTRL_CONFIG_DSM_FUNC_CPU_TDP_LIMIT_CONTROL_IS_SUPPORTED_YES         1
+#define NVPCF0100_CTRL_CONFIG_DSM_FUNC_CPU_TDP_LIMIT_CONTROL_IS_SUPPORTED_NO          0
+
 
 /*!
  * Config DSM 2x version specific defines

@@ -28,7 +28,7 @@
 
 #if defined(BINDATA_INCLUDE_DATA)
 //
-// FUNCTION: kgspGetBinArchiveConcatenatedFMCDesc_GH100("ucode_desc_prod")
+// FUNCTION: kgspGetBinArchiveConcatenatedFMCDesc_GH100("BINDATA_LABEL_UCODE_DESC_PROD")
 // FILE NAME: kernel/inc/gspcc/bin/g_gsp_gh100_dyn_cc_prd_desc.bin
 // FILE TYPE: BINARY
 // VAR NAME: N/A
@@ -37,7 +37,7 @@
 // DATA SIZE (bytes): 84
 // COMPRESSED SIZE (bytes): 28
 //
-static BINDATA_CONST NvU8 kgspBinArchiveConcatenatedFMCDesc_GH100_ucode_desc_prod_data[] = 
+static BINDATA_CONST NvU8 kgspBinArchiveConcatenatedFMCDesc_GH100_BINDATA_LABEL_UCODE_DESC_PROD_data[] = 
 {
     0x63, 0x65, 0x20, 0x02, 0x70, 0x41, 0xf1, 0x0a, 0x20, 0xde, 0x04, 0xc4, 0x37, 0x19, 0x19, 0x18,
     0xf1, 0xe8, 0x03, 0x00, 0x92, 0x10, 0x68, 0x6c, 0x54, 0x00, 0x00, 0x00,
@@ -45,14 +45,14 @@ static BINDATA_CONST NvU8 kgspBinArchiveConcatenatedFMCDesc_GH100_ucode_desc_pro
 #endif // defined(BINDATA_INCLUDE_DATA)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
-BINDATA_STORAGE_PVT kgspBinArchiveConcatenatedFMCDesc_GH100_ucode_desc_prod_storage_pvt;
+BINDATA_STORAGE_PVT kgspBinArchiveConcatenatedFMCDesc_GH100_BINDATA_LABEL_UCODE_DESC_PROD_storage_pvt;
 #endif // defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DEFN)
 {
     84,                                                                // uncompressed data size (bytes)
     28,                                                                // compressed data size (bytes)
-    kgspBinArchiveConcatenatedFMCDesc_GH100_ucode_desc_prod_data,      // compressed data pointer
+    kgspBinArchiveConcatenatedFMCDesc_GH100_BINDATA_LABEL_UCODE_DESC_PROD_data, // compressed data pointer
     NV_TRUE,                                                           // is pData compressed?
     NV_TRUE,                                                           // contain information for file overriding?
     NV_FALSE,                                                          // is the data referenced during load? (Only valid when BINDATA_IS_MUTABLE is true)
@@ -68,8 +68,8 @@ static const BINDATA_ARCHIVE __kgspGetBinArchiveConcatenatedFMCDesc_GH100 =
 {
     1,  // entryNum
     {
-        // entries[] : { "name", pBinStorage }
-        { "ucode_desc_prod"   , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveConcatenatedFMCDesc_GH100_ucode_desc_prod] },
+        // entries[] : { label, pBinStorage }
+        { BINDATA_LABEL_UCODE_DESC_PROD , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveConcatenatedFMCDesc_GH100_BINDATA_LABEL_UCODE_DESC_PROD] },
     }
 };
 

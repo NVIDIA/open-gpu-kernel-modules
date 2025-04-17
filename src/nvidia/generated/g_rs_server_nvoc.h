@@ -1,13 +1,15 @@
 
 #ifndef _G_RS_SERVER_NVOC_H_
 #define _G_RS_SERVER_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,7 +47,7 @@ extern "C" {
 #include "nvport/nvport.h"
 #include "resserv/resserv.h"
 #include "resserv/rs_client.h"
-#include "nvoc/runtime.h"
+#include "nvoc/object.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -99,10 +101,18 @@ MAKE_LIST(RsLockedClientList, CLIENT_ENTRY*);
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__RsShared;
+struct NVOC_METADATA__Object;
+
+
 struct RsShared {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__RsShared *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -114,6 +124,13 @@ struct RsShared {
     // Data members
     NvS32 refCount;
     struct MapNode node;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__RsShared {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
 };
 
 #ifndef __NVOC_CLASS_RsShared_TYPEDEF__
@@ -132,10 +149,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsShared;
     ((pThis)->__nvoc_pbase_RsShared)
 
 #ifdef __nvoc_rs_server_h_disabled
-#define __dynamicCast_RsShared(pThis) ((RsShared*)NULL)
+#define __dynamicCast_RsShared(pThis) ((RsShared*) NULL)
 #else //__nvoc_rs_server_h_disabled
 #define __dynamicCast_RsShared(pThis) \
-    ((RsShared*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(RsShared)))
+    ((RsShared*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(RsShared)))
 #endif //__nvoc_rs_server_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_RsShared(RsShared**, Dynamic*, NvU32, va_list);
@@ -175,15 +192,19 @@ MAKE_INTRUSIVE_MAP(RsSharedMap, RsShared, node);
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__RsSession;
+struct NVOC_METADATA__RsShared;
 struct NVOC_VTABLE__RsSession;
 
 
 struct RsSession {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__RsSession *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__RsSession *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct RsShared __nvoc_base_RsShared;
@@ -201,11 +222,17 @@ struct RsSession {
 };
 
 
-// Metadata including vtable with 2 function pointers plus superclass metadata
+// Vtable with 2 per-class function pointers
 struct NVOC_VTABLE__RsSession {
-
     void (*__sessionRemoveDependant__)(struct RsSession * /*this*/, struct RsResourceRef *);  // virtual
     void (*__sessionRemoveDependency__)(struct RsSession * /*this*/, struct RsResourceRef *);  // virtual
+};
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__RsSession {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__RsShared metadata__RsShared;
+    const struct NVOC_VTABLE__RsSession vtable;
 };
 
 #ifndef __NVOC_CLASS_RsSession_TYPEDEF__
@@ -224,10 +251,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsSession;
     ((pThis)->__nvoc_pbase_RsSession)
 
 #ifdef __nvoc_rs_server_h_disabled
-#define __dynamicCast_RsSession(pThis) ((RsSession*)NULL)
+#define __dynamicCast_RsSession(pThis) ((RsSession*) NULL)
 #else //__nvoc_rs_server_h_disabled
 #define __dynamicCast_RsSession(pThis) \
-    ((RsSession*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(RsSession)))
+    ((RsSession*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(RsSession)))
 #endif //__nvoc_rs_server_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_RsSession(RsSession**, Dynamic*, NvU32, va_list);
@@ -238,18 +265,18 @@ NV_STATUS __nvoc_objCreate_RsSession(RsSession**, Dynamic*, NvU32);
 
 
 // Wrapper macros
-#define sessionRemoveDependant_FNPTR(pSession) pSession->__nvoc_vtable->__sessionRemoveDependant__
+#define sessionRemoveDependant_FNPTR(pSession) pSession->__nvoc_metadata_ptr->vtable.__sessionRemoveDependant__
 #define sessionRemoveDependant(pSession, pResourceRef) sessionRemoveDependant_DISPATCH(pSession, pResourceRef)
-#define sessionRemoveDependency_FNPTR(pSession) pSession->__nvoc_vtable->__sessionRemoveDependency__
+#define sessionRemoveDependency_FNPTR(pSession) pSession->__nvoc_metadata_ptr->vtable.__sessionRemoveDependency__
 #define sessionRemoveDependency(pSession, pResourceRef) sessionRemoveDependency_DISPATCH(pSession, pResourceRef)
 
 // Dispatch functions
 static inline void sessionRemoveDependant_DISPATCH(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
-    pSession->__nvoc_vtable->__sessionRemoveDependant__(pSession, pResourceRef);
+    pSession->__nvoc_metadata_ptr->vtable.__sessionRemoveDependant__(pSession, pResourceRef);
 }
 
 static inline void sessionRemoveDependency_DISPATCH(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
-    pSession->__nvoc_vtable->__sessionRemoveDependency__(pSession, pResourceRef);
+    pSession->__nvoc_metadata_ptr->vtable.__sessionRemoveDependency__(pSession, pResourceRef);
 }
 
 void sessionRemoveDependant_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);

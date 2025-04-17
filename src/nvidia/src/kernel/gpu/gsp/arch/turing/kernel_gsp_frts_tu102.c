@@ -474,6 +474,9 @@ kgspExecuteFwsec_TU102
 
     NV_ASSERT_OR_RETURN(pPreparedCmd != NULL, NV_ERR_INVALID_ARGUMENT);
 
+    if (API_GPU_IN_RESET_SANITY_CHECK(pGpu))
+        return NV_ERR_GPU_IN_FULLCHIP_RESET;
+
     status = kgspExecuteHsFalcon_HAL(pGpu, pKernelGsp, pPreparedCmd->pFwsecUcode,
                                      staticCast(pKernelGsp, KernelFalcon), NULL, NULL);
 

@@ -990,6 +990,13 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
         uvm_api_range_type_t type;
         uvm_processor_id_t dest_id = dest_gpu ? dest_gpu->id : UVM_ID_CPU;
 
+        // Migration to an integrated GPU is equivalent to migration to that
+        // GPUs nearest NUMA node.
+        if (dest_gpu && dest_gpu->parent->is_integrated_gpu) {
+            dest_id = UVM_ID_CPU;
+            cpu_numa_node = dest_gpu->parent->closest_cpu_numa_node;
+        }
+
         type = uvm_api_range_type_check(va_space, mm, params->base, params->length);
         if (type == UVM_API_RANGE_TYPE_INVALID) {
             status = NV_ERR_INVALID_ADDRESS;
@@ -1006,7 +1013,7 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
                 .dst_id                             = dest_id,
                 .dst_node_id                        = cpu_numa_node,
                 .populate_permissions               = UVM_POPULATE_PERMISSIONS_INHERIT,
-                .touch                              = false,
+                .populate_flags                     = UVM_POPULATE_PAGEABLE_FLAG_SKIP_PROT_CHECK,
                 .skip_mapped                        = false,
                 .populate_on_cpu_alloc_failures     = false,
                 .populate_on_migrate_vma_failures   = true,
@@ -1126,6 +1133,9 @@ NV_STATUS uvm_api_migrate_range_group(UVM_MIGRATE_RANGE_GROUP_PARAMS *params, st
 
         dest_id = gpu->id;
     }
+
+    if (gpu && gpu->parent->is_integrated_gpu)
+            dest_id = UVM_ID_CPU;
 
     range_group = radix_tree_lookup(&va_space->range_groups, params->rangeGroupId);
     if (!range_group) {

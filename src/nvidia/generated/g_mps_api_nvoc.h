@@ -1,13 +1,15 @@
 
 #ifndef _G_MPS_API_NVOC_H_
 #define _G_MPS_API_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -76,15 +78,19 @@ extern "C" {
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__MpsApi;
+struct NVOC_METADATA__RmResource;
 struct NVOC_VTABLE__MpsApi;
 
 
 struct MpsApi {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__MpsApi *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__MpsApi *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct RmResource __nvoc_base_RmResource;
@@ -98,10 +104,8 @@ struct MpsApi {
 };
 
 
-// Metadata including vtable with 21 function pointers plus superclass metadata
+// Vtable with 21 per-class function pointers
 struct NVOC_VTABLE__MpsApi {
-    const struct NVOC_VTABLE__RmResource RmResource;    // (rmres) 21 function pointers
-
     NvBool (*__mpsApiAccessCallback__)(struct MpsApi * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (rmres)
     NvBool (*__mpsApiShareCallback__)(struct MpsApi * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (rmres)
     NV_STATUS (*__mpsApiGetMemInterMapParams__)(struct MpsApi * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (rmres)
@@ -125,6 +129,13 @@ struct NVOC_VTABLE__MpsApi {
     void (*__mpsApiAddAdditionalDependants__)(struct RsClient *, struct MpsApi * /*this*/, RsResourceRef *);  // virtual inherited (res) base (rmres)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__MpsApi {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__RmResource metadata__RmResource;
+    const struct NVOC_VTABLE__MpsApi vtable;
+};
+
 #ifndef __NVOC_CLASS_MpsApi_TYPEDEF__
 #define __NVOC_CLASS_MpsApi_TYPEDEF__
 typedef struct MpsApi MpsApi;
@@ -141,146 +152,146 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_MpsApi;
     ((pThis)->__nvoc_pbase_MpsApi)
 
 #ifdef __nvoc_mps_api_h_disabled
-#define __dynamicCast_MpsApi(pThis) ((MpsApi*)NULL)
+#define __dynamicCast_MpsApi(pThis) ((MpsApi*) NULL)
 #else //__nvoc_mps_api_h_disabled
 #define __dynamicCast_MpsApi(pThis) \
-    ((MpsApi*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(MpsApi)))
+    ((MpsApi*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(MpsApi)))
 #endif //__nvoc_mps_api_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_MpsApi(MpsApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_MpsApi(MpsApi**, Dynamic*, NvU32, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_MpsApi(MpsApi**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_MpsApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_MpsApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
 // Wrapper macros
-#define mpsApiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define mpsApiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define mpsApiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) mpsApiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define mpsApiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresShareCallback__
+#define mpsApiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
 #define mpsApiShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) mpsApiShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define mpsApiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
+#define mpsApiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define mpsApiGetMemInterMapParams(pRmResource, pParams) mpsApiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define mpsApiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
+#define mpsApiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define mpsApiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) mpsApiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define mpsApiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
+#define mpsApiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define mpsApiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) mpsApiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define mpsApiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define mpsApiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define mpsApiControlSerialization_Prologue(pResource, pCallContext, pParams) mpsApiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define mpsApiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define mpsApiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define mpsApiControlSerialization_Epilogue(pResource, pCallContext, pParams) mpsApiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define mpsApiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
+#define mpsApiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
 #define mpsApiControl_Prologue(pResource, pCallContext, pParams) mpsApiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define mpsApiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
+#define mpsApiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
 #define mpsApiControl_Epilogue(pResource, pCallContext, pParams) mpsApiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define mpsApiCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define mpsApiCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define mpsApiCanCopy(pResource) mpsApiCanCopy_DISPATCH(pResource)
-#define mpsApiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define mpsApiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define mpsApiIsDuplicate(pResource, hMemory, pDuplicate) mpsApiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define mpsApiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define mpsApiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define mpsApiPreDestruct(pResource) mpsApiPreDestruct_DISPATCH(pResource)
-#define mpsApiControl_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControl__
+#define mpsApiControl_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define mpsApiControl(pResource, pCallContext, pParams) mpsApiControl_DISPATCH(pResource, pCallContext, pParams)
-#define mpsApiControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define mpsApiControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define mpsApiControlFilter(pResource, pCallContext, pParams) mpsApiControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define mpsApiMap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMap__
+#define mpsApiMap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define mpsApiMap(pResource, pCallContext, pParams, pCpuMapping) mpsApiMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
-#define mpsApiUnmap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmap__
+#define mpsApiUnmap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define mpsApiUnmap(pResource, pCallContext, pCpuMapping) mpsApiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
-#define mpsApiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define mpsApiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define mpsApiIsPartialUnmapSupported(pResource) mpsApiIsPartialUnmapSupported_DISPATCH(pResource)
-#define mpsApiMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define mpsApiMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define mpsApiMapTo(pResource, pParams) mpsApiMapTo_DISPATCH(pResource, pParams)
-#define mpsApiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define mpsApiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define mpsApiUnmapFrom(pResource, pParams) mpsApiUnmapFrom_DISPATCH(pResource, pParams)
-#define mpsApiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define mpsApiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define mpsApiGetRefCount(pResource) mpsApiGetRefCount_DISPATCH(pResource)
-#define mpsApiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define mpsApiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define mpsApiAddAdditionalDependants(pClient, pResource, pReference) mpsApiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
 static inline NvBool mpsApiAccessCallback_DISPATCH(struct MpsApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__mpsApiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__mpsApiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool mpsApiShareCallback_DISPATCH(struct MpsApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_vtable->__mpsApiShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_metadata_ptr->vtable.__mpsApiShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS mpsApiGetMemInterMapParams_DISPATCH(struct MpsApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_vtable->__mpsApiGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__mpsApiGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS mpsApiCheckMemInterUnmap_DISPATCH(struct MpsApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_vtable->__mpsApiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__mpsApiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS mpsApiGetMemoryMappingDescriptor_DISPATCH(struct MpsApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_vtable->__mpsApiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__mpsApiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS mpsApiControlSerialization_Prologue_DISPATCH(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__mpsApiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__mpsApiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void mpsApiControlSerialization_Epilogue_DISPATCH(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__mpsApiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__mpsApiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS mpsApiControl_Prologue_DISPATCH(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__mpsApiControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__mpsApiControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void mpsApiControl_Epilogue_DISPATCH(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__mpsApiControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__mpsApiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool mpsApiCanCopy_DISPATCH(struct MpsApi *pResource) {
-    return pResource->__nvoc_vtable->__mpsApiCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__mpsApiCanCopy__(pResource);
 }
 
 static inline NV_STATUS mpsApiIsDuplicate_DISPATCH(struct MpsApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__mpsApiIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__mpsApiIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void mpsApiPreDestruct_DISPATCH(struct MpsApi *pResource) {
-    pResource->__nvoc_vtable->__mpsApiPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__mpsApiPreDestruct__(pResource);
 }
 
 static inline NV_STATUS mpsApiControl_DISPATCH(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__mpsApiControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__mpsApiControl__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS mpsApiControlFilter_DISPATCH(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__mpsApiControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__mpsApiControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS mpsApiMap_DISPATCH(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__mpsApiMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__mpsApiMap__(pResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS mpsApiUnmap_DISPATCH(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__mpsApiUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__mpsApiUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool mpsApiIsPartialUnmapSupported_DISPATCH(struct MpsApi *pResource) {
-    return pResource->__nvoc_vtable->__mpsApiIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__mpsApiIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS mpsApiMapTo_DISPATCH(struct MpsApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__mpsApiMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__mpsApiMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS mpsApiUnmapFrom_DISPATCH(struct MpsApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__mpsApiUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__mpsApiUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 mpsApiGetRefCount_DISPATCH(struct MpsApi *pResource) {
-    return pResource->__nvoc_vtable->__mpsApiGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__mpsApiGetRefCount__(pResource);
 }
 
 static inline void mpsApiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct MpsApi *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__mpsApiAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__mpsApiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NV_STATUS mpsApiConstruct_IMPL(struct MpsApi *arg_pMpsApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);

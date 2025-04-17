@@ -30,8 +30,6 @@
 #include "uvm_test_ioctl.h"
 #include "nv-kref.h"
 
-#include <linux/mmu_notifier.h>
-
 #if defined(NV_LINUX_SCHED_MM_H_PRESENT)
 #include <linux/sched/mm.h>
 #elif defined(NV_LINUX_SCHED_H_PRESENT)
@@ -67,10 +65,6 @@ struct uvm_va_space_mm_struct
   // UVM_VA_SPACE_MM_STATE_ALIVE, but should only be considered usable
   // when retained or current.
   struct mm_struct *mm;
-
-#if UVM_CAN_USE_MMU_NOTIFIERS()
-    struct mmu_notifier mmu_notifier;
-#endif
 
     // Lock protecting the state and retained_count fields.
     uvm_spinlock_t lock;

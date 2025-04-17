@@ -100,6 +100,8 @@ typedef struct SCRUB_NODE SCRUB_NODE;
 #define PMA_ALLOCATE_TURN_BLACKLIST_OFF     NVBIT(11)
 #define PMA_ALLOCATE_ALLOW_PARTIAL          NVBIT(12)
 #define PMA_ALLOCATE_REVERSE_ALLOC          NVBIT(13)
+#define PMA_ALLOCATE_LOCALIZED_UGPU0        NVBIT(14)
+#define PMA_ALLOCATE_LOCALIZED_UGPU1        NVBIT(15)
 
 // Output flags
 #define PMA_ALLOCATE_RESULT_IS_ZERO         NVBIT(0)
@@ -179,7 +181,7 @@ typedef NV_STATUS (*pmaEvictRangeCb_t)(void *ctxPtr, NvU64 physBegin, NvU64 phys
                                        MEMORY_PROTECTION prot);
 
 /*!
- * @brief Pluggable data structure management. Currently we have regmap and address tree.
+ * @brief Pluggable data structure management. Currently we have regmap.
  */
 typedef void *(*pmaMapInit_t)(NvU64 numFrames, NvU64 addrBase, PMA_STATS *pPmaStats, NvBool bProtected);
 typedef void  (*pmaMapDestroy_t)(void *pMap);
@@ -295,7 +297,7 @@ NV_STATUS pmaInitialize(PMA *pPma, NvU32 initFlags);
  *
  * All eviction handlers must have been unregistered by this point.
  *
- * @param[in] pma       Pointer to PMA object being destroyed.
+ * @param[in] pPma      Pointer to PMA object being destroyed.
  */
 void  pmaDestroy(PMA *pPma);
 
@@ -306,11 +308,23 @@ void  pmaDestroy(PMA *pPma);
  * Any clients of PMA can query config and state with a valid PMA object.
  * Querying at different times may return different values when states change.
  *
- * @param[in]     pma       Pointer to PMA object being destroyed.
+ * @param[in]     pPma      Pointer to PMA object
  * @param[in/out] pConfigs  Configs/states to query. See PMA_QUERY_* above.
  */
 NV_STATUS pmaQueryConfigs(PMA* pPma, NvU32 *pConfigs);
 
+/*!
+ * @brief Identify if an FB range is PMA-managed
+ *
+ *
+ * @param[in] pPma    Pointer to PMA object
+ * @param[in] offset  FB block offset
+ * @param[in] limit   FB block limit
+ *
+ * @return NV_TRUE      offset is PMA-managed
+ *         NV_FALSE     offset is not managed by PMA
+*/
+NvBool pmaIsPmaManaged(PMA* pPma, NvU64 offset, NvU64 limit);
 
 /*!
  * @brief Attaches a region of physical memory to be managed by the PMA.

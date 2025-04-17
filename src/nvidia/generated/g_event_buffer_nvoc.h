@@ -1,13 +1,15 @@
 
 #ifndef _G_EVENT_BUFFER_NVOC_H_
 #define _G_EVENT_BUFFER_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -88,15 +90,19 @@ typedef struct
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__EventBuffer;
+struct NVOC_METADATA__RmResource;
 struct NVOC_VTABLE__EventBuffer;
 
 
 struct EventBuffer {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__EventBuffer *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__EventBuffer *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct RmResource __nvoc_base_RmResource;
@@ -138,10 +144,8 @@ struct EventBuffer {
 };
 
 
-// Metadata including vtable with 21 function pointers plus superclass metadata
+// Vtable with 21 per-class function pointers
 struct NVOC_VTABLE__EventBuffer {
-    const struct NVOC_VTABLE__RmResource RmResource;    // (rmres) 21 function pointers
-
     NvBool (*__eventbufferAccessCallback__)(struct EventBuffer * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (rmres)
     NvBool (*__eventbufferShareCallback__)(struct EventBuffer * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (rmres)
     NV_STATUS (*__eventbufferGetMemInterMapParams__)(struct EventBuffer * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (rmres)
@@ -165,6 +169,13 @@ struct NVOC_VTABLE__EventBuffer {
     void (*__eventbufferAddAdditionalDependants__)(struct RsClient *, struct EventBuffer * /*this*/, RsResourceRef *);  // virtual inherited (res) base (rmres)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__EventBuffer {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__RmResource metadata__RmResource;
+    const struct NVOC_VTABLE__EventBuffer vtable;
+};
+
 #ifndef __NVOC_CLASS_EventBuffer_TYPEDEF__
 #define __NVOC_CLASS_EventBuffer_TYPEDEF__
 typedef struct EventBuffer EventBuffer;
@@ -181,15 +192,15 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_EventBuffer;
     ((pThis)->__nvoc_pbase_EventBuffer)
 
 #ifdef __nvoc_event_buffer_h_disabled
-#define __dynamicCast_EventBuffer(pThis) ((EventBuffer*)NULL)
+#define __dynamicCast_EventBuffer(pThis) ((EventBuffer*) NULL)
 #else //__nvoc_event_buffer_h_disabled
 #define __dynamicCast_EventBuffer(pThis) \
-    ((EventBuffer*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(EventBuffer)))
+    ((EventBuffer*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(EventBuffer)))
 #endif //__nvoc_event_buffer_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_EventBuffer(EventBuffer**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_EventBuffer(EventBuffer**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_EventBuffer(EventBuffer**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_EventBuffer(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_EventBuffer((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
@@ -203,47 +214,47 @@ NV_STATUS __nvoc_objCreate_EventBuffer(EventBuffer**, Dynamic*, NvU32, struct CA
 #define eventbuffertBufferCtrlCmdFlush(pEventBuffer) eventbuffertBufferCtrlCmdFlush_DISPATCH(pEventBuffer)
 #define eventbuffertBufferCtrlCmdPostTelemetryEvent_FNPTR(pEventBuffer) pEventBuffer->__eventbuffertBufferCtrlCmdPostTelemetryEvent__
 #define eventbuffertBufferCtrlCmdPostTelemetryEvent(pEventBuffer, pPostTelemetryEvent) eventbuffertBufferCtrlCmdPostTelemetryEvent_DISPATCH(pEventBuffer, pPostTelemetryEvent)
-#define eventbufferAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define eventbufferAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define eventbufferAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) eventbufferAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define eventbufferShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresShareCallback__
+#define eventbufferShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
 #define eventbufferShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) eventbufferShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define eventbufferGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
+#define eventbufferGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define eventbufferGetMemInterMapParams(pRmResource, pParams) eventbufferGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define eventbufferCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
+#define eventbufferCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define eventbufferCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) eventbufferCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define eventbufferGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
+#define eventbufferGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define eventbufferGetMemoryMappingDescriptor(pRmResource, ppMemDesc) eventbufferGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define eventbufferControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define eventbufferControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define eventbufferControlSerialization_Prologue(pResource, pCallContext, pParams) eventbufferControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define eventbufferControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define eventbufferControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define eventbufferControlSerialization_Epilogue(pResource, pCallContext, pParams) eventbufferControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define eventbufferControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
+#define eventbufferControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
 #define eventbufferControl_Prologue(pResource, pCallContext, pParams) eventbufferControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define eventbufferControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
+#define eventbufferControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
 #define eventbufferControl_Epilogue(pResource, pCallContext, pParams) eventbufferControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define eventbufferCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define eventbufferCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define eventbufferCanCopy(pResource) eventbufferCanCopy_DISPATCH(pResource)
-#define eventbufferIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define eventbufferIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define eventbufferIsDuplicate(pResource, hMemory, pDuplicate) eventbufferIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define eventbufferPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define eventbufferPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define eventbufferPreDestruct(pResource) eventbufferPreDestruct_DISPATCH(pResource)
-#define eventbufferControl_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControl__
+#define eventbufferControl_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define eventbufferControl(pResource, pCallContext, pParams) eventbufferControl_DISPATCH(pResource, pCallContext, pParams)
-#define eventbufferControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define eventbufferControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define eventbufferControlFilter(pResource, pCallContext, pParams) eventbufferControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define eventbufferMap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMap__
+#define eventbufferMap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define eventbufferMap(pResource, pCallContext, pParams, pCpuMapping) eventbufferMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
-#define eventbufferUnmap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmap__
+#define eventbufferUnmap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define eventbufferUnmap(pResource, pCallContext, pCpuMapping) eventbufferUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
-#define eventbufferIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define eventbufferIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define eventbufferIsPartialUnmapSupported(pResource) eventbufferIsPartialUnmapSupported_DISPATCH(pResource)
-#define eventbufferMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define eventbufferMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define eventbufferMapTo(pResource, pParams) eventbufferMapTo_DISPATCH(pResource, pParams)
-#define eventbufferUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define eventbufferUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define eventbufferUnmapFrom(pResource, pParams) eventbufferUnmapFrom_DISPATCH(pResource, pParams)
-#define eventbufferGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define eventbufferGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define eventbufferGetRefCount(pResource) eventbufferGetRefCount_DISPATCH(pResource)
-#define eventbufferAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define eventbufferAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define eventbufferAddAdditionalDependants(pClient, pResource, pReference) eventbufferAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
@@ -264,87 +275,87 @@ static inline NV_STATUS eventbuffertBufferCtrlCmdPostTelemetryEvent_DISPATCH(str
 }
 
 static inline NvBool eventbufferAccessCallback_DISPATCH(struct EventBuffer *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__eventbufferAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__eventbufferAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool eventbufferShareCallback_DISPATCH(struct EventBuffer *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_vtable->__eventbufferShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_metadata_ptr->vtable.__eventbufferShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS eventbufferGetMemInterMapParams_DISPATCH(struct EventBuffer *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_vtable->__eventbufferGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__eventbufferGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS eventbufferCheckMemInterUnmap_DISPATCH(struct EventBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_vtable->__eventbufferCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__eventbufferCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS eventbufferGetMemoryMappingDescriptor_DISPATCH(struct EventBuffer *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_vtable->__eventbufferGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__eventbufferGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS eventbufferControlSerialization_Prologue_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__eventbufferControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__eventbufferControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void eventbufferControlSerialization_Epilogue_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__eventbufferControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__eventbufferControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS eventbufferControl_Prologue_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__eventbufferControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__eventbufferControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void eventbufferControl_Epilogue_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__eventbufferControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__eventbufferControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool eventbufferCanCopy_DISPATCH(struct EventBuffer *pResource) {
-    return pResource->__nvoc_vtable->__eventbufferCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__eventbufferCanCopy__(pResource);
 }
 
 static inline NV_STATUS eventbufferIsDuplicate_DISPATCH(struct EventBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__eventbufferIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__eventbufferIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void eventbufferPreDestruct_DISPATCH(struct EventBuffer *pResource) {
-    pResource->__nvoc_vtable->__eventbufferPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__eventbufferPreDestruct__(pResource);
 }
 
 static inline NV_STATUS eventbufferControl_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__eventbufferControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__eventbufferControl__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS eventbufferControlFilter_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__eventbufferControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__eventbufferControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS eventbufferMap_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__eventbufferMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__eventbufferMap__(pResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS eventbufferUnmap_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__eventbufferUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__eventbufferUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool eventbufferIsPartialUnmapSupported_DISPATCH(struct EventBuffer *pResource) {
-    return pResource->__nvoc_vtable->__eventbufferIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__eventbufferIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS eventbufferMapTo_DISPATCH(struct EventBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__eventbufferMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__eventbufferMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS eventbufferUnmapFrom_DISPATCH(struct EventBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__eventbufferUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__eventbufferUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 eventbufferGetRefCount_DISPATCH(struct EventBuffer *pResource) {
-    return pResource->__nvoc_vtable->__eventbufferGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__eventbufferGetRefCount__(pResource);
 }
 
 static inline void eventbufferAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct EventBuffer *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__eventbufferAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__eventbufferAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NV_STATUS eventbuffertBufferCtrlCmdEnableEvent_IMPL(struct EventBuffer *pEventBuffer, NV_EVENT_BUFFER_CTRL_CMD_ENABLE_EVENTS_PARAMS *pEnableParams);

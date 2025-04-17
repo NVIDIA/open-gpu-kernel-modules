@@ -453,15 +453,15 @@ _gpuFabricProbeSetupGpaRange
                                                         gpaAddress) == NV_OK);
 
         NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR,
-                    gpuFabricProbeGetEgmGpaAddress(pGpuFabricProbeInfoKernel,
-                                                &egmGpaAddress) == NV_OK);
-
-        NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR,
                     gpuFabricProbeGetfmCaps(pGpuFabricProbeInfoKernel,
                                         &fmCaps) == NV_OK);
 
         if (fmCaps & NVLINK_INBAND_FM_CAPS_EGM_ENABLED)
         {
+            NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR,
+                        gpuFabricProbeGetEgmGpaAddress(pGpuFabricProbeInfoKernel,
+                                                    &egmGpaAddress) == NV_OK);
+
             NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR,
                     knvlinkSetUniqueFabricEgmBaseAddress_HAL(pGpu, pKernelNvlink,
                                                         egmGpaAddress) == NV_OK);
@@ -1170,6 +1170,25 @@ gpuFabricProbeGetlinkMaskToBeReduced
 
     *linkMaskToBeReduced =
         pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.linkMaskToBeReduced;
+
+    return NV_OK;
+}
+
+NV_STATUS
+gpuFabricProbeGetRemapTableIndex
+(
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel,
+    NvU32 *pRemapTableIdx
+)
+{
+    NV_STATUS status;
+
+    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfoKernel);
+
+    NV_CHECK_OR_RETURN(LEVEL_SILENT, status == NV_OK, status);
+
+    *pRemapTableIdx =
+        pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.remapTableIdx;
 
     return NV_OK;
 }

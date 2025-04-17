@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -344,59 +344,6 @@ pem_write_buffer
 }
 
 /* ------------------------ Public Functions ------------------------------- */
-/*!
- * Constructor
- */
-NV_STATUS
-spdmConstruct_IMPL
-(
-    Spdm *pSpdm
-)
-{
-
-    if (pSpdm == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    pSpdm->pLibspdmContext          = NULL;
-    pSpdm->pLibspdmScratch          = NULL;
-    pSpdm->pAttestationCertChain    = NULL;
-    pSpdm->pDeviceIOContext         = NULL;
-    pSpdm->pMsgLog                  = NULL;
-    pSpdm->pTranscriptLog           = NULL;
-
-    pSpdm->libspdmContextSize       = 0;
-    pSpdm->libspdmScratchSize       = 0;
-    pSpdm->attestationCertChainSize = 0;
-    pSpdm->msgLogMaxSize            = 0;
-    pSpdm->transcriptLogSize        = 0;
-
-    pSpdm->sessionId                = INVALID_SESSION_ID;
-    pSpdm->bSessionEstablished      = NV_FALSE;
-    pSpdm->bUsePolling              = NV_FALSE;
-    pSpdm->bExportSecretCleared     = NV_FALSE;
-
-    pSpdm->pPayloadBufferMemDesc    = NULL;
-    pSpdm->payloadBufferSize        = 0;
-
-    pSpdm->pHeartbeatEvent          = NULL;
-    pSpdm->heartbeatPeriodSec       = 0;
-
-    return NV_OK;
-}
-
-/*!
- * Destructor
- */
-void
-spdmDestruct_IMPL
-(
-    Spdm * pSpdm
-)
-{
-    _spdmClearContext(pSpdm);
-}
 
 NV_STATUS
 spdmSetupCommunicationBuffers_IMPL
@@ -742,7 +689,7 @@ spdmStart_IMPL
         return NV_ERR_NOT_READY;
     }
 
-     // Send GET_VERSION, GET_CAPABILITIES, and NEGOTIATE_ALGORITHMS to Responder.
+    // Send GET_VERSION, GET_CAPABILITIES, and NEGOTIATE_ALGORITHMS to Responder.
     NV_PRINTF(LEVEL_INFO, "SPDM: Starting new SPDM connection.\n");
     CHECK_SPDM_STATUS(libspdm_init_connection(pSpdm->pLibspdmContext, NV_FALSE));
 
@@ -965,15 +912,9 @@ subdeviceSpdmRetrieveTranscript_IMPL
     NV2080_CTRL_INTERNAL_SPDM_RETRIEVE_TRANSCRIPT_PARAMS *pSpdmRetrieveSessionTranscriptParams
 )
 {
-    OBJGPU               *pGpu         = GPU_RES_GET_GPU(pSubdevice);
-    ConfidentialCompute  *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
 
-    if (pConfCompute == NULL || pConfCompute->pSpdm == NULL)
-    {
-        return NV_ERR_INVALID_STATE;
-    }
-
-    Spdm *pSpdm = pConfCompute->pSpdm;
+    OBJGPU *pGpu  = GPU_RES_GET_GPU(pSubdevice);
+    Spdm   *pSpdm = GPU_GET_SPDM(pGpu);
 
     if (pSpdm->pTranscriptLog == NULL || pSpdm->transcriptLogSize == 0)
     {
@@ -1166,11 +1107,12 @@ spdmBuildCertChainDer_IMPL
     while (certCountResp--)
     {
         portMemCopy(pCertStartDest, remainingOutBufferSize, pCertCtx->pCert, pCertCtx->certSize);
-        pCertCtx++;
 
-        pCertStartDest += certSize;
-        remainingOutBufferSize -= certSize;
-        certTotalSize += certSize;
+        pCertStartDest += pCertCtx->certSize;
+        remainingOutBufferSize -= pCertCtx->certSize;
+        certTotalSize += pCertCtx->certSize;
+
+        pCertCtx++;
     }
 
     status = spdmGetIndividualCertificate_HAL(pGpu, pSpdm, NV_SPDM_REQ_L1_CERTIFICATE_ID, NV_TRUE, NULL, &certSize);
@@ -1268,8 +1210,9 @@ spdmBuildCertChainPem_IMPL
         // and where the next certificate should start.
         // Clear the last byte (NULL).
         //
+        certOutSize -= 1;
         remainingOutBufferSize -= certOutSize;
-        pCertChainOut          += certOutSize - 1;
+        pCertChainOut          += certOutSize;
         certTotalSize          += certOutSize;
         certCtxIdx--;
     }
@@ -1295,13 +1238,78 @@ spdmBuildCertChainPem_IMPL
             return NV_ERR_INVALID_DATA;
         }
 
+        // No need to clear the last byte (NULL) in RM while using BINDATA.
         remainingOutBufferSize -= certOutSize;
-        pCertChainOut          += certOutSize - 1;
+        pCertChainOut          += certOutSize;
         certTotalSize          += certOutSize;
         certId--;
     }
 
     *pCertChainOutSize = certTotalSize;
+
+    return NV_OK;
+}
+
+/*!
+  * The function is used to verify SPDM session requester.
+  *
+  * @param [in]   pGpu              The pointer to GPUOBJ.
+  * @param [in]   pSpdm             The pointer to Spdm object.
+  * @param [in]   requesterId       The id represents the session establishment requester.
+  *
+  * @return  NV_OK if requester id is valid; otherwise return NV_ERR_XXXX
+  */
+NV_STATUS
+spdmCheckRequesterIdValid_IMPL
+(
+    OBJGPU   *pGpu,
+    Spdm     *pSpdm,
+    NvU32     requesterId
+)
+{
+    switch (requesterId)
+    {
+       case NV_SPDM_REQUESTER_ID_CONF_COMPUTE:
+           return NV_OK;
+    }
+
+    NV_PRINTF(LEVEL_ERROR, "Error, invalid NV SPDM requester id(0x%x) !!!!\n", requesterId);
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+/*!
+ * The function is used to establish SPDM session
+ *
+ * @param [in]   pGpu              The pointer to GPUOBJ.
+ * @param [in]   pSpdm             The pointer to Spdm object.
+ * @param [in]   requesterId       The id represents the session establishment requester.
+ *
+ * @return  NV_OK if no error; otherwise return NV_ERR_XXXX
+ */
+NV_STATUS
+spdmEstablishSession_IMPL
+(
+    OBJGPU   *pGpu,
+    Spdm     *pSpdm,
+    NvU32     requesterId
+)
+{
+    NV_STATUS status = NV_OK;
+
+    status = spdmCheckRequesterIdValid(pGpu, pSpdm, requesterId);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, status == NV_OK, status);
+
+    //
+    // Initialize SPDM session between Guest RM and SPDM Responder on GPU.
+    // The session lifetime will track Confidential Compute object state lifetime.
+    //
+    status = spdmContextInit(pGpu, pSpdm);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, status == NV_OK, status);
+
+    status = spdmStart(pGpu, pSpdm);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, status == NV_OK, status);
+
+    pSpdm->nvSpdmRequesterId = requesterId;
 
     return NV_OK;
 }

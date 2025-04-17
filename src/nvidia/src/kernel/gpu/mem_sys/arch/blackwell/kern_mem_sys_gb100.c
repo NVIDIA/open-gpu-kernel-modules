@@ -32,15 +32,17 @@
 #include "published/blackwell/gb100/dev_hshub_base.h"
 
 /*!
- * @brief Static function used to return the HSHUB0 IoAperture
+ * @brief Function used to return the HSHUB0 IoAperture
+ *        Used by sysmem flush buffer code, since it gets called
+ *        before HSHUB IO apertures are constructed by HSHUB class object
  *
  * @param[in] pGpu                OBJGPU pointer
  * @param[in[ pKernelMemorySystem KernelMemorySystem pointer
  *
  * @returns IoAperture used to write to HSHUB0 PRI's
  */
-static
-IoAperture* _kmemsysInitHshub0Aperture_GB100
+IoAperture*
+kmemsysInitHshub0Aperture_GB100
 (
     OBJGPU             *pGpu,
     KernelMemorySystem *pKernelMemorySystem
@@ -65,15 +67,22 @@ IoAperture* _kmemsysInitHshub0Aperture_GB100
 }
 
 /*!
- * @brief Static function used to destroy the HSHUB0 IoAperture
+ * @brief Function used to destroy the HSHUB0 IoAperture
+ *        Used by sysmem flush buffer code, since it gets called
+ *        before HSHUB IO apertures are constructed by HSHUB class object
  *
  * @param[in] pGpu                OBJGPU pointer
  * @param[in[ pKernelMemorySystem KernelMemorySystem pointer
  *
  * @returns void
  */
-static
-void _kmemsysDestroyHshub0Aperture_GB100(OBJGPU *pGpu, KernelMemorySystem *pKernelMemorySystem, IoAperture *pIoAperture)
+void
+kmemsysDestroyHshub0Aperture_GB100
+(
+    OBJGPU             *pGpu, 
+    KernelMemorySystem *pKernelMemorySystem, 
+    IoAperture         *pIoAperture
+)
 {
     objDelete(pIoAperture);
 }
@@ -97,7 +106,7 @@ kmemsysAssertSysmemFlushBufferValid_GB100
     NvU32       regHshubPcieFlushSysmemAddrValLo = 0;
     NvU32       regHshubEgPcieFlushSysmemAddrValHi = 0;
     NvU32       regHshubEgPcieFlushSysmemAddrValLo = 0;
-    IoAperture *pHshub0IoAperture = _kmemsysInitHshub0Aperture_GB100(pGpu, pKernelMemorySystem);
+    IoAperture *pHshub0IoAperture = kmemsysInitHshub0Aperture_HAL(pGpu, pKernelMemorySystem);
 
     NV_ASSERT_OR_RETURN_VOID(pHshub0IoAperture != NULL);
 
@@ -122,7 +131,7 @@ kmemsysAssertSysmemFlushBufferValid_GB100
     NV_ASSERT((regHshubPcieFlushSysmemAddrValLo == regHshubEgPcieFlushSysmemAddrValLo) &&
         (regHshubPcieFlushSysmemAddrValHi == regHshubEgPcieFlushSysmemAddrValHi));
 
-    _kmemsysDestroyHshub0Aperture_GB100(pGpu, pKernelMemorySystem, pHshub0IoAperture);
+    kmemsysDestroyHshub0Aperture_HAL(pGpu, pKernelMemorySystem, pHshub0IoAperture);
 }
 
 /*!
@@ -144,7 +153,7 @@ kmemsysProgramSysmemFlushBuffer_GB100
     NvU32       alignedSysmemFlushBufferAddrHi = 0x0;
     NvU32       regValHi;
     NvU32       regValLo;
-    IoAperture *pHshub0IoAperture = _kmemsysInitHshub0Aperture_GB100(pGpu, pKernelMemorySystem);
+    IoAperture *pHshub0IoAperture = kmemsysInitHshub0Aperture_HAL(pGpu, pKernelMemorySystem);
 
     NV_ASSERT_OR_RETURN_VOID(pHshub0IoAperture != NULL);
     NV_ASSERT(pKernelMemorySystem->sysmemFlushBuffer != 0);
@@ -170,7 +179,7 @@ kmemsysProgramSysmemFlushBuffer_GB100
     REG_WR32(pHshub0IoAperture, NV_PFB_HSHUB_EG_PCIE_FLUSH_SYSMEM_ADDR_HI, ((NvU32)regValHi));
     REG_WR32(pHshub0IoAperture, NV_PFB_HSHUB_EG_PCIE_FLUSH_SYSMEM_ADDR_LO, ((NvU32)regValLo));
 
-    _kmemsysDestroyHshub0Aperture_GB100(pGpu, pKernelMemorySystem, pHshub0IoAperture);
+    kmemsysDestroyHshub0Aperture_HAL(pGpu, pKernelMemorySystem, pHshub0IoAperture);
 }
 
 /*!

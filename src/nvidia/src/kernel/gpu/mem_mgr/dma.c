@@ -1165,6 +1165,10 @@ dmaPageArrayInitWithFlags
 )
 {
     dmaPageArrayInit(pPageArray, pPageData, pageCount);
+    if ((pageArrayFlags & DMA_PAGE_ARRARY_FLAGS_LOCALIZED) != 0)
+    {
+       pPageArray->bLocalized = NV_TRUE;
+    }
 }
 
 /*!
@@ -1175,25 +1179,28 @@ dmaPageArrayInitFromMemDesc
 (
     DMA_PAGE_ARRAY     *pPageArray,         //!< [out] Abstracted page array.
     MEMORY_DESCRIPTOR  *pMemDesc,           //!< [in] Memory descriptor.
-    OBJGPU             *pMappingGpu,        //!< [in] Mapping GPU, if different from default GPU
     ADDRESS_TRANSLATION addressTranslation  //!< [in] Address translation for page array.
 )
 {
     NvU64 pageArrayFlags = 0;
 
-    RmPhysAddr *pteArray;
+    KernelMIGManager *pKernelMIGManager = (pMemDesc->pGpu != NULL) ? GPU_GET_KERNEL_MIG_MANAGER(pMemDesc->pGpu) : NULL;
+    NvBool bIsMIGMemPartitioningEnabled = (pKernelMIGManager != NULL) && kmigmgrIsMIGMemPartitioningEnabled(pMemDesc->pGpu, pKernelMIGManager);
 
-    if (pMappingGpu != NULL)
+    // if pMemDesc->pGpu is not populated, silently fall through
+    if (pMemDesc->pGpu == NULL)
     {
-        pteArray = memdescGetPteArrayForGpu(pMemDesc, pMappingGpu, addressTranslation);
+        NV_PRINTF(LEVEL_WARNING, "Unable to determine memdesc localization information!\n");
     }
-    else
+
+    if (!bIsMIGMemPartitioningEnabled &&
+         memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_AS_LOCALIZED))
     {
-        pteArray = memdescGetPteArray(pMemDesc, addressTranslation);
+        pageArrayFlags |= DMA_PAGE_ARRARY_FLAGS_LOCALIZED;
     }
 
     dmaPageArrayInitWithFlags(pPageArray,
-        pteArray,
+        memdescGetPteArray(pMemDesc, addressTranslation),
         memdescGetPteArraySize(pMemDesc, addressTranslation),
         pageArrayFlags);
 }
@@ -1229,6 +1236,13 @@ dmaPageArrayGetPhysAddr
     else
     {
         RmPhysAddr *pPteArray = pPageArray->pData;
+        if (pPageArray->bLocalized)
+        {
+            // Set the bit in the address itself
+            addr = pPteArray[pPageArray->startIndex + pageIndex] |
+                   DMA_PAGE_ARRAY_LOCALIZED_OFFSET;
+        }
+        else
         {
             addr = pPteArray[pPageArray->startIndex + pageIndex];
         }

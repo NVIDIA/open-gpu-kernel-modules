@@ -1,13 +1,15 @@
 
 #ifndef _G_GPU_GROUP_NVOC_H_
 #define _G_GPU_GROUP_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -136,10 +138,18 @@ typedef struct _def_vid_link_node
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJGPUGRP;
+struct NVOC_METADATA__Object;
+
+
 struct OBJGPUGRP {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__OBJGPUGRP *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -162,6 +172,13 @@ struct OBJGPUGRP {
     struct OBJVASPACE *pGlobalVASpace;
 };
 
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJGPUGRP {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
+};
+
 #ifndef __NVOC_CLASS_OBJGPUGRP_TYPEDEF__
 #define __NVOC_CLASS_OBJGPUGRP_TYPEDEF__
 typedef struct OBJGPUGRP OBJGPUGRP;
@@ -178,10 +195,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGPUGRP;
     ((pThis)->__nvoc_pbase_OBJGPUGRP)
 
 #ifdef __nvoc_gpu_group_h_disabled
-#define __dynamicCast_OBJGPUGRP(pThis) ((OBJGPUGRP*)NULL)
+#define __dynamicCast_OBJGPUGRP(pThis) ((OBJGPUGRP*) NULL)
 #else //__nvoc_gpu_group_h_disabled
 #define __dynamicCast_OBJGPUGRP(pThis) \
-    ((OBJGPUGRP*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJGPUGRP)))
+    ((OBJGPUGRP*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJGPUGRP)))
 #endif //__nvoc_gpu_group_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_OBJGPUGRP(OBJGPUGRP**, Dynamic*, NvU32, va_list);

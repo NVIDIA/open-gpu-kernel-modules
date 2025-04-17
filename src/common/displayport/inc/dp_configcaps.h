@@ -571,6 +571,8 @@ namespace DisplayPort
         virtual void initialize() = 0;
         virtual AuxRetry::status setMainLinkChannelCoding(MainLinkChannelCoding channelCoding) = 0;
         virtual void setConnectorTypeC(bool bTypeC) = 0;
+        virtual void setUSBCCableIDInfo(NV0073_CTRL_DP_USBC_CABLEID_INFO *cableIDInfo) = 0;
+        virtual void setCableVconnSourceUnknown() = 0;
         virtual ~DPCDHAL() {}
     };
 
@@ -677,6 +679,9 @@ namespace DisplayPort
                 // If all the LTTPRs supports FEC
                 bool      bFECSupported;
                 bool      bAuxlessALPMSupported;                    // DPCD offset F0009
+                // 0xE000D, DP Tunneling capabilities of DIA which acts as PHY Repeater
+                bool      bDpTunnelingSupported;
+                bool      bDpTunnelingBwAllocModeSupported;
             } repeaterCaps;
 
             struct
@@ -1489,12 +1494,14 @@ namespace DisplayPort
         virtual bool isDp2xChannelCodingCapable() { return false; }
         virtual void setIgnoreCableIdCaps(bool bIgnore) { return; }
         virtual void overrideCableIdCap(LinkRate linkRate, bool bEnable) { return; }
+        virtual void setCableVconnSourceUnknown() { return; }
 
         // implement this function if DPCDHALImpl needs updated state between hotunplug/plug
-        virtual void initialize(){};
+        virtual void initialize(){}
         virtual AuxRetry::status setMainLinkChannelCoding(MainLinkChannelCoding channelCoding){ return AuxRetry::ack; }
         virtual MainLinkChannelCoding getMainLinkChannelCoding() { return ChannelCoding8B10B; }
         virtual void setConnectorTypeC(bool bTypeC) {};
+        virtual void setUSBCCableIDInfo(NV0073_CTRL_DP_USBC_CABLEID_INFO *cableIDInfo) {}
     };
 
 }

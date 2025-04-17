@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -150,6 +150,7 @@ _gpumgrDetermineConfComputeCapabilities
         pGpuMgr->ccCaps.bCCFeatureEnabled = bCCFeatureEnabled;
         pGpuMgr->ccCaps.bDevToolsModeEnabled = gpuIsCCDevToolsModeEnabled(pGpu);
         pGpuMgr->ccCaps.bMultiGpuProtectedPcieModeEnabled = gpuIsCCMultiGpuProtectedPcieModeEnabled(pGpu);
+        pGpuMgr->ccCaps.bMultiGpuNvleModeEnabled = gpuIsCCMultiGpuNvleModeEnabled(pGpu);
 
         if (pGpuMgr->ccCaps.bDevToolsModeEnabled)
         {
@@ -181,8 +182,9 @@ _gpumgrDetermineConfComputeCapabilities
             gpuIsCCDevToolsModeEnabled(pGpu),
             NV_ERR_INVALID_STATE);
 
-        NV_ASSERT_OR_RETURN(pGpuMgr->ccCaps.bMultiGpuProtectedPcieModeEnabled ==
-            gpuIsCCMultiGpuProtectedPcieModeEnabled(pGpu),
+        NV_ASSERT_OR_RETURN((pGpuMgr->ccCaps.bMultiGpuProtectedPcieModeEnabled ==
+            gpuIsCCMultiGpuProtectedPcieModeEnabled(pGpu) || pGpuMgr->ccCaps.bMultiGpuNvleModeEnabled ==
+            gpuIsCCMultiGpuNvleModeEnabled(pGpu)),
             NV_ERR_INVALID_STATE);
     }
 
@@ -204,7 +206,7 @@ _gpumgrDetermineNvlinkEncryptionCapabilities
     // First GPU
     if (ONEBITSET(pGpuMgr->gpuAttachMask))
     {
-        pGpuMgr->ccCaps.bNvlEncryptionEnabled = bNvlEncryptionEnabled;
+        pGpuMgr->nvleCaps.bNvlEncryptionEnabled = bNvlEncryptionEnabled;
     }
     else
     {
@@ -212,7 +214,7 @@ _gpumgrDetermineNvlinkEncryptionCapabilities
         // If one of the GPUs is not NVLE capable, the system as a whole
         // is not NVLE capable
         //
-        NV_ASSERT_OR_RETURN(pGpuMgr->ccCaps.bNvlEncryptionEnabled ==
+        NV_ASSERT_OR_RETURN(pGpuMgr->nvleCaps.bNvlEncryptionEnabled ==
             bNvlEncryptionEnabled, NV_ERR_INVALID_STATE);
     }
 
@@ -904,7 +906,7 @@ gpumgrGetGpuUuidInfo(NvU32 gpuId, NvU8 **ppUuidStr, NvU32 *pUuidStrLen, NvU32 uu
     {
         // Conversion to ASCII or UNICODE
         status = transformGidToUserFriendlyString(pUuid, RM_SHA1_GID_SIZE,
-                                                    ppUuidStr, pUuidStrLen, uuidFlags);
+                                                    ppUuidStr, pUuidStrLen, uuidFlags, RM_UUID_PREFIX_GPU);
         portMemFree(pUuid);
     }
 
@@ -993,11 +995,12 @@ NvBool gpumgrGetRmFirmwareLogsEnabled
 void gpumgrGetRmFirmwarePolicy
 (
     NvU32   pmcBoot42,
+    NvBool  bIsVirtualWithSriov,
     NvBool  bIsSoc,
     NvU32   enableFirmwareRegVal,
     NvBool *pbRequestFirmware,
     NvBool *pbAllowFallbackToMonolithicRm,
-    NvBool  bIsTccOrMcdm
+    WindowsFirmwarePolicyArg  *pWinRmFwPolicyArg
 )
 {
     NvBool bFirmwareCapable = NV_FALSE;
@@ -1010,9 +1013,10 @@ void gpumgrGetRmFirmwarePolicy
         !!(enableFirmwareRegVal & NV_REG_ENABLE_GPU_FIRMWARE_POLICY_ALLOW_FALLBACK);
 
     bFirmwareCapable = gpumgrIsDeviceRmFirmwareCapable(pmcBoot42,
+                                                       bIsVirtualWithSriov,
                                                        bIsSoc,
                                                        &bEnableByDefault,
-                                                       bIsTccOrMcdm);
+                                                       pWinRmFwPolicyArg);
 
     *pbRequestFirmware =
         (bFirmwareCapable &&
@@ -1027,16 +1031,9 @@ static NvBool _gpumgrIsRmFirmwareCapableChip(NvU32 pmcBoot42)
 
 NvBool gpumgrIsVgxRmFirmwareCapableChip(NvU32 pmcBoot42)
 {
-    if (decodePmcBoot42Architecture(pmcBoot42) >= NV_PMC_BOOT_42_ARCHITECTURE_GB100)
-        return NV_TRUE;
-
-    if (decodePmcBoot42Architecture(pmcBoot42) == NV_PMC_BOOT_42_ARCHITECTURE_GH100)
-        return NV_TRUE;
-
-    if (decodePmcBoot42Architecture(pmcBoot42) == NV_PMC_BOOT_42_ARCHITECTURE_AD100)
-        return NV_TRUE;
-
-    return NV_FALSE;
+    return (decodePmcBoot42Architecture(pmcBoot42) >= NV_PMC_BOOT_42_ARCHITECTURE_GB100) ||
+           (decodePmcBoot42Architecture(pmcBoot42) == NV_PMC_BOOT_42_ARCHITECTURE_GH100) ||
+           (decodePmcBoot42Architecture(pmcBoot42) == NV_PMC_BOOT_42_ARCHITECTURE_AD100);
 }
 
 static NvBool _gpumgrIsVgxRmFirmwareDefaultChip(NvU32 pmcBoot42)
@@ -1047,9 +1044,10 @@ static NvBool _gpumgrIsVgxRmFirmwareDefaultChip(NvU32 pmcBoot42)
 NvBool gpumgrIsDeviceRmFirmwareCapable
 (
     NvU32 pmcBoot42,
+    NvBool bIsVirtualWithSriov,
     NvBool bIsSoc,
     NvBool *pbEnabledByDefault,
-    NvBool bIsTccOrMcdm
+    WindowsFirmwarePolicyArg  *pWinRmFwPolicyArg
 )
 {
     NvBool bEnabledByDefault = NV_FALSE;
@@ -1153,7 +1151,7 @@ gpumgrGetGpuHalFactor
 
         *pChipId1 = 0;
         *pSocChipId0 = pAttachArg->socDeviceArgs.socChipId0;
-         isVirtual = NV_FALSE;
+        isVirtual = NV_FALSE;
     }
     else if (pAttachArg->bIsSOC)
     {
@@ -1162,7 +1160,7 @@ gpumgrGetGpuHalFactor
         *pChipId0 = pAttachArg->socChipId0;
         *pChipId1 = 0;
         *pSocChipId0 = pAttachArg->socChipId0;
-         isVirtual = NV_FALSE;
+        isVirtual = NV_FALSE;
     }
     else
     {
@@ -1449,9 +1447,6 @@ gpumgrAttachGpu(NvU32 gpuInstance, GPUATTACHARG *pAttachArg)
 
     // Determine conf compute params
     NV_ASSERT_OK_OR_RETURN(_gpumgrDetermineConfComputeCapabilities(pGpuMgr, pGpu));
-
-    // Determine nvlink encryption params
-    NV_ASSERT_OK_OR_RETURN(_gpumgrDetermineNvlinkEncryptionCapabilities(pGpuMgr, pGpu));
 
     if (!IS_GSP_CLIENT(pGpu))
         pGpuMgr->gpuMonolithicRmMask |= NVBIT(gpuInstance);
@@ -1749,6 +1744,7 @@ gpumgrSetAttachInfo(OBJGPU *pGpu, GPUATTACHARG *pAttachArg)
         // RM paths that cause issues otherwise, see the bug for details.
         //
         pGpu->busInfo.nvDomainBusDeviceFunc = pAttachArg->nvDomainBusDeviceFunc;
+        pGpu->busInfo.bNvDomainBusDeviceFuncValid = NV_TRUE;
     }
     else if (pAttachArg->bIsSOC)
     {
@@ -1770,6 +1766,7 @@ gpumgrSetAttachInfo(OBJGPU *pGpu, GPUATTACHARG *pAttachArg)
             // RM paths that cause issues otherwise, see the bug for details.
             //
             pGpu->busInfo.nvDomainBusDeviceFunc = pAttachArg->nvDomainBusDeviceFunc;
+            pGpu->busInfo.bNvDomainBusDeviceFuncValid = NV_TRUE;
         }
     }
     else
@@ -1788,6 +1785,7 @@ gpumgrSetAttachInfo(OBJGPU *pGpu, GPUATTACHARG *pAttachArg)
         pGpu->busInfo.gpuPhysIoAddr   = pAttachArg->ioPhysAddr;
         pGpu->busInfo.iovaspaceId     = pAttachArg->iovaspaceId;
         pGpu->busInfo.nvDomainBusDeviceFunc = pAttachArg->nvDomainBusDeviceFunc;
+        pGpu->busInfo.bNvDomainBusDeviceFuncValid = NV_TRUE;
         pGpu->deviceMappings[0].gpuNvLength = pAttachArg->regLength;
         pGpu->fbLength                = pAttachArg->fbLength;
         pGpu->busInfo.IntLine         = pAttachArg->intLine;
@@ -1895,6 +1893,11 @@ gpumgrStateLoadGpu(OBJGPU *pGpu, NvU32 flags)
 
     if (status != NV_OK)
         goto gpumgrStateLoadGpu_exit;
+
+    OBJSYS *pSys       = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    // Determine nvlink encryption params
+    NV_ASSERT_OK_OR_RETURN(_gpumgrDetermineNvlinkEncryptionCapabilities(pGpuMgr, pGpu));
 
 gpumgrStateLoadGpu_exit:
     // save the init status for later client queries
@@ -3395,7 +3398,7 @@ gpumgrGetNvlinkRecoveryInfo_IMPL
         // Choose the correct GPU by comparing PCI BusDomainDevice
         // If no matching entry is found, pick the first invalid one.
         //
-        if (!pGpuMgr->nvlinkUncontainedErrorRecoveryInfo[i].bValid || 
+        if (!pGpuMgr->nvlinkUncontainedErrorRecoveryInfo[i].bValid ||
             (pGpuMgr->nvlinkUncontainedErrorRecoveryInfo[i].DomainBusDevice == DomainBusDevice))
         {
             return &pGpuMgr->nvlinkUncontainedErrorRecoveryInfo[i];
@@ -4639,3 +4642,36 @@ NvBool gpumgrIsDeviceMsixAllowed
 
     return gpuIsMsixAllowed_TU102(bar0BaseAddr);
 }
+
+//
+// Workaround for Bug 5041782
+// There is a BAR firewall that will prevent any reads/writes to the BAR
+// register space while a reset is still pending. We must wait for this
+// to drop. Return true if the wait is successful, false otherwise
+//
+NvBool gpumgrWaitForBarFirewall
+(
+    NvU32 domain,
+    NvU8  bus,
+    NvU8  device,
+    NvU8  function,
+    NvU16 devId
+)
+{
+
+    if (
+        (devId >= 0x2900 && devId <= 0x29FF)
+        || (devId >= 0x3180 && devId <= 0x327F)
+        )
+    {
+        return gpuWaitForBarFirewall_GB100(domain, bus, device, function);
+    }
+
+    if (devId >= 0x2B80 && devId <= 0x2F7F)
+    {
+        return gpuWaitForBarFirewall_GB202(domain, bus, device, function);
+    }
+
+    return NV_TRUE;
+}
+

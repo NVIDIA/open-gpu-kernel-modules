@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -278,6 +278,67 @@ struct dev_pm_ops nv_pm_ops = {
  *** STATIC functions
  ***/
 
+#if defined(NVCPU_X86_64)
+#define NV_AMD_SME_BIT BIT(0)
+
+static
+NvBool nv_is_sme_supported(
+    void
+)
+{
+    unsigned int eax, ebx, ecx, edx;
+
+    /* Check for the SME/SEV support leaf */
+    eax = 0x80000000;
+    ecx = 0;
+    native_cpuid(&eax, &ebx, &ecx, &edx);
+    if (eax < 0x8000001f)
+    {
+        return NV_FALSE;
+    }
+
+    eax = 0x8000001f;
+    ecx = 0;
+    native_cpuid(&eax, &ebx, &ecx, &edx);
+    /* Check whether SME is supported */
+    if (!(eax & NV_AMD_SME_BIT))
+    {
+        return NV_FALSE;
+    }
+
+    return NV_TRUE;
+}
+#endif
+
+static
+NvBool nv_detect_sme_enabled(
+    void
+)
+{
+#if (defined(MSR_K8_SYSCFG) || defined(MSR_AMD64_SYSCFG)) && defined(NVCPU_X86_64)
+    NvU32 lo_val, hi_val;
+
+    if (!nv_is_sme_supported())
+    {
+        return NV_FALSE;
+    }
+
+#if defined(MSR_AMD64_SYSCFG)
+    rdmsr(MSR_AMD64_SYSCFG, lo_val, hi_val);
+#if defined(MSR_AMD64_SYSCFG_MEM_ENCRYPT)
+    return (lo_val & MSR_AMD64_SYSCFG_MEM_ENCRYPT) ? NV_TRUE : NV_FALSE;
+#endif //defined(MSR_AMD64_SYSCFG_MEM_ENCRYPT)
+#elif defined(MSR_K8_SYSCFG)
+    rdmsr(MSR_K8_SYSCFG, lo_val, hi_val);
+#if defined(MSR_K8_SYSCFG_MEM_ENCRYPT)
+    return (lo_val & MSR_K8_SYSCFG_MEM_ENCRYPT) ? NV_TRUE : NV_FALSE;
+#endif //defined(MSR_K8_SYSCFG_MEM_ENCRYPT)
+#endif //defined(MSR_AMD64_SYSCFG)
+#else
+    return NV_FALSE;
+#endif //(defined(MSR_K8_SYSCFG) || defined(MSR_AMD64_SYSCFG)) && defined(NVCPU_X86_64)
+}
+
 static
 void nv_detect_conf_compute_platform(
     void
@@ -289,6 +350,8 @@ void nv_detect_conf_compute_platform(
 #if defined(NV_CC_ATTR_SEV_SNP)
     os_cc_sev_snp_enabled = cc_platform_has(CC_ATTR_GUEST_SEV_SNP);
 #endif
+
+    os_cc_sme_enabled = cc_platform_has(CC_ATTR_MEM_ENCRYPT);
 
 #if defined(NV_HV_GET_ISOLATION_TYPE) && IS_ENABLED(CONFIG_HYPERV) && defined(NVCPU_X86_64)
     if (hv_get_isolation_type() == HV_ISOLATION_TYPE_SNP)
@@ -306,6 +369,7 @@ void nv_detect_conf_compute_platform(
 #else
     os_cc_enabled = NV_FALSE;
     os_cc_sev_snp_enabled = NV_FALSE;
+    os_cc_sme_enabled = nv_detect_sme_enabled();
     os_cc_snp_vtom_enabled = NV_FALSE;
     os_cc_tdx_enabled = NV_FALSE;
 #endif //NV_CC_PLATFORM_PRESENT
@@ -630,6 +694,9 @@ nv_report_applied_patches(void)
 static void
 nv_drivers_exit(void)
 {
+#if NV_SUPPORTS_PLATFORM_DEVICE
+    nv_platform_unregister_driver();
+#endif
     nv_pci_unregister_driver();
 }
 
@@ -645,6 +712,16 @@ nv_drivers_init(void)
         rc = -ENODEV;
         goto exit;
     }
+
+#if NV_SUPPORTS_PLATFORM_DEVICE
+    rc = nv_platform_register_driver();
+    if (rc < 0)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: SOC driver registration failed!\n");
+        nv_pci_unregister_driver();
+        rc = -ENODEV;
+    }
+#endif
 
 exit:
     return rc;
@@ -1560,6 +1637,11 @@ static int nv_open_device(nv_state_t *nv, nvidia_stack_t *sp)
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
     int rc;
     NV_STATUS status;
+
+    if ((nv->flags & NV_FLAG_PCI_REMOVE_IN_PROGRESS) != 0)
+    {
+        return -ENODEV;
+    }
 
     if ((nv->flags & NV_FLAG_EXCLUDE) != 0)
     {
@@ -3197,14 +3279,12 @@ nv_alias_pages(
 
         if (contiguous && i>0)
         {
-            page_ptr->dma_addr = pte_array[0] + (i << PAGE_SHIFT);
+            page_ptr->phys_addr = pte_array[0] + (i << PAGE_SHIFT);
         }
         else
         {
-            page_ptr->dma_addr  = pte_array[i];
+            page_ptr->phys_addr  = pte_array[i];
         }
-
-        page_ptr->phys_addr = page_ptr->dma_addr;
 
         /* aliased pages will be mapped on demand. */
         page_ptr->virt_addr = 0x0;
@@ -3291,7 +3371,8 @@ NV_STATUS NV_API_CALL nv_register_user_pages(
     NvU64       page_count,
     NvU64      *phys_addr,
     void       *import_priv,
-    void      **priv_data
+    void      **priv_data,
+    NvBool      unencrypted
 )
 {
     nv_alloc_t *at;
@@ -3321,6 +3402,9 @@ NV_STATUS NV_API_CALL nv_register_user_pages(
 #endif
 
     at->flags.user = NV_TRUE;
+
+    if (unencrypted)
+        at->flags.unencrypted = NV_TRUE;
 
     at->order = get_order(at->num_pages * PAGE_SIZE);
 
@@ -3394,7 +3478,6 @@ NV_STATUS NV_API_CALL nv_register_phys_pages(
     nv_alloc_t *at;
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
     NvU64 i;
-    NvU64 addr;
 
     at = nvos_create_alloc(nvl->dev, page_count);
 
@@ -3413,9 +3496,9 @@ NV_STATUS NV_API_CALL nv_register_phys_pages(
 
     at->order = get_order(at->num_pages * PAGE_SIZE);
 
-    for (i = 0, addr = phys_addr[0]; i < page_count; addr = phys_addr[++i])
+    for (i = 0; i < page_count; i++)
     {
-        at->page_table[i]->phys_addr = addr;
+        at->page_table[i]->phys_addr = phys_addr[i];
     }
 
     at->user_pages = NULL;

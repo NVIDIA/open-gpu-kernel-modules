@@ -78,8 +78,6 @@ void uvm_hal_ada_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->non_replayable_faults_supported = true;
 
-    parent_gpu->access_counters_supported = true;
-
     parent_gpu->fault_cancel_va_supported = true;
 
     parent_gpu->scoped_atomics_supported = true;

@@ -70,6 +70,13 @@
 #endif //NV_DRM_ROTATION_AVAILABLE
 
 /*
+ * Commit 1e13c5644c44 ("drm/drm_mode_object: increase max objects to
+ * accommodate new color props") in Linux v6.8 increased the pre-object
+ * property limit to from 24 to 64.
+ */
+#define NV_DRM_USE_EXTENDED_PROPERTIES (DRM_OBJECT_MAX_PROPERTY >= 64)
+
+/*
  * drm_dev_put() is added by commit 9a96f55034e41b4e002b767e9218d55f03bdff7d
  * (2017-09-26) and drm_dev_unref() is removed by
  * ba1d345401476a5f7fbad622607c5a1f95e59b31 (2018-11-15).

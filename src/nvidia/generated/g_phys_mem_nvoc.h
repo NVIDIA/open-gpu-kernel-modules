@@ -1,13 +1,15 @@
 
 #ifndef _G_PHYS_MEM_NVOC_H_
 #define _G_PHYS_MEM_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,15 +62,19 @@ extern "C" {
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__PhysicalMemory;
+struct NVOC_METADATA__Memory;
 struct NVOC_VTABLE__PhysicalMemory;
 
 
 struct PhysicalMemory {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__PhysicalMemory *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__PhysicalMemory *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Memory __nvoc_base_Memory;
@@ -83,10 +89,8 @@ struct PhysicalMemory {
 };
 
 
-// Metadata including vtable with 26 function pointers plus superclass metadata
+// Vtable with 26 per-class function pointers
 struct NVOC_VTABLE__PhysicalMemory {
-    const struct NVOC_VTABLE__Memory Memory;    // (mem) 26 function pointers
-
     NvBool (*__physmemCanCopy__)(struct PhysicalMemory * /*this*/);  // virtual override (res) base (mem)
     NV_STATUS (*__physmemIsDuplicate__)(struct PhysicalMemory * /*this*/, NvHandle, NvBool *);  // virtual inherited (mem) base (mem)
     NV_STATUS (*__physmemGetMapAddrSpace__)(struct PhysicalMemory * /*this*/, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual inherited (mem) base (mem)
@@ -115,6 +119,13 @@ struct NVOC_VTABLE__PhysicalMemory {
     void (*__physmemAddAdditionalDependants__)(struct RsClient *, struct PhysicalMemory * /*this*/, RsResourceRef *);  // virtual inherited (res) base (mem)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__PhysicalMemory {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Memory metadata__Memory;
+    const struct NVOC_VTABLE__PhysicalMemory vtable;
+};
+
 #ifndef __NVOC_CLASS_PhysicalMemory_TYPEDEF__
 #define __NVOC_CLASS_PhysicalMemory_TYPEDEF__
 typedef struct PhysicalMemory PhysicalMemory;
@@ -131,176 +142,176 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_PhysicalMemory;
     ((pThis)->__nvoc_pbase_PhysicalMemory)
 
 #ifdef __nvoc_phys_mem_h_disabled
-#define __dynamicCast_PhysicalMemory(pThis) ((PhysicalMemory*)NULL)
+#define __dynamicCast_PhysicalMemory(pThis) ((PhysicalMemory*) NULL)
 #else //__nvoc_phys_mem_h_disabled
 #define __dynamicCast_PhysicalMemory(pThis) \
-    ((PhysicalMemory*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(PhysicalMemory)))
+    ((PhysicalMemory*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(PhysicalMemory)))
 #endif //__nvoc_phys_mem_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_PhysicalMemory(PhysicalMemory**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_PhysicalMemory(PhysicalMemory**, Dynamic*, NvU32, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_PhysicalMemory(PhysicalMemory**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_PhysicalMemory(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_PhysicalMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
 // Wrapper macros
-#define physmemCanCopy_FNPTR(pPhysicalMemory) pPhysicalMemory->__nvoc_vtable->__physmemCanCopy__
+#define physmemCanCopy_FNPTR(pPhysicalMemory) pPhysicalMemory->__nvoc_metadata_ptr->vtable.__physmemCanCopy__
 #define physmemCanCopy(pPhysicalMemory) physmemCanCopy_DISPATCH(pPhysicalMemory)
-#define physmemIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memIsDuplicate__
+#define physmemIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsDuplicate__
 #define physmemIsDuplicate(pMemory, hMemory, pDuplicate) physmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
-#define physmemGetMapAddrSpace_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memGetMapAddrSpace__
+#define physmemGetMapAddrSpace_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memGetMapAddrSpace__
 #define physmemGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) physmemGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
-#define physmemControl_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memControl__
+#define physmemControl_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memControl__
 #define physmemControl(pMemory, pCallContext, pParams) physmemControl_DISPATCH(pMemory, pCallContext, pParams)
-#define physmemMap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memMap__
+#define physmemMap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memMap__
 #define physmemMap(pMemory, pCallContext, pParams, pCpuMapping) physmemMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
-#define physmemUnmap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memUnmap__
+#define physmemUnmap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memUnmap__
 #define physmemUnmap(pMemory, pCallContext, pCpuMapping) physmemUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
-#define physmemGetMemInterMapParams_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memGetMemInterMapParams__
+#define physmemGetMemInterMapParams_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memGetMemInterMapParams__
 #define physmemGetMemInterMapParams(pMemory, pParams) physmemGetMemInterMapParams_DISPATCH(pMemory, pParams)
-#define physmemCheckMemInterUnmap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memCheckMemInterUnmap__
+#define physmemCheckMemInterUnmap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memCheckMemInterUnmap__
 #define physmemCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) physmemCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
-#define physmemGetMemoryMappingDescriptor_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memGetMemoryMappingDescriptor__
+#define physmemGetMemoryMappingDescriptor_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memGetMemoryMappingDescriptor__
 #define physmemGetMemoryMappingDescriptor(pMemory, ppMemDesc) physmemGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
-#define physmemCheckCopyPermissions_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memCheckCopyPermissions__
+#define physmemCheckCopyPermissions_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memCheckCopyPermissions__
 #define physmemCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) physmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
-#define physmemIsReady_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memIsReady__
+#define physmemIsReady_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsReady__
 #define physmemIsReady(pMemory, bCopyConstructorContext) physmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define physmemIsGpuMapAllowed_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memIsGpuMapAllowed__
+#define physmemIsGpuMapAllowed_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsGpuMapAllowed__
 #define physmemIsGpuMapAllowed(pMemory, pGpu) physmemIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
-#define physmemIsExportAllowed_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memIsExportAllowed__
+#define physmemIsExportAllowed_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsExportAllowed__
 #define physmemIsExportAllowed(pMemory) physmemIsExportAllowed_DISPATCH(pMemory)
-#define physmemAccessCallback_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define physmemAccessCallback_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define physmemAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) physmemAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define physmemShareCallback_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresShareCallback__
+#define physmemShareCallback_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
 #define physmemShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) physmemShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define physmemControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define physmemControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define physmemControlSerialization_Prologue(pResource, pCallContext, pParams) physmemControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define physmemControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define physmemControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define physmemControlSerialization_Epilogue(pResource, pCallContext, pParams) physmemControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define physmemControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
+#define physmemControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
 #define physmemControl_Prologue(pResource, pCallContext, pParams) physmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define physmemControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
+#define physmemControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
 #define physmemControl_Epilogue(pResource, pCallContext, pParams) physmemControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define physmemPreDestruct_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define physmemPreDestruct_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define physmemPreDestruct(pResource) physmemPreDestruct_DISPATCH(pResource)
-#define physmemControlFilter_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define physmemControlFilter_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define physmemControlFilter(pResource, pCallContext, pParams) physmemControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define physmemIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define physmemIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define physmemIsPartialUnmapSupported(pResource) physmemIsPartialUnmapSupported_DISPATCH(pResource)
-#define physmemMapTo_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define physmemMapTo_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define physmemMapTo(pResource, pParams) physmemMapTo_DISPATCH(pResource, pParams)
-#define physmemUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define physmemUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define physmemUnmapFrom(pResource, pParams) physmemUnmapFrom_DISPATCH(pResource, pParams)
-#define physmemGetRefCount_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define physmemGetRefCount_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define physmemGetRefCount(pResource) physmemGetRefCount_DISPATCH(pResource)
-#define physmemAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define physmemAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define physmemAddAdditionalDependants(pClient, pResource, pReference) physmemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
 static inline NvBool physmemCanCopy_DISPATCH(struct PhysicalMemory *pPhysicalMemory) {
-    return pPhysicalMemory->__nvoc_vtable->__physmemCanCopy__(pPhysicalMemory);
+    return pPhysicalMemory->__nvoc_metadata_ptr->vtable.__physmemCanCopy__(pPhysicalMemory);
 }
 
 static inline NV_STATUS physmemIsDuplicate_DISPATCH(struct PhysicalMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
-    return pMemory->__nvoc_vtable->__physmemIsDuplicate__(pMemory, hMemory, pDuplicate);
+    return pMemory->__nvoc_metadata_ptr->vtable.__physmemIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline NV_STATUS physmemGetMapAddrSpace_DISPATCH(struct PhysicalMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pMemory->__nvoc_vtable->__physmemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+    return pMemory->__nvoc_metadata_ptr->vtable.__physmemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS physmemControl_DISPATCH(struct PhysicalMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pMemory->__nvoc_vtable->__physmemControl__(pMemory, pCallContext, pParams);
+    return pMemory->__nvoc_metadata_ptr->vtable.__physmemControl__(pMemory, pCallContext, pParams);
 }
 
 static inline NV_STATUS physmemMap_DISPATCH(struct PhysicalMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pMemory->__nvoc_vtable->__physmemMap__(pMemory, pCallContext, pParams, pCpuMapping);
+    return pMemory->__nvoc_metadata_ptr->vtable.__physmemMap__(pMemory, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS physmemUnmap_DISPATCH(struct PhysicalMemory *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pMemory->__nvoc_vtable->__physmemUnmap__(pMemory, pCallContext, pCpuMapping);
+    return pMemory->__nvoc_metadata_ptr->vtable.__physmemUnmap__(pMemory, pCallContext, pCpuMapping);
 }
 
 static inline NV_STATUS physmemGetMemInterMapParams_DISPATCH(struct PhysicalMemory *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pMemory->__nvoc_vtable->__physmemGetMemInterMapParams__(pMemory, pParams);
+    return pMemory->__nvoc_metadata_ptr->vtable.__physmemGetMemInterMapParams__(pMemory, pParams);
 }
 
 static inline NV_STATUS physmemCheckMemInterUnmap_DISPATCH(struct PhysicalMemory *pMemory, NvBool bSubdeviceHandleProvided) {
-    return pMemory->__nvoc_vtable->__physmemCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
+    return pMemory->__nvoc_metadata_ptr->vtable.__physmemCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS physmemGetMemoryMappingDescriptor_DISPATCH(struct PhysicalMemory *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pMemory->__nvoc_vtable->__physmemGetMemoryMappingDescriptor__(pMemory, ppMemDesc);
+    return pMemory->__nvoc_metadata_ptr->vtable.__physmemGetMemoryMappingDescriptor__(pMemory, ppMemDesc);
 }
 
 static inline NV_STATUS physmemCheckCopyPermissions_DISPATCH(struct PhysicalMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
-    return pMemory->__nvoc_vtable->__physmemCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
+    return pMemory->__nvoc_metadata_ptr->vtable.__physmemCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline NV_STATUS physmemIsReady_DISPATCH(struct PhysicalMemory *pMemory, NvBool bCopyConstructorContext) {
-    return pMemory->__nvoc_vtable->__physmemIsReady__(pMemory, bCopyConstructorContext);
+    return pMemory->__nvoc_metadata_ptr->vtable.__physmemIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NvBool physmemIsGpuMapAllowed_DISPATCH(struct PhysicalMemory *pMemory, struct OBJGPU *pGpu) {
-    return pMemory->__nvoc_vtable->__physmemIsGpuMapAllowed__(pMemory, pGpu);
+    return pMemory->__nvoc_metadata_ptr->vtable.__physmemIsGpuMapAllowed__(pMemory, pGpu);
 }
 
 static inline NvBool physmemIsExportAllowed_DISPATCH(struct PhysicalMemory *pMemory) {
-    return pMemory->__nvoc_vtable->__physmemIsExportAllowed__(pMemory);
+    return pMemory->__nvoc_metadata_ptr->vtable.__physmemIsExportAllowed__(pMemory);
 }
 
 static inline NvBool physmemAccessCallback_DISPATCH(struct PhysicalMemory *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__physmemAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__physmemAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool physmemShareCallback_DISPATCH(struct PhysicalMemory *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_vtable->__physmemShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_metadata_ptr->vtable.__physmemShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS physmemControlSerialization_Prologue_DISPATCH(struct PhysicalMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__physmemControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__physmemControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void physmemControlSerialization_Epilogue_DISPATCH(struct PhysicalMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__physmemControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__physmemControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS physmemControl_Prologue_DISPATCH(struct PhysicalMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__physmemControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__physmemControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void physmemControl_Epilogue_DISPATCH(struct PhysicalMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__physmemControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__physmemControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline void physmemPreDestruct_DISPATCH(struct PhysicalMemory *pResource) {
-    pResource->__nvoc_vtable->__physmemPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__physmemPreDestruct__(pResource);
 }
 
 static inline NV_STATUS physmemControlFilter_DISPATCH(struct PhysicalMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__physmemControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__physmemControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool physmemIsPartialUnmapSupported_DISPATCH(struct PhysicalMemory *pResource) {
-    return pResource->__nvoc_vtable->__physmemIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__physmemIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS physmemMapTo_DISPATCH(struct PhysicalMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__physmemMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__physmemMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS physmemUnmapFrom_DISPATCH(struct PhysicalMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__physmemUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__physmemUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 physmemGetRefCount_DISPATCH(struct PhysicalMemory *pResource) {
-    return pResource->__nvoc_vtable->__physmemGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__physmemGetRefCount__(pResource);
 }
 
 static inline void physmemAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct PhysicalMemory *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__physmemAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__physmemAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NvBool physmemCanCopy_IMPL(struct PhysicalMemory *pPhysicalMemory);

@@ -51,6 +51,12 @@ kmigmgrIsGPUInstanceFlagValid_GH100
                                     _COMPUTE_SIZE, gpuInstanceFlag);
     NvU32 gfxSizeFlag = DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG,
                                     _GFX_SIZE, gpuInstanceFlag);
+
+    if (!FLD_TEST_REF(NV2080_CTRL_GPU_PARTITION_FLAG_REQ_ALL_MEDIA, _DEFAULT, gpuInstanceFlag))
+    {
+        return NV_FALSE;
+    }
+
     switch (memSizeFlag)
     {
         case NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_FULL:
@@ -122,11 +128,10 @@ kmigmgrIsGPUInstanceCombinationValid_GH100
         return NV_FALSE;
     }
 
-    NV_CHECK_OR_RETURN(LEVEL_ERROR,
-        kmigmgrGetSmallestGpuInstanceSize(pGpu, pKernelMIGManager, &smallestComputeSizeFlag) == NV_OK,
-        NV_FALSE);
+    smallestComputeSizeFlag = kmigmgrSmallestComputeProfileSize(pGpu, pKernelMIGManager);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, smallestComputeSizeFlag != KMIGMGR_COMPUTE_SIZE_INVALID, NV_FALSE);
 
-    // JPG_OFA profile is only available on the smallest partition
+    // JPG_OFA profile is only available on the smallest available partition
     if (FLD_TEST_REF(NV2080_CTRL_GPU_PARTITION_FLAG_REQ_DEC_JPG_OFA, _ENABLE, gpuInstanceFlag))
     {
         if (computeSizeFlag != smallestComputeSizeFlag)

@@ -84,3 +84,27 @@ kbusValidateBAR0WindowBase_GB10B
 {
     return base <= DRF_MASK(NV_XAL_EP_BAR0_WINDOW_BASE);
 }
+
+/*!
+ * @brief Ensure MC point of coherency for volatile GPU writes
+ *
+ * NOTE: Must call kbusFlush BEFORE any calls to busInvalidate
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelBus
+ * @param[in] ApertureFlags NvU32 aperture flags
+ */
+NV_STATUS
+kbusFlush_GB10B
+(
+    OBJGPU     *pGpu,
+    KernelBus  *pKernelBus,
+    NvU32       ApertureFlags
+)
+{
+    //
+    // All memory in GB10B is local but we need to pass in VIDEO_MEMORY to have
+    // the kbusFlushSingle implementation do a sysmembar flush.
+    //
+    return kbusFlushSingle_HAL(pGpu, pKernelBus, ApertureFlags | BUS_FLUSH_VIDEO_MEMORY);
+}

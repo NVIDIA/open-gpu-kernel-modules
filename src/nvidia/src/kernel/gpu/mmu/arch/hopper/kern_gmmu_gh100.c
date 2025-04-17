@@ -486,6 +486,7 @@ kgmmuFaultBufferAllocSharedMemory_GH100
         return status;
     }
 
+    memdescSetPageSize(pMemDesc, AT_GPU, RM_PAGE_SIZE_HUGE);
     memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_131, 
                     pMemDesc);
     if (status != NV_OK)

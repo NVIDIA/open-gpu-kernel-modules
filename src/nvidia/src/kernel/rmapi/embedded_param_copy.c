@@ -722,6 +722,18 @@ NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCt
             break;
         }
 
+        case NV2080_CTRL_CMD_GPU_RPC_GSP_TEST:
+        {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS);
+            RMAPI_PARAM_COPY_INIT(paramCopies[0],
+                            ((NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS*)pParams)->data,
+                            ((NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS*)pParams)->data,
+                            ((NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS*)pParams)->dataSize,
+                            sizeof(NvU32));
+            break;
+        }
+
+
         default:
         {
             return status;
@@ -1098,6 +1110,14 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmC
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS*)pParams)->pPdeBuffer = paramCopies[0].pUserParams;
 
+            break;
+        }
+
+        case NV2080_CTRL_CMD_GPU_RPC_GSP_TEST:
+        {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS);
+            status = rmapiParamsRelease(&paramCopies[0]);
+            ((NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS*)pParams)->data = paramCopies[0].pUserParams;
             break;
         }
 

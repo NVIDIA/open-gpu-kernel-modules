@@ -177,7 +177,6 @@ instmemInitHashTable
 )
 {
     NV_STATUS status = NV_OK;
-    NvU32     i;
 
     pInstMem->nHashTableEntries = hashTableSize / sizeof(DISP_HW_HASH_TABLE_ENTRY);
     pInstMem->hashTableBaseAddr = instmemGetHashTableBaseAddr_HAL(pGpu, pInstMem);
@@ -193,10 +192,9 @@ instmemInitHashTable
     }
 
     // Initialize Hash Table.
-    for (i = 0; i < pInstMem->nHashTableEntries; i++)
-    {
-        pInstMem->pHashTable[i].pContextDma = NULL;
-    }
+    portMemSet(pInstMem->pHashTable, 0x00, pInstMem->nHashTableEntries *
+                                            sizeof(SW_HASH_TABLE_ENTRY));
+
 
 exit:
     return status;

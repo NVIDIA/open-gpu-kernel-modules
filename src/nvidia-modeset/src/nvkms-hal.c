@@ -37,6 +37,7 @@
 #include "class/clc670.h" // NVC670_DISPLAY
 #include "class/clc770.h" // NVC770_DISPLAY
 #include "class/clca70.h" // NVCA70_DISPLAY
+#include "class/clcb70.h" // NVCB70_DISPLAY
 
 #include "class/cl947d.h" // NV947D_CORE_CHANNEL_DMA
 #include "class/cl957d.h" // NV957D_CORE_CHANNEL_DMA
@@ -51,6 +52,8 @@
 #include "class/clc77d.h" // NVC67D_CORE_CHANNEL_DMA
 #include "class/clca7d.h" // NVCA7D_CORE_CHANNEL_DMA
 #include "class/clca7e.h" // NVCA7E_WINDOW_CHANNEL_DMA
+#include "class/clcb7d.h" // NVCB7D_CORE_CHANNEL_DMA
+#include "class/clcb7e.h" // NVCB7E_WINDOW_CHANNEL_DMA
 
 extern NVEvoHAL nvEvo94;
 extern NVEvoHAL nvEvo97;
@@ -171,6 +174,7 @@ enum NvKmsAllocDeviceStatus nvAssignEvoCaps(NVDevEvoPtr pDevEvo)
          * classPrefix |         |  |  |  |  |  |   |
          *         |   |         |  |  |  |  |  |   |
          */
+        ENTRY_NVD(CB, CB, &nvEvoCA, 1, 1, 1, 0, 12, 12),
         /* Blackwell GB20X */
         ENTRY_NVD(CA, CA, &nvEvoCA, 1, 1, 1, 0, 12, 12),
         /* Ada */

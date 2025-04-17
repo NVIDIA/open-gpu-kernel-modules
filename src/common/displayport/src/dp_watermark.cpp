@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -838,25 +838,44 @@ bool DisplayPort::isModePossibleMSTWithFEC
     return true;
 }
 
-unsigned DisplayPort::pbnForMode(const ModesetInfo & modesetInfo)
+unsigned DisplayPort::pbnForMode(const ModesetInfo & modesetInfo, bool bAccountSpread)
 {
-    // When DSC is enabled consider depth will multiplied by 16
-    unsigned dsc_factor = 1;
+    unsigned bpp_factor;
+    NvU64 pbn_numerator, pbn_denominator;
 
     if (modesetInfo.bEnableDsc)
     {
-        if(modesetInfo.colorFormat == dpColorFormat_YCbCr422_Native)
+        if (modesetInfo.depth > 512U)
         {
-            dsc_factor = 32;
+            bpp_factor = 256U;
         }
         else
         {
-            dsc_factor = 16;
+            // Pre-Blackwell, depth will have bppx16
+            bpp_factor = 16U;
+        }   
+    }
+    else
+    {
+        if (modesetInfo.depth > 36U)
+        {
+            // Blackwell and later, depth will have effectiveBppx256
+            bpp_factor = 256U;
+        }
+        else
+        {
+            bpp_factor = 1U;
         }
     }
 
-    unsigned pbnForMode = (NvU32)(divide_ceil(modesetInfo.pixelClockHz * modesetInfo.depth * 1006 * 64 / 8,
-                                    (NvU64)54000000 * 1000 * dsc_factor));
+    pbn_numerator = modesetInfo.pixelClockHz * modesetInfo.depth * 64 / 8;
+    pbn_denominator = 54000000ULL * bpp_factor;
 
-    return pbnForMode;
+    if (bAccountSpread)
+    {
+        pbn_numerator *= 1006;
+        pbn_denominator *= 1000;
+    }
+
+    return (NvU32)(divide_ceil(pbn_numerator, pbn_denominator));
 }

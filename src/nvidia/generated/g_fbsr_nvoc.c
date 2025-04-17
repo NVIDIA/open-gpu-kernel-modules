@@ -1,4 +1,11 @@
 #define NVOC_FBSR_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,40 +14,29 @@
 #include "utils/nvassert.h"
 #include "g_fbsr_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0xa30fe6 = 1;
+char __nvoc_class_id_uniqueness_check__0xa30fe6 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJFBSR;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
-void __nvoc_init_OBJFBSR(OBJFBSR*, RmHalspecOwner* );
-void __nvoc_init_funcTable_OBJFBSR(OBJFBSR*, RmHalspecOwner* );
-NV_STATUS __nvoc_ctor_OBJFBSR(OBJFBSR*, RmHalspecOwner* );
-void __nvoc_init_dataField_OBJFBSR(OBJFBSR*, RmHalspecOwner* );
+// Forward declarations for OBJFBSR
+void __nvoc_init__Object(Object*);
+void __nvoc_init__OBJFBSR(OBJFBSR*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_funcTable_OBJFBSR(OBJFBSR*, RmHalspecOwner *pRmhalspecowner);
+NV_STATUS __nvoc_ctor_OBJFBSR(OBJFBSR*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_dataField_OBJFBSR(OBJFBSR*, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_OBJFBSR(OBJFBSR*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJFBSR;
 
-static const struct NVOC_RTTI __nvoc_rtti_OBJFBSR_OBJFBSR = {
-    /*pClassDef=*/          &__nvoc_class_def_OBJFBSR,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_OBJFBSR,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__OBJFBSR;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJFBSR;
 
-static const struct NVOC_RTTI __nvoc_rtti_OBJFBSR_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(OBJFBSR, __nvoc_base_Object),
-};
+// Down-thunk(s) to bridge OBJFBSR methods from ancestors (if any)
 
-static const struct NVOC_CASTINFO __nvoc_castinfo_OBJFBSR = {
-    /*numRelatives=*/       2,
-    /*relatives=*/ {
-        &__nvoc_rtti_OBJFBSR_OBJFBSR,
-        &__nvoc_rtti_OBJFBSR_Object,
-    },
-};
+// Up-thunk(s) to bridge OBJFBSR methods to ancestors (if any)
 
 const struct NVOC_CLASS_DEF __nvoc_class_def_OBJFBSR = 
 {
@@ -53,15 +49,32 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJFBSR =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_OBJFBSR,
-    /*pCastInfo=*/          &__nvoc_castinfo_OBJFBSR,
-    /*pExportInfo=*/        &__nvoc_export_info_OBJFBSR
+    /*pCastInfo=*/          &__nvoc_castinfo__OBJFBSR,
+    /*pExportInfo=*/        &__nvoc_export_info__OBJFBSR
 };
 
-// Down-thunk(s) to bridge OBJFBSR methods from ancestors (if any)
 
-// Up-thunk(s) to bridge OBJFBSR methods to ancestors (if any)
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__OBJFBSR __nvoc_metadata__OBJFBSR = {
+    .rtti.pClassDef = &__nvoc_class_def_OBJFBSR,    // (fbsr) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_OBJFBSR,
+    .rtti.offset    = 0,
+    .metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super
+    .metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Object.rtti.offset    = NV_OFFSETOF(OBJFBSR, __nvoc_base_Object),
+};
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJFBSR = 
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__OBJFBSR = {
+    .numRelatives = 2,
+    .relatives = {
+        &__nvoc_metadata__OBJFBSR.rtti,    // [0]: (fbsr) this
+        &__nvoc_metadata__OBJFBSR.metadata__Object.rtti,    // [1]: (obj) super
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJFBSR = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -134,8 +147,8 @@ static void __nvoc_init_funcTable_OBJFBSR_1(OBJFBSR *pThis, RmHalspecOwner *pRmh
     }
 
     // fbsrSendMemsysProgramRawCompressionMode -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0fc00UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000ec1UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB202 | GB203 | GB205 | GB206 | GB207 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0fc00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e6UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B */ 
     {
         pThis->__fbsrSendMemsysProgramRawCompressionMode__ = &fbsrSendMemsysProgramRawCompressionMode_GA100;
     }
@@ -154,11 +167,21 @@ void __nvoc_init_funcTable_OBJFBSR(OBJFBSR *pThis, RmHalspecOwner *pRmhalspecown
     __nvoc_init_funcTable_OBJFBSR_1(pThis, pRmhalspecowner);
 }
 
-void __nvoc_init_Object(Object*);
-void __nvoc_init_OBJFBSR(OBJFBSR *pThis, RmHalspecOwner *pRmhalspecowner) {
-    pThis->__nvoc_pbase_OBJFBSR = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;
-    __nvoc_init_Object(&pThis->__nvoc_base_Object);
+// Initialize newly constructed object.
+void __nvoc_init__OBJFBSR(OBJFBSR *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;    // (obj) super
+    pThis->__nvoc_pbase_OBJFBSR = pThis;    // (fbsr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__Object(&pThis->__nvoc_base_Object);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__OBJFBSR.metadata__Object;    // (obj) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__OBJFBSR;    // (fbsr) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_OBJFBSR(pThis, pRmhalspecowner);
 }
 
@@ -176,9 +199,6 @@ NV_STATUS __nvoc_objCreate_OBJFBSR(OBJFBSR **ppThis, Dynamic *pParent, NvU32 cre
 
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(OBJFBSR));
-
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_OBJFBSR);
 
     pThis->__nvoc_base_Object.createFlags = createFlags;
 
@@ -200,7 +220,7 @@ NV_STATUS __nvoc_objCreate_OBJFBSR(OBJFBSR **ppThis, Dynamic *pParent, NvU32 cre
         pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
     NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init_OBJFBSR(pThis, pRmhalspecowner);
+    __nvoc_init__OBJFBSR(pThis, pRmhalspecowner);
     status = __nvoc_ctor_OBJFBSR(pThis, pRmhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_OBJFBSR_cleanup;
 

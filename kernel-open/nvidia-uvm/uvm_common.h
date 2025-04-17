@@ -250,15 +250,6 @@ static inline NvBool uvm_ranges_overlap(NvU64 a_start, NvU64 a_end, NvU64 b_star
     return a_end >= b_start && b_end >= a_start;
 }
 
-static int debug_mode(void)
-{
-#ifdef DEBUG
-    return 1;
-#else
-    return 0;
-#endif
-}
-
 static inline void kmem_cache_destroy_safe(struct kmem_cache **ppCache)
 {
     if (ppCache)
@@ -336,22 +327,6 @@ typedef struct
     NvHandle user_object;
 } uvm_rm_user_object_t;
 
-typedef enum
-{
-    UVM_FD_UNINITIALIZED,
-    UVM_FD_INITIALIZING,
-    UVM_FD_VA_SPACE,
-    UVM_FD_MM,
-    UVM_FD_COUNT
-} uvm_fd_type_t;
-
-// This should be large enough to fit the valid values from uvm_fd_type_t above.
-// Note we can't use order_base_2(UVM_FD_COUNT) to define this because our code
-// coverage tool fails due when the preprocessor expands that to a huge mess of
-// ternary operators.
-#define UVM_FD_TYPE_BITS 2
-#define UVM_FD_TYPE_MASK ((1UL << UVM_FD_TYPE_BITS) - 1)
-
 // Macro used to compare two values for types that support less than operator.
 // It returns -1 if a < b, 1 if a > b and 0 if a == 0
 #define UVM_CMP_DEFAULT(a,b)              \
@@ -374,36 +349,12 @@ typedef enum
 // file. A NULL input returns false.
 bool uvm_file_is_nvidia_uvm(struct file *filp);
 
-// Returns the type of data filp->private_data contains to and if ptr_val !=
-// NULL returns the value of the pointer.
-uvm_fd_type_t uvm_fd_type(struct file *filp, void **ptr_val);
-
-// Returns the pointer stored in filp->private_data if the type
-// matches, otherwise returns NULL.
-void *uvm_fd_get_type(struct file *filp, uvm_fd_type_t type);
-
-// Reads the first word in the supplied struct page.
-static inline void uvm_touch_page(struct page *page)
-{
-    char *mapping;
-
-    UVM_ASSERT(page);
-
-    mapping = (char *) kmap(page);
-    (void)READ_ONCE(*mapping);
-    kunmap(page);
-}
+// Like uvm_file_is_nvidia_uvm(), but further requires that the input file
+// represent a UVM VA space (has fd type UVM_FD_VA_SPACE).
+bool uvm_file_is_nvidia_uvm_va_space(struct file *filp);
 
 // Return true if the VMA is one used by UVM managed allocations.
 bool uvm_vma_is_managed(struct vm_area_struct *vma);
-
-static bool uvm_platform_uses_canonical_form_address(void)
-{
-    if (NVCPU_IS_PPC64LE)
-        return false;
-
-    return true;
-}
 
 // Similar to the GPU MMU HAL num_va_bits(), it returns the CPU's num_va_bits().
 static NvU32 uvm_cpu_num_va_bits(void)
@@ -420,7 +371,7 @@ static void uvm_get_unaddressable_range(NvU32 num_va_bits, NvU64 *first, NvU64 *
 
     // Maxwell GPUs (num_va_bits == 40b) do not support canonical form address
     // even when plugged into platforms using it.
-    if (uvm_platform_uses_canonical_form_address() && num_va_bits > 40) {
+    if (num_va_bits > 40) {
         *first = 1ULL << (num_va_bits - 1);
         *outer = (NvU64)((NvS64)(1ULL << 63) >> (64 - num_va_bits));
     }

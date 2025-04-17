@@ -116,7 +116,9 @@ struct RS_RES_DUP_PARAMS_INTERNAL
     NvU32               flags;                 ///< [in] Flags to denote special cases ( Bug: 2859347 to track removal)
     // Internal use only
     RsClient           *pSrcClient;
+    RsClient           *pDstClient;
     RsResourceRef      *pSrcRef;
+    RsResourceRef      *pDstParentRef;
     API_SECURITY_INFO  *pSecInfo;              ///< [in] Security info
     RS_LOCK_INFO       *pLockInfo;             ///< [inout] Locking flags and state
 };

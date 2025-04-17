@@ -54,6 +54,13 @@ typedef struct
         NvU64                         pa;
         NvU64                         size;
     } profilerArgs;
+
+    struct
+    {
+        NvU64                         pa;
+        NvU64                         size;
+    } sysmemHeapArgs;
+
 } GSP_ARGUMENTS_CACHED;
 
 #endif // GSP_INIT_ARGS_H

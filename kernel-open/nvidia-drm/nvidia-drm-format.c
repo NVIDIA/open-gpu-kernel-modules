@@ -166,4 +166,37 @@ uint32_t *nv_drm_format_array_alloc(
     return array;
 }
 
+bool nv_drm_format_is_yuv(u32 format)
+{
+#if defined(NV_DRM_FORMAT_INFO_HAS_IS_YUV)
+    const struct drm_format_info *format_info = drm_format_info(format);
+    return (format_info != NULL) && format_info->is_yuv;
+#else
+    switch (format) {
+        case DRM_FORMAT_YUYV:
+        case DRM_FORMAT_UYVY:
+
+        case DRM_FORMAT_NV24:
+        case DRM_FORMAT_NV42:
+        case DRM_FORMAT_NV16:
+        case DRM_FORMAT_NV61:
+        case DRM_FORMAT_NV12:
+        case DRM_FORMAT_NV21:
+
+#if defined(DRM_FORMAT_P210)
+        case DRM_FORMAT_P210:
+#endif
+#if defined(DRM_FORMAT_P010)
+        case DRM_FORMAT_P010:
+#endif
+#if defined(DRM_FORMAT_P012)
+        case DRM_FORMAT_P012:
+#endif
+            return true;
+        default:
+            return false;
+    }
+#endif
+}
+
 #endif

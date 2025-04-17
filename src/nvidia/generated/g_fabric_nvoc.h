@@ -1,13 +1,15 @@
 
 #ifndef _G_FABRIC_NVOC_H_
 #define _G_FABRIC_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -108,10 +110,18 @@ void fabricMulticastWaitOnTeamCleanupCallback(void *pCbData);
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__Fabric;
+struct NVOC_METADATA__Object;
+
+
 struct Fabric {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__Fabric *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -138,6 +148,13 @@ struct Fabric {
     PORT_RWLOCK *PRIVATE_FIELD(pMulticastFabriCacheLock);
 };
 
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__Fabric {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
+};
+
 #ifndef __NVOC_CLASS_Fabric_TYPEDEF__
 #define __NVOC_CLASS_Fabric_TYPEDEF__
 typedef struct Fabric Fabric;
@@ -154,10 +171,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Fabric;
     ((pThis)->__nvoc_pbase_Fabric)
 
 #ifdef __nvoc_fabric_h_disabled
-#define __dynamicCast_Fabric(pThis) ((Fabric*)NULL)
+#define __dynamicCast_Fabric(pThis) ((Fabric*) NULL)
 #else //__nvoc_fabric_h_disabled
 #define __dynamicCast_Fabric(pThis) \
-    ((Fabric*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(Fabric)))
+    ((Fabric*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(Fabric)))
 #endif //__nvoc_fabric_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_Fabric(Fabric**, Dynamic*, NvU32, va_list);

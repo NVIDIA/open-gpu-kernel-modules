@@ -28,7 +28,7 @@
 
 #if defined(BINDATA_INCLUDE_DATA)
 //
-// FUNCTION: kgspGetBinArchiveGspRmBoot_TU102("ucode_image")
+// FUNCTION: kgspGetBinArchiveGspRmBoot_TU102("BINDATA_LABEL_UCODE_IMAGE")
 // FILE NAME: kernel/inc/gsprm/bin/g_gsprm_tu10x_riscv_image.bin
 // FILE TYPE: BINARY
 // VAR NAME: N/A
@@ -37,7 +37,7 @@
 // DATA SIZE (bytes): 4096
 // COMPRESSED SIZE (bytes): 811
 //
-static BINDATA_CONST NvU8 kgspBinArchiveGspRmBoot_TU102_ucode_image_data[] = 
+static BINDATA_CONST NvU8 kgspBinArchiveGspRmBoot_TU102_BINDATA_LABEL_UCODE_IMAGE_data[] = 
 {
     0xed, 0x53, 0x31, 0x6c, 0xd3, 0x40, 0x14, 0xfd, 0x77, 0x17, 0xfb, 0x5c, 0x11, 0xb5, 0x89, 0x1c,
     0xe4, 0x42, 0x91, 0x0a, 0x32, 0x52, 0x3b, 0x22, 0x25, 0x8d, 0x0b, 0xea, 0x10, 0x31, 0xb4, 0x8c,
@@ -94,14 +94,14 @@ static BINDATA_CONST NvU8 kgspBinArchiveGspRmBoot_TU102_ucode_image_data[] =
 #endif // defined(BINDATA_INCLUDE_DATA)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
-BINDATA_STORAGE_PVT kgspBinArchiveGspRmBoot_TU102_ucode_image_storage_pvt;
+BINDATA_STORAGE_PVT kgspBinArchiveGspRmBoot_TU102_BINDATA_LABEL_UCODE_IMAGE_storage_pvt;
 #endif // defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DEFN)
 {
     4096,                                                              // uncompressed data size (bytes)
     811,                                                               // compressed data size (bytes)
-    kgspBinArchiveGspRmBoot_TU102_ucode_image_data,                    // compressed data pointer
+    kgspBinArchiveGspRmBoot_TU102_BINDATA_LABEL_UCODE_IMAGE_data,      // compressed data pointer
     NV_TRUE,                                                           // is pData compressed?
     NV_TRUE,                                                           // contain information for file overriding?
     NV_FALSE,                                                          // is the data referenced during load? (Only valid when BINDATA_IS_MUTABLE is true)
@@ -111,7 +111,7 @@ BINDATA_STORAGE_PVT kgspBinArchiveGspRmBoot_TU102_ucode_image_storage_pvt;
 
 #if defined(BINDATA_INCLUDE_DATA)
 //
-// FUNCTION: kgspGetBinArchiveGspRmBoot_TU102("ucode_desc")
+// FUNCTION: kgspGetBinArchiveGspRmBoot_TU102("BINDATA_LABEL_UCODE_DESC")
 // FILE NAME: kernel/inc/gsprm/bin/g_gsprm_tu10x_riscv_desc.bin
 // FILE TYPE: BINARY
 // VAR NAME: N/A
@@ -120,7 +120,7 @@ BINDATA_STORAGE_PVT kgspBinArchiveGspRmBoot_TU102_ucode_image_storage_pvt;
 // DATA SIZE (bytes): 76
 // COMPRESSED SIZE (bytes): 21
 //
-static BINDATA_CONST NvU8 kgspBinArchiveGspRmBoot_TU102_ucode_desc_data[] = 
+static BINDATA_CONST NvU8 kgspBinArchiveGspRmBoot_TU102_BINDATA_LABEL_UCODE_DESC_data[] = 
 {
     0x63, 0x61, 0x80, 0x80, 0x0e, 0x16, 0x08, 0x16, 0x60, 0x20, 0x1f, 0x00, 0x00, 0xf5, 0x7a, 0xd2,
     0x3d, 0x4c, 0x00, 0x00, 0x00,
@@ -128,14 +128,14 @@ static BINDATA_CONST NvU8 kgspBinArchiveGspRmBoot_TU102_ucode_desc_data[] =
 #endif // defined(BINDATA_INCLUDE_DATA)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
-BINDATA_STORAGE_PVT kgspBinArchiveGspRmBoot_TU102_ucode_desc_storage_pvt;
+BINDATA_STORAGE_PVT kgspBinArchiveGspRmBoot_TU102_BINDATA_LABEL_UCODE_DESC_storage_pvt;
 #endif // defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DEFN)
 {
     76,                                                                // uncompressed data size (bytes)
     21,                                                                // compressed data size (bytes)
-    kgspBinArchiveGspRmBoot_TU102_ucode_desc_data,                     // compressed data pointer
+    kgspBinArchiveGspRmBoot_TU102_BINDATA_LABEL_UCODE_DESC_data,       // compressed data pointer
     NV_TRUE,                                                           // is pData compressed?
     NV_TRUE,                                                           // contain information for file overriding?
     NV_FALSE,                                                          // is the data referenced during load? (Only valid when BINDATA_IS_MUTABLE is true)
@@ -151,9 +151,9 @@ static const BINDATA_ARCHIVE __kgspGetBinArchiveGspRmBoot_TU102 =
 {
     2,  // entryNum
     {
-        // entries[] : { "name", pBinStorage }
-        { "ucode_image"       , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveGspRmBoot_TU102_ucode_image] },
-        { "ucode_desc"        , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveGspRmBoot_TU102_ucode_desc] },
+        // entries[] : { label, pBinStorage }
+        { BINDATA_LABEL_UCODE_IMAGE     , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveGspRmBoot_TU102_BINDATA_LABEL_UCODE_IMAGE] },
+        { BINDATA_LABEL_UCODE_DESC      , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveGspRmBoot_TU102_BINDATA_LABEL_UCODE_DESC] },
     }
 };
 

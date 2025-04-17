@@ -51,6 +51,7 @@ typedef enum
     NVHDMIPKT_C871_CLASS = 9, // T239
     NVHDMIPKT_C971_CLASS = 10, // NVD5.0
     NVHDMIPKT_CA71_CLASS = 11,
+    NVHDMIPKT_CB71_CLASS = 12,
     NVHDMIPKT_INVALID_CLASS   // Not to be used by client, and always the last entry here.
 } NVHDMIPKT_CLASS_ID;
 

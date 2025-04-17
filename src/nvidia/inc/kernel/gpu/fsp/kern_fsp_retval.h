@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,8 +21,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#define FSP_OK                          (0x00U)
-#define FSP_ERR_IFS_ERR_INVALID_STATE   (0x9EU)
-#define FSP_ERR_IFR_FILE_NOT_FOUND      (0x9FU)
-#define FSP_ERR_IFS_ERR_NOT_SUPPORTED   (0xA0U)
-#define FSP_ERR_IFS_ERR_INVALID_DATA    (0xA1U)
+#define FSP_OK                            (0x00U)
+#define FSP_ERR_IFS_ERR_INVALID_STATE     (0x9EU)
+#define FSP_ERR_IFR_FILE_NOT_FOUND        (0x9FU)
+#define FSP_ERR_IFS_ERR_NOT_SUPPORTED     (0xA0U)
+#define FSP_ERR_IFS_ERR_INVALID_DATA      (0xA1U)
+#define FSP_ERR_PRC_ERROR_INVALID_KNOB_ID (0x1E3U)

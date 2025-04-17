@@ -1,13 +1,15 @@
 
 #ifndef _G_CLIENT_RESOURCE_NVOC_H_
 #define _G_CLIENT_RESOURCE_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -76,15 +78,21 @@ extern "C" {
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__RmClientResource;
+struct NVOC_METADATA__RsClientResource;
+struct NVOC_METADATA__RmResourceCommon;
+struct NVOC_METADATA__Notifier;
 struct NVOC_VTABLE__RmClientResource;
 
 
 struct RmClientResource {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__RmClientResource *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__RmClientResource *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct RsClientResource __nvoc_base_RsClientResource;
@@ -176,7 +184,7 @@ struct RmClientResource {
     NV_STATUS (*__cliresCtrlCmdDiagProfileRpc__)(struct RmClientResource * /*this*/, NV0000_CTRL_DIAG_PROFILE_RPC_PARAMS *);  // exported (id=0x488)
     NV_STATUS (*__cliresCtrlCmdDiagDumpRpc__)(struct RmClientResource * /*this*/, NV0000_CTRL_DIAG_DUMP_RPC_PARAMS *);  // exported (id=0x489)
     NV_STATUS (*__cliresCtrlCmdEventSetNotification__)(struct RmClientResource * /*this*/, NV0000_CTRL_EVENT_SET_NOTIFICATION_PARAMS *);  // exported (id=0x501)
-    NV_STATUS (*__cliresCtrlCmdEventGetSystemEventStatus__)(struct RmClientResource * /*this*/, NV0000_CTRL_GET_SYSTEM_EVENT_STATUS_PARAMS *);  // exported (id=0x502)
+    NV_STATUS (*__cliresCtrlCmdEventGetSystemEventData__)(struct RmClientResource * /*this*/, NV0000_CTRL_GET_SYSTEM_EVENT_DATA_PARAMS *);  // exported (id=0x502)
     NV_STATUS (*__cliresCtrlCmdOsUnixExportObjectToFd__)(struct RmClientResource * /*this*/, NV0000_CTRL_OS_UNIX_EXPORT_OBJECT_TO_FD_PARAMS *);  // exported (id=0x3d05)
     NV_STATUS (*__cliresCtrlCmdOsUnixImportObjectFromFd__)(struct RmClientResource * /*this*/, NV0000_CTRL_OS_UNIX_IMPORT_OBJECT_FROM_FD_PARAMS *);  // exported (id=0x3d06)
     NV_STATUS (*__cliresCtrlCmdOsUnixGetExportObjectInfo__)(struct RmClientResource * /*this*/, NV0000_CTRL_OS_UNIX_GET_EXPORT_OBJECT_INFO_PARAMS *);  // exported (id=0x3d08)
@@ -198,7 +206,7 @@ struct RmClientResource {
     NV_STATUS (*__cliresCtrlCmdVgpuGetVgpuVersion__)(struct RmClientResource * /*this*/, NV0000_CTRL_VGPU_GET_VGPU_VERSION_PARAMS *);  // exported (id=0x137)
     NV_STATUS (*__cliresCtrlCmdVgpuSetVgpuVersion__)(struct RmClientResource * /*this*/, NV0000_CTRL_VGPU_SET_VGPU_VERSION_PARAMS *);  // exported (id=0x138)
     NV_STATUS (*__cliresCtrlCmdVgpuVfioNotifyRMStatus__)(struct RmClientResource * /*this*/, NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS *);  // exported (id=0xc05)
-    NV_STATUS (*__cliresCtrlCmdSystemNVPCFGetPowerModeInfo__)(struct RmClientResource * /*this*/, NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *);  // exported (id=0x13b)
+    NV_STATUS (*__cliresCtrlCmdSystemNVPCFGetPowerModeInfo__)(struct RmClientResource * /*this*/, NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *);  // exported (id=0x13b)
     NV_STATUS (*__cliresCtrlCmdSystemSyncExternalFabricMgmt__)(struct RmClientResource * /*this*/, NV0000_CTRL_CMD_SYSTEM_SYNC_EXTERNAL_FABRIC_MGMT_PARAMS *);  // exported (id=0x13c)
     NV_STATUS (*__cliresCtrlCmdSystemPfmreqhndlrCtrl__)(struct RmClientResource * /*this*/, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_CTRL_PARAMS *);  // exported (id=0x142)
     NV_STATUS (*__cliresCtrlCmdSystemPfmreqhndlrGetFrmData__)(struct RmClientResource * /*this*/, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_GET_FRM_DATA_PARAMS *);  // exported (id=0x144)
@@ -211,11 +219,8 @@ struct RmClientResource {
 };
 
 
-// Metadata including vtable with 23 function pointers plus superclass metadata
+// Vtable with 23 per-class function pointers
 struct NVOC_VTABLE__RmClientResource {
-    const struct NVOC_VTABLE__RsClientResource RsClientResource;    // (clientres) 18 function pointers
-    const struct NVOC_VTABLE__Notifier Notifier;    // (notify) 5 function pointers
-
     NvBool (*__cliresAccessCallback__)(struct RmClientResource * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual override (res) base (clientres)
     NvBool (*__cliresShareCallback__)(struct RmClientResource * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual override (res) base (clientres)
     NV_STATUS (*__cliresControl_Prologue__)(struct RmClientResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (clientres)
@@ -241,6 +246,15 @@ struct NVOC_VTABLE__RmClientResource {
     NV_STATUS (*__cliresGetOrAllocNotifShare__)(struct RmClientResource * /*this*/, NvHandle, NvHandle, struct NotifShare **);  // virtual inherited (notify) base (notify)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__RmClientResource {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__RsClientResource metadata__RsClientResource;
+    const struct NVOC_METADATA__RmResourceCommon metadata__RmResourceCommon;
+    const struct NVOC_METADATA__Notifier metadata__Notifier;
+    const struct NVOC_VTABLE__RmClientResource vtable;
+};
+
 #ifndef __NVOC_CLASS_RmClientResource_TYPEDEF__
 #define __NVOC_CLASS_RmClientResource_TYPEDEF__
 typedef struct RmClientResource RmClientResource;
@@ -257,27 +271,27 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmClientResource;
     ((pThis)->__nvoc_pbase_RmClientResource)
 
 #ifdef __nvoc_client_resource_h_disabled
-#define __dynamicCast_RmClientResource(pThis) ((RmClientResource*)NULL)
+#define __dynamicCast_RmClientResource(pThis) ((RmClientResource*) NULL)
 #else //__nvoc_client_resource_h_disabled
 #define __dynamicCast_RmClientResource(pThis) \
-    ((RmClientResource*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(RmClientResource)))
+    ((RmClientResource*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(RmClientResource)))
 #endif //__nvoc_client_resource_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_RmClientResource(RmClientResource**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_RmClientResource(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_RmClientResource((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
 // Wrapper macros
-#define cliresAccessCallback_FNPTR(pRmCliRes) pRmCliRes->__nvoc_vtable->__cliresAccessCallback__
+#define cliresAccessCallback_FNPTR(pRmCliRes) pRmCliRes->__nvoc_metadata_ptr->vtable.__cliresAccessCallback__
 #define cliresAccessCallback(pRmCliRes, pInvokingClient, pAllocParams, accessRight) cliresAccessCallback_DISPATCH(pRmCliRes, pInvokingClient, pAllocParams, accessRight)
-#define cliresShareCallback_FNPTR(pRmCliRes) pRmCliRes->__nvoc_vtable->__cliresShareCallback__
+#define cliresShareCallback_FNPTR(pRmCliRes) pRmCliRes->__nvoc_metadata_ptr->vtable.__cliresShareCallback__
 #define cliresShareCallback(pRmCliRes, pInvokingClient, pParentRef, pSharePolicy) cliresShareCallback_DISPATCH(pRmCliRes, pInvokingClient, pParentRef, pSharePolicy)
-#define cliresControl_Prologue_FNPTR(pRmCliRes) pRmCliRes->__nvoc_vtable->__cliresControl_Prologue__
+#define cliresControl_Prologue_FNPTR(pRmCliRes) pRmCliRes->__nvoc_metadata_ptr->vtable.__cliresControl_Prologue__
 #define cliresControl_Prologue(pRmCliRes, pCallContext, pParams) cliresControl_Prologue_DISPATCH(pRmCliRes, pCallContext, pParams)
-#define cliresControl_Epilogue_FNPTR(pRmCliRes) pRmCliRes->__nvoc_vtable->__cliresControl_Epilogue__
+#define cliresControl_Epilogue_FNPTR(pRmCliRes) pRmCliRes->__nvoc_metadata_ptr->vtable.__cliresControl_Epilogue__
 #define cliresControl_Epilogue(pRmCliRes, pCallContext, pParams) cliresControl_Epilogue_DISPATCH(pRmCliRes, pCallContext, pParams)
 #define cliresCtrlCmdSystemGetCpuInfo_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdSystemGetCpuInfo__
 #define cliresCtrlCmdSystemGetCpuInfo(pRmCliRes, pCpuInfoParams) cliresCtrlCmdSystemGetCpuInfo_DISPATCH(pRmCliRes, pCpuInfoParams)
@@ -429,8 +443,8 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresCtrlCmdDiagDumpRpc(pRmCliRes, pRpcDumpParams) cliresCtrlCmdDiagDumpRpc_DISPATCH(pRmCliRes, pRpcDumpParams)
 #define cliresCtrlCmdEventSetNotification_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdEventSetNotification__
 #define cliresCtrlCmdEventSetNotification(pRmCliRes, pEventSetNotificationParams) cliresCtrlCmdEventSetNotification_DISPATCH(pRmCliRes, pEventSetNotificationParams)
-#define cliresCtrlCmdEventGetSystemEventStatus_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdEventGetSystemEventStatus__
-#define cliresCtrlCmdEventGetSystemEventStatus(pRmCliRes, pSystemEventStatusParams) cliresCtrlCmdEventGetSystemEventStatus_DISPATCH(pRmCliRes, pSystemEventStatusParams)
+#define cliresCtrlCmdEventGetSystemEventData_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdEventGetSystemEventData__
+#define cliresCtrlCmdEventGetSystemEventData(pRmCliRes, pSystemEventDataParams) cliresCtrlCmdEventGetSystemEventData_DISPATCH(pRmCliRes, pSystemEventDataParams)
 #define cliresCtrlCmdOsUnixExportObjectToFd_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdOsUnixExportObjectToFd__
 #define cliresCtrlCmdOsUnixExportObjectToFd(pRmCliRes, pParams) cliresCtrlCmdOsUnixExportObjectToFd_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdOsUnixImportObjectFromFd_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdOsUnixImportObjectFromFd__
@@ -493,60 +507,60 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresCtrlCmdSystemPfmreqhndlrGetPerfSensorCounters(pRmCliRes, pParams) cliresCtrlCmdSystemPfmreqhndlrGetPerfSensorCounters_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemPfmreqhndlrGetExtendedPerfSensorCounters_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdSystemPfmreqhndlrGetExtendedPerfSensorCounters__
 #define cliresCtrlCmdSystemPfmreqhndlrGetExtendedPerfSensorCounters(pRmCliRes, pParams) cliresCtrlCmdSystemPfmreqhndlrGetExtendedPerfSensorCounters_DISPATCH(pRmCliRes, pParams)
-#define cliresCanCopy_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define cliresCanCopy_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define cliresCanCopy(pResource) cliresCanCopy_DISPATCH(pResource)
-#define cliresIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define cliresIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define cliresIsDuplicate(pResource, hMemory, pDuplicate) cliresIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define cliresPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define cliresPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define cliresPreDestruct(pResource) cliresPreDestruct_DISPATCH(pResource)
-#define cliresControl_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_vtable->__resControl__
+#define cliresControl_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define cliresControl(pResource, pCallContext, pParams) cliresControl_DISPATCH(pResource, pCallContext, pParams)
-#define cliresControlFilter_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define cliresControlFilter_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define cliresControlFilter(pResource, pCallContext, pParams) cliresControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define cliresControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlSerialization_Prologue__
+#define cliresControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define cliresControlSerialization_Prologue(pResource, pCallContext, pParams) cliresControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define cliresControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlSerialization_Epilogue__
+#define cliresControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define cliresControlSerialization_Epilogue(pResource, pCallContext, pParams) cliresControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define cliresMap_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_vtable->__resMap__
+#define cliresMap_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define cliresMap(pResource, pCallContext, pParams, pCpuMapping) cliresMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
-#define cliresUnmap_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmap__
+#define cliresUnmap_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define cliresUnmap(pResource, pCallContext, pCpuMapping) cliresUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
-#define cliresIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define cliresIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define cliresIsPartialUnmapSupported(pResource) cliresIsPartialUnmapSupported_DISPATCH(pResource)
-#define cliresMapTo_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define cliresMapTo_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define cliresMapTo(pResource, pParams) cliresMapTo_DISPATCH(pResource, pParams)
-#define cliresUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define cliresUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define cliresUnmapFrom(pResource, pParams) cliresUnmapFrom_DISPATCH(pResource, pParams)
-#define cliresGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define cliresGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define cliresGetRefCount(pResource) cliresGetRefCount_DISPATCH(pResource)
-#define cliresAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define cliresAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define cliresAddAdditionalDependants(pClient, pResource, pReference) cliresAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define cliresGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationListPtr__
+#define cliresGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationListPtr__
 #define cliresGetNotificationListPtr(pNotifier) cliresGetNotificationListPtr_DISPATCH(pNotifier)
-#define cliresGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationShare__
+#define cliresGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationShare__
 #define cliresGetNotificationShare(pNotifier) cliresGetNotificationShare_DISPATCH(pNotifier)
-#define cliresSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifySetNotificationShare__
+#define cliresSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifySetNotificationShare__
 #define cliresSetNotificationShare(pNotifier, pNotifShare) cliresSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define cliresUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyUnregisterEvent__
+#define cliresUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyUnregisterEvent__
 #define cliresUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) cliresUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define cliresGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetOrAllocNotifShare__
+#define cliresGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetOrAllocNotifShare__
 #define cliresGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) cliresGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
 static inline NvBool cliresAccessCallback_DISPATCH(struct RmClientResource *pRmCliRes, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pRmCliRes->__nvoc_vtable->__cliresAccessCallback__(pRmCliRes, pInvokingClient, pAllocParams, accessRight);
+    return pRmCliRes->__nvoc_metadata_ptr->vtable.__cliresAccessCallback__(pRmCliRes, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool cliresShareCallback_DISPATCH(struct RmClientResource *pRmCliRes, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pRmCliRes->__nvoc_vtable->__cliresShareCallback__(pRmCliRes, pInvokingClient, pParentRef, pSharePolicy);
+    return pRmCliRes->__nvoc_metadata_ptr->vtable.__cliresShareCallback__(pRmCliRes, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS cliresControl_Prologue_DISPATCH(struct RmClientResource *pRmCliRes, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pRmCliRes->__nvoc_vtable->__cliresControl_Prologue__(pRmCliRes, pCallContext, pParams);
+    return pRmCliRes->__nvoc_metadata_ptr->vtable.__cliresControl_Prologue__(pRmCliRes, pCallContext, pParams);
 }
 
 static inline void cliresControl_Epilogue_DISPATCH(struct RmClientResource *pRmCliRes, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pRmCliRes->__nvoc_vtable->__cliresControl_Epilogue__(pRmCliRes, pCallContext, pParams);
+    pRmCliRes->__nvoc_metadata_ptr->vtable.__cliresControl_Epilogue__(pRmCliRes, pCallContext, pParams);
 }
 
 static inline NV_STATUS cliresCtrlCmdSystemGetCpuInfo_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GET_CPU_INFO_PARAMS *pCpuInfoParams) {
@@ -849,8 +863,8 @@ static inline NV_STATUS cliresCtrlCmdEventSetNotification_DISPATCH(struct RmClie
     return pRmCliRes->__cliresCtrlCmdEventSetNotification__(pRmCliRes, pEventSetNotificationParams);
 }
 
-static inline NV_STATUS cliresCtrlCmdEventGetSystemEventStatus_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GET_SYSTEM_EVENT_STATUS_PARAMS *pSystemEventStatusParams) {
-    return pRmCliRes->__cliresCtrlCmdEventGetSystemEventStatus__(pRmCliRes, pSystemEventStatusParams);
+static inline NV_STATUS cliresCtrlCmdEventGetSystemEventData_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GET_SYSTEM_EVENT_DATA_PARAMS *pSystemEventDataParams) {
+    return pRmCliRes->__cliresCtrlCmdEventGetSystemEventData__(pRmCliRes, pSystemEventDataParams);
 }
 
 static inline NV_STATUS cliresCtrlCmdOsUnixExportObjectToFd_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_OS_UNIX_EXPORT_OBJECT_TO_FD_PARAMS *pParams) {
@@ -937,7 +951,7 @@ static inline NV_STATUS cliresCtrlCmdVgpuVfioNotifyRMStatus_DISPATCH(struct RmCl
     return pRmCliRes->__cliresCtrlCmdVgpuVfioNotifyRMStatus__(pRmCliRes, pVgpuDeleteParams);
 }
 
-static inline NV_STATUS cliresCtrlCmdSystemNVPCFGetPowerModeInfo_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams) {
+static inline NV_STATUS cliresCtrlCmdSystemNVPCFGetPowerModeInfo_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams) {
     return pRmCliRes->__cliresCtrlCmdSystemNVPCFGetPowerModeInfo__(pRmCliRes, pParams);
 }
 
@@ -978,79 +992,79 @@ static inline NV_STATUS cliresCtrlCmdSystemPfmreqhndlrGetExtendedPerfSensorCount
 }
 
 static inline NvBool cliresCanCopy_DISPATCH(struct RmClientResource *pResource) {
-    return pResource->__nvoc_vtable->__cliresCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__cliresCanCopy__(pResource);
 }
 
 static inline NV_STATUS cliresIsDuplicate_DISPATCH(struct RmClientResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__cliresIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__cliresIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void cliresPreDestruct_DISPATCH(struct RmClientResource *pResource) {
-    pResource->__nvoc_vtable->__cliresPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__cliresPreDestruct__(pResource);
 }
 
 static inline NV_STATUS cliresControl_DISPATCH(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__cliresControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__cliresControl__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS cliresControlFilter_DISPATCH(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__cliresControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__cliresControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS cliresControlSerialization_Prologue_DISPATCH(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__cliresControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__cliresControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void cliresControlSerialization_Epilogue_DISPATCH(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__cliresControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__cliresControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS cliresMap_DISPATCH(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__cliresMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__cliresMap__(pResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS cliresUnmap_DISPATCH(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__cliresUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__cliresUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool cliresIsPartialUnmapSupported_DISPATCH(struct RmClientResource *pResource) {
-    return pResource->__nvoc_vtable->__cliresIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__cliresIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS cliresMapTo_DISPATCH(struct RmClientResource *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__cliresMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__cliresMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS cliresUnmapFrom_DISPATCH(struct RmClientResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__cliresUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__cliresUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 cliresGetRefCount_DISPATCH(struct RmClientResource *pResource) {
-    return pResource->__nvoc_vtable->__cliresGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__cliresGetRefCount__(pResource);
 }
 
 static inline void cliresAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct RmClientResource *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__cliresAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__cliresAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 static inline PEVENTNOTIFICATION * cliresGetNotificationListPtr_DISPATCH(struct RmClientResource *pNotifier) {
-    return pNotifier->__nvoc_vtable->__cliresGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__cliresGetNotificationListPtr__(pNotifier);
 }
 
 static inline struct NotifShare * cliresGetNotificationShare_DISPATCH(struct RmClientResource *pNotifier) {
-    return pNotifier->__nvoc_vtable->__cliresGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__cliresGetNotificationShare__(pNotifier);
 }
 
 static inline void cliresSetNotificationShare_DISPATCH(struct RmClientResource *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__nvoc_vtable->__cliresSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_metadata_ptr->vtable.__cliresSetNotificationShare__(pNotifier, pNotifShare);
 }
 
 static inline NV_STATUS cliresUnregisterEvent_DISPATCH(struct RmClientResource *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__nvoc_vtable->__cliresUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__cliresUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS cliresGetOrAllocNotifShare_DISPATCH(struct RmClientResource *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__nvoc_vtable->__cliresGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__cliresGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 NvBool cliresAccessCallback_IMPL(struct RmClientResource *pRmCliRes, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);
@@ -1211,7 +1225,7 @@ NV_STATUS cliresCtrlCmdDiagDumpRpc_IMPL(struct RmClientResource *pRmCliRes, NV00
 
 NV_STATUS cliresCtrlCmdEventSetNotification_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pEventSetNotificationParams);
 
-NV_STATUS cliresCtrlCmdEventGetSystemEventStatus_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GET_SYSTEM_EVENT_STATUS_PARAMS *pSystemEventStatusParams);
+NV_STATUS cliresCtrlCmdEventGetSystemEventData_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GET_SYSTEM_EVENT_DATA_PARAMS *pSystemEventDataParams);
 
 NV_STATUS cliresCtrlCmdOsUnixExportObjectToFd_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_OS_UNIX_EXPORT_OBJECT_TO_FD_PARAMS *pParams);
 
@@ -1255,7 +1269,7 @@ NV_STATUS cliresCtrlCmdVgpuSetVgpuVersion_IMPL(struct RmClientResource *pRmCliRe
 
 NV_STATUS cliresCtrlCmdVgpuVfioNotifyRMStatus_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS *pVgpuDeleteParams);
 
-NV_STATUS cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams);
+NV_STATUS cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams);
 
 NV_STATUS cliresCtrlCmdSystemSyncExternalFabricMgmt_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_CMD_SYSTEM_SYNC_EXTERNAL_FABRIC_MGMT_PARAMS *pExtFabricMgmtParams);
 

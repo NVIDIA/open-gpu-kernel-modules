@@ -236,18 +236,14 @@ static void EnableVRR(NVDpyEvoPtr pDpyEvo)
 {
     NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
     DisplayPort::Device *device = pDpyEvo->dp.pDpLibDevice->device;
-    const NvBool dispSupportsVrr = nvDispSupportsVrr(pDispEvo);
+    const NvBool conceal = nvkms_conceal_vrr_caps();
+    const NvBool dispSupportsVrr = nvDispSupportsVrr(pDispEvo) && !conceal;
 
     // If the dpy is a laptop internal panel and an SBIOS cookie indicates that
     // it supports VRR, override its enable flag and timeout.  Note that in the
     // internal panel scenario, the EDID may not claim VRR support, so honor
     // hasPlatformCookie even if DpyHasVRREDID() reports FALSE.
-    if (pDpyEvo->internal && pDispEvo->vrr.hasPlatformCookie) {
-
-        if (pDispEvo->pDevEvo->hal->caps.supportsDisplayRate) {
-            pDpyEvo->vrr.needsSwFramePacing = TRUE;
-        }
-
+    if (!conceal && (pDpyEvo->internal && pDispEvo->vrr.hasPlatformCookie)) {
         pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_GSYNC;
         return;
     }
@@ -290,10 +286,6 @@ static void EnableVRR(NVDpyEvoPtr pDpyEvo)
             }
         } else {
             pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_NONE;
-        }
-
-        if (pDispEvo->pDevEvo->hal->caps.supportsDisplayRate) {
-            pDpyEvo->vrr.needsSwFramePacing = dispSupportsVrr;
         }
     } else {
         // Assign pDpyEvo->vrr.type independent of DpyHasVRREDID(), so that if

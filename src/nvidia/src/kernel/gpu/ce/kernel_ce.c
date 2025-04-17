@@ -83,12 +83,9 @@ NV_STATUS kceConstructEngine_IMPL(OBJGPU *pGpu, KernelCE *pKCe, ENGDESCRIPTOR en
 
 NvBool kceIsPresent_IMPL(OBJGPU *pGpu, KernelCE *pKCe)
 {
-    // Use bus/fifo to detemine if LCE(i) is present.
-    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvBool present = NV_FALSE;
 
-    NV_ASSERT_OR_RETURN(pKernelBus != NULL, NV_FALSE);
-    present = kbusCheckEngine_HAL(pGpu, pKernelBus, ENG_CE(pKCe->publicID));
+    present = gpuCheckEngine_HAL(pGpu, ENG_CE(pKCe->publicID));
 
     NV_PRINTF(LEVEL_INFO, "KCE %d / %d: present=%d\n", pKCe->publicID,
         pGpu->numCEs > 0 ? pGpu->numCEs - 1 : pGpu->numCEs, present);
@@ -120,8 +117,7 @@ spdmSendTestCommand
     NV_STATUS           status   = NV_OK;
     RM_API              *pRmApi  = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     RMTIMEOUT           timeout;
-    ConfidentialCompute *pCC   = GPU_GET_CONF_COMPUTE(pGpu);
-    Spdm                *pSpdm = pCC->pSpdm;
+    Spdm                *pSpdm = GPU_GET_SPDM(pGpu);
 
     NVC56F_CTRL_CMD_GET_KMB_PARAMS             getKmbParams = {0};
     NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS params = {0};
@@ -152,7 +148,7 @@ spdmSendTestCommand
     params.cmd.cmdType          = RM_GSP_SPDM_CMD_ID_FIPS_SELFTEST;
     params.cmd.ccFipsTest.isEnc = isEnc;
     gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
-    status = spdmCtrlSpdmPartition(pGpu, &params);
+    status = spdmSendCtrlCall(pGpu, pSpdm, &params);
 
     NV_ASSERT_OK_OR_RETURN(status);
 
@@ -161,7 +157,8 @@ spdmSendTestCommand
 
     NV_ASSERT_OK_OR_RETURN(status);
 
-    if (isEnc) {
+    if (isEnc)
+    {
         portMemCopy(encData, encDataSize, params.cmd.ccFipsTest.text, encDataSize);
         portMemCopy(authTag, authTagSize, params.cmd.ccFipsTest.authTag, authTagSize);
     }
@@ -757,6 +754,8 @@ NV_STATUS kceTopLevelPceLceMappingsUpdate_IMPL(OBJGPU *pGpu, KernelCE *pKCe)
         }
     }
 
+    cePauseCeUtilsScheduling(pGpu);
+
     //
     // Pass these values to the ceUpdatePceLceMappings_HAL.
     //
@@ -817,6 +816,8 @@ NV_STATUS kceTopLevelPceLceMappingsUpdate_IMPL(OBJGPU *pGpu, KernelCE *pKCe)
     // GSP/monolithic RM. For CPU-RM, have to call this function explicitly.
     //
     status = kceUpdateClassDB_HAL(pGpu, pKCe);
+
+    ceResumeCeUtilsScheduling(pGpu);
 
     return status;
 }

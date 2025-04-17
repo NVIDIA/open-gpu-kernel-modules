@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -862,6 +862,62 @@ bitVectorFromRaw_IMPL
     return NV_OK;
 }
 
+
+/**
+ * @brief Gets slice for a range within pBitVector
+ *
+ * @note range length must be <=64, so the output slice can fit in a NvU64
+ */
+NV_STATUS
+bitVectorGetSlice_IMPL
+(
+    NV_BITVECTOR *pBitVector,
+    NvU16 bitVectorLast,
+    NV_RANGE range,
+    NvU64 *slice
+)
+{
+    NvU64 *qword;
+    NvU64 temp;
+    NvU64 offsetLo = NV_BITVECTOR_OFFSET(range.lo);
+    NvU64 offsetHi = NV_BITVECTOR_OFFSET(range.hi);
+    NV_STATUS status = NV_OK;
+
+    NV_ASSERT_OR_RETURN(pBitVector != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(rangeLength(range) <= 8 * sizeof(NvU64), NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(range.hi != NV_U64_MAX, NV_ERR_INVALID_ARGUMENT); //detect underflow
+    NV_ASSERT_OR_RETURN(rangeContains(rangeMake(0, bitVectorLast - 1), range),
+                        NV_ERR_INVALID_ARGUMENT);
+
+    qword = (NvU64 *)&pBitVector->qword;
+
+    if(NV_BITVECTOR_IDX(range.lo) == NV_BITVECTOR_IDX(range.hi))
+    {
+        // range fits within a single qword index
+        temp   = qword[NV_BITVECTOR_IDX(range.lo)];
+        temp  &= DRF_SHIFTMASK64(offsetHi : offsetLo);
+        temp >>= offsetLo;
+        *slice = temp;
+    }
+    else
+    {
+        // range spreads across 2 qword indexes
+        NV_ASSERT_OR_RETURN(NV_BITVECTOR_IDX(range.lo) == NV_BITVECTOR_IDX(range.hi) - 1,
+                            NV_ERR_INVALID_ARGUMENT);
+
+        temp   = qword[NV_BITVECTOR_IDX(range.lo)];
+        temp  &= DRF_SHIFTMASK64(63 : offsetLo);
+        temp >>= offsetLo;
+        *slice = temp;
+
+        temp   = qword[NV_BITVECTOR_IDX(range.hi)];
+        temp  &= DRF_SHIFTMASK64(offsetHi : 0);
+        temp <<= 64 - offsetLo;
+        *slice |= temp;
+    }
+
+    return status;
+}
 
 /**
  * @brief Causes the least significant N raised bits in pBitVectorSrc to be

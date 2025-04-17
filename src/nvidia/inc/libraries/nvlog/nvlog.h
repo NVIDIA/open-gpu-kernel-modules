@@ -42,13 +42,25 @@ extern "C" {
 // Include printf definitions
 #include "nvlog/nvlog_printf.h"
 
-extern NVLOG_LOGGER             NvLogLogger;
-extern NVLOG_PRINT_LOGGER       NvLogPrintLogger;
+#if defined(NVRM)
+#include "rmconfig.h"
+
+#define NVLOG_MODULE_ENABLED RMCFG_MODULE_NVLOG
+
+#else
+
+#define NVLOG_MODULE_ENABLED 1
+
+#endif
 
 /********************************/
 /*****  Exported functions  *****/
 /********************************/
 
+#if NVLOG_MODULE_ENABLED
+
+extern NVLOG_LOGGER             NvLogLogger;
+extern NVLOG_PRINT_LOGGER       NvLogPrintLogger;
 
 /**
  * @brief Global NvLog initialization function
@@ -369,6 +381,17 @@ void nvlogDeregisterFlushCb(void (*pCb)(void*), void *pData);
 // All callback list accesses are synchronised.
 //
 void nvlogRunFlushCbs(void);
+
+#else
+
+#define NVLOG_INIT(pData)
+#define NVLOG_UPDATE()
+#define NVLOG_DESTROY()
+
+#define nvlogDumpToKernelLogIfEnabled()
+#define nvlogDumpToKernelLog(bDumpUnchangedBuffersOnlyOnce)
+
+#endif
 
 #ifdef __cplusplus
 } // extern "C"

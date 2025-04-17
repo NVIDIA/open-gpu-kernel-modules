@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -108,6 +108,12 @@ kfspInitRegistryOverrides
 {
     NvU32 data = 0;
 
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_DEVINIT_BY_SECURE_BOOT, &data) == NV_OK && data == NV_REG_STR_RM_DEVINIT_BY_SECURE_BOOT_DISABLE)
+    {
+        NV_PRINTF(LEVEL_WARNING, "RM to boot GSP due to regkey override.\n");
+        pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_RM_BOOT_GSP, NV_TRUE);
+    }
+
     if (((osReadRegistryDword(pGpu, NV_REG_STR_RM_DISABLE_FSP, &data) == NV_OK) &&
         (data == NV_REG_STR_RM_DISABLE_FSP_YES) && IS_EMULATION(pGpu)) ||
         IS_FMODEL(pGpu) || IS_RTLSIM(pGpu))
@@ -154,6 +160,7 @@ kfspInitRegistryOverrides
                                "during boot is disabled using the regkey.\n");
         pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_FSP_FUSE_ERROR_CHECK_ENABLED, NV_FALSE);
     }
+
 }
 
 void

@@ -1,13 +1,15 @@
 
 #ifndef _G_KERNEL_CCU_API_NVOC_H_
 #define _G_KERNEL_CCU_API_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,15 +64,19 @@ extern "C" {
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__KernelCcuApi;
+struct NVOC_METADATA__GpuResource;
 struct NVOC_VTABLE__KernelCcuApi;
 
 
 struct KernelCcuApi {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__KernelCcuApi *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__KernelCcuApi *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct GpuResource __nvoc_base_GpuResource;
@@ -91,10 +97,8 @@ struct KernelCcuApi {
 };
 
 
-// Metadata including vtable with 25 function pointers plus superclass metadata
+// Vtable with 25 per-class function pointers
 struct NVOC_VTABLE__KernelCcuApi {
-    const struct NVOC_VTABLE__GpuResource GpuResource;    // (gpures) 25 function pointers
-
     NV_STATUS (*__kccuapiMap__)(struct KernelCcuApi * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual override (res) base (gpures)
     NV_STATUS (*__kccuapiUnmap__)(struct KernelCcuApi * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual override (res) base (gpures)
     NV_STATUS (*__kccuapiGetMapAddrSpace__)(struct KernelCcuApi * /*this*/, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual override (gpures) base (gpures)
@@ -122,6 +126,13 @@ struct NVOC_VTABLE__KernelCcuApi {
     void (*__kccuapiAddAdditionalDependants__)(struct RsClient *, struct KernelCcuApi * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__KernelCcuApi {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuResource metadata__GpuResource;
+    const struct NVOC_VTABLE__KernelCcuApi vtable;
+};
+
 #ifndef __NVOC_CLASS_KernelCcuApi_TYPEDEF__
 #define __NVOC_CLASS_KernelCcuApi_TYPEDEF__
 typedef struct KernelCcuApi KernelCcuApi;
@@ -138,27 +149,27 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCcuApi;
     ((pThis)->__nvoc_pbase_KernelCcuApi)
 
 #ifdef __nvoc_kernel_ccu_api_h_disabled
-#define __dynamicCast_KernelCcuApi(pThis) ((KernelCcuApi*)NULL)
+#define __dynamicCast_KernelCcuApi(pThis) ((KernelCcuApi*) NULL)
 #else //__nvoc_kernel_ccu_api_h_disabled
 #define __dynamicCast_KernelCcuApi(pThis) \
-    ((KernelCcuApi*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(KernelCcuApi)))
+    ((KernelCcuApi*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(KernelCcuApi)))
 #endif //__nvoc_kernel_ccu_api_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_KernelCcuApi(KernelCcuApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_KernelCcuApi(KernelCcuApi**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_KernelCcuApi(KernelCcuApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_KernelCcuApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_KernelCcuApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
 // Wrapper macros
-#define kccuapiMap_FNPTR(pKernelCcuApi) pKernelCcuApi->__nvoc_vtable->__kccuapiMap__
+#define kccuapiMap_FNPTR(pKernelCcuApi) pKernelCcuApi->__nvoc_metadata_ptr->vtable.__kccuapiMap__
 #define kccuapiMap(pKernelCcuApi, pCallContext, pParams, pCpuMapping) kccuapiMap_DISPATCH(pKernelCcuApi, pCallContext, pParams, pCpuMapping)
-#define kccuapiUnmap_FNPTR(pKernelCcuApi) pKernelCcuApi->__nvoc_vtable->__kccuapiUnmap__
+#define kccuapiUnmap_FNPTR(pKernelCcuApi) pKernelCcuApi->__nvoc_metadata_ptr->vtable.__kccuapiUnmap__
 #define kccuapiUnmap(pKernelCcuApi, pCallContext, pCpuMapping) kccuapiUnmap_DISPATCH(pKernelCcuApi, pCallContext, pCpuMapping)
-#define kccuapiGetMapAddrSpace_FNPTR(pKernelCcuApi) pKernelCcuApi->__nvoc_vtable->__kccuapiGetMapAddrSpace__
+#define kccuapiGetMapAddrSpace_FNPTR(pKernelCcuApi) pKernelCcuApi->__nvoc_metadata_ptr->vtable.__kccuapiGetMapAddrSpace__
 #define kccuapiGetMapAddrSpace(pKernelCcuApi, pCallContext, mapFlags, pAddrSpace) kccuapiGetMapAddrSpace_DISPATCH(pKernelCcuApi, pCallContext, mapFlags, pAddrSpace)
-#define kccuapiGetMemoryMappingDescriptor_FNPTR(pKernelCcuApi) pKernelCcuApi->__nvoc_vtable->__kccuapiGetMemoryMappingDescriptor__
+#define kccuapiGetMemoryMappingDescriptor_FNPTR(pKernelCcuApi) pKernelCcuApi->__nvoc_metadata_ptr->vtable.__kccuapiGetMemoryMappingDescriptor__
 #define kccuapiGetMemoryMappingDescriptor(pKernelCcuApi, ppMemDesc) kccuapiGetMemoryMappingDescriptor_DISPATCH(pKernelCcuApi, ppMemDesc)
 #define kccuapiCtrlCmdSubscribe_FNPTR(pKernelCcuApi) pKernelCcuApi->__kccuapiCtrlCmdSubscribe__
 #define kccuapiCtrlCmdSubscribe(pKernelCcuApi, pParams) kccuapiCtrlCmdSubscribe_DISPATCH(pKernelCcuApi, pParams)
@@ -168,64 +179,64 @@ NV_STATUS __nvoc_objCreate_KernelCcuApi(KernelCcuApi**, Dynamic*, NvU32, struct 
 #define kccuapiCtrlCmdSetStreamState(pKernelCcuApi, pParams) kccuapiCtrlCmdSetStreamState_DISPATCH(pKernelCcuApi, pParams)
 #define kccuapiCtrlCmdGetStreamState_FNPTR(pKernelCcuApi) pKernelCcuApi->__kccuapiCtrlCmdGetStreamState__
 #define kccuapiCtrlCmdGetStreamState(pKernelCcuApi, pParams) kccuapiCtrlCmdGetStreamState_DISPATCH(pKernelCcuApi, pParams)
-#define kccuapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresControl__
+#define kccuapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define kccuapiControl(pGpuResource, pCallContext, pParams) kccuapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define kccuapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresShareCallback__
+#define kccuapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
 #define kccuapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) kccuapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define kccuapiGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
+#define kccuapiGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define kccuapiGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) kccuapiGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define kccuapiInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresInternalControlForward__
+#define kccuapiInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__
 #define kccuapiInternalControlForward(pGpuResource, command, pParams, size) kccuapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define kccuapiGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetInternalObjectHandle__
+#define kccuapiGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define kccuapiGetInternalObjectHandle(pGpuResource) kccuapiGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define kccuapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define kccuapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define kccuapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) kccuapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define kccuapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
+#define kccuapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define kccuapiGetMemInterMapParams(pRmResource, pParams) kccuapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define kccuapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
+#define kccuapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define kccuapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) kccuapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define kccuapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define kccuapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define kccuapiControlSerialization_Prologue(pResource, pCallContext, pParams) kccuapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define kccuapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define kccuapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define kccuapiControlSerialization_Epilogue(pResource, pCallContext, pParams) kccuapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define kccuapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
+#define kccuapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
 #define kccuapiControl_Prologue(pResource, pCallContext, pParams) kccuapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define kccuapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
+#define kccuapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
 #define kccuapiControl_Epilogue(pResource, pCallContext, pParams) kccuapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define kccuapiCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define kccuapiCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define kccuapiCanCopy(pResource) kccuapiCanCopy_DISPATCH(pResource)
-#define kccuapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define kccuapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define kccuapiIsDuplicate(pResource, hMemory, pDuplicate) kccuapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define kccuapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define kccuapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define kccuapiPreDestruct(pResource) kccuapiPreDestruct_DISPATCH(pResource)
-#define kccuapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define kccuapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define kccuapiControlFilter(pResource, pCallContext, pParams) kccuapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define kccuapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define kccuapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define kccuapiIsPartialUnmapSupported(pResource) kccuapiIsPartialUnmapSupported_DISPATCH(pResource)
-#define kccuapiMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define kccuapiMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define kccuapiMapTo(pResource, pParams) kccuapiMapTo_DISPATCH(pResource, pParams)
-#define kccuapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define kccuapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define kccuapiUnmapFrom(pResource, pParams) kccuapiUnmapFrom_DISPATCH(pResource, pParams)
-#define kccuapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define kccuapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define kccuapiGetRefCount(pResource) kccuapiGetRefCount_DISPATCH(pResource)
-#define kccuapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define kccuapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define kccuapiAddAdditionalDependants(pClient, pResource, pReference) kccuapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
 static inline NV_STATUS kccuapiMap_DISPATCH(struct KernelCcuApi *pKernelCcuApi, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pKernelCcuApi->__nvoc_vtable->__kccuapiMap__(pKernelCcuApi, pCallContext, pParams, pCpuMapping);
+    return pKernelCcuApi->__nvoc_metadata_ptr->vtable.__kccuapiMap__(pKernelCcuApi, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS kccuapiUnmap_DISPATCH(struct KernelCcuApi *pKernelCcuApi, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pKernelCcuApi->__nvoc_vtable->__kccuapiUnmap__(pKernelCcuApi, pCallContext, pCpuMapping);
+    return pKernelCcuApi->__nvoc_metadata_ptr->vtable.__kccuapiUnmap__(pKernelCcuApi, pCallContext, pCpuMapping);
 }
 
 static inline NV_STATUS kccuapiGetMapAddrSpace_DISPATCH(struct KernelCcuApi *pKernelCcuApi, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pKernelCcuApi->__nvoc_vtable->__kccuapiGetMapAddrSpace__(pKernelCcuApi, pCallContext, mapFlags, pAddrSpace);
+    return pKernelCcuApi->__nvoc_metadata_ptr->vtable.__kccuapiGetMapAddrSpace__(pKernelCcuApi, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS kccuapiGetMemoryMappingDescriptor_DISPATCH(struct KernelCcuApi *pKernelCcuApi, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pKernelCcuApi->__nvoc_vtable->__kccuapiGetMemoryMappingDescriptor__(pKernelCcuApi, ppMemDesc);
+    return pKernelCcuApi->__nvoc_metadata_ptr->vtable.__kccuapiGetMemoryMappingDescriptor__(pKernelCcuApi, ppMemDesc);
 }
 
 static inline NV_STATUS kccuapiCtrlCmdSubscribe_DISPATCH(struct KernelCcuApi *pKernelCcuApi, NV_COUNTER_COLLECTION_UNIT_SUBSCRIBE_PARAMS *pParams) {
@@ -245,87 +256,87 @@ static inline NV_STATUS kccuapiCtrlCmdGetStreamState_DISPATCH(struct KernelCcuAp
 }
 
 static inline NV_STATUS kccuapiControl_DISPATCH(struct KernelCcuApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_vtable->__kccuapiControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__kccuapiControl__(pGpuResource, pCallContext, pParams);
 }
 
 static inline NvBool kccuapiShareCallback_DISPATCH(struct KernelCcuApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_vtable->__kccuapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__kccuapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS kccuapiGetRegBaseOffsetAndSize_DISPATCH(struct KernelCcuApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_vtable->__kccuapiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__kccuapiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS kccuapiInternalControlForward_DISPATCH(struct KernelCcuApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_vtable->__kccuapiInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__kccuapiInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
 static inline NvHandle kccuapiGetInternalObjectHandle_DISPATCH(struct KernelCcuApi *pGpuResource) {
-    return pGpuResource->__nvoc_vtable->__kccuapiGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__kccuapiGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NvBool kccuapiAccessCallback_DISPATCH(struct KernelCcuApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__kccuapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__kccuapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS kccuapiGetMemInterMapParams_DISPATCH(struct KernelCcuApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_vtable->__kccuapiGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__kccuapiGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS kccuapiCheckMemInterUnmap_DISPATCH(struct KernelCcuApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_vtable->__kccuapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__kccuapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS kccuapiControlSerialization_Prologue_DISPATCH(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__kccuapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__kccuapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void kccuapiControlSerialization_Epilogue_DISPATCH(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__kccuapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__kccuapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS kccuapiControl_Prologue_DISPATCH(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__kccuapiControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__kccuapiControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void kccuapiControl_Epilogue_DISPATCH(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__kccuapiControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__kccuapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool kccuapiCanCopy_DISPATCH(struct KernelCcuApi *pResource) {
-    return pResource->__nvoc_vtable->__kccuapiCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__kccuapiCanCopy__(pResource);
 }
 
 static inline NV_STATUS kccuapiIsDuplicate_DISPATCH(struct KernelCcuApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__kccuapiIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__kccuapiIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void kccuapiPreDestruct_DISPATCH(struct KernelCcuApi *pResource) {
-    pResource->__nvoc_vtable->__kccuapiPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__kccuapiPreDestruct__(pResource);
 }
 
 static inline NV_STATUS kccuapiControlFilter_DISPATCH(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__kccuapiControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__kccuapiControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool kccuapiIsPartialUnmapSupported_DISPATCH(struct KernelCcuApi *pResource) {
-    return pResource->__nvoc_vtable->__kccuapiIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__kccuapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS kccuapiMapTo_DISPATCH(struct KernelCcuApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__kccuapiMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__kccuapiMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS kccuapiUnmapFrom_DISPATCH(struct KernelCcuApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__kccuapiUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__kccuapiUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 kccuapiGetRefCount_DISPATCH(struct KernelCcuApi *pResource) {
-    return pResource->__nvoc_vtable->__kccuapiGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__kccuapiGetRefCount__(pResource);
 }
 
 static inline void kccuapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct KernelCcuApi *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__kccuapiAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__kccuapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NV_STATUS kccuapiMap_IMPL(struct KernelCcuApi *pKernelCcuApi, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping);

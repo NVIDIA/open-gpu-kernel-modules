@@ -56,6 +56,11 @@ extern "C" {
 #define _PMA_2MB                (2ULL   * 1024 * 1024)
 #define _PMA_512MB              (512ULL * 1024 * 1024)
 
+// Localized memory chunks are 64MB split into 2 32MB chunks
+#define PMA_LOCALIZED_MEMORY_ALLOC_STRIDE   (32ULL * 1024 * 1024)
+#define PMA_LOCALIZED_MEMORY_RESERVE_SIZE   (2 * PMA_LOCALIZED_MEMORY_ALLOC_STRIDE)
+
+
 typedef NvU32 PMA_PAGESTATUS;
 
 #define MAP_IDX_ALLOC_UNPIN 0
@@ -65,6 +70,7 @@ typedef NvU32 PMA_PAGESTATUS;
 #define MAP_IDX_PERSISTENT  4
 #define MAP_IDX_NUMA_REUSE  5
 #define MAP_IDX_BLACKLIST   6
+#define MAP_IDX_LOCALIZED   7
 
 #define STATE_FREE      0x00
 #define STATE_UNPIN     NVBIT(MAP_IDX_ALLOC_UNPIN)
@@ -77,15 +83,16 @@ typedef NvU32 PMA_PAGESTATUS;
 #define ATTRIB_PERSISTENT  NVBIT(MAP_IDX_PERSISTENT)
 #define ATTRIB_NUMA_REUSE  NVBIT(MAP_IDX_NUMA_REUSE)
 #define ATTRIB_BLACKLIST   NVBIT(MAP_IDX_BLACKLIST)
+#define ATTRIB_LOCALIZED   NVBIT(MAP_IDX_LOCALIZED)
 
 #define ATTRIB_MASK        (ATTRIB_EVICTING | ATTRIB_SCRUBBING      \
                             | ATTRIB_PERSISTENT | ATTRIB_NUMA_REUSE \
-                            | ATTRIB_BLACKLIST)
+                            | ATTRIB_BLACKLIST | ATTRIB_LOCALIZED)
 
 #define MAP_MASK    (STATE_MASK | ATTRIB_MASK)
 
 #define PMA_STATE_BITS_PER_PAGE     2   // Alloc & pinned state
-#define PMA_ATTRIB_BITS_PER_PAGE    5   // Persistence, Scrubbing, Evicting, Reuse & Blacklisting attributes
+#define PMA_ATTRIB_BITS_PER_PAGE    6   // Persistence, Scrubbing, Evicting, Reuse, Blacklisting, & Localized attributes
 
 #define PMA_BITS_PER_PAGE           (PMA_STATE_BITS_PER_PAGE + PMA_ATTRIB_BITS_PER_PAGE)
 

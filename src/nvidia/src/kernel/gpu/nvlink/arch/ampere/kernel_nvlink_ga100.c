@@ -51,24 +51,24 @@ knvlinkOverrideConfig_GA100
     NV_STATUS status = NV_OK;
     NvU32     i;
 
-    pKernelNvlink->pLinkConnection = portMemAllocNonPaged(sizeof(NvU32) * NVLINK_MAX_LINKS_SW);
+    pKernelNvlink->pLinkConnection = portMemAllocNonPaged(sizeof(NvU32) * pKernelNvlink->maxSupportedLinks);
     if (pKernelNvlink->pLinkConnection == NULL)
         return NV_ERR_NO_MEMORY;
 
-    portMemSet(pKernelNvlink->pLinkConnection, 0, sizeof(NvU32) * NVLINK_MAX_LINKS_SW);
+    portMemSet(pKernelNvlink->pLinkConnection, 0, sizeof(NvU32) * pKernelNvlink->maxSupportedLinks);
 
     //
     // To deal with the nonlegacy force config reg keys, we need to now fill
     // in the default phys links, use a unity 1/1 map.
     //
-    for (i = 0; i < NVLINK_MAX_LINKS_SW; i++)
+    for (i = 0; i < pKernelNvlink->maxSupportedLinks; i++)
     {
         // The physical link is guaranteed valid in all cases
         pKernelNvlink->pLinkConnection[i] = DRF_NUM(_NVLINK, _ARCH_CONNECTION, _PHYSICAL_LINK, i);
     }
 
     // Check to see if there are chiplib overrides for nvlink configuration
-    status = osGetForcedNVLinkConnection(pGpu, NVLINK_MAX_LINKS_SW, pKernelNvlink->pLinkConnection);
+    status = osGetForcedNVLinkConnection(pGpu, pKernelNvlink->maxSupportedLinks, pKernelNvlink->pLinkConnection);
     if ((NV_OK != status) || pKernelNvlink->bForceAutoconfig)
     {
         // A non-OK status implies there are no overrides.
@@ -83,8 +83,8 @@ knvlinkOverrideConfig_GA100
     portMemSet(&forcedConfigParams, 0, sizeof(forcedConfigParams));
 
     forcedConfigParams.bLegacyForcedConfig = NV_FALSE;
-    portMemCopy(&forcedConfigParams.linkConnection, (sizeof(NvU32) * NVLINK_MAX_LINKS_SW),
-                pKernelNvlink->pLinkConnection,     (sizeof(NvU32) * NVLINK_MAX_LINKS_SW));
+    portMemCopy(&forcedConfigParams.linkConnection, (sizeof(NvU32) * pKernelNvlink->maxSupportedLinks),
+                pKernelNvlink->pLinkConnection,     (sizeof(NvU32) * pKernelNvlink->maxSupportedLinks));
 
     //
     // RPC to GSP-RM to for GSP-RM to process the forced NVLink configurations. This includes
@@ -176,7 +176,7 @@ knvlinkRemoveMapping_GA100
     {
         FOR_EACH_INDEX_IN_MASK(32, peerId, peerMask)
         {
-            if (pKernelNvlink->initializedLinks & pKernelNvlink->peerLinkMasks[peerId])
+            if (pKernelNvlink->initializedLinks & KNVLINK_GET_MASK(pKernelNvlink, peerLinkMasks[peerId], 32))
             {
                 bBufferReady = NV_TRUE;
                 break;

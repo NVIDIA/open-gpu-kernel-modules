@@ -1,13 +1,15 @@
 
 #ifndef _G_I2C_API_NVOC_H_
 #define _G_I2C_API_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,15 +62,19 @@ extern "C" {
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__I2cApi;
+struct NVOC_METADATA__GpuResource;
 struct NVOC_VTABLE__I2cApi;
 
 
 struct I2cApi {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__I2cApi *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__I2cApi *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct GpuResource __nvoc_base_GpuResource;
@@ -90,10 +96,8 @@ struct I2cApi {
 };
 
 
-// Metadata including vtable with 25 function pointers plus superclass metadata
+// Vtable with 25 per-class function pointers
 struct NVOC_VTABLE__I2cApi {
-    const struct NVOC_VTABLE__GpuResource GpuResource;    // (gpures) 25 function pointers
-
     NV_STATUS (*__i2capiControl__)(struct I2cApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__i2capiMap__)(struct I2cApi * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__i2capiUnmap__)(struct I2cApi * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
@@ -121,6 +125,13 @@ struct NVOC_VTABLE__I2cApi {
     void (*__i2capiAddAdditionalDependants__)(struct RsClient *, struct I2cApi * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__I2cApi {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuResource metadata__GpuResource;
+    const struct NVOC_VTABLE__I2cApi vtable;
+};
+
 #ifndef __NVOC_CLASS_I2cApi_TYPEDEF__
 #define __NVOC_CLASS_I2cApi_TYPEDEF__
 typedef struct I2cApi I2cApi;
@@ -137,15 +148,15 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_I2cApi;
     ((pThis)->__nvoc_pbase_I2cApi)
 
 #ifdef __nvoc_i2c_api_h_disabled
-#define __dynamicCast_I2cApi(pThis) ((I2cApi*)NULL)
+#define __dynamicCast_I2cApi(pThis) ((I2cApi*) NULL)
 #else //__nvoc_i2c_api_h_disabled
 #define __dynamicCast_I2cApi(pThis) \
-    ((I2cApi*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(I2cApi)))
+    ((I2cApi*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(I2cApi)))
 #endif //__nvoc_i2c_api_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_I2cApi(I2cApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_I2cApi(I2cApi**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_I2cApi(I2cApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_I2cApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_I2cApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
@@ -161,55 +172,55 @@ NV_STATUS __nvoc_objCreate_I2cApi(I2cApi**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define i2capiCtrlCmdI2cTableGetDevInfo(pI2cApi, pParams) i2capiCtrlCmdI2cTableGetDevInfo_DISPATCH(pI2cApi, pParams)
 #define i2capiCtrlCmdI2cTransaction_FNPTR(pI2cApi) pI2cApi->__i2capiCtrlCmdI2cTransaction__
 #define i2capiCtrlCmdI2cTransaction(pI2cApi, pParams) i2capiCtrlCmdI2cTransaction_DISPATCH(pI2cApi, pParams)
-#define i2capiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresControl__
+#define i2capiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define i2capiControl(pGpuResource, pCallContext, pParams) i2capiControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define i2capiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresMap__
+#define i2capiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
 #define i2capiMap(pGpuResource, pCallContext, pParams, pCpuMapping) i2capiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define i2capiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresUnmap__
+#define i2capiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
 #define i2capiUnmap(pGpuResource, pCallContext, pCpuMapping) i2capiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define i2capiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresShareCallback__
+#define i2capiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
 #define i2capiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) i2capiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define i2capiGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
+#define i2capiGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define i2capiGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) i2capiGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define i2capiGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetMapAddrSpace__
+#define i2capiGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__
 #define i2capiGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) i2capiGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define i2capiInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresInternalControlForward__
+#define i2capiInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__
 #define i2capiInternalControlForward(pGpuResource, command, pParams, size) i2capiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define i2capiGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetInternalObjectHandle__
+#define i2capiGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define i2capiGetInternalObjectHandle(pGpuResource) i2capiGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define i2capiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define i2capiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define i2capiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) i2capiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define i2capiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
+#define i2capiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define i2capiGetMemInterMapParams(pRmResource, pParams) i2capiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define i2capiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
+#define i2capiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define i2capiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) i2capiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define i2capiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
+#define i2capiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define i2capiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) i2capiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define i2capiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define i2capiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define i2capiControlSerialization_Prologue(pResource, pCallContext, pParams) i2capiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define i2capiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define i2capiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define i2capiControlSerialization_Epilogue(pResource, pCallContext, pParams) i2capiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define i2capiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
+#define i2capiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
 #define i2capiControl_Prologue(pResource, pCallContext, pParams) i2capiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define i2capiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
+#define i2capiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
 #define i2capiControl_Epilogue(pResource, pCallContext, pParams) i2capiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define i2capiCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define i2capiCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define i2capiCanCopy(pResource) i2capiCanCopy_DISPATCH(pResource)
-#define i2capiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define i2capiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define i2capiIsDuplicate(pResource, hMemory, pDuplicate) i2capiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define i2capiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define i2capiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define i2capiPreDestruct(pResource) i2capiPreDestruct_DISPATCH(pResource)
-#define i2capiControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define i2capiControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define i2capiControlFilter(pResource, pCallContext, pParams) i2capiControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define i2capiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define i2capiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define i2capiIsPartialUnmapSupported(pResource) i2capiIsPartialUnmapSupported_DISPATCH(pResource)
-#define i2capiMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define i2capiMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define i2capiMapTo(pResource, pParams) i2capiMapTo_DISPATCH(pResource, pParams)
-#define i2capiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define i2capiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define i2capiUnmapFrom(pResource, pParams) i2capiUnmapFrom_DISPATCH(pResource, pParams)
-#define i2capiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define i2capiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define i2capiGetRefCount(pResource) i2capiGetRefCount_DISPATCH(pResource)
-#define i2capiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define i2capiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define i2capiAddAdditionalDependants(pClient, pResource, pReference) i2capiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
@@ -234,103 +245,103 @@ static inline NV_STATUS i2capiCtrlCmdI2cTransaction_DISPATCH(struct I2cApi *pI2c
 }
 
 static inline NV_STATUS i2capiControl_DISPATCH(struct I2cApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_vtable->__i2capiControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__i2capiControl__(pGpuResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS i2capiMap_DISPATCH(struct I2cApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_vtable->__i2capiMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__i2capiMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS i2capiUnmap_DISPATCH(struct I2cApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_vtable->__i2capiUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__i2capiUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool i2capiShareCallback_DISPATCH(struct I2cApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_vtable->__i2capiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__i2capiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS i2capiGetRegBaseOffsetAndSize_DISPATCH(struct I2cApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_vtable->__i2capiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__i2capiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS i2capiGetMapAddrSpace_DISPATCH(struct I2cApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__nvoc_vtable->__i2capiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__i2capiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS i2capiInternalControlForward_DISPATCH(struct I2cApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_vtable->__i2capiInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__i2capiInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
 static inline NvHandle i2capiGetInternalObjectHandle_DISPATCH(struct I2cApi *pGpuResource) {
-    return pGpuResource->__nvoc_vtable->__i2capiGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__i2capiGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NvBool i2capiAccessCallback_DISPATCH(struct I2cApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__i2capiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__i2capiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS i2capiGetMemInterMapParams_DISPATCH(struct I2cApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_vtable->__i2capiGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__i2capiGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS i2capiCheckMemInterUnmap_DISPATCH(struct I2cApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_vtable->__i2capiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__i2capiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS i2capiGetMemoryMappingDescriptor_DISPATCH(struct I2cApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_vtable->__i2capiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__i2capiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS i2capiControlSerialization_Prologue_DISPATCH(struct I2cApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__i2capiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__i2capiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void i2capiControlSerialization_Epilogue_DISPATCH(struct I2cApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__i2capiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__i2capiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS i2capiControl_Prologue_DISPATCH(struct I2cApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__i2capiControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__i2capiControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void i2capiControl_Epilogue_DISPATCH(struct I2cApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__i2capiControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__i2capiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool i2capiCanCopy_DISPATCH(struct I2cApi *pResource) {
-    return pResource->__nvoc_vtable->__i2capiCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__i2capiCanCopy__(pResource);
 }
 
 static inline NV_STATUS i2capiIsDuplicate_DISPATCH(struct I2cApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__i2capiIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__i2capiIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void i2capiPreDestruct_DISPATCH(struct I2cApi *pResource) {
-    pResource->__nvoc_vtable->__i2capiPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__i2capiPreDestruct__(pResource);
 }
 
 static inline NV_STATUS i2capiControlFilter_DISPATCH(struct I2cApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__i2capiControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__i2capiControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool i2capiIsPartialUnmapSupported_DISPATCH(struct I2cApi *pResource) {
-    return pResource->__nvoc_vtable->__i2capiIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__i2capiIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS i2capiMapTo_DISPATCH(struct I2cApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__i2capiMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__i2capiMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS i2capiUnmapFrom_DISPATCH(struct I2cApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__i2capiUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__i2capiUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 i2capiGetRefCount_DISPATCH(struct I2cApi *pResource) {
-    return pResource->__nvoc_vtable->__i2capiGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__i2capiGetRefCount__(pResource);
 }
 
 static inline void i2capiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct I2cApi *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__i2capiAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__i2capiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NV_STATUS i2capiCtrlCmdI2cGetPortInfo_IMPL(struct I2cApi *pI2cApi, NV402C_CTRL_I2C_GET_PORT_INFO_PARAMS *pParams);

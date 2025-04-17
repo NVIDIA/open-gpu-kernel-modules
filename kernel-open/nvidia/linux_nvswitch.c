@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -49,6 +49,9 @@
 #include <linux/jiffies.h>
 
 #include "ioctl_nvswitch.h"
+
+#define CREATE_TRACE_POINTS
+#include "nvswitch_event.h"
 
 static const struct
 {
@@ -1890,6 +1893,35 @@ nvswitch_os_print
     snprintf(fmt_printk, sizeof(fmt_printk), "%s%s", kern_level, fmt);
     vprintk(fmt_printk, arglist);
     va_end(arglist);
+}
+
+void
+nvswitch_os_report_error
+(
+    void *os_handle,
+    NvU32 error_code,
+    const char *fmt,
+    ...
+)
+{
+    va_list arglist;
+    char *buffer;
+    gfp_t gfp = NV_MAY_SLEEP() ? NV_GFP_NO_OOM : NV_GFP_ATOMIC;
+    struct pci_dev *pdev = (struct pci_dev *)os_handle;
+
+    if (pdev == NULL)
+        return;
+
+    va_start(arglist, fmt);
+    buffer = kvasprintf(gfp, fmt, arglist);
+    va_end(arglist);
+
+    if (buffer == NULL)
+        return;
+
+    trace_nvswitch_dev_sxid(pdev, error_code, buffer);
+
+    kfree(buffer);
 }
 
 void

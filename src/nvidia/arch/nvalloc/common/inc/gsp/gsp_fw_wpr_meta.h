@@ -232,9 +232,11 @@ typedef struct
 
 #define GSP_FW_HEAP_FREE_LIST_MAGIC 0x4845415046524545ULL
 
-#define GSP_FW_FLAGS                            8:0
-#define GSP_FW_FLAGS_CLOCK_BOOST                NVBIT(0)
-#define GSP_FW_FLAGS_RECOVERY_MARGIN_PRESENT    NVBIT(1)
-#define GSP_FW_FLAGS_PPCIE_ENABLED              NVBIT(2)
+#define GSP_FW_FLAGS                                       8:0
+#define GSP_FW_FLAGS_CLOCK_BOOST                           NVBIT(0)
+#define GSP_FW_FLAGS_RECOVERY_MARGIN_PRESENT               NVBIT(1)
+#define GSP_FW_FLAGS_PPCIE_ENABLED                         NVBIT(2)
+#define GSP_FW_FLAGS_MULTI_GPU_NVLE_ENABLED                NVBIT(3)
+#define GSP_FW_FLAGS_SCAN_RECOVERY_MARGIN                  NVBIT(4)
 
 #endif // GSP_FW_WPR_META_H_

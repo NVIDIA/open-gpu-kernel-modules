@@ -151,6 +151,7 @@ typedef volatile struct _clcba2_tag0 {
 #define NVCBA2_ERROR_SCRUBBER_INSUFFICIENT_PERMISSIONS                          (0x0000001b)
 #define NVCBA2_ERROR_SCRUBBER_MUTEX_ACQUIRE_FAILURE                             (0x0000001c)
 #define NVCBA2_ERROR_SCRUB_SIZE_MAX_EXCEEDED                                    (0x0000001d)
+#define NVCBA2_ERROR_SIZE_ZERO                                                  (0x0000001e)
 
 #ifdef __cplusplus
 };     /* extern "C" */

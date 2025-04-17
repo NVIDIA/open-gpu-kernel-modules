@@ -1,4 +1,11 @@
 #define NVOC_KERNEL_CHANNEL_GROUP_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,49 +14,30 @@
 #include "utils/nvassert.h"
 #include "g_kernel_channel_group_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0xec6de1 = 1;
+char __nvoc_class_id_uniqueness_check__0xec6de1 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelChannelGroup;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsShared;
 
-void __nvoc_init_KernelChannelGroup(KernelChannelGroup*, RmHalspecOwner* );
-void __nvoc_init_funcTable_KernelChannelGroup(KernelChannelGroup*, RmHalspecOwner* );
-NV_STATUS __nvoc_ctor_KernelChannelGroup(KernelChannelGroup*, RmHalspecOwner* );
-void __nvoc_init_dataField_KernelChannelGroup(KernelChannelGroup*, RmHalspecOwner* );
+// Forward declarations for KernelChannelGroup
+void __nvoc_init__RsShared(RsShared*);
+void __nvoc_init__KernelChannelGroup(KernelChannelGroup*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_funcTable_KernelChannelGroup(KernelChannelGroup*, RmHalspecOwner *pRmhalspecowner);
+NV_STATUS __nvoc_ctor_KernelChannelGroup(KernelChannelGroup*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_dataField_KernelChannelGroup(KernelChannelGroup*, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_KernelChannelGroup(KernelChannelGroup*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelChannelGroup;
 
-static const struct NVOC_RTTI __nvoc_rtti_KernelChannelGroup_KernelChannelGroup = {
-    /*pClassDef=*/          &__nvoc_class_def_KernelChannelGroup,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_KernelChannelGroup,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__KernelChannelGroup;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelChannelGroup;
 
-static const struct NVOC_RTTI __nvoc_rtti_KernelChannelGroup_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(KernelChannelGroup, __nvoc_base_RsShared.__nvoc_base_Object),
-};
+// Down-thunk(s) to bridge KernelChannelGroup methods from ancestors (if any)
 
-static const struct NVOC_RTTI __nvoc_rtti_KernelChannelGroup_RsShared = {
-    /*pClassDef=*/          &__nvoc_class_def_RsShared,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(KernelChannelGroup, __nvoc_base_RsShared),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_KernelChannelGroup = {
-    /*numRelatives=*/       3,
-    /*relatives=*/ {
-        &__nvoc_rtti_KernelChannelGroup_KernelChannelGroup,
-        &__nvoc_rtti_KernelChannelGroup_RsShared,
-        &__nvoc_rtti_KernelChannelGroup_Object,
-    },
-};
+// Up-thunk(s) to bridge KernelChannelGroup methods to ancestors (if any)
 
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelChannelGroup = 
 {
@@ -62,15 +50,36 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelChannelGroup =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_KernelChannelGroup,
-    /*pCastInfo=*/          &__nvoc_castinfo_KernelChannelGroup,
-    /*pExportInfo=*/        &__nvoc_export_info_KernelChannelGroup
+    /*pCastInfo=*/          &__nvoc_castinfo__KernelChannelGroup,
+    /*pExportInfo=*/        &__nvoc_export_info__KernelChannelGroup
 };
 
-// Down-thunk(s) to bridge KernelChannelGroup methods from ancestors (if any)
 
-// Up-thunk(s) to bridge KernelChannelGroup methods to ancestors (if any)
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__KernelChannelGroup __nvoc_metadata__KernelChannelGroup = {
+    .rtti.pClassDef = &__nvoc_class_def_KernelChannelGroup,    // (kchangrp) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_KernelChannelGroup,
+    .rtti.offset    = 0,
+    .metadata__RsShared.rtti.pClassDef = &__nvoc_class_def_RsShared,    // (shr) super
+    .metadata__RsShared.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__RsShared.rtti.offset    = NV_OFFSETOF(KernelChannelGroup, __nvoc_base_RsShared),
+    .metadata__RsShared.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^2
+    .metadata__RsShared.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__RsShared.metadata__Object.rtti.offset    = NV_OFFSETOF(KernelChannelGroup, __nvoc_base_RsShared.__nvoc_base_Object),
+};
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelChannelGroup = 
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__KernelChannelGroup = {
+    .numRelatives = 3,
+    .relatives = {
+        &__nvoc_metadata__KernelChannelGroup.rtti,    // [0]: (kchangrp) this
+        &__nvoc_metadata__KernelChannelGroup.metadata__RsShared.rtti,    // [1]: (shr) super
+        &__nvoc_metadata__KernelChannelGroup.metadata__RsShared.metadata__Object.rtti,    // [2]: (obj) super^2
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelChannelGroup = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -135,12 +144,23 @@ void __nvoc_init_funcTable_KernelChannelGroup(KernelChannelGroup *pThis, RmHalsp
     __nvoc_init_funcTable_KernelChannelGroup_1(pThis, pRmhalspecowner);
 }
 
-void __nvoc_init_RsShared(RsShared*);
-void __nvoc_init_KernelChannelGroup(KernelChannelGroup *pThis, RmHalspecOwner *pRmhalspecowner) {
-    pThis->__nvoc_pbase_KernelChannelGroup = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_RsShared.__nvoc_base_Object;
-    pThis->__nvoc_pbase_RsShared = &pThis->__nvoc_base_RsShared;
-    __nvoc_init_RsShared(&pThis->__nvoc_base_RsShared);
+// Initialize newly constructed object.
+void __nvoc_init__KernelChannelGroup(KernelChannelGroup *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_RsShared.__nvoc_base_Object;    // (obj) super^2
+    pThis->__nvoc_pbase_RsShared = &pThis->__nvoc_base_RsShared;    // (shr) super
+    pThis->__nvoc_pbase_KernelChannelGroup = pThis;    // (kchangrp) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__RsShared(&pThis->__nvoc_base_RsShared);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_RsShared.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__KernelChannelGroup.metadata__RsShared.metadata__Object;    // (obj) super^2
+    pThis->__nvoc_base_RsShared.__nvoc_metadata_ptr = &__nvoc_metadata__KernelChannelGroup.metadata__RsShared;    // (shr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__KernelChannelGroup;    // (kchangrp) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_KernelChannelGroup(pThis, pRmhalspecowner);
 }
 
@@ -158,9 +178,6 @@ NV_STATUS __nvoc_objCreate_KernelChannelGroup(KernelChannelGroup **ppThis, Dynam
 
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(KernelChannelGroup));
-
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_KernelChannelGroup);
 
     pThis->__nvoc_base_RsShared.__nvoc_base_Object.createFlags = createFlags;
 
@@ -182,7 +199,7 @@ NV_STATUS __nvoc_objCreate_KernelChannelGroup(KernelChannelGroup **ppThis, Dynam
         pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
     NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init_KernelChannelGroup(pThis, pRmhalspecowner);
+    __nvoc_init__KernelChannelGroup(pThis, pRmhalspecowner);
     status = __nvoc_ctor_KernelChannelGroup(pThis, pRmhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_KernelChannelGroup_cleanup;
 

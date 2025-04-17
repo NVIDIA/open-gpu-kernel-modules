@@ -34,4 +34,6 @@
 #define NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_3_VAL                                                        31:0           /* RWIVF */
 #define NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_3_VAL_INIT                                                   0x00000000     /* RWI-V */
 
+#define NV_PFSP_MNOC_BASE                                                                                (0x008f1e00) /* -W-4A */
+
 #endif // __gb100_dev_fsp_pri_h__

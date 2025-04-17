@@ -632,25 +632,14 @@ typedef void (*BindResultFunc)(void * pVoid, NvU32 gpuMask, NvU32 bState, NvU32 
 // NVOS32 function
 #define NVOS32_FUNCTION_ALLOC_SIZE                      2
 #define NVOS32_FUNCTION_FREE                            3
-// #define NVOS32_FUNCTION_HEAP_PURGE                   4
 #define NVOS32_FUNCTION_INFO                            5
 #define NVOS32_FUNCTION_ALLOC_TILED_PITCH_HEIGHT        6
-// #define NVOS32_FUNCTION_DESTROY                      7
-// #define NVOS32_FUNCTION_RETAIN                       9
-// #define NVOS32_FUNCTION_REALLOC                      10
-#define NVOS32_FUNCTION_DUMP                            11
-// #define NVOS32_FUNCTION_INFO_TYPE_ALLOC_BLOCKS       12
 #define NVOS32_FUNCTION_ALLOC_SIZE_RANGE                14
 #define NVOS32_FUNCTION_REACQUIRE_COMPR                 15
 #define NVOS32_FUNCTION_RELEASE_COMPR                   16
-// #define NVOS32_FUNCTION_MODIFY_DEFERRED_TILES        17
 #define NVOS32_FUNCTION_GET_MEM_ALIGNMENT               18
 #define NVOS32_FUNCTION_HW_ALLOC                        19
 #define NVOS32_FUNCTION_HW_FREE                         20
-// #define NVOS32_FUNCTION_SET_OFFSET                   21
-// #define NVOS32_FUNCTION_IS_TILED                     22
-// #define NVOS32_FUNCTION_ENABLE_RESOURCE              23
-// #define NVOS32_FUNCTION_BIND_COMPR                   24
 #define NVOS32_FUNCTION_ALLOC_OS_DESCRIPTOR             27
 
 typedef struct
@@ -658,14 +647,6 @@ typedef struct
     NvP64 sgt NV_ALIGN_BYTES(8);
     NvP64 gem NV_ALIGN_BYTES(8);
 } NVOS32_DESCRIPTOR_TYPE_OS_SGT_PTR_PARAMETERS;
-
-#define NVOS32_FLAGS_BLOCKINFO_VISIBILITY_CPU (0x00000001)
-typedef struct
-{
-    NvU64 startOffset NV_ALIGN_BYTES(8);
-    NvU64 size NV_ALIGN_BYTES(8);
-    NvU32 flags;
-} NVOS32_BLOCKINFO;
 
 // NVOS32 IVC-heap number delimiting value
 #define NVOS32_IVC_HEAP_NUMBER_DONT_ALLOCATE_ON_IVC_HEAP 0 // When IVC heaps are present,
@@ -792,25 +773,6 @@ typedef struct
           NvU64 base   NV_ALIGN_BYTES(8);   // [OUT] - returned heap phys base
       } Info;
 
-      // NVOS32_FUNCTION_DUMP
-      struct
-      {
-          NvU32 flags;              // [IN] - see _DUMP_FLAGS
-          // [IN]  - if NULL, numBlocks is the returned number of blocks in
-          //         heap, else returns all blocks in eHeap
-          //         if non-NULL points to a buffer that is at least numBlocks
-          //         * sizeof(NVOS32_HEAP_DUMP_BLOCK) bytes.
-          NvP64 pBuffer NV_ALIGN_BYTES(8);
-          // [IN/OUT] - if pBuffer is NULL, will number of blocks in heap
-          //            if pBuffer is non-NULL, is input containing the size of
-          //            pBuffer in units of NVOS32_HEAP_DUMP_BLOCK.  This must
-          //            be greater than or equal to the number of blocks in the
-          //            heap.
-          NvU32 numBlocks;
-      } Dump;
-
-      // NVOS32_FUNCTION_DESTROY - no extra parameters needed
-
       // NVOS32_FUNCTION_ALLOC_SIZE_RANGE
       struct
       {
@@ -835,12 +797,6 @@ typedef struct
           NvS32     numaNode;           // [IN] - NUMA node from which memory should be allocated
       } AllocSizeRange;
 
-      // additions for Longhorn
-#define NVAL_MAX_BANKS (4)
-#define NVAL_MAP_DIRECTION             0:0
-#define NVAL_MAP_DIRECTION_DOWN 0x00000000
-#define NVAL_MAP_DIRECTION_UP   0x00000001
-
       // NVOS32_FUNCTION_GET_MEM_ALIGNMENT
       struct
       {
@@ -853,8 +809,6 @@ typedef struct
           NvU32 alignPitch;
           NvU32 alignPad;
           NvU32 alignMask;
-          NvU32 alignOutputFlags[NVAL_MAX_BANKS];           // We could compress this information but it is probably not that big of a deal
-          NvU32 alignBank[NVAL_MAX_BANKS];
           NvU32 alignKind;
           NvU32 alignAdjust;                                // Output -- If non-zero the amount we need to adjust the offset
           NvU32 alignAttr2;
@@ -922,16 +876,6 @@ typedef struct
 
   } data;
 } NVOS32_PARAMETERS;
-
-typedef struct
-{
-    NvU32 owner;    // owner id - NVOS32_BLOCK_TYPE_FREE or defined by client during heap_alloc
-    NvU32 format;   // arch specific format/kind
-    NvU64 begin NV_ALIGN_BYTES(8); // start of allocated memory block
-    NvU64 align NV_ALIGN_BYTES(8); // actual start of usable memory, aligned to chip specific boundary
-    NvU64 end   NV_ALIGN_BYTES(8); // end of usable memory.  end - align + 1 = size of block
-} NVOS32_HEAP_DUMP_BLOCK;
-
 
 #define NVOS32_DELETE_RESOURCES_ALL                     0
 
@@ -1339,6 +1283,18 @@ typedef struct
 #define NVOS32_ATTR2_ALLOCATE_FROM_SUBHEAP                   27:27
 #define NVOS32_ATTR2_ALLOCATE_FROM_SUBHEAP_NO           0x00000000
 #define NVOS32_ATTR2_ALLOCATE_FROM_SUBHEAP_YES          0x00000001
+
+//
+// Force the video memory allocation to localized allocation.
+// Same attribute can be used to choose between uGPU0 and uGPU1.
+// if set to default, RM will choose the next available uGPU memory.
+// if set to _UGPU0, RM will choose the memory from uGPU0.
+// if set to _UGPU1, RM will choose the memory from uGPU1.
+//
+#define NVOS32_ATTR2_ENABLE_LOCALIZED_MEMORY            30:29
+#define NVOS32_ATTR2_ENABLE_LOCALIZED_MEMORY_DEFAULT    0x00000000
+#define NVOS32_ATTR2_ENABLE_LOCALIZED_MEMORY_UGPU0      0x00000001
+#define NVOS32_ATTR2_ENABLE_LOCALIZED_MEMORY_UGPU1      0x00000002
 
 //
 // When allocating memory, register the memory descriptor to GSP-RM
@@ -2124,6 +2080,17 @@ typedef struct
 #define NVOS46_FLAGS_DISABLE_ENCRYPTION                            16:16
 #define NVOS46_FLAGS_DISABLE_ENCRYPTION_FALSE                      (0x00000000)
 #define NVOS46_FLAGS_DISABLE_ENCRYPTION_TRUE                       (0x00000001)
+
+//
+// DEFAULT  - Use the cache policy set at allocation
+// YES      - Enable gpu caching
+// NO       - Disable gpu caching
+//
+#define NVOS46_FLAGS_GPU_CACHEABLE                                 18:17
+#define NVOS46_FLAGS_GPU_CACHEABLE_DEFAULT                         (0x00000000)
+#define NVOS46_FLAGS_GPU_CACHEABLE_YES                             (0x00000001)
+#define NVOS46_FLAGS_GPU_CACHEABLE_NO                              (0x00000002)
+#define NVOS46_FLAGS_GPU_CACHEABLE_INVALID                         (0x00000003)
 
 #define NVOS46_FLAGS_P2P                                           27:20
 

@@ -715,3 +715,24 @@ subdeviceCtrlCmdBusGetC2CInfo_VF
 
     return NV_OK;
 }
+
+NV_STATUS
+subdeviceCtrlCmdBusGetC2CLpwrStats_VF
+(
+    Subdevice                                      *pSubdevice,
+    NV2080_CTRL_CMD_BUS_GET_C2C_LPWR_STATS_PARAMS  *pParams
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS
+subdeviceCtrlCmdBusSetC2CLpwrStateVote_VF
+(
+    Subdevice                                           *pSubdevice,
+    NV2080_CTRL_CMD_BUS_SET_C2C_LPWR_STATE_VOTE_PARAMS  *pParams
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+

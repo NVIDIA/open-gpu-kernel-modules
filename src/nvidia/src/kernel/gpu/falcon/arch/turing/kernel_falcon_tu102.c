@@ -179,9 +179,13 @@ kflcnReset_TU102
     KernelFalcon *pKernelFlcn
 )
 {
+    NV_STATUS status;
     NV_ASSERT_OK_OR_RETURN(kflcnPreResetWait_HAL(pGpu, pKernelFlcn));
     NV_ASSERT_OK(kflcnResetHw(pGpu, pKernelFlcn));
-    NV_ASSERT_OK_OR_RETURN(kflcnWaitForResetToFinish_HAL(pGpu, pKernelFlcn));
+    status = kflcnWaitForResetToFinish_HAL(pGpu, pKernelFlcn);
+    NV_ASSERT_OR_RETURN((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET), status);
+    if (status == NV_ERR_GPU_IN_FULLCHIP_RESET)
+        return status;
     kflcnSwitchToFalcon_HAL(pGpu, pKernelFlcn);
     kflcnRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_RM,
                       pGpu->chipId0);

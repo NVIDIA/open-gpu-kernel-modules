@@ -253,6 +253,7 @@ dmaAllocMapping_GM107
         NODE              *pMapNode;
         NvU32              shaderFlags;
         NvU32              disableEncryption;
+        NvU32              volatileFlags;
         VASINFO_MAXWELL   *pVASInfo;
         OBJGPU            *pSrcGpu;
         NvU32              peerNumber;
@@ -306,6 +307,21 @@ dmaAllocMapping_GM107
                            DMA_UPDATE_VASPACE_FLAGS_READ_ONLY : 0;
     pLocals->tlbLock    = (NVOS46_FLAGS_TLB_LOCK_ENABLE == DRF_VAL(OS46, _FLAGS, _TLB_LOCK, flags)) ?
                            DMA_UPDATE_VASPACE_FLAGS_TLB_LOCK : 0;
+    
+    switch(DRF_VAL(OS46, _FLAGS, _GPU_CACHEABLE, flags))
+    {
+        case NVOS46_FLAGS_GPU_CACHEABLE_DEFAULT:
+        case NVOS46_FLAGS_GPU_CACHEABLE_INVALID:
+            // The default case is to use the underlying allocation's cache attribute
+            pLocals->volatileFlags = 0;
+            break;
+        case NVOS46_FLAGS_GPU_CACHEABLE_NO:
+            pLocals->volatileFlags = DMA_UPDATE_VASPACE_FLAGS_VOLATILE;
+            break;
+        case NVOS46_FLAGS_GPU_CACHEABLE_YES:
+            pLocals->volatileFlags = DMA_UPDATE_VASPACE_FLAGS_NONVOLATILE;
+            break;
+    }
 
     switch (DRF_VAL(OS46, _FLAGS, _SHADER_ACCESS, flags))
     {
@@ -898,6 +914,11 @@ dmaAllocMapping_GM107
         // Commit the mapping update
         pLocals->pPteArray = memdescGetPteArray(pLocals->pTempMemDesc, addressTranslation);
 
+        if (!pLocals->bIsMIGMemPartitioningEnabled &&
+            memdescGetFlag(pLocals->pTempMemDesc, MEMDESC_FLAGS_ALLOC_AS_LOCALIZED))
+        {
+            pLocals->pageArrayFlags |= DMA_PAGE_ARRARY_FLAGS_LOCALIZED;
+        }
         dmaPageArrayInitWithFlags(&pLocals->pageArray, pLocals->pPteArray, pLocals->pteCount,
                                   pLocals->pageArrayFlags);
 
@@ -916,6 +937,7 @@ dmaAllocMapping_GM107
             {
                 pLocals->aperture = NV_MMU_PTE_APERTURE_VIDEO_MEMORY;
             }
+
         }
         else if (
                  (memdescGetAddressSpace(pLocals->pTempMemDesc) == ADDR_FABRIC_MC) ||
@@ -1119,7 +1141,8 @@ dmaAllocMapping_GM107
                                       NULL,
                                       pLocals->vaLo, pLocals->vaHi,
                                       DMA_UPDATE_VASPACE_FLAGS_UPDATE_ALL | pLocals->readOnly | pLocals->priv |
-                                          pLocals->tlbLock | pLocals->shaderFlags | pLocals->disableEncryption | pLocals->indirectPeer,
+                                          pLocals->tlbLock | pLocals->shaderFlags | pLocals->disableEncryption |
+                                          pLocals->indirectPeer | pLocals->volatileFlags,
                                      &pLocals->pageArray, pLocals->overMap,
                                      &pLocals->comprInfo,
                                       0,
@@ -1888,6 +1911,9 @@ dmaUpdateVASpace_GF100
                 isVolatile = NV_FALSE;
                 break;
     }
+
+    isVolatile |= !!(flags & DMA_UPDATE_VASPACE_FLAGS_VOLATILE);
+    isVolatile &= !(flags & DMA_UPDATE_VASPACE_FLAGS_NONVOLATILE);
 
     encrypted = (flags & DMA_UPDATE_VASPACE_FLAGS_DISABLE_ENCRYPTION) ? 0 :
         memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ENCRYPTED);

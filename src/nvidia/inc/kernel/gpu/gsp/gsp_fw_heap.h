@@ -41,12 +41,12 @@
 #define GSP_FW_HEAP_PARAM_BASE_RM_SIZE_GH100              (14 << 20)   // Hopper+
 
 //
-// Calibrated by observing RM init heap usage on GPUs with various FB sizes.
+// Calibrated by observing RM init heap usage on GPUs with various memory sizes.
 // This seems to fit the data fairly well, but is likely inaccurate (differences
-// in heap usage are more likely correlate with GPU architecture than FB size).
+// in heap usage are more likely correlate with GPU architecture than memory size).
 // TODO: this requires more detailed profiling and tuning.
 //
-#define GSP_FW_HEAP_PARAM_SIZE_PER_GB_FB                  (96 << 10)   // All architectures
+#define GSP_FW_HEAP_PARAM_SIZE_PER_GB                    (96 << 10)   // All architectures
 
 //
 // This number is calibrated by profiling the WPR heap usage of a single
@@ -70,7 +70,7 @@
 
 #if RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
 #define BULLSEYE_ROOT_HEAP_ALLOC_RM_DATA_SECTION_SIZE_DELTA         (12u)
-#define BULLSEYE_ROOT_HEAP_ALLOC_BAREMETAL_LIBOS_HEAP_SIZE_DELTA    (70u)
+#define BULLSEYE_ROOT_HEAP_ALLOC_BAREMETAL_LIBOS_HEAP_SIZE_DELTA    (10u)
 #define GSP_FW_HEAP_SIZE_VGPU_DEFAULT \
                                 ((581u + ((BULLSEYE_ROOT_HEAP_ALLOC_RM_DATA_SECTION_SIZE_DELTA)*8u) + \
                                 (BULLSEYE_ROOT_HEAP_ALLOC_BAREMETAL_LIBOS_HEAP_SIZE_DELTA)) << 20)

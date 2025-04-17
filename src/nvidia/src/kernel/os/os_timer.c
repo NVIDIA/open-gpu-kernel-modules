@@ -288,7 +288,7 @@ static void _osRunAll1HzCallbacks(OBJGPU *pGpu)
             ppEntryPtr = &entry->next;
         }
     }
-    osGetCurrentTick(&pGpu->lastCallbackTime);
+    pGpu->lastCallbackTime = osGetCurrentTick();
 }
 
 //

@@ -34,6 +34,7 @@
 
 #include "kernel/rmapi/control.h"
 #include "kernel/rmapi/rmapi.h"
+#include "kernel/rmapi/mapping_list.h"
 #include "kernel/os/os.h"
 #include "kernel/core/locks.h"
 #include "vgpu/rpc.h"
@@ -143,7 +144,7 @@ _nv83deCtrlCmdValidateRange
 }
 
 static NV_STATUS
-_nv8deCtrlCmdReadWriteSurface
+_nv8deCtrlCmdReadWriteSurfaceLegacy
 (
     KernelSMDebuggerSession *pKernelSMDebuggerSession,
     NV83DE_CTRL_DEBUG_ACCESS_SURFACE_PARAMETERS *pParams,
@@ -294,6 +295,114 @@ _nv8deCtrlCmdReadWriteSurface
     }
 
     return status;
+}
+
+static NV_STATUS
+_nv8deCtrlCmdReadWriteSurface
+(
+    KernelSMDebuggerSession *pKernelSMDebuggerSession,
+    NV83DE_CTRL_DEBUG_ACCESS_SURFACE_PARAMETERS *pParams,
+    NvBool bWrite
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    RsClient *pClient = RES_GET_CLIENT(pKernelSMDebuggerSession);
+    NvU32 count = pParams->count;
+    NvU32 i;
+    NV_STATUS status = NV_OK;
+    KernelChannel *pKernelChannel;
+
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) || IS_VIRTUAL_WITH_HEAVY_SRIOV(pGpu)
+        || (kbusIsBarAccessBlocked(GPU_GET_KERNEL_BUS(pGpu)) && gpuIsCCDevToolsModeEnabled(pGpu))
+        )
+    {
+        return _nv8deCtrlCmdReadWriteSurfaceLegacy(pKernelSMDebuggerSession, pParams, bWrite);
+    }
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+
+    if (count > MAX_ACCESS_OPS)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        CliGetKernelChannel(pClient, pKernelSMDebuggerSession->hChannel, &pKernelChannel));
+
+    for (i = 0; i < count; i++)
+    {
+        CLI_DMA_MAPPING_INFO *pDmaMappingInfo;
+        NvU64 virtAddr = pParams->opsBuffer[i].gpuVA;
+        NvP64 bufPtr = pParams->opsBuffer[i].pCpuVA;
+        NvU64 bufSize = pParams->opsBuffer[i].size;
+
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, bufSize != 0, NV_ERR_INVALID_ARGUMENT);
+
+        while (bufSize != 0)
+        {
+            NvU64 curSize = bufSize;
+
+            // The memory has to be mapped in a single in a single call by the same client
+            NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                CliGetDmaMappingInfo(pClient, RES_GET_PARENT_HANDLE(pKernelSMDebuggerSession),  pKernelChannel->hVASpace,
+                                     virtAddr, gpumgrGetDeviceGpuMask(pGpu->deviceInstance), &pDmaMappingInfo),
+                NV_ERR_INVALID_ARGUMENT);
+
+            NvU64 offsetInMapping = virtAddr - pDmaMappingInfo->DmaOffset;
+            curSize = NV_MIN(curSize, pDmaMappingInfo->pMemDesc->Size - offsetInMapping);
+
+            TRANSFER_SURFACE surf = { .pMemDesc = pDmaMappingInfo->pMemDesc, .offset = offsetInMapping };
+            NvU8 *pKernBuffer = portMemAllocNonPaged(curSize);
+            NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernBuffer != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
+
+            NvU32 transferFlags = TRANSFER_FLAGS_NONE;
+            if (!memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_SWIZZLED, memdescGetPteKind(pDmaMappingInfo->pMemDesc)) &&
+                !IS_SIMULATION(pGpu))
+            {
+                //
+                // CeUtils uses a compressed GMK mapping of the entire FB
+                // It won't respect PTE kind swizzling
+                // Don't set the flag on simulation, as it forces BAR0 path
+                //
+                transferFlags |= TRANSFER_FLAGS_PREFER_CE;
+            }
+
+            if (bWrite)
+            {
+                NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
+                    portMemExCopyFromUser(bufPtr, pKernBuffer, curSize));
+
+                // Write out the buffer to memory
+                if (status == NV_OK)
+                {
+                    NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
+                        memmgrMemWrite(pMemoryManager, &surf, pKernBuffer, curSize, transferFlags));
+                }
+            }
+            else
+            {
+                // Read from memory
+                NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
+                    memmgrMemRead(pMemoryManager, &surf, pKernBuffer, curSize, transferFlags));
+
+                if (status == NV_OK)
+                {
+                    NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
+                        portMemExCopyToUser(pKernBuffer, bufPtr, curSize));
+                }
+            }
+
+            portMemFree(pKernBuffer);
+
+            if (status != NV_OK)
+                return status;
+
+            bufPtr = NvP64_PLUS_OFFSET(bufPtr, curSize);
+            bufSize -= curSize;
+            virtAddr += curSize;
+        }
+    }
+
+    return NV_OK;
 }
 
 NV_STATUS

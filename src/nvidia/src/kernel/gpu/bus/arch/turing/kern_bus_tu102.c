@@ -26,7 +26,6 @@
 #include "gpu/bus/kern_bus.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "vgpu/vgpu_events.h"
-#include "gpu/bif/kernel_bif.h"
 #include "gpu/fifo/kernel_fifo.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
 #include "nvrm_registry.h"
@@ -373,7 +372,6 @@ kbusIsStaticBar1Supported_TU102
 )
 {
     NvU64 bar1Size = kbusGetPciBarSize(pKernelBus, 1);
-    KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
 
@@ -405,78 +403,71 @@ kbusIsStaticBar1Supported_TU102
     if ((fbSize == 0) || (bar1Size == 0))
         return NV_ERR_NOT_SUPPORTED;
 
-    if (pKernelBus->staticBar1ForceType == NV_REG_STR_RM_FORCE_STATIC_BAR1_DISABLE)
+    switch (pKernelBus->staticBar1ForceType)
     {
-        return NV_ERR_NOT_SUPPORTED;
-    }
-    if (pKernelBus->staticBar1ForceType == NV_REG_STR_RM_FORCE_STATIC_BAR1_ENABLE)
-    {
-        //
-        // Only check for at least client-visible FB size on the assumption the user
-        // really wants to enable static BAR1 regardless of the auto checks
-        //
-        NvU64 bar1MapSize =
-            RM_ALIGN_UP(memmgrGetClientFbAddrSpaceSize(pGpu, pMemoryManager),
-                        RM_PAGE_SIZE_2M);
-
-        if (bar1VASizeAligned < bar1MapSize)
-        {
-            NV_PRINTF(LEVEL_ERROR, "BAR1 size %lld is not large enough to map FB size"
-                                   "%lld to force static BAR1\n",
-                                    bar1VASizeAligned, bar1MapSize);
-            DBG_BREAKPOINT();
-
-            return NV_ERR_INVALID_REGISTRY_KEY;
-        }
-
-        return NV_OK;
-    }
-    else if (pKernelBus->staticBar1ForceType == NV_REG_STR_RM_FORCE_STATIC_BAR1_AUTO)
-    {
-        //
-        // Auto-enable if there is enough space to map
-        // + all of FB once
-        // + enough to reserve enough space for userD BAR mappings
-        //       for every channel in the system
-        //       (whether userD is allocated by RM or by the user)
-        // + doorbell mapping mapped once globally (64KB)
-        // + mmio priv mapped once globally (64KB)
-        // + console reservation
-        // + mailbox BAR1 as fallback P2P until it is disabled
-        //
-        NvU32 userdSize = 0;
-        NvU32 numChannels = kfifoGetMaxChannelsInSystem(pGpu, pKernelFifo);
-        NvU64 requiredAutoBar1Size = fbSizeAligned;
-
-        kfifoGetUserdSizeAlign_HAL(pKernelFifo, &userdSize, NULL);
-
-        userdSize *= numChannels;
-
-        requiredAutoBar1Size += userdSize;
-        requiredAutoBar1Size += doorbellAndMmioPrivSize;
-        requiredAutoBar1Size += consoleSize;
-        requiredAutoBar1Size += mailboxSize;
-
-        if (bar1VASizeAligned >= requiredAutoBar1Size)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Enabling static BAR1 automatically!\n");
-            return NV_OK;
-        }
-        else
-        {
+        case NV_REG_STR_RM_FORCE_STATIC_BAR1_DISABLE:
             return NV_ERR_NOT_SUPPORTED;
-        }
+        case NV_REG_STR_RM_FORCE_STATIC_BAR1_ENABLE:
+            {
+                //
+                // Only check for at least client-visible FB size on the assumption the user
+                // really wants to enable static BAR1 regardless of the auto checks
+                //
+                NvU64 bar1MapSize =
+                    RM_ALIGN_UP(memmgrGetClientFbAddrSpaceSize(pGpu, pMemoryManager),
+                                RM_PAGE_SIZE_2M);
+
+                if (bar1VASizeAligned < bar1MapSize)
+                {
+                    NV_PRINTF(LEVEL_ERROR, "BAR1 size %lld is not large enough to map FB size"
+                                           "%lld to force static BAR1\n",
+                                            bar1VASizeAligned, bar1MapSize);
+                    DBG_BREAKPOINT();
+
+                    return NV_ERR_INVALID_REGISTRY_KEY;
+                }
+
+                return NV_OK;
+            }
+        case NV_REG_STR_RM_FORCE_STATIC_BAR1_AUTO:
+            {
+                //
+                // Auto-enable if there is enough space to map
+                // + all of FB once
+                // + enough to reserve enough space for userD BAR mappings
+                //       for every channel in the system
+                //       (whether userD is allocated by RM or by the user)
+                // + doorbell mapping mapped once globally (64KB)
+                // + mmio priv mapped once globally (64KB)
+                // + console reservation
+                // + mailbox BAR1 as fallback P2P until it is disabled
+                //
+                NvU32 userdSize = 0;
+                NvU32 numChannels = kfifoGetMaxChannelsInSystem(pGpu, pKernelFifo);
+                NvU64 requiredAutoBar1Size = fbSizeAligned;
+
+                kfifoGetUserdSizeAlign_HAL(pKernelFifo, &userdSize, NULL);
+
+                userdSize *= numChannels;
+
+                requiredAutoBar1Size += userdSize;
+                requiredAutoBar1Size += doorbellAndMmioPrivSize;
+                requiredAutoBar1Size += consoleSize;
+                requiredAutoBar1Size += mailboxSize;
+
+                if (bar1VASizeAligned >= requiredAutoBar1Size)
+                {
+                    NV_PRINTF(LEVEL_ERROR, "Enabling static BAR1 automatically!\n");
+                    return NV_OK;
+                }
+                else
+                {
+                    return NV_ERR_NOT_SUPPORTED;
+                }
+            }
+        default:
+            return NV_ERR_INVALID_REGISTRY_KEY;
     }
-    // else NV_REG_STR_RM_FORCE_STATIC_BAR1_ONLY_GPU, continue on
-
-    if (pKernelBif->forceP2PType != NV_REG_STR_RM_FORCE_P2P_TYPE_BAR1P2P)
-        return NV_ERR_NOT_SUPPORTED;
-
-    if ((bar1VASize < (doorbellAndMmioPrivSize)) ||
-        ((bar1VASize - (doorbellAndMmioPrivSize)) < fbSizeAligned))
-        return NV_ERR_NOT_SUPPORTED;
-
-    return NV_OK;
 }
 
 /*!
@@ -643,6 +634,14 @@ kbusDisableStaticBar1Mapping_TU102
  * 
  *        If a non-GMK mapping is page size <=2MB, it will be placed in the
  *        dynamic region instead.
+ * 
+ *        If an allocation has different DMA mapping flags, currently it will
+ *        also be placed in the dynmaic region instead by the logic in
+ *        kbusIncreaseStaticBar1Refcount_TU102. This can be relaxed later
+ *        as needed by that function with no changes to this function by
+ *        passing in the appropriate dmaMapFlags to this function.
+ *        
+ * kbusIncreaseStaticBar1Refcount_TU102
  *
  * @param[in]   pGpu            GPU pointer
  * @param[in]   pKernelBus      Kernel bus pointer
@@ -661,6 +660,7 @@ _kbusUpdateStaticBar1VAMapping_TU102
     OBJGPU             *pGpu,
     KernelBus          *pKernelBus,
     MEMORY_DESCRIPTOR  *pMemDesc,
+    NvU32               dmaMapFlags,
     NvBool              bRelease
 )
 {
@@ -729,13 +729,23 @@ _kbusUpdateStaticBar1VAMapping_TU102
         vaLo     = physAddr + pKernelBus->bar1[gfid].staticBar1.startOffset;
         vaHi     = vaLo + mapGranularity - 1;
 
+        //
+        // Note: dmaUpdateVASpace_HAL uses lower level flags than NVOS46_FLAGS.
+        // Invoking dmaUpdateVASpace_HAL directly here misses all the handling
+        // that dmaAllocMapping_HAL does to do additional handling of the 
+        // NVOS46_FLAGS into internal dma flags.
+        // These flags should influence the dmaMapFlags and not be allowed through
+        // this path. When we add such parsing, we can use
+        // DMA_UPDATE_VASPACE_FLAGS_UPDATE_ALL here to not have to read back
+        // the page tables
+        //
         status = dmaUpdateVASpace_HAL(pGpu, pDma, pVAS,
                                       pMemDesc, NULL,
                                       vaLo, vaHi,
                                       DMA_UPDATE_VASPACE_FLAGS_UPDATE_KIND |
                                       DMA_UPDATE_VASPACE_FLAGS_UPDATE_COMPR,
-                                      NULL, 0,
-                                      &comprInfo, 0,
+                                      NULL, 0,                            
+                                      &comprInfo, 0,                           
                                       NV_MMU_PTE_VALID_TRUE,
                                       NV_MMU_PTE_APERTURE_VIDEO_MEMORY,
                                       BUS_INVALID_PEER,
@@ -784,13 +794,15 @@ NV_STATUS kbusIncreaseStaticBar1Refcount_TU102
 (
     OBJGPU *pGpu,
     KernelBus *pKernelBus,
-    MEMORY_DESCRIPTOR *pMemDesc
+    MEMORY_DESCRIPTOR *pMemDesc,
+    NvU32 busMapFlags
 )
 {
     NvU32               requestedKind;
     NvU64               rootOffset;
     MEMORY_DESCRIPTOR  *pRootMemDesc;
     NV_STATUS           status = NV_OK;
+    NvU32 requestedDmaFlags;
 
     NV_CHECK_OR_RETURN(LEVEL_SILENT, kbusIsStaticBar1Enabled(pGpu, pKernelBus),
                         NV_ERR_NOT_SUPPORTED);
@@ -798,22 +810,36 @@ NV_STATUS kbusIncreaseStaticBar1Refcount_TU102
     requestedKind = memdescGetPteKind(pMemDesc);
     pRootMemDesc  = memdescGetRootMemDesc(pMemDesc, &rootOffset);
 
-    if (pRootMemDesc->staticBar1MappingRefCount != 0 &&
-        requestedKind != pRootMemDesc->staticBar1MappingKind)
+    requestedDmaFlags = kbusConvertBusMapFlagsToDmaFlags(pKernelBus, pMemDesc, busMapFlags);
+
+    //
+    // If the mapping kind doesn't match, allow updating it on first reference.
+    // If the mapping dmaFlags don't match, don't allow updates at all since
+    // static BAR1 does not handle all such updates/offsets/etc.
+    //
+    if ((pRootMemDesc->staticBar1MappingRefCount != 0 &&
+        requestedKind != pRootMemDesc->staticBar1MappingKind) ||
+        requestedDmaFlags != pRootMemDesc->staticBar1DmaFlags)
     {
+        //
         // The mapping is being used with a different kind
+        // or different mapping flags from the default
+        //
         return NV_ERR_IN_USE;
     }
 
     if (requestedKind != pKernelBus->staticBar1DefaultKind)
     {
         status = _kbusUpdateStaticBar1VAMapping_TU102(pGpu, pKernelBus,
-                                                     pRootMemDesc, NV_FALSE);
+                                                     pRootMemDesc,
+                                                     requestedDmaFlags,
+                                                     NV_FALSE);
     }
 
     if (status == NV_OK)
     {
         pRootMemDesc->staticBar1MappingKind = requestedKind;
+        pRootMemDesc->staticBar1DmaFlags = requestedDmaFlags;
         pRootMemDesc->staticBar1MappingRefCount++;
     }
 
@@ -856,6 +882,9 @@ NV_STATUS kbusDecreaseStaticBar1Refcount_TU102
     NV_ASSERT_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid) == NV_OK,
                         NV_ERR_INVALID_STATE);
 
+    // TODO: investigate whether the tegra wbinvd flush is really necessary, seems only useful for SYSMEM_COH
+    memdescFlushCpuCaches(pGpu, pMemDesc);
+
     pRootMemDesc = memdescGetRootMemDesc(pMemDesc, NULL);
 
     if (pMemArea != NULL)
@@ -872,8 +901,17 @@ NV_STATUS kbusDecreaseStaticBar1Refcount_TU102
     }
     else
     {
-        // this must be the last reference from memDestruct code, make sure it is
-        NV_ASSERT_OR_RETURN(pRootMemDesc->staticBar1MappingRefCount == 1, NV_ERR_INVALID_STATE);
+        //
+        // pMemArea = NULL is passed in vidmemDestruct to entirely destroy the mapping
+        // regardless of range. Mappings in the dynamic range don't get a static mapping,
+        // so return early
+        // copy constructor may create multiple references, so the refcount can be >= 1,
+        // so the below decrement will naturally handle this.
+        //
+        if (pRootMemDesc->staticBar1MappingRefCount == 0)
+        {
+            return NV_ERR_NOT_SUPPORTED;
+        }
     }
 
     NV_ASSERT_OR_RETURN(pRootMemDesc->staticBar1MappingRefCount != 0, NV_ERR_INVALID_STATE);
@@ -884,8 +922,13 @@ NV_STATUS kbusDecreaseStaticBar1Refcount_TU102
         return NV_OK;
     }
 
+    //
+    // deploying the static mapping just uses BUS_MAP_FB_FLAGS_MAP_UNICAST,
+    // so nothing influences the dmaMapFlags (see kbusConvertBusMapFlagsToDmaFlags)
+    //
     NV_ASSERT_OK_OR_RETURN(
-        _kbusUpdateStaticBar1VAMapping_TU102(pGpu, pKernelBus, pRootMemDesc, NV_TRUE));
+        _kbusUpdateStaticBar1VAMapping_TU102(pGpu, pKernelBus, pRootMemDesc,
+            BUS_MAP_FB_FLAGS_NONE, NV_TRUE));
 
     return NV_OK;
 }
@@ -916,7 +959,7 @@ kbusGetStaticFbAperture_TU102
     MEMORY_DESCRIPTOR *pMemDesc,
     MemoryRange mapRange,
     MemoryArea *pMemArea,
-    NvU32       flags
+    NvU32       busMapFlags
 )
 {
     NV_STATUS   status;
@@ -928,8 +971,8 @@ kbusGetStaticFbAperture_TU102
     NvU64       mapRangeEndPlus1;
     NvU64       numRanges = 0;
     NvU64       i;
-    NvBool      bUnmanagedRange   = !!(flags & BUS_MAP_FB_FLAGS_UNMANAGED_MEM_AREA);
-    NvBool      bDiscontigAllowed = !!(flags & BUS_MAP_FB_FLAGS_ALLOW_DISCONTIG);
+    NvBool      bUnmanagedRange   = !!(busMapFlags & BUS_MAP_FB_FLAGS_UNMANAGED_MEM_AREA);
+    NvBool      bDiscontigAllowed = !!(busMapFlags & BUS_MAP_FB_FLAGS_ALLOW_DISCONTIG);
     NvBool      bContigDesc;
     ADDRESS_TRANSLATION addressTranslation;
     MemoryRange testMapRange;
@@ -1005,7 +1048,7 @@ kbusGetStaticFbAperture_TU102
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    status = kbusIncreaseStaticBar1Refcount_HAL(pGpu, pKernelBus, pMemDesc);
+    status = kbusIncreaseStaticBar1Refcount_HAL(pGpu, pKernelBus, pMemDesc, busMapFlags);
 
     if (status == NV_ERR_IN_USE || status == NV_ERR_NOT_SUPPORTED)
     {

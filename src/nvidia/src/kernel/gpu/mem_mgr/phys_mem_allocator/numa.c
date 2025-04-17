@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,7 +34,12 @@
 #include "gpu/mem_mgr/mem_scrub.h"
 #include "utils/nvprintf.h"
 #include "utils/nvassert.h"
+
+#if !defined(SRT_BUILD)
 #include "os/os.h"
+#else
+#include "pma_test_stubs.h"
+#endif
 
 //
 // Local helper functions and declarations
@@ -236,7 +241,7 @@ NV_STATUS _pmaNumaAllocateRange
         NvU8 osPageShift = osGetPageShift();
 
         // Skip the first page as it is refcounted at allocation.
-        osAllocAcquirePage(sysPhysAddr + (1 << osPageShift), (actualSize >> osPageShift) - 1);
+        osAllocAcquirePage(sysPhysAddr + (1ULL << osPageShift), (NvU32)((actualSize >> osPageShift) - 1));
 
         // GPA needs to be acquired by shifting by the ATS aperture base address
         status = _pmaTranslateKernelPage(pPma, sysPhysAddr, actualSize, &gpaPhysAddr);
@@ -253,9 +258,10 @@ NV_STATUS _pmaNumaAllocateRange
         {
             PSCRUB_NODE pPmaScrubList = NULL;
             NvU64 count;
+            NvU32 flags = 0;
 
             if ((status = scrubSubmitPages(pPma->pScrubObj, (NvU32)actualSize, &gpaPhysAddr,
-                                           1, &pPmaScrubList, &count)) != NV_OK)
+                                           1, &pPmaScrubList, &count, flags)) != NV_OK)
             {
                 status = NV_ERR_INSUFFICIENT_RESOURCES;
                 goto scrub_exit;
@@ -402,16 +408,17 @@ static NV_STATUS _pmaNumaAllocatePages
         }
 
         // Skip the first page as it is refcounted at allocation.
-        osAllocAcquirePage(sysPhysAddr + (1 << osPageShift), (pageSize >> osPageShift) - 1);
+        osAllocAcquirePage(sysPhysAddr + (1ULL << osPageShift), (NvU32)((pageSize >> osPageShift) - 1));
     }
 
     if (bScrubOnAlloc && (i > 0))
     {
         PSCRUB_NODE pPmaScrubList = NULL;
         NvU64 count;
+        NvU32 flags = 0;
 
         if ((status = scrubSubmitPages(pPma->pScrubObj, pageSize, pPages,
-                                       i, &pPmaScrubList, &count)) != NV_OK)
+                                       i, &pPmaScrubList, &count, flags)) != NV_OK)
         {
             status = NV_ERR_INSUFFICIENT_RESOURCES;
             goto scrub_exit;
@@ -524,6 +531,8 @@ NV_STATUS pmaNumaAllocate
     NvBool    allowEvict  = !(flags & PMA_ALLOCATE_DONT_EVICT);
     NvBool   partialFlag  = !!(flags & PMA_ALLOCATE_ALLOW_PARTIAL);
     NvBool bSkipScrubFlag = !!(flags & PMA_ALLOCATE_NO_ZERO);
+    NvU32 localizedFlag    = !!(flags & PMA_ALLOCATE_LOCALIZED_UGPU0) || !!(flags & PMA_ALLOCATE_LOCALIZED_UGPU1);
+    NvU32 localizedUgpuNum = !!(flags & PMA_ALLOCATE_LOCALIZED_UGPU0) ? 0 : 1;
 
     NvU64    finalAllocatedCount = 0;
 
@@ -545,6 +554,35 @@ NV_STATUS pmaNumaAllocate
         NV_PRINTF(LEVEL_INFO, "Cannot allocate from NUMA node %d before it is onlined.\n",
                                numaNodeId);
         return NV_ERR_INVALID_STATE;
+    }
+
+    if (localizedFlag)
+    {
+        if (allocationCount * pageSize > PMA_LOCALIZED_MEMORY_ALLOC_STRIDE)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Localized allocation size is too large\n");
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+
+        if (!!(flags & PMA_ALLOCATE_LOCALIZED_UGPU0) == !!(flags & PMA_ALLOCATE_LOCALIZED_UGPU1))
+        {
+            NV_PRINTF(LEVEL_ERROR, "Only one ugpu can be specified for localized allocations\n");
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+
+        //
+        // range and alignemtn are silently ignored for NUMA
+        // TODO: check for all other unsupported flags like PMA_ALLOCATE_SPECIFY_ADDRESS_RANGE
+        //
+        // alignment = PMA_LOCALIZED_MEMORY_RESERVE_SIZE;
+
+        //
+        // override allocation options
+        // For now, we will force allocate an entire 64MB chunk
+        //
+        pageSize = _PMA_2MB;
+        allocationCount = PMA_LOCALIZED_MEMORY_RESERVE_SIZE / _PMA_2MB;
+
     }
 
     if (contigFlag)
@@ -624,8 +662,10 @@ NV_STATUS pmaNumaAllocate
         NvU64  frameOffset;
         NvU64  frameCount = 0;
         PMA_PAGESTATUS curStatus = STATE_FREE;
-        PMA_PAGESTATUS allocOption = !!(flags & PMA_ALLOCATE_PINNED) ?
+        PMA_PAGESTATUS pinOption = !!(flags & PMA_ALLOCATE_PINNED) ?
                                         STATE_PIN : STATE_UNPIN;
+
+        pinOption |= localizedFlag ? ATTRIB_LOCALIZED : 0;
 
         NV_PRINTF(LEVEL_INFO, "SUCCESS allocCount %lld, allocsize %lld eviction? %s pinned ? %s contig? %s\n",
                               (NvU64) allocCount,(NvU64) allocSize, (flags & PMA_ALLOCATE_DONT_EVICT) ?  "NOTALLOWED" : "ALLOWED",
@@ -634,6 +674,11 @@ NV_STATUS pmaNumaAllocate
         for (i = 0; i < finalAllocatedCount; i++)
         {
             NvU32 j;
+
+            if (localizedFlag)
+            {
+                pPages[i] = pPages[i] + (localizedUgpuNum * PMA_LOCALIZED_MEMORY_ALLOC_STRIDE);
+            }
 
             regId = findRegionID(pPma, pPages[i]);
             pMap  = pPma->pRegions[regId];
@@ -651,7 +696,7 @@ NV_STATUS pmaNumaAllocate
                     status = NV_ERR_NO_MEMORY;
                     break;
                 }
-                pPma->pMapInfo->pmaMapChangeStateAttrib(pMap, frameOffset, allocOption, MAP_MASK);
+                pPma->pMapInfo->pmaMapChangeStateAttrib(pMap, frameOffset, pinOption, MAP_MASK);
             }
             if (status != NV_OK)
                 break;
@@ -707,6 +752,24 @@ void pmaNumaFreeInternal
     NV_ASSERT_OR_RETURN_VOID(PMA_PAGE_SHIFT >= osPageShift);
 
     NV_PRINTF(LEVEL_INFO, "Freeing pPage[0] = %llx pageCount %lld\n", pPages[0], pageCount);
+
+    // If localized, it must be the entire 64MB range
+    {
+        NvU32 regId = findRegionID(pPma, pPages[0]);
+        NvU64 addrBase = pPma->pRegDescriptors[regId]->base;
+        NvU64 frameNum = PMA_ADDR2FRAME(pPages[0], addrBase);
+        if (pPma->pMapInfo->pmaMapRead(pPma->pRegions[regId], frameNum, NV_TRUE) & ATTRIB_LOCALIZED)
+        {
+            if (pageCount != 1)
+            {
+                NV_PRINTF(LEVEL_ERROR, "invalid numer of localized allocations\n");
+                return;
+            }
+            // This returns the 64MB aligned value to the caller, but that's not concerning..
+            pPages[0] = NV_ALIGN_DOWN64(pPages[0], PMA_LOCALIZED_MEMORY_RESERVE_SIZE);
+            size = PMA_LOCALIZED_MEMORY_RESERVE_SIZE;
+        }
+    }
 
     for (i = 0; i < pageCount; i++)
     {

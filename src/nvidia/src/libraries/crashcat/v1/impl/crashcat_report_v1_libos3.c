@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,8 @@
 #include "libos_v3_crashcat.h"
 #include "utils/nvprintf.h"
 #include "nv-crashcat-decoder.h"
+
+#include "g_all_dcl_pb.h"
 
 static inline const char *crashcatReportModeToString_LIBOS3(NV_CRASHCAT_RISCV_MODE mode)
 {
@@ -151,4 +153,35 @@ void crashcatReportLogReporter_V1_LIBOS3(CrashCatReport *pReport)
             crashcatReportV1ReporterVersionLibos3Cl(pReportV1),
             crashcatReportV1ReporterTimestamp(pReportV1));
     }
+}
+
+void crashcatReportLogVersionProtobuf_V1_LIBOS3(CrashCatReport *pReport, PRB_ENCODER *pCrashcatProtobufData)
+{
+    NvCrashCatReport_V1 *pReportV1 = &pReport->v1.report;
+
+#define LIBOS_PANIC_REASON_PROTOBUF_CASE(reason, reasonUpper)   \
+    case LibosPanicReason ## reason: prbEncAddEnum(pCrashcatProtobufData, CRASHCAT_REPORT_LIBOSPANICREASON, CRASHCAT_REPORT_LIBOSPANICREASON ## reasonUpper)
+
+    if (crashcatReportV1SourceCauseType(pReportV1) == NV_CRASHCAT_CAUSE_TYPE_PANIC)
+    {
+        switch (crashcatReportV1SourceCauseLibos3Reason(pReportV1))
+        {
+            LIBOS_PANIC_REASON_PROTOBUF_CASE(UnhandledState, UNHANDLEDSTATE);
+            LIBOS_PANIC_REASON_PROTOBUF_CASE(InvalidConfiguration, INVALIDCONFIGURATION);
+            LIBOS_PANIC_REASON_PROTOBUF_CASE(FatalHardwareError, FATALHARDWAREERROR);
+            LIBOS_PANIC_REASON_PROTOBUF_CASE(InsufficientResources, INSUFFICIENTRESOURCES);
+            LIBOS_PANIC_REASON_PROTOBUF_CASE(Timeout, TIMEOUT);
+            LIBOS_PANIC_REASON_PROTOBUF_CASE(EnvCallFailed, ENVCALLFAILED);
+            LIBOS_PANIC_REASON_PROTOBUF_CASE(AsanMemoryError, ASANMEMORYERROR);
+            LIBOS_PANIC_REASON_PROTOBUF_CASE(ProgrammingError, PROGRAMMINGERROR);
+            LIBOS_PANIC_REASON_PROTOBUF_CASE(AssertionFailed, ASSERTIONFAILED);
+            LIBOS_PANIC_REASON_PROTOBUF_CASE(TrapKernelPanic, TRAPKERNELPANIC);
+            LIBOS_PANIC_REASON_PROTOBUF_CASE(TrapInstruction, TRAPINSTRUCTION);
+            default: prbEncAddEnum(pCrashcatProtobufData, CRASHCAT_REPORT_LIBOSPANICREASON, CRASHCAT_REPORT_LIBOSPANICREASONUNSPECIFIED);
+        }
+    }
+
+    prbEncAddUInt32(pCrashcatProtobufData, CRASHCAT_REPORT_LIBOSVERSIONMAJOR, crashcatReportV1ReporterVersionLibos3Major(pReportV1));
+    prbEncAddUInt32(pCrashcatProtobufData, CRASHCAT_REPORT_LIBOSVERSIONMINOR, crashcatReportV1ReporterVersionLibos3Minor(pReportV1));
+    prbEncAddUInt32(pCrashcatProtobufData, CRASHCAT_REPORT_LIBOSVERSIONCL, crashcatReportV1ReporterVersionLibos3Cl(pReportV1));
 }

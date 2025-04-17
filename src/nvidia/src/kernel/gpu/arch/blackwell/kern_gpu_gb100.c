@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,11 +33,13 @@
 #include "gpu/gpu_child_class_defs.h"
 #include "os/os.h"
 #include "nverror.h"
+#include "nvrm_registry.h"
 
 #include "published/blackwell/gb100/dev_boot.h"
 #include "published/blackwell/gb100/dev_boot_addendum.h"
 #include "published/blackwell/gb100/dev_pcfg_pf0.h"
 #include "published/blackwell/gb100/dev_nv_pcie_config_reg_addendum.h"
+
 
 static NV_STATUS _gpuFindPcieRegAddr_GB100(OBJGPU *pGpu, NvU32 regId, NvU32 *pRegAddr);
 static NvU32     _gpuGetPciePartitionId_GB100(OBJGPU *pGpu, NvU32 hwDefAddr);
@@ -90,10 +92,11 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB100[] =
     GPU_CHILD_PRESENT(KernelNvlink, 1),
     GPU_CHILD_PRESENT(KernelPerf, 1),
     GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(Spdm, 1),
+    GPU_CHILD_PRESENT(ConfidentialCompute, 1),
     GPU_CHILD_PRESENT(KernelFsp, 1),
     GPU_CHILD_PRESENT(KernelGsp, 1),
     GPU_CHILD_PRESENT(KernelSec2, 1),
-    GPU_CHILD_PRESENT(ConfidentialCompute, 1),
     GPU_CHILD_PRESENT(KernelCcu, 1),
 };
 
@@ -147,6 +150,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB102[] =
     GPU_CHILD_PRESENT(KernelFsp, 1),
     GPU_CHILD_PRESENT(KernelGsp, 1),
     GPU_CHILD_PRESENT(KernelSec2, 1),
+    GPU_CHILD_PRESENT(Spdm, 1),
     GPU_CHILD_PRESENT(ConfidentialCompute, 1),
     GPU_CHILD_PRESENT(KernelCcu, 1),
 };
@@ -948,6 +952,43 @@ gpuGetIdInfo_GB100(OBJGPU *pGpu)
     }
 }
 
+//
+// Workaround for Bug 5041782.
+//
+// This function is not created through HAL infrastructure. It needs to be
+// called when OBJGPU is not created. HAL infrastructure can't be used for
+// this case, so it has been added manually. It will be invoked directly by
+// gpumgrWaitForBarFirewall() after checking the GPU devId.
+//
+// See kfspWaitForSecureBoot_GH100
+#define GPU_FSP_BOOT_COMPLETION_TIMEOUT_US 4000000
+NvBool gpuWaitForBarFirewall_GB100(NvU32 domain, NvU8 bus, NvU8 device, NvU8 function)
+{
+    NvU32 data;
+    NvU32 timeUs = 0;
+    void *hPci = osPciInitHandle(domain, bus, device, function, NULL, NULL);
+
+    while (timeUs < GPU_FSP_BOOT_COMPLETION_TIMEOUT_US)
+    {
+        data = osPciReadDword(hPci,
+            NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_2_AND_GENERAL);
+
+        // Firewall is lowered if 0
+        if (DRF_VAL(_PF0_DESIGNATED,
+                    _VENDOR_SPECIFIC_0_HEADER_2_AND_GENERAL,
+                    _BAR_FIREWALL_STATUS,
+                    data) == 0)
+        {
+            return NV_TRUE;
+        }
+
+        osDelayUs(1000);
+        timeUs += 1000;
+    }
+
+    return NV_FALSE;
+}
+
 /*!
  * @brief        Handle SEC_FAULT
  *
@@ -1063,5 +1104,40 @@ gpuIsDevModeEnabledInHw_GB100
 {
     NvU32 val = GPU_REG_RD32(pGpu, NV_PMC_SCRATCH_RESET_2_CC);
     return FLD_TEST_DRF(_PMC, _SCRATCH_RESET_2_CC, _DEV_ENABLED, _TRUE, val);
+}
+
+/*!
+ * Check if Nvlink multiGPU mode has been set 
+ *
+ * @param[in]  pGpu  GPU object pointer
+ */
+NvBool
+gpuIsMultiGpuNvleEnabledInHw_GB100
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32 data;
+    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_CC_MULTI_GPU_NVLE_MODE_ENABLED, &data) == NV_OK) &&
+        (data == NV_REG_STR_RM_CC_MULTI_GPU_NVLE_MODE_ENABLED_YES))
+    {
+        return NV_TRUE;
+    }
+    return NV_FALSE;
+}
+
+/*
+ * @brief Check if NVLE mode bit has been set in the scratch register
+ *
+ * @param[in]  pGpu  GPU object pointer
+ */
+NvBool
+gpuIsNvleModeEnabledInHw_GB100
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32 val = GPU_REG_RD32(pGpu, NV_PMC_SCRATCH_RESET_2_CC);
+    return FLD_TEST_DRF(_PMC, _SCRATCH_RESET_2_CC, _NVLE_MODE_ENABLED, _TRUE, val);
 }
 

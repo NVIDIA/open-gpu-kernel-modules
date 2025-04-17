@@ -1,13 +1,15 @@
 
 #ifndef _G_KERNEL_NVJPG_CTX_NVOC_H_
 #define _G_KERNEL_NVJPG_CTX_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,15 +62,19 @@ ENGDESCRIPTOR nvjpgGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClas
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__NvjpgContext;
+struct NVOC_METADATA__ChannelDescendant;
 struct NVOC_VTABLE__NvjpgContext;
 
 
 struct NvjpgContext {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__NvjpgContext *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__NvjpgContext *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct ChannelDescendant __nvoc_base_ChannelDescendant;
@@ -86,10 +92,8 @@ struct NvjpgContext {
 };
 
 
-// Metadata including vtable with 32 function pointers plus superclass metadata
+// Vtable with 32 per-class function pointers
 struct NVOC_VTABLE__NvjpgContext {
-    const struct NVOC_VTABLE__ChannelDescendant ChannelDescendant;    // (chandes) 32 function pointers
-
     NV_STATUS (*__nvjpgctxGetSwMethods__)(struct NvjpgContext * /*this*/, const METHOD **, NvU32 *);  // virtual inherited (chandes) base (chandes)
     NvBool (*__nvjpgctxIsSwMethodStalling__)(struct NvjpgContext * /*this*/, NvU32);  // virtual inherited (chandes) base (chandes)
     NV_STATUS (*__nvjpgctxCheckMemInterUnmap__)(struct NvjpgContext * /*this*/, NvBool);  // virtual inherited (chandes) base (chandes)
@@ -124,6 +128,13 @@ struct NVOC_VTABLE__NvjpgContext {
     NV_STATUS (*__nvjpgctxGetOrAllocNotifShare__)(struct NvjpgContext * /*this*/, NvHandle, NvHandle, struct NotifShare **);  // virtual inherited (notify) base (chandes)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__NvjpgContext {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__ChannelDescendant metadata__ChannelDescendant;
+    const struct NVOC_VTABLE__NvjpgContext vtable;
+};
+
 #ifndef __NVOC_CLASS_NvjpgContext_TYPEDEF__
 #define __NVOC_CLASS_NvjpgContext_TYPEDEF__
 typedef struct NvjpgContext NvjpgContext;
@@ -140,212 +151,212 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_NvjpgContext;
     ((pThis)->__nvoc_pbase_NvjpgContext)
 
 #ifdef __nvoc_kernel_nvjpg_ctx_h_disabled
-#define __dynamicCast_NvjpgContext(pThis) ((NvjpgContext*)NULL)
+#define __dynamicCast_NvjpgContext(pThis) ((NvjpgContext*) NULL)
 #else //__nvoc_kernel_nvjpg_ctx_h_disabled
 #define __dynamicCast_NvjpgContext(pThis) \
-    ((NvjpgContext*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(NvjpgContext)))
+    ((NvjpgContext*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(NvjpgContext)))
 #endif //__nvoc_kernel_nvjpg_ctx_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_NvjpgContext(NvjpgContext**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_NvjpgContext(NvjpgContext**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_NvjpgContext(NvjpgContext**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_NvjpgContext(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_NvjpgContext((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
 // Wrapper macros
-#define nvjpgctxGetSwMethods_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_vtable->__chandesGetSwMethods__
+#define nvjpgctxGetSwMethods_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesGetSwMethods__
 #define nvjpgctxGetSwMethods(pChannelDescendant, ppMethods, pNumMethods) nvjpgctxGetSwMethods_DISPATCH(pChannelDescendant, ppMethods, pNumMethods)
-#define nvjpgctxIsSwMethodStalling_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_vtable->__chandesIsSwMethodStalling__
+#define nvjpgctxIsSwMethodStalling_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesIsSwMethodStalling__
 #define nvjpgctxIsSwMethodStalling(pChannelDescendant, hHandle) nvjpgctxIsSwMethodStalling_DISPATCH(pChannelDescendant, hHandle)
-#define nvjpgctxCheckMemInterUnmap_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_vtable->__chandesCheckMemInterUnmap__
+#define nvjpgctxCheckMemInterUnmap_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesCheckMemInterUnmap__
 #define nvjpgctxCheckMemInterUnmap(pChannelDescendant, bSubdeviceHandleProvided) nvjpgctxCheckMemInterUnmap_DISPATCH(pChannelDescendant, bSubdeviceHandleProvided)
-#define nvjpgctxControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresControl__
+#define nvjpgctxControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define nvjpgctxControl(pGpuResource, pCallContext, pParams) nvjpgctxControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define nvjpgctxMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresMap__
+#define nvjpgctxMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
 #define nvjpgctxMap(pGpuResource, pCallContext, pParams, pCpuMapping) nvjpgctxMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define nvjpgctxUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresUnmap__
+#define nvjpgctxUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
 #define nvjpgctxUnmap(pGpuResource, pCallContext, pCpuMapping) nvjpgctxUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define nvjpgctxShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresShareCallback__
+#define nvjpgctxShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
 #define nvjpgctxShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) nvjpgctxShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define nvjpgctxGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
+#define nvjpgctxGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define nvjpgctxGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) nvjpgctxGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define nvjpgctxGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetMapAddrSpace__
+#define nvjpgctxGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__
 #define nvjpgctxGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) nvjpgctxGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define nvjpgctxInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresInternalControlForward__
+#define nvjpgctxInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__
 #define nvjpgctxInternalControlForward(pGpuResource, command, pParams, size) nvjpgctxInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define nvjpgctxGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetInternalObjectHandle__
+#define nvjpgctxGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define nvjpgctxGetInternalObjectHandle(pGpuResource) nvjpgctxGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define nvjpgctxAccessCallback_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define nvjpgctxAccessCallback_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define nvjpgctxAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) nvjpgctxAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define nvjpgctxGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
+#define nvjpgctxGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define nvjpgctxGetMemInterMapParams(pRmResource, pParams) nvjpgctxGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define nvjpgctxGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
+#define nvjpgctxGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define nvjpgctxGetMemoryMappingDescriptor(pRmResource, ppMemDesc) nvjpgctxGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define nvjpgctxControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define nvjpgctxControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define nvjpgctxControlSerialization_Prologue(pResource, pCallContext, pParams) nvjpgctxControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define nvjpgctxControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define nvjpgctxControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define nvjpgctxControlSerialization_Epilogue(pResource, pCallContext, pParams) nvjpgctxControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define nvjpgctxControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
+#define nvjpgctxControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
 #define nvjpgctxControl_Prologue(pResource, pCallContext, pParams) nvjpgctxControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define nvjpgctxControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
+#define nvjpgctxControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
 #define nvjpgctxControl_Epilogue(pResource, pCallContext, pParams) nvjpgctxControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define nvjpgctxCanCopy_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define nvjpgctxCanCopy_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define nvjpgctxCanCopy(pResource) nvjpgctxCanCopy_DISPATCH(pResource)
-#define nvjpgctxIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define nvjpgctxIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define nvjpgctxIsDuplicate(pResource, hMemory, pDuplicate) nvjpgctxIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define nvjpgctxPreDestruct_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define nvjpgctxPreDestruct_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define nvjpgctxPreDestruct(pResource) nvjpgctxPreDestruct_DISPATCH(pResource)
-#define nvjpgctxControlFilter_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define nvjpgctxControlFilter_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define nvjpgctxControlFilter(pResource, pCallContext, pParams) nvjpgctxControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define nvjpgctxIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define nvjpgctxIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define nvjpgctxIsPartialUnmapSupported(pResource) nvjpgctxIsPartialUnmapSupported_DISPATCH(pResource)
-#define nvjpgctxMapTo_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define nvjpgctxMapTo_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define nvjpgctxMapTo(pResource, pParams) nvjpgctxMapTo_DISPATCH(pResource, pParams)
-#define nvjpgctxUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define nvjpgctxUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define nvjpgctxUnmapFrom(pResource, pParams) nvjpgctxUnmapFrom_DISPATCH(pResource, pParams)
-#define nvjpgctxGetRefCount_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define nvjpgctxGetRefCount_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define nvjpgctxGetRefCount(pResource) nvjpgctxGetRefCount_DISPATCH(pResource)
-#define nvjpgctxAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define nvjpgctxAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define nvjpgctxAddAdditionalDependants(pClient, pResource, pReference) nvjpgctxAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define nvjpgctxGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationListPtr__
+#define nvjpgctxGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationListPtr__
 #define nvjpgctxGetNotificationListPtr(pNotifier) nvjpgctxGetNotificationListPtr_DISPATCH(pNotifier)
-#define nvjpgctxGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationShare__
+#define nvjpgctxGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationShare__
 #define nvjpgctxGetNotificationShare(pNotifier) nvjpgctxGetNotificationShare_DISPATCH(pNotifier)
-#define nvjpgctxSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_vtable->__notifySetNotificationShare__
+#define nvjpgctxSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifySetNotificationShare__
 #define nvjpgctxSetNotificationShare(pNotifier, pNotifShare) nvjpgctxSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define nvjpgctxUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_vtable->__notifyUnregisterEvent__
+#define nvjpgctxUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyUnregisterEvent__
 #define nvjpgctxUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) nvjpgctxUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define nvjpgctxGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetOrAllocNotifShare__
+#define nvjpgctxGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetOrAllocNotifShare__
 #define nvjpgctxGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) nvjpgctxGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
 static inline NV_STATUS nvjpgctxGetSwMethods_DISPATCH(struct NvjpgContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
-    return pChannelDescendant->__nvoc_vtable->__nvjpgctxGetSwMethods__(pChannelDescendant, ppMethods, pNumMethods);
+    return pChannelDescendant->__nvoc_metadata_ptr->vtable.__nvjpgctxGetSwMethods__(pChannelDescendant, ppMethods, pNumMethods);
 }
 
 static inline NvBool nvjpgctxIsSwMethodStalling_DISPATCH(struct NvjpgContext *pChannelDescendant, NvU32 hHandle) {
-    return pChannelDescendant->__nvoc_vtable->__nvjpgctxIsSwMethodStalling__(pChannelDescendant, hHandle);
+    return pChannelDescendant->__nvoc_metadata_ptr->vtable.__nvjpgctxIsSwMethodStalling__(pChannelDescendant, hHandle);
 }
 
 static inline NV_STATUS nvjpgctxCheckMemInterUnmap_DISPATCH(struct NvjpgContext *pChannelDescendant, NvBool bSubdeviceHandleProvided) {
-    return pChannelDescendant->__nvoc_vtable->__nvjpgctxCheckMemInterUnmap__(pChannelDescendant, bSubdeviceHandleProvided);
+    return pChannelDescendant->__nvoc_metadata_ptr->vtable.__nvjpgctxCheckMemInterUnmap__(pChannelDescendant, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS nvjpgctxControl_DISPATCH(struct NvjpgContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_vtable->__nvjpgctxControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__nvjpgctxControl__(pGpuResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS nvjpgctxMap_DISPATCH(struct NvjpgContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_vtable->__nvjpgctxMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__nvjpgctxMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS nvjpgctxUnmap_DISPATCH(struct NvjpgContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_vtable->__nvjpgctxUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__nvjpgctxUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool nvjpgctxShareCallback_DISPATCH(struct NvjpgContext *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_vtable->__nvjpgctxShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__nvjpgctxShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS nvjpgctxGetRegBaseOffsetAndSize_DISPATCH(struct NvjpgContext *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_vtable->__nvjpgctxGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__nvjpgctxGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS nvjpgctxGetMapAddrSpace_DISPATCH(struct NvjpgContext *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__nvoc_vtable->__nvjpgctxGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__nvjpgctxGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS nvjpgctxInternalControlForward_DISPATCH(struct NvjpgContext *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_vtable->__nvjpgctxInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__nvjpgctxInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
 static inline NvHandle nvjpgctxGetInternalObjectHandle_DISPATCH(struct NvjpgContext *pGpuResource) {
-    return pGpuResource->__nvoc_vtable->__nvjpgctxGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__nvjpgctxGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NvBool nvjpgctxAccessCallback_DISPATCH(struct NvjpgContext *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__nvjpgctxAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvjpgctxAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS nvjpgctxGetMemInterMapParams_DISPATCH(struct NvjpgContext *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_vtable->__nvjpgctxGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__nvjpgctxGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS nvjpgctxGetMemoryMappingDescriptor_DISPATCH(struct NvjpgContext *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_vtable->__nvjpgctxGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__nvjpgctxGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS nvjpgctxControlSerialization_Prologue_DISPATCH(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__nvjpgctxControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvjpgctxControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void nvjpgctxControlSerialization_Epilogue_DISPATCH(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__nvjpgctxControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__nvjpgctxControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS nvjpgctxControl_Prologue_DISPATCH(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__nvjpgctxControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvjpgctxControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void nvjpgctxControl_Epilogue_DISPATCH(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__nvjpgctxControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__nvjpgctxControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool nvjpgctxCanCopy_DISPATCH(struct NvjpgContext *pResource) {
-    return pResource->__nvoc_vtable->__nvjpgctxCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvjpgctxCanCopy__(pResource);
 }
 
 static inline NV_STATUS nvjpgctxIsDuplicate_DISPATCH(struct NvjpgContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__nvjpgctxIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvjpgctxIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void nvjpgctxPreDestruct_DISPATCH(struct NvjpgContext *pResource) {
-    pResource->__nvoc_vtable->__nvjpgctxPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__nvjpgctxPreDestruct__(pResource);
 }
 
 static inline NV_STATUS nvjpgctxControlFilter_DISPATCH(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__nvjpgctxControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvjpgctxControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool nvjpgctxIsPartialUnmapSupported_DISPATCH(struct NvjpgContext *pResource) {
-    return pResource->__nvoc_vtable->__nvjpgctxIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvjpgctxIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS nvjpgctxMapTo_DISPATCH(struct NvjpgContext *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__nvjpgctxMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvjpgctxMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS nvjpgctxUnmapFrom_DISPATCH(struct NvjpgContext *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__nvjpgctxUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvjpgctxUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 nvjpgctxGetRefCount_DISPATCH(struct NvjpgContext *pResource) {
-    return pResource->__nvoc_vtable->__nvjpgctxGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvjpgctxGetRefCount__(pResource);
 }
 
 static inline void nvjpgctxAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct NvjpgContext *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__nvjpgctxAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__nvjpgctxAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 static inline PEVENTNOTIFICATION * nvjpgctxGetNotificationListPtr_DISPATCH(struct NvjpgContext *pNotifier) {
-    return pNotifier->__nvoc_vtable->__nvjpgctxGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__nvjpgctxGetNotificationListPtr__(pNotifier);
 }
 
 static inline struct NotifShare * nvjpgctxGetNotificationShare_DISPATCH(struct NvjpgContext *pNotifier) {
-    return pNotifier->__nvoc_vtable->__nvjpgctxGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__nvjpgctxGetNotificationShare__(pNotifier);
 }
 
 static inline void nvjpgctxSetNotificationShare_DISPATCH(struct NvjpgContext *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__nvoc_vtable->__nvjpgctxSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_metadata_ptr->vtable.__nvjpgctxSetNotificationShare__(pNotifier, pNotifShare);
 }
 
 static inline NV_STATUS nvjpgctxUnregisterEvent_DISPATCH(struct NvjpgContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__nvoc_vtable->__nvjpgctxUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__nvjpgctxUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS nvjpgctxGetOrAllocNotifShare_DISPATCH(struct NvjpgContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__nvoc_vtable->__nvjpgctxGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__nvjpgctxGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 NV_STATUS nvjpgctxConstructHal_KERNEL(struct NvjpgContext *pNvjpgContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);

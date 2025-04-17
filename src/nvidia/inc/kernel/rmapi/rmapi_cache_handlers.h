@@ -25,7 +25,10 @@
 
 #include "nvtypes.h"
 #include "nvstatus.h"
-#include "ctrl/ctrl0073/ctrl0073system.h"
+#include "nvlimits.h"
+#include "ctrl/ctrl0073.h"
+#include "rmconfig.h"
+#include "core/prelude.h"
 
 typedef NV_STATUS (*RmapiCacheGetByInputHandler)(void *cachedEntry, void* pParams, NvBool bSet);
 
@@ -50,5 +53,16 @@ typedef struct DispSystemGetInternalDisplaysCacheEntry
 } DispSystemGetInternalDisplaysCacheEntry;
 
 NV_STATUS _dispSystemGetInternalDisplaysCacheHandler(void *cachedEntry, void* pParams, NvBool bSet);
+
+typedef struct DispSpecificGetTypeCacheTable
+{
+    struct
+    {
+        NvBool valid;
+        NvU32 displayType;
+    } cachedEntries[NV_MAX_DEVICES];
+} DispSpecificGetTypeCacheTable;
+
+NV_STATUS _dispSpecificGetTypeCacheHandler(void *cachedEntry, void *pProvidedParams, NvBool bSet);
 
 #endif

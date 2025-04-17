@@ -2836,6 +2836,11 @@ NV_STATUS getNbsiObjByType
         return NV_ERR_GENERIC;
     }
 
+    if (IsT234DorBetter(pGpu))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
     idx = gpuGetInstance(pGpu);
     if (idx >= NV_MAX_DEVICES)
     {

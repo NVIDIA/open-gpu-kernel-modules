@@ -242,11 +242,24 @@ gpuConstructDeviceInfoTable_FWCLIENT
                            done);
 
     pGpu->numDeviceInfoEntries = pParams->numEntries;
-    portMemCopy(pGpu->pDeviceInfoTable,
-                pGpu->numDeviceInfoEntries * (sizeof *pGpu->pDeviceInfoTable),
-                pParams->deviceInfoTable,
-                pParams->numEntries * (sizeof pParams->deviceInfoTable[0]));
-
+    for (NvU32 i = 0; i < pParams->numEntries; i++)
+    {
+        NV2080_CTRL_INTERNAL_DEVICE_INFO *pSrc = &pParams->deviceInfoTable[i];
+        pGpu->pDeviceInfoTable[i] = (DEVICE_INFO2_ENTRY){
+            .faultId                = pSrc->faultId,
+            .instanceId             = pSrc->instanceId,
+            .typeEnum               = pSrc->typeEnum,
+            .resetId                = pSrc->resetId,
+            .devicePriBase          = pSrc->devicePriBase,
+            .isEngine               = pSrc->isEngine,
+            .rlEngId                = pSrc->rlEngId,
+            .runlistPriBase         = pSrc->runlistPriBase,
+            .groupId                = pSrc->groupId,
+            .ginTargetId            = pSrc->ginTargetId,
+            .deviceBroadcastPriBase = pSrc->deviceBroadcastPriBase,
+            .groupLocalInstanceId   = pSrc->groupLocalInstanceId,
+        };
+    }
 done:
     portMemFree(pParams);
     return status;

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,42 +40,18 @@
 #include "class/cl0040.h" // NV01_MEMORY_LOCAL_USER
 
 static void
-_semsurfFreeRmClient
-(
-    SEM_SHARED_DATA *pShared
-)
-{
-    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    NvU32 i;
-
-    if (pShared->hClient != NV01_NULL_OBJECT)
-    {
-        pRmApi->Free(pRmApi,
-                     pShared->hClient,
-                     pShared->hClient);
-    }
-
-    pShared->hClient    = NV01_NULL_OBJECT;
-    for (i = 0; i < NV_MAX_DEVICES; i++) {
-        pShared->hDevice[i]     = NV01_NULL_OBJECT;
-        pShared->hSubDevice[i]  = NV01_NULL_OBJECT;
-    }
-}
-
-static void
 _semsurfUnregisterCallback
 (
-    SEM_SHARED_DATA *pShared,
-    NvHandle hEvent
+    SEM_NOTIFIER_NODE *pNotNode
 )
 {
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
 
-    if (pShared->hClient != NV01_NULL_OBJECT)
+    if (pNotNode->hClient != NV01_NULL_OBJECT)
     {
         pRmApi->Free(pRmApi,
-                     pShared->hClient,
-                     hEvent);
+                     pNotNode->hClient,
+                     pNotNode->hEvent);
     }
 }
 
@@ -403,77 +379,6 @@ _semsurfEventCallback
     }
 }
 
-static NV_STATUS
-_semsurfAllocDevObjs(SEM_SHARED_DATA *pShared, OBJGPU *pGpu, RM_API *pRmApi)
-{
-    NV0080_ALLOC_PARAMETERS nv0080AllocParams;
-    NV2080_ALLOC_PARAMETERS nv2080AllocParams;
-    NvU32 gpuIdx = gpuGetInstance(pGpu);
-
-    if (pShared->hDevice[gpuIdx] != NV01_NULL_OBJECT)
-    {
-        NV_ASSERT_OR_RETURN(pShared->hSubDevice[gpuIdx] != NV01_NULL_OBJECT,
-                            NV_ERR_INVALID_STATE);
-        return NV_OK;
-    }
-
-    portMemSet(&nv0080AllocParams, 0, sizeof(nv0080AllocParams));
-    nv0080AllocParams.deviceId =
-        gpuGetDeviceInstance(pGpu);
-
-    NV_ASSERT_OK_OR_RETURN(
-        pRmApi->Alloc(pRmApi,
-                      pShared->hClient,
-                      pShared->hClient,
-                      &pShared->hDevice[gpuIdx],
-                      NV01_DEVICE_0,
-                      &nv0080AllocParams,
-                      sizeof(nv0080AllocParams)));
-
-    // Allocate a subDevice
-    portMemSet(&nv2080AllocParams, 0, sizeof(nv2080AllocParams));
-    nv2080AllocParams.subDeviceId =
-        gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-
-    NV_ASSERT_OK_OR_RETURN(
-        pRmApi->Alloc(pRmApi,
-                      pShared->hClient,
-                      pShared->hDevice[gpuIdx],
-                      &pShared->hSubDevice[gpuIdx],
-                      NV20_SUBDEVICE_0,
-                      &nv2080AllocParams,
-                      sizeof(nv2080AllocParams)));
-
-    return NV_OK;
-}
-
-static NV_STATUS
-_semsurfAllocRmClient
-(
-    SemaphoreSurface *pSemSurf
-)
-{
-    SEM_SHARED_DATA *pShared = pSemSurf->pShared;
-    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-
-    //
-    // Allocate an internal client, device, and subDevice for the semaphore
-    // surface. These will be used to allocate the internally-managed memory
-    // object wrapped by the semaphore surface, and to to register callbacks
-    // on the GPU for semaphore awaken/notification interrupts.
-    //
-    NV_ASSERT_OK_OR_RETURN(
-        pRmApi->AllocWithHandle(pRmApi,
-                                NV01_NULL_OBJECT,
-                                NV01_NULL_OBJECT,
-                                NV01_NULL_OBJECT,
-                                NV01_ROOT,
-                                &pShared->hClient,
-                                sizeof(pShared->hClient)));
-
-    return _semsurfAllocDevObjs(pShared, GPU_RES_GET_GPU(pSemSurf), pRmApi);
-}
-
 static void
 _semsurfFreeMemory
 (
@@ -509,12 +414,11 @@ _semsurfDupMemory
 {
     SEM_SHARED_DATA *pShared = pSemSurf->pShared;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    NvU32 gpuIdx = gpuGetInstance(GPU_RES_GET_GPU(pSemSurf));
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         pRmApi->DupObject(pRmApi,
                           pShared->hClient,
-                          pShared->hDevice[gpuIdx],
+                          pShared->hDevice,
                           &pShared->hSemaphoreMem,
                           RES_GET_CLIENT_HANDLE(pSemSurf),
                           pAllocParams->hSemaphoreMem,
@@ -531,7 +435,7 @@ _semsurfDupMemory
             NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                 pRmApi->DupObject(pRmApi,
                                   pShared->hClient,
-                                  pShared->hDevice[gpuIdx],
+                                  pShared->hDevice,
                                   &pShared->hMaxSubmittedMem,
                                   RES_GET_CLIENT_HANDLE(pSemSurf),
                                   pAllocParams->hMaxSubmittedMem,
@@ -556,17 +460,25 @@ _semsurfRegisterCallback
 (
     SemaphoreSurface *pSemSurf,
     OBJGPU *pGpu,
-    NvU32 notifyIndex,
-    NvU32 *phEvent
+    KernelChannel *pKernelChannel,
+    SEM_NOTIFIER_NODE *pNotNode,
+    NvU32 notifyIndex
 )
 {
     SEM_SHARED_DATA *pShared = pSemSurf->pShared;
     NV0005_ALLOC_PARAMETERS nv0005AllocParams;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    NvHandle hEvent = 0;
+    NvHandle hSubdevice = 0;
+
+    NV_ASSERT_OK_OR_RETURN(memmgrGetInternalClientHandles(pGpu,
+                                                          GPU_GET_MEMORY_MANAGER(pGpu),
+                                                          GPU_RES_GET_DEVICE(pKernelChannel),
+                                                          &pNotNode->hClient,
+                                                          NULL,
+                                                          &hSubdevice));
 
     portMemSet(&nv0005AllocParams, 0, sizeof(nv0005AllocParams));
-    nv0005AllocParams.hParentClient = pShared->hClient;
+    nv0005AllocParams.hParentClient = pNotNode->hClient;
     nv0005AllocParams.hClass        = NV01_EVENT_KERNEL_CALLBACK_EX;
     nv0005AllocParams.data          = NV_PTR_TO_NvP64(&pShared->callback);
     nv0005AllocParams.notifyIndex = notifyIndex |
@@ -576,17 +488,15 @@ _semsurfRegisterCallback
         DRF_NUM(0005, _NOTIFY_INDEX, _SUBDEVICE,
                 gpumgrGetSubDeviceInstanceFromGpu(pGpu));
 
-    NV_ASSERT_OK_OR_RETURN(_semsurfAllocDevObjs(pShared, pGpu, pRmApi));
-
     NV_ASSERT_OK_OR_RETURN(pRmApi->Alloc(pRmApi,
-                                         pShared->hClient,
-                                         pShared->hSubDevice[gpuGetInstance(pGpu)],
-                                         &hEvent,
+                                         pNotNode->hClient,
+                                         hSubdevice,
+                                         &pNotNode->hEvent,
                                          NV01_EVENT_KERNEL_CALLBACK_EX,
                                          &nv0005AllocParams,
                                          sizeof(nv0005AllocParams)));
 
-    *phEvent = hEvent;
+    pNotNode->nUsers = 1;
 
     return NV_OK;
 }
@@ -611,7 +521,7 @@ _semsurfRemoveNotifyBinding
         return NV_OK;
     }
 
-    _semsurfUnregisterCallback(pSemSurf->pShared, pNotNode->hEvent);
+    _semsurfUnregisterCallback(pNotNode);
     mapRemove(&pSemSurf->pShared->notifierMap, pNotNode);
     portMemFree(pNotNode);
 
@@ -707,7 +617,7 @@ _semsurfDestroyShared
          mapIterNext(&notIter);
          notIter = mapIterAll(&pShared->notifierMap))
     {
-        _semsurfUnregisterCallback(pShared, notIter.pValue->hEvent);
+        _semsurfUnregisterCallback(notIter.pValue);
         mapRemove(&pShared->notifierMap, notIter.pValue);
         portMemFree(notIter.pValue);
     }
@@ -721,7 +631,7 @@ _semsurfDestroyShared
         {
             pRmApi->UnmapFromCpu(pRmApi,
                                  pShared->hClient,
-                                 pShared->hDevice[pShared->memGpuIdx],
+                                 pShared->hDevice,
                                  pShared->hMaxSubmittedMem,
                                  pShared->maxSubmittedKernAddr,
                                  0, 0);
@@ -737,7 +647,7 @@ _semsurfDestroyShared
         {
             pRmApi->UnmapFromCpu(pRmApi,
                                  pShared->hClient,
-                                 pShared->hDevice[pShared->memGpuIdx],
+                                 pShared->hDevice,
                                  pShared->hSemaphoreMem,
                                  pShared->semKernAddr,
                                  0, 0);
@@ -751,7 +661,6 @@ _semsurfDestroyShared
     pShared->pSemaphoreMem = NULL;
 
     _semsurfFreeMemory(pShared);
-    _semsurfFreeRmClient(pShared);
 
     if (pShared->pSpinlock)
         portSyncSpinlockDestroy(pShared->pSpinlock);
@@ -780,7 +689,9 @@ semsurfConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    RM_API                                 *pRmApi         = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    OBJGPU                                 *pGpu           = GPU_RES_GET_GPU(pSemSurf);
+    MemoryManager                          *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     SEM_SHARED_DATA                        *pShared;
     RmClient                               *pClient;
     RsClient                               *pRsClient;
@@ -788,6 +699,8 @@ semsurfConstruct_IMPL
     NvU32                                   maxSubmittedCoherency;
     NV_STATUS                               status = NV_OK;
     NvU64                                   i;
+
+    NV_CHECK_OR_RETURN(LEVEL_INFO, !IsSLIEnabled(pGpu), NV_ERR_INVALID_STATE);
 
     if (RS_IS_COPY_CTOR(pParams))
     {
@@ -806,7 +719,6 @@ semsurfConstruct_IMPL
 
     portMemSet(pShared, 0, sizeof(*pShared));
     pShared->refCount = 1;
-    pShared->memGpuIdx = gpuGetInstance(GPU_RES_GET_GPU(pSemSurf));
     mapInitIntrusive(&pShared->listenerMap);
     mapInitIntrusive(&pShared->notifierMap);
     mapInitIntrusive(&pSemSurf->boundChannelMap);
@@ -814,12 +726,15 @@ semsurfConstruct_IMPL
     pShared->pSpinlock = portSyncSpinlockCreate(portMemAllocatorGetGlobalNonPaged());
     NV_ASSERT_TRUE_OR_GOTO(status, pShared->pSpinlock != NULL, NV_ERR_NO_MEMORY, ctorFailed);
 
-    NV_ASSERT_OK_OR_GOTO(status, _semsurfAllocRmClient(pSemSurf), ctorFailed);
+    NV_ASSERT_OK_OR_GOTO(status,
+        memmgrGetInternalClientHandles(pGpu, pMemoryManager, GPU_RES_GET_DEVICE(pSemSurf),
+                                            &pShared->hClient, &pShared->hDevice, &pShared->hSubdevice),
+    ctorFailed);
 
     NV_ASSERT_OK_OR_GOTO(status,
         pRmApi->Control(pRmApi,
                         pShared->hClient,
-                        pShared->hSubDevice[pShared->memGpuIdx],
+                        pShared->hSubdevice,
                         NV2080_CTRL_CMD_FB_GET_SEMAPHORE_SURFACE_LAYOUT,
                        &pShared->layout,
                         sizeof pShared->layout),
@@ -854,7 +769,7 @@ semsurfConstruct_IMPL
     NV_ASSERT_OK_OR_GOTO(status,
         pRmApi->MapToCpu(pRmApi,
                          pShared->hClient,
-                         pShared->hDevice[pShared->memGpuIdx],
+                         pShared->hDevice,
                          pShared->hSemaphoreMem,
                          0,
                          pShared->pSemaphoreMem->pMemDesc->Size,
@@ -884,7 +799,7 @@ semsurfConstruct_IMPL
             NV_ASSERT_OK_OR_GOTO(status,
                 pRmApi->MapToCpu(pRmApi,
                                  pShared->hClient,
-                                 pShared->hDevice[pShared->memGpuIdx],
+                                 pShared->hDevice,
                                  pShared->hMaxSubmittedMem,
                                  0,
                                  pShared->pMaxSubmittedMem->pMemDesc->Size,
@@ -1169,7 +1084,6 @@ semsurfCtrlCmdBindChannel_IMPL
     OBJGPU *pGpu;
     RsClient *pRsClient = staticCast(RES_GET_CLIENT(pSemSurf), RsClient);
     KernelChannel *pKernelChannel;
-    NvHandle hEvent;
     NvU64 mapKey;
     NV_STATUS rmStatus = NV_OK;
     NvU32 gpuIdx;
@@ -1187,7 +1101,6 @@ semsurfCtrlCmdBindChannel_IMPL
     NV_CHECK_OR_RETURN(LEVEL_INFO, !IsSLIEnabled(pGpu), NV_ERR_INVALID_STATE);
 
     gpuIdx = gpuGetInstance(pGpu);
-
 
     if (pParams->numNotifyIndices > NV_ARRAY_ELEMENTS(pParams->notifyIndices))
     {
@@ -1228,14 +1141,6 @@ semsurfCtrlCmdBindChannel_IMPL
             continue;
         }
 
-        NV_CHECK_OK_OR_GOTO(rmStatus,
-                            LEVEL_SILENT,
-                            _semsurfRegisterCallback(pSemSurf,
-                                                     pGpu,
-                                                     pParams->notifyIndices[i],
-                                                     &hEvent),
-                            undoBound);
-
         pNotNode = portMemAllocNonPaged(sizeof(*pNotNode));
         if (pNotNode == NULL)
         {
@@ -1245,13 +1150,21 @@ semsurfCtrlCmdBindChannel_IMPL
                       RES_GET_CLIENT_HANDLE(pSemSurf),
                       RES_GET_HANDLE(pSemSurf));
 
-            _semsurfUnregisterCallback(pSemSurf->pShared, hEvent);
             rmStatus = NV_ERR_NO_MEMORY;
             goto undoBound;
         }
+        portMemSet(pNotNode, 0, sizeof(*pNotNode));
 
-        pNotNode->hEvent = hEvent;
-        pNotNode->nUsers = 1;
+        rmStatus = _semsurfRegisterCallback(pSemSurf,
+                                            pGpu,
+                                            pKernelChannel,
+                                            pNotNode,
+                                            pParams->notifyIndices[i]);
+        if (rmStatus != NV_OK)
+        {
+            portMemFree(pNotNode);
+            goto undoBound;
+        }
 
         if (!mapInsertExisting(&pSemSurf->pShared->notifierMap,
                                mapKey,
@@ -1263,7 +1176,7 @@ semsurfCtrlCmdBindChannel_IMPL
                       RES_GET_CLIENT_HANDLE(pSemSurf),
                       RES_GET_HANDLE(pSemSurf));
 
-            _semsurfUnregisterCallback(pSemSurf->pShared, hEvent);
+            _semsurfUnregisterCallback(pNotNode);
             portMemFree(pNotNode);
             rmStatus = NV_ERR_INVALID_STATE;
             goto undoBound;

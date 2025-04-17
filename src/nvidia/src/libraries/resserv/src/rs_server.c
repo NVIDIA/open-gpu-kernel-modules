@@ -256,7 +256,7 @@ NV_STATUS serverFreeResourceTreeUnderLock(RsServer *pServer, RS_RES_FREE_PARAMS 
             goto done;
 
         status = clientFreeResource(pResourceRef->pClient, pServer, pFreeParams);
-        NV_ASSERT(status == NV_OK);
+        NV_ASSERT((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET));
 
         serverResLock_Epilogue(pServer, LOCK_ACCESS_WRITE, pLockInfo, &releaseFlags);
     }
@@ -1372,7 +1372,7 @@ serverFreeResourceTree
         freeParams.bInvalidateOnly = bInvalidateOnly;
         freeParams.pSecInfo = pParams->pSecInfo;
         status = serverFreeResourceTreeUnderLock(pServer, &freeParams);
-        NV_ASSERT(status == NV_OK);
+        NV_ASSERT((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET));
 
         if (pServer->bDebugFreeList)
         {
@@ -1706,6 +1706,10 @@ serverCopyResource
         goto done;
     }
 
+    status = clientGetResourceRef(pClientDst, pParams->hParentDst, &pParams->pDstParentRef);
+    if (status != NV_OK)
+        return status;
+
     if (!resCanCopy(pResourceRefSrc->pResource))
     {
         status = NV_ERR_INVALID_ARGUMENT;
@@ -1718,6 +1722,7 @@ serverCopyResource
 
     pParams->pSrcClient = pClientSrc;
     pParams->pSrcRef = pResourceRefSrc;
+    pParams->pDstClient = pClientDst;
 
     status = serverUpdateLockFlagsForCopy(pServer, pParams);
     if (status != NV_OK)

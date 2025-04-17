@@ -1,20 +1,22 @@
 
 #ifndef _G_KERN_DISP_NVOC_H_
 #define _G_KERN_DISP_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -83,17 +85,6 @@ typedef enum
 
 typedef struct
 {
-    struct RsClient *pClient;
-    NvHandle hChannel;
-    NvU32    channelNum;
-    NvBool   bInUse;
-} KernelDisplayClientChannelMap;
-
-#define DISP_INTR_REG(reg)          NV_PDISP_FE_RM_INTR_##reg
-#define DISP_INTR_REG_IDX(reg,i)    NV_PDISP_FE_RM_INTR_##reg(i)
-
-typedef struct
-{
 // Link configuration
     NvU32   linkBw;                     // Link Rate (270M unit)
     NvU32   dp2LinkBw;                  // Link Rate using DP2.x convention (10M unit)
@@ -102,6 +93,7 @@ typedef struct
     NvBool  bEnhancedFraming;           // Enhanced Framing is enabled or not
     NvBool  bMultiStream;               // Multistream is enabled or not
     NvBool  bFecEnable;                 // FEC is enabled or not
+    NvBool  bDisableEffBppSST8b10b;     // Disable effective bpp 8b10b coding or not
 
 // DSC Information
     NvBool  bDscEnable;                 // DSC is enabled or not
@@ -124,6 +116,17 @@ typedef struct
 
 // bpp in PPS is multiplied by 16 when DSC is enabled
 #define DSC_BPP_FACTOR 16
+
+typedef struct
+{
+    struct RsClient *pClient;
+    NvHandle hChannel;
+    NvU32    channelNum;
+    NvBool   bInUse;
+} KernelDisplayClientChannelMap;
+
+#define DISP_INTR_REG(reg)          NV_PDISP_FE_RM_INTR_##reg
+#define DISP_INTR_REG_IDX(reg,i)    NV_PDISP_FE_RM_INTR_##reg(i)
 
 
 struct DispChannel;
@@ -171,15 +174,20 @@ typedef struct RgLineCallback RgLineCallback;
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__KernelDisplay;
+struct NVOC_METADATA__OBJENGSTATE;
+struct NVOC_METADATA__IntrService;
 struct NVOC_VTABLE__KernelDisplay;
 
 
 struct KernelDisplay {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__KernelDisplay *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__KernelDisplay *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -191,12 +199,13 @@ struct KernelDisplay {
     struct IntrService *__nvoc_pbase_IntrService;    // intrserv super
     struct KernelDisplay *__nvoc_pbase_KernelDisplay;    // kdisp
 
-    // Vtable with 19 per-object function pointers
+    // Vtable with 31 per-object function pointers
     NV_STATUS (*__kdispSelectClass__)(OBJGPU *, struct KernelDisplay * /*this*/, NvU32);  // halified (2 hals) body
     NV_STATUS (*__kdispGetChannelNum__)(struct KernelDisplay * /*this*/, DISPCHNCLASS, NvU32, NvU32 *);  // halified (2 hals) body
     void (*__kdispGetDisplayCapsBaseAndSize__)(OBJGPU *, struct KernelDisplay * /*this*/, NvU32 *, NvU32 *);  // halified (2 hals) body
     void (*__kdispGetDisplaySfUserBaseAndSize__)(OBJGPU *, struct KernelDisplay * /*this*/, NvU32 *, NvU32 *);  // halified (2 hals) body
     NV_STATUS (*__kdispGetDisplayChannelUserBaseAndSize__)(OBJGPU *, struct KernelDisplay * /*this*/, DISPCHNCLASS, NvU32, NvU32 *, NvU32 *);  // halified (2 hals) body
+    NV_STATUS (*__kdispImportImpData__)(struct KernelDisplay * /*this*/);  // halified (2 hals) body
     NvBool (*__kdispGetVgaWorkspaceBase__)(OBJGPU *, struct KernelDisplay * /*this*/, NvU64 *);  // halified (3 hals) body
     NV_STATUS (*__kdispReadRgLineCountAndFrameCount__)(OBJGPU *, struct KernelDisplay * /*this*/, NvU32, NvU32 *, NvU32 *);  // halified (2 hals) body
     void (*__kdispRestoreOriginalLsrMinTime__)(OBJGPU *, struct KernelDisplay * /*this*/, NvU32, NvU32);  // halified (2 hals) body
@@ -209,11 +218,21 @@ struct KernelDisplay {
     NvBool (*__kdispReadPendingWinSemIntr__)(OBJGPU *, struct KernelDisplay * /*this*/, struct THREAD_STATE_NODE *, NvU32 *);  // halified (2 hals) body
     void (*__kdispHandleWinSemEvt__)(OBJGPU *, struct KernelDisplay * /*this*/, struct THREAD_STATE_NODE *);  // halified (2 hals) body
     void (*__kdispIntrRetrigger__)(OBJGPU *, struct KernelDisplay * /*this*/, NvU32, struct THREAD_STATE_NODE *);  // halified (2 hals) body
-    NvU32 (*__kdispServiceAwakenIntr__)(OBJGPU *, struct KernelDisplay * /*this*/, struct THREAD_STATE_NODE *);  // halified (2 hals) body
     NV_STATUS (*__kdispComputeDpModeSettings__)(OBJGPU *, struct KernelDisplay * /*this*/, NvU32, DPMODESETDATA *, DPIMPINFO *);  // halified (3 hals) body
+    NvU32 (*__kdispServiceAwakenIntr__)(OBJGPU *, struct KernelDisplay * /*this*/, struct THREAD_STATE_NODE *);  // halified (2 hals) body
+    NV_STATUS (*__kdispSetAccel__)(OBJGPU *, struct KernelDisplay * /*this*/, NvHandle, DISPCHNCLASS, NvU32, NvU32, NvU32);  // halified (2 hals) body
+    NV_STATUS (*__kdispGetAccel__)(OBJGPU *, struct KernelDisplay * /*this*/, NvHandle, DISPCHNCLASS, NvU32, NvU32 *);  // halified (2 hals) body
+    NvBool (*__kdispIsChannelAllocatedSw__)(OBJGPU *, struct KernelDisplay * /*this*/, DISPCHNCLASS, NvU32);  // halified (2 hals) body
+    NvBool (*__kdispIsChannelAllocatedHw__)(OBJGPU *, struct KernelDisplay * /*this*/, DISPCHNCLASS, NvU32);  // halified (2 hals) body
+    NV_STATUS (*__kdispGetChnCtlRegs__)(struct KernelDisplay * /*this*/, DISPCHNCLASS, NvU32, NvU32 *);  // halified (2 hals) body
+    NV_STATUS (*__kdispGetAccelerators__)(OBJGPU *, struct KernelDisplay * /*this*/, DISPCHNCLASS, NvU32, NvU32 *, NvU32 *);  // halified (2 hals) body
+    void (*__kdispApplyAccelerators__)(OBJGPU *, struct KernelDisplay * /*this*/, DISPCHNCLASS, NvU32, NvU32 *, NvU32, NvBool);  // halified (2 hals) body
+    NV_STATUS (*__kdispReadChannelState__)(OBJGPU *, struct KernelDisplay * /*this*/, DISPCHNCLASS, NvU32, DISPCHNSTATE *);  // halified (2 hals) body
+    NV_STATUS (*__kdispReadDebugStatus__)(OBJGPU *, struct KernelDisplay * /*this*/, DISPCHNCLASS, NvU32, NvBool *);  // halified (2 hals) body
+    NV_STATUS (*__kdispGetChnStatusRegs__)(struct KernelDisplay * /*this*/, DISPCHNCLASS, NvU32, NvU32 *);  // halified (2 hals) body
+    void (*__kdispApplyWarForBug3385499__)(OBJGPU *, struct KernelDisplay * /*this*/, DISPCHNCLASS, NvU32, NvU32);  // halified (2 hals) body
 
-    // 6 PDB properties
-    NvBool PDB_PROP_KDISP_IMP_ENABLE;
+    // 5 PDB properties
     NvBool PDB_PROP_KDISP_IMP_ALLOC_BW_IN_KERNEL_RM_DEF;
     NvBool PDB_PROP_KDISP_FEATURE_STRETCH_VBLANK_CAPABLE;
     NvBool PDB_PROP_KDISP_IN_AWAKEN_INTR;
@@ -239,14 +258,13 @@ struct KernelDisplay {
     PORT_SPINLOCK *pLowLatencySpinLock;
     NvU32 numDispChannels;
     KernelDisplayClientChannelMap *pClientChannelTable;
+    NvBool bIsPanelReplayEnabled;
+    void *pRgVblankCb;
 };
 
 
-// Metadata including vtable with 18 function pointers plus superclass metadata
+// Vtable with 18 per-class function pointers
 struct NVOC_VTABLE__KernelDisplay {
-    const struct NVOC_VTABLE__OBJENGSTATE OBJENGSTATE;    // (engstate) 14 function pointers
-    const struct NVOC_VTABLE__IntrService IntrService;    // (intrserv) 4 function pointers
-
     NV_STATUS (*__kdispConstructEngine__)(OBJGPU *, struct KernelDisplay * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__kdispStatePreInitLocked__)(OBJGPU *, struct KernelDisplay * /*this*/);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__kdispStateInitLocked__)(OBJGPU *, struct KernelDisplay * /*this*/);  // virtual override (engstate) base (engstate)
@@ -267,6 +285,14 @@ struct NVOC_VTABLE__KernelDisplay {
     NV_STATUS (*__kdispServiceNotificationInterrupt__)(OBJGPU *, struct KernelDisplay * /*this*/, IntrServiceServiceNotificationInterruptArguments *);  // virtual inherited (intrserv) base (intrserv)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__KernelDisplay {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
+    const struct NVOC_METADATA__IntrService metadata__IntrService;
+    const struct NVOC_VTABLE__KernelDisplay vtable;
+};
+
 #ifndef __NVOC_CLASS_KernelDisplay_TYPEDEF__
 #define __NVOC_CLASS_KernelDisplay_TYPEDEF__
 typedef struct KernelDisplay KernelDisplay;
@@ -283,10 +309,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelDisplay;
     ((pThis)->__nvoc_pbase_KernelDisplay)
 
 #ifdef __nvoc_kern_disp_h_disabled
-#define __dynamicCast_KernelDisplay(pThis) ((KernelDisplay*)NULL)
+#define __dynamicCast_KernelDisplay(pThis) ((KernelDisplay*) NULL)
 #else //__nvoc_kern_disp_h_disabled
 #define __dynamicCast_KernelDisplay(pThis) \
-    ((KernelDisplay*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(KernelDisplay)))
+    ((KernelDisplay*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(KernelDisplay)))
 #endif //__nvoc_kern_disp_h_disabled
 
 // Property macros
@@ -298,8 +324,6 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelDisplay;
 #define PDB_PROP_KDISP_IN_AWAKEN_INTR_BASE_NAME PDB_PROP_KDISP_IN_AWAKEN_INTR
 #define PDB_PROP_KDISP_IMP_ALLOC_BW_IN_KERNEL_RM_DEF_BASE_CAST
 #define PDB_PROP_KDISP_IMP_ALLOC_BW_IN_KERNEL_RM_DEF_BASE_NAME PDB_PROP_KDISP_IMP_ALLOC_BW_IN_KERNEL_RM_DEF
-#define PDB_PROP_KDISP_IMP_ENABLE_BASE_CAST
-#define PDB_PROP_KDISP_IMP_ENABLE_BASE_NAME PDB_PROP_KDISP_IMP_ENABLE
 #define PDB_PROP_KDISP_FEATURE_STRETCH_VBLANK_CAPABLE_BASE_CAST
 #define PDB_PROP_KDISP_FEATURE_STRETCH_VBLANK_CAPABLE_BASE_NAME PDB_PROP_KDISP_FEATURE_STRETCH_VBLANK_CAPABLE
 
@@ -311,21 +335,21 @@ NV_STATUS __nvoc_objCreate_KernelDisplay(KernelDisplay**, Dynamic*, NvU32);
 
 
 // Wrapper macros
-#define kdispConstructEngine_FNPTR(pKernelDisplay) pKernelDisplay->__nvoc_vtable->__kdispConstructEngine__
+#define kdispConstructEngine_FNPTR(pKernelDisplay) pKernelDisplay->__nvoc_metadata_ptr->vtable.__kdispConstructEngine__
 #define kdispConstructEngine(pGpu, pKernelDisplay, engDesc) kdispConstructEngine_DISPATCH(pGpu, pKernelDisplay, engDesc)
-#define kdispStatePreInitLocked_FNPTR(pKernelDisplay) pKernelDisplay->__nvoc_vtable->__kdispStatePreInitLocked__
+#define kdispStatePreInitLocked_FNPTR(pKernelDisplay) pKernelDisplay->__nvoc_metadata_ptr->vtable.__kdispStatePreInitLocked__
 #define kdispStatePreInitLocked(pGpu, pKernelDisplay) kdispStatePreInitLocked_DISPATCH(pGpu, pKernelDisplay)
-#define kdispStateInitLocked_FNPTR(pKernelDisplay) pKernelDisplay->__nvoc_vtable->__kdispStateInitLocked__
+#define kdispStateInitLocked_FNPTR(pKernelDisplay) pKernelDisplay->__nvoc_metadata_ptr->vtable.__kdispStateInitLocked__
 #define kdispStateInitLocked(pGpu, pKernelDisplay) kdispStateInitLocked_DISPATCH(pGpu, pKernelDisplay)
-#define kdispStateDestroy_FNPTR(pKernelDisplay) pKernelDisplay->__nvoc_vtable->__kdispStateDestroy__
+#define kdispStateDestroy_FNPTR(pKernelDisplay) pKernelDisplay->__nvoc_metadata_ptr->vtable.__kdispStateDestroy__
 #define kdispStateDestroy(pGpu, pKernelDisplay) kdispStateDestroy_DISPATCH(pGpu, pKernelDisplay)
-#define kdispStateLoad_FNPTR(pKernelDisplay) pKernelDisplay->__nvoc_vtable->__kdispStateLoad__
+#define kdispStateLoad_FNPTR(pKernelDisplay) pKernelDisplay->__nvoc_metadata_ptr->vtable.__kdispStateLoad__
 #define kdispStateLoad(pGpu, pKernelDisplay, flags) kdispStateLoad_DISPATCH(pGpu, pKernelDisplay, flags)
-#define kdispStateUnload_FNPTR(pKernelDisplay) pKernelDisplay->__nvoc_vtable->__kdispStateUnload__
+#define kdispStateUnload_FNPTR(pKernelDisplay) pKernelDisplay->__nvoc_metadata_ptr->vtable.__kdispStateUnload__
 #define kdispStateUnload(pGpu, pKernelDisplay, flags) kdispStateUnload_DISPATCH(pGpu, pKernelDisplay, flags)
-#define kdispRegisterIntrService_FNPTR(pKernelDisplay) pKernelDisplay->__nvoc_vtable->__kdispRegisterIntrService__
+#define kdispRegisterIntrService_FNPTR(pKernelDisplay) pKernelDisplay->__nvoc_metadata_ptr->vtable.__kdispRegisterIntrService__
 #define kdispRegisterIntrService(pGpu, pKernelDisplay, pRecords) kdispRegisterIntrService_DISPATCH(pGpu, pKernelDisplay, pRecords)
-#define kdispServiceInterrupt_FNPTR(pKernelDisplay) pKernelDisplay->__nvoc_vtable->__kdispServiceInterrupt__
+#define kdispServiceInterrupt_FNPTR(pKernelDisplay) pKernelDisplay->__nvoc_metadata_ptr->vtable.__kdispServiceInterrupt__
 #define kdispServiceInterrupt(pGpu, pKernelDisplay, pParams) kdispServiceInterrupt_DISPATCH(pGpu, pKernelDisplay, pParams)
 #define kdispServiceInterrupt_HAL(pGpu, pKernelDisplay, pParams) kdispServiceInterrupt_DISPATCH(pGpu, pKernelDisplay, pParams)
 #define kdispSelectClass_FNPTR(pKernelDisplay) pKernelDisplay->__kdispSelectClass__
@@ -343,6 +367,9 @@ NV_STATUS __nvoc_objCreate_KernelDisplay(KernelDisplay**, Dynamic*, NvU32);
 #define kdispGetDisplayChannelUserBaseAndSize_FNPTR(pKernelDisplay) pKernelDisplay->__kdispGetDisplayChannelUserBaseAndSize__
 #define kdispGetDisplayChannelUserBaseAndSize(pGpu, pKernelDisplay, channelClass, channelInstance, pOffset, pSize) kdispGetDisplayChannelUserBaseAndSize_DISPATCH(pGpu, pKernelDisplay, channelClass, channelInstance, pOffset, pSize)
 #define kdispGetDisplayChannelUserBaseAndSize_HAL(pGpu, pKernelDisplay, channelClass, channelInstance, pOffset, pSize) kdispGetDisplayChannelUserBaseAndSize_DISPATCH(pGpu, pKernelDisplay, channelClass, channelInstance, pOffset, pSize)
+#define kdispImportImpData_FNPTR(pKernelDisplay) pKernelDisplay->__kdispImportImpData__
+#define kdispImportImpData(pKernelDisplay) kdispImportImpData_DISPATCH(pKernelDisplay)
+#define kdispImportImpData_HAL(pKernelDisplay) kdispImportImpData_DISPATCH(pKernelDisplay)
 #define kdispGetVgaWorkspaceBase_FNPTR(pKernelDisplay) pKernelDisplay->__kdispGetVgaWorkspaceBase__
 #define kdispGetVgaWorkspaceBase(pGpu, pKernelDisplay, pOffset) kdispGetVgaWorkspaceBase_DISPATCH(pGpu, pKernelDisplay, pOffset)
 #define kdispGetVgaWorkspaceBase_HAL(pGpu, pKernelDisplay, pOffset) kdispGetVgaWorkspaceBase_DISPATCH(pGpu, pKernelDisplay, pOffset)
@@ -379,64 +406,97 @@ NV_STATUS __nvoc_objCreate_KernelDisplay(KernelDisplay**, Dynamic*, NvU32);
 #define kdispIntrRetrigger_FNPTR(pKernelDisplay) pKernelDisplay->__kdispIntrRetrigger__
 #define kdispIntrRetrigger(pGpu, pKernelDisplay, index, arg4) kdispIntrRetrigger_DISPATCH(pGpu, pKernelDisplay, index, arg4)
 #define kdispIntrRetrigger_HAL(pGpu, pKernelDisplay, index, arg4) kdispIntrRetrigger_DISPATCH(pGpu, pKernelDisplay, index, arg4)
-#define kdispServiceAwakenIntr_FNPTR(pKernelDisplay) pKernelDisplay->__kdispServiceAwakenIntr__
-#define kdispServiceAwakenIntr(pGpu, pKernelDisplay, pThreadState) kdispServiceAwakenIntr_DISPATCH(pGpu, pKernelDisplay, pThreadState)
-#define kdispServiceAwakenIntr_HAL(pGpu, pKernelDisplay, pThreadState) kdispServiceAwakenIntr_DISPATCH(pGpu, pKernelDisplay, pThreadState)
 #define kdispComputeDpModeSettings_FNPTR(pKernelDisplay) pKernelDisplay->__kdispComputeDpModeSettings__
 #define kdispComputeDpModeSettings(pGpu, pKernelDisplay, headIndex, pDpModesetData, dpInfo) kdispComputeDpModeSettings_DISPATCH(pGpu, pKernelDisplay, headIndex, pDpModesetData, dpInfo)
 #define kdispComputeDpModeSettings_HAL(pGpu, pKernelDisplay, headIndex, pDpModesetData, dpInfo) kdispComputeDpModeSettings_DISPATCH(pGpu, pKernelDisplay, headIndex, pDpModesetData, dpInfo)
-#define kdispInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateInitMissing__
+#define kdispServiceAwakenIntr_FNPTR(pKernelDisplay) pKernelDisplay->__kdispServiceAwakenIntr__
+#define kdispServiceAwakenIntr(pGpu, pKernelDisplay, pThreadState) kdispServiceAwakenIntr_DISPATCH(pGpu, pKernelDisplay, pThreadState)
+#define kdispServiceAwakenIntr_HAL(pGpu, pKernelDisplay, pThreadState) kdispServiceAwakenIntr_DISPATCH(pGpu, pKernelDisplay, pThreadState)
+#define kdispSetAccel_FNPTR(pKernelDisplay) pKernelDisplay->__kdispSetAccel__
+#define kdispSetAccel(pGpu, pKernelDisplay, hClient, channelClass, channelInstance, acceleratorsm, accelMask) kdispSetAccel_DISPATCH(pGpu, pKernelDisplay, hClient, channelClass, channelInstance, acceleratorsm, accelMask)
+#define kdispSetAccel_HAL(pGpu, pKernelDisplay, hClient, channelClass, channelInstance, acceleratorsm, accelMask) kdispSetAccel_DISPATCH(pGpu, pKernelDisplay, hClient, channelClass, channelInstance, acceleratorsm, accelMask)
+#define kdispGetAccel_FNPTR(pKernelDisplay) pKernelDisplay->__kdispGetAccel__
+#define kdispGetAccel(pGpu, pKernelDisplay, hClient, channelClass, channelInstance, accelerators) kdispGetAccel_DISPATCH(pGpu, pKernelDisplay, hClient, channelClass, channelInstance, accelerators)
+#define kdispGetAccel_HAL(pGpu, pKernelDisplay, hClient, channelClass, channelInstance, accelerators) kdispGetAccel_DISPATCH(pGpu, pKernelDisplay, hClient, channelClass, channelInstance, accelerators)
+#define kdispIsChannelAllocatedSw_FNPTR(pKernelDisplay) pKernelDisplay->__kdispIsChannelAllocatedSw__
+#define kdispIsChannelAllocatedSw(pGpu, pKernelDisplay, channelClass, channelInstance) kdispIsChannelAllocatedSw_DISPATCH(pGpu, pKernelDisplay, channelClass, channelInstance)
+#define kdispIsChannelAllocatedSw_HAL(pGpu, pKernelDisplay, channelClass, channelInstance) kdispIsChannelAllocatedSw_DISPATCH(pGpu, pKernelDisplay, channelClass, channelInstance)
+#define kdispIsChannelAllocatedHw_FNPTR(pKernelDisplay) pKernelDisplay->__kdispIsChannelAllocatedHw__
+#define kdispIsChannelAllocatedHw(pGpu, pKernelDisplay, arg3, arg4) kdispIsChannelAllocatedHw_DISPATCH(pGpu, pKernelDisplay, arg3, arg4)
+#define kdispIsChannelAllocatedHw_HAL(pGpu, pKernelDisplay, arg3, arg4) kdispIsChannelAllocatedHw_DISPATCH(pGpu, pKernelDisplay, arg3, arg4)
+#define kdispGetChnCtlRegs_FNPTR(pKernelDisplay) pKernelDisplay->__kdispGetChnCtlRegs__
+#define kdispGetChnCtlRegs(pKernelDisplay, channelClass, channelInstance, pChnCtl) kdispGetChnCtlRegs_DISPATCH(pKernelDisplay, channelClass, channelInstance, pChnCtl)
+#define kdispGetChnCtlRegs_HAL(pKernelDisplay, channelClass, channelInstance, pChnCtl) kdispGetChnCtlRegs_DISPATCH(pKernelDisplay, channelClass, channelInstance, pChnCtl)
+#define kdispGetAccelerators_FNPTR(pKernelDisplay) pKernelDisplay->__kdispGetAccelerators__
+#define kdispGetAccelerators(pGpu, pKernelDisplay, arg3, channelInstance, pCurrChannelCtl, pAccelerators) kdispGetAccelerators_DISPATCH(pGpu, pKernelDisplay, arg3, channelInstance, pCurrChannelCtl, pAccelerators)
+#define kdispGetAccelerators_HAL(pGpu, pKernelDisplay, arg3, channelInstance, pCurrChannelCtl, pAccelerators) kdispGetAccelerators_DISPATCH(pGpu, pKernelDisplay, arg3, channelInstance, pCurrChannelCtl, pAccelerators)
+#define kdispApplyAccelerators_FNPTR(pKernelDisplay) pKernelDisplay->__kdispApplyAccelerators__
+#define kdispApplyAccelerators(pGpu, pKernelDisplay, arg3, channelInstance, pCurrChannelCtl, acceleratorsToApply, keepCurrAccelerators) kdispApplyAccelerators_DISPATCH(pGpu, pKernelDisplay, arg3, channelInstance, pCurrChannelCtl, acceleratorsToApply, keepCurrAccelerators)
+#define kdispApplyAccelerators_HAL(pGpu, pKernelDisplay, arg3, channelInstance, pCurrChannelCtl, acceleratorsToApply, keepCurrAccelerators) kdispApplyAccelerators_DISPATCH(pGpu, pKernelDisplay, arg3, channelInstance, pCurrChannelCtl, acceleratorsToApply, keepCurrAccelerators)
+#define kdispReadChannelState_FNPTR(pKernelDisplay) pKernelDisplay->__kdispReadChannelState__
+#define kdispReadChannelState(pGpu, pKernelDisplay, channelClass, channelInstance, pChannelState) kdispReadChannelState_DISPATCH(pGpu, pKernelDisplay, channelClass, channelInstance, pChannelState)
+#define kdispReadChannelState_HAL(pGpu, pKernelDisplay, channelClass, channelInstance, pChannelState) kdispReadChannelState_DISPATCH(pGpu, pKernelDisplay, channelClass, channelInstance, pChannelState)
+#define kdispReadDebugStatus_FNPTR(pKernelDisplay) pKernelDisplay->__kdispReadDebugStatus__
+#define kdispReadDebugStatus(pGpu, pKernelDisplay, channelClass, channelInstance, isDebugEnabled) kdispReadDebugStatus_DISPATCH(pGpu, pKernelDisplay, channelClass, channelInstance, isDebugEnabled)
+#define kdispReadDebugStatus_HAL(pGpu, pKernelDisplay, channelClass, channelInstance, isDebugEnabled) kdispReadDebugStatus_DISPATCH(pGpu, pKernelDisplay, channelClass, channelInstance, isDebugEnabled)
+#define kdispGetChnStatusRegs_FNPTR(pKernelDisplay) pKernelDisplay->__kdispGetChnStatusRegs__
+#define kdispGetChnStatusRegs(pKernelDisplay, channelClass, channelInstance, pChnStatus) kdispGetChnStatusRegs_DISPATCH(pKernelDisplay, channelClass, channelInstance, pChnStatus)
+#define kdispGetChnStatusRegs_HAL(pKernelDisplay, channelClass, channelInstance, pChnStatus) kdispGetChnStatusRegs_DISPATCH(pKernelDisplay, channelClass, channelInstance, pChnStatus)
+#define kdispApplyWarForBug3385499_FNPTR(pKernelDisplay) pKernelDisplay->__kdispApplyWarForBug3385499__
+#define kdispApplyWarForBug3385499(pGpu, pKernelDisplay, arg3, channelInstance, chnCtlOffset) kdispApplyWarForBug3385499_DISPATCH(pGpu, pKernelDisplay, arg3, channelInstance, chnCtlOffset)
+#define kdispApplyWarForBug3385499_HAL(pGpu, pKernelDisplay, arg3, channelInstance, chnCtlOffset) kdispApplyWarForBug3385499_DISPATCH(pGpu, pKernelDisplay, arg3, channelInstance, chnCtlOffset)
+#define kdispInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define kdispInitMissing(pGpu, pEngstate) kdispInitMissing_DISPATCH(pGpu, pEngstate)
-#define kdispStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitUnlocked__
+#define kdispStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__
 #define kdispStatePreInitUnlocked(pGpu, pEngstate) kdispStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kdispStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateInitUnlocked__
+#define kdispStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__
 #define kdispStateInitUnlocked(pGpu, pEngstate) kdispStateInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kdispStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreLoad__
+#define kdispStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__
 #define kdispStatePreLoad(pGpu, pEngstate, arg3) kdispStatePreLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define kdispStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePostLoad__
+#define kdispStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostLoad__
 #define kdispStatePostLoad(pGpu, pEngstate, arg3) kdispStatePostLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define kdispStatePreUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreUnload__
+#define kdispStatePreUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreUnload__
 #define kdispStatePreUnload(pGpu, pEngstate, arg3) kdispStatePreUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define kdispStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePostUnload__
+#define kdispStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__
 #define kdispStatePostUnload(pGpu, pEngstate, arg3) kdispStatePostUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define kdispIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateIsPresent__
+#define kdispIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__
 #define kdispIsPresent(pGpu, pEngstate) kdispIsPresent_DISPATCH(pGpu, pEngstate)
-#define kdispClearInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_base_IntrService.__nvoc_vtable->__intrservClearInterrupt__
+#define kdispClearInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_base_IntrService.__nvoc_metadata_ptr->vtable.__intrservClearInterrupt__
 #define kdispClearInterrupt(pGpu, pIntrService, pParams) kdispClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
-#define kdispServiceNotificationInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_base_IntrService.__nvoc_vtable->__intrservServiceNotificationInterrupt__
+#define kdispServiceNotificationInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_base_IntrService.__nvoc_metadata_ptr->vtable.__intrservServiceNotificationInterrupt__
 #define kdispServiceNotificationInterrupt(pGpu, pIntrService, pParams) kdispServiceNotificationInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 
 // Dispatch functions
 static inline NV_STATUS kdispConstructEngine_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, ENGDESCRIPTOR engDesc) {
-    return pKernelDisplay->__nvoc_vtable->__kdispConstructEngine__(pGpu, pKernelDisplay, engDesc);
+    return pKernelDisplay->__nvoc_metadata_ptr->vtable.__kdispConstructEngine__(pGpu, pKernelDisplay, engDesc);
 }
 
 static inline NV_STATUS kdispStatePreInitLocked_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay) {
-    return pKernelDisplay->__nvoc_vtable->__kdispStatePreInitLocked__(pGpu, pKernelDisplay);
+    return pKernelDisplay->__nvoc_metadata_ptr->vtable.__kdispStatePreInitLocked__(pGpu, pKernelDisplay);
 }
 
 static inline NV_STATUS kdispStateInitLocked_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay) {
-    return pKernelDisplay->__nvoc_vtable->__kdispStateInitLocked__(pGpu, pKernelDisplay);
+    return pKernelDisplay->__nvoc_metadata_ptr->vtable.__kdispStateInitLocked__(pGpu, pKernelDisplay);
 }
 
 static inline void kdispStateDestroy_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay) {
-    pKernelDisplay->__nvoc_vtable->__kdispStateDestroy__(pGpu, pKernelDisplay);
+    pKernelDisplay->__nvoc_metadata_ptr->vtable.__kdispStateDestroy__(pGpu, pKernelDisplay);
 }
 
 static inline NV_STATUS kdispStateLoad_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 flags) {
-    return pKernelDisplay->__nvoc_vtable->__kdispStateLoad__(pGpu, pKernelDisplay, flags);
+    return pKernelDisplay->__nvoc_metadata_ptr->vtable.__kdispStateLoad__(pGpu, pKernelDisplay, flags);
 }
 
 static inline NV_STATUS kdispStateUnload_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 flags) {
-    return pKernelDisplay->__nvoc_vtable->__kdispStateUnload__(pGpu, pKernelDisplay, flags);
+    return pKernelDisplay->__nvoc_metadata_ptr->vtable.__kdispStateUnload__(pGpu, pKernelDisplay, flags);
 }
 
-static inline void kdispRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceRecord pRecords[177]) {
-    pKernelDisplay->__nvoc_vtable->__kdispRegisterIntrService__(pGpu, pKernelDisplay, pRecords);
+static inline void kdispRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceRecord pRecords[179]) {
+    pKernelDisplay->__nvoc_metadata_ptr->vtable.__kdispRegisterIntrService__(pGpu, pKernelDisplay, pRecords);
 }
 
 static inline NvU32 kdispServiceInterrupt_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceServiceInterruptArguments *pParams) {
-    return pKernelDisplay->__nvoc_vtable->__kdispServiceInterrupt__(pGpu, pKernelDisplay, pParams);
+    return pKernelDisplay->__nvoc_metadata_ptr->vtable.__kdispServiceInterrupt__(pGpu, pKernelDisplay, pParams);
 }
 
 static inline NV_STATUS kdispSelectClass_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 swClass) {
@@ -457,6 +517,10 @@ static inline void kdispGetDisplaySfUserBaseAndSize_DISPATCH(OBJGPU *pGpu, struc
 
 static inline NV_STATUS kdispGetDisplayChannelUserBaseAndSize_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance, NvU32 *pOffset, NvU32 *pSize) {
     return pKernelDisplay->__kdispGetDisplayChannelUserBaseAndSize__(pGpu, pKernelDisplay, channelClass, channelInstance, pOffset, pSize);
+}
+
+static inline NV_STATUS kdispImportImpData_DISPATCH(struct KernelDisplay *pKernelDisplay) {
+    return pKernelDisplay->__kdispImportImpData__(pKernelDisplay);
 }
 
 static inline NvBool kdispGetVgaWorkspaceBase_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU64 *pOffset) {
@@ -507,52 +571,96 @@ static inline void kdispIntrRetrigger_DISPATCH(OBJGPU *pGpu, struct KernelDispla
     pKernelDisplay->__kdispIntrRetrigger__(pGpu, pKernelDisplay, index, arg4);
 }
 
-static inline NvU32 kdispServiceAwakenIntr_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, struct THREAD_STATE_NODE *pThreadState) {
-    return pKernelDisplay->__kdispServiceAwakenIntr__(pGpu, pKernelDisplay, pThreadState);
-}
-
 static inline NV_STATUS kdispComputeDpModeSettings_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 headIndex, DPMODESETDATA *pDpModesetData, DPIMPINFO *dpInfo) {
     return pKernelDisplay->__kdispComputeDpModeSettings__(pGpu, pKernelDisplay, headIndex, pDpModesetData, dpInfo);
 }
 
+static inline NvU32 kdispServiceAwakenIntr_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, struct THREAD_STATE_NODE *pThreadState) {
+    return pKernelDisplay->__kdispServiceAwakenIntr__(pGpu, pKernelDisplay, pThreadState);
+}
+
+static inline NV_STATUS kdispSetAccel_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvHandle hClient, DISPCHNCLASS channelClass, NvU32 channelInstance, NvU32 acceleratorsm, NvU32 accelMask) {
+    return pKernelDisplay->__kdispSetAccel__(pGpu, pKernelDisplay, hClient, channelClass, channelInstance, acceleratorsm, accelMask);
+}
+
+static inline NV_STATUS kdispGetAccel_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvHandle hClient, DISPCHNCLASS channelClass, NvU32 channelInstance, NvU32 *accelerators) {
+    return pKernelDisplay->__kdispGetAccel__(pGpu, pKernelDisplay, hClient, channelClass, channelInstance, accelerators);
+}
+
+static inline NvBool kdispIsChannelAllocatedSw_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance) {
+    return pKernelDisplay->__kdispIsChannelAllocatedSw__(pGpu, pKernelDisplay, channelClass, channelInstance);
+}
+
+static inline NvBool kdispIsChannelAllocatedHw_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS arg3, NvU32 arg4) {
+    return pKernelDisplay->__kdispIsChannelAllocatedHw__(pGpu, pKernelDisplay, arg3, arg4);
+}
+
+static inline NV_STATUS kdispGetChnCtlRegs_DISPATCH(struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance, NvU32 *pChnCtl) {
+    return pKernelDisplay->__kdispGetChnCtlRegs__(pKernelDisplay, channelClass, channelInstance, pChnCtl);
+}
+
+static inline NV_STATUS kdispGetAccelerators_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS arg3, NvU32 channelInstance, NvU32 *pCurrChannelCtl, NvU32 *pAccelerators) {
+    return pKernelDisplay->__kdispGetAccelerators__(pGpu, pKernelDisplay, arg3, channelInstance, pCurrChannelCtl, pAccelerators);
+}
+
+static inline void kdispApplyAccelerators_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS arg3, NvU32 channelInstance, NvU32 *pCurrChannelCtl, NvU32 acceleratorsToApply, NvBool keepCurrAccelerators) {
+    pKernelDisplay->__kdispApplyAccelerators__(pGpu, pKernelDisplay, arg3, channelInstance, pCurrChannelCtl, acceleratorsToApply, keepCurrAccelerators);
+}
+
+static inline NV_STATUS kdispReadChannelState_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance, DISPCHNSTATE *pChannelState) {
+    return pKernelDisplay->__kdispReadChannelState__(pGpu, pKernelDisplay, channelClass, channelInstance, pChannelState);
+}
+
+static inline NV_STATUS kdispReadDebugStatus_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance, NvBool *isDebugEnabled) {
+    return pKernelDisplay->__kdispReadDebugStatus__(pGpu, pKernelDisplay, channelClass, channelInstance, isDebugEnabled);
+}
+
+static inline NV_STATUS kdispGetChnStatusRegs_DISPATCH(struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance, NvU32 *pChnStatus) {
+    return pKernelDisplay->__kdispGetChnStatusRegs__(pKernelDisplay, channelClass, channelInstance, pChnStatus);
+}
+
+static inline void kdispApplyWarForBug3385499_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS arg3, NvU32 channelInstance, NvU32 chnCtlOffset) {
+    pKernelDisplay->__kdispApplyWarForBug3385499__(pGpu, pKernelDisplay, arg3, channelInstance, chnCtlOffset);
+}
+
 static inline void kdispInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelDisplay *pEngstate) {
-    pEngstate->__nvoc_vtable->__kdispInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_metadata_ptr->vtable.__kdispInitMissing__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kdispStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelDisplay *pEngstate) {
-    return pEngstate->__nvoc_vtable->__kdispStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__kdispStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kdispStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelDisplay *pEngstate) {
-    return pEngstate->__nvoc_vtable->__kdispStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__kdispStateInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kdispStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelDisplay *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__kdispStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__kdispStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS kdispStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelDisplay *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__kdispStatePostLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__kdispStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS kdispStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelDisplay *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__kdispStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__kdispStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS kdispStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelDisplay *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__kdispStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__kdispStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline NvBool kdispIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelDisplay *pEngstate) {
-    return pEngstate->__nvoc_vtable->__kdispIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__kdispIsPresent__(pGpu, pEngstate);
 }
 
 static inline NvBool kdispClearInterrupt_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pIntrService, IntrServiceClearInterruptArguments *pParams) {
-    return pIntrService->__nvoc_vtable->__kdispClearInterrupt__(pGpu, pIntrService, pParams);
+    return pIntrService->__nvoc_metadata_ptr->vtable.__kdispClearInterrupt__(pGpu, pIntrService, pParams);
 }
 
 static inline NV_STATUS kdispServiceNotificationInterrupt_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams) {
-    return pIntrService->__nvoc_vtable->__kdispServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
+    return pIntrService->__nvoc_metadata_ptr->vtable.__kdispServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
 }
 
 void kdispServiceLowLatencyIntrs_KERNEL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5, NvU32 *pIntrServicedHeadMask, MC_ENGINE_BITVECTOR *pIntrPending);
@@ -610,22 +718,6 @@ static inline NvS32 kdispGetBaseOffset(OBJGPU *pGpu, struct KernelDisplay *pKern
 #endif //__nvoc_kern_disp_h_disabled
 
 #define kdispGetBaseOffset_HAL(pGpu, pKernelDisplay) kdispGetBaseOffset(pGpu, pKernelDisplay)
-
-static inline NV_STATUS kdispImportImpData_56cd7a(struct KernelDisplay *pKernelDisplay) {
-    return NV_OK;
-}
-
-
-#ifdef __nvoc_kern_disp_h_disabled
-static inline NV_STATUS kdispImportImpData(struct KernelDisplay *pKernelDisplay) {
-    NV_ASSERT_FAILED_PRECOMP("KernelDisplay was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_disp_h_disabled
-#define kdispImportImpData(pKernelDisplay) kdispImportImpData_56cd7a(pKernelDisplay)
-#endif //__nvoc_kern_disp_h_disabled
-
-#define kdispImportImpData_HAL(pKernelDisplay) kdispImportImpData(pKernelDisplay)
 
 static inline NV_STATUS kdispArbAndAllocDisplayBandwidth_46f6a7(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, enum DISPLAY_ICC_BW_CLIENT iccBwClient, NvU32 minRequiredIsoBandwidthKBPS, NvU32 minRequiredFloorBandwidthKBPS) {
     return NV_ERR_NOT_SUPPORTED;
@@ -926,7 +1018,7 @@ NV_STATUS kdispStateLoad_IMPL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay
 
 NV_STATUS kdispStateUnload_IMPL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 flags);
 
-void kdispRegisterIntrService_IMPL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceRecord pRecords[177]);
+void kdispRegisterIntrService_IMPL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceRecord pRecords[179]);
 
 NvU32 kdispServiceInterrupt_KERNEL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceServiceInterruptArguments *pParams);
 
@@ -959,6 +1051,12 @@ static inline NV_STATUS kdispGetDisplayChannelUserBaseAndSize_46f6a7(OBJGPU *pGp
 }
 
 NV_STATUS kdispGetDisplayChannelUserBaseAndSize_v03_00(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance, NvU32 *pOffset, NvU32 *pSize);
+
+NV_STATUS kdispImportImpData_IMPL(struct KernelDisplay *pKernelDisplay);
+
+static inline NV_STATUS kdispImportImpData_56cd7a(struct KernelDisplay *pKernelDisplay) {
+    return NV_OK;
+}
 
 NvBool kdispGetVgaWorkspaceBase_v04_00(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU64 *pOffset);
 
@@ -1043,18 +1141,86 @@ static inline void kdispIntrRetrigger_b3696a(OBJGPU *pGpu, struct KernelDisplay 
     return;
 }
 
-NvU32 kdispServiceAwakenIntr_v03_00(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, struct THREAD_STATE_NODE *pThreadState);
-
-static inline NvU32 kdispServiceAwakenIntr_4a4dee(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, struct THREAD_STATE_NODE *pThreadState) {
-    return 0;
-}
-
 NV_STATUS kdispComputeDpModeSettings_v02_04(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 headIndex, DPMODESETDATA *pDpModesetData, DPIMPINFO *dpInfo);
 
 NV_STATUS kdispComputeDpModeSettings_v05_01(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 headIndex, DPMODESETDATA *pDpModesetData, DPIMPINFO *dpInfo);
 
 static inline NV_STATUS kdispComputeDpModeSettings_56cd7a(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 headIndex, DPMODESETDATA *pDpModesetData, DPIMPINFO *dpInfo) {
     return NV_OK;
+}
+
+NvU32 kdispServiceAwakenIntr_v03_00(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, struct THREAD_STATE_NODE *pThreadState);
+
+static inline NvU32 kdispServiceAwakenIntr_4a4dee(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, struct THREAD_STATE_NODE *pThreadState) {
+    return 0;
+}
+
+NV_STATUS kdispSetAccel_v02_04(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvHandle hClient, DISPCHNCLASS channelClass, NvU32 channelInstance, NvU32 acceleratorsm, NvU32 accelMask);
+
+static inline NV_STATUS kdispSetAccel_46f6a7(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvHandle hClient, DISPCHNCLASS channelClass, NvU32 channelInstance, NvU32 acceleratorsm, NvU32 accelMask) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS kdispGetAccel_v02_04(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvHandle hClient, DISPCHNCLASS channelClass, NvU32 channelInstance, NvU32 *accelerators);
+
+static inline NV_STATUS kdispGetAccel_46f6a7(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvHandle hClient, DISPCHNCLASS channelClass, NvU32 channelInstance, NvU32 *accelerators) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NvBool kdispIsChannelAllocatedSw_KERNEL_v02_04(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance);
+
+static inline NvBool kdispIsChannelAllocatedSw_3dd2c9(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance) {
+    return NV_FALSE;
+}
+
+NvBool kdispIsChannelAllocatedSw_PHYSICAL_v02_04(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance);
+
+NvBool kdispIsChannelAllocatedHw_v03_00(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS arg3, NvU32 arg4);
+
+static inline NvBool kdispIsChannelAllocatedHw_3dd2c9(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS arg3, NvU32 arg4) {
+    return NV_FALSE;
+}
+
+NV_STATUS kdispGetChnCtlRegs_v03_00(struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance, NvU32 *pChnCtl);
+
+static inline NV_STATUS kdispGetChnCtlRegs_46f6a7(struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance, NvU32 *pChnCtl) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS kdispGetAccelerators_v03_00(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS arg3, NvU32 channelInstance, NvU32 *pCurrChannelCtl, NvU32 *pAccelerators);
+
+static inline NV_STATUS kdispGetAccelerators_d69453(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS arg3, NvU32 channelInstance, NvU32 *pCurrChannelCtl, NvU32 *pAccelerators) {
+    return NV_FALSE;
+}
+
+void kdispApplyAccelerators_v03_00(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS arg3, NvU32 channelInstance, NvU32 *pCurrChannelCtl, NvU32 acceleratorsToApply, NvBool keepCurrAccelerators);
+
+static inline void kdispApplyAccelerators_d44104(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS arg3, NvU32 channelInstance, NvU32 *pCurrChannelCtl, NvU32 acceleratorsToApply, NvBool keepCurrAccelerators) {
+    return;
+}
+
+NV_STATUS kdispReadChannelState_v03_00(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance, DISPCHNSTATE *pChannelState);
+
+static inline NV_STATUS kdispReadChannelState_46f6a7(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance, DISPCHNSTATE *pChannelState) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS kdispReadDebugStatus_v03_00(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance, NvBool *isDebugEnabled);
+
+static inline NV_STATUS kdispReadDebugStatus_56cd7a(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance, NvBool *isDebugEnabled) {
+    return NV_OK;
+}
+
+NV_STATUS kdispGetChnStatusRegs_v03_00(struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance, NvU32 *pChnStatus);
+
+static inline NV_STATUS kdispGetChnStatusRegs_46f6a7(struct KernelDisplay *pKernelDisplay, DISPCHNCLASS channelClass, NvU32 channelInstance, NvU32 *pChnStatus) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+void kdispApplyWarForBug3385499_v03_00(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS arg3, NvU32 channelInstance, NvU32 chnCtlOffset);
+
+static inline void kdispApplyWarForBug3385499_b3696a(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, DISPCHNCLASS arg3, NvU32 channelInstance, NvU32 chnCtlOffset) {
+    return;
 }
 
 void kdispDestruct_IMPL(struct KernelDisplay *pKernelDisplay);

@@ -1,4 +1,11 @@
 #define NVOC_CODE_COVERAGE_MGR_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,40 +14,29 @@
 #include "utils/nvassert.h"
 #include "g_code_coverage_mgr_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x62cbfb = 1;
+char __nvoc_class_id_uniqueness_check__0x62cbfb = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_CodeCoverageManager;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
-void __nvoc_init_CodeCoverageManager(CodeCoverageManager*);
+// Forward declarations for CodeCoverageManager
+void __nvoc_init__Object(Object*);
+void __nvoc_init__CodeCoverageManager(CodeCoverageManager*);
 void __nvoc_init_funcTable_CodeCoverageManager(CodeCoverageManager*);
 NV_STATUS __nvoc_ctor_CodeCoverageManager(CodeCoverageManager*);
 void __nvoc_init_dataField_CodeCoverageManager(CodeCoverageManager*);
 void __nvoc_dtor_CodeCoverageManager(CodeCoverageManager*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_CodeCoverageManager;
 
-static const struct NVOC_RTTI __nvoc_rtti_CodeCoverageManager_CodeCoverageManager = {
-    /*pClassDef=*/          &__nvoc_class_def_CodeCoverageManager,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_CodeCoverageManager,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__CodeCoverageManager;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__CodeCoverageManager;
 
-static const struct NVOC_RTTI __nvoc_rtti_CodeCoverageManager_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(CodeCoverageManager, __nvoc_base_Object),
-};
+// Down-thunk(s) to bridge CodeCoverageManager methods from ancestors (if any)
 
-static const struct NVOC_CASTINFO __nvoc_castinfo_CodeCoverageManager = {
-    /*numRelatives=*/       2,
-    /*relatives=*/ {
-        &__nvoc_rtti_CodeCoverageManager_CodeCoverageManager,
-        &__nvoc_rtti_CodeCoverageManager_Object,
-    },
-};
+// Up-thunk(s) to bridge CodeCoverageManager methods to ancestors (if any)
 
 const struct NVOC_CLASS_DEF __nvoc_class_def_CodeCoverageManager = 
 {
@@ -53,15 +49,32 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_CodeCoverageManager =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_CodeCoverageManager,
-    /*pCastInfo=*/          &__nvoc_castinfo_CodeCoverageManager,
-    /*pExportInfo=*/        &__nvoc_export_info_CodeCoverageManager
+    /*pCastInfo=*/          &__nvoc_castinfo__CodeCoverageManager,
+    /*pExportInfo=*/        &__nvoc_export_info__CodeCoverageManager
 };
 
-// Down-thunk(s) to bridge CodeCoverageManager methods from ancestors (if any)
 
-// Up-thunk(s) to bridge CodeCoverageManager methods to ancestors (if any)
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__CodeCoverageManager __nvoc_metadata__CodeCoverageManager = {
+    .rtti.pClassDef = &__nvoc_class_def_CodeCoverageManager,    // (codecovmgr) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_CodeCoverageManager,
+    .rtti.offset    = 0,
+    .metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super
+    .metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Object.rtti.offset    = NV_OFFSETOF(CodeCoverageManager, __nvoc_base_Object),
+};
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_CodeCoverageManager = 
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__CodeCoverageManager = {
+    .numRelatives = 2,
+    .relatives = {
+        &__nvoc_metadata__CodeCoverageManager.rtti,    // [0]: (codecovmgr) this
+        &__nvoc_metadata__CodeCoverageManager.metadata__Object.rtti,    // [1]: (obj) super
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__CodeCoverageManager = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -108,11 +121,21 @@ void __nvoc_init_funcTable_CodeCoverageManager(CodeCoverageManager *pThis) {
     __nvoc_init_funcTable_CodeCoverageManager_1(pThis);
 }
 
-void __nvoc_init_Object(Object*);
-void __nvoc_init_CodeCoverageManager(CodeCoverageManager *pThis) {
-    pThis->__nvoc_pbase_CodeCoverageManager = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;
-    __nvoc_init_Object(&pThis->__nvoc_base_Object);
+// Initialize newly constructed object.
+void __nvoc_init__CodeCoverageManager(CodeCoverageManager *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;    // (obj) super
+    pThis->__nvoc_pbase_CodeCoverageManager = pThis;    // (codecovmgr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__Object(&pThis->__nvoc_base_Object);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__CodeCoverageManager.metadata__Object;    // (obj) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__CodeCoverageManager;    // (codecovmgr) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_CodeCoverageManager(pThis);
 }
 
@@ -130,9 +153,6 @@ NV_STATUS __nvoc_objCreate_CodeCoverageManager(CodeCoverageManager **ppThis, Dyn
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(CodeCoverageManager));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_CodeCoverageManager);
-
     pThis->__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -146,7 +166,7 @@ NV_STATUS __nvoc_objCreate_CodeCoverageManager(CodeCoverageManager **ppThis, Dyn
         pThis->__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_CodeCoverageManager(pThis);
+    __nvoc_init__CodeCoverageManager(pThis);
     status = __nvoc_ctor_CodeCoverageManager(pThis);
     if (status != NV_OK) goto __nvoc_objCreate_CodeCoverageManager_cleanup;
 

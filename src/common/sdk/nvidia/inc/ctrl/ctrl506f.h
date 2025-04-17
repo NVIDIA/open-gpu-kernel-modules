@@ -39,7 +39,6 @@
 /* NV50_GPFIFO command categories (6bits) */
 #define NV506F_CTRL_RESERVED (0x00)
 #define NV506F_CTRL_GPFIFO   (0x01)
-#define NV506F_CTRL_EVENT    (0x02)
 
 /*
  * NV506F_CTRL_CMD_NULL
@@ -76,17 +75,6 @@
 
 
 #define NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL (0x506f0105) /* finn: Evaluated from "(FINN_NV50_CHANNEL_GPFIFO_GPFIFO_INTERFACE_ID << 8) | NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS_MESSAGE_ID" */
-
-/*
- * NV506F_CTRL_CMD_EVENT_SET_TRIGGER  (deprecated on Fermi+)
- *
- * This command triggers a software event for the associated channel.
- * This command accepts no parameters.
- *
- * Possible status values returned are:
- *   NV_OK
- */
-// #define NV506F_CTRL_CMD_EVENT_SET_TRIGGER         NV506F_CTRL_CMD(EVENT, 0x09)
 
 #define NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS_MESSAGE_ID (0x5U)
 

@@ -53,7 +53,7 @@
 
 #include "ctrl/ctrl0080/ctrl0080fifo.h" // NV0080_CTRL_CMD_FIFO_GET_CAPS_V2
 #include "ctrl/ctrl2080/ctrl2080bus.h" // NV2080_CTRL_CMD_BUS_GET_INFO
-#include "ctrl/ctrla06f.h" // KEPLER_CHANNEL_GPFIFO_A
+#include "ctrl/ctrla06f/ctrla06fgpfifo.h" // KEPLER_CHANNEL_GPFIFO_A
 #include "ctrl/ctrlc36f.h" // VOLTA_CHANNEL_GPFIFO_A
 
 static NvU32 GetHandle(

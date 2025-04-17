@@ -1324,6 +1324,7 @@ static void libosExtractLogs_decode(LIBOS_LOG_DECODE *logDecode)
                 recSize * sizeof(NvU64));
 
             pPrevRec = (LIBOS_LOG_DECODE_RECORD *)&logDecode->scratchBuffer[dst];
+            pPrevRec->timeStamp += pLog->localToGlobalTimerDelta;
         }
 
         // Read in the next record from the log we just copied.
@@ -1464,6 +1465,9 @@ static void libosExtractLogs_nvlog(LIBOS_LOG_DECODE *logDecode, NvBool bSyncNvLo
     {
         LIBOS_LOG_DECODE_LOG *pLog = &logDecode->log[i];
 
+        if (pLog->flags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
+            continue;
+
         if (pLog->bNvLogNoWrap)
         {
             pLog->bNvLogNoWrap = libosCopyLogToNvlog_nowrap(pLog);
@@ -1487,6 +1491,9 @@ void libosPreserveLogs(LIBOS_LOG_DECODE *pLogDecode)
     for (i = 0; i < pLogDecode->numLogBuffers; i++)
     {
         LIBOS_LOG_DECODE_LOG *pLog = &pLogDecode->log[i];
+
+        if (pLog->flags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
+            continue;
 
         if (pLog->bDidPush)
         {
@@ -1608,7 +1615,7 @@ void libosLogCreateEx(LIBOS_LOG_DECODE *logDecode, const char *pSourceName)
 }
 #endif
 
-void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSize, NvU32 gpuInstance, NvU32 gpuArch, NvU32 gpuImpl, const char *name, const char *elfSectionName, void *buildId)
+void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSize, NvU32 gpuInstance, NvU32 gpuArch, NvU32 gpuImpl, const char *name, const char *elfSectionName, NvU32 libosLogFlags, void *buildId)
 {
     NvU32 i;
     LIBOS_LOG_DECODE_LOG *pLog;
@@ -1626,6 +1633,7 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
     pLog->previousPut          = 0;
     pLog->putCopy              = 0;
     pLog->putIter              = 0;
+    pLog->flags                = libosLogFlags;
 
     pLog->gpuInstance  = gpuInstance;
 
@@ -1638,6 +1646,9 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
         portStringCopy(pLog->elfSectionName, sizeof(pLog->elfSectionName), "default", sizeof(pLog->elfSectionName));
 
 #if LIBOS_LOG_TO_NVLOG
+    if (pLog->flags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
+        return;
+
     NV_STATUS status;
 
     const NvU32 libosNoWrapBufferFlags =
@@ -1747,10 +1758,10 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
 #endif // LIBOS_LOG_TO_NVLOG
 }
 
-void libosLogAddLog(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSize, NvU32 gpuInstance, const char *name, const char *elfSectionName)
+void libosLogAddLog(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSize, NvU32 gpuInstance, const char *name, const char *elfSectionName, NvU32 libosLogFlags)
 {
     // Use defaults for gpuArch and gpuImpl
-    libosLogAddLogEx(logDecode, buffer, bufferSize, gpuInstance, 0, 0, name, elfSectionName, NULL);
+    libosLogAddLogEx(logDecode, buffer, bufferSize, gpuInstance, 0, 0, name, elfSectionName, libosLogFlags, NULL);
 }
 
 #if LIBOS_LOG_DECODE_ENABLE
@@ -1847,6 +1858,10 @@ void libosLogInit(LIBOS_LOG_DECODE *logDecode, LibosElf64Header *elf, NvU64 elfS
                 sectionSize = sectionHdr->size;
             }
             _libosLogInitLogBuffer(&logDecode->log[i], (LibosElf64Header *) sectionData, sectionSize);
+#if LIBOS_LOG_TO_NVLOG
+            if (logDecode->log[i].flags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
+                continue;
+#endif
         }
         else
         {
@@ -1871,16 +1886,22 @@ void libosLogInitEx(
 
 void libosLogUpdateTimerDelta(LIBOS_LOG_DECODE *logDecode, NvU64 localToGlobalTimerDelta)
 {
-#if LIBOS_LOG_TO_NVLOG
+
     for (NvU64 i = 0; i < logDecode->numLogBuffers; i++)
     {
+        if (logDecode->log[i].flags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
+            continue;
+
+#if LIBOS_LOG_TO_NVLOG
         LIBOS_LOG_NVLOG_BUFFER *pNoWrapBuf = (LIBOS_LOG_NVLOG_BUFFER *) NvLogLogger.pBuffers[logDecode->log[i].hNvLogNoWrap]->data;
         LIBOS_LOG_NVLOG_BUFFER *pWrapBuf = (LIBOS_LOG_NVLOG_BUFFER *) NvLogLogger.pBuffers[logDecode->log[i].hNvLogWrap]->data;
 
         pNoWrapBuf->localToGlobalTimerDelta = localToGlobalTimerDelta;
         pWrapBuf->localToGlobalTimerDelta = localToGlobalTimerDelta;
-    }
 #endif
+        logDecode->log[i].localToGlobalTimerDelta = localToGlobalTimerDelta;
+    }
+
 }
 
 #else // LIBOS_LOG_DECODE_ENABLE
@@ -1903,6 +1924,9 @@ void libosLogDestroy(LIBOS_LOG_DECODE *logDecode)
     for (i = 0; i < logDecode->numLogBuffers; i++)
     {
         LIBOS_LOG_DECODE_LOG *pLog = &logDecode->log[i];
+
+        if (pLog->flags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
+            continue;
 
         if (pLog->hNvLogNoWrap != 0)
         {

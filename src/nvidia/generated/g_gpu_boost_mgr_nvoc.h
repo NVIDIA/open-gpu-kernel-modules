@@ -1,13 +1,15 @@
 
 #ifndef _G_GPU_BOOST_MGR_NVOC_H_
 #define _G_GPU_BOOST_MGR_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -114,10 +116,18 @@ typedef struct SYNC_GPU_BOOST_GROUP
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJGPUBOOSTMGR;
+struct NVOC_METADATA__Object;
+
+
 struct OBJGPUBOOSTMGR {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__OBJGPUBOOSTMGR *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -130,6 +140,13 @@ struct OBJGPUBOOSTMGR {
     NODE *pGpuIdTree;
     NvU32 groupCount;
     SYNC_GPU_BOOST_GROUP pBoostGroups[16];
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJGPUBOOSTMGR {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
 };
 
 #ifndef __NVOC_CLASS_OBJGPUBOOSTMGR_TYPEDEF__
@@ -148,10 +165,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGPUBOOSTMGR;
     ((pThis)->__nvoc_pbase_OBJGPUBOOSTMGR)
 
 #ifdef __nvoc_gpu_boost_mgr_h_disabled
-#define __dynamicCast_OBJGPUBOOSTMGR(pThis) ((OBJGPUBOOSTMGR*)NULL)
+#define __dynamicCast_OBJGPUBOOSTMGR(pThis) ((OBJGPUBOOSTMGR*) NULL)
 #else //__nvoc_gpu_boost_mgr_h_disabled
 #define __dynamicCast_OBJGPUBOOSTMGR(pThis) \
-    ((OBJGPUBOOSTMGR*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJGPUBOOSTMGR)))
+    ((OBJGPUBOOSTMGR*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJGPUBOOSTMGR)))
 #endif //__nvoc_gpu_boost_mgr_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_OBJGPUBOOSTMGR(OBJGPUBOOSTMGR**, Dynamic*, NvU32, va_list);

@@ -2270,7 +2270,7 @@ static NV_STATUS entry_test_hopper(uvm_gpu_t *gpu, entry_test_page_size_func ent
     TEST_CHECK_GOTO(hal->make_sparse_pte() == 0x8, cleanup);
 
     // sked reflected
-    TEST_CHECK_GOTO(hal->make_sked_reflected_pte() == 0xF09, cleanup);
+    TEST_CHECK_GOTO(hal->make_sked_reflected_pte() == 0xF0F, cleanup);
 
     num_page_sizes = get_page_sizes(gpu, page_sizes);
 
@@ -2461,7 +2461,11 @@ static uvm_ce_hal_t fake_ce_hal = {
         .memcopy = fake_ce_memcopy,
 };
 
-static NV_STATUS fake_gpu_init(NvU32 host_class, NvU32 ce_class, NvU32 architecture, uvm_gpu_t *fake_gpu)
+static NV_STATUS fake_gpu_init(NvU32 host_class,
+                               NvU32 ce_class,
+                               NvU32 architecture,
+                               NvU32 implementation,
+                               uvm_gpu_t *fake_gpu)
 {
     uvm_parent_gpu_t *fake_parent_gpu = fake_gpu->parent;
 
@@ -2470,6 +2474,7 @@ static NV_STATUS fake_gpu_init(NvU32 host_class, NvU32 ce_class, NvU32 architect
     fake_parent_gpu->rm_info.ceClass = ce_class;
     fake_parent_gpu->rm_info.hostClass = host_class;
     fake_parent_gpu->rm_info.gpuArch = architecture;
+    fake_parent_gpu->rm_info.gpuImplementation = implementation;
 
     TEST_CHECK_RET(uvm_hal_init_gpu(fake_parent_gpu) == NV_OK);
 
@@ -2496,6 +2501,7 @@ static NV_STATUS fake_gpu_init_maxwell(uvm_gpu_t *fake_gpu)
     return fake_gpu_init(KEPLER_CHANNEL_GPFIFO_B,
                          MAXWELL_DMA_COPY_A,
                          NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GM000,
+                         0,
                          fake_gpu);
 }
 
@@ -2504,6 +2510,7 @@ static NV_STATUS fake_gpu_init_pascal(uvm_gpu_t *fake_gpu)
     return fake_gpu_init(PASCAL_CHANNEL_GPFIFO_A,
                          PASCAL_DMA_COPY_A,
                          NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GP100,
+                         0,
                          fake_gpu);
 }
 
@@ -2512,6 +2519,7 @@ static NV_STATUS fake_gpu_init_volta(uvm_gpu_t *fake_gpu)
     return fake_gpu_init(VOLTA_CHANNEL_GPFIFO_A,
                          VOLTA_DMA_COPY_A,
                          NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GV100,
+                         0,
                          fake_gpu);
 }
 
@@ -2520,6 +2528,7 @@ static NV_STATUS fake_gpu_init_ampere(uvm_gpu_t *fake_gpu)
     return fake_gpu_init(AMPERE_CHANNEL_GPFIFO_A,
                          AMPERE_DMA_COPY_A,
                          NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GA100,
+                         0,
                          fake_gpu);
 }
 
@@ -2528,14 +2537,16 @@ static NV_STATUS fake_gpu_init_hopper(uvm_gpu_t *fake_gpu)
     return fake_gpu_init(HOPPER_CHANNEL_GPFIFO_A,
                          HOPPER_DMA_COPY_A,
                          NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GH100,
+                         0,
                          fake_gpu);
 }
 
-static NV_STATUS fake_gpu_init_blackwell(uvm_gpu_t *fake_gpu)
+static NV_STATUS fake_gpu_init_blackwell(uvm_gpu_t *fake_gpu, u32 implementation)
 {
     return fake_gpu_init(BLACKWELL_CHANNEL_GPFIFO_A,
                          BLACKWELL_DMA_COPY_A,
                          NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100,
+                         implementation,
                          fake_gpu);
 }
 
@@ -2691,48 +2702,64 @@ static NV_STATUS hopper_test_page_tree(uvm_gpu_t *hopper)
 
 static NV_STATUS blackwell_test_page_tree(uvm_gpu_t *blackwell)
 {
-    NvU32 i, tlb_batch_saved_max_pages;
+    NvU32 i, j, tlb_batch_saved_max_pages;
     NvU64 page_sizes[MAX_NUM_PAGE_SIZES];
     size_t num_page_sizes;
+    unsigned long page_sizes_bitvec;
+    NvU32 implementations[] = {
+        0,
+        NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB10B,
+    };
 
-    TEST_CHECK_RET(fake_gpu_init_blackwell(blackwell) == NV_OK);
+    for (i = 0; i < ARRAY_SIZE(implementations); i++) {
 
-    num_page_sizes = get_page_sizes(blackwell, page_sizes);
-    UVM_ASSERT(num_page_sizes > 0);
+        TEST_CHECK_RET(fake_gpu_init_blackwell(blackwell, implementations[i]) == NV_OK);
 
-    MEM_NV_CHECK_RET(alloc_256g_memory(blackwell), NV_OK);
-    MEM_NV_CHECK_RET(alloc_adjacent_256g_memory(blackwell), NV_OK);
-    MEM_NV_CHECK_RET(get_single_page_256g(blackwell), NV_OK);
-    MEM_NV_CHECK_RET(get_entire_table_256g(blackwell), NV_OK);
+        num_page_sizes = get_page_sizes(blackwell, page_sizes);
+        UVM_ASSERT(num_page_sizes > 0);
 
-    // Although there is no support for the 256GM page size for managed memory,
-    // we run tests that split a 256G page into 512x512M pages because UVM
-    // handles the PTEs for all supported page sizes.
-    MEM_NV_CHECK_RET(split_512m_from_256g(blackwell), NV_OK);
-    MEM_NV_CHECK_RET(get_1tb_range(blackwell), NV_OK);
-    MEM_NV_CHECK_RET(entry_test_blackwell(blackwell, entry_test_page_size_blackwell), NV_OK);
+        if (implementations[i] == NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB10B) {
+            page_sizes_bitvec = blackwell->parent->arch_hal->mmu_mode_hal(BIG_PAGE_SIZE_PASCAL)->page_sizes();
+            TEST_CHECK_RET(page_sizes_bitvec == (UVM_PAGE_SIZE_2M | UVM_PAGE_SIZE_64K | UVM_PAGE_SIZE_4K));
+        }
 
-    // TLB invalidate
-    MEM_NV_CHECK_RET(test_tlb_invalidates_gmmu_v3(blackwell), NV_OK);
+        if (!implementations[i]) {
+            MEM_NV_CHECK_RET(alloc_256g_memory(blackwell), NV_OK);
+            MEM_NV_CHECK_RET(alloc_adjacent_256g_memory(blackwell), NV_OK);
+            MEM_NV_CHECK_RET(get_single_page_256g(blackwell), NV_OK);
+            MEM_NV_CHECK_RET(get_entire_table_256g(blackwell), NV_OK);
 
-    // TLB batch invalidate
-    MEM_NV_CHECK_RET(test_tlb_batch_invalidates(blackwell, page_sizes, num_page_sizes), NV_OK);
+            // Although there is no support for the 256GM page size for managed memory,
+            // we run tests that split a 256G page into 512x512M pages because UVM
+            // handles the PTEs for all supported page sizes.
+            MEM_NV_CHECK_RET(split_512m_from_256g(blackwell), NV_OK);
+            MEM_NV_CHECK_RET(get_1tb_range(blackwell), NV_OK);
+        }
+        MEM_NV_CHECK_RET(entry_test_blackwell(blackwell, entry_test_page_size_blackwell), NV_OK);
 
-    // Run the test again with a bigger limit on max pages
-    tlb_batch_saved_max_pages = blackwell->parent->tlb_batch.max_pages;
-    blackwell->parent->tlb_batch.max_pages = 1024 * 1024;
-    MEM_NV_CHECK_RET(test_tlb_batch_invalidates(blackwell, page_sizes, num_page_sizes), NV_OK);
-    blackwell->parent->tlb_batch.max_pages = tlb_batch_saved_max_pages;
+        // TLB invalidate
+        MEM_NV_CHECK_RET(test_tlb_invalidates_gmmu_v3(blackwell), NV_OK);
 
-    // And with per VA invalidates disabled
-    blackwell->parent->tlb_batch.va_invalidate_supported = false;
-    MEM_NV_CHECK_RET(test_tlb_batch_invalidates(blackwell, page_sizes, num_page_sizes), NV_OK);
-    blackwell->parent->tlb_batch.va_invalidate_supported = true;
+        // TLB batch invalidate
+        MEM_NV_CHECK_RET(test_tlb_batch_invalidates(blackwell, page_sizes, num_page_sizes), NV_OK);
 
-    for (i = 0; i < num_page_sizes; i++) {
-        MEM_NV_CHECK_RET(shrink_test(blackwell, BIG_PAGE_SIZE_PASCAL, page_sizes[i]), NV_OK);
-        MEM_NV_CHECK_RET(get_upper_test(blackwell, BIG_PAGE_SIZE_PASCAL, page_sizes[i]), NV_OK);
-        MEM_NV_CHECK_RET(test_range_vec(blackwell, BIG_PAGE_SIZE_PASCAL, page_sizes[i]), NV_OK);
+        // Run the test again with a bigger limit on max pages
+        tlb_batch_saved_max_pages = blackwell->parent->tlb_batch.max_pages;
+        blackwell->parent->tlb_batch.max_pages = 1024 * 1024;
+        MEM_NV_CHECK_RET(test_tlb_batch_invalidates(blackwell, page_sizes, num_page_sizes), NV_OK);
+        blackwell->parent->tlb_batch.max_pages = tlb_batch_saved_max_pages;
+
+        // And with per VA invalidates disabled
+        blackwell->parent->tlb_batch.va_invalidate_supported = false;
+        MEM_NV_CHECK_RET(test_tlb_batch_invalidates(blackwell, page_sizes, num_page_sizes), NV_OK);
+        blackwell->parent->tlb_batch.va_invalidate_supported = true;
+
+
+        for (j = 0; j < num_page_sizes; j++) {
+            MEM_NV_CHECK_RET(shrink_test(blackwell, BIG_PAGE_SIZE_PASCAL, page_sizes[j]), NV_OK);
+            MEM_NV_CHECK_RET(get_upper_test(blackwell, BIG_PAGE_SIZE_PASCAL, page_sizes[j]), NV_OK);
+            MEM_NV_CHECK_RET(test_range_vec(blackwell, BIG_PAGE_SIZE_PASCAL, page_sizes[j]), NV_OK);
+        }
     }
 
     return NV_OK;

@@ -1,4 +1,11 @@
 #define NVOC_KERNEL_VIDEO_ENGINE_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,40 +14,29 @@
 #include "utils/nvassert.h"
 #include "g_kernel_video_engine_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x9e2f3e = 1;
+char __nvoc_class_id_uniqueness_check__0x9e2f3e = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelVideoEngine;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
-void __nvoc_init_KernelVideoEngine(KernelVideoEngine*, RmHalspecOwner* );
-void __nvoc_init_funcTable_KernelVideoEngine(KernelVideoEngine*, RmHalspecOwner* );
-NV_STATUS __nvoc_ctor_KernelVideoEngine(KernelVideoEngine*, RmHalspecOwner* , struct OBJGPU * arg_pGpu, ENGDESCRIPTOR arg_physEngDesc);
-void __nvoc_init_dataField_KernelVideoEngine(KernelVideoEngine*, RmHalspecOwner* );
+// Forward declarations for KernelVideoEngine
+void __nvoc_init__Object(Object*);
+void __nvoc_init__KernelVideoEngine(KernelVideoEngine*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_funcTable_KernelVideoEngine(KernelVideoEngine*, RmHalspecOwner *pRmhalspecowner);
+NV_STATUS __nvoc_ctor_KernelVideoEngine(KernelVideoEngine*, RmHalspecOwner *pRmhalspecowner, struct OBJGPU *arg_pGpu, ENGDESCRIPTOR arg_physEngDesc);
+void __nvoc_init_dataField_KernelVideoEngine(KernelVideoEngine*, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_KernelVideoEngine(KernelVideoEngine*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelVideoEngine;
 
-static const struct NVOC_RTTI __nvoc_rtti_KernelVideoEngine_KernelVideoEngine = {
-    /*pClassDef=*/          &__nvoc_class_def_KernelVideoEngine,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_KernelVideoEngine,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__KernelVideoEngine;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelVideoEngine;
 
-static const struct NVOC_RTTI __nvoc_rtti_KernelVideoEngine_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(KernelVideoEngine, __nvoc_base_Object),
-};
+// Down-thunk(s) to bridge KernelVideoEngine methods from ancestors (if any)
 
-static const struct NVOC_CASTINFO __nvoc_castinfo_KernelVideoEngine = {
-    /*numRelatives=*/       2,
-    /*relatives=*/ {
-        &__nvoc_rtti_KernelVideoEngine_KernelVideoEngine,
-        &__nvoc_rtti_KernelVideoEngine_Object,
-    },
-};
+// Up-thunk(s) to bridge KernelVideoEngine methods to ancestors (if any)
 
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelVideoEngine = 
 {
@@ -53,15 +49,32 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelVideoEngine =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_KernelVideoEngine,
-    /*pCastInfo=*/          &__nvoc_castinfo_KernelVideoEngine,
-    /*pExportInfo=*/        &__nvoc_export_info_KernelVideoEngine
+    /*pCastInfo=*/          &__nvoc_castinfo__KernelVideoEngine,
+    /*pExportInfo=*/        &__nvoc_export_info__KernelVideoEngine
 };
 
-// Down-thunk(s) to bridge KernelVideoEngine methods from ancestors (if any)
 
-// Up-thunk(s) to bridge KernelVideoEngine methods to ancestors (if any)
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__KernelVideoEngine __nvoc_metadata__KernelVideoEngine = {
+    .rtti.pClassDef = &__nvoc_class_def_KernelVideoEngine,    // (kvideng) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_KernelVideoEngine,
+    .rtti.offset    = 0,
+    .metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super
+    .metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Object.rtti.offset    = NV_OFFSETOF(KernelVideoEngine, __nvoc_base_Object),
+};
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelVideoEngine = 
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__KernelVideoEngine = {
+    .numRelatives = 2,
+    .relatives = {
+        &__nvoc_metadata__KernelVideoEngine.rtti,    // [0]: (kvideng) this
+        &__nvoc_metadata__KernelVideoEngine.metadata__Object.rtti,    // [1]: (obj) super
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelVideoEngine = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -117,11 +130,21 @@ void __nvoc_init_funcTable_KernelVideoEngine(KernelVideoEngine *pThis, RmHalspec
     __nvoc_init_funcTable_KernelVideoEngine_1(pThis, pRmhalspecowner);
 }
 
-void __nvoc_init_Object(Object*);
-void __nvoc_init_KernelVideoEngine(KernelVideoEngine *pThis, RmHalspecOwner *pRmhalspecowner) {
-    pThis->__nvoc_pbase_KernelVideoEngine = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;
-    __nvoc_init_Object(&pThis->__nvoc_base_Object);
+// Initialize newly constructed object.
+void __nvoc_init__KernelVideoEngine(KernelVideoEngine *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;    // (obj) super
+    pThis->__nvoc_pbase_KernelVideoEngine = pThis;    // (kvideng) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__Object(&pThis->__nvoc_base_Object);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__KernelVideoEngine.metadata__Object;    // (obj) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__KernelVideoEngine;    // (kvideng) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_KernelVideoEngine(pThis, pRmhalspecowner);
 }
 
@@ -139,9 +162,6 @@ NV_STATUS __nvoc_objCreate_KernelVideoEngine(KernelVideoEngine **ppThis, Dynamic
 
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(KernelVideoEngine));
-
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_KernelVideoEngine);
 
     pThis->__nvoc_base_Object.createFlags = createFlags;
 
@@ -163,7 +183,7 @@ NV_STATUS __nvoc_objCreate_KernelVideoEngine(KernelVideoEngine **ppThis, Dynamic
         pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
     NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init_KernelVideoEngine(pThis, pRmhalspecowner);
+    __nvoc_init__KernelVideoEngine(pThis, pRmhalspecowner);
     status = __nvoc_ctor_KernelVideoEngine(pThis, pRmhalspecowner, arg_pGpu, arg_physEngDesc);
     if (status != NV_OK) goto __nvoc_objCreate_KernelVideoEngine_cleanup;
 

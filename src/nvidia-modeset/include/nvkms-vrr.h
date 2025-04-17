@@ -40,12 +40,7 @@ void nvAdjustHwModeTimingsForVrrEvo(
     const NVDpyEvoRec *pDpyEvo,
     const enum NvKmsDpyVRRType vrrType,
     const NvU32 vrrOverrideMinRefreshRate,
-    const NvBool needsSwFramePacing,
     NVHwModeTimingsEvoPtr pTimings);
-NvU16 nvPrepareNextVrrNotifier(NVEvoChannelPtr pChannel, NvU32 sd, NvU32 head);
-void nvTrackAndDelayFlipForVrrSwFramePacing(NVDispEvoPtr pDispEvo,
-    const struct NvKmsVrrFramePacingInfo *pVrrFramePacingInfo,
-    NVFlipChannelEvoHwState *pFlip);
 
 void nvAllocVrrEvo(NVDevEvoPtr pDevEvo);
 void nvFreeVrrEvo(NVDevEvoPtr pDevEvo);

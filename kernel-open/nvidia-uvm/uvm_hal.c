@@ -407,6 +407,32 @@ static uvm_hal_class_ops_t arch_table[] =
     },
 };
 
+// chip_table[] is different from the other class op tables - it is used to
+// apply chip specific overrides to arch ops. This means unlike the other class
+// op tables, parent_id does not refer to a preceding entry within the table
+// itself. parent_id is an architecture (not a chip id) and instead refers to an
+// entry in arch_table[]. This means that arch_table[] must be initialized
+// before chip_table[]. chip_table[] must be initialized using
+// ops_init_from_table(arch_table) instead of ops_init_from_parent().
+// TODO: BUG 5044266: the chip ops should be separated from the arch ops.
+static uvm_hal_class_ops_t chip_table[] =
+{
+    {
+        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100 | NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB10B,
+        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100,
+        .u.arch_ops = {
+            .mmu_mode_hal = uvm_hal_mmu_mode_blackwell_integrated,
+        }
+    },
+    {
+        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB200 | NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB20B,
+        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB200,
+        .u.arch_ops = {
+            .mmu_mode_hal = uvm_hal_mmu_mode_blackwell_integrated,
+        }
+    },
+};
+
 static uvm_hal_class_ops_t fault_buffer_table[] =
 {
     {
@@ -670,38 +696,53 @@ static inline void op_copy(uvm_hal_class_ops_t *dst, uvm_hal_class_ops_t *src, N
     memcpy(m_dst, m_src, sizeof(void *));
 }
 
-static inline NV_STATUS ops_init_from_parent(uvm_hal_class_ops_t *table,
-                                             NvU32 row_count,
-                                             NvLength op_count,
-                                             NvLength op_offset)
+static inline NV_STATUS ops_init_from_table(uvm_hal_class_ops_t *dest_table,
+                                            NvU32 dest_row_count,
+                                            uvm_hal_class_ops_t *src_table,
+                                            NvU32 src_row_count,
+                                            NvLength op_count,
+                                            NvLength op_offset)
 {
     NvLength i;
 
-    for (i = 0; i < row_count; i++) {
+    for (i = 0; i < dest_row_count; i++) {
         NvLength j;
         uvm_hal_class_ops_t *parent = NULL;
 
-        if (table[i].parent_id != 0) {
-            parent = ops_find_by_id(table, i, table[i].parent_id);
+        if (dest_table[i].parent_id != 0) {
+            parent = ops_find_by_id(src_table, src_row_count, dest_table[i].parent_id);
             if (parent == NULL)
                 return NV_ERR_INVALID_CLASS;
 
             // Go through all the ops and assign from parent's corresponding op
             // if NULL
             for (j = 0; j < op_count; j++) {
-                if (op_is_null(table + i, j, op_offset))
-                    op_copy(table + i, parent, j, op_offset);
+                if (op_is_null(dest_table + i, j, op_offset))
+                    op_copy(dest_table + i, parent, j, op_offset);
             }
         }
 
         // At this point, it is an error to have missing HAL operations
         for (j = 0; j < op_count; j++) {
-            if (op_is_null(table + i, j, op_offset))
+            if (op_is_null(dest_table + i, j, op_offset))
                 return NV_ERR_INVALID_STATE;
         }
     }
 
     return NV_OK;
+}
+
+static inline NV_STATUS ops_init_from_parent(uvm_hal_class_ops_t *table,
+                                             NvU32 row_count,
+                                             NvLength op_count,
+                                             NvLength op_offset)
+{
+    return ops_init_from_table(table,
+                               row_count,
+                               table,
+                               row_count,
+                               op_count,
+                               op_offset);
 }
 
 NV_STATUS uvm_hal_init_table(void)
@@ -729,6 +770,18 @@ NV_STATUS uvm_hal_init_table(void)
                                   offsetof(uvm_hal_class_ops_t, u.arch_ops));
     if (status != NV_OK) {
         UVM_ERR_PRINT("ops_init_from_parent(arch_table) failed: %s\n", nvstatusToString(status));
+        return status;
+    }
+
+    // chip_table[] must be initialized after arch_table[].
+    status = ops_init_from_table(chip_table,
+                                 ARRAY_SIZE(chip_table),
+                                 arch_table,
+                                 ARRAY_SIZE(arch_table),
+                                 ARCH_OP_COUNT,
+                                 offsetof(uvm_hal_class_ops_t, u.arch_ops));
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("ops_init_from_table(chip_table) failed: %s\n", nvstatusToString(status));
         return status;
     }
 
@@ -797,6 +850,13 @@ NV_STATUS uvm_hal_init_gpu(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->arch_hal = &class_ops->u.arch_ops;
 
+    // Apply per chip overrides if required
+    class_ops = ops_find_by_id(chip_table,
+                               ARRAY_SIZE(chip_table),
+                               gpu_info->gpuArch | gpu_info->gpuImplementation);
+    if (class_ops)
+        parent_gpu->arch_hal = &class_ops->u.arch_ops;
+
     class_ops = ops_find_by_id(fault_buffer_table, ARRAY_SIZE(fault_buffer_table), gpu_info->gpuArch);
     if (class_ops == NULL) {
         UVM_ERR_PRINT("Fault buffer HAL not found, GPU %s, arch: 0x%X\n",
@@ -840,6 +900,12 @@ static void hal_override_properties(uvm_parent_gpu_t *parent_gpu)
     // TODO: Bug 200692962: Add support for access counters in vGPU
     if ((parent_gpu->virt_mode != UVM_VIRT_MODE_NONE) || g_uvm_global.conf_computing_enabled)
         parent_gpu->access_counters_supported = false;
+
+
+    // TODO: Bug 4637114: [UVM] Remove support for physical access counter
+    // notifications. Always set to false, until we remove the PMM reverse
+    // mapping code.
+    parent_gpu->access_counters_can_use_physical_addresses = false;
 }
 
 void uvm_hal_init_properties(uvm_parent_gpu_t *parent_gpu)

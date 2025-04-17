@@ -24,6 +24,8 @@
 #ifndef __gh100_clc86f_h__
 #define __gh100_clc86f_h__
 
+#define  HOPPER_CHANNEL_GPFIFO_A                           (0x0000C86F)
+
 typedef volatile struct Nvc86fControl_struct {
  NvU32 Ignored00[0x010];        /*                                  0000-003f*/
  NvU32 Put;                     /* put offset, read/write           0040-0043*/
@@ -42,54 +44,7 @@ typedef volatile struct Nvc86fControl_struct {
  NvU32 Ignored05[0x5c];
 } Nvc86fControl, HopperAControlGPFifo;
 
-#define  HOPPER_CHANNEL_GPFIFO_A                           (0x0000C86F)
 #define NVC86F_SET_OBJECT                                          (0x00000000)
-#define NVC86F_SEM_ADDR_LO                                         (0x0000005c)
-#define NVC86F_SEM_ADDR_LO_OFFSET                                         31:2
-#define NVC86F_SEM_ADDR_HI                                         (0x00000060)
-#define NVC86F_SEM_ADDR_HI_OFFSET                                         24:0
-#define NVC86F_SEM_PAYLOAD_LO                                      (0x00000064)
-#define NVC86F_SEM_PAYLOAD_HI                                      (0x00000068)
-#define NVC86F_SEM_EXECUTE                                         (0x0000006c)
-#define NVC86F_SEM_EXECUTE_OPERATION                                       2:0
-#define NVC86F_SEM_EXECUTE_OPERATION_ACQUIRE                        0x00000000
-#define NVC86F_SEM_EXECUTE_OPERATION_RELEASE                        0x00000001
-#define NVC86F_SEM_EXECUTE_RELEASE_WFI                                   20:20
-#define NVC86F_SEM_EXECUTE_RELEASE_WFI_DIS                          0x00000000
-#define NVC86F_SEM_EXECUTE_PAYLOAD_SIZE                                  24:24
-#define NVC86F_SEM_EXECUTE_PAYLOAD_SIZE_32BIT                       0x00000000
-
-/* GPFIFO entry format */
-#define NVC86F_GP_ENTRY__SIZE                                          8
-#define NVC86F_GP_ENTRY0_FETCH                                       0:0
-#define NVC86F_GP_ENTRY0_FETCH_UNCONDITIONAL                  0x00000000
-#define NVC86F_GP_ENTRY0_FETCH_CONDITIONAL                    0x00000001
-#define NVC86F_GP_ENTRY0_GET                                        31:2
-#define NVC86F_GP_ENTRY0_OPERAND                                    31:0
-#define NVC86F_GP_ENTRY0_PB_EXTENDED_BASE_OPERAND                   24:8
-#define NVC86F_GP_ENTRY1_GET_HI                                      7:0
-#define NVC86F_GP_ENTRY1_LEVEL                                       9:9
-#define NVC86F_GP_ENTRY1_LEVEL_MAIN                           0x00000000
-#define NVC86F_GP_ENTRY1_LEVEL_SUBROUTINE                     0x00000001
-#define NVC86F_GP_ENTRY1_LENGTH                                    30:10
-#define NVC86F_GP_ENTRY1_SYNC                                      31:31
-#define NVC86F_GP_ENTRY1_SYNC_PROCEED                         0x00000000
-#define NVC86F_GP_ENTRY1_SYNC_WAIT                            0x00000001
-#define NVC86F_GP_ENTRY1_OPCODE                                      7:0
-#define NVC86F_GP_ENTRY1_OPCODE_NOP                           0x00000000
-#define NVC86F_GP_ENTRY1_OPCODE_ILLEGAL                       0x00000001
-#define NVC86F_GP_ENTRY1_OPCODE_GP_CRC                        0x00000002
-#define NVC86F_GP_ENTRY1_OPCODE_PB_CRC                        0x00000003
-#define NVC86F_GP_ENTRY1_OPCODE_SET_PB_SEGMENT_EXTENDED_BASE  0x00000004
-
-
-#define NVC86F_WFI                                                 (0x00000078)
-#define NVC86F_WFI_SCOPE                                                   0:0
-#define NVC86F_WFI_SCOPE_CURRENT_SCG_TYPE                           0x00000000
-#define NVC86F_WFI_SCOPE_CURRENT_VEID                               0x00000000
-#define NVC86F_WFI_SCOPE_ALL                                        0x00000001
-
-
 // NOTE - MEM_OP_A and MEM_OP_B have been replaced in gp100 with methods for
 // specifying the page address for a targeted TLB invalidate and the uTLB for
 // a targeted REPLAY_CANCEL for UVM.
@@ -184,6 +139,53 @@ typedef volatile struct Nvc86fControl_struct {
 #define NVC86F_MEM_OP_D_MMU_OPERATION_TYPE                               23:20
 #define NVC86F_MEM_OP_D_MMU_OPERATION_TYPE_RESERVED                 0x00000000
 #define NVC86F_MEM_OP_D_MMU_OPERATION_TYPE_VIDMEM_ACCESS_BIT_DUMP   0x00000001
+#define NVC86F_SEM_ADDR_LO                                         (0x0000005c)
+#define NVC86F_SEM_ADDR_LO_OFFSET                                         31:2
+#define NVC86F_SEM_ADDR_HI                                         (0x00000060)
+#define NVC86F_SEM_ADDR_HI_OFFSET                                         24:0
+#define NVC86F_SEM_PAYLOAD_LO                                      (0x00000064)
+#define NVC86F_SEM_PAYLOAD_HI                                      (0x00000068)
+#define NVC86F_SEM_EXECUTE                                         (0x0000006c)
+#define NVC86F_SEM_EXECUTE_OPERATION                                       2:0
+#define NVC86F_SEM_EXECUTE_OPERATION_ACQUIRE                        0x00000000
+#define NVC86F_SEM_EXECUTE_OPERATION_RELEASE                        0x00000001
+#define NVC86F_SEM_EXECUTE_OPERATION_ACQ_CIRC_GEQ                   0x00000003
+#define NVC86F_SEM_EXECUTE_ACQUIRE_SWITCH_TSG                            12:12
+#define NVC86F_SEM_EXECUTE_ACQUIRE_SWITCH_TSG_EN                    0x00000001
+#define NVC86F_SEM_EXECUTE_RELEASE_WFI                                   20:20
+#define NVC86F_SEM_EXECUTE_RELEASE_WFI_DIS                          0x00000000
+#define NVC86F_SEM_EXECUTE_PAYLOAD_SIZE                                  24:24
+#define NVC86F_SEM_EXECUTE_PAYLOAD_SIZE_32BIT                       0x00000000
+#define NVC86F_SEM_EXECUTE_RELEASE_TIMESTAMP                             25:25
+#define NVC86F_SEM_EXECUTE_RELEASE_TIMESTAMP_DIS                    0x00000000
+#define NVC86F_SEM_EXECUTE_RELEASE_TIMESTAMP_EN                     0x00000001
+#define NVC86F_WFI                                                 (0x00000078)
+#define NVC86F_WFI_SCOPE                                                   0:0
+#define NVC86F_WFI_SCOPE_CURRENT_SCG_TYPE                           0x00000000
+#define NVC86F_WFI_SCOPE_CURRENT_VEID                               0x00000000
+#define NVC86F_WFI_SCOPE_ALL                                        0x00000001
 
+/* GPFIFO entry format */
+#define NVC86F_GP_ENTRY__SIZE                                          8
+#define NVC86F_GP_ENTRY0_FETCH                                       0:0
+#define NVC86F_GP_ENTRY0_FETCH_UNCONDITIONAL                  0x00000000
+#define NVC86F_GP_ENTRY0_FETCH_CONDITIONAL                    0x00000001
+#define NVC86F_GP_ENTRY0_GET                                        31:2
+#define NVC86F_GP_ENTRY0_OPERAND                                    31:0
+#define NVC86F_GP_ENTRY0_PB_EXTENDED_BASE_OPERAND                   24:8
+#define NVC86F_GP_ENTRY1_GET_HI                                      7:0
+#define NVC86F_GP_ENTRY1_LEVEL                                       9:9
+#define NVC86F_GP_ENTRY1_LEVEL_MAIN                           0x00000000
+#define NVC86F_GP_ENTRY1_LEVEL_SUBROUTINE                     0x00000001
+#define NVC86F_GP_ENTRY1_LENGTH                                    30:10
+#define NVC86F_GP_ENTRY1_SYNC                                      31:31
+#define NVC86F_GP_ENTRY1_SYNC_PROCEED                         0x00000000
+#define NVC86F_GP_ENTRY1_SYNC_WAIT                            0x00000001
+#define NVC86F_GP_ENTRY1_OPCODE                                      7:0
+#define NVC86F_GP_ENTRY1_OPCODE_NOP                           0x00000000
+#define NVC86F_GP_ENTRY1_OPCODE_ILLEGAL                       0x00000001
+#define NVC86F_GP_ENTRY1_OPCODE_GP_CRC                        0x00000002
+#define NVC86F_GP_ENTRY1_OPCODE_PB_CRC                        0x00000003
+#define NVC86F_GP_ENTRY1_OPCODE_SET_PB_SEGMENT_EXTENDED_BASE  0x00000004
 
 #endif // __gh100_clc86f_h__

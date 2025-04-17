@@ -412,6 +412,20 @@ gisubscriptionCtrlCmdExecPartitionsCreate_IMPL
     NV_ASSERT_OR_RETURN(pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_SUPPORTED), NV_ERR_NOT_SUPPORTED);
     NV_ASSERT_OR_RETURN(IS_MIG_IN_USE(pGpu), NV_ERR_INVALID_STATE);
 
+    // Check whether CI Manipulation is disabled for vGPU.
+    if (IS_VIRTUAL(pGpu)) 
+    { 
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+ 
+        NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_ARGUMENT); 
+
+        if (FLD_TEST_DRF(A080, _CTRL_CMD_VGPU_GET_CONFIG, _PARAMS_VGPU_DEV_CAPS_CI_MANIPULATION_ENABLED, _FALSE,
+                         pVSI->vgpuConfig.vgpuDeviceCapsBits)) 
+        { 
+            return NV_ERR_NOT_SUPPORTED; 
+        } 
+    }
+
     NV_CHECK_OR_RETURN(LEVEL_SILENT, (pParams->execPartCount <= NVC637_CTRL_MAX_EXEC_PARTITIONS),
                      NV_ERR_INVALID_ARGUMENT);
 
@@ -602,6 +616,20 @@ gisubscriptionCtrlCmdExecPartitionsDelete_IMPL
                         NV_ERR_NOT_SUPPORTED);
 
     NV_ASSERT_OR_RETURN(IS_MIG_IN_USE(pGpu), NV_ERR_INVALID_STATE);
+
+    // Check whether CI Manipulation is disabled for vGPU.
+    if (IS_VIRTUAL(pGpu))
+    {
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+        
+        NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_ARGUMENT);
+        
+        if (FLD_TEST_DRF(A080, _CTRL_CMD_VGPU_GET_CONFIG, _PARAMS_VGPU_DEV_CAPS_CI_MANIPULATION_ENABLED, _FALSE, 
+                         pVSI->vgpuConfig.vgpuDeviceCapsBits))
+        {   
+            return NV_ERR_NOT_SUPPORTED;
+        }   
+    }
 
     NV_CHECK_OR_RETURN(LEVEL_SILENT, pParams->execPartCount <= NVC637_CTRL_MAX_EXEC_PARTITIONS,
                      NV_ERR_INVALID_ARGUMENT);
@@ -813,8 +841,9 @@ gisubscriptionCtrlCmdExecPartitionsGetActiveIds_IMPL
         ct_assert(NV_UUID_LEN == NVC637_UUID_LEN);
         ct_assert(NV_UUID_STR_LEN == NVC637_UUID_STR_LEN);
 
-        nvGetSmcUuidString(&pMIGComputeInstance->uuid,
-                           pParams->execPartUuid[pParams->execPartCount].str);
+        nvGetUuidString(&pMIGComputeInstance->uuid,
+                        RM_UUID_PREFIX_MIG,
+                        pParams->execPartUuid[pParams->execPartCount].str);
 
         ++pParams->execPartCount;
     }
@@ -1160,7 +1189,10 @@ gisubscriptionCtrlCmdGetUuid_IMPL
                 pGPUInstanceSubscription->pKernelMIGGpuInstance->uuid.uuid,
                 sizeof(pGPUInstanceSubscription->pKernelMIGGpuInstance->uuid.uuid));
 
-    nvGetSmcUuidString((void*)pParams->uuid, pParams->uuidStr);
+    nvGetUuidString((void*)pParams->uuid,
+                    RM_UUID_PREFIX_MIG,
+                    pParams->uuidStr);
+
     pParams->uuidStr[1] = 'G';
     pParams->uuidStr[2] = 'I';
 

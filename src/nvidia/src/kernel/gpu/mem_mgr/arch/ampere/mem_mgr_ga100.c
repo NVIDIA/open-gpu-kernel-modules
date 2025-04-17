@@ -38,6 +38,8 @@
 #include "published/ampere/ga100/dev_mmu.h"
 #include "published/ampere/ga100/dev_fb.h"
 
+#include "kernel/virtualization/common_vgpu_mgr.h"
+
 #define NV_CBC_MAX_SIZE_BUG_2509894_WAR   ((3 * NVBIT64(30)) / 2) // 1.5GBs
 
 /*!

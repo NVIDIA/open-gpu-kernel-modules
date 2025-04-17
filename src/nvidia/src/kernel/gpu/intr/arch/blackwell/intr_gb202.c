@@ -27,8 +27,23 @@
 #include "kernel/gpu/intr/engine_idx.h"
 #include "gpu/disp/kern_disp.h"
 
+/*!
+ * @brief Returns a bitfield with only MC_ENGINE_IDX_DISP set if it's pending in hardware
+ *        On Turing+, there are multiple stall interrupt registers, and reading them
+ *        all in the top half would be expensive. To saitsfy bug 3220319, only find out
+ *        if display interrupt is pending. Fix this in bug 3279300.
+ *        GB20X+, we we report a separate low latency DISP bit that is only pending if the
+ *        low latency interrupt is pending.
+ *
+ * @param[in]  pGpu
+ * @param[in]  pMc
+ * @param[out] pEngines     List of engines that have pending stall interrupts
+ * @param[in]  pThreadState
+ *
+ * @return NV_OK if the list of engines that have pending stall interrupts was retrieved
+ */
 NV_STATUS
-intrGetPendingDisplayIntr_GB202
+intrGetPendingLowLatencyHwDisplayIntr_GB202
 (
     OBJGPU              *pGpu,
     Intr                *pIntr,
@@ -46,7 +61,7 @@ intrGetPendingDisplayIntr_GB202
         return NV_ERR_GPU_IS_LOST;
     }
 
-    if (pIntr->displayIntrVector == NV_INTR_VECTOR_INVALID)
+    if (pIntr->displayLowLatencyIntrVector == NV_INTR_VECTOR_INVALID)
     {
         return NV_OK;
     }

@@ -214,10 +214,17 @@ NV_STATUS uvm_rm_mem_alloc(uvm_gpu_t *gpu,
 
     alloc_info.alignment = gpu_alignment;
 
-    if (type == UVM_RM_MEM_TYPE_SYS)
+    if (type == UVM_RM_MEM_TYPE_SYS) {
+        if (size >= UVM_PAGE_SIZE_2M)
+            alloc_info.pageSize = UVM_PAGE_SIZE_2M;
+        else if (size >= UVM_PAGE_SIZE_64K)
+            alloc_info.pageSize = UVM_PAGE_SIZE_64K;
+
         status = uvm_rm_locked_call(nvUvmInterfaceMemoryAllocSys(gpu->rm_address_space, size, &gpu_va, &alloc_info));
-    else
+    }
+    else {
         status = uvm_rm_locked_call(nvUvmInterfaceMemoryAllocFB(gpu->rm_address_space, size, &gpu_va, &alloc_info));
+    }
 
     if (status != NV_OK) {
         UVM_ERR_PRINT("nvUvmInterfaceMemoryAlloc%s() failed: %s, GPU %s\n",

@@ -1430,9 +1430,9 @@ NV_STATUS UvmAllocDeviceP2P(NvProcessorUuid gpuUuid,
 // UvmMigrate
 //
 // Migrates the backing of a given virtual address range to the specified
-// destination processor. If any page in the VA range is unpopulated, it is
-// populated at the destination processor. The migrated pages in the VA range
-// are also mapped on the destination processor.
+// destination processor's nearest memory. If any page in the VA range is
+// unpopulated, it is populated at the destination processor. The migrated pages
+// in the VA range are also mapped on the destination processor.
 //
 // Both base and length must be aligned to the smallest page size supported by
 // the CPU. The VA range must lie within the largest possible virtual address
@@ -2207,9 +2207,9 @@ NV_STATUS UvmMapDynamicParallelismRegion(void                  *base,
 // allocated via a call to either UvmAlloc or UvmMemMap, or be supported
 // system-allocated pageable memory. If the input virtual range corresponds to
 // system-allocated pageable memory and UvmIsPageableMemoryAccessSupported
-// reports that pageable memory access is supported, the behavior described
-// below does not take effect, and read duplication will not be enabled for
-// the input range.
+// reports that pageable memory access is supported, or if a memoryless
+// processor is present, the behavior described below does not take effect, and
+// read duplication will not be enabled for the input range.
 //
 // Both base and length must be aligned to the smallest page size supported by
 // the CPU.
@@ -2330,7 +2330,7 @@ NV_STATUS UvmDisableReadDuplication(void     *base,
 // UvmSetPreferredLocation
 //
 // Sets the preferred location for the given virtual address range to be the
-// specified processor's memory.
+// specified processor's nearest memory.
 //
 // Both base and length must be aligned to the smallest page size supported by
 // the CPU. The VA range must lie within the largest possible virtual address

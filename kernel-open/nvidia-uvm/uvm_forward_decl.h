@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2025 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -98,8 +98,7 @@ typedef struct uvm_non_replayable_fault_buffer_struct uvm_non_replayable_fault_b
 typedef struct uvm_access_counter_buffer_entry_struct uvm_access_counter_buffer_entry_t;
 typedef struct uvm_access_counter_buffer_struct uvm_access_counter_buffer_t;
 typedef struct uvm_access_counter_service_batch_context_struct uvm_access_counter_service_batch_context_t;
+typedef struct uvm_pmm_sysmem_mappings_struct uvm_pmm_sysmem_mappings_t;
 
 typedef struct uvm_reverse_map_struct uvm_reverse_map_t;
-
-typedef struct uvm_ibm_npu_struct uvm_ibm_npu_t;
 #endif //__UVM_FORWARD_DECL_H__

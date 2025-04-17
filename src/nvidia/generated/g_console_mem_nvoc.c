@@ -1,4 +1,11 @@
 #define NVOC_CONSOLE_MEM_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,115 +14,29 @@
 #include "utils/nvassert.h"
 #include "g_console_mem_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0xaac69e = 1;
+char __nvoc_class_id_uniqueness_check__0xaac69e = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_ConsoleMemory;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Memory;
 
-void __nvoc_init_ConsoleMemory(ConsoleMemory*);
+// Forward declarations for ConsoleMemory
+void __nvoc_init__Memory(Memory*);
+void __nvoc_init__ConsoleMemory(ConsoleMemory*);
 void __nvoc_init_funcTable_ConsoleMemory(ConsoleMemory*);
-NV_STATUS __nvoc_ctor_ConsoleMemory(ConsoleMemory*, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_ctor_ConsoleMemory(ConsoleMemory*, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 void __nvoc_init_dataField_ConsoleMemory(ConsoleMemory*);
 void __nvoc_dtor_ConsoleMemory(ConsoleMemory*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_ConsoleMemory;
 
-static const struct NVOC_RTTI __nvoc_rtti_ConsoleMemory_ConsoleMemory = {
-    /*pClassDef=*/          &__nvoc_class_def_ConsoleMemory,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_ConsoleMemory,
-    /*offset=*/             0,
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ConsoleMemory_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ConsoleMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ConsoleMemory_RsResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RsResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ConsoleMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ConsoleMemory_RmResourceCommon = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResourceCommon,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ConsoleMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ConsoleMemory_RmResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ConsoleMemory, __nvoc_base_Memory.__nvoc_base_RmResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ConsoleMemory_Memory = {
-    /*pClassDef=*/          &__nvoc_class_def_Memory,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ConsoleMemory, __nvoc_base_Memory),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_ConsoleMemory = {
-    /*numRelatives=*/       6,
-    /*relatives=*/ {
-        &__nvoc_rtti_ConsoleMemory_ConsoleMemory,
-        &__nvoc_rtti_ConsoleMemory_Memory,
-        &__nvoc_rtti_ConsoleMemory_RmResource,
-        &__nvoc_rtti_ConsoleMemory_RmResourceCommon,
-        &__nvoc_rtti_ConsoleMemory_RsResource,
-        &__nvoc_rtti_ConsoleMemory_Object,
-    },
-};
-
-const struct NVOC_CLASS_DEF __nvoc_class_def_ConsoleMemory = 
-{
-    /*classInfo=*/ {
-        /*size=*/               sizeof(ConsoleMemory),
-        /*classId=*/            classId(ConsoleMemory),
-        /*providerId=*/         &__nvoc_rtti_provider,
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "ConsoleMemory",
-#endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_ConsoleMemory,
-    /*pCastInfo=*/          &__nvoc_castinfo_ConsoleMemory,
-    /*pExportInfo=*/        &__nvoc_export_info_ConsoleMemory
-};
-
-#if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
-#define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
-#endif
-
-static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ConsoleMemory[] = 
-{
-    {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
-        /*pFunc=*/      (void (*)(void)) NULL,
-#else
-        /*pFunc=*/      (void (*)(void)) conmemCtrlCmdNotifyConsoleDisabled_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
-        /*flags=*/      0x0u,
-        /*accessRight=*/0x0u,
-        /*methodId=*/   0x760101u,
-        /*paramSize=*/  0,
-        /*pClassInfo=*/ &(__nvoc_class_def_ConsoleMemory.classInfo),
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*func=*/       "conmemCtrlCmdNotifyConsoleDisabled"
-#endif
-    },
-
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__ConsoleMemory;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__ConsoleMemory;
 
 // Down-thunk(s) to bridge ConsoleMemory methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^2
@@ -132,14 +53,6 @@ NV_STATUS __nvoc_down_thunk_Memory_rmresGetMemInterMapParams(struct RmResource *
 NV_STATUS __nvoc_down_thunk_Memory_rmresCheckMemInterUnmap(struct RmResource *pMemory, NvBool bSubdeviceHandleProvided);    // super
 NV_STATUS __nvoc_down_thunk_Memory_rmresGetMemoryMappingDescriptor(struct RmResource *pMemory, MEMORY_DESCRIPTOR **ppMemDesc);    // super
 NvBool __nvoc_down_thunk_ConsoleMemory_resCanCopy(struct RsResource *pConsoleMemory);    // this
-
-// 1 down-thunk(s) defined to bridge methods in ConsoleMemory from superclasses
-
-// conmemCanCopy: virtual override (res) base (mem)
-NvBool __nvoc_down_thunk_ConsoleMemory_resCanCopy(struct RsResource *pConsoleMemory) {
-    return conmemCanCopy((struct ConsoleMemory *)(((unsigned char *) pConsoleMemory) - NV_OFFSETOF(ConsoleMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)));
-}
-
 
 // Up-thunk(s) to bridge ConsoleMemory methods to ancestors (if any)
 NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^2
@@ -193,6 +106,182 @@ NV_STATUS __nvoc_up_thunk_RsResource_conmemMapTo(struct ConsoleMemory *pResource
 NV_STATUS __nvoc_up_thunk_RsResource_conmemUnmapFrom(struct ConsoleMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
 NvU32 __nvoc_up_thunk_RsResource_conmemGetRefCount(struct ConsoleMemory *pResource);    // this
 void __nvoc_up_thunk_RsResource_conmemAddAdditionalDependants(struct RsClient *pClient, struct ConsoleMemory *pResource, RsResourceRef *pReference);    // this
+
+const struct NVOC_CLASS_DEF __nvoc_class_def_ConsoleMemory = 
+{
+    /*classInfo=*/ {
+        /*size=*/               sizeof(ConsoleMemory),
+        /*classId=*/            classId(ConsoleMemory),
+        /*providerId=*/         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*name=*/               "ConsoleMemory",
+#endif
+    },
+    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_ConsoleMemory,
+    /*pCastInfo=*/          &__nvoc_castinfo__ConsoleMemory,
+    /*pExportInfo=*/        &__nvoc_export_info__ConsoleMemory
+};
+
+#if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
+#define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
+#endif
+
+static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ConsoleMemory[] = 
+{
+    {               /*  [0] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) conmemCtrlCmdNotifyConsoleDisabled_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+        /*flags=*/      0x0u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x760101u,
+        /*paramSize=*/  0,
+        /*pClassInfo=*/ &(__nvoc_class_def_ConsoleMemory.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "conmemCtrlCmdNotifyConsoleDisabled"
+#endif
+    },
+
+};
+
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__ConsoleMemory __nvoc_metadata__ConsoleMemory = {
+    .rtti.pClassDef = &__nvoc_class_def_ConsoleMemory,    // (conmem) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_ConsoleMemory,
+    .rtti.offset    = 0,
+    .metadata__Memory.rtti.pClassDef = &__nvoc_class_def_Memory,    // (mem) super
+    .metadata__Memory.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Memory.rtti.offset    = NV_OFFSETOF(ConsoleMemory, __nvoc_base_Memory),
+    .metadata__Memory.metadata__RmResource.rtti.pClassDef = &__nvoc_class_def_RmResource,    // (rmres) super^2
+    .metadata__Memory.metadata__RmResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Memory.metadata__RmResource.rtti.offset    = NV_OFFSETOF(ConsoleMemory, __nvoc_base_Memory.__nvoc_base_RmResource),
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.rtti.pClassDef = &__nvoc_class_def_RsResource,    // (res) super^3
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.rtti.offset    = NV_OFFSETOF(ConsoleMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource),
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^4
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.offset    = NV_OFFSETOF(ConsoleMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
+    .metadata__Memory.metadata__RmResource.metadata__RmResourceCommon.rtti.pClassDef = &__nvoc_class_def_RmResourceCommon,    // (rmrescmn) super^3
+    .metadata__Memory.metadata__RmResource.metadata__RmResourceCommon.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Memory.metadata__RmResource.metadata__RmResourceCommon.rtti.offset    = NV_OFFSETOF(ConsoleMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
+
+    .vtable.__conmemCanCopy__ = &conmemCanCopy_IMPL,    // virtual override (res) base (mem)
+    .metadata__Memory.vtable.__memCanCopy__ = &__nvoc_up_thunk_RsResource_memCanCopy,    // virtual inherited (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resCanCopy__ = &__nvoc_down_thunk_ConsoleMemory_resCanCopy,    // virtual
+    .vtable.__conmemIsDuplicate__ = &__nvoc_up_thunk_Memory_conmemIsDuplicate,    // virtual inherited (mem) base (mem)
+    .metadata__Memory.vtable.__memIsDuplicate__ = &memIsDuplicate_IMPL,    // virtual override (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resIsDuplicate__ = &__nvoc_down_thunk_Memory_resIsDuplicate,    // virtual
+    .vtable.__conmemGetMapAddrSpace__ = &__nvoc_up_thunk_Memory_conmemGetMapAddrSpace,    // virtual inherited (mem) base (mem)
+    .metadata__Memory.vtable.__memGetMapAddrSpace__ = &memGetMapAddrSpace_IMPL,    // virtual
+    .vtable.__conmemControl__ = &__nvoc_up_thunk_Memory_conmemControl,    // virtual inherited (mem) base (mem)
+    .metadata__Memory.vtable.__memControl__ = &memControl_IMPL,    // virtual override (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resControl__ = &__nvoc_down_thunk_Memory_resControl,    // virtual
+    .vtable.__conmemMap__ = &__nvoc_up_thunk_Memory_conmemMap,    // virtual inherited (mem) base (mem)
+    .metadata__Memory.vtable.__memMap__ = &memMap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resMap__ = &__nvoc_down_thunk_Memory_resMap,    // virtual
+    .vtable.__conmemUnmap__ = &__nvoc_up_thunk_Memory_conmemUnmap,    // virtual inherited (mem) base (mem)
+    .metadata__Memory.vtable.__memUnmap__ = &memUnmap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resUnmap__ = &__nvoc_down_thunk_Memory_resUnmap,    // virtual
+    .vtable.__conmemGetMemInterMapParams__ = &__nvoc_up_thunk_Memory_conmemGetMemInterMapParams,    // virtual inherited (mem) base (mem)
+    .metadata__Memory.vtable.__memGetMemInterMapParams__ = &memGetMemInterMapParams_IMPL,    // virtual override (rmres) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresGetMemInterMapParams__ = &__nvoc_down_thunk_Memory_rmresGetMemInterMapParams,    // virtual
+    .vtable.__conmemCheckMemInterUnmap__ = &__nvoc_up_thunk_Memory_conmemCheckMemInterUnmap,    // inline virtual inherited (mem) base (mem) body
+    .metadata__Memory.vtable.__memCheckMemInterUnmap__ = &memCheckMemInterUnmap_ac1694,    // inline virtual override (rmres) base (rmres) body
+    .metadata__Memory.metadata__RmResource.vtable.__rmresCheckMemInterUnmap__ = &__nvoc_down_thunk_Memory_rmresCheckMemInterUnmap,    // virtual
+    .vtable.__conmemGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_Memory_conmemGetMemoryMappingDescriptor,    // virtual inherited (mem) base (mem)
+    .metadata__Memory.vtable.__memGetMemoryMappingDescriptor__ = &memGetMemoryMappingDescriptor_IMPL,    // virtual override (rmres) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresGetMemoryMappingDescriptor__ = &__nvoc_down_thunk_Memory_rmresGetMemoryMappingDescriptor,    // virtual
+    .vtable.__conmemCheckCopyPermissions__ = &__nvoc_up_thunk_Memory_conmemCheckCopyPermissions,    // inline virtual inherited (mem) base (mem) body
+    .metadata__Memory.vtable.__memCheckCopyPermissions__ = &memCheckCopyPermissions_ac1694,    // inline virtual body
+    .vtable.__conmemIsReady__ = &__nvoc_up_thunk_Memory_conmemIsReady,    // virtual inherited (mem) base (mem)
+    .metadata__Memory.vtable.__memIsReady__ = &memIsReady_IMPL,    // virtual
+    .vtable.__conmemIsGpuMapAllowed__ = &__nvoc_up_thunk_Memory_conmemIsGpuMapAllowed,    // inline virtual inherited (mem) base (mem) body
+    .metadata__Memory.vtable.__memIsGpuMapAllowed__ = &memIsGpuMapAllowed_e661f0,    // inline virtual body
+    .vtable.__conmemIsExportAllowed__ = &__nvoc_up_thunk_Memory_conmemIsExportAllowed,    // inline virtual inherited (mem) base (mem) body
+    .metadata__Memory.vtable.__memIsExportAllowed__ = &memIsExportAllowed_e661f0,    // inline virtual body
+    .vtable.__conmemAccessCallback__ = &__nvoc_up_thunk_RmResource_conmemAccessCallback,    // virtual inherited (rmres) base (mem)
+    .metadata__Memory.vtable.__memAccessCallback__ = &__nvoc_up_thunk_RmResource_memAccessCallback,    // virtual inherited (rmres) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+    .vtable.__conmemShareCallback__ = &__nvoc_up_thunk_RmResource_conmemShareCallback,    // virtual inherited (rmres) base (mem)
+    .metadata__Memory.vtable.__memShareCallback__ = &__nvoc_up_thunk_RmResource_memShareCallback,    // virtual inherited (rmres) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresShareCallback__ = &rmresShareCallback_IMPL,    // virtual override (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+    .vtable.__conmemControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_conmemControlSerialization_Prologue,    // virtual inherited (rmres) base (mem)
+    .metadata__Memory.vtable.__memControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_memControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+    .vtable.__conmemControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_conmemControlSerialization_Epilogue,    // virtual inherited (rmres) base (mem)
+    .metadata__Memory.vtable.__memControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_memControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+    .vtable.__conmemControl_Prologue__ = &__nvoc_up_thunk_RmResource_conmemControl_Prologue,    // virtual inherited (rmres) base (mem)
+    .metadata__Memory.vtable.__memControl_Prologue__ = &__nvoc_up_thunk_RmResource_memControl_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+    .vtable.__conmemControl_Epilogue__ = &__nvoc_up_thunk_RmResource_conmemControl_Epilogue,    // virtual inherited (rmres) base (mem)
+    .metadata__Memory.vtable.__memControl_Epilogue__ = &__nvoc_up_thunk_RmResource_memControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+    .vtable.__conmemPreDestruct__ = &__nvoc_up_thunk_RsResource_conmemPreDestruct,    // virtual inherited (res) base (mem)
+    .metadata__Memory.vtable.__memPreDestruct__ = &__nvoc_up_thunk_RsResource_memPreDestruct,    // virtual inherited (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+    .vtable.__conmemControlFilter__ = &__nvoc_up_thunk_RsResource_conmemControlFilter,    // virtual inherited (res) base (mem)
+    .metadata__Memory.vtable.__memControlFilter__ = &__nvoc_up_thunk_RsResource_memControlFilter,    // virtual inherited (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+    .vtable.__conmemIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_conmemIsPartialUnmapSupported,    // inline virtual inherited (res) base (mem) body
+    .metadata__Memory.vtable.__memIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_memIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+    .metadata__Memory.metadata__RmResource.vtable.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+    .vtable.__conmemMapTo__ = &__nvoc_up_thunk_RsResource_conmemMapTo,    // virtual inherited (res) base (mem)
+    .metadata__Memory.vtable.__memMapTo__ = &__nvoc_up_thunk_RsResource_memMapTo,    // virtual inherited (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resMapTo__ = &resMapTo_IMPL,    // virtual
+    .vtable.__conmemUnmapFrom__ = &__nvoc_up_thunk_RsResource_conmemUnmapFrom,    // virtual inherited (res) base (mem)
+    .metadata__Memory.vtable.__memUnmapFrom__ = &__nvoc_up_thunk_RsResource_memUnmapFrom,    // virtual inherited (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+    .vtable.__conmemGetRefCount__ = &__nvoc_up_thunk_RsResource_conmemGetRefCount,    // virtual inherited (res) base (mem)
+    .metadata__Memory.vtable.__memGetRefCount__ = &__nvoc_up_thunk_RsResource_memGetRefCount,    // virtual inherited (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+    .vtable.__conmemAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_conmemAddAdditionalDependants,    // virtual inherited (res) base (mem)
+    .metadata__Memory.vtable.__memAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_memAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__ConsoleMemory = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__ConsoleMemory.rtti,    // [0]: (conmem) this
+        &__nvoc_metadata__ConsoleMemory.metadata__Memory.rtti,    // [1]: (mem) super
+        &__nvoc_metadata__ConsoleMemory.metadata__Memory.metadata__RmResource.rtti,    // [2]: (rmres) super^2
+        &__nvoc_metadata__ConsoleMemory.metadata__Memory.metadata__RmResource.metadata__RsResource.rtti,    // [3]: (res) super^3
+        &__nvoc_metadata__ConsoleMemory.metadata__Memory.metadata__RmResource.metadata__RsResource.metadata__Object.rtti,    // [4]: (obj) super^4
+        &__nvoc_metadata__ConsoleMemory.metadata__Memory.metadata__RmResource.metadata__RmResourceCommon.rtti,    // [5]: (rmrescmn) super^3
+    }
+};
+
+// 1 down-thunk(s) defined to bridge methods in ConsoleMemory from superclasses
+
+// conmemCanCopy: virtual override (res) base (mem)
+NvBool __nvoc_down_thunk_ConsoleMemory_resCanCopy(struct RsResource *pConsoleMemory) {
+    return conmemCanCopy((struct ConsoleMemory *)(((unsigned char *) pConsoleMemory) - NV_OFFSETOF(ConsoleMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)));
+}
+
 
 // 25 up-thunk(s) defined to bridge methods in ConsoleMemory to superclasses
 
@@ -322,7 +411,7 @@ void __nvoc_up_thunk_RsResource_conmemAddAdditionalDependants(struct RsClient *p
 }
 
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_ConsoleMemory = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__ConsoleMemory = 
 {
     /*numEntries=*/     1,
     /*pExportEntries=*/ __nvoc_exported_method_def_ConsoleMemory
@@ -371,120 +460,33 @@ static void __nvoc_init_funcTable_ConsoleMemory_1(ConsoleMemory *pThis) {
 // Initialize vtable(s) for 27 virtual method(s).
 void __nvoc_init_funcTable_ConsoleMemory(ConsoleMemory *pThis) {
 
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__ConsoleMemory vtable = {
-        .__conmemCanCopy__ = &conmemCanCopy_IMPL,    // virtual override (res) base (mem)
-        .Memory.__memCanCopy__ = &__nvoc_up_thunk_RsResource_memCanCopy,    // virtual inherited (res) base (rmres)
-        .Memory.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resCanCopy__ = &__nvoc_down_thunk_ConsoleMemory_resCanCopy,    // virtual
-        .__conmemIsDuplicate__ = &__nvoc_up_thunk_Memory_conmemIsDuplicate,    // virtual inherited (mem) base (mem)
-        .Memory.__memIsDuplicate__ = &memIsDuplicate_IMPL,    // virtual override (res) base (rmres)
-        .Memory.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resIsDuplicate__ = &__nvoc_down_thunk_Memory_resIsDuplicate,    // virtual
-        .__conmemGetMapAddrSpace__ = &__nvoc_up_thunk_Memory_conmemGetMapAddrSpace,    // virtual inherited (mem) base (mem)
-        .Memory.__memGetMapAddrSpace__ = &memGetMapAddrSpace_IMPL,    // virtual
-        .__conmemControl__ = &__nvoc_up_thunk_Memory_conmemControl,    // virtual inherited (mem) base (mem)
-        .Memory.__memControl__ = &memControl_IMPL,    // virtual override (res) base (rmres)
-        .Memory.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_Memory_resControl,    // virtual
-        .__conmemMap__ = &__nvoc_up_thunk_Memory_conmemMap,    // virtual inherited (mem) base (mem)
-        .Memory.__memMap__ = &memMap_IMPL,    // virtual override (res) base (rmres)
-        .Memory.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resMap__ = &__nvoc_down_thunk_Memory_resMap,    // virtual
-        .__conmemUnmap__ = &__nvoc_up_thunk_Memory_conmemUnmap,    // virtual inherited (mem) base (mem)
-        .Memory.__memUnmap__ = &memUnmap_IMPL,    // virtual override (res) base (rmres)
-        .Memory.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resUnmap__ = &__nvoc_down_thunk_Memory_resUnmap,    // virtual
-        .__conmemGetMemInterMapParams__ = &__nvoc_up_thunk_Memory_conmemGetMemInterMapParams,    // virtual inherited (mem) base (mem)
-        .Memory.__memGetMemInterMapParams__ = &memGetMemInterMapParams_IMPL,    // virtual override (rmres) base (rmres)
-        .Memory.RmResource.__rmresGetMemInterMapParams__ = &__nvoc_down_thunk_Memory_rmresGetMemInterMapParams,    // virtual
-        .__conmemCheckMemInterUnmap__ = &__nvoc_up_thunk_Memory_conmemCheckMemInterUnmap,    // inline virtual inherited (mem) base (mem) body
-        .Memory.__memCheckMemInterUnmap__ = &memCheckMemInterUnmap_ac1694,    // inline virtual override (rmres) base (rmres) body
-        .Memory.RmResource.__rmresCheckMemInterUnmap__ = &__nvoc_down_thunk_Memory_rmresCheckMemInterUnmap,    // virtual
-        .__conmemGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_Memory_conmemGetMemoryMappingDescriptor,    // virtual inherited (mem) base (mem)
-        .Memory.__memGetMemoryMappingDescriptor__ = &memGetMemoryMappingDescriptor_IMPL,    // virtual override (rmres) base (rmres)
-        .Memory.RmResource.__rmresGetMemoryMappingDescriptor__ = &__nvoc_down_thunk_Memory_rmresGetMemoryMappingDescriptor,    // virtual
-        .__conmemCheckCopyPermissions__ = &__nvoc_up_thunk_Memory_conmemCheckCopyPermissions,    // inline virtual inherited (mem) base (mem) body
-        .Memory.__memCheckCopyPermissions__ = &memCheckCopyPermissions_ac1694,    // inline virtual body
-        .__conmemIsReady__ = &__nvoc_up_thunk_Memory_conmemIsReady,    // virtual inherited (mem) base (mem)
-        .Memory.__memIsReady__ = &memIsReady_IMPL,    // virtual
-        .__conmemIsGpuMapAllowed__ = &__nvoc_up_thunk_Memory_conmemIsGpuMapAllowed,    // inline virtual inherited (mem) base (mem) body
-        .Memory.__memIsGpuMapAllowed__ = &memIsGpuMapAllowed_e661f0,    // inline virtual body
-        .__conmemIsExportAllowed__ = &__nvoc_up_thunk_Memory_conmemIsExportAllowed,    // inline virtual inherited (mem) base (mem) body
-        .Memory.__memIsExportAllowed__ = &memIsExportAllowed_e661f0,    // inline virtual body
-        .__conmemAccessCallback__ = &__nvoc_up_thunk_RmResource_conmemAccessCallback,    // virtual inherited (rmres) base (mem)
-        .Memory.__memAccessCallback__ = &__nvoc_up_thunk_RmResource_memAccessCallback,    // virtual inherited (rmres) base (rmres)
-        .Memory.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
-        .Memory.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
-        .__conmemShareCallback__ = &__nvoc_up_thunk_RmResource_conmemShareCallback,    // virtual inherited (rmres) base (mem)
-        .Memory.__memShareCallback__ = &__nvoc_up_thunk_RmResource_memShareCallback,    // virtual inherited (rmres) base (rmres)
-        .Memory.RmResource.__rmresShareCallback__ = &rmresShareCallback_IMPL,    // virtual override (res) base (res)
-        .Memory.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
-        .__conmemControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_conmemControlSerialization_Prologue,    // virtual inherited (rmres) base (mem)
-        .Memory.__memControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_memControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
-        .Memory.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
-        .Memory.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
-        .__conmemControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_conmemControlSerialization_Epilogue,    // virtual inherited (rmres) base (mem)
-        .Memory.__memControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_memControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .Memory.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
-        .Memory.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
-        .__conmemControl_Prologue__ = &__nvoc_up_thunk_RmResource_conmemControl_Prologue,    // virtual inherited (rmres) base (mem)
-        .Memory.__memControl_Prologue__ = &__nvoc_up_thunk_RmResource_memControl_Prologue,    // virtual inherited (rmres) base (rmres)
-        .Memory.RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
-        .Memory.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
-        .__conmemControl_Epilogue__ = &__nvoc_up_thunk_RmResource_conmemControl_Epilogue,    // virtual inherited (rmres) base (mem)
-        .Memory.__memControl_Epilogue__ = &__nvoc_up_thunk_RmResource_memControl_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .Memory.RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
-        .Memory.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
-        .__conmemPreDestruct__ = &__nvoc_up_thunk_RsResource_conmemPreDestruct,    // virtual inherited (res) base (mem)
-        .Memory.__memPreDestruct__ = &__nvoc_up_thunk_RsResource_memPreDestruct,    // virtual inherited (res) base (rmres)
-        .Memory.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
-        .__conmemControlFilter__ = &__nvoc_up_thunk_RsResource_conmemControlFilter,    // virtual inherited (res) base (mem)
-        .Memory.__memControlFilter__ = &__nvoc_up_thunk_RsResource_memControlFilter,    // virtual inherited (res) base (rmres)
-        .Memory.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
-        .__conmemIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_conmemIsPartialUnmapSupported,    // inline virtual inherited (res) base (mem) body
-        .Memory.__memIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_memIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
-        .Memory.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
-        .Memory.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
-        .__conmemMapTo__ = &__nvoc_up_thunk_RsResource_conmemMapTo,    // virtual inherited (res) base (mem)
-        .Memory.__memMapTo__ = &__nvoc_up_thunk_RsResource_memMapTo,    // virtual inherited (res) base (rmres)
-        .Memory.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
-        .__conmemUnmapFrom__ = &__nvoc_up_thunk_RsResource_conmemUnmapFrom,    // virtual inherited (res) base (mem)
-        .Memory.__memUnmapFrom__ = &__nvoc_up_thunk_RsResource_memUnmapFrom,    // virtual inherited (res) base (rmres)
-        .Memory.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
-        .__conmemGetRefCount__ = &__nvoc_up_thunk_RsResource_conmemGetRefCount,    // virtual inherited (res) base (mem)
-        .Memory.__memGetRefCount__ = &__nvoc_up_thunk_RsResource_memGetRefCount,    // virtual inherited (res) base (rmres)
-        .Memory.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
-        .__conmemAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_conmemAddAdditionalDependants,    // virtual inherited (res) base (mem)
-        .Memory.__memAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_memAddAdditionalDependants,    // virtual inherited (res) base (rmres)
-        .Memory.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.Memory.RmResource.RsResource;    // (res) super^3
-    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable = &vtable.Memory.RmResource;    // (rmres) super^2
-    pThis->__nvoc_base_Memory.__nvoc_vtable = &vtable.Memory;    // (mem) super
-    pThis->__nvoc_vtable = &vtable;    // (conmem) this
-
     // Initialize vtable(s) with 1 per-object function pointer(s).
     __nvoc_init_funcTable_ConsoleMemory_1(pThis);
 }
 
-void __nvoc_init_Memory(Memory*);
-void __nvoc_init_ConsoleMemory(ConsoleMemory *pThis) {
-    pThis->__nvoc_pbase_ConsoleMemory = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;
-    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource;
-    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;
-    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_Memory.__nvoc_base_RmResource;
-    pThis->__nvoc_pbase_Memory = &pThis->__nvoc_base_Memory;
-    __nvoc_init_Memory(&pThis->__nvoc_base_Memory);
+// Initialize newly constructed object.
+void __nvoc_init__ConsoleMemory(ConsoleMemory *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;    // (obj) super^4
+    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource;    // (res) super^3
+    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;    // (rmrescmn) super^3
+    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_Memory.__nvoc_base_RmResource;    // (rmres) super^2
+    pThis->__nvoc_pbase_Memory = &pThis->__nvoc_base_Memory;    // (mem) super
+    pThis->__nvoc_pbase_ConsoleMemory = pThis;    // (conmem) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__Memory(&pThis->__nvoc_base_Memory);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__ConsoleMemory.metadata__Memory.metadata__RmResource.metadata__RsResource.metadata__Object;    // (obj) super^4
+    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr = &__nvoc_metadata__ConsoleMemory.metadata__Memory.metadata__RmResource.metadata__RsResource;    // (res) super^3
+    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon.__nvoc_metadata_ptr = &__nvoc_metadata__ConsoleMemory.metadata__Memory.metadata__RmResource.metadata__RmResourceCommon;    // (rmrescmn) super^3
+    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr = &__nvoc_metadata__ConsoleMemory.metadata__Memory.metadata__RmResource;    // (rmres) super^2
+    pThis->__nvoc_base_Memory.__nvoc_metadata_ptr = &__nvoc_metadata__ConsoleMemory.metadata__Memory;    // (mem) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__ConsoleMemory;    // (conmem) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_ConsoleMemory(pThis);
 }
 
@@ -502,9 +504,6 @@ NV_STATUS __nvoc_objCreate_ConsoleMemory(ConsoleMemory **ppThis, Dynamic *pParen
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(ConsoleMemory));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_ConsoleMemory);
-
     pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -518,7 +517,7 @@ NV_STATUS __nvoc_objCreate_ConsoleMemory(ConsoleMemory **ppThis, Dynamic *pParen
         pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_ConsoleMemory(pThis);
+    __nvoc_init__ConsoleMemory(pThis);
     status = __nvoc_ctor_ConsoleMemory(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_ConsoleMemory_cleanup;
 

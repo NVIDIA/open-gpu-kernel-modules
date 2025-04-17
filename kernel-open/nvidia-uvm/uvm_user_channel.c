@@ -989,17 +989,12 @@ NV_STATUS uvm_test_check_channel_va_space(UVM_TEST_CHECK_CHANNEL_VA_SPACE_PARAMS
 
     // We need to do the lookup using the input file's VA space
     va_space_filp = fget(params->va_space_fd);
-    if (!uvm_file_is_nvidia_uvm(va_space_filp)) {
+    if (!uvm_file_is_nvidia_uvm_va_space(va_space_filp)) {
         status = NV_ERR_INVALID_ARGUMENT;
         goto out;
     }
 
-    va_space = uvm_fd_va_space(va_space_filp);
-    if (!va_space) {
-        status = NV_ERR_INVALID_ARGUMENT;
-        goto out;
-    }
-
+    va_space = uvm_va_space_get(va_space_filp);
     uvm_va_space_down_read(va_space);
 
     gpu = uvm_va_space_get_gpu_by_uuid(va_space, &params->gpu_uuid);

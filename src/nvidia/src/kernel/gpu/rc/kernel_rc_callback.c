@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -331,30 +331,43 @@ krcErrorInvokeCallback_IMPL
             }
         }
 
-        if (IS_GSP_CLIENT(pGpu))
+        NvBool bResetRequired;
+        status = gpuIsDeviceMarkedForReset(pGpu, &bResetRequired);
+        if ((status == NV_OK) && bResetRequired &&
+            (pGpu->getProperty(pGpu, PDB_PROP_GPU_SUPPORTS_TDR_EVENT)))
         {
-            clientAction = osRCCallback_v2(pGpu,
-                                           RES_GET_CLIENT_HANDLE(pKernelChannel),
-                                           hDevice,
-                                           hFifo,
-                                           RES_GET_HANDLE(pKernelChannel),
-                                           exceptLevel,
-                                           exceptType,
-                                           NV_FALSE,
-                                           (NvU32 *)pRcErrorContext,
-                                           &krcResetCallback);
+            NV_PRINTF(LEVEL_FATAL, "Gpu marked for reset. Triggering TDR.\n");
+            gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_GPU_RC_RESET, NULL, 0, 0, 0);
+            // RM takes no action to the channel and triggers TDR (similar to RC_CALLBACK_IGNORE)
+            return NV_FALSE;
         }
         else
         {
-            clientAction = osRCCallback(pGpu,
-                                        RES_GET_CLIENT_HANDLE(pKernelChannel),
-                                        hDevice,
-                                        hFifo,
-                                        RES_GET_HANDLE(pKernelChannel),
-                                        exceptLevel,
-                                        exceptType,
-                                        (NvU32 *)pRcErrorContext,
-                                        &krcResetCallback);
+            if (IS_GSP_CLIENT(pGpu))
+            {
+                clientAction = osRCCallback_v2(pGpu,
+                                            RES_GET_CLIENT_HANDLE(pKernelChannel),
+                                            hDevice,
+                                            hFifo,
+                                            RES_GET_HANDLE(pKernelChannel),
+                                            exceptLevel,
+                                            exceptType,
+                                            NV_FALSE,
+                                            (NvU32 *)pRcErrorContext,
+                                            &krcResetCallback);
+            }
+            else
+            {
+                clientAction = osRCCallback(pGpu,
+                                            RES_GET_CLIENT_HANDLE(pKernelChannel),
+                                            hDevice,
+                                            hFifo,
+                                            RES_GET_HANDLE(pKernelChannel),
+                                            exceptLevel,
+                                            exceptType,
+                                            (NvU32 *)pRcErrorContext,
+                                            &krcResetCallback);
+            }
         }
 
         if (clientAction == RC_CALLBACK_IGNORE ||

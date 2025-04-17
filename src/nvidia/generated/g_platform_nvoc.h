@@ -1,13 +1,15 @@
 
 #ifndef _G_PLATFORM_NVOC_H_
 #define _G_PLATFORM_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,7 +44,7 @@ extern "C" {
 #ifndef _PLATFORM_H_
 #define _PLATFORM_H_
 
-#include "nvoc/runtime.h"
+#include "nvoc/object.h"
 #include "nvlimits.h" // NV_MAX_DEVICES
 #include "ctrl/ctrl0073/ctrl0073specific.h" // NV0073_CTRL_SPECIFIC_MAX_ACPI_DEVICES
 
@@ -88,10 +90,18 @@ typedef struct
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJPFM;
+struct NVOC_METADATA__Object;
+
+
 struct OBJPFM {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__OBJPFM *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -116,6 +126,13 @@ struct OBJPFM {
     ACPI_ID_MAPPING acpiIdMapping[32][16];
 };
 
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJPFM {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
+};
+
 #ifndef __NVOC_CLASS_OBJPFM_TYPEDEF__
 #define __NVOC_CLASS_OBJPFM_TYPEDEF__
 typedef struct OBJPFM OBJPFM;
@@ -132,10 +149,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJPFM;
     ((pThis)->__nvoc_pbase_OBJPFM)
 
 #ifdef __nvoc_platform_h_disabled
-#define __dynamicCast_OBJPFM(pThis) ((OBJPFM*)NULL)
+#define __dynamicCast_OBJPFM(pThis) ((OBJPFM*) NULL)
 #else //__nvoc_platform_h_disabled
 #define __dynamicCast_OBJPFM(pThis) \
-    ((OBJPFM*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJPFM)))
+    ((OBJPFM*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJPFM)))
 #endif //__nvoc_platform_h_disabled
 
 // Property macros

@@ -23,6 +23,9 @@
 
 #include "mapping_reuse/mapping_reuse.h"
 
+
+static NV_STATUS _reusemappingdbAddMappingCallback(void *, NvU64, NvU64, NvU64);
+
 /*!
  * @brief   Initialize the mapping reuse object
  *
@@ -44,8 +47,8 @@ reusemappingdbInit
     ReuseMappingDbSplitMappingFunction pSplitCb
 )
 {
-    mapInitIntrusive(&(pReuseMappingDb->reverseMap));
-    mapInit(&(pReuseMappingDb->forwardMap), pAllocator);
+    mapInitIntrusive(&(pReuseMappingDb->virtualMap));
+    mapInit(&(pReuseMappingDb->allocCtxPhysicalMap), pAllocator);
     pReuseMappingDb->pGlobalCtx = pGlobalCtx;
     pReuseMappingDb->pAllocator = pAllocator;
     pReuseMappingDb->pMapCb = pMapCb;
@@ -64,8 +67,8 @@ reusemappingdbDestruct
     ReuseMappingDb *pReuseMappingDb
 )
 {
-    mapDestroy(&(pReuseMappingDb->reverseMap));
-    mapDestroy(&(pReuseMappingDb->forwardMap));
+    mapDestroy(&(pReuseMappingDb->virtualMap));
+    mapDestroy(&(pReuseMappingDb->allocCtxPhysicalMap));
     portMemSet(pReuseMappingDb, 0, sizeof(*pReuseMappingDb));
 }
 
@@ -79,10 +82,103 @@ void
 reusemappingdbUnmap
 (
     ReuseMappingDb *pReuseMappingDb,
+    void       *pAllocCtx,
     MemoryRange range
 )
 {
-    return;
+    ReuseMappingDbEntry *pEntry = mapFindGEQ(&(pReuseMappingDb->virtualMap), range.start);
+    NvU64 curOffset = range.start;
+    NvBool bFirstRange = NV_TRUE;
+
+    while (pEntry != NULL)
+    {
+        ReuseMappingDbEntry *pNextEntry = mapNext(&(pReuseMappingDb->virtualMap), pEntry);
+        NvU64 revOffset = mapKey(&(pReuseMappingDb->virtualMap), pEntry);
+        MemoryRange revRange = mrangeMake(revOffset, pEntry->size);
+        MemoryRange diffRange = mrangeMake(curOffset, revOffset - curOffset);
+
+        // Only unmap ranges contained within the desired unmap range
+        if (!mrangeContains(range, revRange))
+        {
+            if (bFirstRange)
+            {
+                break;
+            }
+            return;
+        }
+
+        bFirstRange = NV_FALSE;
+        curOffset = mrangeLimit(revRange);
+
+        // Unmap any partial range not tracked by data structure
+        if (diffRange.size != 0)
+        {
+            pReuseMappingDb->pUnmapCb(pReuseMappingDb->pGlobalCtx, pAllocCtx, diffRange);
+        }
+
+        // Remove the range tracked by the data structure
+        pEntry->refCount--;
+        if (pEntry->refCount == 0)
+        {
+            // Only remove entry and unmap if refCount is 0.
+            void *pEntryAllocCtx = pEntry->trackingInfo.pAllocCtx;
+            ReuseMappingDbPhysicalMap *pPhysicalMap = mapFind(&(pReuseMappingDb->allocCtxPhysicalMap),
+                (NvU64) pEntryAllocCtx);
+
+            mapRemove(&(pReuseMappingDb->virtualMap), pEntry);
+            mapRemove(pPhysicalMap, pEntry);
+
+            pReuseMappingDb->pUnmapCb(pReuseMappingDb->pGlobalCtx, pEntryAllocCtx, revRange);
+            PORT_FREE(pReuseMappingDb->pAllocator, pEntry);
+        }
+
+        pEntry = pNextEntry;
+    }
+
+    // Take care of any overhang.
+    if (mrangeLimit(range) != curOffset)
+    {
+        MemoryRange diffRange = mrangeMake(curOffset, mrangeLimit(range) - curOffset);
+        pReuseMappingDb->pUnmapCb(pReuseMappingDb->pGlobalCtx, pAllocCtx, diffRange);
+    }
+}
+
+typedef struct ReuseMappingDbToken
+{
+    ReuseMappingDbEntry *pList;
+    ReuseMappingDb *pDb;
+    NvU64 numNewEntries;
+} ReuseMappingDbToken;
+
+//
+// This callback appends a new mapping entry to the pending linked list. The caller calls this with
+// an opaque token which is the head of the list as well as the physical and virtual offsets, and 
+// this function attaches the entry to the head of the list.
+//
+static NV_STATUS
+_reusemappingdbAddMappingCallback
+(
+    void *pToken,
+    NvU64 physicalOffset,
+    NvU64 virtualOffset,
+    NvU64 size
+)
+{
+    ReuseMappingDbToken *pRealToken = (ReuseMappingDbToken *) pToken;
+    ReuseMappingDbEntry *pEntry = (ReuseMappingDbEntry *) PORT_ALLOC(pRealToken->pDb->pAllocator,
+        sizeof(ReuseMappingDbEntry));
+    NV_ASSERT_OR_RETURN(pEntry != NULL, NV_ERR_NO_MEMORY);
+
+    pEntry->size = size;
+    pEntry->refCount = 1;
+    pEntry->newMappingNode.pNextEntry = pRealToken->pList;
+    pEntry->newMappingNode.physicalOffset = physicalOffset;
+    pEntry->newMappingNode.virtualOffset = virtualOffset;
+
+    pRealToken->pList = pEntry;
+    pRealToken->numNewEntries++;
+
+    return NV_OK;
 }
 
 /*!
@@ -93,7 +189,7 @@ reusemappingdbUnmap
                              This is cached with the mapping offset for reuse. 
  * @param[in]   range        Range within that allocation context to map.
  * @param[out]  pMemoryArea  MemoryArea representing (potentially cached) ranges returned from this database
- * @param[in]   cachingFlags Caching flags used for this mapping (ie REUSE_ANY_RANGES, REUSE_NONE, REUSE_SINGLE_RANGE)
+ * @param[in]   cachingFlags Caching flags used for this mapping (ie _SINGLE_RANGE, _NO_REUSE)
  */
 NV_STATUS
 reusemappingdbMap
@@ -105,5 +201,117 @@ reusemappingdbMap
     NvU64 cachingFlags
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    ReuseMappingDbPhysicalMap *pPhysicalMap;
+    ReuseMappingDbToken token;
+    NvBool bNoReuse = !!(cachingFlags & REUSE_MAPPING_DB_MAP_FLAGS_NO_REUSE);
+    NvBool bSingleRange = !!(cachingFlags & REUSE_MAPPING_DB_MAP_FLAGS_SINGLE_RANGE);
+    NvBool bAddToMap = !bNoReuse;
+    NV_STATUS status = NV_OK;
+
+    // TODO: Remove when we support multi-range reuse
+    NV_ASSERT_OR_RETURN( bSingleRange || bNoReuse, NV_ERR_NOT_SUPPORTED);
+
+    pPhysicalMap = mapFind(&(pReuseMappingDb->allocCtxPhysicalMap), (NvU64) pAllocCtx);
+    
+    // We don't currently have any mappings for this alloc context, create new map
+    if (pPhysicalMap == NULL)
+    {
+        pPhysicalMap = mapInsertNew(&(pReuseMappingDb->allocCtxPhysicalMap), (NvU64) pAllocCtx);
+        mapInitIntrusive(pPhysicalMap);
+        NV_ASSERT_OR_RETURN(pPhysicalMap != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    if (!bNoReuse && bSingleRange)
+    {
+        ReuseMappingDbEntry *pEntry = mapFindLEQ(pPhysicalMap, range.start);
+        // If no range LEQ, then try GEQ
+        if (pEntry == NULL)
+        {
+            pEntry = mapFindGEQ(pPhysicalMap, range.start);
+        }
+        if (pEntry != NULL)
+        {
+            NvU64 physicalOffset = mapKey(pPhysicalMap, pEntry);
+            MemoryRange physRange = mrangeMake(physicalOffset, pEntry->size);
+
+            // LEQ returned a resultant range before current range
+            if(!mrangeIntersects(physRange, range))
+            {
+                pEntry = mapNext(pPhysicalMap, pEntry);
+            }
+            if (pEntry != NULL)
+            {
+                // We at least now have an entry thats not before the desired range.
+                physicalOffset = mapKey(pPhysicalMap, pEntry);
+                physRange = mrangeMake(physicalOffset, pEntry->size);
+                NvU64 virtualOffset = mapKey(&(pReuseMappingDb->virtualMap), pEntry);
+
+                // Do another intersection check becasue the range might be after the desired range
+                if (mrangeIntersects(physRange, range))
+                {
+                    bAddToMap = NV_FALSE;
+                    // Only return exact match
+                    if (physRange.start == range.start && physRange.size == range.size)
+                    {
+                        pMemoryArea->numRanges = 1;
+                        pEntry->refCount++;
+                        pMemoryArea->pRanges = PORT_ALLOC(pReuseMappingDb->pAllocator, sizeof(MemoryRange));
+                        NV_ASSERT_OR_RETURN(pMemoryArea->pRanges != NULL, NV_ERR_NO_MEMORY);
+                        pMemoryArea->pRanges[0] = mrangeMake(virtualOffset, range.size);
+                        return NV_OK;
+                    }
+                }
+            }
+        }
+    }
+    // Initialize linked list of new entries
+    token.numNewEntries = 0;
+    token.pDb = pReuseMappingDb;
+    token.pList = NULL;
+
+    // Get new mappings, added to linked list
+    NV_ASSERT_OK_OR_GOTO(status, pReuseMappingDb->pMapCb(pReuseMappingDb->pGlobalCtx, pAllocCtx,
+                                     range, cachingFlags, &token, _reusemappingdbAddMappingCallback), err_unmap);
+    
+    pMemoryArea->pRanges = PORT_ALLOC(pReuseMappingDb->pAllocator, sizeof(MemoryRange) * token.numNewEntries);
+    pMemoryArea->numRanges = 0;
+    
+    NV_ASSERT_TRUE_OR_GOTO(status, pMemoryArea->pRanges != NULL, NV_ERR_NO_MEMORY, err_unmap);
+
+    // Now append the mappings  to the result memory area
+    while (token.pList != NULL)
+    {
+        ReuseMappingDbEntry *pEntry = token.pList;
+        NvU64 physicalOffset = pEntry->newMappingNode.physicalOffset;
+        NvU64 virtualOffset = pEntry->newMappingNode.virtualOffset;
+        token.pList = pEntry->newMappingNode.pNextEntry;
+
+        pMemoryArea->pRanges[pMemoryArea->numRanges++] = mrangeMake(virtualOffset, range.size);
+
+        // Add data to tracking structures only if the mapped range does not overlap
+        if (bAddToMap)
+        {
+            pEntry->trackingInfo.pAllocCtx = pAllocCtx;
+            mapInsertExisting(pPhysicalMap, physicalOffset, pEntry);
+            mapInsertExisting(&(pReuseMappingDb->virtualMap), virtualOffset, pEntry);
+        }
+        else
+        {
+            PORT_FREE(pReuseMappingDb->pAllocator, pEntry);
+        }
+    }
+
+    return NV_OK;
+
+err_unmap:
+    // Unmap and free if we can't allocate the required space for the result array.
+    while (token.pList != NULL)
+    {
+        void *pCur = token.pList;
+        pReuseMappingDb->pUnmapCb(pReuseMappingDb->pGlobalCtx, pAllocCtx,
+            mrangeMake(token.pList->newMappingNode.virtualOffset, range.size));
+        token.pList = token.pList->newMappingNode.pNextEntry;
+        PORT_FREE(pReuseMappingDb->pAllocator, pCur);
+    }
+    return status;
 }

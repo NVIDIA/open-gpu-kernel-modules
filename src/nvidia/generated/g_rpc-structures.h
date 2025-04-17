@@ -293,7 +293,13 @@ typedef struct rpc_rm_api_control_v29_09
     NvP64      rm_api_params NV_ALIGN_BYTES(8);
 } rpc_rm_api_control_v29_09;
 
-typedef rpc_rm_api_control_v29_09 rpc_rm_api_control_v;
+typedef struct rpc_rm_api_control_v2A_08
+{
+    NVOS54_PARAMETERS_v03_00 params;
+    NvP64      rm_api_params NV_ALIGN_BYTES(8);
+} rpc_rm_api_control_v2A_08;
+
+typedef rpc_rm_api_control_v2A_08 rpc_rm_api_control_v;
 
 typedef struct rpc_alloc_share_device_v03_00
 {
@@ -749,14 +755,14 @@ typedef struct rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10
 
 typedef rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10 rpc_ctrl_dbg_set_mode_mmu_debug_v;
 
-typedef struct rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v29_07
+typedef struct rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v2A_05
 {
     NvHandle   hClient;
     NvHandle   hObject;
-    NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07 ctrlParams;
-} rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v29_07;
+    NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v2A_05 ctrlParams;
+} rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v2A_05;
 
-typedef rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v29_07 rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v;
+typedef rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v2A_05 rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v;
 
 typedef struct rpc_ctrl_dbg_read_single_sm_error_state_v21_06
 {
@@ -1080,7 +1086,14 @@ typedef struct rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05
     NV2080_CTRL_CMD_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_v1F_05 params;
 } rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05;
 
-typedef rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05 rpc_ctrl_internal_memsys_set_zbc_referenced_v;
+typedef struct rpc_ctrl_internal_memsys_set_zbc_referenced_v2A_00
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV0080_CTRL_CMD_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_v2A_00 params;
+} rpc_ctrl_internal_memsys_set_zbc_referenced_v2A_00;
+
+typedef rpc_ctrl_internal_memsys_set_zbc_referenced_v2A_00 rpc_ctrl_internal_memsys_set_zbc_referenced_v;
 
 typedef struct rpc_ctrl_fabric_memory_describe_v1E_0C
 {
@@ -1132,7 +1145,14 @@ typedef struct rpc_ctrl_gpu_get_info_v2_v25_11
     NV2080_CTRL_GPU_GET_INFO_V2_PARAMS_v25_11 params;
 } rpc_ctrl_gpu_get_info_v2_v25_11;
 
-typedef rpc_ctrl_gpu_get_info_v2_v25_11 rpc_ctrl_gpu_get_info_v2_v;
+typedef struct rpc_ctrl_gpu_get_info_v2_v2A_04
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_GPU_GET_INFO_V2_PARAMS_v2A_04 params;
+} rpc_ctrl_gpu_get_info_v2_v2A_04;
+
+typedef rpc_ctrl_gpu_get_info_v2_v2A_04 rpc_ctrl_gpu_get_info_v2_v;
 
 typedef struct rpc_update_gpm_guest_buffer_info_v27_01
 {
@@ -1392,7 +1412,10 @@ typedef struct rpc_gsp_rm_control_v03_00
     NvU32      cmd;
     NvU32      status;
     NvU32      paramsSize;
-    NvU32      flags;
+    NvU32      rmapiRpcFlags;
+    NvU32      rmctrlFlags;
+    NvU32      rmctrlAccessRight;
+    NvU64      reserved0 NV_ALIGN_BYTES(8);
     NvU8       params[];
 } rpc_gsp_rm_control_v03_00;
 
@@ -1458,10 +1481,10 @@ typedef rpc_rc_triggered_v17_02 rpc_rc_triggered_v;
 typedef struct rpc_os_error_log_v17_00
 {
     NvU32      exceptType;
+    NvU32      preemptiveRemovalPreviousXid;
     NvU32      runlistId;
     NvU32      chid;
     char       errString[0x100];
-    NvU32      preemptiveRemovalPreviousXid;
 } rpc_os_error_log_v17_00;
 
 typedef rpc_os_error_log_v17_00 rpc_os_error_log_v;
@@ -1718,14 +1741,14 @@ typedef struct rpc_ctrl_dbg_get_mode_mmu_debug_v25_04
 
 typedef rpc_ctrl_dbg_get_mode_mmu_debug_v25_04 rpc_ctrl_dbg_get_mode_mmu_debug_v;
 
-typedef struct rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v29_07
+typedef struct rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v2A_05
 {
     NvHandle   hClient;
     NvHandle   hObject;
-    NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07 ctrlParams;
-} rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v29_07;
+    NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v2A_05 ctrlParams;
+} rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v2A_05;
 
-typedef rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v29_07 rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v;
+typedef rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v2A_05 rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v;
 
 typedef struct rpc_ctrl_cmd_internal_gpu_start_fabric_probe_v25_09
 {
@@ -1796,6 +1819,13 @@ typedef struct rpc_ctrl_exec_partitions_export_v29_0C
 } rpc_ctrl_exec_partitions_export_v29_0C;
 
 typedef rpc_ctrl_exec_partitions_export_v29_0C rpc_ctrl_exec_partitions_export_v;
+
+typedef struct rpc_setup_hibernation_buffer_v2A_06
+{
+    NvU64      bufferAddr NV_ALIGN_BYTES(8);
+} rpc_setup_hibernation_buffer_v2A_06;
+
+typedef rpc_setup_hibernation_buffer_v2A_06 rpc_setup_hibernation_buffer_v;
 
 
 #endif
@@ -3083,6 +3113,36 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rm_api_control_v29_09 = {
     #endif
     .header_length = sizeof(rpc_rm_api_control_v29_09),
     .fdesc = vmiopd_fdesc_t_rpc_rm_api_control_v29_09
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v2A_08
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rm_api_control_v2A_08[] = {
+    {
+        .vtype                = vtype_NVOS54_PARAMETERS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v2A_08, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvP64,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v2A_08, rm_api_params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "rm_api_params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rm_api_control_v2A_08 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_rm_api_control",
+    #endif
+    .header_length = sizeof(rpc_rm_api_control_v2A_08),
+    .fdesc = vmiopd_fdesc_t_rpc_rm_api_control_v2A_08
 };
 #endif
 
@@ -5003,25 +5063,25 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10 = {
 };
 #endif
 
-#ifndef SKIP_PRINT_rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v29_07
-static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v29_07[] = {
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v2A_05
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v2A_05[] = {
     {
         .vtype                = vtype_NvHandle,
-        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v29_07, hClient),
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v2A_05, hClient),
         #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hClient"
         #endif
     },
     {
         .vtype                = vtype_NvHandle,
-        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v29_07, hObject),
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v2A_05, hObject),
         #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hObject"
         #endif
     },
     {
-        .vtype                = vtype_NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07,
-        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v29_07, ctrlParams),
+        .vtype                = vtype_NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v2A_05,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v2A_05, ctrlParams),
         #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "ctrlParams"
         #endif
@@ -5031,12 +5091,12 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v29_07[
     }
 };
 
-static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v29_07 = {
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v2A_05 = {
     #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_ctrl_dbg_set_mode_mmu_gcc_debug",
     #endif
-    .header_length = sizeof(rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v29_07),
-    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v29_07
+    .header_length = sizeof(rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v2A_05),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v2A_05
 };
 #endif
 
@@ -6402,6 +6462,43 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_internal_memsys_set_zbc_referenced
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_ctrl_internal_memsys_set_zbc_referenced_v2A_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_internal_memsys_set_zbc_referenced_v2A_00[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_internal_memsys_set_zbc_referenced_v2A_00, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_internal_memsys_set_zbc_referenced_v2A_00, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV0080_CTRL_CMD_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_v2A_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_internal_memsys_set_zbc_referenced_v2A_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_internal_memsys_set_zbc_referenced_v2A_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_internal_memsys_set_zbc_referenced",
+    #endif
+    .header_length = sizeof(rpc_ctrl_internal_memsys_set_zbc_referenced_v2A_00),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_internal_memsys_set_zbc_referenced_v2A_00
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_ctrl_fabric_memory_describe_v1E_0C
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_fabric_memory_describe_v1E_0C[] = {
     {
@@ -6621,6 +6718,43 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gpu_get_info_v2_v25_11 = {
     #endif
     .header_length = sizeof(rpc_ctrl_gpu_get_info_v2_v25_11),
     .fdesc = vmiopd_fdesc_t_rpc_ctrl_gpu_get_info_v2_v25_11
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpu_get_info_v2_v2A_04
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gpu_get_info_v2_v2A_04[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_get_info_v2_v2A_04, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_get_info_v2_v2A_04, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_GPU_GET_INFO_V2_PARAMS_v2A_04,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_get_info_v2_v2A_04, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gpu_get_info_v2_v2A_04 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gpu_get_info_v2",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gpu_get_info_v2_v2A_04),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gpu_get_info_v2_v2A_04
 };
 #endif
 
@@ -7726,9 +7860,30 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_rm_control_v03_00[] = {
     },
     {
         .vtype                = vtype_NvU32,
-        .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, flags),
+        .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, rmapiRpcFlags),
         #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "flags"
+        .name                 = "rmapiRpcFlags"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, rmctrlFlags),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "rmctrlFlags"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, rmctrlAccessRight),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "rmctrlAccessRight"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU64,
+        .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, reserved0),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "reserved0"
         #endif
     },
     {
@@ -8064,6 +8219,13 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_os_error_log_v17_00[] = {
     },
     {
         .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_os_error_log_v17_00, preemptiveRemovalPreviousXid),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "preemptiveRemovalPreviousXid"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_os_error_log_v17_00, runlistId),
         #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "runlistId"
@@ -8082,13 +8244,6 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_os_error_log_v17_00[] = {
         .array_length         = 0x100,
         #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "errString"
-        #endif
-    },
-    {
-        .vtype                = vtype_NvU32,
-        .offset               = NV_OFFSETOF(rpc_os_error_log_v17_00, preemptiveRemovalPreviousXid),
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "preemptiveRemovalPreviousXid"
         #endif
     },
     {
@@ -9081,25 +9236,25 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_get_mode_mmu_debug_v25_04 = {
 };
 #endif
 
-#ifndef SKIP_PRINT_rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v29_07
-static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v29_07[] = {
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v2A_05
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v2A_05[] = {
     {
         .vtype                = vtype_NvHandle,
-        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v29_07, hClient),
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v2A_05, hClient),
         #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hClient"
         #endif
     },
     {
         .vtype                = vtype_NvHandle,
-        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v29_07, hObject),
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v2A_05, hObject),
         #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hObject"
         #endif
     },
     {
-        .vtype                = vtype_NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07,
-        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v29_07, ctrlParams),
+        .vtype                = vtype_NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v2A_05,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v2A_05, ctrlParams),
         #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "ctrlParams"
         #endif
@@ -9109,12 +9264,12 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v29_07[
     }
 };
 
-static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v29_07 = {
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v2A_05 = {
     #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_ctrl_dbg_get_mode_mmu_gcc_debug",
     #endif
-    .header_length = sizeof(rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v29_07),
-    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v29_07
+    .header_length = sizeof(rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v2A_05),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v2A_05
 };
 #endif
 
@@ -9401,6 +9556,29 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_exec_partitions_export_v29_0C = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_setup_hibernation_buffer_v2A_06
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_setup_hibernation_buffer_v2A_06[] = {
+    {
+        .vtype                = vtype_NvU64,
+        .offset               = NV_OFFSETOF(rpc_setup_hibernation_buffer_v2A_06, bufferAddr),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "bufferAddr"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_setup_hibernation_buffer_v2A_06 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_setup_hibernation_buffer",
+    #endif
+    .header_length = sizeof(rpc_setup_hibernation_buffer_v2A_06),
+    .fdesc = vmiopd_fdesc_t_rpc_setup_hibernation_buffer_v2A_06
+};
+#endif
+
 #endif
 
 #ifdef RPC_DEBUG_PRINT_FUNCTIONS
@@ -9629,6 +9807,13 @@ vmiopd_mdesc_t *rpcdebugRmApiControl_v25_14(void)
 vmiopd_mdesc_t *rpcdebugRmApiControl_v29_09(void)
 {
     return &vmiopd_mdesc_t_rpc_rm_api_control_v29_09;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v2A_08
+vmiopd_mdesc_t *rpcdebugRmApiControl_v2A_08(void)
+{
+    return &vmiopd_mdesc_t_rpc_rm_api_control_v2A_08;
 }
 #endif
 
@@ -9996,10 +10181,10 @@ vmiopd_mdesc_t *rpcdebugCtrlDbgSetModeMmuDebug_v1A_10(void)
 }
 #endif
 
-#ifndef SKIP_PRINT_rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v29_07
-vmiopd_mdesc_t *rpcdebugCtrlDbgSetModeMmuGccDebug_v29_07(void)
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v2A_05
+vmiopd_mdesc_t *rpcdebugCtrlDbgSetModeMmuGccDebug_v2A_05(void)
 {
-    return &vmiopd_mdesc_t_rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v29_07;
+    return &vmiopd_mdesc_t_rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v2A_05;
 }
 #endif
 
@@ -10262,6 +10447,13 @@ vmiopd_mdesc_t *rpcdebugCtrlInternalMemsysSetZbcReferenced_v1F_05(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_ctrl_internal_memsys_set_zbc_referenced_v2A_00
+vmiopd_mdesc_t *rpcdebugCtrlInternalMemsysSetZbcReferenced_v2A_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_internal_memsys_set_zbc_referenced_v2A_00;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_ctrl_fabric_memory_describe_v1E_0C
 vmiopd_mdesc_t *rpcdebugCtrlFabricMemoryDescribe_v1E_0C(void)
 {
@@ -10301,6 +10493,13 @@ vmiopd_mdesc_t *rpcdebugCtrlBusUnsetP2pMapping_v21_03(void)
 vmiopd_mdesc_t *rpcdebugCtrlGpuGetInfoV2_v25_11(void)
 {
     return &vmiopd_mdesc_t_rpc_ctrl_gpu_get_info_v2_v25_11;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpu_get_info_v2_v2A_04
+vmiopd_mdesc_t *rpcdebugCtrlGpuGetInfoV2_v2A_04(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_gpu_get_info_v2_v2A_04;
 }
 #endif
 
@@ -10773,10 +10972,10 @@ vmiopd_mdesc_t *rpcdebugCtrlDbgGetModeMmuDebug_v25_04(void)
 }
 #endif
 
-#ifndef SKIP_PRINT_rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v29_07
-vmiopd_mdesc_t *rpcdebugCtrlDbgGetModeMmuGccDebug_v29_07(void)
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v2A_05
+vmiopd_mdesc_t *rpcdebugCtrlDbgGetModeMmuGccDebug_v2A_05(void)
 {
-    return &vmiopd_mdesc_t_rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v29_07;
+    return &vmiopd_mdesc_t_rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v2A_05;
 }
 #endif
 
@@ -10836,6 +11035,13 @@ vmiopd_mdesc_t *rpcdebugCtrlExecPartitionsExport_v29_0C(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_setup_hibernation_buffer_v2A_06
+vmiopd_mdesc_t *rpcdebugSetupHibernationBuffer_v2A_06(void)
+{
+    return &vmiopd_mdesc_t_rpc_setup_hibernation_buffer_v2A_06;
+}
+#endif
+
 
 #endif
 
@@ -10887,6 +11093,7 @@ typedef union rpc_generic_union {
     rpc_rm_api_control_v25_0D rm_api_control_v25_0D;
     rpc_rm_api_control_v25_14 rm_api_control_v25_14;
     rpc_rm_api_control_v29_09 rm_api_control_v29_09;
+    rpc_rm_api_control_v2A_08 rm_api_control_v2A_08;
     rpc_rm_api_control_v rm_api_control_v;
     rpc_alloc_share_device_v03_00 alloc_share_device_v03_00;
     rpc_alloc_share_device_v alloc_share_device_v;
@@ -10987,7 +11194,7 @@ typedef union rpc_generic_union {
     rpc_ctrl_dbg_exec_reg_ops_v ctrl_dbg_exec_reg_ops_v;
     rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10 ctrl_dbg_set_mode_mmu_debug_v1A_10;
     rpc_ctrl_dbg_set_mode_mmu_debug_v ctrl_dbg_set_mode_mmu_debug_v;
-    rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v29_07 ctrl_dbg_set_mode_mmu_gcc_debug_v29_07;
+    rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v2A_05 ctrl_dbg_set_mode_mmu_gcc_debug_v2A_05;
     rpc_ctrl_dbg_set_mode_mmu_gcc_debug_v ctrl_dbg_set_mode_mmu_gcc_debug_v;
     rpc_ctrl_dbg_read_single_sm_error_state_v21_06 ctrl_dbg_read_single_sm_error_state_v21_06;
     rpc_ctrl_dbg_read_single_sm_error_state_v ctrl_dbg_read_single_sm_error_state_v;
@@ -11058,6 +11265,7 @@ typedef union rpc_generic_union {
     rpc_ctrl_internal_promote_fault_method_buffers_v1E_07 ctrl_internal_promote_fault_method_buffers_v1E_07;
     rpc_ctrl_internal_promote_fault_method_buffers_v ctrl_internal_promote_fault_method_buffers_v;
     rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05 ctrl_internal_memsys_set_zbc_referenced_v1F_05;
+    rpc_ctrl_internal_memsys_set_zbc_referenced_v2A_00 ctrl_internal_memsys_set_zbc_referenced_v2A_00;
     rpc_ctrl_internal_memsys_set_zbc_referenced_v ctrl_internal_memsys_set_zbc_referenced_v;
     rpc_ctrl_fabric_memory_describe_v1E_0C ctrl_fabric_memory_describe_v1E_0C;
     rpc_ctrl_fabric_memory_describe_v ctrl_fabric_memory_describe_v;
@@ -11069,6 +11277,7 @@ typedef union rpc_generic_union {
     rpc_ctrl_bus_unset_p2p_mapping_v21_03 ctrl_bus_unset_p2p_mapping_v21_03;
     rpc_ctrl_bus_unset_p2p_mapping_v ctrl_bus_unset_p2p_mapping_v;
     rpc_ctrl_gpu_get_info_v2_v25_11 ctrl_gpu_get_info_v2_v25_11;
+    rpc_ctrl_gpu_get_info_v2_v2A_04 ctrl_gpu_get_info_v2_v2A_04;
     rpc_ctrl_gpu_get_info_v2_v ctrl_gpu_get_info_v2_v;
     rpc_update_gpm_guest_buffer_info_v27_01 update_gpm_guest_buffer_info_v27_01;
     rpc_update_gpm_guest_buffer_info_v update_gpm_guest_buffer_info_v;
@@ -11199,7 +11408,7 @@ typedef union rpc_generic_union {
     rpc_ctrl_gpu_query_ecc_status_v ctrl_gpu_query_ecc_status_v;
     rpc_ctrl_dbg_get_mode_mmu_debug_v25_04 ctrl_dbg_get_mode_mmu_debug_v25_04;
     rpc_ctrl_dbg_get_mode_mmu_debug_v ctrl_dbg_get_mode_mmu_debug_v;
-    rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v29_07 ctrl_dbg_get_mode_mmu_gcc_debug_v29_07;
+    rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v2A_05 ctrl_dbg_get_mode_mmu_gcc_debug_v2A_05;
     rpc_ctrl_dbg_get_mode_mmu_gcc_debug_v ctrl_dbg_get_mode_mmu_gcc_debug_v;
     rpc_ctrl_cmd_internal_gpu_start_fabric_probe_v25_09 ctrl_cmd_internal_gpu_start_fabric_probe_v25_09;
     rpc_ctrl_cmd_internal_gpu_start_fabric_probe_v ctrl_cmd_internal_gpu_start_fabric_probe_v;
@@ -11217,6 +11426,8 @@ typedef union rpc_generic_union {
     rpc_ctrl_subdevice_get_libos_heap_stats_v ctrl_subdevice_get_libos_heap_stats_v;
     rpc_ctrl_exec_partitions_export_v29_0C ctrl_exec_partitions_export_v29_0C;
     rpc_ctrl_exec_partitions_export_v ctrl_exec_partitions_export_v;
+    rpc_setup_hibernation_buffer_v2A_06 setup_hibernation_buffer_v2A_06;
+    rpc_setup_hibernation_buffer_v setup_hibernation_buffer_v;
 } rpc_generic_union;
 
 #endif

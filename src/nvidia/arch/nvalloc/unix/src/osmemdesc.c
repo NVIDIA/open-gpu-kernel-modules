@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -82,13 +82,12 @@ osCreateMemFromOsDescriptor
     //
     // For the sake of simplicity, unmatched RM and OS page
     // sizes are not currently supported in this path, except for
-    // PPC64LE and aarch64.
+    // aarch64.
     //
     // Also, the nvmap handle is sent which can be any random number so
     // the virtual address alignment sanity check can't be done here.
     //
-    if (!NVCPU_IS_PPC64LE &&
-        !NVCPU_IS_AARCH64 &&
+    if (!NVCPU_IS_AARCH64 &&
         (NV_RM_PAGE_SIZE != os_page_size))
     {
         return NV_ERR_NOT_SUPPORTED;
@@ -189,10 +188,17 @@ osCreateMemdescFromPages
     MEMORY_DESCRIPTOR *pMemDesc;
     NvU64 memdescFlags = MEMDESC_FLAGS_NONE;
     NvU32 gpuCachedFlags;
+    NvBool bUnprotected = NV_FALSE;
 
     if (FLD_TEST_DRF(OS02, _FLAGS, _ALLOC_NISO_DISPLAY, _YES, flags))
     {
         memdescFlags |= MEMDESC_FLAGS_MEMORY_TYPE_DISPLAY_NISO;
+    }
+
+    if (FLD_TEST_DRF(OS02, _FLAGS, _MEMORY_PROTECTION, _UNPROTECTED, flags))
+    {
+        memdescFlags |= MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
+        bUnprotected = NV_TRUE;
     }
 
     rmStatus = memdescCreate(ppMemDesc, pGpu, size, 0,
@@ -212,7 +218,7 @@ osCreateMemdescFromPages
     rmStatus = nv_register_user_pages(NV_GET_NV_STATE(pGpu),
             NV_RM_PAGES_TO_OS_PAGES(pMemDesc->PageCount),
             memdescGetPteArray(pMemDesc, AT_CPU), pImportPriv,
-            ppPrivate);
+            ppPrivate, bUnprotected);
     if (rmStatus != NV_OK)
     {
         memdescDestroy(pMemDesc);
@@ -342,6 +348,11 @@ osCheckGpuBarsOverlapAddrRange
     gpuInstance = 0;
     while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
     {
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB))
+        {
+            continue;
+        }
+
         NV_INIT_RANGE(gpuPhysFbAddrRange, gpumgrGetGpuPhysFbAddr(pGpu),
             gpumgrGetGpuPhysFbAddr(pGpu) + pGpu->fbLength -1);
 
@@ -621,12 +632,8 @@ osCreateOsDescriptorFromPhysAddr
     if (rmStatus != NV_OK)
         goto cleanup_memdesc;
 
-    //
-    // For syncpoint memory, if IOMMU skip flag wasn't set earlier,
-    // create IOVA mapping.
-    //
-    if (FLD_TEST_DRF(OS02, _FLAGS, _ALLOC_TYPE_SYNCPOINT, _APERTURE, flags) &&
-        !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_SKIP_IOMMU_MAPPING))
+    // If IOMMU skip flag wasn't set earlier, create IOVA mapping.
+    if (!memdescGetFlag(pMemDesc, MEMDESC_FLAGS_SKIP_IOMMU_MAPPING))
     {
         //
         // memdescMapIommu() requires the OS-private data to be set on the memory
@@ -975,6 +982,9 @@ osDestroyOsDescriptorFromPhysAddr
 
     pPrivate = memdescGetMemData(pMemDesc);
     NV_ASSERT(pPrivate != NULL);
+
+    if (!memdescGetFlag(pMemDesc, MEMDESC_FLAGS_SKIP_IOMMU_MAPPING))
+        memdescUnmapIommu(pMemDesc, pGpu->busInfo.iovaspaceId);
 
     nv_unregister_phys_pages(NV_GET_NV_STATE(pGpu), pPrivate);
 }

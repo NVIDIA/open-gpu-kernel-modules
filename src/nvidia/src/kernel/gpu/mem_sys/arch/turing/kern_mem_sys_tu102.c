@@ -104,7 +104,7 @@ NvU32 kmemsysGetEccDedCountRegAddr_TU102
     NvU32               subp
 )
 {
-    return NV_PFB_FBPA_0_ECC_DED_COUNT(fbpa) + (subp * NV_FBPA_PRI_STRIDE);
+    return NV_PFB_FBPA_0_ECC_DED_COUNT(subp) + (fbpa * NV_FBPA_PRI_STRIDE);
 }
 
 /*!

@@ -33,7 +33,7 @@ extern "C" {
 
 extern NVEvoInfoStringRec dummyInfoString;
 
-NVDevEvoPtr nvFindDevEvoByDeviceId(NvU32 deviceId);
+NVDevEvoPtr nvFindDevEvoByDeviceId(struct NvKmsDeviceId deviceId);
 NvU8 nvGetGpuLogIndex(void);
 void nvEvoDetachConnector(NVConnectorEvoRec *pConnectorEvo, const NvU32 head,
                           NVEvoModesetUpdateState *pModesetUpdateState);

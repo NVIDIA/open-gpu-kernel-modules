@@ -28,7 +28,7 @@
 
 #if defined(BINDATA_INCLUDE_DATA)
 //
-// FUNCTION: ksec2GetBinArchiveBlUcode_TU102("ucode_image")
+// FUNCTION: ksec2GetBinArchiveBlUcode_TU102("BINDATA_LABEL_UCODE_IMAGE")
 // FILE NAME: kernel/inc/sec2/bin/g_sec2_bl_gp10x.h
 // FILE TYPE: TEXT
 // VAR NAME: sec2_bl_gp10x
@@ -37,7 +37,7 @@
 // DATA SIZE (bytes): 768
 // COMPRESSED SIZE (bytes): 303
 //
-static BINDATA_CONST NvU8 ksec2BinArchiveBlUcode_TU102_ucode_image_data[] = 
+static BINDATA_CONST NvU8 ksec2BinArchiveBlUcode_TU102_BINDATA_LABEL_UCODE_IMAGE_data[] = 
 {
     0xed, 0x8f, 0xbf, 0x4e, 0xc2, 0x50, 0x14, 0xc6, 0x3f, 0x4a, 0x8b, 0xb7, 0x52, 0xa1, 0xad, 0x0e,
     0x24, 0x4c, 0x3e, 0x42, 0x77, 0xd3, 0xb8, 0xfa, 0x06, 0xba, 0xf9, 0x0e, 0xee, 0xee, 0x2c, 0x5a,
@@ -62,14 +62,14 @@ static BINDATA_CONST NvU8 ksec2BinArchiveBlUcode_TU102_ucode_image_data[] =
 #endif // defined(BINDATA_INCLUDE_DATA)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
-BINDATA_STORAGE_PVT ksec2BinArchiveBlUcode_TU102_ucode_image_storage_pvt;
+BINDATA_STORAGE_PVT ksec2BinArchiveBlUcode_TU102_BINDATA_LABEL_UCODE_IMAGE_storage_pvt;
 #endif // defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DEFN)
 {
     768,                                                               // uncompressed data size (bytes)
     303,                                                               // compressed data size (bytes)
-    ksec2BinArchiveBlUcode_TU102_ucode_image_data,                     // compressed data pointer
+    ksec2BinArchiveBlUcode_TU102_BINDATA_LABEL_UCODE_IMAGE_data,       // compressed data pointer
     NV_TRUE,                                                           // is pData compressed?
     NV_TRUE,                                                           // contain information for file overriding?
     NV_FALSE,                                                          // is the data referenced during load? (Only valid when BINDATA_IS_MUTABLE is true)
@@ -79,16 +79,16 @@ BINDATA_STORAGE_PVT ksec2BinArchiveBlUcode_TU102_ucode_image_storage_pvt;
 
 #if defined(BINDATA_INCLUDE_DATA)
 //
-// FUNCTION: ksec2GetBinArchiveBlUcode_TU102("ucode_desc")
+// FUNCTION: ksec2GetBinArchiveBlUcode_TU102("BINDATA_LABEL_UCODE_DESC")
 // FILE NAME: kernel/inc/sec2/bin/g_sec2_bl_gp10x.h
 // FILE TYPE: TEXT
 // VAR NAME: sec2_bl_gp10x_desc
 // COMPRESSION: NO
 // COMPLEX_STRUCT: YES
-// DATA SIZE (bytes): sizeof(ksec2BinArchiveBlUcode_TU102_ucode_desc_data)
+// DATA SIZE (bytes): sizeof(ksec2BinArchiveBlUcode_TU102_BINDATA_LABEL_UCODE_DESC_data)
 // COMPRESSED SIZE (bytes): N/A
 //
-static const RM_FLCN_BL_DESC ksec2BinArchiveBlUcode_TU102_ucode_desc_data = {
+static const RM_FLCN_BL_DESC ksec2BinArchiveBlUcode_TU102_BINDATA_LABEL_UCODE_DESC_data = {
     0xfd, 
     0, 
     {
@@ -101,14 +101,14 @@ static const RM_FLCN_BL_DESC ksec2BinArchiveBlUcode_TU102_ucode_desc_data = {
 #endif // defined(BINDATA_INCLUDE_DATA)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
-BINDATA_STORAGE_PVT ksec2BinArchiveBlUcode_TU102_ucode_desc_storage_pvt;
+BINDATA_STORAGE_PVT ksec2BinArchiveBlUcode_TU102_BINDATA_LABEL_UCODE_DESC_storage_pvt;
 #endif // defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DEFN)
 {
-    sizeof(ksec2BinArchiveBlUcode_TU102_ucode_desc_data),              // uncompressed data size (bytes)
-    sizeof(ksec2BinArchiveBlUcode_TU102_ucode_desc_data),              // compressed data size (bytes)
-    &ksec2BinArchiveBlUcode_TU102_ucode_desc_data,                     // compressed data pointer
+    sizeof(ksec2BinArchiveBlUcode_TU102_BINDATA_LABEL_UCODE_DESC_data), // uncompressed data size (bytes)
+    sizeof(ksec2BinArchiveBlUcode_TU102_BINDATA_LABEL_UCODE_DESC_data), // compressed data size (bytes)
+    &ksec2BinArchiveBlUcode_TU102_BINDATA_LABEL_UCODE_DESC_data,       // compressed data pointer
     NV_FALSE,                                                          // is pData compressed?
     NV_TRUE,                                                           // contain information for file overriding?
     NV_FALSE,                                                          // is the data referenced during load? (Only valid when BINDATA_IS_MUTABLE is true)
@@ -124,9 +124,9 @@ static const BINDATA_ARCHIVE __ksec2GetBinArchiveBlUcode_TU102 =
 {
     2,  // entryNum
     {
-        // entries[] : { "name", pBinStorage }
-        { "ucode_image"       , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_ksec2BinArchiveBlUcode_TU102_ucode_image] },
-        { "ucode_desc"        , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_ksec2BinArchiveBlUcode_TU102_ucode_desc] },
+        // entries[] : { label, pBinStorage }
+        { BINDATA_LABEL_UCODE_IMAGE     , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_ksec2BinArchiveBlUcode_TU102_BINDATA_LABEL_UCODE_IMAGE] },
+        { BINDATA_LABEL_UCODE_DESC      , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_ksec2BinArchiveBlUcode_TU102_BINDATA_LABEL_UCODE_DESC] },
     }
 };
 

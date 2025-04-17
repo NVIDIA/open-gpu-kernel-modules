@@ -1,13 +1,15 @@
 
 #ifndef _G_GPU_MGMT_API_NVOC_H_
 #define _G_GPU_MGMT_API_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,15 +68,19 @@ extern "C" {
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__GpuManagementApi;
+struct NVOC_METADATA__RmResource;
 struct NVOC_VTABLE__GpuManagementApi;
 
 
 struct GpuManagementApi {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__GpuManagementApi *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__GpuManagementApi *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct RmResource __nvoc_base_RmResource;
@@ -91,10 +97,8 @@ struct GpuManagementApi {
 };
 
 
-// Metadata including vtable with 21 function pointers plus superclass metadata
+// Vtable with 21 per-class function pointers
 struct NVOC_VTABLE__GpuManagementApi {
-    const struct NVOC_VTABLE__RmResource RmResource;    // (rmres) 21 function pointers
-
     NvBool (*__gpumgmtapiAccessCallback__)(struct GpuManagementApi * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (rmres)
     NvBool (*__gpumgmtapiShareCallback__)(struct GpuManagementApi * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (rmres)
     NV_STATUS (*__gpumgmtapiGetMemInterMapParams__)(struct GpuManagementApi * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (rmres)
@@ -118,6 +122,13 @@ struct NVOC_VTABLE__GpuManagementApi {
     void (*__gpumgmtapiAddAdditionalDependants__)(struct RsClient *, struct GpuManagementApi * /*this*/, RsResourceRef *);  // virtual inherited (res) base (rmres)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__GpuManagementApi {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__RmResource metadata__RmResource;
+    const struct NVOC_VTABLE__GpuManagementApi vtable;
+};
+
 #ifndef __NVOC_CLASS_GpuManagementApi_TYPEDEF__
 #define __NVOC_CLASS_GpuManagementApi_TYPEDEF__
 typedef struct GpuManagementApi GpuManagementApi;
@@ -134,15 +145,15 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuManagementApi;
     ((pThis)->__nvoc_pbase_GpuManagementApi)
 
 #ifdef __nvoc_gpu_mgmt_api_h_disabled
-#define __dynamicCast_GpuManagementApi(pThis) ((GpuManagementApi*)NULL)
+#define __dynamicCast_GpuManagementApi(pThis) ((GpuManagementApi*) NULL)
 #else //__nvoc_gpu_mgmt_api_h_disabled
 #define __dynamicCast_GpuManagementApi(pThis) \
-    ((GpuManagementApi*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(GpuManagementApi)))
+    ((GpuManagementApi*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(GpuManagementApi)))
 #endif //__nvoc_gpu_mgmt_api_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_GpuManagementApi(GpuManagementApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_GpuManagementApi(GpuManagementApi**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_GpuManagementApi(GpuManagementApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_GpuManagementApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_GpuManagementApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
@@ -150,47 +161,47 @@ NV_STATUS __nvoc_objCreate_GpuManagementApi(GpuManagementApi**, Dynamic*, NvU32,
 // Wrapper macros
 #define gpumgmtapiCtrlCmdSetShutdownState_FNPTR(pGpuMgmt) pGpuMgmt->__gpumgmtapiCtrlCmdSetShutdownState__
 #define gpumgmtapiCtrlCmdSetShutdownState(pGpuMgmt, pParams) gpumgmtapiCtrlCmdSetShutdownState_DISPATCH(pGpuMgmt, pParams)
-#define gpumgmtapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define gpumgmtapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define gpumgmtapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) gpumgmtapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define gpumgmtapiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresShareCallback__
+#define gpumgmtapiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
 #define gpumgmtapiShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) gpumgmtapiShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define gpumgmtapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
+#define gpumgmtapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define gpumgmtapiGetMemInterMapParams(pRmResource, pParams) gpumgmtapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define gpumgmtapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
+#define gpumgmtapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define gpumgmtapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) gpumgmtapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define gpumgmtapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
+#define gpumgmtapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define gpumgmtapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) gpumgmtapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define gpumgmtapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define gpumgmtapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define gpumgmtapiControlSerialization_Prologue(pResource, pCallContext, pParams) gpumgmtapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define gpumgmtapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define gpumgmtapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define gpumgmtapiControlSerialization_Epilogue(pResource, pCallContext, pParams) gpumgmtapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define gpumgmtapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
+#define gpumgmtapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
 #define gpumgmtapiControl_Prologue(pResource, pCallContext, pParams) gpumgmtapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define gpumgmtapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
+#define gpumgmtapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
 #define gpumgmtapiControl_Epilogue(pResource, pCallContext, pParams) gpumgmtapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define gpumgmtapiCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define gpumgmtapiCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define gpumgmtapiCanCopy(pResource) gpumgmtapiCanCopy_DISPATCH(pResource)
-#define gpumgmtapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define gpumgmtapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define gpumgmtapiIsDuplicate(pResource, hMemory, pDuplicate) gpumgmtapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define gpumgmtapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define gpumgmtapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define gpumgmtapiPreDestruct(pResource) gpumgmtapiPreDestruct_DISPATCH(pResource)
-#define gpumgmtapiControl_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControl__
+#define gpumgmtapiControl_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define gpumgmtapiControl(pResource, pCallContext, pParams) gpumgmtapiControl_DISPATCH(pResource, pCallContext, pParams)
-#define gpumgmtapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define gpumgmtapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define gpumgmtapiControlFilter(pResource, pCallContext, pParams) gpumgmtapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define gpumgmtapiMap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMap__
+#define gpumgmtapiMap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define gpumgmtapiMap(pResource, pCallContext, pParams, pCpuMapping) gpumgmtapiMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
-#define gpumgmtapiUnmap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmap__
+#define gpumgmtapiUnmap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define gpumgmtapiUnmap(pResource, pCallContext, pCpuMapping) gpumgmtapiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
-#define gpumgmtapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define gpumgmtapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define gpumgmtapiIsPartialUnmapSupported(pResource) gpumgmtapiIsPartialUnmapSupported_DISPATCH(pResource)
-#define gpumgmtapiMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define gpumgmtapiMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define gpumgmtapiMapTo(pResource, pParams) gpumgmtapiMapTo_DISPATCH(pResource, pParams)
-#define gpumgmtapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define gpumgmtapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define gpumgmtapiUnmapFrom(pResource, pParams) gpumgmtapiUnmapFrom_DISPATCH(pResource, pParams)
-#define gpumgmtapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define gpumgmtapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define gpumgmtapiGetRefCount(pResource) gpumgmtapiGetRefCount_DISPATCH(pResource)
-#define gpumgmtapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define gpumgmtapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define gpumgmtapiAddAdditionalDependants(pClient, pResource, pReference) gpumgmtapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
@@ -199,87 +210,87 @@ static inline NV_STATUS gpumgmtapiCtrlCmdSetShutdownState_DISPATCH(struct GpuMan
 }
 
 static inline NvBool gpumgmtapiAccessCallback_DISPATCH(struct GpuManagementApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__gpumgmtapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool gpumgmtapiShareCallback_DISPATCH(struct GpuManagementApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_vtable->__gpumgmtapiShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS gpumgmtapiGetMemInterMapParams_DISPATCH(struct GpuManagementApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_vtable->__gpumgmtapiGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS gpumgmtapiCheckMemInterUnmap_DISPATCH(struct GpuManagementApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_vtable->__gpumgmtapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS gpumgmtapiGetMemoryMappingDescriptor_DISPATCH(struct GpuManagementApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_vtable->__gpumgmtapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS gpumgmtapiControlSerialization_Prologue_DISPATCH(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__gpumgmtapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void gpumgmtapiControlSerialization_Epilogue_DISPATCH(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__gpumgmtapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS gpumgmtapiControl_Prologue_DISPATCH(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__gpumgmtapiControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void gpumgmtapiControl_Epilogue_DISPATCH(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__gpumgmtapiControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool gpumgmtapiCanCopy_DISPATCH(struct GpuManagementApi *pResource) {
-    return pResource->__nvoc_vtable->__gpumgmtapiCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiCanCopy__(pResource);
 }
 
 static inline NV_STATUS gpumgmtapiIsDuplicate_DISPATCH(struct GpuManagementApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__gpumgmtapiIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void gpumgmtapiPreDestruct_DISPATCH(struct GpuManagementApi *pResource) {
-    pResource->__nvoc_vtable->__gpumgmtapiPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiPreDestruct__(pResource);
 }
 
 static inline NV_STATUS gpumgmtapiControl_DISPATCH(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__gpumgmtapiControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiControl__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS gpumgmtapiControlFilter_DISPATCH(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__gpumgmtapiControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS gpumgmtapiMap_DISPATCH(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__gpumgmtapiMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiMap__(pResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS gpumgmtapiUnmap_DISPATCH(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__gpumgmtapiUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool gpumgmtapiIsPartialUnmapSupported_DISPATCH(struct GpuManagementApi *pResource) {
-    return pResource->__nvoc_vtable->__gpumgmtapiIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS gpumgmtapiMapTo_DISPATCH(struct GpuManagementApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__gpumgmtapiMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS gpumgmtapiUnmapFrom_DISPATCH(struct GpuManagementApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__gpumgmtapiUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 gpumgmtapiGetRefCount_DISPATCH(struct GpuManagementApi *pResource) {
-    return pResource->__nvoc_vtable->__gpumgmtapiGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiGetRefCount__(pResource);
 }
 
 static inline void gpumgmtapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct GpuManagementApi *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__gpumgmtapiAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__gpumgmtapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NV_STATUS gpumgmtapiCtrlCmdSetShutdownState_IMPL(struct GpuManagementApi *pGpuMgmt, NV0020_CTRL_GPU_MGMT_SET_SHUTDOWN_STATE_PARAMS *pParams);

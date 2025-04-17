@@ -141,6 +141,14 @@ static NV_INLINE void NV_RM_RPC_UPDATE_GPU_PDES(OBJGPU *pGpu, ...) { }
             status = rpcRestoreHibernationData_HAL(pGpu, pRpc);         \
     } while(0)
 
+#define NV_RM_RPC_SETUP_HIBERNATION_BUFFER(pGpu, status)                \
+    do                                                                  \
+    {                                                                   \
+        OBJRPC *pRpc = GPU_GET_RPC(pGpu);                               \
+        if ((status == NV_OK) && (pRpc != NULL))                        \
+            status = rpcSetupHibernationBuffer_HAL(pGpu, pRpc);         \
+    } while(0)
+
 #define NV_RM_RPC_PERF_GET_LEVEL_INFO(pGpu, hClient, hObject, pParams, pPerfClkInfos, status)   \
     do                                                                                          \
     {                                                                                           \

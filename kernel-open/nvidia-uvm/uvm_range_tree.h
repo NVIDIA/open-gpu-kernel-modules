@@ -133,6 +133,16 @@ static uvm_range_tree_node_t *uvm_range_tree_iter_next(uvm_range_tree_t *tree, u
     return NULL;
 }
 
+// Returns the node preceding the provided node in address order, if that node's
+// start >= the provided start.
+static uvm_range_tree_node_t *uvm_range_tree_iter_prev(uvm_range_tree_t *tree, uvm_range_tree_node_t *node, NvU64 start)
+{
+    uvm_range_tree_node_t *prev = uvm_range_tree_prev(tree, node);
+    if (prev && prev->start >= start)
+        return prev;
+    return NULL;
+}
+
 // Return true if the range tree is empty.
 static bool uvm_range_tree_empty(uvm_range_tree_t *tree)
 {

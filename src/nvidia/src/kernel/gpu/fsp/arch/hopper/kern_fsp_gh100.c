@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,6 +32,7 @@
 #include "gpu/gsp/kernel_gsp.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/pmu/kern_pmu.h"
+#include "gpu/spdm/spdm.h"
 #include "fsp/nvdm_payload_cmd_response.h"
 #include "fsp/fsp_clock_boost_rpc.h"
 #include "fsp/fsp_caps_query_rpc.h"
@@ -530,7 +531,7 @@ kfspProcessCommandResponse_GH100
     {
         NV_PRINTF(LEVEL_INFO, "Last command was processed by FSP successfully!\n");
     }
-    else if (status != NV_ERR_OBJECT_NOT_FOUND)
+    else if (status != NV_ERR_OBJECT_NOT_FOUND && status != NV_ERR_INVALID_ARGUMENT)
     {
         NV_PRINTF(LEVEL_ERROR, "FSP response reported error. Task ID: 0x%0x Command type: 0x%0x Error code: 0x%0x\n",
                 pCmdResponse->taskId, pCmdResponse->commandNvdmType, pCmdResponse->errorCode);
@@ -801,6 +802,7 @@ kfspWaitForSecureBoot_GH100
 
     if (status != NV_OK)
     {
+        NV_ASSERT_OK(gpuMarkDeviceForReset(pGpu));
         NV_ERROR_LOG((void*) pGpu, GPU_INIT_ERROR, "Error status 0x%x while polling for FSP boot complete, "
                      "0x%x, 0x%x, 0x%x, 0x%x, 0x%x",
                      status,
@@ -856,6 +858,7 @@ kfspGetGspUcodeArchive
     else
     {
         Gsp *pGsp = GPU_GET_GSP(pGpu);
+        Spdm *pSpdm = GPU_GET_SPDM(pGpu);
 
         // Intentional error print so that we know which mode RM is loaded with
         NV_PRINTF(LEVEL_ERROR, "Loading GSP image for monolithic RM using FSP.\n");
@@ -889,10 +892,13 @@ kfspGetGspUcodeArchive
                 NV_ASSERT_OR_RETURN(gspSetupRMProxyImage(pGpu, pGsp) == NV_OK, NULL);
 
                 // For debug board, when CC enabled, only pick SPDM profile if SPDM is enabled.
-                if ((pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED)      == NV_TRUE) &&
-                    (pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED) == NV_TRUE))
+                if  (pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED))
                 {
-                    return gspGetBinArchiveGspFmcSpdmGfwDebugSigned_HAL(pGsp);
+                    if (confComputeIsSpdmEnabled(pGpu, pCC) &&
+                        pSpdm->getProperty(pSpdm, PDB_PROP_SPDM_ENABLED))
+                    {
+                        return gspGetBinArchiveGspFmcSpdmGfwDebugSigned_HAL(pGsp);
+                    }
                 }
                 else
                 {
@@ -922,10 +928,15 @@ kfspGetGspUcodeArchive
             else
             {
                 NV_ASSERT_OR_RETURN(gspSetupRMProxyImage(pGpu, pGsp) == NV_OK, NULL);
-                if ((pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED)      == NV_TRUE) &&
-                    (pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED) == NV_TRUE))
+                Spdm  *pSpdm = GPU_GET_SPDM(pGpu);
+
+                if (pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED))
                 {
-                    return gspGetBinArchiveGspCcFmcGfwProdSigned_HAL(pGsp);
+                    if (confComputeIsSpdmEnabled(pGpu, pCC) &&
+                        pSpdm->getProperty(pSpdm, PDB_PROP_SPDM_ENABLED))
+                    {
+                        return gspGetBinArchiveGspCcFmcGfwProdSigned_HAL(pGsp);
+                    }
                 }
                 else
                 {
@@ -1015,10 +1026,10 @@ kfspSetupGspImages
     }
 
     // Set up the structures to send GSP-FMC
-    pGspImage = (PBINDATA_STORAGE)bindataArchiveGetStorage(pBinArchive, "ucode_image");
-    pGspImageHash = (PBINDATA_STORAGE)bindataArchiveGetStorage(pBinArchive, "ucode_hash");
-    pGspImageSignature = (PBINDATA_STORAGE)bindataArchiveGetStorage(pBinArchive, "ucode_sig");
-    pGspImagePublicKey = (PBINDATA_STORAGE)bindataArchiveGetStorage(pBinArchive, "ucode_pkey");
+    pGspImage = (PBINDATA_STORAGE)bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_UCODE_IMAGE);
+    pGspImageHash = (PBINDATA_STORAGE)bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_UCODE_HASH);
+    pGspImageSignature = (PBINDATA_STORAGE)bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_UCODE_SIG);
+    pGspImagePublicKey = (PBINDATA_STORAGE)bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_UCODE_PKEY);
 
     if ((pGspImage == NULL) || (pGspImageHash == NULL) ||
         (pGspImageSignature == NULL) || (pGspImagePublicKey == NULL))
@@ -1289,9 +1300,7 @@ kfspPrepareBootCommands_GH100
     NvU32 frtsSize = 0;
     NvP64 pVaKernel = NULL;
     NvP64 pPrivKernel = NULL;
-    NvBool bIsKeepWPRGc6D3Cold = pGpu->getProperty(pGpu, PDB_PROP_GPU_KEEP_WPR_ACROSS_GC6_SUPPORTED) &&
-                                 IS_GPU_GC6_STATE_EXITING(pGpu) &&
-                                 pKernelFsp->bUseKeepWPRGc6FSPCommand;
+    NvBool bIsKeepWPRGc6 = IS_GPU_GC6_STATE_EXITING(pGpu);
 
     statusBoot = kfspWaitForSecureBoot_HAL(pGpu, pKernelFsp);
 
@@ -1404,7 +1413,7 @@ kfspPrepareBootCommands_GH100
     // Set up vidmem for FRTS copy
     // With Keep WPR feature, set Frts_In_Fb_Requested to False for VBIOS.
     //
-    if (!pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM) && !bIsKeepWPRGc6D3Cold)
+    if (!pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM) && !bIsKeepWPRGc6)
     {
         //
         // Since we are very early in the boot path, we cannot know how much
@@ -1458,7 +1467,7 @@ kfspPrepareBootCommands_GH100
         pKernelFsp->pCotPayload->frtsVidmemSize = 0;
     }
 
-    if (!bIsKeepWPRGc6D3Cold)
+    if (!bIsKeepWPRGc6)
     {
         pKernelFsp->pCotPayload->gspFmcSysmemOffset = (NvU64)-1;
         pKernelFsp->pCotPayload->gspBootArgsSysmemOffset = (NvU64)-1;
@@ -1468,7 +1477,7 @@ kfspPrepareBootCommands_GH100
     if (!pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_GSPFMC))
     {
         // With Keep WPR feature, we can reuse the GSP-FMC image in FB.
-        if (!bIsKeepWPRGc6D3Cold)
+        if (!bIsKeepWPRGc6)
         {
             status = kfspSetupGspImages(pGpu, pKernelFsp, pKernelFsp->pCotPayload);
             if (status!= NV_OK)
@@ -1574,7 +1583,6 @@ kfspPrepareAndSendBootCommands_GH100
 {
     NV_STATUS status;
     status = kfspPrepareBootCommands_GH100(pGpu, pKernelFsp);
-    pKernelFsp->bUseKeepWPRGc6FSPCommand = NV_FALSE;
     if (status != NV_OK)
     {
         return (status == NV_WARN_NOTHING_TO_DO) ? NV_OK : status;
@@ -1601,6 +1609,9 @@ kfspErrorCode2NvStatusMap_GH100
         case FSP_ERR_IFS_ERR_INVALID_STATE:
         case FSP_ERR_IFS_ERR_INVALID_DATA:
         return NV_ERR_INVALID_DATA;
+
+        case FSP_ERR_PRC_ERROR_INVALID_KNOB_ID:
+        return NV_ERR_INVALID_ARGUMENT;
 
         default:
         return NV_ERR_GENERIC;

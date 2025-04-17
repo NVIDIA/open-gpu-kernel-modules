@@ -151,6 +151,9 @@
 #define NVLINK_SW_DEFINED_ERROR                         (155)
 #define RESOURCE_RETIREMENT_EVENT                       (156)
 #define RESOURCE_RETIREMENT_FAILURE                     (157)
+
+#define GPU_FATAL_TIMEOUT                               (158)
+#define ROBUST_CHANNEL_CHI_NON_DATA_ERROR               (159)
 #define CHANNEL_RETIREMENT_EVENT                        (160)
 #define CHANNEL_RETIREMENT_FAILURE                      (161)
 #define ROBUST_CHANNEL_LAST_ERROR                       (161)

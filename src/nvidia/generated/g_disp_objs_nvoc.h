@@ -1,13 +1,15 @@
 
 #ifndef _G_DISP_OBJS_NVOC_H_
 #define _G_DISP_OBJS_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -107,15 +109,20 @@ typedef struct DispChannel DispChannel;
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__DisplayApi;
+struct NVOC_METADATA__RmResource;
+struct NVOC_METADATA__Notifier;
 struct NVOC_VTABLE__DisplayApi;
 
 
 struct DisplayApi {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__DisplayApi *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__DisplayApi *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct RmResource __nvoc_base_RmResource;
@@ -136,16 +143,11 @@ struct DisplayApi {
     NvBool bBcResource;
     NvU32 *pNotifyActions[8];
     NvU32 numNotifiers;
-    NvHandle hNotifierMemory;
-    struct Memory *pNotifierMemory;
 };
 
 
-// Metadata including vtable with 26 function pointers plus superclass metadata
+// Vtable with 26 per-class function pointers
 struct NVOC_VTABLE__DisplayApi {
-    const struct NVOC_VTABLE__RmResource RmResource;    // (rmres) 21 function pointers
-    const struct NVOC_VTABLE__Notifier Notifier;    // (notify) 5 function pointers
-
     NV_STATUS (*__dispapiControl__)(struct DisplayApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (rmres)
     NV_STATUS (*__dispapiControl_Prologue__)(struct DisplayApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (rmres)
     void (*__dispapiControl_Epilogue__)(struct DisplayApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (rmres)
@@ -174,6 +176,14 @@ struct NVOC_VTABLE__DisplayApi {
     NV_STATUS (*__dispapiGetOrAllocNotifShare__)(struct DisplayApi * /*this*/, NvHandle, NvHandle, struct NotifShare **);  // virtual inherited (notify) base (notify)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__DisplayApi {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__RmResource metadata__RmResource;
+    const struct NVOC_METADATA__Notifier metadata__Notifier;
+    const struct NVOC_VTABLE__DisplayApi vtable;
+};
+
 #ifndef __NVOC_CLASS_DisplayApi_TYPEDEF__
 #define __NVOC_CLASS_DisplayApi_TYPEDEF__
 typedef struct DisplayApi DisplayApi;
@@ -190,176 +200,176 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_DisplayApi;
     ((pThis)->__nvoc_pbase_DisplayApi)
 
 #ifdef __nvoc_disp_objs_h_disabled
-#define __dynamicCast_DisplayApi(pThis) ((DisplayApi*)NULL)
+#define __dynamicCast_DisplayApi(pThis) ((DisplayApi*) NULL)
 #else //__nvoc_disp_objs_h_disabled
 #define __dynamicCast_DisplayApi(pThis) \
-    ((DisplayApi*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(DisplayApi)))
+    ((DisplayApi*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(DisplayApi)))
 #endif //__nvoc_disp_objs_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_DisplayApi(DisplayApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_DisplayApi(DisplayApi**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_DisplayApi(DisplayApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_DisplayApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_DisplayApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
 // Wrapper macros
-#define dispapiControl_FNPTR(pDisplayApi) pDisplayApi->__nvoc_vtable->__dispapiControl__
+#define dispapiControl_FNPTR(pDisplayApi) pDisplayApi->__nvoc_metadata_ptr->vtable.__dispapiControl__
 #define dispapiControl(pDisplayApi, pCallContext, pParams) dispapiControl_DISPATCH(pDisplayApi, pCallContext, pParams)
-#define dispapiControl_Prologue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_vtable->__dispapiControl_Prologue__
+#define dispapiControl_Prologue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_metadata_ptr->vtable.__dispapiControl_Prologue__
 #define dispapiControl_Prologue(pDisplayApi, pCallContext, pRsParams) dispapiControl_Prologue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
-#define dispapiControl_Epilogue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_vtable->__dispapiControl_Epilogue__
+#define dispapiControl_Epilogue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_metadata_ptr->vtable.__dispapiControl_Epilogue__
 #define dispapiControl_Epilogue(pDisplayApi, pCallContext, pRsParams) dispapiControl_Epilogue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
-#define dispapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define dispapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define dispapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) dispapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define dispapiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresShareCallback__
+#define dispapiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
 #define dispapiShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) dispapiShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define dispapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
+#define dispapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define dispapiGetMemInterMapParams(pRmResource, pParams) dispapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define dispapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
+#define dispapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define dispapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) dispapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define dispapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
+#define dispapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define dispapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) dispapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define dispapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define dispapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define dispapiControlSerialization_Prologue(pResource, pCallContext, pParams) dispapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define dispapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define dispapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define dispapiControlSerialization_Epilogue(pResource, pCallContext, pParams) dispapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define dispapiCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define dispapiCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define dispapiCanCopy(pResource) dispapiCanCopy_DISPATCH(pResource)
-#define dispapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define dispapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define dispapiIsDuplicate(pResource, hMemory, pDuplicate) dispapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define dispapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define dispapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define dispapiPreDestruct(pResource) dispapiPreDestruct_DISPATCH(pResource)
-#define dispapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define dispapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define dispapiControlFilter(pResource, pCallContext, pParams) dispapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define dispapiMap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMap__
+#define dispapiMap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define dispapiMap(pResource, pCallContext, pParams, pCpuMapping) dispapiMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
-#define dispapiUnmap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmap__
+#define dispapiUnmap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define dispapiUnmap(pResource, pCallContext, pCpuMapping) dispapiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
-#define dispapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define dispapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define dispapiIsPartialUnmapSupported(pResource) dispapiIsPartialUnmapSupported_DISPATCH(pResource)
-#define dispapiMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define dispapiMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define dispapiMapTo(pResource, pParams) dispapiMapTo_DISPATCH(pResource, pParams)
-#define dispapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define dispapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define dispapiUnmapFrom(pResource, pParams) dispapiUnmapFrom_DISPATCH(pResource, pParams)
-#define dispapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define dispapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define dispapiGetRefCount(pResource) dispapiGetRefCount_DISPATCH(pResource)
-#define dispapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define dispapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define dispapiAddAdditionalDependants(pClient, pResource, pReference) dispapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define dispapiGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationListPtr__
+#define dispapiGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationListPtr__
 #define dispapiGetNotificationListPtr(pNotifier) dispapiGetNotificationListPtr_DISPATCH(pNotifier)
-#define dispapiGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationShare__
+#define dispapiGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationShare__
 #define dispapiGetNotificationShare(pNotifier) dispapiGetNotificationShare_DISPATCH(pNotifier)
-#define dispapiSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifySetNotificationShare__
+#define dispapiSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifySetNotificationShare__
 #define dispapiSetNotificationShare(pNotifier, pNotifShare) dispapiSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define dispapiUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyUnregisterEvent__
+#define dispapiUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyUnregisterEvent__
 #define dispapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) dispapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define dispapiGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetOrAllocNotifShare__
+#define dispapiGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetOrAllocNotifShare__
 #define dispapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) dispapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
 static inline NV_STATUS dispapiControl_DISPATCH(struct DisplayApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pDisplayApi->__nvoc_vtable->__dispapiControl__(pDisplayApi, pCallContext, pParams);
+    return pDisplayApi->__nvoc_metadata_ptr->vtable.__dispapiControl__(pDisplayApi, pCallContext, pParams);
 }
 
 static inline NV_STATUS dispapiControl_Prologue_DISPATCH(struct DisplayApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
-    return pDisplayApi->__nvoc_vtable->__dispapiControl_Prologue__(pDisplayApi, pCallContext, pRsParams);
+    return pDisplayApi->__nvoc_metadata_ptr->vtable.__dispapiControl_Prologue__(pDisplayApi, pCallContext, pRsParams);
 }
 
 static inline void dispapiControl_Epilogue_DISPATCH(struct DisplayApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
-    pDisplayApi->__nvoc_vtable->__dispapiControl_Epilogue__(pDisplayApi, pCallContext, pRsParams);
+    pDisplayApi->__nvoc_metadata_ptr->vtable.__dispapiControl_Epilogue__(pDisplayApi, pCallContext, pRsParams);
 }
 
 static inline NvBool dispapiAccessCallback_DISPATCH(struct DisplayApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__dispapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool dispapiShareCallback_DISPATCH(struct DisplayApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_vtable->__dispapiShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispapiShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS dispapiGetMemInterMapParams_DISPATCH(struct DisplayApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_vtable->__dispapiGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__dispapiGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS dispapiCheckMemInterUnmap_DISPATCH(struct DisplayApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_vtable->__dispapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__dispapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS dispapiGetMemoryMappingDescriptor_DISPATCH(struct DisplayApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_vtable->__dispapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__dispapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS dispapiControlSerialization_Prologue_DISPATCH(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__dispapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void dispapiControlSerialization_Epilogue_DISPATCH(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__dispapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__dispapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool dispapiCanCopy_DISPATCH(struct DisplayApi *pResource) {
-    return pResource->__nvoc_vtable->__dispapiCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispapiCanCopy__(pResource);
 }
 
 static inline NV_STATUS dispapiIsDuplicate_DISPATCH(struct DisplayApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__dispapiIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispapiIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void dispapiPreDestruct_DISPATCH(struct DisplayApi *pResource) {
-    pResource->__nvoc_vtable->__dispapiPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__dispapiPreDestruct__(pResource);
 }
 
 static inline NV_STATUS dispapiControlFilter_DISPATCH(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__dispapiControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispapiControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS dispapiMap_DISPATCH(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__dispapiMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispapiMap__(pResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS dispapiUnmap_DISPATCH(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__dispapiUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispapiUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool dispapiIsPartialUnmapSupported_DISPATCH(struct DisplayApi *pResource) {
-    return pResource->__nvoc_vtable->__dispapiIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS dispapiMapTo_DISPATCH(struct DisplayApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__dispapiMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispapiMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS dispapiUnmapFrom_DISPATCH(struct DisplayApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__dispapiUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispapiUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 dispapiGetRefCount_DISPATCH(struct DisplayApi *pResource) {
-    return pResource->__nvoc_vtable->__dispapiGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispapiGetRefCount__(pResource);
 }
 
 static inline void dispapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct DisplayApi *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__dispapiAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__dispapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 static inline PEVENTNOTIFICATION * dispapiGetNotificationListPtr_DISPATCH(struct DisplayApi *pNotifier) {
-    return pNotifier->__nvoc_vtable->__dispapiGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__dispapiGetNotificationListPtr__(pNotifier);
 }
 
 static inline struct NotifShare * dispapiGetNotificationShare_DISPATCH(struct DisplayApi *pNotifier) {
-    return pNotifier->__nvoc_vtable->__dispapiGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__dispapiGetNotificationShare__(pNotifier);
 }
 
 static inline void dispapiSetNotificationShare_DISPATCH(struct DisplayApi *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__nvoc_vtable->__dispapiSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_metadata_ptr->vtable.__dispapiSetNotificationShare__(pNotifier, pNotifShare);
 }
 
 static inline NV_STATUS dispapiUnregisterEvent_DISPATCH(struct DisplayApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__nvoc_vtable->__dispapiUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__dispapiUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS dispapiGetOrAllocNotifShare_DISPATCH(struct DisplayApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__nvoc_vtable->__dispapiGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__dispapiGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 NV_STATUS dispapiSetUnicastAndSynchronize_KERNEL(struct DisplayApi *pDisplayApi, struct OBJGPUGRP *pGpuGroup, struct OBJGPU **ppGpu, OBJDISP **ppDisp, NvU32 subDeviceInstance);
@@ -420,15 +430,19 @@ static inline NV_STATUS dispapiCtrlCmdEventSetNotification(struct DisplayApi *pD
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__DispObject;
+struct NVOC_METADATA__DisplayApi;
 struct NVOC_VTABLE__DispObject;
 
 
 struct DispObject {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__DispObject *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__DispObject *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct DisplayApi __nvoc_base_DisplayApi;
@@ -469,10 +483,8 @@ struct DispObject {
 };
 
 
-// Metadata including vtable with 26 function pointers plus superclass metadata
+// Vtable with 26 per-class function pointers
 struct NVOC_VTABLE__DispObject {
-    const struct NVOC_VTABLE__DisplayApi DisplayApi;    // (dispapi) 26 function pointers
-
     NV_STATUS (*__dispobjControl__)(struct DispObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (dispapi) base (dispapi)
     NV_STATUS (*__dispobjControl_Prologue__)(struct DispObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (dispapi) base (dispapi)
     void (*__dispobjControl_Epilogue__)(struct DispObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (dispapi) base (dispapi)
@@ -501,6 +513,13 @@ struct NVOC_VTABLE__DispObject {
     NV_STATUS (*__dispobjGetOrAllocNotifShare__)(struct DispObject * /*this*/, NvHandle, NvHandle, struct NotifShare **);  // virtual inherited (notify) base (dispapi)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__DispObject {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__DisplayApi metadata__DisplayApi;
+    const struct NVOC_VTABLE__DispObject vtable;
+};
+
 #ifndef __NVOC_CLASS_DispObject_TYPEDEF__
 #define __NVOC_CLASS_DispObject_TYPEDEF__
 typedef struct DispObject DispObject;
@@ -517,15 +536,15 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispObject;
     ((pThis)->__nvoc_pbase_DispObject)
 
 #ifdef __nvoc_disp_objs_h_disabled
-#define __dynamicCast_DispObject(pThis) ((DispObject*)NULL)
+#define __dynamicCast_DispObject(pThis) ((DispObject*) NULL)
 #else //__nvoc_disp_objs_h_disabled
 #define __dynamicCast_DispObject(pThis) \
-    ((DispObject*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(DispObject)))
+    ((DispObject*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(DispObject)))
 #endif //__nvoc_disp_objs_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_DispObject(DispObject**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_DispObject(DispObject**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_DispObject(DispObject**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_DispObject(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_DispObject((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
@@ -569,57 +588,57 @@ NV_STATUS __nvoc_objCreate_DispObject(DispObject**, Dynamic*, NvU32, struct CALL
 #define dispobjCtrlCmdC370SetSorFlushMode(pDispObject, pParams) dispobjCtrlCmdC370SetSorFlushMode_DISPATCH(pDispObject, pParams)
 #define dispobjCtrlCmdSystemGetCapsV2_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdSystemGetCapsV2__
 #define dispobjCtrlCmdSystemGetCapsV2(pDispObject, pCapsParams) dispobjCtrlCmdSystemGetCapsV2_DISPATCH(pDispObject, pCapsParams)
-#define dispobjControl_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_vtable->__dispapiControl__
+#define dispobjControl_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl__
 #define dispobjControl(pDisplayApi, pCallContext, pParams) dispobjControl_DISPATCH(pDisplayApi, pCallContext, pParams)
-#define dispobjControl_Prologue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_vtable->__dispapiControl_Prologue__
+#define dispobjControl_Prologue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl_Prologue__
 #define dispobjControl_Prologue(pDisplayApi, pCallContext, pRsParams) dispobjControl_Prologue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
-#define dispobjControl_Epilogue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_vtable->__dispapiControl_Epilogue__
+#define dispobjControl_Epilogue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl_Epilogue__
 #define dispobjControl_Epilogue(pDisplayApi, pCallContext, pRsParams) dispobjControl_Epilogue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
-#define dispobjAccessCallback_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define dispobjAccessCallback_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define dispobjAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) dispobjAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define dispobjShareCallback_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresShareCallback__
+#define dispobjShareCallback_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
 #define dispobjShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) dispobjShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define dispobjGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
+#define dispobjGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define dispobjGetMemInterMapParams(pRmResource, pParams) dispobjGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define dispobjCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
+#define dispobjCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define dispobjCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) dispobjCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define dispobjGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
+#define dispobjGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define dispobjGetMemoryMappingDescriptor(pRmResource, ppMemDesc) dispobjGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define dispobjControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define dispobjControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define dispobjControlSerialization_Prologue(pResource, pCallContext, pParams) dispobjControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define dispobjControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define dispobjControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define dispobjControlSerialization_Epilogue(pResource, pCallContext, pParams) dispobjControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define dispobjCanCopy_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define dispobjCanCopy_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define dispobjCanCopy(pResource) dispobjCanCopy_DISPATCH(pResource)
-#define dispobjIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define dispobjIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define dispobjIsDuplicate(pResource, hMemory, pDuplicate) dispobjIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define dispobjPreDestruct_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define dispobjPreDestruct_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define dispobjPreDestruct(pResource) dispobjPreDestruct_DISPATCH(pResource)
-#define dispobjControlFilter_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define dispobjControlFilter_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define dispobjControlFilter(pResource, pCallContext, pParams) dispobjControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define dispobjMap_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMap__
+#define dispobjMap_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define dispobjMap(pResource, pCallContext, pParams, pCpuMapping) dispobjMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
-#define dispobjUnmap_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmap__
+#define dispobjUnmap_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define dispobjUnmap(pResource, pCallContext, pCpuMapping) dispobjUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
-#define dispobjIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define dispobjIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define dispobjIsPartialUnmapSupported(pResource) dispobjIsPartialUnmapSupported_DISPATCH(pResource)
-#define dispobjMapTo_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define dispobjMapTo_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define dispobjMapTo(pResource, pParams) dispobjMapTo_DISPATCH(pResource, pParams)
-#define dispobjUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define dispobjUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define dispobjUnmapFrom(pResource, pParams) dispobjUnmapFrom_DISPATCH(pResource, pParams)
-#define dispobjGetRefCount_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define dispobjGetRefCount_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define dispobjGetRefCount(pResource) dispobjGetRefCount_DISPATCH(pResource)
-#define dispobjAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define dispobjAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define dispobjAddAdditionalDependants(pClient, pResource, pReference) dispobjAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define dispobjGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationListPtr__
+#define dispobjGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationListPtr__
 #define dispobjGetNotificationListPtr(pNotifier) dispobjGetNotificationListPtr_DISPATCH(pNotifier)
-#define dispobjGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationShare__
+#define dispobjGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationShare__
 #define dispobjGetNotificationShare(pNotifier) dispobjGetNotificationShare_DISPATCH(pNotifier)
-#define dispobjSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifySetNotificationShare__
+#define dispobjSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifySetNotificationShare__
 #define dispobjSetNotificationShare(pNotifier, pNotifShare) dispobjSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define dispobjUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifyUnregisterEvent__
+#define dispobjUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyUnregisterEvent__
 #define dispobjUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) dispobjUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define dispobjGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetOrAllocNotifShare__
+#define dispobjGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetOrAllocNotifShare__
 #define dispobjGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) dispobjGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
@@ -700,107 +719,107 @@ static inline NV_STATUS dispobjCtrlCmdSystemGetCapsV2_DISPATCH(struct DispObject
 }
 
 static inline NV_STATUS dispobjControl_DISPATCH(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pDisplayApi->__nvoc_vtable->__dispobjControl__(pDisplayApi, pCallContext, pParams);
+    return pDisplayApi->__nvoc_metadata_ptr->vtable.__dispobjControl__(pDisplayApi, pCallContext, pParams);
 }
 
 static inline NV_STATUS dispobjControl_Prologue_DISPATCH(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
-    return pDisplayApi->__nvoc_vtable->__dispobjControl_Prologue__(pDisplayApi, pCallContext, pRsParams);
+    return pDisplayApi->__nvoc_metadata_ptr->vtable.__dispobjControl_Prologue__(pDisplayApi, pCallContext, pRsParams);
 }
 
 static inline void dispobjControl_Epilogue_DISPATCH(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
-    pDisplayApi->__nvoc_vtable->__dispobjControl_Epilogue__(pDisplayApi, pCallContext, pRsParams);
+    pDisplayApi->__nvoc_metadata_ptr->vtable.__dispobjControl_Epilogue__(pDisplayApi, pCallContext, pRsParams);
 }
 
 static inline NvBool dispobjAccessCallback_DISPATCH(struct DispObject *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__dispobjAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispobjAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool dispobjShareCallback_DISPATCH(struct DispObject *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_vtable->__dispobjShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispobjShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS dispobjGetMemInterMapParams_DISPATCH(struct DispObject *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_vtable->__dispobjGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__dispobjGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS dispobjCheckMemInterUnmap_DISPATCH(struct DispObject *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_vtable->__dispobjCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__dispobjCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS dispobjGetMemoryMappingDescriptor_DISPATCH(struct DispObject *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_vtable->__dispobjGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__dispobjGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS dispobjControlSerialization_Prologue_DISPATCH(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__dispobjControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispobjControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void dispobjControlSerialization_Epilogue_DISPATCH(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__dispobjControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__dispobjControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool dispobjCanCopy_DISPATCH(struct DispObject *pResource) {
-    return pResource->__nvoc_vtable->__dispobjCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispobjCanCopy__(pResource);
 }
 
 static inline NV_STATUS dispobjIsDuplicate_DISPATCH(struct DispObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__dispobjIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispobjIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void dispobjPreDestruct_DISPATCH(struct DispObject *pResource) {
-    pResource->__nvoc_vtable->__dispobjPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__dispobjPreDestruct__(pResource);
 }
 
 static inline NV_STATUS dispobjControlFilter_DISPATCH(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__dispobjControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispobjControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS dispobjMap_DISPATCH(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__dispobjMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispobjMap__(pResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS dispobjUnmap_DISPATCH(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__dispobjUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispobjUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool dispobjIsPartialUnmapSupported_DISPATCH(struct DispObject *pResource) {
-    return pResource->__nvoc_vtable->__dispobjIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispobjIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS dispobjMapTo_DISPATCH(struct DispObject *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__dispobjMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispobjMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS dispobjUnmapFrom_DISPATCH(struct DispObject *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__dispobjUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispobjUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 dispobjGetRefCount_DISPATCH(struct DispObject *pResource) {
-    return pResource->__nvoc_vtable->__dispobjGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispobjGetRefCount__(pResource);
 }
 
 static inline void dispobjAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct DispObject *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__dispobjAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__dispobjAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 static inline PEVENTNOTIFICATION * dispobjGetNotificationListPtr_DISPATCH(struct DispObject *pNotifier) {
-    return pNotifier->__nvoc_vtable->__dispobjGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__dispobjGetNotificationListPtr__(pNotifier);
 }
 
 static inline struct NotifShare * dispobjGetNotificationShare_DISPATCH(struct DispObject *pNotifier) {
-    return pNotifier->__nvoc_vtable->__dispobjGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__dispobjGetNotificationShare__(pNotifier);
 }
 
 static inline void dispobjSetNotificationShare_DISPATCH(struct DispObject *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__nvoc_vtable->__dispobjSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_metadata_ptr->vtable.__dispobjSetNotificationShare__(pNotifier, pNotifShare);
 }
 
 static inline NV_STATUS dispobjUnregisterEvent_DISPATCH(struct DispObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__nvoc_vtable->__dispobjUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__dispobjUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS dispobjGetOrAllocNotifShare_DISPATCH(struct DispObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__nvoc_vtable->__dispobjGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__dispobjGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 NV_STATUS dispobjConstructHal_IMPL(struct DispObject *pDispObject, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
@@ -906,15 +925,19 @@ static inline NvBool dispobjGetRmFreeFlags(struct DispObject *pDispObject) {
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__NvDispApi;
+struct NVOC_METADATA__DispObject;
 struct NVOC_VTABLE__NvDispApi;
 
 
 struct NvDispApi {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__NvDispApi *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__NvDispApi *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct DispObject __nvoc_base_DispObject;
@@ -941,10 +964,8 @@ struct NvDispApi {
 };
 
 
-// Metadata including vtable with 26 function pointers plus superclass metadata
+// Vtable with 26 per-class function pointers
 struct NVOC_VTABLE__NvDispApi {
-    const struct NVOC_VTABLE__DispObject DispObject;    // (dispobj) 26 function pointers
-
     NV_STATUS (*__nvdispapiControl__)(struct NvDispApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (dispapi) base (dispobj)
     NV_STATUS (*__nvdispapiControl_Prologue__)(struct NvDispApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (dispapi) base (dispobj)
     void (*__nvdispapiControl_Epilogue__)(struct NvDispApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (dispapi) base (dispobj)
@@ -973,6 +994,13 @@ struct NVOC_VTABLE__NvDispApi {
     NV_STATUS (*__nvdispapiGetOrAllocNotifShare__)(struct NvDispApi * /*this*/, NvHandle, NvHandle, struct NotifShare **);  // virtual inherited (notify) base (dispobj)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__NvDispApi {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__DispObject metadata__DispObject;
+    const struct NVOC_VTABLE__NvDispApi vtable;
+};
+
 #ifndef __NVOC_CLASS_NvDispApi_TYPEDEF__
 #define __NVOC_CLASS_NvDispApi_TYPEDEF__
 typedef struct NvDispApi NvDispApi;
@@ -989,15 +1017,15 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_NvDispApi;
     ((pThis)->__nvoc_pbase_NvDispApi)
 
 #ifdef __nvoc_disp_objs_h_disabled
-#define __dynamicCast_NvDispApi(pThis) ((NvDispApi*)NULL)
+#define __dynamicCast_NvDispApi(pThis) ((NvDispApi*) NULL)
 #else //__nvoc_disp_objs_h_disabled
 #define __dynamicCast_NvDispApi(pThis) \
-    ((NvDispApi*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(NvDispApi)))
+    ((NvDispApi*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(NvDispApi)))
 #endif //__nvoc_disp_objs_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_NvDispApi(NvDispApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_NvDispApi(NvDispApi**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_NvDispApi(NvDispApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_NvDispApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_NvDispApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
@@ -1017,57 +1045,57 @@ NV_STATUS __nvoc_objCreate_NvDispApi(NvDispApi**, Dynamic*, NvU32, struct CALL_C
 #define nvdispapiCtrlCmdGetLockpinsCaps(pNvDispApi, pParams) nvdispapiCtrlCmdGetLockpinsCaps_DISPATCH(pNvDispApi, pParams)
 #define nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides_FNPTR(pNvDispApi) pNvDispApi->__nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides__
 #define nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides(pNvDispApi, pParams) nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides_DISPATCH(pNvDispApi, pParams)
-#define nvdispapiControl_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_vtable->__dispapiControl__
+#define nvdispapiControl_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl__
 #define nvdispapiControl(pDisplayApi, pCallContext, pParams) nvdispapiControl_DISPATCH(pDisplayApi, pCallContext, pParams)
-#define nvdispapiControl_Prologue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_vtable->__dispapiControl_Prologue__
+#define nvdispapiControl_Prologue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl_Prologue__
 #define nvdispapiControl_Prologue(pDisplayApi, pCallContext, pRsParams) nvdispapiControl_Prologue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
-#define nvdispapiControl_Epilogue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_vtable->__dispapiControl_Epilogue__
+#define nvdispapiControl_Epilogue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl_Epilogue__
 #define nvdispapiControl_Epilogue(pDisplayApi, pCallContext, pRsParams) nvdispapiControl_Epilogue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
-#define nvdispapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define nvdispapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define nvdispapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) nvdispapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define nvdispapiShareCallback_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresShareCallback__
+#define nvdispapiShareCallback_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
 #define nvdispapiShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) nvdispapiShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define nvdispapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
+#define nvdispapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define nvdispapiGetMemInterMapParams(pRmResource, pParams) nvdispapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define nvdispapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
+#define nvdispapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define nvdispapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) nvdispapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define nvdispapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
+#define nvdispapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define nvdispapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) nvdispapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define nvdispapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define nvdispapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define nvdispapiControlSerialization_Prologue(pResource, pCallContext, pParams) nvdispapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define nvdispapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define nvdispapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define nvdispapiControlSerialization_Epilogue(pResource, pCallContext, pParams) nvdispapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define nvdispapiCanCopy_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define nvdispapiCanCopy_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define nvdispapiCanCopy(pResource) nvdispapiCanCopy_DISPATCH(pResource)
-#define nvdispapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define nvdispapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define nvdispapiIsDuplicate(pResource, hMemory, pDuplicate) nvdispapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define nvdispapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define nvdispapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define nvdispapiPreDestruct(pResource) nvdispapiPreDestruct_DISPATCH(pResource)
-#define nvdispapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define nvdispapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define nvdispapiControlFilter(pResource, pCallContext, pParams) nvdispapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define nvdispapiMap_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMap__
+#define nvdispapiMap_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define nvdispapiMap(pResource, pCallContext, pParams, pCpuMapping) nvdispapiMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
-#define nvdispapiUnmap_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmap__
+#define nvdispapiUnmap_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define nvdispapiUnmap(pResource, pCallContext, pCpuMapping) nvdispapiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
-#define nvdispapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define nvdispapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define nvdispapiIsPartialUnmapSupported(pResource) nvdispapiIsPartialUnmapSupported_DISPATCH(pResource)
-#define nvdispapiMapTo_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define nvdispapiMapTo_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define nvdispapiMapTo(pResource, pParams) nvdispapiMapTo_DISPATCH(pResource, pParams)
-#define nvdispapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define nvdispapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define nvdispapiUnmapFrom(pResource, pParams) nvdispapiUnmapFrom_DISPATCH(pResource, pParams)
-#define nvdispapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define nvdispapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define nvdispapiGetRefCount(pResource) nvdispapiGetRefCount_DISPATCH(pResource)
-#define nvdispapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define nvdispapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define nvdispapiAddAdditionalDependants(pClient, pResource, pReference) nvdispapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define nvdispapiGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationListPtr__
+#define nvdispapiGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationListPtr__
 #define nvdispapiGetNotificationListPtr(pNotifier) nvdispapiGetNotificationListPtr_DISPATCH(pNotifier)
-#define nvdispapiGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationShare__
+#define nvdispapiGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationShare__
 #define nvdispapiGetNotificationShare(pNotifier) nvdispapiGetNotificationShare_DISPATCH(pNotifier)
-#define nvdispapiSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifySetNotificationShare__
+#define nvdispapiSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifySetNotificationShare__
 #define nvdispapiSetNotificationShare(pNotifier, pNotifShare) nvdispapiSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define nvdispapiUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifyUnregisterEvent__
+#define nvdispapiUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyUnregisterEvent__
 #define nvdispapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) nvdispapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define nvdispapiGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetOrAllocNotifShare__
+#define nvdispapiGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetOrAllocNotifShare__
 #define nvdispapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) nvdispapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
@@ -1100,107 +1128,107 @@ static inline NV_STATUS nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides_DISPATC
 }
 
 static inline NV_STATUS nvdispapiControl_DISPATCH(struct NvDispApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pDisplayApi->__nvoc_vtable->__nvdispapiControl__(pDisplayApi, pCallContext, pParams);
+    return pDisplayApi->__nvoc_metadata_ptr->vtable.__nvdispapiControl__(pDisplayApi, pCallContext, pParams);
 }
 
 static inline NV_STATUS nvdispapiControl_Prologue_DISPATCH(struct NvDispApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
-    return pDisplayApi->__nvoc_vtable->__nvdispapiControl_Prologue__(pDisplayApi, pCallContext, pRsParams);
+    return pDisplayApi->__nvoc_metadata_ptr->vtable.__nvdispapiControl_Prologue__(pDisplayApi, pCallContext, pRsParams);
 }
 
 static inline void nvdispapiControl_Epilogue_DISPATCH(struct NvDispApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
-    pDisplayApi->__nvoc_vtable->__nvdispapiControl_Epilogue__(pDisplayApi, pCallContext, pRsParams);
+    pDisplayApi->__nvoc_metadata_ptr->vtable.__nvdispapiControl_Epilogue__(pDisplayApi, pCallContext, pRsParams);
 }
 
 static inline NvBool nvdispapiAccessCallback_DISPATCH(struct NvDispApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__nvdispapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvdispapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool nvdispapiShareCallback_DISPATCH(struct NvDispApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_vtable->__nvdispapiShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvdispapiShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS nvdispapiGetMemInterMapParams_DISPATCH(struct NvDispApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_vtable->__nvdispapiGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__nvdispapiGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS nvdispapiCheckMemInterUnmap_DISPATCH(struct NvDispApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_vtable->__nvdispapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__nvdispapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS nvdispapiGetMemoryMappingDescriptor_DISPATCH(struct NvDispApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_vtable->__nvdispapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__nvdispapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS nvdispapiControlSerialization_Prologue_DISPATCH(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__nvdispapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvdispapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void nvdispapiControlSerialization_Epilogue_DISPATCH(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__nvdispapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__nvdispapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool nvdispapiCanCopy_DISPATCH(struct NvDispApi *pResource) {
-    return pResource->__nvoc_vtable->__nvdispapiCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvdispapiCanCopy__(pResource);
 }
 
 static inline NV_STATUS nvdispapiIsDuplicate_DISPATCH(struct NvDispApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__nvdispapiIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvdispapiIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void nvdispapiPreDestruct_DISPATCH(struct NvDispApi *pResource) {
-    pResource->__nvoc_vtable->__nvdispapiPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__nvdispapiPreDestruct__(pResource);
 }
 
 static inline NV_STATUS nvdispapiControlFilter_DISPATCH(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__nvdispapiControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvdispapiControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS nvdispapiMap_DISPATCH(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__nvdispapiMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvdispapiMap__(pResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS nvdispapiUnmap_DISPATCH(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__nvdispapiUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvdispapiUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool nvdispapiIsPartialUnmapSupported_DISPATCH(struct NvDispApi *pResource) {
-    return pResource->__nvoc_vtable->__nvdispapiIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvdispapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS nvdispapiMapTo_DISPATCH(struct NvDispApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__nvdispapiMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvdispapiMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS nvdispapiUnmapFrom_DISPATCH(struct NvDispApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__nvdispapiUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvdispapiUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 nvdispapiGetRefCount_DISPATCH(struct NvDispApi *pResource) {
-    return pResource->__nvoc_vtable->__nvdispapiGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__nvdispapiGetRefCount__(pResource);
 }
 
 static inline void nvdispapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct NvDispApi *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__nvdispapiAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__nvdispapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 static inline PEVENTNOTIFICATION * nvdispapiGetNotificationListPtr_DISPATCH(struct NvDispApi *pNotifier) {
-    return pNotifier->__nvoc_vtable->__nvdispapiGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__nvdispapiGetNotificationListPtr__(pNotifier);
 }
 
 static inline struct NotifShare * nvdispapiGetNotificationShare_DISPATCH(struct NvDispApi *pNotifier) {
-    return pNotifier->__nvoc_vtable->__nvdispapiGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__nvdispapiGetNotificationShare__(pNotifier);
 }
 
 static inline void nvdispapiSetNotificationShare_DISPATCH(struct NvDispApi *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__nvoc_vtable->__nvdispapiSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_metadata_ptr->vtable.__nvdispapiSetNotificationShare__(pNotifier, pNotifShare);
 }
 
 static inline NV_STATUS nvdispapiUnregisterEvent_DISPATCH(struct NvDispApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__nvoc_vtable->__nvdispapiUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__nvdispapiUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS nvdispapiGetOrAllocNotifShare_DISPATCH(struct NvDispApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__nvoc_vtable->__nvdispapiGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__nvdispapiGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 NV_STATUS nvdispapiCtrlCmdIdleChannel_IMPL(struct NvDispApi *pNvDispApi, NVC370_CTRL_IDLE_CHANNEL_PARAMS *pParams);
@@ -1244,15 +1272,19 @@ NV_STATUS nvdispapiConstruct_IMPL(struct NvDispApi *arg_pNvdispApi, struct CALL_
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__DispSwObj;
+struct NVOC_METADATA__DisplayApi;
 struct NVOC_VTABLE__DispSwObj;
 
 
 struct DispSwObj {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__DispSwObj *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__DispSwObj *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct DisplayApi __nvoc_base_DisplayApi;
@@ -1275,10 +1307,8 @@ struct DispSwObj {
 };
 
 
-// Metadata including vtable with 26 function pointers plus superclass metadata
+// Vtable with 26 per-class function pointers
 struct NVOC_VTABLE__DispSwObj {
-    const struct NVOC_VTABLE__DisplayApi DisplayApi;    // (dispapi) 26 function pointers
-
     NV_STATUS (*__dispswobjControl__)(struct DispSwObj * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (dispapi) base (dispapi)
     NV_STATUS (*__dispswobjControl_Prologue__)(struct DispSwObj * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (dispapi) base (dispapi)
     void (*__dispswobjControl_Epilogue__)(struct DispSwObj * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (dispapi) base (dispapi)
@@ -1307,6 +1337,13 @@ struct NVOC_VTABLE__DispSwObj {
     NV_STATUS (*__dispswobjGetOrAllocNotifShare__)(struct DispSwObj * /*this*/, NvHandle, NvHandle, struct NotifShare **);  // virtual inherited (notify) base (dispapi)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__DispSwObj {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__DisplayApi metadata__DisplayApi;
+    const struct NVOC_VTABLE__DispSwObj vtable;
+};
+
 #ifndef __NVOC_CLASS_DispSwObj_TYPEDEF__
 #define __NVOC_CLASS_DispSwObj_TYPEDEF__
 typedef struct DispSwObj DispSwObj;
@@ -1323,15 +1360,15 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispSwObj;
     ((pThis)->__nvoc_pbase_DispSwObj)
 
 #ifdef __nvoc_disp_objs_h_disabled
-#define __dynamicCast_DispSwObj(pThis) ((DispSwObj*)NULL)
+#define __dynamicCast_DispSwObj(pThis) ((DispSwObj*) NULL)
 #else //__nvoc_disp_objs_h_disabled
 #define __dynamicCast_DispSwObj(pThis) \
-    ((DispSwObj*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(DispSwObj)))
+    ((DispSwObj*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(DispSwObj)))
 #endif //__nvoc_disp_objs_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_DispSwObj(DispSwObj**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_DispSwObj(DispSwObj**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_DispSwObj(DispSwObj**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_DispSwObj(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_DispSwObj((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
@@ -1345,57 +1382,57 @@ NV_STATUS __nvoc_objCreate_DispSwObj(DispSwObj**, Dynamic*, NvU32, struct CALL_C
 #define dispswobjCtrlCmdVideoAdaptiveRefreshRate(pDispSwObj, pParams) dispswobjCtrlCmdVideoAdaptiveRefreshRate_DISPATCH(pDispSwObj, pParams)
 #define dispswobjCtrlCmdGetActiveViewportPointIn_FNPTR(pDispSwObj) pDispSwObj->__dispswobjCtrlCmdGetActiveViewportPointIn__
 #define dispswobjCtrlCmdGetActiveViewportPointIn(pDispSwObj, pParams) dispswobjCtrlCmdGetActiveViewportPointIn_DISPATCH(pDispSwObj, pParams)
-#define dispswobjControl_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_vtable->__dispapiControl__
+#define dispswobjControl_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl__
 #define dispswobjControl(pDisplayApi, pCallContext, pParams) dispswobjControl_DISPATCH(pDisplayApi, pCallContext, pParams)
-#define dispswobjControl_Prologue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_vtable->__dispapiControl_Prologue__
+#define dispswobjControl_Prologue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl_Prologue__
 #define dispswobjControl_Prologue(pDisplayApi, pCallContext, pRsParams) dispswobjControl_Prologue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
-#define dispswobjControl_Epilogue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_vtable->__dispapiControl_Epilogue__
+#define dispswobjControl_Epilogue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl_Epilogue__
 #define dispswobjControl_Epilogue(pDisplayApi, pCallContext, pRsParams) dispswobjControl_Epilogue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
-#define dispswobjAccessCallback_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define dispswobjAccessCallback_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define dispswobjAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) dispswobjAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define dispswobjShareCallback_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresShareCallback__
+#define dispswobjShareCallback_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
 #define dispswobjShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) dispswobjShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define dispswobjGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
+#define dispswobjGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define dispswobjGetMemInterMapParams(pRmResource, pParams) dispswobjGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define dispswobjCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
+#define dispswobjCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define dispswobjCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) dispswobjCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define dispswobjGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
+#define dispswobjGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define dispswobjGetMemoryMappingDescriptor(pRmResource, ppMemDesc) dispswobjGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define dispswobjControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define dispswobjControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define dispswobjControlSerialization_Prologue(pResource, pCallContext, pParams) dispswobjControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define dispswobjControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define dispswobjControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define dispswobjControlSerialization_Epilogue(pResource, pCallContext, pParams) dispswobjControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define dispswobjCanCopy_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define dispswobjCanCopy_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define dispswobjCanCopy(pResource) dispswobjCanCopy_DISPATCH(pResource)
-#define dispswobjIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define dispswobjIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define dispswobjIsDuplicate(pResource, hMemory, pDuplicate) dispswobjIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define dispswobjPreDestruct_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define dispswobjPreDestruct_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define dispswobjPreDestruct(pResource) dispswobjPreDestruct_DISPATCH(pResource)
-#define dispswobjControlFilter_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define dispswobjControlFilter_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define dispswobjControlFilter(pResource, pCallContext, pParams) dispswobjControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define dispswobjMap_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMap__
+#define dispswobjMap_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define dispswobjMap(pResource, pCallContext, pParams, pCpuMapping) dispswobjMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
-#define dispswobjUnmap_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmap__
+#define dispswobjUnmap_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define dispswobjUnmap(pResource, pCallContext, pCpuMapping) dispswobjUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
-#define dispswobjIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define dispswobjIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define dispswobjIsPartialUnmapSupported(pResource) dispswobjIsPartialUnmapSupported_DISPATCH(pResource)
-#define dispswobjMapTo_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define dispswobjMapTo_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define dispswobjMapTo(pResource, pParams) dispswobjMapTo_DISPATCH(pResource, pParams)
-#define dispswobjUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define dispswobjUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define dispswobjUnmapFrom(pResource, pParams) dispswobjUnmapFrom_DISPATCH(pResource, pParams)
-#define dispswobjGetRefCount_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define dispswobjGetRefCount_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define dispswobjGetRefCount(pResource) dispswobjGetRefCount_DISPATCH(pResource)
-#define dispswobjAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define dispswobjAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define dispswobjAddAdditionalDependants(pClient, pResource, pReference) dispswobjAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define dispswobjGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationListPtr__
+#define dispswobjGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationListPtr__
 #define dispswobjGetNotificationListPtr(pNotifier) dispswobjGetNotificationListPtr_DISPATCH(pNotifier)
-#define dispswobjGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationShare__
+#define dispswobjGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationShare__
 #define dispswobjGetNotificationShare(pNotifier) dispswobjGetNotificationShare_DISPATCH(pNotifier)
-#define dispswobjSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifySetNotificationShare__
+#define dispswobjSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifySetNotificationShare__
 #define dispswobjSetNotificationShare(pNotifier, pNotifShare) dispswobjSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define dispswobjUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifyUnregisterEvent__
+#define dispswobjUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyUnregisterEvent__
 #define dispswobjUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) dispswobjUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define dispswobjGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetOrAllocNotifShare__
+#define dispswobjGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetOrAllocNotifShare__
 #define dispswobjGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) dispswobjGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
@@ -1416,107 +1453,107 @@ static inline NV_STATUS dispswobjCtrlCmdGetActiveViewportPointIn_DISPATCH(struct
 }
 
 static inline NV_STATUS dispswobjControl_DISPATCH(struct DispSwObj *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pDisplayApi->__nvoc_vtable->__dispswobjControl__(pDisplayApi, pCallContext, pParams);
+    return pDisplayApi->__nvoc_metadata_ptr->vtable.__dispswobjControl__(pDisplayApi, pCallContext, pParams);
 }
 
 static inline NV_STATUS dispswobjControl_Prologue_DISPATCH(struct DispSwObj *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
-    return pDisplayApi->__nvoc_vtable->__dispswobjControl_Prologue__(pDisplayApi, pCallContext, pRsParams);
+    return pDisplayApi->__nvoc_metadata_ptr->vtable.__dispswobjControl_Prologue__(pDisplayApi, pCallContext, pRsParams);
 }
 
 static inline void dispswobjControl_Epilogue_DISPATCH(struct DispSwObj *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
-    pDisplayApi->__nvoc_vtable->__dispswobjControl_Epilogue__(pDisplayApi, pCallContext, pRsParams);
+    pDisplayApi->__nvoc_metadata_ptr->vtable.__dispswobjControl_Epilogue__(pDisplayApi, pCallContext, pRsParams);
 }
 
 static inline NvBool dispswobjAccessCallback_DISPATCH(struct DispSwObj *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__dispswobjAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispswobjAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool dispswobjShareCallback_DISPATCH(struct DispSwObj *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_vtable->__dispswobjShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispswobjShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS dispswobjGetMemInterMapParams_DISPATCH(struct DispSwObj *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_vtable->__dispswobjGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__dispswobjGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS dispswobjCheckMemInterUnmap_DISPATCH(struct DispSwObj *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_vtable->__dispswobjCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__dispswobjCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS dispswobjGetMemoryMappingDescriptor_DISPATCH(struct DispSwObj *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_vtable->__dispswobjGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__dispswobjGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS dispswobjControlSerialization_Prologue_DISPATCH(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__dispswobjControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispswobjControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void dispswobjControlSerialization_Epilogue_DISPATCH(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__dispswobjControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__dispswobjControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool dispswobjCanCopy_DISPATCH(struct DispSwObj *pResource) {
-    return pResource->__nvoc_vtable->__dispswobjCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispswobjCanCopy__(pResource);
 }
 
 static inline NV_STATUS dispswobjIsDuplicate_DISPATCH(struct DispSwObj *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__dispswobjIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispswobjIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void dispswobjPreDestruct_DISPATCH(struct DispSwObj *pResource) {
-    pResource->__nvoc_vtable->__dispswobjPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__dispswobjPreDestruct__(pResource);
 }
 
 static inline NV_STATUS dispswobjControlFilter_DISPATCH(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__dispswobjControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispswobjControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS dispswobjMap_DISPATCH(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__dispswobjMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispswobjMap__(pResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS dispswobjUnmap_DISPATCH(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__dispswobjUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispswobjUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool dispswobjIsPartialUnmapSupported_DISPATCH(struct DispSwObj *pResource) {
-    return pResource->__nvoc_vtable->__dispswobjIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispswobjIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS dispswobjMapTo_DISPATCH(struct DispSwObj *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__dispswobjMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispswobjMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS dispswobjUnmapFrom_DISPATCH(struct DispSwObj *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__dispswobjUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispswobjUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 dispswobjGetRefCount_DISPATCH(struct DispSwObj *pResource) {
-    return pResource->__nvoc_vtable->__dispswobjGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispswobjGetRefCount__(pResource);
 }
 
 static inline void dispswobjAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct DispSwObj *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__dispswobjAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__dispswobjAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 static inline PEVENTNOTIFICATION * dispswobjGetNotificationListPtr_DISPATCH(struct DispSwObj *pNotifier) {
-    return pNotifier->__nvoc_vtable->__dispswobjGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__dispswobjGetNotificationListPtr__(pNotifier);
 }
 
 static inline struct NotifShare * dispswobjGetNotificationShare_DISPATCH(struct DispSwObj *pNotifier) {
-    return pNotifier->__nvoc_vtable->__dispswobjGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__dispswobjGetNotificationShare__(pNotifier);
 }
 
 static inline void dispswobjSetNotificationShare_DISPATCH(struct DispSwObj *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__nvoc_vtable->__dispswobjSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_metadata_ptr->vtable.__dispswobjSetNotificationShare__(pNotifier, pNotifShare);
 }
 
 static inline NV_STATUS dispswobjUnregisterEvent_DISPATCH(struct DispSwObj *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__nvoc_vtable->__dispswobjUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__dispswobjUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS dispswobjGetOrAllocNotifShare_DISPATCH(struct DispSwObj *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__nvoc_vtable->__dispswobjGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__dispswobjGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 NV_STATUS dispswobjCtrlCmdIsModePossible_IMPL(struct DispSwObj *pDispSwObj, NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS *pParams);
@@ -1550,15 +1587,19 @@ NV_STATUS dispswobjConstruct_IMPL(struct DispSwObj *arg_pDispSwObj, struct CALL_
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__DispCommon;
+struct NVOC_METADATA__DisplayApi;
 struct NVOC_VTABLE__DispCommon;
 
 
 struct DispCommon {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__DispCommon *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__DispCommon *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct DisplayApi __nvoc_base_DisplayApi;
@@ -1573,7 +1614,7 @@ struct DispCommon {
     struct DisplayApi *__nvoc_pbase_DisplayApi;    // dispapi super
     struct DispCommon *__nvoc_pbase_DispCommon;    // dispcmn
 
-    // Vtable with 139 per-object function pointers
+    // Vtable with 141 per-object function pointers
     NV_STATUS (*__dispcmnCtrlCmdSystemGetVblankCounter__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_VBLANK_COUNTER_PARAMS *);  // exported (id=0x730105)
     NV_STATUS (*__dispcmnCtrlCmdSystemGetVblankEnable__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_VBLANK_ENABLE_PARAMS *);  // exported (id=0x730106)
     NV_STATUS (*__dispcmnCtrlCmdSystemCheckSidebandSrSupport__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_CHECK_SIDEBAND_SR_SUPPORT_PARAMS *);  // exported (id=0x73014c)
@@ -1591,6 +1632,7 @@ struct DispCommon {
     NV_STATUS (*__dispcmnCtrlCmdSpecificDisplayChange__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_PARAMS *);  // exported (id=0x7302a4)
     NV_STATUS (*__dispcmnCtrlCmdDfpGetSpreadSpectrum__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_GET_SPREAD_SPECTRUM_PARAMS *);  // exported (id=0x73114c)
     NV_STATUS (*__dispcmnCtrlCmdDfpGetLcdGpioPinNum__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_GET_LCD_GPIO_PIN_NUM_PARAMS *);  // exported (id=0x731154)
+    NV_STATUS (*__dispcmnCtrlCmdDpRetrieveDpRingBuffer__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_RETRIEVE_DP_RING_BUFFER_PARAMS *);  // exported (id=0x731371)
     NV_STATUS (*__dispcmnCtrlCmdDpAuxchI2cTransferCtrl__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_AUXCH_I2C_TRANSFER_CTRL_PARAMS *);  // exported (id=0x73137c)
     NV_STATUS (*__dispcmnCtrlCmdDpASSRCtrl__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_ASSR_CTRL_PARAMS *);  // exported (id=0x73135a)
     NV_STATUS (*__dispcmnCtrlCmdDpSetEcf__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_SET_ECF_PARAMS *);  // exported (id=0x731366)
@@ -1677,7 +1719,7 @@ struct DispCommon {
     NV_STATUS (*__dispcmnCtrlCmdDp2xLinkTrain__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL_PARAMS *);  // exported (id=0x731383)
     NV_STATUS (*__dispcmnCtrlCmdDp2xGetLaneData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *);  // exported (id=0x731384)
     NV_STATUS (*__dispcmnCtrlCmdDp2xSetLaneData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *);  // exported (id=0x731385)
-    NV_STATUS (*__dispcmnCtrlCmdCalculateDpImp__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS *);  // exported (id=0x73138b)
+    NV_STATUS (*__dispcmnCtrlCmdCalculateDpImp__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS *);  // exported (id=0x73138c)
     NV_STATUS (*__dispcmnCtrlCmdDpGetLaneData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_LANE_DATA_PARAMS *);  // exported (id=0x731345)
     NV_STATUS (*__dispcmnCtrlCmdDpSetLaneData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_LANE_DATA_PARAMS *);  // exported (id=0x731346)
     NV_STATUS (*__dispcmnCtrlCmdDpGetTestpattern__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_GET_TESTPATTERN_PARAMS *);  // exported (id=0x731348)
@@ -1713,6 +1755,7 @@ struct DispCommon {
     NV_STATUS (*__dispcmnCtrlCmdDpGetLevelInfoTableData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_GET_LEVEL_INFO_TABLE_DATA_PARAMS *);  // exported (id=0x731388)
     NV_STATUS (*__dispcmnCtrlCmdDp2xSetLevelInfoTableData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP2X_SET_LEVEL_INFO_TABLE_DATA_PARAMS *);  // exported (id=0x731389)
     NV_STATUS (*__dispcmnCtrlCmdDp2xGetLevelInfoTableData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA_PARAMS *);  // exported (id=0x73138a)
+    NV_STATUS (*__dispcmnCtrlCmdDPGetCableIDInfoFromMacro__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_USBC_CABLEID_INFO_PARAMS *);  // exported (id=0x73138d)
 
     // Data members
     NvU32 hotPlugMaskToBeReported;
@@ -1720,10 +1763,8 @@ struct DispCommon {
 };
 
 
-// Metadata including vtable with 26 function pointers plus superclass metadata
+// Vtable with 26 per-class function pointers
 struct NVOC_VTABLE__DispCommon {
-    const struct NVOC_VTABLE__DisplayApi DisplayApi;    // (dispapi) 26 function pointers
-
     NV_STATUS (*__dispcmnControl__)(struct DispCommon * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (dispapi) base (dispapi)
     NV_STATUS (*__dispcmnControl_Prologue__)(struct DispCommon * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (dispapi) base (dispapi)
     void (*__dispcmnControl_Epilogue__)(struct DispCommon * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (dispapi) base (dispapi)
@@ -1752,6 +1793,13 @@ struct NVOC_VTABLE__DispCommon {
     NV_STATUS (*__dispcmnGetOrAllocNotifShare__)(struct DispCommon * /*this*/, NvHandle, NvHandle, struct NotifShare **);  // virtual inherited (notify) base (dispapi)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__DispCommon {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__DisplayApi metadata__DisplayApi;
+    const struct NVOC_VTABLE__DispCommon vtable;
+};
+
 #ifndef __NVOC_CLASS_DispCommon_TYPEDEF__
 #define __NVOC_CLASS_DispCommon_TYPEDEF__
 typedef struct DispCommon DispCommon;
@@ -1768,15 +1816,15 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispCommon;
     ((pThis)->__nvoc_pbase_DispCommon)
 
 #ifdef __nvoc_disp_objs_h_disabled
-#define __dynamicCast_DispCommon(pThis) ((DispCommon*)NULL)
+#define __dynamicCast_DispCommon(pThis) ((DispCommon*) NULL)
 #else //__nvoc_disp_objs_h_disabled
 #define __dynamicCast_DispCommon(pThis) \
-    ((DispCommon*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(DispCommon)))
+    ((DispCommon*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(DispCommon)))
 #endif //__nvoc_disp_objs_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_DispCommon(DispCommon**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_DispCommon(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_DispCommon((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
@@ -1816,6 +1864,8 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnCtrlCmdDfpGetSpreadSpectrum(pDispCommon, pParams) dispcmnCtrlCmdDfpGetSpreadSpectrum_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpGetLcdGpioPinNum_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpGetLcdGpioPinNum__
 #define dispcmnCtrlCmdDfpGetLcdGpioPinNum(pDispCommon, pParams) dispcmnCtrlCmdDfpGetLcdGpioPinNum_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdDpRetrieveDpRingBuffer_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpRetrieveDpRingBuffer__
+#define dispcmnCtrlCmdDpRetrieveDpRingBuffer(pDispCommon, pParams) dispcmnCtrlCmdDpRetrieveDpRingBuffer_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpAuxchI2cTransferCtrl_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpAuxchI2cTransferCtrl__
 #define dispcmnCtrlCmdDpAuxchI2cTransferCtrl(pDispCommon, pParams) dispcmnCtrlCmdDpAuxchI2cTransferCtrl_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpASSRCtrl_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpASSRCtrl__
@@ -2060,57 +2110,59 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnCtrlCmdDp2xSetLevelInfoTableData(pDispCommon, pParams) dispcmnCtrlCmdDp2xSetLevelInfoTableData_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDp2xGetLevelInfoTableData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDp2xGetLevelInfoTableData__
 #define dispcmnCtrlCmdDp2xGetLevelInfoTableData(pDispCommon, pParams) dispcmnCtrlCmdDp2xGetLevelInfoTableData_DISPATCH(pDispCommon, pParams)
-#define dispcmnControl_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_vtable->__dispapiControl__
+#define dispcmnCtrlCmdDPGetCableIDInfoFromMacro_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDPGetCableIDInfoFromMacro__
+#define dispcmnCtrlCmdDPGetCableIDInfoFromMacro(pDispCommon, pParams) dispcmnCtrlCmdDPGetCableIDInfoFromMacro_DISPATCH(pDispCommon, pParams)
+#define dispcmnControl_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl__
 #define dispcmnControl(pDisplayApi, pCallContext, pParams) dispcmnControl_DISPATCH(pDisplayApi, pCallContext, pParams)
-#define dispcmnControl_Prologue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_vtable->__dispapiControl_Prologue__
+#define dispcmnControl_Prologue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl_Prologue__
 #define dispcmnControl_Prologue(pDisplayApi, pCallContext, pRsParams) dispcmnControl_Prologue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
-#define dispcmnControl_Epilogue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_vtable->__dispapiControl_Epilogue__
+#define dispcmnControl_Epilogue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl_Epilogue__
 #define dispcmnControl_Epilogue(pDisplayApi, pCallContext, pRsParams) dispcmnControl_Epilogue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
-#define dispcmnAccessCallback_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define dispcmnAccessCallback_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define dispcmnAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) dispcmnAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define dispcmnShareCallback_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresShareCallback__
+#define dispcmnShareCallback_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
 #define dispcmnShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) dispcmnShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define dispcmnGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
+#define dispcmnGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define dispcmnGetMemInterMapParams(pRmResource, pParams) dispcmnGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define dispcmnCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
+#define dispcmnCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define dispcmnCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) dispcmnCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define dispcmnGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
+#define dispcmnGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define dispcmnGetMemoryMappingDescriptor(pRmResource, ppMemDesc) dispcmnGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define dispcmnControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define dispcmnControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define dispcmnControlSerialization_Prologue(pResource, pCallContext, pParams) dispcmnControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define dispcmnControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define dispcmnControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define dispcmnControlSerialization_Epilogue(pResource, pCallContext, pParams) dispcmnControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define dispcmnCanCopy_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define dispcmnCanCopy_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define dispcmnCanCopy(pResource) dispcmnCanCopy_DISPATCH(pResource)
-#define dispcmnIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define dispcmnIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define dispcmnIsDuplicate(pResource, hMemory, pDuplicate) dispcmnIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define dispcmnPreDestruct_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define dispcmnPreDestruct_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define dispcmnPreDestruct(pResource) dispcmnPreDestruct_DISPATCH(pResource)
-#define dispcmnControlFilter_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define dispcmnControlFilter_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define dispcmnControlFilter(pResource, pCallContext, pParams) dispcmnControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define dispcmnMap_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMap__
+#define dispcmnMap_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define dispcmnMap(pResource, pCallContext, pParams, pCpuMapping) dispcmnMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
-#define dispcmnUnmap_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmap__
+#define dispcmnUnmap_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define dispcmnUnmap(pResource, pCallContext, pCpuMapping) dispcmnUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
-#define dispcmnIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define dispcmnIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define dispcmnIsPartialUnmapSupported(pResource) dispcmnIsPartialUnmapSupported_DISPATCH(pResource)
-#define dispcmnMapTo_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define dispcmnMapTo_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define dispcmnMapTo(pResource, pParams) dispcmnMapTo_DISPATCH(pResource, pParams)
-#define dispcmnUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define dispcmnUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define dispcmnUnmapFrom(pResource, pParams) dispcmnUnmapFrom_DISPATCH(pResource, pParams)
-#define dispcmnGetRefCount_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define dispcmnGetRefCount_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define dispcmnGetRefCount(pResource) dispcmnGetRefCount_DISPATCH(pResource)
-#define dispcmnAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define dispcmnAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define dispcmnAddAdditionalDependants(pClient, pResource, pReference) dispcmnAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define dispcmnGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationListPtr__
+#define dispcmnGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationListPtr__
 #define dispcmnGetNotificationListPtr(pNotifier) dispcmnGetNotificationListPtr_DISPATCH(pNotifier)
-#define dispcmnGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationShare__
+#define dispcmnGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationShare__
 #define dispcmnGetNotificationShare(pNotifier) dispcmnGetNotificationShare_DISPATCH(pNotifier)
-#define dispcmnSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifySetNotificationShare__
+#define dispcmnSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifySetNotificationShare__
 #define dispcmnSetNotificationShare(pNotifier, pNotifShare) dispcmnSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define dispcmnUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifyUnregisterEvent__
+#define dispcmnUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyUnregisterEvent__
 #define dispcmnUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) dispcmnUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define dispcmnGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetOrAllocNotifShare__
+#define dispcmnGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetOrAllocNotifShare__
 #define dispcmnGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) dispcmnGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
@@ -2180,6 +2232,10 @@ static inline NV_STATUS dispcmnCtrlCmdDfpGetSpreadSpectrum_DISPATCH(struct DispC
 
 static inline NV_STATUS dispcmnCtrlCmdDfpGetLcdGpioPinNum_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_LCD_GPIO_PIN_NUM_PARAMS *pParams) {
     return pDispCommon->__dispcmnCtrlCmdDfpGetLcdGpioPinNum__(pDispCommon, pParams);
+}
+
+static inline NV_STATUS dispcmnCtrlCmdDpRetrieveDpRingBuffer_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_RETRIEVE_DP_RING_BUFFER_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdDpRetrieveDpRingBuffer__(pDispCommon, pParams);
 }
 
 static inline NV_STATUS dispcmnCtrlCmdDpAuxchI2cTransferCtrl_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_AUXCH_I2C_TRANSFER_CTRL_PARAMS *pParams) {
@@ -2670,108 +2726,112 @@ static inline NV_STATUS dispcmnCtrlCmdDp2xGetLevelInfoTableData_DISPATCH(struct 
     return pDispCommon->__dispcmnCtrlCmdDp2xGetLevelInfoTableData__(pDispCommon, pParams);
 }
 
+static inline NV_STATUS dispcmnCtrlCmdDPGetCableIDInfoFromMacro_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_USBC_CABLEID_INFO_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdDPGetCableIDInfoFromMacro__(pDispCommon, pParams);
+}
+
 static inline NV_STATUS dispcmnControl_DISPATCH(struct DispCommon *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pDisplayApi->__nvoc_vtable->__dispcmnControl__(pDisplayApi, pCallContext, pParams);
+    return pDisplayApi->__nvoc_metadata_ptr->vtable.__dispcmnControl__(pDisplayApi, pCallContext, pParams);
 }
 
 static inline NV_STATUS dispcmnControl_Prologue_DISPATCH(struct DispCommon *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
-    return pDisplayApi->__nvoc_vtable->__dispcmnControl_Prologue__(pDisplayApi, pCallContext, pRsParams);
+    return pDisplayApi->__nvoc_metadata_ptr->vtable.__dispcmnControl_Prologue__(pDisplayApi, pCallContext, pRsParams);
 }
 
 static inline void dispcmnControl_Epilogue_DISPATCH(struct DispCommon *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
-    pDisplayApi->__nvoc_vtable->__dispcmnControl_Epilogue__(pDisplayApi, pCallContext, pRsParams);
+    pDisplayApi->__nvoc_metadata_ptr->vtable.__dispcmnControl_Epilogue__(pDisplayApi, pCallContext, pRsParams);
 }
 
 static inline NvBool dispcmnAccessCallback_DISPATCH(struct DispCommon *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__dispcmnAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispcmnAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool dispcmnShareCallback_DISPATCH(struct DispCommon *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_vtable->__dispcmnShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispcmnShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS dispcmnGetMemInterMapParams_DISPATCH(struct DispCommon *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_vtable->__dispcmnGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__dispcmnGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS dispcmnCheckMemInterUnmap_DISPATCH(struct DispCommon *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_vtable->__dispcmnCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__dispcmnCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS dispcmnGetMemoryMappingDescriptor_DISPATCH(struct DispCommon *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_vtable->__dispcmnGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__dispcmnGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS dispcmnControlSerialization_Prologue_DISPATCH(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__dispcmnControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispcmnControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void dispcmnControlSerialization_Epilogue_DISPATCH(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__dispcmnControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__dispcmnControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool dispcmnCanCopy_DISPATCH(struct DispCommon *pResource) {
-    return pResource->__nvoc_vtable->__dispcmnCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispcmnCanCopy__(pResource);
 }
 
 static inline NV_STATUS dispcmnIsDuplicate_DISPATCH(struct DispCommon *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__dispcmnIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispcmnIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void dispcmnPreDestruct_DISPATCH(struct DispCommon *pResource) {
-    pResource->__nvoc_vtable->__dispcmnPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__dispcmnPreDestruct__(pResource);
 }
 
 static inline NV_STATUS dispcmnControlFilter_DISPATCH(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__dispcmnControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispcmnControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS dispcmnMap_DISPATCH(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__dispcmnMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispcmnMap__(pResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS dispcmnUnmap_DISPATCH(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_vtable->__dispcmnUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispcmnUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool dispcmnIsPartialUnmapSupported_DISPATCH(struct DispCommon *pResource) {
-    return pResource->__nvoc_vtable->__dispcmnIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispcmnIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS dispcmnMapTo_DISPATCH(struct DispCommon *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__dispcmnMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispcmnMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS dispcmnUnmapFrom_DISPATCH(struct DispCommon *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__dispcmnUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispcmnUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 dispcmnGetRefCount_DISPATCH(struct DispCommon *pResource) {
-    return pResource->__nvoc_vtable->__dispcmnGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__dispcmnGetRefCount__(pResource);
 }
 
 static inline void dispcmnAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct DispCommon *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__dispcmnAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__dispcmnAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 static inline PEVENTNOTIFICATION * dispcmnGetNotificationListPtr_DISPATCH(struct DispCommon *pNotifier) {
-    return pNotifier->__nvoc_vtable->__dispcmnGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__dispcmnGetNotificationListPtr__(pNotifier);
 }
 
 static inline struct NotifShare * dispcmnGetNotificationShare_DISPATCH(struct DispCommon *pNotifier) {
-    return pNotifier->__nvoc_vtable->__dispcmnGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__dispcmnGetNotificationShare__(pNotifier);
 }
 
 static inline void dispcmnSetNotificationShare_DISPATCH(struct DispCommon *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__nvoc_vtable->__dispcmnSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_metadata_ptr->vtable.__dispcmnSetNotificationShare__(pNotifier, pNotifShare);
 }
 
 static inline NV_STATUS dispcmnUnregisterEvent_DISPATCH(struct DispCommon *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__nvoc_vtable->__dispcmnUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__dispcmnUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS dispcmnGetOrAllocNotifShare_DISPATCH(struct DispCommon *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__nvoc_vtable->__dispcmnGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__dispcmnGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 NV_STATUS dispcmnCtrlCmdSystemGetVblankCounter_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_VBLANK_COUNTER_PARAMS *pVBCounterParams);
@@ -2807,6 +2867,8 @@ NV_STATUS dispcmnCtrlCmdSpecificDisplayChange_IMPL(struct DispCommon *pDispCommo
 NV_STATUS dispcmnCtrlCmdDfpGetSpreadSpectrum_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_SPREAD_SPECTRUM_PARAMS *pParams);
 
 NV_STATUS dispcmnCtrlCmdDfpGetLcdGpioPinNum_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_LCD_GPIO_PIN_NUM_PARAMS *pParams);
+
+NV_STATUS dispcmnCtrlCmdDpRetrieveDpRingBuffer_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_RETRIEVE_DP_RING_BUFFER_PARAMS *pParams);
 
 NV_STATUS dispcmnCtrlCmdDpAuxchI2cTransferCtrl_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_AUXCH_I2C_TRANSFER_CTRL_PARAMS *pParams);
 
@@ -3051,6 +3113,8 @@ NV_STATUS dispcmnCtrlCmdDpGetLevelInfoTableData_IMPL(struct DispCommon *pDispCom
 NV_STATUS dispcmnCtrlCmdDp2xSetLevelInfoTableData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_SET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams);
 
 NV_STATUS dispcmnCtrlCmdDp2xGetLevelInfoTableData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams);
+
+NV_STATUS dispcmnCtrlCmdDPGetCableIDInfoFromMacro_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_USBC_CABLEID_INFO_PARAMS *pParams);
 
 NV_STATUS dispcmnConstruct_IMPL(struct DispCommon *arg_pDispCommon, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 

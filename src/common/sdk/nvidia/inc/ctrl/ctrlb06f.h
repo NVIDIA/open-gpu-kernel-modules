@@ -36,15 +36,12 @@
 /* MAXWELL_CHANNEL_GPFIFO_A control commands and parameters */
 
 #include "ctrl/ctrlxxxx.h"
-#include "ctrl/ctrla06f.h"          /* B06F is partially derived from A06F */
-#include "ctrl/ctrl906f.h"          /* B06F is partially derived from 906F */
 #define NVB06F_CTRL_CMD(cat,idx)  \
     NVXXXX_CTRL_CMD(0xB06F, NVB06F_CTRL_##cat, idx)
 
 /* MAXWELL_CHANNEL_GPFIFO_A command categories (6bits) */
 #define NVB06F_CTRL_RESERVED (0x00)
 #define NVB06F_CTRL_GPFIFO   (0x01)
-#define NVB06F_CTRL_EVENT    (0x02)
 
 /*
  * NVB06F_CTRL_CMD_NULL
@@ -366,13 +363,3 @@ typedef struct NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS {
     NVB06F_CTRL_RESTORE_ENGINE_CTX_DATA_PARAMS params;
 } NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS;
 
-
-
-/*
- * NVB06F_CTRL_CMD_EVENT_SET_TRIGGER
- *
- * Please see description of NVA06F_CTRL_CMD_EVENT_SET_TRIGGER for more information.
- */
-#define NVB06F_CTRL_CMD_EVENT_SET_TRIGGER (0xb06f0206) /* finn: Evaluated from "(FINN_MAXWELL_CHANNEL_GPFIFO_A_EVENT_INTERFACE_ID << 8) | 0x6" */
-
-/* _ctrlb06f.h_ */

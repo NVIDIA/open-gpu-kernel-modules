@@ -69,6 +69,8 @@ namespace DisplayPort
 
         bool willLinkSupportMode(const LinkConfiguration &linkConfig, const ModesetInfo &modesetInfo,
                                  NvU32 headIndex = 0, Watermark *watermark = NULL, const DscParams *pDscParams = NULL);
+        virtual bool getValidLowestLinkConfig(LinkConfiguration &lConfig, LinkConfiguration &lowestSelected,
+                                              ModesetInfo queryModesetInfo, const DscParams *pDscParams = NULL);
 
         virtual bool handlePhyPatternRequest();
         virtual bool handleTestLinkTrainRequest();

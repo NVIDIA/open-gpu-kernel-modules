@@ -1,20 +1,22 @@
 
 #ifndef _G_GPU_MGR_NVOC_H_
 #define _G_GPU_MGR_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -136,10 +138,14 @@ typedef struct CONF_COMPUTE_CAPS
     NvBool bDevToolsModeEnabled;
     NvBool bAcceptClientRequest;
     NvBool bMultiGpuProtectedPcieModeEnabled;
+    NvBool bMultiGpuNvleModeEnabled;
     NvBool bFatalFailure;
-    NvBool bNvlEncryptionEnabled;
 } CONF_COMPUTE_CAPS;
 
+typedef struct NVLE_CAPS
+{
+    NvBool bNvlEncryptionEnabled;
+} NVLE_CAPS;
 //
 // types of bridges supported.
 // These defines are inices for the types of bridges supported.
@@ -305,10 +311,18 @@ MAKE_INTRUSIVE_LIST(pcieP2PCapsInfoList, PCIEP2PCAPSINFO, node);
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJGPUMGR;
+struct NVOC_METADATA__Object;
+
+
 struct OBJGPUMGR {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__OBJGPUMGR *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -344,8 +358,16 @@ struct OBJGPUMGR {
     NvU32 numGpuHandles;
     CONF_COMPUTE_CAPS ccCaps;
     NvU64 ccAttackerAdvantage;
+    NVLE_CAPS nvleCaps;
     pcieP2PCapsInfoList pcieP2PCapsInfoCache;
     void *pcieP2PCapsInfoLock;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJGPUMGR {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
 };
 
 #ifndef __NVOC_CLASS_OBJGPUMGR_TYPEDEF__
@@ -364,10 +386,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGPUMGR;
     ((pThis)->__nvoc_pbase_OBJGPUMGR)
 
 #ifdef __nvoc_gpu_mgr_h_disabled
-#define __dynamicCast_OBJGPUMGR(pThis) ((OBJGPUMGR*)NULL)
+#define __dynamicCast_OBJGPUMGR(pThis) ((OBJGPUMGR*) NULL)
 #else //__nvoc_gpu_mgr_h_disabled
 #define __dynamicCast_OBJGPUMGR(pThis) \
-    ((OBJGPUMGR*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJGPUMGR)))
+    ((OBJGPUMGR*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJGPUMGR)))
 #endif //__nvoc_gpu_mgr_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_OBJGPUMGR(OBJGPUMGR**, Dynamic*, NvU32, va_list);
@@ -543,6 +565,14 @@ typedef struct GPUATTACHARG
     SOCGPUATTACHARG socDeviceArgs;
 } GPUATTACHARG;
 
+typedef struct WindowsFirmwarePolicyArg
+{
+    NvU32  devId;
+    NvU32  ssId;
+    NvU32  fuseIsQuadro;
+    NvBool bIsTccOrMcdm;
+} WindowsFirmwarePolicyArg;
+
 NV_STATUS   gpumgrThreadEnableExpandedGpuVisibility(void);
 void        gpumgrThreadDisableExpandedGpuVisibility(void);
 NvBool      gpumgrThreadHasExpandedGpuVisibility(void);
@@ -569,13 +599,14 @@ NV_STATUS   gpumgrGetGpuUuidInfo(NvU32 gpuId, NvU8 **ppUuidStr, NvU32 *pUuidStrL
 // gpumgrGetRmFirmwarePolicy() and  gpumgrGetRmFirmwareLogsEnabled() contain
 // all logic for deciding the policies for loading firmwares, and so need to be
 // compiled for all platforms besides those actually running the firmwares
-void        gpumgrGetRmFirmwarePolicy(NvU32 pmcBoot42, NvBool bIsSoc,
+void        gpumgrGetRmFirmwarePolicy(NvU32 pmcBoot42, NvBool bIsVirtualWithSriov, NvBool bIsSoc,
                                       NvU32 enableFirmwareRegVal, NvBool *pbRequestFirmware,
                                       NvBool *pbAllowFallbackToMonolithicRm,
-                                      NvBool bIsTccOrMcdm);
+                                      WindowsFirmwarePolicyArg  *pWinRmFwPolicyArg);
 NvBool      gpumgrGetRmFirmwareLogsEnabled(NvU32 enableFirmwareLogsRegVal);
-NvBool      gpumgrIsDeviceRmFirmwareCapable(NvU32 pmcBoot42,
-                                            NvBool bIsSoc, NvBool *pbEnableByDefault, NvBool bIsTccOrMcdm);
+NvBool      gpumgrIsDeviceRmFirmwareCapable(NvU32 pmcBoot42, NvBool bIsVirtualWithSriov,
+                                            NvBool bIsSoc, NvBool *pbEnableByDefault,
+                                            WindowsFirmwarePolicyArg  *pWinRmFwPolicyArg);
 NvBool      gpumgrIsVgxRmFirmwareCapableChip(NvU32 pmcBoot42);
 NV_STATUS   gpumgrAttachGpu(NvU32 deviceInstance, GPUATTACHARG *);
 NV_STATUS   gpumgrDetachGpu(NvU32 deviceInstance);
@@ -626,6 +657,7 @@ NvU8        gpumgrGetGpuBridgeType(void);
 NvBool      gpumgrAreAllGpusInOffloadMode(void);
 NvBool      gpumgrIsSafeToReadGpuInfo(void);
 NvBool      gpumgrIsDeviceMsixAllowed(RmPhysAddr bar0BaseAddr, NvU32 pmcBoot1, NvU32 pmcBoot42);
+NvBool      gpumgrWaitForBarFirewall(NvU32 domain, NvU8 bus, NvU8 device, NvU8 function, NvU16 devId);
 
 //
 // gpumgrIsSubDeviceCountOne

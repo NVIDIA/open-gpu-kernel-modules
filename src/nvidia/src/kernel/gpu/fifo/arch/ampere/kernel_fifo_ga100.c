@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,6 +34,7 @@
 #include "published/ampere/ga100/dev_ram.h"
 #include "published/ampere/ga100/dev_ctrl.h"
 #include "published/ampere/ga100/dev_runlist.h"
+#include "published/ampere/ga100/dev_vm.h"
 
 NV_STATUS
 kfifoEngineInfoXlate_GA100
@@ -147,28 +148,18 @@ kfifoChannelGroupGetLocalMaxSubcontext_GA100
  * @param[in] pGpu
  * @param[in] pKernelFifo
  * @param[in] workSubmitToken Token to update the doorbell with
- * @param[in] runlistId       Runlist ID
  */
 NV_STATUS
 kfifoUpdateUsermodeDoorbell_GA100
 (
     OBJGPU     *pGpu,
     KernelFifo *pKernelFifo,
-    NvU32       workSubmitToken,
-    NvU32       runlistId
+    NvU32       workSubmitToken
 )
 {
-    //
-    // Updating the usermode doorbell is different for CPU vs. GSP.
-    //
-    if (!RMCFG_FEATURE_PLATFORM_GSP)
-    {
-        return kfifoUpdateUsermodeDoorbell_TU102(pGpu, pKernelFifo, workSubmitToken, runlistId);
-    }
-    else
-    {
-        return kfifoUpdateInternalDoorbellForUsermode_HAL(pGpu, pKernelFifo, workSubmitToken, runlistId);
-    }
+    NV_PRINTF(LEVEL_INFO, "Poking workSubmitToken 0x%x\n", workSubmitToken);
+
+    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_DOORBELL, workSubmitToken);
 
     return NV_OK;
 }
@@ -209,43 +200,35 @@ kfifoGenerateWorkSubmitTokenHal_GA100
 
     NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfId));
 
-    if (!RMCFG_FEATURE_PLATFORM_GSP || (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && IS_GFID_VF(gfId)))
+    // TODO: Remove check on Ampere. Bug 200606706.
+    if (!bUsedForHost && IS_GFID_VF(gfId))
     {
-        // TODO: Remove check on Ampere. Bug 200606706.
-        if (!bUsedForHost && IS_GFID_VF(gfId))
-        {
-            NvU32 vChId;
+        NvU32 vChId;
 
-            NV_ASSERT_OK_OR_RETURN(kfifoGetVChIdForSChId_HAL(pGpu, pKernelFifo,
-                                                             chId, gfId,
-                                                             kchannelGetEngineType(pKernelChannel),
-                                                             &vChId));
-            chId = vChId;
-        }
-
-        // TODO: Remove, on Ampere channels should be set to a valid runlist before allocation. Bug 200606706.
-        if (!kchannelIsRunlistSet(pGpu, pKernelChannel))
-        {
-            NV_PRINTF(LEVEL_NOTICE,
-                      "FAILED Channel 0x%x is not assigned to runlist yet\n",
-                      chId);
-            return NV_ERR_INVALID_STATE;
-        }
-
-        runlistId = kchannelGetRunlistId(pKernelChannel);
-
-        // Here we construct token to be a concatenation of runlist id and channel id
-        val = FLD_SET_DRF_NUM(_CTRL, _VF_DOORBELL, _RUNLIST_ID, runlistId, val);
-        val = FLD_SET_DRF_NUM(_CTRL, _VF_DOORBELL, _VECTOR,     chId,      val);
-
-        NV_PRINTF(LEVEL_INFO,
-                  "Generated workSubmitToken 0x%x for channel 0x%x runlist 0x%x\n",
-                  val, chId, runlistId);
+        NV_ASSERT_OK_OR_RETURN(kfifoGetVChIdForSChId_HAL(pGpu, pKernelFifo,
+                                                            chId, gfId,
+                                                            kchannelGetEngineType(pKernelChannel),
+                                                            &vChId));
+        chId = vChId;
     }
-    else // RMCFG_FEATURE_PLATFORM_GSP
+    // TODO: Remove, on Ampere channels should be set to a valid runlist before allocation. Bug 200606706.
+    if (!kchannelIsRunlistSet(pGpu, pKernelChannel))
     {
-        NV_ASSERT_OK_OR_RETURN(kfifoGenerateInternalWorkSubmitToken_HAL(pGpu, pKernelFifo, pKernelChannel, &val));
+        NV_PRINTF(LEVEL_NOTICE,
+                    "FAILED Channel 0x%x is not assigned to runlist yet\n",
+                    chId);
+        return NV_ERR_INVALID_STATE;
     }
+
+    runlistId = kchannelGetRunlistId(pKernelChannel);
+
+    // Here we construct token to be a concatenation of runlist id and channel id
+    val = FLD_SET_DRF_NUM(_CTRL, _VF_DOORBELL, _RUNLIST_ID, runlistId, val);
+    val = FLD_SET_DRF_NUM(_CTRL, _VF_DOORBELL, _VECTOR,     chId,      val);
+
+    NV_PRINTF(LEVEL_INFO,
+                "Generated workSubmitToken 0x%x for channel 0x%x runlist 0x%x\n",
+                val, chId, runlistId);
 
     *pGeneratedToken = val;
 
@@ -971,3 +954,42 @@ kfifoCompleteChannelHalt_GA100
     } while (FLD_TEST_DRF(_RUNLIST, _PREEMPT, _RUNLIST_PREEMPT_PENDING, _TRUE, runlistVal));
 }
 
+/*!
+ * @brief Update the usermode doorbell register with work submit token to notify
+ *        host that work is available on this channel.
+ *
+ * @param[in] pGpu
+ * @param[in] pFifo
+ * @param[in] pKernelChannel  Channel to ring the doorbell for
+ */
+NV_STATUS
+kfifoRingChannelDoorBell_GA100
+(
+    OBJGPU          *pGpu,
+    KernelFifo      *pKernelFifo,
+    KernelChannel   *pKernelChannel
+)
+{
+    NvU32        workSubmitToken;
+
+    // Updating the usermode doorbell is different for CPU vs. GSP.
+    //
+    if (!RMCFG_FEATURE_PLATFORM_GSP)
+    {
+        NV_ASSERT_OK_OR_RETURN(kfifoGenerateWorkSubmitToken(pGpu, pKernelFifo,
+                                                            pKernelChannel, &workSubmitToken,
+                                                            NV_TRUE));
+        NV_ASSERT_OK_OR_RETURN(kfifoUpdateUsermodeDoorbell_HAL(pGpu, pKernelFifo,
+                                                               workSubmitToken));
+    }
+    else
+    {
+        NV_ASSERT_OK_OR_RETURN(kfifoGenerateInternalWorkSubmitToken_HAL(pGpu, pKernelFifo,
+                                                                        pKernelChannel, &workSubmitToken));
+
+        NV_ASSERT_OK_OR_RETURN(kfifoUpdateInternalDoorbellForUsermode_HAL(pGpu, pKernelFifo,
+                                                                          workSubmitToken,
+                                                                          kchannelGetRunlistId(pKernelChannel)));
+    }
+    return NV_OK;
+}

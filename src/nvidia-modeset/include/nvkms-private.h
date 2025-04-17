@@ -73,8 +73,6 @@ const NVEvoApiHandlesRec *nvGetSurfaceHandlesFromOpenDevConst(
 
 void nvKmsServiceNonStallInterrupt(void *dataPtr, NvU32 dataU32);
 
-void nvKmsOrphanVblankSemControlForAllOpens(NVDispEvoRec *pDispEvo);
-
 #ifdef __cplusplus
 };
 #endif

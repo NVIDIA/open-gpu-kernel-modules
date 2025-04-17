@@ -1079,7 +1079,7 @@ kbusVerifyCoherentLink_GH100
     KernelBus *pKernelBus
 )
 {
-    NvU64             size             = BUS_COHERENT_LINK_TEST_BUFFER_SIZE;
+    NvU64             size             = 0x100;
     MEMORY_DESCRIPTOR *pMemDesc        = NULL;
     NvU8              *pOffset         = NULL;
     const NvU32       sampleData       = 0x12345678;
@@ -1096,9 +1096,18 @@ kbusVerifyCoherentLink_GH100
         return NV_OK;
     }
 
-    NV_ASSERT_OR_RETURN(pKernelBus->coherentLinkTestBufferBase != 0, NV_ERR_INVALID_STATE);
     memdescCreateExisting(&memDesc, pGpu, size, ADDR_FBMEM, NV_MEMORY_CACHED, MEMDESC_FLAGS_NONE);
-    memdescDescribe(&memDesc, ADDR_FBMEM, pKernelBus->coherentLinkTestBufferBase, size);
+
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_95, 
+                    (&memDesc));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Could not allocate vidmem to test coherent link with\n");
+        DBG_BREAKPOINT();
+        status = NV_ERR_NO_MEMORY;
+        goto busVerifyCoherentLink_failed;
+    }
 
     pOffset = kbusMapRmAperture_HAL(pGpu, &memDesc);
     if (pOffset == NULL)
@@ -1107,6 +1116,10 @@ kbusVerifyCoherentLink_GH100
         goto busVerifyCoherentLink_failed;
     }
     pMemDesc = &memDesc;
+
+    NV_PRINTF_COND(IS_EMULATION(pGpu), LEVEL_ERROR, LEVEL_INFO,
+                   "Coherent link test buffer PA: 0x%llx\n",
+                   memdescGetPhysAddr(pMemDesc, AT_CPU, 0));
 
     for(index = 0; index < size; index += 4)
     {
@@ -1155,6 +1168,7 @@ busVerifyCoherentLink_failed:
     {
         kbusUnmapRmAperture_HAL(pGpu, pMemDesc, &pOffset, NV_TRUE);
     }
+    memdescFree(pMemDesc);
     memdescDestroy(pMemDesc);
 
     if (status == NV_OK)

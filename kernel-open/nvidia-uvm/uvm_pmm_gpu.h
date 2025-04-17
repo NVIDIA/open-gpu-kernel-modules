@@ -229,15 +229,8 @@ static inline void uvm_pmm_devmem_exit(void)
 }
 #endif
 
-#if defined(CONFIG_PCI_P2PDMA) && defined(NV_STRUCT_PAGE_HAS_ZONE_DEVICE_DATA)
-#include <linux/pci-p2pdma.h>
-
 void uvm_pmm_gpu_device_p2p_init(uvm_gpu_t *gpu);
 void uvm_pmm_gpu_device_p2p_deinit(uvm_gpu_t *gpu);
-#else
-static inline void uvm_pmm_gpu_device_p2p_init(uvm_gpu_t *gpu) {}
-static inline void uvm_pmm_gpu_device_p2p_deinit(uvm_gpu_t *gpu) {}
-#endif
 
 struct uvm_gpu_chunk_struct
 {

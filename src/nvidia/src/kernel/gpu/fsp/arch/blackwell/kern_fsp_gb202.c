@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -81,6 +81,7 @@ kfspWaitForSecureBoot_GB202
 
     if (status != NV_OK)
     {
+        NV_ASSERT_OK(gpuMarkDeviceForReset(pGpu));
         NV_ERROR_LOG((void*) pGpu, GPU_INIT_ERROR, "Error status 0x%x while polling for FSP boot complete, "
                      "0x%x, 0x%x, 0x%x, 0x%x, 0x%x",
                      status,

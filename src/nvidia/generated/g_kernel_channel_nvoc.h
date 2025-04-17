@@ -1,13 +1,15 @@
 
 #ifndef _G_KERNEL_CHANNEL_NVOC_H_
 #define _G_KERNEL_CHANNEL_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,10 +60,7 @@ extern "C" {
 #include "ctrl/ctrl506f.h"
 #include "ctrl/ctrl906f.h"
 #include "ctrl/ctrla06f.h"
-#include "ctrl/ctrla16f.h"
-#include "ctrl/ctrla26f.h"
 #include "ctrl/ctrlb06f.h"
-#include "ctrl/ctrlc06f.h"
 #include "ctrl/ctrlc36f.h"
 #include "ctrl/ctrlc56f.h"
 
@@ -143,9 +142,6 @@ typedef enum
 typedef struct
 {
     NvU32 notifiersMaxCount;    // max# of notifiers for class
-    NvU32 eventActionDisable;   // event disable action cmd value
-    NvU32 eventActionSingle;    // event single-shot enable action cmd value
-    NvU32 eventActionRepeat;    // event repeat enable action cmd value
     NvU32 rcNotifierIndex;      // RC notifier index differs depending on the channel class
     CHANNEL_CLASS_TYPE classType;
 } CLI_CHANNEL_CLASS_INFO;
@@ -221,15 +217,20 @@ typedef struct _def_instance_block
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__KernelChannel;
+struct NVOC_METADATA__GpuResource;
+struct NVOC_METADATA__Notifier;
 struct NVOC_VTABLE__KernelChannel;
 
 
 struct KernelChannel {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__KernelChannel *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__KernelChannel *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct GpuResource __nvoc_base_GpuResource;
@@ -245,7 +246,7 @@ struct KernelChannel {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct KernelChannel *__nvoc_pbase_KernelChannel;    // kchannel
 
-    // Vtable with 38 per-object function pointers
+    // Vtable with 37 per-object function pointers
     NV_STATUS (*__kchannelCreateUserMemDesc__)(struct OBJGPU *, struct KernelChannel * /*this*/);  // halified (2 hals)
     NvBool (*__kchannelIsUserdAddrSizeValid__)(struct KernelChannel * /*this*/, NvU32, NvU32);  // halified (4 hals) body
     NV_STATUS (*__kchannelCtrlCmdResetIsolatedChannel__)(struct KernelChannel * /*this*/, NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS *);  // exported (id=0x506f0105)
@@ -254,7 +255,6 @@ struct KernelChannel {
     NV_STATUS (*__kchannelCtrlCmdResetChannel__)(struct KernelChannel * /*this*/, NV906F_CTRL_CMD_RESET_CHANNEL_PARAMS *);  // exported (id=0x906f0102)
     NV_STATUS (*__kchannelCtrlCmdGetDeferRCState__)(struct KernelChannel * /*this*/, NV906F_CTRL_CMD_GET_DEFER_RC_STATE_PARAMS *);  // exported (id=0x906f0105)
     NV_STATUS (*__kchannelCtrlCmdGetMmuFaultInfo__)(struct KernelChannel * /*this*/, NV906F_CTRL_GET_MMU_FAULT_INFO_PARAMS *);  // exported (id=0x906f0106)
-    NV_STATUS (*__kchannelCtrlCmdEventSetNotification__)(struct KernelChannel * /*this*/, NV906F_CTRL_EVENT_SET_NOTIFICATION_PARAMS *);  // exported (id=0x906f0203)
     NV_STATUS (*__kchannelCtrlCmdGpFifoSchedule__)(struct KernelChannel * /*this*/, NVA06F_CTRL_GPFIFO_SCHEDULE_PARAMS *);  // exported (id=0xa06f0103)
     NV_STATUS (*__kchannelCtrlCmdBind__)(struct KernelChannel * /*this*/, NVA06F_CTRL_BIND_PARAMS *);  // exported (id=0xa06f0104)
     NV_STATUS (*__kchannelCtrlCmdSetErrorNotifier__)(struct KernelChannel * /*this*/, NVA06F_CTRL_SET_ERROR_NOTIFIER_PARAMS *);  // exported (id=0xa06f0108)
@@ -320,7 +320,6 @@ struct KernelChannel {
     NvU32 SubProcessID;
     NvU32 bcStateCurrent;
     NvU32 notifyIndex[3];
-    NvU32 *pNotifyActions;
     NvU64 userdLength;
     NvBool bSkipCtxBufferAlloc;
     NvU32 subctxId;
@@ -330,6 +329,7 @@ struct KernelChannel {
     NvU32 runqueue;
     RM_ENGINE_TYPE engineType;
     CC_KMB clientKmb;
+    NvHandle hEncryptStatsBuf;
     MEMORY_DESCRIPTOR *pEncStatsBufMemDesc;
     CC_CRYPTOBUNDLE_STATS *pEncStatsBuf;
     MEMORY_DESCRIPTOR *pKeyRotationNotifierMemDesc;
@@ -339,11 +339,8 @@ struct KernelChannel {
 };
 
 
-// Metadata including vtable with 30 function pointers plus superclass metadata
+// Vtable with 30 per-class function pointers
 struct NVOC_VTABLE__KernelChannel {
-    const struct NVOC_VTABLE__GpuResource GpuResource;    // (gpures) 25 function pointers
-    const struct NVOC_VTABLE__Notifier Notifier;    // (notify) 5 function pointers
-
     NV_STATUS (*__kchannelMap__)(struct KernelChannel * /*this*/, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual override (res) base (gpures)
     NV_STATUS (*__kchannelUnmap__)(struct KernelChannel * /*this*/, CALL_CONTEXT *, RsCpuMapping *);  // virtual override (res) base (gpures)
     NV_STATUS (*__kchannelGetMapAddrSpace__)(struct KernelChannel * /*this*/, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual override (gpures) base (gpures)
@@ -376,6 +373,14 @@ struct NVOC_VTABLE__KernelChannel {
     NV_STATUS (*__kchannelGetOrAllocNotifShare__)(struct KernelChannel * /*this*/, NvHandle, NvHandle, struct NotifShare **);  // virtual inherited (notify) base (notify)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__KernelChannel {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuResource metadata__GpuResource;
+    const struct NVOC_METADATA__Notifier metadata__Notifier;
+    const struct NVOC_VTABLE__KernelChannel vtable;
+};
+
 #ifndef __NVOC_CLASS_KernelChannel_TYPEDEF__
 #define __NVOC_CLASS_KernelChannel_TYPEDEF__
 typedef struct KernelChannel KernelChannel;
@@ -392,29 +397,29 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelChannel;
     ((pThis)->__nvoc_pbase_KernelChannel)
 
 #ifdef __nvoc_kernel_channel_h_disabled
-#define __dynamicCast_KernelChannel(pThis) ((KernelChannel*)NULL)
+#define __dynamicCast_KernelChannel(pThis) ((KernelChannel*) NULL)
 #else //__nvoc_kernel_channel_h_disabled
 #define __dynamicCast_KernelChannel(pThis) \
-    ((KernelChannel*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(KernelChannel)))
+    ((KernelChannel*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(KernelChannel)))
 #endif //__nvoc_kernel_channel_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_KernelChannel(KernelChannel**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_KernelChannel(KernelChannel**, Dynamic*, NvU32, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_KernelChannel(KernelChannel**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_KernelChannel(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_KernelChannel((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
 // Wrapper macros
-#define kchannelMap_FNPTR(pKernelChannel) pKernelChannel->__nvoc_vtable->__kchannelMap__
+#define kchannelMap_FNPTR(pKernelChannel) pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelMap__
 #define kchannelMap(pKernelChannel, pCallContext, pParams, pCpuMapping) kchannelMap_DISPATCH(pKernelChannel, pCallContext, pParams, pCpuMapping)
-#define kchannelUnmap_FNPTR(pKernelChannel) pKernelChannel->__nvoc_vtable->__kchannelUnmap__
+#define kchannelUnmap_FNPTR(pKernelChannel) pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelUnmap__
 #define kchannelUnmap(pKernelChannel, pCallContext, pCpuMapping) kchannelUnmap_DISPATCH(pKernelChannel, pCallContext, pCpuMapping)
-#define kchannelGetMapAddrSpace_FNPTR(pKernelChannel) pKernelChannel->__nvoc_vtable->__kchannelGetMapAddrSpace__
+#define kchannelGetMapAddrSpace_FNPTR(pKernelChannel) pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelGetMapAddrSpace__
 #define kchannelGetMapAddrSpace(pKernelChannel, pCallContext, mapFlags, pAddrSpace) kchannelGetMapAddrSpace_DISPATCH(pKernelChannel, pCallContext, mapFlags, pAddrSpace)
-#define kchannelGetMemInterMapParams_FNPTR(pKernelChannel) pKernelChannel->__nvoc_vtable->__kchannelGetMemInterMapParams__
+#define kchannelGetMemInterMapParams_FNPTR(pKernelChannel) pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelGetMemInterMapParams__
 #define kchannelGetMemInterMapParams(pKernelChannel, pParams) kchannelGetMemInterMapParams_DISPATCH(pKernelChannel, pParams)
-#define kchannelCheckMemInterUnmap_FNPTR(pKernelChannel) pKernelChannel->__nvoc_vtable->__kchannelCheckMemInterUnmap__
+#define kchannelCheckMemInterUnmap_FNPTR(pKernelChannel) pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelCheckMemInterUnmap__
 #define kchannelCheckMemInterUnmap(pKernelChannel, bSubdeviceHandleProvided) kchannelCheckMemInterUnmap_DISPATCH(pKernelChannel, bSubdeviceHandleProvided)
 #define kchannelCreateUserMemDesc_FNPTR(arg_this) arg_this->__kchannelCreateUserMemDesc__
 #define kchannelCreateUserMemDesc(pGpu, arg_this) kchannelCreateUserMemDesc_DISPATCH(pGpu, arg_this)
@@ -434,8 +439,6 @@ NV_STATUS __nvoc_objCreate_KernelChannel(KernelChannel**, Dynamic*, NvU32, CALL_
 #define kchannelCtrlCmdGetDeferRCState(pKernelChannel, pStateParams) kchannelCtrlCmdGetDeferRCState_DISPATCH(pKernelChannel, pStateParams)
 #define kchannelCtrlCmdGetMmuFaultInfo_FNPTR(pKernelChannel) pKernelChannel->__kchannelCtrlCmdGetMmuFaultInfo__
 #define kchannelCtrlCmdGetMmuFaultInfo(pKernelChannel, pFaultInfoParams) kchannelCtrlCmdGetMmuFaultInfo_DISPATCH(pKernelChannel, pFaultInfoParams)
-#define kchannelCtrlCmdEventSetNotification_FNPTR(pKernelChannel) pKernelChannel->__kchannelCtrlCmdEventSetNotification__
-#define kchannelCtrlCmdEventSetNotification(pKernelChannel, pSetEventParams) kchannelCtrlCmdEventSetNotification_DISPATCH(pKernelChannel, pSetEventParams)
 #define kchannelCtrlCmdGpFifoSchedule_FNPTR(pKernelChannel) pKernelChannel->__kchannelCtrlCmdGpFifoSchedule__
 #define kchannelCtrlCmdGpFifoSchedule(pKernelChannel, pSchedParams) kchannelCtrlCmdGpFifoSchedule_DISPATCH(pKernelChannel, pSchedParams)
 #define kchannelCtrlCmdBind_FNPTR(pKernelChannel) pKernelChannel->__kchannelCtrlCmdBind__
@@ -499,76 +502,76 @@ NV_STATUS __nvoc_objCreate_KernelChannel(KernelChannel**, Dynamic*, NvU32, CALL_
 #define kchannelSetKeyRotationNotifier_FNPTR(pKernelChannel) pKernelChannel->__kchannelSetKeyRotationNotifier__
 #define kchannelSetKeyRotationNotifier(pGpu, pKernelChannel, bSet) kchannelSetKeyRotationNotifier_DISPATCH(pGpu, pKernelChannel, bSet)
 #define kchannelSetKeyRotationNotifier_HAL(pGpu, pKernelChannel, bSet) kchannelSetKeyRotationNotifier_DISPATCH(pGpu, pKernelChannel, bSet)
-#define kchannelControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresControl__
+#define kchannelControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define kchannelControl(pGpuResource, pCallContext, pParams) kchannelControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define kchannelShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresShareCallback__
+#define kchannelShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
 #define kchannelShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) kchannelShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define kchannelGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
+#define kchannelGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define kchannelGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) kchannelGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define kchannelInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresInternalControlForward__
+#define kchannelInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__
 #define kchannelInternalControlForward(pGpuResource, command, pParams, size) kchannelInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define kchannelGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetInternalObjectHandle__
+#define kchannelGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define kchannelGetInternalObjectHandle(pGpuResource) kchannelGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define kchannelAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define kchannelAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define kchannelAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) kchannelAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define kchannelGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
+#define kchannelGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define kchannelGetMemoryMappingDescriptor(pRmResource, ppMemDesc) kchannelGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define kchannelControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define kchannelControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define kchannelControlSerialization_Prologue(pResource, pCallContext, pParams) kchannelControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define kchannelControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define kchannelControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define kchannelControlSerialization_Epilogue(pResource, pCallContext, pParams) kchannelControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define kchannelControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
+#define kchannelControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
 #define kchannelControl_Prologue(pResource, pCallContext, pParams) kchannelControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define kchannelControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
+#define kchannelControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
 #define kchannelControl_Epilogue(pResource, pCallContext, pParams) kchannelControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define kchannelCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define kchannelCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define kchannelCanCopy(pResource) kchannelCanCopy_DISPATCH(pResource)
-#define kchannelIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define kchannelIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define kchannelIsDuplicate(pResource, hMemory, pDuplicate) kchannelIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define kchannelPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define kchannelPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define kchannelPreDestruct(pResource) kchannelPreDestruct_DISPATCH(pResource)
-#define kchannelControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define kchannelControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define kchannelControlFilter(pResource, pCallContext, pParams) kchannelControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define kchannelIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define kchannelIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define kchannelIsPartialUnmapSupported(pResource) kchannelIsPartialUnmapSupported_DISPATCH(pResource)
-#define kchannelMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define kchannelMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define kchannelMapTo(pResource, pParams) kchannelMapTo_DISPATCH(pResource, pParams)
-#define kchannelUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define kchannelUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define kchannelUnmapFrom(pResource, pParams) kchannelUnmapFrom_DISPATCH(pResource, pParams)
-#define kchannelGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define kchannelGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define kchannelGetRefCount(pResource) kchannelGetRefCount_DISPATCH(pResource)
-#define kchannelAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define kchannelAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define kchannelAddAdditionalDependants(pClient, pResource, pReference) kchannelAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define kchannelGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationListPtr__
+#define kchannelGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationListPtr__
 #define kchannelGetNotificationListPtr(pNotifier) kchannelGetNotificationListPtr_DISPATCH(pNotifier)
-#define kchannelGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationShare__
+#define kchannelGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationShare__
 #define kchannelGetNotificationShare(pNotifier) kchannelGetNotificationShare_DISPATCH(pNotifier)
-#define kchannelSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifySetNotificationShare__
+#define kchannelSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifySetNotificationShare__
 #define kchannelSetNotificationShare(pNotifier, pNotifShare) kchannelSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define kchannelUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyUnregisterEvent__
+#define kchannelUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyUnregisterEvent__
 #define kchannelUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) kchannelUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define kchannelGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetOrAllocNotifShare__
+#define kchannelGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetOrAllocNotifShare__
 #define kchannelGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) kchannelGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
 static inline NV_STATUS kchannelMap_DISPATCH(struct KernelChannel *pKernelChannel, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pKernelChannel->__nvoc_vtable->__kchannelMap__(pKernelChannel, pCallContext, pParams, pCpuMapping);
+    return pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelMap__(pKernelChannel, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS kchannelUnmap_DISPATCH(struct KernelChannel *pKernelChannel, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pKernelChannel->__nvoc_vtable->__kchannelUnmap__(pKernelChannel, pCallContext, pCpuMapping);
+    return pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelUnmap__(pKernelChannel, pCallContext, pCpuMapping);
 }
 
 static inline NV_STATUS kchannelGetMapAddrSpace_DISPATCH(struct KernelChannel *pKernelChannel, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pKernelChannel->__nvoc_vtable->__kchannelGetMapAddrSpace__(pKernelChannel, pCallContext, mapFlags, pAddrSpace);
+    return pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelGetMapAddrSpace__(pKernelChannel, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS kchannelGetMemInterMapParams_DISPATCH(struct KernelChannel *pKernelChannel, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pKernelChannel->__nvoc_vtable->__kchannelGetMemInterMapParams__(pKernelChannel, pParams);
+    return pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelGetMemInterMapParams__(pKernelChannel, pParams);
 }
 
 static inline NV_STATUS kchannelCheckMemInterUnmap_DISPATCH(struct KernelChannel *pKernelChannel, NvBool bSubdeviceHandleProvided) {
-    return pKernelChannel->__nvoc_vtable->__kchannelCheckMemInterUnmap__(pKernelChannel, bSubdeviceHandleProvided);
+    return pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelCheckMemInterUnmap__(pKernelChannel, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS kchannelCreateUserMemDesc_DISPATCH(struct OBJGPU *pGpu, struct KernelChannel *arg_this) {
@@ -601,10 +604,6 @@ static inline NV_STATUS kchannelCtrlCmdGetDeferRCState_DISPATCH(struct KernelCha
 
 static inline NV_STATUS kchannelCtrlCmdGetMmuFaultInfo_DISPATCH(struct KernelChannel *pKernelChannel, NV906F_CTRL_GET_MMU_FAULT_INFO_PARAMS *pFaultInfoParams) {
     return pKernelChannel->__kchannelCtrlCmdGetMmuFaultInfo__(pKernelChannel, pFaultInfoParams);
-}
-
-static inline NV_STATUS kchannelCtrlCmdEventSetNotification_DISPATCH(struct KernelChannel *pKernelChannel, NV906F_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams) {
-    return pKernelChannel->__kchannelCtrlCmdEventSetNotification__(pKernelChannel, pSetEventParams);
 }
 
 static inline NV_STATUS kchannelCtrlCmdGpFifoSchedule_DISPATCH(struct KernelChannel *pKernelChannel, NVA06F_CTRL_GPFIFO_SCHEDULE_PARAMS *pSchedParams) {
@@ -724,103 +723,103 @@ static inline NV_STATUS kchannelSetKeyRotationNotifier_DISPATCH(struct OBJGPU *p
 }
 
 static inline NV_STATUS kchannelControl_DISPATCH(struct KernelChannel *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_vtable->__kchannelControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__kchannelControl__(pGpuResource, pCallContext, pParams);
 }
 
 static inline NvBool kchannelShareCallback_DISPATCH(struct KernelChannel *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_vtable->__kchannelShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__kchannelShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS kchannelGetRegBaseOffsetAndSize_DISPATCH(struct KernelChannel *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_vtable->__kchannelGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__kchannelGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS kchannelInternalControlForward_DISPATCH(struct KernelChannel *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_vtable->__kchannelInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__kchannelInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
 static inline NvHandle kchannelGetInternalObjectHandle_DISPATCH(struct KernelChannel *pGpuResource) {
-    return pGpuResource->__nvoc_vtable->__kchannelGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__kchannelGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NvBool kchannelAccessCallback_DISPATCH(struct KernelChannel *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__kchannelAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__kchannelAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS kchannelGetMemoryMappingDescriptor_DISPATCH(struct KernelChannel *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_vtable->__kchannelGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__kchannelGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS kchannelControlSerialization_Prologue_DISPATCH(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__kchannelControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__kchannelControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void kchannelControlSerialization_Epilogue_DISPATCH(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__kchannelControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__kchannelControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS kchannelControl_Prologue_DISPATCH(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__kchannelControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__kchannelControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void kchannelControl_Epilogue_DISPATCH(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__kchannelControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__kchannelControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool kchannelCanCopy_DISPATCH(struct KernelChannel *pResource) {
-    return pResource->__nvoc_vtable->__kchannelCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__kchannelCanCopy__(pResource);
 }
 
 static inline NV_STATUS kchannelIsDuplicate_DISPATCH(struct KernelChannel *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__kchannelIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__kchannelIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void kchannelPreDestruct_DISPATCH(struct KernelChannel *pResource) {
-    pResource->__nvoc_vtable->__kchannelPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__kchannelPreDestruct__(pResource);
 }
 
 static inline NV_STATUS kchannelControlFilter_DISPATCH(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__kchannelControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__kchannelControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool kchannelIsPartialUnmapSupported_DISPATCH(struct KernelChannel *pResource) {
-    return pResource->__nvoc_vtable->__kchannelIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__kchannelIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS kchannelMapTo_DISPATCH(struct KernelChannel *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__kchannelMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__kchannelMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS kchannelUnmapFrom_DISPATCH(struct KernelChannel *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__kchannelUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__kchannelUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 kchannelGetRefCount_DISPATCH(struct KernelChannel *pResource) {
-    return pResource->__nvoc_vtable->__kchannelGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__kchannelGetRefCount__(pResource);
 }
 
 static inline void kchannelAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct KernelChannel *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__kchannelAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__kchannelAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 static inline PEVENTNOTIFICATION * kchannelGetNotificationListPtr_DISPATCH(struct KernelChannel *pNotifier) {
-    return pNotifier->__nvoc_vtable->__kchannelGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__kchannelGetNotificationListPtr__(pNotifier);
 }
 
 static inline struct NotifShare * kchannelGetNotificationShare_DISPATCH(struct KernelChannel *pNotifier) {
-    return pNotifier->__nvoc_vtable->__kchannelGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__kchannelGetNotificationShare__(pNotifier);
 }
 
 static inline void kchannelSetNotificationShare_DISPATCH(struct KernelChannel *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__nvoc_vtable->__kchannelSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_metadata_ptr->vtable.__kchannelSetNotificationShare__(pNotifier, pNotifShare);
 }
 
 static inline NV_STATUS kchannelUnregisterEvent_DISPATCH(struct KernelChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__nvoc_vtable->__kchannelUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__kchannelUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS kchannelGetOrAllocNotifShare_DISPATCH(struct KernelChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__nvoc_vtable->__kchannelGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_metadata_ptr->vtable.__kchannelGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 NV_STATUS kchannelNotifyRc_IMPL(struct KernelChannel *pKernelChannel);
@@ -1145,8 +1144,6 @@ NV_STATUS kchannelCtrlCmdResetChannel_IMPL(struct KernelChannel *pKernelChannel,
 NV_STATUS kchannelCtrlCmdGetDeferRCState_IMPL(struct KernelChannel *pKernelChannel, NV906F_CTRL_CMD_GET_DEFER_RC_STATE_PARAMS *pStateParams);
 
 NV_STATUS kchannelCtrlCmdGetMmuFaultInfo_IMPL(struct KernelChannel *pKernelChannel, NV906F_CTRL_GET_MMU_FAULT_INFO_PARAMS *pFaultInfoParams);
-
-NV_STATUS kchannelCtrlCmdEventSetNotification_IMPL(struct KernelChannel *pKernelChannel, NV906F_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams);
 
 NV_STATUS kchannelCtrlCmdGpFifoSchedule_IMPL(struct KernelChannel *pKernelChannel, NVA06F_CTRL_GPFIFO_SCHEDULE_PARAMS *pSchedParams);
 

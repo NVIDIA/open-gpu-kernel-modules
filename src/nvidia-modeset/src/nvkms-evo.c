@@ -186,19 +186,23 @@ NVEvoInfoStringRec dummyInfoString = {
 
 /*!
  * Return the NVDevEvoPtr, if any, that matches deviceId.
+ *
+ * If the deviceId is NVKMS_DEVICE_ID_TEGRA, then find the device with
+ * pDevEvo->isSOCDisplay set and use that instead.
  */
-NVDevEvoPtr nvFindDevEvoByDeviceId(NvU32 deviceId)
+NVDevEvoPtr nvFindDevEvoByDeviceId(struct NvKmsDeviceId deviceId)
 {
     NVDevEvoPtr pDevEvo;
 
     FOR_ALL_EVO_DEVS(pDevEvo) {
-        if (pDevEvo->usesTegraDevice &&
-            (deviceId == NVKMS_DEVICE_ID_TEGRA)) {
+        if (pDevEvo->isSOCDisplay &&
+            (deviceId.rmDeviceId == NVKMS_DEVICE_ID_TEGRA)) {
             return pDevEvo;
-        } else if (pDevEvo->deviceId == deviceId) {
+        } else if (pDevEvo->deviceId.rmDeviceId == deviceId.rmDeviceId &&
+                   pDevEvo->deviceId.migDevice == deviceId.migDevice) {
             return pDevEvo;
         }
-    };
+    }
 
     return NULL;
 }
@@ -5027,8 +5031,6 @@ static void ClearApiHeadStateOneDisp(NVDispEvoRec *pDispEvo)
 {
     NvU32 apiHead;
 
-    nvKmsOrphanVblankSemControlForAllOpens(pDispEvo);
-
     /*
      * Unregister all the flip-occurred event callbacks which are
      * registered with the (api-head, layer) pair event data,
@@ -5042,10 +5044,8 @@ static void ClearApiHeadStateOneDisp(NVDispEvoRec *pDispEvo)
         NvU32 layer;
         NVDispApiHeadStateEvoRec *pApiHeadState =
             &pDispEvo->apiHeadState[apiHead];
-        for (NvU32 i = 0; i < ARRAY_LEN(pApiHeadState->vblankCallbackList); i++) {
-            nvAssert(nvListIsEmpty(&pApiHeadState->vblankCallbackList[i]));
-        }
-        nvAssert(nvListIsEmpty(&pApiHeadState->vblankSemControl.list));
+
+        nvAssert(pApiHeadState->rmVBlankCallbackHandle == 0);
 
         for (layer = 0; layer < ARRAY_LEN(pApiHeadState->flipOccurredEvent); layer++) {
             if (pApiHeadState->flipOccurredEvent[layer].ref_ptr != NULL) {
@@ -5084,11 +5084,6 @@ static NvBool InitApiHeadStateOneDisp(NVDispEvoRec *pDispEvo)
 
         pApiHeadState->activeDpys = nvEmptyDpyIdList();
         pApiHeadState->attributes = NV_EVO_DEFAULT_ATTRIBUTES_SET;
-
-        for (NvU32 i = 0; i < ARRAY_LEN(pApiHeadState->vblankCallbackList); i++) {
-            nvListInit(&pApiHeadState->vblankCallbackList[i]);
-        }
-        nvListInit(&pApiHeadState->vblankSemControl.list);
 
         for (layer = 0; layer < ARRAY_LEN(pApiHeadState->flipOccurredEvent); layer++) {
             pApiHeadState->flipOccurredEvent[layer].ref_ptr =

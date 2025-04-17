@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -180,6 +180,8 @@ void RmInitCpuInfo(void)
         case AARCH64_VENDOR_PART(PHYTIUM, S2500):
         case AARCH64_VENDOR_PART(PHYTIUM, S5000):
         case AARCH64_VENDOR_PART(AMPERE, ALTRA):
+        case AARCH64_VENDOR_PART(AMPEREONE_X, AMPEREONE160):
+        case AARCH64_VENDOR_PART(AMPEREONE_X, AMPEREONE192):
         case AARCH64_VENDOR_PART(MARVELL, OCTEON_CN96XX):
         case AARCH64_VENDOR_PART(MARVELL, OCTEON_CN98XX):
         case AARCH64_VENDOR_PART(ARM, CORTEX_A57):
@@ -187,7 +189,6 @@ void RmInitCpuInfo(void)
             break;
         case AARCH64_VENDOR_PART(ARM, NEOVERSE_N2):
         case AARCH64_VENDOR_PART(ARM, NEOVERSE_V2):
-        case AARCH64_VENDOR_PART(AMPERE_2, AMPEREONE):
             pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV9A_GENERIC;
             break;
         default:

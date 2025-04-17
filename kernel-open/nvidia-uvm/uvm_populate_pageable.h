@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018 NVIDIA Corporation
+    Copyright (c) 2018-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -24,6 +24,8 @@
 #ifndef __UVM_POPULATE_PAGEABLE_H__
 #define __UVM_POPULATE_PAGEABLE_H__
 
+#include "nvstatus.h"
+
 // Types of permissions to influence the address range population.
 // PERMISSIONS_INHERIT will use the permissions of the vma.
 // PERMISSIONS_ANY will populate the pages with any permissions allowed by the
@@ -40,31 +42,27 @@ typedef enum
 
 // Populate the pages of the given vma that overlap with the
 // [start:start+length) range. If any of the pages was not populated, we return
-// NV_ERR_NO_MEMORY. See the comment below for details on the touch argument.
+// NV_ERR_NO_MEMORY.
+//
+// flags is the set of UVM_POPULATE_PAGEABLE_FLAG_* values.
 //
 // Locking: vma->vm_mm->mmap_lock must be held in read or write mode
 NV_STATUS uvm_populate_pageable_vma(struct vm_area_struct *vma,
                                     unsigned long start,
                                     unsigned long length,
-                                    int min_prot,
-                                    bool touch,
-                                    uvm_populate_permissions_t populate_permissions);
+                                    uvm_populate_permissions_t populate_permissions,
+                                    NvU32 flags);
 
 // Populate all the pages in the given range by calling get_user_pages. The
 // range must be fully backed by vmas. If any of the pages was not populated, we
-// return NV_ERR_NO_MEMORY. The caller can request a touch of the populated
-// pages. This can be useful in virtualization environment. See
-// uvm_ats_service_fault() for example usage.
+// return NV_ERR_NO_MEMORY.
 //
-// flags is the set of UVM_POPULATE_PAGEABLE_FLAG_* values. Only
-// UVM_POPULATE_PAGEABLE_FLAG_ALLOW_MANAGED is currently supported.
+// flags is the set of UVM_POPULATE_PAGEABLE_FLAG_* values.
 //
 // Locking: mm->mmap_lock must be held in read or write mode
 NV_STATUS uvm_populate_pageable(struct mm_struct *mm,
                                 unsigned long start,
                                 unsigned long length,
-                                int min_prot,
-                                bool touch,
                                 uvm_populate_permissions_t populate_permissions,
                                 NvU32 flags);
 #endif

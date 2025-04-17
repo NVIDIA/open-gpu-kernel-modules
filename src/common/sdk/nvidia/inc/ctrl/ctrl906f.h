@@ -42,7 +42,6 @@
 /* GF100_GPFIFO command categories (6bits) */
 #define NV906F_CTRL_RESERVED (0x00)
 #define NV906F_CTRL_GPFIFO   (0x01)
-#define NV906F_CTRL_EVENT    (0x02)
 
 
 /*
@@ -147,50 +146,7 @@ typedef struct NV906F_CTRL_CMD_RESET_CHANNEL_PARAMS {
     NvBool bIsRcPending;
 } NV906F_CTRL_CMD_RESET_CHANNEL_PARAMS;
 
-/*
- * NV906F_CTRL_CMD_EVENT_SET_NOTIFICATION
- *
- * This command sets event notification state for the associated channel.
- * This command requires that an instance of NV01_EVENT has been previously
- * bound to the associated channel object.
- *
- *   event
- *     This parameter specifies the type of event to which the specified
- *     action is to be applied.  This parameter must specify a valid
- *     NV906F_NOTIFIERS value (see cl906f.h for more details) and should
- *     not exceed one less NV906F_NOTIFIERS_MAXCOUNT.
- *   action
- *     This parameter specifies the desired event notification action.
- *     Valid notification actions include:
- *       NV906F_CTRL_SET_EVENT_NOTIFICATION_ACTION_DISABLE
- *         This action disables event notification for the specified
- *         event for the associated channel object.
- *       NV906F_CTRL_SET_EVENT_NOTIFICATION_ACTION_SINGLE
- *         This action enables single-shot event notification for the
- *         specified event for the associated channel object.
- *       NV906F_CTRL_SET_EVENT_NOTIFICATION_ACTION_REPEAT
- *         This action enables repeated event notification for the specified
- *         event for the associated channel object.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_PARAM_STRUCT
- *   NV_ERR_INVALID_ARGUMENT
- *   NV_ERR_INVALID_STATE
- */
-#define NV906F_CTRL_CMD_EVENT_SET_NOTIFICATION (0x906f0203) /* finn: Evaluated from "(FINN_GF100_CHANNEL_GPFIFO_EVENT_INTERFACE_ID << 8) | NV906F_CTRL_EVENT_SET_NOTIFICATION_PARAMS_MESSAGE_ID" */
 
-#define NV906F_CTRL_EVENT_SET_NOTIFICATION_PARAMS_MESSAGE_ID (0x3U)
-
-typedef struct NV906F_CTRL_EVENT_SET_NOTIFICATION_PARAMS {
-    NvU32 event;
-    NvU32 action;
-} NV906F_CTRL_EVENT_SET_NOTIFICATION_PARAMS;
-
-/* valid action values */
-#define NV906F_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE (0x00000000)
-#define NV906F_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE  (0x00000001)
-#define NV906F_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT  (0x00000002)
 
 /*
  * NV906F_CTRL_CMD_GET_DEFER_RC_STATE
@@ -206,6 +162,7 @@ typedef struct NV906F_CTRL_EVENT_SET_NOTIFICATION_PARAMS {
  * Possible status values returned are:
  *   NV_OK
  */
+
 #define NV906F_CTRL_CMD_GET_DEFER_RC_STATE (0x906f0105) /* finn: Evaluated from "(FINN_GF100_CHANNEL_GPFIFO_GPFIFO_INTERFACE_ID << 8) | NV906F_CTRL_CMD_GET_DEFER_RC_STATE_PARAMS_MESSAGE_ID" */
 
 #define NV906F_CTRL_CMD_GET_DEFER_RC_STATE_PARAMS_MESSAGE_ID (0x5U)

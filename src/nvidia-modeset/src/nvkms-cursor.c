@@ -430,6 +430,7 @@ extern NVEvoCursorHAL nvEvoCursorC3;
 extern NVEvoCursorHAL nvEvoCursorC5;
 extern NVEvoCursorHAL nvEvoCursorC6;
 extern NVEvoCursorHAL nvEvoCursorCA;
+extern NVEvoCursorHAL nvEvoCursorCB;
 
 
 enum NvKmsAllocDeviceStatus nvInitDispHalCursorEvo(NVDevEvoPtr pDevEvo)
@@ -440,6 +441,7 @@ enum NvKmsAllocDeviceStatus nvInitDispHalCursorEvo(NVDevEvoPtr pDevEvo)
         &nvEvoCursorC5,
         &nvEvoCursorC6,
         &nvEvoCursorCA,
+        &nvEvoCursorCB,
     };
 
     int i;

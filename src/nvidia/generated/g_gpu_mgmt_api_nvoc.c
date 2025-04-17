@@ -1,4 +1,11 @@
 #define NVOC_GPU_MGMT_API_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,106 +14,28 @@
 #include "utils/nvassert.h"
 #include "g_gpu_mgmt_api_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x376305 = 1;
+char __nvoc_class_id_uniqueness_check__0x376305 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuManagementApi;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource;
 
-void __nvoc_init_GpuManagementApi(GpuManagementApi*);
+// Forward declarations for GpuManagementApi
+void __nvoc_init__RmResource(RmResource*);
+void __nvoc_init__GpuManagementApi(GpuManagementApi*);
 void __nvoc_init_funcTable_GpuManagementApi(GpuManagementApi*);
-NV_STATUS __nvoc_ctor_GpuManagementApi(GpuManagementApi*, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_ctor_GpuManagementApi(GpuManagementApi*, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 void __nvoc_init_dataField_GpuManagementApi(GpuManagementApi*);
 void __nvoc_dtor_GpuManagementApi(GpuManagementApi*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_GpuManagementApi;
 
-static const struct NVOC_RTTI __nvoc_rtti_GpuManagementApi_GpuManagementApi = {
-    /*pClassDef=*/          &__nvoc_class_def_GpuManagementApi,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_GpuManagementApi,
-    /*offset=*/             0,
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_GpuManagementApi_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(GpuManagementApi, __nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_GpuManagementApi_RsResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RsResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(GpuManagementApi, __nvoc_base_RmResource.__nvoc_base_RsResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_GpuManagementApi_RmResourceCommon = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResourceCommon,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(GpuManagementApi, __nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_GpuManagementApi_RmResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(GpuManagementApi, __nvoc_base_RmResource),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_GpuManagementApi = {
-    /*numRelatives=*/       5,
-    /*relatives=*/ {
-        &__nvoc_rtti_GpuManagementApi_GpuManagementApi,
-        &__nvoc_rtti_GpuManagementApi_RmResource,
-        &__nvoc_rtti_GpuManagementApi_RmResourceCommon,
-        &__nvoc_rtti_GpuManagementApi_RsResource,
-        &__nvoc_rtti_GpuManagementApi_Object,
-    },
-};
-
-const struct NVOC_CLASS_DEF __nvoc_class_def_GpuManagementApi = 
-{
-    /*classInfo=*/ {
-        /*size=*/               sizeof(GpuManagementApi),
-        /*classId=*/            classId(GpuManagementApi),
-        /*providerId=*/         &__nvoc_rtti_provider,
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "GpuManagementApi",
-#endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_GpuManagementApi,
-    /*pCastInfo=*/          &__nvoc_castinfo_GpuManagementApi,
-    /*pExportInfo=*/        &__nvoc_export_info_GpuManagementApi
-};
-
-#if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
-#define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
-#endif
-
-static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GpuManagementApi[] = 
-{
-    {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x7u)
-        /*pFunc=*/      (void (*)(void)) NULL,
-#else
-        /*pFunc=*/      (void (*)(void)) gpumgmtapiCtrlCmdSetShutdownState_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x7u)
-        /*flags=*/      0x7u,
-        /*accessRight=*/0x0u,
-        /*methodId=*/   0x200101u,
-        /*paramSize=*/  sizeof(NV0020_CTRL_GPU_MGMT_SET_SHUTDOWN_STATE_PARAMS),
-        /*pClassInfo=*/ &(__nvoc_class_def_GpuManagementApi.classInfo),
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*func=*/       "gpumgmtapiCtrlCmdSetShutdownState"
-#endif
-    },
-
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__GpuManagementApi;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__GpuManagementApi;
 
 // Down-thunk(s) to bridge GpuManagementApi methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
@@ -150,6 +79,139 @@ NV_STATUS __nvoc_up_thunk_RsResource_gpumgmtapiMapTo(struct GpuManagementApi *pR
 NV_STATUS __nvoc_up_thunk_RsResource_gpumgmtapiUnmapFrom(struct GpuManagementApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
 NvU32 __nvoc_up_thunk_RsResource_gpumgmtapiGetRefCount(struct GpuManagementApi *pResource);    // this
 void __nvoc_up_thunk_RsResource_gpumgmtapiAddAdditionalDependants(struct RsClient *pClient, struct GpuManagementApi *pResource, RsResourceRef *pReference);    // this
+
+const struct NVOC_CLASS_DEF __nvoc_class_def_GpuManagementApi = 
+{
+    /*classInfo=*/ {
+        /*size=*/               sizeof(GpuManagementApi),
+        /*classId=*/            classId(GpuManagementApi),
+        /*providerId=*/         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*name=*/               "GpuManagementApi",
+#endif
+    },
+    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_GpuManagementApi,
+    /*pCastInfo=*/          &__nvoc_castinfo__GpuManagementApi,
+    /*pExportInfo=*/        &__nvoc_export_info__GpuManagementApi
+};
+
+#if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
+#define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
+#endif
+
+static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GpuManagementApi[] = 
+{
+    {               /*  [0] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x7u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) gpumgmtapiCtrlCmdSetShutdownState_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x7u)
+        /*flags=*/      0x7u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x200101u,
+        /*paramSize=*/  sizeof(NV0020_CTRL_GPU_MGMT_SET_SHUTDOWN_STATE_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_GpuManagementApi.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "gpumgmtapiCtrlCmdSetShutdownState"
+#endif
+    },
+
+};
+
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__GpuManagementApi __nvoc_metadata__GpuManagementApi = {
+    .rtti.pClassDef = &__nvoc_class_def_GpuManagementApi,    // (gpumgmtapi) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_GpuManagementApi,
+    .rtti.offset    = 0,
+    .metadata__RmResource.rtti.pClassDef = &__nvoc_class_def_RmResource,    // (rmres) super
+    .metadata__RmResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__RmResource.rtti.offset    = NV_OFFSETOF(GpuManagementApi, __nvoc_base_RmResource),
+    .metadata__RmResource.metadata__RsResource.rtti.pClassDef = &__nvoc_class_def_RsResource,    // (res) super^2
+    .metadata__RmResource.metadata__RsResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__RmResource.metadata__RsResource.rtti.offset    = NV_OFFSETOF(GpuManagementApi, __nvoc_base_RmResource.__nvoc_base_RsResource),
+    .metadata__RmResource.metadata__RsResource.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^3
+    .metadata__RmResource.metadata__RsResource.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__RmResource.metadata__RsResource.metadata__Object.rtti.offset    = NV_OFFSETOF(GpuManagementApi, __nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
+    .metadata__RmResource.metadata__RmResourceCommon.rtti.pClassDef = &__nvoc_class_def_RmResourceCommon,    // (rmrescmn) super^2
+    .metadata__RmResource.metadata__RmResourceCommon.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__RmResource.metadata__RmResourceCommon.rtti.offset    = NV_OFFSETOF(GpuManagementApi, __nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
+
+    .vtable.__gpumgmtapiAccessCallback__ = &__nvoc_up_thunk_RmResource_gpumgmtapiAccessCallback,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+    .vtable.__gpumgmtapiShareCallback__ = &__nvoc_up_thunk_RmResource_gpumgmtapiShareCallback,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresShareCallback__ = &rmresShareCallback_IMPL,    // virtual override (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+    .vtable.__gpumgmtapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpumgmtapiGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+    .vtable.__gpumgmtapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpumgmtapiCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+    .vtable.__gpumgmtapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpumgmtapiGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+    .vtable.__gpumgmtapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpumgmtapiControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+    .vtable.__gpumgmtapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpumgmtapiControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+    .vtable.__gpumgmtapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpumgmtapiControl_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+    .vtable.__gpumgmtapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpumgmtapiControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+    .vtable.__gpumgmtapiCanCopy__ = &__nvoc_up_thunk_RsResource_gpumgmtapiCanCopy,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+    .vtable.__gpumgmtapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpumgmtapiIsDuplicate,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+    .vtable.__gpumgmtapiPreDestruct__ = &__nvoc_up_thunk_RsResource_gpumgmtapiPreDestruct,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+    .vtable.__gpumgmtapiControl__ = &__nvoc_up_thunk_RsResource_gpumgmtapiControl,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resControl__ = &resControl_IMPL,    // virtual
+    .vtable.__gpumgmtapiControlFilter__ = &__nvoc_up_thunk_RsResource_gpumgmtapiControlFilter,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+    .vtable.__gpumgmtapiMap__ = &__nvoc_up_thunk_RsResource_gpumgmtapiMap,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resMap__ = &resMap_IMPL,    // virtual
+    .vtable.__gpumgmtapiUnmap__ = &__nvoc_up_thunk_RsResource_gpumgmtapiUnmap,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resUnmap__ = &resUnmap_IMPL,    // virtual
+    .vtable.__gpumgmtapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpumgmtapiIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+    .metadata__RmResource.vtable.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+    .metadata__RmResource.metadata__RsResource.vtable.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+    .vtable.__gpumgmtapiMapTo__ = &__nvoc_up_thunk_RsResource_gpumgmtapiMapTo,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resMapTo__ = &resMapTo_IMPL,    // virtual
+    .vtable.__gpumgmtapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpumgmtapiUnmapFrom,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+    .vtable.__gpumgmtapiGetRefCount__ = &__nvoc_up_thunk_RsResource_gpumgmtapiGetRefCount,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+    .vtable.__gpumgmtapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpumgmtapiAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__GpuManagementApi = {
+    .numRelatives = 5,
+    .relatives = {
+        &__nvoc_metadata__GpuManagementApi.rtti,    // [0]: (gpumgmtapi) this
+        &__nvoc_metadata__GpuManagementApi.metadata__RmResource.rtti,    // [1]: (rmres) super
+        &__nvoc_metadata__GpuManagementApi.metadata__RmResource.metadata__RsResource.rtti,    // [2]: (res) super^2
+        &__nvoc_metadata__GpuManagementApi.metadata__RmResource.metadata__RsResource.metadata__Object.rtti,    // [3]: (obj) super^3
+        &__nvoc_metadata__GpuManagementApi.metadata__RmResource.metadata__RmResourceCommon.rtti,    // [4]: (rmrescmn) super^2
+    }
+};
 
 // 21 up-thunk(s) defined to bridge methods in GpuManagementApi to superclasses
 
@@ -259,7 +321,7 @@ void __nvoc_up_thunk_RsResource_gpumgmtapiAddAdditionalDependants(struct RsClien
 }
 
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_GpuManagementApi = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__GpuManagementApi = 
 {
     /*numEntries=*/     1,
     /*pExportEntries=*/ __nvoc_exported_method_def_GpuManagementApi
@@ -309,87 +371,31 @@ static void __nvoc_init_funcTable_GpuManagementApi_1(GpuManagementApi *pThis) {
 // Initialize vtable(s) for 22 virtual method(s).
 void __nvoc_init_funcTable_GpuManagementApi(GpuManagementApi *pThis) {
 
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__GpuManagementApi vtable = {
-        .__gpumgmtapiAccessCallback__ = &__nvoc_up_thunk_RmResource_gpumgmtapiAccessCallback,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
-        .RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
-        .__gpumgmtapiShareCallback__ = &__nvoc_up_thunk_RmResource_gpumgmtapiShareCallback,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresShareCallback__ = &rmresShareCallback_IMPL,    // virtual override (res) base (res)
-        .RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
-        .__gpumgmtapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpumgmtapiGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
-        .__gpumgmtapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpumgmtapiCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
-        .__gpumgmtapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpumgmtapiGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
-        .__gpumgmtapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpumgmtapiControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
-        .RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
-        .__gpumgmtapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpumgmtapiControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
-        .RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
-        .__gpumgmtapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpumgmtapiControl_Prologue,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
-        .RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
-        .__gpumgmtapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpumgmtapiControl_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
-        .RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
-        .__gpumgmtapiCanCopy__ = &__nvoc_up_thunk_RsResource_gpumgmtapiCanCopy,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
-        .__gpumgmtapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpumgmtapiIsDuplicate,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
-        .__gpumgmtapiPreDestruct__ = &__nvoc_up_thunk_RsResource_gpumgmtapiPreDestruct,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
-        .__gpumgmtapiControl__ = &__nvoc_up_thunk_RsResource_gpumgmtapiControl,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resControl__ = &resControl_IMPL,    // virtual
-        .__gpumgmtapiControlFilter__ = &__nvoc_up_thunk_RsResource_gpumgmtapiControlFilter,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
-        .__gpumgmtapiMap__ = &__nvoc_up_thunk_RsResource_gpumgmtapiMap,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resMap__ = &resMap_IMPL,    // virtual
-        .__gpumgmtapiUnmap__ = &__nvoc_up_thunk_RsResource_gpumgmtapiUnmap,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resUnmap__ = &resUnmap_IMPL,    // virtual
-        .__gpumgmtapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpumgmtapiIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
-        .RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
-        .RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
-        .__gpumgmtapiMapTo__ = &__nvoc_up_thunk_RsResource_gpumgmtapiMapTo,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
-        .__gpumgmtapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpumgmtapiUnmapFrom,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
-        .__gpumgmtapiGetRefCount__ = &__nvoc_up_thunk_RsResource_gpumgmtapiGetRefCount,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
-        .__gpumgmtapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpumgmtapiAddAdditionalDependants,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.RmResource.RsResource;    // (res) super^2
-    pThis->__nvoc_base_RmResource.__nvoc_vtable = &vtable.RmResource;    // (rmres) super
-    pThis->__nvoc_vtable = &vtable;    // (gpumgmtapi) this
-
     // Initialize vtable(s) with 1 per-object function pointer(s).
     __nvoc_init_funcTable_GpuManagementApi_1(pThis);
 }
 
-void __nvoc_init_RmResource(RmResource*);
-void __nvoc_init_GpuManagementApi(GpuManagementApi *pThis) {
-    pThis->__nvoc_pbase_GpuManagementApi = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;
-    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_RmResource.__nvoc_base_RsResource;
-    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;
-    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_RmResource;
-    __nvoc_init_RmResource(&pThis->__nvoc_base_RmResource);
+// Initialize newly constructed object.
+void __nvoc_init__GpuManagementApi(GpuManagementApi *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;    // (obj) super^3
+    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_RmResource.__nvoc_base_RsResource;    // (res) super^2
+    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;    // (rmrescmn) super^2
+    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_RmResource;    // (rmres) super
+    pThis->__nvoc_pbase_GpuManagementApi = pThis;    // (gpumgmtapi) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__RmResource(&pThis->__nvoc_base_RmResource);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__GpuManagementApi.metadata__RmResource.metadata__RsResource.metadata__Object;    // (obj) super^3
+    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr = &__nvoc_metadata__GpuManagementApi.metadata__RmResource.metadata__RsResource;    // (res) super^2
+    pThis->__nvoc_base_RmResource.__nvoc_base_RmResourceCommon.__nvoc_metadata_ptr = &__nvoc_metadata__GpuManagementApi.metadata__RmResource.metadata__RmResourceCommon;    // (rmrescmn) super^2
+    pThis->__nvoc_base_RmResource.__nvoc_metadata_ptr = &__nvoc_metadata__GpuManagementApi.metadata__RmResource;    // (rmres) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__GpuManagementApi;    // (gpumgmtapi) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_GpuManagementApi(pThis);
 }
 
@@ -407,9 +413,6 @@ NV_STATUS __nvoc_objCreate_GpuManagementApi(GpuManagementApi **ppThis, Dynamic *
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(GpuManagementApi));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_GpuManagementApi);
-
     pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -423,7 +426,7 @@ NV_STATUS __nvoc_objCreate_GpuManagementApi(GpuManagementApi **ppThis, Dynamic *
         pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_GpuManagementApi(pThis);
+    __nvoc_init__GpuManagementApi(pThis);
     status = __nvoc_ctor_GpuManagementApi(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_GpuManagementApi_cleanup;
 

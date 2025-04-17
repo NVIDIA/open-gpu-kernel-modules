@@ -142,6 +142,9 @@ kgspExecuteBooterUnloadIfNeeded_TU102
         mailbox0 = mailbox1 = 0xdeaddead;
     }
 
+    if (API_GPU_IN_RESET_SANITY_CHECK(pGpu))
+        return NV_ERR_GPU_IN_FULLCHIP_RESET;
+
     // skip actually executing Booter Unload if WPR2 is not up
     if (!kgspIsWpr2Up_HAL(pGpu, pKernelGsp))
     {

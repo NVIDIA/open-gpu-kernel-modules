@@ -688,6 +688,8 @@ static NvS64 _scanContiguousSearchLoop
     NvU64 latestFree[PMA_BITS_PER_PAGE];
     NvU64 i;
 
+    // _scanContiguousSearchLoop can only be called for <32MB localized memory, enforced by PMA
+
     // can't allocate contiguous memory > stride. This is guaranteed by the caller, but be sure here
     if ((localStride != 0) && (numFrames > localStride))
     {
@@ -734,6 +736,48 @@ loop_begin:
         }
     }
 
+    if (localStride != 0)
+    {
+        //
+        // Find a region that is either
+        // 1. already localized or
+        // 2. completely free within the 64MB region
+        //
+        while (frameBaseIdx <= localEnd)
+        {
+            // If one bit is localized, the entire region must be localized
+            if ((pRegmap->map[MAP_IDX_LOCALIZED][PAGE_MAPIDX(frameBaseIdx)] & NVBIT64(PAGE_BITIDX(frameBaseIdx))) != 0)
+            {
+                break;
+            }
+            else
+            {
+                // check for localized availability. Do a contiguous scan of only the region of interest
+                NvU64 strideRegionStart = alignDownToMod(frameBaseIdx,       (localStride * 2), strideRegionAlignmentPadding);
+                NvU64 strideRegionEnd   =   alignUpToMod((frameBaseIdx + 1), (localStride * 2), strideRegionAlignmentPadding) - 1;
+                NvS64 frameFound = _scanContiguousSearchLoop(pRegmap, (localStride * 2), strideRegionStart, strideRegionEnd,
+                                                             frameAlignment, frameAlignmentPadding, 0, 0, 0, 0, NV_FALSE);
+
+                if (frameFound >= 0)
+                {
+                    break;
+                }
+                else
+                {
+                    // align up to the next entire stride region
+                    frameBaseIdx = alignUpToMod(frameBaseIdx + 1, (localStride * 2), strideRegionAlignmentPadding);
+
+                    // Put the address into the correct strideStart
+                    if ((((frameBaseIdx - frameAlignmentPadding) / localStride) % 2) != strideStart)
+                    {
+                        // align up to next stride
+                        frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
+                    }
+                }
+            }
+        }
+    }
+
     //
     // Always start a loop iteration with an updated frameBaseIdx by ensuring that latestFree is always >= frameBaseIdx
     // frameBaseIdx == latestFree[i] means that there are no observed 0s so far in the current run
@@ -754,6 +798,12 @@ loop_begin:
     {
         // TODO, merge logic so we don't need multiple calls for unpin
         if (i == MAP_IDX_ALLOC_UNPIN && bSearchEvictable)
+        {
+            continue;
+        }
+
+        // ignore checking localized for localized request
+        if (i == MAP_IDX_LOCALIZED && (localStride != 0))
         {
             continue;
         }
@@ -979,6 +1029,48 @@ loop_begin:
         }
     }
 
+    if (localStride != 0)
+    {
+        //
+        // Find a region that is either
+        // 1. already localized or
+        // 2. completely free within the 64MB region
+        //
+        while (frameBaseIdx <= localEnd)
+        {
+            // If one bit is localized, the entire region must be localized
+            if ((pRegmap->map[MAP_IDX_LOCALIZED][PAGE_MAPIDX(frameBaseIdx)] & NVBIT64(PAGE_BITIDX(frameBaseIdx))) != 0)
+            {
+                break;
+            }
+            else
+            {
+                // check for localized availability. Do a contiguous scan of only the region of interest
+                NvU64 strideRegionStart = alignDownToMod(frameBaseIdx,       (localStride * 2), strideRegionAlignmentPadding);
+                NvU64 strideRegionEnd   =   alignUpToMod((frameBaseIdx + 1), (localStride * 2), strideRegionAlignmentPadding) - 1;
+                NvS64 frameFound = _scanContiguousSearchLoop(pRegmap, (localStride * 2), strideRegionStart, strideRegionEnd,
+                                                             frameAlignment, frameAlignmentPadding, 0, 0, 0, 0, NV_FALSE);
+
+                if (frameFound >= 0)
+                {
+                    break;
+                }
+                else
+                {
+                    // align up to the next entire stride region
+                    frameBaseIdx = alignUpToMod(frameBaseIdx + 1, (localStride * 2), strideRegionAlignmentPadding);
+
+                    // Put the address into the correct strideStart
+                    if ((((frameBaseIdx - frameAlignmentPadding) / localStride) % 2) != strideStart)
+                    {
+                        // align up to next stride
+                        frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
+                    }
+                }
+            }
+        }
+    }
+
     //
     // Always start a loop iteration with an updated frameBaseIdx by ensuring that latestFree is always >= frameBaseIdx
     // frameBaseIdx == latestFree[i] means that there are no observed 0s so far in the current run
@@ -1003,6 +1095,11 @@ loop_begin:
 
     for (i = 0; i < PMA_BITS_PER_PAGE; i++)
     {
+        // ignore checking localized for localized request
+        if (i == MAP_IDX_LOCALIZED && (localStride != 0))
+        {
+            continue;
+        }
 
         // If array is not already full of evictable and free pages, go to evictable loop
         if ((i != MAP_IDX_ALLOC_UNPIN) || (curEvictPage <= totalFound))

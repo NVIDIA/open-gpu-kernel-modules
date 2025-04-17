@@ -44,7 +44,7 @@ static NV_STATUS try_peer_access_remote_gpu_memory(uvm_gpu_t *local_gpu, uvm_gpu
 
     // allocate CPU memory
     status = uvm_mem_alloc_sysmem_and_map_cpu_kernel(MEM_ALLOCATION_SIZE, current->mm, &sysmem);
-    TEST_CHECK_GOTO(status == NV_OK, cleanup);
+    TEST_NV_CHECK_GOTO(status, cleanup);
 
     // get CPU address
     cpu_va = uvm_mem_get_cpu_addr_kernel(sysmem);
@@ -53,10 +53,10 @@ static NV_STATUS try_peer_access_remote_gpu_memory(uvm_gpu_t *local_gpu, uvm_gpu
 
     // map sysmem to both GPUs
     status = uvm_mem_map_gpu_kernel(sysmem, local_gpu);
-    TEST_CHECK_GOTO(status == NV_OK, cleanup);
+    TEST_NV_CHECK_GOTO(status, cleanup);
 
     status = uvm_mem_map_gpu_kernel(sysmem, peer_gpu);
-    TEST_CHECK_GOTO(status == NV_OK, cleanup);
+    TEST_NV_CHECK_GOTO(status, cleanup);
 
      // get local GPU address for the sysmem
     local_gpu_sysmem = uvm_mem_gpu_address_virtual_kernel(sysmem, local_gpu);
@@ -67,51 +67,53 @@ static NV_STATUS try_peer_access_remote_gpu_memory(uvm_gpu_t *local_gpu, uvm_gpu
 
     // allocate vidmem on remote GPU
     status = uvm_mem_alloc_vidmem(MEM_ALLOCATION_SIZE, peer_gpu, &vidmem);
-    TEST_CHECK_GOTO(status == NV_OK, cleanup);
+    TEST_NV_CHECK_GOTO(status, cleanup);
     TEST_CHECK_GOTO(IS_ALIGNED(MEM_ALLOCATION_SIZE, vidmem->chunk_size), cleanup);
 
     // map onto GPU
     status = uvm_mem_map_gpu_kernel(vidmem, peer_gpu);
-    TEST_CHECK_GOTO(status == NV_OK, cleanup);
+    TEST_NV_CHECK_GOTO(status, cleanup);
 
     // get remote GPU virtual address for its vidmem
     peer_gpu_vidmem = uvm_mem_gpu_address_virtual_kernel(vidmem, peer_gpu);
-    TEST_CHECK_GOTO(status == NV_OK, cleanup);
 
     // initialize memory using CPU
     for (i = 0; i < MEM_ALLOCATION_SIZE / sizeof(NvU32); i++)
         cpu_array[i] = i;
 
-    // copy sysmem to remote GPUs memory
-    status = uvm_push_begin(peer_gpu->channel_manager,
-                            UVM_CHANNEL_TYPE_CPU_TO_GPU,
-                            &push,
-                            "peer identity mapping test initialization");
-    TEST_CHECK_GOTO(status == NV_OK, cleanup);
-    peer_gpu->parent->ce_hal->memcopy(&push, peer_gpu_vidmem, peer_gpu_sysmem, MEM_ALLOCATION_SIZE);
-    status = uvm_push_end_and_wait(&push);
-    TEST_CHECK_GOTO(status == NV_OK, cleanup);
-
-    // set the sysmem back to zero
-    memset((void *)cpu_array, '\0', MEM_ALLOCATION_SIZE);
-
-    // use the peer mapping to copy back to sysmem
+    // use the peer mapping to copy data from sysmem to peer's vidmem,
+    // since the writes are to peer memory, use GPU_TO_GPU type
     status = uvm_push_begin(local_gpu->channel_manager,
                             UVM_CHANNEL_TYPE_GPU_TO_GPU,
                             &push,
-                            "peer identity mapping test");
-    TEST_CHECK_GOTO(status == NV_OK, cleanup);
+                            "peer identity mapping test write to peer");
+    TEST_NV_CHECK_GOTO(status, cleanup);
+
     for (i = 0; i < MEM_ALLOCATION_SIZE / vidmem->chunk_size; i++) {
-        uvm_gpu_address_t local_gpu_peer = uvm_mem_gpu_address_copy(vidmem,
-                                                                    local_gpu,
-                                                                    vidmem->chunk_size * i,
-                                                                    vidmem->chunk_size);
+        uvm_gpu_address_t local_gpu_peer_vidmem = uvm_mem_gpu_address_copy(vidmem,
+                                                                           local_gpu,
+                                                                           vidmem->chunk_size * i,
+                                                                           vidmem->chunk_size);
         uvm_gpu_address_t local_gpu_sysmem_offset = local_gpu_sysmem;
         local_gpu_sysmem_offset.address += vidmem->chunk_size * i;
-        local_gpu->parent->ce_hal->memcopy(&push, local_gpu_sysmem_offset, local_gpu_peer, vidmem->chunk_size);
+        local_gpu->parent->ce_hal->memcopy(&push, local_gpu_peer_vidmem, local_gpu_sysmem_offset, vidmem->chunk_size);
     }
     status = uvm_push_end_and_wait(&push);
-    TEST_CHECK_GOTO(status == NV_OK, cleanup);
+    TEST_NV_CHECK_GOTO(status, cleanup);
+
+    // set the sysmem back to zero
+    memset((void *)cpu_array, 0, MEM_ALLOCATION_SIZE);
+
+    // copy peer vidmem to sysmem
+    status = uvm_push_begin(peer_gpu->channel_manager,
+                            UVM_CHANNEL_TYPE_GPU_TO_CPU,
+                            &push,
+                            "peer identity mapping test read local to check");
+    TEST_NV_CHECK_GOTO(status, cleanup);
+
+    peer_gpu->parent->ce_hal->memcopy(&push, peer_gpu_sysmem, peer_gpu_vidmem, MEM_ALLOCATION_SIZE);
+    status = uvm_push_end_and_wait(&push);
+    TEST_NV_CHECK_GOTO(status, cleanup);
 
     for (i = 0; i < MEM_ALLOCATION_SIZE / sizeof(NvU32); i++) {
         if (cpu_array[i] != i) {

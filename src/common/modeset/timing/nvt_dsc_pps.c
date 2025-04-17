@@ -2290,6 +2290,65 @@ DSC_GeneratePPSWithSliceCountMask
     return NVT_STATUS_SUCCESS;
 }
 
+static NvU32
+_calculateEffectiveBppForDSC
+(
+    const DSC_INFO *pDscInfo,
+    const MODESET_INFO *pModesetInfo,
+    const WAR_DATA *pWARData,
+    NvU32 bpp
+)
+{
+    NvU32 LogicLaneCount, BytePerLogicLane;
+    NvU32 BitPerSymbol;
+    NvU32 slicewidth, chunkSize, sliceCount;
+    NvU32 chunkSymbols, totalSymbolsPerLane;
+    NvU32 totalSymbols;
+
+    if (pWARData->dpData.bIs128b132bChannelCoding)
+    {
+        LogicLaneCount   = 4U;
+        BytePerLogicLane = 4U;
+        BitPerSymbol     = 32U;
+    }
+    else if (pWARData->dpData.dpMode == DSC_DP_MST)
+    {
+        LogicLaneCount   = 4U;
+        BytePerLogicLane = 1U;
+        BitPerSymbol     = 8U;
+    }
+    else
+    {
+        LogicLaneCount   = pWARData->dpData.laneCount;
+        BytePerLogicLane = 1U;
+        BitPerSymbol     = 8U;
+    }
+
+    //
+    // Whenever this function is called, we either have forced slice
+    // width or slice count.
+    //
+    if (pDscInfo->forcedDscParams.sliceWidth > 0U)
+    {
+        slicewidth = pDscInfo->forcedDscParams.sliceWidth;
+        sliceCount = (NvU32)NV_CEIL(pModesetInfo->activeWidth, pDscInfo->forcedDscParams.sliceWidth);
+    }
+    else
+    {
+        slicewidth = (NvU32)NV_CEIL(pModesetInfo->activeWidth, pDscInfo->forcedDscParams.sliceCount);
+        sliceCount = pDscInfo->forcedDscParams.sliceCount;
+    }
+
+    chunkSize           = (NvU32)NV_CEIL((bpp*slicewidth), (8U * BPP_UNIT));
+
+    chunkSymbols        = (NvU32)NV_CEIL(chunkSize,(LogicLaneCount*BytePerLogicLane));
+    totalSymbolsPerLane = (chunkSymbols+1)*(sliceCount);
+    totalSymbols        = totalSymbolsPerLane*LogicLaneCount;
+    bpp                 = (NvU32)NV_CEIL((totalSymbols*BitPerSymbol*BPP_UNIT),pModesetInfo->activeWidth);
+
+    return bpp;
+}
+
 /*
  * @brief Calculate PPS parameters based on passed down Sink,
  *        GPU capability and modeset info
@@ -2325,6 +2384,7 @@ DSC_GeneratePPS
     DSC_OUTPUT_PARAMS *out = NULL;
     DSC_GENERATE_PPS_WORKAREA *pWorkarea = NULL;
     NVT_STATUS ret = NVT_STATUS_ERR;
+    NvU32 eff_bpp = 0U;
 
     if ((!pDscInfo) || (!pModesetInfo) || (!pOpaqueWorkarea) || (!pBitsPerPixelX16))
     {
@@ -2404,21 +2464,29 @@ DSC_GeneratePPS
 
     if (pWARData && (pWARData->connectorType == DSC_DP))
     {
-        //
-        // In DP case, being too close to the available bandwidth caused HW to hang. 
-        // 2 is subtracted based on issues seen in DP CTS testing. Refer to bug 200406501, comment 76
-        // This limitation is only on DP, not needed for HDMI DSC HW
-        //
-        in->bits_per_pixel = (NvU32)((availableBandwidthBitsPerSecond * BPP_UNIT) / pModesetInfo->pixelClockHz) - (BPP_UNIT/8);
 
-        if (pWARData->dpData.laneCount == 1U)
+        if(!in->multi_tile || 
+           (in->multi_tile && pWARData->dpData.dpMode == DSC_DP_SST
+           && !pWARData->dpData.bIs128b132bChannelCoding
+           && pWARData->dpData.bDisableEffBppSST8b10b
+          ))
         {
             //
-            // SOR lane fifo might get overflown when DP 1 lane, FEC enabled and pclk*bpp > 96%*linkclk*8 i.e.
-            // DSC stream is consuming more than 96% of the total bandwidth. Use lower bits per pixel. Refer Bug 200561864.
+            // In DP case, being too close to the available bandwidth caused HW to hang. 
+            // 2 is subtracted based on issues seen in DP CTS testing. Refer to bug 200406501, comment 76
+            // This limitation is only on DP, not needed for HDMI DSC HW
             //
-            in->bits_per_pixel = (NvU32)((96U * availableBandwidthBitsPerSecond * BPP_UNIT) / (100U * pModesetInfo->pixelClockHz)) -
-                                 (BPP_UNIT / 8U);
+            in->bits_per_pixel = (NvU32)((availableBandwidthBitsPerSecond * BPP_UNIT) / pModesetInfo->pixelClockHz) - (BPP_UNIT/8);
+
+            if (pWARData->dpData.laneCount == 1U)
+            {
+                //
+                // SOR lane fifo might get overflown when DP 1 lane, FEC enabled and pclk*bpp > 96%*linkclk*8 i.e.
+                // DSC stream is consuming more than 96% of the total bandwidth. Use lower bits per pixel. Refer Bug 200561864.
+                //
+                in->bits_per_pixel = (NvU32)((96U * availableBandwidthBitsPerSecond * BPP_UNIT) / (100U * pModesetInfo->pixelClockHz)) -
+                                     (BPP_UNIT / 8U);
+            }
         }
 
         if ((pWARData->dpData.dpMode == DSC_DP_SST) && (pWARData->dpData.hBlank < 100U))
@@ -2499,6 +2567,33 @@ DSC_GeneratePPS
 
     in->bits_per_pixel =  DSC_AlignDownForBppPrecision(in->bits_per_pixel, pDscInfo->sinkCaps.bitsPerPixelPrecision);
 
+    if (pWARData && (pWARData->connectorType == DSC_DP) && in->multi_tile)
+    {
+        //
+        // EffectiveBpp should be used only from Blackwell, so keeping 
+        // multi-tile check to restrict it from Blackwell.
+        //
+        if ((!pWARData->dpData.bDisableEffBppSST8b10b) || 
+            (pWARData->dpData.bDisableEffBppSST8b10b && 
+             ((pWARData->dpData.dpMode == DSC_DP_MST) || 
+              pWARData->dpData.bIs128b132bChannelCoding)))
+        {
+            unsigned max_bpp = in->bits_per_pixel + 1;
+
+            // Algorithm in bug 5004872
+            do
+            {
+                max_bpp--;
+                eff_bpp = _calculateEffectiveBppForDSC(pDscInfo, pModesetInfo, pWARData, max_bpp);
+
+            } while ((eff_bpp * (pModesetInfo->pixelClockHz)) > (availableBandwidthBitsPerSecond*BPP_UNIT));
+
+            in->bits_per_pixel = max_bpp;
+
+            in->bits_per_pixel =  DSC_AlignDownForBppPrecision(in->bits_per_pixel, pDscInfo->sinkCaps.bitsPerPixelPrecision);            
+        }
+    }
+
     // If user specified bits_per_pixel value to be used check if it is valid one
     if (*pBitsPerPixelX16 != 0)
     {
@@ -2520,6 +2615,17 @@ DSC_GeneratePPS
         else
         {
             in->bits_per_pixel = *pBitsPerPixelX16;
+        }
+
+        if (pWARData && (pWARData->connectorType == DSC_DP) && in->multi_tile)
+        {
+            if ((!pWARData->dpData.bDisableEffBppSST8b10b) || 
+                (pWARData->dpData.bDisableEffBppSST8b10b && 
+                 ((pWARData->dpData.dpMode == DSC_DP_MST) || 
+                  pWARData->dpData.bIs128b132bChannelCoding)))
+            {
+                eff_bpp = _calculateEffectiveBppForDSC(pDscInfo, pModesetInfo, pWARData, in->bits_per_pixel);                
+            }
         }
 
         //
@@ -2570,6 +2676,18 @@ DSC_GeneratePPS
             // WARNING - Optimal bits per pixel value calculated is greater than what DSC decompressor can support. Forcing it to max that decompressor can support
             in->bits_per_pixel = pDscInfo->sinkCaps.maxBitsPerPixelX16;
         }
+
+        if (pWARData && (pWARData->connectorType == DSC_DP) && in->multi_tile)
+        {
+            if ((!pWARData->dpData.bDisableEffBppSST8b10b) || 
+                (pWARData->dpData.bDisableEffBppSST8b10b && 
+                 ((pWARData->dpData.dpMode == DSC_DP_MST) || 
+                  pWARData->dpData.bIs128b132bChannelCoding)))
+            {
+                eff_bpp = _calculateEffectiveBppForDSC(pDscInfo, pModesetInfo, pWARData, in->bits_per_pixel);
+            }
+        }
+
     }
 
     if (pModesetInfo->bDualMode &&  (pDscInfo->gpuCaps.maxNumHztSlices > 4U))
@@ -2630,7 +2748,14 @@ DSC_GeneratePPS
 
     ret = DSC_PpsDataGen(in, out, pps);
 
-    *pBitsPerPixelX16 = in->bits_per_pixel;
+    if (in->multi_tile && eff_bpp)
+    {
+        *pBitsPerPixelX16 = eff_bpp;
+    }
+    else
+    {
+        *pBitsPerPixelX16 = in->bits_per_pixel;
+    }
 
     /* fall through */
 done:

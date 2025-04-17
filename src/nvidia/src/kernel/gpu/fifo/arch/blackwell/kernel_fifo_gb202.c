@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,26 +65,19 @@ kfifoGenerateWorkSubmitTokenHal_GB202
                         (pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup != NULL),
                         NV_ERR_INVALID_STATE);
 
-    if (!RMCFG_FEATURE_PLATFORM_GSP)
-    {
-        NvU32          chId;
-        NvU32          runlistId;
-        runlistId = kchannelGetRunlistId(pKernelChannel);
-        chId      = pKernelChannel->ChID;
+    NvU32          chId;
+    NvU32          runlistId;
+    runlistId = kchannelGetRunlistId(pKernelChannel);
+    chId      = pKernelChannel->ChID;
 
-        val = FLD_SET_DRF_NUM(_VIRTUAL, _FUNCTION_DOORBELL, _RUNLIST_ID,       runlistId, val);
-        // For ESCHED notifications, we need to update ChID in Vector Field.
-        val = FLD_SET_DRF_NUM(_VIRTUAL, _FUNCTION_DOORBELL, _VECTOR,           chId,      val);
-        val = FLD_SET_DRF(_VIRTUAL, _FUNCTION_DOORBELL, _RUNLIST_DOORBELL, _ENABLE,   val);
+    val = FLD_SET_DRF_NUM(_VIRTUAL, _FUNCTION_DOORBELL, _RUNLIST_ID,       runlistId, val);
+    // For ESCHED notifications, we need to update ChID in Vector Field.
+    val = FLD_SET_DRF_NUM(_VIRTUAL, _FUNCTION_DOORBELL, _VECTOR,           chId,      val);
+    val = FLD_SET_DRF(_VIRTUAL, _FUNCTION_DOORBELL, _RUNLIST_DOORBELL, _ENABLE,   val);
 
-        NV_PRINTF(LEVEL_INFO,
-                  "Generated workSubmitToken 0x%x for channel 0x%x runlist 0x%x\n",
-                  val, chId, runlistId);
-    }
-    else // RMCFG_FEATURE_PLATFORM_GSP
-    {
-        NV_ASSERT_OK_OR_RETURN(kfifoGenerateInternalWorkSubmitToken_HAL(pGpu, pKernelFifo, pKernelChannel, &val));
-    }
+    NV_PRINTF(LEVEL_INFO,
+                "Generated workSubmitToken 0x%x for channel 0x%x runlist 0x%x\n",
+                val, chId, runlistId);
 
     *pGeneratedToken = val;
 

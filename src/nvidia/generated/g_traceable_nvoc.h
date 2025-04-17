@@ -1,20 +1,22 @@
 
 #ifndef _G_TRACEABLE_NVOC_H_
 #define _G_TRACEABLE_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2011-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -42,6 +44,7 @@ extern "C" {
 #define __ANCI_TRACEABLE_H__
 
 #include "core/core.h"
+#include "nvoc/object.h"
 
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
@@ -54,13 +57,26 @@ extern "C" {
 #endif
 
 
+// Metadata with per-class RTTI
+struct NVOC_METADATA__OBJTRACEABLE;
+
+
 struct OBJTRACEABLE {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__OBJTRACEABLE *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Ancestor object pointers for `staticCast` feature
     struct OBJTRACEABLE *__nvoc_pbase_OBJTRACEABLE;    // traceable
+};
+
+
+// Metadata with per-class RTTI
+struct NVOC_METADATA__OBJTRACEABLE {
+    const struct NVOC_RTTI rtti;
 };
 
 #ifndef __NVOC_CLASS_OBJTRACEABLE_TYPEDEF__
@@ -79,10 +95,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJTRACEABLE;
     ((pThis)->__nvoc_pbase_OBJTRACEABLE)
 
 #ifdef __nvoc_traceable_h_disabled
-#define __dynamicCast_OBJTRACEABLE(pThis) ((OBJTRACEABLE*)NULL)
+#define __dynamicCast_OBJTRACEABLE(pThis) ((OBJTRACEABLE*) NULL)
 #else //__nvoc_traceable_h_disabled
 #define __dynamicCast_OBJTRACEABLE(pThis) \
-    ((OBJTRACEABLE*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJTRACEABLE)))
+    ((OBJTRACEABLE*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJTRACEABLE)))
 #endif //__nvoc_traceable_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_OBJTRACEABLE(OBJTRACEABLE**, Dynamic*, NvU32, va_list);

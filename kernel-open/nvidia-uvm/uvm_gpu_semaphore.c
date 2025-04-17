@@ -792,7 +792,7 @@ static NvU64 update_completed_value_locked(uvm_gpu_tracking_semaphore_t *trackin
     //
     // Notably as of 4.3, atomic64_set_release() and atomic64_read_acquire()
     // have been added that are exactly what we need and could be slightly
-    // faster on arm and powerpc than the implementation below. But at least in
+    // faster on arm than the implementation below. But at least in
     // 4.3 the implementation looks broken for arm32 (it maps directly to
     // smp_load_acquire() and that doesn't support 64-bit reads on 32-bit
     // architectures) so instead of dealing with that just use a slightly bigger

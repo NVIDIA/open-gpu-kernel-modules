@@ -197,7 +197,7 @@ NV_STATUS uvm_va_space_create(struct address_space *mapping, uvm_va_space_t **va
                    UVM_LOCK_ORDER_VA_SPACE_READ_ACQUIRE_WRITE_RELEASE_LOCK);
     uvm_spin_lock_init(&va_space->va_space_mm.lock, UVM_LOCK_ORDER_LEAF);
     uvm_range_tree_init(&va_space->va_range_tree);
-    uvm_ats_init_va_space(va_space);
+    uvm_init_rwsem(&va_space->ats.lock, UVM_LOCK_ORDER_LEAF);
 
     // Init to 0 since we rely on atomic_inc_return behavior to return 1 as the
     // first ID.
@@ -394,6 +394,9 @@ static void unregister_gpu(uvm_va_space_t *va_space,
     UVM_ASSERT(processor_mask_array_empty(va_space->has_native_atomics, gpu->id));
 
     uvm_processor_mask_clear(&va_space->registered_gpus, gpu->id);
+
+    if (gpu->parent->is_integrated_gpu)
+        va_space->num_integrated_gpus--;
 
     // Remove the GPU from the CPU/GPU affinity masks
     if (gpu->parent->closest_cpu_numa_node != -1) {
@@ -794,6 +797,17 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
             status = NV_ERR_INVALID_DEVICE;
             goto done;
         }
+    }
+
+    if (gpu->parent->is_integrated_gpu) {
+        // TODO: Bug 5003533 [UVM][T264/GB10B] Multiple iGPU support
+        if (uvm_processor_mask_get_gpu_count(&va_space->registered_gpus)) {
+            status = NV_ERR_INVALID_DEVICE;
+            goto done;
+        }
+
+        UVM_ASSERT(gpu->mem_info.size == 0);
+        va_space->num_integrated_gpus++;
     }
 
     // The VA space's mm is being torn down, so don't allow more work
@@ -1311,34 +1325,26 @@ void uvm_gpu_va_space_release(uvm_gpu_va_space_t *gpu_va_space)
 static void uvm_gpu_va_space_acquire_mmap_lock(struct mm_struct *mm)
 {
     if (mm) {
-        // uvm_ats_register_gpu_va_space() requires mmap_lock to be held in
-        // write mode if IBM ATS support is provided through the kernel.
-        // mmap_lock is optional if IBM ATS support is provided through the
-        // driver. In all cases, We need mmap_lock at least in read mode to
+        // We need mmap_lock at least in read mode to
         // handle potential CPU mapping changes in
         // uvm_va_range_add_gpu_va_space().
-        if (UVM_ATS_IBM_SUPPORTED_IN_KERNEL())
-            uvm_down_write_mmap_lock(mm);
-        else
-            uvm_down_read_mmap_lock(mm);
+        uvm_down_read_mmap_lock(mm);
     }
 }
 
 static void uvm_gpu_va_space_release_mmap_lock(struct mm_struct *mm)
 {
-    if (mm) {
-        if (UVM_ATS_IBM_SUPPORTED_IN_KERNEL())
-            uvm_up_write_mmap_lock(mm);
-        else
-            uvm_up_read_mmap_lock(mm);
-    }
+    if (mm)
+        uvm_up_read_mmap_lock(mm);
 }
 
 static NV_STATUS uvm_gpu_va_space_set_page_dir(uvm_gpu_va_space_t *gpu_va_space)
 {
     NV_STATUS status;
-    uvm_gpu_phys_address_t pdb_phys;
+    uvm_mmu_page_table_alloc_t *tree_alloc;
     NvU64 num_pdes;
+    NvU64 physical_address;
+    NvU64 dma_address;
     NvU32 pasid = -1U;
 
     if (gpu_va_space->ats.enabled) {
@@ -1353,13 +1359,18 @@ static NV_STATUS uvm_gpu_va_space_set_page_dir(uvm_gpu_va_space_t *gpu_va_space)
     //
     // TODO: Bug 1733664: RM needs to preempt and disable channels during this
     //       operation.
-    pdb_phys = uvm_page_tree_pdb(&gpu_va_space->page_tables)->addr;
+    tree_alloc = uvm_page_tree_pdb_internal(&gpu_va_space->page_tables);
+    if (tree_alloc->addr.aperture == UVM_APERTURE_VID)
+        physical_address = tree_alloc->addr.address;
+    else
+        physical_address = page_to_phys(tree_alloc->handle.page);
     num_pdes = uvm_mmu_page_tree_entries(&gpu_va_space->page_tables, 0, UVM_PAGE_SIZE_AGNOSTIC);
     status = uvm_rm_locked_call(nvUvmInterfaceSetPageDirectory(gpu_va_space->duped_gpu_va_space,
-                                                               pdb_phys.address,
+                                                               physical_address,
                                                                num_pdes,
-                                                               pdb_phys.aperture == UVM_APERTURE_VID,
-                                                               pasid));
+                                                               tree_alloc->addr.aperture == UVM_APERTURE_VID,
+                                                               pasid,
+                                                               &dma_address));
     if (status != NV_OK) {
         if (status == NV_ERR_NOT_SUPPORTED) {
             // Convert to the return code specified by uvm.h for
@@ -1375,6 +1386,9 @@ static NV_STATUS uvm_gpu_va_space_set_page_dir(uvm_gpu_va_space_t *gpu_va_space)
         return status;
     }
 
+    if (tree_alloc->addr.aperture == UVM_APERTURE_SYS)
+        gpu_va_space->page_tables.pdb_rm_dma_address = uvm_gpu_phys_address(UVM_APERTURE_SYS, dma_address);
+
     gpu_va_space->did_set_page_directory = true;
     return status;
 }
@@ -1385,7 +1399,9 @@ void uvm_gpu_va_space_unset_page_dir(uvm_gpu_va_space_t *gpu_va_space)
         uvm_assert_rwsem_locked_read(&gpu_va_space->va_space->lock);
 
     if (gpu_va_space->did_set_page_directory) {
-        NV_STATUS status = uvm_rm_locked_call(nvUvmInterfaceUnsetPageDirectory(gpu_va_space->duped_gpu_va_space));
+        NV_STATUS status;
+
+        status = uvm_rm_locked_call(nvUvmInterfaceUnsetPageDirectory(gpu_va_space->duped_gpu_va_space));
         UVM_ASSERT_MSG(status == NV_OK,
                        "nvUvmInterfaceUnsetPageDirectory() failed: %s, GPU %s\n",
                        nvstatusToString(status),
@@ -1529,7 +1545,7 @@ static NV_STATUS create_gpu_va_space(uvm_gpu_t *gpu,
                                 gpu_va_space,
                                 UVM_PAGE_TREE_TYPE_USER,
                                 gpu_address_space_info.bigPageSize,
-                                uvm_get_page_tree_location(gpu->parent),
+                                uvm_get_page_tree_location(gpu),
                                 &gpu_va_space->page_tables);
     if (status != NV_OK) {
         UVM_ERR_PRINT("Initializing the page tree failed: %s, GPU %s\n", nvstatusToString(status), uvm_gpu_name(gpu));
@@ -2092,15 +2108,10 @@ NV_STATUS uvm_test_get_pageable_mem_access_type(UVM_TEST_GET_PAGEABLE_MEM_ACCESS
     params->type = UVM_TEST_PAGEABLE_MEM_ACCESS_TYPE_NONE;
 
     if (uvm_va_space_pageable_mem_access_supported(va_space)) {
-        if (g_uvm_global.ats.enabled) {
-            if (UVM_ATS_IBM_SUPPORTED_IN_KERNEL())
-                params->type = UVM_TEST_PAGEABLE_MEM_ACCESS_TYPE_ATS_KERNEL;
-            else
-                params->type = UVM_TEST_PAGEABLE_MEM_ACCESS_TYPE_ATS_DRIVER;
-        }
-        else {
+        if (g_uvm_global.ats.enabled)
+            params->type = UVM_TEST_PAGEABLE_MEM_ACCESS_TYPE_ATS_DRIVER;
+        else
             params->type = UVM_TEST_PAGEABLE_MEM_ACCESS_TYPE_HMM;
-        }
     }
     else if (uvm_va_space_mm_enabled(va_space)) {
         params->type = UVM_TEST_PAGEABLE_MEM_ACCESS_TYPE_MMU_NOTIFIER;

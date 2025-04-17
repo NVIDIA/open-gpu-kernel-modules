@@ -1,4 +1,11 @@
 #define NVOC_MPS_API_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,82 +14,28 @@
 #include "utils/nvassert.h"
 #include "g_mps_api_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x22ce42 = 1;
+char __nvoc_class_id_uniqueness_check__0x22ce42 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_MpsApi;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource;
 
-void __nvoc_init_MpsApi(MpsApi*);
+// Forward declarations for MpsApi
+void __nvoc_init__RmResource(RmResource*);
+void __nvoc_init__MpsApi(MpsApi*);
 void __nvoc_init_funcTable_MpsApi(MpsApi*);
-NV_STATUS __nvoc_ctor_MpsApi(MpsApi*, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_ctor_MpsApi(MpsApi*, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 void __nvoc_init_dataField_MpsApi(MpsApi*);
 void __nvoc_dtor_MpsApi(MpsApi*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_MpsApi;
 
-static const struct NVOC_RTTI __nvoc_rtti_MpsApi_MpsApi = {
-    /*pClassDef=*/          &__nvoc_class_def_MpsApi,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_MpsApi,
-    /*offset=*/             0,
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_MpsApi_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(MpsApi, __nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_MpsApi_RsResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RsResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(MpsApi, __nvoc_base_RmResource.__nvoc_base_RsResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_MpsApi_RmResourceCommon = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResourceCommon,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(MpsApi, __nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_MpsApi_RmResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(MpsApi, __nvoc_base_RmResource),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_MpsApi = {
-    /*numRelatives=*/       5,
-    /*relatives=*/ {
-        &__nvoc_rtti_MpsApi_MpsApi,
-        &__nvoc_rtti_MpsApi_RmResource,
-        &__nvoc_rtti_MpsApi_RmResourceCommon,
-        &__nvoc_rtti_MpsApi_RsResource,
-        &__nvoc_rtti_MpsApi_Object,
-    },
-};
-
-const struct NVOC_CLASS_DEF __nvoc_class_def_MpsApi = 
-{
-    /*classInfo=*/ {
-        /*size=*/               sizeof(MpsApi),
-        /*classId=*/            classId(MpsApi),
-        /*providerId=*/         &__nvoc_rtti_provider,
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "MpsApi",
-#endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_MpsApi,
-    /*pCastInfo=*/          &__nvoc_castinfo_MpsApi,
-    /*pExportInfo=*/        &__nvoc_export_info_MpsApi
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__MpsApi;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__MpsApi;
 
 // Down-thunk(s) to bridge MpsApi methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
@@ -126,6 +79,115 @@ NV_STATUS __nvoc_up_thunk_RsResource_mpsApiMapTo(struct MpsApi *pResource, RS_RE
 NV_STATUS __nvoc_up_thunk_RsResource_mpsApiUnmapFrom(struct MpsApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
 NvU32 __nvoc_up_thunk_RsResource_mpsApiGetRefCount(struct MpsApi *pResource);    // this
 void __nvoc_up_thunk_RsResource_mpsApiAddAdditionalDependants(struct RsClient *pClient, struct MpsApi *pResource, RsResourceRef *pReference);    // this
+
+const struct NVOC_CLASS_DEF __nvoc_class_def_MpsApi = 
+{
+    /*classInfo=*/ {
+        /*size=*/               sizeof(MpsApi),
+        /*classId=*/            classId(MpsApi),
+        /*providerId=*/         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*name=*/               "MpsApi",
+#endif
+    },
+    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_MpsApi,
+    /*pCastInfo=*/          &__nvoc_castinfo__MpsApi,
+    /*pExportInfo=*/        &__nvoc_export_info__MpsApi
+};
+
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__MpsApi __nvoc_metadata__MpsApi = {
+    .rtti.pClassDef = &__nvoc_class_def_MpsApi,    // (mpsApi) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_MpsApi,
+    .rtti.offset    = 0,
+    .metadata__RmResource.rtti.pClassDef = &__nvoc_class_def_RmResource,    // (rmres) super
+    .metadata__RmResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__RmResource.rtti.offset    = NV_OFFSETOF(MpsApi, __nvoc_base_RmResource),
+    .metadata__RmResource.metadata__RsResource.rtti.pClassDef = &__nvoc_class_def_RsResource,    // (res) super^2
+    .metadata__RmResource.metadata__RsResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__RmResource.metadata__RsResource.rtti.offset    = NV_OFFSETOF(MpsApi, __nvoc_base_RmResource.__nvoc_base_RsResource),
+    .metadata__RmResource.metadata__RsResource.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^3
+    .metadata__RmResource.metadata__RsResource.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__RmResource.metadata__RsResource.metadata__Object.rtti.offset    = NV_OFFSETOF(MpsApi, __nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
+    .metadata__RmResource.metadata__RmResourceCommon.rtti.pClassDef = &__nvoc_class_def_RmResourceCommon,    // (rmrescmn) super^2
+    .metadata__RmResource.metadata__RmResourceCommon.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__RmResource.metadata__RmResourceCommon.rtti.offset    = NV_OFFSETOF(MpsApi, __nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
+
+    .vtable.__mpsApiAccessCallback__ = &__nvoc_up_thunk_RmResource_mpsApiAccessCallback,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+    .vtable.__mpsApiShareCallback__ = &__nvoc_up_thunk_RmResource_mpsApiShareCallback,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresShareCallback__ = &rmresShareCallback_IMPL,    // virtual override (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+    .vtable.__mpsApiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_mpsApiGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+    .vtable.__mpsApiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_mpsApiCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+    .vtable.__mpsApiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_mpsApiGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+    .vtable.__mpsApiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_mpsApiControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+    .vtable.__mpsApiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_mpsApiControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+    .vtable.__mpsApiControl_Prologue__ = &__nvoc_up_thunk_RmResource_mpsApiControl_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+    .vtable.__mpsApiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_mpsApiControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__RmResource.vtable.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+    .vtable.__mpsApiCanCopy__ = &__nvoc_up_thunk_RsResource_mpsApiCanCopy,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+    .vtable.__mpsApiIsDuplicate__ = &__nvoc_up_thunk_RsResource_mpsApiIsDuplicate,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+    .vtable.__mpsApiPreDestruct__ = &__nvoc_up_thunk_RsResource_mpsApiPreDestruct,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+    .vtable.__mpsApiControl__ = &__nvoc_up_thunk_RsResource_mpsApiControl,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resControl__ = &resControl_IMPL,    // virtual
+    .vtable.__mpsApiControlFilter__ = &__nvoc_up_thunk_RsResource_mpsApiControlFilter,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+    .vtable.__mpsApiMap__ = &__nvoc_up_thunk_RsResource_mpsApiMap,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resMap__ = &resMap_IMPL,    // virtual
+    .vtable.__mpsApiUnmap__ = &__nvoc_up_thunk_RsResource_mpsApiUnmap,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resUnmap__ = &resUnmap_IMPL,    // virtual
+    .vtable.__mpsApiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_mpsApiIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+    .metadata__RmResource.vtable.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+    .metadata__RmResource.metadata__RsResource.vtable.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+    .vtable.__mpsApiMapTo__ = &__nvoc_up_thunk_RsResource_mpsApiMapTo,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resMapTo__ = &resMapTo_IMPL,    // virtual
+    .vtable.__mpsApiUnmapFrom__ = &__nvoc_up_thunk_RsResource_mpsApiUnmapFrom,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+    .vtable.__mpsApiGetRefCount__ = &__nvoc_up_thunk_RsResource_mpsApiGetRefCount,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+    .vtable.__mpsApiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_mpsApiAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+    .metadata__RmResource.vtable.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+    .metadata__RmResource.metadata__RsResource.vtable.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__MpsApi = {
+    .numRelatives = 5,
+    .relatives = {
+        &__nvoc_metadata__MpsApi.rtti,    // [0]: (mpsApi) this
+        &__nvoc_metadata__MpsApi.metadata__RmResource.rtti,    // [1]: (rmres) super
+        &__nvoc_metadata__MpsApi.metadata__RmResource.metadata__RsResource.rtti,    // [2]: (res) super^2
+        &__nvoc_metadata__MpsApi.metadata__RmResource.metadata__RsResource.metadata__Object.rtti,    // [3]: (obj) super^3
+        &__nvoc_metadata__MpsApi.metadata__RmResource.metadata__RmResourceCommon.rtti,    // [4]: (rmrescmn) super^2
+    }
+};
 
 // 21 up-thunk(s) defined to bridge methods in MpsApi to superclasses
 
@@ -235,7 +297,7 @@ void __nvoc_up_thunk_RsResource_mpsApiAddAdditionalDependants(struct RsClient *p
 }
 
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_MpsApi = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__MpsApi = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -279,86 +341,30 @@ static void __nvoc_init_funcTable_MpsApi_1(MpsApi *pThis) {
 
 // Initialize vtable(s) for 21 virtual method(s).
 void __nvoc_init_funcTable_MpsApi(MpsApi *pThis) {
-
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__MpsApi vtable = {
-        .__mpsApiAccessCallback__ = &__nvoc_up_thunk_RmResource_mpsApiAccessCallback,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
-        .RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
-        .__mpsApiShareCallback__ = &__nvoc_up_thunk_RmResource_mpsApiShareCallback,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresShareCallback__ = &rmresShareCallback_IMPL,    // virtual override (res) base (res)
-        .RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
-        .__mpsApiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_mpsApiGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
-        .__mpsApiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_mpsApiCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
-        .__mpsApiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_mpsApiGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
-        .__mpsApiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_mpsApiControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
-        .RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
-        .__mpsApiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_mpsApiControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
-        .RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
-        .__mpsApiControl_Prologue__ = &__nvoc_up_thunk_RmResource_mpsApiControl_Prologue,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
-        .RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
-        .__mpsApiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_mpsApiControl_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
-        .RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
-        .__mpsApiCanCopy__ = &__nvoc_up_thunk_RsResource_mpsApiCanCopy,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
-        .__mpsApiIsDuplicate__ = &__nvoc_up_thunk_RsResource_mpsApiIsDuplicate,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
-        .__mpsApiPreDestruct__ = &__nvoc_up_thunk_RsResource_mpsApiPreDestruct,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
-        .__mpsApiControl__ = &__nvoc_up_thunk_RsResource_mpsApiControl,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resControl__ = &resControl_IMPL,    // virtual
-        .__mpsApiControlFilter__ = &__nvoc_up_thunk_RsResource_mpsApiControlFilter,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
-        .__mpsApiMap__ = &__nvoc_up_thunk_RsResource_mpsApiMap,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resMap__ = &resMap_IMPL,    // virtual
-        .__mpsApiUnmap__ = &__nvoc_up_thunk_RsResource_mpsApiUnmap,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resUnmap__ = &resUnmap_IMPL,    // virtual
-        .__mpsApiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_mpsApiIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
-        .RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
-        .RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
-        .__mpsApiMapTo__ = &__nvoc_up_thunk_RsResource_mpsApiMapTo,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
-        .__mpsApiUnmapFrom__ = &__nvoc_up_thunk_RsResource_mpsApiUnmapFrom,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
-        .__mpsApiGetRefCount__ = &__nvoc_up_thunk_RsResource_mpsApiGetRefCount,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
-        .__mpsApiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_mpsApiAddAdditionalDependants,    // virtual inherited (res) base (rmres)
-        .RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
-        .RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.RmResource.RsResource;    // (res) super^2
-    pThis->__nvoc_base_RmResource.__nvoc_vtable = &vtable.RmResource;    // (rmres) super
-    pThis->__nvoc_vtable = &vtable;    // (mpsApi) this
     __nvoc_init_funcTable_MpsApi_1(pThis);
 }
 
-void __nvoc_init_RmResource(RmResource*);
-void __nvoc_init_MpsApi(MpsApi *pThis) {
-    pThis->__nvoc_pbase_MpsApi = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;
-    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_RmResource.__nvoc_base_RsResource;
-    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;
-    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_RmResource;
-    __nvoc_init_RmResource(&pThis->__nvoc_base_RmResource);
+// Initialize newly constructed object.
+void __nvoc_init__MpsApi(MpsApi *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;    // (obj) super^3
+    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_RmResource.__nvoc_base_RsResource;    // (res) super^2
+    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;    // (rmrescmn) super^2
+    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_RmResource;    // (rmres) super
+    pThis->__nvoc_pbase_MpsApi = pThis;    // (mpsApi) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__RmResource(&pThis->__nvoc_base_RmResource);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__MpsApi.metadata__RmResource.metadata__RsResource.metadata__Object;    // (obj) super^3
+    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr = &__nvoc_metadata__MpsApi.metadata__RmResource.metadata__RsResource;    // (res) super^2
+    pThis->__nvoc_base_RmResource.__nvoc_base_RmResourceCommon.__nvoc_metadata_ptr = &__nvoc_metadata__MpsApi.metadata__RmResource.metadata__RmResourceCommon;    // (rmrescmn) super^2
+    pThis->__nvoc_base_RmResource.__nvoc_metadata_ptr = &__nvoc_metadata__MpsApi.metadata__RmResource;    // (rmres) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__MpsApi;    // (mpsApi) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_MpsApi(pThis);
 }
 
@@ -376,9 +382,6 @@ NV_STATUS __nvoc_objCreate_MpsApi(MpsApi **ppThis, Dynamic *pParent, NvU32 creat
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(MpsApi));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_MpsApi);
-
     pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -392,7 +395,7 @@ NV_STATUS __nvoc_objCreate_MpsApi(MpsApi **ppThis, Dynamic *pParent, NvU32 creat
         pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_MpsApi(pThis);
+    __nvoc_init__MpsApi(pThis);
     status = __nvoc_ctor_MpsApi(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_MpsApi_cleanup;
 

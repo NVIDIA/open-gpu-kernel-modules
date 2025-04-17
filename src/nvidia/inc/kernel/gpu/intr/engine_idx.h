@@ -161,11 +161,11 @@
 #define MC_ENGINE_IDX_GSPLITE3                      174
 #define MC_ENGINE_IDX_GSPLITE_MAX                   MC_ENGINE_IDX_GSPLITE3
 #define MC_ENGINE_IDX_DPAUX                         175
-
-#define MC_ENGINE_IDX_DISP_LOW                      176
+#define MC_ENGINE_IDX_GPIO                          176
+#define MC_ENGINE_IDX_DISP_LOW                      177
+#define MC_ENGINE_IDX_HFRP                          178
 // This must be kept as the max bit if we need to add more engines
-#define MC_ENGINE_IDX_MAX                           177
-
+#define MC_ENGINE_IDX_MAX                           179
 
 // Index GR reference
 #define MC_ENGINE_IDX_GRn(x)            (MC_ENGINE_IDX_GR0 + (x))

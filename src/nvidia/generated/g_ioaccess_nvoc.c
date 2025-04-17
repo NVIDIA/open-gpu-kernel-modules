@@ -1,4 +1,11 @@
 #define NVOC_IOACCESS_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,31 +14,27 @@
 #include "utils/nvassert.h"
 #include "g_ioaccess_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0xfcaf2e = 1;
+char __nvoc_class_id_uniqueness_check__0xfcaf2e = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RegisterAperture;
 
-void __nvoc_init_RegisterAperture(RegisterAperture*);
+// Forward declarations for RegisterAperture
+void __nvoc_init__RegisterAperture(RegisterAperture*);
 void __nvoc_init_funcTable_RegisterAperture(RegisterAperture*);
 NV_STATUS __nvoc_ctor_RegisterAperture(RegisterAperture*);
 void __nvoc_init_dataField_RegisterAperture(RegisterAperture*);
 void __nvoc_dtor_RegisterAperture(RegisterAperture*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_RegisterAperture;
 
-static const struct NVOC_RTTI __nvoc_rtti_RegisterAperture_RegisterAperture = {
-    /*pClassDef=*/          &__nvoc_class_def_RegisterAperture,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_RegisterAperture,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__RegisterAperture;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__RegisterAperture;
 
-static const struct NVOC_CASTINFO __nvoc_castinfo_RegisterAperture = {
-    /*numRelatives=*/       1,
-    /*relatives=*/ {
-        &__nvoc_rtti_RegisterAperture_RegisterAperture,
-    },
-};
+// Down-thunk(s) to bridge RegisterAperture methods from ancestors (if any)
+
+// Up-thunk(s) to bridge RegisterAperture methods to ancestors (if any)
 
 // Not instantiable because it's not derived from class "Object"
 // Not instantiable because it's an abstract class with following pure virtual functions:
@@ -54,15 +57,37 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RegisterAperture =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
-    /*pCastInfo=*/          &__nvoc_castinfo_RegisterAperture,
-    /*pExportInfo=*/        &__nvoc_export_info_RegisterAperture
+    /*pCastInfo=*/          &__nvoc_castinfo__RegisterAperture,
+    /*pExportInfo=*/        &__nvoc_export_info__RegisterAperture
 };
 
-// Down-thunk(s) to bridge RegisterAperture methods from ancestors (if any)
 
-// Up-thunk(s) to bridge RegisterAperture methods to ancestors (if any)
+// Metadata with per-class RTTI and vtable
+static const struct NVOC_METADATA__RegisterAperture __nvoc_metadata__RegisterAperture = {
+    .rtti.pClassDef = &__nvoc_class_def_RegisterAperture,    // (regaprt) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_RegisterAperture,
+    .rtti.offset    = 0,
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_RegisterAperture = 
+    .vtable.__regaprtReadReg08__ = NULL,    // pure virtual
+    .vtable.__regaprtReadReg16__ = NULL,    // pure virtual
+    .vtable.__regaprtReadReg32__ = NULL,    // pure virtual
+    .vtable.__regaprtWriteReg08__ = NULL,    // pure virtual
+    .vtable.__regaprtWriteReg16__ = NULL,    // pure virtual
+    .vtable.__regaprtWriteReg32__ = NULL,    // pure virtual
+    .vtable.__regaprtWriteReg32Uc__ = NULL,    // pure virtual
+    .vtable.__regaprtIsRegValid__ = NULL,    // pure virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__RegisterAperture = {
+    .numRelatives = 1,
+    .relatives = {
+        &__nvoc_metadata__RegisterAperture.rtti,    // [0]: (regaprt) this
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__RegisterAperture = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -94,26 +119,19 @@ static void __nvoc_init_funcTable_RegisterAperture_1(RegisterAperture *pThis) {
 
 // Initialize vtable(s) for 8 virtual method(s).
 void __nvoc_init_funcTable_RegisterAperture(RegisterAperture *pThis) {
-
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__RegisterAperture vtable = {
-        .__regaprtReadReg08__ = NULL,    // pure virtual
-        .__regaprtReadReg16__ = NULL,    // pure virtual
-        .__regaprtReadReg32__ = NULL,    // pure virtual
-        .__regaprtWriteReg08__ = NULL,    // pure virtual
-        .__regaprtWriteReg16__ = NULL,    // pure virtual
-        .__regaprtWriteReg32__ = NULL,    // pure virtual
-        .__regaprtWriteReg32Uc__ = NULL,    // pure virtual
-        .__regaprtIsRegValid__ = NULL,    // pure virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_vtable = &vtable;    // (regaprt) this
     __nvoc_init_funcTable_RegisterAperture_1(pThis);
 }
 
-void __nvoc_init_RegisterAperture(RegisterAperture *pThis) {
-    pThis->__nvoc_pbase_RegisterAperture = pThis;
+// Initialize newly constructed object.
+void __nvoc_init__RegisterAperture(RegisterAperture *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_RegisterAperture = pThis;    // (regaprt) this
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__RegisterAperture;    // (regaprt) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_RegisterAperture(pThis);
 }
 

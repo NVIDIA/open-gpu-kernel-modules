@@ -914,27 +914,13 @@ static NvBool FillELDBuffer(const NVDpyEvoRec *pDpyEvo,
 
     if (status == NVT_STATUS_SUCCESS) {
         /*
-         * NvTiming_GetProductName() returns a nul-terminated string, but the
-         * string in the EDID is terminated with 0x0A and padded with 0x20.
-         * Put back these special characters.
+         * NvTiming_GetProductName returns a nul-terminated string. Figure out
+         * how long it is and copy the bytes up to, but not including, the nul
+         * terminator.
          */
-        NvBool pastTerminator = FALSE;
-        NvU32 i;
-
-        for (i = 0; i < NVT_EDID_LDD_PAYLOAD_SIZE; i++) {
-            if (pastTerminator) {
-                name[i] = 0x20;
-            }
-            if (name[i] == '\0') {
-                name[i] = 0x0A;
-                pastTerminator = TRUE;
-            }
-        }
-
-        monitorNameLen = NVT_EDID_LDD_PAYLOAD_SIZE;
-        pEld->buffer[4] |= NVT_EDID_LDD_PAYLOAD_SIZE;
-        nvkms_memcpy(&pEld->buffer[20], name,
-                     NVT_EDID_LDD_PAYLOAD_SIZE);
+        monitorNameLen = nvkms_strlen((char *)name);
+        pEld->buffer[4] |= monitorNameLen;
+        nvkms_memcpy(&pEld->buffer[20], name, monitorNameLen);
     }
 
     /* offset 20 + MNL ~ 20 + MNL + (3 * SAD_Count) - 1 : CEA_SADs */
@@ -1283,7 +1269,8 @@ void nvDpyUpdateHdmiVRRCaps(NVDpyEvoPtr pDpyEvo)
 
     const NvBool gpuSupportsHDMIVRR = pDevEvo->hal->caps.supportsHDMIVRR;
 
-    const NvBool dispSupportsVrr = nvDispSupportsVrr(pDispEvo);
+    const NvBool dispSupportsVrr = nvDispSupportsVrr(pDispEvo) && 
+                                       !nvkms_conceal_vrr_caps();
 
     const NvU32 edidVrrMin = pParsedEdid->info.hdmiForumInfo.vrr_min;
 
@@ -1297,8 +1284,6 @@ void nvDpyUpdateHdmiVRRCaps(NVDpyEvoPtr pDpyEvo)
             pDpyEvo->vrr.type =
                 NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_NON_DEFAULTLISTED;
         }
-
-        pDpyEvo->vrr.needsSwFramePacing = TRUE;
     }
 }
 
@@ -1903,14 +1888,14 @@ static void HdmiLibPrint(
 }
 
 static void HdmiLibAssert(
-    NvHdmiPkt_CBHandle handle,
-    NvBool expr)
+    const char *expr,
+    const char *filename,
+    const char *function,
+    unsigned int line)
 {
-    /*
-     * This interface isn't the best... I hope you have a kernel debugger if
-     * this fires, because the file and line number will always be this one.
-     */
-    nvAssert(expr);
+#ifdef DEBUG
+    nvDebugAssert(expr, filename, function, line);
+#endif
 }
 
 static NvU64 hdmiLibTimerStartTime = 0;

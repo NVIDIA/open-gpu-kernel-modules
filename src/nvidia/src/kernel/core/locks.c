@@ -496,7 +496,7 @@ rmGpuLockAlloc(NvU32 gpuInst)
 
 
     threadId = portThreadGetCurrentThreadId();
-    osGetCurrentTick(&timestamp);
+    timestamp = osGetCurrentTick();
     INSERT_LOCK_TRACE(&rmGpuLockInfo.traceInfo,
                       NV_RETURN_ADDRESS(),
                       lockTraceAlloc,
@@ -579,7 +579,7 @@ rmGpuLockFree(NvU32 gpuInst)
     rmGpuLockInfo.gpusLockableMask &= ~NVBIT(gpuInst);
 
     threadId = portThreadGetCurrentThreadId();
-    osGetCurrentTick(&timestamp);
+    timestamp = osGetCurrentTick();
     INSERT_LOCK_TRACE(&rmGpuLockInfo.traceInfo,
                       NV_RETURN_ADDRESS(),
                       lockTraceFree,
@@ -684,7 +684,17 @@ static void _gpuLocksAcquireDisableInterrupts(NvU32 gpuInst, NvU32 flags)
             intrMaskFlags &= ~INTR_MASK_FLAGS_ISR_SKIP_MASK_UPDATE;
             intrSetIntrMaskFlags(pIntr, intrMaskFlags);
 
-            // During non-cond RM code, allow some intrs to come in.
+            //
+            // During non-ISR RM code, allow some intrs to come in.
+            //
+            // We expect the bottom half will have to run to do deferred
+            // interrupt handling after this, so we don't need more top half
+            // interrupts preventing it from running. Removing the isIsr check
+            // results in slight perf degredation.
+            //
+            // This originally also done to allow the interrupt to be read in the
+            // NV_PMC_INTR_0 status register, but that is no longer required. 
+            //
             if (pIntr->getProperty(pIntr, PDB_PROP_INTR_USE_TOP_EN_FOR_VBLANK_HANDLING))
             {
                 intrSetDisplayInterruptEnable_HAL(pGpu, pIntr, NV_TRUE,  NULL /* threadstate */);
@@ -724,7 +734,7 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
     NvU64     priority = 0;
     NvU64     priorityPrev = 0;
     NvU64     timestamp;
-    NvU64     startWaitTime;
+    NvU64     startWaitTime = 0;
     NvBool    bLockAll = NV_FALSE;
     NvBool    bAcquireAllocLock = NV_FALSE;
     NvU32     loopCount;
@@ -894,7 +904,7 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
 
     // Get start wait time if measuring lock times
     if (pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
-        osGetCurrentTick(&startWaitTime);
+        startWaitTime = osGetCurrentTick();
 
     //
     // Now (attempt) to acquire the locks...
@@ -1075,7 +1085,7 @@ per_gpu_lock_acquired:
         }
 
         // add acquire record to GPUs lock trace
-        osGetCurrentTick(&timestamp);
+        timestamp = osGetCurrentTick();
         INSERT_LOCK_TRACE(&rmGpuLockInfo.traceInfo,
                           ra,
                           lockTraceAcquire,
@@ -1095,7 +1105,7 @@ next_gpu_instance:
     // Update total GPU lock wait time if measuring lock times
     if (status == NV_OK && pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
     {
-        osGetCurrentTick(&timestamp);
+        timestamp = osGetCurrentTick();
 
         portAtomicExAddU64(&rmGpuLockInfo.totalWaitTime, timestamp - startWaitTime);
     }
@@ -1781,7 +1791,7 @@ _rmGpuLocksRelease(NvU32 gpuMask, NvU32 flags, OBJGPU *pDpcGpu, void *ra)
             }
 
             // add release record to GPUs lock trace
-            osGetCurrentTick(&timestamp);
+            timestamp = osGetCurrentTick();
             INSERT_LOCK_TRACE(&rmGpuLockInfo.traceInfo,
                               ra,
                               lockTraceRelease,
@@ -1913,7 +1923,7 @@ done:
         pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT) &&
         startHoldTime > 0)
     {
-        osGetCurrentTick(&timestamp);
+        timestamp = osGetCurrentTick();
 
         portAtomicExAddU64(&rmGpuLockInfo.totalHoldTime,
             timestamp - startHoldTime);

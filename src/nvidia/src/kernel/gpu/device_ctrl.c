@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,7 +44,7 @@
 #include "os-interface.h"
 #endif
 
-
+#include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 //
 // This rmctrl MUST NOT touch hw since it's tagged as NO_GPUS_ACCESS in ctrl0080.def
 // RM allow this type of rmctrl to go through when GPU is not available.
@@ -351,8 +351,7 @@ deviceCtrlCmdGpuSetVgpuHeterogeneousMode_IMPL
     VGPU_INSTANCE_PLACEMENT_INFO            *pVgpuInstancePlacementInfo;
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
-
-    if (IS_MIG_ENABLED(pGpu))
+    if (!kvgpumgrIsMigTimeslicingModeEnabled(pGpu) && IS_MIG_ENABLED(pGpu))
     {
         NV_PRINTF(LEVEL_ERROR, "Call not supported with SMC enabled\n");
         return NV_ERR_NOT_SUPPORTED;
@@ -361,8 +360,20 @@ deviceCtrlCmdGpuSetVgpuHeterogeneousMode_IMPL
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kvgpumgrGetPgpuIndex(pKernelVgpuMgr, pGpu->gpuId, &pgpuIndex));
 
     pPgpuInfo = &pKernelVgpuMgr->pgpuInfo[pgpuIndex];
-
-    pKernelVgpuTypePlacementInfo = &pPgpuInfo->kernelVgpuTypePlacementInfo;
+    if (IS_MIG_IN_USE(pGpu))
+    {
+        pKernelVgpuTypePlacementInfo = kvgpuMgrGetVgpuPlacementInfo(pGpu, pPgpuInfo, pParams->gpuInstanceId);
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelVgpuTypePlacementInfo != NULL, NV_ERR_OBJECT_NOT_FOUND);
+    }
+    else if (IS_MIG_ENABLED(pGpu))
+    {
+        NV_PRINTF(LEVEL_ERROR, "No Graphic Instance created\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+    else
+    {
+        pKernelVgpuTypePlacementInfo = &pPgpuInfo->kernelVgpuTypePlacementInfo;
+    }
 
     if (pPgpuInfo->heterogeneousTimesliceSizesSupported == NV_FALSE)
     {
@@ -370,10 +381,17 @@ deviceCtrlCmdGpuSetVgpuHeterogeneousMode_IMPL
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    if (osIsVgpuVfioPresent() == NV_OK)
-        vgpuCount = pPgpuInfo->numCreatedVgpu;
+    if (IS_MIG_IN_USE(pGpu))
+    {
+        vgpuCount = pPgpuInfo->assignedSwizzIdVgpuCount[pParams->gpuInstanceId];
+    }
     else
-        vgpuCount = pPgpuInfo->numActiveVgpu;
+    {
+        if (osIsVgpuVfioPresent() == NV_OK)
+            vgpuCount = pPgpuInfo->numCreatedVgpu;
+        else
+            vgpuCount = pPgpuInfo->numActiveVgpu;
+    }
 
     if (vgpuCount != 0)
     {
@@ -382,19 +400,39 @@ deviceCtrlCmdGpuSetVgpuHeterogeneousMode_IMPL
         return NV_ERR_IN_USE;
     }
 
-    kvgpumgrSetVgpuType(pGpu, pPgpuInfo, NVA081_CTRL_VGPU_CONFIG_INVALID_TYPE);
+    kvgpumgrSetVgpuType(pGpu, pPgpuInfo, NVA081_CTRL_VGPU_CONFIG_INVALID_TYPE, pParams->gpuInstanceId);
 
     if (IS_GSP_CLIENT(pGpu))
     {
         RM_API                                                          *pRmApi   = GPU_GET_PHYSICAL_RMAPI(pGpu);
         NV_STATUS                                                        rmStatus = NV_OK;
         NV2080_CTRL_VGPU_MGR_INTERNAL_SET_VGPU_HETEROGENEOUS_MODE_PARAMS params   = {0};
+        NvHandle hClient, hSubDevice;
 
         params.bHeterogeneousMode = pParams->bHeterogeneousMode;
 
+        if (IS_MIG_IN_USE(pGpu))
+        {
+            KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+            KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance;
+
+            NV_ASSERT_OK_OR_RETURN(kmigmgrGetGPUInstanceInfo(pGpu,
+                                                            pKernelMIGManager,
+                                                            pParams->gpuInstanceId,
+                                                            &pKernelMIGGpuInstance));
+
+            hClient = pKernelMIGGpuInstance->instanceHandles.hClient;
+            hSubDevice = pKernelMIGGpuInstance->instanceHandles.hSubdevice;
+        }
+        else
+        {
+            hClient = pGpu->hInternalClient;
+            hSubDevice = pGpu->hInternalSubdevice;
+        }
+
         rmStatus = pRmApi->Control(pRmApi,
-                                   pGpu->hInternalClient,
-                                   pGpu->hInternalSubdevice,
+                                   hClient,
+                                   hSubDevice,
                                    NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_SET_VGPU_HETEROGENEOUS_MODE,
                                    &params,
                                    sizeof(NV2080_CTRL_VGPU_MGR_INTERNAL_SET_VGPU_HETEROGENEOUS_MODE_PARAMS));
@@ -405,8 +443,15 @@ deviceCtrlCmdGpuSetVgpuHeterogeneousMode_IMPL
             return rmStatus;
         }
     }
-
-    pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_VGPU_HETEROGENEOUS_MODE, pParams->bHeterogeneousMode);
+    if (IS_MIG_IN_USE(pGpu) && kvgpumgrIsMigTimeslicingModeEnabled(pGpu))
+    {
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kvgpuMgrSetHeterogeneousModePerGI(pGpu,
+                        pParams->gpuInstanceId, pParams->bHeterogeneousMode));
+    }
+    else
+    {
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_VGPU_HETEROGENEOUS_MODE, pParams->bHeterogeneousMode);
+    }
 
     if (pParams->bHeterogeneousMode)
     {
@@ -443,7 +488,7 @@ deviceCtrlCmdGpuSetVgpuHeterogeneousMode_IMPL
      * placement ID, initially all homogeneous supported placement IDs are
      * creatable placement IDs.
      */
-    if (kvgpumgrCheckHomogeneousPlacementSupported(pGpu) == NV_OK)
+    if (kvgpumgrCheckHomogeneousPlacementSupported(pGpu, pParams->gpuInstanceId) == NV_OK)
     {
         for (i = 0; i < pPgpuInfo->numVgpuTypes; i++)
         {
@@ -482,10 +527,25 @@ deviceCtrlCmdGpuGetVgpuHeterogeneousMode_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
-
-    pParams->bHeterogeneousMode = pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VGPU_HETEROGENEOUS_MODE);
-
+    if (IS_MIG_IN_USE(pGpu))
+    {
+        if (kvgpumgrIsMigTimeslicingModeEnabled(pGpu))
+        {
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                kvgpuMgrGetHeterogeneousMode(pGpu, pParams->gpuInstanceId, &pParams->bHeterogeneousMode));
+        }
+        else
+        {
+            pParams->bHeterogeneousMode = NV_FALSE;
+            return NV_ERR_NOT_SUPPORTED;
+        }
+    }
+    else
+    {
+        pParams->bHeterogeneousMode = pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VGPU_HETEROGENEOUS_MODE);
+    }
     return NV_OK;
+
 }
 
 /*!

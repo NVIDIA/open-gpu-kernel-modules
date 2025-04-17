@@ -8,7 +8,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig_private.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B
 //
 
 #ifndef _G_RMCFG_PRIVATE_H_
@@ -282,15 +282,6 @@
 #define IsGH10XorBetter(pGpu)          rmcfg_IsGH10XorBetter(pGpu)
 
 
-// GH20X
-#define IsGH202(pGpu)                  ((0) && (pGpu))
-#define IsGH202orBetter(pGpu)          rmcfg_IsGH202orBetter(pGpu)
-
-// Any GH20X chip?
-#define IsGH20X(pGpu)                  (0 && (pGpu))
-#define IsGH20XorBetter(pGpu)          rmcfg_IsGH20XorBetter(pGpu)
-
-
 // GB10X
 #define IsGB100(pGpu)                  rmcfg_IsGB100(pGpu)
 #define IsGB100orBetter(pGpu)          rmcfg_IsGB100orBetter(pGpu)
@@ -300,6 +291,12 @@
 
 #define IsGB10B(pGpu)                  rmcfg_IsGB10B(pGpu)
 #define IsGB10BorBetter(pGpu)          rmcfg_IsGB10BorBetter(pGpu)
+
+#define IsGB110(pGpu)                  rmcfg_IsGB110(pGpu)
+#define IsGB110orBetter(pGpu)          rmcfg_IsGB110orBetter(pGpu)
+
+#define IsGB112(pGpu)                  rmcfg_IsGB112(pGpu)
+#define IsGB112orBetter(pGpu)          rmcfg_IsGB112orBetter(pGpu)
 
 // Any GB10X chip?
 #define IsGB10X(pGpu)                  rmcfg_IsGB10X(pGpu)
@@ -321,6 +318,9 @@
 
 #define IsGB207(pGpu)                  rmcfg_IsGB207(pGpu)
 #define IsGB207orBetter(pGpu)          rmcfg_IsGB207orBetter(pGpu)
+
+#define IsGB20B(pGpu)                  rmcfg_IsGB20B(pGpu)
+#define IsGB20BorBetter(pGpu)          rmcfg_IsGB20BorBetter(pGpu)
 
 // Any GB20X chip?
 #define IsGB20X(pGpu)                  rmcfg_IsGB20X(pGpu)
@@ -607,6 +607,10 @@
 // Any TEGRA_DISP_CLASSIC_GPUS chip?
 #define IsTEGRA_DISP_CLASSIC_GPUS(pGpu) rmcfg_IsTEGRA_DISP_CLASSIC_GPUS(pGpu)
 #define IsTEGRA_DISP_CLASSIC_GPUSorBetter(pGpu) rmcfg_IsTEGRA_DISP_CLASSIC_GPUSorBetter(pGpu)
+
+
+// Any GB20Y chip?
+#define IsGB20Y(pGpu)                  rmcfg_IsGB20Y(pGpu)
 
 
 // Any TEGRA_BIG_GPUS chip?

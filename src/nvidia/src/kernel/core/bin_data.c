@@ -312,22 +312,21 @@ bindataGetBufferSize
 const BINDATA_STORAGE *
 bindataArchiveGetStorage(
     const BINDATA_ARCHIVE *pBinArchive,
-    const char *binName
+    BINDATA_LABEL bindataLabel
 )
 {
     // paged memory access check
     osPagedSegmentAccessCheck();
 
-    if ((pBinArchive == NULL) || (binName == NULL))
+    if (pBinArchive == NULL)
     {
         return NULL;
     }
 
     NvU32 i;
-    NvLength len = portStringLength(binName) + 1;
     for (i = 0 ; i < pBinArchive->entryNum; i++)
     {
-        if (portStringCompare(binName, pBinArchive->entries[i].name, len) == 0)
+        if (bindataLabel == pBinArchive->entries[i].bindataLabel)
         {
             bindataMarkReferenced(pBinArchive->entries[i].pBinStorage);
             return pBinArchive->entries[i].pBinStorage;

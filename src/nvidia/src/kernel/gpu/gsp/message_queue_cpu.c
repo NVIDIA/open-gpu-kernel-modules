@@ -236,6 +236,7 @@ GspMsgQueuesInit
 
     memdescSetFlag(pMQCollection->pSharedMemDesc, MEMDESC_FLAGS_KERNEL_MODE, NV_TRUE);
 
+    memdescSetPageSize(pMQCollection->pSharedMemDesc, AT_GPU, RM_PAGE_SIZE_HUGE);
     memdescTagAlloc(nvStatus, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_58,
                     pMQCollection->pSharedMemDesc);
     NV_ASSERT_OK_OR_GOTO(nvStatus, nvStatus, error_ret);

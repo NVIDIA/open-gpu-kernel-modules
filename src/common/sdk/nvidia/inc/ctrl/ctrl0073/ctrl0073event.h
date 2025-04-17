@@ -32,6 +32,25 @@
 
 #include "ctrl/ctrl0073/ctrl0073base.h"
 
+/* 
+* tilemask
+*   Tiles assocaited with calc tiemout head.
+* frameActive
+*   New frame has started on this Head.
+* histoReady
+*   Asserts when histogram data from all the "enabled" LTMs belonging to this head 
+*   is ready.
+* startFrameReady
+*   When histo_ready interrupt
+*   is received and HDMA is programmed and then RISCV asserts STARTFRAME_READY.
+*/
+typedef struct NV0073_LTM_HEAD_STATUS_PARAMS {
+    NvU8   tileMask;
+    NvBool frameActive;
+    NvBool histoReady;
+    NvBool startFrameReady;
+} NV0073_LTM_HEAD_STATUS_PARAMS;
+
 /* NV04_DISPLAY_COMMON event-related control commands and parameters */
 
 /*
@@ -89,42 +108,5 @@ typedef struct NV0073_CTRL_EVENT_SET_NOTIFICATION_PARAMS {
 #define NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE (0x00000000U)
 #define NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE  (0x00000001U)
 #define NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT  (0x00000002U)
-
-/*
- * NV0073_CTRL_CMD_EVENT_SET_NOTIFIER_MEMORY
- *
- *     hMemory
- *       This parameter specifies the handle of the memory object
- *       that identifies the memory address translation for this
- *       subdevice instance's notification(s).  The beginning of the
- *       translation points to an array of notification data structures.
- *       The size of the translation must be at least large enough to hold the
- *       maximum number of notification data structures identified by
- *       the NV0073_MAX_NOTIFIERS value.
- *       Legal argument values must be instances of the following classes:
- *         NV01_NULL
- *         NV04_MEMORY
- *       When hMemory specifies the NV01_NULL_OBJECT value then any existing
- *       memory translation connection is cleared.  There must not be any
- *       pending notifications when this command is issued.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_PARAM_STRUCT
- *   NV_ERR_INVALID_ARGUMENT
- *   NV_ERR_INVALID_STATE
- */
-#define NV0073_CTRL_CMD_EVENT_SET_MEMORY_NOTIFIES         (0x730303U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_EVENT_INTERFACE_ID << 8) | NV0073_CTRL_EVENT_SET_MEMORY_NOTIFIES_PARAMS_MESSAGE_ID" */
-
-#define NV0073_CTRL_EVENT_SET_MEMORY_NOTIFIES_PARAMS_MESSAGE_ID (0x3U)
-
-typedef struct NV0073_CTRL_EVENT_SET_MEMORY_NOTIFIES_PARAMS {
-    NvU32    subDeviceInstance;
-    NvHandle hMemory;
-} NV0073_CTRL_EVENT_SET_MEMORY_NOTIFIES_PARAMS;
-
-#define NV0073_EVENT_MEMORY_NOTIFIES_STATUS_NOTIFIED 0U
-#define NV0073_EVENT_MEMORY_NOTIFIES_STATUS_PENDING  1U
-#define NV0073_EVENT_MEMORY_NOTIFIES_STATUS_ERROR    2U
 
 /* _ctrl0073event_h_ */

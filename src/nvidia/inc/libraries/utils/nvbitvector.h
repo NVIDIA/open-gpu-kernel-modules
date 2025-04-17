@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -225,6 +225,18 @@ struct NV_BITVECTOR
                           sizeof(((pBitVector)->last->_)),                  \
                           pRawMask,                                         \
                           rawMaskSize)
+
+#define bitVectorGetSlice(pBitVector, range, slice)                         \
+    bitVectorGetSlice_IMPL(&((pBitVector)->real),                           \
+                          sizeof(((pBitVector)->last->_)),                  \
+                          range,                                            \
+                          slice)
+
+#define bitVectorGetSliceAtOffset(pBitVector, offset, size, slice)          \
+    bitVectorGetSlice_IMPL(&((pBitVector)->real),                           \
+                          sizeof(((pBitVector)->last->_)),                  \
+                          rangeMake(offset, offset + size - 1),             \
+                          slice)
 
 #define bitVectorLowestNBits(pBitVectorDst, pBitVectorSrc,  N)              \
     bitVectorLowestNBits_IMPL(&((pBitVectorDst)->real),                     \
@@ -473,6 +485,15 @@ bitVectorFromRaw_IMPL
     NvU16 bitVectorLast,
     const void *pRawMask,
     NvU32 rawMaskSize
+);
+
+NV_STATUS
+bitVectorGetSlice_IMPL
+(
+    NV_BITVECTOR *pBitVector,
+    NvU16 bitVectorLast,
+    NV_RANGE range,
+    NvU64 *slice
 );
 
 NV_STATUS

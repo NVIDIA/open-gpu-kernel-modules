@@ -479,6 +479,8 @@ static NV_STATUS finnSerializeMessage_NV2080_CTRL_GPU_GET_ENGINES_PARAMS(const N
 static NV_STATUS finnDeserializeMessage_NV2080_CTRL_GPU_GET_ENGINES_PARAMS(finn_bit_pump_for_read *bp, NV2080_CTRL_GPU_GET_ENGINES_PARAMS *api, NvLength api_size, NvBool deser_up);
 static NV_STATUS finnSerializeMessage_NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS(const NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeMessage_NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS(finn_bit_pump_for_read *bp, NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *api, NvLength api_size, NvBool deser_up);
+static NV_STATUS finnSerializeMessage_NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS(const NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS finnDeserializeMessage_NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS(finn_bit_pump_for_read *bp, NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS *api, NvLength api_size, NvBool deser_up);
 static NV_STATUS finnSerializeMessage_NV2080_CTRL_I2C_ACCESS_PARAMS(const NV2080_CTRL_I2C_ACCESS_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeMessage_NV2080_CTRL_I2C_ACCESS_PARAMS(finn_bit_pump_for_read *bp, NV2080_CTRL_I2C_ACCESS_PARAMS *api, NvLength api_size, NvBool deser_up);
 static NV_STATUS finnSerializeMessage_NV2080_CTRL_NVD_GET_DUMP_PARAMS(const NV2080_CTRL_NVD_GET_DUMP_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
@@ -1647,7 +1649,7 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV20_SUBDEVICE_0_CE(NvU64 messag
 // Serialize this interface.
 static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_GPU(NvU64 message, const char *api_intf, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Serialize one of 2 messages in this interface.
+    // Serialize one of 3 messages in this interface.
     switch (message)
     {
 #if (defined(NVRM))
@@ -1655,6 +1657,8 @@ static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_GPU(NvU64 message,
             return finnSerializeMessage_NV2080_CTRL_GPU_GET_ENGINES_PARAMS((const NV2080_CTRL_GPU_GET_ENGINES_PARAMS *) api_intf, bp, seri_up);
         case FINN_MESSAGE_ID(NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS):
             return finnSerializeMessage_NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS((const NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *) api_intf, bp, seri_up);
+        case FINN_MESSAGE_ID(NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS):
+            return finnSerializeMessage_NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS((const NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS *) api_intf, bp, seri_up);
 #endif // (defined(NVRM))
 
 
@@ -1671,7 +1675,7 @@ static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_GPU(NvU64 message,
 // Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV20_SUBDEVICE_0_GPU(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_GPU *api_intf, NvLength api_size, NvBool deser_up)
 {
-    // Deerialize one of 2 messages in this interface.
+    // Deerialize one of 3 messages in this interface.
     switch (message)
     {
 #if (defined(NVRM))
@@ -1679,6 +1683,8 @@ static NV_STATUS finnDeserializeInterface_FINN_NV20_SUBDEVICE_0_GPU(NvU64 messag
             return finnDeserializeMessage_NV2080_CTRL_GPU_GET_ENGINES_PARAMS(bp, (NV2080_CTRL_GPU_GET_ENGINES_PARAMS *) api_intf, api_size, deser_up);
         case FINN_MESSAGE_ID(NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS):
             return finnDeserializeMessage_NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS(bp, (NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *) api_intf, api_size, deser_up);
+        case FINN_MESSAGE_ID(NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS):
+            return finnDeserializeMessage_NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS(bp, (NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS *) api_intf, api_size, deser_up);
 #endif // (defined(NVRM))
 
 
@@ -1703,6 +1709,8 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV20_SUBDEVICE_0_GPU(NvU64 messa
             return sizeof(NV2080_CTRL_GPU_GET_ENGINES_PARAMS);
         case FINN_MESSAGE_ID(NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS):
             return sizeof(NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS);
+        case FINN_MESSAGE_ID(NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS):
+            return sizeof(NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS);
 #endif // (defined(NVRM))
 
 
@@ -4466,6 +4474,222 @@ static NV_STATUS finnDeserializeMessage_NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PAR
     {
         if (!deser_up)
             api->classList = NV_PTR_TO_NvP64(NULL);
+    }
+
+    // Done
+    return NV_OK;
+}
+
+
+// Serialize each of the 5 field(s).
+static NV_STATUS finnSerializeMessage_NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS(const NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up)
+{
+    // Serialize field-presence indicator for `test`.
+    if (finn_write_buffer(bp, 1, 1))
+    {
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        return NV_ERR_BUFFER_TOO_SMALL;
+    }
+
+    // Serialize 8-bit NvU8 primitive.
+    if (finn_write_buffer(bp, api->test, 8))
+    {
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        return NV_ERR_BUFFER_TOO_SMALL;
+    }
+
+    // Serialize field-presence indicator for `dataSize`.
+    if (finn_write_buffer(bp, 1, 1))
+    {
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        return NV_ERR_BUFFER_TOO_SMALL;
+    }
+
+    // Serialize 32-bit NvU32 primitive.
+    if (finn_write_buffer(bp, api->dataSize, 32))
+    {
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        return NV_ERR_BUFFER_TOO_SMALL;
+    }
+
+    // Serialize field-presence indicator for `startTimestamp`.
+    if (finn_write_buffer(bp, 1, 1))
+    {
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        return NV_ERR_BUFFER_TOO_SMALL;
+    }
+
+    // Serialize 64-bit NvU64 primitive.
+    if (finn_write_buffer(bp, api->startTimestamp, 64))
+    {
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        return NV_ERR_BUFFER_TOO_SMALL;
+    }
+
+    // Serialize field-presence indicator for `stopTimestamp`.
+    if (finn_write_buffer(bp, 1, 1))
+    {
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        return NV_ERR_BUFFER_TOO_SMALL;
+    }
+
+    // Serialize 64-bit NvU64 primitive.
+    if (finn_write_buffer(bp, api->stopTimestamp, 64))
+    {
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        return NV_ERR_BUFFER_TOO_SMALL;
+    }
+
+    // Serialize data-presence (nonnull pointer) indicator.
+    if (finn_write_buffer(bp, !!(api->data), 1))
+    {
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        return NV_ERR_BUFFER_TOO_SMALL;
+    }
+
+    // Skip if pointer is null.
+    if (api->data)
+    {
+        // Serialize each element in `data`.
+        {
+            NvLength i;
+            for (i = 0; i < (api->dataSize); ++i)
+            {
+                // Serialize field-presence indicator for `data[i]`.
+                if (finn_write_buffer(bp, 1, 1))
+                {
+                    FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                    return NV_ERR_BUFFER_TOO_SMALL;
+                }
+
+                // Serialize 32-bit NvU32 primitive.
+                if (finn_write_buffer(bp, ((NvU32 *)(NvP64_VALUE(api->data)))[i], 32))
+                {
+                    FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                    return NV_ERR_BUFFER_TOO_SMALL;
+                }
+
+            }
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && api->data)
+            FINN_FREE(NvP64_VALUE(api->data));
+    }
+
+
+    // Done
+    return NV_OK;
+}
+
+
+// Deserialize each of the 5 field(s).
+static NV_STATUS finnDeserializeMessage_NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS(finn_bit_pump_for_read *bp, NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS *api, NvLength api_size, NvBool deser_up)
+{
+    // Check that the destination struct fits within the destination buffer.
+    if (sizeof(NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS) > api_size)
+    {
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        return NV_ERR_BUFFER_TOO_SMALL;
+    }
+
+    // Check field-presence indicator for `test`.
+    if (!finn_read_buffer(bp, 1))
+    {
+        FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
+        return NV_ERR_LIB_RM_VERSION_MISMATCH;
+    }
+
+    // Deserialize 8-bit NvU8 primitive.
+    api->test = (NvU8) finn_read_buffer(bp, 8);
+
+    // Check field-presence indicator for `dataSize`.
+    if (!finn_read_buffer(bp, 1))
+    {
+        FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
+        return NV_ERR_LIB_RM_VERSION_MISMATCH;
+    }
+
+    // Deserialize 32-bit NvU32 primitive.
+    api->dataSize = (NvU32) finn_read_buffer(bp, 32);
+
+    // Check field-presence indicator for `startTimestamp`.
+    if (!finn_read_buffer(bp, 1))
+    {
+        FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
+        return NV_ERR_LIB_RM_VERSION_MISMATCH;
+    }
+
+    // Deserialize 64-bit NvU64 primitive.
+    api->startTimestamp = (NvU64) finn_read_buffer(bp, 64);
+
+    // Check field-presence indicator for `stopTimestamp`.
+    if (!finn_read_buffer(bp, 1))
+    {
+        FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
+        return NV_ERR_LIB_RM_VERSION_MISMATCH;
+    }
+
+    // Deserialize 64-bit NvU64 primitive.
+    api->stopTimestamp = (NvU64) finn_read_buffer(bp, 64);
+
+    // Check data-presence (nonnull pointer) indicator for `data`.
+    if (finn_read_buffer(bp, 1))
+    {
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling code is expected to do so when deserializing up.)
+        if (!deser_up)
+        {
+            // The data-presence indicator would have been false
+            // if there were no data to deserialize.
+            if ((api->dataSize) * (sizeof(NvU32) /*data[i]*/) /*data*/ < 1)
+            {
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                return NV_ERR_BUFFER_TOO_SMALL;
+            }
+
+            api->data = NV_PTR_TO_NvP64(FINN_MALLOC((api->dataSize) * (sizeof(NvU32) /*data[i]*/) /*data*/));
+            if (!api->data)
+            {
+                FINN_ERROR(NV_ERR_NO_MEMORY);
+                return NV_ERR_NO_MEMORY;
+            }
+
+            FINN_MEMZERO(NvP64_VALUE(api->data), (api->dataSize) * (sizeof(NvU32) /*data[i]*/) /*data*/);
+        }
+
+        // Otherwise the pointer must be provided by caller.
+        else if (!api->data)
+        {
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            return NV_ERR_INVALID_POINTER;
+        }
+
+        // Deserialize each element in `data`.
+        {
+            NvLength i;
+            for (i = 0; i < (api->dataSize); ++i)
+            {
+                // Check field-presence indicator for `data[i]`.
+                if (!finn_read_buffer(bp, 1))
+                {
+                    FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
+                    return NV_ERR_LIB_RM_VERSION_MISMATCH;
+                }
+
+                // Deserialize 32-bit NvU32 primitive.
+                ((NvU32 *)(NvP64_VALUE(api->data)))[i] = (NvU32) finn_read_buffer(bp, 32);
+
+            }
+        }
+
+    }
+
+    // Nullify pointer only if FINN manages memory allocation.
+    else
+    {
+        if (!deser_up)
+            api->data = NV_PTR_TO_NvP64(NULL);
     }
 
     // Done

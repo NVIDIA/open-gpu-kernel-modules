@@ -200,6 +200,10 @@ NVDIFRStateEvoPtr nvDIFRAllocate(NVDevEvoPtr pDevEvo)
                          &params,
                          sizeof(params));
 
+    if (ret == NV_ERR_NOT_SUPPORTED) {
+        return NULL;
+    }
+
     if (ret != NV_OK) {
         nvEvoLogDev(pDevEvo,
                     EVO_LOG_WARN,

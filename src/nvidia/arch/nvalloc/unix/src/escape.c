@@ -234,6 +234,9 @@ static void RmAllocOsDescriptor(NVOS02_PARAMETERS *pApi, API_SECURITY_INFO secIn
     else
         attr2 = DRF_DEF(OS32, _ATTR2, _GPU_CACHEABLE, _NO);
 
+    if (FLD_TEST_DRF(OS02, _FLAGS, _MEMORY_PROTECTION, _UNPROTECTED, pApi->flags))
+        attr2 = FLD_SET_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED, attr2);
+
     pVidHeapParams = portMemAllocNonPaged(sizeof(NVOS32_PARAMETERS));
     if (pVidHeapParams == NULL)
     {
@@ -308,16 +311,16 @@ NV_STATUS RmIoctl(
             nv_ioctl_nvos02_parameters_with_fd *pApi;
             NVOS02_PARAMETERS *pParms;
 
-            pApi = data;
-            pParms = &pApi->params;
-
-            NV_ACTUAL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(nv_ioctl_nvos02_parameters_with_fd))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            pApi = data;
+            pParms = &pApi->params;
+
+            NV_ACTUAL_DEVICE_ONLY(nv);
 
             if (pParms->hClass == NV01_MEMORY_SYSTEM_OS_DESCRIPTOR)
                 RmAllocOsDescriptor(pParms, secInfo);
@@ -358,13 +361,13 @@ NV_STATUS RmIoctl(
         {
             NVOS05_PARAMETERS *pApi = data;
 
-            NV_CTL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(NVOS05_PARAMETERS))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            NV_CTL_DEVICE_ONLY(nv);
 
             Nv01AllocObjectWithSecInfo(pApi, secInfo);
             break;
@@ -376,8 +379,8 @@ NV_STATUS RmIoctl(
             NVOS64_PARAMETERS *pApiAccess = data;
             NvBool bAccessApi = (dataSize == sizeof(NVOS64_PARAMETERS));
 
-            if ((dataSize != sizeof(NVOS21_PARAMETERS)) &&
-                (dataSize != sizeof(NVOS64_PARAMETERS)))
+            if ((dataSize != sizeof(*pApi)) &&
+                (dataSize != sizeof(*pApiAccess)))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
@@ -425,13 +428,13 @@ NV_STATUS RmIoctl(
         {
             NVOS00_PARAMETERS *pApi = data;
 
-            NV_CTL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(NVOS00_PARAMETERS))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            NV_CTL_DEVICE_ONLY(nv);
 
             Nv01FreeWithSecInfo(pApi, secInfo);
 
@@ -448,13 +451,13 @@ NV_STATUS RmIoctl(
         {
             NVOS32_PARAMETERS *pApi = data;
 
-            NV_CTL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(NVOS32_PARAMETERS))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            NV_CTL_DEVICE_ONLY(nv);
 
             if (pApi->function == NVOS32_FUNCTION_ALLOC_OS_DESCRIPTOR)
                 RmCreateOsDescriptor(pApi, secInfo);
@@ -468,13 +471,13 @@ NV_STATUS RmIoctl(
         {
             NVOS_I2C_ACCESS_PARAMS *pApi = data;
 
-            NV_ACTUAL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(NVOS_I2C_ACCESS_PARAMS))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            NV_ACTUAL_DEVICE_ONLY(nv);
 
             Nv04I2CAccessWithSecInfo(pApi, secInfo);
             break;
@@ -484,13 +487,13 @@ NV_STATUS RmIoctl(
         {
             NVOS30_PARAMETERS *pApi = data;
 
-            NV_CTL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(NVOS30_PARAMETERS))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            NV_CTL_DEVICE_ONLY(nv);
 
             Nv04IdleChannelsWithSecInfo(pApi, secInfo);
             break;
@@ -501,16 +504,16 @@ NV_STATUS RmIoctl(
             nv_ioctl_nvos33_parameters_with_fd *pApi;
             NVOS33_PARAMETERS *pParms;
 
-            pApi = data;
-            pParms = &pApi->params;
-
-            NV_CTL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(nv_ioctl_nvos33_parameters_with_fd))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            pApi = data;
+            pParms = &pApi->params;
+
+            NV_CTL_DEVICE_ONLY(nv);
 
             // Don't allow userspace to override the caching type
             pParms->flags = FLD_SET_DRF(OS33, _FLAGS, _CACHING_TYPE, _DEFAULT, pParms->flags);
@@ -527,7 +530,7 @@ NV_STATUS RmIoctl(
                 if (pParms->status != NV_OK)
                 {
                     NVOS34_PARAMETERS params;
-                    portMemSet(&params, 0, sizeof(NVOS34_PARAMETERS));
+                    portMemSet(&params, 0, sizeof(params));
                     params.hClient        = pParms->hClient;
                     params.hDevice        = pParms->hDevice;
                     params.hMemory        = pParms->hMemory;
@@ -543,13 +546,13 @@ NV_STATUS RmIoctl(
         {
             NVOS34_PARAMETERS *pApi = data;
 
-            NV_CTL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(NVOS34_PARAMETERS))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            NV_CTL_DEVICE_ONLY(nv);
 
             Nv04UnmapMemoryWithSecInfo(pApi, secInfo);
             break;
@@ -559,13 +562,13 @@ NV_STATUS RmIoctl(
         {
             NVOS38_PARAMETERS *pApi = data;
 
-            NV_CTL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(NVOS38_PARAMETERS))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            NV_CTL_DEVICE_ONLY(nv);
 
             pApi->status = rm_access_registry(pApi->hClient,
                                               pApi->hObject,
@@ -585,13 +588,13 @@ NV_STATUS RmIoctl(
         {
             NVOS39_PARAMETERS *pApi = data;
 
-            NV_CTL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(NVOS39_PARAMETERS))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            NV_CTL_DEVICE_ONLY(nv);
 
             Nv04AllocContextDmaWithSecInfo(pApi, secInfo);
             break;
@@ -601,13 +604,13 @@ NV_STATUS RmIoctl(
         {
             NVOS49_PARAMETERS *pApi = data;
 
-            NV_CTL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(NVOS49_PARAMETERS))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            NV_CTL_DEVICE_ONLY(nv);
 
             Nv04BindContextDmaWithSecInfo(pApi, secInfo);
             break;
@@ -617,13 +620,13 @@ NV_STATUS RmIoctl(
         {
             NVOS46_PARAMETERS *pApi = data;
 
-            NV_CTL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(NVOS46_PARAMETERS))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            NV_CTL_DEVICE_ONLY(nv);
 
             Nv04MapMemoryDmaWithSecInfo(pApi, secInfo);
             break;
@@ -633,13 +636,13 @@ NV_STATUS RmIoctl(
         {
             NVOS47_PARAMETERS *pApi = data;
 
-            NV_CTL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(NVOS47_PARAMETERS))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            NV_CTL_DEVICE_ONLY(nv);
 
             Nv04UnmapMemoryDmaWithSecInfo(pApi, secInfo);
             break;
@@ -649,13 +652,13 @@ NV_STATUS RmIoctl(
         {
             NVOS55_PARAMETERS *pApi = data;
 
-            NV_CTL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(NVOS55_PARAMETERS))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            NV_CTL_DEVICE_ONLY(nv);
 
             Nv04DupObjectWithSecInfo(pApi, secInfo);
             break;
@@ -665,13 +668,13 @@ NV_STATUS RmIoctl(
         {
             NVOS57_PARAMETERS *pApi = data;
 
-            NV_CTL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(NVOS57_PARAMETERS))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            NV_CTL_DEVICE_ONLY(nv);
 
             Nv04ShareWithSecInfo(pApi, secInfo);
             break;
@@ -682,13 +685,13 @@ NV_STATUS RmIoctl(
             nv_state_t *pNv;
             nv_ioctl_status_code_t *pApi = data;
 
-            NV_CTL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(nv_ioctl_status_code_t))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            NV_CTL_DEVICE_ONLY(nv);
 
             pNv = nv_get_adapter_state(pApi->domain, pApi->bus, pApi->slot);
             if (pNv == NULL)
@@ -713,13 +716,13 @@ NV_STATUS RmIoctl(
             NvS32 fd;
             NvBool bSkipDeviceRef;
 
-            NV_CTL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(NVOS54_PARAMETERS))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            NV_CTL_DEVICE_ONLY(nv);
 
             rmStatus = RmGetDeviceFd(pApi, &fd, &bSkipDeviceRef);
             if (rmStatus != NV_OK)
@@ -775,13 +778,13 @@ NV_STATUS RmIoctl(
             void *pOldCpuAddress;
             void *pNewCpuAddress;
 
-            NV_CTL_DEVICE_ONLY(nv);
-
-            if (dataSize != sizeof(NVOS56_PARAMETERS))
+            if (dataSize != sizeof(*pApi))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
             }
+
+            NV_CTL_DEVICE_ONLY(nv);
 
             pOldCpuAddress = NvP64_VALUE(pApi->pOldCpuAddress);
             pNewCpuAddress = NvP64_VALUE(pApi->pNewCpuAddress);
@@ -798,12 +801,17 @@ NV_STATUS RmIoctl(
         {
             NV_LOCKLESS_DIAGNOSTIC_PARAMS *pParams = data;
 
+            if (dataSize != sizeof(*pParams))
+            {
+                rmStatus = NV_ERR_INVALID_ARGUMENT;
+                goto done;
+            }
+
             NV_CTL_DEVICE_ONLY(nv);
 
             if (!osIsAdministrator())
             {
                 rmStatus = NV_ERR_INSUFFICIENT_PERMISSIONS;
-                pParams->status = rmStatus;
                 goto done;
             }
 
@@ -834,7 +842,7 @@ NV_STATUS RmIoctl(
             void *priv = NULL;
             nv_file_private_t *ctl_nvfp;
 
-            if (dataSize != sizeof(nv_ioctl_register_fd_t))
+            if (dataSize != sizeof(*params))
             {
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;

@@ -25,6 +25,7 @@
 
 #include "core/core.h"
 
+#include "nvsecurityinfo.h"
 #include "resserv/rs_resource.h"
 #include "resserv/resserv.h"
 
@@ -118,6 +119,12 @@ typedef struct
 
 // top-level internal RM Control interface
 NV_STATUS   rmControl_Deferred(RmCtrlDeferredCmd *pRmCtrlDeferredCmd);
+
+//
+// Validate whether client has privilege to execute specified cmd.
+// Doesn't handle vGPU CPU plugin case.
+//
+NV_STATUS rmControlValidateClientPrivilegeAccess(NvHandle hClient, NvHandle hObject, NvU32 cmd, NvU32 ctrlFlags, API_SECURITY_INFO *pSecInfo);
 
 // Helper functions for handling embedded parameter copies
 NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmCtrlParams);
@@ -332,6 +339,11 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmC
 //
 #define RMCTRL_FLAGS_NO_API_LOCK                              0x000400000
 
+//
+// This flag specifies that the control call persists in RMCTRL cache across
+// OBJGPU StateLoad/Unload. This flag may be set in addition to RMCTRL_FLAGS_CACHEABLE
+// or RMCTRL_FLAGS_CACHEABLE_BY_INPUT.
+//
 #define RMCTRL_FLAGS_PERSISTENT_CACHEABLE                     0x000800000
 
 //

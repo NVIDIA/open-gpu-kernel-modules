@@ -26,7 +26,8 @@
 #include "os/os.h"
 #include "nverror.h"
 #include "vgpu/rpc.h"
-#include "nvrm_registry.h"
+#include "gpu/fsp/kern_fsp.h"
+#include "fsp/fsp_nvdm_format.h"
 
 #include "published/hopper/gh100/hwproject.h"
 #include "published/hopper/gh100/dev_gc6_island.h"
@@ -351,6 +352,7 @@ gpuGetFlaVasSize_GH100
     return 0x8000000000;  // 512GB
 }
 
+
 //
 // List of GPU children that present for the chip. List entries contain$
 // {CLASS-ID, # of instances} pairs, e.g.: {CE, 2} is 2 instance of OBJCE. This$
@@ -390,10 +392,11 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GH100[] =
     GPU_CHILD_PRESENT(KernelNvlink, 1),
     GPU_CHILD_PRESENT(KernelPerf, 1),
     GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(Spdm, 1),
+    GPU_CHILD_PRESENT(ConfidentialCompute, 1),
     GPU_CHILD_PRESENT(KernelFsp, 1),
     GPU_CHILD_PRESENT(KernelGsp, 1),
     GPU_CHILD_PRESENT(KernelSec2, 1),
-    GPU_CHILD_PRESENT(ConfidentialCompute, 1),
     GPU_CHILD_PRESENT(KernelCcu, 1),
 };
 
@@ -403,6 +406,7 @@ gpuGetChildrenPresent_GH100(OBJGPU *pGpu, NvU32 *pNumEntries)
     *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GH100);
     return gpuChildrenPresent_GH100;
 }
+
 
 /*!
  * @brief Determine if GPU is configured in Self Hosted mode.
@@ -500,7 +504,6 @@ gpuIsProtectedPcieEnabledInHw_GH100
     OBJGPU *pGpu
 )
 {
-    NvU32 data;
     NvU32 scratchVal = GPU_REG_RD32(pGpu, NV_PGC6_AON_SECURE_SCRATCH_GROUP_20_CC);
     NvBool bIsScratchSet = FLD_TEST_DRF(_PGC6, _AON_SECURE_SCRATCH_GROUP_20_CC, _MULTI_GPU_MODE,
                                         _PROTECTED_PCIE, scratchVal);
@@ -508,13 +511,7 @@ gpuIsProtectedPcieEnabledInHw_GH100
     if (!bIsScratchSet)
         return NV_FALSE;
 
-    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_PPCIE_ENABLED, &data) == NV_OK) &&
-        (data == NV_REG_STR_RM_PPCIE_ENABLED_YES))
-    {
-        return NV_TRUE;
-    }
-
-    return NV_FALSE;
+    return gpuIsProtectedPcieSupportedInFirmware_HAL(pGpu);
 }
 
 /*!
@@ -550,6 +547,69 @@ gpuSanityCheckVirtRegAccess_GH100
     }
 
     return NV_ERR_INVALID_ADDRESS;
+}
+
+#pragma pack(1)
+typedef struct
+{
+    NvU8  prcObjType;
+    NvU8  numBytes;
+    NvU16 knobId;
+} NVDM_PAYLOAD_PRC_OBJECT_READ;
+#pragma pack()
+
+#pragma pack(1)
+typedef struct
+{
+    NvU8    messageType;
+    NvU32   taskId;
+    NvU32   commandNvdmType;
+    NvU32   errorCode;
+    NvU16   knobValue;
+    NvU16   misc;
+} NVDM_PAYLOAD_PRC_OBJECT_RESPONSE;
+#pragma pack()
+
+#define NVDM_PRC_PPCIE_READ_OBJECT          0x0C
+#define NVDM_PRC_PPCIE_NUM_BYTES            0x02
+#define NVDM_PRC_PPCIE_KNOB_ID              0x2D
+
+/*!
+ * @brief Check if protected pcie is actually supported in firmware
+ *
+ * @param[in]  pGpu          OBJGPU pointer
+ *
+ * @return NV_TRUE if the firmware supports PPCIE and NV_FALSE otherwise
+ */
+NvBool
+gpuIsProtectedPcieSupportedInFirmware_GH100
+(
+    OBJGPU *pGpu
+)
+{
+    KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
+    NVDM_PAYLOAD_PRC_OBJECT_READ prcKnobReadPayload = {0};
+    NVDM_PAYLOAD_PRC_OBJECT_RESPONSE responsePayload = {0};
+    NV_STATUS status;
+
+    prcKnobReadPayload.prcObjType   = NVDM_PRC_PPCIE_READ_OBJECT;
+    prcKnobReadPayload.numBytes     = NVDM_PRC_PPCIE_NUM_BYTES;
+    prcKnobReadPayload.knobId       = NVDM_PRC_PPCIE_KNOB_ID;
+
+   // This function returns an error code in case we read an invalid knob id
+    status = kfspSendAndReadMessage(pGpu, pKernelFsp,
+                                    (NvU8*)&prcKnobReadPayload,
+                                    sizeof(NVDM_PAYLOAD_PRC_OBJECT_READ),
+                                    NVDM_TYPE_PRC,
+                                    (NvU8 *)&responsePayload,
+                                    sizeof(NVDM_PAYLOAD_PRC_OBJECT_RESPONSE));
+    NV_ASSERT(status == NV_OK || status == NV_ERR_INVALID_ARGUMENT);
+    NV_PRINTF(LEVEL_INFO,"kfspSendAndReadMessage status: 0x%x knobValue: 0x%x\n",
+              (NvU32) status,
+              (NvU32) responsePayload.knobValue);
+
+    // PPCIE is ON only if PRC_KNOB is present and value is 1
+    return (status == NV_OK && responsePayload.knobValue == 1);
 }
 
 /*!

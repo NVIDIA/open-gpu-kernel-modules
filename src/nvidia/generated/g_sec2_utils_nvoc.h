@@ -1,13 +1,15 @@
 
 #ifndef _G_SEC2_UTILS_NVOC_H_
 #define _G_SEC2_UTILS_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,10 +82,18 @@ typedef struct
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__Sec2Utils;
+struct NVOC_METADATA__Object;
+
+
 struct Sec2Utils {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__Sec2Utils *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -108,6 +118,13 @@ struct Sec2Utils {
     NvU32 authTagGetIndex;
 };
 
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__Sec2Utils {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
+};
+
 #ifndef __NVOC_CLASS_Sec2Utils_TYPEDEF__
 #define __NVOC_CLASS_Sec2Utils_TYPEDEF__
 typedef struct Sec2Utils Sec2Utils;
@@ -124,15 +141,15 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Sec2Utils;
     ((pThis)->__nvoc_pbase_Sec2Utils)
 
 #ifdef __nvoc_sec2_utils_h_disabled
-#define __dynamicCast_Sec2Utils(pThis) ((Sec2Utils*)NULL)
+#define __dynamicCast_Sec2Utils(pThis) ((Sec2Utils*) NULL)
 #else //__nvoc_sec2_utils_h_disabled
 #define __dynamicCast_Sec2Utils(pThis) \
-    ((Sec2Utils*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(Sec2Utils)))
+    ((Sec2Utils*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(Sec2Utils)))
 #endif //__nvoc_sec2_utils_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_Sec2Utils(Sec2Utils**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_Sec2Utils(Sec2Utils**, Dynamic*, NvU32, struct OBJGPU * arg_pGpu, KERNEL_MIG_GPU_INSTANCE * arg_pKernelMIGGPUInstance);
+NV_STATUS __nvoc_objCreate_Sec2Utils(Sec2Utils**, Dynamic*, NvU32, struct OBJGPU *arg_pGpu, KERNEL_MIG_GPU_INSTANCE *arg_pKernelMIGGPUInstance);
 #define __objCreate_Sec2Utils(ppNewObj, pParent, createFlags, arg_pGpu, arg_pKernelMIGGPUInstance) \
     __nvoc_objCreate_Sec2Utils((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pGpu, arg_pKernelMIGGPUInstance)
 

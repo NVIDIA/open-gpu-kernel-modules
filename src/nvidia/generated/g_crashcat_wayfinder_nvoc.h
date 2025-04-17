@@ -1,13 +1,15 @@
 
 #ifndef _G_CRASHCAT_WAYFINDER_NVOC_H_
 #define _G_CRASHCAT_WAYFINDER_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -88,6 +90,11 @@ void __nvoc_init_halspec_CrashCatWayfinderHal(CrashCatWayfinderHal*, NV_CRASHCAT
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__CrashCatWayfinder;
+struct NVOC_METADATA__Object;
+
 struct __nvoc_inner_struc_CrashCatWayfinder_1__ {
     NvCrashCatWayfinderL0_V1 wfl0;
     NvCrashCatWayfinderL1_V1 wfl1;
@@ -97,8 +104,11 @@ struct __nvoc_inner_struc_CrashCatWayfinder_1__ {
 
 struct CrashCatWayfinder {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__CrashCatWayfinder *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -111,6 +121,13 @@ struct CrashCatWayfinder {
     struct CrashCatWayfinderHal wayfinderHal;
     struct CrashCatQueue *PRIVATE_FIELD(pQueue);
     struct __nvoc_inner_struc_CrashCatWayfinder_1__ PRIVATE_FIELD(v1);
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__CrashCatWayfinder {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
 };
 
 #ifndef __NVOC_CLASS_CrashCatWayfinder_TYPEDEF__
@@ -129,10 +146,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatWayfinder;
     ((pThis)->__nvoc_pbase_CrashCatWayfinder)
 
 #ifdef __nvoc_crashcat_wayfinder_h_disabled
-#define __dynamicCast_CrashCatWayfinder(pThis) ((CrashCatWayfinder*)NULL)
+#define __dynamicCast_CrashCatWayfinder(pThis) ((CrashCatWayfinder*) NULL)
 #else //__nvoc_crashcat_wayfinder_h_disabled
 #define __dynamicCast_CrashCatWayfinder(pThis) \
-    ((CrashCatWayfinder*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(CrashCatWayfinder)))
+    ((CrashCatWayfinder*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(CrashCatWayfinder)))
 #endif //__nvoc_crashcat_wayfinder_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_CrashCatWayfinder(CrashCatWayfinder**, Dynamic*, NvU32, va_list);

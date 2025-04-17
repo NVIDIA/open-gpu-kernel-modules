@@ -123,42 +123,7 @@ egmmemConstruct_IMPL
     sizeOut = pMemDesc->Size;
     pAllocData->limit = sizeOut - 1;
 
-    if (FLD_TEST_DRF(OS32, _ATTR2, _GPU_CACHEABLE, _DEFAULT, pAllocData->attr2))
-    {
-        pAllocData->attr2 = FLD_SET_DRF(OS32, _ATTR2, _GPU_CACHEABLE, _NO,
-                                        pAllocData->attr2);
-    }
-
-    if (FLD_TEST_DRF(OS32, _ATTR2, _GPU_CACHEABLE, _YES, pAllocData->attr2))
-    {
-        gpuCacheAttrib = NV_MEMORY_CACHED;
-    }
-    else
-    {
-        gpuCacheAttrib = NV_MEMORY_UNCACHED;
-    }
-
-    if (FLD_TEST_DRF(OS32, _ATTR, _COHERENCY, _UNCACHED, pAllocData->attr))
-        Cache = NV_MEMORY_UNCACHED;
-    else if (FLD_TEST_DRF(OS32, _ATTR, _COHERENCY, _CACHED, pAllocData->attr))
-        Cache = NV_MEMORY_CACHED;
-    else if (FLD_TEST_DRF(OS32, _ATTR, _COHERENCY, _WRITE_COMBINE, pAllocData->attr))
-        Cache = NV_MEMORY_WRITECOMBINED;
-    else if (FLD_TEST_DRF(OS32, _ATTR, _COHERENCY, _WRITE_THROUGH, pAllocData->attr))
-        Cache = NV_MEMORY_CACHED;
-    else if (FLD_TEST_DRF(OS32, _ATTR, _COHERENCY, _WRITE_PROTECT, pAllocData->attr))
-        Cache = NV_MEMORY_CACHED;
-    else if (FLD_TEST_DRF(OS32, _ATTR, _COHERENCY, _WRITE_BACK, pAllocData->attr))
-        Cache = NV_MEMORY_CACHED;
-    else
-        Cache = 0;
-
-    ct_assert(NVOS32_ATTR_COHERENCY_UNCACHED      == NVOS02_FLAGS_COHERENCY_UNCACHED);
-    ct_assert(NVOS32_ATTR_COHERENCY_CACHED        == NVOS02_FLAGS_COHERENCY_CACHED);
-    ct_assert(NVOS32_ATTR_COHERENCY_WRITE_COMBINE == NVOS02_FLAGS_COHERENCY_WRITE_COMBINE);
-    ct_assert(NVOS32_ATTR_COHERENCY_WRITE_THROUGH == NVOS02_FLAGS_COHERENCY_WRITE_THROUGH);
-    ct_assert(NVOS32_ATTR_COHERENCY_WRITE_PROTECT == NVOS02_FLAGS_COHERENCY_WRITE_PROTECT);
-    ct_assert(NVOS32_ATTR_COHERENCY_WRITE_BACK    == NVOS02_FLAGS_COHERENCY_WRITE_BACK);
+    memSetSysmemCacheAttrib(pGpu, pAllocData, &Cache, &gpuCacheAttrib);
 
     flags = DRF_DEF(OS02, _FLAGS, _LOCATION, _PCI) |
             DRF_DEF(OS02, _FLAGS, _MAPPING, _NO_MAP) |

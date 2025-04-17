@@ -75,8 +75,8 @@ enum NvYuv420Mode {
 };
 
 typedef struct _NvModeTimings {
-    NvU32 RRx1k;
     NvU64 pixelClockHz NV_ALIGN_BYTES(8); /* in Hz units */
+    NvU32 RRx1k;
     NvU16 hVisible;
     NvU16 hSyncStart;
     NvU16 hSyncEnd;

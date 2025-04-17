@@ -34,6 +34,17 @@
 /* C370 is partially derived from 0073 */
 #include "ctrl/ctrl0073/ctrl0073event.h"
 
+/* 
+* headId
+*   This parameter indicates the ID of head on which we received interrupt
+* RgSemId
+*   This parameter indicates the RG Semaphore Index for given head
+*/
+typedef struct NVC370_RG_SEM_NOTIFICATION_PARAMS {
+    NvU32 headId;
+    NvU32 rgSemId;
+} NVC370_RG_SEM_NOTIFICATION_PARAMS;
+
 
 
 

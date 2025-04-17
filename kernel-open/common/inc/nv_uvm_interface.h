@@ -660,14 +660,20 @@ NV_STATUS nvUvmInterfaceServiceDeviceInterruptsRM(uvmGpuDeviceHandle device);
     RM will propagate the update to all channels using the provided VA space.
     All channels must be idle when this call is made.
 
+    If the pageDirectory is in system memory then a CPU physical address must be
+    provided. RM will establish and manage the DMA mapping for the
+    pageDirectory.
+
     Arguments:
       vaSpace[IN}         - VASpace Object
-      physAddress[IN]     - Physical address of new page directory
+      physAddress[IN]     - Physical address of new page directory. If
+                            !bVidMemAperture this is a CPU physical address.
       numEntries[IN]      - Number of entries including previous PDE which will be copied
       bVidMemAperture[IN] - If set pageDirectory will reside in VidMem aperture else sysmem
       pasid[IN]           - PASID (Process Address Space IDentifier) of the process
                             corresponding to the VA space. Ignored unless the VA space
                             object has ATS enabled.
+      dmaAddress[OUT]     - DMA mapping created for physAddress.
 
     Error codes:
       NV_ERR_GENERIC
@@ -675,7 +681,8 @@ NV_STATUS nvUvmInterfaceServiceDeviceInterruptsRM(uvmGpuDeviceHandle device);
 */
 NV_STATUS nvUvmInterfaceSetPageDirectory(uvmGpuAddressSpaceHandle vaSpace,
                                          NvU64 physAddress, unsigned numEntries,
-                                         NvBool bVidMemAperture, NvU32 pasid);
+                                         NvBool bVidMemAperture, NvU32 pasid,
+                                         NvU64 *dmaAddress);
 
 /*******************************************************************************
     nvUvmInterfaceUnsetPageDirectory
@@ -1862,5 +1869,4 @@ NV_STATUS nvUvmInterfaceCslIncrementIv(UvmCslContext *uvmCslContext,
 NV_STATUS nvUvmInterfaceCslLogEncryption(UvmCslContext *uvmCslContext,
                                          UvmCslOperation operation,
                                          NvU32 bufferSize);
-
 #endif // _NV_UVM_INTERFACE_H_

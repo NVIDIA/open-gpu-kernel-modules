@@ -362,7 +362,7 @@
  *     if the mode will be possible or not on that head when OSLD is enabled. 
  *     The output is only valid if bGetOSLDOutput is set in the head input.
  *     Note that bIsOSLDPossible is only valid if bIsPossible is true.
- *    
+ *
  *   minImpVPState
  *     minImpVPState returns the minimum v-pstate at which the mode is possible
  *     (assuming bIsPossible is TRUE).  This output is valid only on dGPU, and

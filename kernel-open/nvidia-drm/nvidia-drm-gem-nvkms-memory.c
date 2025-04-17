@@ -308,12 +308,12 @@ static int __nv_drm_nvkms_gem_obj_init(
     nv_nvkms_memory->pWriteCombinedIORemapAddress = NULL;
     nv_nvkms_memory->physically_mapped = false;
 
-    if (!nvKms->getMemoryPages(nv_dev->pDevice,
+    if (!nvKms->isVidmem(pMemory) &&
+        !nvKms->getMemoryPages(nv_dev->pDevice,
                                pMemory,
                                &pages,
-                               &numPages) &&
-        !nvKms->isVidmem(pMemory)) {
-        /* GetMemoryPages may fail for vidmem allocations,
+                               &numPages)) {
+        /* GetMemoryPages will fail for vidmem allocations,
          * but it should not fail for sysmem allocations. */
         NV_DRM_DEV_LOG_ERR(nv_dev,
             "Failed to get memory pages for NvKmsKapiMemory 0x%p",

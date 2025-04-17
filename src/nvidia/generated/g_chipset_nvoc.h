@@ -1,13 +1,15 @@
 
 #ifndef _G_CHIPSET_NVOC_H_
 #define _G_CHIPSET_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,6 +77,8 @@ struct PCIECONFIGSPACEBASE
 #define PCI_CLASS_DISPLAY_DEV   0x03
 #define PCI_COMMAND             0x04
 #define PCI_BASE_ADDRESS_0      0x10   /* Aperture Base */
+#define PCI_BASE_ADDRESS_0_VALID_MASK     0xFFFFFFF0
+
 
 #define PCI_VENDOR_ID_AMD       0x1022
 #define PCI_VENDOR_ID_ALI       0x10B9
@@ -157,9 +161,6 @@ struct PCIECONFIGSPACEBASE
 #define CL_AER_ERROR_SOURCE                         (CL_AER_BEGIN + 0x34)
 #define CL_AER_END                                  (CL_AER_BEGIN + 0x34)
 
-// Advanced Error Reporting Root Error Status ERR_COR Subclass Capable Mask
-#define CL_AER_ROOT_ERROR_STATUS_ERR_COR_SUBCLASS_MASK        (NVBIT32(7) | NVBIT32(8))
-
 // PCI Express Device Capabilities 2
 #define CL_PCIE_DEV_CAP_2_ATOMICS_SUPPORTED_BIT     NVBIT(6)
 #define CL_PCIE_DEV_CAP_2_ATOMIC_32BIT              NVBIT(7)
@@ -230,6 +231,20 @@ typedef struct
 #define CL_L1_SS_CTRL2_REG                          (CL_L1_SS_BEGIN + 0x0C)
 #define CL_L1_SS_END                                CL_L1_SS_CTRL2_REG
 
+// ACS redirect Configuration
+#define CL_ACS_BEGIN                                0x0500
+#define CL_ACS_CAP                                 (CL_ACS_BEGIN + 0x04)
+#define CL_ACS_CTRL                                (CL_ACS_BEGIN + 0x06)
+#define CL_ACS_EGRESS_CTL_V                        (CL_ACS_BEGIN + 0x08)
+#define CL_ACS_END                                 CL_ACS_EGRESS_CTL_V
+
+#define CL_ACS_SV                                  NVBIT32(0)      // Source Validation
+#define CL_ACS_TB                                  NVBIT32(1)      // Translation Blocking
+#define CL_ACS_RR                                  NVBIT32(2)      // P2P Req Redirect
+#define CL_ACS_CR                                  NVBIT32(3)      // P2P Cpl Redirect
+#define CL_ACS_UF                                  NVBIT32(4)      // Upstream forwarding
+#define CL_ACS_EC                                  NVBIT32(5)      // P2P Egress Ctrl
+#define CL_ACS_DT                                  NVBIT32(6)      // Direct Translated P2P
 //
 // This defines PCI-E L1 PM Substates Extended Capability structure per PCI-E manual
 // (refer to section 7.xx of ECN_L1_PM_Substates_with_CLKREQ_31_May_2013_Rev10a.pdf
@@ -268,10 +283,18 @@ typedef struct GspSystemInfo GspSystemInfo;
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJCL;
+struct NVOC_METADATA__Object;
+
+
 struct OBJCL {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__OBJCL *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -280,7 +303,7 @@ struct OBJCL {
     struct Object *__nvoc_pbase_Object;    // obj super
     struct OBJCL *__nvoc_pbase_OBJCL;    // cl
 
-    // 37 PDB properties
+    // 36 PDB properties
     NvBool PDB_PROP_CL_PCIE_CONFIG_ACCESSIBLE;
     NvBool PDB_PROP_CL_DISABLE_BR03_FLOW_CONTROL;
     NvBool PDB_PROP_CL_ASLM_SUPPORTS_NV_LINK_UPGRADE;
@@ -291,7 +314,6 @@ struct OBJCL {
     NvBool PDB_PROP_CL_IS_CHIPSET_IN_ASPM_POR_LIST;
     NvBool PDB_PROP_CL_ASPM_L0S_CHIPSET_DISABLED;
     NvBool PDB_PROP_CL_ASPM_L1_CHIPSET_DISABLED;
-    NvBool PDB_PROP_CL_WAR_4802761_ENABLED;
     NvBool PDB_PROP_CL_ASPM_L0S_CHIPSET_ENABLED_MOBILE_ONLY;
     NvBool PDB_PROP_CL_ASPM_L1_CHIPSET_ENABLED_MOBILE_ONLY;
     NvBool PDB_PROP_CL_ASPM_L1_UPSTREAM_PORT_SUPPORTED;
@@ -335,6 +357,13 @@ struct OBJCL {
     PBUSTOPOLOGYINFO pBusTopologyInfo;
 };
 
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJCL {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
+};
+
 #ifndef __NVOC_CLASS_OBJCL_TYPEDEF__
 #define __NVOC_CLASS_OBJCL_TYPEDEF__
 typedef struct OBJCL OBJCL;
@@ -351,10 +380,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJCL;
     ((pThis)->__nvoc_pbase_OBJCL)
 
 #ifdef __nvoc_chipset_h_disabled
-#define __dynamicCast_OBJCL(pThis) ((OBJCL*)NULL)
+#define __dynamicCast_OBJCL(pThis) ((OBJCL*) NULL)
 #else //__nvoc_chipset_h_disabled
 #define __dynamicCast_OBJCL(pThis) \
-    ((OBJCL*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJCL)))
+    ((OBJCL*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJCL)))
 #endif //__nvoc_chipset_h_disabled
 
 // Property macros
@@ -430,8 +459,6 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJCL;
 #define PDB_PROP_CL_IS_CHIPSET_IO_COHERENT_BASE_NAME PDB_PROP_CL_IS_CHIPSET_IO_COHERENT
 #define PDB_PROP_CL_ASLM_SUPPORTS_FAST_LINK_UPGRADE_BASE_CAST
 #define PDB_PROP_CL_ASLM_SUPPORTS_FAST_LINK_UPGRADE_BASE_NAME PDB_PROP_CL_ASLM_SUPPORTS_FAST_LINK_UPGRADE
-#define PDB_PROP_CL_WAR_4802761_ENABLED_BASE_CAST
-#define PDB_PROP_CL_WAR_4802761_ENABLED_BASE_NAME PDB_PROP_CL_WAR_4802761_ENABLED
 
 NV_STATUS __nvoc_objCreateDynamic_OBJCL(OBJCL**, Dynamic*, NvU32, va_list);
 
@@ -1062,6 +1089,20 @@ static inline NvU32 clGetChipsetL1ClockPMSupport(struct OBJGPU *arg1, struct OBJ
 #endif //__nvoc_chipset_h_disabled
 
 #define clGetChipsetL1ClockPMSupport_HAL(arg1, arg2) clGetChipsetL1ClockPMSupport(arg1, arg2)
+
+NV_STATUS clGetPortAcsRedirectConfig_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2, NvU32 arg3, NvU8 arg4, NvU8 arg5, NvU8 arg6, NvU32 *arg7);
+
+
+#ifdef __nvoc_chipset_h_disabled
+static inline NV_STATUS clGetPortAcsRedirectConfig(struct OBJGPU *arg1, struct OBJCL *arg2, NvU32 arg3, NvU8 arg4, NvU8 arg5, NvU8 arg6, NvU32 *arg7) {
+    NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_chipset_h_disabled
+#define clGetPortAcsRedirectConfig(arg1, arg2, arg3, arg4, arg5, arg6, arg7) clGetPortAcsRedirectConfig_IMPL(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+#endif //__nvoc_chipset_h_disabled
+
+#define clGetPortAcsRedirectConfig_HAL(arg1, arg2, arg3, arg4, arg5, arg6, arg7) clGetPortAcsRedirectConfig(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 
 NV_STATUS clConstruct_IMPL(struct OBJCL *arg_pCl);
 

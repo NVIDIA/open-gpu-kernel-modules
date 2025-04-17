@@ -65,7 +65,10 @@ static NV_STATUS test_non_pipelined(uvm_gpu_t *gpu)
     memset(host_ptr, 0, CE_TEST_MEM_SIZE);
 
     for (i = 0; i < CE_TEST_MEM_COUNT; ++i) {
-        status = uvm_rm_mem_alloc(gpu, UVM_RM_MEM_TYPE_GPU, CE_TEST_MEM_SIZE, 0, &mem[i]);
+        uvm_rm_mem_type_t type;
+
+        type = gpu->mem_info.size ? UVM_RM_MEM_TYPE_GPU : UVM_RM_MEM_TYPE_SYS;
+        status = uvm_rm_mem_alloc(gpu, type, CE_TEST_MEM_SIZE, 0, &mem[i]);
         TEST_CHECK_GOTO(status == NV_OK, done);
     }
 
@@ -405,6 +408,7 @@ static NV_STATUS test_memcpy_and_memset(uvm_gpu_t *gpu)
     uvm_rm_mem_t *sys_rm_mem = NULL;
     uvm_rm_mem_t *gpu_rm_mem = NULL;
     uvm_gpu_address_t gpu_addresses[4] = {0};
+    size_t gpu_addresses_length = 0;
     size_t size = gpu->big_page.internal_size;
     static const size_t element_sizes[] = {1, 4, 8};
     const size_t iterations = 4;
@@ -435,7 +439,7 @@ static NV_STATUS test_memcpy_and_memset(uvm_gpu_t *gpu)
 
     // Virtual address (in UVM's internal address space) backed by sysmem
     TEST_NV_CHECK_GOTO(uvm_rm_mem_alloc(gpu, UVM_RM_MEM_TYPE_SYS, size, 0, &sys_rm_mem), done);
-    gpu_addresses[0] = uvm_rm_mem_get_gpu_va(sys_rm_mem, gpu, is_proxy_va_space);
+    gpu_addresses[gpu_addresses_length++] = uvm_rm_mem_get_gpu_va(sys_rm_mem, gpu, is_proxy_va_space);
 
     if (g_uvm_global.conf_computing_enabled) {
         for (i = 0; i < iterations; ++i) {
@@ -472,21 +476,23 @@ static NV_STATUS test_memcpy_and_memset(uvm_gpu_t *gpu)
     // Physical address in sysmem
     TEST_NV_CHECK_GOTO(uvm_mem_alloc(&mem_params, &sys_uvm_mem), done);
     TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_phys(sys_uvm_mem, gpu), done);
-    gpu_addresses[1] = uvm_mem_gpu_address_physical(sys_uvm_mem, gpu, 0, size);
+    gpu_addresses[gpu_addresses_length++] = uvm_mem_gpu_address_physical(sys_uvm_mem, gpu, 0, size);
 
-    // Physical address in vidmem
-    mem_params.backing_gpu = gpu;
-    TEST_NV_CHECK_GOTO(uvm_mem_alloc(&mem_params, &gpu_uvm_mem), done);
-    gpu_addresses[2] = uvm_mem_gpu_address_physical(gpu_uvm_mem, gpu, 0, size);
+    if (gpu->mem_info.size > 0) {
+        // Physical address in vidmem
+        mem_params.backing_gpu = gpu;
+        TEST_NV_CHECK_GOTO(uvm_mem_alloc(&mem_params, &gpu_uvm_mem), done);
+        gpu_addresses[gpu_addresses_length++] = uvm_mem_gpu_address_physical(gpu_uvm_mem, gpu, 0, size);
 
-    // Virtual address (in UVM's internal address space) backed by vidmem
-    TEST_NV_CHECK_GOTO(uvm_rm_mem_alloc(gpu, UVM_RM_MEM_TYPE_GPU, size, 0, &gpu_rm_mem), done);
-    gpu_addresses[3] = uvm_rm_mem_get_gpu_va(gpu_rm_mem, gpu, is_proxy_va_space);
+        // Virtual address (in UVM's internal address space) backed by vidmem
+        TEST_NV_CHECK_GOTO(uvm_rm_mem_alloc(gpu, UVM_RM_MEM_TYPE_GPU, size, 0, &gpu_rm_mem), done);
+        gpu_addresses[gpu_addresses_length++] = uvm_rm_mem_get_gpu_va(gpu_rm_mem, gpu, is_proxy_va_space);
+    }
 
 
     for (i = 0; i < iterations; ++i) {
-        for (j = 0; j < ARRAY_SIZE(gpu_addresses); ++j) {
-            for (k = 0; k < ARRAY_SIZE(gpu_addresses); ++k) {
+        for (j = 0; j < gpu_addresses_length; ++j) {
+            for (k = 0; k < gpu_addresses_length; ++k) {
                 for (s = 0; s < ARRAY_SIZE(element_sizes); s++) {
                     TEST_NV_CHECK_GOTO(test_memcpy_and_memset_inner(gpu,
                                                                     gpu_addresses[k],

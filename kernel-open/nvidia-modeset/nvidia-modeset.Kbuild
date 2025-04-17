@@ -52,7 +52,7 @@ nvidia-modeset-y += $(NVIDIA_MODESET_BINARY_OBJECT_O)
 # Define nvidia-modeset.ko-specific CFLAGS.
 #
 
-NVIDIA_MODESET_CFLAGS += -I$(src)/nvidia-modeset
+NVIDIA_MODESET_CFLAGS += -I$(src)/nvidia-modeset -I$(src)/common/inc
 NVIDIA_MODESET_CFLAGS += -UDEBUG -U_DEBUG -DNDEBUG -DNV_BUILD_MODULE_INSTANCES=0
 
 # Some Android kernels prohibit driver use of filesystem functions like

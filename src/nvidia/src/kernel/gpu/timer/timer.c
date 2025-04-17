@@ -273,10 +273,19 @@ _tmrScheduleCallbackInterrupt
     if (pTmr->getProperty(pTmr, PDB_PROP_TMR_USE_COUNTDOWN_TIMER_FOR_RM_CALLBACKS))
     {
         NvU64 currentTime;
-        NvU32 countdownTime;
+        // 
+        // Bug: 5071665, 4417666. High spikes of DPC Activity in ARM based system.
+        // The issue is caused due to an ARM compiler optimization bug which is doing 
+        // 32-bit subtraction instead of 64-bit subtraction casted to 32-bits. 
+        // Fix: Set 'volatile' qualifier to' countdownTime' so that it is not optimized.
+        //
+        volatile NvU32 countdownTime = 0;
 
         tmrGetCurrentTime(pTmr, &currentTime);
-        countdownTime = currentTime < alarmTime ? NvU64_LO32(alarmTime - currentTime) : 0;
+        if (currentTime < alarmTime)
+        {
+            countdownTime = NvU64_LO32(alarmTime - currentTime);
+        }
         tmrSetCountdown_HAL(pGpu, pTmr, countdownTime, 0, NULL);
     }
     else
@@ -440,7 +449,7 @@ tmrEventTimeUntilNextCallback_IMPL
 
     if (tmrIsOSTimer(pTmr, pEventPublic))
     {
-        osGetCurrentTick(&currentTime);
+        currentTime = osGetCurrentTick();
         // timens corresponds to relative time for OS timer
         NV_CHECK_OR_RETURN(LEVEL_ERROR, portSafeAddU64(pEvent->timens, pEvent->startTimeNs, &nextAlarmTime),
                            NV_ERR_INVALID_ARGUMENT);
@@ -626,7 +635,7 @@ NV_STATUS tmrEventScheduleRel_IMPL
         // Capture system time here, this will help in scheduling callbacks
         // if there is a state unload before receiving the OS timer callback.
         //
-        osGetCurrentTick(&pEventPvt->startTimeNs);
+        pEventPvt->startTimeNs = osGetCurrentTick();
         if (!tmrEventOnList(pTmr, pEvent))
         {
             _tmrInsertCallback(pTmr, pEventPvt, RelTime);
@@ -1356,7 +1365,7 @@ _tmrStateLoadCallbacks
         // Capture system time here, this will help in scheduling callbacks
         // if there is a state unload before receiving the OS timer callback.
         //
-        osGetCurrentTick(&pScan->startTimeNs);
+        pScan->startTimeNs = osGetCurrentTick();
         tmrEventScheduleRelOSTimer_HAL(pTmr, (TMR_EVENT *)pScan, pScan->timens);
         pScan = pScan->pNext;
     }
@@ -1646,7 +1655,7 @@ tmrStateUnload_IMPL
     //
     while (pScan != NULL)
     {
-        osGetCurrentTick(&currentSysTime);
+        currentSysTime = osGetCurrentTick();
         //
         // If somehow any of the time difference is negative,
         // we will use the  original time duration.

@@ -39,6 +39,7 @@
 #include "ctrl/ctrl0000/ctrl0000event.h" // NV0000_CTRL_EVENT_SET_NOTIFICATION_ACTION_*
 
 static NV_STATUS _eventRpcForType(NvHandle hClient, NvHandle hObject);
+static void eventSystemDequeueEventLatest(SystemEventQueueList *pQueue);
 
 NV_STATUS
 eventConstruct_IMPL
@@ -551,11 +552,10 @@ CliDelObjectEvents
 
 void CliAddSystemEvent(
     NvU32 event,
-    NvU32 status,
+    void *pEventData,
     NvBool *isEventNotified
 )
 {
-    NvU32 temp;
     PEVENTNOTIFICATION pEventNotification = NULL;
     RmClient **ppClient;
     RmClient  *pClient;
@@ -579,18 +579,6 @@ void CliAddSystemEvent(
             continue;
         }
 
-        temp = (pClient->CliSysEventInfo.systemEventsQueue.Head + 1) % NV_SYSTEM_EVENT_QUEUE_SIZE;
-
-        if (temp == pClient->CliSysEventInfo.systemEventsQueue.Tail)
-        {
-            NV_PRINTF(LEVEL_ERROR, "system event queue is full");
-            return;
-        }
-
-        pClient->CliSysEventInfo.systemEventsQueue.EventQueue[pClient->CliSysEventInfo.systemEventsQueue.Head].event  = event;
-        pClient->CliSysEventInfo.systemEventsQueue.EventQueue[pClient->CliSysEventInfo.systemEventsQueue.Head].status = status;
-        pClient->CliSysEventInfo.systemEventsQueue.Head = temp;
-
         rmStatus = clientGetResourceRef(staticCast(pClient, RsClient), pRsClient->hClient, &pCliResRef);
         if (rmStatus != NV_OK)
         {
@@ -610,13 +598,30 @@ void CliAddSystemEvent(
             {
                 if (pEventNotification->NotifyIndex == event)
                 {
+                    // only log the system event that has data
+                    if (pEventData != NULL)
+                    {
+                        if (eventSystemEnqueueEvent(&pClient->CliSysEventInfo.eventQueue,
+                                                    event, pEventData) != NV_OK)
+                        {
+                            NV_PRINTF(LEVEL_ERROR, "fails to add event=%d\n", event);
+                            return;
+                        }
+                    }
+
                     if (osNotifyEvent(NULL, pEventNotification, 0, 0, 0) != NV_OK)
                     {
+                        if (pEventData != NULL)
+                            eventSystemDequeueEventLatest(&pClient->CliSysEventInfo.eventQueue);
+
                         NV_PRINTF(LEVEL_ERROR, "failed to deliver event 0x%x",
                                   event);
                     }
-                    if (isEventNotified != NULL)
-                        *isEventNotified = NV_TRUE;
+                    else
+                    {
+                        if (isEventNotified != NULL)
+                            *isEventNotified = NV_TRUE;
+                    }
                 }
                 pEventNotification = pEventNotification->Next;
             }
@@ -649,6 +654,7 @@ _eventRpcForType(NvHandle hClient, NvHandle hObject)
         objDynamicCastById(pResourceRef->pResource, classId(ChannelDescendant)) ||
         objDynamicCastById(pResourceRef->pResource, classId(ContextDma)) ||
         objDynamicCastById(pResourceRef->pResource, classId(DispChannel)) ||
+        objDynamicCastById(pResourceRef->pResource, classId(DispCommon)) ||        
         objDynamicCastById(pResourceRef->pResource, classId(TimerApi)) ||
         objDynamicCastById(pResourceRef->pResource, classId(KernelSMDebuggerSession)))
     {
@@ -703,4 +709,74 @@ eventGetByHandle_IMPL
     *pNotifyIndex = pEventNotification->NotifyIndex;
 
     return status;
+}
+
+void eventSystemInitEventQueue(SystemEventQueueList *pQueue)
+{
+    listInit(pQueue, portMemAllocatorGetGlobalNonPaged());
+}
+
+NV_STATUS eventSystemEnqueueEvent(SystemEventQueueList *pQueue, NvU32 event, void *pEventData)
+{
+    NV0000_CTRL_GET_SYSTEM_EVENT_DATA_PARAMS newNode = { 0 };
+
+    newNode.event = event;
+    switch (event)
+    {
+        case NV0000_NOTIFIERS_DISPLAY_CHANGE:
+            newNode.data.display = *((NV0000_CTRL_SYSTEM_EVENT_DATA_DISPLAY_CHANGE *)pEventData);
+            break;
+
+        case NV0000_NOTIFIERS_VGPU_UNBIND_EVENT:
+            newNode.data.vgpuUnbind = *((NV0000_CTRL_SYSTEM_EVENT_DATA_VGPU_UNBIND *)pEventData);
+            break;
+
+        case NV0000_NOTIFIERS_VGPU_BIND_EVENT:
+            newNode.data.vgpuBind = *((NV0000_CTRL_SYSTEM_EVENT_DATA_VGPU_BIND *)pEventData);
+            break;
+
+        case NV0000_NOTIFIERS_GPU_BIND_UNBIND_EVENT:
+            newNode.data.gpuBindUnbind = *((NV0000_CTRL_SYSTEM_EVENT_DATA_GPU_BIND_UNBIND *)pEventData);
+            break;
+
+        default:
+            return NV_ERR_INVALID_EVENT;
+    }
+
+    if (listAppendValue(pQueue, &newNode) == NULL)
+        return NV_ERR_NO_MEMORY;
+
+    return NV_OK;
+}
+
+static void eventSystemDequeueEventLatest(SystemEventQueueList *pQueue)
+{
+    NV0000_CTRL_GET_SYSTEM_EVENT_DATA_PARAMS *pLastNode = listTail(pQueue);
+
+    if (pLastNode == NULL)
+        return;
+
+    listRemove(pQueue, pLastNode);
+}
+
+NV_STATUS eventSystemDequeueEvent(SystemEventQueueList *pQueue, NV0000_CTRL_GET_SYSTEM_EVENT_DATA_PARAMS *pEvent)
+{
+    NV0000_CTRL_GET_SYSTEM_EVENT_DATA_PARAMS *pFirstNode = listHead(pQueue);
+
+    if (pFirstNode == NULL)
+    {
+        // Queue is empty
+        return NV_ERR_OBJECT_NOT_FOUND;
+    }
+
+    *pEvent = *pFirstNode;
+
+    listRemove(pQueue, pFirstNode);
+
+    return NV_OK;
+}
+
+void eventSystemClearEventQueue(SystemEventQueueList *pQueue)
+{
+    listClear(pQueue);
 }

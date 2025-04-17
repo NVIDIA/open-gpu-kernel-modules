@@ -205,6 +205,7 @@ ct_assert(VGPU_EVENT_BUF_ENTRY_SIZE == (NV_VGPU_EV__SIZE_1 * sizeof (NvU32)));
 #define VGPU_GSP_BUF_ADDR_V2_SIZE                                            4:3
 #define VGPU_GSP_BUF_ADDR_V2_SIZE_4K                                  0x00000000
 #define VGPU_GSP_BUF_ADDR_V2_SIZE_128K                                0x00000001
+#define VGPU_GSP_BUF_ADDR_V2_SIZE_2M                                  0x00000002
 #define VGPU_GSP_BUF_ADDR_V1_PFN                                           63:12
 
 #define VGPU_GSP_CTRL_BUF_V1_VERSION                                           1
@@ -221,18 +222,21 @@ typedef struct {
 
 typedef union {
     struct {
-        volatile NvU32             version;              // Version of control buffer format
-        volatile NvU32             requestId;            // Request sequence number
-        volatile VGPU_GSP_BUF_INFO responseBuf;          // Response buffer address
-        volatile VGPU_GSP_BUF_INFO msgBuf;               // RPC message buffer address
-        volatile VGPU_GSP_BUF_INFO sharedMem;            // Shared memory buffer
-        volatile VGPU_GSP_BUF_INFO eventBuf;             // Event buffer address
-        volatile NvU32             getEventBuf;          // GET index in circular event buffe
-        volatile NvU32             guestEccStatus;       // guest ecc status
-        volatile NvU64             sysmemBitMapTablePfn; // Root node's pfn value of dirty sysmem tracking table
-        volatile NvU32             guestOsType;          // Guest OS type
-        volatile NvU32             requestedGspCaps;     // requested GSP caps
-        volatile VGPU_GSP_BUF_INFO debugBuf;             // Debug buffer address
+        volatile NvU32             version;                    // Version of control buffer format
+        volatile NvU32             requestId;                  // Request sequence number
+        volatile VGPU_GSP_BUF_INFO responseBuf;                // Response buffer address
+        volatile VGPU_GSP_BUF_INFO msgBuf;                     // RPC message buffer address
+        volatile VGPU_GSP_BUF_INFO sharedMem;                  // Shared memory buffer
+        volatile VGPU_GSP_BUF_INFO eventBuf;                   // Event buffer address
+        volatile NvU32             getEventBuf;                // GET index in circular event buffer
+        volatile NvU32             guestEccStatus;             // guest ecc status
+        volatile NvU64             sysmemBitMapTablePfn;       // Root node's pfn value of dirty sysmem tracking table
+        volatile NvU32             guestOsType;                // Guest OS type
+        volatile NvU32             requestedGspCaps;           // requested GSP caps
+        volatile VGPU_GSP_BUF_INFO debugBuf;                   // Debug buffer address
+        volatile NvU32             getSaveHibernateBuf;        // GET index in circular hibernation buffer during SAVE
+        volatile NvU32             putRestoreHibernateBuf;     // PUT index in circular hibernation buffer duing RESTORE
+        volatile NvU32             IsMoreHibernateDataRestore; // If data is available to restore during hibernation
     } ;
     volatile NvU8 buf[VGPU_GSP_CTRL_BUF_SIZE_V1];
 } VGPU_GSP_CTRL_BUF_V1;
@@ -241,18 +245,21 @@ typedef union {
 ct_assert(sizeof(VGPU_GSP_CTRL_BUF_V1) == VGPU_GSP_CTRL_BUF_SIZE_V1);
 
 // check field offset
-ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, version              ) == 0x000);
-ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, requestId            ) == 0x004);
-ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, responseBuf          ) == 0x008);
-ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, msgBuf               ) == 0x018);
-ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, sharedMem            ) == 0x028);
-ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, eventBuf             ) == 0x038);
-ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, getEventBuf          ) == 0x048);
-ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, guestEccStatus       ) == 0x04C);
-ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, sysmemBitMapTablePfn ) == 0x050);
-ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, guestOsType          ) == 0x058);
-ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, requestedGspCaps     ) == 0x05C);
-ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, debugBuf             ) == 0x060);
+ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, version                    ) == 0x000);
+ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, requestId                  ) == 0x004);
+ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, responseBuf                ) == 0x008);
+ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, msgBuf                     ) == 0x018);
+ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, sharedMem                  ) == 0x028);
+ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, eventBuf                   ) == 0x038);
+ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, getEventBuf                ) == 0x048);
+ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, guestEccStatus             ) == 0x04C);
+ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, sysmemBitMapTablePfn       ) == 0x050);
+ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, guestOsType                ) == 0x058);
+ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, requestedGspCaps           ) == 0x05C);
+ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, debugBuf                   ) == 0x060);
+ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, getSaveHibernateBuf        ) == 0x070);
+ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, putRestoreHibernateBuf     ) == 0x074);
+ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, IsMoreHibernateDataRestore ) == 0x078);
 
 /****** Response buffer: written by GSP vGPU plugin and read by guest RM ******/
 
@@ -260,11 +267,14 @@ ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, debugBuf             ) == 0x060);
 
 typedef union {
     struct {
-        volatile NvU32 responseId;          // Response sequence number
-        volatile NvU32 putEventBuf;         // PUT index in circular event buffer
-        volatile NvU32 hostEccStatus;       // host ecc status
-        volatile NvU32 usmType;             // Host USM Type
-        volatile NvU32 enabledGspCaps;      // Enabled GSP caps
+        volatile NvU32 responseId;              // Response sequence number
+        volatile NvU32 putEventBuf;             // PUT index in circular event buffer
+        volatile NvU32 hostEccStatus;           // host ecc status
+        volatile NvU32 usmType;                 // Host USM Type
+        volatile NvU32 enabledGspCaps;          // Enabled GSP caps
+        volatile NvU32 putSaveHibernateBuf;     // PUT index in circular hibernate shared buffer during save
+        volatile NvU32 getRestoreHibernateBuf;  // GET index in circular hibernate shared buffer during restore
+        volatile NvU32 IsMoreHibernateDataSave; // Indicates if data is available to save during hibernation
     };
     volatile NvU8 buf[VGPU_GSP_RESPONSE_BUF_SIZE_V1];
 } VGPU_GSP_RESPONSE_BUF_V1;
@@ -273,11 +283,14 @@ typedef union {
 ct_assert(sizeof(VGPU_GSP_RESPONSE_BUF_V1) == VGPU_GSP_RESPONSE_BUF_SIZE_V1);
 
 // check field offset
-ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, responseId          ) == 0x000);
-ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, putEventBuf         ) == 0x004);
-ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, hostEccStatus       ) == 0x008);
-ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, usmType             ) == 0x00C);
-ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, enabledGspCaps      ) == 0x010);
+ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, responseId              ) == 0x000);
+ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, putEventBuf             ) == 0x004);
+ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, hostEccStatus           ) == 0x008);
+ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, usmType                 ) == 0x00C);
+ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, enabledGspCaps          ) == 0x010);
+ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, putSaveHibernateBuf     ) == 0x014);
+ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, getRestoreHibernateBuf  ) == 0x018);
+ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, IsMoreHibernateDataSave ) == 0x01C);
 
 /******************************************************************************/
 /* GSP Control buffer format - Version 1 - END                                */

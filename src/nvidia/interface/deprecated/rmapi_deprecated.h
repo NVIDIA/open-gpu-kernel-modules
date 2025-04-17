@@ -102,6 +102,7 @@ void RmDeprecatedAllocMemory(DEPRECATED_CONTEXT *pContext, NVOS02_PARAMETERS *pA
  */
 typedef NV_STATUS (*RmDeprecatedControlHandler)(API_SECURITY_INFO*,DEPRECATED_CONTEXT*,NVOS54_PARAMETERS*);
 RmDeprecatedControlHandler RmDeprecatedGetControlHandler(NVOS54_PARAMETERS *pArgs);
+NvBool IsGssLegacyCall(NvU32 cmd);
 
 NV_STATUS RmDeprecatedGetHandleParent(DEPRECATED_CONTEXT *pContext, NvHandle hClient,
                                       NvHandle hObject, NvHandle *phParent);

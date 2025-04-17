@@ -267,6 +267,12 @@ libspdm_return_t libspdm_encapsulated_request(libspdm_context_t *spdm_context,
             libspdm_release_receiver_buffer (spdm_context);
             return LIBSPDM_STATUS_INVALID_MSG_SIZE;
         }
+
+#if LIBSPDM_ENABLE_MSG_LOG
+        // NVIDIA_EDIT: Need to support message log for testing purposes for all responses
+        libspdm_append_msg_log(spdm_context, spdm_response, spdm_response_size);
+#endif /* LIBSPDM_ENABLE_MSG_LOG */
+
         if (spdm_response_size == sizeof(spdm_encapsulated_request_response_t)) {
 
             /* Done*/
@@ -391,6 +397,10 @@ libspdm_return_t libspdm_encapsulated_request(libspdm_context_t *spdm_context,
         switch (spdm_encapsulated_response_ack_response->header.param2) {
         case SPDM_ENCAPSULATED_RESPONSE_ACK_RESPONSE_PAYLOAD_TYPE_ABSENT:
             if (spdm_response_size == ack_header_size) {
+#if LIBSPDM_ENABLE_MSG_LOG
+                // NVIDIA_EDIT: Need to support message log for testing purposes for all responses
+                libspdm_append_msg_log(spdm_context, spdm_response, spdm_response_size);
+#endif /* LIBSPDM_ENABLE_MSG_LOG */
                 libspdm_release_receiver_buffer (spdm_context);
                 return LIBSPDM_STATUS_SUCCESS;
             } else {
@@ -412,6 +422,10 @@ libspdm_return_t libspdm_encapsulated_request(libspdm_context_t *spdm_context,
                         return LIBSPDM_STATUS_INVALID_MSG_FIELD;
                     }
                 }
+#if LIBSPDM_ENABLE_MSG_LOG
+                // NVIDIA_EDIT: Need to support message log for testing purposes for all responses
+                libspdm_append_msg_log(spdm_context, spdm_response, spdm_response_size);
+#endif /* LIBSPDM_ENABLE_MSG_LOG */
                 libspdm_release_receiver_buffer (spdm_context);
                 return LIBSPDM_STATUS_SUCCESS;
             } else {
@@ -425,6 +439,11 @@ libspdm_return_t libspdm_encapsulated_request(libspdm_context_t *spdm_context,
         }
         request_id =
             spdm_encapsulated_response_ack_response->header.param1;
+
+#if LIBSPDM_ENABLE_MSG_LOG
+        // NVIDIA_EDIT: Need to support message log for testing purposes for all responses
+        libspdm_append_msg_log(spdm_context, spdm_response, spdm_response_size);
+#endif /* LIBSPDM_ENABLE_MSG_LOG */
 
         encapsulated_request =
             ((uint8_t *)spdm_encapsulated_response_ack_response + ack_header_size);

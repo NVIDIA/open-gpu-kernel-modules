@@ -208,7 +208,6 @@ NV_STATUS nvUvmInterfaceSessionCreate(uvmGpuSessionHandle *session,
 
     memset(platformInfo, 0, sizeof(*platformInfo));
     platformInfo->atsSupported = nv_ats_supported;
-
     platformInfo->confComputingEnabled = os_cc_enabled;
 
     status = rm_gpu_ops_create_session(sp, (gpuSessionHandle *)session);
@@ -692,7 +691,8 @@ EXPORT_SYMBOL(nvUvmInterfaceServiceDeviceInterruptsRM);
 
 NV_STATUS nvUvmInterfaceSetPageDirectory(uvmGpuAddressSpaceHandle vaSpace,
                                          NvU64 physAddress, unsigned numEntries,
-                                         NvBool bVidMemAperture, NvU32 pasid)
+                                         NvBool bVidMemAperture, NvU32 pasid,
+                                         NvU64 *dmaAddress)
 {
     nvidia_stack_t *sp = NULL;
     NV_STATUS status;
@@ -703,7 +703,8 @@ NV_STATUS nvUvmInterfaceSetPageDirectory(uvmGpuAddressSpaceHandle vaSpace,
     }
 
     status = rm_gpu_ops_set_page_directory(sp, (gpuAddressSpaceHandle)vaSpace,
-                                    physAddress, numEntries, bVidMemAperture, pasid);
+                                    physAddress, numEntries, bVidMemAperture, pasid,
+                                    dmaAddress);
 
     nv_kmem_cache_free_stack(sp);
     return status;
@@ -894,6 +895,7 @@ NV_STATUS nvUvmInterfaceInitFaultInfo(uvmGpuDeviceHandle device,
             goto error;
         }
     }
+
     goto done;
 
 error:

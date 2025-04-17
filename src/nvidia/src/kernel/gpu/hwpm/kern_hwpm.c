@@ -30,8 +30,13 @@
 #include "gpu/hwpm/kern_hwpm.h"
 #include "ctrl/ctrlb0cc.h"
 
+#include "nvrm_registry.h"
+
 /* ------------------------ Static Function Prototypes --------------------- */
 static RefcntStateChangeCallback _khwpmProfilerPmaVaSpaceAllocStateChange;
+
+#define PERF_PER_CTX_VASPACE_SIZE   (4*1024*1024*1024ULL)
+#define EXTENDED_PERF_PER_CTX_VASPACE_SIZE   (128*1024*1024*1024ULL + 4*1024*1024ULL)
 
 /* ------------------------ Public Functions  ------------------------------ */
 
@@ -161,6 +166,7 @@ khwpmStateInitUnlocked_IMPL
 {
     NV_STATUS status = NV_OK;
     NvU32     bpcIdx;
+    NvU32     data32;
 
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
         _khwpmInitPmaStreamAttributes(pGpu, pKernelHwpm), khwpmStateInitUnlocked_exit);
@@ -175,6 +181,21 @@ khwpmStateInitUnlocked_IMPL
     pKernelHwpm->vaSpaceBase = PERF_VASPACE_BASE;
 
     pKernelHwpm->vaSpaceSize = PERF_VASPACE_SIZE - PERF_VASPACE_BASE;
+
+    pKernelHwpm->perCtxSize = PERF_PER_CTX_VASPACE_SIZE;
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_HWPM_EXTENDED_BUFFER, &data32) == NV_OK)
+    {
+        if (data32 == NV_REG_STR_RM_HWPM_EXTENDED_BUFFER_TRUE)
+        {
+            if (pKernelHwpm->getProperty(pKernelHwpm, PDB_PROP_KHWPM_EXTENDED_BUFFER_SUPPORTED) != NV_TRUE)
+            {
+                status = NV_ERR_INVALID_ARGUMENT;
+                goto khwpmStateInitUnlocked_exit;
+            }
+            pKernelHwpm->perCtxSize = EXTENDED_PERF_PER_CTX_VASPACE_SIZE;
+            pKernelHwpm->setProperty(pKernelHwpm, PDB_PROP_KHWPM_EXTENDED_BUFFER_ENABLED, NV_TRUE);
+        }
+    }
 
     pKernelHwpm->streamoutState = portMemAllocNonPaged(sizeof(HWPM_STREAMOUT_STATE) * pKernelHwpm->maxCblocks);
     if (pKernelHwpm->streamoutState == NULL)

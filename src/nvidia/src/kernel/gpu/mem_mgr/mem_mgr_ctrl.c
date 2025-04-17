@@ -65,10 +65,14 @@ memmgrGetDeviceCaps
 {
     NvU8 tempCaps[NV0080_CTRL_FB_CAPS_TBL_SIZE], temp;
     KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
-    const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig =
-        kmemsysGetStaticConfig(pGpu, pKernelMemorySystem);
+    const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig;
 
     NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
+
+    if (pKernelMemorySystem == NULL)
+        return;
+
+    pMemorySystemConfig = kmemsysGetStaticConfig(pGpu, pKernelMemorySystem);
 
     portMemSet(tempCaps, 0, NV0080_CTRL_FB_CAPS_TBL_SIZE);
 
@@ -404,7 +408,6 @@ subdeviceCtrlCmdFbGetMemAlignment_IMPL
     NvHandle                hObject    = RES_GET_HANDLE(pSubdevice);
     Heap                   *pHeap      = vidmemGetHeap(pGpu, pDevice, NV_FALSE, NV_FALSE);
     HEAP_ALLOC_HINT_PARAMS  AllocHint  = {0};
-    NvU32                   i;
     NvU64                   _size, _alignment;
     NV_STATUS               status = NV_OK;
 
@@ -424,7 +427,6 @@ subdeviceCtrlCmdFbGetMemAlignment_IMPL
     AllocHint.pWidth = &pParams->alignWidth;
     AllocHint.pPitch = &pParams->alignPitch;
     AllocHint.pKind = &pParams->alignKind;
-    AllocHint.alignAdjust = 0x0;
 
     status = heapAllocHint(pGpu, pHeap, hClient, hObject, &AllocHint);
     if (status != NV_OK)
@@ -437,36 +439,9 @@ subdeviceCtrlCmdFbGetMemAlignment_IMPL
     pParams->alignMask = (NvU32)_alignment;
     pParams->alignSize = _size;
 
-    if (NV_FALSE == AllocHint.ignoreBankPlacement)
-    {
-        for (i=0; i<MEM_NUM_BANKS_TO_TRY; i++)
-        {
-            if (MEM_NO_BANK_SELECTION == (AllocHint.bankPlacement & MEM_NO_BANK_SELECTION))
-            {
-                pParams->alignBank[i] = 0x0;
-                pParams->alignOutputFlags[i] = NVAL_MAP_DIRECTION_UP;
-            }
-            else
-            {
-                pParams->alignBank[i] = (AllocHint.bankPlacement & MEM_BANK_MASK) + 1;
-                pParams->alignOutputFlags[i] = (BANK_MEM_GROW_DOWN == (AllocHint.bankPlacement & BANK_MEM_GROW_MASK)) ? NVAL_MAP_DIRECTION_DOWN: NVAL_MAP_DIRECTION_UP;
-            }
-            AllocHint.bankPlacement >>= MEM_BANK_DATA_SIZE;
-        }
-
-    }
-    else
-    {
-        for (i=0; i<NVAL_MAX_BANKS; i++)
-        {
-            pParams->alignBank[i] = 0x0;
-            pParams->alignOutputFlags[i] = NVAL_MAP_DIRECTION_UP;
-        }
-    }
-
     // Keep Track of resources that we have allocated
     pParams->alignPad = (NvU32)AllocHint.pad;//XXX64b
-    pParams->alignAdjust = (NvU32)AllocHint.alignAdjust;//XXX64b
+    pParams->alignAdjust = 0;
 
     return NV_OK;
 }
@@ -766,8 +741,13 @@ subdeviceCtrlCmdGbGetSemaphoreSurfaceLayout_IMPL
     NV2080_CTRL_FB_GET_SEMAPHORE_SURFACE_LAYOUT_PARAMS *pParams
 )
 {
-    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(GPU_RES_GET_GPU(pSubdevice));
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
+    // Semaphore surfaces are not supported with legacy Sli.
+    if (IsSLIEnabled(pGpu))
+        return NV_ERR_NOT_SUPPORTED;
+    
     pParams->caps = 0;
 
     if (pMemoryManager->bMonitoredFenceSupported)

@@ -56,12 +56,13 @@
 typedef enum
 {
     // Request commands.
-    // 0x00000000 - 0x7FFFFFFF reserved.
+    RM_SPDM_NV_CMD_TYPE_REQ_KEYMGR_NVLE          = 0x00000000,
+    // 0x00000001 - 0x7FFFFFFF reserved.
 
     // Response commands.
-    RM_SPDM_NV_CMD_TYPE_RSP_SUCCESS   = 0x80000000,
+    RM_SPDM_NV_CMD_TYPE_RSP_SUCCESS              = 0x80000000,
     // 0x80000001 - 0xFFFFFFFF reserved.
-    RM_SPDM_NV_CMD_TYPE_RSP_ERROR     = 0xFFFFFFFF,
+    RM_SPDM_NV_CMD_TYPE_RSP_ERROR                = 0xFFFFFFFF,
 } RM_SPDM_NV_CMD_TYPE;
 
 typedef struct
@@ -70,6 +71,32 @@ typedef struct
 } RM_SPDM_NV_CMD_HDR;
 
 /* ------------------------- NVIDIA Requests -------------------------------- */
+/*!
+ * Request Command: Key Manager NVLE Command
+ * Command Type:    0x00000000
+ *
+ * Fields:
+ *      Payload -  Variable size opaque data blob containing command meant for Key manager
+ *
+ * This command is a generic wrapper around all commands that must be forwarded to Key Manager for NvLink Encryption.
+ * The command structure itself is opaque, as SPDM need not process any of the message itself. This limits coupling
+ * between the two command interfaces.
+ */
+typedef struct
+{
+    RM_SPDM_NV_CMD_HDR hdr;
+
+    NvU8               payload[];
+} RM_SPDM_NV_CMD_REQ_KEYMGR_NVLE;
+
+/*!
+ * Union of all known requests, so responder can allocate enough space for all possible requests.
+ */
+typedef union {
+    RM_SPDM_NV_CMD_HDR             hdr;
+
+    RM_SPDM_NV_CMD_REQ_KEYMGR_NVLE keyMgrNvle;
+} RM_SPDM_NV_CMD_REQ;
 
 /* ------------------------- NVIDIA Responses ------------------------------- */
 /*!
@@ -98,6 +125,16 @@ typedef struct
     RM_SPDM_NV_CMD_HDR hdr;
     NV_STATUS          status;
 } RM_SPDM_NV_CMD_RSP_ERROR;
+
+/*!
+ * Union of all known responses, so requester can allocate enough space for all possible responses.
+ */
+typedef union {
+    RM_SPDM_NV_CMD_HDR         hdr;
+
+    RM_SPDM_NV_CMD_RSP_SUCCESS success;
+    RM_SPDM_NV_CMD_RSP_ERROR   error;
+} RM_SPDM_NV_CMD_RSP;
 
 #pragma pack()
 

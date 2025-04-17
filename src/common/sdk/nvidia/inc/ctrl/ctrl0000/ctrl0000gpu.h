@@ -857,10 +857,6 @@ typedef struct NV0000_CTRL_GPU_LEGACY_CONFIG_PARAMS {
 
     union {
         struct {
-            NvU32 newValue;
-            NvU32 oldValue;
-        } configSet;
-        struct {
             NvU8  paramData[NV0000_CTRL_GPU_LEGACY_CONFIG_MAX_PARAM_DATA];
             NvU32 paramSize;
         } configEx;
@@ -872,7 +868,6 @@ typedef struct NV0000_CTRL_GPU_LEGACY_CONFIG_PARAMS {
     } data;
 } NV0000_CTRL_GPU_LEGACY_CONFIG_PARAMS;
 
-#define NV0000_CTRL_GPU_LEGACY_CONFIG_OP_TYPE_SET      (0x00000001U)
 #define NV0000_CTRL_GPU_LEGACY_CONFIG_OP_TYPE_GET_EX   (0x00000002U)
 #define NV0000_CTRL_GPU_LEGACY_CONFIG_OP_TYPE_SET_EX   (0x00000003U)
 #define NV0000_CTRL_GPU_LEGACY_CONFIG_OP_TYPE_RESERVED (0x00000004U)

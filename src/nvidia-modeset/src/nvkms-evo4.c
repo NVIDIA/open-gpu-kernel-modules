@@ -3064,6 +3064,8 @@ NVEvoHAL nvEvoCA = {
         FALSE,                                    /* supportsMergeMode */
         TRUE,                                     /* supportsHDMI10BPC */
         TRUE,                                     /* supportsDPAudio192KHz */
+        TRUE,                                     /* supportsInputColorSpace */
+        TRUE,                                     /* supportsInputColorRange */
         NV_EVO3_SUPPORTED_DITHERING_MODES,        /* supportedDitheringModes */
         sizeof(NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS), /* impStructSize */
         NV_EVO_SCALER_2TAPS,                      /* minScalerTaps */

@@ -667,6 +667,83 @@ nvswitch_soe_issue_ingress_stop_ls10
 }
 
 /*
+ * @Brief : Clear Engine Interrupt Counter in SOE
+ *
+ * @param[in] device
+ * @param[in] eng_id
+ * @param[in] engineIntrType
+ * @param[in] instance
+ */
+NvlStatus
+nvswitch_soe_clear_engine_interrupt_counter_ls10
+(
+    nvswitch_device                        *device,
+    RM_SOE_CORE_ENGINE_ID                  eng_id,
+    RM_SOE_CORE_ENGINE_INTR_COUNTER_TYPE   engineIntrType,
+    NvU32                                  instance
+)
+{
+    FLCN            *pFlcn;
+    NvU32            cmdSeqDesc = 0;
+    NV_STATUS        status;
+    RM_FLCN_CMD_SOE  cmd;
+    NVSWITCH_TIMEOUT timeout;
+    RM_SOE_CORE_CMD_ENGINE_INTR_COUNTER *pEngineClearIntrCounter;
+    NVSWITCH_GET_BIOS_INFO_PARAMS params = { 0 };
+
+    if (!nvswitch_is_soe_supported(device))
+    {
+        NVSWITCH_PRINT(device, INFO,
+            "%s: SOE is not supported\n",
+            __FUNCTION__);
+        return NVL_SUCCESS; // -NVL_ERR_NOT_SUPPORTED
+    }
+
+    status = device->hal.nvswitch_ctrl_get_bios_info(device, &params);
+    if ((status != NVL_SUCCESS) || ((params.version & SOE_VBIOS_VERSION_MASK) < 
+            SOE_VBIOS_REVLOCK_ENGINE_COUNTERS))
+    {
+        NVSWITCH_PRINT(device, INFO,
+            "%s: Skipping clearing Engine Interrupt Counter and disabiling NVLW interrupt.  Update firmware "
+            "from .%02X to .%02X\n",
+            __FUNCTION__, (NvU32)((params.version & SOE_VBIOS_VERSION_MASK) >> 16), 
+            SOE_VBIOS_REVLOCK_ENGINE_COUNTERS);
+
+        return NVL_SUCCESS; // -NVL_ERR_NOT_SUPPORTED
+    }
+
+    pFlcn = device->pSoe->pFlcn;
+
+    nvswitch_os_memset(&cmd, 0, sizeof(cmd));
+    cmd.hdr.unitId = RM_SOE_UNIT_CORE;
+    cmd.hdr.size   = RM_SOE_CMD_SIZE(CORE, ENGINE_INTR_COUNTER);
+
+    pEngineClearIntrCounter = &cmd.cmd.core.engineClearIntrCounter;
+    pEngineClearIntrCounter->cmdType = RM_SOE_CORE_CMD_ISSUE_ENGINE_INTR_COUNTER_CLEAR;
+    pEngineClearIntrCounter->engId = eng_id;
+    pEngineClearIntrCounter->engineIntrType = engineIntrType;
+    pEngineClearIntrCounter->instance = instance;
+
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_5MSEC_IN_NS, &timeout);
+    status = flcnQueueCmdPostBlocking(device, pFlcn,
+                                      (PRM_FLCN_CMD)&cmd,
+                                      NULL,                 // pMsg
+                                      NULL,                 // pPayload
+                                      SOE_RM_CMDQ_LOG_ID,
+                                      &cmdSeqDesc,
+                                      &timeout);
+    if (status != NV_OK)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Failed to send clear Engine Interrupt Counter command to SOE, status 0x%x\n",
+            __FUNCTION__, status);
+        return -NVL_ERR_GENERIC;
+    }
+
+    return NVL_SUCCESS;
+}
+
+/*
  * @Brief : Perform register writes in SOE during TNVL
  *
  * @param[in] device
@@ -681,7 +758,7 @@ nvswitch_soe_update_intr_report_en_ls10
     nvswitch_device *device,
     RM_SOE_CORE_ENGINE_ID eng_id,
     NvU32 eng_instance,
-    RM_SOE_CORE_NPORT_REPORT_EN_REGISTER reg,
+    RM_SOE_CORE_ENGINE_REPORT_EN_REGISTER reg,
     NvU32 data
 )
 {
@@ -723,7 +800,7 @@ nvswitch_soe_update_intr_report_en_ls10
     pErrorReportEnable = &cmd.cmd.core.enableErrorReport;
     pErrorReportEnable->cmdType = RM_SOE_CORE_CMD_UPDATE_INTR_REPORT_EN;
 
-    pErrorReportEnable->engId = RM_SOE_CORE_ENGINE_ID_NPORT;
+    pErrorReportEnable->engId = eng_id;
     pErrorReportEnable->engInstance = eng_instance;
     pErrorReportEnable->reg = reg;
     pErrorReportEnable->data = data;

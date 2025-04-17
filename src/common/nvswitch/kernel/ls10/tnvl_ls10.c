@@ -1250,14 +1250,6 @@ nvswitch_tnvl_disable_interrupts_ls10
     nvswitch_device *device
 )
 {
-
-    if (!nvswitch_is_tnvl_mode_enabled(device))
-    {
-        NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_TNVL_ERROR,
-           "Failed to disable non-fatal/legacy interrupts. TNVL mode is not enabled\n");
-        return;
-    }
-
     //
     // In TNVL locked disable non-fatal NVLW, NPG, and legacy interrupt,
     // disable additional non-fatals on those partitions.

@@ -1,13 +1,15 @@
 
 #ifndef _G_KERNEL_VIDEO_ENGINE_NVOC_H_
 #define _G_KERNEL_VIDEO_ENGINE_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -103,10 +105,18 @@ typedef struct
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__KernelVideoEngine;
+struct NVOC_METADATA__Object;
+
+
 struct KernelVideoEngine {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__KernelVideoEngine *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -119,6 +129,13 @@ struct KernelVideoEngine {
     ENGDESCRIPTOR physEngDesc;
     VIDEO_TRACE_INFO videoTraceInfo;
     NvBool bVideoTraceEnabled;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__KernelVideoEngine {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
 };
 
 #ifndef __NVOC_CLASS_KernelVideoEngine_TYPEDEF__
@@ -137,15 +154,15 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelVideoEngine;
     ((pThis)->__nvoc_pbase_KernelVideoEngine)
 
 #ifdef __nvoc_kernel_video_engine_h_disabled
-#define __dynamicCast_KernelVideoEngine(pThis) ((KernelVideoEngine*)NULL)
+#define __dynamicCast_KernelVideoEngine(pThis) ((KernelVideoEngine*) NULL)
 #else //__nvoc_kernel_video_engine_h_disabled
 #define __dynamicCast_KernelVideoEngine(pThis) \
-    ((KernelVideoEngine*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(KernelVideoEngine)))
+    ((KernelVideoEngine*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(KernelVideoEngine)))
 #endif //__nvoc_kernel_video_engine_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_KernelVideoEngine(KernelVideoEngine**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_KernelVideoEngine(KernelVideoEngine**, Dynamic*, NvU32, struct OBJGPU * arg_pGpu, ENGDESCRIPTOR arg_physEngDesc);
+NV_STATUS __nvoc_objCreate_KernelVideoEngine(KernelVideoEngine**, Dynamic*, NvU32, struct OBJGPU *arg_pGpu, ENGDESCRIPTOR arg_physEngDesc);
 #define __objCreate_KernelVideoEngine(ppNewObj, pParent, createFlags, arg_pGpu, arg_physEngDesc) \
     __nvoc_objCreate_KernelVideoEngine((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pGpu, arg_physEngDesc)
 

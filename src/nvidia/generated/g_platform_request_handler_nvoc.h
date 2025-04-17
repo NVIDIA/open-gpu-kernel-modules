@@ -1,20 +1,22 @@
 
 #ifndef _G_PLATFORM_REQUEST_HANDLER_NVOC_H_
 #define _G_PLATFORM_REQUEST_HANDLER_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -53,6 +55,7 @@ extern "C" {
 
 /* ------------------------ Includes --------------------------------------- */
 #include "core/core.h"
+#include "nvoc/object.h"
 #include "platform/platform_request_handler_utils.h"
 #include "ctrl/ctrl0000/ctrl0000system.h"
 #include "ctrl/ctrl2080/ctrl2080internal.h"
@@ -286,10 +289,18 @@ typedef struct
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__PlatformRequestHandler;
+struct NVOC_METADATA__Object;
+
+
 struct PlatformRequestHandler {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__PlatformRequestHandler *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -314,6 +325,13 @@ struct PlatformRequestHandler {
     NvU32 dsmVersion;
 };
 
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__PlatformRequestHandler {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
+};
+
 #ifndef __NVOC_CLASS_PlatformRequestHandler_TYPEDEF__
 #define __NVOC_CLASS_PlatformRequestHandler_TYPEDEF__
 typedef struct PlatformRequestHandler PlatformRequestHandler;
@@ -330,10 +348,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_PlatformRequestHandler;
     ((pThis)->__nvoc_pbase_PlatformRequestHandler)
 
 #ifdef __nvoc_platform_request_handler_h_disabled
-#define __dynamicCast_PlatformRequestHandler(pThis) ((PlatformRequestHandler*)NULL)
+#define __dynamicCast_PlatformRequestHandler(pThis) ((PlatformRequestHandler*) NULL)
 #else //__nvoc_platform_request_handler_h_disabled
 #define __dynamicCast_PlatformRequestHandler(pThis) \
-    ((PlatformRequestHandler*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(PlatformRequestHandler)))
+    ((PlatformRequestHandler*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(PlatformRequestHandler)))
 #endif //__nvoc_platform_request_handler_h_disabled
 
 // Property macros

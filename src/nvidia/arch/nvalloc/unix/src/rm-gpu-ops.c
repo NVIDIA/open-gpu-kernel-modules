@@ -382,13 +382,14 @@ NV_STATUS NV_API_CALL rm_gpu_ops_service_device_interrupts_rm(nvidia_stack_t *sp
 NV_STATUS  NV_API_CALL  rm_gpu_ops_set_page_directory (nvidia_stack_t *sp,
                                          gpuAddressSpaceHandle vaSpace,
                                          NvU64 physAddress, unsigned numEntries,
-                                         NvBool bVidMemAperture, NvU32 pasid)
+                                         NvBool bVidMemAperture, NvU32 pasid,
+                                         NvU64 *dmaAddress)
 {
     NV_STATUS rmStatus;
     void *fp;
     NV_ENTER_RM_RUNTIME(sp,fp);
     rmStatus = nvGpuOpsSetPageDirectory(vaSpace, physAddress, numEntries,
-                                        bVidMemAperture, pasid);
+                                        bVidMemAperture, pasid, dmaAddress);
     NV_EXIT_RM_RUNTIME(sp,fp);
     return rmStatus;
 }

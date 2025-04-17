@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -113,5 +113,23 @@ typedef struct NV0080_CTRL_INTERNAL_FIFO_RC_AND_PERMANENTLY_DISABLE_CHANNELS_PAR
     NvU32    numClients;
     NvHandle clientHandles[NV_FIFO_PERMANENTLY_DISABLE_CHANNELS_MAX_CLIENTS];
 } NV0080_CTRL_INTERNAL_FIFO_RC_AND_PERMANENTLY_DISABLE_CHANNELS_PARAMS;
+
+/*!
+ * NV0080_CTRL_CMD_INTERNAL_MEMSYS_SET_ZBC_REFERENCED
+ *
+ * Tell Physical RM whether any ZBC-kind surfaces are allocated.
+ * If PF and all VFs report false, ZBC table can be flushed by Physical RM.
+ *
+ *   bZbcReferenced [IN]
+ *     NV_TRUE -> ZBC-kind (and no _SKIP_ZBCREFCOUNT flag) are allocated in Kernel RM
+ *
+ */
+#define NV0080_CTRL_CMD_INTERNAL_MEMSYS_SET_ZBC_REFERENCED (0x80200a) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS_MESSAGE_ID" */
+
+#define NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS_MESSAGE_ID (0x0AU)
+
+typedef struct NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS {
+    NvBool bZbcSurfacesExist;
+} NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS;
 
 /* ctrl0080internal_h */

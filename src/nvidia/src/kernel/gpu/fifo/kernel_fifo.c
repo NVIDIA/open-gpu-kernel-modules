@@ -293,6 +293,9 @@ _kfifoChidMgrAllocChidHeaps
 )
 {
     NV_STATUS status = NV_OK;
+    NvU32 userdBar1Size;
+    NvU32 numChannels;
+    NvU32 subProcessIsolation = 1;
 
     if (pChidMgr->numChannels == 0)
     {
@@ -316,63 +319,58 @@ _kfifoChidMgrAllocChidHeaps
     constructObjEHeap(pChidMgr->pFifoDataHeap, 0, pChidMgr->numChannels,
                       sizeof(KernelChannel *), 0);
 
-    if (kfifoIsChidHeapEnabled(pKernelFifo))
+    numChannels = kfifoChidMgrGetNumChannels(pGpu, pKernelFifo, pChidMgr);
+
+    pChidMgr->pGlobalChIDHeap = portMemAllocNonPaged(sizeof(OBJEHEAP));
+    if (pChidMgr->pGlobalChIDHeap == NULL)
     {
-        NvU32 userdBar1Size;
-        NvU32 numChannels         = kfifoChidMgrGetNumChannels(pGpu, pKernelFifo, pChidMgr);
-        NvU32 subProcessIsolation = 1;
-
-        pChidMgr->pGlobalChIDHeap = portMemAllocNonPaged(sizeof(OBJEHEAP));
-        if (pChidMgr->pGlobalChIDHeap == NULL)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Error in Allocating memory for global ChID heap!\n");
-            return NV_ERR_NO_MEMORY;
-        }
-        constructObjEHeap(pChidMgr->pGlobalChIDHeap, 0, numChannels,
-                          sizeof(PFIFO_ISOLATIONID), 0);
-
-        //
-        // Enable USERD allocation isolation. USERD allocated by different clients
-        // should not be in the same page
-        //
-        kfifoGetUserdSizeAlign_HAL(pKernelFifo, &userdBar1Size, NULL);
-        NvBool bIsolationEnabled = kfifoIsPreAllocatedUserDEnabled(pKernelFifo);
-        pChidMgr->pGlobalChIDHeap->eheapSetOwnerIsolation(pChidMgr->pGlobalChIDHeap,
-                                                          bIsolationEnabled,
-                                                          RM_PAGE_SIZE / userdBar1Size);
-
-        // Disable USERD allocation isolation for guest if disabled from vmioplugin
-        if (IS_VIRTUAL(pGpu))
-        {
-            VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
-            if (pVSI != NULL)
-            {
-                subProcessIsolation = pVSI->subProcessIsolation;
-            }
-        }
-        else
-        {
-            // In this case subProcessIsolation is always 0
-            if (IS_GSP_CLIENT(pGpu))
-            {
-                subProcessIsolation = 0;
-            }
-        }
-        if (!subProcessIsolation)
-        {
-            pChidMgr->pGlobalChIDHeap->eheapSetOwnerIsolation(
-                                            pChidMgr->pGlobalChIDHeap,
-                                            NV_FALSE,
-                                            RM_PAGE_SIZE / userdBar1Size);
-    #if (defined(_WIN32) || defined(_WIN64) || defined(NV_UNIX)) && !RMCFG_FEATURE_MODS_FEATURES
-            NV_PRINTF(LEVEL_INFO,
-                      "Sub Process channel isolation disabled by vGPU plugin\n");
-    #endif
-        }
-
-        status = _kfifoChidMgrAllocVChidHeapPointers(pGpu, pChidMgr);
+        NV_PRINTF(LEVEL_ERROR,
+                  "Error in Allocating memory for global ChID heap!\n");
+        return NV_ERR_NO_MEMORY;
     }
+    constructObjEHeap(pChidMgr->pGlobalChIDHeap, 0, numChannels,
+                      sizeof(PFIFO_ISOLATIONID), 0);
+
+    //
+    // Enable USERD allocation isolation. USERD allocated by different clients
+    // should not be in the same page
+    //
+    kfifoGetUserdSizeAlign_HAL(pKernelFifo, &userdBar1Size, NULL);
+    NvBool bIsolationEnabled = kfifoIsPreAllocatedUserDEnabled(pKernelFifo);
+    pChidMgr->pGlobalChIDHeap->eheapSetOwnerIsolation(pChidMgr->pGlobalChIDHeap,
+                                                      bIsolationEnabled,
+                                                      RM_PAGE_SIZE / userdBar1Size);
+
+    // Disable USERD allocation isolation for guest if disabled from vmioplugin
+    if (IS_VIRTUAL(pGpu))
+    {
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+        if (pVSI != NULL)
+        {
+            subProcessIsolation = pVSI->subProcessIsolation;
+        }
+    }
+    else
+    {
+        // In this case subProcessIsolation is always 0
+        if (IS_GSP_CLIENT(pGpu))
+        {
+            subProcessIsolation = 0;
+        }
+    }
+    if (!subProcessIsolation)
+    {
+        pChidMgr->pGlobalChIDHeap->eheapSetOwnerIsolation(
+                                        pChidMgr->pGlobalChIDHeap,
+                                        NV_FALSE,
+                                        RM_PAGE_SIZE / userdBar1Size);
+#if (defined(_WIN32) || defined(_WIN64) || defined(NV_UNIX)) && !RMCFG_FEATURE_MODS_FEATURES
+        NV_PRINTF(LEVEL_INFO,
+                  "Sub Process channel isolation disabled by vGPU plugin\n");
+#endif
+    }
+
+    status = _kfifoChidMgrAllocVChidHeapPointers(pGpu, pChidMgr);
 
     return status;
 }
@@ -1367,7 +1365,6 @@ kfifoChidMgrAllocChannelGroupHwID_IMPL
 )
 {
     NvU32 maxChannelGroups;
-    char logMessage[256] = "";
 
     if (pChGrpID == NULL)
         return NV_ERR_INVALID_ARGUMENT;
@@ -1392,13 +1389,6 @@ kfifoChidMgrAllocChannelGroupHwID_IMPL
     {
         *pChGrpID = maxChannelGroups;
         NV_PRINTF(LEVEL_ERROR, "No allocatable FIFO available.\n");
-
-        // For vGPU, log the error message on host side as well
-        if (IS_VIRTUAL(pGpu))
-        {
-            nvDbgSnprintf(logMessage, sizeof(logMessage), "Guest attempted to allocate channel above its max per engine channel limit 0x%x", maxChannelGroups);
-            NV_RM_RPC_LOG(pGpu, (const char *)logMessage, NV_VGPU_LOG_LEVEL_ERROR);
-        }
         return NV_ERR_NO_FREE_FIFOS;
     }
     return NV_OK;
@@ -2545,6 +2535,9 @@ kfifoGetRunlistBufInfo_IMPL
     NvU32           runlistEntrySize = 0;
     NvU32           maxRunlistEntriesSupported = 0;
     CHID_MGR       *pChidMgr = kfifoGetChidMgr(pGpu, pKernelFifo, runlistId);
+    NvU32           runlistSizeMultiplier = 1;
+    RM_ENGINE_TYPE  rmEngineType;
+    NvU32           schedPolicy;
 
     NV_ASSERT_OR_RETURN(pSize != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(pAlignment != NULL, NV_ERR_INVALID_ARGUMENT);
@@ -2574,8 +2567,20 @@ kfifoGetRunlistBufInfo_IMPL
         maxRunlistEntries = maxRunlistEntriesSupported;
     }
 
+    NV_ASSERT_OK_OR_RETURN(kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo, ENGINE_INFO_TYPE_RUNLIST,
+                runlistId, ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32 *)&rmEngineType));
+
+    if (RM_ENGINE_TYPE_IS_GR(rmEngineType) && IS_MIG_IN_USE(pGpu))
+    {
+        gpuGetSchedulerPolicy(pGpu, &schedPolicy);
+        if (schedPolicy != SCHED_POLICY_DEFAULT)
+        {
+            runlistSizeMultiplier = vgpuMgrGetSwrlCountToAllocate(pGpu);
+        }
+    }
+
     runlistEntrySize = kfifoRunlistGetEntrySize_HAL(pKernelFifo);
-    *pSize = (NvU64)runlistEntrySize * maxRunlistEntries;
+    *pSize = (NvU64)runlistEntrySize * maxRunlistEntries * runlistSizeMultiplier;
 
     *pAlignment = NVBIT64(kfifoRunlistGetBaseShift_HAL(pKernelFifo));
     return NV_OK;
@@ -3829,4 +3834,31 @@ kfifoPrintFaultingPbdmaEngineName_IMPL
     }
 
     return "UNKNOWN";
+}
+
+/*!
+ *  @brief Check if there's a channel owned by UVM
+ *
+ *  @returns NV_TRUE if there exists a channel owned by UVM
+ */
+NvBool
+kfifoDoesUvmOwnedChannelExist_IMPL
+(
+    OBJGPU     *pGpu,
+    KernelFifo *pKernelFifo
+)
+{
+    KernelChannel    *pKernelChannel;
+    CHANNEL_ITERATOR  chanIt;
+
+    kfifoGetChannelIterator(pGpu, pKernelFifo, &chanIt, INVALID_RUNLIST_ID);
+    while ((kfifoGetNextKernelChannel(pGpu, pKernelFifo, &chanIt, &pKernelChannel)) == NV_OK)
+    {
+        if (pKernelChannel->bUvmOwned)
+        {
+            return NV_TRUE;
+        }
+    }
+
+    return NV_FALSE;
 }

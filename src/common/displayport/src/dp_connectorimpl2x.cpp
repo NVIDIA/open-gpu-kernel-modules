@@ -36,6 +36,18 @@
 #include "ctrl/ctrl0073/ctrl0073dp.h"
 #include "dp_printf.h"
 
+#define LOGICAL_LANES          4U
+#define EFF_BPP_NON_DSC_SCALER 256U
+#define EFF_BPP_DSC_SCALER     16U
+//
+// DP1: 8b/10b,    1 symbol is 8 bits.
+// DP2: 128b/132b, 1 symbol is 32 bits.
+//
+#define DP1_SYMBOL_SIZE       8U
+#define DP2_SYMBOL_SIZE      32U
+
+#define GET_SYMBOL_SIZE(bIsDp2xChannelCoding) ((bIsDp2xChannelCoding) ? DP2_SYMBOL_SIZE : DP1_SYMBOL_SIZE)
+
 using namespace DisplayPort;
 //
 // The regkey value is available in connector, so using a global variable
@@ -63,6 +75,44 @@ void ConnectorImpl2x::applyDP2xRegkeyOverrides()
     {
         hal->setIgnoreCableIdCaps(true);
     }
+    if (dpRegkeyDatabase.bCableVconnSourceUnknownWar)
+    {
+        hal->setCableVconnSourceUnknown();
+    }
+}
+
+bool ConnectorImpl2x::getValidLowestLinkConfig
+(
+    LinkConfiguration      &lConfig,
+    LinkConfiguration      &lowestSelected,
+    ModesetInfo             modesetInfo,
+    const DscParams        *pDscParams
+)
+{
+    bool bIsModeSupported = ConnectorImpl::getValidLowestLinkConfig(lConfig, lowestSelected, modesetInfo, pDscParams);
+    bool bAvoidHBR3       = main->isAvoidHBR3WAREnabled() && (lowestSelected.peakRate == dp2LinkRate_8_10Gbps);
+    unsigned i = 0;
+    if (!bIsModeSupported || !bAvoidHBR3)
+    {
+        return bIsModeSupported;
+    }
+    for (i = 0; i < numPossibleLnkCfg; i++)
+    {
+        if ((this->allPossibleLinkCfgs[i].lanes     != lowestSelected.lanes) ||
+            (this->allPossibleLinkCfgs[i].peakRate  != lowestSelected.peakRate))
+        {
+            continue;
+        }
+        // check if it's the max possible link
+        if ((this->allPossibleLinkCfgs[i].lanes     != highestAssessedLC.lanes) ||
+            (this->allPossibleLinkCfgs[i].peakRate  != highestAssessedLC.peakRate))
+        {
+            // Get next entry.
+            lowestSelected = this->allPossibleLinkCfgs[i+1];
+            lowestSelected.enableFEC(lConfig.bEnableFEC);
+        }
+    }
+    return bIsModeSupported;
 }
 
 bool ConnectorImpl2x::willLinkSupportModeSST
@@ -130,6 +180,7 @@ bool ConnectorImpl2x::willLinkSupportMode
     impParams.linkConfig.bDp2xChannelCoding     = linkConfig.bIs128b132bChannelCoding;
     impParams.linkConfig.bFECEnabled            = linkConfig.bEnableFEC;
     impParams.linkConfig.bMultiStreamTopology   = linkConfig.multistream;
+    impParams.linkConfig.bDisableEffBppSST8b10b = this->bDisableEffBppSST8b10b;
 
     if (pDscParams != NULL && pDscParams->forcedParams != NULL)
     {
@@ -444,6 +495,26 @@ bool ConnectorImpl2x::compoundQueryAttachMSTGeneric(Group * target,
                                                     DscParams *pDscParams,                        // DSC parameters
                                                     DP_IMP_ERROR *pErrorCode)
 {
+    if (!pDscParams || (pDscParams && !pDscParams->bEnableDsc))
+    {
+        NvU32 symbolSize = GET_SYMBOL_SIZE(activeLinkConfig.bIs128b132bChannelCoding);
+        NvU32 hActive = localInfo->localModesetInfo.surfaceWidth;
+        NvU32 bpp = localInfo->localModesetInfo.depth;
+
+        NvU32 bitsPerLane                   = (NvU32)NV_CEIL(hActive, LOGICAL_LANES) * bpp;
+        NvU32 totalSymbolsPerLane           = (NvU32)NV_CEIL(bitsPerLane, symbolSize);
+        NvU32 totalSymbols                  = totalSymbolsPerLane * LOGICAL_LANES;
+        localInfo->localModesetInfo.depth   = (NvU32)NV_CEIL((totalSymbols * symbolSize * EFF_BPP_NON_DSC_SCALER), hActive);
+    }
+    else
+    {
+        //
+        // If DSC is enabled bpp will already be multiplied by 16, we need to mulitply by another 16 
+        // to match scalar of 256 which is used in non-DSC case. 
+        //
+        localInfo->localModesetInfo.depth = localInfo->localModesetInfo.depth * EFF_BPP_DSC_SCALER;
+    }
+
     // I. Evaluate use of local link bandwidth
 
     //      Calculate the PBN required
@@ -640,15 +711,14 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
                                       pixelClockHz, rasterWidth, rasterHeight,
                                       (rasterBlankStartX - rasterBlankEndX), modesetParams.modesetInfo.surfaceHeight,
                                       depth, rasterBlankStartX, rasterBlankEndX, bEnableDsc, modesetParams.modesetInfo.mode,
-                                      false, dpColorFormat_YCbCr422_Native);
+                                      false, modesetParams.colorFormat);
     }
     else
     {
         targetImpl->lastModesetInfo = ModesetInfo(twoChannelAudioHz, eightChannelAudioHz,
                                       pixelClockHz, rasterWidth, rasterHeight,
                                       (rasterBlankStartX - rasterBlankEndX), modesetParams.modesetInfo.surfaceHeight,
-                                      depth, rasterBlankStartX, rasterBlankEndX, bEnableDsc, modesetParams.modesetInfo.mode,
-                                      false, modesetParams.colorFormat);
+                                      depth, rasterBlankStartX, rasterBlankEndX, bEnableDsc, modesetParams.modesetInfo.mode);
     }
 
     targetImpl->headIndex = modesetParams.headIndex;
@@ -707,6 +777,24 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
         }
     }
 
+    if (linkUseMultistream())
+    {
+        unsigned symbolSize = GET_SYMBOL_SIZE(activeLinkConfig.bIs128b132bChannelCoding);
+
+        if (bEnableDsc)
+        {
+            targetImpl->lastModesetInfo.depth *= EFF_BPP_DSC_SCALER;
+        }
+        else
+        {
+            NvU32 bitsPerLane                   = (NvU32)NV_CEIL(modesetParams.modesetInfo.surfaceWidth, LOGICAL_LANES) * depth;
+            NvU32 totalSymbolsPerLane           = (NvU32)NV_CEIL(bitsPerLane, symbolSize);
+            NvU32 totalSymbols                  = totalSymbolsPerLane * LOGICAL_LANES;
+            targetImpl->lastModesetInfo.depth   = (NvU32)NV_CEIL((totalSymbols * symbolSize * EFF_BPP_NON_DSC_SCALER), 
+                                                                  modesetParams.modesetInfo.surfaceWidth);
+        }
+    }
+
     beforeAddStream(targetImpl);
 
     if (!linkUseMultistream() || main->supportMSAOverMST())
@@ -742,7 +830,20 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
 
     // Move the group to intransistion since we are at the end of notifyAttachBegin
     intransitionGroups.insertFront(targetImpl);
+    if (dev && dev->bApplyPclkWarBug4949066 == true)
+    {
+        EvoInterface   *provider = ((EvoMainLink *)main)->getProvider();
+        NV0073_CTRL_CMD_DP_SET_PROP_FORCE_PCLK_FACTOR_PARAMS params = {0};
+        params.subDeviceInstance = provider->getSubdeviceIndex();
+        params.head = modesetParams.headIndex;
+        params.bEnable = NV_TRUE;
 
+        NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_PROP_FORCE_PCLK_FACTOR, &params, sizeof(params));
+        if (ret != NVOS_STATUS_SUCCESS)
+        {
+            DP_PRINTF(DP_ERROR, "Failed to enable the WAR for bug4949066!");
+        }
+    }
     bFromResumeToNAB = false;
     return bLinkTrainingStatus;
 }
@@ -1088,6 +1189,7 @@ void ConnectorImpl2x::beforeDeleteStream(GroupImpl * group, bool forFlushMode)
         // Delete the stream
         hal->payloadTableClearACT();
         hal->payloadAllocate(group->streamIndex, group->timeslot.begin, 0);
+        main->triggerACT();
     }
 }
 
@@ -1103,7 +1205,7 @@ void ConnectorImpl2x::afterDeleteStream(GroupImpl * group)
         return ConnectorImpl::afterDeleteStream(group);
 
     DP_ASSERT(!group->isTimeslotAllocated());
-    main->triggerACT();
+
     if (group->isHeadAttached() && group->bWaitForDeAllocACT)
     {
         if (!hal->payloadWaitForACTReceived())
@@ -1135,9 +1237,11 @@ bool ConnectorImpl2x::train(const LinkConfiguration &lConfig, bool force, LinkTr
         firstFreeSlot = 0;
     }
 
-    // Invalidate the UHBR if the connector is a USB-C to DP/USB-C.
+    // Invalidate the UHBR if the connector is a USB-C to DP/USB-C
+    // and VCONN source is unknown.
     if (!trainResult && main->isConnectorUSBTypeC() &&
-        lConfig.bIs128b132bChannelCoding && lConfig.peakRate > dp2LinkRate_10_0Gbps)
+        lConfig.bIs128b132bChannelCoding && lConfig.peakRate > dp2LinkRate_10_0Gbps &&
+        main->isCableVconnSourceUnknown())
     {
         hal->overrideCableIdCap(lConfig.peakRate, false);
     }
@@ -1155,6 +1259,24 @@ void ConnectorImpl2x::notifyDetachBegin(Group *target)
     if (!target)
         target = firmwareGroup;
 
+    Device     *newDev  = target->enumDevices(0);
+    DeviceImpl *dev     = (DeviceImpl *)newDev;
+    GroupImpl  *group   = (GroupImpl*)target; 
+    
+    if (dev != NULL && dev->bApplyPclkWarBug4949066 == true)
+    {
+        EvoInterface   *provider = ((EvoMainLink *)main)->getProvider();
+        NV0073_CTRL_CMD_DP_SET_PROP_FORCE_PCLK_FACTOR_PARAMS params = {0};
+        params.subDeviceInstance = provider->getSubdeviceIndex();
+        params.head = group->headIndex;
+        params.bEnable = NV_FALSE;
+
+        NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_PROP_FORCE_PCLK_FACTOR, &params, sizeof(params));
+        if (ret != NVOS_STATUS_SUCCESS)
+        {
+            DP_PRINTF(DP_ERROR, "Failed to Disable the WAR for bug4949066!");
+        }
+    }
     return ConnectorImpl::notifyDetachBegin(target);
 }
 
@@ -1368,10 +1490,7 @@ bool ConnectorImpl2x::enableFlush()
     }
 
     // Reset activeLinkConfig to indicate the link is now lost
-    if (!this->bDisable5019537Fix)
-    {
-        activeLinkConfig = LinkConfiguration();
-    }
+    activeLinkConfig = LinkConfiguration();
 
     return true;
 }
@@ -1701,7 +1820,6 @@ void ConnectorImpl2x::handleEdidWARs(Edid & edid, DiscoveryManager::Device & dev
         {
             // Samsung G9 Monitor is behind internal branch, allocate one more timeslot
             bApplyManualTimeslotBug4968411 = true;
-            bDP2XPreferNonDSCForLowPClk = true;
         }
     }
 
@@ -1714,9 +1832,19 @@ void ConnectorImpl2x::handleEdidWARs(Edid & edid, DiscoveryManager::Device & dev
         }
     }
 
+    if (edid.WARFlags.bDP2XPreferNonDSCForLowPClk)
+    {
+        bDP2XPreferNonDSCForLowPClk = true;
+    }
+
     if (edid.WARFlags.bDisableDscMaxBppLimit)
     {
         bDisableDscMaxBppLimit = true;
+    }       
+
+    if (edid.WARFlags.bForceHeadShutdownOnModeTransition)
+    {
+        bForceHeadShutdownOnModeTransition = true;
     }
 }
 

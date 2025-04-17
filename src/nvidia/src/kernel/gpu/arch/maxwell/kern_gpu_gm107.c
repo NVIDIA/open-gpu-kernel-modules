@@ -33,6 +33,8 @@
 #include "published/maxwell/gm107/dev_fuse.h"
 #include "published/maxwell/gm107/dev_pri_ringstation_sys.h"
 
+#include "ctrl/ctrl0080/ctrl0080gpu.h" // NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS
+
 /*!
  * @brief Returns SR-IOV capabilities
  *
@@ -424,6 +426,155 @@ gpuGetIdInfo_GM107(OBJGPU *pGpu)
 
 }
 
+
+// See gpuChildOrderList_GM200 for documentation
+static const GPUCHILDORDER
+gpuChildOrderList_GM107[] =
+{
+    {classId(OBJBIF),             GCO_ALL},
+    {classId(KernelBif),          GCO_ALL},
+    {classId(NvDebugDump),        GCO_ALL},
+    {classId(ClockManager),       GCO_ALL},
+    {classId(Pmgr),               GCO_ALL},
+    {classId(OBJVOLT),            GCO_ALL},
+    {classId(OBJMC),              GCO_ALL},
+    {classId(KernelMc),           GCO_ALL},
+    {classId(PrivRing),           GCO_ALL},
+    {classId(SwIntr),             GCO_ALL},
+    {classId(Intr),               GCO_ALL},
+    {classId(OBJTMR),             GCO_ALL},
+    {classId(Therm),              GCO_ALL},
+    {classId(OBJHSHUBMANAGER),    GCO_ALL},
+    {classId(Hshub),              GCO_ALL},
+    {classId(MemorySystem),       GCO_ALL},
+    {classId(KernelMemorySystem), GCO_ALL},
+    {classId(MemoryManager),      GCO_ALL},
+    {classId(OBJHDACODEC),        GCO_ALL},
+    {classId(OBJGMMU),            GCO_ALL},
+    {classId(KernelGmmu),         GCO_ALL},
+    {classId(OBJBUS),             GCO_ALL},
+    {classId(KernelBus),          GCO_ALL},
+    {classId(VirtMemAllocator),   GCO_LIST_INIT},
+
+    {classId(OBJDISP),            GCO_LIST_INIT | GCO_LIST_DESTROY},
+    {classId(KernelDisplay),      GCO_LIST_INIT | GCO_LIST_DESTROY},
+    {classId(OBJHDA),             GCO_LIST_INIT | GCO_LIST_DESTROY},
+    {classId(Fan),             GCO_LIST_INIT | GCO_LIST_DESTROY},
+    {classId(VirtMemAllocator),   GCO_LIST_DESTROY},
+    {classId(Pmu),                GCO_ALL},
+    {classId(KernelPmu),          GCO_ALL},
+    {classId(Lpwr   ),            GCO_ALL},
+    {classId(Perf),               GCO_ALL},                        // Perf is after PMU for perfmon_sampling to work
+    {classId(KernelPerf),         GCO_ALL},
+    {classId(VirtMemAllocator),   GCO_LIST_LOAD | GCO_LIST_UNLOAD},
+    {classId(GraphicsManager),    GCO_ALL},
+    {classId(MIGManager),         GCO_ALL},
+    {classId(KernelMIGManager),   GCO_ALL},
+    {classId(KernelGraphicsManager), GCO_ALL},
+    {classId(Graphics),           GCO_ALL},
+    {classId(KernelGraphics),     GCO_ALL},
+    {classId(OBJBSP),             GCO_ALL},
+    {classId(OBJCIPHER),          GCO_ALL},
+    {classId(OBJDISP),            GCO_LIST_LOAD | GCO_LIST_UNLOAD}, // Display is *after* cipher so that hdcp keys can be loaded.
+    {classId(KernelDisplay),      GCO_LIST_LOAD | GCO_LIST_UNLOAD}, // Display is *after* cipher so that hdcp keys can be loaded.
+    {classId(OBJHDA),             GCO_LIST_LOAD | GCO_LIST_UNLOAD},
+    {classId(Fan),             GCO_LIST_LOAD | GCO_LIST_UNLOAD},
+    {classId(OBJCE),              GCO_ALL},
+    {classId(KernelCE),           GCO_ALL},
+    {classId(OBJMSENC),           GCO_ALL},
+    {classId(OBJSEC2),            GCO_ALL},
+    {classId(KernelFifo),              GCO_ALL},
+    {classId(OBJFIFO),            GCO_ALL},
+    {classId(OBJDPAUX),           GCO_ALL},
+    {classId(OBJINFOROM),         GCO_ALL},
+    {classId(OBJGPULOG),          GCO_LIST_INIT | GCO_LIST_LOAD},
+    {classId(OBJGPUMON),          GCO_ALL},
+    {classId(OBJGPULOG),          GCO_LIST_UNLOAD | GCO_LIST_DESTROY},
+    {classId(KernelHwpm),         GCO_ALL},
+    {classId(OBJHWPM),            GCO_ALL},
+    {classId(OBJSWENG),           GCO_ALL},
+    {classId(OBJGRIDDISPLAYLESS), GCO_ALL},
+};
+
+
+// See gpuChildOrderList_GM200 for documentation
+const GPUCHILDORDER *
+gpuGetChildrenOrder_GM107(OBJGPU *pGpu, NvU32 *pNumEntries)
+{
+    *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildOrderList_GM107);
+    return gpuChildOrderList_GM107;
+}
+
+// See gpuChildrenPresent_GM200 for documentation on GPUCHILDPRESENT
+static const GPUCHILDPRESENT gpuChildrenPresent_GM107[] =
+{
+    GPU_CHILD_PRESENT(OBJTMR, 1),
+    GPU_CHILD_PRESENT(KernelMIGManager, 1),
+    GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelRc, 1),
+    GPU_CHILD_PRESENT(Intr, 1),
+    GPU_CHILD_PRESENT(NvDebugDump, 1),
+    GPU_CHILD_PRESENT(OBJSWENG, 1),
+    GPU_CHILD_PRESENT(KernelBif, 1),
+    GPU_CHILD_PRESENT(KernelBus, 1),
+    GPU_CHILD_PRESENT(KernelCE, 3),
+    GPU_CHILD_PRESENT(KernelDisplay, 1),
+    GPU_CHILD_PRESENT(VirtMemAllocator, 1),
+    GPU_CHILD_PRESENT(KernelMemorySystem, 1),
+    GPU_CHILD_PRESENT(MemoryManager, 1),
+    GPU_CHILD_PRESENT(KernelFifo, 1),
+    GPU_CHILD_PRESENT(KernelGmmu, 1),
+    GPU_CHILD_PRESENT(KernelGraphics, 1),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
+    GPU_CHILD_PRESENT(KernelMc, 1),
+    GPU_CHILD_PRESENT(SwIntr, 1),
+    GPU_CHILD_PRESENT(KernelPerf, 1),
+    GPU_CHILD_PRESENT(KernelPmu, 1),
+};
+
+const GPUCHILDPRESENT *
+gpuGetChildrenPresent_GM107(OBJGPU *pGpu, NvU32 *pNumEntries)
+{
+    *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GM107);
+    return gpuChildrenPresent_GM107;
+}
+
+
+
+// See gpuChildrenPresent_GM200 for documentation on GPUCHILDPRESENT
+static const GPUCHILDPRESENT gpuChildrenPresent_GM108[] =
+{
+    GPU_CHILD_PRESENT(OBJTMR, 1),
+    GPU_CHILD_PRESENT(KernelMIGManager, 1),
+    GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelRc, 1),
+    GPU_CHILD_PRESENT(Intr, 1),
+    GPU_CHILD_PRESENT(NvDebugDump, 1),
+    GPU_CHILD_PRESENT(OBJSWENG, 1),
+    GPU_CHILD_PRESENT(KernelBif, 1),
+    GPU_CHILD_PRESENT(KernelBus, 1),
+    GPU_CHILD_PRESENT(KernelCE, 3),
+    GPU_CHILD_PRESENT(VirtMemAllocator, 1),
+    GPU_CHILD_PRESENT(KernelMemorySystem, 1),
+    GPU_CHILD_PRESENT(MemoryManager, 1),
+    GPU_CHILD_PRESENT(KernelFifo, 1),
+    GPU_CHILD_PRESENT(KernelGmmu, 1),
+    GPU_CHILD_PRESENT(KernelGraphics, 1),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
+    GPU_CHILD_PRESENT(KernelMc, 1),
+    GPU_CHILD_PRESENT(SwIntr, 1),
+    GPU_CHILD_PRESENT(KernelPerf, 1),
+    GPU_CHILD_PRESENT(KernelPmu, 1),
+};
+
+const GPUCHILDPRESENT *
+gpuGetChildrenPresent_GM108(OBJGPU *pGpu, NvU32 *pNumEntries)
+{
+    *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GM108);
+    return gpuChildrenPresent_GM108;
+}
+
+
 // GM200 used on all later GPUs
 
 //
@@ -600,6 +751,77 @@ gpuGetChildrenPresent_GM200(OBJGPU *pGpu, NvU32 *pNumEntries)
 {
     *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GM200);
     return gpuChildrenPresent_GM200;
+}
+
+
+// See gpuChildrenPresent_GM200 for documentation on GPUCHILDPRESENT
+static const GPUCHILDPRESENT gpuChildrenPresent_GM206[] =
+{
+    GPU_CHILD_PRESENT(OBJTMR, 1),
+    GPU_CHILD_PRESENT(KernelMIGManager, 1),
+    GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelRc, 1),
+    GPU_CHILD_PRESENT(Intr, 1),
+    GPU_CHILD_PRESENT(NvDebugDump, 1),
+    GPU_CHILD_PRESENT(OBJSWENG, 1),
+    GPU_CHILD_PRESENT(KernelBif, 1),
+    GPU_CHILD_PRESENT(KernelBus, 1),
+    GPU_CHILD_PRESENT(KernelCE, 3),
+    GPU_CHILD_PRESENT(KernelDisplay, 1),
+    GPU_CHILD_PRESENT(VirtMemAllocator, 1),
+    GPU_CHILD_PRESENT(KernelMemorySystem, 1),
+    GPU_CHILD_PRESENT(MemoryManager, 1),
+    GPU_CHILD_PRESENT(KernelFifo, 1),
+    GPU_CHILD_PRESENT(KernelGmmu, 1),
+    GPU_CHILD_PRESENT(KernelGraphics, 1),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
+    GPU_CHILD_PRESENT(KernelMc, 1),
+    GPU_CHILD_PRESENT(SwIntr, 1),
+    GPU_CHILD_PRESENT(KernelPerf, 1),
+    GPU_CHILD_PRESENT(KernelPmu, 1),
+};
+
+const GPUCHILDPRESENT *
+gpuGetChildrenPresent_GM206(OBJGPU *pGpu, NvU32 *pNumEntries)
+{
+    *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GM206);
+    return gpuChildrenPresent_GM206;
+}
+
+/*!
+ * @brief Check if the DSM JT version is correct
+ *
+ * @param  pGpu    OBJGPU pointer
+ *
+ * @return NV_OK if DSM version matches otherwise NV_ERR_INVALID_PARAMETER
+ */
+NV_STATUS
+gpuJtVersionSanityCheck_GM10X
+(
+    OBJGPU *pGpu
+)
+{
+    NV_STATUS status = NV_OK;
+
+    if (!IS_SILICON(pGpu) || NV_IS_MODS)
+    {
+        goto gpuJtVersionSanityCheck_GM10X_EXIT;
+    }
+
+    if (FLD_TEST_DRF(_JT_FUNC, _CAPS, _JT_ENABLED, _TRUE, pGpu->acpiMethodData.jtMethodData.jtCaps))
+    {
+        if (!(pGpu->acpiMethodData.jtMethodData.jtRevId == NV_JT_FUNC_CAPS_REVISION_ID_1_03))
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "JT Version mismatch 0x%x\n", pGpu->acpiMethodData.jtMethodData.jtRevId);
+            DBG_BREAKPOINT();
+            status = NV_ERR_INVALID_PARAMETER;
+            goto gpuJtVersionSanityCheck_GM10X_EXIT;
+        }
+    }
+
+gpuJtVersionSanityCheck_GM10X_EXIT:
+    return status;
 }
 
 /*!

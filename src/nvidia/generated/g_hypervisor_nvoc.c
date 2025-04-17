@@ -1,4 +1,11 @@
 #define NVOC_HYPERVISOR_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,40 +14,29 @@
 #include "utils/nvassert.h"
 #include "g_hypervisor_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x33c1ba = 1;
+char __nvoc_class_id_uniqueness_check__0x33c1ba = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHYPERVISOR;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
-void __nvoc_init_OBJHYPERVISOR(OBJHYPERVISOR*);
+// Forward declarations for OBJHYPERVISOR
+void __nvoc_init__Object(Object*);
+void __nvoc_init__OBJHYPERVISOR(OBJHYPERVISOR*);
 void __nvoc_init_funcTable_OBJHYPERVISOR(OBJHYPERVISOR*);
 NV_STATUS __nvoc_ctor_OBJHYPERVISOR(OBJHYPERVISOR*);
 void __nvoc_init_dataField_OBJHYPERVISOR(OBJHYPERVISOR*);
 void __nvoc_dtor_OBJHYPERVISOR(OBJHYPERVISOR*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJHYPERVISOR;
 
-static const struct NVOC_RTTI __nvoc_rtti_OBJHYPERVISOR_OBJHYPERVISOR = {
-    /*pClassDef=*/          &__nvoc_class_def_OBJHYPERVISOR,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_OBJHYPERVISOR,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__OBJHYPERVISOR;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJHYPERVISOR;
 
-static const struct NVOC_RTTI __nvoc_rtti_OBJHYPERVISOR_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(OBJHYPERVISOR, __nvoc_base_Object),
-};
+// Down-thunk(s) to bridge OBJHYPERVISOR methods from ancestors (if any)
 
-static const struct NVOC_CASTINFO __nvoc_castinfo_OBJHYPERVISOR = {
-    /*numRelatives=*/       2,
-    /*relatives=*/ {
-        &__nvoc_rtti_OBJHYPERVISOR_OBJHYPERVISOR,
-        &__nvoc_rtti_OBJHYPERVISOR_Object,
-    },
-};
+// Up-thunk(s) to bridge OBJHYPERVISOR methods to ancestors (if any)
 
 const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHYPERVISOR = 
 {
@@ -53,15 +49,32 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHYPERVISOR =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_OBJHYPERVISOR,
-    /*pCastInfo=*/          &__nvoc_castinfo_OBJHYPERVISOR,
-    /*pExportInfo=*/        &__nvoc_export_info_OBJHYPERVISOR
+    /*pCastInfo=*/          &__nvoc_castinfo__OBJHYPERVISOR,
+    /*pExportInfo=*/        &__nvoc_export_info__OBJHYPERVISOR
 };
 
-// Down-thunk(s) to bridge OBJHYPERVISOR methods from ancestors (if any)
 
-// Up-thunk(s) to bridge OBJHYPERVISOR methods to ancestors (if any)
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__OBJHYPERVISOR __nvoc_metadata__OBJHYPERVISOR = {
+    .rtti.pClassDef = &__nvoc_class_def_OBJHYPERVISOR,    // (hypervisor) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_OBJHYPERVISOR,
+    .rtti.offset    = 0,
+    .metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super
+    .metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Object.rtti.offset    = NV_OFFSETOF(OBJHYPERVISOR, __nvoc_base_Object),
+};
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJHYPERVISOR = 
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__OBJHYPERVISOR = {
+    .numRelatives = 2,
+    .relatives = {
+        &__nvoc_metadata__OBJHYPERVISOR.rtti,    // [0]: (hypervisor) this
+        &__nvoc_metadata__OBJHYPERVISOR.metadata__Object.rtti,    // [1]: (obj) super
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJHYPERVISOR = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -108,11 +121,21 @@ void __nvoc_init_funcTable_OBJHYPERVISOR(OBJHYPERVISOR *pThis) {
     __nvoc_init_funcTable_OBJHYPERVISOR_1(pThis);
 }
 
-void __nvoc_init_Object(Object*);
-void __nvoc_init_OBJHYPERVISOR(OBJHYPERVISOR *pThis) {
-    pThis->__nvoc_pbase_OBJHYPERVISOR = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;
-    __nvoc_init_Object(&pThis->__nvoc_base_Object);
+// Initialize newly constructed object.
+void __nvoc_init__OBJHYPERVISOR(OBJHYPERVISOR *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;    // (obj) super
+    pThis->__nvoc_pbase_OBJHYPERVISOR = pThis;    // (hypervisor) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__Object(&pThis->__nvoc_base_Object);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__OBJHYPERVISOR.metadata__Object;    // (obj) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__OBJHYPERVISOR;    // (hypervisor) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_OBJHYPERVISOR(pThis);
 }
 
@@ -130,9 +153,6 @@ NV_STATUS __nvoc_objCreate_OBJHYPERVISOR(OBJHYPERVISOR **ppThis, Dynamic *pParen
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(OBJHYPERVISOR));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_OBJHYPERVISOR);
-
     pThis->__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -146,7 +166,7 @@ NV_STATUS __nvoc_objCreate_OBJHYPERVISOR(OBJHYPERVISOR **ppThis, Dynamic *pParen
         pThis->__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_OBJHYPERVISOR(pThis);
+    __nvoc_init__OBJHYPERVISOR(pThis);
     status = __nvoc_ctor_OBJHYPERVISOR(pThis);
     if (status != NV_OK) goto __nvoc_objCreate_OBJHYPERVISOR_cleanup;
 

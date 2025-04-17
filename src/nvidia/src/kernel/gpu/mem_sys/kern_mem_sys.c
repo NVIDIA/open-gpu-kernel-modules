@@ -1010,8 +1010,6 @@ kmemsysSetupCoherentCpuLink_IMPL
     // Switch the toggle for coherent link mapping only if migration is successful
     pGpu->setProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING, NV_TRUE);
 
-    NV_ASSERT_OK_OR_RETURN(kbusVerifyCoherentLink_HAL(pGpu, pKernelBus));
-
     return NV_OK;
 }
 
@@ -1120,3 +1118,23 @@ kmemsysStateUnload_IMPL(OBJGPU *pGpu, KernelMemorySystem *pKernelMemorySystem, N
 
     return status;
 }
+
+/*!
+ * Called after the video memory heap is created
+ */
+NV_STATUS
+kmemsysPostHeapCreate_KERNEL
+(
+    POBJGPU               pGpu,
+    KernelMemorySystem   *pKernelMemorySystem
+)
+{
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
+    {
+        NV_ASSERT_OK_OR_RETURN(kbusVerifyCoherentLink_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu)));
+    }
+
+    return NV_OK;
+}
+
+

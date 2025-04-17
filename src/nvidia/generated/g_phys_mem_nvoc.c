@@ -1,4 +1,11 @@
 #define NVOC_PHYS_MEM_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,91 +14,29 @@
 #include "utils/nvassert.h"
 #include "g_phys_mem_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x5fccf2 = 1;
+char __nvoc_class_id_uniqueness_check__0x5fccf2 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_PhysicalMemory;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Memory;
 
-void __nvoc_init_PhysicalMemory(PhysicalMemory*);
+// Forward declarations for PhysicalMemory
+void __nvoc_init__Memory(Memory*);
+void __nvoc_init__PhysicalMemory(PhysicalMemory*);
 void __nvoc_init_funcTable_PhysicalMemory(PhysicalMemory*);
-NV_STATUS __nvoc_ctor_PhysicalMemory(PhysicalMemory*, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_ctor_PhysicalMemory(PhysicalMemory*, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 void __nvoc_init_dataField_PhysicalMemory(PhysicalMemory*);
 void __nvoc_dtor_PhysicalMemory(PhysicalMemory*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_PhysicalMemory;
 
-static const struct NVOC_RTTI __nvoc_rtti_PhysicalMemory_PhysicalMemory = {
-    /*pClassDef=*/          &__nvoc_class_def_PhysicalMemory,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_PhysicalMemory,
-    /*offset=*/             0,
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_PhysicalMemory_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(PhysicalMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_PhysicalMemory_RsResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RsResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(PhysicalMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_PhysicalMemory_RmResourceCommon = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResourceCommon,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(PhysicalMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_PhysicalMemory_RmResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(PhysicalMemory, __nvoc_base_Memory.__nvoc_base_RmResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_PhysicalMemory_Memory = {
-    /*pClassDef=*/          &__nvoc_class_def_Memory,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(PhysicalMemory, __nvoc_base_Memory),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_PhysicalMemory = {
-    /*numRelatives=*/       6,
-    /*relatives=*/ {
-        &__nvoc_rtti_PhysicalMemory_PhysicalMemory,
-        &__nvoc_rtti_PhysicalMemory_Memory,
-        &__nvoc_rtti_PhysicalMemory_RmResource,
-        &__nvoc_rtti_PhysicalMemory_RmResourceCommon,
-        &__nvoc_rtti_PhysicalMemory_RsResource,
-        &__nvoc_rtti_PhysicalMemory_Object,
-    },
-};
-
-const struct NVOC_CLASS_DEF __nvoc_class_def_PhysicalMemory = 
-{
-    /*classInfo=*/ {
-        /*size=*/               sizeof(PhysicalMemory),
-        /*classId=*/            classId(PhysicalMemory),
-        /*providerId=*/         &__nvoc_rtti_provider,
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "PhysicalMemory",
-#endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_PhysicalMemory,
-    /*pCastInfo=*/          &__nvoc_castinfo_PhysicalMemory,
-    /*pExportInfo=*/        &__nvoc_export_info_PhysicalMemory
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__PhysicalMemory;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__PhysicalMemory;
 
 // Down-thunk(s) to bridge PhysicalMemory methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^2
@@ -108,14 +53,6 @@ NV_STATUS __nvoc_down_thunk_Memory_rmresGetMemInterMapParams(struct RmResource *
 NV_STATUS __nvoc_down_thunk_Memory_rmresCheckMemInterUnmap(struct RmResource *pMemory, NvBool bSubdeviceHandleProvided);    // super
 NV_STATUS __nvoc_down_thunk_Memory_rmresGetMemoryMappingDescriptor(struct RmResource *pMemory, MEMORY_DESCRIPTOR **ppMemDesc);    // super
 NvBool __nvoc_down_thunk_PhysicalMemory_resCanCopy(struct RsResource *pPhysicalMemory);    // this
-
-// 1 down-thunk(s) defined to bridge methods in PhysicalMemory from superclasses
-
-// physmemCanCopy: virtual override (res) base (mem)
-NvBool __nvoc_down_thunk_PhysicalMemory_resCanCopy(struct RsResource *pPhysicalMemory) {
-    return physmemCanCopy((struct PhysicalMemory *)(((unsigned char *) pPhysicalMemory) - NV_OFFSETOF(PhysicalMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)));
-}
-
 
 // Up-thunk(s) to bridge PhysicalMemory methods to ancestors (if any)
 NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^2
@@ -169,6 +106,158 @@ NV_STATUS __nvoc_up_thunk_RsResource_physmemMapTo(struct PhysicalMemory *pResour
 NV_STATUS __nvoc_up_thunk_RsResource_physmemUnmapFrom(struct PhysicalMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
 NvU32 __nvoc_up_thunk_RsResource_physmemGetRefCount(struct PhysicalMemory *pResource);    // this
 void __nvoc_up_thunk_RsResource_physmemAddAdditionalDependants(struct RsClient *pClient, struct PhysicalMemory *pResource, RsResourceRef *pReference);    // this
+
+const struct NVOC_CLASS_DEF __nvoc_class_def_PhysicalMemory = 
+{
+    /*classInfo=*/ {
+        /*size=*/               sizeof(PhysicalMemory),
+        /*classId=*/            classId(PhysicalMemory),
+        /*providerId=*/         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*name=*/               "PhysicalMemory",
+#endif
+    },
+    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_PhysicalMemory,
+    /*pCastInfo=*/          &__nvoc_castinfo__PhysicalMemory,
+    /*pExportInfo=*/        &__nvoc_export_info__PhysicalMemory
+};
+
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__PhysicalMemory __nvoc_metadata__PhysicalMemory = {
+    .rtti.pClassDef = &__nvoc_class_def_PhysicalMemory,    // (physmem) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_PhysicalMemory,
+    .rtti.offset    = 0,
+    .metadata__Memory.rtti.pClassDef = &__nvoc_class_def_Memory,    // (mem) super
+    .metadata__Memory.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Memory.rtti.offset    = NV_OFFSETOF(PhysicalMemory, __nvoc_base_Memory),
+    .metadata__Memory.metadata__RmResource.rtti.pClassDef = &__nvoc_class_def_RmResource,    // (rmres) super^2
+    .metadata__Memory.metadata__RmResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Memory.metadata__RmResource.rtti.offset    = NV_OFFSETOF(PhysicalMemory, __nvoc_base_Memory.__nvoc_base_RmResource),
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.rtti.pClassDef = &__nvoc_class_def_RsResource,    // (res) super^3
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.rtti.offset    = NV_OFFSETOF(PhysicalMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource),
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^4
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.offset    = NV_OFFSETOF(PhysicalMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
+    .metadata__Memory.metadata__RmResource.metadata__RmResourceCommon.rtti.pClassDef = &__nvoc_class_def_RmResourceCommon,    // (rmrescmn) super^3
+    .metadata__Memory.metadata__RmResource.metadata__RmResourceCommon.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Memory.metadata__RmResource.metadata__RmResourceCommon.rtti.offset    = NV_OFFSETOF(PhysicalMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
+
+    .vtable.__physmemCanCopy__ = &physmemCanCopy_IMPL,    // virtual override (res) base (mem)
+    .metadata__Memory.vtable.__memCanCopy__ = &__nvoc_up_thunk_RsResource_memCanCopy,    // virtual inherited (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resCanCopy__ = &__nvoc_down_thunk_PhysicalMemory_resCanCopy,    // virtual
+    .vtable.__physmemIsDuplicate__ = &__nvoc_up_thunk_Memory_physmemIsDuplicate,    // virtual inherited (mem) base (mem)
+    .metadata__Memory.vtable.__memIsDuplicate__ = &memIsDuplicate_IMPL,    // virtual override (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resIsDuplicate__ = &__nvoc_down_thunk_Memory_resIsDuplicate,    // virtual
+    .vtable.__physmemGetMapAddrSpace__ = &__nvoc_up_thunk_Memory_physmemGetMapAddrSpace,    // virtual inherited (mem) base (mem)
+    .metadata__Memory.vtable.__memGetMapAddrSpace__ = &memGetMapAddrSpace_IMPL,    // virtual
+    .vtable.__physmemControl__ = &__nvoc_up_thunk_Memory_physmemControl,    // virtual inherited (mem) base (mem)
+    .metadata__Memory.vtable.__memControl__ = &memControl_IMPL,    // virtual override (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resControl__ = &__nvoc_down_thunk_Memory_resControl,    // virtual
+    .vtable.__physmemMap__ = &__nvoc_up_thunk_Memory_physmemMap,    // virtual inherited (mem) base (mem)
+    .metadata__Memory.vtable.__memMap__ = &memMap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resMap__ = &__nvoc_down_thunk_Memory_resMap,    // virtual
+    .vtable.__physmemUnmap__ = &__nvoc_up_thunk_Memory_physmemUnmap,    // virtual inherited (mem) base (mem)
+    .metadata__Memory.vtable.__memUnmap__ = &memUnmap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resUnmap__ = &__nvoc_down_thunk_Memory_resUnmap,    // virtual
+    .vtable.__physmemGetMemInterMapParams__ = &__nvoc_up_thunk_Memory_physmemGetMemInterMapParams,    // virtual inherited (mem) base (mem)
+    .metadata__Memory.vtable.__memGetMemInterMapParams__ = &memGetMemInterMapParams_IMPL,    // virtual override (rmres) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresGetMemInterMapParams__ = &__nvoc_down_thunk_Memory_rmresGetMemInterMapParams,    // virtual
+    .vtable.__physmemCheckMemInterUnmap__ = &__nvoc_up_thunk_Memory_physmemCheckMemInterUnmap,    // inline virtual inherited (mem) base (mem) body
+    .metadata__Memory.vtable.__memCheckMemInterUnmap__ = &memCheckMemInterUnmap_ac1694,    // inline virtual override (rmres) base (rmres) body
+    .metadata__Memory.metadata__RmResource.vtable.__rmresCheckMemInterUnmap__ = &__nvoc_down_thunk_Memory_rmresCheckMemInterUnmap,    // virtual
+    .vtable.__physmemGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_Memory_physmemGetMemoryMappingDescriptor,    // virtual inherited (mem) base (mem)
+    .metadata__Memory.vtable.__memGetMemoryMappingDescriptor__ = &memGetMemoryMappingDescriptor_IMPL,    // virtual override (rmres) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresGetMemoryMappingDescriptor__ = &__nvoc_down_thunk_Memory_rmresGetMemoryMappingDescriptor,    // virtual
+    .vtable.__physmemCheckCopyPermissions__ = &__nvoc_up_thunk_Memory_physmemCheckCopyPermissions,    // inline virtual inherited (mem) base (mem) body
+    .metadata__Memory.vtable.__memCheckCopyPermissions__ = &memCheckCopyPermissions_ac1694,    // inline virtual body
+    .vtable.__physmemIsReady__ = &__nvoc_up_thunk_Memory_physmemIsReady,    // virtual inherited (mem) base (mem)
+    .metadata__Memory.vtable.__memIsReady__ = &memIsReady_IMPL,    // virtual
+    .vtable.__physmemIsGpuMapAllowed__ = &__nvoc_up_thunk_Memory_physmemIsGpuMapAllowed,    // inline virtual inherited (mem) base (mem) body
+    .metadata__Memory.vtable.__memIsGpuMapAllowed__ = &memIsGpuMapAllowed_e661f0,    // inline virtual body
+    .vtable.__physmemIsExportAllowed__ = &__nvoc_up_thunk_Memory_physmemIsExportAllowed,    // inline virtual inherited (mem) base (mem) body
+    .metadata__Memory.vtable.__memIsExportAllowed__ = &memIsExportAllowed_e661f0,    // inline virtual body
+    .vtable.__physmemAccessCallback__ = &__nvoc_up_thunk_RmResource_physmemAccessCallback,    // virtual inherited (rmres) base (mem)
+    .metadata__Memory.vtable.__memAccessCallback__ = &__nvoc_up_thunk_RmResource_memAccessCallback,    // virtual inherited (rmres) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+    .vtable.__physmemShareCallback__ = &__nvoc_up_thunk_RmResource_physmemShareCallback,    // virtual inherited (rmres) base (mem)
+    .metadata__Memory.vtable.__memShareCallback__ = &__nvoc_up_thunk_RmResource_memShareCallback,    // virtual inherited (rmres) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresShareCallback__ = &rmresShareCallback_IMPL,    // virtual override (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+    .vtable.__physmemControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_physmemControlSerialization_Prologue,    // virtual inherited (rmres) base (mem)
+    .metadata__Memory.vtable.__memControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_memControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+    .vtable.__physmemControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_physmemControlSerialization_Epilogue,    // virtual inherited (rmres) base (mem)
+    .metadata__Memory.vtable.__memControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_memControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+    .vtable.__physmemControl_Prologue__ = &__nvoc_up_thunk_RmResource_physmemControl_Prologue,    // virtual inherited (rmres) base (mem)
+    .metadata__Memory.vtable.__memControl_Prologue__ = &__nvoc_up_thunk_RmResource_memControl_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+    .vtable.__physmemControl_Epilogue__ = &__nvoc_up_thunk_RmResource_physmemControl_Epilogue,    // virtual inherited (rmres) base (mem)
+    .metadata__Memory.vtable.__memControl_Epilogue__ = &__nvoc_up_thunk_RmResource_memControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+    .vtable.__physmemPreDestruct__ = &__nvoc_up_thunk_RsResource_physmemPreDestruct,    // virtual inherited (res) base (mem)
+    .metadata__Memory.vtable.__memPreDestruct__ = &__nvoc_up_thunk_RsResource_memPreDestruct,    // virtual inherited (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+    .vtable.__physmemControlFilter__ = &__nvoc_up_thunk_RsResource_physmemControlFilter,    // virtual inherited (res) base (mem)
+    .metadata__Memory.vtable.__memControlFilter__ = &__nvoc_up_thunk_RsResource_memControlFilter,    // virtual inherited (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+    .vtable.__physmemIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_physmemIsPartialUnmapSupported,    // inline virtual inherited (res) base (mem) body
+    .metadata__Memory.vtable.__memIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_memIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+    .metadata__Memory.metadata__RmResource.vtable.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+    .vtable.__physmemMapTo__ = &__nvoc_up_thunk_RsResource_physmemMapTo,    // virtual inherited (res) base (mem)
+    .metadata__Memory.vtable.__memMapTo__ = &__nvoc_up_thunk_RsResource_memMapTo,    // virtual inherited (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resMapTo__ = &resMapTo_IMPL,    // virtual
+    .vtable.__physmemUnmapFrom__ = &__nvoc_up_thunk_RsResource_physmemUnmapFrom,    // virtual inherited (res) base (mem)
+    .metadata__Memory.vtable.__memUnmapFrom__ = &__nvoc_up_thunk_RsResource_memUnmapFrom,    // virtual inherited (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+    .vtable.__physmemGetRefCount__ = &__nvoc_up_thunk_RsResource_physmemGetRefCount,    // virtual inherited (res) base (mem)
+    .metadata__Memory.vtable.__memGetRefCount__ = &__nvoc_up_thunk_RsResource_memGetRefCount,    // virtual inherited (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+    .vtable.__physmemAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_physmemAddAdditionalDependants,    // virtual inherited (res) base (mem)
+    .metadata__Memory.vtable.__memAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_memAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+    .metadata__Memory.metadata__RmResource.vtable.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+    .metadata__Memory.metadata__RmResource.metadata__RsResource.vtable.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__PhysicalMemory = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__PhysicalMemory.rtti,    // [0]: (physmem) this
+        &__nvoc_metadata__PhysicalMemory.metadata__Memory.rtti,    // [1]: (mem) super
+        &__nvoc_metadata__PhysicalMemory.metadata__Memory.metadata__RmResource.rtti,    // [2]: (rmres) super^2
+        &__nvoc_metadata__PhysicalMemory.metadata__Memory.metadata__RmResource.metadata__RsResource.rtti,    // [3]: (res) super^3
+        &__nvoc_metadata__PhysicalMemory.metadata__Memory.metadata__RmResource.metadata__RsResource.metadata__Object.rtti,    // [4]: (obj) super^4
+        &__nvoc_metadata__PhysicalMemory.metadata__Memory.metadata__RmResource.metadata__RmResourceCommon.rtti,    // [5]: (rmrescmn) super^3
+    }
+};
+
+// 1 down-thunk(s) defined to bridge methods in PhysicalMemory from superclasses
+
+// physmemCanCopy: virtual override (res) base (mem)
+NvBool __nvoc_down_thunk_PhysicalMemory_resCanCopy(struct RsResource *pPhysicalMemory) {
+    return physmemCanCopy((struct PhysicalMemory *)(((unsigned char *) pPhysicalMemory) - NV_OFFSETOF(PhysicalMemory, __nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource)));
+}
+
 
 // 25 up-thunk(s) defined to bridge methods in PhysicalMemory to superclasses
 
@@ -298,7 +387,7 @@ void __nvoc_up_thunk_RsResource_physmemAddAdditionalDependants(struct RsClient *
 }
 
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_PhysicalMemory = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__PhysicalMemory = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -341,119 +430,32 @@ static void __nvoc_init_funcTable_PhysicalMemory_1(PhysicalMemory *pThis) {
 
 // Initialize vtable(s) for 26 virtual method(s).
 void __nvoc_init_funcTable_PhysicalMemory(PhysicalMemory *pThis) {
-
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__PhysicalMemory vtable = {
-        .__physmemCanCopy__ = &physmemCanCopy_IMPL,    // virtual override (res) base (mem)
-        .Memory.__memCanCopy__ = &__nvoc_up_thunk_RsResource_memCanCopy,    // virtual inherited (res) base (rmres)
-        .Memory.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resCanCopy__ = &__nvoc_down_thunk_PhysicalMemory_resCanCopy,    // virtual
-        .__physmemIsDuplicate__ = &__nvoc_up_thunk_Memory_physmemIsDuplicate,    // virtual inherited (mem) base (mem)
-        .Memory.__memIsDuplicate__ = &memIsDuplicate_IMPL,    // virtual override (res) base (rmres)
-        .Memory.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resIsDuplicate__ = &__nvoc_down_thunk_Memory_resIsDuplicate,    // virtual
-        .__physmemGetMapAddrSpace__ = &__nvoc_up_thunk_Memory_physmemGetMapAddrSpace,    // virtual inherited (mem) base (mem)
-        .Memory.__memGetMapAddrSpace__ = &memGetMapAddrSpace_IMPL,    // virtual
-        .__physmemControl__ = &__nvoc_up_thunk_Memory_physmemControl,    // virtual inherited (mem) base (mem)
-        .Memory.__memControl__ = &memControl_IMPL,    // virtual override (res) base (rmres)
-        .Memory.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_Memory_resControl,    // virtual
-        .__physmemMap__ = &__nvoc_up_thunk_Memory_physmemMap,    // virtual inherited (mem) base (mem)
-        .Memory.__memMap__ = &memMap_IMPL,    // virtual override (res) base (rmres)
-        .Memory.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resMap__ = &__nvoc_down_thunk_Memory_resMap,    // virtual
-        .__physmemUnmap__ = &__nvoc_up_thunk_Memory_physmemUnmap,    // virtual inherited (mem) base (mem)
-        .Memory.__memUnmap__ = &memUnmap_IMPL,    // virtual override (res) base (rmres)
-        .Memory.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resUnmap__ = &__nvoc_down_thunk_Memory_resUnmap,    // virtual
-        .__physmemGetMemInterMapParams__ = &__nvoc_up_thunk_Memory_physmemGetMemInterMapParams,    // virtual inherited (mem) base (mem)
-        .Memory.__memGetMemInterMapParams__ = &memGetMemInterMapParams_IMPL,    // virtual override (rmres) base (rmres)
-        .Memory.RmResource.__rmresGetMemInterMapParams__ = &__nvoc_down_thunk_Memory_rmresGetMemInterMapParams,    // virtual
-        .__physmemCheckMemInterUnmap__ = &__nvoc_up_thunk_Memory_physmemCheckMemInterUnmap,    // inline virtual inherited (mem) base (mem) body
-        .Memory.__memCheckMemInterUnmap__ = &memCheckMemInterUnmap_ac1694,    // inline virtual override (rmres) base (rmres) body
-        .Memory.RmResource.__rmresCheckMemInterUnmap__ = &__nvoc_down_thunk_Memory_rmresCheckMemInterUnmap,    // virtual
-        .__physmemGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_Memory_physmemGetMemoryMappingDescriptor,    // virtual inherited (mem) base (mem)
-        .Memory.__memGetMemoryMappingDescriptor__ = &memGetMemoryMappingDescriptor_IMPL,    // virtual override (rmres) base (rmres)
-        .Memory.RmResource.__rmresGetMemoryMappingDescriptor__ = &__nvoc_down_thunk_Memory_rmresGetMemoryMappingDescriptor,    // virtual
-        .__physmemCheckCopyPermissions__ = &__nvoc_up_thunk_Memory_physmemCheckCopyPermissions,    // inline virtual inherited (mem) base (mem) body
-        .Memory.__memCheckCopyPermissions__ = &memCheckCopyPermissions_ac1694,    // inline virtual body
-        .__physmemIsReady__ = &__nvoc_up_thunk_Memory_physmemIsReady,    // virtual inherited (mem) base (mem)
-        .Memory.__memIsReady__ = &memIsReady_IMPL,    // virtual
-        .__physmemIsGpuMapAllowed__ = &__nvoc_up_thunk_Memory_physmemIsGpuMapAllowed,    // inline virtual inherited (mem) base (mem) body
-        .Memory.__memIsGpuMapAllowed__ = &memIsGpuMapAllowed_e661f0,    // inline virtual body
-        .__physmemIsExportAllowed__ = &__nvoc_up_thunk_Memory_physmemIsExportAllowed,    // inline virtual inherited (mem) base (mem) body
-        .Memory.__memIsExportAllowed__ = &memIsExportAllowed_e661f0,    // inline virtual body
-        .__physmemAccessCallback__ = &__nvoc_up_thunk_RmResource_physmemAccessCallback,    // virtual inherited (rmres) base (mem)
-        .Memory.__memAccessCallback__ = &__nvoc_up_thunk_RmResource_memAccessCallback,    // virtual inherited (rmres) base (rmres)
-        .Memory.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
-        .Memory.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
-        .__physmemShareCallback__ = &__nvoc_up_thunk_RmResource_physmemShareCallback,    // virtual inherited (rmres) base (mem)
-        .Memory.__memShareCallback__ = &__nvoc_up_thunk_RmResource_memShareCallback,    // virtual inherited (rmres) base (rmres)
-        .Memory.RmResource.__rmresShareCallback__ = &rmresShareCallback_IMPL,    // virtual override (res) base (res)
-        .Memory.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
-        .__physmemControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_physmemControlSerialization_Prologue,    // virtual inherited (rmres) base (mem)
-        .Memory.__memControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_memControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
-        .Memory.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
-        .Memory.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
-        .__physmemControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_physmemControlSerialization_Epilogue,    // virtual inherited (rmres) base (mem)
-        .Memory.__memControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_memControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .Memory.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
-        .Memory.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
-        .__physmemControl_Prologue__ = &__nvoc_up_thunk_RmResource_physmemControl_Prologue,    // virtual inherited (rmres) base (mem)
-        .Memory.__memControl_Prologue__ = &__nvoc_up_thunk_RmResource_memControl_Prologue,    // virtual inherited (rmres) base (rmres)
-        .Memory.RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
-        .Memory.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
-        .__physmemControl_Epilogue__ = &__nvoc_up_thunk_RmResource_physmemControl_Epilogue,    // virtual inherited (rmres) base (mem)
-        .Memory.__memControl_Epilogue__ = &__nvoc_up_thunk_RmResource_memControl_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .Memory.RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
-        .Memory.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
-        .__physmemPreDestruct__ = &__nvoc_up_thunk_RsResource_physmemPreDestruct,    // virtual inherited (res) base (mem)
-        .Memory.__memPreDestruct__ = &__nvoc_up_thunk_RsResource_memPreDestruct,    // virtual inherited (res) base (rmres)
-        .Memory.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
-        .__physmemControlFilter__ = &__nvoc_up_thunk_RsResource_physmemControlFilter,    // virtual inherited (res) base (mem)
-        .Memory.__memControlFilter__ = &__nvoc_up_thunk_RsResource_memControlFilter,    // virtual inherited (res) base (rmres)
-        .Memory.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
-        .__physmemIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_physmemIsPartialUnmapSupported,    // inline virtual inherited (res) base (mem) body
-        .Memory.__memIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_memIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
-        .Memory.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
-        .Memory.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
-        .__physmemMapTo__ = &__nvoc_up_thunk_RsResource_physmemMapTo,    // virtual inherited (res) base (mem)
-        .Memory.__memMapTo__ = &__nvoc_up_thunk_RsResource_memMapTo,    // virtual inherited (res) base (rmres)
-        .Memory.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
-        .__physmemUnmapFrom__ = &__nvoc_up_thunk_RsResource_physmemUnmapFrom,    // virtual inherited (res) base (mem)
-        .Memory.__memUnmapFrom__ = &__nvoc_up_thunk_RsResource_memUnmapFrom,    // virtual inherited (res) base (rmres)
-        .Memory.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
-        .__physmemGetRefCount__ = &__nvoc_up_thunk_RsResource_physmemGetRefCount,    // virtual inherited (res) base (mem)
-        .Memory.__memGetRefCount__ = &__nvoc_up_thunk_RsResource_memGetRefCount,    // virtual inherited (res) base (rmres)
-        .Memory.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
-        .__physmemAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_physmemAddAdditionalDependants,    // virtual inherited (res) base (mem)
-        .Memory.__memAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_memAddAdditionalDependants,    // virtual inherited (res) base (rmres)
-        .Memory.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
-        .Memory.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.Memory.RmResource.RsResource;    // (res) super^3
-    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable = &vtable.Memory.RmResource;    // (rmres) super^2
-    pThis->__nvoc_base_Memory.__nvoc_vtable = &vtable.Memory;    // (mem) super
-    pThis->__nvoc_vtable = &vtable;    // (physmem) this
     __nvoc_init_funcTable_PhysicalMemory_1(pThis);
 }
 
-void __nvoc_init_Memory(Memory*);
-void __nvoc_init_PhysicalMemory(PhysicalMemory *pThis) {
-    pThis->__nvoc_pbase_PhysicalMemory = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;
-    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource;
-    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;
-    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_Memory.__nvoc_base_RmResource;
-    pThis->__nvoc_pbase_Memory = &pThis->__nvoc_base_Memory;
-    __nvoc_init_Memory(&pThis->__nvoc_base_Memory);
+// Initialize newly constructed object.
+void __nvoc_init__PhysicalMemory(PhysicalMemory *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;    // (obj) super^4
+    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource;    // (res) super^3
+    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;    // (rmrescmn) super^3
+    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_Memory.__nvoc_base_RmResource;    // (rmres) super^2
+    pThis->__nvoc_pbase_Memory = &pThis->__nvoc_base_Memory;    // (mem) super
+    pThis->__nvoc_pbase_PhysicalMemory = pThis;    // (physmem) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__Memory(&pThis->__nvoc_base_Memory);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__PhysicalMemory.metadata__Memory.metadata__RmResource.metadata__RsResource.metadata__Object;    // (obj) super^4
+    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr = &__nvoc_metadata__PhysicalMemory.metadata__Memory.metadata__RmResource.metadata__RsResource;    // (res) super^3
+    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon.__nvoc_metadata_ptr = &__nvoc_metadata__PhysicalMemory.metadata__Memory.metadata__RmResource.metadata__RmResourceCommon;    // (rmrescmn) super^3
+    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr = &__nvoc_metadata__PhysicalMemory.metadata__Memory.metadata__RmResource;    // (rmres) super^2
+    pThis->__nvoc_base_Memory.__nvoc_metadata_ptr = &__nvoc_metadata__PhysicalMemory.metadata__Memory;    // (mem) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__PhysicalMemory;    // (physmem) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_PhysicalMemory(pThis);
 }
 
@@ -471,9 +473,6 @@ NV_STATUS __nvoc_objCreate_PhysicalMemory(PhysicalMemory **ppThis, Dynamic *pPar
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(PhysicalMemory));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_PhysicalMemory);
-
     pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -487,7 +486,7 @@ NV_STATUS __nvoc_objCreate_PhysicalMemory(PhysicalMemory **ppThis, Dynamic *pPar
         pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_PhysicalMemory(pThis);
+    __nvoc_init__PhysicalMemory(pThis);
     status = __nvoc_ctor_PhysicalMemory(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_PhysicalMemory_cleanup;
 

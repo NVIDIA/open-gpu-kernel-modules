@@ -236,7 +236,8 @@ extern "C" {
 #define NV2080_NOTIFIERS_POWER_RESUME                              (194)
 #define NV2080_NOTIFIERS_CTXSW_UCODE_ERROR                         (195)
 #define NV2080_NOTIFIERS_USE_GC6_REDUCED_THRESHOLD                 (196)
-#define NV2080_NOTIFIERS_MAXCOUNT                                  (197)
+#define NV2080_NOTIFIERS_GPU_RC_RESET                              (197)
+#define NV2080_NOTIFIERS_MAXCOUNT                                  (198)
 
 // Indexed GR notifier reference
 #define NV2080_NOTIFIERS_GR(x)         ((x == 0) ? (NV2080_NOTIFIERS_GR0) : (NV2080_NOTIFIERS_GR1 + (x - 1)))

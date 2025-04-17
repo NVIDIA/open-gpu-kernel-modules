@@ -114,13 +114,10 @@ GZIP_CMD              ?= gzip
 CHMOD                 ?= chmod
 OBJCOPY               ?= objcopy
 XZ                    ?= xz
-WHOAMI                ?= whoami
 PKG_CONFIG            ?= pkg-config
 
-ifndef HOSTNAME
-  HOSTNAME             = $(shell hostname)
-endif
-
+NV_BUILD_USER         ?= $(shell whoami)
+NV_BUILD_HOST         ?= $(shell hostname)
 
 NV_AUTO_DEPEND        ?= 1
 NV_VERBOSE            ?= 0
@@ -548,10 +545,16 @@ else
 endif
 
 define GENERATE_NVIDSTRING
+  $(1)_BUILD_NVID := NVIDIA $$(strip $(2)) for $$(TARGET_ARCH)  $$(NVIDIA_NVID_VERSION)
+  $(1)_BUILD_NVID := $$($$(strip $(1))_BUILD_NVID)  $$(NVIDSTRING_BUILD_TYPE_STRING)
+  ifneq ($$(NVIDIA_NVID_EXTRA),)
+    $(1)_BUILD_NVID := $$($$(strip $(1))_BUILD_NVID)  $$(NVIDIA_NVID_EXTRA)
+  endif
+  $(1)_BUILD_NVID := $$($$(strip $(1))_BUILD_NVID)  ($$(NV_BUILD_USER)@$$(NV_BUILD_HOST))
   # g_nvid_string.c depends on all objects except g_nvid_string.o, and version.mk
   $(NVIDSTRING): $$(filter-out $$(call BUILD_OBJECT_LIST,$$(NVIDSTRING)), $(3)) $$(VERSION_MK)
 	$(at_if_quiet)$$(MKDIR) $$(dir $$@)
-	$(at_if_quiet)$$(ECHO) "const char $(1)[] = \"nvidia id: NVIDIA $$(strip $(2)) for $$(TARGET_ARCH)  $$(NVIDIA_VERSION)  $$(NVIDSTRING_BUILD_TYPE_STRING)  (`$$(WHOAMI)`@$$(HOSTNAME))  `$$(DATE)`\";" > $$@
+	$(at_if_quiet)$$(ECHO) "const char $(1)[] = \"nvidia id: $$($$(strip $(1))_BUILD_NVID)  `$$(DATE)`\";" > $$@
 	$(at_if_quiet)$$(ECHO) "const char *const p$$(strip $(1)) = $(1) + 11;" >> $$@;
 endef
 

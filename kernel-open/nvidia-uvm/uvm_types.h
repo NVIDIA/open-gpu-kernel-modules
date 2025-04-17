@@ -1471,12 +1471,6 @@ typedef enum
 //------------------------------------------------------------------------------
 typedef NvUPtr UvmEventQueueHandle;
 
-//------------------------------------------------------------------------------
-// Setting default page size to 4k,
-// this can be updated to 64k in case of power PC
-//------------------------------------------------------------------------------
-#define UVM_DEBUG_ACCESS_PAGE_SIZE      (1 << 12) // 4k page
-
 typedef enum
 {
     UvmDebugAccessTypeRead = 0,

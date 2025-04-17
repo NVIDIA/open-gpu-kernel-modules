@@ -134,7 +134,7 @@ static NV_STATUS phys_mem_allocate_sysmem(uvm_page_tree_t *tree, NvLength size, 
 
     // Check for fake GPUs from the unit test
     if (tree->gpu->parent->pci_dev)
-        status = uvm_parent_gpu_map_cpu_pages(tree->gpu->parent, out->handle.page, UVM_PAGE_ALIGN_UP(size), &dma_addr);
+        status = uvm_gpu_map_cpu_pages(tree->gpu, out->handle.page, UVM_PAGE_ALIGN_UP(size), &dma_addr);
     else
         dma_addr = page_to_phys(out->handle.page);
 
@@ -703,7 +703,7 @@ static NV_STATUS write_gpu_state_cpu(uvm_page_tree_t *tree,
 
     // See the comments in write_gpu_state_gpu()
     tree->gpu->parent->host_hal->tlb_invalidate_all(&push,
-                                                    uvm_page_tree_pdb(tree)->addr,
+                                                    uvm_page_tree_pdb_address(tree),
                                                     invalidate_depth,
                                                     UVM_MEMBAR_NONE);
     page_tree_end(tree, &push);
@@ -787,7 +787,7 @@ static NV_STATUS write_gpu_state_gpu(uvm_page_tree_t *tree,
     // Upgrades don't have to flush out accesses, so no membar is needed on the
     // TLB invalidate.
     tree->gpu->parent->host_hal->tlb_invalidate_all(&push,
-                                                    uvm_page_tree_pdb(tree)->addr,
+                                                    uvm_page_tree_pdb_address(tree),
                                                     invalidate_depth,
                                                     UVM_MEMBAR_NONE);
 
@@ -876,7 +876,10 @@ static NV_STATUS page_tree_ats_init(uvm_page_tree_t *tree)
     if (!page_tree_ats_init_required(tree))
         return NV_OK;
 
-    page_size = mmu_biggest_page_size(tree, UVM_APERTURE_VID);
+    if (tree->gpu->mem_info.size)
+        page_size = mmu_biggest_page_size(tree, UVM_APERTURE_VID);
+    else
+        page_size = mmu_biggest_page_size(tree, UVM_APERTURE_SYS);
 
     uvm_cpu_get_unaddressable_range(&max_va_lower, &min_va_upper);
 
@@ -899,19 +902,17 @@ static NV_STATUS page_tree_ats_init(uvm_page_tree_t *tree)
 
     UVM_ASSERT(tree->no_ats_ranges[0].entry_count == 1);
 
-    if (uvm_platform_uses_canonical_form_address()) {
-        // Upper half
-        status = uvm_page_tree_get_ptes(tree,
-                                        page_size,
-                                        min_va_upper - page_size,
-                                        page_size,
-                                        UVM_PMM_ALLOC_FLAGS_EVICT,
-                                        &tree->no_ats_ranges[1]);
-        if (status != NV_OK)
-            return status;
+    // Upper half
+    status = uvm_page_tree_get_ptes(tree,
+                                    page_size,
+                                    min_va_upper - page_size,
+                                    page_size,
+                                    UVM_PMM_ALLOC_FLAGS_EVICT,
+                                    &tree->no_ats_ranges[1]);
+    if (status != NV_OK)
+        return status;
 
-        UVM_ASSERT(tree->no_ats_ranges[1].entry_count == 1);
-    }
+    UVM_ASSERT(tree->no_ats_ranges[1].entry_count == 1);
 
     return NV_OK;
 }
@@ -1056,6 +1057,9 @@ error:
 //    sysmem     |            -            ||           <disallowed>
 //    default    |            -            ||           <disallowed>
 //
+//   - If a GPU has no vidmem (broken fb or integrated GPU) then the page table
+//     must be in sysmem.
+//
 static void page_tree_set_location(uvm_page_tree_t *tree, uvm_aperture_t location)
 {
     UVM_ASSERT(tree->gpu != NULL);
@@ -1071,6 +1075,9 @@ static void page_tree_set_location(uvm_page_tree_t *tree, uvm_aperture_t locatio
 
         if (uvm_parent_gpu_is_virt_mode_sriov_heavy(tree->gpu->parent) || g_uvm_global.conf_computing_enabled)
             UVM_ASSERT(location == UVM_APERTURE_VID);
+
+        if (!tree->gpu->mem_info.size)
+            UVM_ASSERT(location == UVM_APERTURE_SYS);
     }
 
     if (location == UVM_APERTURE_DEFAULT) {
@@ -1177,7 +1184,7 @@ void uvm_page_tree_deinit(uvm_page_tree_t *tree)
         // error. We can't perform the unmap, so just leave things in place for
         // debug.
         if (status == NV_OK) {
-            tree->gpu->parent->host_hal->tlb_invalidate_all(&push, uvm_page_tree_pdb(tree)->addr, 0, UVM_MEMBAR_NONE);
+            tree->gpu->parent->host_hal->tlb_invalidate_all(&push, uvm_page_tree_pdb_address(tree), 0, UVM_MEMBAR_NONE);
             page_tree_end(tree, &push);
             page_tree_tracker_overwrite_with_push(tree, &push);
         }
@@ -1303,7 +1310,7 @@ void uvm_page_tree_put_ptes_async(uvm_page_tree_t *tree, uvm_page_table_range_t 
         uvm_hal_wfi_membar(&push, membar_after_pde_clears);
 
     tree->gpu->parent->host_hal->tlb_invalidate_all(&push,
-                                                    uvm_page_tree_pdb(tree)->addr,
+                                                    uvm_page_tree_pdb_address(tree),
                                                     invalidate_depth,
                                                     membar_after_invalidate);
 
@@ -2964,7 +2971,7 @@ NV_STATUS uvm_test_invalidate_tlb(UVM_TEST_INVALIDATE_TLB_PARAMS *params, struct
                             "Pushing test invalidate, GPU %s",
                             uvm_gpu_name(gpu));
     if (status == NV_OK)
-        gpu->parent->host_hal->tlb_invalidate_test(&push, uvm_page_tree_pdb(&gpu_va_space->page_tables)->addr, params);
+        gpu->parent->host_hal->tlb_invalidate_test(&push, uvm_page_tree_pdb_address(&gpu_va_space->page_tables), params);
 
 unlock_exit:
     // Wait for the invalidation to be performed

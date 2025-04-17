@@ -1,4 +1,11 @@
 #define NVOC_GPU_DB_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,40 +14,29 @@
 #include "utils/nvassert.h"
 #include "g_gpu_db_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0xcdd250 = 1;
+char __nvoc_class_id_uniqueness_check__0xcdd250 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuDb;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
-void __nvoc_init_GpuDb(GpuDb*);
+// Forward declarations for GpuDb
+void __nvoc_init__Object(Object*);
+void __nvoc_init__GpuDb(GpuDb*);
 void __nvoc_init_funcTable_GpuDb(GpuDb*);
 NV_STATUS __nvoc_ctor_GpuDb(GpuDb*);
 void __nvoc_init_dataField_GpuDb(GpuDb*);
 void __nvoc_dtor_GpuDb(GpuDb*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_GpuDb;
 
-static const struct NVOC_RTTI __nvoc_rtti_GpuDb_GpuDb = {
-    /*pClassDef=*/          &__nvoc_class_def_GpuDb,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_GpuDb,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__GpuDb;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__GpuDb;
 
-static const struct NVOC_RTTI __nvoc_rtti_GpuDb_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(GpuDb, __nvoc_base_Object),
-};
+// Down-thunk(s) to bridge GpuDb methods from ancestors (if any)
 
-static const struct NVOC_CASTINFO __nvoc_castinfo_GpuDb = {
-    /*numRelatives=*/       2,
-    /*relatives=*/ {
-        &__nvoc_rtti_GpuDb_GpuDb,
-        &__nvoc_rtti_GpuDb_Object,
-    },
-};
+// Up-thunk(s) to bridge GpuDb methods to ancestors (if any)
 
 const struct NVOC_CLASS_DEF __nvoc_class_def_GpuDb = 
 {
@@ -53,15 +49,32 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_GpuDb =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_GpuDb,
-    /*pCastInfo=*/          &__nvoc_castinfo_GpuDb,
-    /*pExportInfo=*/        &__nvoc_export_info_GpuDb
+    /*pCastInfo=*/          &__nvoc_castinfo__GpuDb,
+    /*pExportInfo=*/        &__nvoc_export_info__GpuDb
 };
 
-// Down-thunk(s) to bridge GpuDb methods from ancestors (if any)
 
-// Up-thunk(s) to bridge GpuDb methods to ancestors (if any)
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__GpuDb __nvoc_metadata__GpuDb = {
+    .rtti.pClassDef = &__nvoc_class_def_GpuDb,    // (gpudb) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_GpuDb,
+    .rtti.offset    = 0,
+    .metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super
+    .metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Object.rtti.offset    = NV_OFFSETOF(GpuDb, __nvoc_base_Object),
+};
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_GpuDb = 
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__GpuDb = {
+    .numRelatives = 2,
+    .relatives = {
+        &__nvoc_metadata__GpuDb.rtti,    // [0]: (gpudb) this
+        &__nvoc_metadata__GpuDb.metadata__Object.rtti,    // [1]: (obj) super
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__GpuDb = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -108,11 +121,21 @@ void __nvoc_init_funcTable_GpuDb(GpuDb *pThis) {
     __nvoc_init_funcTable_GpuDb_1(pThis);
 }
 
-void __nvoc_init_Object(Object*);
-void __nvoc_init_GpuDb(GpuDb *pThis) {
-    pThis->__nvoc_pbase_GpuDb = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;
-    __nvoc_init_Object(&pThis->__nvoc_base_Object);
+// Initialize newly constructed object.
+void __nvoc_init__GpuDb(GpuDb *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;    // (obj) super
+    pThis->__nvoc_pbase_GpuDb = pThis;    // (gpudb) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__Object(&pThis->__nvoc_base_Object);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__GpuDb.metadata__Object;    // (obj) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__GpuDb;    // (gpudb) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_GpuDb(pThis);
 }
 
@@ -130,9 +153,6 @@ NV_STATUS __nvoc_objCreate_GpuDb(GpuDb **ppThis, Dynamic *pParent, NvU32 createF
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(GpuDb));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_GpuDb);
-
     pThis->__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -146,7 +166,7 @@ NV_STATUS __nvoc_objCreate_GpuDb(GpuDb **ppThis, Dynamic *pParent, NvU32 createF
         pThis->__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_GpuDb(pThis);
+    __nvoc_init__GpuDb(pThis);
     status = __nvoc_ctor_GpuDb(pThis);
     if (status != NV_OK) goto __nvoc_objCreate_GpuDb_cleanup;
 

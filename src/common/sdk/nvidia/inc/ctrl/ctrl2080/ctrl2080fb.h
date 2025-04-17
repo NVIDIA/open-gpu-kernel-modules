@@ -1811,9 +1811,8 @@ typedef struct NV2080_CTRL_FB_PATCH_PBR_FOR_MINING_PARAMS {
  *
  * Get memory alignment. Replacement for NVOS32_FUNCTION_GET_MEM_ALIGNMENT
  */
-#define NV2080_CTRL_CMD_FB_GET_MEM_ALIGNMENT       (0x20801342U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_GET_MEM_ALIGNMENT_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_FB_GET_MEM_ALIGNMENT (0x20801342U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_GET_MEM_ALIGNMENT_PARAMS_MESSAGE_ID" */
 
-#define NV2080_CTRL_FB_GET_MEM_ALIGNMENT_MAX_BANKS (4U)
 #define NV2080_CTRL_FB_GET_MEM_ALIGNMENT_PARAMS_MESSAGE_ID (0x42U)
 
 typedef struct NV2080_CTRL_FB_GET_MEM_ALIGNMENT_PARAMS {
@@ -1827,8 +1826,6 @@ typedef struct NV2080_CTRL_FB_GET_MEM_ALIGNMENT_PARAMS {
     NvU32 alignPitch;
     NvU32 alignPad;
     NvU32 alignMask;
-    NvU32 alignOutputFlags[NV2080_CTRL_FB_GET_MEM_ALIGNMENT_MAX_BANKS];
-    NvU32 alignBank[NV2080_CTRL_FB_GET_MEM_ALIGNMENT_MAX_BANKS];
     NvU32 alignKind;
     NvU32 alignAdjust;                                // Output -- If non-zero the amount we need to adjust the offset
     NvU32 alignAttr2;
@@ -2040,6 +2037,24 @@ typedef struct NV2080_CTRL_FB_FS_INFO_ROP_MASK_PARAMS {
 } NV2080_CTRL_FB_FS_INFO_ROP_MASK_PARAMS;
 
 /*!
+ * Structure holding the in/out params for NV2080_CTRL_FB_FS_INFO_SYS_MASK.
+ */
+typedef struct NV2080_CTRL_FB_FS_INFO_SYS_MASK_PARAMS {
+    /*!
+     * [in]: swizzId
+     * PartitionID associated with a created smc partition. Currently used only for a
+     * device monitoring client to get the physical values of the sys. The client needs to pass
+     * 'NV2080_CTRL_GPU_PARTITION_ID_INVALID' explicitly if it wants RM to ignore the swizzId.
+     * RM will consider this request similar to a legacy case.
+     */
+    NvU32 swizzId;
+    /*!
+     * [out]: physical/local sys mask.
+     */
+    NV_DECLARE_ALIGNED(NvU64 sysEnMask, 8);
+} NV2080_CTRL_FB_FS_INFO_SYS_MASK_PARAMS;
+
+/*!
  * Structure holding the in/out params for NV2080_CTRL_FB_FS_INFO_PROFILER_MON_LTC_MASK.
  */
 typedef struct NV2080_CTRL_FB_FS_INFO_PROFILER_MON_LTC_MASK_PARAMS {
@@ -2233,6 +2248,7 @@ typedef struct NV2080_CTRL_FB_FS_INFO_PROFILER_MON_LOGICAL_LTC_MASK_PARAMS {
 #define NV2080_CTRL_FB_FS_INFO_LOGICAL_LTC_MASK              0xFU
 #define NV2080_CTRL_FB_FS_INFO_PROFILER_MON_LOGICAL_LTC_MASK 0x10U
 #define NV2080_CTRL_SYSL2_FS_INFO_SYSLTS_MASK                0x11U
+#define NV2080_CTRL_FB_FS_INFO_SYS_MASK                      0x12U
 
 typedef struct NV2080_CTRL_FB_FS_INFO_QUERY {
     NvU16 queryType;
@@ -2257,6 +2273,7 @@ typedef struct NV2080_CTRL_FB_FS_INFO_QUERY {
         NV_DECLARE_ALIGNED(NV2080_CTRL_FB_FS_INFO_LOGICAL_LTC_MASK_PARAMS logicalLtc, 8);
         NV_DECLARE_ALIGNED(NV2080_CTRL_FB_FS_INFO_PROFILER_MON_LOGICAL_LTC_MASK_PARAMS dmLogicalLtc, 8);
         NV_DECLARE_ALIGNED(NV2080_CTRL_SYSL2_FS_INFO_SYSLTS_MASK_PARAMS sysl2Lts, 8);
+        NV_DECLARE_ALIGNED(NV2080_CTRL_FB_FS_INFO_SYS_MASK_PARAMS sys, 8);
     } queryParams;
 } NV2080_CTRL_FB_FS_INFO_QUERY;
 
@@ -2749,61 +2766,6 @@ typedef struct NV2080_CTRL_FB_SET_DRAM_ENCRYPTION_CONFIGURATION_PARAMS {
 } NV2080_CTRL_FB_SET_DRAM_ENCRYPTION_CONFIGURATION_PARAMS;
 
 /*
- * NV2080_CTRL_CMD_FB_GET_STATUS
- *
- * This control command is used by clients to get the FB availabilty status,
- * i.e whether the GPU Memory is ready for use or not for MIG and non-MIG cases
- *
- *  fbStatus[OUT]
- *     This parameter returns the various values of FB availability status.
- *     Valid values include:
- *       NV2080_CTRL_FB_STATUS_FAILED
- *          On Non Self hosted (Non NUMA) systems - this status is not expected since
- *              FB memory is available as part of GPU initialization itself.
- *          On Direct connected Self hosted systems - this status is not expected since
- *              FB memory is available as part of GPU initialization itself.
- *          On Nvswitch connected Self hosted systems - this status indicates that either
- *              the memory onlining has failed or fabric probe response has failed.
- *              GPU reset maybe required in such a case.
- *       NV2080_CTRL_FB_STATUS_READY
- *          On Non Self hosted systems - this status is always returned as memory is ready
- *              after GPU initialization is complete.
- *          On Self hosted systems - this status indicates that the FB memory has been onlined
- *              successfully and is available for client/user allocations.
- *       NV2080_CTRL_FB_STATUS_PENDING
- *          On Non Self hosted systems - this status is not expected
- *          On Direct connected Self hosted systems - this status is not expected since
- *              FB memory is available as part of GPU initialization itself.
- *          On Nvswitch connected Self hosted systems - This status indicates memory is yet to
- *              be onlined or is in progress since we are either still waiting for a fabric
- *              probe response or a fabric probe request hasn't been sent yet.
- *       NV2080_CTRL_FB_STATUS_NOT_APPLICABLE
- *          This status indicates that this is a system with no FB memory.
- *
- *
- * @returns Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_STATE
- *   NV_ERR_NOT_SUPPORTED
- *   NV_ERR_NOT_READY
- *   NV_ERR_INVALID_LOCK_STATE
- */
-#define NV2080_CTRL_CMD_FB_GET_STATUS        (0x20801357U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_GET_STATUS_PARAMS_MESSAGE_ID" */
-
-// NUMA Memory Onlining Status
-#define NV2080_CTRL_FB_STATUS_FAILED         (0x00000000U)
-#define NV2080_CTRL_FB_STATUS_READY          (0x00000001U)
-#define NV2080_CTRL_FB_STATUS_PENDING        (0x00000002U)
-#define NV2080_CTRL_FB_STATUS_NOT_APPLICABLE (0x00000003U)
-
-#define NV2080_CTRL_FB_GET_STATUS_PARAMS_MESSAGE_ID (0x57U)
-
-typedef struct NV2080_CTRL_FB_GET_STATUS_PARAMS {
-
-    NvU32 fbStatus;
-} NV2080_CTRL_FB_GET_STATUS_PARAMS;
-
-/*
  * NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_INFOROM_SUPPORT
  *
  * This command returns whether or not DRAM encryption config object is supported via the InfoROM.
@@ -2818,12 +2780,12 @@ typedef struct NV2080_CTRL_FB_GET_STATUS_PARAMS {
  *   NV_OK
  *   NV_ERR_NOT_SUPPORTED
  */
-#define NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_INFOROM_SUPPORT          (0x20801358U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_DRAM_ENCRYPTION_INFOROM_SUPPORT_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_INFOROM_SUPPORT          (0x20801357U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_DRAM_ENCRYPTION_INFOROM_SUPPORT_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_INFOROM_SUPPORT_DISABLED (0x00000000U)
 #define NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_INFOROM_SUPPORT_ENABLED  (0x00000001U)
 
-#define NV2080_CTRL_FB_DRAM_ENCRYPTION_INFOROM_SUPPORT_PARAMS_MESSAGE_ID (0x58U)
+#define NV2080_CTRL_FB_DRAM_ENCRYPTION_INFOROM_SUPPORT_PARAMS_MESSAGE_ID (0x57U)
 
 typedef struct NV2080_CTRL_FB_DRAM_ENCRYPTION_INFOROM_SUPPORT_PARAMS {
     NvU32 isSupported;
@@ -2842,15 +2804,44 @@ typedef struct NV2080_CTRL_FB_DRAM_ENCRYPTION_INFOROM_SUPPORT_PARAMS {
  *   NV_ERR_NOT_SUPPORTED
  *   NV_ERR_INVALID_STATE
  */
-#define NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_STATUS          (0x20801359U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_STATUS_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_STATUS          (0x20801358U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_STATUS_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_STATUS_DISABLED (0x00000000U)
 #define NV2080_CTRL_CMD_FB_QUERY_DRAM_ENCRYPTION_STATUS_ENABLED  (0x00000001U)
 
-#define NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_STATUS_PARAMS_MESSAGE_ID (0x59U)
+#define NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_STATUS_PARAMS_MESSAGE_ID (0x58U)
 
 typedef struct NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_STATUS_PARAMS {
     NvU32 currentStatus;
 } NV2080_CTRL_FB_QUERY_DRAM_ENCRYPTION_STATUS_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_FB_GET_MEMORY_BOOT_TRAINING_FLAGS
+ *
+ * This command returns the memory boot training flags from VBIOS table.
+ *
+ *  flagCollectSchmooData
+ *  flagWrTrHybridVrefEn
+ *  flagWrTrHybridNonVrefEn
+ *  flagRdTrHybridVrefEn
+ *  flagRdTrHybridNonVrefEn
+ *  skipBootTraining
+ *
+ * Possible status return values are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV2080_CTRL_CMD_FB_GET_MEMORY_BOOT_TRAINING_FLAGS (0x20801359U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_GET_MEMORY_BOOT_TRAINING_FLAGS_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_FB_GET_MEMORY_BOOT_TRAINING_FLAGS_PARAMS_MESSAGE_ID (0x59U)
+
+typedef struct NV2080_CTRL_FB_GET_MEMORY_BOOT_TRAINING_FLAGS_PARAMS {
+    NvBool flagCollectSchmooData;
+    NvBool flagWrTrHybridVrefEn;
+    NvBool flagWrTrHybridNonVrefEn;
+    NvBool flagRdTrHybridVrefEn;
+    NvBool flagRdTrHybridNonVrefEn;
+    NvBool skipBootTraining;
+} NV2080_CTRL_FB_GET_MEMORY_BOOT_TRAINING_FLAGS_PARAMS;
 
 /* _ctrl2080fb_h_ */

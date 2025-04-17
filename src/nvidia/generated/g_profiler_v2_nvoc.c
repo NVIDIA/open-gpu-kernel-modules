@@ -1,4 +1,11 @@
 #define NVOC_PROFILER_V2_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,76 +14,97 @@
 #include "utils/nvassert.h"
 #include "g_profiler_v2_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x4976fc = 1;
+char __nvoc_class_id_uniqueness_check__0x4976fc = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_ProfilerBase;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResource;
 
-void __nvoc_init_ProfilerBase(ProfilerBase*, RmHalspecOwner* );
-void __nvoc_init_funcTable_ProfilerBase(ProfilerBase*, RmHalspecOwner* );
-NV_STATUS __nvoc_ctor_ProfilerBase(ProfilerBase*, RmHalspecOwner* , CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
-void __nvoc_init_dataField_ProfilerBase(ProfilerBase*, RmHalspecOwner* );
+// Forward declarations for ProfilerBase
+void __nvoc_init__GpuResource(GpuResource*);
+void __nvoc_init__ProfilerBase(ProfilerBase*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_funcTable_ProfilerBase(ProfilerBase*, RmHalspecOwner *pRmhalspecowner);
+NV_STATUS __nvoc_ctor_ProfilerBase(ProfilerBase*, RmHalspecOwner *pRmhalspecowner, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+void __nvoc_init_dataField_ProfilerBase(ProfilerBase*, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_ProfilerBase(ProfilerBase*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_ProfilerBase;
 
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerBase_ProfilerBase = {
-    /*pClassDef=*/          &__nvoc_class_def_ProfilerBase,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_ProfilerBase,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__ProfilerBase;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__ProfilerBase;
 
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerBase_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ProfilerBase, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
-};
+// Down-thunk(s) to bridge ProfilerBase methods from ancestors (if any)
+NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^2
+NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super^2
+NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+void __nvoc_down_thunk_RmResource_resControlSerialization_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_down_thunk_RmResource_resControl_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+void __nvoc_down_thunk_RmResource_resControl_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_down_thunk_GpuResource_resControl(struct RsResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_down_thunk_GpuResource_resMap(struct RsResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping);    // super
+NV_STATUS __nvoc_down_thunk_GpuResource_resUnmap(struct RsResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping);    // super
+NvBool __nvoc_down_thunk_GpuResource_rmresShareCallback(struct RmResource *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super
 
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerBase_RsResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RsResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ProfilerBase, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerBase_RmResourceCommon = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResourceCommon,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ProfilerBase, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerBase_RmResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ProfilerBase, __nvoc_base_GpuResource.__nvoc_base_RmResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerBase_GpuResource = {
-    /*pClassDef=*/          &__nvoc_class_def_GpuResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ProfilerBase, __nvoc_base_GpuResource),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_ProfilerBase = {
-    /*numRelatives=*/       6,
-    /*relatives=*/ {
-        &__nvoc_rtti_ProfilerBase_ProfilerBase,
-        &__nvoc_rtti_ProfilerBase_GpuResource,
-        &__nvoc_rtti_ProfilerBase_RmResource,
-        &__nvoc_rtti_ProfilerBase_RmResourceCommon,
-        &__nvoc_rtti_ProfilerBase_RsResource,
-        &__nvoc_rtti_ProfilerBase_Object,
-    },
-};
+// Up-thunk(s) to bridge ProfilerBase methods to ancestors (if any)
+NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super^2
+void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControl(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControlFilter(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super^2
+NvBool __nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMapTo(struct RmResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmapFrom(struct RmResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super^2
+NvU32 __nvoc_up_thunk_RsResource_rmresGetRefCount(struct RmResource *pResource);    // super^2
+void __nvoc_up_thunk_RsResource_rmresAddAdditionalDependants(struct RsClient *pClient, struct RmResource *pResource, RsResourceRef *pReference);    // super^2
+NvBool __nvoc_up_thunk_RmResource_gpuresAccessCallback(struct GpuResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams(struct GpuResource *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap(struct GpuResource *pRmResource, NvBool bSubdeviceHandleProvided);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor(struct GpuResource *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresControl_Prologue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_up_thunk_RmResource_gpuresControl_Epilogue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NvBool __nvoc_up_thunk_RsResource_gpuresCanCopy(struct GpuResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_gpuresIsDuplicate(struct GpuResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super
+void __nvoc_up_thunk_RsResource_gpuresPreDestruct(struct GpuResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_gpuresControlFilter(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NvBool __nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported(struct GpuResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_gpuresMapTo(struct GpuResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_gpuresUnmapFrom(struct GpuResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super
+NvU32 __nvoc_up_thunk_RsResource_gpuresGetRefCount(struct GpuResource *pResource);    // super
+void __nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants(struct RsClient *pClient, struct GpuResource *pResource, RsResourceRef *pReference);    // super
+NV_STATUS __nvoc_up_thunk_GpuResource_profilerBaseControl(struct ProfilerBase *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_GpuResource_profilerBaseMap(struct ProfilerBase *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping);    // this
+NV_STATUS __nvoc_up_thunk_GpuResource_profilerBaseUnmap(struct ProfilerBase *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping);    // this
+NvBool __nvoc_up_thunk_GpuResource_profilerBaseShareCallback(struct ProfilerBase *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // this
+NV_STATUS __nvoc_up_thunk_GpuResource_profilerBaseGetRegBaseOffsetAndSize(struct ProfilerBase *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize);    // this
+NV_STATUS __nvoc_up_thunk_GpuResource_profilerBaseGetMapAddrSpace(struct ProfilerBase *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);    // this
+NV_STATUS __nvoc_up_thunk_GpuResource_profilerBaseInternalControlForward(struct ProfilerBase *pGpuResource, NvU32 command, void *pParams, NvU32 size);    // this
+NvHandle __nvoc_up_thunk_GpuResource_profilerBaseGetInternalObjectHandle(struct ProfilerBase *pGpuResource);    // this
+NvBool __nvoc_up_thunk_RmResource_profilerBaseAccessCallback(struct ProfilerBase *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_profilerBaseGetMemInterMapParams(struct ProfilerBase *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_profilerBaseCheckMemInterUnmap(struct ProfilerBase *pRmResource, NvBool bSubdeviceHandleProvided);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_profilerBaseGetMemoryMappingDescriptor(struct ProfilerBase *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_profilerBaseControlSerialization_Prologue(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RmResource_profilerBaseControlSerialization_Epilogue(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_profilerBaseControl_Prologue(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RmResource_profilerBaseControl_Epilogue(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NvBool __nvoc_up_thunk_RsResource_profilerBaseCanCopy(struct ProfilerBase *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_profilerBaseIsDuplicate(struct ProfilerBase *pResource, NvHandle hMemory, NvBool *pDuplicate);    // this
+void __nvoc_up_thunk_RsResource_profilerBasePreDestruct(struct ProfilerBase *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_profilerBaseControlFilter(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NvBool __nvoc_up_thunk_RsResource_profilerBaseIsPartialUnmapSupported(struct ProfilerBase *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_profilerBaseMapTo(struct ProfilerBase *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_profilerBaseUnmapFrom(struct ProfilerBase *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
+NvU32 __nvoc_up_thunk_RsResource_profilerBaseGetRefCount(struct ProfilerBase *pResource);    // this
+void __nvoc_up_thunk_RsResource_profilerBaseAddAdditionalDependants(struct RsClient *pClient, struct ProfilerBase *pResource, RsResourceRef *pReference);    // this
 
 const struct NVOC_CLASS_DEF __nvoc_class_def_ProfilerBase = 
 {
@@ -89,8 +117,8 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_ProfilerBase =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_ProfilerBase,
-    /*pCastInfo=*/          &__nvoc_castinfo_ProfilerBase,
-    /*pExportInfo=*/        &__nvoc_export_info_ProfilerBase
+    /*pCastInfo=*/          &__nvoc_castinfo__ProfilerBase,
+    /*pExportInfo=*/        &__nvoc_export_info__ProfilerBase
 };
 
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
@@ -612,73 +640,132 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Profiler
 
 };
 
-// Down-thunk(s) to bridge ProfilerBase methods from ancestors (if any)
-NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^2
-NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super^2
-NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
-void __nvoc_down_thunk_RmResource_resControlSerialization_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
-NV_STATUS __nvoc_down_thunk_RmResource_resControl_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
-void __nvoc_down_thunk_RmResource_resControl_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
-NV_STATUS __nvoc_down_thunk_GpuResource_resControl(struct RsResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
-NV_STATUS __nvoc_down_thunk_GpuResource_resMap(struct RsResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping);    // super
-NV_STATUS __nvoc_down_thunk_GpuResource_resUnmap(struct RsResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping);    // super
-NvBool __nvoc_down_thunk_GpuResource_rmresShareCallback(struct RmResource *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super
 
-// Up-thunk(s) to bridge ProfilerBase methods to ancestors (if any)
-NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^2
-NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super^2
-void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super^2
-NV_STATUS __nvoc_up_thunk_RsResource_rmresControl(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
-NV_STATUS __nvoc_up_thunk_RsResource_rmresControlFilter(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
-NV_STATUS __nvoc_up_thunk_RsResource_rmresMap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super^2
-NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super^2
-NvBool __nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported(struct RmResource *pResource);    // super^2
-NV_STATUS __nvoc_up_thunk_RsResource_rmresMapTo(struct RmResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super^2
-NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmapFrom(struct RmResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super^2
-NvU32 __nvoc_up_thunk_RsResource_rmresGetRefCount(struct RmResource *pResource);    // super^2
-void __nvoc_up_thunk_RsResource_rmresAddAdditionalDependants(struct RsClient *pClient, struct RmResource *pResource, RsResourceRef *pReference);    // super^2
-NvBool __nvoc_up_thunk_RmResource_gpuresAccessCallback(struct GpuResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
-NV_STATUS __nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams(struct GpuResource *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // super
-NV_STATUS __nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap(struct GpuResource *pRmResource, NvBool bSubdeviceHandleProvided);    // super
-NV_STATUS __nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor(struct GpuResource *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // super
-NV_STATUS __nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
-void __nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
-NV_STATUS __nvoc_up_thunk_RmResource_gpuresControl_Prologue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
-void __nvoc_up_thunk_RmResource_gpuresControl_Epilogue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
-NvBool __nvoc_up_thunk_RsResource_gpuresCanCopy(struct GpuResource *pResource);    // super
-NV_STATUS __nvoc_up_thunk_RsResource_gpuresIsDuplicate(struct GpuResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super
-void __nvoc_up_thunk_RsResource_gpuresPreDestruct(struct GpuResource *pResource);    // super
-NV_STATUS __nvoc_up_thunk_RsResource_gpuresControlFilter(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
-NvBool __nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported(struct GpuResource *pResource);    // super
-NV_STATUS __nvoc_up_thunk_RsResource_gpuresMapTo(struct GpuResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super
-NV_STATUS __nvoc_up_thunk_RsResource_gpuresUnmapFrom(struct GpuResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super
-NvU32 __nvoc_up_thunk_RsResource_gpuresGetRefCount(struct GpuResource *pResource);    // super
-void __nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants(struct RsClient *pClient, struct GpuResource *pResource, RsResourceRef *pReference);    // super
-NV_STATUS __nvoc_up_thunk_GpuResource_profilerBaseControl(struct ProfilerBase *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
-NV_STATUS __nvoc_up_thunk_GpuResource_profilerBaseMap(struct ProfilerBase *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping);    // this
-NV_STATUS __nvoc_up_thunk_GpuResource_profilerBaseUnmap(struct ProfilerBase *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping);    // this
-NvBool __nvoc_up_thunk_GpuResource_profilerBaseShareCallback(struct ProfilerBase *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // this
-NV_STATUS __nvoc_up_thunk_GpuResource_profilerBaseGetRegBaseOffsetAndSize(struct ProfilerBase *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize);    // this
-NV_STATUS __nvoc_up_thunk_GpuResource_profilerBaseGetMapAddrSpace(struct ProfilerBase *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);    // this
-NV_STATUS __nvoc_up_thunk_GpuResource_profilerBaseInternalControlForward(struct ProfilerBase *pGpuResource, NvU32 command, void *pParams, NvU32 size);    // this
-NvHandle __nvoc_up_thunk_GpuResource_profilerBaseGetInternalObjectHandle(struct ProfilerBase *pGpuResource);    // this
-NvBool __nvoc_up_thunk_RmResource_profilerBaseAccessCallback(struct ProfilerBase *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // this
-NV_STATUS __nvoc_up_thunk_RmResource_profilerBaseGetMemInterMapParams(struct ProfilerBase *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // this
-NV_STATUS __nvoc_up_thunk_RmResource_profilerBaseCheckMemInterUnmap(struct ProfilerBase *pRmResource, NvBool bSubdeviceHandleProvided);    // this
-NV_STATUS __nvoc_up_thunk_RmResource_profilerBaseGetMemoryMappingDescriptor(struct ProfilerBase *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // this
-NV_STATUS __nvoc_up_thunk_RmResource_profilerBaseControlSerialization_Prologue(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
-void __nvoc_up_thunk_RmResource_profilerBaseControlSerialization_Epilogue(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
-NV_STATUS __nvoc_up_thunk_RmResource_profilerBaseControl_Prologue(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
-void __nvoc_up_thunk_RmResource_profilerBaseControl_Epilogue(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
-NvBool __nvoc_up_thunk_RsResource_profilerBaseCanCopy(struct ProfilerBase *pResource);    // this
-NV_STATUS __nvoc_up_thunk_RsResource_profilerBaseIsDuplicate(struct ProfilerBase *pResource, NvHandle hMemory, NvBool *pDuplicate);    // this
-void __nvoc_up_thunk_RsResource_profilerBasePreDestruct(struct ProfilerBase *pResource);    // this
-NV_STATUS __nvoc_up_thunk_RsResource_profilerBaseControlFilter(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
-NvBool __nvoc_up_thunk_RsResource_profilerBaseIsPartialUnmapSupported(struct ProfilerBase *pResource);    // this
-NV_STATUS __nvoc_up_thunk_RsResource_profilerBaseMapTo(struct ProfilerBase *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // this
-NV_STATUS __nvoc_up_thunk_RsResource_profilerBaseUnmapFrom(struct ProfilerBase *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
-NvU32 __nvoc_up_thunk_RsResource_profilerBaseGetRefCount(struct ProfilerBase *pResource);    // this
-void __nvoc_up_thunk_RsResource_profilerBaseAddAdditionalDependants(struct RsClient *pClient, struct ProfilerBase *pResource, RsResourceRef *pReference);    // this
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__ProfilerBase __nvoc_metadata__ProfilerBase = {
+    .rtti.pClassDef = &__nvoc_class_def_ProfilerBase,    // (profilerBase) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_ProfilerBase,
+    .rtti.offset    = 0,
+    .metadata__GpuResource.rtti.pClassDef = &__nvoc_class_def_GpuResource,    // (gpures) super
+    .metadata__GpuResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.rtti.offset    = NV_OFFSETOF(ProfilerBase, __nvoc_base_GpuResource),
+    .metadata__GpuResource.metadata__RmResource.rtti.pClassDef = &__nvoc_class_def_RmResource,    // (rmres) super^2
+    .metadata__GpuResource.metadata__RmResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.metadata__RmResource.rtti.offset    = NV_OFFSETOF(ProfilerBase, __nvoc_base_GpuResource.__nvoc_base_RmResource),
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.pClassDef = &__nvoc_class_def_RsResource,    // (res) super^3
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.offset    = NV_OFFSETOF(ProfilerBase, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^4
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.offset    = NV_OFFSETOF(ProfilerBase, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
+    .metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.pClassDef = &__nvoc_class_def_RmResourceCommon,    // (rmrescmn) super^3
+    .metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.offset    = NV_OFFSETOF(ProfilerBase, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
+
+    .vtable.__profilerBaseControl__ = &__nvoc_up_thunk_GpuResource_profilerBaseControl,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControl__ = &gpuresControl_IMPL,    // virtual override (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
+    .vtable.__profilerBaseMap__ = &__nvoc_up_thunk_GpuResource_profilerBaseMap,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
+    .vtable.__profilerBaseUnmap__ = &__nvoc_up_thunk_GpuResource_profilerBaseUnmap,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
+    .vtable.__profilerBaseShareCallback__ = &__nvoc_up_thunk_GpuResource_profilerBaseShareCallback,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+    .vtable.__profilerBaseGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetRegBaseOffsetAndSize__ = &gpuresGetRegBaseOffsetAndSize_IMPL,    // virtual
+    .vtable.__profilerBaseGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
+    .vtable.__profilerBaseInternalControlForward__ = &__nvoc_up_thunk_GpuResource_profilerBaseInternalControlForward,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
+    .vtable.__profilerBaseGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
+    .vtable.__profilerBaseAccessCallback__ = &__nvoc_up_thunk_RmResource_profilerBaseAccessCallback,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+    .vtable.__profilerBaseGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_profilerBaseGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+    .vtable.__profilerBaseCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_profilerBaseCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+    .vtable.__profilerBaseGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_profilerBaseGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+    .vtable.__profilerBaseControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_profilerBaseControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+    .vtable.__profilerBaseControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerBaseControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+    .vtable.__profilerBaseControl_Prologue__ = &__nvoc_up_thunk_RmResource_profilerBaseControl_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+    .vtable.__profilerBaseControl_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerBaseControl_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+    .vtable.__profilerBaseCanCopy__ = &__nvoc_up_thunk_RsResource_profilerBaseCanCopy,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+    .vtable.__profilerBaseIsDuplicate__ = &__nvoc_up_thunk_RsResource_profilerBaseIsDuplicate,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+    .vtable.__profilerBasePreDestruct__ = &__nvoc_up_thunk_RsResource_profilerBasePreDestruct,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+    .vtable.__profilerBaseControlFilter__ = &__nvoc_up_thunk_RsResource_profilerBaseControlFilter,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+    .vtable.__profilerBaseIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_profilerBaseIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
+    .metadata__GpuResource.vtable.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+    .vtable.__profilerBaseMapTo__ = &__nvoc_up_thunk_RsResource_profilerBaseMapTo,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMapTo__ = &resMapTo_IMPL,    // virtual
+    .vtable.__profilerBaseUnmapFrom__ = &__nvoc_up_thunk_RsResource_profilerBaseUnmapFrom,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+    .vtable.__profilerBaseGetRefCount__ = &__nvoc_up_thunk_RsResource_profilerBaseGetRefCount,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+    .vtable.__profilerBaseAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_profilerBaseAddAdditionalDependants,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__ProfilerBase = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__ProfilerBase.rtti,    // [0]: (profilerBase) this
+        &__nvoc_metadata__ProfilerBase.metadata__GpuResource.rtti,    // [1]: (gpures) super
+        &__nvoc_metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.rtti,    // [2]: (rmres) super^2
+        &__nvoc_metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti,    // [3]: (res) super^3
+        &__nvoc_metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti,    // [4]: (obj) super^4
+        &__nvoc_metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti,    // [5]: (rmrescmn) super^3
+    }
+};
 
 // 25 up-thunk(s) defined to bridge methods in ProfilerBase to superclasses
 
@@ -808,7 +895,7 @@ void __nvoc_up_thunk_RsResource_profilerBaseAddAdditionalDependants(struct RsCli
 }
 
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_ProfilerBase = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__ProfilerBase = 
 {
     /*numEntries=*/     34,
     /*pExportEntries=*/ __nvoc_exported_method_def_ProfilerBase
@@ -1088,118 +1175,33 @@ static void __nvoc_init_funcTable_ProfilerBase_1(ProfilerBase *pThis, RmHalspecO
 // Initialize vtable(s) for 61 virtual method(s).
 void __nvoc_init_funcTable_ProfilerBase(ProfilerBase *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__ProfilerBase vtable = {
-        .__profilerBaseControl__ = &__nvoc_up_thunk_GpuResource_profilerBaseControl,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresControl__ = &gpuresControl_IMPL,    // virtual override (res) base (rmres)
-        .GpuResource.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
-        .__profilerBaseMap__ = &__nvoc_up_thunk_GpuResource_profilerBaseMap,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
-        .GpuResource.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
-        .__profilerBaseUnmap__ = &__nvoc_up_thunk_GpuResource_profilerBaseUnmap,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
-        .GpuResource.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
-        .__profilerBaseShareCallback__ = &__nvoc_up_thunk_GpuResource_profilerBaseShareCallback,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
-        .GpuResource.RmResource.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
-        .__profilerBaseGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresGetRegBaseOffsetAndSize__ = &gpuresGetRegBaseOffsetAndSize_IMPL,    // virtual
-        .__profilerBaseGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
-        .__profilerBaseInternalControlForward__ = &__nvoc_up_thunk_GpuResource_profilerBaseInternalControlForward,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
-        .__profilerBaseGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
-        .__profilerBaseAccessCallback__ = &__nvoc_up_thunk_RmResource_profilerBaseAccessCallback,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
-        .__profilerBaseGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_profilerBaseGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
-        .__profilerBaseCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_profilerBaseCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
-        .__profilerBaseGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_profilerBaseGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
-        .__profilerBaseControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_profilerBaseControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
-        .__profilerBaseControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerBaseControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
-        .__profilerBaseControl_Prologue__ = &__nvoc_up_thunk_RmResource_profilerBaseControl_Prologue,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
-        .__profilerBaseControl_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerBaseControl_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
-        .__profilerBaseCanCopy__ = &__nvoc_up_thunk_RsResource_profilerBaseCanCopy,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
-        .__profilerBaseIsDuplicate__ = &__nvoc_up_thunk_RsResource_profilerBaseIsDuplicate,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
-        .__profilerBasePreDestruct__ = &__nvoc_up_thunk_RsResource_profilerBasePreDestruct,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
-        .__profilerBaseControlFilter__ = &__nvoc_up_thunk_RsResource_profilerBaseControlFilter,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
-        .__profilerBaseIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_profilerBaseIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
-        .GpuResource.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
-        .GpuResource.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
-        .GpuResource.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
-        .__profilerBaseMapTo__ = &__nvoc_up_thunk_RsResource_profilerBaseMapTo,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
-        .__profilerBaseUnmapFrom__ = &__nvoc_up_thunk_RsResource_profilerBaseUnmapFrom,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
-        .__profilerBaseGetRefCount__ = &__nvoc_up_thunk_RsResource_profilerBaseGetRefCount,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
-        .__profilerBaseAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_profilerBaseAddAdditionalDependants,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.GpuResource.RmResource.RsResource;    // (res) super^3
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable = &vtable.GpuResource.RmResource;    // (rmres) super^2
-    pThis->__nvoc_base_GpuResource.__nvoc_vtable = &vtable.GpuResource;    // (gpures) super
-    pThis->__nvoc_vtable = &vtable;    // (profilerBase) this
-
     // Initialize vtable(s) with 36 per-object function pointer(s).
     __nvoc_init_funcTable_ProfilerBase_1(pThis, pRmhalspecowner);
 }
 
-void __nvoc_init_GpuResource(GpuResource*);
-void __nvoc_init_ProfilerBase(ProfilerBase *pThis, RmHalspecOwner *pRmhalspecowner) {
-    pThis->__nvoc_pbase_ProfilerBase = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;
-    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;
-    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;
-    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource;
-    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_GpuResource;
-    __nvoc_init_GpuResource(&pThis->__nvoc_base_GpuResource);
+// Initialize newly constructed object.
+void __nvoc_init__ProfilerBase(ProfilerBase *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;    // (obj) super^4
+    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;    // (res) super^3
+    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;    // (rmrescmn) super^3
+    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource;    // (rmres) super^2
+    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_GpuResource;    // (gpures) super
+    pThis->__nvoc_pbase_ProfilerBase = pThis;    // (profilerBase) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuResource(&pThis->__nvoc_base_GpuResource);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object;    // (obj) super^4
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource;    // (res) super^3
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon.__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon;    // (rmrescmn) super^3
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource;    // (rmres) super^2
+    pThis->__nvoc_base_GpuResource.__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerBase.metadata__GpuResource;    // (gpures) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerBase;    // (profilerBase) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_ProfilerBase(pThis, pRmhalspecowner);
 }
 
@@ -1217,9 +1219,6 @@ NV_STATUS __nvoc_objCreate_ProfilerBase(ProfilerBase **ppThis, Dynamic *pParent,
 
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(ProfilerBase));
-
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_ProfilerBase);
 
     pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
@@ -1241,7 +1240,7 @@ NV_STATUS __nvoc_objCreate_ProfilerBase(ProfilerBase **ppThis, Dynamic *pParent,
         pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
     NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init_ProfilerBase(pThis, pRmhalspecowner);
+    __nvoc_init__ProfilerBase(pThis, pRmhalspecowner);
     status = __nvoc_ctor_ProfilerBase(pThis, pRmhalspecowner, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_ProfilerBase_cleanup;
 
@@ -1279,100 +1278,30 @@ NV_STATUS __nvoc_objCreateDynamic_ProfilerBase(ProfilerBase **ppThis, Dynamic *p
     return status;
 }
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0xe99229 = 1;
+char __nvoc_class_id_uniqueness_check__0xe99229 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_ProfilerCtx;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_ProfilerBase;
 
-void __nvoc_init_ProfilerCtx(ProfilerCtx*, RmHalspecOwner* );
-void __nvoc_init_funcTable_ProfilerCtx(ProfilerCtx*, RmHalspecOwner* );
-NV_STATUS __nvoc_ctor_ProfilerCtx(ProfilerCtx*, RmHalspecOwner* , CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
-void __nvoc_init_dataField_ProfilerCtx(ProfilerCtx*, RmHalspecOwner* );
+// Forward declarations for ProfilerCtx
+void __nvoc_init__ProfilerBase(ProfilerBase*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init__ProfilerCtx(ProfilerCtx*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_funcTable_ProfilerCtx(ProfilerCtx*, RmHalspecOwner *pRmhalspecowner);
+NV_STATUS __nvoc_ctor_ProfilerCtx(ProfilerCtx*, RmHalspecOwner *pRmhalspecowner, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+void __nvoc_init_dataField_ProfilerCtx(ProfilerCtx*, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_ProfilerCtx(ProfilerCtx*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_ProfilerCtx;
 
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerCtx_ProfilerCtx = {
-    /*pClassDef=*/          &__nvoc_class_def_ProfilerCtx,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_ProfilerCtx,
-    /*offset=*/             0,
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerCtx_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ProfilerCtx, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerCtx_RsResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RsResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ProfilerCtx, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerCtx_RmResourceCommon = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResourceCommon,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ProfilerCtx, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerCtx_RmResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ProfilerCtx, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerCtx_GpuResource = {
-    /*pClassDef=*/          &__nvoc_class_def_GpuResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ProfilerCtx, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerCtx_ProfilerBase = {
-    /*pClassDef=*/          &__nvoc_class_def_ProfilerBase,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ProfilerCtx, __nvoc_base_ProfilerBase),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_ProfilerCtx = {
-    /*numRelatives=*/       7,
-    /*relatives=*/ {
-        &__nvoc_rtti_ProfilerCtx_ProfilerCtx,
-        &__nvoc_rtti_ProfilerCtx_ProfilerBase,
-        &__nvoc_rtti_ProfilerCtx_GpuResource,
-        &__nvoc_rtti_ProfilerCtx_RmResource,
-        &__nvoc_rtti_ProfilerCtx_RmResourceCommon,
-        &__nvoc_rtti_ProfilerCtx_RsResource,
-        &__nvoc_rtti_ProfilerCtx_Object,
-    },
-};
-
-const struct NVOC_CLASS_DEF __nvoc_class_def_ProfilerCtx = 
-{
-    /*classInfo=*/ {
-        /*size=*/               sizeof(ProfilerCtx),
-        /*classId=*/            classId(ProfilerCtx),
-        /*providerId=*/         &__nvoc_rtti_provider,
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "ProfilerCtx",
-#endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_ProfilerCtx,
-    /*pCastInfo=*/          &__nvoc_castinfo_ProfilerCtx,
-    /*pExportInfo=*/        &__nvoc_export_info_ProfilerCtx
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__ProfilerCtx;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__ProfilerCtx;
 
 // Down-thunk(s) to bridge ProfilerCtx methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^3
@@ -1466,6 +1395,177 @@ NV_STATUS __nvoc_up_thunk_RsResource_profilerCtxMapTo(struct ProfilerCtx *pResou
 NV_STATUS __nvoc_up_thunk_RsResource_profilerCtxUnmapFrom(struct ProfilerCtx *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
 NvU32 __nvoc_up_thunk_RsResource_profilerCtxGetRefCount(struct ProfilerCtx *pResource);    // this
 void __nvoc_up_thunk_RsResource_profilerCtxAddAdditionalDependants(struct RsClient *pClient, struct ProfilerCtx *pResource, RsResourceRef *pReference);    // this
+
+const struct NVOC_CLASS_DEF __nvoc_class_def_ProfilerCtx = 
+{
+    /*classInfo=*/ {
+        /*size=*/               sizeof(ProfilerCtx),
+        /*classId=*/            classId(ProfilerCtx),
+        /*providerId=*/         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*name=*/               "ProfilerCtx",
+#endif
+    },
+    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_ProfilerCtx,
+    /*pCastInfo=*/          &__nvoc_castinfo__ProfilerCtx,
+    /*pExportInfo=*/        &__nvoc_export_info__ProfilerCtx
+};
+
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__ProfilerCtx __nvoc_metadata__ProfilerCtx = {
+    .rtti.pClassDef = &__nvoc_class_def_ProfilerCtx,    // (profilerCtx) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_ProfilerCtx,
+    .rtti.offset    = 0,
+    .metadata__ProfilerBase.rtti.pClassDef = &__nvoc_class_def_ProfilerBase,    // (profilerBase) super
+    .metadata__ProfilerBase.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__ProfilerBase.rtti.offset    = NV_OFFSETOF(ProfilerCtx, __nvoc_base_ProfilerBase),
+    .metadata__ProfilerBase.metadata__GpuResource.rtti.pClassDef = &__nvoc_class_def_GpuResource,    // (gpures) super^2
+    .metadata__ProfilerBase.metadata__GpuResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__ProfilerBase.metadata__GpuResource.rtti.offset    = NV_OFFSETOF(ProfilerCtx, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource),
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.rtti.pClassDef = &__nvoc_class_def_RmResource,    // (rmres) super^3
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.rtti.offset    = NV_OFFSETOF(ProfilerCtx, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource),
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.pClassDef = &__nvoc_class_def_RsResource,    // (res) super^4
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.offset    = NV_OFFSETOF(ProfilerCtx, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.offset    = NV_OFFSETOF(ProfilerCtx, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.pClassDef = &__nvoc_class_def_RmResourceCommon,    // (rmrescmn) super^4
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.offset    = NV_OFFSETOF(ProfilerCtx, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
+
+    .vtable.__profilerCtxControl__ = &__nvoc_up_thunk_GpuResource_profilerCtxControl,    // virtual inherited (gpures) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseControl__ = &__nvoc_up_thunk_GpuResource_profilerBaseControl,    // virtual inherited (gpures) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresControl__ = &gpuresControl_IMPL,    // virtual override (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
+    .vtable.__profilerCtxMap__ = &__nvoc_up_thunk_GpuResource_profilerCtxMap,    // virtual inherited (gpures) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseMap__ = &__nvoc_up_thunk_GpuResource_profilerBaseMap,    // virtual inherited (gpures) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
+    .vtable.__profilerCtxUnmap__ = &__nvoc_up_thunk_GpuResource_profilerCtxUnmap,    // virtual inherited (gpures) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseUnmap__ = &__nvoc_up_thunk_GpuResource_profilerBaseUnmap,    // virtual inherited (gpures) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
+    .vtable.__profilerCtxShareCallback__ = &__nvoc_up_thunk_GpuResource_profilerCtxShareCallback,    // virtual inherited (gpures) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseShareCallback__ = &__nvoc_up_thunk_GpuResource_profilerBaseShareCallback,    // virtual inherited (gpures) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+    .vtable.__profilerCtxGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_profilerCtxGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresGetRegBaseOffsetAndSize__ = &gpuresGetRegBaseOffsetAndSize_IMPL,    // virtual
+    .vtable.__profilerCtxGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_profilerCtxGetMapAddrSpace,    // virtual inherited (gpures) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
+    .vtable.__profilerCtxInternalControlForward__ = &__nvoc_up_thunk_GpuResource_profilerCtxInternalControlForward,    // virtual inherited (gpures) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseInternalControlForward__ = &__nvoc_up_thunk_GpuResource_profilerBaseInternalControlForward,    // virtual inherited (gpures) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
+    .vtable.__profilerCtxGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_profilerCtxGetInternalObjectHandle,    // virtual inherited (gpures) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
+    .vtable.__profilerCtxAccessCallback__ = &__nvoc_up_thunk_RmResource_profilerCtxAccessCallback,    // virtual inherited (rmres) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseAccessCallback__ = &__nvoc_up_thunk_RmResource_profilerBaseAccessCallback,    // virtual inherited (rmres) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+    .vtable.__profilerCtxGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_profilerCtxGetMemInterMapParams,    // virtual inherited (rmres) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_profilerBaseGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+    .vtable.__profilerCtxCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_profilerCtxCheckMemInterUnmap,    // virtual inherited (rmres) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_profilerBaseCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+    .vtable.__profilerCtxGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_profilerCtxGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_profilerBaseGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+    .vtable.__profilerCtxControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_profilerCtxControlSerialization_Prologue,    // virtual inherited (rmres) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_profilerBaseControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+    .vtable.__profilerCtxControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerCtxControlSerialization_Epilogue,    // virtual inherited (rmres) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerBaseControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+    .vtable.__profilerCtxControl_Prologue__ = &__nvoc_up_thunk_RmResource_profilerCtxControl_Prologue,    // virtual inherited (rmres) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseControl_Prologue__ = &__nvoc_up_thunk_RmResource_profilerBaseControl_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+    .vtable.__profilerCtxControl_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerCtxControl_Epilogue,    // virtual inherited (rmres) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseControl_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerBaseControl_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+    .vtable.__profilerCtxCanCopy__ = &__nvoc_up_thunk_RsResource_profilerCtxCanCopy,    // virtual inherited (res) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseCanCopy__ = &__nvoc_up_thunk_RsResource_profilerBaseCanCopy,    // virtual inherited (res) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+    .vtable.__profilerCtxIsDuplicate__ = &__nvoc_up_thunk_RsResource_profilerCtxIsDuplicate,    // virtual inherited (res) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseIsDuplicate__ = &__nvoc_up_thunk_RsResource_profilerBaseIsDuplicate,    // virtual inherited (res) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+    .vtable.__profilerCtxPreDestruct__ = &__nvoc_up_thunk_RsResource_profilerCtxPreDestruct,    // virtual inherited (res) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBasePreDestruct__ = &__nvoc_up_thunk_RsResource_profilerBasePreDestruct,    // virtual inherited (res) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+    .vtable.__profilerCtxControlFilter__ = &__nvoc_up_thunk_RsResource_profilerCtxControlFilter,    // virtual inherited (res) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseControlFilter__ = &__nvoc_up_thunk_RsResource_profilerBaseControlFilter,    // virtual inherited (res) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+    .vtable.__profilerCtxIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_profilerCtxIsPartialUnmapSupported,    // inline virtual inherited (res) base (profilerBase) body
+    .metadata__ProfilerBase.vtable.__profilerBaseIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_profilerBaseIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+    .vtable.__profilerCtxMapTo__ = &__nvoc_up_thunk_RsResource_profilerCtxMapTo,    // virtual inherited (res) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseMapTo__ = &__nvoc_up_thunk_RsResource_profilerBaseMapTo,    // virtual inherited (res) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMapTo__ = &resMapTo_IMPL,    // virtual
+    .vtable.__profilerCtxUnmapFrom__ = &__nvoc_up_thunk_RsResource_profilerCtxUnmapFrom,    // virtual inherited (res) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseUnmapFrom__ = &__nvoc_up_thunk_RsResource_profilerBaseUnmapFrom,    // virtual inherited (res) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+    .vtable.__profilerCtxGetRefCount__ = &__nvoc_up_thunk_RsResource_profilerCtxGetRefCount,    // virtual inherited (res) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseGetRefCount__ = &__nvoc_up_thunk_RsResource_profilerBaseGetRefCount,    // virtual inherited (res) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+    .vtable.__profilerCtxAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_profilerCtxAddAdditionalDependants,    // virtual inherited (res) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_profilerBaseAddAdditionalDependants,    // virtual inherited (res) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__ProfilerCtx = {
+    .numRelatives = 7,
+    .relatives = {
+        &__nvoc_metadata__ProfilerCtx.rtti,    // [0]: (profilerCtx) this
+        &__nvoc_metadata__ProfilerCtx.metadata__ProfilerBase.rtti,    // [1]: (profilerBase) super
+        &__nvoc_metadata__ProfilerCtx.metadata__ProfilerBase.metadata__GpuResource.rtti,    // [2]: (gpures) super^2
+        &__nvoc_metadata__ProfilerCtx.metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.rtti,    // [3]: (rmres) super^3
+        &__nvoc_metadata__ProfilerCtx.metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti,    // [4]: (res) super^4
+        &__nvoc_metadata__ProfilerCtx.metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti,    // [5]: (obj) super^5
+        &__nvoc_metadata__ProfilerCtx.metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti,    // [6]: (rmrescmn) super^4
+    }
+};
 
 // 25 up-thunk(s) defined to bridge methods in ProfilerCtx to superclasses
 
@@ -1595,7 +1695,7 @@ void __nvoc_up_thunk_RsResource_profilerCtxAddAdditionalDependants(struct RsClie
 }
 
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_ProfilerCtx = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__ProfilerCtx = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -1690,145 +1790,35 @@ static void __nvoc_init_funcTable_ProfilerCtx_1(ProfilerCtx *pThis, RmHalspecOwn
 // Initialize vtable(s) for 29 virtual method(s).
 void __nvoc_init_funcTable_ProfilerCtx(ProfilerCtx *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__ProfilerCtx vtable = {
-        .__profilerCtxControl__ = &__nvoc_up_thunk_GpuResource_profilerCtxControl,    // virtual inherited (gpures) base (profilerBase)
-        .ProfilerBase.__profilerBaseControl__ = &__nvoc_up_thunk_GpuResource_profilerBaseControl,    // virtual inherited (gpures) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresControl__ = &gpuresControl_IMPL,    // virtual override (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
-        .__profilerCtxMap__ = &__nvoc_up_thunk_GpuResource_profilerCtxMap,    // virtual inherited (gpures) base (profilerBase)
-        .ProfilerBase.__profilerBaseMap__ = &__nvoc_up_thunk_GpuResource_profilerBaseMap,    // virtual inherited (gpures) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
-        .__profilerCtxUnmap__ = &__nvoc_up_thunk_GpuResource_profilerCtxUnmap,    // virtual inherited (gpures) base (profilerBase)
-        .ProfilerBase.__profilerBaseUnmap__ = &__nvoc_up_thunk_GpuResource_profilerBaseUnmap,    // virtual inherited (gpures) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
-        .__profilerCtxShareCallback__ = &__nvoc_up_thunk_GpuResource_profilerCtxShareCallback,    // virtual inherited (gpures) base (profilerBase)
-        .ProfilerBase.__profilerBaseShareCallback__ = &__nvoc_up_thunk_GpuResource_profilerBaseShareCallback,    // virtual inherited (gpures) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
-        .__profilerCtxGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_profilerCtxGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (profilerBase)
-        .ProfilerBase.__profilerBaseGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresGetRegBaseOffsetAndSize__ = &gpuresGetRegBaseOffsetAndSize_IMPL,    // virtual
-        .__profilerCtxGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_profilerCtxGetMapAddrSpace,    // virtual inherited (gpures) base (profilerBase)
-        .ProfilerBase.__profilerBaseGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
-        .__profilerCtxInternalControlForward__ = &__nvoc_up_thunk_GpuResource_profilerCtxInternalControlForward,    // virtual inherited (gpures) base (profilerBase)
-        .ProfilerBase.__profilerBaseInternalControlForward__ = &__nvoc_up_thunk_GpuResource_profilerBaseInternalControlForward,    // virtual inherited (gpures) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
-        .__profilerCtxGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_profilerCtxGetInternalObjectHandle,    // virtual inherited (gpures) base (profilerBase)
-        .ProfilerBase.__profilerBaseGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
-        .__profilerCtxAccessCallback__ = &__nvoc_up_thunk_RmResource_profilerCtxAccessCallback,    // virtual inherited (rmres) base (profilerBase)
-        .ProfilerBase.__profilerBaseAccessCallback__ = &__nvoc_up_thunk_RmResource_profilerBaseAccessCallback,    // virtual inherited (rmres) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
-        .__profilerCtxGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_profilerCtxGetMemInterMapParams,    // virtual inherited (rmres) base (profilerBase)
-        .ProfilerBase.__profilerBaseGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_profilerBaseGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
-        .__profilerCtxCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_profilerCtxCheckMemInterUnmap,    // virtual inherited (rmres) base (profilerBase)
-        .ProfilerBase.__profilerBaseCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_profilerBaseCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
-        .__profilerCtxGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_profilerCtxGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (profilerBase)
-        .ProfilerBase.__profilerBaseGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_profilerBaseGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
-        .__profilerCtxControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_profilerCtxControlSerialization_Prologue,    // virtual inherited (rmres) base (profilerBase)
-        .ProfilerBase.__profilerBaseControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_profilerBaseControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
-        .__profilerCtxControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerCtxControlSerialization_Epilogue,    // virtual inherited (rmres) base (profilerBase)
-        .ProfilerBase.__profilerBaseControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerBaseControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
-        .__profilerCtxControl_Prologue__ = &__nvoc_up_thunk_RmResource_profilerCtxControl_Prologue,    // virtual inherited (rmres) base (profilerBase)
-        .ProfilerBase.__profilerBaseControl_Prologue__ = &__nvoc_up_thunk_RmResource_profilerBaseControl_Prologue,    // virtual inherited (rmres) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
-        .__profilerCtxControl_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerCtxControl_Epilogue,    // virtual inherited (rmres) base (profilerBase)
-        .ProfilerBase.__profilerBaseControl_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerBaseControl_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
-        .__profilerCtxCanCopy__ = &__nvoc_up_thunk_RsResource_profilerCtxCanCopy,    // virtual inherited (res) base (profilerBase)
-        .ProfilerBase.__profilerBaseCanCopy__ = &__nvoc_up_thunk_RsResource_profilerBaseCanCopy,    // virtual inherited (res) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
-        .__profilerCtxIsDuplicate__ = &__nvoc_up_thunk_RsResource_profilerCtxIsDuplicate,    // virtual inherited (res) base (profilerBase)
-        .ProfilerBase.__profilerBaseIsDuplicate__ = &__nvoc_up_thunk_RsResource_profilerBaseIsDuplicate,    // virtual inherited (res) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
-        .__profilerCtxPreDestruct__ = &__nvoc_up_thunk_RsResource_profilerCtxPreDestruct,    // virtual inherited (res) base (profilerBase)
-        .ProfilerBase.__profilerBasePreDestruct__ = &__nvoc_up_thunk_RsResource_profilerBasePreDestruct,    // virtual inherited (res) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
-        .__profilerCtxControlFilter__ = &__nvoc_up_thunk_RsResource_profilerCtxControlFilter,    // virtual inherited (res) base (profilerBase)
-        .ProfilerBase.__profilerBaseControlFilter__ = &__nvoc_up_thunk_RsResource_profilerBaseControlFilter,    // virtual inherited (res) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
-        .__profilerCtxIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_profilerCtxIsPartialUnmapSupported,    // inline virtual inherited (res) base (profilerBase) body
-        .ProfilerBase.__profilerBaseIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_profilerBaseIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
-        .ProfilerBase.GpuResource.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
-        .ProfilerBase.GpuResource.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
-        .__profilerCtxMapTo__ = &__nvoc_up_thunk_RsResource_profilerCtxMapTo,    // virtual inherited (res) base (profilerBase)
-        .ProfilerBase.__profilerBaseMapTo__ = &__nvoc_up_thunk_RsResource_profilerBaseMapTo,    // virtual inherited (res) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
-        .__profilerCtxUnmapFrom__ = &__nvoc_up_thunk_RsResource_profilerCtxUnmapFrom,    // virtual inherited (res) base (profilerBase)
-        .ProfilerBase.__profilerBaseUnmapFrom__ = &__nvoc_up_thunk_RsResource_profilerBaseUnmapFrom,    // virtual inherited (res) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
-        .__profilerCtxGetRefCount__ = &__nvoc_up_thunk_RsResource_profilerCtxGetRefCount,    // virtual inherited (res) base (profilerBase)
-        .ProfilerBase.__profilerBaseGetRefCount__ = &__nvoc_up_thunk_RsResource_profilerBaseGetRefCount,    // virtual inherited (res) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
-        .__profilerCtxAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_profilerCtxAddAdditionalDependants,    // virtual inherited (res) base (profilerBase)
-        .ProfilerBase.__profilerBaseAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_profilerBaseAddAdditionalDependants,    // virtual inherited (res) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.ProfilerBase.GpuResource.RmResource.RsResource;    // (res) super^4
-    pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable = &vtable.ProfilerBase.GpuResource.RmResource;    // (rmres) super^3
-    pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_vtable = &vtable.ProfilerBase.GpuResource;    // (gpures) super^2
-    pThis->__nvoc_base_ProfilerBase.__nvoc_vtable = &vtable.ProfilerBase;    // (profilerBase) super
-    pThis->__nvoc_vtable = &vtable;    // (profilerCtx) this
-
     // Initialize vtable(s) with 4 per-object function pointer(s).
     __nvoc_init_funcTable_ProfilerCtx_1(pThis, pRmhalspecowner);
 }
 
-void __nvoc_init_ProfilerBase(ProfilerBase*, RmHalspecOwner* );
-void __nvoc_init_ProfilerCtx(ProfilerCtx *pThis, RmHalspecOwner *pRmhalspecowner) {
-    pThis->__nvoc_pbase_ProfilerCtx = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;
-    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;
-    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;
-    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource;
-    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource;
-    pThis->__nvoc_pbase_ProfilerBase = &pThis->__nvoc_base_ProfilerBase;
-    __nvoc_init_ProfilerBase(&pThis->__nvoc_base_ProfilerBase, pRmhalspecowner);
+// Initialize newly constructed object.
+void __nvoc_init__ProfilerCtx(ProfilerCtx *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;    // (res) super^4
+    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;    // (rmrescmn) super^4
+    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource;    // (rmres) super^3
+    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource;    // (gpures) super^2
+    pThis->__nvoc_pbase_ProfilerBase = &pThis->__nvoc_base_ProfilerBase;    // (profilerBase) super
+    pThis->__nvoc_pbase_ProfilerCtx = pThis;    // (profilerCtx) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__ProfilerBase(&pThis->__nvoc_base_ProfilerBase, pRmhalspecowner);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerCtx.metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerCtx.metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource;    // (res) super^4
+    pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon.__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerCtx.metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon;    // (rmrescmn) super^4
+    pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerCtx.metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource;    // (rmres) super^3
+    pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerCtx.metadata__ProfilerBase.metadata__GpuResource;    // (gpures) super^2
+    pThis->__nvoc_base_ProfilerBase.__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerCtx.metadata__ProfilerBase;    // (profilerBase) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerCtx;    // (profilerCtx) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_ProfilerCtx(pThis, pRmhalspecowner);
 }
 
@@ -1846,9 +1836,6 @@ NV_STATUS __nvoc_objCreate_ProfilerCtx(ProfilerCtx **ppThis, Dynamic *pParent, N
 
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(ProfilerCtx));
-
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_ProfilerCtx);
 
     pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
@@ -1870,7 +1857,7 @@ NV_STATUS __nvoc_objCreate_ProfilerCtx(ProfilerCtx **ppThis, Dynamic *pParent, N
         pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
     NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init_ProfilerCtx(pThis, pRmhalspecowner);
+    __nvoc_init__ProfilerCtx(pThis, pRmhalspecowner);
     status = __nvoc_ctor_ProfilerCtx(pThis, pRmhalspecowner, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_ProfilerCtx_cleanup;
 
@@ -1908,100 +1895,30 @@ NV_STATUS __nvoc_objCreateDynamic_ProfilerCtx(ProfilerCtx **ppThis, Dynamic *pPa
     return status;
 }
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x54d077 = 1;
+char __nvoc_class_id_uniqueness_check__0x54d077 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_ProfilerDev;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_ProfilerBase;
 
-void __nvoc_init_ProfilerDev(ProfilerDev*, RmHalspecOwner* );
-void __nvoc_init_funcTable_ProfilerDev(ProfilerDev*, RmHalspecOwner* );
-NV_STATUS __nvoc_ctor_ProfilerDev(ProfilerDev*, RmHalspecOwner* , CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
-void __nvoc_init_dataField_ProfilerDev(ProfilerDev*, RmHalspecOwner* );
+// Forward declarations for ProfilerDev
+void __nvoc_init__ProfilerBase(ProfilerBase*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init__ProfilerDev(ProfilerDev*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_funcTable_ProfilerDev(ProfilerDev*, RmHalspecOwner *pRmhalspecowner);
+NV_STATUS __nvoc_ctor_ProfilerDev(ProfilerDev*, RmHalspecOwner *pRmhalspecowner, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+void __nvoc_init_dataField_ProfilerDev(ProfilerDev*, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_ProfilerDev(ProfilerDev*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_ProfilerDev;
 
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerDev_ProfilerDev = {
-    /*pClassDef=*/          &__nvoc_class_def_ProfilerDev,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_ProfilerDev,
-    /*offset=*/             0,
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerDev_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ProfilerDev, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerDev_RsResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RsResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ProfilerDev, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerDev_RmResourceCommon = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResourceCommon,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ProfilerDev, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerDev_RmResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ProfilerDev, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerDev_GpuResource = {
-    /*pClassDef=*/          &__nvoc_class_def_GpuResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ProfilerDev, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_ProfilerDev_ProfilerBase = {
-    /*pClassDef=*/          &__nvoc_class_def_ProfilerBase,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(ProfilerDev, __nvoc_base_ProfilerBase),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_ProfilerDev = {
-    /*numRelatives=*/       7,
-    /*relatives=*/ {
-        &__nvoc_rtti_ProfilerDev_ProfilerDev,
-        &__nvoc_rtti_ProfilerDev_ProfilerBase,
-        &__nvoc_rtti_ProfilerDev_GpuResource,
-        &__nvoc_rtti_ProfilerDev_RmResource,
-        &__nvoc_rtti_ProfilerDev_RmResourceCommon,
-        &__nvoc_rtti_ProfilerDev_RsResource,
-        &__nvoc_rtti_ProfilerDev_Object,
-    },
-};
-
-const struct NVOC_CLASS_DEF __nvoc_class_def_ProfilerDev = 
-{
-    /*classInfo=*/ {
-        /*size=*/               sizeof(ProfilerDev),
-        /*classId=*/            classId(ProfilerDev),
-        /*providerId=*/         &__nvoc_rtti_provider,
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "ProfilerDev",
-#endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_ProfilerDev,
-    /*pCastInfo=*/          &__nvoc_castinfo_ProfilerDev,
-    /*pExportInfo=*/        &__nvoc_export_info_ProfilerDev
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__ProfilerDev;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__ProfilerDev;
 
 // Down-thunk(s) to bridge ProfilerDev methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^3
@@ -2095,6 +2012,177 @@ NV_STATUS __nvoc_up_thunk_RsResource_profilerDevMapTo(struct ProfilerDev *pResou
 NV_STATUS __nvoc_up_thunk_RsResource_profilerDevUnmapFrom(struct ProfilerDev *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
 NvU32 __nvoc_up_thunk_RsResource_profilerDevGetRefCount(struct ProfilerDev *pResource);    // this
 void __nvoc_up_thunk_RsResource_profilerDevAddAdditionalDependants(struct RsClient *pClient, struct ProfilerDev *pResource, RsResourceRef *pReference);    // this
+
+const struct NVOC_CLASS_DEF __nvoc_class_def_ProfilerDev = 
+{
+    /*classInfo=*/ {
+        /*size=*/               sizeof(ProfilerDev),
+        /*classId=*/            classId(ProfilerDev),
+        /*providerId=*/         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*name=*/               "ProfilerDev",
+#endif
+    },
+    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_ProfilerDev,
+    /*pCastInfo=*/          &__nvoc_castinfo__ProfilerDev,
+    /*pExportInfo=*/        &__nvoc_export_info__ProfilerDev
+};
+
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__ProfilerDev __nvoc_metadata__ProfilerDev = {
+    .rtti.pClassDef = &__nvoc_class_def_ProfilerDev,    // (profilerDev) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_ProfilerDev,
+    .rtti.offset    = 0,
+    .metadata__ProfilerBase.rtti.pClassDef = &__nvoc_class_def_ProfilerBase,    // (profilerBase) super
+    .metadata__ProfilerBase.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__ProfilerBase.rtti.offset    = NV_OFFSETOF(ProfilerDev, __nvoc_base_ProfilerBase),
+    .metadata__ProfilerBase.metadata__GpuResource.rtti.pClassDef = &__nvoc_class_def_GpuResource,    // (gpures) super^2
+    .metadata__ProfilerBase.metadata__GpuResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__ProfilerBase.metadata__GpuResource.rtti.offset    = NV_OFFSETOF(ProfilerDev, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource),
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.rtti.pClassDef = &__nvoc_class_def_RmResource,    // (rmres) super^3
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.rtti.offset    = NV_OFFSETOF(ProfilerDev, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource),
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.pClassDef = &__nvoc_class_def_RsResource,    // (res) super^4
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.offset    = NV_OFFSETOF(ProfilerDev, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.offset    = NV_OFFSETOF(ProfilerDev, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.pClassDef = &__nvoc_class_def_RmResourceCommon,    // (rmrescmn) super^4
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.offset    = NV_OFFSETOF(ProfilerDev, __nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
+
+    .vtable.__profilerDevControl__ = &__nvoc_up_thunk_GpuResource_profilerDevControl,    // virtual inherited (gpures) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseControl__ = &__nvoc_up_thunk_GpuResource_profilerBaseControl,    // virtual inherited (gpures) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresControl__ = &gpuresControl_IMPL,    // virtual override (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
+    .vtable.__profilerDevMap__ = &__nvoc_up_thunk_GpuResource_profilerDevMap,    // virtual inherited (gpures) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseMap__ = &__nvoc_up_thunk_GpuResource_profilerBaseMap,    // virtual inherited (gpures) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
+    .vtable.__profilerDevUnmap__ = &__nvoc_up_thunk_GpuResource_profilerDevUnmap,    // virtual inherited (gpures) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseUnmap__ = &__nvoc_up_thunk_GpuResource_profilerBaseUnmap,    // virtual inherited (gpures) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
+    .vtable.__profilerDevShareCallback__ = &__nvoc_up_thunk_GpuResource_profilerDevShareCallback,    // virtual inherited (gpures) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseShareCallback__ = &__nvoc_up_thunk_GpuResource_profilerBaseShareCallback,    // virtual inherited (gpures) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+    .vtable.__profilerDevGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_profilerDevGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresGetRegBaseOffsetAndSize__ = &gpuresGetRegBaseOffsetAndSize_IMPL,    // virtual
+    .vtable.__profilerDevGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_profilerDevGetMapAddrSpace,    // virtual inherited (gpures) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
+    .vtable.__profilerDevInternalControlForward__ = &__nvoc_up_thunk_GpuResource_profilerDevInternalControlForward,    // virtual inherited (gpures) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseInternalControlForward__ = &__nvoc_up_thunk_GpuResource_profilerBaseInternalControlForward,    // virtual inherited (gpures) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
+    .vtable.__profilerDevGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_profilerDevGetInternalObjectHandle,    // virtual inherited (gpures) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
+    .vtable.__profilerDevAccessCallback__ = &__nvoc_up_thunk_RmResource_profilerDevAccessCallback,    // virtual inherited (rmres) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseAccessCallback__ = &__nvoc_up_thunk_RmResource_profilerBaseAccessCallback,    // virtual inherited (rmres) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+    .vtable.__profilerDevGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_profilerDevGetMemInterMapParams,    // virtual inherited (rmres) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_profilerBaseGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+    .vtable.__profilerDevCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_profilerDevCheckMemInterUnmap,    // virtual inherited (rmres) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_profilerBaseCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+    .vtable.__profilerDevGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_profilerDevGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_profilerBaseGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+    .vtable.__profilerDevControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_profilerDevControlSerialization_Prologue,    // virtual inherited (rmres) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_profilerBaseControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+    .vtable.__profilerDevControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerDevControlSerialization_Epilogue,    // virtual inherited (rmres) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerBaseControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+    .vtable.__profilerDevControl_Prologue__ = &__nvoc_up_thunk_RmResource_profilerDevControl_Prologue,    // virtual inherited (rmres) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseControl_Prologue__ = &__nvoc_up_thunk_RmResource_profilerBaseControl_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+    .vtable.__profilerDevControl_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerDevControl_Epilogue,    // virtual inherited (rmres) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseControl_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerBaseControl_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+    .vtable.__profilerDevCanCopy__ = &__nvoc_up_thunk_RsResource_profilerDevCanCopy,    // virtual inherited (res) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseCanCopy__ = &__nvoc_up_thunk_RsResource_profilerBaseCanCopy,    // virtual inherited (res) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+    .vtable.__profilerDevIsDuplicate__ = &__nvoc_up_thunk_RsResource_profilerDevIsDuplicate,    // virtual inherited (res) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseIsDuplicate__ = &__nvoc_up_thunk_RsResource_profilerBaseIsDuplicate,    // virtual inherited (res) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+    .vtable.__profilerDevPreDestruct__ = &__nvoc_up_thunk_RsResource_profilerDevPreDestruct,    // virtual inherited (res) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBasePreDestruct__ = &__nvoc_up_thunk_RsResource_profilerBasePreDestruct,    // virtual inherited (res) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+    .vtable.__profilerDevControlFilter__ = &__nvoc_up_thunk_RsResource_profilerDevControlFilter,    // virtual inherited (res) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseControlFilter__ = &__nvoc_up_thunk_RsResource_profilerBaseControlFilter,    // virtual inherited (res) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+    .vtable.__profilerDevIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_profilerDevIsPartialUnmapSupported,    // inline virtual inherited (res) base (profilerBase) body
+    .metadata__ProfilerBase.vtable.__profilerBaseIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_profilerBaseIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+    .vtable.__profilerDevMapTo__ = &__nvoc_up_thunk_RsResource_profilerDevMapTo,    // virtual inherited (res) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseMapTo__ = &__nvoc_up_thunk_RsResource_profilerBaseMapTo,    // virtual inherited (res) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMapTo__ = &resMapTo_IMPL,    // virtual
+    .vtable.__profilerDevUnmapFrom__ = &__nvoc_up_thunk_RsResource_profilerDevUnmapFrom,    // virtual inherited (res) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseUnmapFrom__ = &__nvoc_up_thunk_RsResource_profilerBaseUnmapFrom,    // virtual inherited (res) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+    .vtable.__profilerDevGetRefCount__ = &__nvoc_up_thunk_RsResource_profilerDevGetRefCount,    // virtual inherited (res) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseGetRefCount__ = &__nvoc_up_thunk_RsResource_profilerBaseGetRefCount,    // virtual inherited (res) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+    .vtable.__profilerDevAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_profilerDevAddAdditionalDependants,    // virtual inherited (res) base (profilerBase)
+    .metadata__ProfilerBase.vtable.__profilerBaseAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_profilerBaseAddAdditionalDependants,    // virtual inherited (res) base (gpures)
+    .metadata__ProfilerBase.metadata__GpuResource.vtable.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.vtable.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+    .metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__ProfilerDev = {
+    .numRelatives = 7,
+    .relatives = {
+        &__nvoc_metadata__ProfilerDev.rtti,    // [0]: (profilerDev) this
+        &__nvoc_metadata__ProfilerDev.metadata__ProfilerBase.rtti,    // [1]: (profilerBase) super
+        &__nvoc_metadata__ProfilerDev.metadata__ProfilerBase.metadata__GpuResource.rtti,    // [2]: (gpures) super^2
+        &__nvoc_metadata__ProfilerDev.metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.rtti,    // [3]: (rmres) super^3
+        &__nvoc_metadata__ProfilerDev.metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti,    // [4]: (res) super^4
+        &__nvoc_metadata__ProfilerDev.metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti,    // [5]: (obj) super^5
+        &__nvoc_metadata__ProfilerDev.metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti,    // [6]: (rmrescmn) super^4
+    }
+};
 
 // 25 up-thunk(s) defined to bridge methods in ProfilerDev to superclasses
 
@@ -2224,7 +2312,7 @@ void __nvoc_up_thunk_RsResource_profilerDevAddAdditionalDependants(struct RsClie
 }
 
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_ProfilerDev = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__ProfilerDev = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -2329,145 +2417,35 @@ static void __nvoc_init_funcTable_ProfilerDev_1(ProfilerDev *pThis, RmHalspecOwn
 // Initialize vtable(s) for 30 virtual method(s).
 void __nvoc_init_funcTable_ProfilerDev(ProfilerDev *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__ProfilerDev vtable = {
-        .__profilerDevControl__ = &__nvoc_up_thunk_GpuResource_profilerDevControl,    // virtual inherited (gpures) base (profilerBase)
-        .ProfilerBase.__profilerBaseControl__ = &__nvoc_up_thunk_GpuResource_profilerBaseControl,    // virtual inherited (gpures) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresControl__ = &gpuresControl_IMPL,    // virtual override (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
-        .__profilerDevMap__ = &__nvoc_up_thunk_GpuResource_profilerDevMap,    // virtual inherited (gpures) base (profilerBase)
-        .ProfilerBase.__profilerBaseMap__ = &__nvoc_up_thunk_GpuResource_profilerBaseMap,    // virtual inherited (gpures) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
-        .__profilerDevUnmap__ = &__nvoc_up_thunk_GpuResource_profilerDevUnmap,    // virtual inherited (gpures) base (profilerBase)
-        .ProfilerBase.__profilerBaseUnmap__ = &__nvoc_up_thunk_GpuResource_profilerBaseUnmap,    // virtual inherited (gpures) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
-        .__profilerDevShareCallback__ = &__nvoc_up_thunk_GpuResource_profilerDevShareCallback,    // virtual inherited (gpures) base (profilerBase)
-        .ProfilerBase.__profilerBaseShareCallback__ = &__nvoc_up_thunk_GpuResource_profilerBaseShareCallback,    // virtual inherited (gpures) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
-        .__profilerDevGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_profilerDevGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (profilerBase)
-        .ProfilerBase.__profilerBaseGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresGetRegBaseOffsetAndSize__ = &gpuresGetRegBaseOffsetAndSize_IMPL,    // virtual
-        .__profilerDevGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_profilerDevGetMapAddrSpace,    // virtual inherited (gpures) base (profilerBase)
-        .ProfilerBase.__profilerBaseGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
-        .__profilerDevInternalControlForward__ = &__nvoc_up_thunk_GpuResource_profilerDevInternalControlForward,    // virtual inherited (gpures) base (profilerBase)
-        .ProfilerBase.__profilerBaseInternalControlForward__ = &__nvoc_up_thunk_GpuResource_profilerBaseInternalControlForward,    // virtual inherited (gpures) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
-        .__profilerDevGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_profilerDevGetInternalObjectHandle,    // virtual inherited (gpures) base (profilerBase)
-        .ProfilerBase.__profilerBaseGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_profilerBaseGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
-        .__profilerDevAccessCallback__ = &__nvoc_up_thunk_RmResource_profilerDevAccessCallback,    // virtual inherited (rmres) base (profilerBase)
-        .ProfilerBase.__profilerBaseAccessCallback__ = &__nvoc_up_thunk_RmResource_profilerBaseAccessCallback,    // virtual inherited (rmres) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
-        .__profilerDevGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_profilerDevGetMemInterMapParams,    // virtual inherited (rmres) base (profilerBase)
-        .ProfilerBase.__profilerBaseGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_profilerBaseGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
-        .__profilerDevCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_profilerDevCheckMemInterUnmap,    // virtual inherited (rmres) base (profilerBase)
-        .ProfilerBase.__profilerBaseCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_profilerBaseCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
-        .__profilerDevGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_profilerDevGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (profilerBase)
-        .ProfilerBase.__profilerBaseGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_profilerBaseGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
-        .__profilerDevControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_profilerDevControlSerialization_Prologue,    // virtual inherited (rmres) base (profilerBase)
-        .ProfilerBase.__profilerBaseControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_profilerBaseControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
-        .__profilerDevControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerDevControlSerialization_Epilogue,    // virtual inherited (rmres) base (profilerBase)
-        .ProfilerBase.__profilerBaseControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerBaseControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
-        .__profilerDevControl_Prologue__ = &__nvoc_up_thunk_RmResource_profilerDevControl_Prologue,    // virtual inherited (rmres) base (profilerBase)
-        .ProfilerBase.__profilerBaseControl_Prologue__ = &__nvoc_up_thunk_RmResource_profilerBaseControl_Prologue,    // virtual inherited (rmres) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
-        .__profilerDevControl_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerDevControl_Epilogue,    // virtual inherited (rmres) base (profilerBase)
-        .ProfilerBase.__profilerBaseControl_Epilogue__ = &__nvoc_up_thunk_RmResource_profilerBaseControl_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
-        .__profilerDevCanCopy__ = &__nvoc_up_thunk_RsResource_profilerDevCanCopy,    // virtual inherited (res) base (profilerBase)
-        .ProfilerBase.__profilerBaseCanCopy__ = &__nvoc_up_thunk_RsResource_profilerBaseCanCopy,    // virtual inherited (res) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
-        .__profilerDevIsDuplicate__ = &__nvoc_up_thunk_RsResource_profilerDevIsDuplicate,    // virtual inherited (res) base (profilerBase)
-        .ProfilerBase.__profilerBaseIsDuplicate__ = &__nvoc_up_thunk_RsResource_profilerBaseIsDuplicate,    // virtual inherited (res) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
-        .__profilerDevPreDestruct__ = &__nvoc_up_thunk_RsResource_profilerDevPreDestruct,    // virtual inherited (res) base (profilerBase)
-        .ProfilerBase.__profilerBasePreDestruct__ = &__nvoc_up_thunk_RsResource_profilerBasePreDestruct,    // virtual inherited (res) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
-        .__profilerDevControlFilter__ = &__nvoc_up_thunk_RsResource_profilerDevControlFilter,    // virtual inherited (res) base (profilerBase)
-        .ProfilerBase.__profilerBaseControlFilter__ = &__nvoc_up_thunk_RsResource_profilerBaseControlFilter,    // virtual inherited (res) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
-        .__profilerDevIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_profilerDevIsPartialUnmapSupported,    // inline virtual inherited (res) base (profilerBase) body
-        .ProfilerBase.__profilerBaseIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_profilerBaseIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
-        .ProfilerBase.GpuResource.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
-        .ProfilerBase.GpuResource.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
-        .__profilerDevMapTo__ = &__nvoc_up_thunk_RsResource_profilerDevMapTo,    // virtual inherited (res) base (profilerBase)
-        .ProfilerBase.__profilerBaseMapTo__ = &__nvoc_up_thunk_RsResource_profilerBaseMapTo,    // virtual inherited (res) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
-        .__profilerDevUnmapFrom__ = &__nvoc_up_thunk_RsResource_profilerDevUnmapFrom,    // virtual inherited (res) base (profilerBase)
-        .ProfilerBase.__profilerBaseUnmapFrom__ = &__nvoc_up_thunk_RsResource_profilerBaseUnmapFrom,    // virtual inherited (res) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
-        .__profilerDevGetRefCount__ = &__nvoc_up_thunk_RsResource_profilerDevGetRefCount,    // virtual inherited (res) base (profilerBase)
-        .ProfilerBase.__profilerBaseGetRefCount__ = &__nvoc_up_thunk_RsResource_profilerBaseGetRefCount,    // virtual inherited (res) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
-        .__profilerDevAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_profilerDevAddAdditionalDependants,    // virtual inherited (res) base (profilerBase)
-        .ProfilerBase.__profilerBaseAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_profilerBaseAddAdditionalDependants,    // virtual inherited (res) base (gpures)
-        .ProfilerBase.GpuResource.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
-        .ProfilerBase.GpuResource.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
-        .ProfilerBase.GpuResource.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.ProfilerBase.GpuResource.RmResource.RsResource;    // (res) super^4
-    pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable = &vtable.ProfilerBase.GpuResource.RmResource;    // (rmres) super^3
-    pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_vtable = &vtable.ProfilerBase.GpuResource;    // (gpures) super^2
-    pThis->__nvoc_base_ProfilerBase.__nvoc_vtable = &vtable.ProfilerBase;    // (profilerBase) super
-    pThis->__nvoc_vtable = &vtable;    // (profilerDev) this
-
     // Initialize vtable(s) with 5 per-object function pointer(s).
     __nvoc_init_funcTable_ProfilerDev_1(pThis, pRmhalspecowner);
 }
 
-void __nvoc_init_ProfilerBase(ProfilerBase*, RmHalspecOwner* );
-void __nvoc_init_ProfilerDev(ProfilerDev *pThis, RmHalspecOwner *pRmhalspecowner) {
-    pThis->__nvoc_pbase_ProfilerDev = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;
-    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;
-    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;
-    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource;
-    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource;
-    pThis->__nvoc_pbase_ProfilerBase = &pThis->__nvoc_base_ProfilerBase;
-    __nvoc_init_ProfilerBase(&pThis->__nvoc_base_ProfilerBase, pRmhalspecowner);
+// Initialize newly constructed object.
+void __nvoc_init__ProfilerDev(ProfilerDev *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;    // (res) super^4
+    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;    // (rmrescmn) super^4
+    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource;    // (rmres) super^3
+    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource;    // (gpures) super^2
+    pThis->__nvoc_pbase_ProfilerBase = &pThis->__nvoc_base_ProfilerBase;    // (profilerBase) super
+    pThis->__nvoc_pbase_ProfilerDev = pThis;    // (profilerDev) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__ProfilerBase(&pThis->__nvoc_base_ProfilerBase, pRmhalspecowner);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerDev.metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerDev.metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RsResource;    // (res) super^4
+    pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon.__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerDev.metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon;    // (rmrescmn) super^4
+    pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerDev.metadata__ProfilerBase.metadata__GpuResource.metadata__RmResource;    // (rmres) super^3
+    pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerDev.metadata__ProfilerBase.metadata__GpuResource;    // (gpures) super^2
+    pThis->__nvoc_base_ProfilerBase.__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerDev.metadata__ProfilerBase;    // (profilerBase) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__ProfilerDev;    // (profilerDev) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_ProfilerDev(pThis, pRmhalspecowner);
 }
 
@@ -2485,9 +2463,6 @@ NV_STATUS __nvoc_objCreate_ProfilerDev(ProfilerDev **ppThis, Dynamic *pParent, N
 
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(ProfilerDev));
-
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_ProfilerDev);
 
     pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
@@ -2509,7 +2484,7 @@ NV_STATUS __nvoc_objCreate_ProfilerDev(ProfilerDev **ppThis, Dynamic *pParent, N
         pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
     NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init_ProfilerDev(pThis, pRmhalspecowner);
+    __nvoc_init__ProfilerDev(pThis, pRmhalspecowner);
     status = __nvoc_ctor_ProfilerDev(pThis, pRmhalspecowner, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_ProfilerDev_cleanup;
 

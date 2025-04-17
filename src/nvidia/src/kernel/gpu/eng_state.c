@@ -26,9 +26,6 @@
 #include "core/hal.h"
 #include "core/locks.h"
 
-#include "gpu/bus/kern_bus.h"
-
-
 NV_STATUS
 engstateConstructBase_IMPL
 (
@@ -409,10 +406,7 @@ engstateIsPresent_IMPL
     OBJENGSTATE *pEngstate
 )
 {
-    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-
-    NV_ASSERT(pEngstate != NULL);
-    return kbusCheckEngine_HAL(pGpu, pKernelBus, pEngstate->engDesc);
+    return gpuCheckEngine_HAL(pGpu, pEngstate->engDesc);
 }
 
 

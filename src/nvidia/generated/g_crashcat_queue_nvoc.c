@@ -1,4 +1,11 @@
 #define NVOC_CRASHCAT_QUEUE_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,40 +14,29 @@
 #include "utils/nvassert.h"
 #include "g_crashcat_queue_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0xbaa900 = 1;
+char __nvoc_class_id_uniqueness_check__0xbaa900 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatQueue;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
-void __nvoc_init_CrashCatQueue(CrashCatQueue*, CrashCatWayfinder* );
-void __nvoc_init_funcTable_CrashCatQueue(CrashCatQueue*, CrashCatWayfinder* );
-NV_STATUS __nvoc_ctor_CrashCatQueue(CrashCatQueue*, CrashCatWayfinder* , CrashCatQueueConfig * arg_pQueueConfig);
-void __nvoc_init_dataField_CrashCatQueue(CrashCatQueue*, CrashCatWayfinder* );
+// Forward declarations for CrashCatQueue
+void __nvoc_init__Object(Object*);
+void __nvoc_init__CrashCatQueue(CrashCatQueue*, CrashCatWayfinder *pCrashcatWayfinder);
+void __nvoc_init_funcTable_CrashCatQueue(CrashCatQueue*, CrashCatWayfinder *pCrashcatWayfinder);
+NV_STATUS __nvoc_ctor_CrashCatQueue(CrashCatQueue*, CrashCatWayfinder *pCrashcatWayfinder, CrashCatQueueConfig *arg_pQueueConfig);
+void __nvoc_init_dataField_CrashCatQueue(CrashCatQueue*, CrashCatWayfinder *pCrashcatWayfinder);
 void __nvoc_dtor_CrashCatQueue(CrashCatQueue*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_CrashCatQueue;
 
-static const struct NVOC_RTTI __nvoc_rtti_CrashCatQueue_CrashCatQueue = {
-    /*pClassDef=*/          &__nvoc_class_def_CrashCatQueue,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_CrashCatQueue,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__CrashCatQueue;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__CrashCatQueue;
 
-static const struct NVOC_RTTI __nvoc_rtti_CrashCatQueue_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(CrashCatQueue, __nvoc_base_Object),
-};
+// Down-thunk(s) to bridge CrashCatQueue methods from ancestors (if any)
 
-static const struct NVOC_CASTINFO __nvoc_castinfo_CrashCatQueue = {
-    /*numRelatives=*/       2,
-    /*relatives=*/ {
-        &__nvoc_rtti_CrashCatQueue_CrashCatQueue,
-        &__nvoc_rtti_CrashCatQueue_Object,
-    },
-};
+// Up-thunk(s) to bridge CrashCatQueue methods to ancestors (if any)
 
 const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatQueue = 
 {
@@ -53,15 +49,32 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatQueue =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_CrashCatQueue,
-    /*pCastInfo=*/          &__nvoc_castinfo_CrashCatQueue,
-    /*pExportInfo=*/        &__nvoc_export_info_CrashCatQueue
+    /*pCastInfo=*/          &__nvoc_castinfo__CrashCatQueue,
+    /*pExportInfo=*/        &__nvoc_export_info__CrashCatQueue
 };
 
-// Down-thunk(s) to bridge CrashCatQueue methods from ancestors (if any)
 
-// Up-thunk(s) to bridge CrashCatQueue methods to ancestors (if any)
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__CrashCatQueue __nvoc_metadata__CrashCatQueue = {
+    .rtti.pClassDef = &__nvoc_class_def_CrashCatQueue,    // (crashcatQueue) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_CrashCatQueue,
+    .rtti.offset    = 0,
+    .metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super
+    .metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Object.rtti.offset    = NV_OFFSETOF(CrashCatQueue, __nvoc_base_Object),
+};
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_CrashCatQueue = 
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__CrashCatQueue = {
+    .numRelatives = 2,
+    .relatives = {
+        &__nvoc_metadata__CrashCatQueue.rtti,    // [0]: (crashcatQueue) this
+        &__nvoc_metadata__CrashCatQueue.metadata__Object.rtti,    // [1]: (obj) super
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__CrashCatQueue = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -118,11 +131,21 @@ void __nvoc_init_funcTable_CrashCatQueue(CrashCatQueue *pThis, CrashCatWayfinder
     __nvoc_init_funcTable_CrashCatQueue_1(pThis, pCrashcatWayfinder);
 }
 
-void __nvoc_init_Object(Object*);
-void __nvoc_init_CrashCatQueue(CrashCatQueue *pThis, CrashCatWayfinder *pCrashcatWayfinder) {
-    pThis->__nvoc_pbase_CrashCatQueue = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;
-    __nvoc_init_Object(&pThis->__nvoc_base_Object);
+// Initialize newly constructed object.
+void __nvoc_init__CrashCatQueue(CrashCatQueue *pThis, CrashCatWayfinder *pCrashcatWayfinder) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;    // (obj) super
+    pThis->__nvoc_pbase_CrashCatQueue = pThis;    // (crashcatQueue) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__Object(&pThis->__nvoc_base_Object);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__CrashCatQueue.metadata__Object;    // (obj) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__CrashCatQueue;    // (crashcatQueue) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_CrashCatQueue(pThis, pCrashcatWayfinder);
 }
 
@@ -140,9 +163,6 @@ NV_STATUS __nvoc_objCreate_CrashCatQueue(CrashCatQueue **ppThis, Dynamic *pParen
 
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(CrashCatQueue));
-
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_CrashCatQueue);
 
     pThis->__nvoc_base_Object.createFlags = createFlags;
 
@@ -164,7 +184,7 @@ NV_STATUS __nvoc_objCreate_CrashCatQueue(CrashCatQueue **ppThis, Dynamic *pParen
         pCrashcatWayfinder = objFindAncestorOfType(CrashCatWayfinder, pParent);
     NV_ASSERT_OR_RETURN(pCrashcatWayfinder != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init_CrashCatQueue(pThis, pCrashcatWayfinder);
+    __nvoc_init__CrashCatQueue(pThis, pCrashcatWayfinder);
     status = __nvoc_ctor_CrashCatQueue(pThis, pCrashcatWayfinder, arg_pQueueConfig);
     if (status != NV_OK) goto __nvoc_objCreate_CrashCatQueue_cleanup;
 

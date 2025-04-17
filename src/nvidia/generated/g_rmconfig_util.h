@@ -7,7 +7,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig_util.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B
 //
 
 #ifndef _G_RMCFG_UTIL_H_
@@ -61,14 +61,16 @@ NvBool rmcfg_IsGH100(POBJGPU pGpu);
 NvBool rmcfg_IsGH100orBetter(POBJGPU pGpu);
 NvBool rmcfg_IsGH10X(POBJGPU pGpu);
 NvBool rmcfg_IsGH10XorBetter(POBJGPU pGpu);
-NvBool rmcfg_IsGH202orBetter(POBJGPU pGpu);
-NvBool rmcfg_IsGH20XorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsGB100(POBJGPU pGpu);
 NvBool rmcfg_IsGB100orBetter(POBJGPU pGpu);
 NvBool rmcfg_IsGB102(POBJGPU pGpu);
 NvBool rmcfg_IsGB102orBetter(POBJGPU pGpu);
 NvBool rmcfg_IsGB10B(POBJGPU pGpu);
 NvBool rmcfg_IsGB10BorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGB110(POBJGPU pGpu);
+NvBool rmcfg_IsGB110orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGB112(POBJGPU pGpu);
+NvBool rmcfg_IsGB112orBetter(POBJGPU pGpu);
 NvBool rmcfg_IsGB10X(POBJGPU pGpu);
 NvBool rmcfg_IsGB10XorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsGB202(POBJGPU pGpu);
@@ -81,6 +83,8 @@ NvBool rmcfg_IsGB206(POBJGPU pGpu);
 NvBool rmcfg_IsGB206orBetter(POBJGPU pGpu);
 NvBool rmcfg_IsGB207(POBJGPU pGpu);
 NvBool rmcfg_IsGB207orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGB20B(POBJGPU pGpu);
+NvBool rmcfg_IsGB20BorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsGB20X(POBJGPU pGpu);
 NvBool rmcfg_IsGB20XorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsDISPLAYLESS_CLASSIC_GPUS(POBJGPU pGpu);
@@ -108,6 +112,7 @@ NvBool rmcfg_IsGB10Y(POBJGPU pGpu);
 NvBool rmcfg_IsTEGRA_DGPU_BLACKWELL(POBJGPU pGpu);
 NvBool rmcfg_IsTEGRA_DISP_CLASSIC_GPUS(POBJGPU pGpu);
 NvBool rmcfg_IsTEGRA_DISP_CLASSIC_GPUSorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGB20Y(POBJGPU pGpu);
 
 
 #endif  // _G_RMCFG_UTIL_H_

@@ -77,6 +77,7 @@
 #include <class/cl0004.h>               // NV01_TIMER
 #include <class/cl0090.h>               // KERNEL_GRAPHICS_CONTEXT
 #include <class/cl0100.h>               // LOCK_STRESS_OBJECT
+#include <class/cl0101.h>               // LOCK_TEST_RELAXED_DUP_OBJECT
 #include <class/cl506f.h>               // NV50_CHANNEL_GPFIFO
 #include <class/cl906f.h>               // GF100_CHANNEL_GPFIFO
 #include <class/cla06f.h>               // KEPLER_CHANNEL_GPFIFO_A
@@ -104,6 +105,7 @@
 #include <class/clc773.h>               // NVC773_DISP_CAPABILITIES
 #include <class/clc973.h>               // NVC973_DISP_CAPABILITIES
 #include <class/clca73.h>               // NVCA73_DISP_CAPABILITIES
+#include <class/clcb73.h>               // NVCB73_DISP_CAPABILITIES
 #include <class/cl0073.h>               // NV04_DISPLAY_COMMON
 #include <class/cl5080.h>               // NV50_DEFERRED_API_CLASS
 #include <class/cl900e.h>               // MPS_COMPUTE
@@ -134,6 +136,12 @@
 #include <class/clca7b.h>               // NVCA7B_WINDOW_IMM_CHANNEL_DMA
 #include <class/clca7d.h>               // NVCA7D_CORE_CHANNEL_DMA
 #include <class/clca7e.h>               // NVCA7E_WINDOW_CHANNEL_DMA
+#include <class/clcb70.h>               // NVCB70_DISPLAY
+#include <class/clcb71.h>               // NVCB71_DISP_SF_USER
+#include <class/clcb7a.h>               // NVCB7A_CURSOR_IMM_CHANNEL_PIO
+#include <class/clcb7b.h>               // NVCB7B_WINDOW_IMM_CHANNEL_DMA
+#include <class/clcb7d.h>               // NVCB7D_CORE_CHANNEL_DMA
+#include <class/clcb7e.h>               // NVCB7E_WINDOW_CHANNEL_DMA
 #include <class/cl9010.h>               // NV9010_VBLANK_CALLBACK
 #include <class/cl90cc.h>               // GF100_PROFILER
 #include <class/clb0cc.h>               // MAXWELL_PROFILER
@@ -468,6 +476,10 @@
 #define LOCK_STRESS_OBJECT                       (0x00000100)
 #endif
 
+#ifndef LOCK_TEST_RELAXED_DUP_OBJECT
+#define LOCK_TEST_RELAXED_DUP_OBJECT             (0x00000101)
+#endif
+
 #ifndef NV50_CHANNEL_GPFIFO
 #define NV50_CHANNEL_GPFIFO                      (0x0000506f)
 #endif
@@ -577,6 +589,10 @@
 
 #ifndef NVCA73_DISP_CAPABILITIES
 #define NVCA73_DISP_CAPABILITIES                 (0x0000ca73)
+#endif
+
+#ifndef NVCB73_DISP_CAPABILITIES
+#define NVCB73_DISP_CAPABILITIES                 (0x0000cb73)
 #endif
 
 #ifndef NV04_DISPLAY_COMMON
@@ -697,6 +713,30 @@
 
 #ifndef NVCA7E_WINDOW_CHANNEL_DMA
 #define NVCA7E_WINDOW_CHANNEL_DMA                (0x0000ca7e)
+#endif
+
+#ifndef NVCB70_DISPLAY
+#define NVCB70_DISPLAY                           (0x0000cb70)
+#endif
+
+#ifndef NVCB71_DISP_SF_USER
+#define NVCB71_DISP_SF_USER                      (0x0000cb71)
+#endif
+
+#ifndef NVCB7A_CURSOR_IMM_CHANNEL_PIO
+#define NVCB7A_CURSOR_IMM_CHANNEL_PIO            (0x0000cb7a)
+#endif
+
+#ifndef NVCB7B_WINDOW_IMM_CHANNEL_DMA
+#define NVCB7B_WINDOW_IMM_CHANNEL_DMA            (0x0000cb7b)
+#endif
+
+#ifndef NVCB7D_CORE_CHANNEL_DMA
+#define NVCB7D_CORE_CHANNEL_DMA                  (0x0000cb7d)
+#endif
+
+#ifndef NVCB7E_WINDOW_CHANNEL_DMA
+#define NVCB7E_WINDOW_CHANNEL_DMA                (0x0000cb7e)
 #endif
 
 #ifndef NV9010_VBLANK_CALLBACK

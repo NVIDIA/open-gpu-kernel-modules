@@ -69,7 +69,9 @@ static NvBool AllocSurface(
             .data.AllocSize.type = NVOS32_TYPE_SHADER_PROGRAM,
             .data.AllocSize.size = size,
             .data.AllocSize.attr =
-                DRF_DEF(OS32, _ATTR, _LOCATION, _VIDMEM) |
+                (pPushDevice->hasFb ?
+                    DRF_DEF(OS32, _ATTR, _LOCATION, _VIDMEM) :
+                    DRF_DEF(OS32, _ATTR, _LOCATION, _PCI)) |
                 DRF_DEF(OS32, _ATTR, _PHYSICALITY, _ALLOW_NONCONTIGUOUS) |
                 DRF_DEF(OS32, _ATTR, _COHERENCY, _WRITE_COMBINE),
             .data.AllocSize.attr2 =

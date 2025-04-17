@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,9 +36,7 @@ static HYPERVISOR_OPS _hypervisorOps[OS_HYPERVISOR_UNKNOWN];
 
 static NV_STATUS _hypervisorDetection_HVM(OBJHYPERVISOR *);
 static NvBool _hypervisorCheckVirtualPcieP2PApproval(OBJHYPERVISOR *, NvU32);
-
-// Because M$ compiler doesn't support C99 we have to initialize
-// the struct array in this C function, ugly.
+static NvBool _hypervisorCheckVirtualPcieP2PGeneralApproval (NvU32);
 
 static void _hypervisorLoad(void)
 {
@@ -71,6 +69,8 @@ NvBool hypervisorPcieP2pDetection_IMPL
 )
 {
     if (_hypervisorCheckVirtualPcieP2PApproval(pHypervisor, gpuMask))
+        return NV_TRUE;
+    if (_hypervisorCheckVirtualPcieP2PGeneralApproval(gpuMask))
         return NV_TRUE;
     if (hypervisorIsVgxHyper())
         return NV_FALSE;
@@ -105,14 +105,14 @@ found_one:
 
     if (pHypervisor->bIsHVMGuest)
     {
-        NV_PRINTF(LEVEL_WARNING,
-                  "Found HVM kernel running on hypervisor:%s!\n",
+        NV_PRINTF(LEVEL_NOTICE,
+                  "Found HVM kernel running on hypervisor: %s.\n",
                   _hypervisorOps[pHypervisor->type].hypervisorName);
     }
     else if (hypervisorIsVgxHyper())
     {
-        NV_PRINTF(LEVEL_WARNING,
-                  "Found PV kernel running with vGPU hypervisor!\n");
+        NV_PRINTF(LEVEL_NOTICE,
+                  "Found PV kernel running with vGPU hypervisor.\n");
     }
 
     return NV_OK;
@@ -211,7 +211,7 @@ static NV_STATUS _hypervisorDetection_HVM
         i += structLength;
 
         // traverse optional strings section until start of two null bytes
-        while (((i + 2ULL) <= totalLength) && (tableStart[i] || tableStart[i + 1])) 
+        while (((i + 2ULL) <= totalLength) && (tableStart[i] || tableStart[i + 1]))
             i++;
 
         // ensure that entire struct (including last two null bytes) is within tableLength
@@ -240,7 +240,7 @@ static NV_STATUS _hypervisorDetection_HVM
         pHypervisor->type = OS_HYPERVISOR_KVM;
         return NV_OK;
     }
-    
+
     return NV_ERR_NOT_SUPPORTED;
 #else
     return NV_ERR_NOT_SUPPORTED;
@@ -303,6 +303,43 @@ static NvBool _hypervisorCheckVirtualPcieP2PApproval
     // All GPUs in gpuMask are in the same peer clique as identified by the
     // hypervisor, so allow P2P.
     //
+    return NV_TRUE;
+}
+
+static NvBool _hypervisorCheckVirtualPcieP2PGeneralApproval
+(
+    NvU32 gpuMask
+)
+{
+    OBJGPU *pGpu;
+    NvU32 gpuInstance = 0;
+    NV_STATUS status = NV_OK;
+
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    {
+        if(!(IS_PASSTHRU(pGpu)))
+        {
+            return NV_FALSE;
+        }
+        
+        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        NV2080_CTRL_INTERNAL_GET_PCIE_P2P_CAPS_PARAMS p2pCapsParams = {0};
+        
+        status = pRmApi->Control(pRmApi, 
+                                pGpu->hInternalClient,
+                                pGpu->hInternalSubdevice,
+                                NV2080_CTRL_CMD_INTERNAL_GET_PCIE_P2P_CAPS,
+                                &p2pCapsParams,
+                                sizeof(NV2080_CTRL_INTERNAL_GET_PCIE_P2P_CAPS_PARAMS));
+            
+        if ((status != NV_OK) ||
+            (p2pCapsParams.p2pReadCapsStatus != NV0000_P2P_CAPS_STATUS_OK) ||
+            (p2pCapsParams.p2pWriteCapsStatus != NV0000_P2P_CAPS_STATUS_OK))
+        {
+            return NV_FALSE;
+        }
+    }
+
     return NV_TRUE;
 }
 

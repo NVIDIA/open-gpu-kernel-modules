@@ -34,15 +34,9 @@
 /* PASCAL_CHANNEL_GPFIFO_A control commands and parameters */
 
 #include "ctrl/ctrlxxxx.h"
-#include "ctrl/ctrla06f.h"          /* C06F is partially derived from A06F */
-#include "ctrl/ctrl906f.h"          /* C06F is partially derived from 906F */
-#define NVC06F_CTRL_CMD(cat,idx)  \
-    NVXXXX_CTRL_CMD(0xC06F, NVC06F_CTRL_##cat, idx)
 
 /* PASCAL_CHANNEL_GPFIFO_B command categories (6bits) */
 #define NVC06F_CTRL_RESERVED (0x00)
-#define NVC06F_CTRL_GPFIFO   (0x01)
-#define NVC06F_CTRL_EVENT    (0x02)
 
 /*
  * NVC06F_CTRL_CMD_NULL
@@ -54,13 +48,4 @@
  *   NV_OK
  */
 #define NVC06F_CTRL_CMD_NULL (0xc06f0000) /* finn: Evaluated from "(FINN_PASCAL_CHANNEL_GPFIFO_A_RESERVED_INTERFACE_ID << 8) | 0x0" */
-
-
-
-/*
- * NVC06F_CTRL_CMD_EVENT_SET_TRIGGER
- *
- * Please see description of NVA06F_CTRL_CMD_EVENT_SET_TRIGGER for more information.
- */
-#define NVC06F_CTRL_CMD_EVENT_SET_TRIGGER (0xc06f0106) /* finn: Evaluated from "(FINN_PASCAL_CHANNEL_GPFIFO_A_EVENT_INTERFACE_ID << 8) | 0x6" */
 

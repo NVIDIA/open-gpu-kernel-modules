@@ -1004,61 +1004,8 @@ int nvidia_p2p_get_rsync_registers(
     nvidia_p2p_rsync_reg_info_t **reg_info
 )
 {
-    nv_linux_state_t *nvl;
-    NV_STATUS status;
-    NvU32 index = 0;
-    NvU32 count = 0;
-    nvidia_p2p_rsync_reg_info_t *info = NULL;
-    nvidia_p2p_rsync_reg_t *regs = NULL;
-
-    if (reg_info == NULL)
-    {
-        return -EINVAL;
-    }
-
-    status = os_alloc_mem((void**)&info, sizeof(*info));
-    if (status != NV_OK)
-    {
-        return -ENOMEM;
-    }
-
-    memset(info, 0, sizeof(*info));
-
-    info->version = NVIDIA_P2P_RSYNC_REG_INFO_VERSION;
-
-    LOCK_NV_LINUX_DEVICES();
-
-    for (nvl = nv_linux_devices; nvl; nvl = nvl->next)
-    {
-        count++;
-    }
-
-    status = os_alloc_mem((void**)&regs, (count * sizeof(*regs)));
-    if (status != NV_OK)
-    {
-        nvidia_p2p_put_rsync_registers(info);
-        UNLOCK_NV_LINUX_DEVICES();
-        return -ENOMEM;
-    }
-
-    // TODO: This function will always fail with -ENODEV because the logic that
-    // incremented 'index' was removed.  It should be cleaned up in a future
-    // change.
-
-    UNLOCK_NV_LINUX_DEVICES();
-
-    info->regs = regs;
-    info->entries = index;
-
-    if (info->entries == 0)
-    {
-        nvidia_p2p_put_rsync_registers(info);
-        return -ENODEV;
-    }
-
-    *reg_info = info;
-
-    return 0;
+    // TODO: Remove this interface.
+    return -ENODEV;
 }
 
 NV_EXPORT_SYMBOL(nvidia_p2p_get_rsync_registers);
@@ -1067,30 +1014,8 @@ void nvidia_p2p_put_rsync_registers(
     nvidia_p2p_rsync_reg_info_t *reg_info
 )
 {
-    NvU32 i;
-    nvidia_p2p_rsync_reg_t *regs = NULL;
-
-    if (reg_info == NULL)
-    {
-        return;
-    }
-
-    if (reg_info->regs)
-    {
-        for (i = 0; i < reg_info->entries; i++)
-        {
-            regs = &reg_info->regs[i];
-
-            if (regs->ptr)
-            {
-                nv_iounmap(regs->ptr, regs->size);
-            }
-        }
-
-        os_free_mem(reg_info->regs);
-    }
-
-    os_free_mem(reg_info);
+    // TODO: Remove this interface.  There is nothing to do because
+    // nvidia_p2p_get_rsync_registers always fails.
 }
 
 NV_EXPORT_SYMBOL(nvidia_p2p_put_rsync_registers);

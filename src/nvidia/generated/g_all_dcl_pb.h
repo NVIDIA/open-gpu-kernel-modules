@@ -7,6 +7,8 @@
 #include "g_journal_pb.h"
 #include "g_rc_pb.h"
 #include "g_regs_pb.h"
+#include "g_crashcat_pb.h"
+#include "g_gsp_pb.h"
 
 extern const PRB_MSG_DESC prb_messages_dcl[];
 
@@ -18,8 +20,8 @@ extern const PRB_MSG_DESC prb_messages_dcl[];
 // Message maximum lengths
 // Does not include repeated fields, strings and byte arrays.
 #define DCL_ENGINES_LEN 136
-#define DCL_DCLMSG_LEN 616
-#define DCL_ERRORBLOCK_LEN 620
+#define DCL_DCLMSG_LEN 2256
+#define DCL_ERRORBLOCK_LEN 2260
 
 extern const PRB_FIELD_DESC prb_fields_dcl_engines[];
 
@@ -42,6 +44,9 @@ extern const PRB_FIELD_DESC prb_fields_dcl_dclmsg[];
 #define DCL_DCLMSG_RCCOUNTER (&prb_fields_dcl_dclmsg[5])
 #define DCL_DCLMSG_ENGINE (&prb_fields_dcl_dclmsg[6])
 #define DCL_DCLMSG_RC_DIAG_RECS (&prb_fields_dcl_dclmsg[7])
+#define DCL_DCLMSG_CRASHCAT_REPORT (&prb_fields_dcl_dclmsg[8])
+#define DCL_DCLMSG_GSP_RPCDEBUGINFO (&prb_fields_dcl_dclmsg[9])
+#define DCL_DCLMSG_GSP_XIDREPORT (&prb_fields_dcl_dclmsg[10])
 
 // 'DclMsg' field lengths
 #define DCL_DCLMSG_COMMON_LEN 42
@@ -52,6 +57,9 @@ extern const PRB_FIELD_DESC prb_fields_dcl_dclmsg[];
 #define DCL_DCLMSG_RCCOUNTER_LEN 64
 #define DCL_DCLMSG_ENGINE_LEN 139
 #define DCL_DCLMSG_RC_DIAG_RECS_LEN 42
+#define DCL_DCLMSG_CRASHCAT_REPORT_LEN 564
+#define DCL_DCLMSG_GSP_RPCDEBUGINFO_LEN 245
+#define DCL_DCLMSG_GSP_XIDREPORT_LEN 828
 
 extern const PRB_FIELD_DESC prb_fields_dcl_errorblock[];
 
@@ -59,7 +67,7 @@ extern const PRB_FIELD_DESC prb_fields_dcl_errorblock[];
 #define DCL_ERRORBLOCK_DATA (&prb_fields_dcl_errorblock[0])
 
 // 'ErrorBlock' field lengths
-#define DCL_ERRORBLOCK_DATA_LEN 619
+#define DCL_ERRORBLOCK_DATA_LEN 2259
 
 extern const PRB_SERVICE_DESC prb_services_dcl[];
 

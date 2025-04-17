@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,8 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#ifndef __NV_SMG_H__
-#define __NV_SMG_H__
+#ifndef __NV_MIG_TYPES_H__
+#define __NV_MIG_TYPES_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,25 +29,12 @@ extern "C" {
 
 #include "nvtypes.h"
 
-/*
- * The simplest required abstraction for accessing RM independent of the
- * calling component which may be a kernel module or userspace driver.
- */
-typedef NvU32 (*NVSubdevSMGRMControl) (void *ctx, NvU32 object, NvU32 cmd, void *params, NvU32 paramsSize);
-typedef NvU32 (*NVSubdevSMGRMAlloc) (void *ctx, NvU32 parent, NvU32 object, NvU32 cls, void *allocParams);
-typedef NvU32 (*NVSubdevSMGRMFree) (void *ctx, NvU32 parent, NvU32 object);
+typedef NvU32 MIGDeviceId;
 
-NvBool NVSubdevSMGSetPartition(void *ctx,
-                               NvU32 subdevHandle,
-                               const char *computeInstUuid,
-                               NvU32 gpuInstSubscriptionHdl,
-                               NvU32 computeInstSubscriptionHdl,
-                               NVSubdevSMGRMControl rmControl,
-                               NVSubdevSMGRMAlloc rmAlloc,
-                               NVSubdevSMGRMFree rmFree);
+#define NO_MIG_DEVICE 0L
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __NV_SMG_H__ */
+#endif /* __NV_MIG_TYPES_H__ */

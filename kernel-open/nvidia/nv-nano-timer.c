@@ -30,11 +30,7 @@
 #include "os-interface.h"
 #include "nv-linux.h"
 
-#if !defined(NVCPU_PPC64LE)
 #define NV_NANO_TIMER_USE_HRTIMER 1
-#else
-#define NV_NANO_TIMER_USE_HRTIMER 0
-#endif  // !defined(NVCPU_PPC64LE)
 
 struct nv_nano_timer
 {

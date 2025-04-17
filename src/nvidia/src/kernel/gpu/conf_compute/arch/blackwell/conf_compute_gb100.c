@@ -103,9 +103,21 @@ confComputeDeriveSecrets_GB100
         return NV_OK;
     }
 
-    // Add a check if the engine supports Secure Channels
     switch (engine)
     {
+        /*
+         * With Blackwell, key derivation has been modified to per-channel based
+         * as compared to per-engine based implementation earlier.
+         * Hence we need not do any key-derivation here.
+         */
+        case MC_ENGINE_IDX_CE2:
+        case MC_ENGINE_IDX_CE3:
+        case MC_ENGINE_IDX_CE4:
+        case MC_ENGINE_IDX_CE5:
+        case MC_ENGINE_IDX_CE6:
+        case MC_ENGINE_IDX_CE7:
+        case MC_ENGINE_IDX_CE8:
+        case MC_ENGINE_IDX_CE9:
         case MC_ENGINE_IDX_CE12:
         case MC_ENGINE_IDX_CE13:
         case MC_ENGINE_IDX_CE14:

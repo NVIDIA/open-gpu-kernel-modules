@@ -29,6 +29,7 @@
 #include <osapi.h>
 #include <ctrl/ctrl0000/ctrl0000gpu.h>
 #include <ctrl/ctrl0000/ctrl0000unix.h>
+#include <class/cl90cd.h> // NV_EVENT_BUFFER_BIND
 #include <nvdevid.h>
 
 #include <nverror.h>
@@ -114,10 +115,9 @@ NV_STATUS osGetDriverBlock
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NV_STATUS osGetCurrentTick(NvU64 *pTimeInNs)
+NvU64 osGetCurrentTick(void)
 {
-    *pTimeInNs = os_get_current_tick();
-    return NV_OK;
+    return os_get_current_tick();
 }
 
 NvU64 osGetTickResolution(void)
@@ -866,6 +866,30 @@ void osDmaSetAddressSize(
     nv_set_dma_address_size(pOsGpuInfo, bits);
 }
 
+static NV_STATUS osGetPagesInfo(
+    MEMORY_DESCRIPTOR *pMemDesc,
+    NvU64 *pageSize,
+    NvU64 *osPageCount,
+    NvU64 *rmPageCount
+)
+{
+        NvU64 osPageSize  = osGetPageSize();
+
+        // TODO: Switch out for macro before submission.
+        *osPageCount = NV_ALIGN_UP(pMemDesc->Size, osPageSize) >> BIT_IDX_32(osPageSize);
+        *rmPageCount = NV_ALIGN_UP(pMemDesc->Size, RM_PAGE_SIZE) >> RM_PAGE_SHIFT;
+        *pageSize = memdescGetAdjustedPageSize(pMemDesc);
+
+        // In the non-contig case need to protect against page array overflows.
+        if (!memdescGetContiguity(pMemDesc, AT_CPU))
+            NV_ASSERT_OR_RETURN(*rmPageCount <= pMemDesc->pageArraySize, NV_ERR_INVALID_ARGUMENT);
+
+        if (*osPageCount > NV_U32_MAX || *rmPageCount > NV_U32_MAX)
+            return NV_ERR_INVALID_LIMIT;
+
+        return NV_OK;
+}
+
 NV_STATUS osAllocPagesInternal(
     MEMORY_DESCRIPTOR *pMemDesc
 )
@@ -877,18 +901,12 @@ NV_STATUS osAllocPagesInternal(
     NV_STATUS         status;
     NvS32             nodeId    = NV0000_CTRL_NO_NUMA_NODE;
     NV_ADDRESS_SPACE  addrSpace = memdescGetAddressSpace(pMemDesc);
-    NvU64             pageSize  = osGetPageSize();
-    NvU64             osPageCount = NV_ALIGN_UP(pMemDesc->Size, pageSize) >> BIT_IDX_32(pageSize); // TODO: Switch out for macro before submission.
-    NvU64             rmPageCount = NV_ALIGN_UP(pMemDesc->Size, RM_PAGE_SIZE) >> RM_PAGE_SHIFT;
+    NvU64             pageSize;
+    NvU64             osPageCount;
+    NvU64             rmPageCount;
 
     memdescSetAddress(pMemDesc, NvP64_NULL);
     memdescSetMemData(pMemDesc, NULL, NULL);
-
-    // In the non-contig case need to protect against page array overflows.
-    if (!memdescGetContiguity(pMemDesc, AT_CPU))
-    {
-        NV_ASSERT_OR_RETURN(rmPageCount <= pMemDesc->pageArraySize, NV_ERR_INVALID_ARGUMENT);
-    }
 
     //
     // For carveout, the memory is already reserved so we don't have
@@ -904,6 +922,10 @@ NV_STATUS osAllocPagesInternal(
             status = NV_ERR_NOT_SUPPORTED;
             goto done;
         }
+
+        status = osGetPagesInfo(pMemDesc, &pageSize, &osPageCount, &rmPageCount);
+        if (status != NV_OK)
+            goto done;
 
         if (NV_RM_PAGE_SIZE < os_page_size &&
             !memdescGetContiguity(pMemDesc, AT_CPU))
@@ -948,22 +970,9 @@ NV_STATUS osAllocPagesInternal(
             nodeId = GPU_GET_MEMORY_MANAGER(pGpu)->localEgmNodeId;
         }
 
-
-        if (osPageCount > NV_U32_MAX || rmPageCount > NV_U32_MAX)
-        {
-            status = NV_ERR_INVALID_LIMIT;
+        status = osGetPagesInfo(pMemDesc, &pageSize, &osPageCount, &rmPageCount);
+        if (status != NV_OK)
             goto done;
-        }
-
-        //
-        // Bug 4270864: Only non-contig EGM memory needs to specify order. Contig memory
-        // calculates it within nv_alloc_pages. The long term goal is to expand the ability
-        // to request large page size for all of sysmem.
-        //
-        if (memdescIsEgm(pMemDesc) && !memdescGetContiguity(pMemDesc, AT_CPU))
-        {
-            pageSize = memdescGetPageSize(pMemDesc, AT_GPU);
-        }
 
         status = nv_alloc_pages(
             NV_GET_NV_STATE(pGpu),
@@ -1097,10 +1106,9 @@ NV_STATUS osMapPciMemoryAreaUser
         tNvuap.access_size = os_page_size;
 
         tNvuap.caching = mode;
-        tNvuap.remap_prot_extra = 0;
         tNvuap.contig = NV_TRUE;
 
-        NV_ASSERT_OK_OR_RETURN(nv_get_usermap_access_params(pOsGpuInfo, &tNvuap));
+        NV_ASSERT_OK_OR_RETURN(nv_check_usermap_access_params(pOsGpuInfo, &tNvuap));
 
         ppNvuap = (nv_usermap_access_params_t **) tlsEntryAcquire(TLS_ENTRY_ID_MAPPING_CONTEXT);
         NV_ASSERT_OR_RETURN(ppNvuap != NULL, NV_ERR_INVALID_STATE);
@@ -2832,6 +2840,7 @@ void osInitSystemStaticConfig(SYS_STATIC_CONFIG *pConfig)
     pConfig->bIsNotebook = rm_is_system_notebook();
     pConfig->bOsCCEnabled = os_cc_enabled;
     pConfig->bOsCCSevSnpEnabled = os_cc_sev_snp_enabled;
+    pConfig->bOsCCSmeEnabled = os_cc_sme_enabled;
     pConfig->bOsCCSnpVtomEnabled = os_cc_snp_vtom_enabled;
     pConfig->bOsCCTdxEnabled = os_cc_tdx_enabled;
 }
@@ -3329,35 +3338,6 @@ osIovaMap
 
     bIsFbOffset = IS_FB_OFFSET(peer, base, pIovaMapping->pPhysMemDesc->Size);
 
-    //
-    // For indirect peers bIsFbOffset should be NV_TRUE
-    // TODO:IS_FB_OFFSET macro is currently broken for P9 systems
-    // Bug 2010857 tracks fixing this
-    //
-#if defined(NVCPU_PPC64LE)
-    KernelMemorySystem *pRootKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pRootMemDesc->pGpu);
-    if (bIsIndirectPeerMapping)
-    {
-        //
-        // If the first page from the memdesc is in FB then the remaining pages
-        // should also be in FB. If the memdesc is contiguous, check that it is
-        // contained within the coherent CPU FB range. memdescGetNvLinkGpa()
-        // will check that each page is in FB to handle the discontiguous case.
-        //
-        NvU64 atsBase = base + pRootKernelMemorySystem->coherentCpuFbBase;
-        NvU64 atsEnd = bIsContig ? (atsBase + pIovaMapping->pPhysMemDesc->Size) : atsBase;
-        if ((atsBase >= pRootKernelMemorySystem->coherentCpuFbBase) &&
-             (atsEnd <= pRootKernelMemorySystem->coherentCpuFbEnd))
-        {
-            bIsFbOffset = NV_TRUE;
-        }
-        else
-        {
-            NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_STATE);
-        }
-    }
-#endif
-
     void *pPriv = memdescGetMemData(pIovaMapping->pPhysMemDesc);
     osPageCount = NV_RM_PAGES_TO_OS_PAGES(pIovaMapping->pPhysMemDesc->PageCount);
 
@@ -3828,7 +3808,7 @@ osGetAtsTargetAddressRange
     NvU32   peerIndex
 )
 {
-#if RMCFG_MODULE_KERNEL_BIF && RMCFG_MODULE_KERNEL_NVLINK && (defined(NVCPU_PPC64LE) || defined(NVCPU_AARCH64))
+#if RMCFG_MODULE_KERNEL_BIF && RMCFG_MODULE_KERNEL_NVLINK && defined(NVCPU_AARCH64)
     KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
     KernelBif    *pKernelBif    = GPU_GET_KERNEL_BIF(pGpu);
     nv_state_t   *nv;
@@ -3897,7 +3877,7 @@ osGetFbNumaInfo
     NvS32  *pNodeId
 )
 {
-#if RMCFG_MODULE_KERNEL_BIF && RMCFG_MODULE_KERNEL_NVLINK && (defined(NVCPU_PPC64LE) || defined(NVCPU_AARCH64))
+#if RMCFG_MODULE_KERNEL_BIF && RMCFG_MODULE_KERNEL_NVLINK && defined(NVCPU_AARCH64)
     KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
     KernelBif    *pKernelBif    = GPU_GET_KERNEL_BIF(pGpu);
     nv_state_t   *nv;

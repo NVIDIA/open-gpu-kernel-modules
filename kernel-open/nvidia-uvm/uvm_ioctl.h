@@ -527,25 +527,6 @@ typedef struct
 } UVM_MEM_MAP_PARAMS;
 
 //
-// UvmDebugAccessMemory
-//
-#define UVM_DEBUG_ACCESS_MEMORY                                       UVM_IOCTL_BASE(36)
-
-typedef struct
-{
-#ifdef __linux__
-    NvS32               sessionIndex;                    // IN
-#endif
-    NvU64               baseAddress   NV_ALIGN_BYTES(8); // IN
-    NvU64               sizeInBytes   NV_ALIGN_BYTES(8); // IN
-    NvU32               accessType;                      // IN (UvmDebugAccessType)
-    NvU64               buffer        NV_ALIGN_BYTES(8); // IN/OUT
-    NvBool              isBitmaskSet;                    // OUT
-    NvU64               bitmask       NV_ALIGN_BYTES(8); // IN/OUT
-    NV_STATUS           rmStatus;                        // OUT
-} UVM_DEBUG_ACCESS_MEMORY_PARAMS;
-
-//
 // UvmRegisterGpu
 //
 #define UVM_REGISTER_GPU                                              UVM_IOCTL_BASE(37)
@@ -1009,20 +990,35 @@ typedef struct
 //
 #define UVM_POPULATE_PAGEABLE                                         UVM_IOCTL_BASE(71)
 
-// Allow population of managed ranges.
-//
-// The UVM driver must have builtin tests enabled for the API to use the
-// following two flags.
+// Allow population of managed ranges. The goal is to validate that it is
+// possible to populate pageable ranges backed by VMAs with the VM_MIXEDMAP or
+// VM_DONTEXPAND special flags set. But since there is no portable way to force
+// allocation of such memory from user space, and it is not safe to change the
+// flags of an already-created VMA from kernel space, we take advantage of the
+// fact that managed ranges have both special flags set at creation time (see
+// uvm_mmap).
 #define UVM_POPULATE_PAGEABLE_FLAG_ALLOW_MANAGED              0x00000001
 
 // By default UVM_POPULATE_PAGEABLE returns an error if the destination vma
 // does not have read permission. This flag skips that check.
 #define UVM_POPULATE_PAGEABLE_FLAG_SKIP_PROT_CHECK            0x00000002
 
-#define UVM_POPULATE_PAGEABLE_FLAGS_TEST_ALL    (UVM_POPULATE_PAGEABLE_FLAG_ALLOW_MANAGED | \
+// By default UVM_POPULATE_PAGEABLE returns an error if the destination vma
+// is VM_IO or VM_PFNMAP. This flag skips that check.
+#define UVM_POPULATE_PAGEABLE_FLAG_ALLOW_SPECIAL              0x00000004
+
+// These flags are used internally within the driver and are not allowed from
+// user space.
+#define UVM_POPULATE_PAGEABLE_FLAGS_INTERNAL    UVM_POPULATE_PAGEABLE_FLAG_ALLOW_SPECIAL
+
+// These flags are allowed from user space only when builtin tests are enabled.
+// Some of them may also be used internally within the driver in non-test use
+// cases.
+#define UVM_POPULATE_PAGEABLE_FLAGS_TEST        (UVM_POPULATE_PAGEABLE_FLAG_ALLOW_MANAGED | \
                                                  UVM_POPULATE_PAGEABLE_FLAG_SKIP_PROT_CHECK)
 
-#define UVM_POPULATE_PAGEABLE_FLAGS_ALL         UVM_POPULATE_PAGEABLE_FLAGS_TEST_ALL
+#define UVM_POPULATE_PAGEABLE_FLAGS_ALL         (UVM_POPULATE_PAGEABLE_FLAGS_INTERNAL | \
+                                                 UVM_POPULATE_PAGEABLE_FLAGS_TEST)
 
 typedef struct
 {
@@ -1141,7 +1137,6 @@ typedef struct
     NvU32     is8Supported; // OUT
     NV_STATUS rmStatus;     // OUT
 } UVM_IS_8_SUPPORTED_PARAMS;
-
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@
   */
 
 #define RM_STRICT_CONFIG_EMIT_DISP_ENGINE_DEFINITIONS     0
+#define BPPX256_SCALER       256U
 
 #include "os/os.h"
 #include "gpu/gpu.h"
@@ -40,6 +41,7 @@
 #include "gpu/disp/head/kernel_head.h"
 #include "mem_mgr/mem.h"
 #include "platform/sli/sli.h"
+#include "diagnostics/journal.h"
 #include "displayport/displayport.h"
 #include "displayport/displayport2x.h"
 
@@ -489,6 +491,7 @@ dispcmnCtrlCmdCalculateDpImp_IMPL
     dpModesetData.bMultiStream              = pParams->linkConfig.bMultiStreamTopology;
     dpModesetData.bFecEnable                = pParams->linkConfig.bFECEnabled;
     dpModesetData.bEnhancedFraming          = pParams->linkConfig.bEnhancedFraming;
+    dpModesetData.bDisableEffBppSST8b10b    = pParams->linkConfig.bDisableEffBppSST8b10b;
 
     NV_ASSERT_OR_RETURN((IS_VALID_DP2_X_LINKBW(dpModesetData.dp2LinkBw) &&
                          IS_VALID_LANECOUNT(dpModesetData.laneCount)),
@@ -526,10 +529,11 @@ dispcmnCtrlCmdCalculateDpImp_IMPL
         pParams->watermark.hBlankSym        = dpInfo.hBlankSym;
         pParams->watermark.vBlankSym        = dpInfo.vBlankSym;
         pParams->watermark.minHBlank        = dpInfo.minHBlank;
+        pParams->watermark.effectiveBpp     = dpInfo.effectiveBppxScaler;
 
         if ((dpInfo.minHBlank > hBlank) ||
             (dpInfo.hBlankSym < NV_MAX(dpInfo.twoChannelAudioSymbols, dpInfo.eightChannelAudioSymbols)) ||
-            (dpModesetData.PClkFreqHz * dpModesetData.bpp >= dpInfo.linkTotalDataRate))
+            (dpModesetData.PClkFreqHz * dpInfo.effectiveBppxScaler >= dpInfo.linkTotalDataRate * BPPX256_SCALER))
         {
             pParams->watermark.bIsModePossible = NV_FALSE;
         }
@@ -540,7 +544,7 @@ dispcmnCtrlCmdCalculateDpImp_IMPL
         //
         if (!(dpModesetData.bDP2xChannelCoding || dpModesetData.bMultiStream) &&
             (dpModesetData.bDscEnable) &&
-            (dpModesetData.PClkFreqHz * dpModesetData.bpp < dpInfo.linkTotalDataRate / 64))
+            ((dpModesetData.PClkFreqHz * dpInfo.effectiveBppxScaler) < (dpInfo.linkTotalDataRate * BPPX256_SCALER) / 64))
         {
             pParams->watermark.bIsModePossible = NV_FALSE;
         }
@@ -550,6 +554,33 @@ dispcmnCtrlCmdCalculateDpImp_IMPL
         pParams->watermark.bIsModePossible = NV_FALSE;
     }
     return status;
+}
+
+/*!
+ * @brief  Retrieves DpRingBuffer from RM
+ *
+ * @param pDispCommon [In]
+ * @param pParams     [In, Out]
+ *
+ * @return
+ *   NV_OK
+ *     The call succeeded.
+ *   NV_ERR_NOT_SUPPORTED
+ *     Can't get DpRingBuffer from RM
+ */
+NV_STATUS
+dispcmnCtrlCmdDpRetrieveDpRingBuffer_IMPL
+(
+    DispCommon *pDispCommon,
+    NV0073_CTRL_CMD_DP_RETRIEVE_DP_RING_BUFFER_PARAMS *pParams
+)
+{
+    pParams->pDpRingBuffer = (NvU8 *)rcdbCreateRingBuffer(
+        SYS_GET_RCDB(SYS_GET_INSTANCE()),
+        pParams->ringBufferType,
+        pParams->numRecords);
+
+    return NV_OK;
 }
 
 /*!

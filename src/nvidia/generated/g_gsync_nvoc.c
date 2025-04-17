@@ -1,4 +1,11 @@
 #define NVOC_GSYNC_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,40 +14,29 @@
 #include "utils/nvassert.h"
 #include "g_gsync_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0xd07fd0 = 1;
+char __nvoc_class_id_uniqueness_check__0xd07fd0 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGSYNCMGR;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
-void __nvoc_init_OBJGSYNCMGR(OBJGSYNCMGR*);
+// Forward declarations for OBJGSYNCMGR
+void __nvoc_init__Object(Object*);
+void __nvoc_init__OBJGSYNCMGR(OBJGSYNCMGR*);
 void __nvoc_init_funcTable_OBJGSYNCMGR(OBJGSYNCMGR*);
 NV_STATUS __nvoc_ctor_OBJGSYNCMGR(OBJGSYNCMGR*);
 void __nvoc_init_dataField_OBJGSYNCMGR(OBJGSYNCMGR*);
 void __nvoc_dtor_OBJGSYNCMGR(OBJGSYNCMGR*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJGSYNCMGR;
 
-static const struct NVOC_RTTI __nvoc_rtti_OBJGSYNCMGR_OBJGSYNCMGR = {
-    /*pClassDef=*/          &__nvoc_class_def_OBJGSYNCMGR,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_OBJGSYNCMGR,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__OBJGSYNCMGR;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJGSYNCMGR;
 
-static const struct NVOC_RTTI __nvoc_rtti_OBJGSYNCMGR_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(OBJGSYNCMGR, __nvoc_base_Object),
-};
+// Down-thunk(s) to bridge OBJGSYNCMGR methods from ancestors (if any)
 
-static const struct NVOC_CASTINFO __nvoc_castinfo_OBJGSYNCMGR = {
-    /*numRelatives=*/       2,
-    /*relatives=*/ {
-        &__nvoc_rtti_OBJGSYNCMGR_OBJGSYNCMGR,
-        &__nvoc_rtti_OBJGSYNCMGR_Object,
-    },
-};
+// Up-thunk(s) to bridge OBJGSYNCMGR methods to ancestors (if any)
 
 const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGSYNCMGR = 
 {
@@ -53,15 +49,32 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGSYNCMGR =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_OBJGSYNCMGR,
-    /*pCastInfo=*/          &__nvoc_castinfo_OBJGSYNCMGR,
-    /*pExportInfo=*/        &__nvoc_export_info_OBJGSYNCMGR
+    /*pCastInfo=*/          &__nvoc_castinfo__OBJGSYNCMGR,
+    /*pExportInfo=*/        &__nvoc_export_info__OBJGSYNCMGR
 };
 
-// Down-thunk(s) to bridge OBJGSYNCMGR methods from ancestors (if any)
 
-// Up-thunk(s) to bridge OBJGSYNCMGR methods to ancestors (if any)
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__OBJGSYNCMGR __nvoc_metadata__OBJGSYNCMGR = {
+    .rtti.pClassDef = &__nvoc_class_def_OBJGSYNCMGR,    // (gsyncmgr) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_OBJGSYNCMGR,
+    .rtti.offset    = 0,
+    .metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super
+    .metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Object.rtti.offset    = NV_OFFSETOF(OBJGSYNCMGR, __nvoc_base_Object),
+};
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJGSYNCMGR = 
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__OBJGSYNCMGR = {
+    .numRelatives = 2,
+    .relatives = {
+        &__nvoc_metadata__OBJGSYNCMGR.rtti,    // [0]: (gsyncmgr) this
+        &__nvoc_metadata__OBJGSYNCMGR.metadata__Object.rtti,    // [1]: (obj) super
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJGSYNCMGR = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -113,8 +126,8 @@ NvBool gsyncmgrIsFirmwareGPUMismatch_STATIC_DISPATCH(struct OBJGPU *pGpu, OBJGSY
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
 
 
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000ec1UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB202 | GB203 | GB205 | GB206 | GB207 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xe0000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e6UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B */ 
     {
         return gsyncmgrIsFirmwareGPUMismatch_GB100(pGpu, pGsync);
     }
@@ -129,11 +142,21 @@ NvBool gsyncmgrIsFirmwareGPUMismatch_STATIC_DISPATCH(struct OBJGPU *pGpu, OBJGSY
     return NV_FALSE;
 }
 
-void __nvoc_init_Object(Object*);
-void __nvoc_init_OBJGSYNCMGR(OBJGSYNCMGR *pThis) {
-    pThis->__nvoc_pbase_OBJGSYNCMGR = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;
-    __nvoc_init_Object(&pThis->__nvoc_base_Object);
+// Initialize newly constructed object.
+void __nvoc_init__OBJGSYNCMGR(OBJGSYNCMGR *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;    // (obj) super
+    pThis->__nvoc_pbase_OBJGSYNCMGR = pThis;    // (gsyncmgr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__Object(&pThis->__nvoc_base_Object);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__OBJGSYNCMGR.metadata__Object;    // (obj) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__OBJGSYNCMGR;    // (gsyncmgr) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_OBJGSYNCMGR(pThis);
 }
 
@@ -151,9 +174,6 @@ NV_STATUS __nvoc_objCreate_OBJGSYNCMGR(OBJGSYNCMGR **ppThis, Dynamic *pParent, N
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(OBJGSYNCMGR));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_OBJGSYNCMGR);
-
     pThis->__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -167,7 +187,7 @@ NV_STATUS __nvoc_objCreate_OBJGSYNCMGR(OBJGSYNCMGR **ppThis, Dynamic *pParent, N
         pThis->__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_OBJGSYNCMGR(pThis);
+    __nvoc_init__OBJGSYNCMGR(pThis);
     status = __nvoc_ctor_OBJGSYNCMGR(pThis);
     if (status != NV_OK) goto __nvoc_objCreate_OBJGSYNCMGR_cleanup;
 

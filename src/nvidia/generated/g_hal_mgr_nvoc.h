@@ -1,20 +1,22 @@
 
 #ifndef _G_HAL_MGR_NVOC_H_
 #define _G_HAL_MGR_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,6 +46,7 @@ extern "C" {
 
 #include "core/core.h"
 #include "core/hal.h"
+#include "nvoc/object.h"
 
 #define HALMGR_GET_HAL(p, halid)     halmgrGetHal((p), halid)
 
@@ -58,10 +61,18 @@ extern "C" {
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJHALMGR;
+struct NVOC_METADATA__Object;
+
+
 struct OBJHALMGR {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__OBJHALMGR *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -71,7 +82,14 @@ struct OBJHALMGR {
     struct OBJHALMGR *__nvoc_pbase_OBJHALMGR;    // halmgr
 
     // Data members
-    struct OBJHAL *pHalList[77];
+    struct OBJHAL *pHalList[79];
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJHALMGR {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
 };
 
 #ifndef __NVOC_CLASS_OBJHALMGR_TYPEDEF__
@@ -90,10 +108,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHALMGR;
     ((pThis)->__nvoc_pbase_OBJHALMGR)
 
 #ifdef __nvoc_hal_mgr_h_disabled
-#define __dynamicCast_OBJHALMGR(pThis) ((OBJHALMGR*)NULL)
+#define __dynamicCast_OBJHALMGR(pThis) ((OBJHALMGR*) NULL)
 #else //__nvoc_hal_mgr_h_disabled
 #define __dynamicCast_OBJHALMGR(pThis) \
-    ((OBJHALMGR*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJHALMGR)))
+    ((OBJHALMGR*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJHALMGR)))
 #endif //__nvoc_hal_mgr_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_OBJHALMGR(OBJHALMGR**, Dynamic*, NvU32, va_list);

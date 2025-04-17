@@ -157,7 +157,8 @@ typedef struct
     NvU32  fabricHealthMask;      /* Mask containing bits indicating various fabric health parameters */
     NvU32  gpaAddressEGMHi;       /* GPA Address for EGM. Don't use if EGM support is not present in GFM */
     NvU8   maxRbmLinks;           /* Max RBM mode supported */
-    NvU8   reserved[15];          /* For future use. Must be initialized to zero */
+    NvU32  remapTableIdx;         /* remap table index for the GPU */
+    NvU8   reserved[11];          /* For future use. Must be initialized to zero */
 } nvlink_inband_gpu_probe_rsp_t;
 
 typedef struct

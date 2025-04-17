@@ -245,8 +245,7 @@ typedef struct NV2080_CTRL_FLCN_GET_ENGINE_ARCH_PARAMS {
  * @{
  */
 #define NV2080_CTRL_FLCN_USTREAMER_FEATURE_DEFAULT                       0U
-#define NV2080_CTRL_FLCN_USTREAMER_FEATURE_PMUMON                        1U
-#define NV2080_CTRL_FLCN_USTREAMER_FEATURE__COUNT                        2U
+#define NV2080_CTRL_FLCN_USTREAMER_FEATURE__COUNT                        1U
 /*!@}*/
 
 /*!

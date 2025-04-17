@@ -33,6 +33,7 @@
 #include "ctrl/ctrlxxxx.h"
 #include "ctrl/ctrl2080/ctrl2080gpu.h"
 #include "nv_vgpu_types.h"
+#include "nvcfg_sdk.h"
 /* NVA081_VGPU_CONFIG control commands and parameters */
 
 #define NVA081_CTRL_CMD(cat,idx)             NVXXXX_CTRL_CMD(0xA081, NVA081_CTRL_##cat, idx)
@@ -42,8 +43,9 @@
 #define NVA081_CTRL_VGPU_CONFIG              (0x01)
 
 #define NVA081_CTRL_VGPU_CONFIG_INVALID_TYPE 0x00
-#define NVA081_MAX_VGPU_TYPES_PER_PGPU       0x40
+#define NVA081_MAX_VGPU_TYPES_PER_PGPU       0x64
 #define NVA081_MAX_VGPU_PER_PGPU             32
+#define NVA081_MAX_VGPU_PER_GI               12
 #define NVA081_VM_UUID_SIZE                  16
 #define NVA081_VGPU_STRING_BUFFER_SIZE       32
 #define NVA081_VGPU_SIGNATURE_SIZE           128
@@ -118,6 +120,7 @@ typedef struct NVA081_CTRL_VGPU_INFO {
     NvU32 ftraceEnable;
     NvU32 gpuDirectSupported;
     NvU32 nvlinkP2PSupported;
+    NvU32 maxInstancePerGI;
     NvU32 multiVgpuExclusive;
     NvU32 exclusiveType;
     NvU32 exclusiveSize;
@@ -329,6 +332,11 @@ typedef struct NVA081_CTRL_VGPU_CONFIG_GET_VGPU_TYPE_INFO_PARAMS {
  *      This structure represents supported/creatable vGPU types on a pGPU
  */
 typedef struct NVA081_CTRL_VGPU_CONFIG_GET_VGPU_TYPES_PARAMS {
+    /*
+     * [IN] GPU Instance ID or Swizz ID
+     */
+    NvU32 gpuInstanceId;
+
     /*
      * [OUT] vGPU config state on a pGPU
      */
@@ -793,6 +801,9 @@ typedef struct NVA081_CTRL_VGPU_CONFIG_UPDATE_PLACEMENT_INFO_PARAMS {
  *
  * Parameters:
  *
+ * gpuInstanceId [IN]
+ *  GPU Instance ID or Swizz ID
+ *
  * vgpuTypeId [IN]
  *  The client provided vGPU type ID
  *
@@ -816,6 +827,7 @@ typedef struct NVA081_CTRL_VGPU_CONFIG_UPDATE_PLACEMENT_INFO_PARAMS {
 #define NVA081_CTRL_VGPU_CONFIG_GET_CREATABLE_PLACEMENTS_PARAMS_MESSAGE_ID (0x1cU)
 
 typedef struct NVA081_CTRL_VGPU_CONFIG_GET_CREATABLE_PLACEMENTS_PARAMS {
+    NvU32 gpuInstanceId;
     NvU32 vgpuTypeId;
     NvU32 placementSize;
     NvU32 count;
@@ -854,6 +866,11 @@ typedef struct NVA081_CTRL_PGPU_GET_VGPU_STREAMING_CAPABILITY_PARAMS {
 #define NVA081_CTRL_VGPU_CAPABILITY_HETEROGENEOUS_TIMESLICE_PROFILES 7
 #define NVA081_CTRL_VGPU_CAPABILITY_FRACTIONAL_MULTI_VGPU            8
 #define NVA081_CTRL_VGPU_CAPABILITY_HOMOGENEOUS_PLACEMENT_ID         9
+
+#define NVA081_CTRL_VGPU_CAPABILITY_MIG_TIMESLICING_SUPPORTED        10
+#define NVA081_CTRL_VGPU_CAPABILITY_MIG_TIMESLICING_MODE_ENABLED     11
+
+
 
 /*
  * NVA081_CTRL_CMD_VGPU_SET_CAPABILITY
@@ -1009,5 +1026,34 @@ typedef struct NVA081_CTRL_VGPU_GET_BAR_INFO_PARAMS {
 typedef struct NVA081_CTRL_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH_PARAMS {
     NvU32 migrationBandwidth;
 } NVA081_CTRL_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH_PARAMS;
+
+/*
+ * NVA081_CTRL_CMD_VGPU_CONFIG_ENUMERATE_VGPU_PER_GPU_INSTANCE
+ *
+ * This command enumerates list of vGPU guest instances per GPU instance
+ *
+ * gpuInstanceId [IN]
+ *  This parameter specifies the GPU Instance Id or Swizz Id
+ *
+ * numVgpu [OUT]
+ *  This parameter specifies the number of virtual GPUs created on a GPU instance
+ *
+ * vgpuInstanceIds [OUT]
+ *  This parameter specifies an array of vGPU type ids active on a GPU instance
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_OBJECT_NOT_FOUND
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NVA081_CTRL_CMD_VGPU_CONFIG_ENUMERATE_VGPU_PER_GPU_INSTANCE (0xa0810124) /* finn: Evaluated from "(FINN_NVA081_VGPU_CONFIG_VGPU_CONFIG_INTERFACE_ID << 8) | NVA081_CTRL_VGPU_CONFIG_ENUMERATE_VGPU_PER_GPU_INSTANCE_PARAMS_MESSAGE_ID" */
+
+#define NVA081_CTRL_VGPU_CONFIG_ENUMERATE_VGPU_PER_GPU_INSTANCE_PARAMS_MESSAGE_ID (0x24U)
+
+typedef struct NVA081_CTRL_VGPU_CONFIG_ENUMERATE_VGPU_PER_GPU_INSTANCE_PARAMS {
+    NvU32 gpuInstanceId;
+    NvU32 numVgpu;
+    NvU32 vgpuInstanceIds[NVA081_MAX_VGPU_PER_GI];
+} NVA081_CTRL_VGPU_CONFIG_ENUMERATE_VGPU_PER_GPU_INSTANCE_PARAMS;
 
 /* _ctrlA081vgpuconfig_h_ */

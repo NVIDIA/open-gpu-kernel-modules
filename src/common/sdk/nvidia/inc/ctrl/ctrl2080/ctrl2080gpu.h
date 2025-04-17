@@ -111,8 +111,9 @@ typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_GPU_INFO;
 #define NV2080_CTRL_GPU_INFO_INDEX_IS_RESETLESS_MIG_SUPPORTED          (0x0000003fU)
 
 
+#define NV2080_CTRL_GPU_INFO_INDEX_IS_LOCALIZATION_SUPPORTED           (0x00000041U)
 
-#define NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE                             (0x00000041U)
+#define NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE                             (0x00000042U)
 #define NV2080_CTRL_GPU_INFO_INDEX_GROUP_ID                30:24
 #define NV2080_CTRL_GPU_INFO_INDEX_RESERVED                31:31
 
@@ -222,6 +223,10 @@ typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_GPU_INFO;
 /* valid resetless MIG device supported values */
 #define NV2080_CTRL_GPU_INFO_INDEX_IS_RESETLESS_MIG_SUPPORTED_NO       (0x00000000U)
 #define NV2080_CTRL_GPU_INFO_INDEX_IS_RESETLESS_MIG_SUPPORTED_YES      (0x00000001U)
+
+/* valid localization supported values */
+#define NV2080_CTRL_GPU_INFO_INDEX_IS_LOCALIZATION_SUPPORTED_NO        (0x00000000U)
+#define NV2080_CTRL_GPU_INFO_INDEX_IS_LOCALIZATION_SUPPORTED_YES       (0x00000001U)
 
 /*
  * NV2080_CTRL_CMD_GPU_GET_INFO
@@ -754,6 +759,8 @@ typedef struct NV2080_CTRL_GPU_GET_ENGINES_V2_PARAMS {
     NvU32 engineCount;
     NvU32 engineList[NV2080_GPU_MAX_ENGINES_LIST_SIZE];
 } NV2080_CTRL_GPU_GET_ENGINES_V2_PARAMS;
+
+
 
 /*
  * NV2080_CTRL_CMD_GPU_GET_ENGINE_CLASSLIST
@@ -2634,7 +2641,14 @@ typedef struct NV2080_CTRL_GPU_SET_PARTITION_INFO {
 #define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE__SIZE                    8U
 
 
-#define NV2080_CTRL_GPU_PARTITION_MAX_TYPES                              40U
+#define NV2080_CTRL_GPU_PARTITION_MAX_TYPES                              90U
+
+#define NV2080_CTRL_GPU_PARTITION_FLAG_REQ_ALL_MEDIA          29:28
+#define NV2080_CTRL_GPU_PARTITION_FLAG_REQ_ALL_MEDIA_DEFAULT             0U
+#define NV2080_CTRL_GPU_PARTITION_FLAG_REQ_ALL_MEDIA_DISABLE             1U
+#define NV2080_CTRL_GPU_PARTITION_FLAG_REQ_ALL_MEDIA_ENABLE              2U
+
+
 #define NV2080_CTRL_GPU_PARTITION_FLAG_REQ_DEC_JPG_OFA          30:30
 #define NV2080_CTRL_GPU_PARTITION_FLAG_REQ_DEC_JPG_OFA_DISABLE           0U
 #define NV2080_CTRL_GPU_PARTITION_FLAG_REQ_DEC_JPG_OFA_ENABLE            1U
@@ -3131,6 +3145,7 @@ typedef struct NV2080_CTRL_GPU_GET_VMMU_SEGMENT_SIZE_PARAMS {
 #define NV2080_CTRL_GPU_VMMU_SEGMENT_SIZE_128MB    0x08000000U
 #define NV2080_CTRL_GPU_VMMU_SEGMENT_SIZE_256MB    0x10000000U
 #define NV2080_CTRL_GPU_VMMU_SEGMENT_SIZE_512MB    0x20000000U
+#define NV2080_CTRL_GPU_VMMU_SEGMENT_SIZE_1024MB   0x40000000U
 
 
 
@@ -4585,5 +4600,76 @@ typedef struct NV2080_CTRL_GPU_GET_TPC_RECONFIG_MASK_PARAMS {
     NvU32 gpc;
     NvU32 tpcReconfigMask;
 } NV2080_CTRL_GPU_GET_TPC_RECONFIG_MASK_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_GPU_RPC_GSP_TEST
+ *
+ * This command checks a variable sized RPC for a known pattern, then
+ * fills the data field with another pattern. It also records the timestamp
+ * before and after the RPC is sent to GSP.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_GENERIC
+ */
+#define NV2080_CTRL_CMD_GPU_RPC_GSP_TEST (0x208001e8) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS_MESSAGE_ID (0xe8U)
+
+typedef struct NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS {
+    NvU8  test;
+    NvU32 dataSize;
+    NV_DECLARE_ALIGNED(NvU64 startTimestamp, 8);
+    NV_DECLARE_ALIGNED(NvU64 stopTimestamp, 8);
+    NV_DECLARE_ALIGNED(NvP64 data, 8);
+} NV2080_CTRL_GPU_RPC_GSP_TEST_PARAMS;
+
+#define NV2080_CTRL_GPU_RPC_GSP_TEST_SERIALIZED_INTEGRITY 0x1
+#define NV2080_CTRL_GPU_RPC_GSP_TEST_UNSERIALIZED 0x2
+
+/*
+ * NV2080_CTRL_CMD_GPU_RPC_GSP_QUERY_SIZES
+ *
+ * This command returns information necessary for GSP RPC integrity tests
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_GENERIC
+ */
+#define NV2080_CTRL_CMD_GPU_RPC_GSP_QUERY_SIZES (0x208001e9) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_RPC_GSP_QUERY_SIZES_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_GPU_RPC_GSP_QUERY_SIZES_PARAMS_MESSAGE_ID (0xe9U)
+
+typedef struct NV2080_CTRL_GPU_RPC_GSP_QUERY_SIZES_PARAMS {
+    NvU32 maxRpcSize;
+    NvU32 finnRmapiSize;
+    NvU32 rpcGspControlSize;
+    NvU32 rpcMessageHeaderSize;
+    NV_DECLARE_ALIGNED(NvU64 timestampFreq, 8);
+} NV2080_CTRL_GPU_RPC_GSP_QUERY_SIZES_PARAMS;
+
+/*
+ * RUSD features.
+ * Each feature definition equates to a bit in the supportedFeatures bitmask.
+ */
+#define RUSD_FEATURE_NON_POLLING 0x1
+#define RUSD_FEATURE_POLLING     0x2
+
+/*
+ * NV2080_CTRL_CMD_GPU_RUSD_GET_SUPPORTED_FEATURES
+ *
+ * @brief Returns bitmask of supported RUSD features.
+ *
+ * @param[out]  supportedFeatures Bitmask of supported RUSD features
+ *
+ * @return NV_OK
+ */
+#define NV2080_CTRL_CMD_RUSD_GET_SUPPORTED_FEATURES (0x208081eaU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_LEGACY_NON_PRIVILEGED_INTERFACE_ID << 8) | NV2080_CTRL_RUSD_GET_SUPPORTED_FEATURES_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_RUSD_GET_SUPPORTED_FEATURES_PARAMS_MESSAGE_ID (0xeaU)
+
+typedef struct NV2080_CTRL_RUSD_GET_SUPPORTED_FEATURES_PARAMS {
+    NvU32 supportedFeatures;
+} NV2080_CTRL_RUSD_GET_SUPPORTED_FEATURES_PARAMS;
 
 /* _ctrl2080gpu_h_ */

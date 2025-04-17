@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,6 +34,13 @@
 
 #include "ctrl/ctrlxxxx.h"
 #include "class/cl0000.h"
+
+#define NV0000_NOTIFIERS_DISPLAY_CHANGE        (0)
+#define NV0000_NOTIFIERS_VGPU_UNBIND_EVENT     (1)
+#define NV0000_NOTIFIERS_VGPU_BIND_EVENT       (2)
+#define NV0000_NOTIFIERS_GPU_BIND_UNBIND_EVENT (3)
+#define NV0000_NOTIFIERS_MAXCOUNT              (4)
+
 /*
  * NV0000_CTRL_CMD_EVENT_SET_NOTIFICATION
  *
@@ -80,34 +87,59 @@ typedef struct NV0000_CTRL_EVENT_SET_NOTIFICATION_PARAMS {
 #define NV0000_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE  (0x00000001)
 #define NV0000_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT  (0x00000002)
 
+typedef struct NV0000_CTRL_SYSTEM_EVENT_DATA_DISPLAY_CHANGE {
+    NvU32 deviceMask;
+} NV0000_CTRL_SYSTEM_EVENT_DATA_DISPLAY_CHANGE;
+
+typedef struct NV0000_CTRL_SYSTEM_EVENT_DATA_VGPU_UNBIND {
+    NvU32 gpuId;
+} NV0000_CTRL_SYSTEM_EVENT_DATA_VGPU_UNBIND;
+
+typedef struct NV0000_CTRL_SYSTEM_EVENT_DATA_VGPU_BIND {
+    NvU32 gpuId;
+} NV0000_CTRL_SYSTEM_EVENT_DATA_VGPU_BIND;
+
+typedef struct NV0000_CTRL_SYSTEM_EVENT_DATA_GPU_BIND_UNBIND {
+    NvU32  gpuId;
+    NvBool bBind;
+} NV0000_CTRL_SYSTEM_EVENT_DATA_GPU_BIND_UNBIND;
+
 /*
- * NV0000_CTRL_CMD_GET_SYSTEM_EVENT_STATUS
+ * NV0000_CTRL_CMD_GET_SYSTEM_EVENT_DATA
  *
- * This command returns the status of the specified system event type.
+ * This command reads the client's event data queue info FIFO order.
  * See the description of NV01_EVENT for details on registering events.
  *
  *   event
- *     This parameter specifies the event type. Valid event type values
- *     can be found in cl0000.h.
- *   status
- *     This parameter returns the status for a given event type. Valid
- *     status values can be found in cl0000.h.
+ *     Output only as selective event data query is not supported yet.
+ *     Event type.
+ *     Valid event type values can be found in this header file.
+ *
+ *   data
+ *     Data associated with the event.
  *
  * Possible status values returned are:
  *   NV_OK
  *   NV_ERR_INVALID_PARAM_STRUCT
  *   NV_ERR_INVALID_CLIENT
+ *   NV_ERR_OBJECT_NOT_FOUND when system event queue is empty
  *
  */
 
-#define NV0000_CTRL_CMD_GET_SYSTEM_EVENT_STATUS           (0x502) /* finn: Evaluated from "(FINN_NV01_ROOT_EVENT_INTERFACE_ID << 8) | NV0000_CTRL_GET_SYSTEM_EVENT_STATUS_PARAMS_MESSAGE_ID" */
+#define NV0000_CTRL_CMD_GET_SYSTEM_EVENT_DATA (0x502) /* finn: Evaluated from "(FINN_NV01_ROOT_EVENT_INTERFACE_ID << 8) | NV0000_CTRL_GET_SYSTEM_EVENT_DATA_PARAMS_MESSAGE_ID" */
 
-#define NV0000_CTRL_GET_SYSTEM_EVENT_STATUS_PARAMS_MESSAGE_ID (0x2U)
+#define NV0000_CTRL_GET_SYSTEM_EVENT_DATA_PARAMS_MESSAGE_ID (0x2U)
 
-typedef struct NV0000_CTRL_GET_SYSTEM_EVENT_STATUS_PARAMS {
+typedef struct NV0000_CTRL_GET_SYSTEM_EVENT_DATA_PARAMS {
     NvU32 event;
-    NvU32 status;
-} NV0000_CTRL_GET_SYSTEM_EVENT_STATUS_PARAMS;
+
+    union {
+        NV0000_CTRL_SYSTEM_EVENT_DATA_DISPLAY_CHANGE  display;
+        NV0000_CTRL_SYSTEM_EVENT_DATA_VGPU_UNBIND     vgpuUnbind;
+        NV0000_CTRL_SYSTEM_EVENT_DATA_VGPU_BIND       vgpuBind;
+        NV0000_CTRL_SYSTEM_EVENT_DATA_GPU_BIND_UNBIND gpuBindUnbind;
+    } data;
+} NV0000_CTRL_GET_SYSTEM_EVENT_DATA_PARAMS;
 
 /* _ctrl0000event_h_ */
 

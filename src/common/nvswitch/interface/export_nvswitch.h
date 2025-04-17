@@ -666,6 +666,19 @@ nvswitch_os_print
 );
 
 /*
+ * Log the given error code via an OS-specifric programmatic API
+ */
+void
+NVSWITCH_PRINT_ATTRIB(3, 4)
+nvswitch_os_report_error
+(
+    void *os_handle,
+    NvU32 error_code,
+    const char *fmt,
+    ...
+);
+
+/*
  * "Registry" interface for dword
  */
 NvlStatus

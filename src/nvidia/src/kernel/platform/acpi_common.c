@@ -1108,8 +1108,6 @@ _acpiCacheMethodData
     OBJGPU *pGpu
 )
 {
-    OBJSYS   *pSys = SYS_GET_INSTANCE();
-    OBJOS    *pOS  = SYS_GET_OS(pSys);
     NV_STATUS status;
     NvU32 inOut = 0;
     NvU16 rtnSize = sizeof(inOut);
@@ -1133,34 +1131,31 @@ _acpiCacheMethodData
     pGpu->acpiMethodData.jtMethodData.jtRevId = (NvU16)DRF_VAL(_JT_FUNC, _CAPS, _REVISION_ID, inOut);
     gpuSetGC6SBIOSCapabilities(pGpu);
 
-    if (!pOS->bMuxUnsupportedOnOS)
+    // Fill in the MUX Method Data.
+    portMemSet(pGpu->acpiMethodData.muxMethodData.acpiIdMuxModeTable, 0, sizeof(pGpu->acpiMethodData.muxMethodData.acpiIdMuxModeTable));
+    portMemSet(pGpu->acpiMethodData.muxMethodData.acpiIdMuxPartTable, 0, sizeof(pGpu->acpiMethodData.muxMethodData.acpiIdMuxPartTable));
+    portMemSet(pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable, 0, sizeof(pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable));    
+    if (pGpu->acpiMethodData.dodMethodData.status == NV_OK)
     {
-        // Fill in the MUX Method Data.
-        portMemSet(pGpu->acpiMethodData.muxMethodData.acpiIdMuxModeTable, 0, sizeof(pGpu->acpiMethodData.muxMethodData.acpiIdMuxModeTable));
-        portMemSet(pGpu->acpiMethodData.muxMethodData.acpiIdMuxPartTable, 0, sizeof(pGpu->acpiMethodData.muxMethodData.acpiIdMuxPartTable));
-        portMemSet(pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable, 0, sizeof(pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable));    
-        if (pGpu->acpiMethodData.dodMethodData.status == NV_OK)
+        tableLen = pGpu->acpiMethodData.dodMethodData.acpiIdListLen / sizeof(NvU32);
+        pGpu->acpiMethodData.muxMethodData.tableLen = tableLen;
+        for (acpiidIndex = 0; acpiidIndex < tableLen; acpiidIndex++)
         {
-            tableLen = pGpu->acpiMethodData.dodMethodData.acpiIdListLen / sizeof(NvU32);
-            pGpu->acpiMethodData.muxMethodData.tableLen = tableLen;
-            for (acpiidIndex = 0; acpiidIndex < tableLen; acpiidIndex++)
-            {
-                status = osCallACPI_MXDM(pGpu, pGpu->acpiMethodData.dodMethodData.acpiIdList[acpiidIndex], &mode);
-                pGpu->acpiMethodData.muxMethodData.acpiIdMuxModeTable[acpiidIndex].acpiId = pGpu->acpiMethodData.dodMethodData.acpiIdList[acpiidIndex];
-                pGpu->acpiMethodData.muxMethodData.acpiIdMuxModeTable[acpiidIndex].mode = mode;
-                pGpu->acpiMethodData.muxMethodData.acpiIdMuxModeTable[acpiidIndex].status = status;
+            status = osCallACPI_MXDM(pGpu, pGpu->acpiMethodData.dodMethodData.acpiIdList[acpiidIndex], &mode);
+            pGpu->acpiMethodData.muxMethodData.acpiIdMuxModeTable[acpiidIndex].acpiId = pGpu->acpiMethodData.dodMethodData.acpiIdList[acpiidIndex];
+            pGpu->acpiMethodData.muxMethodData.acpiIdMuxModeTable[acpiidIndex].mode = mode;
+            pGpu->acpiMethodData.muxMethodData.acpiIdMuxModeTable[acpiidIndex].status = status;
 
-                status = osCallACPI_MXID(pGpu, pGpu->acpiMethodData.dodMethodData.acpiIdList[acpiidIndex], &muxPartId);
-                pGpu->acpiMethodData.muxMethodData.acpiIdMuxPartTable[acpiidIndex].acpiId = pGpu->acpiMethodData.dodMethodData.acpiIdList[acpiidIndex];
-                pGpu->acpiMethodData.muxMethodData.acpiIdMuxPartTable[acpiidIndex].mode = muxPartId;
-                pGpu->acpiMethodData.muxMethodData.acpiIdMuxPartTable[acpiidIndex].status = status;
+            status = osCallACPI_MXID(pGpu, pGpu->acpiMethodData.dodMethodData.acpiIdList[acpiidIndex], &muxPartId);
+            pGpu->acpiMethodData.muxMethodData.acpiIdMuxPartTable[acpiidIndex].acpiId = pGpu->acpiMethodData.dodMethodData.acpiIdList[acpiidIndex];
+            pGpu->acpiMethodData.muxMethodData.acpiIdMuxPartTable[acpiidIndex].mode = muxPartId;
+            pGpu->acpiMethodData.muxMethodData.acpiIdMuxPartTable[acpiidIndex].status = status;
 
-                status = osCallACPI_MXDS(pGpu, pGpu->acpiMethodData.dodMethodData.acpiIdList[acpiidIndex], &state);
-                pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable[acpiidIndex].acpiId = pGpu->acpiMethodData.dodMethodData.acpiIdList[acpiidIndex];
-                pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable[acpiidIndex].mode = state;
-                pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable[acpiidIndex].status = status;
-                mode = muxPartId = state = 0;
-            }
+            status = osCallACPI_MXDS(pGpu, pGpu->acpiMethodData.dodMethodData.acpiIdList[acpiidIndex], &state);
+            pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable[acpiidIndex].acpiId = pGpu->acpiMethodData.dodMethodData.acpiIdList[acpiidIndex];
+            pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable[acpiidIndex].mode = state;
+            pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable[acpiidIndex].status = status;
+            mode = muxPartId = state = 0;
         }
     }
 

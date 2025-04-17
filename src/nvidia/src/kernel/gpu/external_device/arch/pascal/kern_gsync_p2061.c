@@ -305,3 +305,61 @@ gsyncSetRasterSyncDecodeMode_P2061_V300
 
     return NV_OK;
 }
+
+// Read the VRR setting from the CONTROL5 register
+NV_STATUS
+gsyncGetVRR_P2061_V300
+(
+    OBJGPU            *pGpu,
+    DACEXTERNALDEVICE *pExtDev,
+    NvU32             *pVRR
+)
+{
+    NvU8    data;
+
+    NV_ASSERT_OK_OR_RETURN(readregu008_extdeviceTargeted(pGpu, pExtDev, (NvU8)NV_P2061_CONTROL5, &data));
+
+    *pVRR =
+        (DRF_VAL(_P2061, _CONTROL5, _SYNC_MODE, data) == NV_P2061_CONTROL5_SYNC_MODE_VARIABLE_REFRESH_RATE) ?
+        NV30F1_CTRL_GSYNC_SET_CONTROL_SYNC_MODE_VARIABLE_REFRESH_RATE :
+        NV30F1_CTRL_GSYNC_SET_CONTROL_SYNC_MODE_FIXED_REFRESH_RATE;
+
+    return NV_OK;
+}
+
+// Read the VRR setting from the CONTROL5 register
+NV_STATUS
+gsyncSetVRR_P2061_V300
+(
+    OBJGPU            *pGpu,
+    DACEXTERNALDEVICE *pExtDev,
+    NvU32              refreshRateMode
+)
+{
+    NvU8    data, old_data;
+    NvU32   new_setting;
+
+    NV_ASSERT_OK_OR_RETURN(readregu008_extdeviceTargeted(pGpu, pExtDev, (NvU8)NV_P2061_CONTROL5, &data));
+    old_data = data;
+
+    switch (refreshRateMode)
+    {
+        case NV30F1_CTRL_GSYNC_SET_CONTROL_SYNC_MODE_FIXED_REFRESH_RATE:
+            new_setting = NV_P2061_CONTROL5_SYNC_MODE_FIXED_REFRESH_RATE;
+            break;
+        case NV30F1_CTRL_GSYNC_SET_CONTROL_SYNC_MODE_VARIABLE_REFRESH_RATE:
+            new_setting = NV_P2061_CONTROL5_SYNC_MODE_VARIABLE_REFRESH_RATE;
+            break;
+        default:
+            return NV_ERR_INVALID_PARAMETER;
+    }
+
+    data = FLD_SET_DRF_NUM(_P2061, _CONTROL5, _SYNC_MODE, new_setting, data);
+    if (data != old_data)
+    {
+        NV_ASSERT_OK_OR_RETURN(
+            writeregu008_extdeviceTargeted(pGpu, pExtDev, NV_P2061_CONTROL5, data));
+    }
+
+    return NV_OK;
+}

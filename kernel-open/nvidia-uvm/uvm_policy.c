@@ -364,7 +364,14 @@ NV_STATUS uvm_api_set_preferred_location(const UVM_SET_PREFERRED_LOCATION_PARAMS
         if (status != NV_OK)
             goto done;
 
-        preferred_location_id = gpu->id;
+        // Setting an integrated GPU as the preferred location is equivalant to
+        // the preferred location being the iGPU's nearest NUMA node.
+        if (gpu->parent->is_integrated_gpu) {
+            preferred_location_id = UVM_ID_CPU;
+            preferred_cpu_nid = gpu->parent->closest_cpu_numa_node;
+        } else {
+            preferred_location_id = gpu->id;
+        }
     }
 
     UVM_ASSERT(status == NV_OK);
@@ -857,6 +864,12 @@ static NV_STATUS read_duplication_set(uvm_va_space_t *va_space, NvU64 base, NvU6
         goto done;
     }
     else if (type == UVM_API_RANGE_TYPE_ATS) {
+        status = NV_OK;
+        goto done;
+    }
+
+    // An integrated GPU has no vidmem to make a duplicate
+    if (uvm_va_space_has_integrated_gpu(va_space)) {
         status = NV_OK;
         goto done;
     }

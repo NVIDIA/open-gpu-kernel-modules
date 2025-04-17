@@ -1,13 +1,15 @@
 
 #ifndef _G_VIRT_MEM_MGR_NVOC_H_
 #define _G_VIRT_MEM_MGR_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,10 +74,18 @@ typedef struct OBJVMM OBJVMM;
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJVMM;
+struct NVOC_METADATA__Object;
+
+
 struct OBJVMM {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__OBJVMM *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -83,6 +93,13 @@ struct OBJVMM {
     // Ancestor object pointers for `staticCast` feature
     struct Object *__nvoc_pbase_Object;    // obj super
     struct OBJVMM *__nvoc_pbase_OBJVMM;    // vmm
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJVMM {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
 };
 
 #ifndef __NVOC_CLASS_OBJVMM_TYPEDEF__
@@ -101,10 +118,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJVMM;
     ((pThis)->__nvoc_pbase_OBJVMM)
 
 #ifdef __nvoc_virt_mem_mgr_h_disabled
-#define __dynamicCast_OBJVMM(pThis) ((OBJVMM*)NULL)
+#define __dynamicCast_OBJVMM(pThis) ((OBJVMM*) NULL)
 #else //__nvoc_virt_mem_mgr_h_disabled
 #define __dynamicCast_OBJVMM(pThis) \
-    ((OBJVMM*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJVMM)))
+    ((OBJVMM*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJVMM)))
 #endif //__nvoc_virt_mem_mgr_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_OBJVMM(OBJVMM**, Dynamic*, NvU32, va_list);

@@ -29,24 +29,9 @@
 #include "dp/nvdp-connector-event-sink.h"
 #include "nvkms-hdmi.h"
 #include "nvkms-dpy.h"
-#include "nvkms-sync.h"
 
 #include <ctrl/ctrl0000/ctrl0000unix.h>
-#include <class/cl0040.h> /* NV01_MEMORY_LOCAL_USER */
-#include <class/cl2080.h> /* NV20_SUBDEVICE_0 */
-#include <ctrl/ctrl2080/ctrl2080event.h> /* NV2080_CTRL_CMD_EVENT_SET_NOTIFICATION */
 
-#define MAX_VRR_NOTIFIER_SLOTS_PER_HEAD 4
-#define MAX_NOTIFIER_SIZE 0x10
-#define NOTIFIER_BYTES_PER_HEAD \
-    (MAX_VRR_NOTIFIER_SLOTS_PER_HEAD * MAX_NOTIFIER_SIZE)
-
-#define MAX_VRR_FLIP_DELAY_TIME_RETRY_COUNT 5
-
-typedef struct _vrrSurfaceNotifier
-{
-    NvU8 notifier[NV_MAX_HEADS][NOTIFIER_BYTES_PER_HEAD];
-} vrrSurfaceNotifier, *vrrSurfaceNotifierPtr;
 
 /*!
  * This file contains routines for handling Variable Refresh Rate (VRR) display
@@ -355,7 +340,6 @@ static NvBool GetEdidTimeoutMicroseconds(
 void nvAdjustHwModeTimingsForVrrEvo(const NVDpyEvoRec *pDpyEvo,
                                     const enum NvKmsDpyVRRType vrrType,
                                     const NvU32 vrrOverrideMinRefreshRate,
-                                    const NvBool needsSwFramePacing,
                                     NVHwModeTimingsEvoPtr pTimings)
 {
     NvU32 timeoutMicroseconds;
@@ -396,7 +380,8 @@ void nvAdjustHwModeTimingsForVrrEvo(const NVDpyEvoRec *pDpyEvo,
 
     // Disallow VRR if the refresh rate is less than 110% of the VRR minimum
     // refresh rate.
-    if (nvGetRefreshRate10kHz(pTimings) <
+    if (timeoutMicroseconds > 0 &&
+        nvGetRefreshRate10kHz(pTimings) <
         (((NvU64) 1000000 * 11000) / timeoutMicroseconds)) {
         return;
     }
@@ -413,7 +398,6 @@ void nvAdjustHwModeTimingsForVrrEvo(const NVDpyEvoRec *pDpyEvo,
     }
 
     pTimings->vrr.timeoutMicroseconds = timeoutMicroseconds;
-    pTimings->vrr.needsSwFramePacing = needsSwFramePacing;
     pTimings->vrr.type = vrrType;
 }
 
@@ -456,366 +440,6 @@ static void RmDisableVrr(NVDevEvoPtr pDevEvo)
     nvAssert(pDevEvo->hal->caps.supportsDisplayRate);
 }
 
-NvU16 nvPrepareNextVrrNotifier(NVEvoChannelPtr pChannel, NvU32 sd, NvU32 head)
-{
-    enum NvKmsNIsoFormat nIsoFormat = NVKMS_NISO_FORMAT_FOUR_WORD_NVDISPLAY;
-
-    vrrSurfaceNotifierPtr pNotifiers = pChannel->notifiersDma[sd].subDeviceAddress[sd];
-
-    const NvU32 notifierSize =
-        nvKmsSizeOfNotifier(nIsoFormat, FALSE /* overlay */);
-
-    const NvU8 nextSlot =
-            pChannel->notifiersDma[sd].vrrNotifierHead[head].vrrNotifierNextSlot;
-
-    const NvU8 *headBase = pNotifiers->notifier[head];
-
-    const NvU8 offsetInBytes =
-        (headBase - ((const NvU8 *) pNotifiers)) + (notifierSize * nextSlot);
-
-    nvAssert(notifierSize <= MAX_NOTIFIER_SIZE);
-
-    nvKmsResetNotifier(nIsoFormat, FALSE /* overlay */,
-                       nextSlot, pNotifiers->notifier[head]);
-
-    pChannel->notifiersDma[sd].vrrNotifierHead[head].vrrNotifierNextSlot =
-        (nextSlot + 1) % MAX_VRR_NOTIFIER_SLOTS_PER_HEAD;
-
-    return offsetInBytes / 4;
-}
-
-static void SetTimeoutPerFrame(void *dataPtr, NvU32 dataU32)
-{
-    // Set the timeout after which the current frame will self-refresh.
-    NVDispEvoPtr pDispEvo = dataPtr;
-    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    NVEvoUpdateState updateState = { };
-    NvU32 head;
-    NvU32 inputHead = dataU32;
-    NVDispHeadStateEvoRec *pInputHeadState = &pDispEvo->headState[inputHead];
-    NvU32 displayRate = pInputHeadState->displayRate;
-    struct NvKmsVrrFramePacingInfo *pInputVrrFramePacingInfo =
-                            &(pInputHeadState->vrrFramePacingInfo);
-    const NvU32 headsMask = pInputHeadState->mergeModeVrrSecondaryHeadMask |
-        NVBIT(inputHead);
-    volatile NV0073_CTRL_RM_VRR_SHARED_DATA *pData = pInputVrrFramePacingInfo->pData;
-
-    /*
-     * XXX[2Heads1OR] Implement per api-head frame pacing and remove this
-     * mergeMode check and NVDispEvoRec::mergeModeVrrSecondaryHeadMask.
-     */
-    if ((pInputHeadState->mergeMode == NV_EVO_MERGE_MODE_SECONDARY) ||
-            !pInputVrrFramePacingInfo->framePacingActive ||
-            (displayRate == pData->timeout)) {
-        return;
-    }
-
-    nvPushEvoSubDevMaskDisp(pDispEvo);
-    FOR_EACH_EVO_HW_HEAD_IN_MASK(headsMask, head) {
-        pDispEvo->headState[head].displayRate = pData->timeout;
-
-        pDevEvo->hal->SetDisplayRate(pDispEvo, head,
-                                     TRUE /* enable */,
-                                     &updateState,
-                                     pDispEvo->headState[head].displayRate / 1000);
-    }
-
-    /*
-     * In order to change the one shot self refresh timeout mid-frame without
-     * immediately triggering a new frame, skip setting RELEASE_ELV for this
-     * update.
-     */
-    nvEvoUpdateAndKickOff(pDispEvo, FALSE, &updateState,
-                          FALSE /* releaseElv */);
-    nvPopEvoSubDevMask(pDevEvo);
-}
-
-static void SetTimeoutEvent(void *arg, void *pEventDataVoid, NvU32 hEvent,
-                            NvU32 Data, NV_STATUS Status)
-{
-    Nv2080VrrSetTimeoutNotification  *pParams = pEventDataVoid;
-
-    (void) nvkms_alloc_timer_with_ref_ptr(
-        SetTimeoutPerFrame, /* callback */
-        arg, /* argument (this is a ref_ptr to a pDispEvo) */
-        pParams->head,   /* dataU32 */
-        0);
-}
-
-static void DisableVrrSetTimeoutEvent(NVDispEvoRec *pDispEvo)
-{
-    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    NvU32 sd = pDispEvo->displayOwner;
-    NvU32 subdeviceHandle = pDevEvo->pSubDevices[sd]->handle;
-    NV2080_CTRL_EVENT_SET_NOTIFICATION_PARAMS setEventParams = {0};
-    NvU32 ret;
-
-    nvAssert(pDispEvo->vrrSetTimeoutEventUsageCount != 0);
-
-    pDispEvo->vrrSetTimeoutEventUsageCount--;
-    if (pDispEvo->vrrSetTimeoutEventUsageCount != 0) {
-        return;
-    }
-
-    nvAssert(pDispEvo->vrrSetTimeoutEventHandle != 0);
-
-    setEventParams.event = NV2080_NOTIFIERS_VRR_SET_TIMEOUT;
-    setEventParams.action = NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE;
-    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
-                         subdeviceHandle,
-                         NV2080_CTRL_CMD_EVENT_SET_NOTIFICATION,
-                         &setEventParams,
-                         sizeof(setEventParams));
-    if (ret != NVOS_STATUS_SUCCESS) {
-        nvEvoLogDev(pDevEvo, EVO_LOG_WARN,
-                "NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE failed for vrr %d", ret);
-    }
-
-    ret = nvRmApiFree(nvEvoGlobal.clientHandle,
-                      subdeviceHandle,
-                      pDispEvo->vrrSetTimeoutEventHandle);
-    if (ret != NVOS_STATUS_SUCCESS) {
-        nvEvoLogDev(pDevEvo, EVO_LOG_WARN,
-                    "nvRmApiFree(notify) failed for vrr %d", ret);
-    }
-
-    nvFreeUnixRmHandle(&pDevEvo->handleAllocator,
-                       pDispEvo->vrrSetTimeoutEventHandle);
-    pDispEvo->vrrSetTimeoutEventHandle = 0;
-}
-
-static NvBool EnableVrrSetTimeoutEvent(NVDispEvoRec *pDispEvo)
-{
-    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    NvU32 sd = pDispEvo->displayOwner;
-    NvU32 subdeviceHandle = pDevEvo->pSubDevices[sd]->handle;
-    NV2080_CTRL_EVENT_SET_NOTIFICATION_PARAMS setEventParams = { };
-    NvU32 ret;
-
-    if (pDispEvo->vrrSetTimeoutEventUsageCount != 0) {
-        nvAssert(pDispEvo->vrrSetTimeoutEventHandle != 0);
-        goto done;
-    }
-
-    nvAssert(pDispEvo->vrrSetTimeoutEventHandle == 0);
-
-    pDispEvo->vrrSetTimeoutEventHandle =
-        nvGenerateUnixRmHandle(&pDevEvo->handleAllocator);
-
-    if (!nvRmRegisterCallback(pDevEvo,
-                              &pDispEvo->vrrSetTimeoutCallback,
-                              pDispEvo->ref_ptr,
-                              subdeviceHandle,
-                              pDispEvo->vrrSetTimeoutEventHandle,
-                              SetTimeoutEvent,
-                              NV2080_NOTIFIERS_VRR_SET_TIMEOUT)) {
-        nvFreeUnixRmHandle(&pDevEvo->handleAllocator,
-                           pDispEvo->vrrSetTimeoutEventHandle);
-        nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
-                    "nvRmRegisterCallback failed for vrr");
-        return FALSE;
-    }
-
-    // Enable VRR notifications from this subdevice.
-    setEventParams.event = NV2080_NOTIFIERS_VRR_SET_TIMEOUT;
-    setEventParams.action = NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT;
-    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
-                              subdeviceHandle,
-                              NV2080_CTRL_CMD_EVENT_SET_NOTIFICATION,
-                              &setEventParams,
-                              sizeof(setEventParams));
-    if (ret != NVOS_STATUS_SUCCESS) {
-        nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
-                    "NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT failed for vrr 0x%x", ret);
-        nvRmApiFree(nvEvoGlobal.clientHandle,
-                    subdeviceHandle, pDispEvo->vrrSetTimeoutEventHandle);
-        nvFreeUnixRmHandle(&pDevEvo->handleAllocator,
-                           pDispEvo->vrrSetTimeoutEventHandle);
-        pDispEvo->vrrSetTimeoutEventHandle = 0;
-        return FALSE;
-    }
-
-done:
-    pDispEvo->vrrSetTimeoutEventUsageCount++;
-    return TRUE;
-}
-
-static NvBool VrrRgLineActiveSessionOpen(NVDispEvoPtr pDispEvo,
-                                        struct NvKmsVrrFramePacingInfo *pVrrFramePacingInfo)
-{
-    NvU32 ret = 0;
-    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    NvU32 sd = pDispEvo->displayOwner;
-    NvU32 subdeviceHandle = pDevEvo->pSubDevices[sd]->handle;
-    NV_MEMORY_ALLOCATION_PARAMS memAllocParams = { };
-    NvHandle memoryHandle;
-    void *address = NULL;
-
-    if (!EnableVrrSetTimeoutEvent(pDispEvo)) {
-        return FALSE;
-    }
-
-    /* allocate memory from vidmem */
-    memoryHandle = nvGenerateUnixRmHandle(&pDevEvo->handleAllocator);
-    memAllocParams.owner = NVKMS_RM_HEAP_ID;
-    memAllocParams.type = NVOS32_TYPE_DMA;
-    memAllocParams.size = sizeof(NV0073_CTRL_RM_VRR_SHARED_DATA);
-    memAllocParams.attr = DRF_DEF(OS32, _ATTR, _PAGE_SIZE, _4KB) |
-                          DRF_DEF(OS32, _ATTR, _PHYSICALITY, _CONTIGUOUS) |
-                          DRF_DEF(OS32, _ATTR, _COHERENCY, _UNCACHED) |
-                          DRF_DEF(OS32, _ATTR, _LOCATION, _VIDMEM);
-
-    memAllocParams.flags |= (NVOS32_ALLOC_FLAGS_ALLOCATE_KERNEL_PRIVILEGED |
-                            NVOS32_ALLOC_FLAGS_PERSISTENT_VIDMEM);
-
-    ret = nvRmApiAlloc(nvEvoGlobal.clientHandle,
-                       pDevEvo->deviceHandle,
-                       memoryHandle,
-                       NV01_MEMORY_LOCAL_USER,
-                       &memAllocParams);
-
-    if (ret != NVOS_STATUS_SUCCESS) {
-        nvEvoLogDev(pDevEvo, EVO_LOG_ERROR, "nvRmApiAlloc(memory) failed for vrr 0x%x", ret);
-        goto free_memory_handle;
-    }
-
-    ret = nvRmApiMapMemory(nvEvoGlobal.clientHandle,
-                           subdeviceHandle,
-                           memoryHandle,
-                           0,
-                           sizeof(NV0073_CTRL_RM_VRR_SHARED_DATA),
-                           &address,
-                           0);
-    if ((ret != NVOS_STATUS_SUCCESS) || (address == NULL)) {
-        nvEvoLogDev(pDevEvo, EVO_LOG_ERROR, " nvRmApiMapMemory failed for vrr 0x%x addr: %p",
-                ret, address);
-        nvRmApiFree(nvEvoGlobal.clientHandle,
-              subdeviceHandle, memoryHandle);
-        goto free_memory_handle;
-    }
-
-    pVrrFramePacingInfo->pData = (NV0073_CTRL_RM_VRR_SHARED_DATA *)address;
-    pVrrFramePacingInfo->memoryHandle = memoryHandle;
-
-    return TRUE;
-
-free_memory_handle:
-    nvFreeUnixRmHandle(&pDevEvo->handleAllocator, memoryHandle);
-    DisableVrrSetTimeoutEvent(pDispEvo);
-    return FALSE;
-}
-
-static void VrrRgLineActiveSessionClose(NVDispEvoPtr pDispEvo,
-                                        struct NvKmsVrrFramePacingInfo *pVrrFramePacingInfo)
-{
-    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    NvU32 sd = pDispEvo->displayOwner;
-    NvU32 subdeviceHandle = pDevEvo->pSubDevices[sd]->handle;
-    NvU32 ret = 0;
-
-    // clean up allocated memory
-    ret = nvRmApiUnmapMemory(nvEvoGlobal.clientHandle,
-                            subdeviceHandle,
-                            pVrrFramePacingInfo->memoryHandle,
-                            (void *)pVrrFramePacingInfo->pData,
-                            0);
-    if (ret != NVOS_STATUS_SUCCESS) {
-        nvEvoLogDev(pDevEvo, EVO_LOG_WARN, "nvRmApiUnmapMemory failed for vrr %d", ret);
-    }
-
-    ret = nvRmApiFree(nvEvoGlobal.clientHandle,
-                        subdeviceHandle,
-                        pVrrFramePacingInfo->memoryHandle);
-    if (ret != NVOS_STATUS_SUCCESS) {
-        nvEvoLogDev(pDevEvo, EVO_LOG_WARN, "nvRmApiFree(memory) failed for vrr %d", ret);
-    }
-
-    nvFreeUnixRmHandle(&pDevEvo->handleAllocator, pVrrFramePacingInfo->memoryHandle);
-
-    DisableVrrSetTimeoutEvent(pDispEvo);
-}
-
-/*!
- * Enable or disable SW Frame Pacing for one head.
- *
- * This will reset the NVDispHeadStateEvoRec::NvKmsVrrFramePacingInfo state used
- * to track Frame pacing per head and call RM to set an interrupt to be called
- * at every first RG scanline of every frame (whether initiated by a flip or
- * a self-refresh).
- */
-static NvBool SetSwFramePacing(NVDispEvoPtr pDispEvo, NvU32 head, NvBool enable)
-{
-    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
-    struct NvKmsVrrFramePacingInfo *pVrrFramePacingInfo =
-        &pHeadState->vrrFramePacingInfo;
-    const NVHwModeTimingsEvo *pTimings = &pHeadState->timings;
-    const NvU32 timeout = pTimings->vrr.timeoutMicroseconds;
-    struct NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS params = { };
-    NvU32 maxFrameTime = 0;
-    NvU32 minFrameTime = 0;
-
-    if (pVrrFramePacingInfo->framePacingActive == enable) {
-        return TRUE;
-    }
-
-    if (enable) {
-        maxFrameTime = timeout * 1000;
-        minFrameTime = 1000 *
-            axb_div_c(pTimings->rasterSize.y * 1000,
-                      pTimings->rasterSize.x,
-                      pTimings->pixelClock);
-
-        /*
-         * SW Frame pacing won't work with infinite self-refresh adaptive sync
-         * or direct drive panels (none of which currently exist) or when
-         * driving a mode below the panel's minimum refresh rate.
-         */
-        if ((maxFrameTime == 0) ||
-            (minFrameTime == 0) ||
-            (minFrameTime >= maxFrameTime)) {
-            nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
-                        "Failed to set variable refresh rate with invalid "
-                        "minimum frame time (%u ns) or maximum frame time "
-                        "(%u ns)", minFrameTime, maxFrameTime);
-            return FALSE;
-        }
-
-        if (!VrrRgLineActiveSessionOpen(pDispEvo, pVrrFramePacingInfo)) {
-            nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
-                        "Failed to setup Rgline active session for vrr");
-            return FALSE;
-        }
-    }
-
-    params.head = head;
-    params.height = 1;
-    params.bEnable = enable;
-    params.subDeviceInstance = pDispEvo->displayOwner;
-    params.maxFrameTime = maxFrameTime;
-    params.minFrameTime = minFrameTime;
-    params.hMemory = pVrrFramePacingInfo->memoryHandle;
-    if (nvRmApiControl(nvEvoGlobal.clientHandle,
-                   pDispEvo->pDevEvo->displayCommonHandle,
-                   NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE,
-                   &params, sizeof(params))
-        != NVOS_STATUS_SUCCESS) {
-        nvAssert(!"NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE failed");
-        VrrRgLineActiveSessionClose(pDispEvo, pVrrFramePacingInfo);
-        return FALSE;
-    }
-
-    if (!enable) {
-        VrrRgLineActiveSessionClose(pDispEvo, pVrrFramePacingInfo);
-
-        // Reset the state used to track SW Frame pacing.
-        nvkms_memset(pVrrFramePacingInfo, 0, sizeof(*pVrrFramePacingInfo));
-    }
-
-    pVrrFramePacingInfo->framePacingActive = enable;
-    return TRUE;
-}
-
 void nvDisableVrr(NVDevEvoPtr pDevEvo)
 {
     NVDispEvoPtr pDispEvo;
@@ -826,8 +450,6 @@ void nvDisableVrr(NVDevEvoPtr pDevEvo)
             NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
 
             TellRMAboutVrrHead(pDispEvo, pHeadState, FALSE);
-
-            SetSwFramePacing(pDispEvo, head, FALSE);
         }
     }
 
@@ -1131,13 +753,6 @@ static void SetStallLockOneDisp(NVDispEvoPtr pDispEvo, NvU32 applyAllowVrrApiHea
                                             enableVrrOnHead[head],
                                             &updateState,
                                             timeout);
-
-                if ((pHeadState->timings.vrr.type !=
-                            NVKMS_DPY_VRR_TYPE_NONE) &&
-                        pHeadState->timings.vrr.needsSwFramePacing) {
-                    SetSwFramePacing(pDispEvo, head,
-                                    enableVrrOnHead[head]);
-                }
             }
         }
     }
@@ -1258,57 +873,6 @@ void nvSetVrrActive(NVDevEvoPtr pDevEvo,
     if (!SetVrrActivePriv(pDevEvo, applyAllowVrrApiHeadMasks, 
                           vrrActiveApiHeadMasks)) {
         nvDisableVrr(pDevEvo);
-    }
-}
-
-/*!
- * Track the minimum and average time between flips over the last 16 flips, and
- * add a timestamp to delay the next flip to adjust Frame pacing if necessary.
- */
-void nvTrackAndDelayFlipForVrrSwFramePacing(NVDispEvoPtr pDispEvo,
-    const struct NvKmsVrrFramePacingInfo *pVrrFramePacingInfo,
-    NVFlipChannelEvoHwState *pFlip)
-{
-    volatile NV0073_CTRL_RM_VRR_SHARED_DATA *pData = pVrrFramePacingInfo->pData;
-    NvU32 retryCount = MAX_VRR_FLIP_DELAY_TIME_RETRY_COUNT;
-    NvU64 flipTimeStamp = 0;
-    NvU64 dataTimeStamp1 = 0, dataTimeStamp2 = 0;
-    NvU32 expectedFrameNum = 0;
-    NvBool bFlipTimeAdjustment = NV_FALSE;
-    NvBool bCheckFlipTime = NV_FALSE;
-
-    // If the RG interrupt isn't active, then SW Frame pacing isn't in use.
-    if (!pVrrFramePacingInfo->framePacingActive) {
-        return;
-    }
-
-    do {
-        // read the data timestamp first
-        dataTimeStamp1 = pData->dataTimeStamp;
-
-        // now read the actual data required
-        expectedFrameNum = pData->expectedFrameNum;
-        bFlipTimeAdjustment = pData->bFlipTimeAdjustment;
-        bCheckFlipTime = pData->bCheckFlipTime;
-        flipTimeStamp = pData->flipTimeStamp;
-
-        // read the data timestamp again to check if values were updated
-        // by RM in between while nvkms was reading them.
-        dataTimeStamp2 = pData->dataTimeStamp;
-    } while ((dataTimeStamp1 != dataTimeStamp2) && --retryCount);
-
-    if (retryCount == 0) {
-        nvEvoLogDisp(pDispEvo, EVO_LOG_ERROR,
-                    "Failed to sync with RM to get flipTimeStamp related data");
-        return;
-    }
-
-    if (expectedFrameNum > 1) {
-        pFlip->tearing = FALSE;
-    }
-
-    if (bFlipTimeAdjustment && !(pFlip->tearing && bCheckFlipTime)) {
-        pFlip->timeStamp = flipTimeStamp;
     }
 }
 

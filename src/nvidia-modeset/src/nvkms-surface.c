@@ -559,10 +559,16 @@ void nvEvoRegisterSurface(NVDevEvoPtr pDevEvo,
                         goto fail;
                 }
 
-                if (nisoMemory) {
-                    allocParams.attr2 =
-                        FLD_SET_DRF(OS32, _ATTR2, _NISO_DISPLAY, _YES,
-                                    allocParams.attr2);
+                if (!pRequest->noDisplayHardwareAccess) {
+                    if (nisoMemory) {
+                        allocParams.attr2 =
+                            FLD_SET_DRF(OS32, _ATTR2, _NISO_DISPLAY, _YES,
+                                        allocParams.attr2);
+                    } else {
+                        allocParams.attr2 =
+                            FLD_SET_DRF(OS32, _ATTR2, _ISO, _YES,
+                                        allocParams.attr2);
+                    }
                 }
 
                 result = nvRmApiAlloc(nvEvoGlobal.clientHandle,

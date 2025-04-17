@@ -31,7 +31,6 @@
 #include "uvm_processors.h"
 #include "uvm_gpu.h"
 #include "uvm_lock.h"
-#include "uvm_ats_ibm.h"
 
 // Global state of the uvm driver
 struct uvm_global_struct
@@ -123,12 +122,6 @@ struct uvm_global_struct
         // without acquiring any locks.
         bool enabled;
     } ats;
-
-#if UVM_IBM_NPU_SUPPORTED()
-    // On IBM systems this array tracks the active NPUs (the NPUs which are
-    // attached to retained GPUs).
-    uvm_ibm_npu_t npus[NV_MAX_NPUS];
-#endif
 
     // List of all active VA spaces
     struct

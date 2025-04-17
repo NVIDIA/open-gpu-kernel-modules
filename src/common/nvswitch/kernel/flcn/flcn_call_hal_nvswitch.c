@@ -110,7 +110,7 @@ flcnQueueCmdPostBlocking
     if (status != NV_OK)
     {
         NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_SOE_COMMAND_QUEUE,
-            "Fatal, Failed to post command to SOE. Data {0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x}\n",
+            "Failed to post command to SOE. Data {0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x}\n",
             pCmd->cmdGen.hdr.unitId, pCmd->cmdGen.hdr.size, pCmd->cmdGen.hdr.ctrlFlags,
             pCmd->cmdGen.hdr.seqNumId, pCmd->cmdGen.cmd, (NvU8)pCmd->cmdGen.cmd);
 
@@ -121,7 +121,7 @@ flcnQueueCmdPostBlocking
     if (status == NV_ERR_TIMEOUT)
     {
         NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_SOE_TIMEOUT,
-            "Fatal, Timed out while waiting for SOE command completion. Data {0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x}\n",
+            "Timed out while waiting for SOE command completion. Data {0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x}\n",
             pCmd->cmdGen.hdr.unitId, pCmd->cmdGen.hdr.size, pCmd->cmdGen.hdr.ctrlFlags,
             pCmd->cmdGen.hdr.seqNumId, pCmd->cmdGen.cmd, (NvU8)pCmd->cmdGen.cmd);
         flcnQueueCmdCancel(device, pFlcn, *pSeqDesc);

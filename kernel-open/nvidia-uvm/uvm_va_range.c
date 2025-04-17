@@ -1286,6 +1286,16 @@ uvm_va_range_t *uvm_va_space_iter_first(uvm_va_space_t *va_space, NvU64 start, N
     return uvm_va_range_container(uvm_range_tree_iter_first(&va_space->va_range_tree, start, end));
 }
 
+uvm_va_range_t *uvm_va_space_iter_gmmu_mappable_first(uvm_va_space_t *va_space, NvU64 start)
+{
+    uvm_va_range_t *va_range = uvm_va_range_container(uvm_range_tree_iter_first(&va_space->va_range_tree, start, ~0ULL));
+
+    if (va_range && !uvm_va_range_is_gmmu_mappable(va_range))
+        va_range = uvm_va_range_gmmu_mappable_next(va_range);
+
+    return va_range;
+}
+
 uvm_va_range_t *uvm_va_space_iter_next(uvm_va_range_t *va_range, NvU64 end)
 {
     uvm_va_space_t *va_space;
@@ -1298,6 +1308,17 @@ uvm_va_range_t *uvm_va_space_iter_next(uvm_va_range_t *va_range, NvU64 end)
     va_space = va_range->va_space;
     uvm_assert_rwsem_locked(&va_space->lock);
     return uvm_va_range_container(uvm_range_tree_iter_next(&va_space->va_range_tree, &va_range->node, end));
+}
+
+uvm_va_range_t *uvm_va_space_iter_prev(uvm_va_range_t *va_range, NvU64 start)
+{
+    uvm_va_space_t *va_space;
+
+    UVM_ASSERT(va_range);
+
+    va_space = va_range->va_space;
+    uvm_assert_rwsem_locked(&va_space->lock);
+    return uvm_va_range_container(uvm_range_tree_iter_prev(&va_space->va_range_tree, &va_range->node, start));
 }
 
 size_t uvm_va_range_num_blocks(uvm_va_range_managed_t *managed_range)

@@ -68,9 +68,7 @@ subdeviceCtrlCmdOsUnixVidmemPersistenceStatus_IMPL
     nv_state_t *nv   = NV_GET_NV_STATE(pGpu);
     nv_priv_t  *nvp  = NV_GET_NV_PRIV(nv);
 
-    pParams->bVidmemPersistent = !gpuIsVidmemPreservationBrokenBug3172217(pGpu) &&
-                                 (nv->preserve_vidmem_allocations ||
-                                  nvp->s0ix_pm_enabled);
+    pParams->bVidmemPersistent = (nv->preserve_vidmem_allocations || nvp->s0ix_pm_enabled);
 
     return NV_OK;
 }

@@ -1,5 +1,5 @@
 /*
-* SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+* SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 * SPDX-License-Identifier: MIT
 *
 * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,7 +38,7 @@ struct lkca_aead_ctx
 };
 #endif
 
-int libspdm_aead_prealloc(void **context, char const *alg)
+static int libspdm_aead_prealloc(void **context, char const *alg)
 {
 #ifndef USE_LKCA
     return -ENODEV;
@@ -175,14 +175,14 @@ static int lkca_aead_internal(struct crypto_aead *aead,
 }
 #endif
 
-int libspdm_aead_prealloced(void *context,
-                            const uint8_t *key, size_t key_size,
-                            const uint8_t *iv, size_t iv_size,
-                            const uint8_t *a_data, size_t a_data_size,
-                            const uint8_t *data_in, size_t data_in_size,
-                            uint8_t *tag, size_t tag_size,
-                            uint8_t *data_out, size_t *data_out_size,
-                            bool enc)
+static int libspdm_aead_prealloced(void *context,
+                                   const uint8_t *key, size_t key_size,
+                                   const uint8_t *iv, size_t iv_size,
+                                   const uint8_t *a_data, size_t a_data_size,
+                                   const uint8_t *data_in, size_t data_in_size,
+                                   uint8_t *tag, size_t tag_size,
+                                   uint8_t *data_out, size_t *data_out_size,
+                                   bool enc)
 {
 #ifndef USE_LKCA
     return -ENODEV;

@@ -249,7 +249,8 @@ NvBool nvIsLayerDirty(const struct NvKmsFlipCommonParams *pParams,
            pParams->layer[layer].tmo.specified ||
            pParams->layer[layer].csc.specified ||
            pParams->layer[layer].hdr.specified ||
-           pParams->layer[layer].colorSpace.specified;
+           pParams->layer[layer].colorSpace.specified ||
+           pParams->layer[layer].tf.specified;
 }
 
 /*!
@@ -847,6 +848,11 @@ static NvBool UpdateLayerFlipEvoHwStateCommon(
     if (pParams->layer[layer].colorSpace.specified) {
         pHwState->colorSpace =
             pParams->layer[layer].colorSpace.val;
+    }
+
+    if (pParams->layer[layer].tf.specified) {
+        pHwState->tf =
+            pParams->layer[layer].tf.val;
     }
 
     if (pParams->layer[layer].csc00Override.specified) {
@@ -1500,7 +1506,8 @@ ValidateLayerLutHwState(const NVDevEvoRec *pDevEvo,
              * If the layer's surface format is FP16, the ILUT must not be
              * enabled.
              */
-            if (pHwState->inputLut.pLutSurfaceEvo) {
+            if ((pHwState->inputLut.pLutSurfaceEvo != NULL) ||
+                (pHwState->tf != NVKMS_INPUT_TF_LINEAR)) {
                 return FALSE;
             }
         }
@@ -1707,45 +1714,40 @@ ValidateHDR(const NVDevEvoRec *pDevEvo,
 
 static NvBool
 ValidateColorspace(const NVDevEvoRec *pDevEvo,
-                   const NvU32 head,
-                   const NVFlipEvoHwState *pFlipState)
+                   const NVFlipEvoHwState *pFlipState,
+                   NvU32 layer)
 {
-    NvU32 layer;
+    if ((pFlipState->layer[layer].colorSpace !=
+         NVKMS_INPUT_COLOR_SPACE_NONE)) {
 
-    for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
+        NVSurfaceEvoPtr pSurfaceEvo =
+            pFlipState->layer[layer].pSurfaceEvo[NVKMS_LEFT];
+        const NvKmsSurfaceMemoryFormatInfo *pFormatInfo =
+            (pSurfaceEvo != NULL) ?
+                nvKmsGetSurfaceMemoryFormatInfo(pSurfaceEvo->format) : NULL;
+
+        if (pFormatInfo == NULL) {
+            return FALSE;
+        }
+
+        // FP16 is only for use with scRGB.
         if ((pFlipState->layer[layer].colorSpace !=
-             NVKMS_INPUT_COLORSPACE_NONE)) {
+             NVKMS_INPUT_COLOR_SPACE_SCRGB) &&
+            ((pSurfaceEvo->format ==
+              NvKmsSurfaceMemoryFormatRF16GF16BF16AF16) ||
+             (pSurfaceEvo->format ==
+              NvKmsSurfaceMemoryFormatRF16GF16BF16XF16))) {
+            return FALSE;
+        }
 
-            NVSurfaceEvoPtr pSurfaceEvo =
-                pFlipState->layer[layer].pSurfaceEvo[NVKMS_LEFT];
-            const NvKmsSurfaceMemoryFormatInfo *pFormatInfo =
-                (pSurfaceEvo != NULL) ?
-                    nvKmsGetSurfaceMemoryFormatInfo(pSurfaceEvo->format) : NULL;
-
-            // XXX HDR TODO: Support YUV.
-            if ((pFormatInfo == NULL) || pFormatInfo->isYUV) {
-                return FALSE;
-            }
-
-            // FP16 is only for use with scRGB.
-            if ((pFlipState->layer[layer].colorSpace !=
-                 NVKMS_INPUT_COLORSPACE_SCRGB_LINEAR) &&
-                ((pSurfaceEvo->format ==
-                  NvKmsSurfaceMemoryFormatRF16GF16BF16AF16) ||
-                 (pSurfaceEvo->format ==
-                  NvKmsSurfaceMemoryFormatRF16GF16BF16XF16))) {
-                return FALSE;
-            }
-
-            // scRGB is only compatible with FP16.
-            if ((pFlipState->layer[layer].colorSpace ==
-                 NVKMS_INPUT_COLORSPACE_SCRGB_LINEAR) &&
-                !((pSurfaceEvo->format ==
-                   NvKmsSurfaceMemoryFormatRF16GF16BF16AF16) ||
-                  (pSurfaceEvo->format ==
-                   NvKmsSurfaceMemoryFormatRF16GF16BF16XF16))) {
-                return FALSE;
-            }
+        // scRGB is only compatible with FP16.
+        if ((pFlipState->layer[layer].colorSpace ==
+             NVKMS_INPUT_COLOR_SPACE_SCRGB) &&
+            !((pSurfaceEvo->format ==
+               NvKmsSurfaceMemoryFormatRF16GF16BF16AF16) ||
+              (pSurfaceEvo->format ==
+               NvKmsSurfaceMemoryFormatRF16GF16BF16XF16))) {
+            return FALSE;
         }
     }
 
@@ -1834,13 +1836,13 @@ NvBool nvValidateFlipEvoHwState(
         if (!ValidateLayerLutHwState(pDevEvo, pFlipState, layer)) {
             return FALSE;
         }
+
+        if (!ValidateColorspace(pDevEvo,pFlipState, layer)) {
+            return FALSE;
+        }
     }
 
     if (!ValidateHDR(pDevEvo, head, pFlipState)) {
-        return FALSE;
-    }
-
-    if (!ValidateColorspace(pDevEvo, head, pFlipState)) {
         return FALSE;
     }
 
@@ -2979,7 +2981,6 @@ void nvPreFlip(NVDevEvoRec *pDevEvo,
                const NvBool skipUpdate)
 {
     NvU32 sd, head;
-    NVDispEvoRec *pDispEvo;
 
     for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
 
@@ -3011,52 +3012,6 @@ void nvPreFlip(NVDevEvoRec *pDevEvo,
             // Applying allowVrrApiHeadMask to at least one apiHead
             nvSetVrrActive(pDevEvo, applyAllowVrrApiHeadMasks, allowVrrApiHeadMasks);
             break;
-        }
-    }
-
-    /*
-     * Update flip metering for Frame pacing smoothing/frame splitting for direct
-     * drive and adaptive sync VRR, and override the flip timestamp if
-     * necessary.
-     */
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
-        for (NvU32 inputHead = 0; inputHead < pDevEvo->numHeads; inputHead++) {
-            const NVDispHeadStateEvoRec *pInputHeadState =
-                &pDispEvo->headState[inputHead];
-            const struct NvKmsVrrFramePacingInfo *pInputVrrFramePacingInfo =
-                &pInputHeadState->vrrFramePacingInfo;
-            const NvU32 headsMask = pInputHeadState->mergeModeVrrSecondaryHeadMask |
-                NVBIT(inputHead);
-
-            /*
-             * XXX[2Heads1OR] Implement per api-head frame pacing and remove this
-             * mergeMode check and NVDispEvoRec::mergeModeVrrSecondaryHeadMask.
-             */
-            if (pInputHeadState->mergeMode == NV_EVO_MERGE_MODE_SECONDARY) {
-                continue;
-            }
-
-#if defined(DEBUG)
-            FOR_EACH_EVO_HW_HEAD_IN_MASK(headsMask, head) {
-                const NVFlipEvoHwState *pInputHeadNewState =
-                    &pWorkArea->sd[sd].head[inputHead].newState;
-                const NVFlipEvoHwState *pNewState =
-                    &pWorkArea->sd[sd].head[head].newState;
-
-                nvAssert(pNewState->dirty.layer[NVKMS_MAIN_LAYER] ==
-                            pInputHeadNewState->dirty.layer[NVKMS_MAIN_LAYER]);
-            }
-#endif
-
-            FOR_EACH_EVO_HW_HEAD_IN_MASK(headsMask, head) {
-                NVFlipEvoHwState *pNewState =
-                    &pWorkArea->sd[sd].head[head].newState;
-                if (pNewState->dirty.layer[NVKMS_MAIN_LAYER]) {
-                    nvTrackAndDelayFlipForVrrSwFramePacing(pDispEvo,
-                        pInputVrrFramePacingInfo,
-                        &pNewState->layer[NVKMS_MAIN_LAYER]);
-                }
-            }
         }
     }
 }

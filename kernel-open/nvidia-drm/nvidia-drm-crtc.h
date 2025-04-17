@@ -191,6 +191,13 @@ struct nv_drm_plane {
      */
     uint32_t layer_idx;
 
+    /**
+     * @supportsColorProperties
+     *
+     * If true, supports the COLOR_ENCODING and COLOR_RANGE properties.
+     */
+    bool supportsColorProperties;
+
     struct NvKmsLUTCaps ilut_caps;
     struct NvKmsLUTCaps tmo_caps;
 };
@@ -203,10 +210,23 @@ static inline struct nv_drm_plane *to_nv_plane(struct drm_plane *plane)
     return container_of(plane, struct nv_drm_plane, base);
 }
 
-struct nv_drm_lut_surface {
+struct nv_drm_nvkms_surface {
     struct NvKmsKapiDevice *pDevice;
     struct NvKmsKapiMemory *nvkms_memory;
     struct NvKmsKapiSurface *nvkms_surface;
+    void *buffer;
+    struct kref refcount;
+};
+
+struct nv_drm_nvkms_surface_params {
+    NvU32 width;
+    NvU32 height;
+    size_t surface_size;
+    enum NvKmsSurfaceMemoryFormat format;
+};
+
+struct nv_drm_lut_surface {
+    struct nv_drm_nvkms_surface base;
     struct {
         NvU32 vssSegments;
         enum NvKmsLUTVssType vssType;
@@ -215,14 +235,12 @@ struct nv_drm_lut_surface {
         enum NvKmsLUTFormat entryFormat;
 
     } properties;
-    void *buffer;
-    struct kref refcount;
 };
 
 struct nv_drm_plane_state {
     struct drm_plane_state base;
     s32 __user *fd_user_ptr;
-    enum NvKmsInputColorSpace input_colorspace;
+    enum nv_drm_input_color_space input_colorspace;
 #if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
     struct drm_property_blob *hdr_output_metadata;
 #endif

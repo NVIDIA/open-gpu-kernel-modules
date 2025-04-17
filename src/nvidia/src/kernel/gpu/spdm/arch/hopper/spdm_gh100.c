@@ -32,6 +32,9 @@
 #include "spdm/rmspdmtransport.h"
 #include "spdm/rmspdmvendordef.h"
 #include "gpu/timer/objtmr.h"
+#include "gpu/gpu.h"
+#include "core/locks.h"
+#include "rmapi/client_resource.h"
 #include "gpu/gsp/kernel_gsp.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/mem_mgr.h"
@@ -880,8 +883,8 @@ spdmMessageProcess_GH100
         // Prepare GSP-CMD and send to GSP-SPDM partition
         portMemSet(&params, 0, sizeof(params));
         params.cmd.cmdType = RM_GSP_SPDM_CMD_ID_CC_CTRL;
+        status = spdmSendCtrlCall(pGpu, pSpdm, &params);
 
-        status = spdmCtrlSpdmPartition(pGpu, &params);
         if (params.msg.status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "SPDM: RPC failed! RPC status = 0x%x\n",
@@ -1184,7 +1187,8 @@ spdmSendInitRmDataCommand_GH100
 
     gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
 
-    status = spdmCtrlSpdmPartition(pGpu, &params);
+    status = spdmSendCtrlCall(pGpu, pSpdm, &params);
+
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "SPDM: Send/receive error in INIT_RM_DATA command\n");
@@ -1316,7 +1320,7 @@ spdmRegisterForHeartbeats_GH100
     params.cmd.ccHeartbeatCtrl.bEnable = NV_TRUE;
 
     gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
-    status = spdmCtrlSpdmPartition(pGpu, &params);
+    status = spdmSendCtrlCall(pGpu, pSpdm, &params);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "SPDM: Send/receive error in CC_HEARTBEAT_CTRL command! Status = 0x%0x\n", status);
@@ -1361,7 +1365,7 @@ spdmUnregisterFromHeartbeats_GH100
     params.cmd.ccHeartbeatCtrl.bEnable = NV_FALSE;
 
     gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
-    status = spdmCtrlSpdmPartition(pGpu, &params);
+    status = spdmSendCtrlCall(pGpu, pSpdm, &params);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "SPDM: Send/receive error in CC_HEARTBEAT_CTRL command! Status = 0x%0x\n", status);
@@ -1386,3 +1390,46 @@ ErrorExit:
 
     return status;
 }
+
+/*!
+ * @brief     Control call function that send request GSP-SPDM partition
+ *
+ * @param[in]      pGpu        : OBJGPU Pointer
+ * @SpdmProxy[in]  pSpdm       : Spdm  pointer
+ * @param[in]      pParams     : SPDM RPC structure pointer
+ *
+ * @return    NV_OK if success, Error otherwise.
+ */
+NV_STATUS
+spdmSendCtrlCall_GH100
+(
+    OBJGPU                                     *pGpu,
+    Spdm                                       *pSpdm,
+    NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS *pParams
+)
+{
+    NV_STATUS status;
+
+    if (IS_VIRTUAL(pGpu))
+    {
+        // The control call currently doesn't support the vGPU environment, therefore return NV_ERR_NOT_SUPPORTED.
+        return NV_ERR_NOT_SUPPORTED;
+    }
+    else
+    {
+        RM_API *pRmApi   = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+        NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+
+        // Calls the subdeviceCtrlCmdSpdmPartition_IMPL control call in Physical RM mode.
+        status = pRmApi->Control(pRmApi,
+                                 pGpu->hInternalClient,
+                                 pGpu->hInternalSubdevice,
+                                 NV2080_CTRL_INTERNAL_SPDM_PARTITION,
+                                 pParams,
+                                 sizeof(NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS));
+    }
+
+    return status;
+}
+

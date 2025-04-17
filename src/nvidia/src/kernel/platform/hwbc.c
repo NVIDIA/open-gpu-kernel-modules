@@ -535,7 +535,7 @@ objClGetBr03Bar0
     Rev = osPciReadByte(pBR03->ctrlDev.handle, NV_BR03_XVU_REV_CC);
 
     if (Rev != 0xA1) // Rev A1 BAR0 is broken
-        bar0 = osPciReadDword(pBR03->ctrlDev.handle, PCI_BASE_ADDRESS_0) & ~RM_PAGE_MASK;
+        bar0 = (osPciReadDword(pBR03->ctrlDev.handle, PCI_BASE_ADDRESS_0) & PCI_BASE_ADDRESS_0_VALID_MASK) & ~RM_PAGE_MASK;
 
     //
     // Warning: Future OS may forbid us to map the PCIE enhanced configuration space directly
@@ -617,7 +617,7 @@ objClFreeBr03Bar0
     Rev = osPciReadByte(pBR03->ctrlDev.handle, NV_BR03_XVU_REV_CC);
 
     if (Rev != 0xA1) // Rev A1 BAR0 is broken
-        bar0 = osPciReadDword(pBR03->ctrlDev.handle, PCI_BASE_ADDRESS_0) & ~RM_PAGE_MASK;
+        bar0 = (osPciReadDword(pBR03->ctrlDev.handle, PCI_BASE_ADDRESS_0) & PCI_BASE_ADDRESS_0_VALID_MASK) & ~RM_PAGE_MASK;
 
     //
     // Warning: Future OS may forbid us to map the PCIE enhanced configuration space directly

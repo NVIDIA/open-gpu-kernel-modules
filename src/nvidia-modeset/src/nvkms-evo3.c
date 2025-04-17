@@ -77,12 +77,26 @@ enum FMTCoeffType
 {
     FMT_COEFF_TYPE_IDENTITY = 0,
 
+    FMT_COEFF_TYPE_REC601_YUV_8BPC_LTD_TO_RGB_16BPC_FULL,
+    FMT_COEFF_TYPE_REC601_YUV_8BPC_FULL_TO_RGB_16BPC_FULL,
+    FMT_COEFF_TYPE_REC601_YUV_10BPC_LTD_TO_RGB_16BPC_FULL,
+    FMT_COEFF_TYPE_REC601_YUV_10BPC_FULL_TO_RGB_16BPC_FULL,
+    FMT_COEFF_TYPE_REC601_YUV_12BPC_LTD_TO_RGB_16BPC_FULL,
+    FMT_COEFF_TYPE_REC601_YUV_12BPC_FULL_TO_RGB_16BPC_FULL,
+
     FMT_COEFF_TYPE_REC709_YUV_8BPC_LTD_TO_RGB_16BPC_FULL,
     FMT_COEFF_TYPE_REC709_YUV_8BPC_FULL_TO_RGB_16BPC_FULL,
     FMT_COEFF_TYPE_REC709_YUV_10BPC_LTD_TO_RGB_16BPC_FULL,
     FMT_COEFF_TYPE_REC709_YUV_10BPC_FULL_TO_RGB_16BPC_FULL,
     FMT_COEFF_TYPE_REC709_YUV_12BPC_LTD_TO_RGB_16BPC_FULL,
     FMT_COEFF_TYPE_REC709_YUV_12BPC_FULL_TO_RGB_16BPC_FULL,
+
+    FMT_COEFF_TYPE_REC2020_YUV_8BPC_LTD_TO_RGB_16BPC_FULL,
+    FMT_COEFF_TYPE_REC2020_YUV_8BPC_FULL_TO_RGB_16BPC_FULL,
+    FMT_COEFF_TYPE_REC2020_YUV_10BPC_LTD_TO_RGB_16BPC_FULL,
+    FMT_COEFF_TYPE_REC2020_YUV_10BPC_FULL_TO_RGB_16BPC_FULL,
+    FMT_COEFF_TYPE_REC2020_YUV_12BPC_LTD_TO_RGB_16BPC_FULL,
+    FMT_COEFF_TYPE_REC2020_YUV_12BPC_FULL_TO_RGB_16BPC_FULL,
 
     // FMT is always identity for RGB to avoid possible calculation error.
 
@@ -94,6 +108,20 @@ static const NvU32 FMTMatrix[FMT_COEFF_TYPE_MAX][12] =
 {
     // FMT_COEFF_TYPE_IDENTITY
     {  0x10000,        0,        0,        0,        0,  0x10000,        0,        0,        0,        0,  0x10000,        0 },
+
+    // FMT_COEFF_TYPE_REC601_YUV_8BPC_LTD_TO_RGB_16BPC_FULL
+    {  0x19A29,  0x12B3C,        0, 0x1F2038, 0x1F2F14,  0x12B3C, 0x1F9B52,   0x8819,        0,  0x12B3C,  0x20668, 0x1EEA18 },
+    // FMT_COEFF_TYPE_REC601_YUV_8BPC_FULL_TO_RGB_16BPC_FULL
+    {  0x1684C,  0x100FD,        0, 0x1F4D42, 0x1F487A,  0x100FD, 0x1FA790,   0x86EB,        0,  0x100FD,  0x1C762, 0x1F1E16 },
+    // FMT_COEFF_TYPE_REC601_YUV_10BPC_LTD_TO_RGB_16BPC_FULL
+    {  0x19A29,  0x12B3C,        0, 0x1F2038, 0x1F2F14,  0x12B3C, 0x1F9B52,   0x8819,        0,  0x12B3C,  0x20668, 0x1EEA18 },
+    // FMT_COEFF_TYPE_REC601_YUV_10BPC_FULL_TO_RGB_16BPC_FULL
+    {  0x1673E,  0x1003C,        0, 0x1F4CBB, 0x1F4903,  0x1003C, 0x1FA7D2,   0x8751,        0,  0x1003C,  0x1C60C, 0x1F1D6B },
+    // FMT_COEFF_TYPE_REC601_YUV_12BPC_LTD_TO_RGB_16BPC_FULL
+    {  0x19A29,  0x12B3C,        0, 0x1F2038, 0x1F2F14,  0x12B3C, 0x1F9B52,   0x8819,        0,  0x12B3C,  0x20668, 0x1EEA18 },
+    // FMT_COEFF_TYPE_REC601_YUV_12BPC_FULL_TO_RGB_16BPC_FULL
+    {  0x166FA,  0x1000C,        0, 0x1F4C99, 0x1F4926,  0x1000C, 0x1FA7E3,   0x876B,        0,  0x1000C,  0x1C5B7, 0x1F1D41 },
+
     // FMT_COEFF_TYPE_REC709_YUV_8BPC_LTD_TO_RGB_16BPC_FULL
     {  0x1CCB7,  0x12B3C,        0, 0x1F06F1, 0x1F770C,  0x12B3C, 0x1FC933,   0x4D2D,        0,  0x12B3C,  0x21EDD, 0x1EDDDE },
     // FMT_COEFF_TYPE_REC709_YUV_8BPC_FULL_TO_RGB_16BPC_FULL
@@ -106,6 +134,19 @@ static const NvU32 FMTMatrix[FMT_COEFF_TYPE_MAX][12] =
     {  0x1CCB7,  0x12B3C,        0, 0x1F06F1, 0x1F770C,  0x12B3C, 0x1FC933,   0x4D2D,        0,  0x12B3C,  0x21EDD, 0x1EDDDE },
     // FMT_COEFF_TYPE_REC709_YUV_12BPC_FULL_TO_RGB_16BPC_FULL
     {  0x19339,  0x1000C,        0, 0x1F367D, 0x1F8823,  0x1000C, 0x1FD009,   0x53DF,        0,  0x1000C,  0x1DB1F, 0x1F128E },
+
+    // FMT_COEFF_TYPE_REC2020_YUV_8BPC_LTD_TO_RGB_16BPC_FULL
+    {  0x1AF66,  0x12B3C,        0, 0x1F1599, 0x1F58D9,  0x12B3C, 0x1FCFDC,   0x58F2,        0,  0x12B3C,  0x22669, 0x1EDA18 },
+    // FMT_COEFF_TYPE_REC2020_YUV_8BPC_FULL_TO_RGB_16BPC_FULL
+    {  0x17AF4,  0x100FD,        0, 0x1F4401, 0x1F6D2B,  0x100FD, 0x1FD5B6,   0x5DD2,        0,  0x100FD,  0x1E37F, 0x1F1024 },
+    // FMT_COEFF_TYPE_REC2020_YUV_10BPC_LTD_TO_RGB_16BPC_FULL
+    {  0x1AF66,  0x12B3C,        0, 0x1F1599, 0x1F58D9,  0x12B3C, 0x1FCFDC,   0x58F2,        0,  0x12B3C,  0x22669, 0x1EDA18 },
+    // FMT_COEFF_TYPE_REC2020_YUV_10BPC_FULL_TO_RGB_16BPC_FULL
+    {  0x179D8,  0x1003C,        0, 0x1F4372, 0x1F6D99,  0x1003C, 0x1FD5D6,   0x5E19,        0,  0x1003C,  0x1E214, 0x1F0F6E },
+    // FMT_COEFF_TYPE_REC2020_YUV_12BPC_LTD_TO_RGB_16BPC_FULL
+    {  0x1AF66,  0x12B3C,        0, 0x1F1599, 0x1F58D9,  0x12B3C, 0x1FCFDC,   0x58F2,        0,  0x12B3C,  0x22669, 0x1EDA18 },
+    // FMT_COEFF_TYPE_REC2020_YUV_12BPC_FULL_TO_RGB_16BPC_FULL
+    {  0x17991,  0x1000C,        0, 0x1F434F, 0x1F6DB5,  0x1000C, 0x1FD5DE,   0x5E2B,        0,  0x1000C,  0x1E1BA, 0x1F0F41 },
 };
 
 static void SetCsc00MatrixC5(NVEvoChannelPtr pChannel,
@@ -559,7 +600,7 @@ static void ConfigureCsc0C5(NVDevEvoPtr pDevEvo,
 
     if (enable) {
         /* Linear RGB FP16 -> Linear LMS FP16 */
-        if (pHwState->colorSpace == NVKMS_INPUT_COLORSPACE_BT2100_PQ) {
+        if (pHwState->colorSpace == NVKMS_INPUT_COLOR_SPACE_BT2100) {
             csc00Matrix = Rec2020RGBToLMS;
         } else {
             csc00Matrix = Rec709RGBToLMS;
@@ -1112,45 +1153,68 @@ static void EvoInitChannelC5(NVDevEvoPtr pDevEvo, NVEvoChannelPtr pChannel)
     }
 }
 
+static enum FMTCoeffType EvoGetFMTCoeffType(
+    NvBool isYUV,
+    enum NvKmsInputColorSpace colorSpace,
+    NvU8 depthPerComponent,
+    enum NvKmsInputColorRange colorRange)
+{
+#define FMT(nvkms_space, coeff_space, depth, nvkms_range, coeff_range)                              \
+    if ((colorSpace == NVKMS_INPUT_COLOR_SPACE_##nvkms_space) &&                                    \
+        (depthPerComponent == depth) &&                                                             \
+        (colorRange == NVKMS_INPUT_COLOR_RANGE_##nvkms_range)) {                                    \
+        return FMT_COEFF_TYPE_##coeff_space##_YUV_##depth##BPC_##coeff_range##_TO_RGB_16BPC_FULL;   \
+    }
+
+    // RGB colorspaces use identity FMT
+    if (!isYUV) {
+        return FMT_COEFF_TYPE_IDENTITY;
+    }
+
+    if (colorRange == NVKMS_INPUT_COLOR_RANGE_DEFAULT) {
+        // For YUV, default to limited color range
+        colorRange = NVKMS_INPUT_COLOR_RANGE_LIMITED;
+    }
+
+    FMT(BT601,  REC601,   8, LIMITED, LTD);
+    FMT(BT601,  REC601,   8, FULL,    FULL);
+    FMT(BT601,  REC601,  10, LIMITED, LTD);
+    FMT(BT601,  REC601,  10, FULL,    FULL);
+    FMT(BT601,  REC601,  12, LIMITED, LTD);
+    FMT(BT601,  REC601,  12, FULL,    FULL);
+
+    FMT(BT709,  REC709,   8, LIMITED, LTD);
+    FMT(BT709,  REC709,   8, FULL,    FULL);
+    FMT(BT709,  REC709,  10, LIMITED, LTD);
+    FMT(BT709,  REC709,  10, FULL,    FULL);
+    FMT(BT709,  REC709,  12, LIMITED, LTD);
+    FMT(BT709,  REC709,  12, FULL,    FULL);
+
+    FMT(BT2100, REC2020,  8, LIMITED, LTD);
+    FMT(BT2100, REC2020,  8, FULL,    FULL);
+    FMT(BT2100, REC2020, 10, LIMITED, LTD);
+    FMT(BT2100, REC2020, 10, FULL,    FULL);
+    FMT(BT2100, REC2020, 12, LIMITED, LTD);
+    FMT(BT2100, REC2020, 12, FULL,    FULL);
+
+    // Unsupported formats also use identity FMT
+    return FMT_COEFF_TYPE_IDENTITY;
+#undef FMT
+}
+
 static const NvU32* EvoGetFMTMatrixC5(
     const enum NvKmsSurfaceMemoryFormat format,
     const NVFlipChannelEvoHwState *pHwState)
 {
-    const NvU32* retValue = NULL;
     const NvKmsSurfaceMemoryFormatInfo *pFormatInfo =
         nvKmsGetSurfaceMemoryFormatInfo(format);
 
     // Choose FMT matrix based on input colorspace, bpc, and colorrange.
-    if (pFormatInfo->isYUV) {
-        NvBool specifiedFull = (pHwState->colorRange == NVKMS_INPUT_COLORRANGE_FULL);
-        if (pFormatInfo->yuv.depthPerComponent == 8) {
-            if (specifiedFull) {
-                retValue = FMTMatrix[FMT_COEFF_TYPE_REC709_YUV_8BPC_FULL_TO_RGB_16BPC_FULL];
-            } else {
-                retValue = FMTMatrix[FMT_COEFF_TYPE_REC709_YUV_8BPC_LTD_TO_RGB_16BPC_FULL];
-            }
-        } else if (pFormatInfo->yuv.depthPerComponent == 10) {
-            if (specifiedFull) {
-                retValue = FMTMatrix[FMT_COEFF_TYPE_REC709_YUV_10BPC_FULL_TO_RGB_16BPC_FULL];
-            } else {
-                retValue = FMTMatrix[FMT_COEFF_TYPE_REC709_YUV_10BPC_LTD_TO_RGB_16BPC_FULL];
-            }
-        } else if (pFormatInfo->yuv.depthPerComponent == 12) {
-            if (specifiedFull) {
-                retValue = FMTMatrix[FMT_COEFF_TYPE_REC709_YUV_12BPC_FULL_TO_RGB_16BPC_FULL];
-            } else {
-                retValue = FMTMatrix[FMT_COEFF_TYPE_REC709_YUV_12BPC_LTD_TO_RGB_16BPC_FULL];
-            }
-        } else {
-            // Unsupported bit depth, fail silently by defaulting to identity.
-            retValue = FMTMatrix[FMT_COEFF_TYPE_IDENTITY];
-        }
-    } else {
-        // All inputs with RGB colorspace receive an identity FMT.
-        retValue = FMTMatrix[FMT_COEFF_TYPE_IDENTITY];
-    }
-
-    return retValue;
+    return FMTMatrix[EvoGetFMTCoeffType(pFormatInfo->isYUV,
+                                        pHwState->colorSpace,
+                                        pFormatInfo->isYUV ? pFormatInfo->yuv.depthPerComponent
+                                                           : pFormatInfo->rgb.bitsPerPixel / 3,
+                                        pHwState->colorRange)];
 }
 
 static void EvoSetFMTMatrixC5(
@@ -3821,8 +3885,7 @@ static NvBool
 EvoFlipC3Common(NVDevEvoPtr pDevEvo,
          NVEvoChannelPtr pChannel,
          const NVFlipChannelEvoHwState *pHwState,
-         NVEvoUpdateState *updateState,
-         NvU32 head)
+         NVEvoUpdateState *updateState)
 {
     const NvKmsSurfaceMemoryFormatInfo *pFormatInfo;
     NvU32 presentControl, eye;
@@ -3836,27 +3899,9 @@ EvoFlipC3Common(NVDevEvoPtr pDevEvo,
     /* program notifier */
 
     if (pHwState->completionNotifier.surface.pSurfaceEvo == NULL) {
-        /*
-         * if no notifier surface is attached but vrr RGLine calculations
-         * for frame pacing are enabled then we need to provide our own
-         * surface and keep getting flip completion updates.
-         */
-        const NvU32 sdMask = nvPeekEvoSubDevMask(pDevEvo);
-        const NvU32 sd = (sdMask == 0) ? 0 : nv_ffs(sdMask) - 1;
-        NVDispHeadStateEvoRec *pHeadState = &pDevEvo->pDispEvo[sd]->headState[head];
-        struct NvKmsVrrFramePacingInfo *pVrrFramePacingInfo = &pHeadState->vrrFramePacingInfo;
-
-        if (pVrrFramePacingInfo->framePacingActive) {
-            pSurfaceDesc = &pChannel->notifiersDma[sd].surfaceDesc;
-            offset = nvPrepareNextVrrNotifier(pChannel, sd, head);
-            ctrlVal = DRF_DEF(C37E, _SET_NOTIFIER_CONTROL, _MODE, _WRITE_AWAKEN);
-            pDevEvo->hal->SetWinNotifierSurfaceAddressAndControl(pDevEvo,
-                pChannel, pSurfaceDesc, offset, ctrlVal);
-        } else {
-            offset = ctrlVal = 0;
-            pDevEvo->hal->SetWinNotifierSurfaceAddressAndControl(pDevEvo,
-                pChannel, NULL, offset, ctrlVal);
-        }
+        offset = ctrlVal = 0;
+        pDevEvo->hal->SetWinNotifierSurfaceAddressAndControl(pDevEvo,
+            pChannel, NULL, offset, ctrlVal);
     } else {
         const NVFlipNIsoSurfaceEvoHwState *pNIso =
             &pHwState->completionNotifier.surface;
@@ -4384,15 +4429,13 @@ EvoFlipC3(NVDevEvoPtr pDevEvo,
     NvBool isLutModeVss = FALSE;
     NVSurfaceEvoPtr pLutSurfaceEvo = EvoGetLutSurface3(pDevEvo, pChannel, pHwState,
                                                        &lutSize, &offset, &isLutModeVss);
-    NvU32 win = NV_EVO_CHANNEL_MASK_WINDOW_NUMBER(pChannel->channelMask);
-    NvU32 head = pDevEvo->headForWindow[win];
 
     if (pHwState->timeStamp != 0) {
         InsertAdditionalTimestampFlip(pDevEvo, pChannel, pHwState,
                                       updateState);
     }
 
-    flip3Return = EvoFlipC3Common(pDevEvo, pChannel, pHwState, updateState, head);
+    flip3Return = EvoFlipC3Common(pDevEvo, pChannel, pHwState, updateState);
 
     /* program semaphore */
     EvoProgramSemaphore3(pDevEvo, pChannel, pHwState);
@@ -4560,15 +4603,15 @@ EvoFlipC5Common(NVDevEvoPtr pDevEvo,
     const NvU32 sd = (sdMask == 0) ? 0 : nv_ffs(sdMask) - 1;
     const NVDispHeadStateEvoRec *pHeadState = &pDevEvo->pDispEvo[sd]->headState[head];
 
-    // XXX HDR TODO: Handle other colorspaces
+    // XXX HDR TODO: Handle other transfer funcions
     // XXX HDR TODO: Enable custom input LUTs with HDR
     if (pHwState->inputLut.fromOverride ||
-        (pHwState->colorSpace != NVKMS_INPUT_COLORSPACE_BT2100_PQ)) {
+        (pHwState->tf != NVKMS_INPUT_TF_PQ)) {
         pLutSurfaceEvo = EvoGetLutSurface3(pDevEvo, pChannel, pHwState,
                                            &lutSize, &lutOffset, &isLutModeVss);
     }
 
-    if (!EvoFlipC3Common(pDevEvo, pChannel, pHwState, updateState, head)) {
+    if (!EvoFlipC3Common(pDevEvo, pChannel, pHwState, updateState)) {
         ConfigureTmoLut(pDevEvo, pHwState, pChannel);
         return;
     }
@@ -4630,8 +4673,7 @@ EvoFlipC5Common(NVDevEvoPtr pDevEvo,
     // unless the surface being displayed is already FP16 to begin with.
     if ((format == NvKmsSurfaceMemoryFormatRF16GF16BF16AF16) ||
         (format == NvKmsSurfaceMemoryFormatRF16GF16BF16XF16) || bypassComposition) {
-        nvAssert((pHwState->colorSpace == NVKMS_INPUT_COLORSPACE_SCRGB_LINEAR) ||
-                 (pHwState->colorSpace == NVKMS_INPUT_COLORSPACE_NONE));
+        nvAssert(pHwState->tf == NVKMS_INPUT_TF_LINEAR);
         pLutSurfaceEvo = NULL;
     } else if (!pLutSurfaceEvo) {
         NVEvoLutDataRec *pData = NULL;
@@ -4641,13 +4683,13 @@ EvoFlipC5Common(NVDevEvoPtr pDevEvo,
 
         nvAssert(pData);
 
-        switch (pHwState->colorSpace) {
-            case NVKMS_INPUT_COLORSPACE_BT2100_PQ:
+        switch (pHwState->tf) {
+            case NVKMS_INPUT_TF_PQ:
                 EvoSetupPQEotfBaseLutC5(pData,
                                         &pDevEvo->lut.defaultBaseLUTState[sd],
                                         &lutSize, &isLutModeVss);
                 break;
-            case NVKMS_INPUT_COLORSPACE_NONE:
+            case NVKMS_INPUT_TF_LINEAR:
                 EvoSetupIdentityBaseLutC5(pData,
                                           &pDevEvo->lut.defaultBaseLUTState[sd],
                                           &lutSize, &isLutModeVss);
@@ -6454,6 +6496,8 @@ NvBool nvEvoGetHeadSetControlCursorValueC3(const NVDevEvoRec *pDevEvo,
                                                 const NVSurfaceEvoRec *pSurfaceEvo,
                                                 NvU32 *pValue)
 {
+    NvU32 plane, numPlanes;
+    NvU64 minRequiredSize = 0;
     NvU32 value = 0;
 
     if (pSurfaceEvo == NULL) {
@@ -6479,25 +6523,43 @@ NvBool nvEvoGetHeadSetControlCursorValueC3(const NVDevEvoRec *pDevEvo,
         return FALSE;
     }
 
+    numPlanes = nvKmsGetSurfaceMemoryFormatInfo(pSurfaceEvo->format)->numPlanes;
+
     /*
      * The cursor only supports a few image sizes.
+     *
+     * Compute minRequiredSize as widthInPixels x heightInPixels x 4 bytes per
+     * pixel, except for 32x32: we require a minimum pitch of 256, so we use
+     * that instead of widthInPixels x 4.
      */
     if ((pSurfaceEvo->widthInPixels == 32) &&
         (pSurfaceEvo->heightInPixels == 32)) {
         value |= DRF_DEF(C37D, _HEAD_SET_CONTROL_CURSOR, _SIZE, _W32_H32);
+        minRequiredSize = 256 * 32;
     } else if ((pSurfaceEvo->widthInPixels == 64) &&
                (pSurfaceEvo->heightInPixels == 64)) {
         value |= DRF_DEF(C37D, _HEAD_SET_CONTROL_CURSOR, _SIZE, _W64_H64);
+        minRequiredSize = 64 * 64 * 4;
     } else if ((pDevEvo->cursorHal->caps.maxSize >= 128) &&
                (pSurfaceEvo->widthInPixels == 128) &&
                (pSurfaceEvo->heightInPixels == 128)) {
         value |= DRF_DEF(C37D, _HEAD_SET_CONTROL_CURSOR, _SIZE, _W128_H128);
+        minRequiredSize = 128 * 128 * 4;
     } else if ((pDevEvo->cursorHal->caps.maxSize >= 256) &&
                (pSurfaceEvo->widthInPixels == 256) &&
                (pSurfaceEvo->heightInPixels == 256)) {
         value |= DRF_DEF(C37D, _HEAD_SET_CONTROL_CURSOR, _SIZE, _W256_H256);
+        minRequiredSize = 256 * 256 * 4;
     } else {
         return FALSE;
+    }
+
+    /* The surface size cannot be smaller than the required minimum. */
+
+    for (plane = 0; plane < numPlanes; plane++) {
+        if (pSurfaceEvo->planes[plane].rmObjectSizeInBytes < minRequiredSize) {
+            return FALSE;
+        }
     }
 
     /*
@@ -8081,6 +8143,8 @@ NVEvoHAL nvEvoC3 = {
         FALSE,                                    /* supportsMergeMode */
         FALSE,                                    /* supportsHDMI10BPC */
         FALSE,                                    /* supportsDPAudio192KHz */
+        FALSE,                                    /* supportsInputColorSpace */
+        FALSE,                                    /* supportsInputColorRange */
         NV_EVO3_SUPPORTED_DITHERING_MODES,        /* supportedDitheringModes */
         sizeof(NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS), /* impStructSize */
         NV_EVO_SCALER_2TAPS,                      /* minScalerTaps */
@@ -8177,6 +8241,8 @@ NVEvoHAL nvEvoC5 = {
         TRUE,                                     /* supportsMergeMode */
         FALSE,                                    /* supportsHDMI10BPC */
         FALSE,                                    /* supportsDPAudio192KHz */
+        TRUE,                                     /* supportsInputColorSpace */
+        TRUE,                                     /* supportsInputColorRange */
         NV_EVO3_SUPPORTED_DITHERING_MODES,        /* supportedDitheringModes */
         sizeof(NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS), /* impStructSize */
         NV_EVO_SCALER_2TAPS,                      /* minScalerTaps */
@@ -8273,6 +8339,8 @@ NVEvoHAL nvEvoC6 = {
         TRUE,                                     /* supportsMergeMode */
         TRUE,                                     /* supportsHDMI10BPC */
         FALSE,                                    /* supportsDPAudio192KHz */
+        TRUE,                                     /* supportsInputColorSpace */
+        TRUE,                                     /* supportsInputColorRange */
         NV_EVO3_SUPPORTED_DITHERING_MODES,        /* supportedDitheringModes */
         sizeof(NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS), /* impStructSize */
         NV_EVO_SCALER_2TAPS,                      /* minScalerTaps */

@@ -36,8 +36,6 @@
 /* AMPERE_CHANNEL_GPFIFO_A control commands and parameters */
 
 #include "ctrl/ctrlxxxx.h"
-#include "ctrl/ctrl906f.h"          /* C36F is partially derived from 906F */
-#include "ctrl/ctrla06f.h"          /* C36F is partially derived from a06F */
 #include "ctrl/ctrlc36f.h" // This control call interface is an ALIAS of C36F
 
 #include "cc_drv.h"
@@ -50,7 +48,6 @@
 /* AMPERE_CHANNEL_GPFIFO_A command categories (6bits) */
 #define NVC56F_CTRL_RESERVED (0x00)
 #define NVC56F_CTRL_GPFIFO   (0x01)
-#define NVC56F_CTRL_EVENT    (0x02)
 
 /*
  * NVC56F_CTRL_CMD_NULL
@@ -83,6 +80,11 @@ typedef struct NVC56F_CTRL_CMD_GET_KMB_STAT_ADDR {
  *
  *    kmb     [OUT]            The KMB for the channel.
  *    hMemory [IN]             Memory handle to the encryption statistics buffer for the channel.
+ *    keyRotationLowerThreshold [OUT] Key rotation lower threshold.
+ *    keyRotationUpperThreshold [OUT] Key rotation upper threshold.
+ *
+ *    The key rotation thresholds are in units of
+ *    (amount of data encrypted in units of 16 bytes + number of encryption invocations).
  *
  *    Possible status values returned are:
  *     NV_OK
@@ -97,6 +99,8 @@ typedef struct NVC56F_CTRL_CMD_GET_KMB_STAT_ADDR {
 typedef struct NVC56F_CTRL_CMD_GET_KMB_PARAMS {
     CC_KMB   kmb;
     NvHandle hMemory;
+    NV_DECLARE_ALIGNED(NvU64 keyRotationLowerThreshold, 8);
+    NV_DECLARE_ALIGNED(NvU64 keyRotationUpperThreshold, 8);
 } NVC56F_CTRL_CMD_GET_KMB_PARAMS;
 
 /*

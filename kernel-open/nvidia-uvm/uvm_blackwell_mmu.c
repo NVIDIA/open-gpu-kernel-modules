@@ -39,6 +39,7 @@
 #include "hwref/blackwell/gb100/dev_fault.h"
 
 static uvm_mmu_mode_hal_t blackwell_mmu_mode_hal;
+static uvm_mmu_mode_hal_t blackwell_integrated_mmu_mode_hal;
 
 static NvU32 page_table_depth_blackwell(NvU64 page_size)
 {
@@ -59,11 +60,34 @@ static NvU64 page_sizes_blackwell(void)
     return UVM_PAGE_SIZE_256G | UVM_PAGE_SIZE_512M | UVM_PAGE_SIZE_2M | UVM_PAGE_SIZE_64K | UVM_PAGE_SIZE_4K;
 }
 
+static NvU64 page_sizes_blackwell_integrated(void)
+{
+    return UVM_PAGE_SIZE_2M | UVM_PAGE_SIZE_64K | UVM_PAGE_SIZE_4K;
+}
+
+static uvm_mmu_mode_hal_t *__uvm_hal_mmu_mode_blackwell(uvm_mmu_mode_hal_t *mmu_mode_hal,
+                                                        NvU64 big_page_size)
+{
+    uvm_mmu_mode_hal_t *hopper_mmu_mode_hal;
+
+    UVM_ASSERT(big_page_size == UVM_PAGE_SIZE_64K || big_page_size == UVM_PAGE_SIZE_128K);
+
+    hopper_mmu_mode_hal = uvm_hal_mmu_mode_hopper(big_page_size);
+    UVM_ASSERT(hopper_mmu_mode_hal);
+
+    // The assumption made is that arch_hal->mmu_mode_hal() will be called
+    // under the global lock the first time, so check it here.
+    uvm_assert_mutex_locked(&g_uvm_global.global_lock);
+
+    *mmu_mode_hal = *hopper_mmu_mode_hal;
+    mmu_mode_hal->page_table_depth = page_table_depth_blackwell;
+
+    return mmu_mode_hal;
+}
+
 uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_blackwell(NvU64 big_page_size)
 {
     static bool initialized = false;
-
-    UVM_ASSERT(big_page_size == UVM_PAGE_SIZE_64K || big_page_size == UVM_PAGE_SIZE_128K);
 
     // TODO: Bug 1789555: RM should reject the creation of GPU VA spaces with
     // 128K big page size for Pascal+ GPUs
@@ -71,21 +95,34 @@ uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_blackwell(NvU64 big_page_size)
         return NULL;
 
     if (!initialized) {
-        uvm_mmu_mode_hal_t *hopper_mmu_mode_hal = uvm_hal_mmu_mode_hopper(big_page_size);
-        UVM_ASSERT(hopper_mmu_mode_hal);
+        uvm_mmu_mode_hal_t *mmu_mode_hal;
 
-        // The assumption made is that arch_hal->mmu_mode_hal() will be called
-        // under the global lock the first time, so check it here.
-        uvm_assert_mutex_locked(&g_uvm_global.global_lock);
-
-        blackwell_mmu_mode_hal = *hopper_mmu_mode_hal;
-        blackwell_mmu_mode_hal.page_table_depth = page_table_depth_blackwell;
-        blackwell_mmu_mode_hal.page_sizes = page_sizes_blackwell;
-
+        mmu_mode_hal = __uvm_hal_mmu_mode_blackwell(&blackwell_mmu_mode_hal, big_page_size);
+        mmu_mode_hal->page_sizes = page_sizes_blackwell;
         initialized = true;
     }
 
     return &blackwell_mmu_mode_hal;
+}
+
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_blackwell_integrated(NvU64 big_page_size)
+{
+    static bool initialized = false;
+
+    // TODO: Bug 1789555: RM should reject the creation of GPU VA spaces with
+    // 128K big page size for Pascal+ GPUs
+    if (big_page_size == UVM_PAGE_SIZE_128K)
+        return NULL;
+
+    if (!initialized) {
+        uvm_mmu_mode_hal_t *mmu_mode_hal;
+
+        mmu_mode_hal = __uvm_hal_mmu_mode_blackwell(&blackwell_integrated_mmu_mode_hal, big_page_size);
+        mmu_mode_hal->page_sizes = page_sizes_blackwell_integrated;
+        initialized = true;
+    }
+
+    return &blackwell_integrated_mmu_mode_hal;
 }
 
 NvU16 uvm_hal_blackwell_mmu_client_id_to_utlb_id(NvU16 client_id)

@@ -1,13 +1,15 @@
 
 #ifndef _G_HYPERVISOR_NVOC_H_
 #define _G_HYPERVISOR_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,10 +82,18 @@ typedef struct HOST_VGPU_DEVICE HOST_VGPU_DEVICE;
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJHYPERVISOR;
+struct NVOC_METADATA__Object;
+
+
 struct OBJHYPERVISOR {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__OBJHYPERVISOR *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -103,6 +113,13 @@ struct OBJHYPERVISOR {
     NvBool bIsHypervVgpuSupported;
 };
 
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJHYPERVISOR {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
+};
+
 #ifndef __NVOC_CLASS_OBJHYPERVISOR_TYPEDEF__
 #define __NVOC_CLASS_OBJHYPERVISOR_TYPEDEF__
 typedef struct OBJHYPERVISOR OBJHYPERVISOR;
@@ -119,10 +136,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHYPERVISOR;
     ((pThis)->__nvoc_pbase_OBJHYPERVISOR)
 
 #ifdef __nvoc_hypervisor_h_disabled
-#define __dynamicCast_OBJHYPERVISOR(pThis) ((OBJHYPERVISOR*)NULL)
+#define __dynamicCast_OBJHYPERVISOR(pThis) ((OBJHYPERVISOR*) NULL)
 #else //__nvoc_hypervisor_h_disabled
 #define __dynamicCast_OBJHYPERVISOR(pThis) \
-    ((OBJHYPERVISOR*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJHYPERVISOR)))
+    ((OBJHYPERVISOR*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJHYPERVISOR)))
 #endif //__nvoc_hypervisor_h_disabled
 
 // Property macros

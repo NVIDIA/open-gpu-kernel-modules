@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -79,11 +79,13 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB202[] =
     GPU_CHILD_PRESENT(KernelNvlink, 1),
     GPU_CHILD_PRESENT(KernelPerf, 1),
     GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(Spdm, 1),
+    GPU_CHILD_PRESENT(ConfidentialCompute, 1),
     GPU_CHILD_PRESENT(KernelFsp, 1),
     GPU_CHILD_PRESENT(KernelGsp, 1),
     GPU_CHILD_PRESENT(KernelSec2, 1),
-    GPU_CHILD_PRESENT(ConfidentialCompute, 1),
     GPU_CHILD_PRESENT(KernelGsplite, 4),
+    GPU_CHILD_PRESENT(KernelCcu, 1),
 };
 
 const GPUCHILDPRESENT*
@@ -175,6 +177,43 @@ gpuWritePcieConfigCycle_GB202
     osPciWriteDword(pGpu->hPci, hwDefAddr, value);
 
     return NV_OK;
+}
+
+//
+// Workaround for Bug 5041782.
+//
+// This function is not created through HAL infrastructure. It needs to be
+// called when OBJGPU is not created. HAL infrastructure can't be used for
+// this case, so it has been added manually. It will be invoked directly by
+// gpumgrWaitForBarFirewall() after checking the GPU devId.
+//
+// See kfspWaitForSecureBoot_GH100
+#define GPU_FSP_BOOT_COMPLETION_TIMEOUT_US 4000000
+NvBool gpuWaitForBarFirewall_GB202(NvU32 domain, NvU8 bus, NvU8 device, NvU8 function)
+{
+    NvU32 data;
+    NvU32 timeUs = 0;
+    void *hPci = osPciInitHandle(domain, bus, device, function, NULL, NULL);
+
+    while (timeUs < GPU_FSP_BOOT_COMPLETION_TIMEOUT_US)
+    {
+        data = osPciReadDword(hPci,
+            NV_EP_PCFG_GPU_VSEC_DEBUG_SEC_2);
+
+        // Firewall is lowered if 0
+        if (DRF_VAL(_EP_PCFG_GPU,
+                    _VSEC_DEBUG_SEC_2,
+                    _BAR_FIREWALL_ENGAGE,
+                    data) == 0)
+        {
+            return NV_TRUE;
+        }
+
+        osDelayUs(1000);
+        timeUs += 1000;
+    }
+
+    return NV_FALSE;
 }
 
 /*!
@@ -354,3 +393,51 @@ gpuIsInternalSkuFuseEnabled_GB202
     return bInternalSkuEnabled;
 }
 
+/*!
+ * @brief Check if GRCE that is present is required or not
+ *
+ * @param[in]  pGpu            OBJGPU pointer
+ * @param[in]  engDesc
+ *
+ * @return NV_TRUE if GRCE that is present is required, NV_FALSE otherwise
+ */
+NvBool
+gpuRequireGrCePresence_GB202
+(
+    OBJGPU *pGpu,
+    ENGDESCRIPTOR  engDesc
+)
+{
+    KernelFifo *pKernelFifo  = GPU_GET_KERNEL_FIFO(pGpu);
+    NvBool    bSupported;
+
+    NV_ASSERT_OR_RETURN(pKernelFifo != NULL, NV_FALSE);
+
+    NvBool isEnginePresent = (kfifoCheckEngine_HAL(pGpu, pKernelFifo,
+                                         engDesc,
+                                         &bSupported) == NV_OK &&
+                                         bSupported);
+
+    RM_ENGINE_TYPE   rmCeEngineType = RM_ENGINE_TYPE_COPY(GET_CE_IDX(engDesc));
+
+    if (isEnginePresent)
+    {
+        // NOTE: This is a temporary WAR. This will be updated with a generic fix by finding partnered GR.
+        if ((rmCeEngineType == RM_ENGINE_TYPE_COPY1 && !(kfifoCheckEngine_HAL(pGpu, pKernelFifo,
+                                     ENG_GR(1),
+                                     &bSupported) == NV_OK &&
+               bSupported)) ||
+           (rmCeEngineType == RM_ENGINE_TYPE_COPY2 && !(kfifoCheckEngine_HAL(pGpu, pKernelFifo,
+                                     ENG_GR(2),
+                                     &bSupported) == NV_OK &&
+               bSupported)) ||
+           (rmCeEngineType == RM_ENGINE_TYPE_COPY3 && !(kfifoCheckEngine_HAL(pGpu, pKernelFifo,
+                                     ENG_GR(3),
+                                     &bSupported) == NV_OK &&
+               bSupported)))
+        {
+            isEnginePresent = NV_FALSE;
+        }
+    }
+    return isEnginePresent;
+}

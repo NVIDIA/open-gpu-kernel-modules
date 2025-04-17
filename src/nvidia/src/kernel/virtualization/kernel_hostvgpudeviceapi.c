@@ -23,7 +23,8 @@
 #include "ctrl/ctrl2080.h"
 #include "virtualization/kernel_hostvgpudeviceapi.h"
 #include "virtualization/vgpuconfigapi.h"
-
+#include "gpu/bus/kern_bus.h"
+#include "platform/sli/sli.h"
 #include "core/core.h"
 #include "core/locks.h"
 #include "os/os.h"
@@ -127,6 +128,7 @@ kernelhostvgpudeviceapiConstruct_IMPL
     pKernelHostVgpuDeviceApi->pShared->pDevice       = pKernelHostVgpuDevice;
     pKernelHostVgpuDevice->pGspPluginHeapMemDesc     = NULL;
     pKernelHostVgpuDevice->bGspPluginTaskInitialized = NV_FALSE;
+    pKernelHostVgpuDevice->vgpuDeviceInstanceId      = pAllocParams->vgpuDeviceInstanceId;
 
     pKernelHostVgpuDevice->bGpupLiveMigrationEnabled = pAllocParams->bGpupLiveMigrationEnabled;
 
@@ -210,6 +212,57 @@ kernelhostvgpudeviceapiCopyConstruct_IMPL
     return NV_OK;
 }
 
+static NV_STATUS
+_kernelhostvgpudeviceInvalidateGpuTLBL2Cache(OBJGPU *pGpu, Device *pDevice)
+{
+    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+    NV2080_CTRL_FB_FLUSH_GPU_CACHE_PARAMS *pl2_params = portMemAllocNonPaged(sizeof(*pl2_params));
+    NV_STATUS rmStatus = NV_OK;
+
+    if (pl2_params == NULL)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
+    /* Invalidate TLBs for non SR-IOV vGPUs */
+    if (!gpuIsSriovEnabled(pGpu))
+        kgmmuInvalidateTlb_HAL(pGpu, pKernelGmmu, NULL, VASPACE_FLAGS_NONE,
+                               PTE_DOWNGRADE, GPU_GFID_PF, NV_GMMU_INVAL_SCOPE_ALL_TLBS);
+
+    /* Invalidate L2 cache for sysmem */
+    pl2_params->flags =
+        DRF_DEF(2080, _CTRL_FB_FLUSH_GPU_CACHE_FLAGS, _APERTURE, _SYSTEM_MEMORY) |
+        DRF_DEF(2080, _CTRL_FB_FLUSH_GPU_CACHE_FLAGS, _INVALIDATE, _YES)         |
+        DRF_DEF(2080, _CTRL_FB_FLUSH_GPU_CACHE_FLAGS, _FLUSH_MODE, _FULL_CACHE);
+
+    rmStatus = kmemsysFlushGpuCache(pGpu, pKernelMemorySystem, pKernelBus, pl2_params);
+
+    if (rmStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to invalidate gpu L2 cache for sysmem. Status:0x%x\n", rmStatus);
+    }
+
+    /* Invalidate L2 cache for vidmem */
+    portMemSet(pl2_params, 0, sizeof(*pl2_params));
+    pl2_params->flags =
+        DRF_DEF(2080, _CTRL_FB_FLUSH_GPU_CACHE_FLAGS, _APERTURE, _VIDEO_MEMORY)  |
+        DRF_DEF(2080, _CTRL_FB_FLUSH_GPU_CACHE_FLAGS, _INVALIDATE, _YES)         |
+        DRF_DEF(2080, _CTRL_FB_FLUSH_GPU_CACHE_FLAGS, _FLUSH_MODE, _FULL_CACHE)  |
+        DRF_DEF(2080, _CTRL_FB_FLUSH_GPU_CACHE_FLAGS, _FB_FLUSH, _NO);
+
+    rmStatus = kmemsysFlushGpuCache(pGpu, pKernelMemorySystem, pKernelBus, pl2_params);
+
+    if (rmStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to invalidate gpu L2 cache for vidmem. Status:0x%x\n", rmStatus);
+    }
+
+    portMemFree(pl2_params);
+    return rmStatus;
+}
+
 void
 destroyKernelHostVgpuDeviceShare(OBJGPU *pGpu, KernelHostVgpuDeviceShr* pShare)
 {
@@ -230,6 +283,11 @@ destroyKernelHostVgpuDeviceShare(OBJGPU *pGpu, KernelHostVgpuDeviceShr* pShare)
     NV_ASSERT(pDevice != NULL);
     if (pDevice != NULL)
     {
+        status = _kernelhostvgpudeviceInvalidateGpuTLBL2Cache(pGpu, pDevice);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to invalidate TLBs and L2 cache. Status:0x%x\n", status);
+        }
         pDevice->pKernelHostVgpuDevice = NULL;
     }
 

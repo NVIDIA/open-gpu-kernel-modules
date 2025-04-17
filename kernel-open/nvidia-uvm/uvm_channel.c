@@ -2901,6 +2901,13 @@ static NV_STATUS channel_pool_add(uvm_channel_manager_t *channel_manager,
 
 static bool ce_is_usable(const UvmGpuCopyEngineCaps *cap)
 {
+    // When Confidential Computing is enabled, all Copy Engines must support
+    // encryption / decryption, tracked by 'secure' flag. This holds even for
+    // non-CPU-GPU transactions because each channel has an associate semaphore,
+    // and semaphore release must be observable by all processing units.
+    if (g_uvm_global.conf_computing_enabled && !cap->secure)
+        return false;
+
     return cap->supported && !cap->grce;
 }
 

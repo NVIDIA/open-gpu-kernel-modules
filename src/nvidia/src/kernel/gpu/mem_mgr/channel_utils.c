@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -544,7 +544,6 @@ channelFillGpFifo
         kfifoIsLiteModeEnabled_HAL(pGpu, pKernelFifo))
     {
         KernelChannel *pKernelChannel;
-        NvU32 workSubmitToken;
 
         {
             RsClient *pClient;
@@ -552,13 +551,13 @@ channelFillGpFifo
             NV_ASSERT_OK(CliGetKernelChannel(pClient, pChannel->channelId, &pKernelChannel));
         }
 
-        NV_ASSERT_OK_OR_RETURN(
-            kfifoGenerateWorkSubmitToken(pGpu,
-                                         pKernelFifo,
-                                         pKernelChannel,
-                                         &workSubmitToken, NV_TRUE));
-
-        kfifoUpdateUsermodeDoorbell_HAL(pGpu, pKernelFifo, workSubmitToken, kchannelGetRunlistId(pKernelChannel));
+        if (pKernelFifo->bDoorbellsSupported)
+        {
+            NV_ASSERT_OK_OR_RETURN(
+                kfifoRingChannelDoorBell_HAL(pGpu,
+                                             pKernelFifo,
+                                             pKernelChannel));
+        }
     }
     else if (pChannel->bUseDoorbellRegister)
     {

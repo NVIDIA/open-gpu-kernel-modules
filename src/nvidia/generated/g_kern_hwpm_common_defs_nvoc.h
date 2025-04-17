@@ -1,13 +1,15 @@
 
 #ifndef _G_KERN_HWPM_COMMON_DEFS_NVOC_H_
 #define _G_KERN_HWPM_COMMON_DEFS_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,7 +62,6 @@ typedef struct
     MEMORY_DESCRIPTOR *pNumBytesBufDesc;
     RsResourceRef *pMemoryPmaBufferRef;
     RsResourceRef *pMemoryPmaAvailBytesRef;
-    NvU64 vaddr;
     NvU64 size;
     NvU64 vaddrRecordBuf;
     NvU64 vaddrNumBytesBuf;

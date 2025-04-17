@@ -180,6 +180,7 @@ kgraphicsAllocGrGlobalCtxBuffers_TU102
 
     return status;
 }
+
 /**
  * @brief Initializes Bug 4208224 by performing the following actions
  *        1.) Sets up static handles inside an info struct to be referenced later

@@ -215,25 +215,25 @@ s_allocateUcodeFromBinArchive
 
     if (kgspIsDebugModeEnabled_HAL(pGpu, pKernelGsp))
     {
-        pBinImage = bindataArchiveGetStorage(pBinArchive, "image_dbg");
-        pBinHeader = bindataArchiveGetStorage(pBinArchive, "header_dbg");
-        pBinSig = bindataArchiveGetStorage(pBinArchive, "sig_dbg");
+        pBinImage = bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_IMAGE_DBG);
+        pBinHeader = bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_HEADER_DBG);
+        pBinSig = bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_SIG_DBG);
     }
     else
     {
-        pBinImage = bindataArchiveGetStorage(pBinArchive, "image_prod");
-        pBinHeader = bindataArchiveGetStorage(pBinArchive, "header_prod");
-        pBinSig = bindataArchiveGetStorage(pBinArchive, "sig_prod");
+        pBinImage = bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_IMAGE_PROD);
+        pBinHeader = bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_HEADER_PROD);
+        pBinSig = bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_SIG_PROD);
     }
 
     NV_ASSERT_OR_RETURN(pBinImage != NULL, NV_ERR_NOT_SUPPORTED);
     NV_ASSERT_OR_RETURN(pBinHeader != NULL, NV_ERR_NOT_SUPPORTED);
     NV_ASSERT_OR_RETURN(pBinSig != NULL, NV_ERR_NOT_SUPPORTED);
 
-    pBinPatchSig = bindataArchiveGetStorage(pBinArchive, "patch_sig");
-    pBinPatchLoc = bindataArchiveGetStorage(pBinArchive, "patch_loc");
-    pBinPatchMeta = bindataArchiveGetStorage(pBinArchive, "patch_meta");
-    pBinNumSigs = bindataArchiveGetStorage(pBinArchive, "num_sigs");
+    pBinPatchSig = bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_PATCH_SIG);
+    pBinPatchLoc = bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_PATCH_LOC);
+    pBinPatchMeta = bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_PATCH_META);
+    pBinNumSigs = bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_NUM_SIGS);
 
     NV_ASSERT_OR_RETURN(pBinPatchSig != NULL, NV_ERR_NOT_SUPPORTED);
     NV_ASSERT_OR_RETURN(pBinPatchLoc != NULL, NV_ERR_NOT_SUPPORTED);

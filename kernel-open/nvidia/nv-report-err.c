@@ -24,8 +24,10 @@
 #define  __NO_VERSION__
 #include "nv-linux.h"
 #include "os-interface.h"
-
 #include "nv-report-err.h"
+
+#define CREATE_TRACE_POINTS
+#include "nv-tracepoint.h"
 
 nv_report_error_cb_t nv_error_cb_handle = NULL;
 
@@ -64,14 +66,15 @@ void nv_report_error(
     char *buffer;
     gfp_t gfp = NV_MAY_SLEEP() ? NV_GFP_NO_OOM : NV_GFP_ATOMIC;
 
-    if (nv_error_cb_handle == NULL)
-        return;
-
     buffer = kvasprintf(gfp, format, ap);
 
     if (buffer == NULL)
         return;
 
-    nv_error_cb_handle(dev, error_number, buffer, strlen(buffer) + 1);
+    trace_nvidia_dev_xid(dev, error_number, buffer);
+
+    if (nv_error_cb_handle != NULL)
+        nv_error_cb_handle(dev, error_number, buffer, strlen(buffer) + 1);
+
     kfree(buffer);
 }

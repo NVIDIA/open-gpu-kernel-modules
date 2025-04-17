@@ -413,6 +413,9 @@ static NV_STATUS test_all(uvm_va_space_t *va_space)
         for_each_va_space_gpu(gpu, va_space) {
             NvU64 page_sizes = gpu->address_space_tree.hal->page_sizes();
 
+            if (gpu->mem_info.size == 0)
+                continue;
+
             UVM_ASSERT(max_supported_page_sizes >= hweight_long(page_sizes));
 
             status = test_alloc_vidmem(gpu, UVM_PAGE_SIZE_DEFAULT, sizes[i], &mem);
@@ -437,7 +440,9 @@ static NV_STATUS test_all(uvm_va_space_t *va_space)
                 all_mem[current_alloc++] = mem;
 
             }
+        }
 
+        for_each_va_space_gpu(gpu, va_space) {
             status = test_alloc_sysmem_dma(va_space, gpu, sizes[i], &mem);
             if (status != NV_OK) {
                 UVM_TEST_PRINT("Test alloc sysmem DMA failed, size %zd GPU %s\n",
@@ -466,6 +471,9 @@ static NV_STATUS test_basic_vidmem(uvm_gpu_t *gpu)
     NvU64 biggest_page_size = uvm_mmu_biggest_page_size_up_to(&gpu->address_space_tree, UVM_CHUNK_SIZE_MAX);
     NvU64 smallest_page_size = page_sizes & ~(page_sizes - 1);
     uvm_mem_t *mem = NULL;
+
+    if (gpu->mem_info.size == 0)
+        return NV_OK;
 
     page_sizes &= UVM_CHUNK_SIZES_MASK;
     for_each_page_size(page_size, page_sizes) {

@@ -1,6 +1,14 @@
 NVIDIA_SOURCES ?=
 NVIDIA_SOURCES_CXX ?=
 
+NVIDIA_SOURCES += nvidia/nv-platform.c
+NVIDIA_SOURCES += nvidia/nv-dsi-parse-panel-props.c
+NVIDIA_SOURCES += nvidia/nv-bpmp.c
+NVIDIA_SOURCES += nvidia/nv-gpio.c
+NVIDIA_SOURCES += nvidia/nv-backlight.c
+NVIDIA_SOURCES += nvidia/nv-imp.c
+NVIDIA_SOURCES += nvidia/nv-platform-pm.c
+NVIDIA_SOURCES += nvidia/nv-ipc-soc.c
 NVIDIA_SOURCES += nvidia/nv.c
 NVIDIA_SOURCES += nvidia/nv-pci.c
 NVIDIA_SOURCES += nvidia/nv-dmabuf.c
@@ -30,6 +38,7 @@ NVIDIA_SOURCES += nvidia/nv-rsync.c
 NVIDIA_SOURCES += nvidia/nv-msi.c
 NVIDIA_SOURCES += nvidia/nv-caps.c
 NVIDIA_SOURCES += nvidia/nv-caps-imex.c
+NVIDIA_SOURCES += nvidia/nv-clk.c
 NVIDIA_SOURCES += nvidia/nv-host1x.c
 NVIDIA_SOURCES += nvidia/nv_uvm_interface.c
 NVIDIA_SOURCES += nvidia/libspdm_aead.c

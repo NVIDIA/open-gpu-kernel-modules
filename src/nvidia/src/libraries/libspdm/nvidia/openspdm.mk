@@ -43,6 +43,8 @@ LIBSPDM_SOURCES += src/kernel/gpu/spdm/arch/blackwell/spdm_certs_gb100.c
 LIBSPDM_SOURCES += src/kernel/gpu/conf_compute/ccsl.c
 LIBSPDM_SOURCES += src/kernel/gpu/conf_compute/arch/hopper/conf_compute_keystore_gh100.c
 LIBSPDM_SOURCES += src/kernel/gpu/conf_compute/arch/blackwell/conf_compute_keystore_gb100.c
+LIBSPDM_SOURCES += src/kernel/gpu/spdm/kernel_spdm.c
+LIBSPDM_SOURCES += src/kernel/gpu/bus/p2p_api.c
 
 # NVIDIA-authored platform code
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/nvidia/nvspdm_crypt_null.c

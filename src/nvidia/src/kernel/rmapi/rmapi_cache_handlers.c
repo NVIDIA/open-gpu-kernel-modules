@@ -23,6 +23,8 @@
 
 #include "rmapi/rmapi_cache_handlers.h"
 #include "nvport/nvport.h"
+#include "containers/list.h"
+#include "containers/map.h"
 
 //
 // NV0073_CTRL_CMD_SYSTEM_GET_SUPPORTED is CACHEABLE_BY_INPUT instead of CACHEABLE,
@@ -89,3 +91,45 @@ NV_STATUS _dispSystemGetInternalDisplaysCacheHandler
 
     return NV_OK;
 }
+
+//
+// NV0073_CTRL_CMD_SPECIFIC_GET_TYPE Cache Handler.
+//
+NV_STATUS _dispSpecificGetTypeCacheHandler
+(
+    void *cachedEntry,
+    void *pProvidedParams,
+    NvBool bSet
+)
+{
+    NV0073_CTRL_SPECIFIC_GET_TYPE_PARAMS *pParams     = pProvidedParams;
+    DispSpecificGetTypeCacheTable        *pCacheTable = cachedEntry;
+    NvU32 cacheEntryIdx;
+
+    if (!ONEBITSET(pParams->displayId))
+        return NV_ERR_INVALID_ARGUMENT;
+
+    cacheEntryIdx = BIT_IDX_32(pParams->displayId);
+
+    if (!bSet && !pCacheTable->cachedEntries[cacheEntryIdx].valid)
+        return NV_ERR_OBJECT_NOT_FOUND;
+
+    if (bSet)
+    {
+        if (pCacheTable->cachedEntries[cacheEntryIdx].valid)
+        {
+            // Verify mode.
+            NV_ASSERT(pCacheTable->cachedEntries[cacheEntryIdx].displayType == pParams->displayType);
+        }
+
+        pCacheTable->cachedEntries[cacheEntryIdx].displayType = pParams->displayType;
+        pCacheTable->cachedEntries[cacheEntryIdx].valid       = NV_TRUE;
+    }
+    else
+    {
+        pParams->displayType = pCacheTable->cachedEntries[cacheEntryIdx].displayType;
+    }
+
+    return NV_OK;
+}
+

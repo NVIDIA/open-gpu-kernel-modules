@@ -1891,16 +1891,16 @@ _ceChannelUpdateGpFifo_GM107
         NV_ASSERT_OR_RETURN_VOID(CliGetKernelChannelWithDevice(pChannel->pRsClient,
                                  pChannel->deviceId, pChannel->channelId,
                                  &pFifoKernelChannel) == NV_OK);
+        if (!kchannelIsRunlistSet(pGpu, pFifoKernelChannel))
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                "FAILED Channel 0x%x is not assigned to runlist yet\n",
+                kchannelGetDebugTag(pFifoKernelChannel));
+            return;
+        }
+        // update doorbell register
+        kfifoUpdateUsermodeDoorbell_HAL(pGpu, pKernelFifo, workSubmitToken);
     }
-    if (!kchannelIsRunlistSet(pGpu, pFifoKernelChannel))
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "FAILED Channel 0x%x is not assigned to runlist yet\n",
-                  kchannelGetDebugTag(pFifoKernelChannel));
-        return;
-    }
-    // update doorbell register
-    kfifoUpdateUsermodeDoorbell_HAL(pGpu, pKernelFifo, workSubmitToken, kchannelGetRunlistId(pFifoKernelChannel));
 }
 
 /*!

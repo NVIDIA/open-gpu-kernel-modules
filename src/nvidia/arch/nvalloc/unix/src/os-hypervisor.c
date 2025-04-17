@@ -840,11 +840,11 @@ NV_STATUS NV_API_CALL nv_gpu_unbind_event
     // LOCK: acquire API lock
     if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_HYPERVISOR)) == NV_OK)
     {
-        /*
-         * Send gpu_id in "status" field of the event so that nvidia-vgpu-mgr
-         * daemon knows which GPU is being unbound
-         */
-        CliAddSystemEvent(NV0000_NOTIFIERS_GPU_UNBIND_EVENT, gpuId, isEventNotified);
+        NV0000_CTRL_SYSTEM_EVENT_DATA_VGPU_UNBIND eventData = { 0 };
+
+        // Send gpu_id so that nvidia-vgpu-mgr daemon knows which GPU is being unbound
+        eventData.gpuId = gpuId;
+        CliAddSystemEvent(NV0000_NOTIFIERS_VGPU_UNBIND_EVENT, &eventData, isEventNotified);
 
         // UNLOCK: release API lock
         rmapiLockRelease();
@@ -872,7 +872,10 @@ NV_STATUS NV_API_CALL nv_gpu_bind_event(
     // LOCK: acquire API lock
     if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_HYPERVISOR)) == NV_OK)
     {
-        CliAddSystemEvent(NV0000_NOTIFIERS_GPU_BIND_EVENT, gpuId, isEventNotified);
+        NV0000_CTRL_SYSTEM_EVENT_DATA_VGPU_BIND eventData = { 0 };
+
+        eventData.gpuId = gpuId;
+        CliAddSystemEvent(NV0000_NOTIFIERS_VGPU_BIND_EVENT, &eventData, isEventNotified);
 
         // UNLOCK: release API lock
         rmapiLockRelease();

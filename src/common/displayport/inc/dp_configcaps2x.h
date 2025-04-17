@@ -41,6 +41,7 @@ namespace DisplayPort
         CableTypePassive = 1,
         CableTypeLRD = 2,
         CableTypeActiveReTimer = 3,
+        CableTypeOptical = 4,
     };
 
     struct DPCDHALImpl2x : DPCDHALImpl
@@ -72,13 +73,30 @@ namespace DisplayPort
                 bool     bUHBR_20GSupported;
             } dpInTunnelingCaps;
 
+            /* 
+             * Cable capabilities determined on the sink end
+             * read by source via DPCD
+             */
             struct
             {
                 bool      bUHBR_10GSupported;
                 bool      bUHBR_13_5GSupported;
                 bool      bUHBR_20GSupported;
                 CableType cableType;
-            } cableCaps;
+            } rxCableCaps;
+
+            /* 
+             * Cable capabilities determined on the source end
+             */
+            struct
+            {
+                bool      bIsSupported;
+                bool      bUHBR_10GSupported;
+                bool      bUHBR_13_5GSupported;
+                bool      bUHBR_20GSupported;
+                CableType cableType;
+                bool      bVconnSource;
+            } txCableCaps;
         } caps2x;
 
         struct
@@ -115,6 +133,21 @@ namespace DisplayPort
         virtual NvU32               getUHBRSupported();
         virtual void                setIgnoreCableIdCaps(bool bIgnore){ bIgnoreCableIdCaps = bIgnore; }
         virtual void                overrideCableIdCap(LinkRate linkRate, bool bEnable);
+
+        void                        setCableVconnSourceUnknown()
+        {
+            bCableVconnSourceUnknown = true;
+        }
+        void                        resetTxCableCaps()
+        {
+            caps2x.txCableCaps.bUHBR_10GSupported = true;
+            caps2x.txCableCaps.bUHBR_13_5GSupported = true;
+            caps2x.txCableCaps.bUHBR_20GSupported = true;
+            caps2x.txCableCaps.bVconnSource = true;
+            caps2x.txCableCaps.bIsSupported = false;
+        }
+        virtual void                setUSBCCableIDInfo(NV0073_CTRL_DP_USBC_CABLEID_INFO *cableIDInfo);
+
         virtual bool                parseTestRequestPhy();
         virtual bool                parseTestRequestTraining(NvU8 * buffer);
         // DPCD offset 2230 - 2250
@@ -127,7 +160,8 @@ namespace DisplayPort
         // class fields that need re-initialization
         bool bIgnoreCableIdCaps;
         bool bConnectorIsTypeC;
-
+        bool bCableVconnSourceUnknown;
+        
         virtual void initialize()
         {
             setIgnoreCableIdCaps(false);
@@ -145,9 +179,13 @@ namespace DisplayPort
             caps2x.bUHBR_13_5GSupported = true;
             caps2x.bUHBR_20GSupported = true;
 
-            caps2x.cableCaps.bUHBR_10GSupported = true;
-            caps2x.cableCaps.bUHBR_13_5GSupported = true;
-            caps2x.cableCaps.bUHBR_20GSupported = true;
+            caps2x.rxCableCaps.bUHBR_10GSupported = true;
+            caps2x.rxCableCaps.bUHBR_13_5GSupported = true;
+            caps2x.rxCableCaps.bUHBR_20GSupported = true;
+
+            // txCableCaps are set only if data from connector
+            // is available to be read
+            resetTxCableCaps();
         };
     };
 }

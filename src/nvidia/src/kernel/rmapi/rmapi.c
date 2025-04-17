@@ -555,7 +555,7 @@ rmapiLockAcquire(NvU32 flags, NvU32 module)
     NvU64 threadId = portThreadGetCurrentThreadId();
 
     NvU64 myPriority = 0;
-    NvU64 startWaitTime;
+    NvU64 startWaitTime = 0;
 
     // Make sure lock has been created
     NV_CHECK_OR_RETURN(LEVEL_ERROR, g_RmApiLock.pLock != NULL, NV_ERR_NOT_READY);
@@ -581,7 +581,7 @@ rmapiLockAcquire(NvU32 flags, NvU32 module)
 
     // Get start wait time measuring lock wait times
     if (pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
-        osGetCurrentTick(&startWaitTime);
+        startWaitTime = osGetCurrentTick();
 
     //
     // For conditional acquires and DISPATCH_LEVEL we want to exit
@@ -647,7 +647,7 @@ rmapiLockAcquire(NvU32 flags, NvU32 module)
     if (rmStatus == NV_OK)
     {
         NvU64 timestamp;
-        osGetCurrentTick(&timestamp);
+        timestamp = osGetCurrentTick();
 
         // Update total API lock wait time if measuring lock times
         if (pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
@@ -690,7 +690,7 @@ rmapiLockAcquire(NvU32 flags, NvU32 module)
         // and released after they are which could lead to uninitialized memory
         // being present in TLS.
         //
-        osGetCurrentTick((NvU64 *) pStartTime);
+        *(NvU64*)pStartTime = osGetCurrentTick();
     }
 
     return rmStatus;
@@ -708,7 +708,7 @@ rmapiLockRelease(void)
     if (pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
         startTime = (NvU64) tlsEntryGet(g_RmApiLock.tlsEntryId);
 
-    osGetCurrentTick(&timestamp);
+    timestamp = osGetCurrentTick();
 
     RMTRACE_RMLOCK(_API_LOCK_RELEASE);
 

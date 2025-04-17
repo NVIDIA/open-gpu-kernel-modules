@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -642,12 +642,11 @@ enum {
 ,     CS_RESERVED_1
 ,     CS_SIFIVE_FU740_C000
 ,     CS_PLDA_XPRESSRICH_AXI_REF
-,     CS_AMPERE_AMPEREONE
+,     CS_AMPERE_AMPEREONE160
 ,     CS_PHYTIUM_S5000
 ,     CS_RESERVED_2
 ,     CS_RESERVED_3
-,     CS_AMD_RPH
-,     CS_INTEL_B660
+,     CS_AMPERE_AMPEREONE192
 ,     CS_MAX_PCIE
 };
 

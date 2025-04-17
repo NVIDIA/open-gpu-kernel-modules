@@ -1,13 +1,15 @@
 
 #ifndef _G_UVM_NVOC_H_
 #define _G_UVM_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -116,15 +118,20 @@ typedef enum
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__OBJUVM;
+struct NVOC_METADATA__OBJENGSTATE;
+struct NVOC_METADATA__IntrService;
 struct NVOC_VTABLE__OBJUVM;
 
 
 struct OBJUVM {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__OBJUVM *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__OBJUVM *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -178,11 +185,8 @@ struct OBJUVM {
 };
 
 
-// Metadata including vtable with 18 function pointers plus superclass metadata
+// Vtable with 18 per-class function pointers
 struct NVOC_VTABLE__OBJUVM {
-    const struct NVOC_VTABLE__OBJENGSTATE OBJENGSTATE;    // (engstate) 14 function pointers
-    const struct NVOC_VTABLE__IntrService IntrService;    // (intrserv) 4 function pointers
-
     void (*__uvmStateDestroy__)(OBJGPU *, struct OBJUVM * /*this*/);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__uvmStateInitUnlocked__)(OBJGPU *, struct OBJUVM * /*this*/);  // virtual override (engstate) base (engstate)
     void (*__uvmRegisterIntrService__)(OBJGPU *, struct OBJUVM * /*this*/, IntrServiceRecord *);  // virtual override (intrserv) base (intrserv)
@@ -203,6 +207,14 @@ struct NVOC_VTABLE__OBJUVM {
     NV_STATUS (*__uvmServiceNotificationInterrupt__)(OBJGPU *, struct OBJUVM * /*this*/, IntrServiceServiceNotificationInterruptArguments *);  // virtual inherited (intrserv) base (intrserv)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__OBJUVM {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
+    const struct NVOC_METADATA__IntrService metadata__IntrService;
+    const struct NVOC_VTABLE__OBJUVM vtable;
+};
+
 #ifndef __NVOC_CLASS_OBJUVM_TYPEDEF__
 #define __NVOC_CLASS_OBJUVM_TYPEDEF__
 typedef struct OBJUVM OBJUVM;
@@ -219,10 +231,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJUVM;
     ((pThis)->__nvoc_pbase_OBJUVM)
 
 #ifdef __nvoc_uvm_h_disabled
-#define __dynamicCast_OBJUVM(pThis) ((OBJUVM*)NULL)
+#define __dynamicCast_OBJUVM(pThis) ((OBJUVM*) NULL)
 #else //__nvoc_uvm_h_disabled
 #define __dynamicCast_OBJUVM(pThis) \
-    ((OBJUVM*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJUVM)))
+    ((OBJUVM*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJUVM)))
 #endif //__nvoc_uvm_h_disabled
 
 // Property macros
@@ -237,9 +249,9 @@ NV_STATUS __nvoc_objCreate_OBJUVM(OBJUVM**, Dynamic*, NvU32);
 
 
 // Wrapper macros
-#define uvmStateDestroy_FNPTR(pUvm) pUvm->__nvoc_vtable->__uvmStateDestroy__
+#define uvmStateDestroy_FNPTR(pUvm) pUvm->__nvoc_metadata_ptr->vtable.__uvmStateDestroy__
 #define uvmStateDestroy(pGpu, pUvm) uvmStateDestroy_DISPATCH(pGpu, pUvm)
-#define uvmStateInitUnlocked_FNPTR(pUvm) pUvm->__nvoc_vtable->__uvmStateInitUnlocked__
+#define uvmStateInitUnlocked_FNPTR(pUvm) pUvm->__nvoc_metadata_ptr->vtable.__uvmStateInitUnlocked__
 #define uvmStateInitUnlocked(pGpu, pUvm) uvmStateInitUnlocked_DISPATCH(pGpu, pUvm)
 #define uvmInitAccessCntrBuffer_FNPTR(pUvm) pUvm->__uvmInitAccessCntrBuffer__
 #define uvmInitAccessCntrBuffer(pGpu, pUvm, pAccessCounterBuffer) uvmInitAccessCntrBuffer_DISPATCH(pGpu, pUvm, pAccessCounterBuffer)
@@ -295,9 +307,9 @@ NV_STATUS __nvoc_objCreate_OBJUVM(OBJUVM**, Dynamic*, NvU32);
 #define uvmGetAccessCntrRegisterMappings_FNPTR(pUvm) pUvm->__uvmGetAccessCntrRegisterMappings__
 #define uvmGetAccessCntrRegisterMappings(pGpu, pUvm, accessCounterIndex, arg4, arg5, arg6, arg7, arg8, arg9, arg10) uvmGetAccessCntrRegisterMappings_DISPATCH(pGpu, pUvm, accessCounterIndex, arg4, arg5, arg6, arg7, arg8, arg9, arg10)
 #define uvmGetAccessCntrRegisterMappings_HAL(pGpu, pUvm, accessCounterIndex, arg4, arg5, arg6, arg7, arg8, arg9, arg10) uvmGetAccessCntrRegisterMappings_DISPATCH(pGpu, pUvm, accessCounterIndex, arg4, arg5, arg6, arg7, arg8, arg9, arg10)
-#define uvmRegisterIntrService_FNPTR(pUvm) pUvm->__nvoc_vtable->__uvmRegisterIntrService__
+#define uvmRegisterIntrService_FNPTR(pUvm) pUvm->__nvoc_metadata_ptr->vtable.__uvmRegisterIntrService__
 #define uvmRegisterIntrService(arg1, pUvm, arg3) uvmRegisterIntrService_DISPATCH(arg1, pUvm, arg3)
-#define uvmServiceInterrupt_FNPTR(pUvm) pUvm->__nvoc_vtable->__uvmServiceInterrupt__
+#define uvmServiceInterrupt_FNPTR(pUvm) pUvm->__nvoc_metadata_ptr->vtable.__uvmServiceInterrupt__
 #define uvmServiceInterrupt(arg1, pUvm, arg3) uvmServiceInterrupt_DISPATCH(arg1, pUvm, arg3)
 #define uvmAccessCntrService_FNPTR(pUvm) pUvm->__uvmAccessCntrService__
 #define uvmAccessCntrService(pGpu, pUvm) uvmAccessCntrService_DISPATCH(pGpu, pUvm)
@@ -338,42 +350,42 @@ NV_STATUS __nvoc_objCreate_OBJUVM(OBJUVM**, Dynamic*, NvU32);
 #define uvmGetRegOffsetAccessCntrBufferSize_FNPTR(pUvm) pUvm->__uvmGetRegOffsetAccessCntrBufferSize__
 #define uvmGetRegOffsetAccessCntrBufferSize(pUvm, accessCounterIndex) uvmGetRegOffsetAccessCntrBufferSize_DISPATCH(pUvm, accessCounterIndex)
 #define uvmGetRegOffsetAccessCntrBufferSize_HAL(pUvm, accessCounterIndex) uvmGetRegOffsetAccessCntrBufferSize_DISPATCH(pUvm, accessCounterIndex)
-#define uvmConstructEngine_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateConstructEngine__
+#define uvmConstructEngine_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define uvmConstructEngine(pGpu, pEngstate, arg3) uvmConstructEngine_DISPATCH(pGpu, pEngstate, arg3)
-#define uvmInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateInitMissing__
+#define uvmInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define uvmInitMissing(pGpu, pEngstate) uvmInitMissing_DISPATCH(pGpu, pEngstate)
-#define uvmStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitLocked__
+#define uvmStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
 #define uvmStatePreInitLocked(pGpu, pEngstate) uvmStatePreInitLocked_DISPATCH(pGpu, pEngstate)
-#define uvmStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitUnlocked__
+#define uvmStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__
 #define uvmStatePreInitUnlocked(pGpu, pEngstate) uvmStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define uvmStateInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateInitLocked__
+#define uvmStateInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__
 #define uvmStateInitLocked(pGpu, pEngstate) uvmStateInitLocked_DISPATCH(pGpu, pEngstate)
-#define uvmStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreLoad__
+#define uvmStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__
 #define uvmStatePreLoad(pGpu, pEngstate, arg3) uvmStatePreLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define uvmStateLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateLoad__
+#define uvmStateLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateLoad__
 #define uvmStateLoad(pGpu, pEngstate, arg3) uvmStateLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define uvmStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePostLoad__
+#define uvmStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostLoad__
 #define uvmStatePostLoad(pGpu, pEngstate, arg3) uvmStatePostLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define uvmStatePreUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreUnload__
+#define uvmStatePreUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreUnload__
 #define uvmStatePreUnload(pGpu, pEngstate, arg3) uvmStatePreUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define uvmStateUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateUnload__
+#define uvmStateUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateUnload__
 #define uvmStateUnload(pGpu, pEngstate, arg3) uvmStateUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define uvmStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePostUnload__
+#define uvmStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__
 #define uvmStatePostUnload(pGpu, pEngstate, arg3) uvmStatePostUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define uvmIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateIsPresent__
+#define uvmIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__
 #define uvmIsPresent(pGpu, pEngstate) uvmIsPresent_DISPATCH(pGpu, pEngstate)
-#define uvmClearInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_base_IntrService.__nvoc_vtable->__intrservClearInterrupt__
+#define uvmClearInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_base_IntrService.__nvoc_metadata_ptr->vtable.__intrservClearInterrupt__
 #define uvmClearInterrupt(pGpu, pIntrService, pParams) uvmClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
-#define uvmServiceNotificationInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_base_IntrService.__nvoc_vtable->__intrservServiceNotificationInterrupt__
+#define uvmServiceNotificationInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_base_IntrService.__nvoc_metadata_ptr->vtable.__intrservServiceNotificationInterrupt__
 #define uvmServiceNotificationInterrupt(pGpu, pIntrService, pParams) uvmServiceNotificationInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 
 // Dispatch functions
 static inline void uvmStateDestroy_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pUvm) {
-    pUvm->__nvoc_vtable->__uvmStateDestroy__(pGpu, pUvm);
+    pUvm->__nvoc_metadata_ptr->vtable.__uvmStateDestroy__(pGpu, pUvm);
 }
 
 static inline NV_STATUS uvmStateInitUnlocked_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pUvm) {
-    return pUvm->__nvoc_vtable->__uvmStateInitUnlocked__(pGpu, pUvm);
+    return pUvm->__nvoc_metadata_ptr->vtable.__uvmStateInitUnlocked__(pGpu, pUvm);
 }
 
 static inline NV_STATUS uvmInitAccessCntrBuffer_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pUvm, struct AccessCounterBuffer *pAccessCounterBuffer) {
@@ -448,12 +460,12 @@ static inline NV_STATUS uvmGetAccessCntrRegisterMappings_DISPATCH(OBJGPU *pGpu, 
     return pUvm->__uvmGetAccessCntrRegisterMappings__(pGpu, pUvm, accessCounterIndex, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
 }
 
-static inline void uvmRegisterIntrService_DISPATCH(OBJGPU *arg1, struct OBJUVM *pUvm, IntrServiceRecord arg3[177]) {
-    pUvm->__nvoc_vtable->__uvmRegisterIntrService__(arg1, pUvm, arg3);
+static inline void uvmRegisterIntrService_DISPATCH(OBJGPU *arg1, struct OBJUVM *pUvm, IntrServiceRecord arg3[179]) {
+    pUvm->__nvoc_metadata_ptr->vtable.__uvmRegisterIntrService__(arg1, pUvm, arg3);
 }
 
 static inline NvU32 uvmServiceInterrupt_DISPATCH(OBJGPU *arg1, struct OBJUVM *pUvm, IntrServiceServiceInterruptArguments *arg3) {
-    return pUvm->__nvoc_vtable->__uvmServiceInterrupt__(arg1, pUvm, arg3);
+    return pUvm->__nvoc_metadata_ptr->vtable.__uvmServiceInterrupt__(arg1, pUvm, arg3);
 }
 
 static inline NV_STATUS uvmAccessCntrService_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pUvm) {
@@ -509,59 +521,59 @@ static inline NvU32 uvmGetRegOffsetAccessCntrBufferSize_DISPATCH(struct OBJUVM *
 }
 
 static inline NV_STATUS uvmConstructEngine_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pEngstate, ENGDESCRIPTOR arg3) {
-    return pEngstate->__nvoc_vtable->__uvmConstructEngine__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__uvmConstructEngine__(pGpu, pEngstate, arg3);
 }
 
 static inline void uvmInitMissing_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pEngstate) {
-    pEngstate->__nvoc_vtable->__uvmInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_metadata_ptr->vtable.__uvmInitMissing__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS uvmStatePreInitLocked_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pEngstate) {
-    return pEngstate->__nvoc_vtable->__uvmStatePreInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__uvmStatePreInitLocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS uvmStatePreInitUnlocked_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pEngstate) {
-    return pEngstate->__nvoc_vtable->__uvmStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__uvmStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS uvmStateInitLocked_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pEngstate) {
-    return pEngstate->__nvoc_vtable->__uvmStateInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__uvmStateInitLocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS uvmStatePreLoad_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__uvmStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__uvmStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS uvmStateLoad_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__uvmStateLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__uvmStateLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS uvmStatePostLoad_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__uvmStatePostLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__uvmStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS uvmStatePreUnload_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__uvmStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__uvmStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS uvmStateUnload_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__uvmStateUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__uvmStateUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS uvmStatePostUnload_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__uvmStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__uvmStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline NvBool uvmIsPresent_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pEngstate) {
-    return pEngstate->__nvoc_vtable->__uvmIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__uvmIsPresent__(pGpu, pEngstate);
 }
 
 static inline NvBool uvmClearInterrupt_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pIntrService, IntrServiceClearInterruptArguments *pParams) {
-    return pIntrService->__nvoc_vtable->__uvmClearInterrupt__(pGpu, pIntrService, pParams);
+    return pIntrService->__nvoc_metadata_ptr->vtable.__uvmClearInterrupt__(pGpu, pIntrService, pParams);
 }
 
 static inline NV_STATUS uvmServiceNotificationInterrupt_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams) {
-    return pIntrService->__nvoc_vtable->__uvmServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
+    return pIntrService->__nvoc_metadata_ptr->vtable.__uvmServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
 }
 
 NV_STATUS uvmInitializeAccessCntrBuffer_IMPL(OBJGPU *pGpu, struct OBJUVM *pUvm, struct AccessCounterBuffer *pAccessCounterBuffer);
@@ -729,7 +741,7 @@ static inline NV_STATUS uvmGetAccessCntrRegisterMappings_395e98(OBJGPU *pGpu, st
     return NV_ERR_NOT_SUPPORTED;
 }
 
-void uvmRegisterIntrService_IMPL(OBJGPU *arg1, struct OBJUVM *pUvm, IntrServiceRecord arg3[177]);
+void uvmRegisterIntrService_IMPL(OBJGPU *arg1, struct OBJUVM *pUvm, IntrServiceRecord arg3[179]);
 
 NvU32 uvmServiceInterrupt_IMPL(OBJGPU *arg1, struct OBJUVM *pUvm, IntrServiceServiceInterruptArguments *arg3);
 

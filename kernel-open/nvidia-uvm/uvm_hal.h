@@ -494,6 +494,7 @@ uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_turing(NvU64 big_page_size);
 uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_ampere(NvU64 big_page_size);
 uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_hopper(NvU64 big_page_size);
 uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_blackwell(NvU64 big_page_size);
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_blackwell_integrated(NvU64 big_page_size);
 
 void uvm_hal_maxwell_mmu_enable_prefetch_faults_unsupported(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_maxwell_mmu_disable_prefetch_faults_unsupported(uvm_parent_gpu_t *parent_gpu);
@@ -863,7 +864,8 @@ struct uvm_sec2_hal_struct
 
 typedef struct
 {
-    // id is either a hardware class or GPU architecture
+    // TODO: BUG 5044266: the chip ops should be separated from the arch ops.
+    // id is either a hardware class, a chip or a GPU architecture
     NvU32 id;
     NvU32 parent_id;
     union
@@ -874,7 +876,7 @@ typedef struct
         // ce_ops: id is a hardware class
         uvm_ce_hal_t ce_ops;
 
-        // arch_ops: id is an architecture
+        // arch_ops: id is an architecture or a chip
         uvm_arch_hal_t arch_ops;
 
         // fault_buffer_ops: id is an architecture

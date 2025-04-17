@@ -14,6 +14,7 @@ NV_HEADER_PRESENCE_TESTS = \
   drm/drm_encoder.h \
   drm/drm_atomic_uapi.h \
   drm/drm_drv.h \
+  drm/drm_edid.h \
   drm/drm_fbdev_generic.h \
   drm/drm_fbdev_ttm.h \
   drm/drm_client_setup.h \
@@ -65,13 +66,10 @@ NV_HEADER_PRESENCE_TESTS = \
   linux/nvhost.h \
   linux/nvhost_t194.h \
   linux/host1x-next.h \
-  asm/book3s/64/hash-64k.h \
   asm/set_memory.h \
   asm/prom.h \
-  asm/powernv.h \
   linux/atomic.h \
   asm/barrier.h \
-  asm/opal-api.h \
   sound/hdaudio.h \
   asm/pgtable_types.h \
   asm/page.h \

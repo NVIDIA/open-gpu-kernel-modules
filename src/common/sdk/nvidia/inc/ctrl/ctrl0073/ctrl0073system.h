@@ -1911,6 +1911,7 @@ typedef struct NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO_PARAMS {
 #define NV0073_CTRL_DISP_LPWR_FEATURE_ID_CLK_GATING_HUBCLK      0x0006
 #define NV0073_CTRL_DISP_LPWR_FEATURE_ID_CLK_GATING_DISPCLK     0x0007
 #define NV0073_CTRL_DISP_LPWR_FEATURE_ID_CLK_GATING_POSTRG_CLKS 0x0008
+#define NV0073_CTRL_DISP_LPWR_FEATURE_ID_MSCG                   0x0009
 
 // Parameter/characteristics of Display ALPM
 #define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_ALPM_INVALID         0x0000
@@ -2030,6 +2031,66 @@ typedef struct NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO_PARAMS {
  * (This property allows Get operation)
  */
 #define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_CLK_GATING_GATE_TIME_US           (0x0003)
+
+ /*!
+ * Property specifies current state of the specified clock
+ * i.e. Gated ot not Gated
+ * (This property allows Get operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_CLK_GATING_STATUS                 (0x0004)
+
+/*!
+ * @brief Parameter/characteristics of MSCG
+ *
+ * Following are the Parameter/characteristics for MSCG
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_MSCG_INVALID                      (0x0000)
+
+/*!
+ * Property specifies if DPS1 is supported
+ * (This property allows Get operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_MSCG_DPS1_SUPPORT                 (0x0001)
+
+/*!
+ * Property specifies if DPS2 is supported
+ * (This property allows Get operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_MSCG_DPS2_SUPPORT                 (0x0002)
+
+/*!
+ * Property specifies if MSCG is enabled
+ * (This property allows Get/SET operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_MSCG_ENABLED                      (0x0003)
+
+/*!
+ * Property specifies the time(in US) for which DPS1 was enabled
+ * in ACTIVE region
+ * (This property allows Get operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_MSCG_DPS1_ACTIVE_TIME_US          (0x0004)
+
+/*!
+ * Property specifies the time(in US) for which DPS1 was enabled
+ * in VBLANK region
+ * (This property allows Get operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_MSCG_DPS1_VBLANK_TIME_US          (0x0005)
+
+/*!
+ * Property specifies the time(in US) for which DPS2 was enabled
+ * in ACTIVE region
+ * (This property allows Get operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_MSCG_DPS2_ACTIVE_TIME_US          (0x0006)
+
+/*!
+ * Property specifies the time(in US) for which DPS2 was enabled
+ * in VBLANK region
+ * (This property allows Get operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_MSCG_DPS2_VBLANK_TIME_US          (0x0007)
 
 /*!
  * @brief Structure to identify display low power feature
@@ -2202,6 +2263,143 @@ typedef struct NV0073_CTRL_CMD_SYSTEM_NOTIFY_DRR_MSCG_WAR_PARAMS {
     NvU32  presentDurationUs;
     NvBool bEnableDrr;
 } NV0073_CTRL_CMD_SYSTEM_NOTIFY_DRR_MSCG_WAR_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_SYSTEM_SET_DISPLAY_PERF_LIMIT
+ *
+ * This command sets lower and/or upper bounds for a display clock (dispclk or
+ * hubclk), or for the memory perf level.  When this API is called, the system
+ * will immediately attempt to switch the clock or perf level to a value that
+ * meets the specified condition(s).
+ *
+ * If no lower limit is desired, the "min" input should be set to zero.
+ *
+ * If no upper limit is desired for a clock, the "max" input should be set to
+ * NV_U32_MAX.
+ *
+ * This API does not allow an upper limit to be specified for perf level.
+ *
+ * Any perf limit set through this API will remain in effect until it updated
+ * or cancelled by a subsequent call to this API.  A perf limit may be
+ * cancelled by setting the "min" value to NV_U32_MIN (0) and the "max" value
+ * (for clocks) to NV_U32_MAX.  Only one perf limit may be in effect for a
+ * given clientUsageId and type at any given time.
+ *
+ * At any given time, multiple perf limits (with different clientUsageIds) may
+ * be in effect for a given clock or perf level, and that clock or perf level
+ * will be set to a value that meets the requirements of all active perf
+ * limits.  If there is a conflict between perf limits, the conflict will be
+ * resolved by the perf limit(s) with the higher priority.
+ *
+ * For example, suppose the API is called with the following parameters:
+ *   clientUsageId = NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_ID_MODS
+ *   type = NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_TYPE_DISPCLK
+ *   data.clock.minFrequencyKHz = 800000
+ *   data.clock.maxFrequencyKHz = 800000
+ * This will set dispclk to 800 MHz (or possibly a slightly higher frequency,
+ * if the clock dividers do not allow 800 MHz to be set exactly).
+ *
+ * Then suppose this call is made:
+ *   clientUsageId = NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_ID_ISMODEPOSSIBLE
+ *   type = NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_TYPE_DISPCLK
+ *   data.clock.minFrequencyKHz = 1000000
+ *   data.clock.maxFrequencyKHz = 0xFFFFFFFF
+ * After this call, dispclk will remain set to 800 MHz, because, although the
+ * min frequency was requested to be at least 1 GHz, this would conflict with
+ * the "maxFrequencyKHz = 800000" value set in the previous call, which is
+ * still in effect.  The previous call takes priority because
+ * NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_ID_MODS has higher priority than
+ * NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_ID_ISMODEPOSSIBLE.
+ *
+ * Then suppose this call is made:
+ *   clientUsageId = NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_ID_MODS
+ *   type = NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_TYPE_DISPCLK
+ *   data.clock.minFrequencyKHz = 0
+ *   data.clock.maxFrequencyKHz = 0xFFFFFFFF
+ * This removes the NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_ID_MODS perf
+ * limit.  At this point, dispclk will be set to 1 GHz, in accordance with the
+ * NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_ID_ISMODEPOSSIBLE perf limit,
+ * which is still in effect.  (The remaining perf limit allows the clock to be
+ * higher than 1 GHz, but in practice, the clock will generally be set to the
+ * lowest frequency that meets the perf limit requirement, to save power.  For
+ * perf level, perf monitors (which do not use the perf limit mechanism) may
+ * force a higher value in order to meet performance needs.)
+ *
+ * This API takes an array of perf limit structures, so multiple perf limits
+ * maybe set within the same call.
+ *
+ * This API is primarily intended for use on SOC products, where display is
+ * separate from the GPU.  On dGPU products, this API may not be supported;
+ * instead, NV2080_CTRL_CMD_PERF_LIMITS_SET_STATUS_V2 may be used to set perf
+ * limits.
+ *
+ *   subDeviceInstance (in)
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed.  This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *
+ *   numLimits (in)
+ *     This is the number of perf limits with lower and/or upper limits to
+ *     apply.
+ *
+ *   bWaitForCompletion (in)
+ *     It is possible that a perf change or clock change may take some time to
+ *     execute.  If this flag is set, the API will wait for all of the changes
+ *     to complete before returning.  (However, it will not wait for completion
+ *     of any operation that is blocked by a higher priority perf limit.)
+ *
+ *   clientUsageId (in)
+ *     This is a NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_ID_xxx value
+ *     indicating who the client is, and/or the purpose of the perf limit.  It
+ *     is used to establish priority between conflicting perf limits.
+ *
+ *   whatIsToBeLimited (in)
+ *     This is a NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_TYPE_xxx value
+ *     indicating which clock, or memory perf level, is to have limits applied.
+ *
+ *   minLevelOrFreqKHz (in)
+ *   maxLevelOrFreqKHz (in)
+ *     If type is
+ *     NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_TYPE_PERF_LEVEL, then
+ *     minLevelOrFreqKHz specifies the zero-based index of the minimum perf
+ *     level to allow.  maxLevelOrFreqKHz is not used.
+ *
+ *     If type specifies a clock
+ *     (NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_TYPE_DISPCLK or
+ *     NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_TYPE_HUBCLK), then
+ *     minLevelOrFreqKHz and maxLevelOrFreqKHz specify the lower and upper
+ *     limits (respectively) for the specified clock's frequency.
+ */
+#define NV0073_CTRL_CMD_SYSTEM_SET_DISPLAY_PERF_LIMIT                 (0x73015aU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_PARAMS_MESSAGE_ID" */
+
+/* valid clientUsageId values */
+#define NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_ID_ISMODEPOSSIBLE   (0U)
+#define NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_ID_MCLK_SWITCH      (1U)
+#define NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_ID_MODS             (2U)
+
+/* valid type values */
+#define NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_LIMITING_PERF_LEVEL (0U)
+#define NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_LIMITING_DISPCLK    (1U)
+#define NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_LIMITING_HUBCLK     (2U)
+
+/* Define a structure for a single perf limit */
+typedef struct NV0073_CTRL_SYSTEM_DISPLAY_PERF_LIMIT {
+    NvU8  clientUsageId;
+    NvU8  whatIsToBeLimited;
+    NvU32 minLevelOrFreqKHz;
+    NvU32 maxLevelOrFreqKHz;
+} NV0073_CTRL_SYSTEM_DISPLAY_PERF_LIMIT;
+
+#define NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_PARAMS_MESSAGE_ID (0x5AU)
+
+typedef struct NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_PARAMS {
+    NvU32  subDeviceInstance;
+    NvU32  numLimits;
+    NvBool bWaitForCompletion;
+    NV_DECLARE_ALIGNED(NvP64 limits, 8);
+} NV0073_CTRL_SYSTEM_SET_DISPLAY_PERF_LIMIT_PARAMS;
 
 /*
  * NV0073_CTRL_CMD_SYSTEM_GET_CRASH_LOCK_COUNTER_INFO

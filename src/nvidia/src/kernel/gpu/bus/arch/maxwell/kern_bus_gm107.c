@@ -849,14 +849,14 @@ _kbusRequiresP2PMailboxBar1_GM107
 {
     KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
 
-    return (pKernelBif->forceP2PType != NV_REG_STR_RM_FORCE_P2P_TYPE_BAR1P2P)
-        &&
-        (!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_READS_DISABLED) ||
-         !pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_WRITES_DISABLED))
-        &&
-        IS_GFID_PF(gfid)
-        &&
-        !kbusIsP2pMailboxClientAllocated(pKernelBus);
+    return (pKernelBif->pcieP2PType != NV_REG_STR_RM_PCIEP2P_TYPE_BAR1)
+           &&
+           (!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_READS_DISABLED) ||
+            !pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_WRITES_DISABLED))
+           &&
+           IS_GFID_PF(gfid)
+           &&
+           !kbusIsP2pMailboxClientAllocated(pKernelBus);
 }
 
 /*!
@@ -1030,6 +1030,7 @@ kbusInitBar1_GM107(OBJGPU *pGpu, KernelBus *pKernelBus, NvU32 gfid)
         DBG_BREAKPOINT();
         return rmStatus;
     }
+
 
     // Restrict normal BAR1 alloc to be within the aperture
     pVASpaceHeap = vaspaceGetHeap(pKernelBus->bar1[gfid].pVAS);
@@ -2643,7 +2644,7 @@ kbusUpdateRmAperture_GM107
         addressTranslation = AT_GPU;
     }
 
-    dmaPageArrayInitFromMemDesc(&pageArray, pSubDevMemDesc, NULL, addressTranslation);
+    dmaPageArrayInitFromMemDesc(&pageArray, pSubDevMemDesc, addressTranslation);
     userCtx.pGpu = pGpu;
     userCtx.gfid = gfid;
     NV_ASSERT_OK_OR_RETURN(mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, &userCtx));
@@ -2855,7 +2856,7 @@ kbusMapFbAperture_GM107
     //
     // Try to get a static BAR1 mapping. If static BAR1 is not enabled
     // or the allocation goes in the dynamic range, we will get NV_ERR_NOT_SUPPORTED
-    // and fall through to te dynamic map (also used for initial static BAR1 setup itself)
+    // and fall through to the dynamic map (also used for initial static BAR1 setup itself)
     //
     rmStatus = kbusGetStaticFbAperture_HAL(pGpu, pKernelBus, pMemDesc,
                                            mapRange, pMemArea, flags);
@@ -2989,6 +2990,7 @@ kbusUnmapFbAperture_GM107
     memdescFlushCpuCaches(pGpu, pMemDesc);
 
     rmStatus = NV_OK;
+
 
     for (idx = 0; idx < memArea.numRanges; idx++)
     {
@@ -3128,14 +3130,9 @@ _kbusMapAperture_GM107
 {
     NV_STATUS           rmStatus = NV_ERR_GENERIC;
     VirtMemAllocator   *pDma;
-    NvU32               flags = DRF_DEF(OS46, _FLAGS, _DMA_UNICAST_REUSE_ALLOC, _FALSE);
+    NvU32               dmaFlags = kbusConvertBusMapFlagsToDmaFlags(pKernelBus, pMemDesc, mapFlags);
     MEMORY_DESCRIPTOR  *pTempMemDesc;
     NvU32               swizzId = KMIGMGR_SWIZZID_INVALID;
-
-    if (mapFlags & BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED)
-    {
-        flags = FLD_SET_DRF(OS46, _FLAGS, _DMA_OFFSET_FIXED, _TRUE, flags);
-    }
 
     pDma  = GPU_GET_DMA(pGpu);
 
@@ -3172,37 +3169,10 @@ _kbusMapAperture_GM107
         }
     }
 
-    if (memdescGetCpuCacheAttrib(pMemDesc) == NV_MEMORY_CACHED)
-    {
-        flags = FLD_SET_DRF(OS46, _FLAGS, _CACHE_SNOOP, _ENABLE, flags);
-    }
-
-    if (mapFlags & BUS_MAP_FB_FLAGS_MAP_DOWNWARDS)
-    {
-        flags = FLD_SET_DRF(OS46, _FLAGS, _DMA_OFFSET_GROWS, _DOWN, flags);
-    }
-
-    // Disable the encryption if DIRECT mapping is requested, currently it is just for testing purpose
-    if (mapFlags & BUS_MAP_FB_FLAGS_DISABLE_ENCRYPTION)
-    {
-        flags = FLD_SET_DRF(OS46, _FLAGS, _DISABLE_ENCRYPTION, _TRUE, flags);
-    }
-
-    NV_ASSERT(!((mapFlags & BUS_MAP_FB_FLAGS_READ_ONLY) &&
-                (mapFlags & BUS_MAP_FB_FLAGS_WRITE_ONLY)));
-    if (mapFlags & BUS_MAP_FB_FLAGS_READ_ONLY)
-    {
-        flags = FLD_SET_DRF(OS46, _FLAGS, _ACCESS, _READ_ONLY, flags);
-    }
-    else if (mapFlags & BUS_MAP_FB_FLAGS_WRITE_ONLY)
-    {
-        flags = FLD_SET_DRF(OS46, _FLAGS, _ACCESS, _WRITE_ONLY, flags);
-    }
-
     rmStatus = memdescCreateSubMem(&pTempMemDesc, pMemDesc, pGpu, offset, *pLength);
     if (NV_OK == rmStatus)
     {
-        rmStatus = dmaAllocMapping_HAL(pGpu, pDma, pVAS, pTempMemDesc, pAperOffset, flags, NULL, swizzId);
+        rmStatus = dmaAllocMapping_HAL(pGpu, pDma, pVAS, pTempMemDesc, pAperOffset, dmaFlags, NULL, swizzId);
         memdescFree(pTempMemDesc);
         memdescDestroy(pTempMemDesc);
     }
@@ -5833,7 +5803,10 @@ kbusMemoryCopy_GM107
             kbusSetBAR0WindowVidOffset_HAL(pGpu, pKernelBus,
                                             ALIGN_64K(srcPA));
             bytes = NV_MIN(size, (bar0WindowSize - bar0Offset));
-
+            //
+            // TODO: we could use kbusMemoryCopyToPtr_HAL here, but we might end up
+            // with code duplication just to get `bytes`.
+            //
             for (i = 0; i < bytes; i+= sizeof(NvU32))
             {
                 data = GPU_REG_RD32(pGpu,
@@ -5983,7 +5956,6 @@ kbusMemoryCopyFromPtr_GM107
     NvU32 i;
     NvU64 dest;
 
-    dest = memdescGetPhysAddr(pDstMemDesc, FORCE_VMMU_TRANSLATION(pDstMemDesc, AT_GPU), dstOffset);
 
     if (memdescGetAddressSpace(pDstMemDesc) == ADDR_SYSMEM)
     {
@@ -5995,14 +5967,15 @@ kbusMemoryCopyFromPtr_GM107
             DBG_BREAKPOINT();
             return status;
         }
-    }
 
-    if (memdescGetAddressSpace(pDstMemDesc) == ADDR_SYSMEM)
-    {
-        portMemCopy(pDstMem, (NvU32)size, pSrcMem, (NvU32)size);
+        portMemCopy(pDstMem, size, pSrcMem, size);
+
+        memdescUnmapOld(pDstMemDesc, 1 /* kernel */, 0, pDstMem, pDstPriv);
     }
     else
     {
+        dest = memdescGetPhysAddr(pDstMemDesc, FORCE_VMMU_TRANSLATION(pDstMemDesc, AT_GPU), dstOffset);
+
         bar0Window = kbusGetBAR0WindowVidOffset_HAL(pGpu, pKernelBus);
 
         while (size != 0)
@@ -6021,39 +5994,116 @@ kbusMemoryCopyFromPtr_GM107
             {
                 data = MEM_RD32(pSrcMem + offset + i);
 
-                if (memdescGetAddressSpace(pDstMemDesc) == ADDR_SYSMEM)
-                {
-                    MEM_WR32((pDstMem + offset + i), data);
-                }
-                else
-                {
-                    GPU_REG_WR32(pGpu,
-                        (DRF_BASE(NV_PRAMIN) + (NvU32)bar0Offset + i),
-                        data);
-                }
+                GPU_REG_WR32(pGpu,
+                    (DRF_BASE(NV_PRAMIN) + (NvU32)bar0Offset + i),
+                    data);
             }
 
             offset += bytes;
             size -= bytes;
         }
 
-        if (memdescGetAddressSpace(pDstMemDesc) == ADDR_FBMEM)
-        {
-            //
-            // Make sure the writes make it to FB by sending a read after the writes.
-            // We use PRAMIN window readback because some versions of the flush HAL
-            // will attempt a VBAR2 readback, and kbusMemoryCopy is designed to be usable
-            // even before we have VBAR2 set up.
-            //
-            kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_VIDEO_MEMORY_VIA_PRAMIN_WINDOW);
-        }
+        //
+        // Make sure the writes make it to FB by sending a read after the writes.
+        // We use PRAMIN window readback because some versions of the flush HAL
+        // will attempt a VBAR2 readback, and kbusMemoryCopy is designed to be usable
+        // even before we have VBAR2 set up.
+        //
+        kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_VIDEO_MEMORY_VIA_PRAMIN_WINDOW);
 
         // Reset the window to the previous state.
         kbusSetBAR0WindowVidOffset_HAL(pGpu, pKernelBus, bar0Window);
     }
 
-    if (pDstMem != NULL)
-        memdescUnmapOld(pDstMemDesc, 1 /* kernel */, 0, pDstMem, pDstPriv);
+    return NV_OK;
+}
+
+/*!
+ * Performs a physically addressed memory copy between system memory and video
+ * memory via BAR0 window
+ *
+ * Regions must be contiguous chunks.
+ *
+ * @param[in]  pGpu         OBJGPU pointer
+ * @param[in]  pKernelBus   KernelBus pointer
+ * @param[in]  pDst         Destination VA
+ * @param[in]  pSrcMemDesc  Src memory descriptor
+ * @param[in]  srcOffset    Offset into source
+ * @param[in]  size         Number of bytes to copy
+ *
+ * @returns None
+ */
+NV_STATUS
+kbusMemoryCopyToPtr_GM107
+(
+    OBJGPU            *pGpu,
+    KernelBus         *pKernelBus,
+    NvU8              *pDstMem,
+    MEMORY_DESCRIPTOR *pSrcMemDesc,
+    NvU64              srcOffset,
+    NvU64              size
+)
+{
+    NV_STATUS status = NV_OK;
+    NvU8 *pSrcMem = NULL;
+    void *pSrcPriv = NULL;
+    NvU64 bytes;
+    NvU64 offset = 0;
+    NvU64 bar0Window;
+    NvU64 bar0Offset = 0;
+    NvU64 bar0WindowSize = DRF_SIZE(NV_PRAMIN);
+    NvU32 data;
+    NvU32 i;
+    NvU64 source;
+
+    if (memdescGetAddressSpace(pSrcMemDesc) == ADDR_SYSMEM)
+    {
+        status = memdescMapOld(pSrcMemDesc, srcOffset, size, NV_TRUE /* kernel */,
+                               NV_PROTECT_READ_WRITE,
+                               (void **)&pSrcMem, &pSrcPriv);
+        if (status != NV_OK)
+        {
+            DBG_BREAKPOINT();
+            return status;
+        }
+
+        portMemCopy(pDstMem, size, pSrcMem, size);
+
+        memdescUnmapOld(pSrcMemDesc, 1 /* kernel */, 0, pSrcMem, pSrcPriv);
+    }
+    else
+    {
+        source = memdescGetPhysAddr(pSrcMemDesc, FORCE_VMMU_TRANSLATION(pSrcMemDesc, AT_GPU), srcOffset);
+
+        bar0Window = kbusGetBAR0WindowVidOffset_HAL(pGpu, pKernelBus);
+
+        while (size != 0)
+        {
+            if (memdescGetAddressSpace(pSrcMemDesc) == ADDR_FBMEM)
+            {
+                NvU64 sourcePA = source + offset;
+                bar0Offset = ALIGN_64K_OFFSET(sourcePA);
+                kbusSetBAR0WindowVidOffset_HAL(pGpu, pKernelBus,
+                                                ALIGN_64K(sourcePA));
+            }
+
+            bytes = NV_MIN(size, (bar0WindowSize - bar0Offset));
+
+            for (i = 0; i < bytes; i += sizeof(NvU32))
+            {
+                data = GPU_REG_RD32(pGpu,
+                    (DRF_BASE(NV_PRAMIN) + (NvU32)bar0Offset + i));
+
+                MEM_WR32((pDstMem + offset + i), data);
+            }
+
+            offset += bytes;
+            size -= bytes;
+        }
+
+        // Reset the window to the previous state.
+        kbusSetBAR0WindowVidOffset_HAL(pGpu, pKernelBus, bar0Window);
+    }
 
     return NV_OK;
 }
@@ -6085,4 +6135,58 @@ kbusPrepareForXVEReset_GM107
     }
 
     return status;
+}
+
+NV_STATUS kbusGetEffectiveAddressSpace_GM107(OBJGPU *pGpu,
+                                             MEMORY_DESCRIPTOR *pMemDesc, NvU32 mapFlags,
+                                             NV_ADDRESS_SPACE *pAddrSpace)
+{
+    NV_ADDRESS_SPACE addrSpace;
+    NvBool bDirectSysMappingAllowed = NV_TRUE;
+    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+
+    NV_ASSERT_OR_RETURN(pKernelBus != NULL, NV_ERR_INVALID_STATE);
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO, kbusIsDirectMappingAllowed_HAL(pGpu, pKernelBus, pMemDesc, mapFlags, &bDirectSysMappingAllowed));
+
+    //
+    // Bug 1482818: Deprecate reflected mappings in production code.
+    //  The usage of reflected writes, in addition to causing several deadlock
+    //  scenarios involving P2P transfers, are disallowed on NVLINK (along with
+    //  reflected reads), and should no longer be used.
+    //  The below PDB property should be unset once the remaining usages in MODS
+    //  have been culled. (Bug 1780557)
+    //
+    if ((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM) &&
+        !bDirectSysMappingAllowed &&
+        (DRF_VAL(OS33, _FLAGS, _MAPPING, mapFlags) != NVOS33_FLAGS_MAPPING_DIRECT) &&
+        !kbusIsReflectedMappingAccessAllowed(pKernelBus))
+    {
+        NV_ASSERT(0);
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
+    {
+        addrSpace = ADDR_FBMEM;
+    }
+    else if ((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM) &&
+        (bDirectSysMappingAllowed || FLD_TEST_DRF(OS33, _FLAGS, _MAPPING, _DIRECT, mapFlags) ||
+        (IS_VIRTUAL_WITH_SRIOV(pGpu) && !IS_FMODEL(pGpu) && !IS_RTLSIM(pGpu))))
+    {
+        addrSpace = ADDR_SYSMEM;
+    }
+    else if ((memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM) ||
+             ((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM) && !bDirectSysMappingAllowed))
+    {
+        addrSpace = ADDR_FBMEM;
+    }
+    else
+    {
+        addrSpace = memdescGetAddressSpace(pMemDesc);
+    }
+
+    if (pAddrSpace != NULL)
+        *pAddrSpace = addrSpace;
+
+    return NV_OK;
 }

@@ -2574,11 +2574,17 @@ typedef struct NV2080_CTRL_NVLINK_PRM_ACCESS_PPLM_PARAMS {
     NvBool                      bWrite;
     NV2080_CTRL_NVLINK_PRM_DATA prm;
     NvBool                      test_mode;
+    NvBool                      plr_vld;
     NvU8                        plane_ind;
     NvU8                        port_type;
     NvU8                        lp_msb;
     NvU8                        pnat;
     NvU8                        local_port;
+    NvBool                      plr_reject_mode_vld;
+    NvBool                      plr_margin_th_override_to_default;
+    NvU8                        plr_reject_mode;
+    NvU8                        tx_crc_plr;
+    NvU8                        plr_margin_th;
     NvU8                        fec_override_admin_10g_40g;
     NvU8                        fec_override_admin_25g;
     NvU8                        fec_override_admin_50g;
@@ -3288,7 +3294,8 @@ typedef enum NV2080_CTRL_NVLINK_INJECT_SW_ERROR_SEVERITY {
     NV2080_CTRL_NVLINK_INJECT_SW_ERROR_SEVERITY_MSE_ECC_INJECT_RLW_FATAL = 18,
     NV2080_CTRL_NVLINK_INJECT_SW_ERROR_SEVERITY_MSE_ECC_INJECT_TLW_NON_FATAL = 19,
     NV2080_CTRL_NVLINK_INJECT_SW_ERROR_SEVERITY_MSE_ECC_INJECT_TLW_FATAL = 20,
-    NV2080_CTRL_NVLINK_INJECT_SW_ERROR_SEVERITY_MAX = 21,
+    NV2080_CTRL_NVLINK_INJECT_SW_ERROR_SEVERITY_MSE_GIN_SAW_MVB_FATAL = 21,
+    NV2080_CTRL_NVLINK_INJECT_SW_ERROR_SEVERITY_MAX = 22,
 } NV2080_CTRL_NVLINK_INJECT_SW_ERROR_SEVERITY;
 
 #define NV2080_CTRL_NVLINK_INJECT_SW_ERROR_PARAMS_MESSAGE_ID (0x89U)
@@ -3297,6 +3304,51 @@ typedef struct NV2080_CTRL_NVLINK_INJECT_SW_ERROR_PARAMS {
     NvU32                                       linkMask;
     NV2080_CTRL_NVLINK_INJECT_SW_ERROR_SEVERITY severity;
 } NV2080_CTRL_NVLINK_INJECT_SW_ERROR_PARAMS;
+
+/*
+ * NV2080_CTRL_NVLINK_UPDATE_NVLE_TOPOLOGY
+ *
+ *  This command is used to update the NVLE topology in GSP RM
+ *
+ *  [in] localGpuAlid
+ *      ALID of local GPU in P2P object
+ *  [in] localGpuClid
+ *      CLID of local GPU in P2P object
+ *  [in] remoteGpuAlid
+ *      ALID of remote GPU in P2P object
+ *  [in] remoteGpuClid
+ *      CLID of remote GPU in P2P object
+ */
+#define NV2080_CTRL_NVLINK_UPDATE_NVLE_TOPOLOGY (0x2080308cU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_UPDATE_NVLE_TOPOLOGY_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_NVLINK_UPDATE_NVLE_TOPOLOGY_PARAMS_MESSAGE_ID (0x8cU)
+
+typedef struct NV2080_CTRL_NVLINK_UPDATE_NVLE_TOPOLOGY_PARAMS {
+    NvU32 localGpuAlid;
+    NvU32 localGpuClid;
+    NvU32 remoteGpuAlid;
+    NvU32 remoteGpuClid;
+} NV2080_CTRL_NVLINK_UPDATE_NVLE_TOPOLOGY_PARAMS;
+
+/*
+ * NV2080_CTRL_NVLINK_GET_NVLE_LIDS
+ *
+ *  This command is used to get the alid and clid of a GPU from the remap table.
+ *
+ *  [in] probeClid
+ *      CLID from probe response
+ *  [out] clid
+ *      CLID of GPU from remap table
+ *  [out] alid
+ *      ALID of gpu
+ */
+#define NV2080_CTRL_NVLINK_GET_NVLE_LIDS (0x2080308dU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_GET_NVLE_LIDS_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_NVLINK_GET_NVLE_LIDS_PARAMS_MESSAGE_ID (0x8dU)
+
+typedef struct NV2080_CTRL_NVLINK_GET_NVLE_LIDS_PARAMS {
+    NvU32 probeClid;
+    NvU32 clid;
+    NvU32 alid;
+} NV2080_CTRL_NVLINK_GET_NVLE_LIDS_PARAMS;
 
 /*
  * NV2080_CTRL_CMD_NVLINK_POST_LAZY_ERROR_RECOVERY
@@ -3352,6 +3404,23 @@ typedef struct NV2080_CTRL_NVLINK_GET_L1_TOGGLE_PARAMS {
     NvU32                              linkMask;
     NV2080_CTRL_NVLINK_L1_FORCE_CONFIG config[NV2080_CTRL_NVLINK_MAX_LINKS];
 } NV2080_CTRL_NVLINK_GET_L1_TOGGLE_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_NVLINK_GET_NVLE_ENCRYPT_EN_INFO
+ *
+ *  This command is used to get the ENCRYPT_EN register info
+ *
+ *  [out] bEncyptEnSet
+ *      Boolean that shows if ENCRYPT_EN is enabled or not.
+ */
+
+#define NV2080_CTRL_CMD_NVLINK_GET_NVLE_ENCRYPT_EN_INFO (0x2080308bU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_GET_NVLE_ENCRYPT_EN_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_NVLINK_GET_NVLE_ENCRYPT_EN_INFO_PARAMS_MESSAGE_ID (0x8bU)
+
+typedef struct NV2080_CTRL_NVLINK_GET_NVLE_ENCRYPT_EN_INFO_PARAMS {
+    NvBool bEncryptEnSet;
+} NV2080_CTRL_NVLINK_GET_NVLE_ENCRYPT_EN_INFO_PARAMS;
 
 
 /* _ctrl2080nvlink_h_ */

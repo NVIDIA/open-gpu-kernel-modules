@@ -2463,7 +2463,7 @@ _memorymulticastfabricValidatePhysMem
     {
         NV_PRINTF(LEVEL_ERROR, "Device-less memory isn't supported yet\n");
 
-        return NV_ERR_NOT_SUPPORTED;
+        return NV_ERR_INVALID_ARGUMENT;
     }
 
     if (!memmgrIsMemDescSupportedByFla_HAL(pPhysMemDesc->pGpu,

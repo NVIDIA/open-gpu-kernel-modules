@@ -225,6 +225,7 @@ extern NvU64 os_page_mask;
 extern NvU8  os_page_shift;
 extern NvBool os_cc_enabled;
 extern NvBool os_cc_sev_snp_enabled;
+extern NvBool os_cc_sme_enabled;
 extern NvBool os_cc_snp_vtom_enabled;
 extern NvBool os_cc_tdx_enabled;
 extern NvBool os_dma_buf_enabled;

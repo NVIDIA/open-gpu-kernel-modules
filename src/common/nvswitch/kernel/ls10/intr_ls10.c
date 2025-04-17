@@ -1368,15 +1368,23 @@ _nvswitch_service_route_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_ROUTE, _ERR_STATUS_0, _NVS_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
-
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _ROUTE, _ERR_NVS_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _ROUTE, _ERR_NVS_ECC_ERROR_COUNTER, 0);
+
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_ROUTE_ERR_NVS_ECC_ERROR_COUNTER, 
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             _nvswitch_collect_error_info_ls10(device, link,
                 NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_TIME,
@@ -1401,15 +1409,24 @@ _nvswitch_service_route_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_ROUTE, _ERR_STATUS_0, _GLT_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
-
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _ROUTE, _ERR_GLT_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _ROUTE, _ERR_GLT_ECC_ERROR_COUNTER, 0);
+
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_ROUTE_ERR_GLT_ECC_ERROR_COUNTER, 
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //            	
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
+
             _nvswitch_collect_error_info_ls10(device, link,
                 NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_TIME,
                 &data);
@@ -1433,15 +1450,24 @@ _nvswitch_service_route_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_ROUTE, _ERR_STATUS_0, _MCRID_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
-
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _ROUTE, _ERR_MCRID_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _ROUTE, _ERR_MCRID_ECC_ERROR_COUNTER, 0);
+
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_ROUTE_ERR_MCRID_ECC_ERROR_COUNTER, 
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
+
             _nvswitch_collect_error_info_ls10(device, link,
                 NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_TIME,
                 &data);
@@ -1465,15 +1491,24 @@ _nvswitch_service_route_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_ROUTE, _ERR_STATUS_0, _EXTMCRID_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
-
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _ROUTE, _ERR_EXTMCRID_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _ROUTE, _ERR_EXTMCRID_ECC_ERROR_COUNTER, 0);
+
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_ROUTE_ERR_EXTMCRID_ECC_ERROR_COUNTER, 
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
+
             _nvswitch_collect_error_info_ls10(device, link,
                 NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_TIME,
                 &data);
@@ -1497,15 +1532,24 @@ _nvswitch_service_route_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_ROUTE, _ERR_STATUS_0, _RAM_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
-
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _ROUTE, _ERR_RAM_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _ROUTE, _ERR_RAM_ECC_ERROR_COUNTER, 0);
+
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_ROUTE_ERR_RAM_ECC_ERROR_COUNTER, 
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
+
             _nvswitch_collect_error_info_ls10(device, link,
                 NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_TIME,
                 &data);
@@ -1595,6 +1639,7 @@ _nvswitch_service_ingress_fatal_ls10
     NvU32 pending, bit, contain, unhandled;
     NVSWITCH_RAW_ERROR_LOG_TYPE data = {0, { 0 }};
     INFOROM_NVS_ECC_ERROR_EVENT err_event = {0};
+    NvlStatus status;
 
     report.raw_pending = NVSWITCH_ENG_RD32(device, NPORT, , link, _INGRESS, _ERR_STATUS_0);
     report.raw_enable = NVSWITCH_ENG_RD32(device, NPORT, , link, _INGRESS, _ERR_FATAL_REPORT_EN_0);
@@ -1657,12 +1702,21 @@ _nvswitch_service_ingress_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_INGRESS, _ERR_STATUS_0, _NCISOC_HDR_ECC_LIMIT_ERR, 1))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_INGRESS_ERR_NCISOC_HDR_ECC_ERROR_COUNTER, 
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_ENG_WR32(device, NPORT, , link, _INGRESS, _ERR_STATUS_0,
                 DRF_NUM(_INGRESS, _ERR_STATUS_0, _NCISOC_HDR_ECC_LIMIT_ERR, 1));
@@ -1912,15 +1966,24 @@ _nvswitch_service_ingress_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_INGRESS, _ERR_STATUS_0, _NCISOC_HDR_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
-
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _INGRESS, _ERR_NCISOC_HDR_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _INGRESS, _ERR_NCISOC_HDR_ECC_ERROR_COUNTER, 0);
+
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_INGRESS_ERR_NCISOC_HDR_ECC_ERROR_COUNTER, 
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
+
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_INGRESS_NCISOC_HDR_ECC_LIMIT_ERR, "ingress header ECC");
             NVSWITCH_REPORT_DATA(_HW_NPORT_INGRESS_NCISOC_HDR_ECC_LIMIT_ERR, data);
 
@@ -1966,15 +2029,24 @@ _nvswitch_service_ingress_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_INGRESS, _ERR_STATUS_0, _REMAPTAB_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
-
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _INGRESS, _ERR_REMAPTAB_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _INGRESS, _ERR_REMAPTAB_ECC_ERROR_COUNTER, 0);
+
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_INGRESS_ERR_REMAPTAB_ECC_ERROR_COUNTER, 
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
+
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_INGRESS_REMAPTAB_ECC_LIMIT_ERR, "ingress remap ECC");
             NVSWITCH_REPORT_DATA(_HW_NPORT_INGRESS_REMAPTAB_ECC_LIMIT_ERR, data);
 
@@ -1995,15 +2067,24 @@ _nvswitch_service_ingress_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_INGRESS, _ERR_STATUS_0, _RIDTAB_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
-
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _INGRESS, _ERR_RIDTAB_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _INGRESS, _ERR_RIDTAB_ECC_ERROR_COUNTER, 0);
+
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_INGRESS_ERR_RIDTAB_ECC_ERROR_COUNTER, 
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
+
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_INGRESS_RIDTAB_ECC_LIMIT_ERR, "ingress RID ECC");
             NVSWITCH_REPORT_DATA(_HW_NPORT_INGRESS_RIDTAB_ECC_LIMIT_ERR, data);
 
@@ -2024,15 +2105,24 @@ _nvswitch_service_ingress_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_INGRESS, _ERR_STATUS_0, _RLANTAB_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
-
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _INGRESS, _ERR_RLANTAB_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _INGRESS, _ERR_RLANTAB_ECC_ERROR_COUNTER, 0);
+
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_INGRESS_ERR_RLANTAB_ECC_ERROR_COUNTER, 
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
+
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_INGRESS_RLANTAB_ECC_LIMIT_ERR, "ingress RLAN ECC");
             NVSWITCH_REPORT_DATA(_HW_NPORT_INGRESS_RLANTAB_ECC_LIMIT_ERR, data);
 
@@ -2210,15 +2300,24 @@ _nvswitch_service_ingress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(raw_pending_0,
                 DRF_NUM(_INGRESS, _ERR_STATUS_0, _EXTAREMAPTAB_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
-
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _INGRESS, _ERR_EXTAREMAPTAB_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _INGRESS, _ERR_EXTAREMAPTAB_ECC_ERROR_COUNTER, 0);
+
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_INGRESS_ERR_EXTAREMAPTAB_ECC_ERROR_COUNTER, 
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
+
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_INGRESS_EXTAREMAPTAB_ECC_LIMIT_ERR, "ingress ExtA remap ECC");
             NVSWITCH_REPORT_DATA(_HW_NPORT_INGRESS_EXTAREMAPTAB_ECC_LIMIT_ERR, data);
 
@@ -2239,15 +2338,24 @@ _nvswitch_service_ingress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(raw_pending_0,
                 DRF_NUM(_INGRESS, _ERR_STATUS_0, _EXTBREMAPTAB_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
-
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _INGRESS, _ERR_EXTBREMAPTAB_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _INGRESS, _ERR_EXTBREMAPTAB_ECC_ERROR_COUNTER, 0);
+
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_INGRESS_ERR_EXTBREMAPTAB_ECC_ERROR_COUNTER, 
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
+
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_INGRESS_EXTBREMAPTAB_ECC_LIMIT_ERR, "ingress ExtB remap ECC");
             NVSWITCH_REPORT_DATA(_HW_NPORT_INGRESS_EXTBREMAPTAB_ECC_LIMIT_ERR, data);
 
@@ -2268,15 +2376,24 @@ _nvswitch_service_ingress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(raw_pending_0,
                 DRF_NUM(_INGRESS, _ERR_STATUS_0, _MCREMAPTAB_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
-
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _INGRESS, _ERR_MCREMAPTAB_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _INGRESS, _ERR_MCREMAPTAB_ECC_ERROR_COUNTER, 0);
+
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_INGRESS_ERR_MCREMAPTAB_ECC_ERROR_COUNTER, 
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
+
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_INGRESS_MCREMAPTAB_ECC_LIMIT_ERR, "ingress MC remap ECC");
             NVSWITCH_REPORT_DATA(_HW_NPORT_INGRESS_MCREMAPTAB_ECC_LIMIT_ERR, data);
 
@@ -2429,14 +2546,21 @@ _nvswitch_service_tstate_nonfatal_ls10
                 &data);
             NVSWITCH_REPORT_DATA(_HW_NPORT_TSTATE_TAGPOOL_ECC_LIMIT_ERR, data);
 
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _TSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER,
-                DRF_DEF(_TSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_TSTATE_ERR_TAGPOOL_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             _nvswitch_construct_ecc_error_event_ls10(&err_event,
                 NVSWITCH_ERR_HW_NPORT_TSTATE_TAGPOOL_ECC_LIMIT_ERR, link,
@@ -2477,14 +2601,21 @@ _nvswitch_service_tstate_nonfatal_ls10
                 &data);
             NVSWITCH_REPORT_DATA(_HW_NPORT_TSTATE_CRUMBSTORE_ECC_LIMIT_ERR, data);
 
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _TSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER,
-                DRF_DEF(_TSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_TSTATE_ERR_CRUMBSTORE_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             _nvswitch_construct_ecc_error_event_ls10(&err_event,
                 NVSWITCH_ERR_HW_NPORT_TSTATE_CRUMBSTORE_ECC_LIMIT_ERR, link,
@@ -2545,6 +2676,7 @@ _nvswitch_service_tstate_fatal_ls10
     NvU32 pending, bit, contain, unhandled;
     NVSWITCH_RAW_ERROR_LOG_TYPE data = {0, { 0 }};
     INFOROM_NVS_ECC_ERROR_EVENT err_event = {0};
+    NvlStatus status;
 
     report.raw_pending = NVSWITCH_ENG_RD32(device, NPORT, , link, _TSTATE, _ERR_STATUS_0);
     report.raw_enable = NVSWITCH_ENG_RD32(device, NPORT, , link, _TSTATE, _ERR_FATAL_REPORT_EN_0);
@@ -2611,12 +2743,21 @@ _nvswitch_service_tstate_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_TSTATE, _ERR_STATUS_0, _TAGPOOL_ECC_LIMIT_ERR, 1))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_TSTATE_ERR_TAGPOOL_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_ENG_WR32(device, NPORT, , link, _TSTATE, _ERR_STATUS_0,
                 DRF_NUM(_TSTATE, _ERR_STATUS_0, _TAGPOOL_ECC_LIMIT_ERR, 1));
@@ -2673,12 +2814,21 @@ _nvswitch_service_tstate_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_TSTATE, _ERR_STATUS_0, _CRUMBSTORE_ECC_LIMIT_ERR, 1))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_TSTATE_ERR_CRUMBSTORE_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_ENG_WR32(device, NPORT, , link, _TSTATE, _ERR_STATUS_0,
                 DRF_NUM(_TSTATE, _ERR_STATUS_0, _CRUMBSTORE_ECC_LIMIT_ERR, 1));
@@ -2788,15 +2938,24 @@ _nvswitch_service_egress_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_EGRESS, _ERR_STATUS_0, _NXBAR_HDR_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
-
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _EGRESS, _ERR_NXBAR_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_NXBAR_ECC_ERROR_COUNTER, 0);
+
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_EGRESS_ERR_NXBAR_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
+
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_EGRESS_NXBAR_HDR_ECC_LIMIT_ERR, "egress input ECC error limit");
             NVSWITCH_REPORT_DATA(_HW_NPORT_EGRESS_NXBAR_HDR_ECC_LIMIT_ERR, data);
 
@@ -2836,12 +2995,21 @@ _nvswitch_service_egress_nonfatal_ls10
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_EGRESS_RAM_OUT_HDR_ECC_LIMIT_ERR, "egress output ECC error limit");
             NVSWITCH_REPORT_DATA(_HW_NPORT_EGRESS_RAM_OUT_HDR_ECC_LIMIT_ERR, data);
 
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_EGRESS_ERR_RAM_OUT_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             _nvswitch_construct_ecc_error_event_ls10(&err_event,
                 NVSWITCH_ERR_HW_NPORT_EGRESS_RAM_OUT_HDR_ECC_LIMIT_ERR, link, bAddressValid, address,
@@ -2920,12 +3088,21 @@ _nvswitch_service_egress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _NXBAR_REDUCTION_HDR_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_EGRESS_ERR_NXBAR_REDUCTION_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
 
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_NXBAR_REDUCTION_ECC_ERROR_COUNTER, 0);
@@ -2950,14 +3127,21 @@ _nvswitch_service_egress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCRSPCTRLSTORE_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_EGRESS_ERR_MCRSPCTRLSTORE_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
 
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_MCRSPCTRLSTORE_ECC_ERROR_COUNTER, 0);
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_EGRESS_MCRSPCTRLSTORE_ECC_LIMIT_ERR, "egress MC response ECC error limit");
             NVSWITCH_REPORT_DATA(_HW_NPORT_EGRESS_MCRSPCTRLSTORE_ECC_LIMIT_ERR, data);
@@ -2979,14 +3163,21 @@ _nvswitch_service_egress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _RBCTRLSTORE_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_EGRESS_ERR_RBCTRLSTORE_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
 
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_RBCTRLSTORE_ECC_ERROR_COUNTER, 0);
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_EGRESS_RBCTRLSTORE_ECC_LIMIT_ERR, "egress RB ECC error limit");
             NVSWITCH_REPORT_DATA(_HW_NPORT_EGRESS_RBCTRLSTORE_ECC_LIMIT_ERR, data);
@@ -3008,14 +3199,21 @@ _nvswitch_service_egress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCREDSGT_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_EGRESS_ERR_MCREDSGT_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
 
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_MCREDSGT_ECC_ERROR_COUNTER, 0);
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_EGRESS_MCREDSGT_ECC_LIMIT_ERR, "egress RSG ECC error limit");
             NVSWITCH_REPORT_DATA(_HW_NPORT_EGRESS_MCREDSGT_ECC_LIMIT_ERR, data);
@@ -3037,14 +3235,21 @@ _nvswitch_service_egress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCREDBUF_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_EGRESS_ERR_MCREDBUF_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
 
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_MCREDBUF_ECC_ERROR_COUNTER, 0);
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_EGRESS_MCREDBUF_ECC_LIMIT_ERR, "egress MCRB ECC error limit");
             NVSWITCH_REPORT_DATA(_HW_NPORT_EGRESS_MCREDBUF_ECC_LIMIT_ERR, data);
@@ -3066,14 +3271,21 @@ _nvswitch_service_egress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCRSP_RAM_HDR_ECC_DBE_ERR, 1))))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_EGRESS_ERR_MCRSP_RAM_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
 
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_MCRSP_RAM_ECC_ERROR_COUNTER, 0);
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_EGRESS_MCRSP_RAM_HDR_ECC_LIMIT_ERR, "egress MC header ECC error limit");
             NVSWITCH_REPORT_DATA(_HW_NPORT_EGRESS_MCRSP_RAM_HDR_ECC_LIMIT_ERR, data);
@@ -3104,12 +3316,21 @@ _nvswitch_service_egress_nonfatal_ls10_err_status_1:
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_EGRESS, _ERR_STATUS_1, _NXBAR_REDUCTION_HDR_ECC_LIMIT_ERR, 1))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_EGRESS_ERR_NXBAR_REDUCTION_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_STATUS_1,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _NXBAR_REDUCTION_HDR_ECC_LIMIT_ERR, 1));
@@ -3148,12 +3369,21 @@ _nvswitch_service_egress_nonfatal_ls10_err_status_1:
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCREDBUF_ECC_LIMIT_ERR, 1))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_EGRESS_ERR_MCREDBUF_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_STATUS_1,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCREDBUF_ECC_LIMIT_ERR, 1));
@@ -3313,12 +3543,21 @@ _nvswitch_service_egress_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_EGRESS, _ERR_STATUS_0, _NXBAR_HDR_ECC_LIMIT_ERR, 1))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_EGRESS_ERR_NXBAR_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_STATUS_0,
                 DRF_NUM(_EGRESS, _ERR_STATUS_0, _NXBAR_HDR_ECC_LIMIT_ERR, 1));
@@ -3354,12 +3593,21 @@ _nvswitch_service_egress_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_EGRESS, _ERR_STATUS_0, _RAM_OUT_HDR_ECC_LIMIT_ERR, 1))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_EGRESS_ERR_RAM_OUT_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_STATUS_0,
                 DRF_NUM(_EGRESS, _ERR_STATUS_0, _RAM_OUT_HDR_ECC_LIMIT_ERR, 1));
@@ -3549,12 +3797,21 @@ _nvswitch_service_egress_fatal_ls10_err_status_1:
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCRSPCTRLSTORE_ECC_LIMIT_ERR, 1))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_EGRESS_ERR_MCRSPCTRLSTORE_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_STATUS_1,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCRSPCTRLSTORE_ECC_LIMIT_ERR, 1));
@@ -3577,12 +3834,21 @@ _nvswitch_service_egress_fatal_ls10_err_status_1:
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_EGRESS, _ERR_STATUS_1, _RBCTRLSTORE_ECC_LIMIT_ERR, 1))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_EGRESS_ERR_RBCTRLSTORE_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_STATUS_1,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _RBCTRLSTORE_ECC_LIMIT_ERR, 1));
@@ -3605,12 +3871,21 @@ _nvswitch_service_egress_fatal_ls10_err_status_1:
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCREDSGT_ECC_LIMIT_ERR, 1))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_EGRESS_ERR_MCREDSGT_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_STATUS_1,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCREDSGT_ECC_LIMIT_ERR, 1));
@@ -3633,12 +3908,21 @@ _nvswitch_service_egress_fatal_ls10_err_status_1:
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCRSP_RAM_HDR_ECC_LIMIT_ERR, 1))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_EGRESS_ERR_MCRSP_RAM_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_STATUS_1,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCRSP_RAM_HDR_ECC_LIMIT_ERR, 1));
@@ -3742,12 +4026,21 @@ _nvswitch_service_sourcetrack_nonfatal_ls10
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_SOURCETRACK_CREQ_TCEN0_CRUMBSTORE_ECC_LIMIT_ERR,
                                     "sourcetrack TCEN0 crumbstore ECC limit err");
 
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_SOURCETRACK_ERR_CREQ_TCEN0_CRUMBSTORE_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             _nvswitch_construct_ecc_error_event_ls10(&err_event,
                 NVSWITCH_ERR_HW_NPORT_SOURCETRACK_CREQ_TCEN0_CRUMBSTORE_ECC_LIMIT_ERR, link,
@@ -3809,6 +4102,7 @@ _nvswitch_service_sourcetrack_fatal_ls10
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
     NvU32 pending, bit, contain, unhandled;
     INFOROM_NVS_ECC_ERROR_EVENT err_event = {0};
+    NvlStatus status;
 
     report.raw_pending = NVSWITCH_ENG_RD32(device, NPORT, , link,
                             _SOURCETRACK, _ERR_STATUS_0);
@@ -3859,12 +4153,21 @@ _nvswitch_service_sourcetrack_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_SOURCETRACK, _ERR_STATUS_0, _CREQ_TCEN0_CRUMBSTORE_ECC_LIMIT_ERR, 1))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_SOURCETRACK_ERR_CREQ_TCEN0_CRUMBSTORE_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_ENG_WR32(device, NPORT, , link, _SOURCETRACK, _ERR_STATUS_0,
                 DRF_NUM(_SOURCETRACK, _ERR_STATUS_0, _CREQ_TCEN0_CRUMBSTORE_ECC_LIMIT_ERR, 1));
@@ -3998,15 +4301,21 @@ _nvswitch_service_multicast_nonfatal_ls10
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_MULTICASTTSTATE_TAGPOOL_ECC_LIMIT_ERR, "MC TS tag store single-bit threshold");
             NVSWITCH_REPORT_DATA(_HW_NPORT_MULTICASTTSTATE_TAGPOOL_ECC_LIMIT_ERR, data);
 
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_MULTICASTTSTATE_ERR_TAGPOOL_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
 
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER,
-                DRF_DEF(_MULTICASTTSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             _nvswitch_construct_ecc_error_event_ls10(&err_event,
                 NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_TAGPOOL_ECC_LIMIT_ERR, link,
@@ -4042,15 +4351,21 @@ _nvswitch_service_multicast_nonfatal_ls10
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_ECC_LIMIT_ERR, "MC TS crumbstore single-bit threshold");
             NVSWITCH_REPORT_DATA(_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_ECC_LIMIT_ERR, data);
 
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_MULTICASTTSTATE_ERR_CRUMBSTORE_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
 
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER,
-                DRF_DEF(_MULTICASTTSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             _nvswitch_construct_ecc_error_event_ls10(&err_event,
                 NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_ECC_LIMIT_ERR, link,
@@ -4125,6 +4440,7 @@ _nvswitch_service_multicast_fatal_ls10
     NvU32 pending, bit, contain, unhandled;
     NVSWITCH_RAW_ERROR_LOG_TYPE data = {0, { 0 }};
     INFOROM_NVS_ECC_ERROR_EVENT err_event = {0};
+    NvlStatus status;
 
     report.raw_pending = NVSWITCH_ENG_RD32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_STATUS_0);
     report.raw_enable = NVSWITCH_ENG_RD32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_FATAL_REPORT_EN_0);
@@ -4175,12 +4491,21 @@ _nvswitch_service_multicast_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_MULTICASTTSTATE, _ERR_STATUS_0, _TAGPOOL_ECC_LIMIT_ERR, 1))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_MULTICASTTSTATE_ERR_TAGPOOL_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_ENG_WR32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_STATUS_0,
                 DRF_NUM(_MULTICASTTSTATE, _ERR_STATUS_0, _TAGPOOL_ECC_LIMIT_ERR, 1));
@@ -4219,12 +4544,21 @@ _nvswitch_service_multicast_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_MULTICASTTSTATE, _ERR_STATUS_0, _CRUMBSTORE_ECC_LIMIT_ERR, 1))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_MULTICASTTSTATE_ERR_CRUMBSTORE_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_ENG_WR32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_STATUS_0,
                 DRF_NUM(_MULTICASTTSTATE, _ERR_STATUS_0, _CRUMBSTORE_ECC_LIMIT_ERR, 1));
@@ -4331,15 +4665,21 @@ _nvswitch_service_reduction_nonfatal_ls10
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_REDUCTIONTSTATE_TAGPOOL_ECC_LIMIT_ERR, "Red TS tag store single-bit threshold");
             NVSWITCH_REPORT_DATA(_HW_NPORT_REDUCTIONTSTATE_TAGPOOL_ECC_LIMIT_ERR, data);
 
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_REDUCTIONTSTATE_ERR_TAGPOOL_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
 
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER,
-                DRF_DEF(_REDUCTIONTSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             _nvswitch_construct_ecc_error_event_ls10(&err_event,
                 NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_TAGPOOL_ECC_LIMIT_ERR, link,
@@ -4375,15 +4715,21 @@ _nvswitch_service_reduction_nonfatal_ls10
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_ECC_LIMIT_ERR, "Red TS crumbstore single-bit threshold");
             NVSWITCH_REPORT_DATA(_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_ECC_LIMIT_ERR, data);
 
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_REDUCTIONTSTATE_ERR_CRUMBSTORE_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
 
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER,
-                DRF_DEF(_REDUCTIONTSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             _nvswitch_construct_ecc_error_event_ls10(&err_event,
                 NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_ECC_LIMIT_ERR, link,
@@ -4453,6 +4799,7 @@ _nvswitch_service_reduction_fatal_ls10
     NvU32 pending, bit, contain, unhandled;
     NVSWITCH_RAW_ERROR_LOG_TYPE data = {0, { 0 }};
     INFOROM_NVS_ECC_ERROR_EVENT err_event = {0};
+    NvlStatus status;
 
     report.raw_pending = NVSWITCH_ENG_RD32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_STATUS_0);
     report.raw_enable = NVSWITCH_ENG_RD32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_FATAL_REPORT_EN_0);
@@ -4508,12 +4855,21 @@ _nvswitch_service_reduction_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_REDUCTIONTSTATE, _ERR_STATUS_0, _TAGPOOL_ECC_LIMIT_ERR, 1))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_REDUCTIONTSTATE_ERR_TAGPOOL_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_ENG_WR32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_STATUS_0,
                 DRF_NUM(_REDUCTIONTSTATE, _ERR_STATUS_0, _TAGPOOL_ECC_LIMIT_ERR, 1));
@@ -4557,12 +4913,21 @@ _nvswitch_service_reduction_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_REDUCTIONTSTATE, _ERR_STATUS_0, _CRUMBSTORE_ECC_LIMIT_ERR, 1))
         {
-            //
-            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
-            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-            //
-            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
-                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                      RM_SOE_CORE_ENGINE_ID_NPORT,
+                                                                      RM_SOE_CORE_REDUCTIONTSTATE_ERR_CRUMBSTORE_ECC_ERROR_COUNTER,
+                                                                      link
+                                                                     );
+            if(status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, INFO, "%s: NPORT counter clear command failed. Disabling NPG interrupt at GIN\n", __FUNCTION__);
+
+                //
+                // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+                //
+                NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                    NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            }
 
             NVSWITCH_ENG_WR32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_STATUS_0,
                 DRF_NUM(_REDUCTIONTSTATE, _ERR_STATUS_0, _CRUMBSTORE_ECC_LIMIT_ERR, 1));
@@ -5735,6 +6100,7 @@ _nvswitch_service_nxbar_tile_ls10
     NvU32 pending, bit, unhandled;
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
     NvU32 link = tile;
+    NvlStatus status;
 
     report.raw_pending = NVSWITCH_TILE_RD32(device, tile, _NXBAR_TILE, _ERR_STATUS);
     report.raw_enable = NVSWITCH_TILE_RD32(device, tile, _NXBAR_TILE, _ERR_FATAL_INTR_EN);
@@ -5822,8 +6188,17 @@ _nvswitch_service_nxbar_tile_ls10
 
     // Disable interrupts that have occurred after fatal error.
     // This helps prevent an interrupt storm if HW keeps triggering unnecessary stream of interrupts.
-    NVSWITCH_TILE_WR32(device, tile, _NXBAR_TILE, _ERR_FATAL_INTR_EN,
-                            report.raw_enable & ~pending);
+    status = nvswitch_soe_update_intr_report_en_ls10(device, 
+                                                     RM_SOE_CORE_ENGINE_ID_NXBAR_TILE,
+                                                     link, 
+                                                     RM_SOE_CORE_NXBAR_TILE_ERR_FATAL_INTR_EN,
+                                                     report.raw_enable & ~pending
+                                                    );
+
+    if (status != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: RM_SOE_CORE_NXBAR_TILE_ERR_FATAL_INTR_EN failed\n", __FUNCTION__);
+    }
 
     NVSWITCH_TILE_WR32(device, link, _NXBAR_TILE, _ERR_STATUS, pending);
 
@@ -5846,6 +6221,7 @@ _nvswitch_service_nxbar_tileout_ls10
     NvU32 pending, bit, unhandled;
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
     NvU32 link = tileout;
+    NvlStatus status;
 
     report.raw_pending = NVSWITCH_TILEOUT_RD32(device, tileout, _NXBAR_TILEOUT, _ERR_STATUS);
     report.raw_enable = NVSWITCH_TILEOUT_RD32(device, tileout, _NXBAR_TILEOUT, _ERR_FATAL_INTR_EN);
@@ -5926,8 +6302,17 @@ _nvswitch_service_nxbar_tileout_ls10
 
     // Disable interrupts that have occurred after fatal error.
     // This helps prevent an interrupt storm if HW keeps triggering unnecessary stream of interrupts.
-    NVSWITCH_TILEOUT_WR32(device, tileout, _NXBAR_TILEOUT, _ERR_FATAL_INTR_EN,
-                            report.raw_enable & ~pending);
+    status = nvswitch_soe_update_intr_report_en_ls10(device, 
+                                                     RM_SOE_CORE_ENGINE_ID_NXBAR_TILEOUT,
+                                                     link, 
+                                                     RM_SOE_CORE_NXBAR_TILEOUT_ERR_FATAL_INTR_EN,
+                                                     report.raw_enable & ~pending
+                                                    );
+
+    if (status != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: RM_SOE_CORE_NXBAR_TILEOUT_ERR_FATAL_INTR_EN failed\n", __FUNCTION__);
+    }
 
     NVSWITCH_TILEOUT_WR32(device, tileout, _NXBAR_TILEOUT, _ERR_STATUS, pending);
 
@@ -6349,7 +6734,8 @@ _nvswitch_deferred_link_state_check_ls10
     lastLinkUpTime = chip_device->deferredLinkErrors[link].state.lastLinkUpTime;
     lastRetrainTime = chip_device->deferredLinkErrors[link].state.lastRetrainTime;
     // Sanity Check
-    NVSWITCH_ASSERT(nvswitch_is_link_valid(device, link));
+    if (!nvswitch_is_link_valid(device, link))
+        return;
 
     chip_device->deferredLinkErrors[link].state.bLinkStateCallBackEnabled = NV_FALSE;
     bRedeferLinkStateCheck = NV_FALSE;
@@ -6797,9 +7183,9 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_0_ls10
         // Driver WAR to disable ECC error and prevent an interrupt storm.
         // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
         //
-        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0,
+        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0,
             report.raw_enable &
-            ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0, _CREQ_RAM_ECC_LIMIT_ERR, 1));
+            ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0, _CREQ_RAM_ECC_LIMIT_ERR, 1));
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_0, _RSP_RAM_DAT_ECC_DBE_ERR, 1);
@@ -6819,9 +7205,9 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_0_ls10
         // Driver WAR to disable ECC error and prevent an interrupt storm.
         // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
         //
-        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0,
+        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0,
             report.raw_enable &
-            ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0, _RSP_RAM_ECC_LIMIT_ERR, 1));
+            ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0, _RSP_RAM_ECC_LIMIT_ERR, 1));
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_0, _COM_RAM_DAT_ECC_DBE_ERR, 1);
@@ -6846,9 +7232,9 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_0_ls10
         // Driver WAR to disable ECC error and prevent an interrupt storm.
         // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
         //
-        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0,
+        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0,
             report.raw_enable &
-            ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0, _COM_RAM_ECC_LIMIT_ERR, 1));
+            ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0, _COM_RAM_ECC_LIMIT_ERR, 1));
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_0, _RSP1_RAM_ECC_LIMIT_ERR, 1);
@@ -6861,9 +7247,9 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_0_ls10
         // Driver WAR to disable ECC error and prevent an interrupt storm.
         // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
         //
-        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0,
+        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0,
             report.raw_enable &
-            ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0, _RSP1_RAM_ECC_LIMIT_ERR, 1));
+            ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0, _RSP1_RAM_ECC_LIMIT_ERR, 1));
     }
 
     NVSWITCH_UNHANDLED_CHECK(device, unhandled);
@@ -8230,12 +8616,6 @@ nvswitch_initialize_interrupt_tree_ls10
 
    // NVLIPT
     _nvswitch_initialize_nvlipt_interrupts_ls10(device);
-
-    // Disable non-fatal and legacy interrupts in TNVL mode
-    if (nvswitch_is_tnvl_mode_enabled(device))
-    {
-       nvswitch_tnvl_disable_interrupts(device);
-    }
 }
 
 //

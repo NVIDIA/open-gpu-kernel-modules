@@ -1,4 +1,11 @@
 #define NVOC_PLATFORM_REQUEST_HANDLER_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,40 +14,29 @@
 #include "utils/nvassert.h"
 #include "g_platform_request_handler_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x641a7f = 1;
+char __nvoc_class_id_uniqueness_check__0x641a7f = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_PlatformRequestHandler;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
-void __nvoc_init_PlatformRequestHandler(PlatformRequestHandler*);
+// Forward declarations for PlatformRequestHandler
+void __nvoc_init__Object(Object*);
+void __nvoc_init__PlatformRequestHandler(PlatformRequestHandler*);
 void __nvoc_init_funcTable_PlatformRequestHandler(PlatformRequestHandler*);
 NV_STATUS __nvoc_ctor_PlatformRequestHandler(PlatformRequestHandler*);
 void __nvoc_init_dataField_PlatformRequestHandler(PlatformRequestHandler*);
 void __nvoc_dtor_PlatformRequestHandler(PlatformRequestHandler*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_PlatformRequestHandler;
 
-static const struct NVOC_RTTI __nvoc_rtti_PlatformRequestHandler_PlatformRequestHandler = {
-    /*pClassDef=*/          &__nvoc_class_def_PlatformRequestHandler,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_PlatformRequestHandler,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__PlatformRequestHandler;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__PlatformRequestHandler;
 
-static const struct NVOC_RTTI __nvoc_rtti_PlatformRequestHandler_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(PlatformRequestHandler, __nvoc_base_Object),
-};
+// Down-thunk(s) to bridge PlatformRequestHandler methods from ancestors (if any)
 
-static const struct NVOC_CASTINFO __nvoc_castinfo_PlatformRequestHandler = {
-    /*numRelatives=*/       2,
-    /*relatives=*/ {
-        &__nvoc_rtti_PlatformRequestHandler_PlatformRequestHandler,
-        &__nvoc_rtti_PlatformRequestHandler_Object,
-    },
-};
+// Up-thunk(s) to bridge PlatformRequestHandler methods to ancestors (if any)
 
 const struct NVOC_CLASS_DEF __nvoc_class_def_PlatformRequestHandler = 
 {
@@ -53,15 +49,32 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_PlatformRequestHandler =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_PlatformRequestHandler,
-    /*pCastInfo=*/          &__nvoc_castinfo_PlatformRequestHandler,
-    /*pExportInfo=*/        &__nvoc_export_info_PlatformRequestHandler
+    /*pCastInfo=*/          &__nvoc_castinfo__PlatformRequestHandler,
+    /*pExportInfo=*/        &__nvoc_export_info__PlatformRequestHandler
 };
 
-// Down-thunk(s) to bridge PlatformRequestHandler methods from ancestors (if any)
 
-// Up-thunk(s) to bridge PlatformRequestHandler methods to ancestors (if any)
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__PlatformRequestHandler __nvoc_metadata__PlatformRequestHandler = {
+    .rtti.pClassDef = &__nvoc_class_def_PlatformRequestHandler,    // (pfmreqhndlr) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_PlatformRequestHandler,
+    .rtti.offset    = 0,
+    .metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super
+    .metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Object.rtti.offset    = NV_OFFSETOF(PlatformRequestHandler, __nvoc_base_Object),
+};
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_PlatformRequestHandler = 
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__PlatformRequestHandler = {
+    .numRelatives = 2,
+    .relatives = {
+        &__nvoc_metadata__PlatformRequestHandler.rtti,    // [0]: (pfmreqhndlr) this
+        &__nvoc_metadata__PlatformRequestHandler.metadata__Object.rtti,    // [1]: (obj) super
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__PlatformRequestHandler = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -107,11 +120,21 @@ void __nvoc_init_funcTable_PlatformRequestHandler(PlatformRequestHandler *pThis)
     __nvoc_init_funcTable_PlatformRequestHandler_1(pThis);
 }
 
-void __nvoc_init_Object(Object*);
-void __nvoc_init_PlatformRequestHandler(PlatformRequestHandler *pThis) {
-    pThis->__nvoc_pbase_PlatformRequestHandler = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;
-    __nvoc_init_Object(&pThis->__nvoc_base_Object);
+// Initialize newly constructed object.
+void __nvoc_init__PlatformRequestHandler(PlatformRequestHandler *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;    // (obj) super
+    pThis->__nvoc_pbase_PlatformRequestHandler = pThis;    // (pfmreqhndlr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__Object(&pThis->__nvoc_base_Object);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__PlatformRequestHandler.metadata__Object;    // (obj) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__PlatformRequestHandler;    // (pfmreqhndlr) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_PlatformRequestHandler(pThis);
 }
 
@@ -129,9 +152,6 @@ NV_STATUS __nvoc_objCreate_PlatformRequestHandler(PlatformRequestHandler **ppThi
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(PlatformRequestHandler));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_PlatformRequestHandler);
-
     pThis->__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -145,7 +165,7 @@ NV_STATUS __nvoc_objCreate_PlatformRequestHandler(PlatformRequestHandler **ppThi
         pThis->__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_PlatformRequestHandler(pThis);
+    __nvoc_init__PlatformRequestHandler(pThis);
     status = __nvoc_ctor_PlatformRequestHandler(pThis);
     if (status != NV_OK) goto __nvoc_objCreate_PlatformRequestHandler_cleanup;
 

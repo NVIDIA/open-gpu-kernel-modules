@@ -109,7 +109,6 @@ $(obj)/$(NVIDIA_INTERFACE): $(addprefix $(obj)/,$(NVIDIA_OBJECTS))
 
 NV_OBJECTS_DEPEND_ON_CONFTEST += $(NVIDIA_OBJECTS)
 
-NV_CONFTEST_FUNCTION_COMPILE_TESTS += hash__remap_4k_pfn
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += set_pages_uc
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += list_is_first
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += set_memory_uc
@@ -196,6 +195,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += mdev_set_iommu_device
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += offline_and_remove_memory
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += stack_trace
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += crypto_tfm_ctx_aligned
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += assign_str
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_of_node_to_nid
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_sme_active
@@ -234,6 +234,10 @@ NV_CONFTEST_SYMBOL_COMPILE_TESTS += follow_pte_arg_vma
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_follow_pfnmap_start
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_pci_ats_supported
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += ecc_digits_from_bytes
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_set_memory_encrypted
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_set_memory_decrypted
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl___platform_driver_register
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present___platform_driver_register
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += dma_ops
 NV_CONFTEST_TYPE_COMPILE_TESTS += swiotlb_dma_ops
@@ -258,6 +262,8 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += vm_area_struct_has_const_vm_flags
 NV_CONFTEST_TYPE_COMPILE_TESTS += memory_failure_has_trapno_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += foll_longterm_present
 NV_CONFTEST_TYPE_COMPILE_TESTS += bus_type_has_iommu_ops
+NV_CONFTEST_TYPE_COMPILE_TESTS += of_property_for_each_u32_has_internal_args
+NV_CONFTEST_TYPE_COMPILE_TESTS += platform_driver_struct_remove_returns_void
 NV_CONFTEST_TYPE_COMPILE_TESTS += class_create_has_no_owner_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += class_devnode_has_const_arg
 

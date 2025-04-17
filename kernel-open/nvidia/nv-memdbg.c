@@ -115,7 +115,10 @@ void nv_memdbg_add(void *addr, NvU64 size, const char *file, int line)
     nv_memdbg_node_t *node;
     unsigned long flags;
 
-    WARN_ON(addr == NULL);
+    if (addr == NULL)
+    {
+        return;
+    }
 
     /* If node allocation fails, we can still update the untracked counters */
     node = kmalloc(sizeof(*node),
@@ -153,6 +156,11 @@ void nv_memdbg_remove(void *addr, NvU64 size, const char *file, int line)
 {
     nv_memdbg_node_t *node;
     unsigned long flags;
+
+    if (addr == NULL)
+    {
+        return;
+    }
 
     NV_SPIN_LOCK_IRQSAVE(&g_nv_memdbg.lock, flags);
 

@@ -135,7 +135,6 @@ namespace DisplayPort
     {
       private:
         NvU32 _maxLinkRateSupportedGpu;
-        NvU32 _minPClkForCompressed;
         NvU32 _maxLinkRateSupportedDfp;
         bool _hasIncreasedWatermarkLimits;
         bool _hasMultistream;
@@ -161,6 +160,8 @@ namespace DisplayPort
         bool _isLTPhyRepeaterSupported;
         bool _isMSTPCONCapsReadDisabled;
         bool _isDownspreadSupported;
+        bool _bAvoidHBR3;
+        bool _bAvoidHBR3DisabledByRegkey;
         //
         // LTTPR count reported by RM, it might not be the same with DPLib probe
         // For example, some Intel LTTPR might not be ready to response 0xF0000 probe
@@ -211,11 +212,6 @@ namespace DisplayPort
         virtual bool isPC2Disabled()
         {
             return _isPC2Disabled;
-        }
-
-        virtual NvU32 getMinPClkForCompressed()
-        {
-            return _minPClkForCompressed;
         }
 
         virtual NvU32 getGpuDpSupportedVersions()
@@ -273,6 +269,11 @@ namespace DisplayPort
         virtual bool isDownspreadSupported()
         {
             return _isDownspreadSupported;
+        }
+
+        virtual bool isAvoidHBR3WAREnabled()
+        {
+            return _bAvoidHBR3 && !_bAvoidHBR3DisabledByRegkey;
         }
 
         // Get GPU DSC capabilities
@@ -344,6 +345,7 @@ namespace DisplayPort
             DP_ASSERT(0 && "DP1x should never get this request.");
             return false;
         }
+        virtual bool getUSBCCableIDInfo(NV0073_CTRL_DP_USBC_CABLEID_INFO *cableIDInfo) { return false; }
         virtual void preLinkTraining(NvU32 head);
         virtual void postLinkTraining(NvU32 head);
         virtual NvU32 getRegkeyValue(const char *key);
@@ -355,6 +357,7 @@ namespace DisplayPort
                            unsigned phyRepeaterCount = 0);
         virtual bool retrieveRingBuffer(NvU8 dpRingBuffertype, NvU32 numRecords);
         virtual void getLinkConfig(unsigned & laneCount, NvU64 & linkRate);
+        void getLinkConfigWithFEC(unsigned & laneCount, NvU64 & linkRate, bool &bFECEnabled);
         virtual bool getMaxLinkConfigFromUefi(NvU8 &linkRate, NvU8 &laneCount);
         virtual bool setDpMSAParameters(bool bStereoEnable, const NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS &msaparams);
         virtual bool setDpStereoMSAParameters(bool bStereoEnable, const NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS &msaparams);

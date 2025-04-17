@@ -1,20 +1,22 @@
 
 #ifndef _G_KERN_GMMU_NVOC_H_
 #define _G_KERN_GMMU_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+3* SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -395,15 +397,20 @@ typedef struct
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__KernelGmmu;
+struct NVOC_METADATA__OBJENGSTATE;
+struct NVOC_METADATA__IntrService;
 struct NVOC_VTABLE__KernelGmmu;
 
 
 struct KernelGmmu {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__KernelGmmu *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__KernelGmmu *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -537,9 +544,11 @@ struct KernelGmmu {
 
 struct KernelGmmu_PRIVATE {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__KernelGmmu *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__KernelGmmu *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -671,11 +680,8 @@ struct KernelGmmu_PRIVATE {
 };
 
 
-// Metadata including vtable with 18 function pointers plus superclass metadata
+// Vtable with 18 per-class function pointers
 struct NVOC_VTABLE__KernelGmmu {
-    const struct NVOC_VTABLE__OBJENGSTATE OBJENGSTATE;    // (engstate) 14 function pointers
-    const struct NVOC_VTABLE__IntrService IntrService;    // (intrserv) 4 function pointers
-
     NV_STATUS (*__kgmmuConstructEngine__)(OBJGPU *, struct KernelGmmu * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__kgmmuStateInitLocked__)(OBJGPU *, struct KernelGmmu * /*this*/);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__kgmmuStateLoad__)(OBJGPU *, struct KernelGmmu * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
@@ -696,6 +702,14 @@ struct NVOC_VTABLE__KernelGmmu {
     NvBool (*__kgmmuIsPresent__)(struct OBJGPU *, struct KernelGmmu * /*this*/);  // virtual inherited (engstate) base (engstate)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__KernelGmmu {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
+    const struct NVOC_METADATA__IntrService metadata__IntrService;
+    const struct NVOC_VTABLE__KernelGmmu vtable;
+};
+
 #ifndef __NVOC_CLASS_KernelGmmu_TYPEDEF__
 #define __NVOC_CLASS_KernelGmmu_TYPEDEF__
 typedef struct KernelGmmu KernelGmmu;
@@ -712,10 +726,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGmmu;
     ((pThis)->__nvoc_pbase_KernelGmmu)
 
 #ifdef __nvoc_kern_gmmu_h_disabled
-#define __dynamicCast_KernelGmmu(pThis) ((KernelGmmu*)NULL)
+#define __dynamicCast_KernelGmmu(pThis) ((KernelGmmu*) NULL)
 #else //__nvoc_kern_gmmu_h_disabled
 #define __dynamicCast_KernelGmmu(pThis) \
-    ((KernelGmmu*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(KernelGmmu)))
+    ((KernelGmmu*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(KernelGmmu)))
 #endif //__nvoc_kern_gmmu_h_disabled
 
 // Property macros
@@ -738,29 +752,29 @@ NV_STATUS __nvoc_objCreate_KernelGmmu(KernelGmmu**, Dynamic*, NvU32);
 
 
 // Wrapper macros
-#define kgmmuConstructEngine_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_vtable->__kgmmuConstructEngine__
+#define kgmmuConstructEngine_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuConstructEngine__
 #define kgmmuConstructEngine(pGpu, pKernelGmmu, arg3) kgmmuConstructEngine_DISPATCH(pGpu, pKernelGmmu, arg3)
-#define kgmmuStateInitLocked_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_vtable->__kgmmuStateInitLocked__
+#define kgmmuStateInitLocked_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuStateInitLocked__
 #define kgmmuStateInitLocked(pGpu, pKernelGmmu) kgmmuStateInitLocked_DISPATCH(pGpu, pKernelGmmu)
-#define kgmmuStateLoad_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_vtable->__kgmmuStateLoad__
+#define kgmmuStateLoad_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuStateLoad__
 #define kgmmuStateLoad(pGpu, pKernelGmmu, arg3) kgmmuStateLoad_DISPATCH(pGpu, pKernelGmmu, arg3)
-#define kgmmuStateUnload_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_vtable->__kgmmuStateUnload__
+#define kgmmuStateUnload_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuStateUnload__
 #define kgmmuStateUnload(pGpu, pKernelGmmu, arg3) kgmmuStateUnload_DISPATCH(pGpu, pKernelGmmu, arg3)
-#define kgmmuStatePostLoad_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_vtable->__kgmmuStatePostLoad__
+#define kgmmuStatePostLoad_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuStatePostLoad__
 #define kgmmuStatePostLoad(pGpu, pKernelGmmu, arg3) kgmmuStatePostLoad_DISPATCH(pGpu, pKernelGmmu, arg3)
 #define kgmmuStatePostLoad_HAL(pGpu, pKernelGmmu, arg3) kgmmuStatePostLoad_DISPATCH(pGpu, pKernelGmmu, arg3)
-#define kgmmuStatePreUnload_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_vtable->__kgmmuStatePreUnload__
+#define kgmmuStatePreUnload_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuStatePreUnload__
 #define kgmmuStatePreUnload(pGpu, pKernelGmmu, arg3) kgmmuStatePreUnload_DISPATCH(pGpu, pKernelGmmu, arg3)
 #define kgmmuStatePreUnload_HAL(pGpu, pKernelGmmu, arg3) kgmmuStatePreUnload_DISPATCH(pGpu, pKernelGmmu, arg3)
-#define kgmmuStateDestroy_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_vtable->__kgmmuStateDestroy__
+#define kgmmuStateDestroy_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuStateDestroy__
 #define kgmmuStateDestroy(pGpu, pKernelGmmu) kgmmuStateDestroy_DISPATCH(pGpu, pKernelGmmu)
-#define kgmmuRegisterIntrService_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_vtable->__kgmmuRegisterIntrService__
+#define kgmmuRegisterIntrService_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuRegisterIntrService__
 #define kgmmuRegisterIntrService(pGpu, pKernelGmmu, arg3) kgmmuRegisterIntrService_DISPATCH(pGpu, pKernelGmmu, arg3)
-#define kgmmuClearInterrupt_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_vtable->__kgmmuClearInterrupt__
+#define kgmmuClearInterrupt_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuClearInterrupt__
 #define kgmmuClearInterrupt(pGpu, pKernelGmmu, pParams) kgmmuClearInterrupt_DISPATCH(pGpu, pKernelGmmu, pParams)
-#define kgmmuServiceInterrupt_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_vtable->__kgmmuServiceInterrupt__
+#define kgmmuServiceInterrupt_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuServiceInterrupt__
 #define kgmmuServiceInterrupt(pGpu, pKernelGmmu, pParams) kgmmuServiceInterrupt_DISPATCH(pGpu, pKernelGmmu, pParams)
-#define kgmmuServiceNotificationInterrupt_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_vtable->__kgmmuServiceNotificationInterrupt__
+#define kgmmuServiceNotificationInterrupt_FNPTR(pKernelGmmu) pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuServiceNotificationInterrupt__
 #define kgmmuServiceNotificationInterrupt(pGpu, pKernelGmmu, pParams) kgmmuServiceNotificationInterrupt_DISPATCH(pGpu, pKernelGmmu, pParams)
 #define kgmmuServiceNotificationInterrupt_HAL(pGpu, pKernelGmmu, pParams) kgmmuServiceNotificationInterrupt_DISPATCH(pGpu, pKernelGmmu, pParams)
 #define kgmmuInstBlkVaLimitGet_FNPTR(pKernelGmmu) pKernelGmmu->__kgmmuInstBlkVaLimitGet__
@@ -991,64 +1005,64 @@ NV_STATUS __nvoc_objCreate_KernelGmmu(KernelGmmu**, Dynamic*, NvU32);
 #define kgmmuGetFakeSparseEntry_FNPTR(arg_this) arg_this->__kgmmuGetFakeSparseEntry__
 #define kgmmuGetFakeSparseEntry(arg1, arg_this, arg3) kgmmuGetFakeSparseEntry_DISPATCH(arg1, arg_this, arg3)
 #define kgmmuGetFakeSparseEntry_HAL(arg1, arg_this, arg3) kgmmuGetFakeSparseEntry_DISPATCH(arg1, arg_this, arg3)
-#define kgmmuInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateInitMissing__
+#define kgmmuInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define kgmmuInitMissing(pGpu, pEngstate) kgmmuInitMissing_DISPATCH(pGpu, pEngstate)
-#define kgmmuStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitLocked__
+#define kgmmuStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
 #define kgmmuStatePreInitLocked(pGpu, pEngstate) kgmmuStatePreInitLocked_DISPATCH(pGpu, pEngstate)
-#define kgmmuStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitUnlocked__
+#define kgmmuStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__
 #define kgmmuStatePreInitUnlocked(pGpu, pEngstate) kgmmuStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kgmmuStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateInitUnlocked__
+#define kgmmuStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__
 #define kgmmuStateInitUnlocked(pGpu, pEngstate) kgmmuStateInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kgmmuStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreLoad__
+#define kgmmuStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__
 #define kgmmuStatePreLoad(pGpu, pEngstate, arg3) kgmmuStatePreLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define kgmmuStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePostUnload__
+#define kgmmuStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__
 #define kgmmuStatePostUnload(pGpu, pEngstate, arg3) kgmmuStatePostUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define kgmmuIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateIsPresent__
+#define kgmmuIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__
 #define kgmmuIsPresent(pGpu, pEngstate) kgmmuIsPresent_DISPATCH(pGpu, pEngstate)
 
 // Dispatch functions
 static inline NV_STATUS kgmmuConstructEngine_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, ENGDESCRIPTOR arg3) {
-    return pKernelGmmu->__nvoc_vtable->__kgmmuConstructEngine__(pGpu, pKernelGmmu, arg3);
+    return pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuConstructEngine__(pGpu, pKernelGmmu, arg3);
 }
 
 static inline NV_STATUS kgmmuStateInitLocked_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu) {
-    return pKernelGmmu->__nvoc_vtable->__kgmmuStateInitLocked__(pGpu, pKernelGmmu);
+    return pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuStateInitLocked__(pGpu, pKernelGmmu);
 }
 
 static inline NV_STATUS kgmmuStateLoad_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, NvU32 arg3) {
-    return pKernelGmmu->__nvoc_vtable->__kgmmuStateLoad__(pGpu, pKernelGmmu, arg3);
+    return pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuStateLoad__(pGpu, pKernelGmmu, arg3);
 }
 
 static inline NV_STATUS kgmmuStateUnload_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, NvU32 arg3) {
-    return pKernelGmmu->__nvoc_vtable->__kgmmuStateUnload__(pGpu, pKernelGmmu, arg3);
+    return pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuStateUnload__(pGpu, pKernelGmmu, arg3);
 }
 
 static inline NV_STATUS kgmmuStatePostLoad_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, NvU32 arg3) {
-    return pKernelGmmu->__nvoc_vtable->__kgmmuStatePostLoad__(pGpu, pKernelGmmu, arg3);
+    return pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuStatePostLoad__(pGpu, pKernelGmmu, arg3);
 }
 
 static inline NV_STATUS kgmmuStatePreUnload_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, NvU32 arg3) {
-    return pKernelGmmu->__nvoc_vtable->__kgmmuStatePreUnload__(pGpu, pKernelGmmu, arg3);
+    return pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuStatePreUnload__(pGpu, pKernelGmmu, arg3);
 }
 
 static inline void kgmmuStateDestroy_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu) {
-    pKernelGmmu->__nvoc_vtable->__kgmmuStateDestroy__(pGpu, pKernelGmmu);
+    pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuStateDestroy__(pGpu, pKernelGmmu);
 }
 
-static inline void kgmmuRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, IntrServiceRecord arg3[177]) {
-    pKernelGmmu->__nvoc_vtable->__kgmmuRegisterIntrService__(pGpu, pKernelGmmu, arg3);
+static inline void kgmmuRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, IntrServiceRecord arg3[179]) {
+    pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuRegisterIntrService__(pGpu, pKernelGmmu, arg3);
 }
 
 static inline NvBool kgmmuClearInterrupt_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, IntrServiceClearInterruptArguments *pParams) {
-    return pKernelGmmu->__nvoc_vtable->__kgmmuClearInterrupt__(pGpu, pKernelGmmu, pParams);
+    return pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuClearInterrupt__(pGpu, pKernelGmmu, pParams);
 }
 
 static inline NvU32 kgmmuServiceInterrupt_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, IntrServiceServiceInterruptArguments *pParams) {
-    return pKernelGmmu->__nvoc_vtable->__kgmmuServiceInterrupt__(pGpu, pKernelGmmu, pParams);
+    return pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuServiceInterrupt__(pGpu, pKernelGmmu, pParams);
 }
 
 static inline NV_STATUS kgmmuServiceNotificationInterrupt_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, IntrServiceServiceNotificationInterruptArguments *pParams) {
-    return pKernelGmmu->__nvoc_vtable->__kgmmuServiceNotificationInterrupt__(pGpu, pKernelGmmu, pParams);
+    return pKernelGmmu->__nvoc_metadata_ptr->vtable.__kgmmuServiceNotificationInterrupt__(pGpu, pKernelGmmu, pParams);
 }
 
 static inline NV_STATUS kgmmuInstBlkVaLimitGet_DISPATCH(struct KernelGmmu *pKernelGmmu, struct OBJVASPACE *pVAS, NvU32 subctxId, INST_BLK_INIT_PARAMS *pParams, NvU32 *pOffset, NvU64 *pData) {
@@ -1356,31 +1370,31 @@ static inline NvU8 * kgmmuGetFakeSparseEntry_DISPATCH(OBJGPU *arg1, struct Kerne
 }
 
 static inline void kgmmuInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate) {
-    pEngstate->__nvoc_vtable->__kgmmuInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_metadata_ptr->vtable.__kgmmuInitMissing__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kgmmuStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate) {
-    return pEngstate->__nvoc_vtable->__kgmmuStatePreInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__kgmmuStatePreInitLocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kgmmuStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate) {
-    return pEngstate->__nvoc_vtable->__kgmmuStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__kgmmuStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kgmmuStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate) {
-    return pEngstate->__nvoc_vtable->__kgmmuStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__kgmmuStateInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kgmmuStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__kgmmuStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__kgmmuStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS kgmmuStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__kgmmuStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__kgmmuStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline NvBool kgmmuIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate) {
-    return pEngstate->__nvoc_vtable->__kgmmuIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__kgmmuIsPresent__(pGpu, pEngstate);
 }
 
 static inline NvU32 kgmmuService_4a4dee(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu) {
@@ -1942,7 +1956,7 @@ NV_STATUS kgmmuStatePreUnload_IMPL(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu,
 
 void kgmmuStateDestroy_IMPL(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu);
 
-void kgmmuRegisterIntrService_IMPL(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, IntrServiceRecord arg3[177]);
+void kgmmuRegisterIntrService_IMPL(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, IntrServiceRecord arg3[179]);
 
 NvBool kgmmuClearInterrupt_IMPL(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, IntrServiceClearInterruptArguments *pParams);
 
@@ -2109,8 +2123,8 @@ NvU32 kgmmuGetGraphicsEngineId_GH100(struct KernelGmmu *pKernelGmmu);
 
 NvU32 kgmmuReadShadowBufPutIndex_GH100(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, FAULT_BUFFER_TYPE type);
 
-static inline NvU32 kgmmuReadShadowBufPutIndex_4a4dee(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, FAULT_BUFFER_TYPE type) {
-    return 0;
+static inline NvU32 kgmmuReadShadowBufPutIndex_474d46(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, FAULT_BUFFER_TYPE type) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
 }
 
 NvBool kgmmuIsFaultEngineBar1_TU102(struct KernelGmmu *pKernelGmmu, NvU32 arg2);

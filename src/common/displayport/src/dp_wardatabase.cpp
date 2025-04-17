@@ -600,12 +600,18 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             {
                 this->WARFlags.bDisableDscMaxBppLimit = true;
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Disable DSC max BPP limit of 16 for DSC.");
+            }       
+            else if (ProductID == 0x5CA7)
+            {
+                this->WARFlags.bForceHeadShutdownOnModeTransition = true;
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Force head shutdown on Mode transition.");
             }
             break;
-        case 0xB306:
-            if (ProductID == 0x3228)
+        // Gigabyte
+        case 0x541C:
+            if (ProductID == 0x3215)
             {
-                // ASUS PG32UQXR does not set DPCD 0x2217 to reflect correct CableID.
+                // Gigabyte AORUS FO32U2P does not set DPCD 0x2217 to reflect correct CableID.
                 this->WARFlags.bSkipCableIdCheck = true;
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Panel does not expose cable capability. Ignoring it. Bug 4968411");
             }
@@ -629,6 +635,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 // Do not allocate manual timeslot when under a separate branch. This is checked with branch OUI.
                 //
                 this->WARFlags.bAllocateManualTimeslots = true;
+                this->WARFlags.bDP2XPreferNonDSCForLowPClk = true;
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Panel needs allocation of manual timeslot. Bug 4958974");
             }
             if (ProductID == 0x7256)

@@ -182,6 +182,7 @@ struct drm_nvidia_gem_import_userspace_memory_params {
 
 struct drm_nvidia_get_dev_info_params {
     uint32_t gpu_id;             /* OUT */
+    uint32_t mig_device;         /* OUT */
     uint32_t primary_index;      /* OUT; the "card%d" value */
 
     uint32_t supports_alloc;     /* OUT */

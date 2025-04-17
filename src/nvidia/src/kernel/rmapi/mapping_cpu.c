@@ -102,56 +102,7 @@ rmapiGetEffectiveAddrSpace
     NV_ADDRESS_SPACE *pAddrSpace
 )
 {
-    NV_ADDRESS_SPACE addrSpace;
-    NvBool bDirectSysMappingAllowed = NV_TRUE;
-
-    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-
-    NV_ASSERT_OK_OR_RETURN(
-        kbusIsDirectMappingAllowed_HAL(pGpu, pKernelBus, pMemDesc, mapFlags,
-                                      &bDirectSysMappingAllowed));
-
-    //
-    // Bug 1482818: Deprecate reflected mappings in production code.
-    //  The usage of reflected writes, in addition to causing several deadlock
-    //  scenarios involving P2P transfers, are disallowed on NVLINK (along with
-    //  reflected reads), and should no longer be used.
-    //  The below PDB property should be unset once the remaining usages in MODS
-    //  have been culled. (Bug 1780557)
-    //
-    if ((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM) &&
-        !bDirectSysMappingAllowed &&
-        (DRF_VAL(OS33, _FLAGS, _MAPPING, mapFlags) != NVOS33_FLAGS_MAPPING_DIRECT) &&
-        !kbusIsReflectedMappingAccessAllowed(pKernelBus))
-    {
-        NV_ASSERT(0);
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
-    if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
-    {
-        addrSpace = ADDR_FBMEM;
-    }
-    else if ((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM) &&
-        (bDirectSysMappingAllowed || FLD_TEST_DRF(OS33, _FLAGS, _MAPPING, _DIRECT, mapFlags) ||
-        (IS_VIRTUAL_WITH_SRIOV(pGpu) && !IS_FMODEL(pGpu) && !IS_RTLSIM(pGpu))))
-    {
-        addrSpace = ADDR_SYSMEM;
-    }
-    else if ((memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM) ||
-             ((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM) && !bDirectSysMappingAllowed))
-    {
-        addrSpace = ADDR_FBMEM;
-    }
-    else
-    {
-        addrSpace = memdescGetAddressSpace(pMemDesc);
-    }
-
-    if (pAddrSpace)
-        *pAddrSpace = addrSpace;
-
-    return NV_OK;
+    return kbusGetEffectiveAddressSpace_HAL(pGpu, pMemDesc, mapFlags, pAddrSpace);
 }
 
 // Asserts to check caching type matches across sdk and nv_memory_types

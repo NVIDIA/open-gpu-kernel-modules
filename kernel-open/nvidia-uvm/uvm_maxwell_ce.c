@@ -226,9 +226,13 @@ bool uvm_hal_maxwell_ce_memset_is_valid(uvm_push_t *push,
 bool uvm_hal_maxwell_ce_memcopy_is_valid(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src)
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
-    const bool peer_copy = uvm_gpu_address_is_peer(gpu, dst) || uvm_gpu_address_is_peer(gpu, src);
 
-    if (push->channel && peer_copy && !uvm_channel_is_p2p(push->channel)) {
+    if (uvm_gpu_address_is_peer(gpu, src)) {
+        UVM_ERR_PRINT("Peer copy from peer address (0x%llx) is not allowed!", src.address);
+        return false;
+    }
+
+    if (push->channel && uvm_gpu_address_is_peer(gpu, dst) && !uvm_channel_is_p2p(push->channel)) {
         UVM_ERR_PRINT("Peer copy from address (0x%llx) to address (0x%llx) should use designated p2p channels!",
                       src.address,
                       dst.address);

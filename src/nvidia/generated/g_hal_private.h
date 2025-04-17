@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_hal_private.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B
 //
 
 //
@@ -69,6 +69,8 @@
 #  define RMCFG_HAL_SETUP_GB100          1
 #  define RMCFG_HAL_SETUP_GB102          1
 #  define RMCFG_HAL_SETUP_GB10B          1
+#  define RMCFG_HAL_SETUP_GB110          1
+#  define RMCFG_HAL_SETUP_GB112          1
 #endif // GB10X
 
 #if defined(RMCFG_HAL_SETUP_GB20X)
@@ -77,6 +79,7 @@
 #  define RMCFG_HAL_SETUP_GB205          1
 #  define RMCFG_HAL_SETUP_GB206          1
 #  define RMCFG_HAL_SETUP_GB207          1
+#  define RMCFG_HAL_SETUP_GB20B          1
 #endif // GB20X
 
 #endif  // RMCFG_ENGINE_SETUP
@@ -413,6 +416,38 @@ NV_STATUS registerHalModule_GB10B(void)
 
 #endif  // GB10X or GB10B
 
+#if defined(RMCFG_HAL_SETUP_GB110)
+
+static const HAL_IFACE_SETUP halIface_GB110 = {
+
+    rpcHalIfacesSetup_GB110,
+    rpcstructurecopyHalIfacesSetup_GB110,
+
+};
+
+NV_STATUS registerHalModule_GB110(void)
+{
+    return registerHalModule(HAL_IMPL_GB110, &halIface_GB110);
+}
+
+#endif  // GB10X or GB110
+
+#if defined(RMCFG_HAL_SETUP_GB112)
+
+static const HAL_IFACE_SETUP halIface_GB112 = {
+
+    rpcHalIfacesSetup_GB112,
+    rpcstructurecopyHalIfacesSetup_GB112,
+
+};
+
+NV_STATUS registerHalModule_GB112(void)
+{
+    return registerHalModule(HAL_IMPL_GB112, &halIface_GB112);
+}
+
+#endif  // GB10X or GB112
+
 #if defined(RMCFG_HAL_SETUP_GB202)
 
 static const HAL_IFACE_SETUP halIface_GB202 = {
@@ -492,6 +527,22 @@ NV_STATUS registerHalModule_GB207(void)
 }
 
 #endif  // GB20X or GB207
+
+#if defined(RMCFG_HAL_SETUP_GB20B)
+
+static const HAL_IFACE_SETUP halIface_GB20B = {
+
+    rpcHalIfacesSetup_GB20B,
+    rpcstructurecopyHalIfacesSetup_GB20B,
+
+};
+
+NV_STATUS registerHalModule_GB20B(void)
+{
+    return registerHalModule(HAL_IMPL_GB20B, &halIface_GB20B);
+}
+
+#endif  // GB20X or GB20B
 
 
 

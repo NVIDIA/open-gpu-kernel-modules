@@ -25,6 +25,9 @@
 
 #include "mem_mgr/fla_mem.h"
 
+
+#include "platform/chipset/chipset.h"
+
 #include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
@@ -173,7 +176,7 @@ memDestruct_IMPL
     if (pMemory->bRpcAlloc && (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu)))
     {
         NV_RM_RPC_FREE(pGpu, hClient, hParent, hMemory, status);
-        NV_ASSERT(status == NV_OK);
+        NV_ASSERT((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET));
     }
 }
 
@@ -670,16 +673,6 @@ _memDestructCommonWithDevice
     }
 
     dispcmnGetByDevice(pRsClient, hDevice, &pDispCommon);
-
-    if (pDispCommon != NULL)
-    {
-        DisplayApi *pDisplayApi = staticCast(pDispCommon, DisplayApi);
-        if (pDisplayApi->hNotifierMemory == hMemory)
-        {
-            pDisplayApi->hNotifierMemory = NV01_NULL_OBJECT;
-            pDisplayApi->pNotifierMemory = NULL;
-        }
-    }
 
     //
     // Release any FB HW resources
@@ -1204,4 +1197,57 @@ memIsDuplicate_IMPL
     *pDuplicate = (pMemory->pMemDesc == pMemory1->pMemDesc);
 
     return NV_OK;
+}
+
+void memSetSysmemCacheAttrib_IMPL
+(
+    OBJGPU                          *pGpu,
+    NV_MEMORY_ALLOCATION_PARAMS     *pAllocData,
+    NvU32                           *pCpuCacheAttrib,
+    NvU32                           *pGpuCacheAttrib
+)
+{
+    //
+    // For system memory default to GPU uncached. GPU caching is different from
+    // the expected default memory model since it is not coherent.  Clients must
+    // understand this and handle any coherency requirements explicitly.
+    //
+    if (DRF_VAL(OS32, _ATTR2, _GPU_CACHEABLE, pAllocData->attr2) ==
+        NVOS32_ATTR2_GPU_CACHEABLE_DEFAULT)
+    {
+        pAllocData->attr2 = FLD_SET_DRF(OS32, _ATTR2, _GPU_CACHEABLE, _NO,
+                                        pAllocData->attr2);
+    }
+
+    if (DRF_VAL(OS32, _ATTR2, _GPU_CACHEABLE, pAllocData->attr2) ==
+        NVOS32_ATTR2_GPU_CACHEABLE_YES)
+    {
+        *pGpuCacheAttrib = NV_MEMORY_CACHED;
+    }
+    else
+    {
+        *pGpuCacheAttrib = NV_MEMORY_UNCACHED;
+    }
+
+    if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_UNCACHED)
+        *pCpuCacheAttrib = NV_MEMORY_UNCACHED;
+    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_CACHED)
+        *pCpuCacheAttrib = NV_MEMORY_CACHED;
+    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_COMBINE)
+        *pCpuCacheAttrib = NV_MEMORY_WRITECOMBINED;
+    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_THROUGH)
+        *pCpuCacheAttrib = NV_MEMORY_CACHED;
+    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_PROTECT)
+        *pCpuCacheAttrib = NV_MEMORY_CACHED;
+    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_BACK)
+        *pCpuCacheAttrib = NV_MEMORY_CACHED;
+    else
+        *pCpuCacheAttrib = 0;
+
+    ct_assert(NVOS32_ATTR_COHERENCY_UNCACHED      == NVOS02_FLAGS_COHERENCY_UNCACHED);
+    ct_assert(NVOS32_ATTR_COHERENCY_CACHED        == NVOS02_FLAGS_COHERENCY_CACHED);
+    ct_assert(NVOS32_ATTR_COHERENCY_WRITE_COMBINE == NVOS02_FLAGS_COHERENCY_WRITE_COMBINE);
+    ct_assert(NVOS32_ATTR_COHERENCY_WRITE_THROUGH == NVOS02_FLAGS_COHERENCY_WRITE_THROUGH);
+    ct_assert(NVOS32_ATTR_COHERENCY_WRITE_PROTECT == NVOS02_FLAGS_COHERENCY_WRITE_PROTECT);
+    ct_assert(NVOS32_ATTR_COHERENCY_WRITE_BACK    == NVOS02_FLAGS_COHERENCY_WRITE_BACK);
 }

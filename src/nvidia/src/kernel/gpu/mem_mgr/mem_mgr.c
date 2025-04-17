@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -55,6 +55,7 @@
 #include "gpu/mem_mgr/mem_mapper.h"
 #include "platform/sli/sli.h"
 #include "virtualization/hypervisor/hypervisor.h"
+#include "gpu/device/device.h"
 
 #include "class/cl0050.h"
 #include "containers/eheap_old.h"
@@ -86,6 +87,8 @@ memmgrConstructEngine_IMPL
     pMemoryManager->overrideInitHeapMin = 0;
     pMemoryManager->overrideHeapMax     = ~0ULL;
     pMemoryManager->Ram.fbOverrideSizeMb = ~0ULL;
+    pMemoryManager->localEgmPeerId = BUS_INVALID_PEER;
+    pMemoryManager->localEgmNodeId = -1;
 
     // Create the children
     rmStatus = _memmgrCreateChildObjects(pMemoryManager);
@@ -278,6 +281,21 @@ _memmgrInitRegistryOverrides(OBJGPU *pGpu, MemoryManager *pMemoryManager)
         }
     }
 
+    //
+    // Default to HAL support, and optionally allow only disabling it.
+    // Do not allow enabling it on unsupported architecture.
+    //
+    pMemoryManager->bLocalizedMemorySupported =
+        memmgrGetLocalizedMemorySupported_HAL(pGpu, pMemoryManager);
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_LOCALIZED_MEMORY, &data32) == NV_OK)
+    {
+        if (data32 == NV_REG_STR_RM_LOCALIZED_MEMORY_DISABLE)
+        {
+            pMemoryManager->bLocalizedMemorySupported = NV_FALSE;
+        }
+    }
+
     if (osReadRegistryDword(pGpu, NV_REG_STR_DISABLE_GLOBAL_CE_UTILS, &data32) == NV_OK &&
         data32 == NV_REG_STR_DISABLE_GLOBAL_CE_UTILS_YES)
     {
@@ -293,6 +311,23 @@ _memmgrInitRegistryOverrides(OBJGPU *pGpu, MemoryManager *pMemoryManager)
         }
     }
 
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_64K_BUG_5123775_WAR, &data32) == NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "BUG 5123775 WAR: isEnabled %d\n", data32);
+        if (data32)
+        {
+            pMemoryManager->bug64kPage5123775War = NV_TRUE;
+        }
+        else
+        {
+            pMemoryManager->bug64kPage5123775War = NV_FALSE;
+        }
+    }
+    else
+    {
+        pMemoryManager->bug64kPage5123775War = NV_FALSE;
+    } 
+
     pMemoryManager->bCePhysicalVidmemAccessNotSupported = gpuIsSelfHosted(pGpu);
 }
 
@@ -303,6 +338,8 @@ memmgrStatePreInitLocked_IMPL
     MemoryManager *pMemoryManager
 )
 {
+    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+
     if (IS_GSP_CLIENT(pGpu) || IS_VIRTUAL(pGpu))
     {
         //
@@ -316,6 +353,11 @@ memmgrStatePreInitLocked_IMPL
     // Determine the size of reserved memory
     NV_ASSERT_OK_OR_RETURN(memmgrPreInitReservedMemory_HAL(pGpu, pMemoryManager));
 
+    if (pKernelMemorySystem->pStaticConfig->bDisableCompbitBacking)
+    {
+        pMemoryManager->bUseVirtualCopyOnSuspend = NV_FALSE;
+    }
+    
     return NV_OK;
 }
 
@@ -364,6 +406,9 @@ memmgrTestCeUtils
                     pSysMemDesc);
     NV_ASSERT_OK_OR_GOTO(status, status, failed);
     sysSurface.pMemDesc = pSysMemDesc;
+
+    // Ensure that comptags are not dirty. This can happen in back-to-back runs when FB is not properly scrubbed
+    NV_ASSERT_OK_OR_GOTO(status, memmgrMemSet(pMemoryManager, &vidSurface, 0, sizeof vidmemData, TRANSFER_FLAGS_PREFER_CE),             failed);
 
     NV_ASSERT_OK_OR_GOTO(status, memmgrMemWrite(pMemoryManager, &vidSurface, &vidmemData, sizeof vidmemData, TRANSFER_FLAGS_NONE),      failed);
     NV_ASSERT_OK_OR_GOTO(status, memmgrMemWrite(pMemoryManager, &sysSurface, &sysmemData, sizeof sysmemData, TRANSFER_FLAGS_NONE),      failed);
@@ -418,7 +463,7 @@ memmgrInitInternalChannels_IMPL
 
     NV_PRINTF(LEVEL_INFO, "Initializing global CeUtils instance\n");
 
-    NV_ASSERT_OK_OR_RETURN(memmgrInitCeUtils(pMemoryManager, NV_FALSE));
+    NV_ASSERT_OK_OR_RETURN(memmgrInitCeUtils(pMemoryManager, NV_FALSE, NV_TRUE));
 
     return NV_OK;
 }
@@ -553,10 +598,14 @@ memmgrStateInitLocked_IMPL
     memmgrScrubRegistryOverrides_HAL(pGpu, pMemoryManager);
 
     memmgrScrubInit_HAL(pGpu, pMemoryManager);
-    NV_ASSERT_OK_OR_RETURN(kfifoAddSchedulingHandler(pGpu,
-                GPU_GET_KERNEL_FIFO(pGpu),
-                memmgrPostSchedulingEnableHandler, NULL,
-                memmgrPreSchedulingDisableHandler, NULL));
+
+    if (GPU_GET_KERNEL_FIFO(pGpu) != NULL)
+    {
+        NV_ASSERT_OK_OR_RETURN(kfifoAddSchedulingHandler(pGpu,
+                    GPU_GET_KERNEL_FIFO(pGpu),
+                    memmgrPostSchedulingEnableHandler, NULL,
+                    memmgrPreSchedulingDisableHandler, NULL));
+    }
 
     //
     // Allocate framebuffer heap.  All memory must be allocated from here to keep the world
@@ -897,9 +946,12 @@ memmgrStateDestroy_IMPL
         pMemoryManager->bLocalEgmEnabled = NV_FALSE;
     }
 
-    kfifoRemoveSchedulingHandler(pGpu, GPU_GET_KERNEL_FIFO(pGpu),
-        memmgrPostSchedulingEnableHandler, NULL,
-        memmgrPreSchedulingDisableHandler, NULL);
+    if (GPU_GET_KERNEL_FIFO(pGpu) != NULL)
+    {
+        kfifoRemoveSchedulingHandler(pGpu, GPU_GET_KERNEL_FIFO(pGpu),
+            memmgrPostSchedulingEnableHandler, NULL,
+            memmgrPreSchedulingDisableHandler, NULL);
+    }
     memmgrScrubDestroy_HAL(pGpu, pMemoryManager);
 }
 
@@ -1033,7 +1085,7 @@ memmgrCreateHeap_IMPL
             }
         }
 
-        kmemsysPostHeapCreate_HAL(pGpu, pKernelMemorySystem);
+        NV_ASSERT_OK_OR_RETURN(kmemsysPostHeapCreate_HAL(pGpu, pKernelMemorySystem));
     }
 
     return status;
@@ -1365,7 +1417,14 @@ memmgrLargePageSupported_IMPL
     }
     else if (addrSpace == ADDR_SYSMEM)
     {
-        isSupported = (pMemoryManager->sysmemPageSize != RM_PAGE_SIZE);
+        if (RMCFG_FEATURE_PLATFORM_UNIX)
+        {
+            isSupported = NV_TRUE;
+        }
+        else
+        {
+            isSupported = (pMemoryManager->sysmemPageSize != RM_PAGE_SIZE);
+        }
     }
     else
     {
@@ -1573,25 +1632,7 @@ memmgrDeterminePageSize_IMPL
     {
         addrSpace = memmgrAllocGetAddrSpace(pMemoryManager, pageFormatFlags, *pRetAttr);
 
-        //
-        // Bug 4270864: Temp hack until sysmem supports higher order allocations.
-        // We allow EGM to get allocated at higher page size.
-        //
-        if (memmgrIsLocalEgmEnabled(pMemoryManager) &&
-            addrSpace == ADDR_SYSMEM &&
-            FLD_TEST_DRF(OS32, _ATTR2, _FIXED_NUMA_NODE_ID, _YES, *pRetAttr2) &&
-            //
-            // Bug 4270868: MODS has test cases which pass FIXED_NUMA_NODE_ID,
-            // but invalid node_id. Will remove once MODS tests get fixed.
-            //
-            !RMCFG_FEATURE_MODS_FEATURES)
-        {
-            bIsBigPageSupported = NV_TRUE;
-        }
-        else
-        {
-            bIsBigPageSupported = memmgrLargePageSupported(pMemoryManager, addrSpace);
-        }
+        bIsBigPageSupported = memmgrLargePageSupported(pMemoryManager, addrSpace);
         pageSizeAttr = dmaNvos32ToPageSizeAttr(*pRetAttr, *pRetAttr2);
 
         //
@@ -1648,6 +1689,18 @@ memmgrDeterminePageSize_IMPL
                 {
                     NvBool bUseDefaultHugePagesize = NV_TRUE;
                     // WDDMV2 Windows it expect default page size to be 4K /64KB /128KB
+
+                    //
+                    // For sysmem, the default should select the native OS page size
+                    // as clients tend to make an assumption about the default flag.
+                    // TODO: 4691005
+                    //
+                    if (RMCFG_FEATURE_PLATFORM_UNIX && (addrSpace == ADDR_SYSMEM))
+                    {
+                        pageSize = osGetPageSize();
+                        break;
+                    }
+
                     if (bUseDefaultHugePagesize &&
                         kgmmuIsHugePageSupported(pKernelGmmu) &&
                         (memSize >= RM_PAGE_SIZE_HUGE) && (addrSpace != ADDR_SYSMEM ||
@@ -3266,6 +3319,8 @@ memmgrInitFbRegions_IMPL
 
     NV_ASSERT_OK_OR_RETURN(memmgrInitBaseFbRegions_HAL(pGpu, pMemoryManager));
 
+    NV_ASSERT_OK_OR_RETURN(memmgrReserveVbiosVgaRegions_HAL(pGpu, pMemoryManager));
+
     NV_ASSERT_OK_OR_RETURN(memmgrInitFbRegionsHal_HAL(pGpu, pMemoryManager));
 
     //
@@ -3867,7 +3922,6 @@ memmgrStatePostLoad_IMPL
         NvS32 egmNodeId;
         KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
 
-        pMemoryManager->localEgmNodeId = -1;
         if (gpuIsSelfHosted(pGpu) &&
             pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_IS_C2C_LINK_UP) &&    // EGM can be enabled only in C2C path.
             (osGetEgmInfo(pGpu, &egmPhysAddr, &egmSize, &egmNodeId) == NV_OK) &&
@@ -3895,6 +3949,7 @@ memmgrStatePostLoad_IMPL
         {
             pMemoryManager->bLocalEgmEnabled = NV_TRUE;
             pMemoryManager->localEgmPeerId = pMemoryManager->localEgmOverride.peerId;
+            pMemoryManager->localEgmNodeId = pGpu->cpuNumaNodeId;
         }
     }
 
@@ -3931,6 +3986,8 @@ memmgrStatePostLoad_IMPL
                     NV_PRINTF(LEVEL_ERROR, "HSHUB programming failed for EGM Peer ID: %u. status: %d\n",
                               pMemoryManager->localEgmPeerId, status);
 
+                    kbusUnreserveP2PPeerIds_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu),
+                                                NVBIT(pMemoryManager->localEgmPeerId));
                     pMemoryManager->bLocalEgmEnabled = NV_FALSE;
                     pMemoryManager->localEgmPeerId = BUS_INVALID_PEER;
                     return status;
@@ -3946,10 +4003,6 @@ memmgrStatePostLoad_IMPL
             return NV_ERR_INVALID_ARGUMENT;
         }
     }
-    else
-    {
-        pMemoryManager->localEgmPeerId = BUS_INVALID_PEER;
-    }
     return NV_OK;
 }
 
@@ -3957,13 +4010,14 @@ NV_STATUS
 memmgrInitCeUtils_IMPL
 (
     MemoryManager *pMemoryManager,
-    NvBool         bFifoLite
+    NvBool         bFifoLite,
+    NvBool         bVirtualMode
 )
 {
     OBJGPU *pGpu = ENG_GET_GPU(pMemoryManager);
-    NV0050_ALLOCATION_PARAMETERS ceUtilsParams = {0};
     const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig =
-                kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
+        kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
+    NV0050_ALLOCATION_PARAMETERS ceUtilsParams = {0};
 
     NV_ASSERT_OR_RETURN(pMemoryManager->pCeUtils == NULL, NV_ERR_INVALID_STATE);
 
@@ -3972,16 +4026,16 @@ memmgrInitCeUtils_IMPL
     else if(IsTURINGorBetter(pGpu))
         ceUtilsParams.flags |= DRF_DEF(0050_CEUTILS, _FLAGS, _NO_BAR1_USE, _TRUE);
 
-    if (!bFifoLite && !RMCFG_FEATURE_PLATFORM_GSP && IS_SILICON(pGpu) && !pMemorySystemConfig->bDisableCompbitBacking &&
-        ((pMemorySystemConfig->bUseRawModeComptaglineAllocation || pMemorySystemConfig->bOneToOneComptagLineAllocation) &&
-         IsdBLACKWELLorBetter(pGpu)))
+    if (pMemoryManager->bCePhysicalVidmemAccessNotSupported)
+        ceUtilsParams.flags |= DRF_DEF(0050_CEUTILS, _FLAGS, _VIRTUAL_MODE, _TRUE);
+
+    if (!bFifoLite && !RMCFG_FEATURE_PLATFORM_GSP && bVirtualMode &&
+        IS_SILICON(pGpu) && !pMemorySystemConfig->bDisableCompbitBacking &&
+        (pMemorySystemConfig->bUseRawModeComptaglineAllocation || pMemorySystemConfig->bOneToOneComptagLineAllocation))
     {
         // Turn on virtual mode to enable compressed allocation access
         ceUtilsParams.flags |= DRF_DEF(0050_CEUTILS, _FLAGS, _VIRTUAL_MODE, _TRUE);
     }
-
-    if (pMemoryManager->bCePhysicalVidmemAccessNotSupported)
-        ceUtilsParams.flags |= DRF_DEF(0050_CEUTILS, _FLAGS, _VIRTUAL_MODE, _TRUE);
 
     NV_ASSERT_OK_OR_RETURN(objCreate(&pMemoryManager->pCeUtils, pMemoryManager, CeUtils, ENG_GET_GPU(pMemoryManager), NULL, &ceUtilsParams));
 
@@ -4001,6 +4055,61 @@ memmgrDestroyCeUtils_IMPL
     MemoryManager *pMemoryManager
 )
 {
-    objDelete(pMemoryManager->pCeUtils);
+    CeUtils *pCeUtils = pMemoryManager->pCeUtils;
+
+    // ceutilsDestruct() path might call interrupt handlers which reference CeUtils
     pMemoryManager->pCeUtils = NULL;
+    objDelete(pCeUtils);
+}
+
+/*!
+ * @brief   Get suitable handles for MIG/non-MIG mode
+ *
+ * @param[in]       pGpu                GPU pointer
+ * @param[in]       pMemoryManager      MemoryManager pointer
+ * @param[in]       pExternalDevice     External device used to find the right partition
+ * @param[out]      phClient            Handle to internal client
+ * @param[out]      phDevice            Handle to internal device
+ * @param[out]      phSubdevice         Handle to internal subdevice
+ *
+ * @returns On success, returns NV_OK.
+ *          On failure, returns error code.
+ */
+NV_STATUS
+memmgrGetInternalClientHandles_IMPL
+(
+    OBJGPU *pGpu,
+    MemoryManager *pMemoryManager,
+    Device *pExternalDevice,
+    NvHandle *phClient,
+    NvHandle *phDevice,
+    NvHandle *phSubdevice
+)
+{
+    if (IS_MIG_IN_USE(pGpu))
+    {
+        KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+        MIG_INSTANCE_REF pMigInstanceRef;
+        KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance;
+
+        NV_ASSERT_OK_OR_RETURN(
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pExternalDevice, &pMigInstanceRef));
+        pKernelMIGGpuInstance = pMigInstanceRef.pKernelMIGGpuInstance;
+
+        *phClient = pKernelMIGGpuInstance->instanceHandles.hClient;
+        if (phDevice != NULL)
+            *phDevice = pKernelMIGGpuInstance->instanceHandles.hDevice;
+        if (phSubdevice != NULL)
+            *phSubdevice = pKernelMIGGpuInstance->instanceHandles.hSubdevice;
+    }
+    else
+    {
+        *phClient = pMemoryManager->hClient;
+        if (phDevice != NULL)
+            *phDevice = pMemoryManager->hDevice;
+        if (phSubdevice != NULL)
+            *phSubdevice = pMemoryManager->hSubdevice;
+    }
+
+    return NV_OK;
 }

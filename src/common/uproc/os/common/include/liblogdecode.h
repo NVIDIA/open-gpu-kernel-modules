@@ -122,6 +122,11 @@ typedef LIBOS_LOG_NVLOG_BUFFER_V1 LIBOS_LOG_NVLOG_BUFFER;
 
 #define LIBOS_LOG_NVLOG_BUFFER_SIZE(dataSize) (NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) + (dataSize))
 
+// Flag to avoid nvlog buffer alloc when adding the libos log. This flag has no
+// impact if LIBOS_LOG_TO_NVLOG is not set.
+// The default value for this flag is 0
+#define LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED    0x1
+
 struct LIBOS_LOG_DECODE_LOG
 {
     volatile NvU64 *physicLogBuffer;
@@ -132,6 +137,8 @@ struct LIBOS_LOG_DECODE_LOG
     NvU32 gpuInstance;               // GPU that this log is associated with.
     char taskPrefix[TASK_NAME_MAX_LENGTH];     // Prefix string printed before each line.
     char elfSectionName[ELF_SECTION_NAME_MAX]; // Task section name in container logging ELF serving as ID.
+    NvU32 flags;
+    NvU64 localToGlobalTimerDelta;
 
 #if LIBOS_LOG_TO_NVLOG
     NvU32 hNvLogNoWrap;  // No wrap buffer captures first records.
@@ -186,8 +193,8 @@ void libosLogCreate(LIBOS_LOG_DECODE *logDecode);
 void libosLogCreateEx(LIBOS_LOG_DECODE *logDecode, const char *pSourceName);
 #endif
 
-void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSize, NvU32 gpuInstance, NvU32 gpuArch, NvU32 gpuImpl, const char *name, const char *elfSectionName, void *buildId);
-void libosLogAddLog(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSize, NvU32 gpuInstance, const char *name, const char *elfSectionName);
+void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSize, NvU32 gpuInstance, NvU32 gpuArch, NvU32 gpuImpl, const char *name, const char *elfSectionName, NvU32 libosLogFlags, void *buildId);
+void libosLogAddLog(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSize, NvU32 gpuInstance, const char *name, const char *elfSectionName, NvU32 libosLogFlags);
 
 #if LIBOS_LOG_DECODE_ENABLE
 void libosLogInit(LIBOS_LOG_DECODE *logDecode, LibosElf64Header *elf, NvU64 elfSize);

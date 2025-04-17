@@ -669,17 +669,13 @@ _kp2pCapsGetStatusOverPcieBar1
     NvU8 readCapStatus = *pP2PReadCapStatus;
     NvU8 atomicsCapStatus = *pP2PAtomicsCapStatus;
 
-    if ((pKernelBif->forceP2PType != NV_REG_STR_RM_FORCE_P2P_TYPE_BAR1P2P))
+    if (((pKernelBif->forceP2PType != NV_REG_STR_RM_FORCE_P2P_TYPE_DEFAULT) &&
+         (pKernelBif->forceP2PType != NV_REG_STR_RM_FORCE_P2P_TYPE_PCIEP2P))
+        ||
+        ((pKernelBif->pcieP2PType != NV_REG_STR_RM_PCIEP2P_TYPE_BAR1) &&
+         (pKernelBif->pcieP2PType != NV_REG_STR_RM_PCIEP2P_TYPE_AUTO)))
     {
         return NV_ERR_NOT_SUPPORTED;
-    }
-
-    // Check if any overrides are enabled.
-    if (_kp2pCapsCheckStatusOverridesForPcie(gpuMask, pP2PWriteCapStatus,
-                                            pP2PReadCapStatus,
-                                            pP2PAtomicsCapStatus))
-    {
-        return NV_OK;
     }
 
     //
@@ -695,6 +691,14 @@ _kp2pCapsGetStatusOverPcieBar1
         {
             return NV_ERR_NOT_SUPPORTED;
         }
+    }
+
+    // Check if any overrides are enabled.
+    if (_kp2pCapsCheckStatusOverridesForPcie(gpuMask, pP2PWriteCapStatus,
+                                             pP2PReadCapStatus,
+                                             pP2PAtomicsCapStatus))
+    {
+        return NV_OK;
     }
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,

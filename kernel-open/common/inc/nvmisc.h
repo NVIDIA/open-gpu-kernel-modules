@@ -701,11 +701,6 @@ nvPrevPow2_U64(const NvU64 x )
     }                                                       \
 }
 
-//
-// Bug 4851259: Newly added functions must be hidden from certain HS-signed
-// ucode compilers to avoid signature mismatch.
-//
-#ifndef NVDEC_1_0
 /*!
  * Returns the position of nth set bit in the given mask.
  *
@@ -734,8 +729,6 @@ nvGetNthSetBitIndex32(NvU32 mask, NvU32 n)
 
     return -1;
 }
-
-#endif // NVDEC_1_0
 
 //
 // Size to use when declaring variable-sized arrays
@@ -780,11 +773,14 @@ nvGetNthSetBitIndex32(NvU32 mask, NvU32 n)
 // Returns the offset (in bytes) of 'member' in struct 'type'.
 #ifndef NV_OFFSETOF
     #if defined(__GNUC__) && (__GNUC__ > 3)
-        #define NV_OFFSETOF(type, member)   ((NvU32)__builtin_offsetof(type, member))
+        #define NV_OFFSETOF(type, member)   ((NvUPtr) __builtin_offsetof(type, member))
     #else
-        #define NV_OFFSETOF(type, member)    ((NvU32)(NvU64)&(((type *)0)->member)) // shouldn't we use PtrToUlong? But will need to include windows header.
+        #define NV_OFFSETOF(type, member)    ((NvUPtr) &(((type *)0)->member))
     #endif
 #endif
+
+// Given a pointer and the member it is of the parent struct, return a pointer to the parent struct
+#define NV_CONTAINEROF(ptr, type, member) ((type *) (((NvUPtr) ptr) - NV_OFFSETOF(type, member)))
 
 //
 // Performs a rounded division of b into a (unsigned). For SIGNED version of

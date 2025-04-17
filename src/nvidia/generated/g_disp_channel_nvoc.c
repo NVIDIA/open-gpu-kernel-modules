@@ -1,4 +1,11 @@
 #define NVOC_DISP_CHANNEL_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,109 +14,32 @@
 #include "utils/nvassert.h"
 #include "g_disp_channel_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0xbd2ff3 = 1;
+char __nvoc_class_id_uniqueness_check__0xbd2ff3 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannel;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_INotifier;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Notifier;
 
-void __nvoc_init_DispChannel(DispChannel*);
+// Forward declarations for DispChannel
+void __nvoc_init__GpuResource(GpuResource*);
+void __nvoc_init__Notifier(Notifier*);
+void __nvoc_init__DispChannel(DispChannel*);
 void __nvoc_init_funcTable_DispChannel(DispChannel*);
-NV_STATUS __nvoc_ctor_DispChannel(DispChannel*, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams, NvU32 arg_isDma);
+NV_STATUS __nvoc_ctor_DispChannel(DispChannel*, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams, NvU32 arg_isDma);
 void __nvoc_init_dataField_DispChannel(DispChannel*);
 void __nvoc_dtor_DispChannel(DispChannel*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_DispChannel;
 
-static const struct NVOC_RTTI __nvoc_rtti_DispChannel_DispChannel = {
-    /*pClassDef=*/          &__nvoc_class_def_DispChannel,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_DispChannel,
-    /*offset=*/             0,
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannel_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannel, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannel_RsResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RsResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannel, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannel_RmResourceCommon = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResourceCommon,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannel, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannel_RmResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannel, __nvoc_base_GpuResource.__nvoc_base_RmResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannel_GpuResource = {
-    /*pClassDef=*/          &__nvoc_class_def_GpuResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannel, __nvoc_base_GpuResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannel_INotifier = {
-    /*pClassDef=*/          &__nvoc_class_def_INotifier,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannel, __nvoc_base_Notifier.__nvoc_base_INotifier),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannel_Notifier = {
-    /*pClassDef=*/          &__nvoc_class_def_Notifier,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannel, __nvoc_base_Notifier),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_DispChannel = {
-    /*numRelatives=*/       8,
-    /*relatives=*/ {
-        &__nvoc_rtti_DispChannel_DispChannel,
-        &__nvoc_rtti_DispChannel_Notifier,
-        &__nvoc_rtti_DispChannel_INotifier,
-        &__nvoc_rtti_DispChannel_GpuResource,
-        &__nvoc_rtti_DispChannel_RmResource,
-        &__nvoc_rtti_DispChannel_RmResourceCommon,
-        &__nvoc_rtti_DispChannel_RsResource,
-        &__nvoc_rtti_DispChannel_Object,
-    },
-};
-
-const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannel = 
-{
-    /*classInfo=*/ {
-        /*size=*/               sizeof(DispChannel),
-        /*classId=*/            classId(DispChannel),
-        /*providerId=*/         &__nvoc_rtti_provider,
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "DispChannel",
-#endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_DispChannel,
-    /*pCastInfo=*/          &__nvoc_castinfo_DispChannel,
-    /*pExportInfo=*/        &__nvoc_export_info_DispChannel
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__DispChannel;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__DispChannel;
 
 // Down-thunk(s) to bridge DispChannel methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^2
@@ -128,14 +58,6 @@ void __nvoc_down_thunk_Notifier_inotifySetNotificationShare(struct INotifier *pN
 NV_STATUS __nvoc_down_thunk_Notifier_inotifyUnregisterEvent(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super
 NV_STATUS __nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super
 NV_STATUS __nvoc_down_thunk_DispChannel_gpuresGetRegBaseOffsetAndSize(struct GpuResource *pDispChannel, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize);    // this
-
-// 1 down-thunk(s) defined to bridge methods in DispChannel from superclasses
-
-// dispchnGetRegBaseOffsetAndSize: virtual override (gpures) base (gpures)
-NV_STATUS __nvoc_down_thunk_DispChannel_gpuresGetRegBaseOffsetAndSize(struct GpuResource *pDispChannel, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return dispchnGetRegBaseOffsetAndSize((struct DispChannel *)(((unsigned char *) pDispChannel) - NV_OFFSETOF(DispChannel, __nvoc_base_GpuResource)), pGpu, pOffset, pSize);
-}
-
 
 // Up-thunk(s) to bridge DispChannel methods to ancestors (if any)
 NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^2
@@ -196,6 +118,179 @@ struct NotifShare * __nvoc_up_thunk_Notifier_dispchnGetNotificationShare(struct 
 void __nvoc_up_thunk_Notifier_dispchnSetNotificationShare(struct DispChannel *pNotifier, struct NotifShare *pNotifShare);    // this
 NV_STATUS __nvoc_up_thunk_Notifier_dispchnUnregisterEvent(struct DispChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
 NV_STATUS __nvoc_up_thunk_Notifier_dispchnGetOrAllocNotifShare(struct DispChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
+
+const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannel = 
+{
+    /*classInfo=*/ {
+        /*size=*/               sizeof(DispChannel),
+        /*classId=*/            classId(DispChannel),
+        /*providerId=*/         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*name=*/               "DispChannel",
+#endif
+    },
+    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_DispChannel,
+    /*pCastInfo=*/          &__nvoc_castinfo__DispChannel,
+    /*pExportInfo=*/        &__nvoc_export_info__DispChannel
+};
+
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__DispChannel __nvoc_metadata__DispChannel = {
+    .rtti.pClassDef = &__nvoc_class_def_DispChannel,    // (dispchn) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_DispChannel,
+    .rtti.offset    = 0,
+    .metadata__GpuResource.rtti.pClassDef = &__nvoc_class_def_GpuResource,    // (gpures) super
+    .metadata__GpuResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.rtti.offset    = NV_OFFSETOF(DispChannel, __nvoc_base_GpuResource),
+    .metadata__GpuResource.metadata__RmResource.rtti.pClassDef = &__nvoc_class_def_RmResource,    // (rmres) super^2
+    .metadata__GpuResource.metadata__RmResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.metadata__RmResource.rtti.offset    = NV_OFFSETOF(DispChannel, __nvoc_base_GpuResource.__nvoc_base_RmResource),
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.pClassDef = &__nvoc_class_def_RsResource,    // (res) super^3
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.offset    = NV_OFFSETOF(DispChannel, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^4
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.offset    = NV_OFFSETOF(DispChannel, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
+    .metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.pClassDef = &__nvoc_class_def_RmResourceCommon,    // (rmrescmn) super^3
+    .metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.offset    = NV_OFFSETOF(DispChannel, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
+    .metadata__Notifier.rtti.pClassDef = &__nvoc_class_def_Notifier,    // (notify) super
+    .metadata__Notifier.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Notifier.rtti.offset    = NV_OFFSETOF(DispChannel, __nvoc_base_Notifier),
+    .metadata__Notifier.metadata__INotifier.rtti.pClassDef = &__nvoc_class_def_INotifier,    // (inotify) super^2
+    .metadata__Notifier.metadata__INotifier.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Notifier.metadata__INotifier.rtti.offset    = NV_OFFSETOF(DispChannel, __nvoc_base_Notifier.__nvoc_base_INotifier),
+
+    .vtable.__dispchnGetRegBaseOffsetAndSize__ = &dispchnGetRegBaseOffsetAndSize_IMPL,    // virtual override (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetRegBaseOffsetAndSize__ = &__nvoc_down_thunk_DispChannel_gpuresGetRegBaseOffsetAndSize,    // virtual
+    .vtable.__dispchnControl__ = &__nvoc_up_thunk_GpuResource_dispchnControl,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControl__ = &gpuresControl_IMPL,    // virtual override (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
+    .vtable.__dispchnMap__ = &__nvoc_up_thunk_GpuResource_dispchnMap,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
+    .vtable.__dispchnUnmap__ = &__nvoc_up_thunk_GpuResource_dispchnUnmap,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
+    .vtable.__dispchnShareCallback__ = &__nvoc_up_thunk_GpuResource_dispchnShareCallback,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+    .vtable.__dispchnGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_dispchnGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
+    .vtable.__dispchnInternalControlForward__ = &__nvoc_up_thunk_GpuResource_dispchnInternalControlForward,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
+    .vtable.__dispchnGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_dispchnGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
+    .vtable.__dispchnAccessCallback__ = &__nvoc_up_thunk_RmResource_dispchnAccessCallback,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+    .vtable.__dispchnGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispchnGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+    .vtable.__dispchnCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispchnCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+    .vtable.__dispchnGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispchnGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+    .vtable.__dispchnControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+    .vtable.__dispchnControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+    .vtable.__dispchnControl_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnControl_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+    .vtable.__dispchnControl_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnControl_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+    .vtable.__dispchnCanCopy__ = &__nvoc_up_thunk_RsResource_dispchnCanCopy,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+    .vtable.__dispchnIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispchnIsDuplicate,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+    .vtable.__dispchnPreDestruct__ = &__nvoc_up_thunk_RsResource_dispchnPreDestruct,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+    .vtable.__dispchnControlFilter__ = &__nvoc_up_thunk_RsResource_dispchnControlFilter,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+    .vtable.__dispchnIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispchnIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
+    .metadata__GpuResource.vtable.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+    .vtable.__dispchnMapTo__ = &__nvoc_up_thunk_RsResource_dispchnMapTo,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMapTo__ = &resMapTo_IMPL,    // virtual
+    .vtable.__dispchnUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispchnUnmapFrom,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+    .vtable.__dispchnGetRefCount__ = &__nvoc_up_thunk_RsResource_dispchnGetRefCount,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+    .vtable.__dispchnAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispchnAddAdditionalDependants,    // virtual inherited (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+    .vtable.__dispchnGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispchnGetNotificationListPtr,    // virtual inherited (notify) base (notify)
+    .metadata__Notifier.vtable.__notifyGetNotificationListPtr__ = &notifyGetNotificationListPtr_IMPL,    // virtual override (inotify) base (inotify)
+    .metadata__Notifier.metadata__INotifier.vtable.__inotifyGetNotificationListPtr__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr,    // pure virtual
+    .vtable.__dispchnGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnGetNotificationShare,    // virtual inherited (notify) base (notify)
+    .metadata__Notifier.vtable.__notifyGetNotificationShare__ = &notifyGetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+    .metadata__Notifier.metadata__INotifier.vtable.__inotifyGetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationShare,    // pure virtual
+    .vtable.__dispchnSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnSetNotificationShare,    // virtual inherited (notify) base (notify)
+    .metadata__Notifier.vtable.__notifySetNotificationShare__ = &notifySetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+    .metadata__Notifier.metadata__INotifier.vtable.__inotifySetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifySetNotificationShare,    // pure virtual
+    .vtable.__dispchnUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispchnUnregisterEvent,    // virtual inherited (notify) base (notify)
+    .metadata__Notifier.vtable.__notifyUnregisterEvent__ = &notifyUnregisterEvent_IMPL,    // virtual override (inotify) base (inotify)
+    .metadata__Notifier.metadata__INotifier.vtable.__inotifyUnregisterEvent__ = &__nvoc_down_thunk_Notifier_inotifyUnregisterEvent,    // pure virtual
+    .vtable.__dispchnGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispchnGetOrAllocNotifShare,    // virtual inherited (notify) base (notify)
+    .metadata__Notifier.vtable.__notifyGetOrAllocNotifShare__ = &notifyGetOrAllocNotifShare_IMPL,    // virtual override (inotify) base (inotify)
+    .metadata__Notifier.metadata__INotifier.vtable.__inotifyGetOrAllocNotifShare__ = &__nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare,    // pure virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__DispChannel = {
+    .numRelatives = 8,
+    .relatives = {
+        &__nvoc_metadata__DispChannel.rtti,    // [0]: (dispchn) this
+        &__nvoc_metadata__DispChannel.metadata__GpuResource.rtti,    // [1]: (gpures) super
+        &__nvoc_metadata__DispChannel.metadata__GpuResource.metadata__RmResource.rtti,    // [2]: (rmres) super^2
+        &__nvoc_metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti,    // [3]: (res) super^3
+        &__nvoc_metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti,    // [4]: (obj) super^4
+        &__nvoc_metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti,    // [5]: (rmrescmn) super^3
+        &__nvoc_metadata__DispChannel.metadata__Notifier.rtti,    // [6]: (notify) super
+        &__nvoc_metadata__DispChannel.metadata__Notifier.metadata__INotifier.rtti,    // [7]: (inotify) super^2
+    }
+};
+
+// 1 down-thunk(s) defined to bridge methods in DispChannel from superclasses
+
+// dispchnGetRegBaseOffsetAndSize: virtual override (gpures) base (gpures)
+NV_STATUS __nvoc_down_thunk_DispChannel_gpuresGetRegBaseOffsetAndSize(struct GpuResource *pDispChannel, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return dispchnGetRegBaseOffsetAndSize((struct DispChannel *)(((unsigned char *) pDispChannel) - NV_OFFSETOF(DispChannel, __nvoc_base_GpuResource)), pGpu, pOffset, pSize);
+}
+
 
 // 29 up-thunk(s) defined to bridge methods in DispChannel to superclasses
 
@@ -345,7 +440,7 @@ NV_STATUS __nvoc_up_thunk_Notifier_dispchnGetOrAllocNotifShare(struct DispChanne
 }
 
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_DispChannel = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__DispChannel = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -396,138 +491,37 @@ static void __nvoc_init_funcTable_DispChannel_1(DispChannel *pThis) {
 
 // Initialize vtable(s) for 30 virtual method(s).
 void __nvoc_init_funcTable_DispChannel(DispChannel *pThis) {
-
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__DispChannel vtable = {
-        .__dispchnGetRegBaseOffsetAndSize__ = &dispchnGetRegBaseOffsetAndSize_IMPL,    // virtual override (gpures) base (gpures)
-        .GpuResource.__gpuresGetRegBaseOffsetAndSize__ = &__nvoc_down_thunk_DispChannel_gpuresGetRegBaseOffsetAndSize,    // virtual
-        .__dispchnControl__ = &__nvoc_up_thunk_GpuResource_dispchnControl,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresControl__ = &gpuresControl_IMPL,    // virtual override (res) base (rmres)
-        .GpuResource.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
-        .__dispchnMap__ = &__nvoc_up_thunk_GpuResource_dispchnMap,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
-        .GpuResource.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
-        .__dispchnUnmap__ = &__nvoc_up_thunk_GpuResource_dispchnUnmap,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
-        .GpuResource.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
-        .__dispchnShareCallback__ = &__nvoc_up_thunk_GpuResource_dispchnShareCallback,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
-        .GpuResource.RmResource.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
-        .__dispchnGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_dispchnGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
-        .__dispchnInternalControlForward__ = &__nvoc_up_thunk_GpuResource_dispchnInternalControlForward,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
-        .__dispchnGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_dispchnGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
-        .GpuResource.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
-        .__dispchnAccessCallback__ = &__nvoc_up_thunk_RmResource_dispchnAccessCallback,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
-        .__dispchnGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispchnGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
-        .__dispchnCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispchnCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
-        .__dispchnGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispchnGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
-        .__dispchnControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
-        .__dispchnControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
-        .__dispchnControl_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnControl_Prologue,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
-        .__dispchnControl_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnControl_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .GpuResource.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .GpuResource.RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
-        .__dispchnCanCopy__ = &__nvoc_up_thunk_RsResource_dispchnCanCopy,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
-        .__dispchnIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispchnIsDuplicate,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
-        .__dispchnPreDestruct__ = &__nvoc_up_thunk_RsResource_dispchnPreDestruct,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
-        .__dispchnControlFilter__ = &__nvoc_up_thunk_RsResource_dispchnControlFilter,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
-        .__dispchnIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispchnIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
-        .GpuResource.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
-        .GpuResource.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
-        .GpuResource.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
-        .__dispchnMapTo__ = &__nvoc_up_thunk_RsResource_dispchnMapTo,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
-        .__dispchnUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispchnUnmapFrom,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
-        .__dispchnGetRefCount__ = &__nvoc_up_thunk_RsResource_dispchnGetRefCount,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
-        .__dispchnAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispchnAddAdditionalDependants,    // virtual inherited (res) base (gpures)
-        .GpuResource.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
-        .GpuResource.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
-        .GpuResource.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
-        .__dispchnGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispchnGetNotificationListPtr,    // virtual inherited (notify) base (notify)
-        .Notifier.__notifyGetNotificationListPtr__ = &notifyGetNotificationListPtr_IMPL,    // virtual override (inotify) base (inotify)
-        .Notifier.INotifier.__inotifyGetNotificationListPtr__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr,    // pure virtual
-        .__dispchnGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnGetNotificationShare,    // virtual inherited (notify) base (notify)
-        .Notifier.__notifyGetNotificationShare__ = &notifyGetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
-        .Notifier.INotifier.__inotifyGetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationShare,    // pure virtual
-        .__dispchnSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnSetNotificationShare,    // virtual inherited (notify) base (notify)
-        .Notifier.__notifySetNotificationShare__ = &notifySetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
-        .Notifier.INotifier.__inotifySetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifySetNotificationShare,    // pure virtual
-        .__dispchnUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispchnUnregisterEvent,    // virtual inherited (notify) base (notify)
-        .Notifier.__notifyUnregisterEvent__ = &notifyUnregisterEvent_IMPL,    // virtual override (inotify) base (inotify)
-        .Notifier.INotifier.__inotifyUnregisterEvent__ = &__nvoc_down_thunk_Notifier_inotifyUnregisterEvent,    // pure virtual
-        .__dispchnGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispchnGetOrAllocNotifShare,    // virtual inherited (notify) base (notify)
-        .Notifier.__notifyGetOrAllocNotifShare__ = &notifyGetOrAllocNotifShare_IMPL,    // virtual override (inotify) base (inotify)
-        .Notifier.INotifier.__inotifyGetOrAllocNotifShare__ = &__nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare,    // pure virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.GpuResource.RmResource.RsResource;    // (res) super^3
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable = &vtable.GpuResource.RmResource;    // (rmres) super^2
-    pThis->__nvoc_base_GpuResource.__nvoc_vtable = &vtable.GpuResource;    // (gpures) super
-    pThis->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_vtable = &vtable.Notifier.INotifier;    // (inotify) super^2
-    pThis->__nvoc_base_Notifier.__nvoc_vtable = &vtable.Notifier;    // (notify) super
-    pThis->__nvoc_vtable = &vtable;    // (dispchn) this
     __nvoc_init_funcTable_DispChannel_1(pThis);
 }
 
-void __nvoc_init_GpuResource(GpuResource*);
-void __nvoc_init_Notifier(Notifier*);
-void __nvoc_init_DispChannel(DispChannel *pThis) {
-    pThis->__nvoc_pbase_DispChannel = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;
-    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;
-    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;
-    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource;
-    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_GpuResource;
-    pThis->__nvoc_pbase_INotifier = &pThis->__nvoc_base_Notifier.__nvoc_base_INotifier;
-    pThis->__nvoc_pbase_Notifier = &pThis->__nvoc_base_Notifier;
-    __nvoc_init_GpuResource(&pThis->__nvoc_base_GpuResource);
-    __nvoc_init_Notifier(&pThis->__nvoc_base_Notifier);
+// Initialize newly constructed object.
+void __nvoc_init__DispChannel(DispChannel *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;    // (obj) super^4
+    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;    // (res) super^3
+    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;    // (rmrescmn) super^3
+    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource;    // (rmres) super^2
+    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_GpuResource;    // (gpures) super
+    pThis->__nvoc_pbase_INotifier = &pThis->__nvoc_base_Notifier.__nvoc_base_INotifier;    // (inotify) super^2
+    pThis->__nvoc_pbase_Notifier = &pThis->__nvoc_base_Notifier;    // (notify) super
+    pThis->__nvoc_pbase_DispChannel = pThis;    // (dispchn) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuResource(&pThis->__nvoc_base_GpuResource);
+    __nvoc_init__Notifier(&pThis->__nvoc_base_Notifier);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object;    // (obj) super^4
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource;    // (res) super^3
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon;    // (rmrescmn) super^3
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannel.metadata__GpuResource.metadata__RmResource;    // (rmres) super^2
+    pThis->__nvoc_base_GpuResource.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannel.metadata__GpuResource;    // (gpures) super
+    pThis->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannel.metadata__Notifier.metadata__INotifier;    // (inotify) super^2
+    pThis->__nvoc_base_Notifier.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannel.metadata__Notifier;    // (notify) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__DispChannel;    // (dispchn) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_DispChannel(pThis);
 }
 
@@ -545,9 +539,6 @@ NV_STATUS __nvoc_objCreate_DispChannel(DispChannel **ppThis, Dynamic *pParent, N
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(DispChannel));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_DispChannel);
-
     pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -561,7 +552,7 @@ NV_STATUS __nvoc_objCreate_DispChannel(DispChannel **ppThis, Dynamic *pParent, N
         pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_DispChannel(pThis);
+    __nvoc_init__DispChannel(pThis);
     status = __nvoc_ctor_DispChannel(pThis, arg_pCallContext, arg_pParams, arg_isDma);
     if (status != NV_OK) goto __nvoc_objCreate_DispChannel_cleanup;
 
@@ -600,118 +591,32 @@ NV_STATUS __nvoc_objCreateDynamic_DispChannel(DispChannel **ppThis, Dynamic *pPa
     return status;
 }
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x10dec3 = 1;
+char __nvoc_class_id_uniqueness_check__0x10dec3 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannelPio;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_INotifier;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Notifier;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannel;
 
-void __nvoc_init_DispChannelPio(DispChannelPio*);
+// Forward declarations for DispChannelPio
+void __nvoc_init__DispChannel(DispChannel*);
+void __nvoc_init__DispChannelPio(DispChannelPio*);
 void __nvoc_init_funcTable_DispChannelPio(DispChannelPio*);
-NV_STATUS __nvoc_ctor_DispChannelPio(DispChannelPio*, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_ctor_DispChannelPio(DispChannelPio*, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 void __nvoc_init_dataField_DispChannelPio(DispChannelPio*);
 void __nvoc_dtor_DispChannelPio(DispChannelPio*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_DispChannelPio;
 
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelPio_DispChannelPio = {
-    /*pClassDef=*/          &__nvoc_class_def_DispChannelPio,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_DispChannelPio,
-    /*offset=*/             0,
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelPio_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannelPio, __nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelPio_RsResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RsResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannelPio, __nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelPio_RmResourceCommon = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResourceCommon,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannelPio, __nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelPio_RmResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannelPio, __nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelPio_GpuResource = {
-    /*pClassDef=*/          &__nvoc_class_def_GpuResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannelPio, __nvoc_base_DispChannel.__nvoc_base_GpuResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelPio_INotifier = {
-    /*pClassDef=*/          &__nvoc_class_def_INotifier,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannelPio, __nvoc_base_DispChannel.__nvoc_base_Notifier.__nvoc_base_INotifier),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelPio_Notifier = {
-    /*pClassDef=*/          &__nvoc_class_def_Notifier,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannelPio, __nvoc_base_DispChannel.__nvoc_base_Notifier),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelPio_DispChannel = {
-    /*pClassDef=*/          &__nvoc_class_def_DispChannel,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannelPio, __nvoc_base_DispChannel),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_DispChannelPio = {
-    /*numRelatives=*/       9,
-    /*relatives=*/ {
-        &__nvoc_rtti_DispChannelPio_DispChannelPio,
-        &__nvoc_rtti_DispChannelPio_DispChannel,
-        &__nvoc_rtti_DispChannelPio_Notifier,
-        &__nvoc_rtti_DispChannelPio_INotifier,
-        &__nvoc_rtti_DispChannelPio_GpuResource,
-        &__nvoc_rtti_DispChannelPio_RmResource,
-        &__nvoc_rtti_DispChannelPio_RmResourceCommon,
-        &__nvoc_rtti_DispChannelPio_RsResource,
-        &__nvoc_rtti_DispChannelPio_Object,
-    },
-};
-
-const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannelPio = 
-{
-    /*classInfo=*/ {
-        /*size=*/               sizeof(DispChannelPio),
-        /*classId=*/            classId(DispChannelPio),
-        /*providerId=*/         &__nvoc_rtti_provider,
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "DispChannelPio",
-#endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_DispChannelPio,
-    /*pCastInfo=*/          &__nvoc_castinfo_DispChannelPio,
-    /*pExportInfo=*/        &__nvoc_export_info_DispChannelPio
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__DispChannelPio;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__DispChannelPio;
 
 // Down-thunk(s) to bridge DispChannelPio methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^3
@@ -820,6 +725,205 @@ struct NotifShare * __nvoc_up_thunk_Notifier_dispchnpioGetNotificationShare(stru
 void __nvoc_up_thunk_Notifier_dispchnpioSetNotificationShare(struct DispChannelPio *pNotifier, struct NotifShare *pNotifShare);    // this
 NV_STATUS __nvoc_up_thunk_Notifier_dispchnpioUnregisterEvent(struct DispChannelPio *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
 NV_STATUS __nvoc_up_thunk_Notifier_dispchnpioGetOrAllocNotifShare(struct DispChannelPio *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
+
+const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannelPio = 
+{
+    /*classInfo=*/ {
+        /*size=*/               sizeof(DispChannelPio),
+        /*classId=*/            classId(DispChannelPio),
+        /*providerId=*/         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*name=*/               "DispChannelPio",
+#endif
+    },
+    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_DispChannelPio,
+    /*pCastInfo=*/          &__nvoc_castinfo__DispChannelPio,
+    /*pExportInfo=*/        &__nvoc_export_info__DispChannelPio
+};
+
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__DispChannelPio __nvoc_metadata__DispChannelPio = {
+    .rtti.pClassDef = &__nvoc_class_def_DispChannelPio,    // (dispchnpio) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_DispChannelPio,
+    .rtti.offset    = 0,
+    .metadata__DispChannel.rtti.pClassDef = &__nvoc_class_def_DispChannel,    // (dispchn) super
+    .metadata__DispChannel.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__DispChannel.rtti.offset    = NV_OFFSETOF(DispChannelPio, __nvoc_base_DispChannel),
+    .metadata__DispChannel.metadata__GpuResource.rtti.pClassDef = &__nvoc_class_def_GpuResource,    // (gpures) super^2
+    .metadata__DispChannel.metadata__GpuResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__DispChannel.metadata__GpuResource.rtti.offset    = NV_OFFSETOF(DispChannelPio, __nvoc_base_DispChannel.__nvoc_base_GpuResource),
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.rtti.pClassDef = &__nvoc_class_def_RmResource,    // (rmres) super^3
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.rtti.offset    = NV_OFFSETOF(DispChannelPio, __nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource),
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.pClassDef = &__nvoc_class_def_RsResource,    // (res) super^4
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.offset    = NV_OFFSETOF(DispChannelPio, __nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.offset    = NV_OFFSETOF(DispChannelPio, __nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.pClassDef = &__nvoc_class_def_RmResourceCommon,    // (rmrescmn) super^4
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.offset    = NV_OFFSETOF(DispChannelPio, __nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
+    .metadata__DispChannel.metadata__Notifier.rtti.pClassDef = &__nvoc_class_def_Notifier,    // (notify) super^2
+    .metadata__DispChannel.metadata__Notifier.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__DispChannel.metadata__Notifier.rtti.offset    = NV_OFFSETOF(DispChannelPio, __nvoc_base_DispChannel.__nvoc_base_Notifier),
+    .metadata__DispChannel.metadata__Notifier.metadata__INotifier.rtti.pClassDef = &__nvoc_class_def_INotifier,    // (inotify) super^3
+    .metadata__DispChannel.metadata__Notifier.metadata__INotifier.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__DispChannel.metadata__Notifier.metadata__INotifier.rtti.offset    = NV_OFFSETOF(DispChannelPio, __nvoc_base_DispChannel.__nvoc_base_Notifier.__nvoc_base_INotifier),
+
+    .vtable.__dispchnpioGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_DispChannel_dispchnpioGetRegBaseOffsetAndSize,    // virtual inherited (dispchn) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetRegBaseOffsetAndSize__ = &dispchnGetRegBaseOffsetAndSize_IMPL,    // virtual override (gpures) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresGetRegBaseOffsetAndSize__ = &__nvoc_down_thunk_DispChannel_gpuresGetRegBaseOffsetAndSize,    // virtual
+    .vtable.__dispchnpioControl__ = &__nvoc_up_thunk_GpuResource_dispchnpioControl,    // virtual inherited (gpures) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnControl__ = &__nvoc_up_thunk_GpuResource_dispchnControl,    // virtual inherited (gpures) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresControl__ = &gpuresControl_IMPL,    // virtual override (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
+    .vtable.__dispchnpioMap__ = &__nvoc_up_thunk_GpuResource_dispchnpioMap,    // virtual inherited (gpures) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnMap__ = &__nvoc_up_thunk_GpuResource_dispchnMap,    // virtual inherited (gpures) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
+    .vtable.__dispchnpioUnmap__ = &__nvoc_up_thunk_GpuResource_dispchnpioUnmap,    // virtual inherited (gpures) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnUnmap__ = &__nvoc_up_thunk_GpuResource_dispchnUnmap,    // virtual inherited (gpures) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
+    .vtable.__dispchnpioShareCallback__ = &__nvoc_up_thunk_GpuResource_dispchnpioShareCallback,    // virtual inherited (gpures) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnShareCallback__ = &__nvoc_up_thunk_GpuResource_dispchnShareCallback,    // virtual inherited (gpures) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+    .vtable.__dispchnpioGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_dispchnpioGetMapAddrSpace,    // virtual inherited (gpures) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_dispchnGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
+    .vtable.__dispchnpioInternalControlForward__ = &__nvoc_up_thunk_GpuResource_dispchnpioInternalControlForward,    // virtual inherited (gpures) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnInternalControlForward__ = &__nvoc_up_thunk_GpuResource_dispchnInternalControlForward,    // virtual inherited (gpures) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
+    .vtable.__dispchnpioGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_dispchnpioGetInternalObjectHandle,    // virtual inherited (gpures) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_dispchnGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
+    .vtable.__dispchnpioAccessCallback__ = &__nvoc_up_thunk_RmResource_dispchnpioAccessCallback,    // virtual inherited (rmres) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnAccessCallback__ = &__nvoc_up_thunk_RmResource_dispchnAccessCallback,    // virtual inherited (rmres) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+    .vtable.__dispchnpioGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispchnpioGetMemInterMapParams,    // virtual inherited (rmres) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispchnGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+    .vtable.__dispchnpioCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispchnpioCheckMemInterUnmap,    // virtual inherited (rmres) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispchnCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+    .vtable.__dispchnpioGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispchnpioGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispchnGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+    .vtable.__dispchnpioControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnpioControlSerialization_Prologue,    // virtual inherited (rmres) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+    .vtable.__dispchnpioControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnpioControlSerialization_Epilogue,    // virtual inherited (rmres) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+    .vtable.__dispchnpioControl_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnpioControl_Prologue,    // virtual inherited (rmres) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnControl_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnControl_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+    .vtable.__dispchnpioControl_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnpioControl_Epilogue,    // virtual inherited (rmres) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnControl_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnControl_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+    .vtable.__dispchnpioCanCopy__ = &__nvoc_up_thunk_RsResource_dispchnpioCanCopy,    // virtual inherited (res) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnCanCopy__ = &__nvoc_up_thunk_RsResource_dispchnCanCopy,    // virtual inherited (res) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+    .vtable.__dispchnpioIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispchnpioIsDuplicate,    // virtual inherited (res) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispchnIsDuplicate,    // virtual inherited (res) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+    .vtable.__dispchnpioPreDestruct__ = &__nvoc_up_thunk_RsResource_dispchnpioPreDestruct,    // virtual inherited (res) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnPreDestruct__ = &__nvoc_up_thunk_RsResource_dispchnPreDestruct,    // virtual inherited (res) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+    .vtable.__dispchnpioControlFilter__ = &__nvoc_up_thunk_RsResource_dispchnpioControlFilter,    // virtual inherited (res) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnControlFilter__ = &__nvoc_up_thunk_RsResource_dispchnControlFilter,    // virtual inherited (res) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+    .vtable.__dispchnpioIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispchnpioIsPartialUnmapSupported,    // inline virtual inherited (res) base (dispchn) body
+    .metadata__DispChannel.vtable.__dispchnIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispchnIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+    .vtable.__dispchnpioMapTo__ = &__nvoc_up_thunk_RsResource_dispchnpioMapTo,    // virtual inherited (res) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnMapTo__ = &__nvoc_up_thunk_RsResource_dispchnMapTo,    // virtual inherited (res) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMapTo__ = &resMapTo_IMPL,    // virtual
+    .vtable.__dispchnpioUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispchnpioUnmapFrom,    // virtual inherited (res) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispchnUnmapFrom,    // virtual inherited (res) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+    .vtable.__dispchnpioGetRefCount__ = &__nvoc_up_thunk_RsResource_dispchnpioGetRefCount,    // virtual inherited (res) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetRefCount__ = &__nvoc_up_thunk_RsResource_dispchnGetRefCount,    // virtual inherited (res) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+    .vtable.__dispchnpioAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispchnpioAddAdditionalDependants,    // virtual inherited (res) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispchnAddAdditionalDependants,    // virtual inherited (res) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+    .vtable.__dispchnpioGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispchnpioGetNotificationListPtr,    // virtual inherited (notify) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispchnGetNotificationListPtr,    // virtual inherited (notify) base (notify)
+    .metadata__DispChannel.metadata__Notifier.vtable.__notifyGetNotificationListPtr__ = &notifyGetNotificationListPtr_IMPL,    // virtual override (inotify) base (inotify)
+    .metadata__DispChannel.metadata__Notifier.metadata__INotifier.vtable.__inotifyGetNotificationListPtr__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr,    // pure virtual
+    .vtable.__dispchnpioGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnpioGetNotificationShare,    // virtual inherited (notify) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnGetNotificationShare,    // virtual inherited (notify) base (notify)
+    .metadata__DispChannel.metadata__Notifier.vtable.__notifyGetNotificationShare__ = &notifyGetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+    .metadata__DispChannel.metadata__Notifier.metadata__INotifier.vtable.__inotifyGetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationShare,    // pure virtual
+    .vtable.__dispchnpioSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnpioSetNotificationShare,    // virtual inherited (notify) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnSetNotificationShare,    // virtual inherited (notify) base (notify)
+    .metadata__DispChannel.metadata__Notifier.vtable.__notifySetNotificationShare__ = &notifySetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+    .metadata__DispChannel.metadata__Notifier.metadata__INotifier.vtable.__inotifySetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifySetNotificationShare,    // pure virtual
+    .vtable.__dispchnpioUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispchnpioUnregisterEvent,    // virtual inherited (notify) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispchnUnregisterEvent,    // virtual inherited (notify) base (notify)
+    .metadata__DispChannel.metadata__Notifier.vtable.__notifyUnregisterEvent__ = &notifyUnregisterEvent_IMPL,    // virtual override (inotify) base (inotify)
+    .metadata__DispChannel.metadata__Notifier.metadata__INotifier.vtable.__inotifyUnregisterEvent__ = &__nvoc_down_thunk_Notifier_inotifyUnregisterEvent,    // pure virtual
+    .vtable.__dispchnpioGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispchnpioGetOrAllocNotifShare,    // virtual inherited (notify) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispchnGetOrAllocNotifShare,    // virtual inherited (notify) base (notify)
+    .metadata__DispChannel.metadata__Notifier.vtable.__notifyGetOrAllocNotifShare__ = &notifyGetOrAllocNotifShare_IMPL,    // virtual override (inotify) base (inotify)
+    .metadata__DispChannel.metadata__Notifier.metadata__INotifier.vtable.__inotifyGetOrAllocNotifShare__ = &__nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare,    // pure virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__DispChannelPio = {
+    .numRelatives = 9,
+    .relatives = {
+        &__nvoc_metadata__DispChannelPio.rtti,    // [0]: (dispchnpio) this
+        &__nvoc_metadata__DispChannelPio.metadata__DispChannel.rtti,    // [1]: (dispchn) super
+        &__nvoc_metadata__DispChannelPio.metadata__DispChannel.metadata__GpuResource.rtti,    // [2]: (gpures) super^2
+        &__nvoc_metadata__DispChannelPio.metadata__DispChannel.metadata__GpuResource.metadata__RmResource.rtti,    // [3]: (rmres) super^3
+        &__nvoc_metadata__DispChannelPio.metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti,    // [4]: (res) super^4
+        &__nvoc_metadata__DispChannelPio.metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti,    // [5]: (obj) super^5
+        &__nvoc_metadata__DispChannelPio.metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti,    // [6]: (rmrescmn) super^4
+        &__nvoc_metadata__DispChannelPio.metadata__DispChannel.metadata__Notifier.rtti,    // [7]: (notify) super^2
+        &__nvoc_metadata__DispChannelPio.metadata__DispChannel.metadata__Notifier.metadata__INotifier.rtti,    // [8]: (inotify) super^3
+    }
+};
 
 // 30 up-thunk(s) defined to bridge methods in DispChannelPio to superclasses
 
@@ -974,7 +1078,7 @@ NV_STATUS __nvoc_up_thunk_Notifier_dispchnpioGetOrAllocNotifShare(struct DispCha
 }
 
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_DispChannelPio = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__DispChannelPio = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -1017,168 +1121,38 @@ static void __nvoc_init_funcTable_DispChannelPio_1(DispChannelPio *pThis) {
 
 // Initialize vtable(s) for 30 virtual method(s).
 void __nvoc_init_funcTable_DispChannelPio(DispChannelPio *pThis) {
-
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__DispChannelPio vtable = {
-        .__dispchnpioGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_DispChannel_dispchnpioGetRegBaseOffsetAndSize,    // virtual inherited (dispchn) base (dispchn)
-        .DispChannel.__dispchnGetRegBaseOffsetAndSize__ = &dispchnGetRegBaseOffsetAndSize_IMPL,    // virtual override (gpures) base (gpures)
-        .DispChannel.GpuResource.__gpuresGetRegBaseOffsetAndSize__ = &__nvoc_down_thunk_DispChannel_gpuresGetRegBaseOffsetAndSize,    // virtual
-        .__dispchnpioControl__ = &__nvoc_up_thunk_GpuResource_dispchnpioControl,    // virtual inherited (gpures) base (dispchn)
-        .DispChannel.__dispchnControl__ = &__nvoc_up_thunk_GpuResource_dispchnControl,    // virtual inherited (gpures) base (gpures)
-        .DispChannel.GpuResource.__gpuresControl__ = &gpuresControl_IMPL,    // virtual override (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
-        .__dispchnpioMap__ = &__nvoc_up_thunk_GpuResource_dispchnpioMap,    // virtual inherited (gpures) base (dispchn)
-        .DispChannel.__dispchnMap__ = &__nvoc_up_thunk_GpuResource_dispchnMap,    // virtual inherited (gpures) base (gpures)
-        .DispChannel.GpuResource.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
-        .__dispchnpioUnmap__ = &__nvoc_up_thunk_GpuResource_dispchnpioUnmap,    // virtual inherited (gpures) base (dispchn)
-        .DispChannel.__dispchnUnmap__ = &__nvoc_up_thunk_GpuResource_dispchnUnmap,    // virtual inherited (gpures) base (gpures)
-        .DispChannel.GpuResource.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
-        .__dispchnpioShareCallback__ = &__nvoc_up_thunk_GpuResource_dispchnpioShareCallback,    // virtual inherited (gpures) base (dispchn)
-        .DispChannel.__dispchnShareCallback__ = &__nvoc_up_thunk_GpuResource_dispchnShareCallback,    // virtual inherited (gpures) base (gpures)
-        .DispChannel.GpuResource.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
-        .__dispchnpioGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_dispchnpioGetMapAddrSpace,    // virtual inherited (gpures) base (dispchn)
-        .DispChannel.__dispchnGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_dispchnGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
-        .DispChannel.GpuResource.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
-        .__dispchnpioInternalControlForward__ = &__nvoc_up_thunk_GpuResource_dispchnpioInternalControlForward,    // virtual inherited (gpures) base (dispchn)
-        .DispChannel.__dispchnInternalControlForward__ = &__nvoc_up_thunk_GpuResource_dispchnInternalControlForward,    // virtual inherited (gpures) base (gpures)
-        .DispChannel.GpuResource.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
-        .__dispchnpioGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_dispchnpioGetInternalObjectHandle,    // virtual inherited (gpures) base (dispchn)
-        .DispChannel.__dispchnGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_dispchnGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
-        .DispChannel.GpuResource.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
-        .__dispchnpioAccessCallback__ = &__nvoc_up_thunk_RmResource_dispchnpioAccessCallback,    // virtual inherited (rmres) base (dispchn)
-        .DispChannel.__dispchnAccessCallback__ = &__nvoc_up_thunk_RmResource_dispchnAccessCallback,    // virtual inherited (rmres) base (gpures)
-        .DispChannel.GpuResource.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
-        .__dispchnpioGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispchnpioGetMemInterMapParams,    // virtual inherited (rmres) base (dispchn)
-        .DispChannel.__dispchnGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispchnGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
-        .DispChannel.GpuResource.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
-        .__dispchnpioCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispchnpioCheckMemInterUnmap,    // virtual inherited (rmres) base (dispchn)
-        .DispChannel.__dispchnCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispchnCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
-        .DispChannel.GpuResource.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
-        .__dispchnpioGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispchnpioGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (dispchn)
-        .DispChannel.__dispchnGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispchnGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
-        .DispChannel.GpuResource.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
-        .__dispchnpioControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnpioControlSerialization_Prologue,    // virtual inherited (rmres) base (dispchn)
-        .DispChannel.__dispchnControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
-        .DispChannel.GpuResource.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
-        .__dispchnpioControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnpioControlSerialization_Epilogue,    // virtual inherited (rmres) base (dispchn)
-        .DispChannel.__dispchnControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .DispChannel.GpuResource.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
-        .__dispchnpioControl_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnpioControl_Prologue,    // virtual inherited (rmres) base (dispchn)
-        .DispChannel.__dispchnControl_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnControl_Prologue,    // virtual inherited (rmres) base (gpures)
-        .DispChannel.GpuResource.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
-        .__dispchnpioControl_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnpioControl_Epilogue,    // virtual inherited (rmres) base (dispchn)
-        .DispChannel.__dispchnControl_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnControl_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .DispChannel.GpuResource.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
-        .__dispchnpioCanCopy__ = &__nvoc_up_thunk_RsResource_dispchnpioCanCopy,    // virtual inherited (res) base (dispchn)
-        .DispChannel.__dispchnCanCopy__ = &__nvoc_up_thunk_RsResource_dispchnCanCopy,    // virtual inherited (res) base (gpures)
-        .DispChannel.GpuResource.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
-        .__dispchnpioIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispchnpioIsDuplicate,    // virtual inherited (res) base (dispchn)
-        .DispChannel.__dispchnIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispchnIsDuplicate,    // virtual inherited (res) base (gpures)
-        .DispChannel.GpuResource.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
-        .__dispchnpioPreDestruct__ = &__nvoc_up_thunk_RsResource_dispchnpioPreDestruct,    // virtual inherited (res) base (dispchn)
-        .DispChannel.__dispchnPreDestruct__ = &__nvoc_up_thunk_RsResource_dispchnPreDestruct,    // virtual inherited (res) base (gpures)
-        .DispChannel.GpuResource.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
-        .__dispchnpioControlFilter__ = &__nvoc_up_thunk_RsResource_dispchnpioControlFilter,    // virtual inherited (res) base (dispchn)
-        .DispChannel.__dispchnControlFilter__ = &__nvoc_up_thunk_RsResource_dispchnControlFilter,    // virtual inherited (res) base (gpures)
-        .DispChannel.GpuResource.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
-        .__dispchnpioIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispchnpioIsPartialUnmapSupported,    // inline virtual inherited (res) base (dispchn) body
-        .DispChannel.__dispchnIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispchnIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
-        .DispChannel.GpuResource.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
-        .DispChannel.GpuResource.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
-        .DispChannel.GpuResource.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
-        .__dispchnpioMapTo__ = &__nvoc_up_thunk_RsResource_dispchnpioMapTo,    // virtual inherited (res) base (dispchn)
-        .DispChannel.__dispchnMapTo__ = &__nvoc_up_thunk_RsResource_dispchnMapTo,    // virtual inherited (res) base (gpures)
-        .DispChannel.GpuResource.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
-        .__dispchnpioUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispchnpioUnmapFrom,    // virtual inherited (res) base (dispchn)
-        .DispChannel.__dispchnUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispchnUnmapFrom,    // virtual inherited (res) base (gpures)
-        .DispChannel.GpuResource.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
-        .__dispchnpioGetRefCount__ = &__nvoc_up_thunk_RsResource_dispchnpioGetRefCount,    // virtual inherited (res) base (dispchn)
-        .DispChannel.__dispchnGetRefCount__ = &__nvoc_up_thunk_RsResource_dispchnGetRefCount,    // virtual inherited (res) base (gpures)
-        .DispChannel.GpuResource.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
-        .__dispchnpioAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispchnpioAddAdditionalDependants,    // virtual inherited (res) base (dispchn)
-        .DispChannel.__dispchnAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispchnAddAdditionalDependants,    // virtual inherited (res) base (gpures)
-        .DispChannel.GpuResource.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
-        .__dispchnpioGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispchnpioGetNotificationListPtr,    // virtual inherited (notify) base (dispchn)
-        .DispChannel.__dispchnGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispchnGetNotificationListPtr,    // virtual inherited (notify) base (notify)
-        .DispChannel.Notifier.__notifyGetNotificationListPtr__ = &notifyGetNotificationListPtr_IMPL,    // virtual override (inotify) base (inotify)
-        .DispChannel.Notifier.INotifier.__inotifyGetNotificationListPtr__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr,    // pure virtual
-        .__dispchnpioGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnpioGetNotificationShare,    // virtual inherited (notify) base (dispchn)
-        .DispChannel.__dispchnGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnGetNotificationShare,    // virtual inherited (notify) base (notify)
-        .DispChannel.Notifier.__notifyGetNotificationShare__ = &notifyGetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
-        .DispChannel.Notifier.INotifier.__inotifyGetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationShare,    // pure virtual
-        .__dispchnpioSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnpioSetNotificationShare,    // virtual inherited (notify) base (dispchn)
-        .DispChannel.__dispchnSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnSetNotificationShare,    // virtual inherited (notify) base (notify)
-        .DispChannel.Notifier.__notifySetNotificationShare__ = &notifySetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
-        .DispChannel.Notifier.INotifier.__inotifySetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifySetNotificationShare,    // pure virtual
-        .__dispchnpioUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispchnpioUnregisterEvent,    // virtual inherited (notify) base (dispchn)
-        .DispChannel.__dispchnUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispchnUnregisterEvent,    // virtual inherited (notify) base (notify)
-        .DispChannel.Notifier.__notifyUnregisterEvent__ = &notifyUnregisterEvent_IMPL,    // virtual override (inotify) base (inotify)
-        .DispChannel.Notifier.INotifier.__inotifyUnregisterEvent__ = &__nvoc_down_thunk_Notifier_inotifyUnregisterEvent,    // pure virtual
-        .__dispchnpioGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispchnpioGetOrAllocNotifShare,    // virtual inherited (notify) base (dispchn)
-        .DispChannel.__dispchnGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispchnGetOrAllocNotifShare,    // virtual inherited (notify) base (notify)
-        .DispChannel.Notifier.__notifyGetOrAllocNotifShare__ = &notifyGetOrAllocNotifShare_IMPL,    // virtual override (inotify) base (inotify)
-        .DispChannel.Notifier.INotifier.__inotifyGetOrAllocNotifShare__ = &__nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare,    // pure virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.DispChannel.GpuResource.RmResource.RsResource;    // (res) super^4
-    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable = &vtable.DispChannel.GpuResource.RmResource;    // (rmres) super^3
-    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_vtable = &vtable.DispChannel.GpuResource;    // (gpures) super^2
-    pThis->__nvoc_base_DispChannel.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_vtable = &vtable.DispChannel.Notifier.INotifier;    // (inotify) super^3
-    pThis->__nvoc_base_DispChannel.__nvoc_base_Notifier.__nvoc_vtable = &vtable.DispChannel.Notifier;    // (notify) super^2
-    pThis->__nvoc_base_DispChannel.__nvoc_vtable = &vtable.DispChannel;    // (dispchn) super
-    pThis->__nvoc_vtable = &vtable;    // (dispchnpio) this
     __nvoc_init_funcTable_DispChannelPio_1(pThis);
 }
 
-void __nvoc_init_DispChannel(DispChannel*);
-void __nvoc_init_DispChannelPio(DispChannelPio *pThis) {
-    pThis->__nvoc_pbase_DispChannelPio = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;
-    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;
-    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;
-    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource;
-    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource;
-    pThis->__nvoc_pbase_INotifier = &pThis->__nvoc_base_DispChannel.__nvoc_base_Notifier.__nvoc_base_INotifier;
-    pThis->__nvoc_pbase_Notifier = &pThis->__nvoc_base_DispChannel.__nvoc_base_Notifier;
-    pThis->__nvoc_pbase_DispChannel = &pThis->__nvoc_base_DispChannel;
-    __nvoc_init_DispChannel(&pThis->__nvoc_base_DispChannel);
+// Initialize newly constructed object.
+void __nvoc_init__DispChannelPio(DispChannelPio *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;    // (res) super^4
+    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;    // (rmrescmn) super^4
+    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource;    // (rmres) super^3
+    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource;    // (gpures) super^2
+    pThis->__nvoc_pbase_INotifier = &pThis->__nvoc_base_DispChannel.__nvoc_base_Notifier.__nvoc_base_INotifier;    // (inotify) super^3
+    pThis->__nvoc_pbase_Notifier = &pThis->__nvoc_base_DispChannel.__nvoc_base_Notifier;    // (notify) super^2
+    pThis->__nvoc_pbase_DispChannel = &pThis->__nvoc_base_DispChannel;    // (dispchn) super
+    pThis->__nvoc_pbase_DispChannelPio = pThis;    // (dispchnpio) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__DispChannel(&pThis->__nvoc_base_DispChannel);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelPio.metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelPio.metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource;    // (res) super^4
+    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelPio.metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon;    // (rmrescmn) super^4
+    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelPio.metadata__DispChannel.metadata__GpuResource.metadata__RmResource;    // (rmres) super^3
+    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelPio.metadata__DispChannel.metadata__GpuResource;    // (gpures) super^2
+    pThis->__nvoc_base_DispChannel.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelPio.metadata__DispChannel.metadata__Notifier.metadata__INotifier;    // (inotify) super^3
+    pThis->__nvoc_base_DispChannel.__nvoc_base_Notifier.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelPio.metadata__DispChannel.metadata__Notifier;    // (notify) super^2
+    pThis->__nvoc_base_DispChannel.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelPio.metadata__DispChannel;    // (dispchn) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelPio;    // (dispchnpio) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_DispChannelPio(pThis);
 }
 
@@ -1196,9 +1170,6 @@ NV_STATUS __nvoc_objCreate_DispChannelPio(DispChannelPio **ppThis, Dynamic *pPar
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(DispChannelPio));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_DispChannelPio);
-
     pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -1212,7 +1183,7 @@ NV_STATUS __nvoc_objCreate_DispChannelPio(DispChannelPio **ppThis, Dynamic *pPar
         pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_DispChannelPio(pThis);
+    __nvoc_init__DispChannelPio(pThis);
     status = __nvoc_ctor_DispChannelPio(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_DispChannelPio_cleanup;
 
@@ -1250,118 +1221,32 @@ NV_STATUS __nvoc_objCreateDynamic_DispChannelPio(DispChannelPio **ppThis, Dynami
     return status;
 }
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0xfe3d2e = 1;
+char __nvoc_class_id_uniqueness_check__0xfe3d2e = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannelDma;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResource;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_INotifier;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Notifier;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannel;
 
-void __nvoc_init_DispChannelDma(DispChannelDma*);
+// Forward declarations for DispChannelDma
+void __nvoc_init__DispChannel(DispChannel*);
+void __nvoc_init__DispChannelDma(DispChannelDma*);
 void __nvoc_init_funcTable_DispChannelDma(DispChannelDma*);
-NV_STATUS __nvoc_ctor_DispChannelDma(DispChannelDma*, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_ctor_DispChannelDma(DispChannelDma*, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 void __nvoc_init_dataField_DispChannelDma(DispChannelDma*);
 void __nvoc_dtor_DispChannelDma(DispChannelDma*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_DispChannelDma;
 
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelDma_DispChannelDma = {
-    /*pClassDef=*/          &__nvoc_class_def_DispChannelDma,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_DispChannelDma,
-    /*offset=*/             0,
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelDma_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannelDma, __nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelDma_RsResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RsResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannelDma, __nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelDma_RmResourceCommon = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResourceCommon,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannelDma, __nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelDma_RmResource = {
-    /*pClassDef=*/          &__nvoc_class_def_RmResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannelDma, __nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelDma_GpuResource = {
-    /*pClassDef=*/          &__nvoc_class_def_GpuResource,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannelDma, __nvoc_base_DispChannel.__nvoc_base_GpuResource),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelDma_INotifier = {
-    /*pClassDef=*/          &__nvoc_class_def_INotifier,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannelDma, __nvoc_base_DispChannel.__nvoc_base_Notifier.__nvoc_base_INotifier),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelDma_Notifier = {
-    /*pClassDef=*/          &__nvoc_class_def_Notifier,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannelDma, __nvoc_base_DispChannel.__nvoc_base_Notifier),
-};
-
-static const struct NVOC_RTTI __nvoc_rtti_DispChannelDma_DispChannel = {
-    /*pClassDef=*/          &__nvoc_class_def_DispChannel,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DispChannelDma, __nvoc_base_DispChannel),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_DispChannelDma = {
-    /*numRelatives=*/       9,
-    /*relatives=*/ {
-        &__nvoc_rtti_DispChannelDma_DispChannelDma,
-        &__nvoc_rtti_DispChannelDma_DispChannel,
-        &__nvoc_rtti_DispChannelDma_Notifier,
-        &__nvoc_rtti_DispChannelDma_INotifier,
-        &__nvoc_rtti_DispChannelDma_GpuResource,
-        &__nvoc_rtti_DispChannelDma_RmResource,
-        &__nvoc_rtti_DispChannelDma_RmResourceCommon,
-        &__nvoc_rtti_DispChannelDma_RsResource,
-        &__nvoc_rtti_DispChannelDma_Object,
-    },
-};
-
-const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannelDma = 
-{
-    /*classInfo=*/ {
-        /*size=*/               sizeof(DispChannelDma),
-        /*classId=*/            classId(DispChannelDma),
-        /*providerId=*/         &__nvoc_rtti_provider,
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "DispChannelDma",
-#endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_DispChannelDma,
-    /*pCastInfo=*/          &__nvoc_castinfo_DispChannelDma,
-    /*pExportInfo=*/        &__nvoc_export_info_DispChannelDma
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__DispChannelDma;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__DispChannelDma;
 
 // Down-thunk(s) to bridge DispChannelDma methods from ancestors (if any)
 NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^3
@@ -1470,6 +1355,205 @@ struct NotifShare * __nvoc_up_thunk_Notifier_dispchndmaGetNotificationShare(stru
 void __nvoc_up_thunk_Notifier_dispchndmaSetNotificationShare(struct DispChannelDma *pNotifier, struct NotifShare *pNotifShare);    // this
 NV_STATUS __nvoc_up_thunk_Notifier_dispchndmaUnregisterEvent(struct DispChannelDma *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
 NV_STATUS __nvoc_up_thunk_Notifier_dispchndmaGetOrAllocNotifShare(struct DispChannelDma *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
+
+const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannelDma = 
+{
+    /*classInfo=*/ {
+        /*size=*/               sizeof(DispChannelDma),
+        /*classId=*/            classId(DispChannelDma),
+        /*providerId=*/         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*name=*/               "DispChannelDma",
+#endif
+    },
+    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_DispChannelDma,
+    /*pCastInfo=*/          &__nvoc_castinfo__DispChannelDma,
+    /*pExportInfo=*/        &__nvoc_export_info__DispChannelDma
+};
+
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__DispChannelDma __nvoc_metadata__DispChannelDma = {
+    .rtti.pClassDef = &__nvoc_class_def_DispChannelDma,    // (dispchndma) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_DispChannelDma,
+    .rtti.offset    = 0,
+    .metadata__DispChannel.rtti.pClassDef = &__nvoc_class_def_DispChannel,    // (dispchn) super
+    .metadata__DispChannel.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__DispChannel.rtti.offset    = NV_OFFSETOF(DispChannelDma, __nvoc_base_DispChannel),
+    .metadata__DispChannel.metadata__GpuResource.rtti.pClassDef = &__nvoc_class_def_GpuResource,    // (gpures) super^2
+    .metadata__DispChannel.metadata__GpuResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__DispChannel.metadata__GpuResource.rtti.offset    = NV_OFFSETOF(DispChannelDma, __nvoc_base_DispChannel.__nvoc_base_GpuResource),
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.rtti.pClassDef = &__nvoc_class_def_RmResource,    // (rmres) super^3
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.rtti.offset    = NV_OFFSETOF(DispChannelDma, __nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource),
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.pClassDef = &__nvoc_class_def_RsResource,    // (res) super^4
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti.offset    = NV_OFFSETOF(DispChannelDma, __nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource),
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti.offset    = NV_OFFSETOF(DispChannelDma, __nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object),
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.pClassDef = &__nvoc_class_def_RmResourceCommon,    // (rmrescmn) super^4
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti.offset    = NV_OFFSETOF(DispChannelDma, __nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
+    .metadata__DispChannel.metadata__Notifier.rtti.pClassDef = &__nvoc_class_def_Notifier,    // (notify) super^2
+    .metadata__DispChannel.metadata__Notifier.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__DispChannel.metadata__Notifier.rtti.offset    = NV_OFFSETOF(DispChannelDma, __nvoc_base_DispChannel.__nvoc_base_Notifier),
+    .metadata__DispChannel.metadata__Notifier.metadata__INotifier.rtti.pClassDef = &__nvoc_class_def_INotifier,    // (inotify) super^3
+    .metadata__DispChannel.metadata__Notifier.metadata__INotifier.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__DispChannel.metadata__Notifier.metadata__INotifier.rtti.offset    = NV_OFFSETOF(DispChannelDma, __nvoc_base_DispChannel.__nvoc_base_Notifier.__nvoc_base_INotifier),
+
+    .vtable.__dispchndmaGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_DispChannel_dispchndmaGetRegBaseOffsetAndSize,    // virtual inherited (dispchn) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetRegBaseOffsetAndSize__ = &dispchnGetRegBaseOffsetAndSize_IMPL,    // virtual override (gpures) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresGetRegBaseOffsetAndSize__ = &__nvoc_down_thunk_DispChannel_gpuresGetRegBaseOffsetAndSize,    // virtual
+    .vtable.__dispchndmaControl__ = &__nvoc_up_thunk_GpuResource_dispchndmaControl,    // virtual inherited (gpures) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnControl__ = &__nvoc_up_thunk_GpuResource_dispchnControl,    // virtual inherited (gpures) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresControl__ = &gpuresControl_IMPL,    // virtual override (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
+    .vtable.__dispchndmaMap__ = &__nvoc_up_thunk_GpuResource_dispchndmaMap,    // virtual inherited (gpures) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnMap__ = &__nvoc_up_thunk_GpuResource_dispchnMap,    // virtual inherited (gpures) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
+    .vtable.__dispchndmaUnmap__ = &__nvoc_up_thunk_GpuResource_dispchndmaUnmap,    // virtual inherited (gpures) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnUnmap__ = &__nvoc_up_thunk_GpuResource_dispchnUnmap,    // virtual inherited (gpures) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
+    .vtable.__dispchndmaShareCallback__ = &__nvoc_up_thunk_GpuResource_dispchndmaShareCallback,    // virtual inherited (gpures) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnShareCallback__ = &__nvoc_up_thunk_GpuResource_dispchnShareCallback,    // virtual inherited (gpures) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+    .vtable.__dispchndmaGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_dispchndmaGetMapAddrSpace,    // virtual inherited (gpures) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_dispchnGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
+    .vtable.__dispchndmaInternalControlForward__ = &__nvoc_up_thunk_GpuResource_dispchndmaInternalControlForward,    // virtual inherited (gpures) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnInternalControlForward__ = &__nvoc_up_thunk_GpuResource_dispchnInternalControlForward,    // virtual inherited (gpures) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
+    .vtable.__dispchndmaGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_dispchndmaGetInternalObjectHandle,    // virtual inherited (gpures) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_dispchnGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
+    .vtable.__dispchndmaAccessCallback__ = &__nvoc_up_thunk_RmResource_dispchndmaAccessCallback,    // virtual inherited (rmres) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnAccessCallback__ = &__nvoc_up_thunk_RmResource_dispchnAccessCallback,    // virtual inherited (rmres) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+    .vtable.__dispchndmaGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispchndmaGetMemInterMapParams,    // virtual inherited (rmres) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispchnGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+    .vtable.__dispchndmaCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispchndmaCheckMemInterUnmap,    // virtual inherited (rmres) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispchnCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+    .vtable.__dispchndmaGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispchndmaGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispchnGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+    .vtable.__dispchndmaControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispchndmaControlSerialization_Prologue,    // virtual inherited (rmres) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+    .vtable.__dispchndmaControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchndmaControlSerialization_Epilogue,    // virtual inherited (rmres) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+    .vtable.__dispchndmaControl_Prologue__ = &__nvoc_up_thunk_RmResource_dispchndmaControl_Prologue,    // virtual inherited (rmres) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnControl_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnControl_Prologue,    // virtual inherited (rmres) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+    .vtable.__dispchndmaControl_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchndmaControl_Epilogue,    // virtual inherited (rmres) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnControl_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnControl_Epilogue,    // virtual inherited (rmres) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+    .vtable.__dispchndmaCanCopy__ = &__nvoc_up_thunk_RsResource_dispchndmaCanCopy,    // virtual inherited (res) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnCanCopy__ = &__nvoc_up_thunk_RsResource_dispchnCanCopy,    // virtual inherited (res) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+    .vtable.__dispchndmaIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispchndmaIsDuplicate,    // virtual inherited (res) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispchnIsDuplicate,    // virtual inherited (res) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+    .vtable.__dispchndmaPreDestruct__ = &__nvoc_up_thunk_RsResource_dispchndmaPreDestruct,    // virtual inherited (res) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnPreDestruct__ = &__nvoc_up_thunk_RsResource_dispchnPreDestruct,    // virtual inherited (res) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+    .vtable.__dispchndmaControlFilter__ = &__nvoc_up_thunk_RsResource_dispchndmaControlFilter,    // virtual inherited (res) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnControlFilter__ = &__nvoc_up_thunk_RsResource_dispchnControlFilter,    // virtual inherited (res) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+    .vtable.__dispchndmaIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispchndmaIsPartialUnmapSupported,    // inline virtual inherited (res) base (dispchn) body
+    .metadata__DispChannel.vtable.__dispchnIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispchnIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+    .vtable.__dispchndmaMapTo__ = &__nvoc_up_thunk_RsResource_dispchndmaMapTo,    // virtual inherited (res) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnMapTo__ = &__nvoc_up_thunk_RsResource_dispchnMapTo,    // virtual inherited (res) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMapTo__ = &resMapTo_IMPL,    // virtual
+    .vtable.__dispchndmaUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispchndmaUnmapFrom,    // virtual inherited (res) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispchnUnmapFrom,    // virtual inherited (res) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+    .vtable.__dispchndmaGetRefCount__ = &__nvoc_up_thunk_RsResource_dispchndmaGetRefCount,    // virtual inherited (res) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetRefCount__ = &__nvoc_up_thunk_RsResource_dispchnGetRefCount,    // virtual inherited (res) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+    .vtable.__dispchndmaAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispchndmaAddAdditionalDependants,    // virtual inherited (res) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispchnAddAdditionalDependants,    // virtual inherited (res) base (gpures)
+    .metadata__DispChannel.metadata__GpuResource.vtable.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.vtable.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+    .metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+    .vtable.__dispchndmaGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispchndmaGetNotificationListPtr,    // virtual inherited (notify) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispchnGetNotificationListPtr,    // virtual inherited (notify) base (notify)
+    .metadata__DispChannel.metadata__Notifier.vtable.__notifyGetNotificationListPtr__ = &notifyGetNotificationListPtr_IMPL,    // virtual override (inotify) base (inotify)
+    .metadata__DispChannel.metadata__Notifier.metadata__INotifier.vtable.__inotifyGetNotificationListPtr__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr,    // pure virtual
+    .vtable.__dispchndmaGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchndmaGetNotificationShare,    // virtual inherited (notify) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnGetNotificationShare,    // virtual inherited (notify) base (notify)
+    .metadata__DispChannel.metadata__Notifier.vtable.__notifyGetNotificationShare__ = &notifyGetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+    .metadata__DispChannel.metadata__Notifier.metadata__INotifier.vtable.__inotifyGetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationShare,    // pure virtual
+    .vtable.__dispchndmaSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchndmaSetNotificationShare,    // virtual inherited (notify) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnSetNotificationShare,    // virtual inherited (notify) base (notify)
+    .metadata__DispChannel.metadata__Notifier.vtable.__notifySetNotificationShare__ = &notifySetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+    .metadata__DispChannel.metadata__Notifier.metadata__INotifier.vtable.__inotifySetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifySetNotificationShare,    // pure virtual
+    .vtable.__dispchndmaUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispchndmaUnregisterEvent,    // virtual inherited (notify) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispchnUnregisterEvent,    // virtual inherited (notify) base (notify)
+    .metadata__DispChannel.metadata__Notifier.vtable.__notifyUnregisterEvent__ = &notifyUnregisterEvent_IMPL,    // virtual override (inotify) base (inotify)
+    .metadata__DispChannel.metadata__Notifier.metadata__INotifier.vtable.__inotifyUnregisterEvent__ = &__nvoc_down_thunk_Notifier_inotifyUnregisterEvent,    // pure virtual
+    .vtable.__dispchndmaGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispchndmaGetOrAllocNotifShare,    // virtual inherited (notify) base (dispchn)
+    .metadata__DispChannel.vtable.__dispchnGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispchnGetOrAllocNotifShare,    // virtual inherited (notify) base (notify)
+    .metadata__DispChannel.metadata__Notifier.vtable.__notifyGetOrAllocNotifShare__ = &notifyGetOrAllocNotifShare_IMPL,    // virtual override (inotify) base (inotify)
+    .metadata__DispChannel.metadata__Notifier.metadata__INotifier.vtable.__inotifyGetOrAllocNotifShare__ = &__nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare,    // pure virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__DispChannelDma = {
+    .numRelatives = 9,
+    .relatives = {
+        &__nvoc_metadata__DispChannelDma.rtti,    // [0]: (dispchndma) this
+        &__nvoc_metadata__DispChannelDma.metadata__DispChannel.rtti,    // [1]: (dispchn) super
+        &__nvoc_metadata__DispChannelDma.metadata__DispChannel.metadata__GpuResource.rtti,    // [2]: (gpures) super^2
+        &__nvoc_metadata__DispChannelDma.metadata__DispChannel.metadata__GpuResource.metadata__RmResource.rtti,    // [3]: (rmres) super^3
+        &__nvoc_metadata__DispChannelDma.metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.rtti,    // [4]: (res) super^4
+        &__nvoc_metadata__DispChannelDma.metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object.rtti,    // [5]: (obj) super^5
+        &__nvoc_metadata__DispChannelDma.metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon.rtti,    // [6]: (rmrescmn) super^4
+        &__nvoc_metadata__DispChannelDma.metadata__DispChannel.metadata__Notifier.rtti,    // [7]: (notify) super^2
+        &__nvoc_metadata__DispChannelDma.metadata__DispChannel.metadata__Notifier.metadata__INotifier.rtti,    // [8]: (inotify) super^3
+    }
+};
 
 // 30 up-thunk(s) defined to bridge methods in DispChannelDma to superclasses
 
@@ -1624,7 +1708,7 @@ NV_STATUS __nvoc_up_thunk_Notifier_dispchndmaGetOrAllocNotifShare(struct DispCha
 }
 
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_DispChannelDma = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__DispChannelDma = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -1667,168 +1751,38 @@ static void __nvoc_init_funcTable_DispChannelDma_1(DispChannelDma *pThis) {
 
 // Initialize vtable(s) for 30 virtual method(s).
 void __nvoc_init_funcTable_DispChannelDma(DispChannelDma *pThis) {
-
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__DispChannelDma vtable = {
-        .__dispchndmaGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_DispChannel_dispchndmaGetRegBaseOffsetAndSize,    // virtual inherited (dispchn) base (dispchn)
-        .DispChannel.__dispchnGetRegBaseOffsetAndSize__ = &dispchnGetRegBaseOffsetAndSize_IMPL,    // virtual override (gpures) base (gpures)
-        .DispChannel.GpuResource.__gpuresGetRegBaseOffsetAndSize__ = &__nvoc_down_thunk_DispChannel_gpuresGetRegBaseOffsetAndSize,    // virtual
-        .__dispchndmaControl__ = &__nvoc_up_thunk_GpuResource_dispchndmaControl,    // virtual inherited (gpures) base (dispchn)
-        .DispChannel.__dispchnControl__ = &__nvoc_up_thunk_GpuResource_dispchnControl,    // virtual inherited (gpures) base (gpures)
-        .DispChannel.GpuResource.__gpuresControl__ = &gpuresControl_IMPL,    // virtual override (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
-        .__dispchndmaMap__ = &__nvoc_up_thunk_GpuResource_dispchndmaMap,    // virtual inherited (gpures) base (dispchn)
-        .DispChannel.__dispchnMap__ = &__nvoc_up_thunk_GpuResource_dispchnMap,    // virtual inherited (gpures) base (gpures)
-        .DispChannel.GpuResource.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
-        .__dispchndmaUnmap__ = &__nvoc_up_thunk_GpuResource_dispchndmaUnmap,    // virtual inherited (gpures) base (dispchn)
-        .DispChannel.__dispchnUnmap__ = &__nvoc_up_thunk_GpuResource_dispchnUnmap,    // virtual inherited (gpures) base (gpures)
-        .DispChannel.GpuResource.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
-        .__dispchndmaShareCallback__ = &__nvoc_up_thunk_GpuResource_dispchndmaShareCallback,    // virtual inherited (gpures) base (dispchn)
-        .DispChannel.__dispchnShareCallback__ = &__nvoc_up_thunk_GpuResource_dispchnShareCallback,    // virtual inherited (gpures) base (gpures)
-        .DispChannel.GpuResource.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
-        .__dispchndmaGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_dispchndmaGetMapAddrSpace,    // virtual inherited (gpures) base (dispchn)
-        .DispChannel.__dispchnGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_dispchnGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
-        .DispChannel.GpuResource.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
-        .__dispchndmaInternalControlForward__ = &__nvoc_up_thunk_GpuResource_dispchndmaInternalControlForward,    // virtual inherited (gpures) base (dispchn)
-        .DispChannel.__dispchnInternalControlForward__ = &__nvoc_up_thunk_GpuResource_dispchnInternalControlForward,    // virtual inherited (gpures) base (gpures)
-        .DispChannel.GpuResource.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
-        .__dispchndmaGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_dispchndmaGetInternalObjectHandle,    // virtual inherited (gpures) base (dispchn)
-        .DispChannel.__dispchnGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_dispchnGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
-        .DispChannel.GpuResource.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
-        .__dispchndmaAccessCallback__ = &__nvoc_up_thunk_RmResource_dispchndmaAccessCallback,    // virtual inherited (rmres) base (dispchn)
-        .DispChannel.__dispchnAccessCallback__ = &__nvoc_up_thunk_RmResource_dispchnAccessCallback,    // virtual inherited (rmres) base (gpures)
-        .DispChannel.GpuResource.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
-        .__dispchndmaGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispchndmaGetMemInterMapParams,    // virtual inherited (rmres) base (dispchn)
-        .DispChannel.__dispchnGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispchnGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
-        .DispChannel.GpuResource.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
-        .__dispchndmaCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispchndmaCheckMemInterUnmap,    // virtual inherited (rmres) base (dispchn)
-        .DispChannel.__dispchnCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispchnCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
-        .DispChannel.GpuResource.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
-        .__dispchndmaGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispchndmaGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (dispchn)
-        .DispChannel.__dispchnGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispchnGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
-        .DispChannel.GpuResource.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
-        .__dispchndmaControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispchndmaControlSerialization_Prologue,    // virtual inherited (rmres) base (dispchn)
-        .DispChannel.__dispchnControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
-        .DispChannel.GpuResource.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
-        .__dispchndmaControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchndmaControlSerialization_Epilogue,    // virtual inherited (rmres) base (dispchn)
-        .DispChannel.__dispchnControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .DispChannel.GpuResource.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
-        .__dispchndmaControl_Prologue__ = &__nvoc_up_thunk_RmResource_dispchndmaControl_Prologue,    // virtual inherited (rmres) base (dispchn)
-        .DispChannel.__dispchnControl_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnControl_Prologue,    // virtual inherited (rmres) base (gpures)
-        .DispChannel.GpuResource.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
-        .__dispchndmaControl_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchndmaControl_Epilogue,    // virtual inherited (rmres) base (dispchn)
-        .DispChannel.__dispchnControl_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnControl_Epilogue,    // virtual inherited (rmres) base (gpures)
-        .DispChannel.GpuResource.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
-        .__dispchndmaCanCopy__ = &__nvoc_up_thunk_RsResource_dispchndmaCanCopy,    // virtual inherited (res) base (dispchn)
-        .DispChannel.__dispchnCanCopy__ = &__nvoc_up_thunk_RsResource_dispchnCanCopy,    // virtual inherited (res) base (gpures)
-        .DispChannel.GpuResource.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
-        .__dispchndmaIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispchndmaIsDuplicate,    // virtual inherited (res) base (dispchn)
-        .DispChannel.__dispchnIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispchnIsDuplicate,    // virtual inherited (res) base (gpures)
-        .DispChannel.GpuResource.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
-        .__dispchndmaPreDestruct__ = &__nvoc_up_thunk_RsResource_dispchndmaPreDestruct,    // virtual inherited (res) base (dispchn)
-        .DispChannel.__dispchnPreDestruct__ = &__nvoc_up_thunk_RsResource_dispchnPreDestruct,    // virtual inherited (res) base (gpures)
-        .DispChannel.GpuResource.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
-        .__dispchndmaControlFilter__ = &__nvoc_up_thunk_RsResource_dispchndmaControlFilter,    // virtual inherited (res) base (dispchn)
-        .DispChannel.__dispchnControlFilter__ = &__nvoc_up_thunk_RsResource_dispchnControlFilter,    // virtual inherited (res) base (gpures)
-        .DispChannel.GpuResource.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
-        .__dispchndmaIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispchndmaIsPartialUnmapSupported,    // inline virtual inherited (res) base (dispchn) body
-        .DispChannel.__dispchnIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispchnIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
-        .DispChannel.GpuResource.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
-        .DispChannel.GpuResource.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
-        .DispChannel.GpuResource.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
-        .__dispchndmaMapTo__ = &__nvoc_up_thunk_RsResource_dispchndmaMapTo,    // virtual inherited (res) base (dispchn)
-        .DispChannel.__dispchnMapTo__ = &__nvoc_up_thunk_RsResource_dispchnMapTo,    // virtual inherited (res) base (gpures)
-        .DispChannel.GpuResource.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
-        .__dispchndmaUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispchndmaUnmapFrom,    // virtual inherited (res) base (dispchn)
-        .DispChannel.__dispchnUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispchnUnmapFrom,    // virtual inherited (res) base (gpures)
-        .DispChannel.GpuResource.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
-        .__dispchndmaGetRefCount__ = &__nvoc_up_thunk_RsResource_dispchndmaGetRefCount,    // virtual inherited (res) base (dispchn)
-        .DispChannel.__dispchnGetRefCount__ = &__nvoc_up_thunk_RsResource_dispchnGetRefCount,    // virtual inherited (res) base (gpures)
-        .DispChannel.GpuResource.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
-        .__dispchndmaAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispchndmaAddAdditionalDependants,    // virtual inherited (res) base (dispchn)
-        .DispChannel.__dispchnAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispchnAddAdditionalDependants,    // virtual inherited (res) base (gpures)
-        .DispChannel.GpuResource.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
-        .DispChannel.GpuResource.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
-        .DispChannel.GpuResource.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
-        .__dispchndmaGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispchndmaGetNotificationListPtr,    // virtual inherited (notify) base (dispchn)
-        .DispChannel.__dispchnGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispchnGetNotificationListPtr,    // virtual inherited (notify) base (notify)
-        .DispChannel.Notifier.__notifyGetNotificationListPtr__ = &notifyGetNotificationListPtr_IMPL,    // virtual override (inotify) base (inotify)
-        .DispChannel.Notifier.INotifier.__inotifyGetNotificationListPtr__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr,    // pure virtual
-        .__dispchndmaGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchndmaGetNotificationShare,    // virtual inherited (notify) base (dispchn)
-        .DispChannel.__dispchnGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnGetNotificationShare,    // virtual inherited (notify) base (notify)
-        .DispChannel.Notifier.__notifyGetNotificationShare__ = &notifyGetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
-        .DispChannel.Notifier.INotifier.__inotifyGetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationShare,    // pure virtual
-        .__dispchndmaSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchndmaSetNotificationShare,    // virtual inherited (notify) base (dispchn)
-        .DispChannel.__dispchnSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnSetNotificationShare,    // virtual inherited (notify) base (notify)
-        .DispChannel.Notifier.__notifySetNotificationShare__ = &notifySetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
-        .DispChannel.Notifier.INotifier.__inotifySetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifySetNotificationShare,    // pure virtual
-        .__dispchndmaUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispchndmaUnregisterEvent,    // virtual inherited (notify) base (dispchn)
-        .DispChannel.__dispchnUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispchnUnregisterEvent,    // virtual inherited (notify) base (notify)
-        .DispChannel.Notifier.__notifyUnregisterEvent__ = &notifyUnregisterEvent_IMPL,    // virtual override (inotify) base (inotify)
-        .DispChannel.Notifier.INotifier.__inotifyUnregisterEvent__ = &__nvoc_down_thunk_Notifier_inotifyUnregisterEvent,    // pure virtual
-        .__dispchndmaGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispchndmaGetOrAllocNotifShare,    // virtual inherited (notify) base (dispchn)
-        .DispChannel.__dispchnGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispchnGetOrAllocNotifShare,    // virtual inherited (notify) base (notify)
-        .DispChannel.Notifier.__notifyGetOrAllocNotifShare__ = &notifyGetOrAllocNotifShare_IMPL,    // virtual override (inotify) base (inotify)
-        .DispChannel.Notifier.INotifier.__inotifyGetOrAllocNotifShare__ = &__nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare,    // pure virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.DispChannel.GpuResource.RmResource.RsResource;    // (res) super^4
-    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable = &vtable.DispChannel.GpuResource.RmResource;    // (rmres) super^3
-    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_vtable = &vtable.DispChannel.GpuResource;    // (gpures) super^2
-    pThis->__nvoc_base_DispChannel.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_vtable = &vtable.DispChannel.Notifier.INotifier;    // (inotify) super^3
-    pThis->__nvoc_base_DispChannel.__nvoc_base_Notifier.__nvoc_vtable = &vtable.DispChannel.Notifier;    // (notify) super^2
-    pThis->__nvoc_base_DispChannel.__nvoc_vtable = &vtable.DispChannel;    // (dispchn) super
-    pThis->__nvoc_vtable = &vtable;    // (dispchndma) this
     __nvoc_init_funcTable_DispChannelDma_1(pThis);
 }
 
-void __nvoc_init_DispChannel(DispChannel*);
-void __nvoc_init_DispChannelDma(DispChannelDma *pThis) {
-    pThis->__nvoc_pbase_DispChannelDma = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;
-    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;
-    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;
-    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource;
-    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource;
-    pThis->__nvoc_pbase_INotifier = &pThis->__nvoc_base_DispChannel.__nvoc_base_Notifier.__nvoc_base_INotifier;
-    pThis->__nvoc_pbase_Notifier = &pThis->__nvoc_base_DispChannel.__nvoc_base_Notifier;
-    pThis->__nvoc_pbase_DispChannel = &pThis->__nvoc_base_DispChannel;
-    __nvoc_init_DispChannel(&pThis->__nvoc_base_DispChannel);
+// Initialize newly constructed object.
+void __nvoc_init__DispChannelDma(DispChannelDma *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;    // (res) super^4
+    pThis->__nvoc_pbase_RmResourceCommon = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon;    // (rmrescmn) super^4
+    pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource;    // (rmres) super^3
+    pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource;    // (gpures) super^2
+    pThis->__nvoc_pbase_INotifier = &pThis->__nvoc_base_DispChannel.__nvoc_base_Notifier.__nvoc_base_INotifier;    // (inotify) super^3
+    pThis->__nvoc_pbase_Notifier = &pThis->__nvoc_base_DispChannel.__nvoc_base_Notifier;    // (notify) super^2
+    pThis->__nvoc_pbase_DispChannel = &pThis->__nvoc_base_DispChannel;    // (dispchn) super
+    pThis->__nvoc_pbase_DispChannelDma = pThis;    // (dispchndma) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__DispChannel(&pThis->__nvoc_base_DispChannel);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelDma.metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelDma.metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RsResource;    // (res) super^4
+    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RmResourceCommon.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelDma.metadata__DispChannel.metadata__GpuResource.metadata__RmResource.metadata__RmResourceCommon;    // (rmrescmn) super^4
+    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelDma.metadata__DispChannel.metadata__GpuResource.metadata__RmResource;    // (rmres) super^3
+    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelDma.metadata__DispChannel.metadata__GpuResource;    // (gpures) super^2
+    pThis->__nvoc_base_DispChannel.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelDma.metadata__DispChannel.metadata__Notifier.metadata__INotifier;    // (inotify) super^3
+    pThis->__nvoc_base_DispChannel.__nvoc_base_Notifier.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelDma.metadata__DispChannel.metadata__Notifier;    // (notify) super^2
+    pThis->__nvoc_base_DispChannel.__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelDma.metadata__DispChannel;    // (dispchn) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__DispChannelDma;    // (dispchndma) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_DispChannelDma(pThis);
 }
 
@@ -1846,9 +1800,6 @@ NV_STATUS __nvoc_objCreate_DispChannelDma(DispChannelDma **ppThis, Dynamic *pPar
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(DispChannelDma));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_DispChannelDma);
-
     pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -1862,7 +1813,7 @@ NV_STATUS __nvoc_objCreate_DispChannelDma(DispChannelDma **ppThis, Dynamic *pPar
         pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_DispChannelDma(pThis);
+    __nvoc_init__DispChannelDma(pThis);
     status = __nvoc_ctor_DispChannelDma(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_DispChannelDma_cleanup;
 

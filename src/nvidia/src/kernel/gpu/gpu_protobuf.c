@@ -142,6 +142,47 @@ gpuDumpCallbackRegister_IMPL
                         REF_DEF(NVD_ENGINE_FLAGS_PRIORITY, _MED) |
                         REF_DEF(NVD_ENGINE_FLAGS_SOURCE,   _BOTH),
                         (void *)pGpu);
+
+        if (IS_GSP_CLIENT(pGpu))
+        {
+            //
+            // Sign up all the GSP-only NVDUMP engines with a NULL dump function.
+            // This will make the CPU-RM call NV_RM_RPC_DUMP_PROTOBUF_COMPONENT
+            // for each of these to collect the data from GSP and then put it
+            // in the overall protobuf payload.
+            //
+            NvU32 gspNvdEngines[] =
+            {
+                NVDUMP_COMPONENT_ENG_FIFO,
+                NVDUMP_COMPONENT_ENG_GRAPHICS,
+                NVDUMP_COMPONENT_ENG_FB,
+                NVDUMP_COMPONENT_ENG_DISP,
+                NVDUMP_COMPONENT_ENG_FAN,
+                NVDUMP_COMPONENT_ENG_THERMAL,
+                NVDUMP_COMPONENT_ENG_FUSE,
+                NVDUMP_COMPONENT_ENG_VBIOS,
+                NVDUMP_COMPONENT_ENG_PERF,
+                NVDUMP_COMPONENT_ENG_BUS,
+                NVDUMP_COMPONENT_ENG_PMU,
+                NVDUMP_COMPONENT_ENG_CE,
+                NVDUMP_COMPONENT_ENG_LPWR,
+                NVDUMP_COMPONENT_ENG_VOLT,
+                NVDUMP_COMPONENT_ENG_CLK,
+                NVDUMP_COMPONENT_ENG_SEC2,
+                NVDUMP_COMPONENT_ENG_NVDEC,
+                NVDUMP_COMPONENT_ENG_DPU,
+                NVDUMP_COMPONENT_ENG_FBFLCN,
+                NVDUMP_COMPONENT_ENG_HDA,
+                NVDUMP_COMPONENT_ENG_NVENC,
+                NVDUMP_COMPONENT_ENG_GSP
+            };
+            NvU32 flags = REF_DEF(NVD_ENGINE_FLAGS_PRIORITY, _LOW) |
+                          REF_DEF(NVD_ENGINE_FLAGS_SOURCE,   _GSP);
+            for (NvU32 i = 0; i < NV_ARRAY_ELEMENTS(gspNvdEngines); i++)
+            {
+                nvdEngineSignUp(pGpu, pNvd, NULL, gspNvdEngines[i], flags, (void*)pGpu);
+            }
+        }
     }
 }
 

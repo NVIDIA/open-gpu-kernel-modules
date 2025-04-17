@@ -179,81 +179,9 @@ bool uvm_va_space_mm_enabled(uvm_va_space_t *va_space)
     return uvm_va_space_mm_enabled_system();
 }
 
-#if UVM_CAN_USE_MMU_NOTIFIERS()
-    static uvm_va_space_t *get_va_space(struct mmu_notifier *mn)
-    {
-        // This may be called without a thread context present, so be careful
-        // what is used here.
-        return container_of(mn, uvm_va_space_t, va_space_mm.mmu_notifier);
-    }
-
-    static void uvm_mmu_notifier_invalidate_range_ats(struct mmu_notifier *mn,
-                                                      struct mm_struct *mm,
-                                                      unsigned long start,
-                                                      unsigned long end)
-    {
-        // In most cases ->invalidate_range() is called with exclusive end.
-        // uvm_ats_invalidate() expects an inclusive end so we have to
-        // convert it.
-        //
-        // There's a special case however. Kernel TLB gathering sometimes
-        // identifies "fullmm" invalidates by setting both start and end to ~0.
-        //
-        // It's unclear if there are any other cases in which the kernel will
-        // call us with start == end. Since we can't definitively say no, we
-        // conservatively treat all such calls as full invalidates.
-        if (start == end) {
-            start = 0;
-            end = ~0UL;
-        }
-        else {
-            --end;
-        }
-
-        UVM_ENTRY_VOID(uvm_ats_invalidate(get_va_space(mn), start, end));
-    }
-
-    static struct mmu_notifier_ops uvm_mmu_notifier_ops_ats =
-    {
-#if defined(NV_MMU_NOTIFIER_OPS_HAS_INVALIDATE_RANGE)
-        .invalidate_range = uvm_mmu_notifier_invalidate_range_ats,
-#elif defined(NV_MMU_NOTIFIER_OPS_HAS_ARCH_INVALIDATE_SECONDARY_TLBS)
-        .arch_invalidate_secondary_tlbs = uvm_mmu_notifier_invalidate_range_ats,
-#else
-        #error One of invalidate_range/arch_invalid_secondary must be present
-#endif
-    };
-
-    static int uvm_mmu_notifier_register(uvm_va_space_mm_t *va_space_mm)
-    {
-        UVM_ASSERT(va_space_mm->mm);
-        uvm_assert_mmap_lock_locked_write(va_space_mm->mm);
-
-        va_space_mm->mmu_notifier.ops = &uvm_mmu_notifier_ops_ats;
-        return __mmu_notifier_register(&va_space_mm->mmu_notifier, va_space_mm->mm);
-    }
-
-    static void uvm_mmu_notifier_unregister(uvm_va_space_mm_t *va_space_mm)
-    {
-        mmu_notifier_unregister(&va_space_mm->mmu_notifier, va_space_mm->mm);
-    }
-#else
-    static int uvm_mmu_notifier_register(uvm_va_space_mm_t *va_space_mm)
-    {
-        UVM_ASSERT(0);
-        return 0;
-    }
-
-    static void uvm_mmu_notifier_unregister(uvm_va_space_mm_t *va_space_mm)
-    {
-        UVM_ASSERT(0);
-    }
-#endif // UVM_CAN_USE_MMU_NOTIFIERS()
-
 NV_STATUS uvm_va_space_mm_register(uvm_va_space_t *va_space)
 {
     uvm_va_space_mm_t *va_space_mm = &va_space->va_space_mm;
-    int ret;
 
     uvm_assert_mmap_lock_locked_write(current->mm);
     uvm_assert_rwsem_locked_write(&va_space->lock);
@@ -267,23 +195,12 @@ NV_STATUS uvm_va_space_mm_register(uvm_va_space_t *va_space)
     va_space_mm->mm = current->mm;
     uvm_mmgrab(va_space_mm->mm);
 
-    // We must be prepared to handle callbacks as soon as we make this call,
-    // except for ->release() which can't be called since the mm belongs to
-    // current.
-    if (UVM_ATS_IBM_SUPPORTED_IN_DRIVER() && g_uvm_global.ats.enabled) {
-        ret = uvm_mmu_notifier_register(va_space_mm);
-        if (ret) {
-            // Inform uvm_va_space_mm_unregister() that it has nothing to do.
-            uvm_mmdrop(va_space_mm->mm);
-            va_space_mm->mm = NULL;
-            return errno_to_nv_status(ret);
-        }
-    }
-
     if ((UVM_IS_CONFIG_HMM() || UVM_HMM_RANGE_FAULT_SUPPORTED()) &&
         uvm_va_space_pageable_mem_access_supported(va_space)) {
 
         #if UVM_CAN_USE_MMU_NOTIFIERS()
+            int ret;
+
             // Initialize MMU interval notifiers for this process. This allows
             // mmu_interval_notifier_insert() to be called without holding the
             // mmap_lock for write.
@@ -318,11 +235,8 @@ void uvm_va_space_mm_unregister(uvm_va_space_t *va_space)
     if (!va_space_mm->mm)
         return;
 
-    if (uvm_va_space_mm_enabled(va_space)) {
-        if (UVM_ATS_IBM_SUPPORTED_IN_DRIVER() && g_uvm_global.ats.enabled)
-            uvm_mmu_notifier_unregister(va_space_mm);
+    if (uvm_va_space_mm_enabled(va_space))
         uvm_mmdrop(va_space_mm->mm);
-    }
 }
 
 struct mm_struct *uvm_va_space_mm_retain(uvm_va_space_t *va_space)

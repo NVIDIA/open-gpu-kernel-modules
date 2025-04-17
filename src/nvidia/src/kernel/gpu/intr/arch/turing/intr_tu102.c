@@ -1059,10 +1059,12 @@ intrGetLeafStatus_TU102
 }
 
 /*!
- * @brief Returns a bitfield with only MC_ENGINE_IDX_DISP set if it's pending
+ * @brief Returns a bitfield with only MC_ENGINE_IDX_DISP set if it's pending in hardware
  *        On Turing+, there are multiple stall interrupt registers, and reading them
  *        all in the top half would be expensive. To saitsfy bug 3220319, only find out
- *        if display interrupt is pending. Fix this in bug 3279300
+ *        if display interrupt is pending. Fix this in bug 3279300.
+ *        The MC_ENGINE_IDX_DISP that this function reports conflates both the low latency display
+ *        interrupts and other display interrupts in architectures supported by this HAL.
  *
  * @param[in]  pGpu
  * @param[in]  pMc
@@ -1072,7 +1074,7 @@ intrGetLeafStatus_TU102
  * @return NV_OK if the list of engines that have pending stall interrupts was retrieved
  */
 NV_STATUS
-intrGetPendingDisplayIntr_TU102
+intrGetPendingLowLatencyHwDisplayIntr_TU102
 (
     OBJGPU              *pGpu,
     Intr                *pIntr,
@@ -1080,8 +1082,6 @@ intrGetPendingDisplayIntr_TU102
     THREAD_STATE_NODE   *pThreadState
 )
 {
-    KernelDisplay  *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
-
     bitVectorClrAll(pEngines);
 
     if (IS_GPU_GC6_STATE_ENTERED(pGpu))
@@ -1092,14 +1092,6 @@ intrGetPendingDisplayIntr_TU102
     if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu))
     {
         return NV_ERR_GPU_IS_LOST;
-    }
-
-    if (pKernelDisplay != NULL && kdispGetDeferredVblankHeadMask(pKernelDisplay))
-    {
-        // Deferred vblank is pending which we need to handle
-        bitVectorSet(pEngines, MC_ENGINE_IDX_DISP);
-        // Nothing else to set here, return early
-        return NV_OK;
     }
 
     if (pIntr->displayIntrVector == NV_INTR_VECTOR_INVALID)

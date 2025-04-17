@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -167,7 +167,6 @@ memmapperExecuteSemaphoreSignal
     RM_API                               *pRmApi
 )
 {
-    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(GPU_RES_GET_GPU(pMemoryMapper));
     NV_SEMAPHORE_SURFACE_CTRL_SET_VALUE_PARAMS params = {0};
 
     params.index    = pSignal->index;
@@ -178,7 +177,7 @@ memmapperExecuteSemaphoreSignal
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         pRmApi->Control(pRmApi,
-                        pMemoryManager->hClient,
+                        pMemoryMapper->hInternalClient,
                         pMemoryMapper->hInternalSemaphoreSurface,
                         NV_SEMAPHORE_SURFACE_CTRL_CMD_SET_VALUE,
                         &params,
@@ -378,17 +377,26 @@ memmapperConstruct_IMPL
         sizeof (NV_MEMORY_MAPPER_NOTIFICATION), TRANSFER_FLAGS_USE_BAR1);
     NV_ASSERT_TRUE_OR_GOTO(status, pMemoryMapper->pNotification != NULL, NV_ERR_NO_MEMORY, failed);
 
+    NV_ASSERT_OK_OR_GOTO(status,
+        memmgrGetInternalClientHandles(pGpu,
+                                       pMemoryManager,
+                                       GPU_RES_GET_DEVICE(pMemoryMapper),
+                                       &pMemoryMapper->hInternalClient,
+                                       &pMemoryMapper->hInternalDevice,
+                                       &pMemoryMapper->hInternalSubdevice),
+        failed);
+
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
         pRmApi->DupObject(pRmApi,
-                          pMemoryManager->hClient,
-                          pMemoryManager->hSubdevice,
+                          pMemoryMapper->hInternalClient,
+                          pMemoryMapper->hInternalSubdevice,
                           &pMemoryMapper->hInternalSemaphoreSurface,
                           RES_GET_CLIENT_HANDLE(pMemoryMapper),
                           pAllocParams->hSemaphoreSurface,
                           NV04_DUP_HANDLE_FLAGS_NONE),
         failed);
 
-    RmClient *pInternalClient = serverutilGetClientUnderLock(pMemoryManager->hClient);
+    RmClient *pInternalClient = serverutilGetClientUnderLock(pMemoryMapper->hInternalClient);
     NV_ASSERT_TRUE_OR_GOTO(status, pInternalClient != NULL, NV_ERR_INVALID_STATE, failed);
     RsClient *pInternalRsClient = staticCast(pInternalClient, RsClient);
     RsResourceRef  *pSemSurfRef;
@@ -419,7 +427,7 @@ failed:
 
         if (pMemoryMapper->hInternalSemaphoreSurface != NV01_NULL_OBJECT)
         {
-            pRmApi->Free(pRmApi, pMemoryManager->hClient, pMemoryMapper->hInternalSemaphoreSurface);
+            pRmApi->Free(pRmApi, pMemoryMapper->hInternalClient, pMemoryMapper->hInternalSemaphoreSurface);
         }
 
         portMemFree(pMemoryMapper->pOperationQueue);
@@ -442,7 +450,7 @@ memmapperDestruct_IMPL
                          sizeof (NV_MEMORY_MAPPER_NOTIFICATION), TRANSFER_FLAGS_USE_BAR1);
 
     refRemoveDependant(RES_GET_REF(pMemoryMapper->pNotificationMemory), RES_GET_REF(pMemoryMapper));
-    pRmApi->Free(pRmApi, pMemoryManager->hClient, pMemoryMapper->hInternalSemaphoreSurface);
+    pRmApi->Free(pRmApi, pMemoryMapper->hInternalClient, pMemoryMapper->hInternalSemaphoreSurface);
     portMemFree(pMemoryMapper->pOperationQueue);
 
     pMemoryMapper->pWorkerParams->pMemoryMapper = NULL;
@@ -460,7 +468,6 @@ memmapperSubmitSemaphoreWait
     NV00FE_CTRL_OPERATION_SEMAPHORE      *pSemaphoreWait
 )
 {
-    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(GPU_RES_GET_GPU(pMemoryMapper));
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
 
     NV_SEMAPHORE_SURFACE_CTRL_REGISTER_WAITER_PARAMS params = {0};
@@ -469,7 +476,7 @@ memmapperSubmitSemaphoreWait
     params.notificationHandle = (NvU64)&pMemoryMapper->semaphoreCallback;
 
     NV_STATUS status = pRmApi->Control(pRmApi,
-                                       pMemoryManager->hClient,
+                                       pMemoryMapper->hInternalClient,
                                        pMemoryMapper->hInternalSemaphoreSurface,
                                        NV_SEMAPHORE_SURFACE_CTRL_CMD_REGISTER_WAITER,
                                        &params,

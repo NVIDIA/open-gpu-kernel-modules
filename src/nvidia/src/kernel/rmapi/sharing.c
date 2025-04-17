@@ -21,12 +21,14 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #include "rmapi/rmapi.h"
+#include "rmapi/rmapi_utils.h"
 #include "entry_points.h"
 #include "core/thread_state.h"
 #include "rmapi/rs_utils.h"
 #include "resserv/rs_access_map.h"
 #include "resource_desc.h"
 #include "class/cl0071.h"
+#include "gpu/gpu_resource.h"
 
 static NV_STATUS
 _RmDupObject
@@ -374,6 +376,7 @@ serverInitGlobalSharePolicies
     return NV_OK;
 }
 
+// Called with both src/dst client lock held
 NV_STATUS serverUpdateLockFlagsForCopy(RsServer *pServer, RS_RES_DUP_PARAMS *pParams)
 {
     RS_RESOURCE_DESC  *pResDesc;
@@ -394,6 +397,31 @@ NV_STATUS serverUpdateLockFlagsForCopy(RsServer *pServer, RS_RES_DUP_PARAMS *pPa
     if (pResDesc->flags & RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_DUP)
     {
         pLockInfo->flags |= RM_LOCK_FLAGS_GPU_GROUP_LOCK;
+    }
+
+    if (pResDesc->flags & RS_FLAGS_ACQUIRE_RELAXED_GPUS_LOCK_ON_DUP)
+    {
+        // Holding both client lock and the at least RO API lock. Safe to access the resource
+        if (rmapiLockIsOwner())
+        {
+            GpuResource *pGpuResSrc = dynamicCast(pParams->pSrcRef->pResource, GpuResource);
+            GpuResource *pGpuResDst = dynamicCast(pParams->pDstParentRef->pResource, GpuResource);
+
+            if ((pGpuResSrc != NULL) &&
+                (pGpuResDst != NULL) &&
+                (pGpuResSrc->pGpu == pGpuResDst->pGpu))
+            {
+                pLockInfo->flags |= RM_LOCK_FLAGS_GPU_GROUP_LOCK;
+            }
+            else
+            {
+                pLockInfo->flags &= ~(RM_LOCK_FLAGS_NO_GPUS_LOCK);
+            }
+        }
+        else
+        {
+            pLockInfo->flags &= ~(RM_LOCK_FLAGS_NO_GPUS_LOCK);
+        }
     }
 
     pLockInfo->pContextRef = pParams->pSrcRef->pParentRef;

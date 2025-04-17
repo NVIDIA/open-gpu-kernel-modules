@@ -41,6 +41,7 @@
 
 #include "gpu/device/device.h"
 #include "class/cl0080.h"
+#include "class/clc372sw.h"
 
 #include "class/cl83de.h" // GT200_DEBUGGER
 #include "gpu/gr/kernel_sm_debugger_session.h"
@@ -774,7 +775,6 @@ serverAllocResourceUnderLock
         {
             NV_PRINTF(LEVEL_INFO, "Overriding flags for alloc of class %04x\n",
                 pRmAllocParams->externalClassId);
-            pLockInfo->flags &= ~RM_LOCK_FLAGS_NO_GPUS_LOCK;
             pLockInfo->flags |= RM_LOCK_FLAGS_GPU_GROUP_LOCK;
             if ((pLockInfo->state & RM_LOCK_STATES_ALLOW_RECURSIVE_LOCKS) == 0)
             {
@@ -1095,7 +1095,6 @@ serverUpdateLockFlagsForFree
             {
                 NV_PRINTF(LEVEL_INFO, "Overriding flags for free of class %04x\n",
                     pRmFreeParams->pResourceRef->externalClassId);
-                pLockInfo->flags &= ~RM_LOCK_FLAGS_NO_GPUS_LOCK;
                 pLockInfo->flags |= RM_LOCK_FLAGS_GPU_GROUP_LOCK;
                 pLockInfo->state |= RM_LOCK_STATES_ALLOW_RECURSIVE_LOCKS;
             }
@@ -1395,8 +1394,14 @@ resservResourceFactory
     if (pResource == NULL)
         return NV_ERR_INSUFFICIENT_RESOURCES;
 
-    if (pResDesc->internalClassId == classId(Subdevice) || pResDesc->internalClassId == classId(Device))
+    if (pResDesc->internalClassId == classId(Subdevice)  || pResDesc->internalClassId == classId(Device) ||
+        pResDesc->internalClassId == classId(DispCommon))
     {
+        //
+        // DispCommon and DispSwObj's pGpu will be retrieved at the beginning of the function,
+        // since their parent is Device.
+        //
+        if (!(pResDesc->internalClassId == classId(DispCommon)) && !(pResDesc->internalClassId == classId(DispSwObj)))
         {
             pGpu = GPU_RES_GET_GPU(dynamicCast(pDynamic, GpuResource));
         }
@@ -1519,11 +1524,12 @@ rmapiFreeWithSecInfo
     }
     else
     {
-        NV_PRINTF(LEVEL_INFO,
-                  "Nv01Free: free failed; status: %s (0x%08x)\n",
-                  nvstatusToString(status), status);
-        NV_PRINTF(LEVEL_INFO, "Nv01Free:  client:0x%x object:0x%x\n",
-                  hClient, hObject);
+       NV_PRINTF_COND(status == NV_ERR_GPU_IN_FULLCHIP_RESET, LEVEL_INFO, LEVEL_WARNING,
+                "Nv01Free: free failed; status: %s (0x%08x)\n",
+                nvstatusToString(status), status);
+       NV_PRINTF_COND(status == NV_ERR_GPU_IN_FULLCHIP_RESET, LEVEL_INFO, LEVEL_WARNING,
+                "Nv01Free:  client:0x%x object:0x%x\n",
+                hClient, hObject);
     }
 
     return status;

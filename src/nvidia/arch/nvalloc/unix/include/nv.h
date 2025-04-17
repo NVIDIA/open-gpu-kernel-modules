@@ -168,6 +168,15 @@ typedef enum _TEGRASOC_WHICH_CLK
     TEGRASOC_WHICH_CLK_PLLA_DISP,
     TEGRASOC_WHICH_CLK_PLLA_DISPHUB,
     TEGRASOC_WHICH_CLK_PLLA,
+    TEGRASOC_WHICH_CLK_EMC,
+    TEGRASOC_WHICH_CLK_GPU_FIRST,
+    TEGRASOC_WHICH_CLK_GPU_SYS = TEGRASOC_WHICH_CLK_GPU_FIRST,
+    TEGRASOC_WHICH_CLK_GPU_NVD,
+    TEGRASOC_WHICH_CLK_GPU_UPROC,
+    TEGRASOC_WHICH_CLK_GPU_GPC0,
+    TEGRASOC_WHICH_CLK_GPU_GPC1,
+    TEGRASOC_WHICH_CLK_GPU_GPC2,
+    TEGRASOC_WHICH_CLK_GPU_LAST = TEGRASOC_WHICH_CLK_GPU_GPC2,
     TEGRASOC_WHICH_CLK_MAX, // TEGRASOC_WHICH_CLK_MAX is defined for boundary checks only.
 } TEGRASOC_WHICH_CLK;
 
@@ -283,7 +292,6 @@ typedef struct nv_usermap_access_params_s
     MemoryArea memArea;
     NvU64    access_start;
     NvU64    access_size;
-    NvU64    remap_prot_extra;
     NvBool   contig;
     NvU32    caching;
 } nv_usermap_access_params_t;
@@ -299,7 +307,6 @@ typedef struct nv_alloc_mapping_context_s {
     MemoryArea memArea;
     NvU64  access_start;
     NvU64  access_size;
-    NvU64  remap_prot_extra;
     NvU32  prot;
     NvBool valid;
     NvU32  caching;
@@ -567,24 +574,24 @@ typedef NV_STATUS (*nvPmaEvictRangeCallback)(void *, NvU64, NvU64, nvgpuGpuMemor
  * flags
  */
 
-#define NV_FLAG_OPEN                   0x0001
-#define NV_FLAG_EXCLUDE                0x0002
-#define NV_FLAG_CONTROL                0x0004
-// Unused                              0x0008
-#define NV_FLAG_SOC_DISPLAY            0x0010
-#define NV_FLAG_USES_MSI               0x0020
-#define NV_FLAG_USES_MSIX              0x0040
-#define NV_FLAG_PASSTHRU               0x0080
-#define NV_FLAG_SUSPENDED              0x0100
-#define NV_FLAG_SOC_IGPU               0x0200
+#define NV_FLAG_OPEN                    0x0001
+#define NV_FLAG_EXCLUDE                 0x0002
+#define NV_FLAG_CONTROL                 0x0004
+// Unused                               0x0008
+#define NV_FLAG_SOC_DISPLAY             0x0010
+#define NV_FLAG_USES_MSI                0x0020
+#define NV_FLAG_USES_MSIX               0x0040
+#define NV_FLAG_PASSTHRU                0x0080
+#define NV_FLAG_SUSPENDED               0x0100
+#define NV_FLAG_SOC_IGPU                0x0200
 /* To be set when an FLR needs to be triggered after device shut down. */
-#define NV_FLAG_TRIGGER_FLR            0x0400
-#define NV_FLAG_PERSISTENT_SW_STATE    0x0800
-#define NV_FLAG_IN_RECOVERY            0x1000
-// Unused                              0x2000
-#define NV_FLAG_UNBIND_LOCK            0x4000
+#define NV_FLAG_TRIGGER_FLR             0x0400
+#define NV_FLAG_PERSISTENT_SW_STATE     0x0800
+#define NV_FLAG_IN_RECOVERY             0x1000
+#define NV_FLAG_PCI_REMOVE_IN_PROGRESS  0x2000
+#define NV_FLAG_UNBIND_LOCK             0x4000
 /* To be set when GPU is not present on the bus, to help device teardown */
-#define NV_FLAG_IN_SURPRISE_REMOVAL    0x8000
+#define NV_FLAG_IN_SURPRISE_REMOVAL     0x8000
 
 typedef enum
 {
@@ -798,7 +805,7 @@ NV_STATUS  NV_API_CALL  nv_alias_pages           (nv_state_t *, NvU32, NvU64, Nv
 NV_STATUS  NV_API_CALL  nv_alloc_pages           (nv_state_t *, NvU32, NvU64, NvBool, NvU32, NvBool, NvBool, NvS32, NvU64 *, void **);
 NV_STATUS  NV_API_CALL  nv_free_pages            (nv_state_t *, NvU32, NvBool, NvU32, void *);
 
-NV_STATUS  NV_API_CALL  nv_register_user_pages   (nv_state_t *, NvU64, NvU64 *, void *, void **);
+NV_STATUS  NV_API_CALL  nv_register_user_pages   (nv_state_t *, NvU64, NvU64 *, void *, void **, NvBool);
 void       NV_API_CALL  nv_unregister_user_pages (nv_state_t *, NvU64, void **, void **);
 
 NV_STATUS NV_API_CALL   nv_register_peer_io_mem  (nv_state_t *, NvU64 *, NvU64, void **);
@@ -918,6 +925,15 @@ NV_STATUS NV_API_CALL nv_get_phys_pages          (void *, void *, NvU32 *);
 
 void      NV_API_CALL nv_get_disp_smmu_stream_ids (nv_state_t *, NvU32 *, NvU32 *);
 
+NV_STATUS NV_API_CALL nv_clk_get_handles         (nv_state_t *);
+void      NV_API_CALL nv_clk_clear_handles       (nv_state_t *);
+NV_STATUS NV_API_CALL nv_enable_clk              (nv_state_t *, TEGRASOC_WHICH_CLK);
+void      NV_API_CALL nv_disable_clk             (nv_state_t *, TEGRASOC_WHICH_CLK);
+NV_STATUS NV_API_CALL nv_get_curr_freq           (nv_state_t *, TEGRASOC_WHICH_CLK, NvU32 *);
+NV_STATUS NV_API_CALL nv_get_max_freq            (nv_state_t *, TEGRASOC_WHICH_CLK, NvU32 *);
+NV_STATUS NV_API_CALL nv_get_min_freq            (nv_state_t *, TEGRASOC_WHICH_CLK, NvU32 *);
+NV_STATUS NV_API_CALL nv_set_freq                (nv_state_t *, TEGRASOC_WHICH_CLK, NvU32);
+
 /*
  * ---------------------------------------------------------------------------
  *
@@ -945,6 +961,7 @@ NvBool     NV_API_CALL  rm_isr                   (nvidia_stack_t *, nv_state_t *
 void       NV_API_CALL  rm_isr_bh                (nvidia_stack_t *, nv_state_t *);
 void       NV_API_CALL  rm_isr_bh_unlocked       (nvidia_stack_t *, nv_state_t *);
 NvBool     NV_API_CALL  rm_is_msix_allowed       (nvidia_stack_t *, nv_state_t *);
+NvBool     NV_API_CALL  rm_wait_for_bar_firewall (nvidia_stack_t *, NvU32 domain, NvU8 bus, NvU8 device, NvU8 function, NvU16 devId);
 NV_STATUS  NV_API_CALL  rm_power_management      (nvidia_stack_t *, nv_state_t *, nv_pm_action_t);
 NV_STATUS  NV_API_CALL  rm_stop_user_channels    (nvidia_stack_t *, nv_state_t *);
 NV_STATUS  NV_API_CALL  rm_restart_user_channels (nvidia_stack_t *, nv_state_t *);
@@ -1043,6 +1060,9 @@ void       NV_API_CALL rm_acpi_nvpcf_notify(nvidia_stack_t *);
 
 NvBool     NV_API_CALL rm_is_altstack_in_use(void);
 
+void       NV_API_CALL rm_notify_gpu_addition(nvidia_stack_t *, nv_state_t *);
+void       NV_API_CALL rm_notify_gpu_removal(nvidia_stack_t *, nv_state_t *);
+
 /* vGPU VFIO specific functions */
 NV_STATUS  NV_API_CALL  nv_vgpu_create_request(nvidia_stack_t *, nv_state_t *, const NvU8 *, NvU32, NvU16 *,
                                                NvU32 *, NvU32 *, NvU32);
@@ -1057,7 +1077,7 @@ NV_STATUS  NV_API_CALL  nv_vgpu_process_vf_info(nvidia_stack_t *, nv_state_t *, 
 NV_STATUS  NV_API_CALL  nv_gpu_bind_event(nvidia_stack_t *, NvU32, NvBool *);
 NV_STATUS  NV_API_CALL  nv_gpu_unbind_event(nvidia_stack_t *, NvU32, NvBool *);
 
-NV_STATUS NV_API_CALL nv_get_usermap_access_params(nv_state_t*, nv_usermap_access_params_t*);
+NV_STATUS NV_API_CALL nv_check_usermap_access_params(nv_state_t*, const nv_usermap_access_params_t*);
 nv_soc_irq_type_t NV_API_CALL nv_get_current_irq_type(nv_state_t*);
 void       NV_API_CALL  nv_flush_coherent_cpu_cache_range(nv_state_t *nv, NvU64 cpu_virtual, NvU64 size);
 

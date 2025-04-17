@@ -24,15 +24,52 @@
 #ifndef __gb100_clc96f_h__
 #define __gb100_clc96f_h__
 
+#define  BLACKWELL_CHANNEL_GPFIFO_A                           (0x0000C96F)
+
 typedef volatile struct Nvc96fControl_struct {
  NvU32 Ignored00[0x23];        /*                                  0000-008b*/
  NvU32 GPPut;                   /* GP FIFO put offset               008c-008f*/
  NvU32 Ignored01[0x5c];
 } Nvc96fControl, BlackwellAControlGPFifo;
 
-#define  BLACKWELL_CHANNEL_GPFIFO_A                           (0x0000C96F)
-
 #define NVC96F_SET_OBJECT                                          (0x00000000)
+#define NVC96F_MEM_OP_A                                            (0x00000028)
+#define NVC96F_MEM_OP_A_TLB_INVALIDATE_INVALIDATION_SIZE                   5:0  // Used to specify size of invalidate, used for invalidates which are not of the REPLAY_CANCEL_TARGETED type
+#define NVC96F_MEM_OP_A_TLB_INVALIDATE_INVAL_SCOPE                         7:6  // only relevant for invalidates with NVC96F_MEM_OP_C_TLB_INVALIDATE_REPLAY_NONE for invalidating  link TLB only, or non-link TLB only or all TLBs
+#define NVC96F_MEM_OP_A_TLB_INVALIDATE_INVAL_SCOPE_NON_LINK_TLBS             2
+#define NVC96F_MEM_OP_A_TLB_INVALIDATE_SYSMEMBAR                         11:11
+#define NVC96F_MEM_OP_A_TLB_INVALIDATE_SYSMEMBAR_EN                 0x00000001
+#define NVC96F_MEM_OP_A_TLB_INVALIDATE_SYSMEMBAR_DIS                0x00000000
+#define NVC96F_MEM_OP_A_TLB_INVALIDATE_TARGET_ADDR_LO                    31:12
+#define NVC96F_MEM_OP_B                                            (0x0000002c)
+#define NVC96F_MEM_OP_B_TLB_INVALIDATE_TARGET_ADDR_HI                     31:0
+#define NVC96F_MEM_OP_C                                            (0x00000030)
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_PDB                                 0:0
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_PDB_ONE                      0x00000000
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_PDB_ALL                      0x00000001  // Probably nonsensical for MMU_TLB_INVALIDATE_TARGETED
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_GPC                                 1:1
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_GPC_ENABLE                   0x00000000
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_GPC_DISABLE                  0x00000001
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_REPLAY                              4:2  // only relevant if GPC ENABLE
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_REPLAY_NONE                  0x00000000
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_ACK_TYPE                            6:5  // only relevant if GPC ENABLE
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_ACK_TYPE_NONE                0x00000000
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_ACK_TYPE_GLOBALLY            0x00000001
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_PAGE_TABLE_LEVEL                    9:7  // Invalidate affects this level and all below
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_PAGE_TABLE_LEVEL_ALL         0x00000000  // Invalidate tlb caches at all levels of the page table
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_PAGE_TABLE_LEVEL_PTE_ONLY    0x00000001
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_PAGE_TABLE_LEVEL_UP_TO_PDE4  0x00000006
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_PDB_APERTURE                          11:10  // only relevant if PDB_ONE
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_PDB_APERTURE_VID_MEM             0x00000000
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_PDB_APERTURE_SYS_MEM_COHERENT    0x00000002
+#define NVC96F_MEM_OP_C_TLB_INVALIDATE_PDB_ADDR_LO                       31:12  // only relevant if PDB_ONE
+
+#define NVC96F_MEM_OP_D                                            (0x00000034)
+#define NVC96F_MEM_OP_D_TLB_INVALIDATE_PDB_ADDR_HI                        26:0  // only relevant if PDB_ONE
+#define NVC96F_MEM_OP_D_OPERATION                                        31:27
+#define NVC96F_MEM_OP_D_OPERATION_MMU_TLB_INVALIDATE                0x00000009
+#define NVC96F_MEM_OP_D_OPERATION_MMU_TLB_INVALIDATE_TARGETED       0x0000000a
+
 #define NVC96F_SEM_ADDR_LO                                         (0x0000005c)
 #define NVC96F_SEM_ADDR_LO_OFFSET                                         31:2
 #define NVC96F_SEM_ADDR_HI                                         (0x00000060)

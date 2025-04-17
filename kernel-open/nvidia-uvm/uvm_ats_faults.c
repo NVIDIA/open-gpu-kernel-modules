@@ -58,37 +58,6 @@ static NV_STATUS service_ats_requests(uvm_gpu_va_space_t *gpu_va_space,
     bool write = (access_type >= UVM_FAULT_ACCESS_TYPE_WRITE);
     bool is_fault_service_type = (service_type == UVM_ATS_SERVICE_TYPE_FAULTS);
     bool is_prefetch_faults = (is_fault_service_type && (access_type == UVM_FAULT_ACCESS_TYPE_PREFETCH));
-    uvm_populate_permissions_t populate_permissions = is_fault_service_type ?
-                                            (write ? UVM_POPULATE_PERMISSIONS_WRITE : UVM_POPULATE_PERMISSIONS_ANY) :
-                                            UVM_POPULATE_PERMISSIONS_INHERIT;
-
-
-    // Request uvm_migrate_pageable() to touch the corresponding page after
-    // population.
-    // Under virtualization ATS provides two translations:
-    // 1) guest virtual -> guest physical
-    // 2) guest physical -> host physical
-    //
-    // The overall ATS translation will fault if either of those translations is
-    // invalid. The pin_user_pages() call within uvm_migrate_pageable() call
-    // below handles translation #1, but not #2. We don't know if we're running
-    // as a guest, but in case we are we can force that translation to be valid
-    // by touching the guest physical address from the CPU. If the translation
-    // is not valid then the access will cause a hypervisor fault. Note that
-    // dma_map_page() can't establish mappings used by GPU ATS SVA translations.
-    // GPU accesses to host physical addresses obtained as a result of the
-    // address translation request uses the CPU address space instead of the
-    // IOMMU address space since the translated host physical address isn't
-    // necessarily an IOMMU address. The only way to establish guest physical to
-    // host physical mapping in the CPU address space is to touch the page from
-    // the CPU.
-    //
-    // We assume that the hypervisor mappings are all VM_PFNMAP, VM_SHARED, and
-    // VM_WRITE, meaning that the mappings are all granted write access on any
-    // fault and that the kernel will never revoke them.
-    // drivers/vfio/pci/vfio_pci_nvlink2.c enforces this. Thus we can assume
-    // that a read fault is always sufficient to also enable write access on the
-    // guest translation.
 
     uvm_migrate_args_t uvm_migrate_args =
     {
@@ -98,8 +67,8 @@ static NV_STATUS service_ats_requests(uvm_gpu_va_space_t *gpu_va_space,
         .dst_node_id                        = ats_context->residency_node,
         .start                              = start,
         .length                             = length,
-        .populate_permissions               = populate_permissions,
-        .touch                              = is_fault_service_type,
+        .populate_permissions               = UVM_POPULATE_PERMISSIONS_INHERIT,
+        .populate_flags                     = UVM_POPULATE_PAGEABLE_FLAG_SKIP_PROT_CHECK,
         .skip_mapped                        = is_fault_service_type,
         .populate_on_cpu_alloc_failures     = is_fault_service_type,
         .populate_on_migrate_vma_failures   = is_fault_service_type,
@@ -114,6 +83,13 @@ static NV_STATUS service_ats_requests(uvm_gpu_va_space_t *gpu_va_space,
         .gpus_to_check_for_nvlink_errors    = NULL,
         .fail_on_unresolved_sto_errors      = !is_fault_service_type || is_prefetch_faults,
     };
+
+    if (is_fault_service_type) {
+        uvm_migrate_args.populate_permissions = (write ? UVM_POPULATE_PERMISSIONS_WRITE : UVM_POPULATE_PERMISSIONS_ANY);
+
+        // If we're faulting, let the GPU access special vmas
+        uvm_migrate_args.populate_flags |= UVM_POPULATE_PAGEABLE_FLAG_ALLOW_SPECIAL;
+    }
 
     UVM_ASSERT(uvm_ats_can_service_faults(gpu_va_space, mm));
 
@@ -533,8 +509,20 @@ static NV_STATUS uvm_ats_service_faults_region(uvm_gpu_va_space_t *gpu_va_space,
                                   access_type,
                                   UVM_ATS_SERVICE_TYPE_FAULTS,
                                   ats_context);
-    if (status != NV_OK)
+    if (status != NV_OK) {
+        // This condition can occur if we unexpectedly fault on a vma that
+        // doesn't support faulting (or at least doesn't support
+        // pin_user_pages). This may be an incorrect mapping setup from the
+        // vma's owning driver, a hardware bug, or just that the owning driver
+        // didn't expect a device fault. Either way, we don't want to consider
+        // this a global error so don't propagate it, but also don't indicate
+        // that the faults were serviced. That way the caller knows to cancel
+        // them precisely.
+        if (status == NV_ERR_INVALID_ADDRESS)
+            return NV_OK;
+
         return status;
+    }
 
     uvm_page_mask_region_fill(faults_serviced_mask, region);
 
@@ -689,12 +677,14 @@ bool uvm_ats_check_in_gmmu_region(uvm_va_space_t *va_space, NvU64 address, uvm_v
         if (next->node.start <= gmmu_region_base + UVM_GMMU_ATS_GRANULARITY - 1)
             return true;
 
-        prev = uvm_va_range_container(uvm_range_tree_prev(&va_space->va_range_tree, &next->node));
+        prev = uvm_va_range_gmmu_mappable_prev(next);
     }
     else {
         // No VA range exists after address, so check the last VA range in the
         // tree.
         prev = uvm_va_range_container(uvm_range_tree_last(&va_space->va_range_tree));
+        while (prev && !uvm_va_range_is_gmmu_mappable(prev))
+            prev = uvm_va_range_gmmu_mappable_prev(prev);
     }
 
     return prev && (prev->node.end >= gmmu_region_base);

@@ -102,6 +102,11 @@ MODULE_PARM_DESC(malloc_verbose, "Report information about malloc calls on modul
 static bool malloc_verbose = false;
 module_param_named(malloc_verbose, malloc_verbose, bool, 0400);
 
+MODULE_PARM_DESC(conceal_vrr_caps, 
+                 "Conceal all display VRR capabilities");
+static bool conceal_vrr_caps = false;
+module_param_named(conceal_vrr_caps, conceal_vrr_caps, bool, 0400);
+
 /* Fail allocating the RM core channel for NVKMS using the i-th method (see
  * FailAllocCoreChannelMethod). Failures not using the i-th method are ignored. */
 MODULE_PARM_DESC(fail_alloc_core_channel, "Control testing for hardware core channel allocation failure");
@@ -135,7 +140,12 @@ NvBool nvkms_test_fail_alloc_core_channel(
 
     return NV_TRUE;
 }
-    
+
+NvBool nvkms_conceal_vrr_caps(void)
+{
+    return conceal_vrr_caps;
+}
+
 NvBool nvkms_output_rounding_fix(void)
 {
     return output_rounding_fix;

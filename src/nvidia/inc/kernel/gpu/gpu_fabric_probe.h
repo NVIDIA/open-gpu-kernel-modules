@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -60,6 +60,7 @@ NV_STATUS gpuFabricProbeGetEgmGpaAddress(GPU_FABRIC_PROBE_INFO_KERNEL *pInfo, Nv
 NV_STATUS gpuFabricProbeGetNumProbeReqs(GPU_FABRIC_PROBE_INFO_KERNEL *pInfo, NvU64 *numProbes);
 NV_STATUS gpuFabricProbeGetFabricCliqueId(GPU_FABRIC_PROBE_INFO_KERNEL *pInfo, NvU32 *pFabricCliqueId);
 NV_STATUS gpuFabricProbeGetFabricHealthStatus(GPU_FABRIC_PROBE_INFO_KERNEL *pInfo, NvU32 *pFabricHealthStatusMask);
+NV_STATUS gpuFabricProbeGetRemapTableIndex(GPU_FABRIC_PROBE_INFO_KERNEL *pInfo, NvU32 *pRemapTableIdx);
 
 NvBool gpuFabricProbeIsReceived(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel);
 NvBool gpuFabricProbeIsSuccess(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel);
@@ -78,5 +79,6 @@ NV_STATUS gpuFabricProbeReceivePhysicalCallback(NvU32 gpuInstance, NvU64 *pNotif
 NV_STATUS gpuFabricProbeReceiveUpdatePhysicalCallback(NvU32 gpuInstance, NvU64 *pNotifyGfIdMask,
             NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pInbandRcvParams);
 NV_STATUS gpuFabricProbeGetGfid(OBJGPU *pGpu, NvU32 *pGfid);
+NvBool gpuFabricProbeIsInProgress(OBJGPU *pGpu);
 
 #endif // GPU_FABRIC_PROBE_H

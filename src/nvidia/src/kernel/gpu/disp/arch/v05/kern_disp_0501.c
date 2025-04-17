@@ -41,10 +41,17 @@
 // Local help functions and strctures/macros for NVD5 DP IMP.
 
 // All bpp / effective bpp are multiplied by this scaler to avoid floating operation.
-#define BPP_SCALER          256U
+#define BPPX256_SCALER       256U
 #define BPPX16_SCALER        16U
 #define BPPX32_SCALER        32U
 #define LOGICAL_LANES         4U
+
+//
+// DP1: 8b/10b, we have 1 byte per logic lane.
+// DP2: 128b/132b, we have only 4 bytes per lane.
+//
+#define DP1_BYTE_PER_LOGIC_LANE    1U
+#define DP2_BYTES_PER_LOGIC_LANE   4U
 
 //
 // DP1: 8b/10b,    1 symbol is 8 bits.
@@ -57,6 +64,7 @@
 #define DP1_CODING_SIZE      10U
 
 #define GET_SYMBOL_SIZE(bIsDp2xChannelCoding) ((bIsDp2xChannelCoding) ? DP2_SYMBOL_SIZE : DP1_SYMBOL_SIZE)
+#define BYTES_PER_LOGIC_LANE(bIsDp2xChannelCoding) ((bIsDp2xChannelCoding) ? DP2_BYTES_PER_LOGIC_LANE : DP1_BYTE_PER_LOGIC_LANE)
 
 #define FEC_PARITY_SYM(lanes, x) ((lanes) == 1 ? (NV_MIN(((x) - 1) % 512, 12) + ((x) - 1) / 512 * 12 + 1) : \
                                                  (NV_MIN(((x) - 1) % 256,  6) + ((x) - 1) / 256 *  6 + 1))
@@ -78,35 +86,38 @@ typedef enum
     EIGHT_CHANNELS = 8
 } DP_AUDIO_CHANNELS;
 
-static NvU32 _calcEffectiveBpp
+static NvU32 _calcEffectiveBppxScalerNonDsc
 (
     NvU32   hActive,
     NvU32   sourceBpp,
     NvBool  bIsDp2xChannelCoding,
-    NvBool  bEnableDSC,
-    NvU32   sliceWidth,
-    NvU32   chunkSize
+    NvBool  bMultiStream,
+    NvU32   laneCount
 )
 {
-    NvU32 sliceNum              = 0U;
-    NvU32 symbolCyclePerSlice   = 0U;
-    NvU32 totalSymbolCycles     = 0U;
+    NvU32 totalSymbols          = 0U;
     NvU32 effectiveBppxScaler   = 0U;
+    NvU32 totalSymbolsPerLane   = 0U;
+    NvU32 logicalLanes          = LOGICAL_LANES;
 
     NvU32 symbolSize   = GET_SYMBOL_SIZE(bIsDp2xChannelCoding);
 
-    if (bEnableDSC)
+     //
+    // Logic lane count values for :
+    // 1. 128b/132b : 4
+    // 2. 8b/10 :
+    //     a. MST : 4
+    //     B. SST : 1, 2 or 4 based on lane Count
+    //
+    if (!bMultiStream && !bIsDp2xChannelCoding)
     {
-        sliceNum            = (NvU32)NV_CEIL(hActive, sliceWidth);
-        symbolCyclePerSlice = (NvU32)NV_CEIL(chunkSize, (symbolSize * LOGICAL_LANES / 8U)) + 1U;
-        totalSymbolCycles   = symbolCyclePerSlice * sliceNum;
+        logicalLanes = laneCount;
     }
-    else
-    {
-        NvU32 bitsPerLane = (NvU32)NV_CEIL(hActive, LOGICAL_LANES) * sourceBpp;
-        totalSymbolCycles = (NvU32)NV_CEIL(bitsPerLane, symbolSize);
-    }
-    effectiveBppxScaler   = (NvU32)NV_CEIL((totalSymbolCycles * (symbolSize * LOGICAL_LANES * BPP_SCALER)), hActive);
+
+    NvU32 bitsPerLane   = (NvU32)NV_CEIL(hActive, logicalLanes) * sourceBpp;
+    totalSymbolsPerLane = (NvU32)NV_CEIL(bitsPerLane, symbolSize);
+    totalSymbols        = totalSymbolsPerLane * logicalLanes;
+    effectiveBppxScaler = (NvU32)NV_CEIL((totalSymbols * symbolSize * BPPX256_SCALER), hActive);
 
     return effectiveBppxScaler;
 }
@@ -119,7 +130,7 @@ static NvU32 _calcDpMinHBlankMST
 {
     NvU32 symbolCounts = bIsDp2xChannelCoding ? 3U : 5U;
     NvU32 symbolSize   = GET_SYMBOL_SIZE(bIsDp2xChannelCoding);
-    return NV_CEIL(symbolCounts * symbolSize * LOGICAL_LANES * BPP_SCALER, bppXScaler);
+    return NV_CEIL(symbolCounts * symbolSize * LOGICAL_LANES * BPPX256_SCALER, bppXScaler);
 }
 
 static NvU32 _getSdpSymbolsMST
@@ -283,7 +294,6 @@ static NvU32 _calcWatermark8b10bSST
     NvU32   laneCount,
     NvBool  bFecEnabled,
     NvU32   scaledBpp,
-    NvBool  bIsYUV422,
     NvBool  bIsDscEnabled
 )
 {
@@ -298,7 +308,7 @@ static NvU32 _calcWatermark8b10bSST
 
     if (bFecEnabled)
     {
-        s = (laneCount == 1) ? 15 : 10;
+        s = (laneCount == 1) ? 18 : 13;
     }
     else
     {
@@ -307,7 +317,7 @@ static NvU32 _calcWatermark8b10bSST
 
     if (bIsDscEnabled)
     {
-        bppScaler = bIsYUV422 ? BPPX32_SCALER : BPPX16_SCALER;
+        bppScaler = BPPX16_SCALER;
     }
 
     ratio_x1000 = ((NvS64) pClkKhz * scaledBpp * (bFecEnabled ? 1024 : 1000)) /
@@ -428,38 +438,30 @@ kdispComputeDpModeSettings_v05_01
     DPIMPINFO          *dpInfo
 )
 {
-    NvU32  hActive               = pDpModesetData->SetRasterBlankStartX -
-                                   pDpModesetData->SetRasterBlankEndX;
+    NvU32 hActive               = pDpModesetData->SetRasterBlankStartX -
+                                  pDpModesetData->SetRasterBlankEndX;
 
-    NvU32  hBlank                = pDpModesetData->SetRasterSizeWidth - hActive;
+    NvU32 hBlank                = pDpModesetData->SetRasterSizeWidth - hActive;
 
-    NvU32  effectiveBpp          = 0U;
-    NvU32  symbolSize            = GET_SYMBOL_SIZE(pDpModesetData->bDP2xChannelCoding);
-    NvU64  linkFreqHz            = pDpModesetData->dp2LinkBw ?
-                                   DP_LINK_RATE_10M_TO_BPS((NvU64)pDpModesetData->dp2LinkBw) :
-                                   DP_LINK_RATE_270M_TO_BPS((NvU64)pDpModesetData->linkBw);
+    NvU32 effectiveBppxScaler   = 0U;
+    NvU32 symbolSize            = GET_SYMBOL_SIZE(pDpModesetData->bDP2xChannelCoding);
+    NvU64 linkFreqHz            = pDpModesetData->dp2LinkBw ?
+                                  DP_LINK_RATE_10M_TO_BPS((NvU64)pDpModesetData->dp2LinkBw) :
+                                  DP_LINK_RATE_270M_TO_BPS((NvU64)pDpModesetData->linkBw);
 
-    NvU32  sliceCount            = 0U;
-    NvU32  chunkSize             = 0U;
-    NvU32  sliceWidth            = 0U;
+    NvU32 sliceCount            = 0U;
+    NvU32 chunkSize             = 0U;
+    NvU32 sliceWidth            = 0U;
 
-    NvU32  rgPacketMode          = 0U;
-    NvU32  pclkFactor            = 0U;
+    NvU32 rgPacketMode          = 0U;
+    NvU32 pclkFactor            = 0U;
 
     // depth is multiplied by 16 in case of DSC enable
-    NvU32  dscFactor             = pDpModesetData->bDscEnable ? 16U : 1U;
-    NvU64  linkDataRate          = 0U;
-    NvS32  hBlankSym             = 0U;
-    NvS32  vBlankSym             = 0U;
-    NvU32  msaSym                = 0U;
-    NvBool bIsYUV422             = NV_FALSE;
-
-    if (pDpModesetData->bDscEnable &&
-        pDpModesetData->colorFormat == dpColorFormat_YCbCr422_Native)
-    {
-        dscFactor = 32;
-        bIsYUV422 = NV_TRUE;
-    }
+    NvU32  dscFactor            = pDpModesetData->bDscEnable ? 16U : 1U;
+    NvU64  linkDataRate         = 0U;
+    NvS32  hBlankSym            = 0U;
+    NvS32  vBlankSym            = 0U;
+    NvU32  msaSym               = 0U;
 
     dpInfo->bEnhancedFraming = pDpModesetData->bEnhancedFraming;
 
@@ -491,17 +493,50 @@ kdispComputeDpModeSettings_v05_01
     linkDataRate = _convertLinkRateToDataRate(pDpModesetData->dp2LinkBw,
                                              pDpModesetData->bDP2xChannelCoding,
                                              pDpModesetData->bFecEnable);
-    dpInfo->linkTotalDataRate = 8 * linkDataRate * pDpModesetData->laneCount * dscFactor;
+
+    dpInfo->linkTotalDataRate = 8 * linkDataRate * pDpModesetData->laneCount;
+
+    // SST
+    if (!(pDpModesetData->bMultiStream))
+    {
+        if (pDpModesetData->bDscEnable)
+        {
+            effectiveBppxScaler = pDpModesetData->bpp * BPPX16_SCALER;
+        }
+        else
+        {
+            if (pDpModesetData->bDisableEffBppSST8b10b && !pDpModesetData->bDP2xChannelCoding)
+            {
+                effectiveBppxScaler = pDpModesetData->bpp * BPPX256_SCALER;
+            }
+            else
+            {
+                effectiveBppxScaler = _calcEffectiveBppxScalerNonDsc(hActive, pDpModesetData->bpp, pDpModesetData->bDP2xChannelCoding,
+                                                                     pDpModesetData->bMultiStream, pDpModesetData->laneCount);        
+            }
+        }
+    }
+    else
+    {
+        effectiveBppxScaler = pDpModesetData->bpp;
+    }
+
+    dpInfo->effectiveBppxScaler = effectiveBppxScaler;
 
     if (pDpModesetData->bDP2xChannelCoding || pDpModesetData->bMultiStream)
     {
-        // 8b/10b MST or 128b/132b
-        effectiveBpp        = _calcEffectiveBpp(hActive, pDpModesetData->bpp, pDpModesetData->bDP2xChannelCoding,
-                                                pDpModesetData->bDscEnable, sliceWidth, chunkSize);
 
-        dpInfo->minHBlank   = _calcDpMinHBlankMST(effectiveBpp, pDpModesetData->bDP2xChannelCoding);
+        dpInfo->minHBlank   = _calcDpMinHBlankMST(effectiveBppxScaler, pDpModesetData->bDP2xChannelCoding);
 
-        dpInfo->hBlankSym = (hBlank * pDpModesetData->bpp) / (LOGICAL_LANES * symbolSize * dscFactor);
+        if (pDpModesetData->bMultiStream)
+        {
+            dpInfo->hBlankSym = (hBlank * pDpModesetData->bpp) / (LOGICAL_LANES * symbolSize * BPPX256_SCALER);
+        }
+        else
+        {
+            dpInfo->hBlankSym = (hBlank * pDpModesetData->bpp) / (LOGICAL_LANES * symbolSize * dscFactor);
+        }
+
         if (pDpModesetData->bDP2xChannelCoding)
         {
             // exclude BS/BE
@@ -537,6 +572,7 @@ kdispComputeDpModeSettings_v05_01
     else
     {
         // 8b/10b SST.
+
         // (VBID+MVID+MAUD)
         const NvU32 symbolCount             = 3U;
         // Per spec, each symbol will be repeated 4 times.
@@ -557,7 +593,7 @@ kdispComputeDpModeSettings_v05_01
         {
             NvU32 HActivePerLane = NV_CEIL(hActive, pDpModesetData->laneCount);
             //padding
-            blankingBits += NV_CEIL(HActivePerLane * pDpModesetData->bpp * BPP_SCALER, DP1_SYMBOL_SIZE * BPP_SCALER) * DP1_SYMBOL_SIZE * pDpModesetData->laneCount -
+            blankingBits += NV_CEIL(HActivePerLane * pDpModesetData->bpp * BPPX256_SCALER, DP1_SYMBOL_SIZE * BPPX256_SCALER) * DP1_SYMBOL_SIZE * pDpModesetData->laneCount -
                             (hActive * pDpModesetData->bpp); //+blankingBits_nonDSC_padding
         }
 
@@ -643,13 +679,12 @@ kdispComputeDpModeSettings_v05_01
         {
             dpInfo->vBlankSym = vBlankSym;
         }
-
+        
         dpInfo->waterMark = _calcWatermark8b10bSST(pDpModesetData->PClkFreqHz,
                                                    linkFreqHz,
                                                    pDpModesetData->laneCount,
                                                    pDpModesetData->bFecEnable,
                                                    pDpModesetData->bpp,
-                                                   bIsYUV422,
                                                    pDpModesetData->bDscEnable);
     }
 

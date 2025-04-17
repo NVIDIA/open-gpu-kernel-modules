@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -90,7 +90,11 @@
 #define NV_PF0_DVSEC0_CXL_HEADER_1_DVSEC_VENDOR_ID_DEFAULT                                           0x00001e98          /* R-I-V */
 #define NV_PF0_DVSEC0_CXL_HEADER_1_DVSEC_LENGTH_DEFAULT                                              0x0000003c          /* R-I-V */
 #define NV_PF0_DVSEC0_CAPABILITY_HEADER                                                              0x00000af0          /* R--4R */
+#define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_1                                                 0x00000af4          /* R--4R */
 #define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_1_NV_DVSEC0_LENGTH_DEFAULT                        0x0000001c          /* R-I-V */
+#define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_2_AND_GENERAL                                     0x00000af8          /* R--4R */
+#define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_2_AND_GENERAL_BAR_FIREWALL_STATUS                 20:20               /* R-IVF */
+#define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_2_AND_GENERAL_BAR_FIREWALL_STATUS_DEFAULT         0x00000001          /* R-I-V */
 #define NV_PF0_DVSEC8_CAP_HEADER                                                                     0x000003b8          /* R--4R */
 #define NV_PF0_DVSEC8_REGISTER_BLOCK_3_REGISTER_OFFSET_HIGH                                          0x000003d8          /* R--4R */
 #define NV_PF0_DVSEC8_HEADER_1_DVSEC_VENDOR_ID_DEFAULT                                               0x00001e98          /* R-I-V */

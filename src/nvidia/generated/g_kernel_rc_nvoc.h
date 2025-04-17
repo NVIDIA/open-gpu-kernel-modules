@@ -1,13 +1,15 @@
 
 #ifndef _G_KERNEL_RC_NVOC_H_
 #define _G_KERNEL_RC_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -89,15 +91,19 @@ typedef enum {
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__KernelRc;
+struct NVOC_METADATA__OBJENGSTATE;
 struct NVOC_VTABLE__KernelRc;
 
 
 struct KernelRc {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__KernelRc *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__KernelRc *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -109,6 +115,8 @@ struct KernelRc {
 
     // Vtable with 1 per-object function pointer
     void (*__krcWatchdogRecovery__)(struct OBJGPU *, struct KernelRc * /*this*/);  // halified (2 hals) body
+
+    // 1 PDB property
 
     // Data members
     NvBool bRobustChannelsEnabled;
@@ -123,10 +131,8 @@ struct KernelRc {
 };
 
 
-// Metadata including vtable with 14 function pointers plus superclass metadata
+// Vtable with 14 per-class function pointers
 struct NVOC_VTABLE__KernelRc {
-    const struct NVOC_VTABLE__OBJENGSTATE OBJENGSTATE;    // (engstate) 14 function pointers
-
     NV_STATUS (*__krcConstructEngine__)(struct OBJGPU *, struct KernelRc * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
     void (*__krcInitMissing__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
     NV_STATUS (*__krcStatePreInitLocked__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
@@ -141,6 +147,13 @@ struct NVOC_VTABLE__KernelRc {
     NV_STATUS (*__krcStatePostUnload__)(struct OBJGPU *, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
     void (*__krcStateDestroy__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
     NvBool (*__krcIsPresent__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
+};
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__KernelRc {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
+    const struct NVOC_VTABLE__KernelRc vtable;
 };
 
 #ifndef __NVOC_CLASS_KernelRc_TYPEDEF__
@@ -159,10 +172,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelRc;
     ((pThis)->__nvoc_pbase_KernelRc)
 
 #ifdef __nvoc_kernel_rc_h_disabled
-#define __dynamicCast_KernelRc(pThis) ((KernelRc*)NULL)
+#define __dynamicCast_KernelRc(pThis) ((KernelRc*) NULL)
 #else //__nvoc_kernel_rc_h_disabled
 #define __dynamicCast_KernelRc(pThis) \
-    ((KernelRc*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(KernelRc)))
+    ((KernelRc*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(KernelRc)))
 #endif //__nvoc_kernel_rc_h_disabled
 
 // Property macros
@@ -177,41 +190,41 @@ NV_STATUS __nvoc_objCreate_KernelRc(KernelRc**, Dynamic*, NvU32);
 
 
 // Wrapper macros
-#define krcConstructEngine_FNPTR(pKernelRc) pKernelRc->__nvoc_vtable->__krcConstructEngine__
+#define krcConstructEngine_FNPTR(pKernelRc) pKernelRc->__nvoc_metadata_ptr->vtable.__krcConstructEngine__
 #define krcConstructEngine(pGpu, pKernelRc, engDescriptor) krcConstructEngine_DISPATCH(pGpu, pKernelRc, engDescriptor)
 #define krcWatchdogRecovery_FNPTR(pKernelRc) pKernelRc->__krcWatchdogRecovery__
 #define krcWatchdogRecovery(pGpu, pKernelRc) krcWatchdogRecovery_DISPATCH(pGpu, pKernelRc)
 #define krcWatchdogRecovery_HAL(pGpu, pKernelRc) krcWatchdogRecovery_DISPATCH(pGpu, pKernelRc)
-#define krcInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateInitMissing__
+#define krcInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define krcInitMissing(pGpu, pEngstate) krcInitMissing_DISPATCH(pGpu, pEngstate)
-#define krcStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitLocked__
+#define krcStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
 #define krcStatePreInitLocked(pGpu, pEngstate) krcStatePreInitLocked_DISPATCH(pGpu, pEngstate)
-#define krcStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitUnlocked__
+#define krcStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__
 #define krcStatePreInitUnlocked(pGpu, pEngstate) krcStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define krcStateInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateInitLocked__
+#define krcStateInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__
 #define krcStateInitLocked(pGpu, pEngstate) krcStateInitLocked_DISPATCH(pGpu, pEngstate)
-#define krcStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateInitUnlocked__
+#define krcStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__
 #define krcStateInitUnlocked(pGpu, pEngstate) krcStateInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define krcStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreLoad__
+#define krcStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__
 #define krcStatePreLoad(pGpu, pEngstate, arg3) krcStatePreLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define krcStateLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateLoad__
+#define krcStateLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateLoad__
 #define krcStateLoad(pGpu, pEngstate, arg3) krcStateLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define krcStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePostLoad__
+#define krcStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostLoad__
 #define krcStatePostLoad(pGpu, pEngstate, arg3) krcStatePostLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define krcStatePreUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreUnload__
+#define krcStatePreUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreUnload__
 #define krcStatePreUnload(pGpu, pEngstate, arg3) krcStatePreUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define krcStateUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateUnload__
+#define krcStateUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateUnload__
 #define krcStateUnload(pGpu, pEngstate, arg3) krcStateUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define krcStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePostUnload__
+#define krcStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__
 #define krcStatePostUnload(pGpu, pEngstate, arg3) krcStatePostUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define krcStateDestroy_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateDestroy__
+#define krcStateDestroy_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__
 #define krcStateDestroy(pGpu, pEngstate) krcStateDestroy_DISPATCH(pGpu, pEngstate)
-#define krcIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateIsPresent__
+#define krcIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__
 #define krcIsPresent(pGpu, pEngstate) krcIsPresent_DISPATCH(pGpu, pEngstate)
 
 // Dispatch functions
 static inline NV_STATUS krcConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, ENGDESCRIPTOR engDescriptor) {
-    return pKernelRc->__nvoc_vtable->__krcConstructEngine__(pGpu, pKernelRc, engDescriptor);
+    return pKernelRc->__nvoc_metadata_ptr->vtable.__krcConstructEngine__(pGpu, pKernelRc, engDescriptor);
 }
 
 static inline void krcWatchdogRecovery_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pKernelRc) {
@@ -219,55 +232,55 @@ static inline void krcWatchdogRecovery_DISPATCH(struct OBJGPU *pGpu, struct Kern
 }
 
 static inline void krcInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    pEngstate->__nvoc_vtable->__krcInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_metadata_ptr->vtable.__krcInitMissing__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS krcStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    return pEngstate->__nvoc_vtable->__krcStatePreInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStatePreInitLocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS krcStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    return pEngstate->__nvoc_vtable->__krcStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS krcStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    return pEngstate->__nvoc_vtable->__krcStateInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStateInitLocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS krcStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    return pEngstate->__nvoc_vtable->__krcStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStateInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS krcStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__krcStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS krcStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__krcStateLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStateLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS krcStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__krcStatePostLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS krcStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__krcStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS krcStateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__krcStateUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStateUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS krcStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__krcStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline void krcStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    pEngstate->__nvoc_vtable->__krcStateDestroy__(pGpu, pEngstate);
+    pEngstate->__nvoc_metadata_ptr->vtable.__krcStateDestroy__(pGpu, pEngstate);
 }
 
 static inline NvBool krcIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    return pEngstate->__nvoc_vtable->__krcIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__krcIsPresent__(pGpu, pEngstate);
 }
 
 NV_STATUS krcErrorWriteNotifier_CPU(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelChannel *pKernelChannel, NvU32 exceptType, RM_ENGINE_TYPE localRmEngineType, NV_STATUS notifierStatus, NvU32 *pFlushFlags);

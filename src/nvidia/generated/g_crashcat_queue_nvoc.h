@@ -1,13 +1,15 @@
 
 #ifndef _G_CRASHCAT_QUEUE_NVOC_H_
 #define _G_CRASHCAT_QUEUE_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -94,10 +96,18 @@ typedef struct
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__CrashCatQueue;
+struct NVOC_METADATA__Object;
+
+
 struct CrashCatQueue {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__CrashCatQueue *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -110,6 +120,13 @@ struct CrashCatQueue {
     CrashCatQueueConfig PRIVATE_FIELD(config);
     struct CrashCatEngine *PRIVATE_FIELD(pEngine);
     void *PRIVATE_FIELD(pMapping);
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__CrashCatQueue {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
 };
 
 #ifndef __NVOC_CLASS_CrashCatQueue_TYPEDEF__
@@ -128,15 +145,15 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatQueue;
     ((pThis)->__nvoc_pbase_CrashCatQueue)
 
 #ifdef __nvoc_crashcat_queue_h_disabled
-#define __dynamicCast_CrashCatQueue(pThis) ((CrashCatQueue*)NULL)
+#define __dynamicCast_CrashCatQueue(pThis) ((CrashCatQueue*) NULL)
 #else //__nvoc_crashcat_queue_h_disabled
 #define __dynamicCast_CrashCatQueue(pThis) \
-    ((CrashCatQueue*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(CrashCatQueue)))
+    ((CrashCatQueue*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(CrashCatQueue)))
 #endif //__nvoc_crashcat_queue_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_CrashCatQueue(CrashCatQueue**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_CrashCatQueue(CrashCatQueue**, Dynamic*, NvU32, CrashCatQueueConfig * arg_pQueueConfig);
+NV_STATUS __nvoc_objCreate_CrashCatQueue(CrashCatQueue**, Dynamic*, NvU32, CrashCatQueueConfig *arg_pQueueConfig);
 #define __objCreate_CrashCatQueue(ppNewObj, pParent, createFlags, arg_pQueueConfig) \
     __nvoc_objCreate_CrashCatQueue((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pQueueConfig)
 

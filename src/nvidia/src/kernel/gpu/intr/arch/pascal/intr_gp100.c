@@ -188,7 +188,7 @@ intrGetPendingStall_GP100
 {
     extern NV_STATUS intrGetPendingStall_GM107(OBJGPU *pGpu, Intr *pIntr, MC_ENGINE_BITVECTOR *pEngines, THREAD_STATE_NODE *pThreadState);
     OBJTMR              *pTmr    = GPU_GET_TIMER(pGpu);
-    MC_ENGINE_BITVECTOR  pendingEngines;
+    MC_ENGINE_BITVECTOR  pendingGmmuEngines;
 
     NV_ASSERT_OK_OR_RETURN(intrGetPendingStall_GM107(pGpu, pIntr, pEngines, pThreadState));
 
@@ -203,8 +203,8 @@ intrGetPendingStall_GP100
         }
     }
 
-    intrGetGmmuInterrupts(pGpu, pIntr, &pendingEngines, pThreadState);
-    bitVectorOr(pEngines, pEngines, &pendingEngines);
+    intrGetGmmuInterrupts(pGpu, pIntr, &pendingGmmuEngines, pThreadState);
+    bitVectorOr(pEngines, pEngines, &pendingGmmuEngines);
 
     if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu))
     {

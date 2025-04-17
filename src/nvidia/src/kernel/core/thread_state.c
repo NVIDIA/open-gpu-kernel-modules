@@ -246,7 +246,7 @@ NvU32 threadStateGetSetupFlags(void)
 static void _threadStateSetNextCpuYieldTime(THREAD_STATE_NODE *pThreadNode)
 {
     NvU64 timeInNs;
-    osGetCurrentTick(&timeInNs);
+    timeInNs = osGetCurrentTick();
 
     pThreadNode->timeout.nextCpuYieldTime = timeInNs +
         (TIMEOUT_DEFAULT_OS_RESCHEDULE_INTERVAL_SECS) * 1000000 * 1000;
@@ -261,7 +261,7 @@ void threadStateYieldCpuIfNecessary(OBJGPU *pGpu, NvBool bQuiet)
     rmStatus = threadStateGetCurrent(&pThreadNode, pGpu);
     if ((rmStatus == NV_OK) && pThreadNode )
     {
-        osGetCurrentTick(&timeInNs);
+        timeInNs = osGetCurrentTick();
         if (timeInNs >= pThreadNode->timeout.nextCpuYieldTime)
         {
             if (NV_OK == osSchedule())
@@ -310,7 +310,7 @@ static NV_STATUS _threadNodeInitTime(THREAD_STATE_NODE *pThreadNode)
         nonComputeTimeoutMsecs = TIMEOUT_DPC_ISR_INTERVAL_MS;
     }
 
-    osGetCurrentTick(&timeInNs);
+    timeInNs = osGetCurrentTick();
 
     if (firstInit)
     {
@@ -422,7 +422,7 @@ static NV_STATUS _threadNodeCheckTimeout(OBJGPU *pGpu, THREAD_STATE_NODE *pThrea
         return NV_ERR_INVALID_STATE;
     }
 
-    osGetCurrentTick(&timeInNs);
+    timeInNs = osGetCurrentTick();
     if (pElapsedTimeUs)
     {
         *pElapsedTimeUs = (timeInNs - pThreadNode->timeout.enterTime) / 1000;
@@ -639,7 +639,9 @@ TlsMirror_Exit:
     if (rmStatus != NV_OK)
         return;
 
+    portSyncSpinlockAcquire(threadStateDatabase.spinlock);
     threadStateDatabase.ppISRDeferredIntHandlerThreadNode[pGpu->gpuInstance] = pThreadNode;
+    portSyncSpinlockRelease(threadStateDatabase.spinlock);
 }
 
 /**
@@ -690,6 +692,8 @@ TlsMirror_Exit:
 
     NV_ASSERT_OR_RETURN_VOID(pThreadNode->cpuNum < threadStateDatabase.maxCPUs);
 
+    portSyncSpinlockAcquire(threadStateDatabase.spinlock);
+
     //
     // We use a cpu/gpu indexed structure to store the threadNode pointer
     // instead of a tree indexed by threadId because threadId is no longer
@@ -700,6 +704,7 @@ TlsMirror_Exit:
     pThreadStateIsrLockless = &threadStateDatabase.pIsrlocklessThreadNode[pThreadNode->cpuNum];
     NV_ASSERT(pThreadStateIsrLockless->ppIsrThreadStateGpu[pGpu->gpuInstance] == NULL);
     pThreadStateIsrLockless->ppIsrThreadStateGpu[pGpu->gpuInstance] = pThreadNode;
+    portSyncSpinlockRelease(threadStateDatabase.spinlock);
 }
 
 void threadStateOnlyProcessWorkISRAndDeferredIntHandler
@@ -740,7 +745,9 @@ void threadStateOnlyFreeISRAndDeferredIntHandler
         NV_ASSERT(rmStatus == NV_OK);
     }
 
+    portSyncSpinlockAcquire(threadStateDatabase.spinlock);
     threadStateDatabase.ppISRDeferredIntHandlerThreadNode[pGpu->gpuInstance] = NULL;
+    portSyncSpinlockRelease(threadStateDatabase.spinlock);
 
     if (TLS_MIRROR_THREADSTATE)
     {
@@ -901,9 +908,11 @@ void threadStateFreeISRLockless(THREAD_STATE_NODE *pThreadNode, OBJGPU *pGpu, Nv
         NV_ASSERT(rmStatus == NV_OK);
     }
 
+    portSyncSpinlockAcquire(threadStateDatabase.spinlock);
     pThreadStateIsrlockless = &threadStateDatabase.pIsrlocklessThreadNode[pThreadNode->cpuNum];
     NV_ASSERT(pThreadStateIsrlockless->ppIsrThreadStateGpu[pGpu->gpuInstance] != NULL);
     pThreadStateIsrlockless->ppIsrThreadStateGpu[pGpu->gpuInstance] = NULL;
+    portSyncSpinlockRelease(threadStateDatabase.spinlock);
 
     if (TLS_MIRROR_THREADSTATE)
     {
@@ -1196,9 +1205,7 @@ NV_STATUS threadStateCheckTimeout(OBJGPU *pGpu, NvU64 *pElapsedTimeUs)
 
 static void _threadStateSetTimeoutOverride(THREAD_STATE_NODE *pThreadNode, NvU64 newTimeoutMs)
 {
-    NvU64 timeInNs;
-
-    osGetCurrentTick(&timeInNs);
+    NvU64 timeInNs = osGetCurrentTick();
 
     _threadStateSetNextCpuYieldTime(pThreadNode);
 

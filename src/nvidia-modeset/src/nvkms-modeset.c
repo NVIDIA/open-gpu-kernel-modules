@@ -438,7 +438,6 @@ static void AdjustHwModeTimingsForVrr(const NVDispEvoRec *pDispEvo,
     nvAdjustHwModeTimingsForVrrEvo(pDpyEvo,
                                    vrrType,
                                    vrrOverrideMinRefreshRate,
-                                   pDpyEvo->vrr.needsSwFramePacing,
                                    pTimings);
 }
 
@@ -720,6 +719,43 @@ NvBool AssignProposedHwHeadsForDsiConnector(
     return ret;
 }
 
+static NvBool HeadIsFree(const NVDevEvoRec *pDevEvo,
+                         const NvU32 apiHead,
+                         const NvU32 freeHwHeadsMask,
+                         const NvU32 head)
+{
+    if ((NVBIT(head) & freeHwHeadsMask) == 0x0) {
+        return FALSE;
+    }
+
+    if (pDevEvo->apiHead[apiHead].numLayers >
+            pDevEvo->head[head].numLayers) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static NvU32 GetFreeHeads(const NVDevEvoRec *pDevEvo,
+                          const NvU32 apiHead,
+                          const NVDpyEvoRec *pDpyEvo,
+                          const NvU32 freeHwHeadsMask)
+{
+    NvU32 foundHead = NV_INVALID_HEAD;
+
+    for (NvS32 head = (pDevEvo->numHeads - 1); head >= 0; head--) {
+        if (HeadIsFree(pDevEvo, apiHead, freeHwHeadsMask, head)) {
+            if ((foundHead == NV_INVALID_HEAD) ||
+                   (pDevEvo->head[head].numLayers <
+                    pDevEvo->head[foundHead].numLayers)) {
+                foundHead = head;
+            }
+        }
+    }
+
+    return foundHead;
+}
+
 static
 NvBool AssignProposedHwHeadsForDPSerializer(
     const NVDispEvoRec *pDispEvo,
@@ -729,6 +765,7 @@ NvBool AssignProposedHwHeadsForDPSerializer(
     const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     NvU32 freeHwHeadsMask = *pFreeHwHeadsMask;
     NvU32 ret = TRUE;
+    NvU32 boundHead;
 
     for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
         NVProposedModeSetStateOneApiHead *pProposedApiHead =
@@ -742,7 +779,15 @@ NvBool AssignProposedHwHeadsForDPSerializer(
             continue;
         }
 
-        const NvU32 boundHead = pDpyEvo->dp.serializerStreamIndex;
+        if (pDpyEvo->pConnectorEvo->dpSerializerCaps.supportsMST) {
+            /* MST case: Use earlier assigned stream index */
+            boundHead = pDpyEvo->dp.serializerStreamIndex;
+        } else {
+            /* SST case: find free heads if there are multiple DP Serializer in SST mode */
+            boundHead = GetFreeHeads(pDevEvo, apiHead, pDpyEvo,
+                                           freeHwHeadsMask);
+        }
+
         if (pProposedApiHead->hwHeadsMask == 0x0) {
             if ((freeHwHeadsMask & NVBIT(boundHead)) != 0x0) {
                 nvAssert(pDevEvo->apiHead[apiHead].numLayers <=
@@ -762,23 +807,6 @@ NvBool AssignProposedHwHeadsForDPSerializer(
 
     *pFreeHwHeadsMask &= freeHwHeadsMask;
     return ret;
-}
-
-static NvBool HeadIsFree(const NVDevEvoRec *pDevEvo,
-                         const NvU32 apiHead,
-                         const NvU32 freeHwHeadsMask,
-                         const NvU32 head)
-{
-    if ((NVBIT(head) & freeHwHeadsMask) == 0x0) {
-        return FALSE;
-    }
-
-    if (pDevEvo->apiHead[apiHead].numLayers >
-            pDevEvo->head[head].numLayers) {
-        return FALSE;
-    }
-
-    return TRUE;
 }
 
 static NvU32 GetFree2Heads1ORHeadsMask(const NVDevEvoRec *pDevEvo,
@@ -801,26 +829,6 @@ static NvU32 GetFree2Heads1ORHeadsMask(const NVDevEvoRec *pDevEvo,
     }
 
     return 0;
-}
-
-static NvU32 GetFreeHeads(const NVDevEvoRec *pDevEvo,
-                          const NvU32 apiHead,
-                          const NVDpyEvoRec *pDpyEvo,
-                          const NvU32 freeHwHeadsMask)
-{
-    NvU32 foundHead = NV_INVALID_HEAD;
-
-    for (NvS32 head = (pDevEvo->numHeads - 1); head >= 0; head--) {
-        if (HeadIsFree(pDevEvo, apiHead, freeHwHeadsMask, head)) {
-            if ((foundHead == NV_INVALID_HEAD) ||
-                   (pDevEvo->head[head].numLayers <
-                    pDevEvo->head[foundHead].numLayers)) {
-                foundHead = head;
-            }
-        }
-    }
-
-    return foundHead;
 }
 
 static NvBool AssignProposedHwHeadsGeneric(
@@ -1887,17 +1895,17 @@ done:
 }
 
 static NvBool VblankCallbackListsAreEmpty(
-    const NVDispApiHeadStateEvoRec *pApiHeadState)
+    const NVDispVblankApiHeadState *pVblankApiHeadState)
 {
-    ct_assert(ARRAY_LEN(pApiHeadState->vblankCallbackList) == 2);
+    ct_assert(ARRAY_LEN(pVblankApiHeadState->vblankCallbackList) == 2);
 
-    return (nvListIsEmpty(&pApiHeadState->vblankCallbackList[0]) &&
-            nvListIsEmpty(&pApiHeadState->vblankCallbackList[1]));
+    return (nvListIsEmpty(&pVblankApiHeadState->vblankCallbackList[0]) &&
+            nvListIsEmpty(&pVblankApiHeadState->vblankCallbackList[1]));
 }
 
 static void VBlankCallbackDeferredWork(void *dataPtr, NvU32 data32)
 {
-    NVDispApiHeadStateEvoRec *pApiHeadState = NULL;
+    NVDispVblankApiHeadState *pVblankApiHeadState = NULL;
     NVVBlankCallbackPtr pVBlankCallbackTmp = NULL;
     NVVBlankCallbackPtr pVBlankCallback = NULL;
     NVDispEvoPtr pDispEvo = dataPtr;
@@ -1907,19 +1915,19 @@ static void VBlankCallbackDeferredWork(void *dataPtr, NvU32 data32)
         return;
     }
 
-    pApiHeadState = &pDispEvo->apiHeadState[apiHead];
+    pVblankApiHeadState = &pDispEvo->vblankApiHeadState[apiHead];
 
     /*
      * Increment the vblankCount here, so that any callbacks in the list can
      * rely on the same value.
      */
-    pApiHeadState->vblankCount++;
+    pVblankApiHeadState->vblankCount++;
 
-    for (NvU32 i = 0; i < ARRAY_LEN(pApiHeadState->vblankCallbackList); i++) {
+    for (NvU32 i = 0; i < ARRAY_LEN(pVblankApiHeadState->vblankCallbackList); i++) {
 
         nvListForEachEntry_safe(pVBlankCallback,
                                 pVBlankCallbackTmp,
-                                &pApiHeadState->vblankCallbackList[i],
+                                &pVblankApiHeadState->vblankCallbackList[i],
                                 vblankCallbackListEntry) {
             pVBlankCallback->pCallback(pDispEvo, pVBlankCallback);
         }
@@ -1975,9 +1983,12 @@ static void EnableVBlankCallbacks(const NVDevEvoRec *pDevEvo)
             NVDispApiHeadStateEvoRec *pApiHeadState =
                 &pDispEvo->apiHeadState[apiHead];
 
+            const NVDispVblankApiHeadState *pVblankApiHeadState =
+                &pDispEvo->vblankApiHeadState[apiHead];
+
             nvAssert(pApiHeadState->rmVBlankCallbackHandle == 0);
 
-            if (VblankCallbackListsAreEmpty(pApiHeadState)) {
+            if (VblankCallbackListsAreEmpty(pVblankApiHeadState)) {
                 continue;
             }
 
@@ -2902,13 +2913,6 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
 
 
     nvHdmiFrlSetConfig(pDispEvo, head);
-
-    if (isPrimaryHead) {
-        pHeadState->mergeModeVrrSecondaryHeadMask =
-            pProposedApiHead->hwHeadsMask & ~NVBIT(head);
-    } else {
-        pHeadState->mergeModeVrrSecondaryHeadMask = 0x0;
-    }
 }
 
 /*!
@@ -4193,6 +4197,8 @@ nvApiHeadRegisterVBlankCallback(NVDispEvoPtr pDispEvo,
      */
     const NvU32 head = nvGetPrimaryHwHead(pDispEvo, apiHead);
     NVDispApiHeadStateEvoRec *pApiHeadState = &pDispEvo->apiHeadState[apiHead];
+    NVDispVblankApiHeadState *pVblankApiHeadState =
+        &pDispEvo->vblankApiHeadState[apiHead];
     NVVBlankCallbackPtr pVBlankCallback = NULL;
 
     pVBlankCallback = nvCalloc(1, sizeof(*pVBlankCallback));
@@ -4206,10 +4212,7 @@ nvApiHeadRegisterVBlankCallback(NVDispEvoPtr pDispEvo,
 
     /* append to the tail of the list */
     nvListAppend(&pVBlankCallback->vblankCallbackListEntry,
-                 &pApiHeadState->vblankCallbackList[listIndex]);
-
-    nvAssert((head != NV_INVALID_HEAD) ||
-                (pApiHeadState->rmVBlankCallbackHandle == 0));
+                 &pVblankApiHeadState->vblankCallbackList[listIndex]);
 
     // If this is the first entry in the list, register the vblank callback
     if ((head != NV_INVALID_HEAD) &&
@@ -4234,6 +4237,8 @@ void nvApiHeadUnregisterVBlankCallback(NVDispEvoPtr pDispEvo,
 {
     const NvU32 apiHead = pCallback->apiHead;
     NVDispApiHeadStateEvoRec *pApiHeadState = &pDispEvo->apiHeadState[apiHead];
+    const NVDispVblankApiHeadState *pVblankApiHeadState =
+        &pDispEvo->vblankApiHeadState[apiHead];
     const NvU32 head = nvGetPrimaryHwHead(pDispEvo, apiHead);
 
     nvListDel(&pCallback->vblankCallbackListEntry);
@@ -4243,7 +4248,7 @@ void nvApiHeadUnregisterVBlankCallback(NVDispEvoPtr pDispEvo,
                 (pApiHeadState->rmVBlankCallbackHandle == 0));
 
     // If there are no more callbacks, disable the RM-level callback
-    if (VblankCallbackListsAreEmpty(pApiHeadState) &&
+    if (VblankCallbackListsAreEmpty(pVblankApiHeadState) &&
             (head != NV_INVALID_HEAD) &&
             (pApiHeadState->rmVBlankCallbackHandle != 0)) {
         nvRmRemoveVBlankCallback(pDispEvo,

@@ -29,7 +29,6 @@
 NVVblankSemControl *nvEvoEnableVblankSemControl(
     NVDevEvoRec *pDevEvo,
     NVDispEvoRec *pDispEvo,
-    NvU32 apiHeadMask,
     NVSurfaceEvoRec *pSurfaceEvo,
     NvU64 surfaceOffset);
 
@@ -41,9 +40,5 @@ NvBool nvEvoAccelVblankSemControls(
     NVDevEvoPtr pDevEvo,
     NVDispEvoRec *pDispEvo,
     NvU32 apiHeadMask);
-
-void nvEvoOrphanVblankSemControl(
-    NVDispEvoRec *pDispEvo,
-    NVVblankSemControl *pVblankSemControl);
 
 #endif /* __NVKMS_VBLANK_SEM_CONTROL_H__ */

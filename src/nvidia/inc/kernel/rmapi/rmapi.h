@@ -312,9 +312,15 @@ NV_STATUS rmapiControlCacheInit(void);
 NvBool rmapiControlIsCacheable(NvU32 flags, NvU32 accessRight, NvBool bAllowInternal);
 NvBool rmapiCmdIsCacheable(NvU32 cmd, NvBool bAllowInternal);
 NV_STATUS rmapiControlCacheGet(NvHandle hClient, NvHandle hObject, NvU32 cmd,
-                               void* params, NvU32 paramsSize);
+                               void* params, NvU32 paramsSize, API_SECURITY_INFO *pSecInfo);
+NV_STATUS rmapiControlCacheGetUnchecked(NvHandle hClient, NvHandle hObject, NvU32 cmd,
+                               void* params, NvU32 paramsSize, API_SECURITY_INFO *pSecInfo);
+
 NV_STATUS rmapiControlCacheSet(NvHandle hClient, NvHandle hObject, NvU32 cmd,
                                void* params, NvU32 paramsSize);
+NV_STATUS rmapiControlCacheSetUnchecked(NvHandle hClient, NvHandle hObject, NvU32 cmd,
+                               void* params, NvU32 paramsSize, NvU32 rmctrlFlags);
+
 NV_STATUS rmapiControlCacheSetGpuAttrForObject(NvHandle hClient, NvHandle hObject, OBJGPU *pGpu);
 void rmapiControlCacheFreeAllCacheForGpu(NvU32 gpuInst);
 void rmapiControlCacheFreeNonPersistentCacheForGpu(NvU32 gpuInst);

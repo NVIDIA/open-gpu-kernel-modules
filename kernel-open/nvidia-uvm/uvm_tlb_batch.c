@@ -47,7 +47,7 @@ static NvU64 biggest_page_size(NvU64 page_sizes)
 static void tlb_batch_flush_invalidate_per_va(uvm_tlb_batch_t *batch, uvm_push_t *push)
 {
     uvm_page_tree_t *tree = batch->tree;
-    uvm_gpu_phys_address_t pdb_addr = uvm_page_tree_pdb(tree)->addr;
+    uvm_gpu_phys_address_t pdb_addr = uvm_page_tree_pdb_address(tree);
     uvm_membar_t membar = UVM_MEMBAR_NONE;
     NvU32 i;
 
@@ -83,7 +83,7 @@ static void tlb_batch_flush_invalidate_all(uvm_tlb_batch_t *batch, uvm_push_t *p
     uvm_gpu_t *gpu = tree->gpu;
     NvU32 page_table_depth = tree->hal->page_table_depth(batch->biggest_page_size);
 
-    gpu->parent->host_hal->tlb_invalidate_all(push, uvm_page_tree_pdb(tree)->addr, page_table_depth, batch->membar);
+    gpu->parent->host_hal->tlb_invalidate_all(push, uvm_page_tree_pdb_address(tree), page_table_depth, batch->membar);
 }
 
 static bool tlb_batch_should_invalidate_all(uvm_tlb_batch_t *batch)

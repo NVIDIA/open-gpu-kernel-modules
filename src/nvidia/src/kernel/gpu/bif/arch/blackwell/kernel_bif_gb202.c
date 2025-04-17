@@ -20,7 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#include "core/core.h"
+
 #include "gpu/gpu.h"
 #include "gpu/bif/kernel_bif.h"
 #include "platform/chipset/chipset.h"
@@ -223,5 +223,10 @@ NvBool kbifAllowGpuReqPcieAtomics_GB202
 )
 {
     // Bug 4919951
+    if (gpuIsTeslaBranded(pGpu))
+    {
+        return NV_TRUE;
+    }
+
     return NV_FALSE;
 }

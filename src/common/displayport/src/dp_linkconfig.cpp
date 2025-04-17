@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -170,7 +170,14 @@ NvU32 LinkConfiguration::slotsForPBN(NvU32 allocatedPBN, bool usable)
 void LinkConfiguration::pbnRequired(const ModesetInfo & modesetInfo, unsigned & base_pbn, unsigned & slots, unsigned & slots_pbn)
 {
 
-    base_pbn = pbnForMode(modesetInfo);
+    if (bIs128b132bChannelCoding)
+    {
+        base_pbn = pbnForMode(modesetInfo, false);
+    }
+    else
+    {
+        base_pbn = pbnForMode(modesetInfo, true);
+    }
 
     if (!bIs128b132bChannelCoding)
     {

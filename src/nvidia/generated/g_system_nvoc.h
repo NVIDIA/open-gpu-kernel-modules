@@ -1,13 +1,15 @@
 
 #ifndef _G_SYSTEM_NVOC_H_
 #define _G_SYSTEM_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,6 +50,7 @@ extern "C" {
 \***************************************************************************/
 
 #include "core/core.h"
+#include "nvoc/object.h"
 #include "nvlimits.h" // NV_MAX_DEVICES
 #include "ctrl/ctrl2080/ctrl2080gpu.h"
 #include "diagnostics/traceable.h"
@@ -77,6 +80,7 @@ extern "C" {
 #define SYS_GET_FABRIC(p)         ((p)->pFabric)
 #define SYS_GET_GPUDB(p)          ((p)->pGpuDb)
 #define SYS_GET_HALMGR(p)         ((p)->pHalMgr)
+
 #if RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
 #define SYS_GET_CODE_COV_MGR(p)   ((p)->pCodeCovMgr)
 #else
@@ -336,16 +340,19 @@ typedef struct SYS_STATIC_CONFIG
     /*! Initial SLI configuration flags */
     NvU32 initialSliFlags;
 
-    /*! Indicates confidentail compute OS support is enabled or not */
+    /*! Indicates confidential compute OS support is enabled or not */
     NvBool bOsCCEnabled;
 
     /*! Indicates SEV-SNP confidential compute OS support is enabled or not */
     NvBool bOsCCSevSnpEnabled;
 
+    /*! Indicates Memory Encryption OS support is enabled or not */
+    NvBool bOsCCSmeEnabled;
+
     /*! Indicates SEV-SNP vTOM confidential compute OS support is enabled or not */
     NvBool bOsCCSnpVtomEnabled;
 
-    /*! Indicates Intel TDX confidentail compute OS support is enabled or not */
+    /*! Indicates Intel TDX confidential compute OS support is enabled or not */
     NvBool bOsCCTdxEnabled;
 } SYS_STATIC_CONFIG;
 
@@ -399,15 +406,20 @@ MAKE_MULTIMAP(SYS_MEM_EXPORT_CACHE, SysMemExportCacheEntry);
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__OBJSYS;
+struct NVOC_METADATA__Object;
+struct NVOC_METADATA__OBJTRACEABLE;
 struct NVOC_VTABLE__OBJSYS;
 
 
 struct OBJSYS {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__OBJSYS *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__OBJSYS *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -500,10 +512,17 @@ struct OBJSYS {
 };
 
 
-// Metadata including vtable with 1 function pointer plus superclass metadata
+// Vtable with 1 per-class function pointer
 struct NVOC_VTABLE__OBJSYS {
-
     NV_STATUS (*__sysCaptureState__)(struct OBJSYS * /*this*/);  // virtual
+};
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__OBJSYS {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
+    const struct NVOC_METADATA__OBJTRACEABLE metadata__OBJTRACEABLE;
+    const struct NVOC_VTABLE__OBJSYS vtable;
 };
 
 #ifndef __NVOC_CLASS_OBJSYS_TYPEDEF__
@@ -522,10 +541,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJSYS;
     ((pThis)->__nvoc_pbase_OBJSYS)
 
 #ifdef __nvoc_system_h_disabled
-#define __dynamicCast_OBJSYS(pThis) ((OBJSYS*)NULL)
+#define __dynamicCast_OBJSYS(pThis) ((OBJSYS*) NULL)
 #else //__nvoc_system_h_disabled
 #define __dynamicCast_OBJSYS(pThis) \
-    ((OBJSYS*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJSYS)))
+    ((OBJSYS*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJSYS)))
 #endif //__nvoc_system_h_disabled
 
 // Property macros
@@ -606,12 +625,12 @@ NV_STATUS __nvoc_objCreate_OBJSYS(OBJSYS**, Dynamic*, NvU32);
 
 
 // Wrapper macros
-#define sysCaptureState_FNPTR(arg_this) arg_this->__nvoc_vtable->__sysCaptureState__
+#define sysCaptureState_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__sysCaptureState__
 #define sysCaptureState(arg_this) sysCaptureState_DISPATCH(arg_this)
 
 // Dispatch functions
 static inline NV_STATUS sysCaptureState_DISPATCH(struct OBJSYS *arg_this) {
-    return arg_this->__nvoc_vtable->__sysCaptureState__(arg_this);
+    return arg_this->__nvoc_metadata_ptr->vtable.__sysCaptureState__(arg_this);
 }
 
 NV_STATUS sysCaptureState_IMPL(struct OBJSYS *arg1);

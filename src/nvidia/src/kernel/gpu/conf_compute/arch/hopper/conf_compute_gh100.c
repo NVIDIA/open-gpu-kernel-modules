@@ -71,7 +71,7 @@ confComputeIsGpuCcCapable_GH100
 
     if (confComputeIsDebugModeEnabled_HAL(pGpu, pConfCompute))
     {
-        NV_PRINTF(LEVEL_ERROR, "Cannot boot Confidential Compute as debug board is not supported!\n");
+        NV_PRINTF(LEVEL_ERROR, "Cannot boot Confidential Compute as debug board is not supported.\n");
         return NV_FALSE;
     }
 
@@ -180,6 +180,8 @@ confComputeDeriveSecrets_GH100(ConfidentialCompute *pConfCompute,
                 CC_GKEYID_GEN(CC_KEYSPACE_GSP, CC_LKEYID_GSP_CPU_REPLAYABLE_FAULT)));
             NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
                 CC_GKEYID_GEN(CC_KEYSPACE_GSP, CC_LKEYID_GSP_CPU_NON_REPLAYABLE_FAULT)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_GSP, CC_LKEYID_CPU_GSP_NVLE_P2P_WRAPPING)));
             break;
         case MC_ENGINE_IDX_SEC2:
         {

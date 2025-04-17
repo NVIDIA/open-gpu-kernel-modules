@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -172,6 +172,7 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
         //
         kmemsysProgramSysmemFlushBuffer_HAL(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
 
+        OBJTMR    *pTmr = GPU_GET_TIMER(pGpu);
         KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
         KernelGspBootMode bootMode;
 
@@ -204,6 +205,15 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
                 NV_PRINTF(LEVEL_ERROR, "cannot init libOS PMU logging structures: 0x%x\n", status);
                 goto done;
             }
+
+            //
+            // In suspend/resume case, update the GPU time after GFW boot is complete
+            // (to avoid PLM collisions) but before loading GSP-RM ucode (which
+            // consumes the updated GPU time).
+            //
+            tmrSetCurrentTime_HAL(pGpu, pTmr);
+
+            libosLogUpdateTimerDelta(&pKernelGsp->logDecode, pTmr->sysTimerOffsetNs);
         }
 
         status = kgspPrepareForBootstrap_HAL(pGpu, pKernelGsp, bootMode);
@@ -227,9 +237,6 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
         if ((pKernelFsp != NULL) && !IS_VIRTUAL(pGpu))
         {
             pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_BOOT_COMMAND_OK, NV_FALSE);
-
-            // This is a no-op in CPU-RM
-            NV_ASSERT_OK_OR_GOTO(status, kfspPrepareKeepWPRAcrossGc6Physical(pGpu, pKernelFsp), done);
 
             status = kfspPrepareAndSendBootCommands_HAL(pGpu, pKernelFsp);
             if (status != NV_OK)

@@ -152,6 +152,7 @@ typedef NvU8 FLCN_STATUS;
 #define FLCN_ERR_VPR_APP_DISP_FALCON_IS_NOT_IN_LS_MODE                     (0x61U)
 #define FLCN_ERR_VPR_APP_VPR_IS_ALREADY_ENABLED                            (0x62U)
 #define FLCN_ERR_VPR_APP_UNEXPECTEDLY_RUNNING_ON_RISCV                     (0x63U)
+#define FLCN_ERR_INVALID_SR_CONFIGURATION                                  (0x64U)
 
 // Clocks Errors
 #define FLCN_ERR_CYCLE_DETECTED                                            (0x70U)

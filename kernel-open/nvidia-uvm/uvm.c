@@ -33,10 +33,12 @@
 #include "uvm_va_block.h"
 #include "uvm_tools.h"
 #include "uvm_common.h"
+#include "uvm_fd_type.h"
 #include "uvm_linux_ioctl.h"
 #include "uvm_hmm.h"
 #include "uvm_mem.h"
 #include "uvm_kvmalloc.h"
+#include "uvm_test_file.h"
 
 #define NVIDIA_UVM_DEVICE_NAME          "nvidia-uvm"
 
@@ -49,55 +51,9 @@ bool uvm_file_is_nvidia_uvm(struct file *filp)
     return (filp != NULL) && (filp->f_op == &uvm_fops);
 }
 
-uvm_fd_type_t uvm_fd_type(struct file *filp, void **ptr_val)
+bool uvm_file_is_nvidia_uvm_va_space(struct file *filp)
 {
-    unsigned long uptr;
-    uvm_fd_type_t type;
-    void *ptr;
-
-    UVM_ASSERT(uvm_file_is_nvidia_uvm(filp));
-
-    uptr = atomic_long_read_acquire((atomic_long_t *) (&filp->private_data));
-    type = (uvm_fd_type_t)(uptr & UVM_FD_TYPE_MASK);
-    ptr = (void *)(uptr & ~UVM_FD_TYPE_MASK);
-    BUILD_BUG_ON(UVM_FD_COUNT > UVM_FD_TYPE_MASK + 1);
-
-    switch (type) {
-        case UVM_FD_UNINITIALIZED:
-        case UVM_FD_INITIALIZING:
-            UVM_ASSERT(!ptr);
-            break;
-
-        case UVM_FD_VA_SPACE:
-            UVM_ASSERT(ptr);
-            BUILD_BUG_ON(__alignof__(uvm_va_space_t) < (1UL << UVM_FD_TYPE_BITS));
-            break;
-
-        case UVM_FD_MM:
-            UVM_ASSERT(ptr);
-            BUILD_BUG_ON(__alignof__(struct file) < (1UL << UVM_FD_TYPE_BITS));
-            break;
-
-        default:
-            UVM_ASSERT(0);
-    }
-
-    if (ptr_val)
-        *ptr_val = ptr;
-
-    return type;
-}
-
-void *uvm_fd_get_type(struct file *filp, uvm_fd_type_t type)
-{
-    void *ptr;
-
-    UVM_ASSERT(uvm_file_is_nvidia_uvm(filp));
-
-    if (uvm_fd_type(filp, &ptr) == type)
-        return ptr;
-    else
-        return NULL;
+    return uvm_file_is_nvidia_uvm(filp) && uvm_fd_type(filp, NULL) == UVM_FD_VA_SPACE;
 }
 
 static NV_STATUS uvm_api_mm_initialize(UVM_MM_INITIALIZE_PARAMS *params, struct file *filp)
@@ -105,7 +61,6 @@ static NV_STATUS uvm_api_mm_initialize(UVM_MM_INITIALIZE_PARAMS *params, struct 
     uvm_va_space_t *va_space;
     uvm_va_space_mm_t *va_space_mm;
     struct file *uvm_file;
-    uvm_fd_type_t old_fd_type;
     struct mm_struct *mm;
     NV_STATUS status;
 
@@ -127,14 +82,9 @@ static NV_STATUS uvm_api_mm_initialize(UVM_MM_INITIALIZE_PARAMS *params, struct 
         goto err;
     }
 
-    old_fd_type = atomic_long_cmpxchg((atomic_long_t *)&filp->private_data,
-                                      UVM_FD_UNINITIALIZED,
-                                      UVM_FD_INITIALIZING);
-    old_fd_type &= UVM_FD_TYPE_MASK;
-    if (old_fd_type != UVM_FD_UNINITIALIZED) {
-        status = NV_ERR_IN_USE;
+    status = uvm_fd_type_init(filp);
+    if (status != NV_OK)
         goto err;
-    }
 
     va_space_mm = &va_space->va_space_mm;
     uvm_spin_lock(&va_space_mm->lock);
@@ -173,13 +123,13 @@ static NV_STATUS uvm_api_mm_initialize(UVM_MM_INITIALIZE_PARAMS *params, struct 
             break;
     }
     uvm_spin_unlock(&va_space_mm->lock);
-    atomic_long_set_release((atomic_long_t *)&filp->private_data, (long)uvm_file | UVM_FD_MM);
+    uvm_fd_type_set(filp, UVM_FD_MM, uvm_file);
 
     return NV_OK;
 
 err_release_unlock:
     uvm_spin_unlock(&va_space_mm->lock);
-    atomic_long_set_release((atomic_long_t *)&filp->private_data, UVM_FD_UNINITIALIZED);
+    uvm_fd_type_set(filp, UVM_FD_UNINITIALIZED, NULL);
 
 err:
     if (uvm_file)
@@ -249,44 +199,10 @@ static void uvm_release_deferred(void *data)
     uvm_up_read(&g_uvm_global.pm.lock);
 }
 
-static void uvm_mm_release(struct file *filp, struct file *uvm_file)
+static void uvm_release_va_space(struct file *filp, uvm_va_space_t *va_space)
 {
-    uvm_va_space_t *va_space = uvm_va_space_get(uvm_file);
-    uvm_va_space_mm_t *va_space_mm = &va_space->va_space_mm;
-    struct mm_struct *mm = va_space_mm->mm;
-
-    if (uvm_va_space_mm_enabled(va_space)) {
-        uvm_va_space_mm_unregister(va_space);
-
-        if (uvm_va_space_mm_enabled(va_space))
-            uvm_mmput(mm);
-
-        va_space_mm->mm = NULL;
-        fput(uvm_file);
-    }
-}
-
-static int uvm_release(struct inode *inode, struct file *filp)
-{
-    void *ptr;
-    uvm_va_space_t *va_space;
-    uvm_fd_type_t fd_type;
     int ret;
 
-    fd_type = uvm_fd_type(filp, &ptr);
-    UVM_ASSERT(fd_type != UVM_FD_INITIALIZING);
-    if (fd_type == UVM_FD_UNINITIALIZED) {
-        uvm_kvfree(filp->f_mapping);
-        return 0;
-    }
-    else if (fd_type == UVM_FD_MM) {
-        uvm_kvfree(filp->f_mapping);
-        uvm_mm_release(filp, (struct file *)ptr);
-        return 0;
-    }
-
-    UVM_ASSERT(fd_type == UVM_FD_VA_SPACE);
-    va_space = (uvm_va_space_t *)ptr;
     filp->private_data = NULL;
     filp->f_mapping = NULL;
 
@@ -309,6 +225,52 @@ static int uvm_release(struct inode *inode, struct file *filp)
         nv_kthread_q_item_init(&va_space->deferred_release_q_item, uvm_release_deferred, va_space);
         ret = nv_kthread_q_schedule_q_item(&g_uvm_global.deferred_release_q, &va_space->deferred_release_q_item);
         UVM_ASSERT(ret != 0);
+    }
+}
+
+static void uvm_release_mm(struct file *filp, struct file *uvm_file)
+{
+    uvm_va_space_t *va_space = uvm_va_space_get(uvm_file);
+    uvm_va_space_mm_t *va_space_mm = &va_space->va_space_mm;
+    struct mm_struct *mm = va_space_mm->mm;
+
+    uvm_kvfree(filp->f_mapping);
+
+    if (uvm_va_space_mm_enabled(va_space)) {
+        uvm_va_space_mm_unregister(va_space);
+
+        if (uvm_va_space_mm_enabled(va_space))
+            uvm_mmput(mm);
+
+        va_space_mm->mm = NULL;
+        fput(uvm_file);
+    }
+}
+
+static int uvm_release(struct inode *inode, struct file *filp)
+{
+    void *ptr;
+    uvm_fd_type_t fd_type = uvm_fd_type(filp, &ptr);
+
+    switch (fd_type) {
+        case UVM_FD_UNINITIALIZED:
+            uvm_kvfree(filp->f_mapping);
+            break;
+
+        case UVM_FD_VA_SPACE:
+            uvm_release_va_space(filp, (uvm_va_space_t *)ptr);
+            break;
+
+        case UVM_FD_MM:
+            uvm_release_mm(filp, (struct file *)ptr);
+            break;
+
+        case UVM_FD_TEST:
+            uvm_test_file_release(filp, (uvm_test_file_t *)ptr);
+            break;
+
+        default:
+            UVM_ASSERT_MSG(0, "Unexpected fd type: %d\n", fd_type);
     }
 
     return 0;
@@ -829,6 +791,7 @@ static struct vm_operations_struct uvm_vm_ops_device_p2p =
 
 static int uvm_mmap(struct file *filp, struct vm_area_struct *vma)
 {
+    void *fd_type_ptr;
     uvm_va_space_t *va_space;
     NV_STATUS status = uvm_global_get_status();
     int ret = 0;
@@ -837,9 +800,17 @@ static int uvm_mmap(struct file *filp, struct vm_area_struct *vma)
     if (status != NV_OK)
         return -nv_status_to_errno(status);
 
-    va_space = uvm_fd_va_space(filp);
-    if (!va_space)
-        return -EBADFD;
+    switch (uvm_fd_type(filp, &fd_type_ptr)) {
+        case UVM_FD_VA_SPACE:
+            va_space = (uvm_va_space_t *)fd_type_ptr;
+            break;
+
+        case UVM_FD_TEST:
+            return uvm_test_file_mmap((uvm_test_file_t *)fd_type_ptr, vma);
+
+        default:
+            return -EBADFD;
+    }
 
     // When the VA space is associated with an mm, all vmas under the VA space
     // must come from that mm.
@@ -999,33 +970,40 @@ static NV_STATUS uvm_api_initialize(UVM_INITIALIZE_PARAMS *params, struct file *
     // attempt to be made. This is safe because other threads will have only had
     // a chance to observe UVM_FD_INITIALIZING and not UVM_FD_VA_SPACE in this
     // case.
-    old_fd_type = atomic_long_cmpxchg((atomic_long_t *)&filp->private_data,
-                                      UVM_FD_UNINITIALIZED,
-                                      UVM_FD_INITIALIZING);
-    old_fd_type &= UVM_FD_TYPE_MASK;
-    if (old_fd_type == UVM_FD_UNINITIALIZED) {
-        status = uvm_va_space_create(filp->f_mapping, &va_space, params->flags);
-        if (status != NV_OK) {
-            atomic_long_set_release((atomic_long_t *)&filp->private_data, UVM_FD_UNINITIALIZED);
-            return status;
-        }
+    old_fd_type = uvm_fd_type_init_cas(filp);
+    switch (old_fd_type) {
+        case UVM_FD_UNINITIALIZED:
+            status = uvm_va_space_create(filp->f_mapping, &va_space, params->flags);
+            if (status != NV_OK) {
+                uvm_fd_type_set(filp, UVM_FD_UNINITIALIZED, NULL);
+                return status;
+            }
 
-        atomic_long_set_release((atomic_long_t *)&filp->private_data, (long)va_space | UVM_FD_VA_SPACE);
-    }
-    else if (old_fd_type == UVM_FD_VA_SPACE) {
-        va_space = uvm_va_space_get(filp);
+            uvm_fd_type_set(filp, UVM_FD_VA_SPACE, va_space);
+            break;
 
-        if (params->flags != va_space->initialization_flags)
+        case UVM_FD_VA_SPACE:
+            va_space = uvm_va_space_get(filp);
+            if (params->flags != va_space->initialization_flags)
+                status = NV_ERR_INVALID_ARGUMENT;
+            else
+                status = NV_OK;
+
+            break;
+
+        case UVM_FD_MM:
+        case UVM_FD_TEST:
             status = NV_ERR_INVALID_ARGUMENT;
-        else
-            status = NV_OK;
-    }
-    else if (old_fd_type == UVM_FD_MM) {
-        status = NV_ERR_INVALID_ARGUMENT;
-    }
-    else {
-        UVM_ASSERT(old_fd_type == UVM_FD_INITIALIZING);
-        status = NV_ERR_BUSY_RETRY;
+            break;
+
+        case UVM_FD_INITIALIZING:
+            status = NV_ERR_BUSY_RETRY;
+            break;
+
+        default:
+            UVM_ASSERT(0);
+            status = NV_ERR_INVALID_STATE; // Quiet compiler warnings
+            break;
     }
 
     return status;

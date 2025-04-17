@@ -372,23 +372,88 @@ cursor_plane_req_config_update(struct drm_plane *plane,
         old_config.dstY != req_config->dstY;
 }
 
-static void free_drm_lut_surface(struct kref *ref)
+static void release_drm_nvkms_surface(struct nv_drm_nvkms_surface *drm_nvkms_surface)
 {
-    struct nv_drm_lut_surface *drm_lut_surface =
-        container_of(ref, struct nv_drm_lut_surface, refcount);
-    struct NvKmsKapiDevice *pDevice = drm_lut_surface->pDevice;
+    struct NvKmsKapiDevice *pDevice = drm_nvkms_surface->pDevice;
 
-    BUG_ON(drm_lut_surface->nvkms_surface == NULL);
-    BUG_ON(drm_lut_surface->nvkms_memory == NULL);
-    BUG_ON(drm_lut_surface->buffer == NULL);
+    BUG_ON(drm_nvkms_surface->nvkms_surface == NULL);
+    BUG_ON(drm_nvkms_surface->nvkms_memory == NULL);
+    BUG_ON(drm_nvkms_surface->buffer == NULL);
 
-    nvKms->destroySurface(pDevice, drm_lut_surface->nvkms_surface);
-    nvKms->unmapMemory(pDevice, drm_lut_surface->nvkms_memory,
+    nvKms->destroySurface(pDevice, drm_nvkms_surface->nvkms_surface);
+    nvKms->unmapMemory(pDevice, drm_nvkms_surface->nvkms_memory,
                        NVKMS_KAPI_MAPPING_TYPE_KERNEL,
-                       drm_lut_surface->buffer);
-    nvKms->freeMemory(pDevice, drm_lut_surface->nvkms_memory);
+                       drm_nvkms_surface->buffer);
+    nvKms->freeMemory(pDevice, drm_nvkms_surface->nvkms_memory);
+}
 
-    nv_drm_free(drm_lut_surface);
+static int init_drm_nvkms_surface(struct nv_drm_device *nv_dev,
+    struct nv_drm_nvkms_surface *drm_nvkms_surface,
+    struct nv_drm_nvkms_surface_params *surface_params)
+{
+    struct NvKmsKapiDevice *pDevice = nv_dev->pDevice;
+    NvU8 compressible = 0; // No compression
+
+    struct NvKmsKapiCreateSurfaceParams params = {};
+    struct NvKmsKapiMemory *surface_mem;
+    struct NvKmsKapiSurface *surface;
+    void *buffer;
+
+    params.format = surface_params->format;
+    params.width = surface_params->width;
+    params.height = surface_params->height;
+
+    /* Allocate displayable memory. */
+    if (nv_dev->hasVideoMemory) {
+        surface_mem =
+            nvKms->allocateVideoMemory(pDevice,
+                                       NvKmsSurfaceMemoryLayoutPitch,
+                                       NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT,
+                                       surface_params->surface_size,
+                                       &compressible);
+    } else {
+        surface_mem =
+            nvKms->allocateSystemMemory(pDevice,
+                                        NvKmsSurfaceMemoryLayoutPitch,
+                                        NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT,
+                                        surface_params->surface_size,
+                                        &compressible);
+    }
+    if (surface_mem == NULL) {
+        return -ENOMEM;
+    }
+
+    /* Map memory in order to populate it. */
+    if (!nvKms->mapMemory(pDevice, surface_mem,
+                          NVKMS_KAPI_MAPPING_TYPE_KERNEL,
+                          &buffer)) {
+        nvKms->freeMemory(pDevice, surface_mem);
+        return -ENOMEM;
+    }
+
+    params.planes[0].memory = surface_mem;
+    params.planes[0].offset = 0;
+    params.planes[0].pitch = surface_params->surface_size;
+
+    /* Create surface. */
+    surface = nvKms->createSurface(pDevice, &params);
+    if (surface == NULL) {
+        nvKms->unmapMemory(pDevice, surface_mem,
+                           NVKMS_KAPI_MAPPING_TYPE_KERNEL, buffer);
+        nvKms->freeMemory(pDevice, surface_mem);
+        return -ENOMEM;
+    }
+
+    /* Pack into struct nv_drm_nvkms_surface. */
+    drm_nvkms_surface->pDevice = pDevice;
+    drm_nvkms_surface->nvkms_memory = surface_mem;
+    drm_nvkms_surface->nvkms_surface = surface;
+    drm_nvkms_surface->buffer = buffer;
+
+    /* Init refcount. */
+    kref_init(&drm_nvkms_surface->refcount);
+
+    return 0;
 }
 
 static struct nv_drm_lut_surface *alloc_drm_lut_surface(
@@ -399,84 +464,47 @@ static struct nv_drm_lut_surface *alloc_drm_lut_surface(
     NvU32 num_vss_header_entries,
     NvU32 num_entries)
 {
-    struct NvKmsKapiDevice *pDevice = nv_dev->pDevice;
     struct nv_drm_lut_surface *drm_lut_surface;
-    NvU8 compressible = 0; // No compression
-    size_t size =
+    const size_t surface_size =
         (((num_vss_header_entries + num_entries) *
           NVKMS_LUT_CAPS_LUT_ENTRY_SIZE) + 255) & ~255; // 256-byte aligned
 
-    struct NvKmsKapiMemory *surface_mem;
-    struct NvKmsKapiSurface *surface;
-    struct NvKmsKapiCreateSurfaceParams params = {};
-    NvU16 *lut_data;
+    struct nv_drm_nvkms_surface_params params = {};
 
-    /* Allocate displayable memory. */
-    if (nv_dev->hasVideoMemory) {
-        surface_mem =
-            nvKms->allocateVideoMemory(pDevice,
-                                       NvKmsSurfaceMemoryLayoutPitch,
-                                       NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT,
-                                       size,
-                                       &compressible);
-    } else {
-        surface_mem =
-            nvKms->allocateSystemMemory(pDevice,
-                                        NvKmsSurfaceMemoryLayoutPitch,
-                                        NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT,
-                                        size,
-                                        &compressible);
-    }
-    if (surface_mem == NULL) {
-        return NULL;
-    }
-
-    /* Map memory in order to populate it. */
-    if (!nvKms->mapMemory(pDevice, surface_mem,
-                          NVKMS_KAPI_MAPPING_TYPE_KERNEL,
-                          (void **) &lut_data)) {
-        nvKms->freeMemory(pDevice, surface_mem);
-        return NULL;
-    }
-
-    /* Create surface. */
     params.format = NvKmsSurfaceMemoryFormatR16G16B16A16;
     params.width = num_vss_header_entries + num_entries;
     params.height = 1;
-    params.planes[0].memory = surface_mem;
-    params.planes[0].offset = 0;
-    params.planes[0].pitch = size;
+    params.surface_size = surface_size;
 
-    surface = nvKms->createSurface(pDevice, &params);
-    if (surface == NULL) {
-        nvKms->unmapMemory(pDevice, surface_mem,
-                           NVKMS_KAPI_MAPPING_TYPE_KERNEL, (void *) lut_data);
-        nvKms->freeMemory(pDevice, surface_mem);
-        return NULL;
-    }
-
-    /* Pack into struct nv_drm_lut_surface. */
     drm_lut_surface = nv_drm_calloc(1, sizeof(struct nv_drm_lut_surface));
     if (drm_lut_surface == NULL) {
-        nvKms->destroySurface(pDevice, surface);
-        nvKms->unmapMemory(pDevice, surface_mem,
-                           NVKMS_KAPI_MAPPING_TYPE_KERNEL, (void *) lut_data);
-        nvKms->freeMemory(pDevice, surface_mem);
         return NULL;
     }
-    drm_lut_surface->pDevice = pDevice;
-    drm_lut_surface->nvkms_memory = surface_mem;
-    drm_lut_surface->nvkms_surface = surface;
-    drm_lut_surface->buffer = lut_data;
+
+    if (init_drm_nvkms_surface(nv_dev, &drm_lut_surface->base, &params) != 0) {
+        nv_drm_free(drm_lut_surface);
+        return NULL;
+    }
+
     drm_lut_surface->properties.vssSegments = num_vss_header_segments;
     drm_lut_surface->properties.vssType = vss_type;
     drm_lut_surface->properties.lutEntries = num_entries;
     drm_lut_surface->properties.entryFormat = entry_format;
 
-    /* Init refcount. */
-    kref_init(&drm_lut_surface->refcount);
-
     return drm_lut_surface;
+}
+
+static void free_drm_lut_surface(struct kref *ref)
+{
+    struct nv_drm_nvkms_surface *drm_nvkms_surface =
+        container_of(ref, struct nv_drm_nvkms_surface, refcount);
+    struct nv_drm_lut_surface *drm_lut_surface =
+        container_of(drm_nvkms_surface, struct nv_drm_lut_surface, base);
+
+    // Clean up base
+    release_drm_nvkms_surface(drm_nvkms_surface);
+
+    nv_drm_free(drm_lut_surface);
 }
 
 static NvU32 fp32_lut_interp(
@@ -582,7 +610,7 @@ static struct nv_drm_lut_surface *create_drm_ilut_surface_vss(
         return NULL;
     }
 
-    lut_data = (NvU16 *) drm_lut_surface->buffer;
+    lut_data = (NvU16 *) drm_lut_surface->base.buffer;
 
     /* Calculate VSS header. */
     if (vss_header_seg_sizes != NULL) {
@@ -733,7 +761,7 @@ static struct nv_drm_lut_surface *create_drm_ilut_surface_legacy(
         return NULL;
     }
 
-    lut_data = (NvU16 *) drm_lut_surface->buffer;
+    lut_data = (NvU16 *) drm_lut_surface->base.buffer;
 
     /* Fill LUT surface. */
     for (entry_idx = 0; entry_idx < NVKMS_LUT_ARRAY_SIZE; entry_idx++) {
@@ -799,7 +827,7 @@ static struct nv_drm_lut_surface *create_drm_tmo_surface(
         return NULL;
     }
 
-    lut_data = (NvU16 *) drm_lut_surface->buffer;
+    lut_data = (NvU16 *) drm_lut_surface->base.buffer;
 
     /* Calculate linear VSS header. */
     for (entry_idx = 0; entry_idx < NUM_VSS_HEADER_ENTRIES; entry_idx++) {
@@ -901,7 +929,7 @@ static struct nv_drm_lut_surface *create_drm_olut_surface_vss(
         return NULL;
     }
 
-    lut_data = (NvU16 *) drm_lut_surface->buffer;
+    lut_data = (NvU16 *) drm_lut_surface->base.buffer;
 
     /* Calculate VSS header. */
     if (vss_header_seg_sizes != NULL) {
@@ -1021,7 +1049,7 @@ static struct nv_drm_lut_surface *create_drm_olut_surface_legacy(
         return NULL;
     }
 
-    lut_data = (NvU16 *) drm_lut_surface->buffer;
+    lut_data = (NvU16 *) drm_lut_surface->base.buffer;
 
     /* Fill LUT surface. */
     for (entry_idx = 0; entry_idx < NVKMS_LUT_ARRAY_SIZE; entry_idx++) {
@@ -1056,6 +1084,74 @@ update_matrix_override(struct drm_property_blob *blob,
                 memcmp(new_matrix, old_matrix, sizeof(*old_matrix));
     return enabled;
 }
+
+static enum NvKmsInputColorSpace nv_get_nvkms_input_colorspace(
+    enum nv_drm_input_color_space colorSpace)
+{
+    switch (colorSpace) {
+        case NV_DRM_INPUT_COLOR_SPACE_NONE:
+            return NVKMS_INPUT_COLOR_SPACE_NONE;
+        case NV_DRM_INPUT_COLOR_SPACE_SCRGB_LINEAR:
+            return NVKMS_INPUT_COLOR_SPACE_BT709;
+        case NV_DRM_INPUT_COLOR_SPACE_BT2100_PQ:
+            return NVKMS_INPUT_COLOR_SPACE_BT2100;
+        default:
+            /* We shouldn't hit this */
+            WARN_ON("Unsupported input colorspace");
+            return NVKMS_INPUT_COLOR_SPACE_NONE;
+    }
+}
+
+static enum NvKmsInputTf nv_get_nvkms_input_tf(
+    enum nv_drm_input_color_space colorSpace)
+{
+    switch (colorSpace) {
+        case NV_DRM_INPUT_COLOR_SPACE_NONE:
+            return NVKMS_INPUT_TF_LINEAR;
+        case NV_DRM_INPUT_COLOR_SPACE_SCRGB_LINEAR:
+            return NVKMS_INPUT_TF_LINEAR;
+        case NV_DRM_INPUT_COLOR_SPACE_BT2100_PQ:
+            return NVKMS_INPUT_TF_PQ;
+        default:
+            /* We shouldn't hit this */
+            WARN_ON("Unsupported input colorspace");
+            return NVKMS_INPUT_TF_LINEAR;
+    }
+}
+
+#if defined(NV_DRM_PLANE_CREATE_COLOR_PROPERTIES_PRESENT)
+static enum NvKmsInputColorSpace nv_drm_color_encoding_to_nvkms_colorspace(
+    enum drm_color_encoding color_encoding)
+{
+    switch(color_encoding) {
+        case DRM_COLOR_YCBCR_BT601:
+            return NVKMS_INPUT_COLOR_SPACE_BT601;
+        case DRM_COLOR_YCBCR_BT709:
+            return NVKMS_INPUT_COLOR_SPACE_BT709;
+        case DRM_COLOR_YCBCR_BT2020:
+            return NVKMS_INPUT_COLOR_SPACE_BT2020;
+        default:
+            /* We shouldn't hit this */
+            WARN_ON("Unsupported DRM color_encoding");
+            return NVKMS_INPUT_COLOR_SPACE_NONE;
+    }
+}
+
+static enum NvKmsInputColorRange nv_drm_color_range_to_nvkms_color_range(
+    enum drm_color_range color_range)
+{
+    switch(color_range) {
+        case DRM_COLOR_YCBCR_FULL_RANGE:
+            return NVKMS_INPUT_COLOR_RANGE_FULL;
+        case DRM_COLOR_YCBCR_LIMITED_RANGE:
+            return NVKMS_INPUT_COLOR_RANGE_LIMITED;
+        default:
+            /* We shouldn't hit this */
+            WARN_ON("Unsupported DRM color_range");
+            return NVKMS_INPUT_COLOR_RANGE_DEFAULT;
+    }
+}
+#endif
 
 static int
 plane_req_config_update(struct drm_plane *plane,
@@ -1190,8 +1286,37 @@ plane_req_config_update(struct drm_plane *plane,
         nv_plane->defaultCompositionMode;
 #endif
 
-    req_config->config.inputColorSpace =
-        nv_drm_plane_state->input_colorspace;
+#if defined(NV_DRM_PLANE_CREATE_COLOR_PROPERTIES_PRESENT)
+    if ((nv_drm_plane_state->input_colorspace == NV_DRM_INPUT_COLOR_SPACE_NONE) &&
+        nv_drm_format_is_yuv(plane_state->fb->format->format)) {
+
+        if (nv_plane->supportsColorProperties) {
+            req_config->config.inputColorSpace =
+                nv_drm_color_encoding_to_nvkms_colorspace(plane_state->color_encoding);
+            req_config->config.inputColorRange =
+                nv_drm_color_range_to_nvkms_color_range(plane_state->color_range);
+        } else {
+            req_config->config.inputColorSpace = NVKMS_INPUT_COLOR_SPACE_NONE;
+            req_config->config.inputColorRange = NVKMS_INPUT_COLOR_RANGE_DEFAULT;
+        }
+        req_config->config.inputTf = NVKMS_INPUT_TF_LINEAR;
+    } else {
+#endif
+        req_config->config.inputColorSpace =
+            nv_get_nvkms_input_colorspace(nv_drm_plane_state->input_colorspace);
+        req_config->config.inputColorRange = NVKMS_INPUT_COLOR_RANGE_DEFAULT;
+        req_config->config.inputTf =
+            nv_get_nvkms_input_tf(nv_drm_plane_state->input_colorspace);
+#if defined(NV_DRM_PLANE_CREATE_COLOR_PROPERTIES_PRESENT)
+    }
+#endif
+
+    req_config->flags.inputTfChanged =
+        (old_config.inputTf != req_config->config.inputTf);
+    req_config->flags.inputColorSpaceChanged =
+        (old_config.inputColorSpace != req_config->config.inputColorSpace);
+    req_config->flags.inputColorRangeChanged =
+        (old_config.inputColorRange != req_config->config.inputColorRange);
 
     req_config->config.syncParams.preSyncptSpecified = false;
     req_config->config.syncParams.postSyncptRequested = false;
@@ -1240,10 +1365,10 @@ plane_req_config_update(struct drm_plane *plane,
 
         switch (info_frame->eotf) {
             case HDMI_EOTF_SMPTE_ST2084:
-                req_config->config.tf = NVKMS_OUTPUT_TF_PQ;
+                req_config->config.outputTf = NVKMS_OUTPUT_TF_PQ;
                 break;
             case HDMI_EOTF_TRADITIONAL_GAMMA_SDR:
-                req_config->config.tf =
+                req_config->config.outputTf =
                     NVKMS_OUTPUT_TF_TRADITIONAL_GAMMA_SDR;
                 break;
             default:
@@ -1254,7 +1379,7 @@ plane_req_config_update(struct drm_plane *plane,
         req_config->config.hdrMetadata.enabled = true;
     } else {
         req_config->config.hdrMetadata.enabled = false;
-        req_config->config.tf = NVKMS_OUTPUT_TF_NONE;
+        req_config->config.outputTf = NVKMS_OUTPUT_TF_NONE;
     }
 
     req_config->flags.hdrMetadataChanged =
@@ -1264,7 +1389,7 @@ plane_req_config_update(struct drm_plane *plane,
                 &req_config->config.hdrMetadata.val,
                 sizeof(struct NvKmsHDRStaticMetadata)));
 
-    req_config->flags.tfChanged = (old_config.tf != req_config->config.tf);
+    req_config->flags.outputTfChanged = (old_config.outputTf != req_config->config.outputTf);
 #endif
 
     req_config->config.matrixOverrides.enabled.lmsCtm =
@@ -1295,7 +1420,7 @@ plane_req_config_update(struct drm_plane *plane,
 
     if (nv_drm_plane_state->degamma_changed) {
         if (nv_drm_plane_state->degamma_drm_lut_surface != NULL) {
-            kref_put(&nv_drm_plane_state->degamma_drm_lut_surface->refcount,
+            kref_put(&nv_drm_plane_state->degamma_drm_lut_surface->base.refcount,
                      free_drm_lut_surface);
             nv_drm_plane_state->degamma_drm_lut_surface = NULL;
         }
@@ -1327,7 +1452,7 @@ plane_req_config_update(struct drm_plane *plane,
         if (nv_drm_plane_state->degamma_drm_lut_surface != NULL) {
             req_config->config.ilut.enabled = NV_TRUE;
             req_config->config.ilut.lutSurface =
-                nv_drm_plane_state->degamma_drm_lut_surface->nvkms_surface;
+                nv_drm_plane_state->degamma_drm_lut_surface->base.nvkms_surface;
             req_config->config.ilut.offset = 0;
             req_config->config.ilut.vssSegments =
                 nv_drm_plane_state->degamma_drm_lut_surface->properties.vssSegments;
@@ -1346,7 +1471,7 @@ plane_req_config_update(struct drm_plane *plane,
 
     if (nv_drm_plane_state->tmo_changed) {
         if (nv_drm_plane_state->tmo_drm_lut_surface != NULL) {
-            kref_put(&nv_drm_plane_state->tmo_drm_lut_surface->refcount,
+            kref_put(&nv_drm_plane_state->tmo_drm_lut_surface->base.refcount,
                      free_drm_lut_surface);
             nv_drm_plane_state->tmo_drm_lut_surface = NULL;
         }
@@ -1363,7 +1488,7 @@ plane_req_config_update(struct drm_plane *plane,
         if (nv_drm_plane_state->tmo_drm_lut_surface != NULL) {
             req_config->config.tmo.enabled = NV_TRUE;
             req_config->config.tmo.lutSurface =
-                nv_drm_plane_state->tmo_drm_lut_surface->nvkms_surface;
+                nv_drm_plane_state->tmo_drm_lut_surface->base.nvkms_surface;
             req_config->config.tmo.offset = 0;
             req_config->config.tmo.vssSegments =
                 nv_drm_plane_state->tmo_drm_lut_surface->properties.vssSegments;
@@ -1870,7 +1995,7 @@ nv_drm_plane_atomic_duplicate_state(struct drm_plane *plane)
     nv_plane_state->degamma_drm_lut_surface =
         nv_old_plane_state->degamma_drm_lut_surface;
     if (nv_plane_state->degamma_drm_lut_surface) {
-        kref_get(&nv_plane_state->degamma_drm_lut_surface->refcount);
+        kref_get(&nv_plane_state->degamma_drm_lut_surface->base.refcount);
     }
 
     nv_plane_state->tmo_lut = nv_old_plane_state->tmo_lut;
@@ -1881,7 +2006,7 @@ nv_drm_plane_atomic_duplicate_state(struct drm_plane *plane)
     nv_plane_state->tmo_drm_lut_surface =
         nv_old_plane_state->tmo_drm_lut_surface;
     if (nv_plane_state->tmo_drm_lut_surface) {
-        kref_get(&nv_plane_state->tmo_drm_lut_surface->refcount);
+        kref_get(&nv_plane_state->tmo_drm_lut_surface->base.refcount);
     }
 
     return &nv_plane_state->base;
@@ -1909,13 +2034,13 @@ static inline void __nv_drm_plane_atomic_destroy_state(
 
     nv_drm_property_blob_put(nv_drm_plane_state->degamma_lut);
     if (nv_drm_plane_state->degamma_drm_lut_surface != NULL) {
-        kref_put(&nv_drm_plane_state->degamma_drm_lut_surface->refcount,
+        kref_put(&nv_drm_plane_state->degamma_drm_lut_surface->base.refcount,
                  free_drm_lut_surface);
     }
 
     nv_drm_property_blob_put(nv_drm_plane_state->tmo_lut);
     if (nv_drm_plane_state->tmo_drm_lut_surface != NULL) {
-        kref_put(&nv_drm_plane_state->tmo_drm_lut_surface->refcount,
+        kref_put(&nv_drm_plane_state->tmo_drm_lut_surface->base.refcount,
                  free_drm_lut_surface);
     }
 }
@@ -2113,7 +2238,7 @@ nv_drm_atomic_crtc_duplicate_state(struct drm_crtc *crtc)
     }
     nv_state->regamma_divisor = nv_old_state->regamma_divisor;
     if (nv_state->regamma_drm_lut_surface) {
-        kref_get(&nv_state->regamma_drm_lut_surface->refcount);
+        kref_get(&nv_state->regamma_drm_lut_surface->base.refcount);
     }
     nv_state->regamma_changed = false;
 
@@ -2142,7 +2267,7 @@ static void nv_drm_atomic_crtc_destroy_state(struct drm_crtc *crtc,
 
     nv_drm_property_blob_put(nv_state->regamma_lut);
     if (nv_state->regamma_drm_lut_surface != NULL) {
-        kref_put(&nv_state->regamma_drm_lut_surface->refcount,
+        kref_put(&nv_state->regamma_drm_lut_surface->base.refcount,
                  free_drm_lut_surface);
     }
 
@@ -2386,7 +2511,7 @@ static int nv_drm_crtc_atomic_check(struct drm_crtc *crtc,
 
     if (nv_crtc_state->regamma_changed) {
         if (nv_crtc_state->regamma_drm_lut_surface != NULL) {
-            kref_put(&nv_crtc_state->regamma_drm_lut_surface->refcount,
+            kref_put(&nv_crtc_state->regamma_drm_lut_surface->base.refcount,
                      free_drm_lut_surface);
             nv_crtc_state->regamma_drm_lut_surface = NULL;
         }
@@ -2417,7 +2542,7 @@ static int nv_drm_crtc_atomic_check(struct drm_crtc *crtc,
         if (nv_crtc_state->regamma_drm_lut_surface != NULL) {
             req_config->modeSetConfig.olut.enabled = NV_TRUE;
             req_config->modeSetConfig.olut.lutSurface =
-                nv_crtc_state->regamma_drm_lut_surface->nvkms_surface;
+                nv_crtc_state->regamma_drm_lut_surface->base.nvkms_surface;
             req_config->modeSetConfig.olut.offset = 0;
             req_config->modeSetConfig.olut.vssSegments =
                 nv_crtc_state->regamma_drm_lut_surface->properties.vssSegments;
@@ -2521,7 +2646,7 @@ static void nv_drm_plane_install_properties(
     if (nv_dev->nv_input_colorspace_property) {
         drm_object_attach_property(
             &plane->base, nv_dev->nv_input_colorspace_property,
-            NVKMS_INPUT_COLORSPACE_NONE);
+            NV_DRM_INPUT_COLOR_SPACE_NONE);
     }
 
     if (supportsICtCp) {
@@ -2531,17 +2656,14 @@ static void nv_drm_plane_install_properties(
                 &plane->base, nv_dev->nv_hdr_output_metadata_property, 0);
         }
 #endif
+    }
 
-        /*
-         * The old DRM_OBJECT_MAX_PROPERTY limit of 24 is too small to
-         * accomodate all of the properties for the ICtCp pipeline.
-         *
-         * Commit 1e13c5644c44 ("drm/drm_mode_object: increase max objects to
-         * accommodate new color props") in Linux v6.8 increased the limit to
-         * 64. To be safe, require this before attaching any properties for the
-         * ICtCp pipeline.
-         */
-        if (DRM_OBJECT_MAX_PROPERTY >= 64) {
+    /*
+     * Per-plane HDR properties get us dangerously close to the 24 property
+     * limit on kernels that don't support NV_DRM_USE_EXTENDED_PROPERTIES.
+     */
+    if (NV_DRM_USE_EXTENDED_PROPERTIES) {
+        if (supportsICtCp) {
             if (nv_dev->nv_plane_lms_ctm_property) {
                 drm_object_attach_property(
                     &plane->base, nv_dev->nv_plane_lms_ctm_property, 0);
@@ -2568,36 +2690,36 @@ static void nv_drm_plane_install_properties(
                     NVKMS_LUT_ARRAY_SIZE);
             }
         }
-    }
 
-    if (nv_dev->nv_plane_blend_ctm_property) {
-        drm_object_attach_property(
-            &plane->base, nv_dev->nv_plane_blend_ctm_property, 0);
-    }
+        if (nv_dev->nv_plane_blend_ctm_property) {
+            drm_object_attach_property(
+                &plane->base, nv_dev->nv_plane_blend_ctm_property, 0);
+        }
 
-    if (nv_plane->ilut_caps.supported) {
-        if (nv_plane->ilut_caps.vssSupport == NVKMS_LUT_VSS_SUPPORTED) {
-            if (nv_dev->nv_plane_degamma_tf_property) {
-                drm_object_attach_property(
-                    &plane->base, nv_dev->nv_plane_degamma_tf_property,
-                    NV_DRM_TRANSFER_FUNCTION_DEFAULT);
+        if (nv_plane->ilut_caps.supported) {
+            if (nv_plane->ilut_caps.vssSupport == NVKMS_LUT_VSS_SUPPORTED) {
+                if (nv_dev->nv_plane_degamma_tf_property) {
+                    drm_object_attach_property(
+                        &plane->base, nv_dev->nv_plane_degamma_tf_property,
+                        NV_DRM_TRANSFER_FUNCTION_DEFAULT);
+                }
+                if (nv_dev->nv_plane_degamma_multiplier_property) {
+                    /* Default to 1 in S31.32 Sign-Magnitude Format */
+                    nv_plane_state->degamma_multiplier = ((uint64_t) 1) << 32;
+                    drm_object_attach_property(
+                        &plane->base, nv_dev->nv_plane_degamma_multiplier_property,
+                        nv_plane_state->degamma_multiplier);
+                }
             }
-            if (nv_dev->nv_plane_degamma_multiplier_property) {
-                /* Default to 1 in S31.32 Sign-Magnitude Format */
-                nv_plane_state->degamma_multiplier = ((uint64_t) 1) << 32;
+            if (nv_dev->nv_plane_degamma_lut_property) {
                 drm_object_attach_property(
-                    &plane->base, nv_dev->nv_plane_degamma_multiplier_property,
-                    nv_plane_state->degamma_multiplier);
+                    &plane->base, nv_dev->nv_plane_degamma_lut_property, 0);
             }
-        }
-        if (nv_dev->nv_plane_degamma_lut_property) {
-            drm_object_attach_property(
-                &plane->base, nv_dev->nv_plane_degamma_lut_property, 0);
-        }
-        if (nv_dev->nv_plane_degamma_lut_size_property) {
-            drm_object_attach_property(
-                &plane->base, nv_dev->nv_plane_degamma_lut_size_property,
-                NVKMS_LUT_ARRAY_SIZE);
+            if (nv_dev->nv_plane_degamma_lut_size_property) {
+                drm_object_attach_property(
+                    &plane->base, nv_dev->nv_plane_degamma_lut_size_property,
+                    NVKMS_LUT_ARRAY_SIZE);
+            }
         }
     }
 }
@@ -2775,6 +2897,29 @@ nv_drm_plane_create(struct drm_device *dev,
     if (ret != 0) {
         goto failed_plane_init;
     }
+
+#if defined(NV_DRM_PLANE_CREATE_COLOR_PROPERTIES_PRESENT)
+    if (pResInfo->caps.supportsInputColorSpace &&
+        pResInfo->caps.supportsInputColorRange) {
+
+        nv_plane->supportsColorProperties = true;
+
+        drm_plane_create_color_properties(
+            plane,
+            NVBIT(DRM_COLOR_YCBCR_BT601) |
+            NVBIT(DRM_COLOR_YCBCR_BT709) |
+            NVBIT(DRM_COLOR_YCBCR_BT2020),
+            NVBIT(DRM_COLOR_YCBCR_FULL_RANGE) |
+            NVBIT(DRM_COLOR_YCBCR_LIMITED_RANGE),
+            DRM_COLOR_YCBCR_BT709,
+            DRM_COLOR_YCBCR_FULL_RANGE
+        );
+    } else {
+        nv_plane->supportsColorProperties = false;
+    }
+#else
+    nv_plane->supportsColorProperties = false;
+#endif
 
     drm_plane_helper_add(plane, &nv_plane_helper_funcs);
 

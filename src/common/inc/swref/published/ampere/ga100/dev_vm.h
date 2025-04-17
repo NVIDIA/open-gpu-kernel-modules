@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2025 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -128,5 +128,6 @@
 #define NV_VIRTUAL_FUNCTION_TIME_0_NSEC                                           31:5 /* R-XUF */
 #define NV_VIRTUAL_FUNCTION_TIME_1                                                0x30084 /* R--4R */
 #define NV_VIRTUAL_FUNCTION_TIME_1_NSEC                                           28:0 /* R-XUF */
+#define NV_VIRTUAL_FUNCTION_DOORBELL                                              0x30090 /* -W-4R */
 #define NV_VIRTUAL_FUNCTION_PRIV_MAILBOX_SCRATCH(i)                               (0x2100+(i)*4) /* RW-4A */
 #endif // __ga100_dev_vm_h__

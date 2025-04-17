@@ -28,7 +28,7 @@
 
 #if defined(BINDATA_INCLUDE_DATA)
 //
-// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("image_dbg")
+// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("BINDATA_LABEL_IMAGE_DBG")
 // FILE NAME: kernel/inc/gsprm/bin/booter/ga10x/load/g_booteruc_load_ga10x_dbg.h
 // FILE TYPE: TEXT
 // VAR NAME: booter_ucode_data_ga10x
@@ -37,7 +37,7 @@
 // DATA SIZE (bytes): 60416
 // COMPRESSED SIZE (bytes): 34777
 //
-static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_image_dbg_data[] = 
+static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_IMAGE_DBG_data[] = 
 {
     0xe4, 0x5d, 0xe3, 0x92, 0x28, 0x3a, 0xb7, 0x1c, 0xdb, 0xb6, 0x6d, 0xdb, 0xb6, 0x6d, 0xdb, 0xf6,
     0x1e, 0xdb, 0xb6, 0x6d, 0xdb, 0xb6, 0x6d, 0xdb, 0xf6, 0xdc, 0xef, 0xf7, 0x79, 0x85, 0x9b, 0x07,
@@ -2217,14 +2217,14 @@ static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_image_dbg_data[] =
 #endif // defined(BINDATA_INCLUDE_DATA)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
-BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_image_dbg_storage_pvt;
+BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_IMAGE_DBG_storage_pvt;
 #endif // defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DEFN)
 {
     60416,                                                             // uncompressed data size (bytes)
     34777,                                                             // compressed data size (bytes)
-    kgspBinArchiveBooterLoadUcode_GA102_image_dbg_data,                // compressed data pointer
+    kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_IMAGE_DBG_data,  // compressed data pointer
     NV_TRUE,                                                           // is pData compressed?
     NV_TRUE,                                                           // contain information for file overriding?
     NV_FALSE,                                                          // is the data referenced during load? (Only valid when BINDATA_IS_MUTABLE is true)
@@ -2234,7 +2234,7 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_image_dbg_storage_pvt;
 
 #if defined(BINDATA_INCLUDE_DATA)
 //
-// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("header_dbg")
+// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("BINDATA_LABEL_HEADER_DBG")
 // FILE NAME: kernel/inc/gsprm/bin/booter/ga10x/load/g_booteruc_load_ga10x_dbg.h
 // FILE TYPE: TEXT
 // VAR NAME: booter_ucode_header_ga10x
@@ -2243,7 +2243,7 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_image_dbg_storage_pvt;
 // DATA SIZE (bytes): 36
 // COMPRESSED SIZE (bytes): 27
 //
-static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_header_dbg_data[] = 
+static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_HEADER_DBG_data[] = 
 {
     0x63, 0x60, 0x00, 0x02, 0x46, 0x20, 0xee, 0x02, 0xe2, 0x24, 0x08, 0x13, 0x4c, 0x74, 0x42, 0x69,
     0x20, 0x00, 0x00, 0x26, 0xcc, 0x03, 0x79, 0x24, 0x00, 0x00, 0x00,
@@ -2251,14 +2251,14 @@ static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_header_dbg_data[] 
 #endif // defined(BINDATA_INCLUDE_DATA)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
-BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_header_dbg_storage_pvt;
+BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_HEADER_DBG_storage_pvt;
 #endif // defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DEFN)
 {
     36,                                                                // uncompressed data size (bytes)
     27,                                                                // compressed data size (bytes)
-    kgspBinArchiveBooterLoadUcode_GA102_header_dbg_data,               // compressed data pointer
+    kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_HEADER_DBG_data, // compressed data pointer
     NV_TRUE,                                                           // is pData compressed?
     NV_TRUE,                                                           // contain information for file overriding?
     NV_FALSE,                                                          // is the data referenced during load? (Only valid when BINDATA_IS_MUTABLE is true)
@@ -2268,7 +2268,7 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_header_dbg_storage_pvt;
 
 #if defined(BINDATA_INCLUDE_DATA)
 //
-// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("image_prod")
+// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("BINDATA_LABEL_IMAGE_PROD")
 // FILE NAME: kernel/inc/gsprm/bin/booter/ga10x/load/g_booteruc_load_ga10x_prod.h
 // FILE TYPE: TEXT
 // VAR NAME: booter_ucode_data_ga10x
@@ -2277,7 +2277,7 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_header_dbg_storage_pvt;
 // DATA SIZE (bytes): 60416
 // COMPRESSED SIZE (bytes): 34775
 //
-static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_image_prod_data[] = 
+static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_IMAGE_PROD_data[] = 
 {
     0xe4, 0x5d, 0xe3, 0x96, 0x28, 0x4a, 0xaf, 0x1c, 0xdb, 0xb6, 0x6d, 0xdb, 0xb6, 0x6d, 0xdb, 0xb6,
     0x6d, 0xdb, 0xb6, 0xed, 0xd9, 0x63, 0xdb, 0xb6, 0x6d, 0xdf, 0xef, 0xf7, 0x79, 0x85, 0xdb, 0x0f,
@@ -4457,14 +4457,14 @@ static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_image_prod_data[] 
 #endif // defined(BINDATA_INCLUDE_DATA)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
-BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_image_prod_storage_pvt;
+BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_IMAGE_PROD_storage_pvt;
 #endif // defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DEFN)
 {
     60416,                                                             // uncompressed data size (bytes)
     34775,                                                             // compressed data size (bytes)
-    kgspBinArchiveBooterLoadUcode_GA102_image_prod_data,               // compressed data pointer
+    kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_IMAGE_PROD_data, // compressed data pointer
     NV_TRUE,                                                           // is pData compressed?
     NV_TRUE,                                                           // contain information for file overriding?
     NV_FALSE,                                                          // is the data referenced during load? (Only valid when BINDATA_IS_MUTABLE is true)
@@ -4474,7 +4474,7 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_image_prod_storage_pvt;
 
 #if defined(BINDATA_INCLUDE_DATA)
 //
-// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("header_prod")
+// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("BINDATA_LABEL_HEADER_PROD")
 // FILE NAME: kernel/inc/gsprm/bin/booter/ga10x/load/g_booteruc_load_ga10x_prod.h
 // FILE TYPE: TEXT
 // VAR NAME: booter_ucode_header_ga10x
@@ -4483,7 +4483,7 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_image_prod_storage_pvt;
 // DATA SIZE (bytes): 36
 // COMPRESSED SIZE (bytes): 27
 //
-static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_header_prod_data[] = 
+static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_HEADER_PROD_data[] = 
 {
     0x63, 0x60, 0x00, 0x02, 0x46, 0x20, 0xee, 0x02, 0xe2, 0x24, 0x08, 0x13, 0x4c, 0x74, 0x42, 0x69,
     0x20, 0x00, 0x00, 0x26, 0xcc, 0x03, 0x79, 0x24, 0x00, 0x00, 0x00,
@@ -4491,14 +4491,14 @@ static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_header_prod_data[]
 #endif // defined(BINDATA_INCLUDE_DATA)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
-BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_header_prod_storage_pvt;
+BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_HEADER_PROD_storage_pvt;
 #endif // defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DEFN)
 {
     36,                                                                // uncompressed data size (bytes)
     27,                                                                // compressed data size (bytes)
-    kgspBinArchiveBooterLoadUcode_GA102_header_prod_data,              // compressed data pointer
+    kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_HEADER_PROD_data, // compressed data pointer
     NV_TRUE,                                                           // is pData compressed?
     NV_TRUE,                                                           // contain information for file overriding?
     NV_FALSE,                                                          // is the data referenced during load? (Only valid when BINDATA_IS_MUTABLE is true)
@@ -4508,7 +4508,7 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_header_prod_storage_pvt;
 
 #if defined(BINDATA_INCLUDE_DATA)
 //
-// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("sig_dbg")
+// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("BINDATA_LABEL_SIG_DBG")
 // FILE NAME: kernel/inc/gsprm/bin/booter/ga10x/load/g_booteruc_load_ga10x_ga102_rsa3k_0_sig.h
 // FILE TYPE: TEXT
 // VAR NAME: booter_load_sig_dbg_ga10x
@@ -4517,7 +4517,7 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_header_prod_storage_pvt;
 // DATA SIZE (bytes): 768
 // COMPRESSED SIZE (bytes): N/A
 //
-static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_sig_dbg_data[] = 
+static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_SIG_DBG_data[] = 
 {
     0xe4, 0x3d, 0xd4, 0xa9, 0x74, 0x57, 0x60, 0xf9, 0x6d, 0x73, 0x76, 0x3f, 0x8a, 0x22, 0x55, 0xaa,
     0xea, 0x8a, 0x41, 0x37, 0xb6, 0x82, 0x80, 0x33, 0xb4, 0xf2, 0x5b, 0x2a, 0x9d, 0x28, 0x7a, 0x0c,
@@ -4571,14 +4571,14 @@ static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_sig_dbg_data[] =
 #endif // defined(BINDATA_INCLUDE_DATA)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
-BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_sig_dbg_storage_pvt;
+BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_SIG_DBG_storage_pvt;
 #endif // defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DEFN)
 {
     768,                                                               // uncompressed data size (bytes)
     768,                                                               // compressed data size (bytes)
-    kgspBinArchiveBooterLoadUcode_GA102_sig_dbg_data,                  // compressed data pointer
+    kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_SIG_DBG_data,    // compressed data pointer
     NV_FALSE,                                                          // is pData compressed?
     NV_TRUE,                                                           // contain information for file overriding?
     NV_FALSE,                                                          // is the data referenced during load? (Only valid when BINDATA_IS_MUTABLE is true)
@@ -4588,7 +4588,7 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_sig_dbg_storage_pvt;
 
 #if defined(BINDATA_INCLUDE_DATA)
 //
-// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("sig_prod")
+// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("BINDATA_LABEL_SIG_PROD")
 // FILE NAME: kernel/inc/gsprm/bin/booter/ga10x/load/g_booteruc_load_ga10x_ga102_rsa3k_0_sig.h
 // FILE TYPE: TEXT
 // VAR NAME: booter_load_sig_prod_ga10x
@@ -4597,7 +4597,7 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_sig_dbg_storage_pvt;
 // DATA SIZE (bytes): 768
 // COMPRESSED SIZE (bytes): 420
 //
-static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_sig_prod_data[] = 
+static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_SIG_PROD_data[] = 
 {
     0x33, 0xb0, 0xb1, 0x96, 0x5f, 0x92, 0x66, 0x3a, 0x4d, 0x78, 0xdb, 0x33, 0x65, 0xad, 0x4b, 0xdf,
     0xb8, 0x4f, 0x69, 0xc8, 0xa4, 0x47, 0x3b, 0x75, 0xfd, 0x69, 0xe9, 0x90, 0x57, 0xdd, 0x75, 0x2d,
@@ -4630,14 +4630,14 @@ static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_sig_prod_data[] =
 #endif // defined(BINDATA_INCLUDE_DATA)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
-BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_sig_prod_storage_pvt;
+BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_SIG_PROD_storage_pvt;
 #endif // defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DEFN)
 {
     768,                                                               // uncompressed data size (bytes)
     420,                                                               // compressed data size (bytes)
-    kgspBinArchiveBooterLoadUcode_GA102_sig_prod_data,                 // compressed data pointer
+    kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_SIG_PROD_data,   // compressed data pointer
     NV_TRUE,                                                           // is pData compressed?
     NV_TRUE,                                                           // contain information for file overriding?
     NV_FALSE,                                                          // is the data referenced during load? (Only valid when BINDATA_IS_MUTABLE is true)
@@ -4647,7 +4647,7 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_sig_prod_storage_pvt;
 
 #if defined(BINDATA_INCLUDE_DATA)
 //
-// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("patch_loc")
+// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("BINDATA_LABEL_PATCH_LOC")
 // FILE NAME: kernel/inc/gsprm/bin/booter/ga10x/load/g_booteruc_load_ga10x_ga102_rsa3k_0_sig.h
 // FILE TYPE: TEXT
 // VAR NAME: booter_load_sig_ga10x_patch_location
@@ -4656,21 +4656,21 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_sig_prod_storage_pvt;
 // DATA SIZE (bytes): 4
 // COMPRESSED SIZE (bytes): N/A
 //
-static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_patch_loc_data[] = 
+static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_LOC_data[] = 
 {
     0x10, 0x8a, 0x00, 0x00,
 };
 #endif // defined(BINDATA_INCLUDE_DATA)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
-BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_patch_loc_storage_pvt;
+BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_LOC_storage_pvt;
 #endif // defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DEFN)
 {
     4,                                                                 // uncompressed data size (bytes)
     4,                                                                 // compressed data size (bytes)
-    kgspBinArchiveBooterLoadUcode_GA102_patch_loc_data,                // compressed data pointer
+    kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_LOC_data,  // compressed data pointer
     NV_FALSE,                                                          // is pData compressed?
     NV_TRUE,                                                           // contain information for file overriding?
     NV_FALSE,                                                          // is the data referenced during load? (Only valid when BINDATA_IS_MUTABLE is true)
@@ -4680,7 +4680,7 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_patch_loc_storage_pvt;
 
 #if defined(BINDATA_INCLUDE_DATA)
 //
-// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("patch_sig")
+// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("BINDATA_LABEL_PATCH_SIG")
 // FILE NAME: kernel/inc/gsprm/bin/booter/ga10x/load/g_booteruc_load_ga10x_ga102_rsa3k_0_sig.h
 // FILE TYPE: TEXT
 // VAR NAME: booter_load_sig_ga10x_patch_signature
@@ -4689,21 +4689,21 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_patch_loc_storage_pvt;
 // DATA SIZE (bytes): 4
 // COMPRESSED SIZE (bytes): N/A
 //
-static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_patch_sig_data[] = 
+static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_SIG_data[] = 
 {
     0x00, 0x00, 0x00, 0x00,
 };
 #endif // defined(BINDATA_INCLUDE_DATA)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
-BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_patch_sig_storage_pvt;
+BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_SIG_storage_pvt;
 #endif // defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DEFN)
 {
     4,                                                                 // uncompressed data size (bytes)
     4,                                                                 // compressed data size (bytes)
-    kgspBinArchiveBooterLoadUcode_GA102_patch_sig_data,                // compressed data pointer
+    kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_SIG_data,  // compressed data pointer
     NV_FALSE,                                                          // is pData compressed?
     NV_TRUE,                                                           // contain information for file overriding?
     NV_FALSE,                                                          // is the data referenced during load? (Only valid when BINDATA_IS_MUTABLE is true)
@@ -4713,7 +4713,7 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_patch_sig_storage_pvt;
 
 #if defined(BINDATA_INCLUDE_DATA)
 //
-// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("patch_meta")
+// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("BINDATA_LABEL_PATCH_META")
 // FILE NAME: kernel/inc/gsprm/bin/booter/ga10x/load/g_booteruc_load_ga10x_ga102_rsa3k_0_sig.h
 // FILE TYPE: TEXT
 // VAR NAME: booter_load_sig_ga10x_patch_meta_data
@@ -4722,21 +4722,21 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_patch_sig_storage_pvt;
 // DATA SIZE (bytes): 12
 // COMPRESSED SIZE (bytes): N/A
 //
-static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_patch_meta_data[] = 
+static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_META_data[] = 
 {
     0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
 };
 #endif // defined(BINDATA_INCLUDE_DATA)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
-BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_patch_meta_storage_pvt;
+BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_META_storage_pvt;
 #endif // defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DEFN)
 {
     12,                                                                // uncompressed data size (bytes)
     12,                                                                // compressed data size (bytes)
-    kgspBinArchiveBooterLoadUcode_GA102_patch_meta_data,               // compressed data pointer
+    kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_META_data, // compressed data pointer
     NV_FALSE,                                                          // is pData compressed?
     NV_TRUE,                                                           // contain information for file overriding?
     NV_FALSE,                                                          // is the data referenced during load? (Only valid when BINDATA_IS_MUTABLE is true)
@@ -4746,7 +4746,7 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_patch_meta_storage_pvt;
 
 #if defined(BINDATA_INCLUDE_DATA)
 //
-// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("num_sigs")
+// FUNCTION: kgspGetBinArchiveBooterLoadUcode_GA102("BINDATA_LABEL_NUM_SIGS")
 // FILE NAME: kernel/inc/gsprm/bin/booter/ga10x/load/g_booteruc_load_ga10x_ga102_rsa3k_0_sig.h
 // FILE TYPE: TEXT
 // VAR NAME: num_sigs_per_ucode
@@ -4755,21 +4755,21 @@ BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_patch_meta_storage_pvt;
 // DATA SIZE (bytes): 4
 // COMPRESSED SIZE (bytes): N/A
 //
-static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_num_sigs_data[] = 
+static BINDATA_CONST NvU8 kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_NUM_SIGS_data[] = 
 {
     0x02, 0x00, 0x00, 0x00,
 };
 #endif // defined(BINDATA_INCLUDE_DATA)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
-BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_num_sigs_storage_pvt;
+BINDATA_STORAGE_PVT kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_NUM_SIGS_storage_pvt;
 #endif // defined(BINDATA_INCLUDE_STORAGE_PVT_DECL)
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DEFN)
 {
     4,                                                                 // uncompressed data size (bytes)
     4,                                                                 // compressed data size (bytes)
-    kgspBinArchiveBooterLoadUcode_GA102_num_sigs_data,                 // compressed data pointer
+    kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_NUM_SIGS_data,   // compressed data pointer
     NV_FALSE,                                                          // is pData compressed?
     NV_TRUE,                                                           // contain information for file overriding?
     NV_FALSE,                                                          // is the data referenced during load? (Only valid when BINDATA_IS_MUTABLE is true)
@@ -4785,17 +4785,17 @@ static const BINDATA_ARCHIVE __kgspGetBinArchiveBooterLoadUcode_GA102 =
 {
     10,  // entryNum
     {
-        // entries[] : { "name", pBinStorage }
-        { "image_dbg"         , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_image_dbg] },
-        { "header_dbg"        , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_header_dbg] },
-        { "image_prod"        , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_image_prod] },
-        { "header_prod"       , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_header_prod] },
-        { "sig_dbg"           , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_sig_dbg] },
-        { "sig_prod"          , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_sig_prod] },
-        { "patch_loc"         , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_patch_loc] },
-        { "patch_sig"         , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_patch_sig] },
-        { "patch_meta"        , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_patch_meta] },
-        { "num_sigs"          , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_num_sigs] },
+        // entries[] : { label, pBinStorage }
+        { BINDATA_LABEL_IMAGE_DBG       , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_IMAGE_DBG] },
+        { BINDATA_LABEL_HEADER_DBG      , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_HEADER_DBG] },
+        { BINDATA_LABEL_IMAGE_PROD      , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_IMAGE_PROD] },
+        { BINDATA_LABEL_HEADER_PROD     , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_HEADER_PROD] },
+        { BINDATA_LABEL_SIG_DBG         , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_SIG_DBG] },
+        { BINDATA_LABEL_SIG_PROD        , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_SIG_PROD] },
+        { BINDATA_LABEL_PATCH_LOC       , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_LOC] },
+        { BINDATA_LABEL_PATCH_SIG       , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_SIG] },
+        { BINDATA_LABEL_PATCH_META      , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_META] },
+        { BINDATA_LABEL_NUM_SIGS        , (const PBINDATA_STORAGE) &g_bindata_pvt[__idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_NUM_SIGS] },
     }
 };
 

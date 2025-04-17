@@ -537,6 +537,14 @@ confComputeSetKeyRotationThreshold_IMPL(ConfidentialCompute *pConfCompute,
     return NV_OK;
 }
 
+void confComputeGetKeyRotationThreshold(ConfidentialCompute *pConfCompute,
+                                        NvU64               *pLowerThreshold,
+                                        NvU64               *pUpperThreshold)
+{
+    *pLowerThreshold = pConfCompute->keyRotationLowerThreshold;
+    *pUpperThreshold = pConfCompute->keyRotationUpperThreshold;
+}
+
 NvBool confComputeIsUpperThresholdCrossed_IMPL(ConfidentialCompute           *pConfCompute,
                                                const KEY_ROTATION_STATS_INFO *pStatsInfo)
 {

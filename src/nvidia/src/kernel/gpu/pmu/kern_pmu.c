@@ -36,6 +36,8 @@
 #include "nvrm_registry.h"
 #include "kernel/os/os.h"
 
+#include "ctrl/ctrl0080/ctrl0080gpu.h"
+
 NV_STATUS
 kpmuConstructEngine_IMPL(OBJGPU *pGpu, KernelPmu *pKernelPmu, ENGDESCRIPTOR engDesc)
 {
@@ -197,7 +199,7 @@ kpmuInitLibosLoggingStructures_IMPL
     // Add PMU log buffer (use a fake "task name" - NVRISCV)
     libosLogAddLogEx(&pKernelPmu->logDecode, pKernelPmu->pPrintBuf, pKernelPmu->printBufSize,
                      pGpu->gpuInstance, (gpuGetChipArch(pGpu) >> GPU_ARCH_SHIFT), gpuGetChipImpl(pGpu),
-                     "NVRISCV", NULL, NULL);
+                     "NVRISCV", NULL, 0, NULL);
 
     // Finish PMU log init (setting the lossless-print flag and resolve-pointers flag)
     libosLogInitEx(&pKernelPmu->logDecode, pKernelPmu->pLogElf, NV_TRUE, NV_TRUE, NV_TRUE, pKernelPmu->logElfSize);

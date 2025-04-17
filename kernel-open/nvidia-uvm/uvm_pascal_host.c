@@ -265,7 +265,7 @@ void uvm_hal_pascal_replay_faults(uvm_push_t *push, uvm_fault_replay_type_t type
     // of the invalidation, we just invalidate PTEs for address 0x0.
     UVM_ASSERT_MSG(type == UVM_FAULT_REPLAY_TYPE_START || type == UVM_FAULT_REPLAY_TYPE_START_ACK_ALL,
                    "replay_type: %u\n", type);
-    pdb = uvm_page_tree_pdb(&gpu->address_space_tree)->addr;
+    pdb = uvm_page_tree_pdb_address(&gpu->address_space_tree);
 
     if (pdb.aperture == UVM_APERTURE_VID)
         aperture_value = HWCONST(C06F, MEM_OP_C, TLB_INVALIDATE_PDB_APERTURE, VID_MEM);

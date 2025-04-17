@@ -1,13 +1,15 @@
 
 #ifndef _G_LOCK_STRESS_NVOC_H_
 #define _G_LOCK_STRESS_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,15 +62,19 @@ extern "C" {
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__LockStressObject;
+struct NVOC_METADATA__GpuResource;
 struct NVOC_VTABLE__LockStressObject;
 
 
 struct LockStressObject {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__LockStressObject *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__LockStressObject *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct GpuResource __nvoc_base_GpuResource;
@@ -101,10 +107,8 @@ struct LockStressObject {
 };
 
 
-// Metadata including vtable with 25 function pointers plus superclass metadata
+// Vtable with 25 per-class function pointers
 struct NVOC_VTABLE__LockStressObject {
-    const struct NVOC_VTABLE__GpuResource GpuResource;    // (gpures) 25 function pointers
-
     NV_STATUS (*__lockStressObjControl__)(struct LockStressObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__lockStressObjMap__)(struct LockStressObject * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__lockStressObjUnmap__)(struct LockStressObject * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
@@ -132,6 +136,13 @@ struct NVOC_VTABLE__LockStressObject {
     void (*__lockStressObjAddAdditionalDependants__)(struct RsClient *, struct LockStressObject * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__LockStressObject {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuResource metadata__GpuResource;
+    const struct NVOC_VTABLE__LockStressObject vtable;
+};
+
 #ifndef __NVOC_CLASS_LockStressObject_TYPEDEF__
 #define __NVOC_CLASS_LockStressObject_TYPEDEF__
 typedef struct LockStressObject LockStressObject;
@@ -148,15 +159,15 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_LockStressObject;
     ((pThis)->__nvoc_pbase_LockStressObject)
 
 #ifdef __nvoc_lock_stress_h_disabled
-#define __dynamicCast_LockStressObject(pThis) ((LockStressObject*)NULL)
+#define __dynamicCast_LockStressObject(pThis) ((LockStressObject*) NULL)
 #else //__nvoc_lock_stress_h_disabled
 #define __dynamicCast_LockStressObject(pThis) \
-    ((LockStressObject*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(LockStressObject)))
+    ((LockStressObject*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(LockStressObject)))
 #endif //__nvoc_lock_stress_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_LockStressObject(LockStressObject**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_LockStressObject(LockStressObject**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_LockStressObject(LockStressObject**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_LockStressObject(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_LockStressObject((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
@@ -182,55 +193,55 @@ NV_STATUS __nvoc_objCreate_LockStressObject(LockStressObject**, Dynamic*, NvU32,
 #define lockStressObjCtrlCmdPerformLockStressInternalNoGpusLockApiLockReadMode(pResource, pParams) lockStressObjCtrlCmdPerformLockStressInternalNoGpusLockApiLockReadMode_DISPATCH(pResource, pParams)
 #define lockStressObjCtrlCmdGetLockStressCounters_FNPTR(pResource) pResource->__lockStressObjCtrlCmdGetLockStressCounters__
 #define lockStressObjCtrlCmdGetLockStressCounters(pResource, pParams) lockStressObjCtrlCmdGetLockStressCounters_DISPATCH(pResource, pParams)
-#define lockStressObjControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresControl__
+#define lockStressObjControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define lockStressObjControl(pGpuResource, pCallContext, pParams) lockStressObjControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define lockStressObjMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresMap__
+#define lockStressObjMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
 #define lockStressObjMap(pGpuResource, pCallContext, pParams, pCpuMapping) lockStressObjMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define lockStressObjUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresUnmap__
+#define lockStressObjUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
 #define lockStressObjUnmap(pGpuResource, pCallContext, pCpuMapping) lockStressObjUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define lockStressObjShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresShareCallback__
+#define lockStressObjShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
 #define lockStressObjShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) lockStressObjShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define lockStressObjGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
+#define lockStressObjGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define lockStressObjGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) lockStressObjGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define lockStressObjGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetMapAddrSpace__
+#define lockStressObjGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__
 #define lockStressObjGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) lockStressObjGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define lockStressObjInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresInternalControlForward__
+#define lockStressObjInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__
 #define lockStressObjInternalControlForward(pGpuResource, command, pParams, size) lockStressObjInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define lockStressObjGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetInternalObjectHandle__
+#define lockStressObjGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define lockStressObjGetInternalObjectHandle(pGpuResource) lockStressObjGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define lockStressObjAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define lockStressObjAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define lockStressObjAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) lockStressObjAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define lockStressObjGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
+#define lockStressObjGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define lockStressObjGetMemInterMapParams(pRmResource, pParams) lockStressObjGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define lockStressObjCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
+#define lockStressObjCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define lockStressObjCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) lockStressObjCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define lockStressObjGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
+#define lockStressObjGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define lockStressObjGetMemoryMappingDescriptor(pRmResource, ppMemDesc) lockStressObjGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define lockStressObjControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define lockStressObjControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define lockStressObjControlSerialization_Prologue(pResource, pCallContext, pParams) lockStressObjControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define lockStressObjControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define lockStressObjControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define lockStressObjControlSerialization_Epilogue(pResource, pCallContext, pParams) lockStressObjControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define lockStressObjControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
+#define lockStressObjControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
 #define lockStressObjControl_Prologue(pResource, pCallContext, pParams) lockStressObjControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define lockStressObjControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
+#define lockStressObjControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
 #define lockStressObjControl_Epilogue(pResource, pCallContext, pParams) lockStressObjControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define lockStressObjCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
+#define lockStressObjCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define lockStressObjCanCopy(pResource) lockStressObjCanCopy_DISPATCH(pResource)
-#define lockStressObjIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
+#define lockStressObjIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define lockStressObjIsDuplicate(pResource, hMemory, pDuplicate) lockStressObjIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define lockStressObjPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define lockStressObjPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define lockStressObjPreDestruct(pResource) lockStressObjPreDestruct_DISPATCH(pResource)
-#define lockStressObjControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define lockStressObjControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define lockStressObjControlFilter(pResource, pCallContext, pParams) lockStressObjControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define lockStressObjIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define lockStressObjIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define lockStressObjIsPartialUnmapSupported(pResource) lockStressObjIsPartialUnmapSupported_DISPATCH(pResource)
-#define lockStressObjMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define lockStressObjMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define lockStressObjMapTo(pResource, pParams) lockStressObjMapTo_DISPATCH(pResource, pParams)
-#define lockStressObjUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define lockStressObjUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define lockStressObjUnmapFrom(pResource, pParams) lockStressObjUnmapFrom_DISPATCH(pResource, pParams)
-#define lockStressObjGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define lockStressObjGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define lockStressObjGetRefCount(pResource) lockStressObjGetRefCount_DISPATCH(pResource)
-#define lockStressObjAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define lockStressObjAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define lockStressObjAddAdditionalDependants(pClient, pResource, pReference) lockStressObjAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
@@ -275,103 +286,103 @@ static inline NV_STATUS lockStressObjCtrlCmdGetLockStressCounters_DISPATCH(struc
 }
 
 static inline NV_STATUS lockStressObjControl_DISPATCH(struct LockStressObject *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_vtable->__lockStressObjControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__lockStressObjControl__(pGpuResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS lockStressObjMap_DISPATCH(struct LockStressObject *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_vtable->__lockStressObjMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__lockStressObjMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS lockStressObjUnmap_DISPATCH(struct LockStressObject *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_vtable->__lockStressObjUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__lockStressObjUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool lockStressObjShareCallback_DISPATCH(struct LockStressObject *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_vtable->__lockStressObjShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__lockStressObjShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS lockStressObjGetRegBaseOffsetAndSize_DISPATCH(struct LockStressObject *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_vtable->__lockStressObjGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__lockStressObjGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS lockStressObjGetMapAddrSpace_DISPATCH(struct LockStressObject *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__nvoc_vtable->__lockStressObjGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__lockStressObjGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS lockStressObjInternalControlForward_DISPATCH(struct LockStressObject *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_vtable->__lockStressObjInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__lockStressObjInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
 static inline NvHandle lockStressObjGetInternalObjectHandle_DISPATCH(struct LockStressObject *pGpuResource) {
-    return pGpuResource->__nvoc_vtable->__lockStressObjGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_metadata_ptr->vtable.__lockStressObjGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NvBool lockStressObjAccessCallback_DISPATCH(struct LockStressObject *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__lockStressObjAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__lockStressObjAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS lockStressObjGetMemInterMapParams_DISPATCH(struct LockStressObject *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_vtable->__lockStressObjGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__lockStressObjGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS lockStressObjCheckMemInterUnmap_DISPATCH(struct LockStressObject *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_vtable->__lockStressObjCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__lockStressObjCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS lockStressObjGetMemoryMappingDescriptor_DISPATCH(struct LockStressObject *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_vtable->__lockStressObjGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_metadata_ptr->vtable.__lockStressObjGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS lockStressObjControlSerialization_Prologue_DISPATCH(struct LockStressObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__lockStressObjControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__lockStressObjControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void lockStressObjControlSerialization_Epilogue_DISPATCH(struct LockStressObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__lockStressObjControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__lockStressObjControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS lockStressObjControl_Prologue_DISPATCH(struct LockStressObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__lockStressObjControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__lockStressObjControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void lockStressObjControl_Epilogue_DISPATCH(struct LockStressObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__lockStressObjControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__lockStressObjControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool lockStressObjCanCopy_DISPATCH(struct LockStressObject *pResource) {
-    return pResource->__nvoc_vtable->__lockStressObjCanCopy__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__lockStressObjCanCopy__(pResource);
 }
 
 static inline NV_STATUS lockStressObjIsDuplicate_DISPATCH(struct LockStressObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_vtable->__lockStressObjIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_metadata_ptr->vtable.__lockStressObjIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void lockStressObjPreDestruct_DISPATCH(struct LockStressObject *pResource) {
-    pResource->__nvoc_vtable->__lockStressObjPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__lockStressObjPreDestruct__(pResource);
 }
 
 static inline NV_STATUS lockStressObjControlFilter_DISPATCH(struct LockStressObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__lockStressObjControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__lockStressObjControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool lockStressObjIsPartialUnmapSupported_DISPATCH(struct LockStressObject *pResource) {
-    return pResource->__nvoc_vtable->__lockStressObjIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__lockStressObjIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS lockStressObjMapTo_DISPATCH(struct LockStressObject *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__lockStressObjMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__lockStressObjMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS lockStressObjUnmapFrom_DISPATCH(struct LockStressObject *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__lockStressObjUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__lockStressObjUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 lockStressObjGetRefCount_DISPATCH(struct LockStressObject *pResource) {
-    return pResource->__nvoc_vtable->__lockStressObjGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__lockStressObjGetRefCount__(pResource);
 }
 
 static inline void lockStressObjAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct LockStressObject *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__lockStressObjAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__lockStressObjAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NV_STATUS lockStressObjCtrlCmdResetLockStressState_IMPL(struct LockStressObject *pResource);

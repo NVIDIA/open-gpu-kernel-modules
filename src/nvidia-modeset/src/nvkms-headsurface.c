@@ -38,6 +38,9 @@
 #include "nvkms-rm.h"
 
 #include <class/cl0040.h> /* NV01_MEMORY_LOCAL_USER */
+#include <class/cl003e.h> /* NV01_MEMORY_SYSTEM */
+#include <class/cla06fsubch.h>
+#include <class/clb06f.h> /* MAXWELL_CHANNEL_GPFIFO_A */
 
 static NvBool AllocNotifiers(NVHsDeviceEvoRec *pHsDevice);
 static void FreeNotifiers(NVHsDeviceEvoRec *pHsDevice);
@@ -108,10 +111,11 @@ static void GetLog2GobsPerBlock(
     *pitchInBlocks = pitchInBytes / NVKMS_BLOCK_LINEAR_GOB_WIDTH;
 }
 
-static NvU32 AllocSurfaceVidmem(
+static NvBool AllocSurfaceVidmem(
     const NVDevEvoRec *pDevEvo,
     NvU32 handle,
-    NvU64 sizeInBytes)
+    NvU64 sizeInBytes,
+    const NvKmsMemoryIsoType isoType)
 {
     NV_MEMORY_ALLOCATION_PARAMS memAllocParams = { };
 
@@ -125,6 +129,10 @@ static NvU32 AllocSurfaceVidmem(
 
     memAllocParams.attr2 = DRF_DEF(OS32, _ATTR2, _GPU_CACHEABLE, _DEFAULT);
 
+    if (isoType == NVKMS_MEMORY_ISO) {
+        memAllocParams.attr2 = FLD_SET_DRF(OS32, _ATTR2, _ISO, _YES, memAllocParams.attr2);
+    }
+
     memAllocParams.flags = NVOS32_ALLOC_FLAGS_FORCE_MEM_GROWS_DOWN |
                            NVOS32_ALLOC_FLAGS_ALIGNMENT_FORCE;
 
@@ -134,7 +142,7 @@ static NvU32 AllocSurfaceVidmem(
                         pDevEvo->deviceHandle,
                         handle,
                         NV01_MEMORY_LOCAL_USER,
-                        &memAllocParams);
+                        &memAllocParams) == NVOS_STATUS_SUCCESS;
 }
 
 NvU64 nvHsMapSurfaceToDevice(
@@ -144,7 +152,7 @@ NvU64 nvHsMapSurfaceToDevice(
     const enum NvHsMapPermissions hsMapPermissions)
 {
     NvU32 ret;
-    NvU32 flags = DRF_DEF(OS46, _FLAGS, _CACHE_SNOOP, _ENABLE);
+    NvU32 flags = DRF_DEF(OS46, _FLAGS, _CACHE_SNOOP, _DISABLE);
     NvU64 gpuAddress = 0;
 
     /* pHsDevice could be NULL if we are in no3d mode. */
@@ -288,8 +296,10 @@ NVHsSurfaceRec *nvHsAllocSurface(
     NvU32 pitchInBlocks = 0;
     NvU64 sizeInBytes = 0;
     NvU32 log2GobsPerBlockY = 0;
-    NvU32 ret = 0;
+    NvBool ret;
     NVHsSurfaceRec *pHsSurface = nvCalloc(1, sizeof(*pHsSurface));
+    const NvKmsMemoryIsoType isoType =
+        requireDisplayHardwareAccess ? NVKMS_MEMORY_ISO : NVKMS_MEMORY_NISO;
 
     if (pHsSurface == NULL) {
         return NULL;
@@ -310,9 +320,15 @@ NVHsSurfaceRec *nvHsAllocSurface(
         goto fail;
     }
 
-    ret = AllocSurfaceVidmem(pDevEvo, pHsSurface->rmHandle, sizeInBytes);
+    if (pDevEvo->requiresAllAllocationsInSysmem) {
+        ret = nvRmAllocSysmem(pDevEvo, pHsSurface->rmHandle, NULL, NULL,
+                              sizeInBytes, isoType);
+    } else {
+        ret = AllocSurfaceVidmem(pDevEvo, pHsSurface->rmHandle, sizeInBytes,
+                                 isoType);
+    }
 
-    if (ret != NVOS_STATUS_SUCCESS) {
+    if (!ret) {
         nvFreeUnixRmHandle(&pDevEvo->handleAllocator, pHsSurface->rmHandle);
         pHsSurface->rmHandle = 0;
 
@@ -889,15 +905,25 @@ static NvU32 AllocNotifierMemory(
     NvU32 handle)
 {
     NV_MEMORY_ALLOCATION_PARAMS memAllocParams = { };
+    NvU32 hClass;
 
     memAllocParams.owner = NVKMS_RM_HEAP_ID;
     memAllocParams.size = NVKMS_HEAD_SURFACE_NOTIFIERS_SIZE_IN_BYTES;
     memAllocParams.type = NVOS32_TYPE_DMA;
 
-    memAllocParams.attr = DRF_DEF(OS32, _ATTR, _LOCATION, _VIDMEM) |
-                          DRF_DEF(OS32, _ATTR, _PHYSICALITY, _CONTIGUOUS) |
+    memAllocParams.attr = DRF_DEF(OS32, _ATTR, _PHYSICALITY, _CONTIGUOUS) |
                           DRF_DEF(OS32, _ATTR, _PAGE_SIZE, _4KB) |
                           DRF_DEF(OS32, _ATTR, _COHERENCY, _UNCACHED);
+
+    if (pDevEvo->requiresAllAllocationsInSysmem) {
+        memAllocParams.attr = FLD_SET_DRF(OS32, _ATTR, _LOCATION, _PCI,
+                                          memAllocParams.attr);
+        hClass = NV01_MEMORY_SYSTEM;
+    } else {
+        memAllocParams.attr = FLD_SET_DRF(OS32, _ATTR, _LOCATION, _VIDMEM,
+                                          memAllocParams.attr);
+        hClass = NV01_MEMORY_LOCAL_USER;
+    }
 
     memAllocParams.flags = NVOS32_ALLOC_FLAGS_FORCE_MEM_GROWS_DOWN |
                            NVOS32_ALLOC_FLAGS_IGNORE_BANK_PLACEMENT |
@@ -908,7 +934,7 @@ static NvU32 AllocNotifierMemory(
     return nvRmApiAlloc(nvEvoGlobal.clientHandle,
                        pDevEvo->deviceHandle,
                        handle,
-                       NV01_MEMORY_LOCAL_USER,
+                       hClass,
                        &memAllocParams);
 }
 
@@ -1610,6 +1636,25 @@ static struct NvHsNextFrameWorkArea HsAssignNextFrameWorkArea(
 }
 
 /*!
+ * Issue an L2 flush if display is not coherent with the GPU.
+ */
+static void HsFlushL2(
+    const NVDevEvoRec *pDevEvo,
+    NVHsChannelEvoRec *pHsChannel)
+{
+    if (!pDevEvo->isSOCDisplay) {
+        return;
+    }
+
+    NvPushChannelPtr p = &pHsChannel->nvPush.channel;
+    /* Host WFI */
+    nvPushImmedVal(p, NVA06F_SUBCHANNEL_2D, NVB06F_WFI, 0);
+    /* Flush L2 to backing store */
+    nvPushMethod(p, NVA06F_SUBCHANNEL_2D, NVB06F_MEM_OP_D, 1);
+    nvPushSetMethodData(p, DRF_DEF(B06F, _MEM_OP_D, _OPERATION, _L2_FLUSH_DIRTY));
+}
+
+/*!
  * Produce the next headSurface frame.
  *
  * Render the frame, flip to it, and update next{Index,Offset} bookkeeping
@@ -1709,6 +1754,8 @@ void nvHsNextFrame(
             eyeMask |= thisEyeMask;
         }
     }
+
+    HsFlushL2(pDevEvo, pHsChannel);
 
     if (workArea.doFlipToNextIndex) {
 

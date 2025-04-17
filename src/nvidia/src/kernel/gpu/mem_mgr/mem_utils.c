@@ -40,6 +40,9 @@
 
 #include "kernel/gpu/conf_compute/ccsl.h"
 
+#include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
+#include "virtualization/hypervisor/hypervisor.h"
+
 #include "class/cl0005.h"      // NV01_EVENT
 
 #include "ctrl/ctrla06f/ctrla06fgpfifo.h"
@@ -88,7 +91,7 @@ memmgrGetMemTransferType
 
         CeUtils *pCeUtils = pMemoryManager->pCeUtils;
 
-        if (pCeUtils != NULL)
+        if (pCeUtils != NULL && !ceutilsIsSubmissionPaused(pCeUtils))
         {
             NvBool bDstCompr = pDst != NULL && memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE,
                                                                 memdescGetPteKind(pDst->pMemDesc));
@@ -100,10 +103,16 @@ memmgrGetMemTransferType
             }
         }
 
+        //
         // On Emulation we may lack CE support so preventing excessive debug spew.
-        if (!IS_EMULATION(pGpu))
+        // ceUtil is disabled for the vGPU host.
+        //
+        if (!IS_EMULATION(pGpu)
+            && !(hypervisorIsVgxHyper() || (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && !IS_VIRTUAL(pGpu))) &&
+            !IS_MIG_ENABLED(pGpu)
+            )
         {
-            NV_PRINTF(LEVEL_INFO, "Can't copy using CE, falling back to other methods\n");
+            NV_PRINTF(LEVEL_WARNING, "Can't copy using CE, falling back to other methods\n");
         }
     }
     else if (kbusIsBarAccessBlocked(pKernelBus) &&

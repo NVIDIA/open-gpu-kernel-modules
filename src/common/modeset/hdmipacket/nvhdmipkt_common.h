@@ -80,8 +80,12 @@ struct tagNVHDMIPKT_MEM_MAP
 
 // HDMIPKT assert define
 #if defined (DEBUG)
-    #define NvHdmiPkt_AssertP(p, expr)  ((p)->callback.assert ?                           \
-                                         (p)->callback.assert((p)->cbHandle, !!(expr)) : 0)
+    #define NvHdmiPkt_AssertP(p, expr)  ((p)->callback.assert && !(expr) ?  \
+                                         (p)->callback.assert(#expr,        \
+                                                              __FILE__,     \
+                                                              __FUNCTION__, \
+                                                              __LINE__)     \
+                                         : 0)
     #define NvHdmiPkt_Assert(expr)      NvHdmiPkt_AssertP(pThis, expr)
 #else
     #define NvHdmiPkt_AssertP(p, expr)

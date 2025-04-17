@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -61,7 +61,7 @@
 
 
 
-#define GMMU_PD1_VADDR_BIT_LO                        29
+#define GMMU_PD0_VADDR_BIT_LO                        21
 
 static const NvU64 pageSizes[] = {
     RM_PAGE_SIZE,
@@ -375,11 +375,11 @@ _gvaspaceReserveVaForClientRm
         else
         {
             //
-            // We're pinning only till PD1 for now to conserve memory. We don't know
+            // We're pinning only till PD0 for now to conserve memory. We don't know
             // how much memory will be eventually consumed by leaf page tables.
             //
             const MMU_FMT_LEVEL *pLevelFmt =
-                   mmuFmtFindLevelWithPageShift(userCtx.pGpuState->pFmt->pRoot, GMMU_PD1_VADDR_BIT_LO);
+                   mmuFmtFindLevelWithPageShift(userCtx.pGpuState->pFmt->pRoot, GMMU_PD0_VADDR_BIT_LO);
             status = mmuWalkReserveEntries(userCtx.pGpuState->pWalk,
                                            pLevelFmt,
                                            pGVAS->vaStartServerRMOwned,
@@ -449,13 +449,13 @@ gvaspaceReserveSplitVaSpace_IMPL
         pGVAS->vaLimitServerRMOwned = pGVAS->vaStartServerRMOwned +
                                       SPLIT_VAS_SERVER_RM_MANAGED_VA_SIZE - 1;
 
-        // Base and limit + 1 should be aligned to 512MB.
-        if (!NV_IS_ALIGNED(pGVAS->vaStartServerRMOwned, NVBIT64(GMMU_PD1_VADDR_BIT_LO)))
+        // Base and limit + 1 should be aligned to 2MB.
+        if (!NV_IS_ALIGNED(pGVAS->vaStartServerRMOwned, NVBIT64(GMMU_PD0_VADDR_BIT_LO)))
         {
             NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_ARGUMENT);
         }
 
-        if (!NV_IS_ALIGNED(pGVAS->vaLimitServerRMOwned + 1, NVBIT64(GMMU_PD1_VADDR_BIT_LO)))
+        if (!NV_IS_ALIGNED(pGVAS->vaLimitServerRMOwned + 1, NVBIT64(GMMU_PD0_VADDR_BIT_LO)))
         {
             NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_ARGUMENT);
         }
@@ -915,7 +915,7 @@ _gvaspaceReleaseVaForServerRm
     NV_ASSERT_OK_OR_RETURN(gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx));
 
     const MMU_FMT_LEVEL *pLevelFmt =
-           mmuFmtFindLevelWithPageShift(userCtx.pGpuState->pFmt->pRoot, GMMU_PD1_VADDR_BIT_LO);
+           mmuFmtFindLevelWithPageShift(userCtx.pGpuState->pFmt->pRoot, GMMU_PD0_VADDR_BIT_LO);
     status = mmuWalkReleaseEntries(userCtx.pGpuState->pWalk,
                                    pLevelFmt,
                                    pGVAS->vaStartServerRMOwned,
@@ -3108,9 +3108,8 @@ gvaspaceExternalRootDirCommit_IMPL
     NV_ASSERT_OR_RETURN((pGVAS->flags & VASPACE_FLAGS_SHARED_MANAGEMENT) || vaspaceIsExternallyOwned(pVAS),
                      NV_ERR_NOT_SUPPORTED);
 
-    // If we have coherent cpu mapping, it is functionally required that we use direct BAR2 mappings
-    if ((aperture == ADDR_SYSMEM) && pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) &&
-        !vaspaceIsExternallyOwned(pVAS))
+    // When placing top-level PDE in sysmem, must import the memory to RM
+    if ((aperture == ADDR_SYSMEM) && !RMCFG_FEATURE_PLATFORM_GSP)
     {
         NV_CHECK_OR_RETURN(LEVEL_ERROR, IS_GFID_PF(gfid), NV_ERR_INVALID_ARGUMENT);
 
@@ -3132,7 +3131,7 @@ gvaspaceExternalRootDirCommit_IMPL
                                              RS_PRIV_LEVEL_KERNEL);
         NV_ASSERT_OR_GOTO(NV_OK == status, catch);
     }
-    else
+    else if (!IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
     {
         NvU32 flags = MEMDESC_FLAGS_NONE;
 
@@ -3150,6 +3149,13 @@ gvaspaceExternalRootDirCommit_IMPL
         memdescDescribe(pRootMemNew, aperture, pParams->physAddress, (NvU32)rootSizeNew);
         memdescSetPageSize(pRootMemNew, VAS_ADDRESS_TRANSLATION(pVAS), RM_PAGE_SIZE);
     }
+
+    //
+    // In this case, we don't want to actually migrate Page Table, just perform
+    // the above mapping, assuming it was required
+    //
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
+        return NV_OK;
 
     if (vaspaceIsExternallyOwned(pVAS))
     {
@@ -3285,6 +3291,29 @@ gvaspaceExternalRootDirRevoke_IMPL
     const NvU64               rootPdeCoverage = mmuFmtLevelPageSize(pGpuState->pFmt->pRoot);
     const NvU64               vaInternalLo = NV_ALIGN_DOWN64(pVAS->vasStart,           rootPdeCoverage);
     const NvU64               vaInternalHi = NV_ALIGN_UP64(pGVAS->vaLimitInternal + 1, rootPdeCoverage) - 1;
+
+    //
+    // Due to virtual without SRIOV design the page table update would take place in the host.
+    // However, the guest is responsible for creating the IOMMU mapping for UVM to use.
+    // This block makes sure we clean up the memdesc and the IOMMU mapping.
+    //
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
+    {
+        MEMORY_DESCRIPTOR *pMemDesc = NULL;
+        pMemDesc = vaspaceGetPageDirBase(pVAS, pGpu);
+
+        //
+        // memdescFree calls the destruct callback to free the created IOMMU mapping.
+        // This only occurs in case the PDB is in sysmem. Otherwise this call
+        // will NOP.
+        //
+        memdescFree(pMemDesc);
+
+        // Free the RM memory used to hold the memdesc struct.
+        memdescDestroy(pMemDesc);
+        
+        return status;
+    }
 
     if (vaspaceIsExternallyOwned(pVAS))
     {
@@ -5202,7 +5231,7 @@ _gvaspacePopulatePDEentries
     portMemSet(pPdeCopyParams, 0, sizeof(NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS));
 
     // Populate the input params.
-    pdeInfo.pageSize    = NVBIT64(GMMU_PD1_VADDR_BIT_LO);
+    pdeInfo.pageSize    = NVBIT64(GMMU_PD0_VADDR_BIT_LO);
     pdeInfo.virtAddress = pGVAS->vaStartServerRMOwned;
 
     // Fetch the details of the PDEs backing server RM's VA range.
@@ -5220,7 +5249,7 @@ _gvaspacePopulatePDEentries
 
     pPdeCopyParams->numLevelsToCopy = pdeInfo.numLevels;
     pPdeCopyParams->subDeviceId     = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-    pPdeCopyParams->pageSize        = NVBIT64(GMMU_PD1_VADDR_BIT_LO);
+    pPdeCopyParams->pageSize        = NVBIT64(GMMU_PD0_VADDR_BIT_LO);
     pPdeCopyParams->virtAddrLo      = pGVAS->vaStartServerRMOwned;
     pPdeCopyParams->virtAddrHi      = pPdeCopyParams->virtAddrLo +
                                         SPLIT_VAS_SERVER_RM_MANAGED_VA_SIZE - 1;

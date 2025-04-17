@@ -109,6 +109,8 @@ void EvoMainLink2x::applyDP2xRegkeyOverrides()
     this->bSupportUHBR2_50   = dpRegkeyDatabase.supportInternalUhbrOnFpga & NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT_2_5G;
     this->bSupportUHBR2_70   = dpRegkeyDatabase.supportInternalUhbrOnFpga & NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT_2_7G;
     this->bSupportUHBR5_00   = dpRegkeyDatabase.supportInternalUhbrOnFpga & NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT_5_0G;
+    this->bEnable5147205Fix  = dpRegkeyDatabase.bEnable5147205Fix;
+	this->bCableVconnSourceUnknown = dpRegkeyDatabase.bCableVconnSourceUnknownWar;
 }
 
 NvU32 EvoMainLink2x::headToStream(NvU32 head, bool bSidebandMessageSupported,
@@ -452,6 +454,7 @@ bool EvoMainLink2x::train(const LinkConfiguration & link, bool force,
     DP2XResetParam resetParam;
     dpMemZero(&resetParam, sizeof(resetParam));
     resetParam.bForce = force;
+    resetParam.bSkipLt = bSkipLt;
 
     // Get the original skipFallback setting.
     bSkipFallback = requestRmLC.policy.skipFallback();
@@ -521,10 +524,12 @@ bool EvoMainLink2x::train(const LinkConfiguration & link, bool force,
             {
                 if (this->isConnectorUSBTypeC() &&
                     requestRmLC.bIs128b132bChannelCoding &&
-                    requestRmLC.peakRate > dp2LinkRate_10_0Gbps)
+                    requestRmLC.peakRate > dp2LinkRate_10_0Gbps &&
+                    bCableVconnSourceUnknown)
                 {
                     //
-                    // Invalidate the link rate from fallback table if the connector type is USB-C to DP.
+                    // Invalidate the link rate from fallback table if the connector type is USB-C to DP
+                    // and VCONN source is unknown.
                     // Source will not retry the same link rate if fallback LT fails again.
                     //
                     invalidateLinkRatesInFallbackTable(requestRmLC.peakRate);
@@ -1110,6 +1115,11 @@ bool EvoMainLink2x::resetDPRXLink(DP2XResetParam resetParam)
         ltRmParams.cmd |= DRF_DEF(0073_CTRL, _DP2X_CMD, _FAKE_LINK_TRAINING, _DONOT_TOGGLE_TRANSMISSION);
     }
 
+    if (resetParam.bSkipLt && bEnable5147205Fix)
+    {
+        ltRmParams.cmd |= DRF_DEF(0073_CTRL, _DP2X_CMD, _SKIP_HW_PROGRAMMING, _YES);
+    }
+
     switch (resetParam.reason)
     {
         case DP2X_ResetLinkForPreLT:
@@ -1401,5 +1411,32 @@ bool EvoMainLink2x::physicalLayerSetDP2xTestPattern(DP2xPatternInfo *patternInfo
     NvU32 code = provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_TESTPATTERN, &params, sizeof(params));
 
     return (code == NVOS_STATUS_SUCCESS);
+}
+
+bool EvoMainLink2x::getUSBCCableIDInfo(NV0073_CTRL_DP_USBC_CABLEID_INFO *cableIDInfo)
+{
+    if (!cableIDInfo)
+    {
+        return false;
+    }
+
+    NV0073_CTRL_DP_USBC_CABLEID_INFO_PARAMS params = { 0 };
+
+    // Setup input parameters for RM Control call to get details from PHY
+    params.subDeviceInstance = this->subdeviceIndex;
+    params.displayId = this->displayId;
+
+    NvU32 code = provider->rmControl0073(NV0073_CTRL_CMD_DP_GET_CABLEID_INFO_FROM_MACRO, &params, sizeof(params));
+    bool success = (code == NVOS_STATUS_SUCCESS);
+    if (success)
+    {
+        cableIDInfo->uhbr10_0_capable   = params.cableIDInfo.uhbr10_0_capable;
+        cableIDInfo->uhbr13_5_capable   = params.cableIDInfo.uhbr13_5_capable;
+        cableIDInfo->uhbr20_0_capable   = params.cableIDInfo.uhbr20_0_capable;
+        cableIDInfo->type               = params.cableIDInfo.type;
+        cableIDInfo->vconn_source       = params.cableIDInfo.vconn_source;
+    }
+
+    return success;
 }
 

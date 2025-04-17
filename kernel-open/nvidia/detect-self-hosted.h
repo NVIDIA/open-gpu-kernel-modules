@@ -24,16 +24,15 @@
 #ifndef __DETECT_SELF_HOSTED_H__
 #define __DETECT_SELF_HOSTED_H__
 
-// PCI devIds 0x2340-0x237f are for Self-Hosted Hopper
 static inline int pci_devid_is_self_hosted_hopper(unsigned short devid)
 {
-    return devid >= 0x2340 && devid <= 0x237f;
+    return devid >= 0x2340 && devid <= 0x237f;       // GH100 Self-Hosted
 }
 
-// PCI devIds 0x2940-0x297f are for Self-Hosted Blackwell
 static inline int pci_devid_is_self_hosted_blackwell(unsigned short devid)
 {
-    return devid >= 0x2940 && devid <= 0x297f;
+    return (devid >= 0x2940 && devid <= 0x297f)      // GB100 Self-Hosted
+           || (devid >= 0x31c0 && devid <= 0x31ff);  // GB110 Self-Hosted
 }
 
 static inline int pci_devid_is_self_hosted(unsigned short devid)

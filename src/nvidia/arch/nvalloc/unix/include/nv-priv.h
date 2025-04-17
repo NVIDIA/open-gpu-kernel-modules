@@ -342,6 +342,12 @@ typedef struct
     NvU32 pmc_boot_1;
     NvU32 pmc_boot_42;
 
+    /*
+     * This flag is set if the upstream port has been configured ("D3cold Aux Power Limit" and
+     * "PERST# Assertion Delay") for GC6. This configuration is needed only for desktops.
+     */
+    NvBool gc6_upstream_port_configured;
+
     /* This flag is set if _PR3 ACPI method is available to support RTD3. */
     NvBool pr3_acpi_method_present;
 } nv_priv_t;

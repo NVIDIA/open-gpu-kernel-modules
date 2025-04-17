@@ -38,6 +38,8 @@ uint32_t *nv_drm_format_array_alloc(
     unsigned int *count,
     const long unsigned int nvkms_format_mask);
 
+bool nv_drm_format_is_yuv(u32 format);
+
 #endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
 
 #endif /* __NVIDIA_DRM_FORMAT_H__ */

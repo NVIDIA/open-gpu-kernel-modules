@@ -201,7 +201,7 @@ _memoryFabricAttachMem
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    if (gpuIsCCFeatureEnabled(pGpu) && !gpuIsCCMultiGpuProtectedPcieModeEnabled(pGpu))
+    if (gpuIsCCFeatureEnabled(pGpu) && (!gpuIsCCMultiGpuProtectedPcieModeEnabled(pGpu) && !gpuIsCCMultiGpuNvleModeEnabled(pGpu)))
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Unsupported when Confidential Computing is enabled in SPT\n");

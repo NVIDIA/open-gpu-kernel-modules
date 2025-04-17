@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,7 +28,12 @@
  */
 
 #include "nvport/nvport.h"
+#include "nvtypes.h"
 #include <nvport/safe.h>
+
+#if NVOS_IS_LIBOS && defined(DEBUG)
+#include "gsp_error_injection.h"
+#endif
 
 #if !PORT_IS_MODULE_SUPPORTED(debug)
 #error "DEBUG module must be present for memory tracking"
@@ -668,6 +673,81 @@ _portMemLimitExceeded(NvU32 gfid, NvLength size)
     return bExceeded;
 }
 
+void
+portMemLibosLimitInc(NvU32 gfid, NvLength size)
+{
+    if (portMemGlobals.bLimitEnabled)
+    {
+        if (isGfidValid(gfid))
+        {
+            NvU32 gfidIdx = gfid - 1;
+            PORT_MEM_ATOMIC_ADD_SIZE(&portMemGlobals.pGfidTracking[gfidIdx]->counterLibosGfid, size);
+        }
+    }
+}
+
+void
+portMemLibosLimitDec(NvU32 gfid, NvLength size)
+{
+    if (portMemGlobals.bLimitEnabled)
+    {
+        if (isGfidValid(gfid))
+        {
+            NvU32 gfidIdx = gfid - 1;
+            if (portMemGlobals.pGfidTracking[gfidIdx]->counterLibosGfid < size)
+            {
+                PORT_MEM_PRINT_ERROR("GFID %d memory free error: counter underflow\n"
+                                     "counter = %llu\nsize = %llu\n",
+                                     gfid,
+                                     portMemGlobals.pGfidTracking[gfidIdx]->counterLibosGfid,
+                                     size);
+                PORT_BREAKPOINT_CHECKED();
+            }
+            else
+            {
+                PORT_MEM_ATOMIC_SUB_SIZE(
+                    &portMemGlobals.pGfidTracking[gfidIdx]->counterLibosGfid,
+                    size);
+            }
+        }
+    }
+}
+
+NvBool
+portMemLibosLimitExceeded(NvU32 gfid, NvLength size)
+{
+    NvBool bExceeded = NV_FALSE;
+
+    if (portMemGlobals.bLimitEnabled)
+    {
+        if (isGfidValid(gfid))
+        {
+            NvU32 gfidIdx = gfid - 1;
+            if ((size + portMemGlobals.pGfidTracking[gfidIdx]->counterLibosGfid) >
+                portMemGlobals.pGfidTracking[gfidIdx]->limitLibosGfid)
+            {
+                PORT_MEM_PRINT_ERROR(
+                    "LibOS memory allocation denied; GFID %d exceeded per-VF LibOS heap limit of "
+                    "%"NvUPtr_fmtu"\n"
+                    "counter = %llu\nsize = %llu\n",
+                    gfid,
+                    portMemGlobals.pGfidTracking[gfidIdx]->limitLibosGfid,
+                    portMemGlobals.pGfidTracking[gfidIdx]->counterLibosGfid,
+                    size
+                );
+                bExceeded = NV_TRUE;
+            }
+        }
+        else
+        {
+            // Also fail for invalid GFID
+            PORT_MEM_PRINT_ERROR("LibOS memory allocation denied; GFID %d invalid\n", gfid);
+            bExceeded = NV_TRUE;
+        }
+    }
+    return bExceeded;
+}
+
 #define PORT_MEM_LIMIT_INC(gfid, pMem, size) _portMemLimitInc(gfid, pMem, size)
 #define PORT_MEM_LIMIT_DEC(pMem, size)      _portMemLimitDec(pMem, size)
 #define PORT_MEM_LIMIT_EXCEEDED(gfid, size)  _portMemLimitExceeded(gfid, size)
@@ -979,6 +1059,18 @@ portMemInitializeAllocatorTrackingLimit(NvU32 gfid, NvLength limit, NvBool bLimi
     portMemGlobals.bLimitEnabled = bLimitEnabled;
 }
 
+void
+portMemInitializeAllocatorTrackingLibosLimit(NvU32 gfid, NvLength limit)
+{
+    if (!isGfidValid(gfid))
+        return;
+
+    NvU32 gfidIdx = gfid - 1;
+
+    if (portMemGlobals.pGfidTracking[gfidIdx] != NULL)
+        portMemGlobals.pGfidTracking[gfidIdx]->limitLibosGfid = limit;
+}
+
 void portMemGfidTrackingInit(NvU32 gfid)
 {
     if (!isGfidValid(gfid))
@@ -1006,6 +1098,8 @@ void portMemGfidTrackingInit(NvU32 gfid)
     pTracking->limitGfid = NV_U64_MAX;
     pTracking->counterGfid = 0;
     pTracking->gfid = gfid;
+    pTracking->limitLibosGfid = NV_U64_MAX;
+    pTracking->counterLibosGfid = 0;
     PORT_LOCKED_LIST_LINK(&portMemGlobals.mainTracking, pTracking, portMemGlobals.trackingLock);
     PORT_MEM_COUNTER_INIT(&pTracking->counter);
     portMemGlobals.pGfidTracking[gfidIdx] = pTracking;
@@ -1050,6 +1144,15 @@ _portMemAllocatorAlloc
 {
     NvU32 gfid = 0;
     void *pMem = NULL;
+#if NVOS_IS_LIBOS && defined(DEBUG)
+    __error_injection_probe(NV2082_CTRL_GSP_INJECT_TARGET_NVPORT_MEM_ALLOC, 0);
+    if (g_bMemoryAllocationFailure)
+    {
+        portDbgPrintf("  !!! MEMORY ALLOCATION FAILURE !!!\n");
+        g_bMemoryAllocationFailure = NV_FALSE;
+        return NULL;
+    }
+#endif
     if (pAlloc == NULL)
     {
         PORT_BREAKPOINT_CHECKED();

@@ -268,7 +268,7 @@ kgraphicsStateInitLocked_IMPL
     //
     if (numClasses == 0)
     {
-        PGPU_ENGINE_ORDER pEngineOrder = &pGpu->engineOrder;
+        GpuEngineOrder *pEngineOrder = &pGpu->engineOrder;
         const CLASSDESCRIPTOR *pClassDesc = &pEngineOrder->pClassDescriptors[0];
         NvU32 i;
         NvU32 classNum;
@@ -312,6 +312,7 @@ kgraphicsStateInitLocked_IMPL
     pKernelGraphics->bug4208224Info.hDeviceId    = NV01_NULL_OBJECT;
     pKernelGraphics->bug4208224Info.hSubdeviceId = NV01_NULL_OBJECT;
     pKernelGraphics->bug4208224Info.bConstructed = NV_FALSE;
+
     return NV_OK;
 }
 
@@ -507,6 +508,7 @@ _kgraphicsPostSchedulingEnableHandler
             return NV_WARN_MORE_PROCESSING_REQUIRED;
         }
     }
+
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kgraphicsCreateGoldenImageChannel(pGpu, pKernelGraphics));
     if (kgraphicsIsBug4208224WARNeeded_HAL(pGpu, pKernelGraphics))
     {
@@ -540,6 +542,9 @@ kgraphicsInvalidateStaticInfo_IMPL
 
     portMemFree(pKernelGraphics->pPrivate->staticInfo.pSmIssueRateModifier);
     pKernelGraphics->pPrivate->staticInfo.pSmIssueRateModifier = NULL;
+
+    portMemFree(pKernelGraphics->pPrivate->staticInfo.pSmIssueRateModifierV2);
+    pKernelGraphics->pPrivate->staticInfo.pSmIssueRateModifierV2 = NULL;
 
     portMemFree(pKernelGraphics->pPrivate->staticInfo.pFecsTraceDefines);
     pKernelGraphics->pPrivate->staticInfo.pFecsTraceDefines = NULL;
@@ -1093,17 +1098,18 @@ kgraphicsLoadStaticInfo_KERNEL
     NvBool bBcState = gpumgrGetBcEnabledStatus(pGpu);
     union
     {
-        NV2080_CTRL_INTERNAL_STATIC_GR_GET_CAPS_PARAMS                   caps;
-        NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS                   info;
-        NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS        globalSmOrder;
-        NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS    floorsweepingMasks;
-        NV2080_CTRL_INTERNAL_STATIC_GR_GET_PPC_MASKS_PARAMS              ppcMasks;
-        NV2080_CTRL_INTERNAL_STATIC_GR_GET_ZCULL_INFO_PARAMS             zcullInfo;
-        NV2080_CTRL_INTERNAL_STATIC_GR_GET_ROP_INFO_PARAMS               ropInfo;
-        NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS smIssueRateModifier;
-        NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_RECORD_SIZE_PARAMS       fecsRecordSize;
-        NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS     fecsTraceDefines;
-        NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS         pdbProperties;
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_CAPS_PARAMS                      caps;
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS                      info;
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS           globalSmOrder;
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS       floorsweepingMasks;
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_PPC_MASKS_PARAMS                 ppcMasks;
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_ZCULL_INFO_PARAMS                zcullInfo;
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_ROP_INFO_PARAMS                  ropInfo;
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS    smIssueRateModifier;
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS smIssueRateModifierV2;
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_RECORD_SIZE_PARAMS          fecsRecordSize;
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS        fecsTraceDefines;
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS            pdbProperties;
     } *pParams = NULL;
 
     NV_ASSERT_OR_RETURN(pPrivate != NULL, NV_ERR_INVALID_STATE);
@@ -1367,6 +1373,32 @@ kgraphicsLoadStaticInfo_KERNEL
         status = NV_OK;
     }
 
+    // SM Issue Rate Modifier V2
+    portMemSet(pParams, 0, sizeof(*pParams));
+    status = pRmApi->Control(pRmApi,
+                             hClient,
+                             hSubdevice,
+                             NV2080_CTRL_CMD_INTERNAL_STATIC_KGR_GET_SM_ISSUE_RATE_MODIFIER_V2,
+                             pParams,
+                             sizeof(pParams->smIssueRateModifierV2));
+
+    if (status == NV_OK)
+    {
+        pPrivate->staticInfo.pSmIssueRateModifierV2 = portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pSmIssueRateModifierV2));
+        if (pPrivate->staticInfo.pSmIssueRateModifierV2 == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup;
+        }
+
+        portMemCopy(pPrivate->staticInfo.pSmIssueRateModifierV2, sizeof(*pPrivate->staticInfo.pSmIssueRateModifierV2),
+                    &pParams->smIssueRateModifierV2.smIssueRateModifierV2[grIdx], sizeof(pParams->smIssueRateModifierV2.smIssueRateModifierV2[grIdx]));
+    }
+    else if (status == NV_ERR_NOT_SUPPORTED)
+    {
+        status = NV_OK;
+    }
+
     // FECS Record Size
     portMemSet(pParams, 0, sizeof(*pParams));
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
@@ -1463,6 +1495,9 @@ cleanup:
 
         portMemFree(pPrivate->staticInfo.pSmIssueRateModifier);
         pPrivate->staticInfo.pSmIssueRateModifier = NULL;
+
+        portMemFree(pPrivate->staticInfo.pSmIssueRateModifierV2);
+        pPrivate->staticInfo.pSmIssueRateModifierV2 = NULL;
 
         portMemFree(pPrivate->staticInfo.pFecsTraceDefines);
         pPrivate->staticInfo.pFecsTraceDefines = NULL;
@@ -2397,19 +2432,13 @@ kgraphicsCreateGoldenImageChannel_IMPL
     bAcquireLock = NV_FALSE;
     pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
 
-    if (!bNeedMIGWar)
+    if (kgraphicsIsGFXSupported(pGpu, pKernelGraphics))
     {
         objectType = GR_OBJECT_TYPE_3D;
     }
     else
     {
         objectType = GR_OBJECT_TYPE_COMPUTE;
-
-        {
-
-            if (kgraphicsIsGFXSupported(pGpu, pKernelGraphics))
-                objectType = GR_OBJECT_TYPE_3D;
-        }
     }
 
     // Get KernelGraphicsObject class Id
@@ -2486,7 +2515,11 @@ void kgraphicsFreeGlobalCtxBuffers_IMPL
 
     // make sure all L2 cache lines using CB buffers are clear after we free them
     if (bEvict)
-        NV_ASSERT_OK(kmemsysCacheOp_HAL(pGpu, pKernelMemorySystem, NULL, FB_CACHE_VIDEO_MEMORY, FB_CACHE_EVICT));
+    {
+        NV_STATUS status;
+        status = kmemsysCacheOp_HAL(pGpu, pKernelMemorySystem, NULL, FB_CACHE_VIDEO_MEMORY, FB_CACHE_EVICT);
+        NV_ASSERT((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET));
+    }
 }
 
 NV_STATUS
@@ -3065,6 +3098,7 @@ subdeviceCtrlCmdKGrGetGlobalSmOrder_IMPL
         pParams->globalSmId[i].globalTpcId     = pStaticInfo->globalSmOrder.globalSmId[i].globalTpcId;
         pParams->globalSmId[i].virtualGpcId    = pStaticInfo->globalSmOrder.globalSmId[i].virtualGpcId;
         pParams->globalSmId[i].migratableTpcId = pStaticInfo->globalSmOrder.globalSmId[i].migratableTpcId;
+        pParams->globalSmId[i].ugpuId          = pStaticInfo->globalSmOrder.globalSmId[i].ugpuId;
     }
 
     return status;
@@ -3124,6 +3158,107 @@ subdeviceCtrlCmdKGrGetSmIssueRateModifier_IMPL
     pParams->imla2 = pStaticInfo->pSmIssueRateModifier->imla2;
     pParams->imla3 = pStaticInfo->pSmIssueRateModifier->imla3;
     pParams->imla4 = pStaticInfo->pSmIssueRateModifier->imla4;
+
+    return NV_OK;
+}
+
+static NvU8
+findSmIssueRateModifier
+(
+    NvU32 index,
+    NvU32 *pData,
+    NV2080_CTRL_INTERNAL_STATIC_GR_SM_ISSUE_RATE_MODIFIER_V2 *pSmIssueRateModifierV2
+)
+{
+    for (NvU32 i = 0; i < pSmIssueRateModifierV2->smIssueRateModifierListSize; i++)
+    {
+        if (pSmIssueRateModifierV2->smIssueRateModifierList[i].index == index)
+        {
+            *pData = pSmIssueRateModifierV2->smIssueRateModifierList[i].data;
+            return NV_OK;
+        }
+    }
+
+    return NV_ERR_INVALID_ARGUMENT;
+}
+
+/*!
+ * subdeviceCtrlCmdKGrGetSmIssueRateModifierV2
+ *
+ * Lock Requirements:
+ *      Assert that API lock and GPUs lock held on entry
+ */
+NV_STATUS
+subdeviceCtrlCmdKGrGetSmIssueRateModifierV2_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelGraphics *pKernelGraphics;
+    Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
+    const KGRAPHICS_STATIC_INFO *pStaticInfo;
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    NvU32 fuseValue = 0;
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+
+    if (!IS_MIG_IN_USE(pGpu) || kmigmgrIsDeviceUsingDeviceProfiling(pGpu, pKernelMIGManager, pDevice))
+    {
+        NvU32 grIdx;
+        for (grIdx = 0; grIdx < GPU_MAX_GRS; grIdx++)
+        {
+            pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, grIdx);
+            if (pKernelGraphics != NULL)
+                break;
+        }
+        if (pKernelGraphics == NULL)
+            return NV_ERR_INVALID_STATE;
+    }
+    else
+    {
+        MIG_INSTANCE_REF ref;
+        RM_ENGINE_TYPE globalGrEngine;
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref));
+        NV_ASSERT_OR_RETURN(ref.pMIGComputeInstance != NULL && ref.pKernelMIGGpuInstance != NULL, NV_ERR_INVALID_STATE);
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref, RM_ENGINE_TYPE_GR(0), &globalGrEngine));
+
+        pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, RM_ENGINE_TYPE_GR_IDX(globalGrEngine));
+    }
+
+    // Verify static info is available
+    pStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
+    NV_ASSERT_OR_RETURN(pStaticInfo != NULL, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(pStaticInfo->pSmIssueRateModifierV2 != NULL, NV_ERR_NOT_SUPPORTED);
+
+    if (pParams->smIssueRateModifierListSize >= NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_MAX_LIST_SIZE)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+    else if (pParams->smIssueRateModifierListSize != 0)
+    {
+        // Discarding fuse values. Will collect agn after validating all fuse indexes are valid.
+        for (NvU32 i = 0; i < pParams->smIssueRateModifierListSize; i++)
+        {
+            NV_ASSERT_OK_OR_RETURN(findSmIssueRateModifier(pParams->smIssueRateModifierList[i].index, &fuseValue, pStaticInfo->pSmIssueRateModifierV2));
+        }
+    }
+    else if (pParams->smIssueRateModifierListSize == 0)
+    {
+        pParams->smIssueRateModifierListSize = pStaticInfo->pSmIssueRateModifierV2->smIssueRateModifierListSize;
+        for (NvU32 i = 0; i < pParams->smIssueRateModifierListSize; i++)
+            pParams->smIssueRateModifierList[i].index = pStaticInfo->pSmIssueRateModifierV2->smIssueRateModifierList[i].index;
+    }
+
+    for (NvU32 i = 0; i < pParams->smIssueRateModifierListSize; i++)
+    {
+        NV_ASSERT_OK_OR_RETURN(findSmIssueRateModifier(pParams->smIssueRateModifierList[i].index, &(pParams->smIssueRateModifierList[i].data), pStaticInfo->pSmIssueRateModifierV2));
+    }
 
     return NV_OK;
 }
@@ -4229,11 +4364,18 @@ subdeviceCtrlCmdGrInternalSetFecsTraceWrOffset_IMPL
 
 NvBool kgraphicsIsCtxswLoggingEnabled_FWCLIENT(OBJGPU *pGpu, KernelGraphics *pKernelGraphics)
 {
-    RUSD_GR_INFO grInfo;
+    NvBool bEnabled = NV_FALSE;
 
-    RUSD_READ_DATA((NV00DE_SHARED_DATA*)(pGpu->userSharedData.pMapBuffer), grInfo, &grInfo);
-    pKernelGraphics->bCtxswLoggingEnabled = grInfo.bCtxswLoggingEnabled;
+    // Skip on CC
+    if (pGpu->userSharedData.pMapBuffer != NULL)
+    {
+        RUSD_GR_INFO grInfo;
 
+        RUSD_READ_DATA((NV00DE_SHARED_DATA*)(pGpu->userSharedData.pMapBuffer), grInfo, &grInfo);
+        bEnabled = grInfo.bCtxswLoggingEnabled;
+    }
+
+    pKernelGraphics->bCtxswLoggingEnabled = bEnabled;
     return pKernelGraphics->bCtxswLoggingEnabled;
 }
 

@@ -640,22 +640,28 @@ enum NvKmsInputColorRange {
      * If DEFAULT is provided, driver will assume full range for RGB formats
      * and limited range for YUV formats.
      */
-    NVKMS_INPUT_COLORRANGE_DEFAULT = 0,
+    NVKMS_INPUT_COLOR_RANGE_DEFAULT = 0,
 
-    NVKMS_INPUT_COLORRANGE_LIMITED = 1,
+    NVKMS_INPUT_COLOR_RANGE_LIMITED = 1,
 
-    NVKMS_INPUT_COLORRANGE_FULL = 2,
+    NVKMS_INPUT_COLOR_RANGE_FULL = 2,
 };
 
 enum NvKmsInputColorSpace {
-    /* Unknown colorspace; no de-gamma will be applied */
-    NVKMS_INPUT_COLORSPACE_NONE = 0,
+    /* Unknown colorspace */
+    NVKMS_INPUT_COLOR_SPACE_NONE = 0,
 
-    /* Linear, Rec.709 [-0.5, 7.5) */
-    NVKMS_INPUT_COLORSPACE_SCRGB_LINEAR = 1,
+    NVKMS_INPUT_COLOR_SPACE_BT601 = 1,
+    NVKMS_INPUT_COLOR_SPACE_BT709 = 2,
+    NVKMS_INPUT_COLOR_SPACE_BT2020 = 3,
+    NVKMS_INPUT_COLOR_SPACE_BT2100 = NVKMS_INPUT_COLOR_SPACE_BT2020,
 
-    /* PQ, Rec.2020 unity */
-    NVKMS_INPUT_COLORSPACE_BT2100_PQ = 2,
+    NVKMS_INPUT_COLOR_SPACE_SCRGB = 4
+};
+
+enum NvKmsInputTf {
+    NVKMS_INPUT_TF_LINEAR = 0,
+    NVKMS_INPUT_TF_PQ = 1
 };
 
 enum NvKmsOutputColorimetry {

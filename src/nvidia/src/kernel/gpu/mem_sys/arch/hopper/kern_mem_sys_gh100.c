@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -629,27 +629,5 @@ kmemsysGetEccDedCountRegAddr_GH100
     NvU32               subp
 )
 {
-    return NV_PFB_FBPA_0_ECC_DED_COUNT(fbpa) + (subp * NV_FBPA_PRI_STRIDE);
-}
-
-/*!
- * @brief Check if the GPU memory partition is in use, which
- *        indicates whether memory has been onlined or not.
- *
- * @param[in] pGpu                OBJGPU pointer
- * @param[in] pKernelMemorySystem KernelMemorySystem pointer
- * @param[in] swizzId             swizzId of the MIG GPU instance,
- *                                0 for full GPU instance/non-MIG.
- *
- * @returns NvBool - NV_TRUE if memory is onlined, NV_FALSE otherwise
- */
-NvBool
-kmemsysIsNumaPartitionInUse_GH100
-(
-    OBJGPU             *pGpu,
-    KernelMemorySystem *pKernelMemorySystem,
-    NvU32               swizzId
-)
-{
-    return pKernelMemorySystem->memPartitionNumaInfo[swizzId].bInUse;
+    return NV_PFB_FBPA_0_ECC_DED_COUNT(subp) + (fbpa * NV_FBPA_PRI_STRIDE);
 }

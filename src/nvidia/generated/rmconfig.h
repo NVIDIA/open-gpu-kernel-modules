@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB202, GB203, GB205, GB206, GB207
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B
 //
 
 #ifndef _RMCFG_H_
@@ -31,7 +31,6 @@
 #define RMCFG_CHIP_GA10XF    0
 #define RMCFG_CHIP_AD10X     1
 #define RMCFG_CHIP_GH10X     1
-#define RMCFG_CHIP_GH20X     0
 #define RMCFG_CHIP_GB10X     1
 #define RMCFG_CHIP_GB20X     1
 #define RMCFG_CHIP_T12X      0
@@ -92,12 +91,15 @@
 #define RMCFG_CHIP_GB100     1
 #define RMCFG_CHIP_GB102     1
 #define RMCFG_CHIP_GB10B     1
+#define RMCFG_CHIP_GB110     1
+#define RMCFG_CHIP_GB112     1
 
 #define RMCFG_CHIP_GB202     1
 #define RMCFG_CHIP_GB203     1
 #define RMCFG_CHIP_GB205     1
 #define RMCFG_CHIP_GB206     1
 #define RMCFG_CHIP_GB207     1
+#define RMCFG_CHIP_GB20B     1
 
 #define RMCFG_CHIP_T194      0
 
@@ -134,7 +136,6 @@
 #define RMCFG_CHIP_GK110C    0
 #define RMCFG_CHIP_GK208     0
 #define RMCFG_CHIP_GK208S    0
-#define RMCFG_CHIP_GH202     0
 #define RMCFG_CHIP_T001_FERMI_NOT_EXIST 0
 #define RMCFG_CHIP_T124      0
 #define RMCFG_CHIP_T132      0
@@ -203,6 +204,7 @@
 #define RMCFG_CHIP_TEGRA_DGPU_BLACKWELL 1
 #define RMCFG_CHIP_TEGRA_DISP 1
 #define RMCFG_CHIP_TEGRA_DISP_CLASSIC_GPUS 1
+#define RMCFG_CHIP_GB20Y     1
 #define RMCFG_CHIP_TEGRA_BIG_GPUS 0
 #define RMCFG_CHIP_FERMI_TEGRA_BIG_GPUS 0
 #define RMCFG_CHIP_TEGRA     0
@@ -320,13 +322,16 @@
 #define RMCFG_FEATURE_MIG_GFX                     1  // RMconfig to encapsulate MIG With GFX support (SMG)
 #define RMCFG_FEATURE_MULTICAST_FABRIC            1  // Support for MULTICAST_FABRIC
 #define RMCFG_FEATURE_NVLINK_ERROR_THRESHOLD      1  // Support for NVLINK_ERROR_THRESHOLD
+#define RMCFG_FEATURE_LOCALIZED_MEMORY            1  // Support for Localized memory feature
 #define RMCFG_FEATURE_LTS_REPAIR                  1  // Support for LTS swapping in-field
 #define RMCFG_FEATURE_GSP_SEC2_ENC_CHNLMGMT_RC_WAR  1  // WAR required for RC handling. See comment #36 of bug 4406277
 #define RMCFG_FEATURE_FABRIC_LINEAR_ADDRESSING    1  // Unicast fabric memory management
 #define RMCFG_FEATURE_GSP_RM_TRACE_RATS           1
+#define RMCFG_FEATURE_DP_TUNNELING                1  // Support for DP over USB-C feature, DP tunneling.
 #define RMCFG_FEATURE_TEGRA_BPMP                  1  // Tegra BPMP integration
 #define RMCFG_FEATURE_BINDATA_IMAGE               0  // Extract bindata from RM binary during compilation and save it in bindata_image.bin
 #define RMCFG_FEATURE_BINDATA_EXTRACTION          0  // Load bindata from disk.(Needs BINDATA_IMAGE to be enabled)
+#define RMCFG_FEATURE_SOC_PACKAGE_POWER_STATE     1  // RM support for SOC Package Power States
 
 
 
@@ -399,6 +404,7 @@
 #define RMCFG_CLASS_NV1_TIMER                     1  // aka NV01_TIMER
 #define RMCFG_CLASS_KERNEL_GRAPHICS_CONTEXT       1  // Graphics Context in Kernel side
 #define RMCFG_CLASS_LOCK_STRESS_OBJECT            1  // Lock Stress Testing Object
+#define RMCFG_CLASS_LOCK_TEST_RELAXED_DUP_OBJECT  1  // Relaxed Dup Lock Testing Object
 #define RMCFG_CLASS_NV50_CHANNEL_GPFIFO           1
 #define RMCFG_CLASS_GF100_CHANNEL_GPFIFO          1
 #define RMCFG_CLASS_KEPLER_CHANNEL_GPFIFO_A       1
@@ -438,6 +444,7 @@
 #define RMCFG_CLASS_NVC773_DISP_CAPABILITIES      1
 #define RMCFG_CLASS_NVC973_DISP_CAPABILITIES      1
 #define RMCFG_CLASS_NVCA73_DISP_CAPABILITIES      1
+#define RMCFG_CLASS_NVCB73_DISP_CAPABILITIES      1
 #define RMCFG_CLASS_NV04_DISPLAY_COMMON           1
 #define RMCFG_CLASS_NV50_DEFERRED_API_CLASS       1
 #define RMCFG_CLASS_MPS_COMPUTE                   1
@@ -480,6 +487,12 @@
 #define RMCFG_CLASS_NVCA7B_WINDOW_IMM_CHANNEL_DMA  1
 #define RMCFG_CLASS_NVCA7D_CORE_CHANNEL_DMA       1
 #define RMCFG_CLASS_NVCA7E_WINDOW_CHANNEL_DMA     1
+#define RMCFG_CLASS_NVCB70_DISPLAY                1
+#define RMCFG_CLASS_NVCB71_DISP_SF_USER           1
+#define RMCFG_CLASS_NVCB7A_CURSOR_IMM_CHANNEL_PIO  1
+#define RMCFG_CLASS_NVCB7B_WINDOW_IMM_CHANNEL_DMA  1
+#define RMCFG_CLASS_NVCB7D_CORE_CHANNEL_DMA       1
+#define RMCFG_CLASS_NVCB7E_WINDOW_CHANNEL_DMA     1
 #define RMCFG_CLASS_NV9010_VBLANK_CALLBACK        1
 #define RMCFG_CLASS_GF100_PROFILER                1  // Profiler Client Support
 #define RMCFG_CLASS_MAXWELL_PROFILER              1  // Base Profiler Class
@@ -670,7 +683,8 @@
 #define RMCFG_MODULE_I2C                          0  // i2c Serial Interface
 #define RMCFG_MODULE_KERNEL_I2C                   1  // Kernel controls for I2C
 #define RMCFG_MODULE_SPI                          0  // SPI Interface
-#define RMCFG_MODULE_SMBPBI                       0  // SMBus Post-Box Interface
+#define RMCFG_MODULE_OOB                          0  // Out-of-band Interface
+#define RMCFG_MODULE_FSP_GPIO                     1  // FSP General Purpose I/O Pins
 #define RMCFG_MODULE_GPIO                         0  // General Purpose I/O Pins
 #define RMCFG_MODULE_KERNEL_GPIO                  1  // Kernel controls for GPIO
 #define RMCFG_MODULE_FAN                          0  // General Purpose I/O Pins
@@ -732,6 +746,7 @@
 #define RMCFG_MODULE_TMDS                         0  // Display component: Transition Minimized Differential Signaling
 #define RMCFG_MODULE_CL                           1  // Core Logic
 #define RMCFG_MODULE_RCDB                         1  // RC Journal log DB
+#define RMCFG_MODULE_NVLOG                        1  // NVLOG infrastructure for storing buffers of logs in various binary formats
 #define RMCFG_MODULE_GPUACCT                      1  // GPU Accounting
 #define RMCFG_MODULE_GRDBG                        0  // Debugger Engine Object
 #define RMCFG_MODULE_PSR                          0  // Panel Self Refresh
@@ -795,7 +810,8 @@
 #define RMCFG_MODULE_DISP_MGR                     0  // Lid- and dock-related disp code for NOTEBOOK
 #define RMCFG_MODULE_PLATFORM                     1  // Object for platform related features
 #define RMCFG_MODULE_KERNEL_CCU                   1  // Counter Collection Unit Kernel(CPU) RM
-#define RMCFG_MODULE_SPDM                         1  // Secure Protocol and Data Management (SPDM) on Kernel(CPU) RM
+#define RMCFG_MODULE_LIBSPDM                      1  // Secure Protocol and Data Management (SPDM) library on Kernel(CPU) RM
+#define RMCFG_MODULE_SPDM                         1  // Secure Protocol and Data Management (SPDM) support Kernel(CPU)-Physical(GSP) RM
 
 
 

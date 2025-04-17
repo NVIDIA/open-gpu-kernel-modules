@@ -588,7 +588,7 @@ static NV_STATUS service_non_managed_fault(uvm_gpu_va_space_t *gpu_va_space,
 
         ats_invalidate->tlb_batch_pending = false;
 
-        va_range_next = uvm_va_space_iter_first(va_space, fault_entry->fault_address, ~0ULL);
+        va_range_next = uvm_va_space_iter_gmmu_mappable_first(va_space, fault_entry->fault_address);
 
         // The VA isn't managed. See if ATS knows about it.
         vma = find_vma_intersection(mm, fault_address, fault_address + 1);

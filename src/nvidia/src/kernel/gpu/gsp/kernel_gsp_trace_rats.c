@@ -39,6 +39,7 @@
 #include "gpu_mgr/gpu_mgr.h"
 #include "vgpu/rpc.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "gpu/timer/objtmr.h"
 
 static
 NV_STATUS
@@ -54,8 +55,10 @@ _gspTraceEventBufferAdd
     NvP64 notificationHandle;
     EVENT_BUFFER_PRODUCER_DATA notifyEvent;
     NvU32 notifyIndex = NV_EVENT_BUFFER_RECORD_TYPE_RATS_GSP_TRACE;
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
 
     pRecord->seqNo = pBind->pEventBuffer->seqNo++;
+    pRecord->timeStamp += pTmr->sysTimerOffsetNs;
 
     portMemSet(&notifyEvent, 0, sizeof(notifyEvent));
     notifyEvent.pVardata = NV_PTR_TO_NvP64(NULL);

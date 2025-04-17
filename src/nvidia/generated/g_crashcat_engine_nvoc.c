@@ -1,4 +1,11 @@
 #define NVOC_CRASHCAT_ENGINE_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,31 +14,27 @@
 #include "utils/nvassert.h"
 #include "g_crashcat_engine_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x654166 = 1;
+char __nvoc_class_id_uniqueness_check__0x654166 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatEngine;
 
-void __nvoc_init_CrashCatEngine(CrashCatEngine*);
+// Forward declarations for CrashCatEngine
+void __nvoc_init__CrashCatEngine(CrashCatEngine*);
 void __nvoc_init_funcTable_CrashCatEngine(CrashCatEngine*);
 NV_STATUS __nvoc_ctor_CrashCatEngine(CrashCatEngine*);
 void __nvoc_init_dataField_CrashCatEngine(CrashCatEngine*);
 void __nvoc_dtor_CrashCatEngine(CrashCatEngine*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_CrashCatEngine;
 
-static const struct NVOC_RTTI __nvoc_rtti_CrashCatEngine_CrashCatEngine = {
-    /*pClassDef=*/          &__nvoc_class_def_CrashCatEngine,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_CrashCatEngine,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__CrashCatEngine;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__CrashCatEngine;
 
-static const struct NVOC_CASTINFO __nvoc_castinfo_CrashCatEngine = {
-    /*numRelatives=*/       1,
-    /*relatives=*/ {
-        &__nvoc_rtti_CrashCatEngine_CrashCatEngine,
-    },
-};
+// Down-thunk(s) to bridge CrashCatEngine methods from ancestors (if any)
+
+// Up-thunk(s) to bridge CrashCatEngine methods to ancestors (if any)
 
 // Not instantiable because it's not derived from class "Object"
 // Not instantiable because it's an abstract class with following pure virtual functions:
@@ -55,15 +58,39 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatEngine =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
-    /*pCastInfo=*/          &__nvoc_castinfo_CrashCatEngine,
-    /*pExportInfo=*/        &__nvoc_export_info_CrashCatEngine
+    /*pCastInfo=*/          &__nvoc_castinfo__CrashCatEngine,
+    /*pExportInfo=*/        &__nvoc_export_info__CrashCatEngine
 };
 
-// Down-thunk(s) to bridge CrashCatEngine methods from ancestors (if any)
 
-// Up-thunk(s) to bridge CrashCatEngine methods to ancestors (if any)
+// Metadata with per-class RTTI and vtable
+static const struct NVOC_METADATA__CrashCatEngine __nvoc_metadata__CrashCatEngine = {
+    .rtti.pClassDef = &__nvoc_class_def_CrashCatEngine,    // (crashcatEngine) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_CrashCatEngine,
+    .rtti.offset    = 0,
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_CrashCatEngine = 
+    .vtable.__crashcatEngineUnload__ = &crashcatEngineUnload_IMPL,    // virtual
+    .vtable.__crashcatEngineConfigured__ = NULL,    // pure virtual
+    .vtable.__crashcatEngineVprintf__ = NULL,    // pure virtual
+    .vtable.__crashcatEnginePriRead__ = NULL,    // pure virtual
+    .vtable.__crashcatEnginePriWrite__ = NULL,    // pure virtual
+    .vtable.__crashcatEngineMapBufferDescriptor__ = NULL,    // pure virtual
+    .vtable.__crashcatEngineUnmapBufferDescriptor__ = NULL,    // pure virtual
+    .vtable.__crashcatEngineSyncBufferDescriptor__ = NULL,    // pure virtual
+    .vtable.__crashcatEngineGetScratchOffsets__ = NULL,    // pure virtual
+    .vtable.__crashcatEngineGetWFL0Offset__ = NULL,    // pure virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__CrashCatEngine = {
+    .numRelatives = 1,
+    .relatives = {
+        &__nvoc_metadata__CrashCatEngine.rtti,    // [0]: (crashcatEngine) this
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__CrashCatEngine = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -100,28 +127,19 @@ static void __nvoc_init_funcTable_CrashCatEngine_1(CrashCatEngine *pThis) {
 
 // Initialize vtable(s) for 10 virtual method(s).
 void __nvoc_init_funcTable_CrashCatEngine(CrashCatEngine *pThis) {
-
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__CrashCatEngine vtable = {
-        .__crashcatEngineUnload__ = &crashcatEngineUnload_IMPL,    // virtual
-        .__crashcatEngineConfigured__ = NULL,    // pure virtual
-        .__crashcatEngineVprintf__ = NULL,    // pure virtual
-        .__crashcatEnginePriRead__ = NULL,    // pure virtual
-        .__crashcatEnginePriWrite__ = NULL,    // pure virtual
-        .__crashcatEngineMapBufferDescriptor__ = NULL,    // pure virtual
-        .__crashcatEngineUnmapBufferDescriptor__ = NULL,    // pure virtual
-        .__crashcatEngineSyncBufferDescriptor__ = NULL,    // pure virtual
-        .__crashcatEngineGetScratchOffsets__ = NULL,    // pure virtual
-        .__crashcatEngineGetWFL0Offset__ = NULL,    // pure virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_vtable = &vtable;    // (crashcatEngine) this
     __nvoc_init_funcTable_CrashCatEngine_1(pThis);
 }
 
-void __nvoc_init_CrashCatEngine(CrashCatEngine *pThis) {
-    pThis->__nvoc_pbase_CrashCatEngine = pThis;
+// Initialize newly constructed object.
+void __nvoc_init__CrashCatEngine(CrashCatEngine *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_CrashCatEngine = pThis;    // (crashcatEngine) this
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__CrashCatEngine;    // (crashcatEngine) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_CrashCatEngine(pThis);
 }
 

@@ -38,7 +38,6 @@ NV_STATUS stdmemValidateParams
     NV_MEMORY_ALLOCATION_PARAMS *pAllocData
 )
 {
-    NvBool         bIso;
     RS_PRIV_LEVEL  privLevel;
     CALL_CONTEXT  *pCallContext = resservGetTlsCallContext();
 
@@ -78,21 +77,6 @@ NV_STATUS stdmemValidateParams
         return NV_ERR_INVALID_OWNER;
     }
 
-    bIso = (pAllocData->type == NVOS32_TYPE_PRIMARY) ||
-           (pAllocData->type == NVOS32_TYPE_VIDEO) ||
-           (pAllocData->type == NVOS32_TYPE_CURSOR);
-
-    //
-    // MM-TODO: If surface requires ISO guarantees, ensure it's of the proper
-    // NVOS32_TYPE. Eventually, we should decouple NVOS32_TYPE from conveying
-    // ISO behavior; RM needs to audit NVOS32_TYPE uses wrt ISO determination.
-    //
-    if (!bIso && FLD_TEST_DRF(OS32, _ATTR2, _ISO, _YES, pAllocData->attr2))
-    {
-        NV_PRINTF(LEVEL_INFO, "type is non-ISO but attributes request ISO!\n");
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
     //
     // check PAGE_OFFLINING flag for client
     // If the client is not a ROOT client, then turning PAGE_OFFLINIG OFF is invalid
@@ -114,11 +98,13 @@ NV_STATUS stdmemValidateParams
     }
 
     //
-    // If NVOS32_TYPE indicates ISO requirements, set
-    // NVOS32_ATTR2_NISO_DISPLAY_YES so it can be used within RM instead of
-    // NVOS32_TYPE for ISO determination.
+    // Check if type implies ISO requirement and set _ISO attribute.
+    // MM-TODO: Eventually, we should decouple NVOS32_TYPE from conveying
+    // ISO behavior (Bug 1896562).
     //
-    if (bIso)
+    if ((pAllocData->type == NVOS32_TYPE_PRIMARY) ||
+        (pAllocData->type == NVOS32_TYPE_VIDEO) ||
+        (pAllocData->type == NVOS32_TYPE_CURSOR))
     {
         pAllocData->attr2 = FLD_SET_DRF(OS32, _ATTR2, _ISO, _YES,
                                         pAllocData->attr2);

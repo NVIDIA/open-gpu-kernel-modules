@@ -86,7 +86,7 @@ kchangrpapiConstruct_IMPL
     if (RS_IS_COPY_CTOR(pParams))
     {
         NV_ASSERT_OK_OR_GOTO(rmStatus,
-                             rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_FIFO),
+                             rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_FIFO),
                              done);
         bLockAcquired = NV_TRUE;
         rmStatus = kchangrpapiCopyConstruct_IMPL(pKernelChannelGroupApi,
@@ -114,7 +114,7 @@ kchangrpapiConstruct_IMPL
 
     // Acquire the lock *only after* PMA is done allocating.
     NV_ASSERT_OK_OR_GOTO(rmStatus,
-                         rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_FIFO),
+                         rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_FIFO),
                          done);
     bLockAcquired = NV_TRUE;
 
@@ -549,7 +549,7 @@ failed:
 done:
 
     if (bLockAcquired)
-        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+        rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
 
     if ((rmStatus == NV_OK) && bReserveMem)
     {

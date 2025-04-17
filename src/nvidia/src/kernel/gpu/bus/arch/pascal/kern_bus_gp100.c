@@ -733,9 +733,10 @@ kbusGetPeerId_GP100
 {
     extern NvU32 kbusGetPeerId_GM107(OBJGPU *pGpu, KernelBus *pKernelBus, OBJGPU *pPeerGpu);
     NvU32 gpuPeerInst = gpuGetInstance(pGpuPeer);
-    NvU32 peerId = pKernelBus->p2p.busNvlinkPeerNumberMask[gpuPeerInst];
+    NvU32 peerMask = pKernelBus->p2p.busNvlinkPeerNumberMask[gpuPeerInst];
+    NvU32 peerId;
 
-    if (peerId == 0)
+    if (peerMask == 0)
     {
         NV_PRINTF(LEVEL_INFO,
                   "NVLINK P2P not set up between GPU%u and GPU%u, checking for PCIe P2P...\n",
@@ -743,8 +744,16 @@ kbusGetPeerId_GP100
         return kbusGetPeerId_GM107(pGpu, pKernelBus, pGpuPeer);
     }
 
-    LOWESTBITIDX_32(peerId);
-    return peerId;
+    FOR_EACH_INDEX_IN_MASK(32, peerId, peerMask)
+    {
+        if (!pKernelBus->p2p.bEgmPeer[peerId])
+        {
+            return peerId;
+        }
+    }
+    FOR_EACH_INDEX_IN_MASK_END;
+
+    return BUS_INVALID_PEER;
 }
 
 /**

@@ -85,8 +85,15 @@
     DRM_DEBUG_DRIVER("[GPU ID 0x%08x] " __fmt,     \
                      __dev->gpu_info.gpu_id, ##__VA_ARGS__)
 
+enum nv_drm_input_color_space {
+    NV_DRM_INPUT_COLOR_SPACE_NONE,
+    NV_DRM_INPUT_COLOR_SPACE_SCRGB_LINEAR,
+    NV_DRM_INPUT_COLOR_SPACE_BT2100_PQ
+};
+
 struct nv_drm_device {
     nv_gpu_info_t gpu_info;
+    MIGDeviceId gpu_mig_device;
 
     struct drm_device *dev;
 
@@ -182,6 +189,9 @@ struct nv_drm_device {
     struct drm_property *nv_crtc_regamma_divisor_property;
 
     struct nv_drm_device *next;
+
+    NvU64 vtFbBaseAddress;
+    NvU64 vtFbSize;
 };
 
 static inline NvU32 nv_drm_next_display_semaphore(

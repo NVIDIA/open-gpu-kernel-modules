@@ -83,12 +83,16 @@
 #include <gpu/kern_gpu_power.h>
 #include <gpu_mgr/gpu_mgr.h>
 #include <core/locks.h>
+#include <pex.h>
+#include <acpidsmguids.h>
 #include "kernel/gpu/intr/intr.h"
 
 #include <gpu/mem_sys/kern_mem_sys.h>
 #include <gpu/subdevice/subdevice.h>
+#include <ctrl/ctrl0080/ctrl0080gpu.h>
 #include <ctrl/ctrl2080/ctrl2080unix.h>
 #include <gpu/timer/objtmr.h>
+
 
 //
 // Schedule timer based callback, to check for the complete GPU Idleness.
@@ -125,6 +129,12 @@
 // than this value then it will be capped to this value.
 //
 #define GCOFF_DYNAMIC_PM_MAX_FB_SIZE_MB      1024
+
+//
+// Safe/Fallback value of PEX reset delay for GCOFF/GPUOFF.
+// Used when programming upstream port as per sku specific PEX reset delay from vbios fails
+//
+#define DEFAULT_GCOFF_PEXRST_DELAY 0
 
 static void RmScheduleCallbackForIdlePreConditions(OBJGPU *);
 static void RmScheduleCallbackForIdlePreConditionsUnderGpuLock(OBJGPU *);
@@ -251,21 +261,28 @@ static NvBool RmCanEnterGcxUnderGpuLock(
     OBJGPU *pGpu
 )
 {
+    nv_state_t    *nv  = NV_GET_NV_STATE(pGpu);
+    nv_priv_t     *nvp = NV_GET_NV_PRIV(nv);
+
     NV_ASSERT(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 
     /*
-     * If GPU does not support GC6 and the actual FB utilization is higher than the threshold,
-     * then the GPU can neither enter GC6 nor GCOFF. So, return from here.
+     * If GC6 cannot be achieved (either GC6 is unsupported or the upstream port is not configured),
+     * Check for GCOFF prerequisites
      */
-    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED))
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED) ||
+        !nvp->gc6_upstream_port_configured)
     {
         NvU64          usedFbSize     = 0;
-        nv_state_t    *nv             = NV_GET_NV_STATE(pGpu);
-        nv_priv_t     *nvp            = NV_GET_NV_PRIV(nv);
         MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
+        /*
+         * In order to enter GCOFF, the FB memory threshold should be less than gcoff_max_fb_size
+         * and clients of RM should not hold the refcount to prevent GCOFF.
+         */
         if (!((memmgrGetUsedRamSize(pGpu, pMemoryManager, &usedFbSize) == NV_OK) &&
-            (usedFbSize <= nvp->dynamic_power.gcoff_max_fb_size)))
+              (usedFbSize <= nvp->dynamic_power.gcoff_max_fb_size) &&
+              (nvp->dynamic_power.clients_gcoff_disallow_refcount == 0)))
         {
             return NV_FALSE;
         }
@@ -1091,7 +1108,7 @@ static int os_get_dynamic_boost_support(
 {
     NV_STATUS status = NV_OK;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pNvpcfParams;
+    NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pNvpcfParams;
     OBJGPU *pGpu;
     int ret;
 
@@ -2206,6 +2223,7 @@ NV_STATUS RmGcxPowerManagement(
 {
     KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     nv_state_t         *nv                  = NV_GET_NV_STATE(pGpu);
+    nv_priv_t          *nvp                 = NV_GET_NV_PRIV(nv);
     NV_STATUS           status              = NV_OK;
 
     if (pGpu->acpiMethodData.jtMethodData.bSBIOSCaps &&
@@ -2236,7 +2254,8 @@ NV_STATUS RmGcxPowerManagement(
         // 2. For system PM with s2idle, GC6 can be used if it is
         //    supported by the GPU.
         //
-        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED))
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED) &&
+            nvp->gc6_upstream_port_configured)
         {
             bCanUseGc6 = bIsDynamicPM ? NV_TRUE : nv_s2idle_pm_configured();
         }
@@ -2253,10 +2272,14 @@ NV_STATUS RmGcxPowerManagement(
             pGpu->setProperty(pGpu, PDB_PROP_GPU_GCOFF_STATE_ENTERING, NV_TRUE);
 
             //
-            // Set 'bPreserveComptagBackingStoreOnSuspendDef' so that comptag
+            // Set 'bPreserveComptagBackingStoreOnSuspend' so that comptag
             // related handling can be done during state unload/load.
             //
-            pKernelMemorySystem->bPreserveComptagBackingStoreOnSuspend = NV_TRUE;
+            if (!pMemoryManager->bUseVirtualCopyOnSuspend)
+            {
+                pKernelMemorySystem->bPreserveComptagBackingStoreOnSuspend = NV_TRUE;
+            }
+
             status = RmPowerManagement(pGpu, NV_PM_ACTION_STANDBY);
             pGpu->setProperty(pGpu, PDB_PROP_GPU_GCOFF_STATE_ENTERING, NV_FALSE);
 
@@ -2764,6 +2787,104 @@ RmInitS0ixPowerManagement(
     }
 }
 
+/*!
+ * @brief: Helper function to abstract the execution and return value verification
+ *         of PEX DSM methods, necessary for GC6 to work in Desktops.
+ *
+ * This function is capable to invoke three _DSM methods, as listed below:
+ *   0x0: _DSM for "Query supported functions"
+ *        (for more details, refer to section 9.1.1 of the ACPI 6.3 Specification).
+ *   0xA: _DSM for "Requesting D3cold Aux Power Limit"
+ *        (for more details, refer to section 4.6.10 of PCI Firmware Specification v3.3)
+ *   0xB: _DSM for "Adding PERST# Assertion Delay"
+ *        (for more details, refer to section 4.6.11 of PCI Firmware Specification v3.3)
+ *
+ * @param[in]   nv                 nv_state_t pointer.
+ * @param[in]   dsmSubFunc         subfunction to invoke.
+ * @param[in]   data               input data for dsmSubFunc.
+ *
+ * @return      TRUE if dsmSubFunc executed successfully and return value is as expected;
+ *              FALSE otherwise.
+ */
+static NvBool RmAcpiD3ColdDsm
+(
+    nv_state_t *nv,
+    NvU32       dsmSubFunc,
+    NvU32       data
+)
+{
+    NvU32 inData = data;
+
+    /*
+     * Third argument (i.e. acpiDsmRev) is sent as 4 because PEX_FUNC_AUXPOWERLIMIT and
+     * PEX_FUNC_PEXRST_DELAY sub-functions were introduced in PCI Firmware Specification 3.2
+     * and they are supported only for _DSM revision 4 onwards. But, RM still use _DSM
+     * revision 2 (see drivers/common/inc/pex.h). Hence, the need to hardcode 4 here.
+     */
+    if (nv_acpi_d3cold_dsm_for_upstream_port(nv, (NvU8 *)&PEX_DSM_GUID, 4, dsmSubFunc, &data) != NV_OK)
+    {
+        NV_PRINTF(LEVEL_NOTICE, "%s: PEX _DSM subfunction: 0x%X failed.\n", __FUNCTION__, dsmSubFunc);
+        return NV_FALSE;
+    }
+
+    switch (dsmSubFunc)
+    {
+        case NV_ACPI_ALL_FUNC_SUPPORT:
+            return ((data & NVBIT(PEX_FUNC_PEXRST_DELAY)) &&
+                    (data & NVBIT(PEX_FUNC_AUXPOWERLIMIT)));
+
+        case PEX_FUNC_PEXRST_DELAY:
+            return (inData == data);
+
+        case PEX_FUNC_AUXPOWERLIMIT:
+            return ((data == NV_AUX_POWER_REQUEST_STATUS_GRANTED_WITH_12V_POWER) ||
+                    (data == NV_AUX_POWER_REQUEST_STATUS_GRANTED_WITHOUT_12V_POWER));
+
+        default:
+            return NV_FALSE;
+    }
+
+    return NV_FALSE;
+}
+
+static NvBool RmConfigureUpstreamPortForRTD3(
+    nv_state_t *nv,
+    NvBool      bConfigureForGC6
+)
+{
+    nv_priv_t *nvp  = NV_GET_NV_PRIV(nv);
+    OBJGPU    *pGpu = NV_GET_NV_PRIV_PGPU(nv);
+
+    if (nvp->b_mobile_config_enabled)
+        return NV_TRUE;
+
+    if (!RmAcpiD3ColdDsm(nv, NV_ACPI_ALL_FUNC_SUPPORT, 0))
+    {
+        return NV_FALSE;
+    }
+
+    if (!RmAcpiD3ColdDsm(nv, PEX_FUNC_PEXRST_DELAY,
+                         bConfigureForGC6 ? pGpu->gc6State.GC6PerstDelay : DEFAULT_GCOFF_PEXRST_DELAY))
+    {
+        return NV_FALSE;
+    }
+
+    if (!RmAcpiD3ColdDsm(nv, PEX_FUNC_AUXPOWERLIMIT,
+                         bConfigureForGC6 ? pGpu->gc6State.GC6TotalBoardPower : 0))
+    {
+        if (bConfigureForGC6)
+            RmAcpiD3ColdDsm(nv, PEX_FUNC_PEXRST_DELAY, DEFAULT_GCOFF_PEXRST_DELAY);
+
+        return NV_FALSE;
+    }
+
+    NV_PRINTF(LEVEL_NOTICE,
+              "Aux Power and Pex delay settings %s successfully.\n",
+              bConfigureForGC6? "applied": "cleared");
+
+    return NV_TRUE;
+}
+
 void RmInitPowerManagement(
     nv_state_t *nv
 )
@@ -2774,9 +2895,16 @@ void RmInitPowerManagement(
         NvBool bGC6Support   = NV_FALSE;
         NvBool bGCOFFSupport = NV_FALSE;
         NvBool bRtd3Support  = RmCheckRtd3GcxSupport(nv, &bGC6Support, &bGCOFFSupport);
+        nv_priv_t *nvp       = NV_GET_NV_PRIV(nv);
 
         RmInitDeferredDynamicPowerManagement(nv, bRtd3Support);
         RmInitS0ixPowerManagement(nv, bRtd3Support, bGC6Support);
+
+        if (bRtd3Support && bGC6Support &&
+            (nvp->s0ix_pm_enabled || (nvp->dynamic_power.mode == NV_DYNAMIC_PM_FINE)))
+        {
+            nvp->gc6_upstream_port_configured = RmConfigureUpstreamPortForRTD3(nv, NV_TRUE);
+        }
 
         // UNLOCK: release GPUs lock
         rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
@@ -2787,6 +2915,13 @@ void RmDestroyPowerManagement(
     nv_state_t *nv
 )
 {
+    nv_priv_t *nvp = NV_GET_NV_PRIV(nv);
+
+    if (nvp->gc6_upstream_port_configured)
+    {
+        RmConfigureUpstreamPortForRTD3(nv, NV_FALSE);
+    }
+
     RmDestroyDeferredDynamicPowerManagement(nv);
 }
 

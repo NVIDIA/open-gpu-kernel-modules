@@ -1,13 +1,15 @@
 
 #ifndef _G_KERN_MEM_SYS_NVOC_H_
 #define _G_KERN_MEM_SYS_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -211,15 +213,19 @@ typedef NV2080_CTRL_INTERNAL_MEMSYS_GET_STATIC_CONFIG_PARAMS MEMORY_SYSTEM_STATI
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__KernelMemorySystem;
+struct NVOC_METADATA__OBJENGSTATE;
 struct NVOC_VTABLE__KernelMemorySystem;
 
 
 struct KernelMemorySystem {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__KernelMemorySystem *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__KernelMemorySystem *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -229,7 +235,7 @@ struct KernelMemorySystem {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct KernelMemorySystem *__nvoc_pbase_KernelMemorySystem;    // kmemsys
 
-    // Vtable with 29 per-object function pointers
+    // Vtable with 31 per-object function pointers
     NV_STATUS (*__kmemsysGetFbNumaInfo__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvU64 *, NvU64 *, NvS32 *);  // halified (2 hals) body
     NV_STATUS (*__kmemsysReadUsableFbSize__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvU64 *);  // halified (2 hals) body
     NV_STATUS (*__kmemsysGetUsableFbSize__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvU64 *);  // halified (2 hals) body
@@ -239,6 +245,8 @@ struct KernelMemorySystem {
     void (*__kmemsysWriteL2SysmemInvalidateReg__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvU32);  // halified (2 hals) body
     NvU32 (*__kmemsysReadL2PeermemInvalidateReg__)(OBJGPU *, struct KernelMemorySystem * /*this*/);  // halified (2 hals) body
     void (*__kmemsysWriteL2PeermemInvalidateReg__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvU32);  // halified (2 hals) body
+    struct IoAperture * (*__kmemsysInitHshub0Aperture__)(OBJGPU *, struct KernelMemorySystem * /*this*/);  // halified (2 hals) body
+    void (*__kmemsysDestroyHshub0Aperture__)(OBJGPU *, struct KernelMemorySystem * /*this*/, struct IoAperture *);  // halified (2 hals) body
     NV_STATUS (*__kmemsysInitFlushSysmemBuffer__)(OBJGPU *, struct KernelMemorySystem * /*this*/);  // halified (3 hals) body
     void (*__kmemsysProgramSysmemFlushBuffer__)(OBJGPU *, struct KernelMemorySystem * /*this*/);  // halified (6 hals) body
     NvU32 (*__kmemsysGetFlushSysmemBufferAddrShift__)(OBJGPU *, struct KernelMemorySystem * /*this*/);  // halified (4 hals) body
@@ -258,7 +266,9 @@ struct KernelMemorySystem {
     NvU32 (*__kmemsysGetEccDedCountRegAddr__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvU32, NvU32);  // halified (3 hals) body
     NvU16 (*__kmemsysGetMaximumBlacklistPages__)(OBJGPU *, struct KernelMemorySystem * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kmemsysGetFbInfos__)(OBJGPU *, struct KernelMemorySystem * /*this*/, struct RsClient *, Device *, NvHandle, NV2080_CTRL_FB_GET_INFO_V2_PARAMS *, NvU64 *);  // halified (2 hals)
-    NvBool (*__kmemsysIsNumaPartitionInUse__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvU32);  // halified (2 hals) body
+    NvBool (*__kmemsysCheckReadoutEccEnablement__)(OBJGPU *, struct KernelMemorySystem * /*this*/);  // halified (2 hals) body
+
+    // 1 PDB property
 
     // Data members
     NvBool bDisableTiledCachingInvalidatesWithEccBug1521641;
@@ -288,10 +298,8 @@ struct KernelMemorySystem {
 };
 
 
-// Metadata including vtable with 14 function pointers plus superclass metadata
+// Vtable with 14 per-class function pointers
 struct NVOC_VTABLE__KernelMemorySystem {
-    const struct NVOC_VTABLE__OBJENGSTATE OBJENGSTATE;    // (engstate) 14 function pointers
-
     NV_STATUS (*__kmemsysConstructEngine__)(OBJGPU *, struct KernelMemorySystem * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__kmemsysStatePreInitLocked__)(OBJGPU *, struct KernelMemorySystem * /*this*/);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__kmemsysStateInitLocked__)(OBJGPU *, struct KernelMemorySystem * /*this*/);  // virtual override (engstate) base (engstate)
@@ -306,6 +314,13 @@ struct NVOC_VTABLE__KernelMemorySystem {
     NV_STATUS (*__kmemsysStateInitUnlocked__)(struct OBJGPU *, struct KernelMemorySystem * /*this*/);  // virtual inherited (engstate) base (engstate)
     NV_STATUS (*__kmemsysStatePostUnload__)(struct OBJGPU *, struct KernelMemorySystem * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
     NvBool (*__kmemsysIsPresent__)(struct OBJGPU *, struct KernelMemorySystem * /*this*/);  // virtual inherited (engstate) base (engstate)
+};
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__KernelMemorySystem {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
+    const struct NVOC_VTABLE__KernelMemorySystem vtable;
 };
 
 #ifndef __NVOC_CLASS_KernelMemorySystem_TYPEDEF__
@@ -324,10 +339,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelMemorySystem;
     ((pThis)->__nvoc_pbase_KernelMemorySystem)
 
 #ifdef __nvoc_kern_mem_sys_h_disabled
-#define __dynamicCast_KernelMemorySystem(pThis) ((KernelMemorySystem*)NULL)
+#define __dynamicCast_KernelMemorySystem(pThis) ((KernelMemorySystem*) NULL)
 #else //__nvoc_kern_mem_sys_h_disabled
 #define __dynamicCast_KernelMemorySystem(pThis) \
-    ((KernelMemorySystem*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(KernelMemorySystem)))
+    ((KernelMemorySystem*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(KernelMemorySystem)))
 #endif //__nvoc_kern_mem_sys_h_disabled
 
 // Property macros
@@ -342,23 +357,23 @@ NV_STATUS __nvoc_objCreate_KernelMemorySystem(KernelMemorySystem**, Dynamic*, Nv
 
 
 // Wrapper macros
-#define kmemsysConstructEngine_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_vtable->__kmemsysConstructEngine__
+#define kmemsysConstructEngine_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysConstructEngine__
 #define kmemsysConstructEngine(pGpu, pKernelMemorySystem, arg3) kmemsysConstructEngine_DISPATCH(pGpu, pKernelMemorySystem, arg3)
-#define kmemsysStatePreInitLocked_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_vtable->__kmemsysStatePreInitLocked__
+#define kmemsysStatePreInitLocked_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysStatePreInitLocked__
 #define kmemsysStatePreInitLocked(pGpu, pKernelMemorySystem) kmemsysStatePreInitLocked_DISPATCH(pGpu, pKernelMemorySystem)
-#define kmemsysStateInitLocked_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_vtable->__kmemsysStateInitLocked__
+#define kmemsysStateInitLocked_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysStateInitLocked__
 #define kmemsysStateInitLocked(pGpu, pKernelMemorySystem) kmemsysStateInitLocked_DISPATCH(pGpu, pKernelMemorySystem)
-#define kmemsysStatePreLoad_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_vtable->__kmemsysStatePreLoad__
+#define kmemsysStatePreLoad_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysStatePreLoad__
 #define kmemsysStatePreLoad(pGpu, pKernelMemorySystem, flags) kmemsysStatePreLoad_DISPATCH(pGpu, pKernelMemorySystem, flags)
-#define kmemsysStatePostLoad_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_vtable->__kmemsysStatePostLoad__
+#define kmemsysStatePostLoad_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysStatePostLoad__
 #define kmemsysStatePostLoad(pGpu, pKernelMemorySystem, flags) kmemsysStatePostLoad_DISPATCH(pGpu, pKernelMemorySystem, flags)
-#define kmemsysStateLoad_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_vtable->__kmemsysStateLoad__
+#define kmemsysStateLoad_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysStateLoad__
 #define kmemsysStateLoad(pGpu, pKernelMemorySystem, flags) kmemsysStateLoad_DISPATCH(pGpu, pKernelMemorySystem, flags)
-#define kmemsysStatePreUnload_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_vtable->__kmemsysStatePreUnload__
+#define kmemsysStatePreUnload_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysStatePreUnload__
 #define kmemsysStatePreUnload(pGpu, pKernelMemorySystem, flags) kmemsysStatePreUnload_DISPATCH(pGpu, pKernelMemorySystem, flags)
-#define kmemsysStateUnload_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_vtable->__kmemsysStateUnload__
+#define kmemsysStateUnload_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysStateUnload__
 #define kmemsysStateUnload(pGpu, pKernelMemorySystem, flags) kmemsysStateUnload_DISPATCH(pGpu, pKernelMemorySystem, flags)
-#define kmemsysStateDestroy_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_vtable->__kmemsysStateDestroy__
+#define kmemsysStateDestroy_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysStateDestroy__
 #define kmemsysStateDestroy(pGpu, pKernelMemorySystem) kmemsysStateDestroy_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysGetFbNumaInfo_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__kmemsysGetFbNumaInfo__
 #define kmemsysGetFbNumaInfo(pGpu, pKernelMemorySystem, physAddr, rsvdPhysAddr, numaNodeId) kmemsysGetFbNumaInfo_DISPATCH(pGpu, pKernelMemorySystem, physAddr, rsvdPhysAddr, numaNodeId)
@@ -387,6 +402,12 @@ NV_STATUS __nvoc_objCreate_KernelMemorySystem(KernelMemorySystem**, Dynamic*, Nv
 #define kmemsysWriteL2PeermemInvalidateReg_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__kmemsysWriteL2PeermemInvalidateReg__
 #define kmemsysWriteL2PeermemInvalidateReg(pGpu, pKernelMemorySystem, arg3) kmemsysWriteL2PeermemInvalidateReg_DISPATCH(pGpu, pKernelMemorySystem, arg3)
 #define kmemsysWriteL2PeermemInvalidateReg_HAL(pGpu, pKernelMemorySystem, arg3) kmemsysWriteL2PeermemInvalidateReg_DISPATCH(pGpu, pKernelMemorySystem, arg3)
+#define kmemsysInitHshub0Aperture_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__kmemsysInitHshub0Aperture__
+#define kmemsysInitHshub0Aperture(pGpu, pKernelMemorySystem) kmemsysInitHshub0Aperture_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysInitHshub0Aperture_HAL(pGpu, pKernelMemorySystem) kmemsysInitHshub0Aperture_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysDestroyHshub0Aperture_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__kmemsysDestroyHshub0Aperture__
+#define kmemsysDestroyHshub0Aperture(pGpu, pKernelMemorySystem, pIoAperture) kmemsysDestroyHshub0Aperture_DISPATCH(pGpu, pKernelMemorySystem, pIoAperture)
+#define kmemsysDestroyHshub0Aperture_HAL(pGpu, pKernelMemorySystem, pIoAperture) kmemsysDestroyHshub0Aperture_DISPATCH(pGpu, pKernelMemorySystem, pIoAperture)
 #define kmemsysInitFlushSysmemBuffer_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__kmemsysInitFlushSysmemBuffer__
 #define kmemsysInitFlushSysmemBuffer(pGpu, pKernelMemorySystem) kmemsysInitFlushSysmemBuffer_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysInitFlushSysmemBuffer_HAL(pGpu, pKernelMemorySystem) kmemsysInitFlushSysmemBuffer_DISPATCH(pGpu, pKernelMemorySystem)
@@ -444,55 +465,55 @@ NV_STATUS __nvoc_objCreate_KernelMemorySystem(KernelMemorySystem**, Dynamic*, Nv
 #define kmemsysGetFbInfos_FNPTR(arg_this) arg_this->__kmemsysGetFbInfos__
 #define kmemsysGetFbInfos(arg1, arg_this, arg3, arg4, hSubdevice, pParams, pFbInfoListIndicesUnset) kmemsysGetFbInfos_DISPATCH(arg1, arg_this, arg3, arg4, hSubdevice, pParams, pFbInfoListIndicesUnset)
 #define kmemsysGetFbInfos_HAL(arg1, arg_this, arg3, arg4, hSubdevice, pParams, pFbInfoListIndicesUnset) kmemsysGetFbInfos_DISPATCH(arg1, arg_this, arg3, arg4, hSubdevice, pParams, pFbInfoListIndicesUnset)
-#define kmemsysIsNumaPartitionInUse_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__kmemsysIsNumaPartitionInUse__
-#define kmemsysIsNumaPartitionInUse(pGpu, pKernelMemorySystem, swizzId) kmemsysIsNumaPartitionInUse_DISPATCH(pGpu, pKernelMemorySystem, swizzId)
-#define kmemsysIsNumaPartitionInUse_HAL(pGpu, pKernelMemorySystem, swizzId) kmemsysIsNumaPartitionInUse_DISPATCH(pGpu, pKernelMemorySystem, swizzId)
-#define kmemsysInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateInitMissing__
+#define kmemsysCheckReadoutEccEnablement_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__kmemsysCheckReadoutEccEnablement__
+#define kmemsysCheckReadoutEccEnablement(pGpu, pKernelMemorySystem) kmemsysCheckReadoutEccEnablement_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysCheckReadoutEccEnablement_HAL(pGpu, pKernelMemorySystem) kmemsysCheckReadoutEccEnablement_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define kmemsysInitMissing(pGpu, pEngstate) kmemsysInitMissing_DISPATCH(pGpu, pEngstate)
-#define kmemsysStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitUnlocked__
+#define kmemsysStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__
 #define kmemsysStatePreInitUnlocked(pGpu, pEngstate) kmemsysStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kmemsysStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateInitUnlocked__
+#define kmemsysStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__
 #define kmemsysStateInitUnlocked(pGpu, pEngstate) kmemsysStateInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kmemsysStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePostUnload__
+#define kmemsysStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__
 #define kmemsysStatePostUnload(pGpu, pEngstate, arg3) kmemsysStatePostUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define kmemsysIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateIsPresent__
+#define kmemsysIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__
 #define kmemsysIsPresent(pGpu, pEngstate) kmemsysIsPresent_DISPATCH(pGpu, pEngstate)
 
 // Dispatch functions
 static inline NV_STATUS kmemsysConstructEngine_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, ENGDESCRIPTOR arg3) {
-    return pKernelMemorySystem->__nvoc_vtable->__kmemsysConstructEngine__(pGpu, pKernelMemorySystem, arg3);
+    return pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysConstructEngine__(pGpu, pKernelMemorySystem, arg3);
 }
 
 static inline NV_STATUS kmemsysStatePreInitLocked_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
-    return pKernelMemorySystem->__nvoc_vtable->__kmemsysStatePreInitLocked__(pGpu, pKernelMemorySystem);
+    return pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysStatePreInitLocked__(pGpu, pKernelMemorySystem);
 }
 
 static inline NV_STATUS kmemsysStateInitLocked_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
-    return pKernelMemorySystem->__nvoc_vtable->__kmemsysStateInitLocked__(pGpu, pKernelMemorySystem);
+    return pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysStateInitLocked__(pGpu, pKernelMemorySystem);
 }
 
 static inline NV_STATUS kmemsysStatePreLoad_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 flags) {
-    return pKernelMemorySystem->__nvoc_vtable->__kmemsysStatePreLoad__(pGpu, pKernelMemorySystem, flags);
+    return pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysStatePreLoad__(pGpu, pKernelMemorySystem, flags);
 }
 
 static inline NV_STATUS kmemsysStatePostLoad_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 flags) {
-    return pKernelMemorySystem->__nvoc_vtable->__kmemsysStatePostLoad__(pGpu, pKernelMemorySystem, flags);
+    return pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysStatePostLoad__(pGpu, pKernelMemorySystem, flags);
 }
 
 static inline NV_STATUS kmemsysStateLoad_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 flags) {
-    return pKernelMemorySystem->__nvoc_vtable->__kmemsysStateLoad__(pGpu, pKernelMemorySystem, flags);
+    return pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysStateLoad__(pGpu, pKernelMemorySystem, flags);
 }
 
 static inline NV_STATUS kmemsysStatePreUnload_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 flags) {
-    return pKernelMemorySystem->__nvoc_vtable->__kmemsysStatePreUnload__(pGpu, pKernelMemorySystem, flags);
+    return pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysStatePreUnload__(pGpu, pKernelMemorySystem, flags);
 }
 
 static inline NV_STATUS kmemsysStateUnload_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 flags) {
-    return pKernelMemorySystem->__nvoc_vtable->__kmemsysStateUnload__(pGpu, pKernelMemorySystem, flags);
+    return pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysStateUnload__(pGpu, pKernelMemorySystem, flags);
 }
 
 static inline void kmemsysStateDestroy_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
-    pKernelMemorySystem->__nvoc_vtable->__kmemsysStateDestroy__(pGpu, pKernelMemorySystem);
+    pKernelMemorySystem->__nvoc_metadata_ptr->vtable.__kmemsysStateDestroy__(pGpu, pKernelMemorySystem);
 }
 
 static inline NV_STATUS kmemsysGetFbNumaInfo_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU64 *physAddr, NvU64 *rsvdPhysAddr, NvS32 *numaNodeId) {
@@ -529,6 +550,14 @@ static inline NvU32 kmemsysReadL2PeermemInvalidateReg_DISPATCH(OBJGPU *pGpu, str
 
 static inline void kmemsysWriteL2PeermemInvalidateReg_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 arg3) {
     pKernelMemorySystem->__kmemsysWriteL2PeermemInvalidateReg__(pGpu, pKernelMemorySystem, arg3);
+}
+
+static inline struct IoAperture * kmemsysInitHshub0Aperture_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    return pKernelMemorySystem->__kmemsysInitHshub0Aperture__(pGpu, pKernelMemorySystem);
+}
+
+static inline void kmemsysDestroyHshub0Aperture_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, struct IoAperture *pIoAperture) {
+    pKernelMemorySystem->__kmemsysDestroyHshub0Aperture__(pGpu, pKernelMemorySystem, pIoAperture);
 }
 
 static inline NV_STATUS kmemsysInitFlushSysmemBuffer_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
@@ -607,28 +636,28 @@ static inline NV_STATUS kmemsysGetFbInfos_DISPATCH(OBJGPU *arg1, struct KernelMe
     return arg_this->__kmemsysGetFbInfos__(arg1, arg_this, arg3, arg4, hSubdevice, pParams, pFbInfoListIndicesUnset);
 }
 
-static inline NvBool kmemsysIsNumaPartitionInUse_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 swizzId) {
-    return pKernelMemorySystem->__kmemsysIsNumaPartitionInUse__(pGpu, pKernelMemorySystem, swizzId);
+static inline NvBool kmemsysCheckReadoutEccEnablement_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    return pKernelMemorySystem->__kmemsysCheckReadoutEccEnablement__(pGpu, pKernelMemorySystem);
 }
 
 static inline void kmemsysInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelMemorySystem *pEngstate) {
-    pEngstate->__nvoc_vtable->__kmemsysInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_metadata_ptr->vtable.__kmemsysInitMissing__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kmemsysStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelMemorySystem *pEngstate) {
-    return pEngstate->__nvoc_vtable->__kmemsysStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__kmemsysStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kmemsysStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelMemorySystem *pEngstate) {
-    return pEngstate->__nvoc_vtable->__kmemsysStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__kmemsysStateInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kmemsysStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelMemorySystem *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_vtable->__kmemsysStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__kmemsysStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline NvBool kmemsysIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelMemorySystem *pEngstate) {
-    return pEngstate->__nvoc_vtable->__kmemsysIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_metadata_ptr->vtable.__kmemsysIsPresent__(pGpu, pEngstate);
 }
 
 static inline void kmemsysAssertSysmemFlushBufferValid_b3696a(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
@@ -704,17 +733,16 @@ static inline NV_STATUS kmemsysCheckDisplayRemapperRange(OBJGPU *pGpu, struct Ke
 
 #define kmemsysCheckDisplayRemapperRange_HAL(pGpu, pKernelMemorySystem, arg3, arg4) kmemsysCheckDisplayRemapperRange(pGpu, pKernelMemorySystem, arg3, arg4)
 
-static inline void kmemsysPostHeapCreate_b3696a(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
-    return;
-}
+NV_STATUS kmemsysPostHeapCreate_KERNEL(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
 
 
 #ifdef __nvoc_kern_mem_sys_h_disabled
-static inline void kmemsysPostHeapCreate(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+static inline NV_STATUS kmemsysPostHeapCreate(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
     NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kern_mem_sys_h_disabled
-#define kmemsysPostHeapCreate(pGpu, pKernelMemorySystem) kmemsysPostHeapCreate_b3696a(pGpu, pKernelMemorySystem)
+#define kmemsysPostHeapCreate(pGpu, pKernelMemorySystem) kmemsysPostHeapCreate_KERNEL(pGpu, pKernelMemorySystem)
 #endif //__nvoc_kern_mem_sys_h_disabled
 
 #define kmemsysPostHeapCreate_HAL(pGpu, pKernelMemorySystem) kmemsysPostHeapCreate(pGpu, pKernelMemorySystem)
@@ -902,6 +930,18 @@ static inline void kmemsysWriteL2PeermemInvalidateReg_f2d351(OBJGPU *pGpu, struc
     NV_ASSERT_PRECOMP(0);
 }
 
+struct IoAperture *kmemsysInitHshub0Aperture_GB100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
+static inline struct IoAperture *kmemsysInitHshub0Aperture_fa6e19(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    return ((void *)0);
+}
+
+void kmemsysDestroyHshub0Aperture_GB100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, struct IoAperture *pIoAperture);
+
+static inline void kmemsysDestroyHshub0Aperture_b3696a(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, struct IoAperture *pIoAperture) {
+    return;
+}
+
 static inline NV_STATUS kmemsysInitFlushSysmemBuffer_56cd7a(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
     return NV_OK;
 }
@@ -1040,11 +1080,9 @@ static inline NV_STATUS kmemsysGetFbInfos_ac1694(OBJGPU *arg1, struct KernelMemo
 
 NV_STATUS kmemsysGetFbInfos_VF(OBJGPU *arg1, struct KernelMemorySystem *arg2, struct RsClient *arg3, Device *arg4, NvHandle hSubdevice, NV2080_CTRL_FB_GET_INFO_V2_PARAMS *pParams, NvU64 *pFbInfoListIndicesUnset);
 
-NvBool kmemsysIsNumaPartitionInUse_GH100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 swizzId);
+NvBool kmemsysCheckReadoutEccEnablement_GV100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
 
-static inline NvBool kmemsysIsNumaPartitionInUse_3dd2c9(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 swizzId) {
-    return NV_FALSE;
-}
+NvBool kmemsysCheckReadoutEccEnablement_GA100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
 
 static inline NvBool kmemsysIsL2CleanFbPull(struct KernelMemorySystem *pKernelMemorySystem) {
     return pKernelMemorySystem->bL2CleanFbPull;
@@ -1053,6 +1091,17 @@ static inline NvBool kmemsysIsL2CleanFbPull(struct KernelMemorySystem *pKernelMe
 void kmemsysDestruct_IMPL(struct KernelMemorySystem *pKernelMemorySystem);
 
 #define __nvoc_kmemsysDestruct(pKernelMemorySystem) kmemsysDestruct_IMPL(pKernelMemorySystem)
+NV_STATUS kmemsysFlushGpuCache_IMPL(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, struct KernelBus *pKernelBus, NV2080_CTRL_FB_FLUSH_GPU_CACHE_PARAMS *pCacheFlushParams);
+
+#ifdef __nvoc_kern_mem_sys_h_disabled
+static inline NV_STATUS kmemsysFlushGpuCache(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, struct KernelBus *pKernelBus, NV2080_CTRL_FB_FLUSH_GPU_CACHE_PARAMS *pCacheFlushParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kern_mem_sys_h_disabled
+#define kmemsysFlushGpuCache(pGpu, pKernelMemorySystem, pKernelBus, pCacheFlushParams) kmemsysFlushGpuCache_IMPL(pGpu, pKernelMemorySystem, pKernelBus, pCacheFlushParams)
+#endif //__nvoc_kern_mem_sys_h_disabled
+
 NV_STATUS kmemsysEnsureSysmemFlushBufferInitialized_IMPL(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
 
 #ifdef __nvoc_kern_mem_sys_h_disabled

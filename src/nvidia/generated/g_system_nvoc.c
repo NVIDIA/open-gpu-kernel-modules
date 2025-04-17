@@ -1,4 +1,11 @@
 #define NVOC_SYSTEM_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,49 +14,31 @@
 #include "utils/nvassert.h"
 #include "g_system_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x40e2c8 = 1;
+char __nvoc_class_id_uniqueness_check__0x40e2c8 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJSYS;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJTRACEABLE;
 
-void __nvoc_init_OBJSYS(OBJSYS*);
+// Forward declarations for OBJSYS
+void __nvoc_init__Object(Object*);
+void __nvoc_init__OBJTRACEABLE(OBJTRACEABLE*);
+void __nvoc_init__OBJSYS(OBJSYS*);
 void __nvoc_init_funcTable_OBJSYS(OBJSYS*);
 NV_STATUS __nvoc_ctor_OBJSYS(OBJSYS*);
 void __nvoc_init_dataField_OBJSYS(OBJSYS*);
 void __nvoc_dtor_OBJSYS(OBJSYS*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJSYS;
 
-static const struct NVOC_RTTI __nvoc_rtti_OBJSYS_OBJSYS = {
-    /*pClassDef=*/          &__nvoc_class_def_OBJSYS,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_OBJSYS,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__OBJSYS;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJSYS;
 
-static const struct NVOC_RTTI __nvoc_rtti_OBJSYS_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(OBJSYS, __nvoc_base_Object),
-};
+// Down-thunk(s) to bridge OBJSYS methods from ancestors (if any)
 
-static const struct NVOC_RTTI __nvoc_rtti_OBJSYS_OBJTRACEABLE = {
-    /*pClassDef=*/          &__nvoc_class_def_OBJTRACEABLE,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(OBJSYS, __nvoc_base_OBJTRACEABLE),
-};
-
-static const struct NVOC_CASTINFO __nvoc_castinfo_OBJSYS = {
-    /*numRelatives=*/       3,
-    /*relatives=*/ {
-        &__nvoc_rtti_OBJSYS_OBJSYS,
-        &__nvoc_rtti_OBJSYS_OBJTRACEABLE,
-        &__nvoc_rtti_OBJSYS_Object,
-    },
-};
+// Up-thunk(s) to bridge OBJSYS methods to ancestors (if any)
 
 const struct NVOC_CLASS_DEF __nvoc_class_def_OBJSYS = 
 {
@@ -62,15 +51,38 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJSYS =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_OBJSYS,
-    /*pCastInfo=*/          &__nvoc_castinfo_OBJSYS,
-    /*pExportInfo=*/        &__nvoc_export_info_OBJSYS
+    /*pCastInfo=*/          &__nvoc_castinfo__OBJSYS,
+    /*pExportInfo=*/        &__nvoc_export_info__OBJSYS
 };
 
-// Down-thunk(s) to bridge OBJSYS methods from ancestors (if any)
 
-// Up-thunk(s) to bridge OBJSYS methods to ancestors (if any)
+// Metadata with per-class RTTI and vtable with ancestor(s)
+static const struct NVOC_METADATA__OBJSYS __nvoc_metadata__OBJSYS = {
+    .rtti.pClassDef = &__nvoc_class_def_OBJSYS,    // (sys) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_OBJSYS,
+    .rtti.offset    = 0,
+    .metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super
+    .metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Object.rtti.offset    = NV_OFFSETOF(OBJSYS, __nvoc_base_Object),
+    .metadata__OBJTRACEABLE.rtti.pClassDef = &__nvoc_class_def_OBJTRACEABLE,    // (traceable) super
+    .metadata__OBJTRACEABLE.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__OBJTRACEABLE.rtti.offset    = NV_OFFSETOF(OBJSYS, __nvoc_base_OBJTRACEABLE),
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJSYS = 
+    .vtable.__sysCaptureState__ = &sysCaptureState_IMPL,    // virtual
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__OBJSYS = {
+    .numRelatives = 3,
+    .relatives = {
+        &__nvoc_metadata__OBJSYS.rtti,    // [0]: (sys) this
+        &__nvoc_metadata__OBJSYS.metadata__Object.rtti,    // [1]: (obj) super
+        &__nvoc_metadata__OBJSYS.metadata__OBJTRACEABLE.rtti,    // [2]: (traceable) super
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJSYS = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
@@ -137,25 +149,27 @@ static void __nvoc_init_funcTable_OBJSYS_1(OBJSYS *pThis) {
 
 // Initialize vtable(s) for 1 virtual method(s).
 void __nvoc_init_funcTable_OBJSYS(OBJSYS *pThis) {
-
-    // Per-class vtable definition
-    static const struct NVOC_VTABLE__OBJSYS vtable = {
-        .__sysCaptureState__ = &sysCaptureState_IMPL,    // virtual
-    };
-
-    // Pointer(s) to per-class vtable(s)
-    pThis->__nvoc_vtable = &vtable;    // (sys) this
     __nvoc_init_funcTable_OBJSYS_1(pThis);
 }
 
-void __nvoc_init_Object(Object*);
-void __nvoc_init_OBJTRACEABLE(OBJTRACEABLE*);
-void __nvoc_init_OBJSYS(OBJSYS *pThis) {
-    pThis->__nvoc_pbase_OBJSYS = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;
-    pThis->__nvoc_pbase_OBJTRACEABLE = &pThis->__nvoc_base_OBJTRACEABLE;
-    __nvoc_init_Object(&pThis->__nvoc_base_Object);
-    __nvoc_init_OBJTRACEABLE(&pThis->__nvoc_base_OBJTRACEABLE);
+// Initialize newly constructed object.
+void __nvoc_init__OBJSYS(OBJSYS *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;    // (obj) super
+    pThis->__nvoc_pbase_OBJTRACEABLE = &pThis->__nvoc_base_OBJTRACEABLE;    // (traceable) super
+    pThis->__nvoc_pbase_OBJSYS = pThis;    // (sys) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__Object(&pThis->__nvoc_base_Object);
+    __nvoc_init__OBJTRACEABLE(&pThis->__nvoc_base_OBJTRACEABLE);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__OBJSYS.metadata__Object;    // (obj) super
+    pThis->__nvoc_base_OBJTRACEABLE.__nvoc_metadata_ptr = &__nvoc_metadata__OBJSYS.metadata__OBJTRACEABLE;    // (traceable) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__OBJSYS;    // (sys) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_OBJSYS(pThis);
 }
 
@@ -173,9 +187,6 @@ NV_STATUS __nvoc_objCreate_OBJSYS(OBJSYS **ppThis, Dynamic *pParent, NvU32 creat
     // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(OBJSYS));
 
-    // Initialize runtime type information.
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_OBJSYS);
-
     pThis->__nvoc_base_Object.createFlags = createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
@@ -189,7 +200,7 @@ NV_STATUS __nvoc_objCreate_OBJSYS(OBJSYS **ppThis, Dynamic *pParent, NvU32 creat
         pThis->__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_OBJSYS(pThis);
+    __nvoc_init__OBJSYS(pThis);
     status = __nvoc_ctor_OBJSYS(pThis);
     if (status != NV_OK) goto __nvoc_objCreate_OBJSYS_cleanup;
 

@@ -48,5 +48,6 @@
 #include "ctrl208f/ctrl208fdma.h"
 #include "ctrl208f/ctrl208fmmu.h"
 #include "ctrl208f/ctrl208fucodecoverage.h"
+#include "ctrl208f/ctrl208fnvlink.h"
 #include "ctrl208f/ctrl208fpmu.h"
 

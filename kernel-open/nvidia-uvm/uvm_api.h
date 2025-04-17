@@ -189,7 +189,7 @@ static bool uvm_api_range_invalid(NvU64 base, NvU64 length)
 }
 
 // Some APIs can only enforce 4K alignment as it's the smallest GPU page size
-// even when the smallest host page is larger (e.g. 64K on ppc64le).
+// even when the smallest host page is larger.
 static bool uvm_api_range_invalid_4k(NvU64 base, NvU64 length)
 {
     return uvm_api_range_invalid_aligned(base, length, UVM_PAGE_SIZE_4K);

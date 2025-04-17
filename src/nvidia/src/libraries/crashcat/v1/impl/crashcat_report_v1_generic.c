@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,8 @@
 #include "crashcat/crashcat_report.h"
 #include "crashcat/crashcat_engine.h"
 #include "nv-crashcat-decoder.h"
+
+#include "g_all_dcl_pb.h"
 
 static inline const char crashcatReportModeToChar_GENERIC(NV_CRASHCAT_RISCV_MODE mode)
 {
@@ -78,4 +80,11 @@ void crashcatReportLogReporter_V1_GENERIC(CrashCatReport *pReport)
         partition, ucodeId, crashcatReportModeToChar_GENERIC(riscvMode),
         crashcatReportV1ReporterVersion(pReportV1),
         crashcatReportV1ReporterTimestamp(pReportV1));
+}
+
+void crashcatReportLogVersionProtobuf_V1_GENERIC(CrashCatReport *pReport, PRB_ENCODER *pCrashcatProtobufData)
+{
+    NvCrashCatReport_V1 *pReportV1 = &pReport->v1.report;
+
+    prbEncAddUInt32(pCrashcatProtobufData, CRASHCAT_REPORT_LIBOSVERSIONMAJOR, crashcatReportV1ReporterVersion(pReportV1));
 }

@@ -319,7 +319,7 @@ void nv_drm_handle_dynamic_display_connected(struct nv_drm_device *nv_dev,
     nv_encoder = get_nv_encoder_from_nvkms_display(dev, hDisplay);
 
     if (nv_encoder != NULL) {
-        NV_DRM_DEV_LOG_ERR(
+        NV_DRM_DEV_LOG_INFO(
             nv_dev,
             "Encoder with NvKmsKapiDisplay 0x%08x already exists.",
             hDisplay);

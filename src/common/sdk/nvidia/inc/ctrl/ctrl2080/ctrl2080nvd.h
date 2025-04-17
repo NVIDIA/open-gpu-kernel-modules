@@ -306,7 +306,8 @@ typedef struct NV2080_CTRL_NVD_GET_NOCAT_JOURNAL_PARAMS {
 #define NV2080_CTRL_NOCAT_TDR_TYPE_GC6_RESET           4
 #define NV2080_CTRL_NOCAT_TDR_TYPE_SURPRISE_REMOVAL    5
 #define NV2080_CTRL_NOCAT_TDR_TYPE_UCODE_RESET         6
-#define NV2080_CTRL_NOCAT_TDR_TYPE_TEST                7
+#define NV2080_CTRL_NOCAT_TDR_TYPE_GPU_RC_RESET        7
+#define NV2080_CTRL_NOCAT_TDR_TYPE_TEST                8
 
 typedef struct NV2080CtrlNocatJournalDataTdrReason {
     NvU32 flags;

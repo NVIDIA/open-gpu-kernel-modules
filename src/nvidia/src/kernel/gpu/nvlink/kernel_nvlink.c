@@ -938,7 +938,7 @@ knvlinkGetNumLinksToPeer_IMPL
  *
  * @return    Returns the mask of peer links between the GPUs
  */
-NvU32
+NvU64
 knvlinkGetLinkMaskToPeer_IMPL
 (
     OBJGPU       *pGpu0,
@@ -946,7 +946,7 @@ knvlinkGetLinkMaskToPeer_IMPL
     OBJGPU       *pGpu1
 )
 {
-    NvU32 peerLinkMask = 0;
+    NvU64 peerLinkMask = 0;
     KernelNvlink *pKernelNvlink1 = NULL;
 
     pKernelNvlink1 = GPU_GET_KERNEL_NVLINK(pGpu1);
@@ -976,7 +976,7 @@ knvlinkGetLinkMaskToPeer_IMPL
         // are updated only when a P2P object is allocated. So, return
         // the cached value of mask of links connected to a GPU
         //
-        peerLinkMask = pKernelNvlink0->peerLinkMasks[gpuGetInstance(pGpu1)];
+        peerLinkMask = KNVLINK_GET_MASK(pKernelNvlink0, peerLinkMasks[gpuGetInstance(pGpu1)], 64);
     }
 
     return peerLinkMask;
@@ -998,13 +998,13 @@ knvlinkSetLinkMaskToPeer_IMPL
     OBJGPU       *pGpu0,
     KernelNvlink *pKernelNvlink0,
     OBJGPU       *pGpu1,
-    NvU32         peerLinkMask
+    NvU64         peerLinkMask
 )
 {
     NV_STATUS status = NV_OK;
 
     // Return early if no update needed to the peer link mask
-    if (pKernelNvlink0->peerLinkMasks[gpuGetInstance(pGpu1)] == peerLinkMask)
+    if (KNVLINK_GET_MASK(pKernelNvlink0, peerLinkMasks[gpuGetInstance(pGpu1)], 64) == peerLinkMask)
         return NV_OK;
 
     pKernelNvlink0->peerLinkMasks[gpuGetInstance(pGpu1)] = peerLinkMask;
@@ -1250,7 +1250,7 @@ knvlinkPrepareForXVEReset_IMPL
             //
             FOR_EACH_INDEX_IN_MASK(32, linkId, KNVLINK_GET_MASK(pKernelNvlink, enabledLinks, 32))
             {
-                pKernelNvlink->disconnectedLinkMask |=  NVBIT(linkId);
+                pKernelNvlink->disconnectedLinkMask |=  NVBIT64(linkId);
                 pKernelNvlink->connectedLinksMask   &= ~NVBIT(linkId);
 
                 if (pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.deviceType !=
@@ -1269,7 +1269,7 @@ knvlinkPrepareForXVEReset_IMPL
                     KernelNvlink *pRemoteKernelNvlink = GPU_GET_KERNEL_NVLINK(pRemoteGpu);
                     NvU32 remoteLinkId = pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.linkNumber;
 
-                    pRemoteKernelNvlink->disconnectedLinkMask |=  NVBIT(remoteLinkId);
+                    pRemoteKernelNvlink->disconnectedLinkMask |=  NVBIT64(remoteLinkId);
                     pRemoteKernelNvlink->connectedLinksMask   &= ~NVBIT(remoteLinkId);
                 }
             }
@@ -1828,13 +1828,14 @@ knvlinkCopyNvlinkDeviceInfo_IMPL
     }
 
     // Update CPU-RM's NVLink state with the information received from GSP-RM RPC
-    pKernelNvlink->ioctrlMask       = pNvlinkInfoParams->ioctrlMask;
-    pKernelNvlink->ioctrlNumEntries = pNvlinkInfoParams->ioctrlNumEntries;
-    pKernelNvlink->ioctrlSize       = pNvlinkInfoParams->ioctrlSize;
-    pKernelNvlink->discoveredLinks  = pNvlinkInfoParams->discoveredLinks;
-    pKernelNvlink->ipVerNvlink      = pNvlinkInfoParams->ipVerNvlink;
+    pKernelNvlink->ioctrlMask        = pNvlinkInfoParams->ioctrlMask;
+    pKernelNvlink->ioctrlNumEntries  = pNvlinkInfoParams->ioctrlNumEntries;
+    pKernelNvlink->ioctrlSize        = pNvlinkInfoParams->ioctrlSize;
+    pKernelNvlink->discoveredLinks   = pNvlinkInfoParams->discoveredLinks;
+    pKernelNvlink->ipVerNvlink       = pNvlinkInfoParams->ipVerNvlink;
+    pKernelNvlink->maxSupportedLinks = pNvlinkInfoParams->maxSupportedLinks;
 
-    for (i = 0; i < NVLINK_MAX_LINKS_SW; i++)
+    for (i = 0; i < pKernelNvlink->maxSupportedLinks; i++)
     {
         pKernelNvlink->nvlinkLinks[i].pGpu     = pGpu;
         pKernelNvlink->nvlinkLinks[i].bValid   = pNvlinkInfoParams->linkInfo[i].bValid;

@@ -36,15 +36,12 @@
 /* VOLTA_CHANNEL_GPFIFO_A control commands and parameters */
 
 #include "ctrl/ctrlxxxx.h"
-#include "ctrl/ctrl906f.h"          /* C36F is partially derived from 906F */
-#include "ctrl/ctrla06f.h"          /* C36F is partially derived from a06F */
 #define NVC36F_CTRL_CMD(cat,idx)  \
     NVXXXX_CTRL_CMD(0xC36F, NVC36F_CTRL_##cat, idx)
 
 /* VOLTA_CHANNEL_GPFIFO_A command categories (6bits) */
 #define NVC36F_CTRL_RESERVED (0x00)
 #define NVC36F_CTRL_GPFIFO   (0x01)
-#define NVC36F_CTRL_EVENT    (0x02)
 #define NVC36F_CTRL_INTERNAL (0x03)
 
 /*
@@ -139,22 +136,6 @@ typedef struct NVC36F_CTRL_GPFIFO_UPDATE_FAULT_METHOD_BUFFER_PARAMS {
 typedef struct NVC36F_CTRL_GPFIFO_SET_WORK_SUBMIT_TOKEN_NOTIF_INDEX_PARAMS {
     NvU32 index;
 } NVC36F_CTRL_GPFIFO_SET_WORK_SUBMIT_TOKEN_NOTIF_INDEX_PARAMS;
-
-
-
-/*
- * NVC36F_CTRL_CMD_EVENT_SET_NOTIFICATION
- *
- * Please see description of NVA06F_CTRL_CMD_EVENT_SET_NOTIFICATION for more information.
-*/
-#define NVC36F_CTRL_CMD_EVENT_SET_NOTIFICATION (0xc36f0205) /* finn: Evaluated from "(FINN_VOLTA_CHANNEL_GPFIFO_A_EVENT_INTERFACE_ID << 8) | 0x5" */
-
-/*
- * NVC36F_CTRL_CMD_EVENT_SET_TRIGGER
- *
- * Please see description of NVA06F_CTRL_CMD_EVENT_SET_TRIGGER for more information.
- */
-#define NVC36F_CTRL_CMD_EVENT_SET_TRIGGER      (0xc36f0206) /* finn: Evaluated from "(FINN_VOLTA_CHANNEL_GPFIFO_A_EVENT_INTERFACE_ID << 8) | 0x6" */
 
 
 

@@ -1,13 +1,15 @@
 
 #ifndef _G_REF_COUNT_NVOC_H_
 #define _G_REF_COUNT_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -108,10 +110,18 @@ typedef void RefcntResetCallback(struct OBJREFCNT *, Dynamic *, NvU64);
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJREFCNT;
+struct NVOC_METADATA__Object;
+
+
 struct OBJREFCNT {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__OBJREFCNT *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -133,6 +143,13 @@ struct OBJREFCNT {
     RefcntResetCallback *refcntResetCallback;
 };
 
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJREFCNT {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
+};
+
 #ifndef __NVOC_CLASS_OBJREFCNT_TYPEDEF__
 #define __NVOC_CLASS_OBJREFCNT_TYPEDEF__
 typedef struct OBJREFCNT OBJREFCNT;
@@ -149,10 +166,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJREFCNT;
     ((pThis)->__nvoc_pbase_OBJREFCNT)
 
 #ifdef __nvoc_ref_count_h_disabled
-#define __dynamicCast_OBJREFCNT(pThis) ((OBJREFCNT*)NULL)
+#define __dynamicCast_OBJREFCNT(pThis) ((OBJREFCNT*) NULL)
 #else //__nvoc_ref_count_h_disabled
 #define __dynamicCast_OBJREFCNT(pThis) \
-    ((OBJREFCNT*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJREFCNT)))
+    ((OBJREFCNT*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJREFCNT)))
 #endif //__nvoc_ref_count_h_disabled
 
 // Property macros
@@ -161,7 +178,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJREFCNT;
 
 NV_STATUS __nvoc_objCreateDynamic_OBJREFCNT(OBJREFCNT**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_OBJREFCNT(OBJREFCNT**, Dynamic*, NvU32, Dynamic * arg_pParent, NvU32 arg_tag, RefcntStateChangeCallback * arg_pStateChangeCallback, RefcntResetCallback * arg_pResetCallback);
+NV_STATUS __nvoc_objCreate_OBJREFCNT(OBJREFCNT**, Dynamic*, NvU32, Dynamic *arg_pParent, NvU32 arg_tag, RefcntStateChangeCallback *arg_pStateChangeCallback, RefcntResetCallback *arg_pResetCallback);
 #define __objCreate_OBJREFCNT(ppNewObj, pParent, createFlags, arg_pParent, arg_tag, arg_pStateChangeCallback, arg_pResetCallback) \
     __nvoc_objCreate_OBJREFCNT((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pParent, arg_tag, arg_pStateChangeCallback, arg_pResetCallback)
 

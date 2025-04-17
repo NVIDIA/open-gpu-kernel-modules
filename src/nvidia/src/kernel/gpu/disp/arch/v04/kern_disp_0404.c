@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,39 +21,35 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "gpu/disp/head/kernel_head.h"
-#include "published/disp/v05_01/dev_disp.h"
+/******************************************************************************
+*
+*       Kernel Display Module
+*       This file contains functions managing display on CPU RM
+*
+******************************************************************************/
 
-NvBool kheadReadVblankIntrEnable_KERNEL_v05_01
+#define RM_STRICT_CONFIG_EMIT_DISP_ENGINE_DEFINITIONS     0
+
+#include "gpu/disp/vblank_callback/vblank.h"
+#include "gpu/disp/kern_disp.h"
+
+void
+kheadVsyncNotificationOverRgVblankIntr_v04_04
 (
-    OBJGPU *pGpu,
-    KernelHead *pKernelHead
+    OBJGPU              *pGpu,
+    KernelHead          *pKernelHead
 )
 {
-    NvU32 intr = GPU_REG_RD32(pGpu, NV_PDISP_FE_RM_INTR_EN1_HEAD_TIMING(pKernelHead->PublicId));
-    if (FLD_TEST_DRF(_PDISP, _FE_RM_INTR_EN1_HEAD_TIMING, _LAST_DATA, _ENABLE, intr))
+    KernelDisplay   *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    VBLANKCALLBACK  *pCallback = (VBLANKCALLBACK *)pKernelDisplay->pRgVblankCb;
+    if (pKernelDisplay->bIsPanelReplayEnabled)
     {
-         return NV_TRUE;
+        if (pCallback != NULL && pCallback->Proc != NULL)
+        {
+            pCallback->Proc(pGpu, pCallback->pObject, pCallback->Param1,
+                            pCallback->Param2,pCallback->Status);
+        }
     }
-    return NV_FALSE;
+
 }
 
-void kheadWriteVblankIntrEnable_KERNEL_v05_01
-(
-    OBJGPU *pGpu,
-    KernelHead *pKernelHead,
-    NvBool  bEnable
-)
-{
-    NvU32 intrEn = GPU_REG_RD32(pGpu, NV_PDISP_FE_RM_INTR_EN1_HEAD_TIMING(pKernelHead->PublicId));
-    kheadResetPendingVblank_HAL(pGpu, pKernelHead, NULL);
-    if (bEnable)
-    {
-         intrEn = FLD_SET_DRF(_PDISP, _FE_RM_INTR_EN1_HEAD_TIMING, _LAST_DATA, _ENABLE, intrEn);
-    }
-    else
-    {
-        intrEn = FLD_SET_DRF(_PDISP, _FE_RM_INTR_EN1_HEAD_TIMING, _LAST_DATA, _DISABLE, intrEn);
-    }
-    GPU_REG_WR32(pGpu, NV_PDISP_FE_RM_INTR_EN1_HEAD_TIMING(pKernelHead->PublicId), intrEn);
-}

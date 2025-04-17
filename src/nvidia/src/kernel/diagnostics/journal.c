@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -67,6 +67,7 @@
 #define NOCAT_GC6_RESET_TDR_STR                 "GC6 RESET"
 #define NOCAT_NORMAL_TDR_STR                    "NORMAL TDR"
 #define NOCAT_UCODE_RESET_TDR_STR               "UCODE RESET"
+#define NOCAT_GPU_RC_RESET_TDR_STR              "GPU RC RESET"
 #define NOCAT_SURPRISE_REMOVAL_TDR_STR          "SURPRISE REMOVAL"
 #define NOCAT_DEFAULT_TAG_VALUE_STR             "prod"
 #define NOCAT_DEFAULT_TDR_REASON_SRC_STR        "KMD"
@@ -563,6 +564,9 @@ static NvU64 _getCommonJournalStateMask(OBJGPU *pGpu)
 
     if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
         stateMask |= NV_RM_JOURNAL_STATE_MASK_IS_LOST;
+
+    if (IS_GSP_CLIENT(pGpu))
+        stateMask |= NV_RM_JOURNAL_STATE_MASK_GSP_RM_ENABLED;
 
     return stateMask;
 }
@@ -1260,7 +1264,7 @@ _rcdbGetTimeInfo
                     (NvU64)sec * 1000000 + usec);
 
     // Add time since boot in seconds.
-    osGetCurrentTick(&timeSinceBoot);
+    timeSinceBoot = osGetCurrentTick();
     prbEncAddUInt32(pPrbEnc,
                     NVDEBUG_SYSTEMINFO_TIMEINFO_TIME_SINCE_BOOT_SEC,
                     (NvU32)(timeSinceBoot / 1000000000ULL));
@@ -3349,6 +3353,9 @@ void _rcdbSetTdrReason
     case NV2080_CTRL_NOCAT_TDR_TYPE_UCODE_RESET:
         pTmpStr = NOCAT_UCODE_RESET_TDR_STR;
         break;
+    case NV2080_CTRL_NOCAT_TDR_TYPE_GPU_RC_RESET:
+        pTmpStr = NOCAT_GPU_RC_RESET_TDR_STR;
+        break;
     default:
         pTmpStr = NOCAT_UNKNOWN_STR;
         break;
@@ -3977,6 +3984,7 @@ rcdbNocatInsertNocatError(
         // lock the journal so we don't wrap over the record we are inserting.
         if (pRcdb->nocatJournalDescriptor.lockTimestamp == 0)
         {
+            pRcdb->nocatJournalDescriptor.lockTimestamp = pNewEntry->timestamp;
             pRcdb->nocatJournalDescriptor.nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_JOURNAL_LOCKED_IDX]++;
         }
         else
@@ -3984,7 +3992,6 @@ rcdbNocatInsertNocatError(
             pRcdb->nocatJournalDescriptor.nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_JOURNAL_LOCK_UPDATED_IDX]++;
         }
 
-        pRcdb->nocatJournalDescriptor.lockTimestamp = pNewEntry->timestamp;
         postRecord = NV_TRUE;
         break;
 

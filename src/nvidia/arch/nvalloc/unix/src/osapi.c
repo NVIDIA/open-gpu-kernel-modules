@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -288,7 +288,8 @@ static NV_STATUS RmGpuUuidRawToString(
 
     rmStatus = transformGidToUserFriendlyString(pGidData, RM_SHA1_GID_SIZE,
                                                 &pGidString, &GidStrlen,
-                                                gidFlags);
+                                                gidFlags,
+                                                RM_UUID_PREFIX_GPU);
     if (rmStatus != NV_OK)
         return rmStatus;
 
@@ -733,10 +734,10 @@ static NV_STATUS RmAccessRegistry(
                 goto done;
 
             RmStatus = rmGpuGroupLockAcquire(pSubdevice->subDeviceInst,
-                    GPU_LOCK_GRP_SUBDEVICE, 
+                    GPU_LOCK_GRP_SUBDEVICE,
                     GPUS_LOCK_FLAGS_NONE,
-                    RM_LOCK_MODULES_GPU, 
-                    &gpuMask); 
+                    RM_LOCK_MODULES_GPU,
+                    &gpuMask);
             if (RmStatus != NV_OK)
             {
                 gpuMask = 0;
@@ -749,10 +750,10 @@ static NV_STATUS RmAccessRegistry(
         else
         {
             RmStatus = rmGpuGroupLockAcquire(pDevice->deviceInst,
-                    GPU_LOCK_GRP_DEVICE, 
+                    GPU_LOCK_GRP_DEVICE,
                     GPUS_LOCK_FLAGS_NONE,
-                    RM_LOCK_MODULES_GPU, 
-                    &gpuMask); 
+                    RM_LOCK_MODULES_GPU,
+                    &gpuMask);
             if (RmStatus != NV_OK)
             {
                 gpuMask = 0;
@@ -975,10 +976,10 @@ static NV_STATUS RmUpdateDeviceMappingInfo(
             goto done;
 
         status = rmGpuGroupLockAcquire(pSubdevice->subDeviceInst,
-                                       GPU_LOCK_GRP_SUBDEVICE, 
+                                       GPU_LOCK_GRP_SUBDEVICE,
                                        GPUS_LOCK_FLAGS_NONE,
-                                       RM_LOCK_MODULES_GPU, 
-                                       &gpuMask); 
+                                       RM_LOCK_MODULES_GPU,
+                                       &gpuMask);
         if (status != NV_OK)
             goto done;
 
@@ -987,10 +988,10 @@ static NV_STATUS RmUpdateDeviceMappingInfo(
     else
     {
         status = rmGpuGroupLockAcquire(pDevice->deviceInst,
-                                       GPU_LOCK_GRP_DEVICE, 
+                                       GPU_LOCK_GRP_DEVICE,
                                        GPUS_LOCK_FLAGS_NONE,
-                                       RM_LOCK_MODULES_GPU, 
-                                       &gpuMask); 
+                                       RM_LOCK_MODULES_GPU,
+                                       &gpuMask);
         if (status != NV_OK)
             goto done;
 
@@ -1037,6 +1038,8 @@ static NV_STATUS RmPerformVersionCheck(
     const char *rmStr = NV_VERSION_STRING;
     NvBool relaxed = NV_FALSE;
     NvU32 i;
+    NvU32 procId;
+    char procName[32];
 
     //
     // rmStr (i.e., NV_VERSION_STRING) must be null-terminated and fit within
@@ -1116,11 +1119,16 @@ static NV_STATUS RmPerformVersionCheck(
     //
     pParams->versionString[NV_RM_API_VERSION_STRING_LENGTH - 1] = '\0';
 
+    procId = os_get_current_process();
+    os_get_current_process_name(procName, sizeof(procName));
+
     nv_printf(NV_DBG_ERRORS,
-              "NVRM: API mismatch: the client has the version %s, but\n"
-              "NVRM: this kernel module has the version %s.  Please\n"
-              "NVRM: make sure that this kernel module and all NVIDIA driver\n"
-              "NVRM: components have the same version.\n",
+              "NVRM: API mismatch: the client '%s' (pid %u)\n"
+              "NVRM: has the version %s, but this kernel module has\n"
+              "NVRM: the version %s.  Please make sure that this\n"
+              "NVRM: kernel module and all NVIDIA driver components\n"
+              "NVRM: have the same version.\n",
+              procName, procId,
               pParams->versionString, NV_VERSION_STRING);
 
     os_string_copy(pParams->versionString, rmStr);
@@ -1197,7 +1205,7 @@ void RmRequestDNotifierState(
     OBJGPU *pGpu         = NV_GET_NV_PRIV_PGPU(pNv);
     NvU32 supportedFuncs = 0;
     NvU16 dsmDataSize    = sizeof(supportedFuncs);
-    NV_STATUS status     = NV_OK; 
+    NV_STATUS status     = NV_OK;
 
     status = osCallACPI_DSM(pGpu, ACPI_DSM_FUNCTION_GPS_2X,
                             GPS_FUNC_REQUESTDXSTATE, &supportedFuncs,
@@ -2299,7 +2307,7 @@ static NV_STATUS RmCreateMmapContextLocked(
 
         NV_ASSERT_OK_OR_GOTO(status, RmSetUserMapAccessRange(nvuap), done);
 
-        status = nv_get_usermap_access_params(pNv, nvuap);
+        status = nv_check_usermap_access_params(pNv, nvuap);
         if (status != NV_OK)
         {
             goto done;
@@ -3254,7 +3262,7 @@ NV_STATUS NV_API_CALL rm_run_rc_callback(
 static void _tmrEventServiceTimerWorkItem
 (
     NvU32 gpuInstance,
-    void *pArgs  
+    void *pArgs
 )
 {
     OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
@@ -3403,7 +3411,7 @@ NV_STATUS rm_access_registry(
 )
 {
     NV_STATUS RmStatus;
-    NvBool bReadOnly = (AccessType == NVOS38_ACCESS_TYPE_READ_DWORD) || 
+    NvBool bReadOnly = (AccessType == NVOS38_ACCESS_TYPE_READ_DWORD) ||
                        (AccessType == NVOS38_ACCESS_TYPE_READ_BINARY);
 
     // LOCK: acquire API lock
@@ -3546,6 +3554,7 @@ NV_STATUS NV_API_CALL rm_is_supported_device(
         NvBool bIsFirmwareCapable;
 
         bIsFirmwareCapable = gpumgrIsDeviceRmFirmwareCapable(pmc_boot_42,
+                                                             FLD_TEST_DRF(_PMC, _BOOT_1, _VGPU, _VF, pmc_boot_1),
                                                              NV_IS_SOC_DISPLAY_DEVICE(pNv),
                                                              NULL,
                                                              NV_FALSE /* bIsTccOrMcdm */);
@@ -4350,7 +4359,7 @@ void NV_API_CALL rm_power_source_change_event(
                   "%s: Failed to handle Power Source change event, status=0x%x\n",
                   __FUNCTION__, rmStatus);
     }
- 
+
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
 }
@@ -4975,7 +4984,7 @@ void  NV_API_CALL  rm_kernel_rmapi_op(nvidia_stack_t *sp, void *ops_cmd)
             break;
 
         case NV04_ALLOC:
-            Nv04AllocKernel(&ops->params.alloc);
+            Nv04AllocWithAccessKernel(&ops->params.alloc);
             break;
 
         case NV04_VID_HEAP_CONTROL:
@@ -5168,6 +5177,15 @@ NV_STATUS NV_API_CALL rm_get_gpu_numa_info(
          NV_ARRAY_ELEMENTS(pParams->numaOfflineAddresses)))
     {
         return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if (NV_IS_SOC_DISPLAY_DEVICE(nv))
+    {
+        numa_info->nid = NV0000_CTRL_NO_NUMA_NODE;
+        numa_info->numa_mem_addr = 0;
+        numa_info->numa_mem_size = 0;
+        numa_info->offline_addresses.numEntries = 0;
+        return NV_OK;
     }
 
     NV_ENTER_RM_RUNTIME(sp,fp);
@@ -5890,7 +5908,7 @@ void NV_API_CALL rm_acpi_nvpcf_notify(
 
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
- 
+
     // LOCK: acquire API lock
     if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE,
                                      RM_LOCK_MODULES_EVENT)) == NV_OK)
@@ -5913,3 +5931,72 @@ void NV_API_CALL rm_acpi_nvpcf_notify(
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
 }
+
+static void rm_notify_gpu_addition_removal_helper(
+    nv_state_t *nv,
+    NvBool bBind)
+{
+    THREAD_STATE_NODE threadState;
+
+    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+
+    if (rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI) == NV_OK)
+    {
+        NV0000_CTRL_SYSTEM_EVENT_DATA_GPU_BIND_UNBIND eventData = { 0 };
+
+        eventData.gpuId = nv->gpu_id;
+        eventData.bBind = bBind;
+
+        CliAddSystemEvent(NV0000_NOTIFIERS_GPU_BIND_UNBIND_EVENT, &eventData, NULL);
+        rmapiLockRelease();
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_ERROR, "Fail to acquire rmApi lock. Skip notification.");
+    }
+
+    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
+}
+
+void NV_API_CALL rm_notify_gpu_addition(
+    nvidia_stack_t *sp,
+    nv_state_t *nv)
+{
+    void *fp = NULL;
+
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rm_notify_gpu_addition_removal_helper(nv, NV_TRUE);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+}
+
+void NV_API_CALL rm_notify_gpu_removal(
+    nvidia_stack_t *sp,
+    nv_state_t *nv)
+{
+    void *fp = NULL;
+
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rm_notify_gpu_addition_removal_helper(nv, NV_FALSE);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+}
+
+NvBool NV_API_CALL rm_wait_for_bar_firewall(
+    nvidia_stack_t * sp,
+    NvU32 domain,
+    NvU8  bus,
+    NvU8  device,
+    NvU8  function,
+    NvU16 devId
+)
+{
+    NvBool ret;
+    void *fp = NULL;
+
+    // no state set up yet for threadstate or RM locks
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    ret = gpumgrWaitForBarFirewall(domain, bus, device, function, devId);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+
+    return ret;
+}
+

@@ -1,13 +1,15 @@
 
 #ifndef _G_GPU_HALSPEC_NVOC_H_
 #define _G_GPU_HALSPEC_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,10 +57,17 @@ extern "C" {
 #endif
 
 
+// Metadata with per-class RTTI
+struct NVOC_METADATA__RmHalspecOwner;
+
+
 struct RmHalspecOwner {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__RmHalspecOwner *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Ancestor object pointers for `staticCast` feature
     struct RmHalspecOwner *__nvoc_pbase_RmHalspecOwner;    // rmhalspecowner
@@ -68,6 +77,12 @@ struct RmHalspecOwner {
     struct RmVariantHal rmVariantHal;
     struct TegraChipHal tegraChipHal;
     struct DispIpHal dispIpHal;
+};
+
+
+// Metadata with per-class RTTI
+struct NVOC_METADATA__RmHalspecOwner {
+    const struct NVOC_RTTI rtti;
 };
 
 #ifndef __NVOC_CLASS_RmHalspecOwner_TYPEDEF__
@@ -86,10 +101,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmHalspecOwner;
     ((pThis)->__nvoc_pbase_RmHalspecOwner)
 
 #ifdef __nvoc_gpu_halspec_h_disabled
-#define __dynamicCast_RmHalspecOwner(pThis) ((RmHalspecOwner*)NULL)
+#define __dynamicCast_RmHalspecOwner(pThis) ((RmHalspecOwner*) NULL)
 #else //__nvoc_gpu_halspec_h_disabled
 #define __dynamicCast_RmHalspecOwner(pThis) \
-    ((RmHalspecOwner*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(RmHalspecOwner)))
+    ((RmHalspecOwner*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(RmHalspecOwner)))
 #endif //__nvoc_gpu_halspec_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_RmHalspecOwner(RmHalspecOwner**, Dynamic*, NvU32, va_list);

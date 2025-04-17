@@ -443,3 +443,69 @@ knvlinkPostSchedulingEnableCallbackUnregister_GB100
     kfifoRemoveSchedulingHandler(pGpu, GPU_GET_KERNEL_FIFO(pGpu),
         _knvlinkHandlePostSchedulingEnableCallback_GB100, NULL, NULL, NULL);
 }
+
+/**
+ * @brief Check if ENCRYPT_EN bit is set
+ *
+ * @param[in] pGpu           OBJGPU pointer
+ * @param[in] pKernelNvlink  KernelNvlink pointer
+ *
+ * @return  NV_TRUE is ENCRYPT_EN is set, else NV_FALSE
+ */
+
+NvBool
+knvlinkIsEncryptEnSet_GB100
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    NV2080_CTRL_NVLINK_GET_NVLE_ENCRYPT_EN_INFO_PARAMS params;
+    NvU32 status;
+    portMemSet(&params, 0, sizeof(params));
+
+    status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                                NV2080_CTRL_CMD_NVLINK_GET_NVLE_ENCRYPT_EN_INFO,
+                                (void *)&params, sizeof(params));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to execute GSP-RM GPC to get Nvlink Encrypt Enable Info\n");
+        return NV_FALSE;
+    }
+
+    return params.bEncryptEnSet;
+}
+
+/*!
+ * @brief  Check if NVLE PDB Property is set
+ * 
+ * @param[in]  pGpu              OBJGPU pointer
+ * @param[in]  pKernelNvlink     KernelNvlink pointer
+ *
+ */
+NvBool
+knvlinkIsNvleEnabled_GB100
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    if (!(pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED)))
+    {
+        //
+        // Nvlink Encryption PDB PROP is set when 
+        // 1. Nvlink Encryption regkey has been enabled AND
+        // 2. Encrypt Enable Bit is set by FSP AND
+        // 3. Secure Scratch Register Bit is set by FSP after reading the NVLE PRC Knob
+        //
+
+        if (knvlinkIsEncryptEnSet_HAL(pGpu, pKernelNvlink) &&
+            gpuIsNvleModeEnabledInHw_HAL(pGpu)
+            )
+        {
+            pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED, NV_TRUE);
+        }
+    }
+
+    return pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED);
+}

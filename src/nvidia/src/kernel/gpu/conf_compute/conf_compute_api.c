@@ -138,6 +138,10 @@ confComputeApiCtrlCmdSystemGetCapabilities_IMPL
         pParams->ccFeature = NV_CONF_COMPUTE_SYSTEM_FEATURE_DISABLED;
         pParams->multiGpuMode = NV_CONF_COMPUTE_SYSTEM_MULTI_GPU_MODE_PROTECTED_PCIE;
     }
+    else if (pCcCaps->bMultiGpuNvleModeEnabled)
+    {
+        pParams->multiGpuMode = NV_CONF_COMPUTE_SYSTEM_MULTI_GPU_MODE_NVLE;
+    }
 
     return NV_OK;
 }
@@ -280,6 +284,7 @@ confComputeApiCtrlCmdGetGpuCertificate_IMPL
     Subdevice           *pSubdevice   = NULL;
     OBJGPU              *pGpu         = NULL;
     ConfidentialCompute *pConfCompute = NULL;
+    Spdm                *pSpdm        = NULL;
     NV_STATUS            status       = NV_OK;
 
     NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
@@ -289,29 +294,31 @@ confComputeApiCtrlCmdGetGpuCertificate_IMPL
                              pParams->hSubDevice, &pSubdevice));
     pGpu         = GPU_RES_GET_GPU(pSubdevice);
     pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+    pSpdm        = GPU_GET_SPDM(pGpu);
 
-    if (pConfCompute != NULL && pConfCompute->pSpdm != NULL &&
-        pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED))
+    if (pConfCompute != NULL && confComputeIsSpdmEnabled(pGpu, pConfCompute))
     {
-        // Set max size of certificate buffers before calling SPDM.
-        pParams->certChainSize            = NV_CONF_COMPUTE_CERT_CHAIN_MAX_SIZE;
-        pParams->attestationCertChainSize = NV_CONF_COMPUTE_ATTESTATION_CERT_CHAIN_MAX_SIZE;
-
-        status = spdmGetCertChains_HAL(pGpu,
-                                       pConfCompute->pSpdm,
-                                       pParams->certChain,
-                                       &pParams->certChainSize,
-                                       pParams->attestationCertChain,
-                                       &pParams->attestationCertChainSize);
-        if (status != NV_OK)
+        if (pSpdm->getProperty(pSpdm, PDB_PROP_SPDM_ENABLED))
         {
-            // Attestation failure, tear down the CC system.
-            confComputeSetErrorState(pGpu, pConfCompute);
+            // Set max size of certificate buffers before calling SPDM.
+            pParams->certChainSize            = NV_CONF_COMPUTE_CERT_CHAIN_MAX_SIZE;
+            pParams->attestationCertChainSize = NV_CONF_COMPUTE_ATTESTATION_CERT_CHAIN_MAX_SIZE;
+
+            status = spdmGetCertChains_HAL(pGpu,
+                                           pSpdm,
+                                           pParams->certChain,
+                                           &pParams->certChainSize,
+                                           pParams->attestationCertChain,
+                                           &pParams->attestationCertChainSize);
+            if (status != NV_OK)
+            {
+                // Attestation failure, tear down the CC system.
+                confComputeSetErrorState(pGpu, pConfCompute);
+            }
+
+            return status;
         }
-
-        return status;
     }
-
     return NV_ERR_OBJECT_NOT_FOUND;
 }
 
@@ -325,6 +332,7 @@ confComputeApiCtrlCmdGetGpuAttestationReport_IMPL
     Subdevice           *pSubdevice   = NULL;
     OBJGPU              *pGpu         = NULL;
     ConfidentialCompute *pConfCompute = NULL;
+    Spdm                *pSpdm        = NULL;
     NV_STATUS            status       = NV_OK;
 
     NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
@@ -332,18 +340,21 @@ confComputeApiCtrlCmdGetGpuAttestationReport_IMPL
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
         subdeviceGetByHandle(RES_GET_CLIENT(pConfComputeApi),
                              pParams->hSubDevice, &pSubdevice));
+
     pGpu         = GPU_RES_GET_GPU(pSubdevice);
+    pSpdm        = GPU_GET_SPDM(pGpu);
     pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
 
-    if (pConfCompute != NULL && pConfCompute->pSpdm != NULL &&
-        pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED))
+    if (pConfCompute != NULL &&
+        confComputeIsSpdmEnabled(pGpu, pConfCompute) &&
+        pSpdm->getProperty(pSpdm, PDB_PROP_SPDM_ENABLED))
     {
         // Set max size of report buffers before calling SPDM.
         pParams->attestationReportSize    = NV_CONF_COMPUTE_GPU_ATTESTATION_REPORT_MAX_SIZE;
         pParams->cecAttestationReportSize = NV_CONF_COMPUTE_GPU_CEC_ATTESTATION_REPORT_MAX_SIZE;
 
         status = spdmGetAttestationReport(pGpu,
-                                          pConfCompute->pSpdm,
+                                          pSpdm,
                                           pParams->nonce,
                                           pParams->attestationReport,
                                           &pParams->attestationReportSize,

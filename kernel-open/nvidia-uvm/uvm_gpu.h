@@ -819,6 +819,14 @@ struct uvm_gpu_struct
         uvm_bit_locks_t bitlocks;
     } sysmem_mappings;
 
+    // Reverse lookup table used to query the user mapping associated with a
+    // sysmem (DMA) physical address.
+    //
+    // The system memory mapping information referred to by this field is
+    // different from that of sysmem_mappings, because it relates to user
+    // mappings (instead of kernel), and it is used in most configurations.
+    uvm_pmm_sysmem_mappings_t pmm_reverse_sysmem_mappings;
+
     struct
     {
         uvm_conf_computing_dma_buffer_pool_t dma_buffer_pool;
@@ -993,17 +1001,6 @@ struct uvm_parent_gpu_struct
     // nvUvmInterfaceUnregisterGpu()).
     struct pci_dev *pci_dev;
 
-    // NVLINK Processing Unit (NPU) on PowerPC platforms. The NPU is a
-    // collection of CPU-side PCI devices which bridge GPU NVLINKs and the CPU
-    // memory bus.
-    //
-    // There is one PCI device per NVLINK. A set of NVLINKs connects to a single
-    // GPU, and all NVLINKs for a given socket are collected logically under
-    // this UVM NPU because some resources (such as register mappings) are
-    // shared by all those NVLINKs. This means multiple GPUs may connect to the
-    // same UVM NPU.
-    uvm_ibm_npu_t *npu;
-
     // On kernels with NUMA support, this entry contains the closest CPU NUMA
     // node to this GPU. Otherwise, the value will be -1.
     int closest_cpu_numa_node;
@@ -1026,13 +1023,12 @@ struct uvm_parent_gpu_struct
     // dma_addressable_start (in bifSetupDmaWindow_IMPL()) and hence when
     // referencing sysmem from the GPU, dma_addressable_start should be
     // subtracted from the physical address. The DMA mapping helpers like
-    // uvm_parent_gpu_map_cpu_pages() and uvm_parent_gpu_dma_alloc_page() take
-    // care of that.
+    // uvm_gpu_map_cpu_pages() and uvm_gpu_dma_alloc_page() take care of that.
     NvU64 dma_addressable_start;
     NvU64 dma_addressable_limit;
 
     // Total size (in bytes) of physically mapped (with
-    // uvm_parent_gpu_map_cpu_pages) sysmem pages, used for leak detection.
+    // uvm_gpu_map_cpu_pages) sysmem pages, used for leak detection.
     atomic64_t mapped_cpu_pages_size;
 
     // Hardware Abstraction Layer
@@ -1071,6 +1067,11 @@ struct uvm_parent_gpu_struct
     bool non_replayable_faults_supported;
 
     bool access_counters_supported;
+
+    // TODO: Bug 4637114: [UVM] Remove support for physical access counter
+    // notifications. Always set to false, until we remove the PMM reverse
+    // mapping code.
+    bool access_counters_can_use_physical_addresses;
 
     bool fault_cancel_va_supported;
 
@@ -1131,6 +1132,13 @@ struct uvm_parent_gpu_struct
 
     // Indicates whether the GPU can map sysmem with pages larger than 4k
     bool can_map_sysmem_with_large_pages;
+
+    // An integrated GPU has no vidmem and coherent access to sysmem. Note
+    // integrated GPUs have a write-back L2 cache (cf. discrete GPUs
+    // write-through cache.)
+    // TODO: Bug 5023085: this should be queried from RM instead of determined
+    // by UVM.
+    bool is_integrated_gpu;
 
     struct
     {
@@ -1252,9 +1260,6 @@ struct uvm_parent_gpu_struct
     uvm_rb_tree_t instance_ptr_table;
     uvm_spinlock_t instance_ptr_table_lock;
 
-    // This is set to true if the GPU belongs to an SLI group.
-    bool sli_enabled;
-
     struct
     {
         bool supported;
@@ -1339,6 +1344,8 @@ struct uvm_parent_gpu_struct
 
     uvm_test_parent_gpu_inject_error_t test;
 };
+
+NvU64 uvm_parent_gpu_dma_addr_to_gpu_addr(uvm_parent_gpu_t *parent_gpu, NvU64 dma_addr);
 
 static const char *uvm_parent_gpu_name(uvm_parent_gpu_t *parent_gpu)
 {
@@ -1676,20 +1683,21 @@ NV_STATUS uvm_gpu_check_nvlink_error(uvm_gpu_t *gpu);
 // error and it's required to call uvm_gpu_check_nvlink_error() to be sure.
 NV_STATUS uvm_gpu_check_nvlink_error_no_rm(uvm_gpu_t *gpu);
 
-// Map size bytes of contiguous sysmem on the GPU for physical access
+// Map size bytes of contiguous sysmem on the GPU for physical access.
 //
 // size has to be aligned to PAGE_SIZE.
 //
 // Returns the physical address of the pages that can be used to access them on
-// the GPU.
-NV_STATUS uvm_parent_gpu_map_cpu_pages(uvm_parent_gpu_t *parent_gpu, struct page *page, size_t size, NvU64 *dma_address_out);
+// the GPU. This address is usable by any GPU under the same parent for the
+// lifetime of that parent.
+NV_STATUS uvm_gpu_map_cpu_pages(uvm_gpu_t *gpu, struct page *page, size_t size, NvU64 *dma_address_out);
 
-// Unmap num_pages pages previously mapped with uvm_parent_gpu_map_cpu_pages().
+// Unmap num_pages pages previously mapped with uvm_gpu_map_cpu_pages().
 void uvm_parent_gpu_unmap_cpu_pages(uvm_parent_gpu_t *parent_gpu, NvU64 dma_address, size_t size);
 
-static NV_STATUS uvm_parent_gpu_map_cpu_page(uvm_parent_gpu_t *parent_gpu, struct page *page, NvU64 *dma_address_out)
+static NV_STATUS uvm_gpu_map_cpu_page(uvm_gpu_t *gpu, struct page *page, NvU64 *dma_address_out)
 {
-    return uvm_parent_gpu_map_cpu_pages(parent_gpu, page, PAGE_SIZE, dma_address_out);
+    return uvm_gpu_map_cpu_pages(gpu, page, PAGE_SIZE, dma_address_out);
 }
 
 static void uvm_parent_gpu_unmap_cpu_page(uvm_parent_gpu_t *parent_gpu, NvU64 dma_address)
@@ -1700,16 +1708,15 @@ static void uvm_parent_gpu_unmap_cpu_page(uvm_parent_gpu_t *parent_gpu, NvU64 dm
 // Allocate and map a page of system DMA memory on the GPU for physical access
 //
 // Returns
-// - the address of the page that can be used to access them on
-//   the GPU in the dma_address_out parameter.
 // - the address of allocated memory in CPU virtual address space.
-void *uvm_parent_gpu_dma_alloc_page(uvm_parent_gpu_t *parent_gpu,
-                                    gfp_t gfp_flags,
-                                    NvU64 *dma_address_out);
+// - the address of the page that can be used to access them on
+//   the GPU in the dma_address_out parameter. This address is usable by any GPU
+//   under the same parent for the lifetime of that parent.
+NV_STATUS uvm_gpu_dma_alloc_page(uvm_gpu_t *gpu, gfp_t gfp_flags, void **cpu_addr_out, NvU64 *dma_address_out);
 
 // Unmap and free size bytes of contiguous sysmem DMA previously allocated
-// with uvm_parent_gpu_map_cpu_pages().
-void uvm_parent_gpu_dma_free_page(uvm_parent_gpu_t *parent_gpu, void *va, NvU64 dma_address);
+// with uvm_gpu_dma_alloc_page().
+void uvm_parent_gpu_dma_free_page(uvm_parent_gpu_t *parent_gpu, void *cpu_addr, NvU64 dma_address);
 
 // Returns whether the given range is within the GPU's addressable VA ranges.
 // It requires the input 'addr' to be in canonical form for platforms compliant
@@ -1729,8 +1736,6 @@ bool uvm_gpu_can_address(uvm_gpu_t *gpu, NvU64 addr, NvU64 size);
 //
 // The GPU must be initialized before calling this function.
 bool uvm_gpu_can_address_kernel(uvm_gpu_t *gpu, NvU64 addr, NvU64 size);
-
-bool uvm_platform_uses_canonical_form_address(void);
 
 // Returns addr's canonical form for host systems that use canonical form
 // addresses.
@@ -1774,7 +1779,7 @@ static bool uvm_parent_gpu_needs_proxy_channel_pool(const uvm_parent_gpu_t *pare
     return uvm_parent_gpu_is_virt_mode_sriov_heavy(parent_gpu);
 }
 
-uvm_aperture_t uvm_get_page_tree_location(const uvm_parent_gpu_t *parent_gpu);
+uvm_aperture_t uvm_get_page_tree_location(const uvm_gpu_t *gpu);
 
 // Add the given instance pointer -> user_channel mapping to this GPU. The
 // bottom half GPU page fault handler uses this to look up the VA space for GPU

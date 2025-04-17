@@ -1,13 +1,15 @@
 
 #ifndef _G_JOURNAL_NVOC_H_
 #define _G_JOURNAL_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -201,10 +203,19 @@ typedef struct _nocatQueueDescriptor
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJRCDB;
+struct NVOC_METADATA__Object;
+struct NVOC_METADATA__OBJTRACEABLE;
+
+
 struct OBJRCDB {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__OBJRCDB *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -239,6 +250,14 @@ struct OBJRCDB {
     NvU64 timeStampFreq;
 };
 
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJRCDB {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
+    const struct NVOC_METADATA__OBJTRACEABLE metadata__OBJTRACEABLE;
+};
+
 #ifndef __NVOC_CLASS_OBJRCDB_TYPEDEF__
 #define __NVOC_CLASS_OBJRCDB_TYPEDEF__
 typedef struct OBJRCDB OBJRCDB;
@@ -255,10 +274,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJRCDB;
     ((pThis)->__nvoc_pbase_OBJRCDB)
 
 #ifdef __nvoc_journal_h_disabled
-#define __dynamicCast_OBJRCDB(pThis) ((OBJRCDB*)NULL)
+#define __dynamicCast_OBJRCDB(pThis) ((OBJRCDB*) NULL)
 #else //__nvoc_journal_h_disabled
 #define __dynamicCast_OBJRCDB(pThis) \
-    ((OBJRCDB*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJRCDB)))
+    ((OBJRCDB*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJRCDB)))
 #endif //__nvoc_journal_h_disabled
 
 // Property macros

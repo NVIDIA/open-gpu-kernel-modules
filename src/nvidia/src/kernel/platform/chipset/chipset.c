@@ -141,7 +141,7 @@ clInitMappingPciBusDevice_IMPL
         return NV0000_CTRL_GPU_INVALID_ID;
 
     // do we already know our domain/bus/device?
-    if (gpuGetDBDF(pGpu) == 0)
+    if (!gpuIsDBDFValid(pGpu))
     {
         // we're checking all the device/funcs for the first 10 buses!
         // Note that we give up the enumeration once we find our first
@@ -165,24 +165,16 @@ clInitMappingPciBusDevice_IMPL
                         continue;
 
                     // if the BAR0 matches our PhysAddr, it's the correct device
-                    if ((osPciReadDword(handle, PCI_BASE_ADDRESS_0)) !=
+                    if (((osPciReadDword(handle, PCI_BASE_ADDRESS_0) & PCI_BASE_ADDRESS_0_VALID_MASK)) !=
                         pGpu->busInfo.gpuPhysAddr)
                         continue;
 
                     // save our domain/bus/device/function
                     pGpu->busInfo.nvDomainBusDeviceFunc = gpuEncodeDomainBusDevice(domain, (NvU8)bus, device);
+                    pGpu->busInfo.bNvDomainBusDeviceFuncValid = NV_TRUE;
 
                     bFoundDevice = NV_TRUE;
 
-                    if (!(IS_SIMULATION(pGpu) || IS_SIM_MODS(GPU_GET_OS(pGpu))))
-                    {
-                        NV_ASSERT(gpuGetDBDF(pGpu) != 0);
-                    }
-                                                        // On the HP "Wilson's Peak"/McKinley system
-                                                        // the graphics is located at
-                                                        // domain==0, bus==0, device==0.
-                                                        // Why should this be invalid?
-                    // In simulation, the fmodel can put this at bus==0, device==0
                     break;
                 }
             }
@@ -193,10 +185,8 @@ clInitMappingPciBusDevice_IMPL
     bus = gpuGetBus(pGpu);
     device = gpuGetDevice(pGpu);
 
-    if (gpuGetDBDF(pGpu) == 0)
+    if (!gpuIsDBDFValid(pGpu))
     {
-        if (!(IS_SIMULATION(pGpu)|| IS_SIM_MODS(GPU_GET_OS(pGpu)))
-               || (bFoundDevice == NV_FALSE))
         {
             NV_PRINTF(LEVEL_ERROR,
                     "NVRM initMappingPciBusDevice: can't find a device!\n");
@@ -795,7 +785,6 @@ void clSyncWithGsp_IMPL(OBJCL *pCl, GspSystemInfo *pGSI)
     CL_SYNC_PDB(PDB_PROP_CL_IS_CHIPSET_IN_ASPM_POR_LIST);
     CL_SYNC_PDB(PDB_PROP_CL_ASPM_L0S_CHIPSET_DISABLED);
     CL_SYNC_PDB(PDB_PROP_CL_ASPM_L1_CHIPSET_DISABLED);
-    CL_SYNC_PDB(PDB_PROP_CL_WAR_4802761_ENABLED);
     CL_SYNC_PDB(PDB_PROP_CL_ASPM_L0S_CHIPSET_ENABLED_MOBILE_ONLY);
     CL_SYNC_PDB(PDB_PROP_CL_ASPM_L1_CHIPSET_ENABLED_MOBILE_ONLY);
     CL_SYNC_PDB(PDB_PROP_CL_ASPM_L1_UPSTREAM_PORT_SUPPORTED);

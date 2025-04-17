@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@
 #include "gpu/spdm/spdm.h"
 #include "gpu/conf_compute/conf_compute.h"
 #include "core/locks.h"
+#include "gpu/gpu.h"
 #include "ctrl/ctrl2080/ctrl2080spdm.h"
 #include "rmapi/client_resource.h"
 #include "gpu/conf_compute/ccsl.h"
@@ -39,51 +40,24 @@
 /* ------------------------- Static Functions ------------------------------ */
 
 /* ------------------------- Public Functions ------------------------------ */
-
 /*!
- * @brief spdmCtrlSpdmPartition
- *        Common function used to call gspCommandPostBlocking based on the platform on which it runs (i.e. vGPU, GSP-RM, Monolithic).
+ * @brief spdmProxyCtrlSpdmPartition
+ *        The physical layer function to handle cotrol request from kernel SPDM.
  *
- * @param[in]     pGpu                     : OBJGPU Pointer
- * @param[in]     pSpdmPartitionParams     : SPDM RPC structure pointer
+ * @param[in]      pGpu                     : OBJGPU Pointer
+ * @param[in]      pSpdmPartitionParams     : SPDM RPC structure pointer
+ *
+ * @return  return NV_OK if no error detected.
  */
-NV_STATUS spdmCtrlSpdmPartition
+NV_STATUS spdmProxyCtrlSpdmPartition_IMPL
 (
     OBJGPU                                     *pGpu,
     NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS *pSpdmPartitionParams
 )
 {
-    NV_STATUS status = NV_OK;
 
-    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+    return NV_ERR_NOT_SUPPORTED;
 
-    if (IS_VIRTUAL(pGpu))
-    {
-        // The control call currently doesn't support the vGPU environment, therefore return NV_ERR_NOT_SUPPORTED.
-        return NV_ERR_NOT_SUPPORTED;
-    }
-    else if (IS_GSP_CLIENT(pGpu))
-    {
-        RM_API *pRmApi   = GPU_GET_PHYSICAL_RMAPI(pGpu);
-
-        // Calls the subdeviceCtrlCmdSpdmPartition_IMPL control call in Physical RM mode.
-        status = pRmApi->Control(pRmApi,
-                                 pGpu->hInternalClient,
-                                 pGpu->hInternalSubdevice,
-                                 NV2080_CTRL_INTERNAL_SPDM_PARTITION,
-                                 pSpdmPartitionParams,
-                                 sizeof(NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS));
-    }
-    else
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "spdmCtrlSpdmPartition failed with error 0x%0x\n", status);
-    }
-
-    return status;
 }
+
 

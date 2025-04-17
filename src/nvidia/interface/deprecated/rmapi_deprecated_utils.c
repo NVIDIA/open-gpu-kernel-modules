@@ -323,6 +323,15 @@ RmDeprecatedConvertOs32ToOs02Flags
     else
         os02Flags = FLD_SET_DRF(OS02, _FLAGS, _ALLOC_NISO_DISPLAY, _NO, os02Flags);
 
+    if (FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _PROTECTED, attr2))
+    {
+        os02Flags = FLD_SET_DRF(OS02, _FLAGS, _MEMORY_PROTECTION, _PROTECTED, os02Flags);
+    }
+    else if (FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED, attr2))
+    {
+        os02Flags = FLD_SET_DRF(OS02, _FLAGS, _MEMORY_PROTECTION, _UNPROTECTED, os02Flags);
+    }
+
     if (rmStatus == NV_OK)
     {
         *pOs02Flags = os02Flags;
@@ -432,6 +441,15 @@ RmDeprecatedConvertOs02ToOs32Flags
         attr2 |= DRF_DEF(OS32, _ATTR2, _REGISTER_MEMDESC_TO_PHYS_RM, _TRUE);
     else
         attr2 |= DRF_DEF(OS32, _ATTR2, _REGISTER_MEMDESC_TO_PHYS_RM, _FALSE);
+
+    if (FLD_TEST_DRF(OS02, _FLAGS, _MEMORY_PROTECTION, _PROTECTED, os02Flags))
+    {
+        attr2 |= DRF_DEF(OS32, _ATTR2, _MEMORY_PROTECTION, _PROTECTED);
+    }
+    else if (FLD_TEST_DRF(OS02, _FLAGS, _MEMORY_PROTECTION, _UNPROTECTED, os02Flags))
+    {
+        attr2 |= DRF_DEF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED);
+    }
 
     if (rmStatus == NV_OK)
     {

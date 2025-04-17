@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2023 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -485,10 +485,13 @@ static NV_STATUS mem_alloc_sysmem_dma_chunks(uvm_mem_t *mem, gfp_t gfp_flags)
     dma_addrs = mem->sysmem.dma_addrs[uvm_id_gpu_index(mem->dma_owner->id)];
 
     for (i = 0; i < mem->chunks_count; ++i) {
-        mem->sysmem.va[i] = uvm_parent_gpu_dma_alloc_page(mem->dma_owner->parent, gfp_flags, &dma_addrs[i]);
-        if (!mem->sysmem.va[i])
-            goto err_no_mem;
+        void *va;
 
+        status = uvm_gpu_dma_alloc_page(mem->dma_owner, gfp_flags, &va, &dma_addrs[i]);
+        if (status != NV_OK)
+            goto error;
+
+        mem->sysmem.va[i] = va;
         mem->sysmem.pages[i] = uvm_virt_to_page(mem->sysmem.va[i]);
         if (!mem->sysmem.pages[i])
             goto err_no_mem;
@@ -917,12 +920,12 @@ static NV_STATUS sysmem_map_gpu_phys(uvm_mem_t *mem, uvm_gpu_t *gpu)
         return status;
 
     for (i = 0; i < mem->chunks_count; ++i) {
-        status = uvm_parent_gpu_map_cpu_pages(gpu->parent,
-                                              mem->sysmem.pages[i],
-                                              mem->chunk_size,
-                                              &mem->sysmem.dma_addrs[uvm_id_gpu_index(gpu->id)][i]);
+        NvU64 dma_addr;
+        status = uvm_gpu_map_cpu_pages(gpu, mem->sysmem.pages[i], mem->chunk_size, &dma_addr);
         if (status != NV_OK)
             goto error;
+
+        mem->sysmem.dma_addrs[uvm_id_gpu_index(gpu->id)][i] = dma_addr;
     }
 
     return NV_OK;

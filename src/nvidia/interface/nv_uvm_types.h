@@ -268,6 +268,7 @@ typedef struct UvmGpuChannelInfo_tag
 
     // The errorNotifier is filled out when the channel hits an RC error.
     NvNotification    *errorNotifier;
+
     NvNotification    *keyRotationNotifier;
 
     NvU32              hwRunlistId;
@@ -297,6 +298,7 @@ typedef struct UvmGpuChannelInfo_tag
     NvU64              gpFifoGpuVa;
     NvU64              gpPutGpuVa;
     NvU64              gpGetGpuVa;
+
     // GPU VA of work submission offset is needed in Confidential Computing
     // so CE channels can ring doorbell of other channels as required for
     // WLC/LCIC work submission
@@ -373,6 +375,9 @@ typedef struct
 
     // True if the CE can be used for P2P transactions
     NvBool p2p:1;
+
+    // True if the CE supports encryption
+    NvBool secure:1;
 
     // Mask of physical CEs assigned to this LCE
     //
@@ -978,17 +983,17 @@ typedef struct UvmGpuFaultInfo_tag
         NvU32 replayableFaultMask;
 
         // Fault buffer CPU mapping
-        void*  bufferAddress;
-        //
         // When Confidential Computing is disabled, the mapping points to the
         // actual HW fault buffer.
         //
         // When Confidential Computing is enabled, the mapping points to a
         // copy of the HW fault buffer. This "shadow buffer" is maintained
         // by GSP-RM.
+        void*  bufferAddress;
 
         // Size, in bytes, of the fault buffer pointed by bufferAddress.
         NvU32  bufferSize;
+
         // Mapping pointing to the start of the fault buffer metadata containing
         // a 16Byte authentication tag and a valid byte. Always NULL when
         // Confidential Computing is disabled.

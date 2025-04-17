@@ -121,6 +121,7 @@ static NVSurfaceEvoPtr AllocLutSurfaceEvoInVidmem(NVDevEvoPtr pDevEvo)
     size = (sizeof(NVEvoLutDataRec) + 63) & ~63;
     attr = FLD_SET_DRF(OS32, _ATTR, _LOCATION, _VIDMEM, attr);
     attr2 = FLD_SET_DRF(OS32, _ATTR2, _GPU_CACHEABLE, _DEFAULT, attr2);
+    attr2 = FLD_SET_DRF(OS32, _ATTR2, _ISO, _YES, attr2);
 
     alignment = NV_MAX(alignment, NV_EVO_SURFACE_ALIGNMENT);
     if (alignment != 0) {

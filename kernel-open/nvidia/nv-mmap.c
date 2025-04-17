@@ -161,16 +161,7 @@ nvidia_vma_access(
         if (pageIndex >= at->num_pages)
             return -EINVAL;
 
-        /*
-         * For PPC64LE build, nv_array_index_no_speculate() is not defined
-         * therefore call nv_speculation_barrier().
-         * When this definition is added, this platform check should be removed.
-         */
-#if !defined(NVCPU_PPC64LE)
         pageIndex = nv_array_index_no_speculate(pageIndex, at->num_pages);
-#else
-        nv_speculation_barrier();
-#endif
         kernel_mapping = (void *)(at->page_table[pageIndex]->virt_addr + pageOffset);
     }
     else
@@ -293,8 +284,7 @@ static vm_fault_t nvidia_fault(
             NvU64 numPages = mmap_context->memArea.pRanges[idx].size >> PAGE_SHIFT;
             while (numPages != 0)
             {
-                ret = nv_insert_pfn(vma, curOffs + vma->vm_start, pfn,
-                        mmap_context->remap_prot_extra);
+                ret = nv_insert_pfn(vma, curOffs + vma->vm_start, pfn);
                 if (ret != VM_FAULT_NOPAGE)
                 {
                     goto err;
@@ -407,7 +397,7 @@ static int nvidia_mmap_peer_io(
     start = at->page_table[page_index]->phys_addr;
     size = pages * PAGE_SIZE;
 
-    ret = nv_io_remap_page_range(vma, start, size, 0, vma->vm_start);
+    ret = nv_io_remap_page_range(vma, start, size, vma->vm_start);
 
     return ret;
 }
@@ -428,16 +418,7 @@ static int nvidia_mmap_sysmem(
     start = vma->vm_start;
     for (j = page_index; j < (page_index + pages); j++)
     {
-        /*
-         * For PPC64LE build, nv_array_index_no_speculate() is not defined
-         * therefore call nv_speculation_barrier().
-         * When this definition is added, this platform check should be removed.
-         */
-#if !defined(NVCPU_PPC64LE)
         j = nv_array_index_no_speculate(j, (page_index + pages));
-#else
-        nv_speculation_barrier();
-#endif
 
         if (
 #if defined(NV_VGPU_KVM_BUILD)
@@ -451,7 +432,7 @@ static int nvidia_mmap_sysmem(
         else
         {
             if (at->flags.unencrypted)
-                vma->vm_page_prot = nv_adjust_pgprot(vma->vm_page_prot, 0);
+                vma->vm_page_prot = nv_adjust_pgprot(vma->vm_page_prot);
 
             ret = vm_insert_page(vma, start,
                                  NV_GET_PAGE_STRUCT(at->page_table[j]->phys_addr));
@@ -551,7 +532,6 @@ int nvidia_mmap_helper(
      */
     if (!NV_IS_CTL_DEVICE(nv))
     {
-        NvU32 remap_prot_extra = mmap_context->remap_prot_extra;
         NvU64 access_start = mmap_context->access_start;
         NvU64 access_len = mmap_context->access_size;
 
@@ -624,7 +604,7 @@ int nvidia_mmap_helper(
                     if (nv_io_remap_page_range(vma,
                             mmap_context->memArea.pRanges[idx].start,
                             mmap_context->memArea.pRanges[idx].size,
-                            remap_prot_extra, vma->vm_start + curOffs) != 0)
+                            vma->vm_start + curOffs) != 0)
                     {
                         up(&nvl->mmap_lock);
                         return -EAGAIN;

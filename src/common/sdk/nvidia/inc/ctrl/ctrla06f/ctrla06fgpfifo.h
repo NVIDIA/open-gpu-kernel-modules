@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2007-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2007-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,6 +44,18 @@
  *   When set, the channel will be enabled in addition to being added to the appropriate runlist.
  *   When not set, the channel will be disabled and removed from runlist.
  *
+ * bSkipSubmit
+ *   This parameter indicates whether this channel is not to be scheduled, even though it is enabled.
+ *   When set, the channel will not be scheduled.
+ *   When not set, the channel will be scheduled.
+ *
+ * bSkipEnable
+ *   This parameter indicates whether this channel is not to be enabled, even though it is scheduled.
+ *   When set, the channel will not be enabled.
+ *   When not set, the channel will be enabled.
+ *
+ * When bEnable is set, both bSkipSubmit and bSkipEnable can't be set.
+ *
  * Possible status values returned are:
  *   NV_OK
  *   NV_ERR_INVALID_OBJECT_HANDLE
@@ -57,6 +69,7 @@
 typedef struct NVA06F_CTRL_GPFIFO_SCHEDULE_PARAMS {
     NvBool bEnable;
     NvBool bSkipSubmit;
+    NvBool bSkipEnable;
 } NVA06F_CTRL_GPFIFO_SCHEDULE_PARAMS;
 
 /*

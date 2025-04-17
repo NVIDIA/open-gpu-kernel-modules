@@ -202,6 +202,43 @@ static int nv_drm_framebuffer_init(struct drm_device *dev,
         params.explicit_layout = false;
     }
 
+    /*
+     * XXX work around an invalid pitch assumption in DRM.
+     *
+     * The smallest pitch the display hardware allows is 256.
+     *
+     * If a DRM client allocates a 32x32 cursor surface through
+     * DRM_IOCTL_MODE_CREATE_DUMB, we'll correctly round the pitch to 256:
+     *
+     *     pitch = round(32width * 4Bpp, 256) = 256
+     *
+     * and then allocate an 8k surface:
+     *
+     *     size = pitch * 32height = 8196
+     *
+     * and report the rounded pitch and size back to the client through the
+     * struct drm_mode_create_dumb ioctl params.
+     *
+     * But when the DRM client passes that buffer object handle to
+     * DRM_IOCTL_MODE_CURSOR, the client has no way to specify the pitch.  This
+     * path in drm:
+     *
+     *    DRM_IOCTL_MODE_CURSOR
+     *     drm_mode_cursor_ioctl()
+     *      drm_mode_cursor_common()
+     *       drm_mode_cursor_universal()
+     *
+     * will implicitly create a framebuffer from the buffer object, and compute
+     * the pitch as width x 32 (without aligning to our minimum pitch).
+     *
+     * Intercept this case and force the pitch back to 256.
+     */
+    if ((params.width == 32) &&
+        (params.height == 32) &&
+        (params.planes[0].pitch == 128)) {
+        params.planes[0].pitch = 256;
+    }
+
     /* Create NvKmsKapiSurface */
 
     nv_fb->pSurface = nvKms->createSurface(nv_dev->pDevice, &params);

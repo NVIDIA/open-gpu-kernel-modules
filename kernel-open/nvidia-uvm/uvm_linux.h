@@ -76,13 +76,15 @@
 #include <linux/ratelimit.h>
 #endif
 
-#if defined(NV_PNV_NPU2_INIT_CONTEXT_PRESENT)
-#include <asm/powernv.h>
-#endif
-
 #if defined(NV_LINUX_SCHED_TASK_STACK_H_PRESENT)
 #include <linux/sched/task_stack.h>
 #endif
+
+#include "linux/bitmap.h"
+#include "linux/bitops.h"
+#include "linux/gfp.h"
+#include "linux/pagemap.h"
+#include "linux/types.h"
 
 #if !defined(NV_SG_DMA_PAGE_ITER_PRESENT)
 #include <linux/scatterlist.h>

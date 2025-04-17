@@ -23,6 +23,10 @@
 #ifndef __ga100_dev_fuse_h__
 #define __ga100_dev_fuse_h__
 
+#define NV_FUSE_FEATURE_READOUT                                                                     0x00823814 /* R--4R */
+#define NV_FUSE_FEATURE_READOUT_ECC_DRAM                                                            16:16      /* R--VF */
+#define NV_FUSE_FEATURE_READOUT_ECC_DRAM_ENABLED                                                    0x00000001 /* R---V */
+
 #define NV_FUSE_OPT_SECURE_GSP_DEBUG_DIS                                                            0x0082074C /* RW-4R */
 #define NV_FUSE_OPT_SECURE_GSP_DEBUG_DIS_DATA                                                              0:0 /* RWIVF */
 #define NV_FUSE_OPT_SECURE_GSP_DEBUG_DIS_DATA_NO                                                    0x00000000 /* RW--V */

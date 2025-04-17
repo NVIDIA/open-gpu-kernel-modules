@@ -61,11 +61,7 @@ kfifoConstructHal_GM107
     {
         default:
         case NV_REG_STR_RM_INST_LOC_INSTBLK_DEFAULT:
-            if (kfifoIsMixedInstmemApertureDefAllowed(pKernelFifo))
-                pKernelFifo->pInstAllocList  = ADDRLIST_FBMEM_PREFERRED;
-            else
-                pKernelFifo->pInstAllocList  = ADDRLIST_FBMEM_ONLY;
-
+            pKernelFifo->pInstAllocList  = ADDRLIST_FBMEM_PREFERRED;
             pKernelFifo->InstAttr        = NV_MEMORY_UNCACHED;
             break;
         case NV_REG_STR_RM_INST_LOC_INSTBLK_VID:

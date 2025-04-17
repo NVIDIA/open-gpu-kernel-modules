@@ -282,10 +282,6 @@ knvlinkApplyRegkeyOverrides_IMPL
     if (NV_OK == osReadRegistryDword(pGpu,
                  NV_REG_STR_RM_NVLINK_ENCRYPTION, &regdata))
     {
-        //
-        // Nvlink Encryption PDB PROP is set when Nvlink Encryption regkey has been enabled AND
-        // either we are running in MODS or CC is enabled
-        //
         if (FLD_TEST_DRF(_REG_STR_RM, _NVLINK_ENCRYPTION, _MODE, _ENABLE, regdata))
         {
             if (RMCFG_FEATURE_MODS_FEATURES)
@@ -302,7 +298,7 @@ knvlinkApplyRegkeyOverrides_IMPL
                 NvBool bCCFeatureEnabled = (pCC != NULL) && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED);
                 if (bCCFeatureEnabled)
                 {
-                    pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED, NV_TRUE);
+                    pKernelNvlink->bNvleModeRegkey = NV_TRUE;
                     pKernelNvlink->gspProxyRegkeys = DRF_DEF(GSP, _PROXY_REG, _NVLINK_ENCRYPTION, _ENABLE);
                     NV_PRINTF(LEVEL_INFO,
                               "Nvlink Encryption is enabled via regkey\n");

@@ -133,16 +133,6 @@ kheadIsVblankCallbackDue
         // Every other callback whose time has come.
         if (pCallback->VBlankCount == 1+vblankCount)
         {
-            // Some callbacks might have become due, but only want ISR time exclusively (no DPC)
-            if (pCallback->Flags & VBLANK_CALLBACK_FLAG_LOW_LATENCY__ISR_ONLY)
-            {
-                if (!(state & VBLANK_STATE_PROCESS_CALLED_FROM_ISR))
-                {
-                    // Callback explicitly wants ISR time for its processing.
-                    return NV_FALSE;
-                }
-            }
-
             return NV_TRUE;
         }
     }

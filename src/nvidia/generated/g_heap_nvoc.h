@@ -1,13 +1,15 @@
 
 #ifndef _G_HEAP_NVOC_H_
 #define _G_HEAP_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -87,8 +89,6 @@ typedef struct
 // New Stuff for WDDM
 typedef struct
 {
-    NvU32   client;
-    NvU32   owner;
     NvU32   type;
     NvU32   flags;
     NvU32  *pHeight;
@@ -99,11 +99,7 @@ typedef struct
     NvU32  *pAttr;
     NvU32  *pAttr2;
     NvU32  *pKind;
-    NvU32   bankPlacement;
-    NvBool  ignoreBankPlacement;
     NvU64   pad;
-    NvU64   alignAdjust;
-    NvU32   format;
 } HEAP_ALLOC_HINT_PARAMS;
 
 typedef struct
@@ -136,8 +132,6 @@ typedef struct
 #define MEM_GROW_MASK                     0x80
 
 // other defines
-#define MEM_BANK_MASK                     0x3F
-#define MEM_NO_BANK_SELECTION             0xFF
 #define MEM_NUM_BANKS_TO_TRY              0x1 // check a max of 1 bank
 #define MEM_BANK_DATA_SIZE                0x8 // store everything in a byte
 
@@ -166,15 +160,9 @@ typedef struct
 // in NVOS32_FUNCTION_INFO_TYPE_ALLOC_BLOCKS::NVOS32_TYPE_RM_SCRATCH
 //
 #define HEAP_OWNER_RM_SCRATCH_BEGIN         0xDEAF0000
-#define HEAP_OWNER_RM_CHANNEL_INSTMEM       (HEAP_OWNER_RM_SCRATCH_BEGIN + 1)
-#define HEAP_OWNER_RM_CHANNEL_CTX_BUFFER    (HEAP_OWNER_RM_SCRATCH_BEGIN + 2)
-#define HEAP_OWNER_RM_VIDEO_UCODE           (HEAP_OWNER_RM_SCRATCH_BEGIN + 3)
-#define HEAP_OWNER_RM_FB_BUG_147656         (HEAP_OWNER_RM_SCRATCH_BEGIN + 4)
-#define HEAP_OWNER_RM_FB_BUG_177053         (HEAP_OWNER_RM_SCRATCH_BEGIN + 5)
-#define HEAP_OWNER_RM_DSI_INST_MEM          (HEAP_OWNER_RM_SCRATCH_BEGIN + 6)
-#define HEAP_OWNER_RM_CTX_SAVE_AREAS        (HEAP_OWNER_RM_SCRATCH_BEGIN + 7)
-#define HEAP_OWNER_RM_RESERVED_REGION       (HEAP_OWNER_RM_SCRATCH_BEGIN + 8)
-#define HEAP_OWNER_RM_SCRATCH_END           (HEAP_OWNER_RM_SCRATCH_BEGIN + 9)   // make this the last
+#define HEAP_OWNER_RM_CHANNEL_CTX_BUFFER    (HEAP_OWNER_RM_SCRATCH_BEGIN + 1)
+#define HEAP_OWNER_RM_RESERVED_REGION       (HEAP_OWNER_RM_SCRATCH_BEGIN + 2)
+#define HEAP_OWNER_RM_SCRATCH_END           (HEAP_OWNER_RM_SCRATCH_BEGIN + 3)   // make this the last
 
 #define HEAP_OWNER_RM_KERNEL_CLIENT         (HEAP_OWNER_RM_SCRATCH_END + 1)
 #define HEAP_OWNER_PMA_RESERVED_REGION      (HEAP_OWNER_RM_SCRATCH_END + 2)
@@ -292,10 +280,18 @@ typedef struct
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__Heap;
+struct NVOC_METADATA__Object;
+
+
 struct Heap {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__Heap *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -320,8 +316,6 @@ struct Heap {
     struct MEM_BLOCK *pBlockList;
     struct MEM_BLOCK *pFreeBlockList;
     NODE *pBlockTree;
-    NvHandle memHandle;
-    NvU32 numBlocks;
     TEX_INFO textureData[4];
     struct MEM_BLOCK *pNoncontigFreeBlockList;
     BLACKLIST_ADDRESSES blackListAddresses;
@@ -332,10 +326,13 @@ struct Heap {
     NvU32 shuffleStrides[5];
     NvU32 shuffleStrideIndex;
     PMA pmaObject;
-    NvU64 peakInternalUsage;
-    NvU64 peakExternalUsage;
-    NvU64 currInternalUsage;
-    NvU64 currExternalUsage;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__Heap {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
 };
 
 #ifndef __NVOC_CLASS_Heap_TYPEDEF__
@@ -354,10 +351,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Heap;
     ((pThis)->__nvoc_pbase_Heap)
 
 #ifdef __nvoc_heap_h_disabled
-#define __dynamicCast_Heap(pThis) ((Heap*)NULL)
+#define __dynamicCast_Heap(pThis) ((Heap*) NULL)
 #else //__nvoc_heap_h_disabled
 #define __dynamicCast_Heap(pThis) \
-    ((Heap*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(Heap)))
+    ((Heap*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(Heap)))
 #endif //__nvoc_heap_h_disabled
 
 // Property macros
@@ -455,17 +452,6 @@ static inline void heapGetClientAddrSpaceSize(struct OBJGPU *arg1, struct Heap *
 #define heapGetClientAddrSpaceSize(arg1, arg2, arg3) heapGetClientAddrSpaceSize_IMPL(arg1, arg2, arg3)
 #endif //__nvoc_heap_h_disabled
 
-NV_STATUS heapInfoTypeAllocBlocks_IMPL(struct Heap *arg1, NvU32 arg2, NvU64 *arg3);
-
-#ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapInfoTypeAllocBlocks(struct Heap *arg1, NvU32 arg2, NvU64 *arg3) {
-    NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_heap_h_disabled
-#define heapInfoTypeAllocBlocks(arg1, arg2, arg3) heapInfoTypeAllocBlocks_IMPL(arg1, arg2, arg3)
-#endif //__nvoc_heap_h_disabled
-
 NV_STATUS heapGetSize_IMPL(struct Heap *arg1, NvU64 *arg2);
 
 #ifdef __nvoc_heap_h_disabled
@@ -521,39 +507,6 @@ static inline NV_STATUS heapGetBlock(struct Heap *arg1, NvU64 arg2, struct MEM_B
 #define heapGetBlock(arg1, arg2, arg3) heapGetBlock_IMPL(arg1, arg2, arg3)
 #endif //__nvoc_heap_h_disabled
 
-NV_STATUS heapGetBlockHandle_IMPL(struct Heap *arg1, NvU32 arg2, NvU32 arg3, NvU64 arg4, NvBool arg5, NvHandle *arg6);
-
-#ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapGetBlockHandle(struct Heap *arg1, NvU32 arg2, NvU32 arg3, NvU64 arg4, NvBool arg5, NvHandle *arg6) {
-    NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_heap_h_disabled
-#define heapGetBlockHandle(arg1, arg2, arg3, arg4, arg5, arg6) heapGetBlockHandle_IMPL(arg1, arg2, arg3, arg4, arg5, arg6)
-#endif //__nvoc_heap_h_disabled
-
-NvU32 heapGetNumBlocks_IMPL(struct Heap *arg1);
-
-#ifdef __nvoc_heap_h_disabled
-static inline NvU32 heapGetNumBlocks(struct Heap *arg1) {
-    NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
-    return 0;
-}
-#else //__nvoc_heap_h_disabled
-#define heapGetNumBlocks(arg1) heapGetNumBlocks_IMPL(arg1)
-#endif //__nvoc_heap_h_disabled
-
-NV_STATUS heapGetBlockInfo_IMPL(struct Heap *arg1, NvU32 arg2, NVOS32_HEAP_DUMP_BLOCK *arg3);
-
-#ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapGetBlockInfo(struct Heap *arg1, NvU32 arg2, NVOS32_HEAP_DUMP_BLOCK *arg3) {
-    NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_heap_h_disabled
-#define heapGetBlockInfo(arg1, arg2, arg3) heapGetBlockInfo_IMPL(arg1, arg2, arg3)
-#endif //__nvoc_heap_h_disabled
-
 NV_STATUS heapAllocHint_IMPL(struct OBJGPU *arg1, struct Heap *arg2, NvHandle arg3, NvHandle arg4, HEAP_ALLOC_HINT_PARAMS *arg5);
 
 #ifdef __nvoc_heap_h_disabled
@@ -584,28 +537,6 @@ static inline void heapHwFree(struct OBJGPU *arg1, struct Heap *arg2, struct Mem
 }
 #else //__nvoc_heap_h_disabled
 #define heapHwFree(arg1, arg2, arg3, arg4) heapHwFree_IMPL(arg1, arg2, arg3, arg4)
-#endif //__nvoc_heap_h_disabled
-
-NV_STATUS heapFreeBlockCount_IMPL(struct OBJGPU *arg1, struct Heap *arg2, NvU32 *arg3);
-
-#ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapFreeBlockCount(struct OBJGPU *arg1, struct Heap *arg2, NvU32 *arg3) {
-    NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_heap_h_disabled
-#define heapFreeBlockCount(arg1, arg2, arg3) heapFreeBlockCount_IMPL(arg1, arg2, arg3)
-#endif //__nvoc_heap_h_disabled
-
-NV_STATUS heapFreeBlockInfo_IMPL(struct OBJGPU *arg1, struct Heap *arg2, NvU32 arg3, void *arg4);
-
-#ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapFreeBlockInfo(struct OBJGPU *arg1, struct Heap *arg2, NvU32 arg3, void *arg4) {
-    NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_heap_h_disabled
-#define heapFreeBlockInfo(arg1, arg2, arg3, arg4) heapFreeBlockInfo_IMPL(arg1, arg2, arg3, arg4)
 #endif //__nvoc_heap_h_disabled
 
 NV_STATUS heapInitRegistryOverrides_IMPL(struct OBJGPU *arg1, struct Heap *arg2);

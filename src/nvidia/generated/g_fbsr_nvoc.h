@@ -1,13 +1,15 @@
 
 #ifndef _G_FBSR_NVOC_H_
 #define _G_FBSR_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -97,10 +99,18 @@ typedef struct
 #endif
 
 
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJFBSR;
+struct NVOC_METADATA__Object;
+
+
 struct OBJFBSR {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__OBJFBSR *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
@@ -136,6 +146,13 @@ struct OBJFBSR {
     MEMORY_DESCRIPTOR *pSysReservedMemDesc;
 };
 
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJFBSR {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
+};
+
 #ifndef __NVOC_CLASS_OBJFBSR_TYPEDEF__
 #define __NVOC_CLASS_OBJFBSR_TYPEDEF__
 typedef struct OBJFBSR OBJFBSR;
@@ -152,10 +169,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJFBSR;
     ((pThis)->__nvoc_pbase_OBJFBSR)
 
 #ifdef __nvoc_fbsr_h_disabled
-#define __dynamicCast_OBJFBSR(pThis) ((OBJFBSR*)NULL)
+#define __dynamicCast_OBJFBSR(pThis) ((OBJFBSR*) NULL)
 #else //__nvoc_fbsr_h_disabled
 #define __dynamicCast_OBJFBSR(pThis) \
-    ((OBJFBSR*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJFBSR)))
+    ((OBJFBSR*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJFBSR)))
 #endif //__nvoc_fbsr_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_OBJFBSR(OBJFBSR**, Dynamic*, NvU32, va_list);

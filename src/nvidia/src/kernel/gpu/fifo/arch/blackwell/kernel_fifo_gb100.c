@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -104,26 +104,19 @@ kfifoGenerateWorkSubmitTokenHal_GB100
                         (pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup != NULL),
                         NV_ERR_INVALID_STATE);
 
-    if (!RMCFG_FEATURE_PLATFORM_GSP)
-    {
-        NvU32          chId;
-        NvU32          runlistId;
+    NvU32          chId;
+    NvU32          runlistId;
 
-        runlistId = kchannelGetRunlistId(pKernelChannel);
-        chId      = pKernelChannel->ChID;
+    runlistId = kchannelGetRunlistId(pKernelChannel);
+    chId      = pKernelChannel->ChID;
 
-        // Here we construct token to be a concatenation of runlist id and channel id
-        val = FLD_SET_DRF_NUM(_VIRTUAL, _FUNCTION_DOORBELL, _RUNLIST_ID, runlistId, val);
-        val = FLD_SET_DRF_NUM(_VIRTUAL, _FUNCTION_DOORBELL, _VECTOR,     chId,      val);
+    // Here we construct token to be a concatenation of runlist id and channel id
+    val = FLD_SET_DRF_NUM(_VIRTUAL, _FUNCTION_DOORBELL, _RUNLIST_ID, runlistId, val);
+    val = FLD_SET_DRF_NUM(_VIRTUAL, _FUNCTION_DOORBELL, _VECTOR,     chId,      val);
 
-        NV_PRINTF(LEVEL_INFO,
-                  "Generated workSubmitToken 0x%x for channel 0x%x runlist 0x%x\n",
-                  val, chId, runlistId);
-    }
-    else // RMCFG_FEATURE_PLATFORM_GSP
-    {
-        NV_ASSERT_OK_OR_RETURN(kfifoGenerateInternalWorkSubmitToken_HAL(pGpu, pKernelFifo, pKernelChannel, &val));
-    }
+    NV_PRINTF(LEVEL_INFO,
+                "Generated workSubmitToken 0x%x for channel 0x%x runlist 0x%x\n",
+                val, chId, runlistId);
 
     *pGeneratedToken = val;
 

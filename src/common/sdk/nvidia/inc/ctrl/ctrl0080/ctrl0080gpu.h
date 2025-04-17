@@ -596,6 +596,9 @@ typedef struct NV0080_CTRL_GPU_SET_VGPU_VF_BAR1_SIZE_PARAMS {
  * vGPU heterogeneous mode on a GPU can only be set when the command
  * is running in a vGPU host device.
  *
+ *   gpuInstanceId
+ *     GPU Instance ID or Swizz ID
+ *
  *   bHeterogeneousMode
  *     This parameter set the vGPU heterogeneous mode of the device.
  *     Possible values are:
@@ -617,6 +620,7 @@ typedef struct NV0080_CTRL_GPU_SET_VGPU_VF_BAR1_SIZE_PARAMS {
 
 typedef struct NV0080_CTRL_GPU_SET_VGPU_HETEROGENEOUS_MODE_PARAMS {
     NvBool bHeterogeneousMode;
+    NvU32  gpuInstanceId;
 } NV0080_CTRL_GPU_SET_VGPU_HETEROGENEOUS_MODE_PARAMS;
 
 /**
@@ -624,6 +628,9 @@ typedef struct NV0080_CTRL_GPU_SET_VGPU_HETEROGENEOUS_MODE_PARAMS {
  *
  * This command returns a value indicating vGPU heterogeneous mode of
  * the GPU.
+ *
+ *   gpuInstanceId
+ *     GPU Instance ID or Swizz ID
  *
  *   bHeterogeneousMode
  *     This parameter returns the vGPU heterogeneous mode of the device.
@@ -643,6 +650,7 @@ typedef struct NV0080_CTRL_GPU_SET_VGPU_HETEROGENEOUS_MODE_PARAMS {
 
 typedef struct NV0080_CTRL_GPU_GET_VGPU_HETEROGENEOUS_MODE_PARAMS {
     NvBool bHeterogeneousMode;
+    NvU32  gpuInstanceId;
 } NV0080_CTRL_GPU_GET_VGPU_HETEROGENEOUS_MODE_PARAMS;
 
 /* _ctrl0080gpu_h_ */

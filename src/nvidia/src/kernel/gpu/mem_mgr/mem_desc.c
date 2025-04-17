@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -556,16 +556,6 @@ memdescDestroy
         MEM_DESC_DESTROY_CALLBACK *pCb = memdescGetDestroyCallbackList(pMemDesc);
         MEM_DESC_DESTROY_CALLBACK *pNext;
 
-        if (pMemDesc->_flags & MEMDESC_FLAGS_RESTORE_PTE_KIND_ON_FREE)
-        {
-            if (kbusDecreaseStaticBar1Refcount_HAL(pMemDesc->pGpu,
-                    GPU_GET_KERNEL_BUS(pMemDesc->pGpu), pMemDesc,
-                    NULL) == NV_OK)
-            {
-                memdescSetFlag(pMemDesc, MEMDESC_FLAGS_RESTORE_PTE_KIND_ON_FREE, NV_FALSE);
-            }
-        }
-
         if (pMemDesc->_flags & MEMDESC_FLAGS_DUMMY_TOPLEVEL)
         {
             // When called from RmFreeFrameBuffer() and memdescFree could not do it because it is unallocated.
@@ -1093,15 +1083,17 @@ memdescAlloc
     {
         case ADDR_SYSMEM:
         case ADDR_EGM:
-            // Can't alloc sysmem on GSP firmware.
-            if (RMCFG_FEATURE_PLATFORM_GSP && !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_GUEST_ALLOCATED))
+            // Can only alloc sysmem on 0FB GSP
+            if (RMCFG_FEATURE_PLATFORM_GSP &&
+                !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_GUEST_ALLOCATED) &&
+                !pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB))
             {
                 //
                 // TO DO: Make this an error once existing allocations are cleaned up.
                 // After that pHeap selection can be moved to memdescAllocInternal()
                 //
                 NV_PRINTF(LEVEL_WARNING,
-                          "WARNING sysmem alloc on GSP firmware\n");
+                          "WARNING sysmem alloc on GSP firmware moved to FB\n");
                 pMemDesc->_addressSpace = ADDR_FBMEM;
                 pMemDesc->pHeap = GPU_GET_HEAP(pGpu);
             }
@@ -1138,6 +1130,14 @@ memdescAlloc
             break;
         case ADDR_FBMEM:
         {
+            // On 0FB GSP, all FB allocations go to kernel-allocated sysmem heap
+            if (RMCFG_FEATURE_PLATFORM_GSP && pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB))
+            {
+                NV_PRINTF(LEVEL_WARNING,
+                          "WARNING FB alloc on GSP Firmware moved to sysmem\n");
+                pMemDesc->_addressSpace = ADDR_SYSMEM;
+                break;
+            }
             //
             // When APM is enabled, all RM internal vidmem allocations go to
             // unprotected memory. There is an underlying assumption that
@@ -2071,7 +2071,7 @@ memdescGetMapInternalType
 
         return MEMDESC_MAP_INTERNAL_TYPE_COHERENT_FBMEM;
     }
-    else
+    else if (GPU_GET_KERNEL_BUS(pGpu) != NULL)
     {
         KernelBus *pKernelBus      = GPU_GET_KERNEL_BUS(pGpu);
         NvBool     bUseDirectMap   = NV_FALSE;
@@ -2281,12 +2281,15 @@ void memdescUnmapInternal
         pMemDesc->_internalMappingRefCount = 0;
     }
 
-    // Flush for direct mappings too to keep the behavior
-    if (((flags & TRANSFER_FLAGS_DEFER_FLUSH) == 0) &&
-        (mapType == MEMDESC_MAP_INTERNAL_TYPE_SYSMEM_DIRECT || mapType == MEMDESC_MAP_INTERNAL_TYPE_BAR2))
+    if (GPU_GET_KERNEL_BUS(pGpu) != NULL)
     {
-        kbusFlush_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu),
-                      kbusGetFlushAperture(GPU_GET_KERNEL_BUS(pGpu), memdescGetAddressSpace(pMemDesc)));
+        // Flush for direct mappings too to keep the behavior
+        if (((flags & TRANSFER_FLAGS_DEFER_FLUSH) == 0) &&
+            (mapType == MEMDESC_MAP_INTERNAL_TYPE_SYSMEM_DIRECT || mapType == MEMDESC_MAP_INTERNAL_TYPE_BAR2))
+        {
+            kbusFlush_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu),
+                          kbusGetFlushAperture(GPU_GET_KERNEL_BUS(pGpu), memdescGetAddressSpace(pMemDesc)));
+        }
     }
 }
 
@@ -2383,8 +2386,11 @@ _memdescFillPagesAtNativeGranularity
 )
 {
     NV_STATUS status;
+    NvU32 fillLimit;
 
-    NV_ASSERT(pageIndex + pageCount < pMemDesc->PageCount);
+    NV_ASSERT_OR_RETURN_VOID(pageIndex < pMemDesc->pageArraySize);
+    NV_ASSERT_OR_RETURN_VOID(portSafeAddU32(pageIndex, pageCount, &fillLimit));
+    NV_ASSERT_OR_RETURN_VOID(fillLimit <= pMemDesc->pageArraySize);
 
     status = memdescSetPageArrayGranularity(pMemDesc, pageSize);
     if (status != NV_OK)
@@ -2397,7 +2403,9 @@ _memdescFillPagesAtNativeGranularity
         pMemDesc->_pteArray[pageIndex + i] = pPages[i];
     }
 
-    pMemDesc->ActualSize = pageCount * pageSize;
+    // PageCount is set to the last populated page.
+    pMemDesc->PageCount = pageIndex + pageCount;
+    pMemDesc->ActualSize = pMemDesc->PageCount * pageSize;
 }
 
 /*!
@@ -2411,8 +2419,12 @@ _memdescFillPagesAtNativeGranularity
  *  typically memdescCreateExisting() prior to calling
  *  memdescFillPages().
  *
+ * Using this function modifies PageCount, the function operates
+ * on an assumption that users will fill the memory from start to end.
+ * using memdescFill to describe a memdesc out of order is illegal.
+ *
  *  @param[in]   pMemDesc       Memory descriptor to fill
- *  @param[in]   pageIndex      Index into memory descriptor to fill from
+ *  @param[in]   pageIndex      Index into memory descriptor to fill from.
  *  @param[in]   pPages         Array of physical addresses
  *  @param[in]   pageCount      Number of entries in pPages
  *  @param[in]   pageSize       Size of each page in pPages
@@ -2436,8 +2448,12 @@ memdescFillPages
     NvU32 pageCount4k = numChunks4k * pageCount;
     NvU32 result4k, limit4k;
     NvU64 addr;
+    NvBool bClippedMemFill = NV_FALSE;
+    NvU64 totalFilledPageCount;
 
-    NV_ASSERT(pMemDesc != NULL);
+    NV_ASSERT_OR_RETURN_VOID(pMemDesc != NULL);
+    NV_ASSERT_OR_RETURN_VOID(pageSize > 0);
+
 
     if (GPU_GET_MEMORY_MANAGER(pGpu)->bEnableDynamicGranularityPageArrays)
     {
@@ -2445,8 +2461,8 @@ memdescFillPages
         return;
     }
 
-    NV_ASSERT(offset4k < pMemDesc->PageCount);
-    NV_ASSERT(portSafeAddU32(offset4k, pageCount4k, &result4k));
+    NV_ASSERT_OR_RETURN_VOID(offset4k < pMemDesc->pageArraySize);
+    NV_ASSERT_OR_RETURN_VOID(portSafeAddU32(offset4k, pageCount4k, &result4k));
 
     //
     // There is a possibility that the pMemDesc was created using 4K aligned
@@ -2455,12 +2471,14 @@ memdescFillPages
     // that case, pageCount4k would be greater than pMemdesc->pageCount. We
     // limit pageCount4k to stay within pMemdesc->pageCount in that case.
     //
-    if (result4k > pMemDesc->PageCount)
-        pageCount4k = pMemDesc->PageCount - offset4k;
+    if (result4k > pMemDesc->pageArraySize)
+    {
+        bClippedMemFill = NV_TRUE;
+        pageCount4k = pMemDesc->pageArraySize - offset4k;
+    }
 
-    NV_ASSERT(pageSize > 0);
-    NV_ASSERT(0 == (pageSize & (RM_PAGE_SIZE - 1)));
-    NV_ASSERT(!memdescHasSubDeviceMemDescs(pMemDesc));
+    NV_ASSERT_OR_RETURN_VOID(0 == (pageSize & (RM_PAGE_SIZE - 1)));
+    NV_ASSERT_OR_RETURN_VOID(!memdescHasSubDeviceMemDescs(pMemDesc));
 
     // Fill _pteArray array using numChunks4k as a stride
     for (i = 0, j = offset4k; i < pageCount; i++, j += numChunks4k)
@@ -2474,6 +2492,19 @@ memdescFillPages
         for (k = j + 1; k < limit4k; k++, addr += RM_PAGE_SIZE)
             pMemDesc->_pteArray[k] = addr;
     }
+
+    if (bClippedMemFill)
+    {
+        totalFilledPageCount = pMemDesc->pageArraySize;
+    }
+    else
+    {
+        totalFilledPageCount = offset4k + pageCount4k;
+    }
+
+    pMemDesc->PageCount = totalFilledPageCount;
+    pMemDesc->ActualSize = pMemDesc->PageCount * RM_PAGE_SIZE;
+    pMemDesc->pageArrayGranularity = RM_PAGE_SIZE;
 }
 
 /*!
@@ -2620,12 +2651,6 @@ memdescCreateSubMem
         pMemDescNew->_flags |= MEMDESC_FLAGS_KERNEL_MODE;
     else
         pMemDescNew->_flags &= ~MEMDESC_FLAGS_KERNEL_MODE;
-
-    //
-    // This flag used to indicate the memdesc needs to restore pte kind
-    // when it is freed. It should only not be set for any sub memDesc.
-    //
-    pMemDescNew->_flags &= ~MEMDESC_FLAGS_RESTORE_PTE_KIND_ON_FREE;
 
     pMemDescNew->Size = Size;
     pMemDescNew->_pteKind = pMemDesc->_pteKind;
@@ -2960,7 +2985,7 @@ void memdescGetPhysAddrsForGpu(MEMORY_DESCRIPTOR *pMemDesc,
 }
 
 /*!
- *  @brief Return the physical addresses of pMemdesc
+ *  @brief Return the physical addresses of pMemdesc for use in a PTE or to give to HW
  *
  *  @param[in]  pMemDesc            Memory descriptor used
  *  @param[in]  pGpu                GPU to return the addresses for
@@ -2986,7 +3011,7 @@ void memdescGetPtePhysAddrsForGpu(MEMORY_DESCRIPTOR *pMemDesc,
     //
     NvU64 i;
     NvU64 pageIndex;
-    DMA_PAGE_ARRAY pageArray;
+    RmPhysAddr *pteArray = memdescGetPteArrayForGpu(pMemDesc, pGpu, addressTranslation);
     const NvBool contiguous = (memdescGetPteArraySize(pMemDesc, addressTranslation) == 1);
     const NvU64 pageArrayGranularityMask = pMemDesc->pageArrayGranularity - 1;
     const NvU32 pageArrayGranularityShift = BIT_IDX_64(pMemDesc->pageArrayGranularity);
@@ -2994,20 +3019,24 @@ void memdescGetPtePhysAddrsForGpu(MEMORY_DESCRIPTOR *pMemDesc,
     NV_ASSERT(!memdescHasSubDeviceMemDescs(pMemDesc));
     offset += pMemDesc->PteAdjust;
 
-    // We need not just the physical address, but the physical address to be used for the PTE
-    dmaPageArrayInitFromMemDesc(&pageArray, pMemDesc, pGpu, addressTranslation);
-
     for (i = 0; i < count; ++i)
     {
         if (contiguous)
         {
-            pAddresses[i] = dmaPageArrayGetPhysAddr(&pageArray, 0) + offset;
+            pAddresses[i] = pteArray[0] + offset;
         }
         else
         {
             pageIndex = offset >> pageArrayGranularityShift;
-            NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR, pageIndex < pMemDesc->PageCount);   // (i)
-            pAddresses[i] = dmaPageArrayGetPhysAddr(&pageArray, pageIndex) + (offset & pageArrayGranularityMask);
+            NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR, pageIndex < pMemDesc->PageCount);
+            pAddresses[i] = pteArray[pageIndex] + (offset & pageArrayGranularityMask);
+        }
+
+        // TODO: localized doesn't require virt mem
+        if (pMemDesc->_flags & MEMDESC_FLAGS_ALLOC_AS_LOCALIZED)
+        {
+            // Set the bit in the address itself
+            pAddresses[i] |= DMA_PAGE_ARRAY_LOCALIZED_OFFSET;
         }
 
         offset += stride;
@@ -3036,6 +3065,7 @@ void memdescGetPhysAddrs(MEMORY_DESCRIPTOR *pMemDesc,
     memdescGetPhysAddrsForGpu(pMemDesc, pMemDesc->pGpu, addressTranslation, offset, stride, count, pAddresses);
 }
 
+
 /*!
  *  @brief Return the physical address of pMemdesc+Offset
  *
@@ -3057,6 +3087,31 @@ memdescGetPhysAddr
 {
     RmPhysAddr addr;
     memdescGetPhysAddrs(pMemDesc, addressTranslation, offset, 0, 1, &addr);
+    return addr;
+}
+
+/*!
+ *  @brief Return the physical address of pMemdesc+Offset for
+ *         for a PTE or to give to HW
+ *
+ *  "long description"
+ *
+ *  @param[in]  pMemDesc           Memory descriptor used
+ *  @param[in]  addressTranslation Address translation identifier
+ *  @param[in]  offset             Offset into memory descriptor
+ *
+ *  @returns A physical address
+ */
+RmPhysAddr
+memdescGetPtePhysAddr
+(
+    MEMORY_DESCRIPTOR *pMemDesc,
+    ADDRESS_TRANSLATION addressTranslation,
+    NvU64 offset
+)
+{
+    RmPhysAddr addr;
+    memdescGetPtePhysAddrsForGpu(pMemDesc, pMemDesc->pGpu, addressTranslation, offset, 0, 1, &addr);
     return addr;
 }
 
@@ -4944,4 +4999,31 @@ memdescIsEgm
     }
 
     return NV_FALSE;
+}
+
+NvU64 memdescGetAdjustedPageSize(
+    MEMORY_DESCRIPTOR *pMemDesc
+)
+{
+    NvU64 pageSize  = osGetPageSize();
+    //
+    // Only non-contig memory needs to specify order. For contig memory the OS layer
+    // calculates it within nv_alias_pages and picks the largest order based on the
+    // allocation size.
+    //
+    if (!memdescGetContiguity(pMemDesc, AT_CPU))
+    {
+        pageSize = memdescGetPageSize(pMemDesc, AT_GPU);
+        //
+        // pageSize == 0 indicates the caller did not specify a physical page size
+        // for the allocation. Default to allocating at OS page size granularity.
+        //
+        if (pageSize == 0)
+        {
+            pageSize = osGetPageSize();
+            memdescSetPageSize(pMemDesc, AT_GPU, pageSize);
+        }
+    }
+
+    return pageSize;
 }

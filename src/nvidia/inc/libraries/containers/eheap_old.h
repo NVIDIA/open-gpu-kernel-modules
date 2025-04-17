@@ -67,7 +67,6 @@ typedef NV_STATUS  (*EHeapSetAllocRange)(OBJEHEAP *, NvU64 rangeLo, NvU64 rangeH
 typedef NV_STATUS  (*EHeapTraversalFn)(OBJEHEAP *, void *pEnv, EMEMBLOCK *, NvU32 *pContinue, NvU32 *pInvalCursor);
 typedef NV_STATUS  (*EHeapTraverse)(OBJEHEAP *, void *pEnv, EHeapTraversalFn, NvS32 direction);
 typedef NvU32      (*EHeapGetNumBlocks)(OBJEHEAP *);
-typedef NV_STATUS  (*EHeapGetBlockInfo)(OBJEHEAP *, NvU32, NVOS32_HEAP_DUMP_BLOCK *);
 typedef NV_STATUS  (*EHeapSetOwnerIsolation)(OBJEHEAP *, NvBool bEnable, NvU32 granularity);
 
 struct OBJEHEAP
@@ -85,7 +84,6 @@ struct OBJEHEAP
     EHeapSetAllocRange     eheapSetAllocRange;
     EHeapTraverse          eheapTraverse;
     EHeapGetNumBlocks      eheapGetNumBlocks;
-    EHeapGetBlockInfo      eheapGetBlockInfo;
     EHeapSetOwnerIsolation eheapSetOwnerIsolation;
 
     // private data

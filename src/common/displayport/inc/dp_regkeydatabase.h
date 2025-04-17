@@ -64,12 +64,6 @@
 #define NV_DP_REGKEY_POWER_DOWN_PHY                   "DP_POWER_DOWN_PHY"
 
 //
-// Regkey to re-assess max link if the first assessed link config
-// is lower than the panel max
-//
-#define NV_DP_REGKEY_REASSESS_MAX_LINK                "DP_REASSESS_MAX_LINK"
-
-//
 // DSC capability of downstream device should be decided based on device's own
 // and its parent's DSC capability.
 //
@@ -87,17 +81,22 @@
 
 #define NV_DP2X_IGNORE_CABLE_ID_CAPS                    "DP2X_IGNORE_CABLE_ID_CAPS"
 
+#define NV_DP2X_REGKEY_DISABLE_EFF_BPP_SST_8b10b        "DP2X_REGKEY_DISABLE_EFF_BPP_SST_8b10b"
+
+#define NV_DP2X_REGKEY_VCONN_SOURCE_UNKNOWN_WAR         "DP2X_VCONN_SOURCE_UNKNOWN_WAR"
+
 //
 // Bug 4388987 : This regkey will disable reading PCON caps for MST.
 //
 #define NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED    "DP_BUG_4388987_WAR"
 #define NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION   "DP_DISABLE_TUNNEL_BW_ALLOCATION"
 
+#define NV_DP_REGKEY_DISABLE_AVOID_HBR3_WAR            "DP_DISABLE_AVOID_HBR3_WAR"
+
 // Bug 4793112 : On eDP panel, do not cache source OUI if it reads zero
 #define NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE            "DP_SKIP_ZERO_OUI_CACHE"
 
-#define NV_DP_REGKEY_DISABLE_FIX_FOR_5019537        "DP_DISABLE_5019537_FIX"
-
+#define NV_DP_REGKEY_ENABLE_FIX_FOR_5147205         "DP_ENABLE_5147205_FIX"
 // Bug 5088957 : Force head shutdown in DpLib
 #define NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN            "DP_WAR_5088957"
 
@@ -105,6 +104,7 @@
 #define NV_DP_REGKEY_ENABLE_LOWER_BPP_CHECK_FOR_DSC "DP_ENABLE_LOWER_BPP_CHECK"
 
 
+//
 // Data Base used to store all the regkey values.
 // The actual data base is declared statically in dp_evoadapter.cpp.
 // All entries set to 0 before initialized by the first EvoMainLink constructor.
@@ -135,14 +135,16 @@ struct DP_REGKEY_DATABASE
     bool  bBypassEDPRevCheck;
     bool  bDscMstCapBug3143315;
     bool  bPowerDownPhyBeforeD3;
-    bool  bReassessMaxLink;
     NvU32 supportInternalUhbrOnFpga;
     bool  bIgnoreCableIdCaps;
+    bool  bDisableEffBppSST8b10b;
     bool  bMSTPCONCapsReadDisabled;
     bool  bForceDisableTunnelBwAllocation;
     bool  bDownspreadDisabled;
+    bool  bDisableAvoidHBR3War;
+    bool  bCableVconnSourceUnknownWar;
     bool  bSkipZeroOuiCache;
-    bool  bDisable5019537Fix;
+    bool  bEnable5147205Fix;
     bool  bForceHeadShutdown;
     bool  bEnableLowerBppCheckForDsc;
 };

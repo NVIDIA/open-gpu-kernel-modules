@@ -834,12 +834,12 @@ return_t deserialize_NV83DE_CTRL_DEBUG_EXEC_REG_OPS_PARAMS_v1A_06(NV83DE_CTRL_DE
 }
 
 static
-return_t deserialize_NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07(NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS *pParams,
+return_t deserialize_NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v2A_05(NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS *pParams,
                                                                             NvU8 *buffer,
                                                                             NvU32 bufferSize,
                                                                             NvU32 *offset)
 {
-    NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07   *src  = (void*)(buffer);
+    NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v2A_05   *src  = (void*)(buffer);
     NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS          *dest = pParams;
 
     if (src && dest) {
@@ -2429,6 +2429,29 @@ return_t deserialize_NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS_v1E_06(NV0090_CTRL_GE
 #endif
 
 #ifdef BUILD_COMMON_RPCS
+return_t deserialize_NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS_v2A_00(
+                                                                    NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS *pParams,
+                                                                    NvU8 *buffer,
+                                                                    NvU32 bufferSize,
+                                                                    NvU32 *offset)
+{
+#ifdef COPY_INPUT_PARAMETERS
+    NV0080_CTRL_CMD_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_v2A_00 *src  = (void*)(buffer);
+    NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS     *dest = pParams;
+
+    if (src && dest)
+    {
+        dest->bZbcSurfacesExist = src->bZbcSurfacesExist;
+    }
+    else
+        return FAILURE_T;
+#endif
+
+    return SUCCESS_T;
+}
+#endif
+
+#ifdef BUILD_COMMON_RPCS
 return_t deserialize_NV2080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS_v1F_05(
                                                                     NV2080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS *pParams,
                                                                     NvU8 *buffer,
@@ -2826,6 +2849,36 @@ return_t deserialize_NV2080_CTRL_GPU_GET_INFO_V2_PARAMS_v25_11(NV2080_CTRL_GPU_G
         return FAILURE_T;
     return SUCCESS_T;
 }
+
+return_t deserialize_NV2080_CTRL_GPU_GET_INFO_V2_PARAMS_v2A_04(NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams,
+                                                               NvU8 *buffer,
+                                                               NvU32 bufferSize,
+                                                               NvU32 *offset)
+{
+    NV2080_CTRL_GPU_GET_INFO_V2_PARAMS_v2A_04 *src  = (void*)(buffer);
+    NV2080_CTRL_GPU_GET_INFO_V2_PARAMS        *dest = pParams;
+    if (src && dest)
+    {
+        NvU32 i;
+        if (src->gpuInfoListSize > NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE_v2A_04) {
+            return FAILURE_T;
+        }
+
+#ifdef COPY_INPUT_PARAMETERS
+        dest->gpuInfoListSize = src->gpuInfoListSize;
+#endif
+
+        for (i = 0; i < NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE_v2A_04; i++) {
+#ifdef COPY_INPUT_PARAMETERS
+             dest->gpuInfoList[i].index = src->gpuInfoList[i].index;
+#endif
+             dest->gpuInfoList[i].data  = src->gpuInfoList[i].data;
+        }
+    }
+    else
+        return FAILURE_T;
+    return SUCCESS_T;
+}
 #endif // UMED_BUILD
 
 return_t deserialize_NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK_v21_05(
@@ -3000,12 +3053,12 @@ return_t deserialize_NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS_v29_07(NVB0CC_CTRL_RESER
 }
 
 #ifndef UMED_BUILD
-return_t deserialize_NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07(NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS *pParams,
+return_t deserialize_NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v2A_05(NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS *pParams,
                                                                             NvU8 *buffer,
                                                                             NvU32 bufferSize,
                                                                             NvU32 *offset)
 {
-    NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07    *src  = (void*)(buffer);
+    NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v2A_05    *src  = (void*)(buffer);
     NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS           *dest = pParams;
 
     if (src && dest) {
@@ -3797,13 +3850,13 @@ return_t serialize_NV83DE_CTRL_DEBUG_EXEC_REG_OPS_PARAMS_v1A_06(NV83DE_CTRL_DEBU
 }
 
 static
-return_t serialize_NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07(NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS *pParams,
+return_t serialize_NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v2A_05(NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS *pParams,
                                                                           NvU8 *buffer,
                                                                           NvU32 bufferSize,
                                                                           NvU32 *offset)
 {
     NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS           *src  = pParams;
-    NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07    *dest = (void*)(buffer);
+    NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS_v2A_05    *dest = (void*)(buffer);
 
     if (src && dest) {
 #ifdef COPY_INPUT_PARAMETERS
@@ -5626,6 +5679,28 @@ return_t serialize_NV90E6_CTRL_CMD_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_M
 #endif
 
 #ifdef BUILD_COMMON_RPCS
+return_t serialize_NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS_v2A_00(
+                                                                  NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS *pParams,
+                                                                  NvU8 *buffer,
+                                                                  NvU32 bufferSize,
+                                                                  NvU32 *offset)
+{
+#ifdef COPY_INPUT_PARAMETERS
+    NV0080_CTRL_CMD_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_v2A_00 *dest = (void*)(buffer);
+    NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS     *src  = pParams;
+
+    if (src && dest)
+    {
+        dest->bZbcSurfacesExist = src->bZbcSurfacesExist;
+    }
+    else
+        return FAILURE_T;
+#endif
+    return SUCCESS_T;
+}
+#endif
+
+#ifdef BUILD_COMMON_RPCS
 return_t serialize_NV2080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS_v1F_05(
                                                                   NV2080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS *pParams,
                                                                   NvU8 *buffer,
@@ -5780,6 +5855,37 @@ return_t serialize_NV2080_CTRL_GPU_GET_INFO_V2_PARAMS_v25_11(NV2080_CTRL_GPU_GET
 #endif
 
         for (i = 0; i < NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE_v25_11; i++) {
+#ifdef COPY_INPUT_PARAMETERS
+             dest->gpuInfoList[i].index = src->gpuInfoList[i].index;
+#endif
+             dest->gpuInfoList[i].data  = src->gpuInfoList[i].data;
+        }
+    }
+    else
+        return FAILURE_T;
+    return SUCCESS_T;
+}
+
+return_t serialize_NV2080_CTRL_GPU_GET_INFO_V2_PARAMS_v2A_04(NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams,
+                                                             NvU8 *buffer,
+                                                             NvU32 bufferSize,
+                                                             NvU32 *offset)
+{
+    NV2080_CTRL_GPU_GET_INFO_V2_PARAMS_v2A_04 *dest = (void*)(buffer);
+    NV2080_CTRL_GPU_GET_INFO_V2_PARAMS        *src  = pParams;
+
+    if (src && dest)
+    {
+        NvU32 i;
+        if (src->gpuInfoListSize > NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE_v2A_04) {
+            return FAILURE_T;
+        }
+
+#ifdef COPY_INPUT_PARAMETERS
+        dest->gpuInfoListSize = src->gpuInfoListSize;
+#endif
+
+        for (i = 0; i < NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE_v2A_04; i++) {
 #ifdef COPY_INPUT_PARAMETERS
              dest->gpuInfoList[i].index = src->gpuInfoList[i].index;
 #endif
@@ -5959,13 +6065,13 @@ return_t serialize_NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS_v29_07(NVB0CC_CTRL_RESERVE
 }
 
 #ifndef UMED_BUILD
-return_t serialize_NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07(NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS *pParams,
+return_t serialize_NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v2A_05(NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS *pParams,
                                                                           NvU8 *buffer,
                                                                           NvU32 bufferSize,
                                                                           NvU32 *offset)
 {
     NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS           *src  = pParams;
-    NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v29_07    *dest = (void*)(buffer);
+    NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS_v2A_05    *dest = (void*)(buffer);
 
     if (src && dest) {
         dest->value = src->value;
@@ -6625,6 +6731,17 @@ static NV_STATUS static_data_copy(OBJRPCSTRUCTURECOPY *pObjRpcStructureCopy,
         return status;
     }
 
+    // Unused
+    NV_CHECK_AND_ALIGN_OFFSET(*offset, bAlignOffset)
+    status = serialize_deserialize(NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS)(pObjRpcStructureCopy,
+                                                                                        &pVSI->grSmIssueRateModifierV2,
+                                                                                        buffer,
+                                                                                        bufferSize,
+                                                                                        offset);
+    if (status != NVOS_STATUS_SUCCESS) {
+        return status;
+    }
+
     NV_CHECK_AND_ALIGN_OFFSET(*offset, bAlignOffset)
     status = serialize_deserialize(NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS)(pObjRpcStructureCopy,
                                                                                 &pVSI->mcStaticIntrTable,
@@ -6844,6 +6961,16 @@ static NV_STATUS consolidated_gr_static_info_copy(OBJRPCSTRUCTURECOPY *pObjRpcSt
                                                                                                      buffer,
                                                                                                      bufferSize,
                                                                                                      offset);
+    if (status != NVOS_STATUS_SUCCESS) {
+        goto end;
+    }
+
+    NV_CHECK_AND_ALIGN_OFFSET(*offset, bAlignOffset)
+    status = serialize_deserialize(NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS)(pObjRpcStructureCopy,
+                                                                                                        &pVSI->smIssueRateModifierV2,
+                                                                                                        buffer,
+                                                                                                        bufferSize,
+                                                                                                        offset);
     if (status != NVOS_STATUS_SUCCESS) {
         goto end;
     }

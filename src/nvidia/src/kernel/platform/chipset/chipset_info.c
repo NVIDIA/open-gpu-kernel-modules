@@ -104,28 +104,6 @@ BRINFO upstreamPortInfo[] =
 };
 
 static NV_STATUS
-AMD_14D8_setupFunc
-(
-    OBJCL *pCl
-)
-{
-    pCl->setProperty(pCl, PDB_PROP_CL_WAR_4802761_ENABLED, NV_TRUE);
-
-    return NV_OK;
-}
-
-static NV_STATUS
-Intel_A70D_setupFunc
-(
-    OBJCL *pCl
-)
-{
-    pCl->setProperty(pCl, PDB_PROP_CL_WAR_4802761_ENABLED, NV_TRUE);
-
-    return NV_OK;
-}
-
-static NV_STATUS
 Intel_25XX_setupFunc
 (
     OBJCL *pCl

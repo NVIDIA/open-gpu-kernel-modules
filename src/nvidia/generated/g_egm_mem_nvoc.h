@@ -1,13 +1,15 @@
 
 #ifndef _G_EGM_MEM_NVOC_H_
 #define _G_EGM_MEM_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,15 +63,19 @@ extern "C" {
 #endif
 
 
-// Metadata including vtable
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__ExtendedGpuMemory;
+struct NVOC_METADATA__StandardMemory;
 struct NVOC_VTABLE__ExtendedGpuMemory;
 
 
 struct ExtendedGpuMemory {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
-    const struct NVOC_VTABLE__ExtendedGpuMemory *__nvoc_vtable;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__ExtendedGpuMemory *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Parent (i.e. superclass or base class) objects
     struct StandardMemory __nvoc_base_StandardMemory;
@@ -85,10 +91,8 @@ struct ExtendedGpuMemory {
 };
 
 
-// Metadata including vtable with 26 function pointers plus superclass metadata
+// Vtable with 26 per-class function pointers
 struct NVOC_VTABLE__ExtendedGpuMemory {
-    const struct NVOC_VTABLE__StandardMemory StandardMemory;    // (stdmem) 26 function pointers
-
     NvBool (*__egmmemCanCopy__)(struct ExtendedGpuMemory * /*this*/);  // virtual inherited (stdmem) base (stdmem)
     NV_STATUS (*__egmmemIsDuplicate__)(struct ExtendedGpuMemory * /*this*/, NvHandle, NvBool *);  // virtual inherited (mem) base (stdmem)
     NV_STATUS (*__egmmemGetMapAddrSpace__)(struct ExtendedGpuMemory * /*this*/, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual inherited (mem) base (stdmem)
@@ -117,6 +121,13 @@ struct NVOC_VTABLE__ExtendedGpuMemory {
     void (*__egmmemAddAdditionalDependants__)(struct RsClient *, struct ExtendedGpuMemory * /*this*/, RsResourceRef *);  // virtual inherited (res) base (stdmem)
 };
 
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__ExtendedGpuMemory {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__StandardMemory metadata__StandardMemory;
+    const struct NVOC_VTABLE__ExtendedGpuMemory vtable;
+};
+
 #ifndef __NVOC_CLASS_ExtendedGpuMemory_TYPEDEF__
 #define __NVOC_CLASS_ExtendedGpuMemory_TYPEDEF__
 typedef struct ExtendedGpuMemory ExtendedGpuMemory;
@@ -133,176 +144,176 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_ExtendedGpuMemory;
     ((pThis)->__nvoc_pbase_ExtendedGpuMemory)
 
 #ifdef __nvoc_egm_mem_h_disabled
-#define __dynamicCast_ExtendedGpuMemory(pThis) ((ExtendedGpuMemory*)NULL)
+#define __dynamicCast_ExtendedGpuMemory(pThis) ((ExtendedGpuMemory*) NULL)
 #else //__nvoc_egm_mem_h_disabled
 #define __dynamicCast_ExtendedGpuMemory(pThis) \
-    ((ExtendedGpuMemory*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(ExtendedGpuMemory)))
+    ((ExtendedGpuMemory*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(ExtendedGpuMemory)))
 #endif //__nvoc_egm_mem_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_ExtendedGpuMemory(ExtendedGpuMemory**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_ExtendedGpuMemory(ExtendedGpuMemory**, Dynamic*, NvU32, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_objCreate_ExtendedGpuMemory(ExtendedGpuMemory**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 #define __objCreate_ExtendedGpuMemory(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_ExtendedGpuMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
 // Wrapper macros
-#define egmmemCanCopy_FNPTR(pStandardMemory) pStandardMemory->__nvoc_base_StandardMemory.__nvoc_vtable->__stdmemCanCopy__
+#define egmmemCanCopy_FNPTR(pStandardMemory) pStandardMemory->__nvoc_base_StandardMemory.__nvoc_metadata_ptr->vtable.__stdmemCanCopy__
 #define egmmemCanCopy(pStandardMemory) egmmemCanCopy_DISPATCH(pStandardMemory)
-#define egmmemIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_vtable->__memIsDuplicate__
+#define egmmemIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsDuplicate__
 #define egmmemIsDuplicate(pMemory, hMemory, pDuplicate) egmmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
-#define egmmemGetMapAddrSpace_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_vtable->__memGetMapAddrSpace__
+#define egmmemGetMapAddrSpace_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memGetMapAddrSpace__
 #define egmmemGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) egmmemGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
-#define egmmemControl_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_vtable->__memControl__
+#define egmmemControl_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memControl__
 #define egmmemControl(pMemory, pCallContext, pParams) egmmemControl_DISPATCH(pMemory, pCallContext, pParams)
-#define egmmemMap_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_vtable->__memMap__
+#define egmmemMap_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memMap__
 #define egmmemMap(pMemory, pCallContext, pParams, pCpuMapping) egmmemMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
-#define egmmemUnmap_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_vtable->__memUnmap__
+#define egmmemUnmap_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memUnmap__
 #define egmmemUnmap(pMemory, pCallContext, pCpuMapping) egmmemUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
-#define egmmemGetMemInterMapParams_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_vtable->__memGetMemInterMapParams__
+#define egmmemGetMemInterMapParams_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memGetMemInterMapParams__
 #define egmmemGetMemInterMapParams(pMemory, pParams) egmmemGetMemInterMapParams_DISPATCH(pMemory, pParams)
-#define egmmemCheckMemInterUnmap_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_vtable->__memCheckMemInterUnmap__
+#define egmmemCheckMemInterUnmap_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memCheckMemInterUnmap__
 #define egmmemCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) egmmemCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
-#define egmmemGetMemoryMappingDescriptor_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_vtable->__memGetMemoryMappingDescriptor__
+#define egmmemGetMemoryMappingDescriptor_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memGetMemoryMappingDescriptor__
 #define egmmemGetMemoryMappingDescriptor(pMemory, ppMemDesc) egmmemGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
-#define egmmemCheckCopyPermissions_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_vtable->__memCheckCopyPermissions__
+#define egmmemCheckCopyPermissions_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memCheckCopyPermissions__
 #define egmmemCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) egmmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
-#define egmmemIsReady_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_vtable->__memIsReady__
+#define egmmemIsReady_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsReady__
 #define egmmemIsReady(pMemory, bCopyConstructorContext) egmmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define egmmemIsGpuMapAllowed_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_vtable->__memIsGpuMapAllowed__
+#define egmmemIsGpuMapAllowed_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsGpuMapAllowed__
 #define egmmemIsGpuMapAllowed(pMemory, pGpu) egmmemIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
-#define egmmemIsExportAllowed_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_vtable->__memIsExportAllowed__
+#define egmmemIsExportAllowed_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsExportAllowed__
 #define egmmemIsExportAllowed(pMemory) egmmemIsExportAllowed_DISPATCH(pMemory)
-#define egmmemAccessCallback_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
+#define egmmemAccessCallback_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define egmmemAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) egmmemAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define egmmemShareCallback_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresShareCallback__
+#define egmmemShareCallback_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
 #define egmmemShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) egmmemShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define egmmemControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
+#define egmmemControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
 #define egmmemControlSerialization_Prologue(pResource, pCallContext, pParams) egmmemControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define egmmemControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
+#define egmmemControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define egmmemControlSerialization_Epilogue(pResource, pCallContext, pParams) egmmemControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define egmmemControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
+#define egmmemControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
 #define egmmemControl_Prologue(pResource, pCallContext, pParams) egmmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define egmmemControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
+#define egmmemControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
 #define egmmemControl_Epilogue(pResource, pCallContext, pParams) egmmemControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define egmmemPreDestruct_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
+#define egmmemPreDestruct_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define egmmemPreDestruct(pResource) egmmemPreDestruct_DISPATCH(pResource)
-#define egmmemControlFilter_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
+#define egmmemControlFilter_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define egmmemControlFilter(pResource, pCallContext, pParams) egmmemControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define egmmemIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
+#define egmmemIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__
 #define egmmemIsPartialUnmapSupported(pResource) egmmemIsPartialUnmapSupported_DISPATCH(pResource)
-#define egmmemMapTo_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
+#define egmmemMapTo_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__
 #define egmmemMapTo(pResource, pParams) egmmemMapTo_DISPATCH(pResource, pParams)
-#define egmmemUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
+#define egmmemUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define egmmemUnmapFrom(pResource, pParams) egmmemUnmapFrom_DISPATCH(pResource, pParams)
-#define egmmemGetRefCount_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
+#define egmmemGetRefCount_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__
 #define egmmemGetRefCount(pResource) egmmemGetRefCount_DISPATCH(pResource)
-#define egmmemAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
+#define egmmemAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define egmmemAddAdditionalDependants(pClient, pResource, pReference) egmmemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
 static inline NvBool egmmemCanCopy_DISPATCH(struct ExtendedGpuMemory *pStandardMemory) {
-    return pStandardMemory->__nvoc_vtable->__egmmemCanCopy__(pStandardMemory);
+    return pStandardMemory->__nvoc_metadata_ptr->vtable.__egmmemCanCopy__(pStandardMemory);
 }
 
 static inline NV_STATUS egmmemIsDuplicate_DISPATCH(struct ExtendedGpuMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
-    return pMemory->__nvoc_vtable->__egmmemIsDuplicate__(pMemory, hMemory, pDuplicate);
+    return pMemory->__nvoc_metadata_ptr->vtable.__egmmemIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline NV_STATUS egmmemGetMapAddrSpace_DISPATCH(struct ExtendedGpuMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pMemory->__nvoc_vtable->__egmmemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+    return pMemory->__nvoc_metadata_ptr->vtable.__egmmemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS egmmemControl_DISPATCH(struct ExtendedGpuMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pMemory->__nvoc_vtable->__egmmemControl__(pMemory, pCallContext, pParams);
+    return pMemory->__nvoc_metadata_ptr->vtable.__egmmemControl__(pMemory, pCallContext, pParams);
 }
 
 static inline NV_STATUS egmmemMap_DISPATCH(struct ExtendedGpuMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pMemory->__nvoc_vtable->__egmmemMap__(pMemory, pCallContext, pParams, pCpuMapping);
+    return pMemory->__nvoc_metadata_ptr->vtable.__egmmemMap__(pMemory, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS egmmemUnmap_DISPATCH(struct ExtendedGpuMemory *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pMemory->__nvoc_vtable->__egmmemUnmap__(pMemory, pCallContext, pCpuMapping);
+    return pMemory->__nvoc_metadata_ptr->vtable.__egmmemUnmap__(pMemory, pCallContext, pCpuMapping);
 }
 
 static inline NV_STATUS egmmemGetMemInterMapParams_DISPATCH(struct ExtendedGpuMemory *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pMemory->__nvoc_vtable->__egmmemGetMemInterMapParams__(pMemory, pParams);
+    return pMemory->__nvoc_metadata_ptr->vtable.__egmmemGetMemInterMapParams__(pMemory, pParams);
 }
 
 static inline NV_STATUS egmmemCheckMemInterUnmap_DISPATCH(struct ExtendedGpuMemory *pMemory, NvBool bSubdeviceHandleProvided) {
-    return pMemory->__nvoc_vtable->__egmmemCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
+    return pMemory->__nvoc_metadata_ptr->vtable.__egmmemCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS egmmemGetMemoryMappingDescriptor_DISPATCH(struct ExtendedGpuMemory *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pMemory->__nvoc_vtable->__egmmemGetMemoryMappingDescriptor__(pMemory, ppMemDesc);
+    return pMemory->__nvoc_metadata_ptr->vtable.__egmmemGetMemoryMappingDescriptor__(pMemory, ppMemDesc);
 }
 
 static inline NV_STATUS egmmemCheckCopyPermissions_DISPATCH(struct ExtendedGpuMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
-    return pMemory->__nvoc_vtable->__egmmemCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
+    return pMemory->__nvoc_metadata_ptr->vtable.__egmmemCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline NV_STATUS egmmemIsReady_DISPATCH(struct ExtendedGpuMemory *pMemory, NvBool bCopyConstructorContext) {
-    return pMemory->__nvoc_vtable->__egmmemIsReady__(pMemory, bCopyConstructorContext);
+    return pMemory->__nvoc_metadata_ptr->vtable.__egmmemIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NvBool egmmemIsGpuMapAllowed_DISPATCH(struct ExtendedGpuMemory *pMemory, struct OBJGPU *pGpu) {
-    return pMemory->__nvoc_vtable->__egmmemIsGpuMapAllowed__(pMemory, pGpu);
+    return pMemory->__nvoc_metadata_ptr->vtable.__egmmemIsGpuMapAllowed__(pMemory, pGpu);
 }
 
 static inline NvBool egmmemIsExportAllowed_DISPATCH(struct ExtendedGpuMemory *pMemory) {
-    return pMemory->__nvoc_vtable->__egmmemIsExportAllowed__(pMemory);
+    return pMemory->__nvoc_metadata_ptr->vtable.__egmmemIsExportAllowed__(pMemory);
 }
 
 static inline NvBool egmmemAccessCallback_DISPATCH(struct ExtendedGpuMemory *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_vtable->__egmmemAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_metadata_ptr->vtable.__egmmemAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool egmmemShareCallback_DISPATCH(struct ExtendedGpuMemory *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_vtable->__egmmemShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_metadata_ptr->vtable.__egmmemShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS egmmemControlSerialization_Prologue_DISPATCH(struct ExtendedGpuMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__egmmemControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__egmmemControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void egmmemControlSerialization_Epilogue_DISPATCH(struct ExtendedGpuMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__egmmemControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__egmmemControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS egmmemControl_Prologue_DISPATCH(struct ExtendedGpuMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__egmmemControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__egmmemControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void egmmemControl_Epilogue_DISPATCH(struct ExtendedGpuMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_vtable->__egmmemControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_metadata_ptr->vtable.__egmmemControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline void egmmemPreDestruct_DISPATCH(struct ExtendedGpuMemory *pResource) {
-    pResource->__nvoc_vtable->__egmmemPreDestruct__(pResource);
+    pResource->__nvoc_metadata_ptr->vtable.__egmmemPreDestruct__(pResource);
 }
 
 static inline NV_STATUS egmmemControlFilter_DISPATCH(struct ExtendedGpuMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_vtable->__egmmemControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__egmmemControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool egmmemIsPartialUnmapSupported_DISPATCH(struct ExtendedGpuMemory *pResource) {
-    return pResource->__nvoc_vtable->__egmmemIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__egmmemIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS egmmemMapTo_DISPATCH(struct ExtendedGpuMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__egmmemMapTo__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__egmmemMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS egmmemUnmapFrom_DISPATCH(struct ExtendedGpuMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_vtable->__egmmemUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_metadata_ptr->vtable.__egmmemUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 egmmemGetRefCount_DISPATCH(struct ExtendedGpuMemory *pResource) {
-    return pResource->__nvoc_vtable->__egmmemGetRefCount__(pResource);
+    return pResource->__nvoc_metadata_ptr->vtable.__egmmemGetRefCount__(pResource);
 }
 
 static inline void egmmemAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct ExtendedGpuMemory *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_vtable->__egmmemAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_metadata_ptr->vtable.__egmmemAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NV_STATUS egmmemConstruct_IMPL(struct ExtendedGpuMemory *arg_pStandardMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);

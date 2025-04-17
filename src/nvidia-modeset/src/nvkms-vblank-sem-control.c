@@ -67,12 +67,12 @@ static void VblankSemControlCallback(
     NVDispEvoRec *pDispEvo,
     NVVBlankCallbackPtr pCallbackData)
 {
-    NVDispApiHeadStateEvoRec *pApiHeadState = pCallbackData->pUserData;
-    const NvU64 vblankCount = pApiHeadState->vblankCount;
+    NVDispVblankApiHeadState *pVblankApiHeadState = pCallbackData->pUserData;
+    const NvU64 vblankCount = pVblankApiHeadState->vblankCount;
     NVVblankSemControlHeadEntry *pEntry;
 
     nvListForEachEntry(
-        pEntry, &pApiHeadState->vblankSemControl.list, listEntry) {
+        pEntry, &pVblankApiHeadState->vblankSemControl.list, listEntry) {
 
         volatile struct NvKmsVblankSemControlDataOneHead *pData =
             pEntry->pDataOneHead;
@@ -119,16 +119,16 @@ static NvBool EnableVblankSemControlOneHead(
     NVVblankSemControl *pVblankSemControl,
     struct NvKmsVblankSemControlDataOneHead *pDataOneHead)
 {
-    NVDispApiHeadStateEvoRec *pApiHeadState = &pDispEvo->apiHeadState[apiHead];
+    NVDispVblankApiHeadState *pVblankApiHeadState = &pDispEvo->vblankApiHeadState[apiHead];
     NVVblankSemControlHeadEntry *pEntry;
     const NvBool isFirstEntry =
-        nvListIsEmpty(&pApiHeadState->vblankSemControl.list);
+        nvListIsEmpty(&pVblankApiHeadState->vblankSemControl.list);
 
     pEntry = &pVblankSemControl->headEntry[apiHead];
 
     pEntry->pDataOneHead = pDataOneHead;
     pEntry->previousRequestCounter = 0;
-    pEntry->previousVblankCount = pApiHeadState->vblankCount;
+    pEntry->previousVblankCount = pVblankApiHeadState->vblankCount;
 
     //
     // If this is the first enabled vblank sem control on head, add a vblank
@@ -136,19 +136,19 @@ static NvBool EnableVblankSemControlOneHead(
     // sequenced before any NotifyVblank callbacks (those use addToFront=false).
     //
     if (isFirstEntry) {
-        pApiHeadState->vblankSemControl.pCallbackPtr =
+        pVblankApiHeadState->vblankSemControl.pCallbackPtr =
             nvApiHeadRegisterVBlankCallback(pDispEvo,
                                             apiHead,
                                             VblankSemControlCallback,
-                                            pApiHeadState,
+                                            pVblankApiHeadState,
                                             0 /* listIndex */);
-        if (pApiHeadState->vblankSemControl.pCallbackPtr == NULL) {
+        if (pVblankApiHeadState->vblankSemControl.pCallbackPtr == NULL) {
             nvkms_memset(pEntry, 0, sizeof(*pEntry));
             return FALSE;
         }
     }
 
-    nvListAdd(&pEntry->listEntry, &pApiHeadState->vblankSemControl.list);
+    nvListAdd(&pEntry->listEntry, &pVblankApiHeadState->vblankSemControl.list);
 
     return TRUE;
 }
@@ -158,13 +158,13 @@ static void DisableVblankSemControlOneHead(
     NvU32 apiHead,
     NVVblankSemControlHeadEntry *pEntry)
 {
-    NVDispApiHeadStateEvoRec *pApiHeadState = &pDispEvo->apiHeadState[apiHead];
+    NVDispVblankApiHeadState *pVblankApiHeadState = &pDispEvo->vblankApiHeadState[apiHead];
 
     //
     // Accelerate any pending semaphores before disabling the vblank sem control.
     //
     VblankSemControlWrite(
-        pEntry, pApiHeadState->vblankCount, TRUE /* bAccel */);
+        pEntry, pVblankApiHeadState->vblankCount, TRUE /* bAccel */);
 
     nvListDel(&pEntry->listEntry);
 
@@ -172,10 +172,10 @@ static void DisableVblankSemControlOneHead(
     // If that was the last enabled vblank sem control on head, delete the
     // vblank callback.
     //
-    if (nvListIsEmpty(&pApiHeadState->vblankSemControl.list)) {
+    if (nvListIsEmpty(&pVblankApiHeadState->vblankSemControl.list)) {
         nvApiHeadUnregisterVBlankCallback(
-            pDispEvo, pApiHeadState->vblankSemControl.pCallbackPtr);
-        pApiHeadState->vblankSemControl.pCallbackPtr = NULL;
+            pDispEvo, pVblankApiHeadState->vblankSemControl.pCallbackPtr);
+        pVblankApiHeadState->vblankSemControl.pCallbackPtr = NULL;
     }
 
     nvkms_memset(pEntry, 0, sizeof(*pEntry));
@@ -184,12 +184,9 @@ static void DisableVblankSemControlOneHead(
 static NvBool EnableVblankSemControlValidate(
     NVDevEvoRec *pDevEvo,
     NVDispEvoRec *pDispEvo,
-    NvU32 apiHeadMask,
     NVSurfaceEvoRec *pSurfaceEvo,
     NvU64 surfaceOffset)
 {
-    NvU32 apiHead;
-
     if (!pDevEvo->supportsVblankSemControl) {
         return FALSE;
     }
@@ -218,12 +215,6 @@ static NvBool EnableVblankSemControlValidate(
         return FALSE;
     }
 
-    FOR_ALL_HEADS(apiHead, apiHeadMask) {
-        if (nvGetPrimaryHwHead(pDispEvo, apiHead) == NV_INVALID_HEAD) {
-            return FALSE;
-        }
-    }
-
     return TRUE;
 }
 
@@ -233,7 +224,7 @@ static void DisableVblankSemControl(
 {
     NvU32 apiHead;
 
-    FOR_ALL_HEADS(apiHead, pVblankSemControl->apiHeadMask) {
+    for (apiHead = 0; apiHead < ARRAY_LEN(pVblankSemControl->headEntry); apiHead++) {
         NVVblankSemControlHeadEntry *pEntry =
             &pVblankSemControl->headEntry[apiHead];
         DisableVblankSemControlOneHead(pDispEvo, apiHead, pEntry);
@@ -257,22 +248,9 @@ NvBool nvEvoDisableVblankSemControl(
     return TRUE;
 }
 
-void nvEvoOrphanVblankSemControl(
-    NVDispEvoRec *pDispEvo,
-    NVVblankSemControl *pVblankSemControl)
-{
-    if (!pDispEvo->pDevEvo->supportsVblankSemControl) {
-        return;
-    }
-
-    DisableVblankSemControl(pDispEvo, pVblankSemControl);
-    pVblankSemControl->apiHeadMask = 0;
-}
-
 NVVblankSemControl *nvEvoEnableVblankSemControl(
     NVDevEvoRec *pDevEvo,
     NVDispEvoRec *pDispEvo,
-    NvU32 apiHeadMask,
     NVSurfaceEvoRec *pSurfaceEvo,
     NvU64 surfaceOffset)
 {
@@ -280,7 +258,7 @@ NVVblankSemControl *nvEvoEnableVblankSemControl(
     NVVblankSemControl *pVblankSemControl;
     NvU32 apiHead;
 
-    if (!EnableVblankSemControlValidate(pDevEvo, pDispEvo, apiHeadMask,
+    if (!EnableVblankSemControlValidate(pDevEvo, pDispEvo,
                                         pSurfaceEvo, surfaceOffset)) {
         return NULL;
     }
@@ -305,10 +283,9 @@ NVVblankSemControl *nvEvoEnableVblankSemControl(
     }
 
     pVblankSemControl->dispIndex = pDispEvo->displayOwner;
-    pVblankSemControl->apiHeadMask = apiHeadMask;
     pVblankSemControl->pSurfaceEvo = pSurfaceEvo;
 
-    FOR_ALL_HEADS(apiHead, apiHeadMask) {
+    for (apiHead = 0; apiHead < ARRAY_LEN(pVblankSemControl->headEntry); apiHead++) {
         if (!EnableVblankSemControlOneHead(pDispEvo,
                                            apiHead,
                                            pVblankSemControl,
@@ -342,16 +319,16 @@ NvBool nvEvoAccelVblankSemControls(
 
     FOR_ALL_HEADS(apiHead, apiHeadMask) {
 
-        NVDispApiHeadStateEvoRec *pApiHeadState =
-            &pDispEvo->apiHeadState[apiHead];
+        NVDispVblankApiHeadState *pVblankApiHeadState =
+            &pDispEvo->vblankApiHeadState[apiHead];
         NVVblankSemControlHeadEntry *pEntry;
 
         nvListForEachEntry(
-            pEntry, &pApiHeadState->vblankSemControl.list, listEntry) {
+            pEntry, &pVblankApiHeadState->vblankSemControl.list, listEntry) {
 
             VblankSemControlWrite(
                 pEntry,
-                pApiHeadState->vblankCount,
+                pVblankApiHeadState->vblankCount,
                 TRUE /* bAccel */);
         }
     }

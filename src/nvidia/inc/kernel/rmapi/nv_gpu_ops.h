@@ -173,7 +173,8 @@ NV_STATUS nvGpuOpsCheckEccErrorSlowpath(struct gpuChannel * channel, NvBool *bEc
 
 NV_STATUS nvGpuOpsSetPageDirectory(struct gpuAddressSpace * vaSpace,
                                    NvU64 physAddress, unsigned numEntries,
-                                   NvBool bVidMemAperture, NvU32 pasid);
+                                   NvBool bVidMemAperture, NvU32 pasid,
+                                   NvU64 *dmaAdress);
 
 NV_STATUS nvGpuOpsUnsetPageDirectory(struct gpuAddressSpace * vaSpace);
 

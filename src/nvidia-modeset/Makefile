@@ -171,40 +171,38 @@ CXX_ONLY_CFLAGS += -fcheck-new
 
 SHADER_OBJS =
 
-  CFLAGS += -DNVKMS_INCLUDE_HEADSURFACE=1
+CFLAGS += -I $(SRC_COMMON)/unix/nvidia-3d/interface
+CFLAGS += -I $(SRC_COMMON)/unix/nvidia-push/interface
+CFLAGS += -I $(SRC_COMMON)/unix/nvidia-3d/include
+CFLAGS += -I $(SRC_COMMON)/unix/nvidia-push/include
+CFLAGS += -I $(SRC_COMMON)/unix/xzminidec/interface
+CFLAGS += -I $(SRC_COMMON)/unix/nvidia-headsurface
+CFLAGS += -I src/shaders
 
-  CFLAGS += -I $(SRC_COMMON)/unix/nvidia-3d/interface
-  CFLAGS += -I $(SRC_COMMON)/unix/nvidia-push/interface
-  CFLAGS += -I $(SRC_COMMON)/unix/nvidia-3d/include
-  CFLAGS += -I $(SRC_COMMON)/unix/nvidia-push/include
-  CFLAGS += -I $(SRC_COMMON)/unix/xzminidec/interface
-  CFLAGS += -I $(SRC_COMMON)/unix/nvidia-headsurface
-  CFLAGS += -I src/shaders
+CFLAGS += -DNV_PUSH_IN_KERNEL
+CFLAGS += -DNV_XZ_CUSTOM_MEM_HOOKS
+CFLAGS += -DNV_XZ_USE_NVTYPES
+CFLAGS += -DXZ_DEC_SINGLE
 
-  CFLAGS += -DNV_PUSH_IN_KERNEL
-  CFLAGS += -DNV_XZ_CUSTOM_MEM_HOOKS
-  CFLAGS += -DNV_XZ_USE_NVTYPES
-  CFLAGS += -DXZ_DEC_SINGLE
-
-  # Compress the shaders and embed in ELF object files.
-  define COMPRESS_SHADERS
-    $$(OUTPUTDIR)/$(1)_shaders.xz: src/shaders/g_$(1)_shaders
+# Compress the shaders and embed in ELF object files.
+define COMPRESS_SHADERS
+$$(OUTPUTDIR)/$(1)_shaders.xz: src/shaders/g_$(1)_shaders
 	@$(MKDIR) $$(OUTPUTDIR)
 	$$(call quiet_cmd,XZ) -ce -C none < $$^ > $$@
 
-    $$(eval $$(call READ_ONLY_OBJECT_FROM_FILE_RULE,$$(OUTPUTDIR)/$(1)_shaders.xz))
+$$(eval $$(call READ_ONLY_OBJECT_FROM_FILE_RULE,$$(OUTPUTDIR)/$(1)_shaders.xz))
 
-    SHADER_OBJS += $$(OUTPUTDIR)/$(1)_shaders.xz.o
-  endef
+SHADER_OBJS += $$(OUTPUTDIR)/$(1)_shaders.xz.o
+endef
 
-  $(eval $(call COMPRESS_SHADERS,maxwell))
-  $(eval $(call COMPRESS_SHADERS,pascal))
-  $(eval $(call COMPRESS_SHADERS,volta))
-  $(eval $(call COMPRESS_SHADERS,turing))
-  $(eval $(call COMPRESS_SHADERS,ampere))
-    $(eval $(call COMPRESS_SHADERS,hopper))
-    $(eval $(call COMPRESS_SHADERS,blackwell))
-    $(eval $(call COMPRESS_SHADERS,gb20x))
+$(eval $(call COMPRESS_SHADERS,maxwell))
+$(eval $(call COMPRESS_SHADERS,pascal))
+$(eval $(call COMPRESS_SHADERS,volta))
+$(eval $(call COMPRESS_SHADERS,turing))
+$(eval $(call COMPRESS_SHADERS,ampere))
+$(eval $(call COMPRESS_SHADERS,hopper))
+$(eval $(call COMPRESS_SHADERS,blackwell))
+$(eval $(call COMPRESS_SHADERS,gb20x))
 
 OBJS = $(call BUILD_OBJECT_LIST,$(ALL_SRCS))
 OBJS += $(SHADER_OBJS)

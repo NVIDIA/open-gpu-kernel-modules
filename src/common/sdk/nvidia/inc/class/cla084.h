@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -76,18 +76,6 @@ typedef struct NVA084_ALLOC_PARAMETERS {
     NvBool     bDisableDefaultSmcExecPartRestore;
     NvU32      vgpuDeviceInstanceId;
     NvHandle   hPluginClient;
-    NvU32      numGuestFbHandles;
-    NvHandle   guestFbHandleList[NVA084_MAX_VMMU_SEGMENTS];
     NvU8       vgpuDevName[VM_UUID_SIZE];
-    NvHandle   hPluginHeapMemory;
-    NvHandle   hMigRmHeapMemory;
-    NV_DECLARE_ALIGNED(NvU64 ctrlBuffOffset, 8);
-    NV_DECLARE_ALIGNED(NvU64 initTaskLogBuffOffset, 8);
-    NV_DECLARE_ALIGNED(NvU64 initTaskLogBuffSize, 8);
-    NV_DECLARE_ALIGNED(NvU64 vgpuTaskLogBuffOffset, 8);
-    NV_DECLARE_ALIGNED(NvU64 vgpuTaskLogBuffSize, 8);
-    NV_DECLARE_ALIGNED(NvU64 kernelLogBuffOffset, 8);
-    NV_DECLARE_ALIGNED(NvU64 kernelLogBuffSize, 8);
-    NvBool     bDeviceProfilingEnabled;
     NvBool     bGpupLiveMigrationEnabled;
 } NVA084_ALLOC_PARAMETERS;

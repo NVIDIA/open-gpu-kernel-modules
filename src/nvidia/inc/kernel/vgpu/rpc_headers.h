@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -252,6 +252,7 @@ typedef enum
     GPU_RECOVERY_EVENT_TYPE_REFRESH,
     GPU_RECOVERY_EVENT_TYPE_GPU_DRAIN_P2P,
     GPU_RECOVERY_EVENT_TYPE_SYS_REBOOT,
+    GPU_RECOVERY_EVENT_TYPE_GPU_REBOOT,
 } GPU_RECOVERY_EVENT_TYPE;
 
 

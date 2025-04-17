@@ -199,6 +199,9 @@ static NV_STATUS test_all_gpus_in_va(uvm_va_space_t *va_space)
             for (j = 0; j < ARRAY_SIZE(mem_types); ++j) {
                 bool test_cpu_mappings = (mem_types[j] == UVM_RM_MEM_TYPE_SYS) || !g_uvm_global.conf_computing_enabled;
 
+                if (mem_types[j] == UVM_RM_MEM_TYPE_GPU && gpu->mem_info.size == 0)
+                        continue;
+
                 for (k = 0; k < ARRAY_SIZE(alignments); ++k) {
 
                     // Create an allocation in the GPU's address space

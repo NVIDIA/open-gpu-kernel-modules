@@ -300,8 +300,21 @@ profilerDevConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
+    OBJSYS                      *pSys             = SYS_GET_INSTANCE();
     ProfilerBase                *pProfBase        = staticCast(pProfDev, ProfilerBase);
     PROFILER_CLIENT_PERMISSIONS clientPermissions = {0};
+    NVB2CC_ALLOC_PARAMETERS *pAllocParams = pParams->pAllocParams;
+
+    if (pSys->getProperty(pSys, PDB_PROP_SYS_VALIDATE_CLIENT_HANDLE) &&
+        ((pParams->pSecInfo)->privLevel < RS_PRIV_LEVEL_USER_ROOT) && 
+        (pAllocParams->hClientTarget != 0))
+    {
+        NV_STATUS rmStatus;
+
+        rmStatus = osValidateClientTokens((void*)rmclientGetSecurityTokenByHandle(pCallContext->pClient->hClient),
+                                          (void*)rmclientGetSecurityTokenByHandle(pAllocParams->hClientTarget));
+        NV_CHECK_OR_RETURN(LEVEL_NOTICE, rmStatus == NV_OK, rmStatus);
+    }
 
     if (!profilerBaseQueryCapabilities_HAL(pProfBase, pCallContext, pParams,
                                             &clientPermissions))

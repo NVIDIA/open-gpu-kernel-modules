@@ -303,6 +303,7 @@ static NvBool GetSpaVersion(
         /* Blackwell */
         { NV2080_CTRL_GR_INFO_SM_VERSION_10_0, { 10,0 } },
         { NV2080_CTRL_GR_INFO_SM_VERSION_10_1, { 10,1 } },
+        { NV2080_CTRL_GR_INFO_SM_VERSION_10_3, { 10,3 } },
         { NV2080_CTRL_GR_INFO_SM_VERSION_10_4, { 10,4 } },
     };
 

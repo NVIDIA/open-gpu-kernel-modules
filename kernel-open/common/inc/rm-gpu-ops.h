@@ -83,7 +83,7 @@ NV_STATUS  NV_API_CALL rm_gpu_ops_destroy_access_cntr_info(nvidia_stack_t *, nvg
 NV_STATUS  NV_API_CALL rm_gpu_ops_own_access_cntr_intr(nvidia_stack_t *, nvgpuSessionHandle_t, nvgpuAccessCntrInfo_t, NvBool);
 NV_STATUS  NV_API_CALL rm_gpu_ops_enable_access_cntr(nvidia_stack_t *, nvgpuDeviceHandle_t, nvgpuAccessCntrInfo_t, const nvgpuAccessCntrConfig_t *);
 NV_STATUS  NV_API_CALL rm_gpu_ops_disable_access_cntr(nvidia_stack_t *, nvgpuDeviceHandle_t, nvgpuAccessCntrInfo_t);
-NV_STATUS  NV_API_CALL  rm_gpu_ops_set_page_directory (nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvU64, unsigned, NvBool, NvU32);
+NV_STATUS  NV_API_CALL  rm_gpu_ops_set_page_directory (nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvU64, unsigned, NvBool, NvU32, NvU64 *);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_unset_page_directory (nvidia_stack_t *, nvgpuAddressSpaceHandle_t);
 NV_STATUS  NV_API_CALL rm_gpu_ops_get_nvlink_info(nvidia_stack_t *, nvgpuDeviceHandle_t, nvgpuNvlinkInfo_t);
 NV_STATUS  NV_API_CALL rm_gpu_ops_p2p_object_create(nvidia_stack_t *, nvgpuDeviceHandle_t, nvgpuDeviceHandle_t, NvHandle *);

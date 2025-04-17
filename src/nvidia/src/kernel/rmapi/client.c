@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -219,6 +219,8 @@ rmclientConstruct_IMPL
     if (status == NV_OK && pParams->pAllocParams != NULL)
         *(NvHandle*)(pParams->pAllocParams) = pParams->hClient;
 
+    eventSystemInitEventQueue(&pClient->CliSysEventInfo.eventQueue);
+
     NV_PRINTF(LEVEL_INFO, "New RM Client: hClient=0x%08x (%c), ProcID=%u, name='%s'\n",
         pRsClient->hClient, (pRsClient->type == CLIENT_TYPE_USER) ? 'U' : 'K', pClient->ProcID, pClient->name);
 
@@ -259,6 +261,8 @@ rmclientDestruct_IMPL
     CliUnregisterFromThirdPartyP2P(pClient);
 
     osPutPidInfo(pClient->pOsPidInfo);
+
+    eventSystemClearEventQueue(&pClient->CliSysEventInfo.eventQueue);
 
     // Updating the client list just before client handle unregister //
     // in case child free functions need to iterate over all clients //

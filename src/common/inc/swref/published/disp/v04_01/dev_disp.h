@@ -43,4 +43,17 @@
 #define NV_PDISP_FE_RM_INTR_STAT_CTRL_DISP_WIN_SEM_NOT_PENDING                                0x00000000 /* R-I-V */
 #define NV_PDISP_FE_RM_INTR_STAT_CTRL_DISP_WIN_SEM_PENDING                                    0x00000001 /* R---V */
 
+#define NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING(i)                                       (0x00611C00+(i)*4) /* R--4A */
+#define NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING__SIZE_1                                                   8 /*       */
+
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING(i)                                           (0x00611800+(i)*4) /* RW-4A */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING__SIZE_1                                                       8 /*       */
+
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_SEM(i)                                     (16+(i)):(16+(i)) /*       */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_SEM__SIZE_1                                                6 /*       */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_SEM_INIT                                          0x00000000 /*       */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_SEM_NOT_PENDING                                   0x00000000 /*       */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_SEM_PENDING                                       0x00000001 /*       */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_SEM_RESET                                         0x00000001 /*       */
+
 #endif // __v04_01_dev_disp_h__

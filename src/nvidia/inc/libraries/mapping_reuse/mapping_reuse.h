@@ -30,40 +30,68 @@
 extern "C" {
 #endif
 
-#define REUSE_MAPPING_DB_MAP_FLAGS_REUSE_ANY_RANGES 0x0
-#define REUSE_MAPPING_DB_MAP_FLAGS_REUSE_NONE 0x1
-#define REUSE_MAPPING_DB_MAP_FLAGS_REUSE_SINGLE_RANGE 0x2
+// Only return single range.
+#define REUSE_MAPPING_DB_MAP_FLAGS_SINGLE_RANGE NVBIT(0)
+// No reuse, call the map callback directly.
+#define REUSE_MAPPING_DB_MAP_FLAGS_NO_REUSE  NVBIT(1)
 
-#define REUSE_MAPPING_DB_MAP_FLAGS_DEFAULT REUSE_MAPPING_DB_MAP_FLAGS_REUSE_ANY_RANGES
+// Remove this from defaults when we support multi-range reuse.
+#define REUSE_MAPPING_DB_MAP_FLAGS_DEFAULT REUSE_MAPPING_DB_MAP_FLAGS_SINGLE_RANGE
 
 typedef struct ReuseMappingDbEntry  ReuseMappingDbEntry;
 typedef struct ReuseMappingDbEntry {
     NvU64 size;
     NvU64 refCount;
-    struct
+
+    //
+    // trackingInfo is the data used to locate this entry within the reuse database.
+    // This is in union with newMappingNode, which is a node used in a linked list when we
+    // create new entries, before we actually insert into the reuse database.
+    //
+    union
     {
-        void *pAllocCtx;
-        MapNode reverseNode;
-        MapNode forwardNode;
-    } trackingInfo;
+        struct
+        {
+            void *pAllocCtx;
+            MapNode virtualNode;
+            MapNode physicalNode;
+        } trackingInfo;
+        struct
+        {
+            ReuseMappingDbEntry *pNextEntry;
+            NvU64 virtualOffset;
+            NvU64 physicalOffset;
+        } newMappingNode;
+    };
 } ReuseMappingDbEntry;
 
-MAKE_INTRUSIVE_MAP(ReuseMappingDbForwardMap, ReuseMappingDbEntry, trackingInfo.forwardNode);
-MAKE_INTRUSIVE_MAP(ReuseMappingDbReverseMap, ReuseMappingDbEntry, trackingInfo.reverseNode);
+MAKE_INTRUSIVE_MAP(ReuseMappingDbPhysicalMap, ReuseMappingDbEntry, trackingInfo.physicalNode);
+MAKE_INTRUSIVE_MAP(ReuseMappingDbVirtualMap, ReuseMappingDbEntry, trackingInfo.virtualNode);
 
-MAKE_MAP(ReuseMappingDbAllocCtxMap, ReuseMappingDbForwardMap);
+//
+// There are 2 levels of mapping here: the first maps from a given allocation context to a physical
+// map, and a second that is an ordered map of physical offsets. All physical offsets are referenced
+// to a given allocation context, and are not valid on there own (ie are not real/unique memory offsets) 
+//
+MAKE_MAP(ReuseMappingDbAllocCtxMap, ReuseMappingDbPhysicalMap);
 
-typedef NV_STATUS (*ReuseMappingDbAddMappingCallback)(void *pToken, NvU64 forwardOffset, NvU64 reverseOffset, NvU64 size);
+//
+// This function is called by the ReuseMappingDbMapFunction when it intends to add new mapped ranges.
+// pToken is the same token passed into ReuseMappingDbMapFunction.
+//
+typedef NV_STATUS (*ReuseMappingDbAddMappingCallback)(void *pToken, NvU64 physicalOffset, NvU64 virtualOffset, NvU64 size);
 
-typedef NV_STATUS (*ReuseMappingDbMapFunction)(void *pGlobalCtx, void *pAllocCtx, MemoryRange forwardRange, void *pToken, ReuseMappingDbAddMappingCallback fn);
-typedef void (*ReuseMappingDbUnnmapFunction)(void *pGlobalCtx, void *pAllocCtx, MemoryRange reverseRange);
-
-typedef NV_STATUS (*ReuseMappingDbSplitMappingFunction)(void *pGlobalCtx, void *pAllocCtx, MemoryRange reverseRange, NvU64 boundary);
+// Map callback when the database doesn't contained cached mappings
+typedef NV_STATUS (*ReuseMappingDbMapFunction)(void *pGlobalCtx, void *pAllocCtx, MemoryRange physicalRange, NvU64 cachingFlags, void *pToken, ReuseMappingDbAddMappingCallback fn);
+// Unmap callback when refcount of any mapped range reaches 0
+typedef void (*ReuseMappingDbUnnmapFunction)(void *pGlobalCtx, void *pAllocCtx, MemoryRange virtualRange);
+// Callback for when a node is split in two. Performs any tracking or cleanup necessary.
+typedef NV_STATUS (*ReuseMappingDbSplitMappingFunction)(void *pGlobalCtx, void *pAllocCtx, MemoryRange virtualRange, NvU64 boundary);
 
 typedef struct ReuseMappingDb
 {
-    ReuseMappingDbAllocCtxMap forwardMap;
-    ReuseMappingDbReverseMap reverseMap;
+    ReuseMappingDbAllocCtxMap allocCtxPhysicalMap;
+    ReuseMappingDbVirtualMap virtualMap;
     void *pGlobalCtx;
     PORT_MEM_ALLOCATOR *pAllocator;
 
@@ -81,7 +109,7 @@ void reusemappingdbDestruct(ReuseMappingDb *pReuseMappingDb);
 NV_STATUS reusemappingdbMap(ReuseMappingDb *pReuseMappingDb, void *pAllocCtx, MemoryRange range,
         MemoryArea *pMemoryArea, NvU64 cachingFlags);
 
-void reusemappingdbUnmap(ReuseMappingDb *pReuseMappingDb, MemoryRange range);
+void reusemappingdbUnmap(ReuseMappingDb *pReuseMappingDb, void *pAllocCtx, MemoryRange range);
 
 #ifdef __cplusplus
 }

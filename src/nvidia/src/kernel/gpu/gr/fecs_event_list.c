@@ -665,7 +665,7 @@ fecsCtxswLoggingInit
         return NV_ERR_NO_MEMORY;
     portMemSet(pFecsTraceInfo, 0, sizeof(*pFecsTraceInfo));
 
-    osGetCurrentTick(&seed);
+    seed = osGetCurrentTick();
     pFecsTraceInfo->pFecsLogPrng = portCryptoPseudoRandomGeneratorCreate(seed);
 
     *ppFecsTraceInfo = pFecsTraceInfo;
@@ -1587,31 +1587,29 @@ fecsBufferDisableHw
                                      &getHwEnableParams.grRouteInfo),
         return);
 
-    NV_ASSERT_OK_OR_ELSE(
-        status,
-        pRmApi->Control(pRmApi,
-                        hClient,
-                        hSubdevice,
-                        NV2080_CTRL_CMD_INTERNAL_GR_GET_FECS_TRACE_HW_ENABLE,
-                        &getHwEnableParams,
-                        sizeof(getHwEnableParams)),
-        return);
-
+    status = pRmApi->Control(pRmApi,
+                             hClient,
+                             hSubdevice,
+                             NV2080_CTRL_CMD_INTERNAL_GR_GET_FECS_TRACE_HW_ENABLE,
+                             &getHwEnableParams,
+                             sizeof(getHwEnableParams));
+    NV_ASSERT_OR_RETURN_VOID((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET));
+    if (status == NV_ERR_GPU_IN_FULLCHIP_RESET)
+        return;
+ 
     if (getHwEnableParams.bEnable)
     {
         // Copy previously loaded routing info
         setHwEnableParams.grRouteInfo = getHwEnableParams.grRouteInfo;
         setHwEnableParams.bEnable = NV_FALSE;
 
-        NV_ASSERT_OK_OR_ELSE(
-            status,
-            pRmApi->Control(pRmApi,
-                            hClient,
-                            hSubdevice,
-                            NV2080_CTRL_CMD_INTERNAL_GR_SET_FECS_TRACE_HW_ENABLE,
-                            &setHwEnableParams,
-                            sizeof(setHwEnableParams)),
-            return);
+        status = pRmApi->Control(pRmApi,
+                                 hClient,
+                                 hSubdevice,
+                                 NV2080_CTRL_CMD_INTERNAL_GR_SET_FECS_TRACE_HW_ENABLE,
+                                 &setHwEnableParams,
+                                 sizeof(setHwEnableParams));
+        NV_ASSERT_OR_RETURN_VOID((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET));
     }
 }
 

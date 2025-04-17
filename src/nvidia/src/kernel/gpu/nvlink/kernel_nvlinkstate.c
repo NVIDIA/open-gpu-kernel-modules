@@ -263,7 +263,7 @@ knvlinkIsPresent_IMPL
     NV_STATUS status = NV_OK;
 
     // Mark NVLINK as absent when HCC SPT is enabled
-    if (gpuIsCCFeatureEnabled(pGpu) && !gpuIsCCMultiGpuProtectedPcieModeEnabled(pGpu))
+    if (gpuIsCCFeatureEnabled(pGpu) && (!gpuIsCCMultiGpuProtectedPcieModeEnabled(pGpu) && !gpuIsCCMultiGpuNvleModeEnabled(pGpu)))
         return NV_FALSE;
 
     // On GSP clients, retrieve all device discovery info from GSP through RPC
@@ -515,7 +515,7 @@ knvlinkStateLoad_IMPL
     knvlinkFilterBridgeLinks_HAL(pGpu, pKernelNvlink);
 
     // Disconnected links mask tracks links whose remote ends are not discovered
-    pKernelNvlink->disconnectedLinkMask = KNVLINK_GET_MASK(pKernelNvlink, enabledLinks, 32);
+    pKernelNvlink->disconnectedLinkMask = KNVLINK_GET_MASK(pKernelNvlink, enabledLinks, 64);
 
     if (!IS_RTLSIM(pGpu) || pKernelNvlink->bForceEnableCoreLibRtlsims)
     {
@@ -796,6 +796,16 @@ knvlinkStatePostLoad_IMPL
         }
     }
 
+    // We check for NVLE enablement here for the production/non-MODS case
+    if (pKernelNvlink->bNvleModeRegkey)
+    {
+        if (!knvlinkIsNvleEnabled_HAL(pGpu, pKernelNvlink))
+        {
+            NV_PRINTF(LEVEL_ERROR," NVLE not enabled on GPU%d\n", pGpu->gpuInstance);
+            return NV_ERR_FEATURE_NOT_ENABLED;
+        }
+    }
+
     status = knvlinkStatePostLoadHal_HAL(pGpu, pKernelNvlink);
     if (status != NV_OK)
     {
@@ -963,7 +973,7 @@ knvlinkStatePostUnload_IMPL
         {
             KernelNvlink *pRemoteKernelNvlink = GPU_GET_KERNEL_NVLINK(pRemoteGpu);
 
-            pRemoteKernelNvlink->disconnectedLinkMask |= NVBIT(pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.linkNumber);
+            pRemoteKernelNvlink->disconnectedLinkMask |= NVBIT64(pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.linkNumber);
         }
     }
     FOR_EACH_INDEX_IN_MASK_END;
@@ -1269,26 +1279,26 @@ _knvlinkProcessSysmemLinks
 {
     NV_STATUS status = NV_OK;
 
-#if defined(NVCPU_PPC64LE) || defined(NVCPU_AARCH64)
+#if defined(NVCPU_AARCH64)
     if (pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_SYSMEM_SUPPORT_ENABLED))
     {
         //
-        // In case of IBM or Tegra, the sysmem links will already have
+        // In case of Tegra, the sysmem links will already have
         // been registered in nvlink core library. In order to trigger
         // topology detection, call knvlinkCoreGetRemoteDeviceInfo
         //
         if (!knvlinkIsForcedConfig(pGpu, pKernelNvlink) && !pKernelNvlink->pLinkConnection)
         {
             //
-            // Establish the current link topology and enable IBM CPU/SYSMEM links.
-            // If any of the discovered links are CPU/SYSMEM, they will be trained,
+            // Establish the current link topology and enable SYSMEM links.
+            // If any of the discovered links are SYSMEM, they will be trained,
             // post-enabled, and then enabled in HSHUB when the call has completed.
             //
             status = knvlinkCoreGetRemoteDeviceInfo(pGpu, pKernelNvlink);
             if (status != NV_OK)
             {
                 NV_PRINTF(LEVEL_ERROR,
-                          "Failed call to get remote device info during IBM CPU/SYSMEM links "
+                          "Failed call to get remote device info during SYSMEM links "
                           "setup, failing NVLink StateLoad on GPU%d!!!\n\n",
                           pGpu->gpuInstance);
 

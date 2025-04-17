@@ -113,7 +113,7 @@ pfmreqhndlrInitGpu
                 if (pRmApi->Control(pRmApi,
                                     pGpu->hInternalClient,
                                     pGpu->hInternalSubdevice,
-                                    NV2080_CTRL_CMD_INTERNAL_PERF_PFM_REQ_HNDLR_PRH_DEPENDENCY_CHECK,
+                                    NV2080_CTRL_CMD_INTERNAL_PERF_PFM_REQ_HNDLR_DEPENDENCY_CHECK,
                                     NULL,
                                     0) == NV_OK)
                 {

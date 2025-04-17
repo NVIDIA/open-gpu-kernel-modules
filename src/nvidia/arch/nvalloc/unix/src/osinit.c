@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,8 +45,8 @@
 #include <gpu/timer/objtmr.h>
 #include "gpu/bus/kern_bus.h"
 #include "nverror.h"
-#include <gpu/bif/kernel_bif.h>
 #include <nv-nb-regs.h>
+#include <gpu/bif/kernel_bif.h>
 #include <gpu/mem_mgr/mem_mgr.h>
 #include <gpu/mem_sys/kern_mem_sys.h>
 #include "kernel/gpu/intr/intr.h"
@@ -809,7 +809,12 @@ osInitNvMapping(
         MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
         memmgrSetPmaForcePersistence(pMemoryManager, NV_TRUE);
-        pKernelMemorySystem->bPreserveComptagBackingStoreOnSuspend = NV_TRUE;
+
+        // Monolithic uses Fifolite channel which doesn't support Virtual mode
+        if (!pMemoryManager->bUseVirtualCopyOnSuspend)
+        {
+            pKernelMemorySystem->bPreserveComptagBackingStoreOnSuspend = NV_TRUE;
+        }
 
         nv->preserve_vidmem_allocations = NV_TRUE;
     }
@@ -872,6 +877,25 @@ osTeardownScalability(
     return clTeardownPcie(pGpu, pCl);
 }
 
+static NV_STATUS
+RmInitNvHal(
+    nv_state_t *nv,
+    NvU32 deviceReference,
+    UNIX_STATUS *status
+)
+{
+    OBJGPU             *pGpu      = gpumgrGetGpu(deviceReference);
+    nv_priv_t          *nvp       = NV_GET_NV_PRIV(nv);
+
+    PORT_UNREFERENCED_VARIABLE(pGpu);
+
+    nvp->flags |= NV_INIT_FLAG_HAL;
+
+    nvp->flags |= NV_INIT_FLAG_HAL_COMPONENTS;
+
+    return NV_OK;
+}
+
 #define NV_DBG_PRINT_VGA_STATUS(nv, src)    \
     NV_DEV_PRINTF(NV_DBG_SETUP, nv, "%s reports GPU is %s VGA\n", \
               src, NV_PRIMARY_VGA(nv) ? "primary" : "not primary");
@@ -913,6 +937,11 @@ static void
 RmDeterminePrimaryDevice(OBJGPU *pGpu)
 {
     nv_state_t *nv = NV_GET_NV_STATE(pGpu);
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
+    {
+        return;
+    }
 
     // Skip updating nv->primary_vga while RM is recovering after GPU reset
     if (nv->flags & NV_FLAG_IN_RECOVERY)
@@ -1056,6 +1085,52 @@ RmTeardownDeviceDma(
         {
             vmmDestroyVaspace(pVmm, pIOVAS);
         }
+    }
+}
+
+static void
+RmEnableDeviceClks(nv_state_t *nv)
+{
+    NvU32 freqKHz = 0;
+    NvU32 i;
+    NV_STATUS ret;
+
+    for (i = TEGRASOC_WHICH_CLK_GPU_FIRST; i <= TEGRASOC_WHICH_CLK_GPU_LAST; i++)
+    {
+        ret = nv_get_max_freq(nv, i, &freqKHz);
+        if (ret != NV_OK)
+        {
+            NV_PRINTF(LEVEL_INFO, "NVRM: Max Freq fetch failed for Clk:%d\n", i);
+            continue;
+        }
+
+        ret = nv_enable_clk(nv, i);
+        if (ret != NV_OK)
+        {
+            NV_PRINTF(LEVEL_INFO, "NVRM: Clk prepare enable failed for Clk:%d\n", i);
+            continue;
+        }
+
+        ret = nv_set_freq(nv, i, freqKHz);
+        if (ret != NV_OK)
+        {
+            NV_PRINTF(LEVEL_INFO, "NVRM: Set Freq failed for Clk:%d\n", i);
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_INFO, "NVRM: Set Freq:%d for Clk:%d\n", freqKHz, i);
+        }
+    }
+}
+
+static void
+RmDisableDeviceClks(nv_state_t *nv)
+{
+    NvU32 i;
+
+    for (i = TEGRASOC_WHICH_CLK_GPU_FIRST; i <= TEGRASOC_WHICH_CLK_GPU_LAST; i++)
+    {
+        nv_disable_clk(nv, i);
     }
 }
 
@@ -1817,7 +1892,7 @@ NvBool RmInitAdapter(
     }
 
     KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
-    if ((pKernelFsp != NULL) && !IS_GSP_CLIENT(pGpu) && !IS_VIRTUAL(pGpu))
+    if ((pKernelFsp != NULL) && !IS_GSP_CLIENT(pGpu) && !IS_VIRTUAL(pGpu) && !pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_RM_BOOT_GSP))
     {
         status.rmStatus = kfspPrepareAndSendBootCommands_HAL(pGpu, pKernelFsp);
         if (status.rmStatus != NV_OK)
@@ -1842,6 +1917,13 @@ NvBool RmInitAdapter(
     {
         os_disable_console_access();
         consoleDisabled = NV_TRUE;
+    }
+
+    // This needs to run before GSP-RM is booted, or else it will timeout
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_CLKS_IN_TEGRA_SOC))
+    {
+        NV_PRINTF(LEVEL_INFO, "Enable Clocks to Max\n");
+        RmEnableDeviceClks(nv);
     }
 
     //
@@ -1883,6 +1965,14 @@ NvBool RmInitAdapter(
     if (IS_PASSTHRU(pGpu))
         nv->flags |= NV_FLAG_PASSTHRU;
 
+    RmInitNvHal(nv, devicereference, &status);
+    if (!RM_INIT_SUCCESS(status.initStatus))
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "RmInitNvHal() failed, bailing out of RmInitAdapter!\n");
+        goto shutdown;
+    }
+
     status.rmStatus = RmInitX86Emu(pGpu);
     if (status.rmStatus != NV_OK)
     {
@@ -1892,8 +1982,10 @@ NvBool RmInitAdapter(
         goto shutdown;
     }
 
+
     initVendorSpecificRegistry(pGpu, nv->pci_info.device_id);
-    if (!IS_VIRTUAL(pGpu))
+
+    if (!IS_VIRTUAL(pGpu) && !NV_IS_SOC_DISPLAY_DEVICE(nv))
     {
         initNbsiTable(pGpu);
     }
@@ -1926,6 +2018,7 @@ NvBool RmInitAdapter(
     // GPU is initialized.
     //
     gpumgrThreadDisableExpandedGpuVisibility();
+
 
     // LOCK: acquire GPUs lock
     status.rmStatus = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE,
@@ -2174,6 +2267,12 @@ void RmShutdownAdapter(
 
                 os_enable_console_access();
 
+                if (pGpu->getProperty(pGpu, PDB_PROP_GPU_CLKS_IN_TEGRA_SOC))
+                {
+                    NV_PRINTF(LEVEL_INFO, "Disable Clocks\n");
+                    RmDisableDeviceClks(nv);
+                }
+
                 //if (nvp->flags & NV_INIT_FLAG_HAL)
                 //  destroyHal(pDev);
 
@@ -2360,6 +2459,9 @@ static void initVendorSpecificRegistry(
     NvU32 vendor_id = 0;
 
     if (!pGpu)
+        return;
+
+    if (pGpu->bIsSOC)
         return;
 
     rmStatus = GPU_BUS_CFG_RD32(pGpu,

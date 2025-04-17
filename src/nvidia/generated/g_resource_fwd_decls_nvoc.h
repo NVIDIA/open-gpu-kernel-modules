@@ -1,13 +1,15 @@
 
 #ifndef _G_RESOURCE_FWD_DECLS_NVOC_H_
 #define _G_RESOURCE_FWD_DECLS_NVOC_H_
-#include "nvoc/runtime.h"
 
 // Version of generated metadata structures
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 1
+#define NVOC_METADATA_VERSION 2
+
+#include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -308,6 +310,10 @@ typedef struct KernelSMDebuggerSession KernelSMDebuggerSession;
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
+
+// Metadata with per-class RTTI
+struct NVOC_METADATA__NVOCFwdDeclHack;
 
 struct RmClientResource;
 
@@ -1277,12 +1283,26 @@ typedef struct LockStressObject LockStressObject;
 #define __nvoc_class_id_LockStressObject 0xecce10
 #endif /* __nvoc_class_id_LockStressObject */
 
+struct LockTestRelaxedDupObject;
+
+#ifndef __NVOC_CLASS_LockTestRelaxedDupObject_TYPEDEF__
+#define __NVOC_CLASS_LockTestRelaxedDupObject_TYPEDEF__
+typedef struct LockTestRelaxedDupObject LockTestRelaxedDupObject;
+#endif /* __NVOC_CLASS_LockTestRelaxedDupObject_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_LockTestRelaxedDupObject
+#define __nvoc_class_id_LockTestRelaxedDupObject 0x19e861
+#endif /* __nvoc_class_id_LockTestRelaxedDupObject */
+
 
 
 struct NVOCFwdDeclHack {
 
-    // Metadata
-    const struct NVOC_RTTI *__nvoc_rtti;
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__NVOCFwdDeclHack *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
 
     // Ancestor object pointers for `staticCast` feature
     struct NVOCFwdDeclHack *__nvoc_pbase_NVOCFwdDeclHack;    // nvocfwddeclhack
@@ -1372,6 +1392,7 @@ struct NVOCFwdDeclHack {
     struct DispSfUser *PRIVATE_FIELD(DispSfUser_NVC771_DISP_SF_USER);
     struct DispSfUser *PRIVATE_FIELD(DispSfUser_NVC971_DISP_SF_USER);
     struct DispSfUser *PRIVATE_FIELD(DispSfUser_NVCA71_DISP_SF_USER);
+    struct DispSfUser *PRIVATE_FIELD(DispSfUser_NVCB71_DISP_SF_USER);
     struct MmuFaultBuffer *PRIVATE_FIELD(MmuFaultBuffer_MMU_FAULT_BUFFER);
     struct AccessCounterBuffer *PRIVATE_FIELD(AccessCounterBuffer_ACCESS_COUNTER_NOTIFY_BUFFER);
     struct VidmemAccessBitBuffer *PRIVATE_FIELD(VidmemAccessBitBuffer_MMU_VIDMEM_ACCESS_BIT_BUFFER);
@@ -1384,6 +1405,7 @@ struct NVOCFwdDeclHack {
     struct NvDispApi *PRIVATE_FIELD(NvDispApi_NVC770_DISPLAY);
     struct NvDispApi *PRIVATE_FIELD(NvDispApi_NVC970_DISPLAY);
     struct NvDispApi *PRIVATE_FIELD(NvDispApi_NVCA70_DISPLAY);
+    struct NvDispApi *PRIVATE_FIELD(NvDispApi_NVCB70_DISPLAY);
     struct DispSwObj *PRIVATE_FIELD(DispSwObj_NVC372_DISPLAY_SW);
     struct DispCommon *PRIVATE_FIELD(DispCommon_NV04_DISPLAY_COMMON);
     struct VblankCallback *PRIVATE_FIELD(VblankCallback_NV9010_VBLANK_CALLBACK);
@@ -1392,6 +1414,7 @@ struct NVOCFwdDeclHack {
     struct DispChannelPio *PRIVATE_FIELD(DispChannelPio_NVC67A_CURSOR_IMM_CHANNEL_PIO);
     struct DispChannelPio *PRIVATE_FIELD(DispChannelPio_NVC97A_CURSOR_IMM_CHANNEL_PIO);
     struct DispChannelPio *PRIVATE_FIELD(DispChannelPio_NVCA7A_CURSOR_IMM_CHANNEL_PIO);
+    struct DispChannelPio *PRIVATE_FIELD(DispChannelPio_NVCB7A_CURSOR_IMM_CHANNEL_PIO);
     struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVC57B_WINDOW_IMM_CHANNEL_DMA);
     struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVC57D_CORE_CHANNEL_DMA);
     struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVC57E_WINDOW_CHANNEL_DMA);
@@ -1411,6 +1434,10 @@ struct NVOCFwdDeclHack {
     struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVCA7B_WINDOW_IMM_CHANNEL_DMA);
     struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVCA7D_CORE_CHANNEL_DMA);
     struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVCA7E_WINDOW_CHANNEL_DMA);
+    struct DispCapabilities *PRIVATE_FIELD(DispCapabilities_NVCB73_DISP_CAPABILITIES);
+    struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVCB7B_WINDOW_IMM_CHANNEL_DMA);
+    struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVCB7D_CORE_CHANNEL_DMA);
+    struct DispChannelDma *PRIVATE_FIELD(DispChannelDma_NVCB7E_WINDOW_CHANNEL_DMA);
     struct DispSwObject *PRIVATE_FIELD(DispSwObject_GF100_DISP_SW);
     struct TimedSemaSwObject *PRIVATE_FIELD(TimedSemaSwObject_GF100_TIMED_SEMAPHORE_SW);
     struct DeferredApiObject *PRIVATE_FIELD(DeferredApiObject_NV50_DEFERRED_API_CLASS);
@@ -1474,6 +1501,13 @@ struct NVOCFwdDeclHack {
     struct KernelCcuApi *PRIVATE_FIELD(KernelCcuApi_NV_COUNTER_COLLECTION_UNIT);
     struct CeUtilsApi *PRIVATE_FIELD(CeUtilsApi_NV_CE_UTILS);
     struct LockStressObject *PRIVATE_FIELD(LockStressObject_LOCK_STRESS_OBJECT);
+    struct LockTestRelaxedDupObject *PRIVATE_FIELD(LockTestRelaxedDupObject_LOCK_TEST_RELAXED_DUP_OBJECT);
+};
+
+
+// Metadata with per-class RTTI
+struct NVOC_METADATA__NVOCFwdDeclHack {
+    const struct NVOC_RTTI rtti;
 };
 
 #ifndef __NVOC_CLASS_NVOCFwdDeclHack_TYPEDEF__
@@ -1492,10 +1526,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_NVOCFwdDeclHack;
     ((pThis)->__nvoc_pbase_NVOCFwdDeclHack)
 
 #ifdef __nvoc_resource_fwd_decls_h_disabled
-#define __dynamicCast_NVOCFwdDeclHack(pThis) ((NVOCFwdDeclHack*)NULL)
+#define __dynamicCast_NVOCFwdDeclHack(pThis) ((NVOCFwdDeclHack*) NULL)
 #else //__nvoc_resource_fwd_decls_h_disabled
 #define __dynamicCast_NVOCFwdDeclHack(pThis) \
-    ((NVOCFwdDeclHack*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(NVOCFwdDeclHack)))
+    ((NVOCFwdDeclHack*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(NVOCFwdDeclHack)))
 #endif //__nvoc_resource_fwd_decls_h_disabled
 
 NV_STATUS __nvoc_objCreateDynamic_NVOCFwdDeclHack(NVOCFwdDeclHack**, Dynamic*, NvU32, va_list);

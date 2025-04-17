@@ -110,6 +110,7 @@ enum FailAllocCoreChannelMethod {
 };
 
 NvBool nvkms_test_fail_alloc_core_channel(enum FailAllocCoreChannelMethod method);
+NvBool nvkms_conceal_vrr_caps(void);
 NvBool nvkms_output_rounding_fix(void);
 NvBool nvkms_disable_hdmi_frl(void);
 NvBool nvkms_disable_vrr_memclk_switch(void);

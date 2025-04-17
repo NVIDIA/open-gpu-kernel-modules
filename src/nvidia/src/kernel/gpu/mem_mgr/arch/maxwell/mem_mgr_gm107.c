@@ -55,6 +55,36 @@
 //
 static NV_STATUS memmgrComputeAndSetVgaDisplayMemoryBase_GM107(OBJGPU *, NvU64);
 
+static NvU32
+memmgrGetParentGpuZbcSurfaces
+(
+    OBJGPU *pGpu,
+    MemoryManager *pMemoryManager
+)
+{
+    return GPU_GET_MEMORY_MANAGER(gpumgrGetParentGPU(pGpu))->zbcSurfaces;
+}
+
+static NvU32
+memmgrIncParentGpuZbcSurfaces
+(
+    OBJGPU *pGpu,
+    MemoryManager *pMemoryManager
+)
+{
+    return ++(GPU_GET_MEMORY_MANAGER(gpumgrGetParentGPU(pGpu))->zbcSurfaces);
+}
+
+static NvU32
+memmgrDecParentGpuZbcSurfaces
+(
+    OBJGPU *pGpu,
+    MemoryManager *pMemoryManager
+)
+{
+    return --(GPU_GET_MEMORY_MANAGER(gpumgrGetParentGPU(pGpu))->zbcSurfaces);
+}
+
 NvU32
 memmgrChooseKindCompressC_GM107
 (
@@ -271,10 +301,6 @@ memmgrSetZbcReferenced
 {
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV2080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS params = {0};
-    RsClient *pClient;
-    Subdevice *pSubdevice;
-    NvHandle hSubdevice;
-    NvU32 subDevInst;
 
     // Allocations are RPCed to host, so they are counted there
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
@@ -282,21 +308,12 @@ memmgrSetZbcReferenced
 
     params.bZbcSurfacesExist = bZbcSurfacesExist;
 
-    NV_ASSERT_OR_RETURN_VOID(
-        serverGetClientUnderLock(&g_resServ, hClient, &pClient) == NV_OK);
-
-    subDevInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-
-    NV_ASSERT_OR_RETURN_VOID(subdeviceGetByInstance(pClient, hDevice, subDevInst, &pSubdevice) == NV_OK);
-
-    hSubdevice = RES_GET_HANDLE(pSubdevice);
-
     NV_ASSERT_OK(
         pRmApi->Control(
             pRmApi,
             hClient,
-            hSubdevice,
-            NV2080_CTRL_CMD_INTERNAL_MEMSYS_SET_ZBC_REFERENCED,
+            hDevice,
+            NV0080_CTRL_CMD_INTERNAL_MEMSYS_SET_ZBC_REFERENCED,
             &params,
             sizeof(params)));
 }
@@ -489,12 +506,13 @@ memmgrAllocHal_GM107
             retAttr2 = FLD_SET_DRF(OS32, _ATTR2, _ZBC, _PREFER_ZBC, retAttr2);
             if (!bAlignPhase)
             {
-                pMemoryManager->zbcSurfaces++;
+                NvU32 zbcSurfaces = memmgrIncParentGpuZbcSurfaces(pGpu, pMemoryManager);
+
                 NV_PRINTF(LEVEL_INFO,
                           "zbcSurfaces = 0x%x, hwResId = 0x%x\n",
-                          pMemoryManager->zbcSurfaces, pFbAllocInfo->hwResId);
+                          zbcSurfaces, pFbAllocInfo->hwResId);
 
-                if (pMemoryManager->zbcSurfaces == 1)
+                if (zbcSurfaces == 1)
                     memmgrSetZbcReferenced(pGpu, pFbAllocInfo->hClient, pFbAllocInfo->hDevice, NV_TRUE);
             }
         }
@@ -552,6 +570,8 @@ memmgrFreeHal_GM107
     if (FLD_TEST_DRF(OS32, _ATTR2, _ZBC_SKIP_ZBCREFCOUNT, _NO, pFbAllocInfo->pageFormat->attr2) &&
         memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_ZBC, pFbAllocInfo->format))
     {
+        NvU32 zbcSurfaces = memmgrGetParentGpuZbcSurfaces(pGpu, pMemoryManager);
+
         //
         // For vGPU, ZBC is used by the guest application. So for vGPU use case zbcsurface can
         // be 0. Hence this ASSERT is not relevant for the VGPU HOST.
@@ -559,13 +579,13 @@ memmgrFreeHal_GM107
         // object allocation and then while Free we will have to add assert based on the flags.
         //
         if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VIRTUALIZATION_MODE_HOST_VGPU))
-            NV_ASSERT(pMemoryManager->zbcSurfaces !=0 );
+            NV_ASSERT(zbcSurfaces !=0 );
 
-        if (pMemoryManager->zbcSurfaces != 0)
+        if (zbcSurfaces != 0)
         {
-            pMemoryManager->zbcSurfaces--;
+            zbcSurfaces = memmgrDecParentGpuZbcSurfaces(pGpu, pMemoryManager);
 
-            if (pMemoryManager->zbcSurfaces == 0)
+            if (zbcSurfaces == 0)
                 memmgrSetZbcReferenced(pGpu, pFbAllocInfo->hClient, pFbAllocInfo->hDevice, NV_FALSE);
         }
 
@@ -574,8 +594,7 @@ memmgrFreeHal_GM107
                   pFbAllocInfo->hwResId, pFbAllocInfo->offset,
                   pFbAllocInfo->size);
 
-        NV_PRINTF(LEVEL_INFO, "[2] zbcSurfaces = 0x%x\n",
-                  pMemoryManager->zbcSurfaces);
+        NV_PRINTF(LEVEL_INFO, "[2] zbcSurfaces = 0x%x\n", zbcSurfaces);
     }
 
     return NV_OK;
@@ -1019,7 +1038,7 @@ memmgrInitReservedMemory_GM107
     // Reserved memory located at bottom of FB, base this at start of FB
     else
     {
-        tmpAddr = pMemoryManager->heapStartOffset;
+        tmpAddr = 0;
         if (bRsvdRegionIsValid)
         {
             tmpAddr = NV_MAX(pMemoryManager->Ram.fbRegion[rsvdRegion].base, tmpAddr);
@@ -1241,6 +1260,7 @@ memmgrSetMemDescPageSize_GM107
 
     if (ADDR_SYSMEM == addrSpace)
     {
+        NvU64 sysmemPageSize = RMCFG_FEATURE_PLATFORM_UNIX ? osGetPageSize() : pMemoryManager->sysmemPageSize;
         RmPhysAddr physAddr = memdescGetPte(pMemDesc, addressTranslation, 0);
         switch (pageSizeAttr)
         {
@@ -1250,7 +1270,7 @@ memmgrSetMemDescPageSize_GM107
             case RM_ATTR_PAGE_SIZE_DEFAULT:
                 newPageSize = _memmgrGetOptimalSysmemPageSize(physAddr,
                         pMemDesc, kgmmuGetBigPageSize_HAL(pKernelGmmu),
-                        pMemoryManager->sysmemPageSize);
+                        sysmemPageSize);
                 break;
             case RM_ATTR_PAGE_SIZE_4KB:
                 newPageSize = RM_PAGE_SIZE;
@@ -1839,6 +1859,12 @@ memmgrCalcReservedFbSpaceHal_GM107
         *rsvdSlowSize = pMemoryManager->rsvdMemorySizeIncrement;
         *rsvdISOSize = 0;
     }
+    // Temporary workaround to increase the heap size for NVBUG 4997009
+    if(IsGB20XorBetter(pGpu) && (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && !IS_VIRTUAL(pGpu)))
+    {
+        // increase by 150 MB
+        *rsvdSlowSize += (150 << 20);
+    }
 
     if (RMCFG_FEATURE_PLATFORM_WINDOWS && pMemoryManager->bBug2301372IncreaseRmReserveMemoryWar)
     {
@@ -2020,16 +2046,6 @@ memmgrPreInitReservedMemory_GM107
 
         NV_PRINTF(LEVEL_INFO, "Reserve space for Bar2 inst block offset = 0x%llx size = 0x%x\n",
             pKernelBus->bar2[GPU_GFID_PF].instBlockBase, GF100_BUS_INSTANCEBLOCK_SIZE);
-    }
-
-    if (gpuIsSelfHosted(pGpu) && !RMCFG_FEATURE_PLATFORM_GSP)
-    {
-        //
-        // Reserve space for the test buffer used in coherent link test
-        // that is run early when memory allocation is not ready yet.
-        //
-        pKernelBus->coherentLinkTestBufferBase = tmpAddr;
-        tmpAddr += BUS_COHERENT_LINK_TEST_BUFFER_SIZE;
     }
 
     //

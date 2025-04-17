@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2025 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -1329,18 +1329,40 @@ static void cpu_chunk_remove_sysmem_gpu_mapping(uvm_cpu_chunk_t *chunk, uvm_gpu_
     if (gpu_mapping_addr == 0)
         return;
 
+    uvm_pmm_sysmem_mappings_remove_gpu_mapping(&gpu->pmm_reverse_sysmem_mappings, gpu_mapping_addr);
     uvm_cpu_chunk_unmap_gpu(chunk, gpu);
 }
 
-static NV_STATUS cpu_chunk_add_sysmem_gpu_mapping(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu)
+static NV_STATUS cpu_chunk_add_sysmem_gpu_mapping(uvm_cpu_chunk_t *chunk,
+                                                  uvm_va_block_t *block,
+                                                  uvm_page_index_t page_index,
+                                                  uvm_gpu_t *gpu)
 {
+    NV_STATUS status;
+    uvm_chunk_size_t chunk_size;
+
     // When the Confidential Computing feature is enabled the transfers don't
     // use the DMA mapping of CPU chunks (since it's protected memory), but
     // the DMA address of the unprotected dma buffer.
     if (g_uvm_global.conf_computing_enabled)
         return NV_OK;
 
-    return uvm_cpu_chunk_map_gpu(chunk, gpu);
+    status = uvm_cpu_chunk_map_gpu(chunk, gpu);
+    if (status != NV_OK)
+        return status;
+
+    chunk_size = uvm_cpu_chunk_get_size(chunk);
+
+    status = uvm_pmm_sysmem_mappings_add_gpu_mapping(&gpu->pmm_reverse_sysmem_mappings,
+                                                     uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu),
+                                                     uvm_va_block_cpu_page_address(block, page_index),
+                                                     chunk_size,
+                                                     block,
+                                                     UVM_ID_CPU);
+    if (status != NV_OK)
+        uvm_cpu_chunk_unmap_gpu(chunk, gpu);
+
+    return status;
 }
 
 static void block_gpu_unmap_phys_all_cpu_pages(uvm_va_block_t *block, uvm_gpu_t *gpu)
@@ -1372,7 +1394,7 @@ static NV_STATUS block_gpu_map_phys_all_cpu_pages(uvm_va_block_t *block, uvm_gpu
                            uvm_id_value(gpu->id),
                            uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu));
 
-            status = cpu_chunk_add_sysmem_gpu_mapping(chunk, gpu);
+            status = cpu_chunk_add_sysmem_gpu_mapping(chunk, block, page_index, gpu);
             if (status != NV_OK)
                 goto error;
         }
@@ -1447,10 +1469,14 @@ void uvm_va_block_unmap_cpu_chunk_on_gpus(uvm_va_block_t *block,
     }
 }
 
-NV_STATUS uvm_va_block_map_cpu_chunk_on_gpus(uvm_va_block_t *block, uvm_cpu_chunk_t *chunk)
+NV_STATUS uvm_va_block_map_cpu_chunk_on_gpus(uvm_va_block_t *block,
+                                             uvm_cpu_chunk_t *chunk,
+                                             uvm_page_index_t page_index)
 {
     NV_STATUS status;
     uvm_gpu_id_t id;
+    uvm_chunk_size_t chunk_size = uvm_cpu_chunk_get_size(chunk);
+    uvm_va_block_region_t chunk_region = uvm_va_block_chunk_region(block, chunk_size, page_index);
 
     // We can't iterate over va_space->registered_gpus because we might be
     // on the eviction path, which does not have the VA space lock held. We have
@@ -1464,7 +1490,7 @@ NV_STATUS uvm_va_block_map_cpu_chunk_on_gpus(uvm_va_block_t *block, uvm_cpu_chun
             continue;
 
         gpu = uvm_gpu_get(id);
-        status = cpu_chunk_add_sysmem_gpu_mapping(chunk, gpu);
+        status = cpu_chunk_add_sysmem_gpu_mapping(chunk, block, chunk_region.first, gpu);
         if (status != NV_OK)
             goto error;
     }
@@ -1731,7 +1757,7 @@ static NV_STATUS block_populate_overlapping_cpu_chunks(uvm_va_block_t *block,
             // before mapping.
             chunk_ptr = split_chunks[i];
             split_chunks[i] = NULL;
-            status = uvm_va_block_map_cpu_chunk_on_gpus(block, chunk_ptr);
+            status = uvm_va_block_map_cpu_chunk_on_gpus(block, chunk_ptr, running_page_index);
             if (status != NV_OK)
                 goto done;
         }
@@ -1768,7 +1794,7 @@ static NV_STATUS block_populate_overlapping_cpu_chunks(uvm_va_block_t *block,
                     // before mapping.
                     chunk_ptr = small_chunks[j];
                     small_chunks[j] = NULL;
-                    status = uvm_va_block_map_cpu_chunk_on_gpus(block, chunk_ptr);
+                    status = uvm_va_block_map_cpu_chunk_on_gpus(block, chunk_ptr, running_page_index);
                     if (status != NV_OK)
                         goto done;
                 }
@@ -1835,7 +1861,7 @@ static NV_STATUS block_add_cpu_chunk(uvm_va_block_t *block,
         if (status != NV_OK)
             goto out;
 
-        status = uvm_va_block_map_cpu_chunk_on_gpus(block, chunk);
+        status = uvm_va_block_map_cpu_chunk_on_gpus(block, chunk, page_index);
         if (status != NV_OK) {
             uvm_cpu_chunk_remove_from_block(block, uvm_cpu_chunk_get_numa_node(chunk), page_index);
             goto out;
@@ -10033,7 +10059,15 @@ static NV_STATUS block_split_cpu_chunk_one(uvm_va_block_t *block, uvm_page_index
     uvm_cpu_chunk_t *chunk = uvm_cpu_chunk_get_chunk_for_page(block, nid, page_index);
     uvm_chunk_size_t chunk_size = uvm_cpu_chunk_get_size(chunk);
     uvm_chunk_size_t new_size;
+    uvm_gpu_t *gpu;
+    NvU64 gpu_mapping_addr;
+    uvm_processor_mask_t *gpu_split_mask;
+    uvm_gpu_id_t id;
     NV_STATUS status;
+
+    gpu_split_mask = uvm_processor_mask_cache_alloc();
+    if (!gpu_split_mask)
+        return NV_ERR_NO_MEMORY;
 
     if (chunk_size == UVM_CHUNK_SIZE_2M)
         new_size = UVM_CHUNK_SIZE_64K;
@@ -10042,10 +10076,44 @@ static NV_STATUS block_split_cpu_chunk_one(uvm_va_block_t *block, uvm_page_index
 
     UVM_ASSERT(IS_ALIGNED(chunk_size, new_size));
 
+    uvm_processor_mask_zero(gpu_split_mask);
+    for_each_gpu_id(id) {
+        if (!uvm_va_block_gpu_state_get(block, id))
+            continue;
+
+        gpu = uvm_gpu_get(id);
+
+        // If the parent chunk has not been mapped, there is nothing to split.
+        gpu_mapping_addr = uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu);
+        if (gpu_mapping_addr == 0)
+            continue;
+
+        status = uvm_pmm_sysmem_mappings_split_gpu_mappings(&gpu->pmm_reverse_sysmem_mappings,
+                                                            gpu_mapping_addr,
+                                                            new_size);
+        if (status != NV_OK)
+            goto merge;
+
+        uvm_processor_mask_set(gpu_split_mask, id);
+    }
+
     if (new_size == UVM_CHUNK_SIZE_64K)
         status = block_split_cpu_chunk_to_64k(block, nid);
     else
         status = block_split_cpu_chunk_to_4k(block, page_index, nid);
+
+    if (status != NV_OK) {
+merge:
+        for_each_gpu_id_in_mask(id, gpu_split_mask) {
+            gpu = uvm_gpu_get(id);
+            gpu_mapping_addr = uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu);
+            uvm_pmm_sysmem_mappings_merge_gpu_mappings(&gpu->pmm_reverse_sysmem_mappings,
+                                                       gpu_mapping_addr,
+                                                       chunk_size);
+        }
+    }
+
+    uvm_processor_mask_cache_free(gpu_split_mask);
 
     return status;
 }
@@ -10201,6 +10269,7 @@ static void block_merge_cpu_chunks_to_2m(uvm_va_block_t *block, uvm_page_index_t
 static void block_merge_cpu_chunks_one(uvm_va_block_t *block, uvm_page_index_t page_index, int nid)
 {
     uvm_cpu_chunk_t *chunk = uvm_cpu_chunk_get_chunk_for_page(block, nid, page_index);
+    uvm_gpu_id_t id;
 
     if (!chunk)
         return;
@@ -10211,6 +10280,25 @@ static void block_merge_cpu_chunks_one(uvm_va_block_t *block, uvm_page_index_t p
     else {
         UVM_ASSERT(uvm_cpu_chunk_get_size(chunk) == UVM_CHUNK_SIZE_64K);
         block_merge_cpu_chunks_to_2m(block, page_index, nid);
+    }
+
+    chunk = uvm_cpu_chunk_get_chunk_for_page(block, nid, page_index);
+
+    for_each_gpu_id(id) {
+        NvU64 gpu_mapping_addr;
+        uvm_gpu_t *gpu;
+
+        if (!uvm_va_block_gpu_state_get(block, id))
+            continue;
+
+        gpu = uvm_gpu_get(id);
+        gpu_mapping_addr = uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu);
+        if (gpu_mapping_addr == 0)
+            continue;
+
+        uvm_pmm_sysmem_mappings_merge_gpu_mappings(&gpu->pmm_reverse_sysmem_mappings,
+                                                   gpu_mapping_addr,
+                                                   uvm_cpu_chunk_get_size(chunk));
     }
 }
 
@@ -10629,6 +10717,9 @@ static void block_split_gpu(uvm_va_block_t *existing, uvm_va_block_t *new, uvm_g
     size_t new_pages = uvm_va_block_num_cpu_pages(new);
     size_t existing_pages, existing_pages_4k, existing_pages_big, new_pages_big;
     uvm_pte_bits_gpu_t pte_bit;
+    uvm_cpu_chunk_t *cpu_chunk;
+    uvm_page_index_t page_index;
+    int nid;
 
     if (!existing_gpu_state)
         return;
@@ -10642,6 +10733,14 @@ static void block_split_gpu(uvm_va_block_t *existing, uvm_va_block_t *new, uvm_g
     UVM_ASSERT(PAGE_ALIGNED(existing->start));
     existing_pages = (new->start - existing->start) / PAGE_SIZE;
 
+    for_each_possible_uvm_node(nid) {
+        for_each_cpu_chunk_in_block(cpu_chunk, page_index, new, nid) {
+            uvm_pmm_sysmem_mappings_reparent_gpu_mapping(&gpu->pmm_reverse_sysmem_mappings,
+                                                         uvm_cpu_chunk_get_gpu_phys_addr(cpu_chunk, gpu),
+                                                         new);
+        }
+    }
+
     block_copy_split_gpu_chunks(existing, new, gpu);
 
     block_split_page_mask(&existing_gpu_state->resident,
@@ -10650,10 +10749,8 @@ static void block_split_gpu(uvm_va_block_t *existing, uvm_va_block_t *new, uvm_g
                           new_pages);
 
     for (pte_bit = 0; pte_bit < UVM_PTE_BITS_GPU_MAX; pte_bit++) {
-        block_split_page_mask(&existing_gpu_state->pte_bits[pte_bit],
-                              existing_pages,
-                              &new_gpu_state->pte_bits[pte_bit],
-                              new_pages);
+        block_split_page_mask(&existing_gpu_state->pte_bits[pte_bit], existing_pages,
+                              &new_gpu_state->pte_bits[pte_bit], new_pages);
     }
 
     // Adjust page table ranges.
@@ -11125,6 +11222,16 @@ NV_STATUS uvm_va_block_add_mappings_after_migration(uvm_va_block_t *va_block,
         uvm_processor_mask_or(map_other_processors, &policy->accessed_by, thrashing_processors);
     else
         uvm_processor_mask_copy(map_other_processors, &policy->accessed_by);
+
+    // For a system with an integrated GPU, a range may only be in system
+    // memory so always map all processors.
+    // TODO: Bug 5003533: When multiple iGPUs are supported this
+    // automatic mapping should be determined by the resident NUMA node
+    // rather than system wide.
+    if (uvm_va_space_has_integrated_gpu(va_space)) {
+        uvm_processor_mask_or(map_other_processors, map_other_processors, &va_space->registered_gpus);
+        uvm_processor_mask_set(map_other_processors, UVM_ID_CPU);
+    }
 
     // Only processors that can access the new location must be considered
     uvm_processor_mask_and(map_other_processors,

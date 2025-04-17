@@ -226,7 +226,7 @@ typedef struct NV0080_CTRL_DMA_FILL_PTE_MEM_PARAMS {
     NvU32    pteMemPfn;
     NvU32    pageSize;
     NvU32    startPageIndex;
-    NvU32    flags;
+    NV_DECLARE_ALIGNED(NvU64 flags, 8);
     NvHandle hSrcVASpace;
     NvHandle hTgtVASpace;
     NvU32    peerId;

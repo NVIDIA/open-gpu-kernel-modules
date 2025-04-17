@@ -91,9 +91,10 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB10B[] =
     GPU_CHILD_PRESENT(SwIntr, 1),
     GPU_CHILD_PRESENT(KernelPerf, 1),
     GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(Spdm, 1),
+    GPU_CHILD_PRESENT(ConfidentialCompute, 1),
     GPU_CHILD_PRESENT(KernelFsp, 1),
     GPU_CHILD_PRESENT(KernelGsp, 1),
-    GPU_CHILD_PRESENT(ConfidentialCompute, 1),
 };
 
 const GPUCHILDPRESENT *

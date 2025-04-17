@@ -204,7 +204,11 @@ void __nvoc_objDelete(Dynamic *pDynamic)
         portMemFree(pDerivedObj);
 }
 
-//! Internal method to fill out an object's RTTI pointers from a class definition.
+//! Fill out an object's RTTI pointers from a class definition.
+//! This function is not needed for metadata v2 (and after).
+//! The linker discards this function if all NVOC objects use v2 or later.
+//! The prototype is needed to suppress GCC's `missing-prototypes` warning.
+void __nvoc_initRtti(Dynamic *pNewObject, const struct NVOC_CLASS_DEF *pClassDef);
 void __nvoc_initRtti(Dynamic *pNewObject, const struct NVOC_CLASS_DEF *pClassDef)
 {
     NvU32 relativeIdx;
@@ -215,6 +219,7 @@ void __nvoc_initRtti(Dynamic *pNewObject, const struct NVOC_CLASS_DEF *pClassDef
         *ppRelativeRtti = pRelative;
     }
 }
+
 
 //! Internal backing method for objCreateDynamic.
 NV_STATUS __nvoc_objCreateDynamic(

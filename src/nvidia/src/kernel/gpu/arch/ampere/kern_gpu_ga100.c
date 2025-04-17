@@ -126,6 +126,7 @@ gpuIsCtxBufAllocInPmaSupported_GA100
     return NV_FALSE;
 }
 
+
 //
 // List of GPU children that present for the chip. List entries contain$
 // {CLASS-ID, # of instances} pairs, e.g.: {CE, 2} is 2 instance of OBJCE. This$
@@ -227,6 +228,52 @@ gpuGetChildrenPresent_GA102(OBJGPU *pGpu, NvU32 *pNumEntries)
     return gpuChildrenPresent_GA102;
 }
 
+
+//
+// List of GPU children that present for the chip. List entries contain$
+// {CLASS-ID, # of instances} pairs, e.g.: {CE, 2} is 2 instance of OBJCE. This$
+// list controls only engine presence. Order is defined by$
+// gpuGetChildrenOrder_HAL.$
+//
+// List entries contain {CLASS-ID, # of instances} pairs.
+//
+static const GPUCHILDPRESENT gpuChildrenPresent_GA10B[] =
+{
+    GPU_CHILD_PRESENT(OBJTMR, 1),
+    GPU_CHILD_PRESENT(KernelMIGManager, 1),
+    GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelRc, 1),
+    GPU_CHILD_PRESENT(Intr, 1),
+    GPU_CHILD_PRESENT(NvDebugDump, 1),
+    GPU_CHILD_PRESENT(OBJSWENG, 1),
+    GPU_CHILD_PRESENT(OBJUVM, 1),
+    GPU_CHILD_PRESENT(KernelBif, 1),
+    GPU_CHILD_PRESENT(KernelBus, 1),
+    GPU_CHILD_PRESENT(KernelCE, 4),
+    GPU_CHILD_PRESENT(VirtMemAllocator, 1),
+    GPU_CHILD_PRESENT(KernelMemorySystem, 1),
+    GPU_CHILD_PRESENT(MemoryManager, 1),
+    GPU_CHILD_PRESENT(KernelFifo, 1),
+    GPU_CHILD_PRESENT(KernelGmmu, 1),
+    GPU_CHILD_PRESENT(KernelGraphics, 2),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
+    GPU_CHILD_PRESENT(KernelMc, 1),
+    GPU_CHILD_PRESENT(SwIntr, 1),
+    GPU_CHILD_PRESENT(KernelNvlink, 1),
+    GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(KernelSec2, 1),
+    GPU_CHILD_PRESENT(KernelGsp, 1),
+    GPU_CHILD_PRESENT(ConfidentialCompute, 1),
+};
+
+const GPUCHILDPRESENT *
+gpuGetChildrenPresent_GA10B(OBJGPU *pGpu, NvU32 *pNumEntries)
+{
+    *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GA10B);
+    return gpuChildrenPresent_GA10B;
+}
+
+
 /*! @brief Returns if a P2P object is allocated in SRIOV mode.
  *
  *  @param[in]   pGpu     OBJGPU pointer
@@ -255,31 +302,6 @@ gpuCheckIfFbhubPoisonIntrPending_GA100
     return intrIsVectorPending_HAL(pGpu, GPU_GET_INTR(pGpu), NV_PFB_FBHUB_POISON_INTR_VECTOR_HW_INIT, NULL);
 }
 
-NV_STATUS
-gpuGetDeviceInfoTableSectionInfos_GA100
-(
-    OBJGPU                    *pGpu,
-    DeviceInfoTableSectionVec *pVec
-)
-{
-    NV_ASSERT_OR_RETURN(pVec != NULL, NV_ERR_INVALID_ARGUMENT);
-
-    NvU32 deviceInfoCfg = GPU_REG_RD32(pGpu, NV_PTOP_DEVICE_INFO_CFG);
-
-    DeviceInfoTableSection section = {
-        .row0Addr   = NV_PTOP_DEVICE_INFO2(0),
-        .maxDevices = DRF_VAL(_PTOP, _DEVICE_INFO_CFG, _MAX_DEVICES,
-                              deviceInfoCfg),
-        .maxRows    = DRF_VAL(_PTOP, _DEVICE_INFO_CFG, _NUM_ROWS,
-                              deviceInfoCfg),
-        .maxRowsPerDevice = DRF_VAL(_PTOP, _DEVICE_INFO_CFG,
-                                    _MAX_ROWS_PER_DEVICE,
-                                    deviceInfoCfg)};
-
-    NV_ASSERT_OR_RETURN(vectAppend(pVec, &section) != NULL, NV_ERR_NO_MEMORY);
-
-    return NV_OK;
-};
 
 /*!
  * @brief A bit in scratch 30 is reserved to indicate GPU Drain and Reset is pending.

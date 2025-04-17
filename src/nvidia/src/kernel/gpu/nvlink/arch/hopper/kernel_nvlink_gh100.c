@@ -494,7 +494,7 @@ knvlinkGetEffectivePeerLinkMask_GH100
     OBJGPU *pGpu,
     KernelNvlink *pKernelNvlink,
     OBJGPU *pRemoteGpu,
-    NvU32  *pPeerLinkMask
+    NvU64  *pPeerLinkMask
 )
 {
     NvU32 peerLinkMask, remotePeerLinkMask, effectivePeerLinkMask, peerLinkMaskPerIoctrl;
@@ -520,7 +520,7 @@ knvlinkGetEffectivePeerLinkMask_GH100
         return;
     }
 
-    peerLinkMask = pKernelNvlink->peerLinkMasks[remoteGpuInstance];
+    peerLinkMask = KNVLINK_GET_MASK(pKernelNvlink, peerLinkMasks[remoteGpuInstance], 32);
     if (peerLinkMask == 0)
     {
         return;
@@ -532,7 +532,7 @@ knvlinkGetEffectivePeerLinkMask_GH100
     // the masks must be equal.
     //
     pRemoteKernelNvlink = GPU_GET_KERNEL_NVLINK(pRemoteGpu);
-    remotePeerLinkMask = pRemoteKernelNvlink->peerLinkMasks[gpuInstance];
+    remotePeerLinkMask = KNVLINK_GET_MASK(pRemoteKernelNvlink, peerLinkMasks[gpuInstance], 32);
     NV_ASSERT(nvPopCount32(remotePeerLinkMask) == nvPopCount32(peerLinkMask));
 
     // Find out number of active NVLinks between the two GPUs.
@@ -787,6 +787,14 @@ knvlinkSetUniqueFabricEgmBaseAddress_GH100
 )
 {
     NV_STATUS status = NV_OK;
+
+    // Ensure EGM is enabled in RM before proceeding
+    if (!memmgrIsLocalEgmEnabled(GPU_GET_MEMORY_MANAGER(pGpu)))
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "EGM is not enabled in RM for GPU %x\n", pGpu->gpuInstance);
+        return NV_ERR_INVALID_STATE;
+    }
 
     status = knvlinkValidateFabricEgmBaseAddress_HAL(pGpu, pKernelNvlink,
                                                   fabricEgmBaseAddr);
