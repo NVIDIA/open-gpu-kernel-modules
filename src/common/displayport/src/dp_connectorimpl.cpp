@@ -518,12 +518,18 @@ create:
     newDev->dpcdRevisionMinor = device.dpcdRevisionMinor;
     newDev->complianceDeviceEdidReadTest = isCompliance;
     newDev->maxTmdsClkRate = maxTmdsClkRate;
+    newDev->bApplyPclkWarBug4949066 = false;
 
     Address::NvU32Buffer addrBuffer;
     dpMemZero(addrBuffer, sizeof(addrBuffer));
     newDev->address.toNvU32Buffer(addrBuffer);
     NV_DPTRACE_INFO(NEW_SINK_DETECTED, newDev->address.size(), addrBuffer[0], addrBuffer[1], addrBuffer[2], addrBuffer[3],
                         newDev->multistream, newDev->rawEDID.getManufId(), newDev->rawEDID.getProductId());
+
+    if(newDev->rawEDID.getManufId() ==  0x6D1E)
+    {
+        newDev->bApplyPclkWarBug4949066 = true;
+    }
 
     // Apply any DPCD overrides if required
     newDev->dpcdOverrides();

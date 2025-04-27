@@ -135,7 +135,6 @@ _krcInitRegistryOverrides
         pKernelRc->bBreakOnRc = NV_TRUE;
     }
 
-
     if (osReadRegistryDword(pGpu,
                             NV_REG_STR_RM_WATCHDOG_TIMEOUT,
                             &pKernelRc->watchdogPersistent.timeoutSecs) !=
@@ -145,6 +144,29 @@ _krcInitRegistryOverrides
         pKernelRc->watchdogPersistent.timeoutSecs =
             NV_REG_STR_RM_WATCHDOG_TIMEOUT_DEFAULT;
     }
+
+    NvU32 data32 = 0;
+    NvU32 bug5203024OverrideTimeouts = (
+        (osReadRegistryDword(pGpu, NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT,
+                             &data32) == NV_OK) ?
+        data32 :
+        0);
+
+    NvBool bOverrideWatchdogTimeout = (DRF_VAL(_REG_STR,
+                                               _RM_BUG5203024_OVERRIDE_TIMEOUT,
+                                               _FLAGS_SET_RC_WATCHDOG_TIMEOUT,
+                                               bug5203024OverrideTimeouts) ==
+                                       1);
+    if (bOverrideWatchdogTimeout)
+    {
+        pKernelRc->watchdogPersistent.timeoutSecs =
+            DRF_VAL(_REG_STR, _RM_BUG5203024_OVERRIDE_TIMEOUT, _VALUE_MS,
+                    bug5203024OverrideTimeouts) / 1000;
+
+        NV_PRINTF(LEVEL_NOTICE, "RC Watchdog timeout forced to %d seconds.\n",
+                  pKernelRc->watchdogPersistent.timeoutSecs);
+    }
+
     if (osReadRegistryDword(pGpu,
                             NV_REG_STR_RM_WATCHDOG_INTERVAL,
                             &pKernelRc->watchdogPersistent.intervalSecs) !=
@@ -448,8 +470,8 @@ krcCheckBusError_KERNEL
                                 &clDevCtrlStatus) == NV_OK &&
         clDevCtrlStatusFlags != 0)
     {
-        NV_PRINTF(LEVEL_INFO,
-            "PCI-E corelogic: Pending errors in DEV_CTRL_STATUS = %08X\n",
+        NV_PRINTF(LEVEL_ERROR,
+            "PCI-E corelogic status has pending errors (CL_PCIE_DEV_CTRL_STATUS = %08X):\n",
             clDevCtrlStatus);
 
         clDevCtrlStatusFlags_Org = clDevCtrlStatusFlags;
@@ -457,7 +479,7 @@ krcCheckBusError_KERNEL
         if (clDevCtrlStatusFlags &
             NV2080_CTRL_BUS_INFO_PCIE_LINK_ERRORS_CORR_ERROR)
         {
-            NV_PRINTF(LEVEL_INFO, "PCI-E corelogic: CORR_ERROR_DETECTED\n");
+            NV_PRINTF(LEVEL_ERROR, "     _CORR_ERROR_DETECTED\n");
             // not much interested in this one
             clDevCtrlStatusFlags &=
                 ~NV2080_CTRL_BUS_INFO_PCIE_LINK_ERRORS_CORR_ERROR;
@@ -465,27 +487,26 @@ krcCheckBusError_KERNEL
         if (clDevCtrlStatusFlags &
             NV2080_CTRL_BUS_INFO_PCIE_LINK_ERRORS_NON_FATAL_ERROR)
         {
-            NV_PRINTF(LEVEL_INFO, "PCI-E corelogic: NON_FATAL_ERROR_DETECTED\n");
+            NV_PRINTF(LEVEL_ERROR, "     _NON_FATAL_ERROR_DETECTED\n");
         }
         if (clDevCtrlStatusFlags &
             NV2080_CTRL_BUS_INFO_PCIE_LINK_ERRORS_FATAL_ERROR)
         {
-            NV_PRINTF(LEVEL_ERROR, "PCI-E corelogic: FATAL_ERROR_DETECTED\n");
+            NV_PRINTF(LEVEL_ERROR, "     _FATAL_ERROR_DETECTED\n");
         }
         if (clDevCtrlStatusFlags &
             NV2080_CTRL_BUS_INFO_PCIE_LINK_ERRORS_UNSUPP_REQUEST)
         {
-            NV_PRINTF(LEVEL_INFO, "PCI-E corelogic: UNSUPP_REQUEST_DETECTED\n");
+            NV_PRINTF(LEVEL_ERROR, "     _UNSUPP_REQUEST_DETECTED\n");
         }
     }
 
     // Corelogic AER
     if (pCl != NULL && clPcieReadAerCapability(pGpu, pCl, &clAer) == NV_OK &&
-        (clAer.UncorrErrStatusReg != 0 || 
-         (clAer.RooErrStatus & ~CL_AER_ROOT_ERROR_STATUS_ERR_COR_SUBCLASS_MASK) != 0))
+        (clAer.UncorrErrStatusReg != 0 || clAer.RooErrStatus != 0))
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "PCI-E Advanced Error Reporting Corelogic Info:\n");
+                  "PCE-I Advanced Error Reporting Corelogic Info:\n");
         NV_PRINTF(LEVEL_ERROR,
                   "     Uncorr Error Status Register    : %08X\n",
                   clAer.UncorrErrStatusReg);

@@ -8115,6 +8115,7 @@ subdeviceCtrlCmdGpuGetComputeProfiles_IMPL
     MIG_INSTANCE_REF ref;
     NvU32 entryCount;
     NvU32 i;
+    NV2080_CTRL_INTERNAL_MIGMGR_PROFILE_INFO giProfile;
 
     if (!IS_MIG_ENABLED(pGpu))
         return NV_ERR_INVALID_STATE;
@@ -8131,16 +8132,16 @@ subdeviceCtrlCmdGpuGetComputeProfiles_IMPL
     {
         maxSmCount = ref.pKernelMIGGpuInstance->pProfile->smCount;
         maxPhysicalSlotCount = ref.pKernelMIGGpuInstance->pProfile->virtualGpcCount;
+        portMemCopy(&giProfile, sizeof(giProfile), ref.pKernelMIGGpuInstance->pProfile, sizeof(giProfile));
     }
     else
     {
-        NV2080_CTRL_INTERNAL_MIGMGR_PROFILE_INFO profile;
 
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            kmigmgrGetGpuProfileFromFlag(pGpu, pKernelMIGManager, pParams->partitionFlag, &profile));
+            kmigmgrGetGpuProfileFromFlag(pGpu, pKernelMIGManager, pParams->partitionFlag, &giProfile));
 
-        maxSmCount = profile.smCount;
-        maxPhysicalSlotCount = profile.virtualGpcCount;
+        maxSmCount = giProfile.smCount;
+        maxPhysicalSlotCount = giProfile.virtualGpcCount;
     }
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pStaticInfo != NULL, NV_ERR_INVALID_STATE);
@@ -8150,6 +8151,8 @@ subdeviceCtrlCmdGpuGetComputeProfiles_IMPL
     entryCount = 0;
     for (i = 0; i < pStaticInfo->pCIProfiles->profileCount; i++)
     {
+        NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS params = {0};
+
         if ((pStaticInfo->pCIProfiles->profiles[i].smCount > maxSmCount) ||
             (pStaticInfo->pCIProfiles->profiles[i].physicalSlots > maxPhysicalSlotCount))
         {
@@ -8163,7 +8166,15 @@ subdeviceCtrlCmdGpuGetComputeProfiles_IMPL
             (pParams->profiles[entryCount - 1].gpcCount == pStaticInfo->pCIProfiles->profiles[i].gpcCount) &&
             (pParams->profiles[entryCount - 1].smCount == pStaticInfo->pCIProfiles->profiles[i].smCount))
         {
-           continue;
+            continue;
+        }
+
+        params.computeSize = pStaticInfo->pCIProfiles->profiles[i].computeSize;
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            kmigmgrComputeProfileGetCapacity(pGpu, pKernelMIGManager, &giProfile, NULL, &params));
+        if (params.totalProfileCount == 0)
+        {
+            continue;
         }
 
         pParams->profiles[entryCount].computeSize = pStaticInfo->pCIProfiles->profiles[i].computeSize;

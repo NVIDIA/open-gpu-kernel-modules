@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -78,5 +78,6 @@ NV_STATUS gpuFabricProbeReceivePhysicalCallback(NvU32 gpuInstance, NvU64 *pNotif
 NV_STATUS gpuFabricProbeReceiveUpdatePhysicalCallback(NvU32 gpuInstance, NvU64 *pNotifyGfIdMask,
             NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pInbandRcvParams);
 NV_STATUS gpuFabricProbeGetGfid(OBJGPU *pGpu, NvU32 *pGfid);
+NvBool gpuFabricProbeIsInProgress(OBJGPU *pGpu);
 
 #endif // GPU_FABRIC_PROBE_H

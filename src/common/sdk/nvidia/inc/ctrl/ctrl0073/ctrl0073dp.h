@@ -3377,6 +3377,44 @@ typedef struct NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA_PARAMS {
 
 #define NV0073_CTRL_CMD_DP2X_GET_LEVEL_INFO_TABLE_DATA (0x73138aU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA_PARAMS_MESSAGE_ID" */
 
+/*
+ * NV0073_CTRL_CMD_DP_SET_PROP_FORCE_PCLK_FACTOR
+ *
+ * This command is used to apply the WAR based on EDID.
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   displayId
+ *     This parameter specifies the ID of the digital display for which the
+ *     data should be returned.  The display ID must a digital display.
+ *     If more than one displayId bit is set or the displayId is not a DP,
+ *     this call will return NV_ERR_INVALID_ARGUMENT.
+ *   bEnable
+ *     This parameter will be used by RM to set the PDB property. Later that PDB 
+ *     property will be used for applying the WAR
+ *   head
+ *     This parameter specify for which head RM need to apply the WAR
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ *
+ */
+#define NV0073_CTRL_CMD_DP_SET_PROP_FORCE_PCLK_FACTOR_PARAMS_MESSAGE_ID (0x8BU)
+
+typedef struct NV0073_CTRL_CMD_DP_SET_PROP_FORCE_PCLK_FACTOR_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 displayId;
+    NvU32 bEnable;
+    NvU32 head;
+} NV0073_CTRL_CMD_DP_SET_PROP_FORCE_PCLK_FACTOR_PARAMS;
+
+#define NV0073_CTRL_CMD_DP_SET_PROP_FORCE_PCLK_FACTOR (0x73138bU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_DP_SET_PROP_FORCE_PCLK_FACTOR_PARAMS_MESSAGE_ID" */
+
 
 
 /*
@@ -3444,7 +3482,7 @@ typedef struct NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA_PARAMS {
  *   NV_ERR_NOT_SUPPORTED
  */
 
-#define NV0073_CTRL_CMD_CALCULATE_DP_IMP               (0x73138bU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS_MESSAGE_ID" */
+#define NV0073_CTRL_CMD_CALCULATE_DP_IMP              (0x73138cU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS_MESSAGE_ID" */
 
 typedef struct NV0073_CTRL_DP_IMP_LINK_CONFIGURATION {
     NvU32  linkRate10M;
@@ -3489,7 +3527,7 @@ typedef struct NV0073_CTRL_DP_IMP_WATERMARK {
     NvBool bIsModePossible;
 } NV0073_CTRL_DP_IMP_WATERMARK;
 
-#define NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS_MESSAGE_ID (0x8BU)
+#define NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS_MESSAGE_ID (0x8CU)
 
 typedef struct NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS {
     NvU32                                 subDeviceInstance;

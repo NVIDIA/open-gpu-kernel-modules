@@ -108,7 +108,7 @@ vgpuapiCtrlCmdVgpuDisplayCleanupSurface_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pVgpuApi);
     NV_STATUS rmStatus = NV_OK;
 
-    NV_RM_RPC_CLEANUP_SURFACE(pGpu, pParams, rmStatus);
+    NV_RM_RPC_CLEANUP_SURFACE(pGpu, RES_GET_CLIENT_HANDLE(pVgpuApi), pParams, rmStatus);
 
     return rmStatus;
 }

@@ -97,6 +97,7 @@
 #define NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE            "DP_SKIP_ZERO_OUI_CACHE"
 
 #define NV_DP_REGKEY_DISABLE_FIX_FOR_5019537        "DP_DISABLE_5019537_FIX"
+#define NV_DP_REGKEY_ENABLE_FIX_FOR_5147205         "DP_ENABLE_5147205_FIX"
 
 // Bug 5088957 : Force head shutdown in DpLib
 #define NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN            "DP_WAR_5088957"
@@ -143,6 +144,7 @@ struct DP_REGKEY_DATABASE
     bool  bDownspreadDisabled;
     bool  bSkipZeroOuiCache;
     bool  bDisable5019537Fix;
+    bool  bEnable5147205Fix;
     bool  bForceHeadShutdown;
     bool  bEnableLowerBppCheckForDsc;
 };

@@ -85,12 +85,12 @@ static NV_INLINE void NV_RM_RPC_UPDATE_GPU_PDES(OBJGPU *pGpu, ...) { }
             status = rpcSetSurfaceProperties_HAL(pGpu, pRpc, hClient, pParams, bSkipCompare);  \
     } while (0)
 
-#define NV_RM_RPC_CLEANUP_SURFACE(pGpu, pParams, status)                        \
+#define NV_RM_RPC_CLEANUP_SURFACE(pGpu, hClient, pParams, status)                        \
     do                                                                          \
     {                                                                           \
         OBJRPC *pRpc = GPU_GET_RPC(pGpu);                                       \
         if ((status == NV_OK) && (pRpc != NULL))                                \
-            status = rpcCleanupSurface_HAL(pGpu, pRpc, pParams);                \
+            status = rpcCleanupSurface_HAL(pGpu, pRpc, hClient, pParams);                \
     } while (0)
 
 #define NV_RM_RPC_SWITCH_TO_VGA(pGpu, status)                                   \

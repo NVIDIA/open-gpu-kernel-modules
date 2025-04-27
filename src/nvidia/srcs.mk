@@ -319,6 +319,7 @@ SRCS += interface/deprecated/rmapi_deprecated_misc.c
 SRCS += interface/deprecated/rmapi_deprecated_utils.c
 SRCS += interface/deprecated/rmapi_deprecated_vidheapctrl.c
 SRCS += interface/deprecated/rmapi_gss_legacy_control.c
+SRCS += interface/gsp_abi_check.c
 SRCS += interface/rmapi/src/g_finn_rm_api.c
 SRCS += src/kernel/compute/fabric.c
 SRCS += src/kernel/compute/fm_session_api.c
