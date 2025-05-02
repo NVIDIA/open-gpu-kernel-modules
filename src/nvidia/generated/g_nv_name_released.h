@@ -5430,7 +5430,6 @@ static const CHIPS_RELEASED sChipsReleased[] = {
     { 0x2C19, 0x0000, 0x0000, "NVIDIA GeForce RTX 5080 Laptop GPU" },
     { 0x2C58, 0x0000, 0x0000, "NVIDIA GeForce RTX 5090 Laptop GPU" },
     { 0x2C59, 0x0000, 0x0000, "NVIDIA GeForce RTX 5080 Laptop GPU" },
-    { 0x2D04, 0x0000, 0x0000, "NVIDIA GeForce RTX 5060 Ti" },
     { 0x2F04, 0x0000, 0x0000, "NVIDIA GeForce RTX 5070" },
     { 0x2F18, 0x0000, 0x0000, "NVIDIA GeForce RTX 5070 Ti Laptop GPU" },
     { 0x2F58, 0x0000, 0x0000, "NVIDIA GeForce RTX 5070 Ti Laptop GPU" },

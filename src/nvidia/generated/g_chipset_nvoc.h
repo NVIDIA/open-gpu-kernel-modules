@@ -161,6 +161,9 @@ struct PCIECONFIGSPACEBASE
 #define CL_AER_ERROR_SOURCE                         (CL_AER_BEGIN + 0x34)
 #define CL_AER_END                                  (CL_AER_BEGIN + 0x34)
 
+// Advanced Error Reporting Root Error Status ERR_COR Subclass Capable Mask
+#define CL_AER_ROOT_ERROR_STATUS_ERR_COR_SUBCLASS_MASK        (NVBIT32(7) | NVBIT32(8))
+
 // PCI Express Device Capabilities 2
 #define CL_PCIE_DEV_CAP_2_ATOMICS_SUPPORTED_BIT     NVBIT(6)
 #define CL_PCIE_DEV_CAP_2_ATOMIC_32BIT              NVBIT(7)
