@@ -105,11 +105,32 @@ timeoutRegistryOverride
 {
     NvU32 data32 = 0;
 
+    NvU32 bug5203024OverrideTimeouts = (
+        (osReadRegistryDword(pGpu, NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT,
+                             &data32) == NV_OK) ?
+        data32 :
+        0);
+
+    NvBool bOverrideDefaultTimeout = (DRF_VAL(_REG_STR,
+                                              _RM_BUG5203024_OVERRIDE_TIMEOUT,
+                                              _FLAGS_SET_RM_DEFAULT_TIMEOUT,
+                                              bug5203024OverrideTimeouts) == 1);
+
     // Override timeout value
-    if ((osReadRegistryDword(pGpu,
-                             NV_REG_STR_RM_OVERRIDE_DEFAULT_TIMEOUT,
-                             &data32) == NV_OK) && (data32 != 0))
+    if (bOverrideDefaultTimeout ||
+        ((osReadRegistryDword(pGpu,
+                              NV_REG_STR_RM_DEFAULT_TIMEOUT_MS,
+                              &data32) == NV_OK) &&
+         (data32 != 0)))
     {
+        if (bOverrideDefaultTimeout)
+        {
+            data32 = DRF_VAL(_REG_STR,
+                             _RM_BUG5203024_OVERRIDE_TIMEOUT,
+                             _VALUE_MS,
+                             bug5203024OverrideTimeouts);
+        }
+
         // Handle 32-bit overflow.
         if (data32 > (NV_U32_MAX / 1000))
         {

@@ -132,6 +132,7 @@ struct LIBOS_LOG_DECODE_LOG
     NvU32 gpuInstance;               // GPU that this log is associated with.
     char taskPrefix[TASK_NAME_MAX_LENGTH];     // Prefix string printed before each line.
     char elfSectionName[ELF_SECTION_NAME_MAX]; // Task section name in container logging ELF serving as ID.
+    NvU64 localToGlobalTimerDelta;
 
 #if LIBOS_LOG_TO_NVLOG
     NvU32 hNvLogNoWrap;  // No wrap buffer captures first records.

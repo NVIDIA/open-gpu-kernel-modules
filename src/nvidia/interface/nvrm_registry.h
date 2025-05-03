@@ -57,16 +57,48 @@
 #define NV_REG_STR_GLOBAL_SURFACE_OVERRIDE_RM_ENABLE     3:3
 
 
-#define NV_REG_STR_RM_OVERRIDE_DEFAULT_TIMEOUT         "RmDefaultTimeout"
+//
+// This regkey is experimental and may behave differently on specific platforms.
+// DO NOT rely on it being a stable regkey to change all timeouts at once.
+//
+// Type Dword
+// Change all RM internal timeouts to experiment with Bug 5203024.
+//
+// Some timeouts may still silently clamp to differnt min/max values and this
+// regkey does NOT validate their range.
+//
+#define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT        "RmOverrideInternalTimeoutsMs"
+// Timeout value to set in milliseconds
+#define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT_VALUE_MS                        23:0
+// Same effect as setting "RmDefaultTimeout" to VALUE_MS
+#define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT_FLAGS_SET_RM_DEFAULT_TIMEOUT    31:31
+// Same effect as setting "RmWatchDogTimeOut" to VALUE_MS (converted to seconds)
+#define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT_FLAGS_SET_RC_WATCHDOG_TIMEOUT   30:30
+// Same effect as setting "RmEngineContextSwitchTimeoutUs" to VALUE_MS (converted to usec)
+#define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT_FLAGS_SET_CTXSW_TIMEOUT         29:29
+// Currently has no effect
+#define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT_FLAGS_SET_VIDENG_TIMEOUT        28:28
+// Currently has no effect
+#define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT_FLAGS_SET_PMU_INTERNAL_TIMEOUT  27:27
+// Currently has no effect
+#define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT_FLAGS_SET_FECS_WATCHDOG_TIMEOUT 26:26
+
+
+//
 // Type Dword
 // Override default RM timeout.  Measured in milliseconds.
 // Not scaled for emulation
+//
+#define NV_REG_STR_RM_DEFAULT_TIMEOUT_MS                "RmDefaultTimeout"
 
+
+//
+// Type Dword
+// Override default RM timeout flags to either OSDELAY or OSTIMER.
+//
 #define NV_REG_STR_RM_OVERRIDE_DEFAULT_TIMEOUT_FLAGS    "RmDefaultTimeoutFlags"
 #define NV_REG_STR_RM_OVERRIDE_DEFAULT_TIMEOUT_FLAGS_OSTIMER    4
 #define NV_REG_STR_RM_OVERRIDE_DEFAULT_TIMEOUT_FLAGS_OSDELAY    8
-// Type Dword
-// Override default RM timeout flags to either OSDELAY or OSTIMER.
 
 
 #define NV_REG_STR_SUPPRESS_CLASS_LIST "SuppressClassList"
@@ -1328,6 +1360,33 @@
 #define NV_REG_PROCESS_NONSTALL_INTR_IN_LOCKLESS_ISR_DISABLE      0x00000000
 #define NV_REG_PROCESS_NONSTALL_INTR_IN_LOCKLESS_ISR_ENABLE       0x00000001
 
+
+//
+// Type: DWORD
+// Sets the Initial runlist Context switch timeout value in base 2 microseconds
+// (1024 nanosecond timer ticks).
+// Default: 0x003fffff base2 usec ~ 4.3 seconds
+//
+// The lower 31 bits have these limits
+// Min: 0x00000002
+// Max: 0x7fffffff
+// A value of 0 means CTXSW timeout is disabled entirely.
+//
+// It is possible for a privileged client to change this value for all engines
+// using a ctrl call.
+//
+// If MSB (bit 31) is set, then the timeout value set will be "locked" and the
+// ctrl call to change it will fail.
+//
+#define NV_REG_STR_RM_CTXSW_TIMEOUT                         "RmEngineContextSwitchTimeoutUs"
+#define NV_REG_STR_RM_CTXSW_TIMEOUT_DEFAULT                 0x003fffff
+#define NV_REG_STR_RM_CTXSW_TIMEOUT_TIME                    30:0
+#define NV_REG_STR_RM_CTXSW_TIMEOUT_TIME_DISABLE            0x00000000
+#define NV_REG_STR_RM_CTXSW_TIMEOUT_LOCK                    31:31
+#define NV_REG_STR_RM_CTXSW_TIMEOUT_LOCK_FALSE              0x0
+#define NV_REG_STR_RM_CTXSW_TIMEOUT_LOCK_TRUE               0x1
+
+
 #define NV_REG_STR_RM_ROBUST_CHANNELS                       "RmRobustChannels"
 #define NV_REG_STR_RM_ROBUST_CHANNELS_ENABLE                 0x00000001
 #define NV_REG_STR_RM_ROBUST_CHANNELS_DISABLE                0x00000000
@@ -2498,6 +2557,12 @@
 #define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_DISABLE     0x00000000
 #define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_ENABLE      0x00000001
 
+// Type DWORD
+// Allows extending PMU FB Operationg Timeout (DMA / FBFlush) on certain profiles
+// This currently takes effect on GB10X profile only
+#define NV_REG_STR_RM_PMU_FB_TIMEOUT_US                    "RmPmuFBTimeoutUs"
+#define NV_REG_STR_RM_PMU_FB_TIMEOUT_US_DEFAULT            (0)
+
 //
 // Type: Dword
 //
@@ -2609,5 +2674,17 @@
 #define NV_REG_STR_RM_WAR_5045021_ENABLE                           0x00000001
 #define NV_REG_STR_RM_WAR_5045021_DISABLE                          0x00000000
 #define NV_REG_STR_RM_WAR_5045021_DEFAULT                          0x00000000
+
+//
+// Type: DWORD
+// Regkey to enable/disable FB sanity check after FSP secure boot complete
+// _ENABLE: Enable FB sanity check
+// _DISABLE: Disable FB sanity check
+// default is _DISABLE
+//
+#define NV_REG_STR_RM_FB_SANITY_CHECK                             "RmFbSanityCheck"
+#define NV_REG_STR_RM_FB_SANITY_CHECK_ENABLE                      (0x00000001)
+#define NV_REG_STR_RM_FB_SANITY_CHECK_DISABLE                     (0x00000000)
+#define NV_REG_STR_RM_FB_SANITY_CHECK_DEFAULT                     NV_REG_STR_RM_FB_SANITY_CHECK_DISABLE
 
 #endif // NVRM_REGISTRY_H

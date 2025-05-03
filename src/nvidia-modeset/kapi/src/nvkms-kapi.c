@@ -79,8 +79,14 @@ static NvU32 EnumerateGpus(nv_gpu_info_t *gpuInfo)
  */
 static void RmFreeDevice(struct NvKmsKapiDevice *device)
 {
-    nvKmsKapiFreeRmHandle(device, device->smgGpuInstSubscriptionHdl);
-    nvKmsKapiFreeRmHandle(device, device->smgComputeInstSubscriptionHdl);
+    if (device->smgGpuInstSubscriptionHdl != 0x0) {
+        nvKmsKapiFreeRmHandle(device, device->smgGpuInstSubscriptionHdl);
+        device->smgGpuInstSubscriptionHdl = 0x0;
+    }
+    if (device->smgComputeInstSubscriptionHdl != 0x0) {
+        nvKmsKapiFreeRmHandle(device, device->smgComputeInstSubscriptionHdl);
+        device->smgComputeInstSubscriptionHdl = 0x0;
+    }
 
     if (device->hRmSubDevice != 0x0) {
         nvRmApiFree(device->hRmClient,

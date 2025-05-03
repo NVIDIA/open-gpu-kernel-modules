@@ -109,6 +109,7 @@ void EvoMainLink2x::applyDP2xRegkeyOverrides()
     this->bSupportUHBR2_50   = dpRegkeyDatabase.supportInternalUhbrOnFpga & NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT_2_5G;
     this->bSupportUHBR2_70   = dpRegkeyDatabase.supportInternalUhbrOnFpga & NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT_2_7G;
     this->bSupportUHBR5_00   = dpRegkeyDatabase.supportInternalUhbrOnFpga & NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT_5_0G;
+    this->bEnable5147205Fix  = dpRegkeyDatabase.bEnable5147205Fix;
 }
 
 NvU32 EvoMainLink2x::headToStream(NvU32 head, bool bSidebandMessageSupported,
@@ -452,6 +453,7 @@ bool EvoMainLink2x::train(const LinkConfiguration & link, bool force,
     DP2XResetParam resetParam;
     dpMemZero(&resetParam, sizeof(resetParam));
     resetParam.bForce = force;
+    resetParam.bSkipLt = bSkipLt;
 
     // Get the original skipFallback setting.
     bSkipFallback = requestRmLC.policy.skipFallback();
@@ -1108,6 +1110,11 @@ bool EvoMainLink2x::resetDPRXLink(DP2XResetParam resetParam)
     if (resetParam.bForce)
     {
         ltRmParams.cmd |= DRF_DEF(0073_CTRL, _DP2X_CMD, _FAKE_LINK_TRAINING, _DONOT_TOGGLE_TRANSMISSION);
+    }
+
+    if (resetParam.bSkipLt && bEnable5147205Fix)
+    {
+        ltRmParams.cmd |= DRF_DEF(0073_CTRL, _DP2X_CMD, _SKIP_HW_PROGRAMMING, _YES);
     }
 
     switch (resetParam.reason)

@@ -345,8 +345,6 @@ extern int nv_pat_mode;
 
 #define NV_PAGE_COUNT(page) \
   ((unsigned int)page_count(page))
-#define NV_GET_PAGE_COUNT(page_ptr) \
-  (NV_PAGE_COUNT(NV_GET_PAGE_STRUCT(page_ptr->phys_addr)))
 #define NV_GET_PAGE_FLAGS(page_ptr) \
   (NV_GET_PAGE_STRUCT(page_ptr->phys_addr)->flags)
 
@@ -1161,10 +1159,6 @@ typedef struct nvidia_pte_s {
     NvU64           phys_addr;
     unsigned long   virt_addr;
     NvU64           dma_addr;
-#ifdef CONFIG_XEN
-    unsigned int    guest_pfn;
-#endif
-    unsigned int    page_count;
 } nvidia_pte_t;
 
 #if defined(CONFIG_DMA_SHARED_BUFFER)

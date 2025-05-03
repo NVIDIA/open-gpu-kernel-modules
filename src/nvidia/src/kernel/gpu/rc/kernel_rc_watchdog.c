@@ -29,6 +29,7 @@
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/rc/kernel_rc.h"
 #include "kernel/gpu/bif/kernel_bif.h"
+#include "kernel/gpu/bus/kern_bus.h"
 #include "kernel/os/os.h"
 #include "platform/sli/sli.h"
 
@@ -1389,6 +1390,15 @@ krcWatchdogInitPushbuffer_IMPL
 
     SLI_LOOP_START(SLI_LOOP_FLAGS_NONE);
     {
+        //
+        // On some architectures, if doorbell is mapped via bar0, we need to send
+        // an extra flush
+        //
+        if (kbusFlushPcieForBar0Doorbell_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu)) != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Busflush failed.\n");
+            return;
+        }
         kfifoUpdateUsermodeDoorbell_HAL(pGpu, GPU_GET_KERNEL_FIFO(pGpu),
             pKernelRc->watchdog.notifierToken->info32,
             pKernelRc->watchdog.runlistId);

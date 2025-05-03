@@ -5106,7 +5106,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x100u)
         /*flags=*/      0x100u,
         /*accessRight=*/0x0u,
-        /*methodId=*/   0x73138bu,
+        /*methodId=*/   0x73138cu,
         /*paramSize=*/  sizeof(NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS),
         /*pClassInfo=*/ &(__nvoc_class_def_DispCommon.classInfo),
 #if NV_PRINTF_STRINGS_ALLOWED
@@ -5897,7 +5897,7 @@ static void __nvoc_init_funcTable_DispCommon_1(DispCommon *pThis) {
     pThis->__dispcmnCtrlCmdDp2xSetLaneData__ = &dispcmnCtrlCmdDp2xSetLaneData_IMPL;
 #endif
 
-    // dispcmnCtrlCmdCalculateDpImp -- exported (id=0x73138b)
+    // dispcmnCtrlCmdCalculateDpImp -- exported (id=0x73138c)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x100u)
     pThis->__dispcmnCtrlCmdCalculateDpImp__ = &dispcmnCtrlCmdCalculateDpImp_IMPL;
 #endif

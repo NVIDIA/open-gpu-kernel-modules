@@ -345,6 +345,15 @@ kgraphicsStateLoad_IMPL
 {
     KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
 
+    if (IS_VIRTUAL_WITH_SRIOV(pGpu))
+    {
+        //
+        // Force initialize scratch registers
+        // so won't read back X and assert in RTL
+        //
+        kgraphicsSetFecsTraceHwEnable_HAL(pGpu, pKernelGraphics, NV_FALSE);
+    }
+
     if (fecsGetCtxswLogConsumerCount(pGpu, pKernelGraphicsManager) > 0)
     {
         fecsBufferMap(pGpu, pKernelGraphics);
@@ -4229,11 +4238,18 @@ subdeviceCtrlCmdGrInternalSetFecsTraceWrOffset_IMPL
 
 NvBool kgraphicsIsCtxswLoggingEnabled_FWCLIENT(OBJGPU *pGpu, KernelGraphics *pKernelGraphics)
 {
-    RUSD_GR_INFO grInfo;
+    NvBool bEnabled = NV_FALSE;
 
-    RUSD_READ_DATA((NV00DE_SHARED_DATA*)(pGpu->userSharedData.pMapBuffer), grInfo, &grInfo);
-    pKernelGraphics->bCtxswLoggingEnabled = grInfo.bCtxswLoggingEnabled;
+    // Skip on CC
+    if (pGpu->userSharedData.pMapBuffer != NULL)
+    {
+        RUSD_GR_INFO grInfo;
 
+        RUSD_READ_DATA((NV00DE_SHARED_DATA*)(pGpu->userSharedData.pMapBuffer), grInfo, &grInfo);
+        bEnabled = grInfo.bCtxswLoggingEnabled;
+    }
+
+    pKernelGraphics->bCtxswLoggingEnabled = bEnabled;
     return pKernelGraphics->bCtxswLoggingEnabled;
 }
 

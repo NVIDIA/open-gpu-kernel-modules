@@ -135,7 +135,6 @@ _krcInitRegistryOverrides
         pKernelRc->bBreakOnRc = NV_TRUE;
     }
 
-
     if (osReadRegistryDword(pGpu,
                             NV_REG_STR_RM_WATCHDOG_TIMEOUT,
                             &pKernelRc->watchdogPersistent.timeoutSecs) !=
@@ -145,6 +144,29 @@ _krcInitRegistryOverrides
         pKernelRc->watchdogPersistent.timeoutSecs =
             NV_REG_STR_RM_WATCHDOG_TIMEOUT_DEFAULT;
     }
+
+    NvU32 data32 = 0;
+    NvU32 bug5203024OverrideTimeouts = (
+        (osReadRegistryDword(pGpu, NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT,
+                             &data32) == NV_OK) ?
+        data32 :
+        0);
+
+    NvBool bOverrideWatchdogTimeout = (DRF_VAL(_REG_STR,
+                                               _RM_BUG5203024_OVERRIDE_TIMEOUT,
+                                               _FLAGS_SET_RC_WATCHDOG_TIMEOUT,
+                                               bug5203024OverrideTimeouts) ==
+                                       1);
+    if (bOverrideWatchdogTimeout)
+    {
+        pKernelRc->watchdogPersistent.timeoutSecs =
+            DRF_VAL(_REG_STR, _RM_BUG5203024_OVERRIDE_TIMEOUT, _VALUE_MS,
+                    bug5203024OverrideTimeouts) / 1000;
+
+        NV_PRINTF(LEVEL_NOTICE, "RC Watchdog timeout forced to %d seconds.\n",
+                  pKernelRc->watchdogPersistent.timeoutSecs);
+    }
+
     if (osReadRegistryDword(pGpu,
                             NV_REG_STR_RM_WATCHDOG_INTERVAL,
                             &pKernelRc->watchdogPersistent.intervalSecs) !=

@@ -264,7 +264,8 @@ struct KernelNvlink {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct KernelNvlink *__nvoc_pbase_KernelNvlink;    // knvlink
 
-    // Vtable with 36 per-object function pointers
+    // Vtable with 37 per-object function pointers
+    NvBool (*__knvlinkIsPresent__)(struct OBJGPU *, struct KernelNvlink * /*this*/);  // virtual halified (2 hals) override (engstate) base (engstate)
     NV_STATUS (*__knvlinkSetUniqueFabricBaseAddress__)(struct OBJGPU *, struct KernelNvlink * /*this*/, NvU64);  // halified (3 hals) body
     void (*__knvlinkClearUniqueFabricBaseAddress__)(struct OBJGPU *, struct KernelNvlink * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__knvlinkSetUniqueFabricEgmBaseAddress__)(struct OBJGPU *, struct KernelNvlink * /*this*/, NvU64);  // halified (2 hals) body
@@ -397,7 +398,8 @@ struct KernelNvlink_PRIVATE {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct KernelNvlink *__nvoc_pbase_KernelNvlink;    // knvlink
 
-    // Vtable with 36 per-object function pointers
+    // Vtable with 37 per-object function pointers
+    NvBool (*__knvlinkIsPresent__)(struct OBJGPU *, struct KernelNvlink * /*this*/);  // virtual halified (2 hals) override (engstate) base (engstate)
     NV_STATUS (*__knvlinkSetUniqueFabricBaseAddress__)(struct OBJGPU *, struct KernelNvlink * /*this*/, NvU64);  // halified (3 hals) body
     void (*__knvlinkClearUniqueFabricBaseAddress__)(struct OBJGPU *, struct KernelNvlink * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__knvlinkSetUniqueFabricEgmBaseAddress__)(struct OBJGPU *, struct KernelNvlink * /*this*/, NvU64);  // halified (2 hals) body
@@ -516,7 +518,7 @@ struct KernelNvlink_PRIVATE {
 };
 
 
-// Metadata including vtable with 14 function pointers plus superclass metadata
+// Metadata including vtable with 13 function pointers plus superclass metadata
 struct NVOC_VTABLE__KernelNvlink {
     const struct NVOC_VTABLE__OBJENGSTATE OBJENGSTATE;    // (engstate) 14 function pointers
 
@@ -526,7 +528,6 @@ struct NVOC_VTABLE__KernelNvlink {
     NV_STATUS (*__knvlinkStatePostLoad__)(struct OBJGPU *, struct KernelNvlink * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__knvlinkStateUnload__)(struct OBJGPU *, struct KernelNvlink * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__knvlinkStatePostUnload__)(struct OBJGPU *, struct KernelNvlink * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
-    NvBool (*__knvlinkIsPresent__)(struct OBJGPU *, struct KernelNvlink * /*this*/);  // virtual override (engstate) base (engstate)
     void (*__knvlinkInitMissing__)(struct OBJGPU *, struct KernelNvlink * /*this*/);  // virtual inherited (engstate) base (engstate)
     NV_STATUS (*__knvlinkStatePreInitUnlocked__)(struct OBJGPU *, struct KernelNvlink * /*this*/);  // virtual inherited (engstate) base (engstate)
     NV_STATUS (*__knvlinkStateInitLocked__)(struct OBJGPU *, struct KernelNvlink * /*this*/);  // virtual inherited (engstate) base (engstate)
@@ -618,8 +619,9 @@ NV_STATUS __nvoc_objCreate_KernelNvlink(KernelNvlink**, Dynamic*, NvU32);
 #define knvlinkStateUnload(arg1, arg_this, arg3) knvlinkStateUnload_DISPATCH(arg1, arg_this, arg3)
 #define knvlinkStatePostUnload_FNPTR(arg_this) arg_this->__nvoc_vtable->__knvlinkStatePostUnload__
 #define knvlinkStatePostUnload(arg1, arg_this, arg3) knvlinkStatePostUnload_DISPATCH(arg1, arg_this, arg3)
-#define knvlinkIsPresent_FNPTR(arg_this) arg_this->__nvoc_vtable->__knvlinkIsPresent__
+#define knvlinkIsPresent_FNPTR(arg_this) arg_this->__knvlinkIsPresent__
 #define knvlinkIsPresent(arg1, arg_this) knvlinkIsPresent_DISPATCH(arg1, arg_this)
+#define knvlinkIsPresent_HAL(arg1, arg_this) knvlinkIsPresent_DISPATCH(arg1, arg_this)
 #define knvlinkSetUniqueFabricBaseAddress_FNPTR(pKernelNvlink) pKernelNvlink->__knvlinkSetUniqueFabricBaseAddress__
 #define knvlinkSetUniqueFabricBaseAddress(pGpu, pKernelNvlink, arg3) knvlinkSetUniqueFabricBaseAddress_DISPATCH(pGpu, pKernelNvlink, arg3)
 #define knvlinkSetUniqueFabricBaseAddress_HAL(pGpu, pKernelNvlink, arg3) knvlinkSetUniqueFabricBaseAddress_DISPATCH(pGpu, pKernelNvlink, arg3)
@@ -769,7 +771,7 @@ static inline NV_STATUS knvlinkStatePostUnload_DISPATCH(struct OBJGPU *arg1, str
 }
 
 static inline NvBool knvlinkIsPresent_DISPATCH(struct OBJGPU *arg1, struct KernelNvlink *arg_this) {
-    return arg_this->__nvoc_vtable->__knvlinkIsPresent__(arg1, arg_this);
+    return arg_this->__knvlinkIsPresent__(arg1, arg_this);
 }
 
 static inline NV_STATUS knvlinkSetUniqueFabricBaseAddress_DISPATCH(struct OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink, NvU64 arg3) {
@@ -1865,6 +1867,10 @@ NV_STATUS knvlinkStatePostLoad_IMPL(struct OBJGPU *arg1, struct KernelNvlink *ar
 NV_STATUS knvlinkStateUnload_IMPL(struct OBJGPU *arg1, struct KernelNvlink *arg2, NvU32 arg3);
 
 NV_STATUS knvlinkStatePostUnload_IMPL(struct OBJGPU *arg1, struct KernelNvlink *arg2, NvU32 arg3);
+
+static inline NvBool knvlinkIsPresent_3dd2c9(struct OBJGPU *arg1, struct KernelNvlink *arg2) {
+    return NV_FALSE;
+}
 
 NvBool knvlinkIsPresent_IMPL(struct OBJGPU *arg1, struct KernelNvlink *arg2);
 

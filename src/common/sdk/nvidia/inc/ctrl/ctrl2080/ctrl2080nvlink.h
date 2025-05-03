@@ -2574,11 +2574,17 @@ typedef struct NV2080_CTRL_NVLINK_PRM_ACCESS_PPLM_PARAMS {
     NvBool                      bWrite;
     NV2080_CTRL_NVLINK_PRM_DATA prm;
     NvBool                      test_mode;
+    NvBool                      plr_vld;
     NvU8                        plane_ind;
     NvU8                        port_type;
     NvU8                        lp_msb;
     NvU8                        pnat;
     NvU8                        local_port;
+    NvBool                      plr_reject_mode_vld;
+    NvBool                      plr_margin_th_override_to_default;
+    NvU8                        plr_reject_mode;
+    NvU8                        tx_crc_plr;
+    NvU8                        plr_margin_th;
     NvU8                        fec_override_admin_10g_40g;
     NvU8                        fec_override_admin_25g;
     NvU8                        fec_override_admin_50g;

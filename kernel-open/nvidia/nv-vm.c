@@ -431,7 +431,6 @@ NV_STATUS nv_alloc_contig_pages(
 
         page_ptr = at->page_table[i];
         page_ptr->phys_addr = phys_addr;
-        page_ptr->page_count = NV_GET_PAGE_COUNT(page_ptr);
         page_ptr->virt_addr = virt_addr;
         page_ptr->dma_addr = nv_phys_to_dma(dev, page_ptr->phys_addr);
 
@@ -486,17 +485,6 @@ void nv_free_contig_pages(
     {
         page_ptr = at->page_table[i];
 
-        if (NV_GET_PAGE_COUNT(page_ptr) != page_ptr->page_count)
-        {
-            static int count = 0;
-            if (count++ < NV_MAX_RECURRING_WARNING_MESSAGES)
-            {
-                nv_printf(NV_DBG_ERRORS,
-                    "NVRM: VM: %s: page count != initial page count (%u,%u)\n",
-                    __FUNCTION__, NV_GET_PAGE_COUNT(page_ptr),
-                    page_ptr->page_count);
-            }
-        }
         NV_MAYBE_UNRESERVE_PAGE(page_ptr);
     }
 
@@ -600,7 +588,6 @@ NV_STATUS nv_alloc_system_pages(
 
             page_ptr = at->page_table[(i * os_pages_in_page) + sub_page_idx];
             page_ptr->phys_addr = phys_addr;
-            page_ptr->page_count = NV_GET_PAGE_COUNT(page_ptr);
             page_ptr->virt_addr = sub_page_virt_addr;
 
             //
@@ -666,18 +653,6 @@ void nv_free_system_pages(
     for (i = 0; i < at->num_pages; i++)
     {
         page_ptr = at->page_table[i];
-
-        if (NV_GET_PAGE_COUNT(page_ptr) != page_ptr->page_count)
-        {
-            static int count = 0;
-            if (count++ < NV_MAX_RECURRING_WARNING_MESSAGES)
-            {
-                nv_printf(NV_DBG_ERRORS,
-                    "NVRM: VM: %s: page count != initial page count (%u,%u)\n",
-                    __FUNCTION__, NV_GET_PAGE_COUNT(page_ptr),
-                    page_ptr->page_count);
-            }
-        }
 
         NV_MAYBE_UNRESERVE_PAGE(page_ptr);
     }

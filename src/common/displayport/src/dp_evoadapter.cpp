@@ -104,6 +104,7 @@ const struct
     {NV_DP_REGKEY_DISABLE_DOWNSPREAD,               &dpRegkeyDatabase.bDownspreadDisabled,             DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE,              &dpRegkeyDatabase.bSkipZeroOuiCache,               DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_DISABLE_FIX_FOR_5019537,          &dpRegkeyDatabase.bDisable5019537Fix,              DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_FIX_FOR_5147205,           &dpRegkeyDatabase.bEnable5147205Fix,               DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN,              &dpRegkeyDatabase.bForceHeadShutdown,              DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_ENABLE_LOWER_BPP_CHECK_FOR_DSC,   &dpRegkeyDatabase.bEnableLowerBppCheckForDsc,      DP_REG_VAL_BOOL}
 };

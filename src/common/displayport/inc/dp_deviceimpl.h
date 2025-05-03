@@ -135,7 +135,7 @@ namespace DisplayPort
         bool              multistream;
         bool              videoSink, audioSink;
         bool              plugged;
-
+        bool              bApplyPclkWarBug4949066;
 
         AuxRetry          friendlyAux;
         bool              payloadAllocated;             // did the allocate payload go through?

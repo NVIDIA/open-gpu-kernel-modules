@@ -2077,6 +2077,11 @@ gpuStatePreInit_IMPL
                         "engine removal in PreInit with NV_ERR_NOT_SUPPORTED is deprecated (%s)\n",
                         engstateGetName(pEngstate));
                     break;
+                case ENG_HDACODEC:
+                    NV_PRINTF(LEVEL_WARNING,
+                        "engine removal in PreInit with NV_ERR_NOT_SUPPORTED is deprecated (%s)\n",
+                        engstateGetName(pEngstate));
+                    break;
                 default:
                     NV_PRINTF(LEVEL_ERROR,
                         "disallowing NV_ERR_NOT_SUPPORTED PreInit removal of untracked engine (%s)\n",

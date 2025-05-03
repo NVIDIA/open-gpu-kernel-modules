@@ -145,3 +145,4 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += drm_driver_has_gem_prime_mmap
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_output_poll_changed
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_driver_has_date
 NV_CONFTEST_TYPE_COMPILE_TESTS += file_operations_fop_unsigned_offset_present
+NV_CONFTEST_TYPE_COMPILE_TESTS += drm_connector_helper_funcs_mode_valid_has_const_mode_arg

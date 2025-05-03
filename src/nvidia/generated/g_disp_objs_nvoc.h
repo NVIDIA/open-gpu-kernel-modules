@@ -1677,7 +1677,7 @@ struct DispCommon {
     NV_STATUS (*__dispcmnCtrlCmdDp2xLinkTrain__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL_PARAMS *);  // exported (id=0x731383)
     NV_STATUS (*__dispcmnCtrlCmdDp2xGetLaneData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *);  // exported (id=0x731384)
     NV_STATUS (*__dispcmnCtrlCmdDp2xSetLaneData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *);  // exported (id=0x731385)
-    NV_STATUS (*__dispcmnCtrlCmdCalculateDpImp__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS *);  // exported (id=0x73138b)
+    NV_STATUS (*__dispcmnCtrlCmdCalculateDpImp__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS *);  // exported (id=0x73138c)
     NV_STATUS (*__dispcmnCtrlCmdDpGetLaneData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_LANE_DATA_PARAMS *);  // exported (id=0x731345)
     NV_STATUS (*__dispcmnCtrlCmdDpSetLaneData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_LANE_DATA_PARAMS *);  // exported (id=0x731346)
     NV_STATUS (*__dispcmnCtrlCmdDpGetTestpattern__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_GET_TESTPATTERN_PARAMS *);  // exported (id=0x731348)

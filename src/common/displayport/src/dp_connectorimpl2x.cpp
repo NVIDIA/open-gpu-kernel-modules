@@ -742,7 +742,20 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
 
     // Move the group to intransistion since we are at the end of notifyAttachBegin
     intransitionGroups.insertFront(targetImpl);
+    if (dev && dev->bApplyPclkWarBug4949066 == true)
+    {
+        EvoInterface   *provider = ((EvoMainLink *)main)->getProvider();
+        NV0073_CTRL_CMD_DP_SET_PROP_FORCE_PCLK_FACTOR_PARAMS params = {0};
+        params.subDeviceInstance = provider->getSubdeviceIndex();
+        params.head = modesetParams.headIndex;
+        params.bEnable = NV_TRUE;
 
+        NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_PROP_FORCE_PCLK_FACTOR, &params, sizeof(params));
+        if (ret != NVOS_STATUS_SUCCESS)
+        {
+            DP_PRINTF(DP_ERROR, "Failed to enable the WAR for bug4949066!");
+        }
+    }
     bFromResumeToNAB = false;
     return bLinkTrainingStatus;
 }
@@ -1155,6 +1168,24 @@ void ConnectorImpl2x::notifyDetachBegin(Group *target)
     if (!target)
         target = firmwareGroup;
 
+    Device     *newDev  = target->enumDevices(0);
+    DeviceImpl *dev     = (DeviceImpl *)newDev;
+    GroupImpl  *group   = (GroupImpl*)target; 
+    
+    if (dev != NULL && dev->bApplyPclkWarBug4949066 == true)
+    {
+        EvoInterface   *provider = ((EvoMainLink *)main)->getProvider();
+        NV0073_CTRL_CMD_DP_SET_PROP_FORCE_PCLK_FACTOR_PARAMS params = {0};
+        params.subDeviceInstance = provider->getSubdeviceIndex();
+        params.head = group->headIndex;
+        params.bEnable = NV_FALSE;
+
+        NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_PROP_FORCE_PCLK_FACTOR, &params, sizeof(params));
+        if (ret != NVOS_STATUS_SUCCESS)
+        {
+            DP_PRINTF(DP_ERROR, "Failed to Disable the WAR for bug4949066!");
+        }
+    }
     return ConnectorImpl::notifyDetachBegin(target);
 }
 

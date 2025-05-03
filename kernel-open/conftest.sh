@@ -7604,6 +7604,33 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_DRIVER_HAS_DATE" "" "types"
         ;;
 
+        drm_connector_helper_funcs_mode_valid_has_const_mode_arg)
+            #
+            # Determine if the 'mode' pointer argument is const in
+            # drm_connector_helper_funcs::mode_valid.
+            #
+            # The 'mode' pointer argument in
+            # drm_connector_helper_funcs::mode_valid was made const by commit
+            # 26d6fd81916e ("drm/connector: make mode_valid take a const struct
+            # drm_display_mode") in linux-next, expected in v6.15.
+            #
+            CODE="
+            #if defined(NV_DRM_DRM_ATOMIC_HELPER_H_PRESENT)
+            #include <drm/drm_atomic_helper.h>
+            #endif
+
+            static int conftest_drm_connector_mode_valid(struct drm_connector *connector,
+                                                         const struct drm_display_mode *mode) {
+                return 0;
+            }
+
+            const struct drm_connector_helper_funcs conftest_drm_connector_helper_funcs = {
+                .mode_valid = conftest_drm_connector_mode_valid,
+            };"
+
+            compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_HELPER_FUNCS_MODE_VALID_HAS_CONST_MODE_ARG" "" "types"
+        ;;
+
         # When adding a new conftest entry, please use the correct format for
         # specifying the relevant upstream Linux kernel commit.  Please
         # avoid specifying -rc kernels, and only use SHAs that actually exist

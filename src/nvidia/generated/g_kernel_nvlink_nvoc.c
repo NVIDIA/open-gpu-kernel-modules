@@ -107,7 +107,7 @@ NV_STATUS __nvoc_down_thunk_KernelNvlink_engstateStatePostUnload(struct OBJGPU *
     return knvlinkStatePostUnload(arg1, (struct KernelNvlink *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelNvlink, __nvoc_base_OBJENGSTATE)), arg3);
 }
 
-// knvlinkIsPresent: virtual override (engstate) base (engstate)
+// knvlinkIsPresent: virtual halified (2 hals) override (engstate) base (engstate)
 NvBool __nvoc_down_thunk_KernelNvlink_engstateIsPresent(struct OBJGPU *arg1, struct OBJENGSTATE *arg_this) {
     return knvlinkIsPresent(arg1, (struct KernelNvlink *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelNvlink, __nvoc_base_OBJENGSTATE)));
 }
@@ -356,6 +356,17 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
+
+    // knvlinkIsPresent -- virtual halified (2 hals) override (engstate) base (engstate)
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__knvlinkIsPresent__ = &knvlinkIsPresent_3dd2c9;
+    }
+    // default
+    else
+    {
+        pThis->__knvlinkIsPresent__ = &knvlinkIsPresent_IMPL;
+    }
 
     // knvlinkSetUniqueFabricBaseAddress -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
@@ -770,7 +781,7 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
     {
         pThis->__knvlinkGetSupportedCounters__ = &knvlinkGetSupportedCounters_46f6a7;
     }
-} // End __nvoc_init_funcTable_KernelNvlink_1 with approximately 80 basic block(s).
+} // End __nvoc_init_funcTable_KernelNvlink_1 with approximately 82 basic block(s).
 
 
 // Initialize vtable(s) for 50 virtual method(s).
@@ -790,7 +801,6 @@ void __nvoc_init_funcTable_KernelNvlink(KernelNvlink *pThis, RmHalspecOwner *pRm
         .OBJENGSTATE.__engstateStateUnload__ = &__nvoc_down_thunk_KernelNvlink_engstateStateUnload,    // virtual
         .__knvlinkStatePostUnload__ = &knvlinkStatePostUnload_IMPL,    // virtual override (engstate) base (engstate)
         .OBJENGSTATE.__engstateStatePostUnload__ = &__nvoc_down_thunk_KernelNvlink_engstateStatePostUnload,    // virtual
-        .__knvlinkIsPresent__ = &knvlinkIsPresent_IMPL,    // virtual override (engstate) base (engstate)
         .OBJENGSTATE.__engstateIsPresent__ = &__nvoc_down_thunk_KernelNvlink_engstateIsPresent,    // virtual
         .__knvlinkInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_knvlinkInitMissing,    // virtual inherited (engstate) base (engstate)
         .OBJENGSTATE.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
@@ -812,7 +822,7 @@ void __nvoc_init_funcTable_KernelNvlink(KernelNvlink *pThis, RmHalspecOwner *pRm
     pThis->__nvoc_base_OBJENGSTATE.__nvoc_vtable = &vtable.OBJENGSTATE;    // (engstate) super
     pThis->__nvoc_vtable = &vtable;    // (knvlink) this
 
-    // Initialize vtable(s) with 36 per-object function pointer(s).
+    // Initialize vtable(s) with 37 per-object function pointer(s).
     __nvoc_init_funcTable_KernelNvlink_1(pThis, pRmhalspecowner);
 }
 

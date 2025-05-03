@@ -805,11 +805,21 @@ kgrmgrGetVeidSizePerSpan_IMPL
     NvU32 *pVeidSizePerSpan
 )
 {
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    NV2080_CTRL_INTERNAL_MIGMGR_COMPUTE_PROFILE computeProfile;
+    NvU32 computeSize;
+
     NV_ASSERT_OR_RETURN(pVeidSizePerSpan != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    computeSize = kmigmgrSmallestComputeProfileSize(pGpu, pKernelMIGManager);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, computeSize != KMIGMGR_COMPUTE_SIZE_INVALID, NV_ERR_INVALID_STATE);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        kmigmgrGetComputeProfileFromSize(pGpu, pKernelMIGManager, computeSize, &computeProfile));
 
     // VEIDs for each span should be the VEID size we assign to the smallest GPC count
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        kgrmgrGetVeidsFromGpcCount_HAL(pGpu, pKernelGraphicsManager, 1, pVeidSizePerSpan));
+        kgrmgrGetVeidsFromGpcCount_HAL(pGpu, pKernelGraphicsManager, computeProfile.gpcCount, pVeidSizePerSpan));
 
     return NV_OK;
 }
