@@ -6349,7 +6349,8 @@ _nvswitch_deferred_link_state_check_ls10
     lastLinkUpTime = chip_device->deferredLinkErrors[link].state.lastLinkUpTime;
     lastRetrainTime = chip_device->deferredLinkErrors[link].state.lastRetrainTime;
     // Sanity Check
-    NVSWITCH_ASSERT(nvswitch_is_link_valid(device, link));
+    if (!nvswitch_is_link_valid(device, link))
+        return;
 
     chip_device->deferredLinkErrors[link].state.bLinkStateCallBackEnabled = NV_FALSE;
     bRedeferLinkStateCheck = NV_FALSE;

@@ -1197,6 +1197,8 @@ static NV_STATUS alloc_parent_gpu(const NvProcessorUuid *gpu_uuid,
     uvm_sema_init(&parent_gpu->isr.replayable_faults.service_lock, 1, UVM_LOCK_ORDER_ISR);
     uvm_sema_init(&parent_gpu->isr.non_replayable_faults.service_lock, 1, UVM_LOCK_ORDER_ISR);
     uvm_mutex_init(&parent_gpu->access_counters_enablement_lock, UVM_LOCK_ORDER_ACCESS_COUNTERS);
+    uvm_mutex_init(&parent_gpu->access_counters_clear_tracker_lock, UVM_LOCK_ACCESS_COUNTERS_CLEAR_OPS);
+    uvm_tracker_init(&parent_gpu->access_counters_clear_tracker);
     uvm_spin_lock_irqsave_init(&parent_gpu->isr.interrupts_lock, UVM_LOCK_ORDER_LEAF);
     uvm_spin_lock_init(&parent_gpu->instance_ptr_table_lock, UVM_LOCK_ORDER_LEAF);
     uvm_rb_tree_init(&parent_gpu->instance_ptr_table);
@@ -1214,6 +1216,7 @@ static NV_STATUS alloc_parent_gpu(const NvProcessorUuid *gpu_uuid,
     return NV_OK;
 
 cleanup:
+    uvm_tracker_deinit(&parent_gpu->access_counters_clear_tracker);
     uvm_kvfree(parent_gpu);
 
     return status;
@@ -1644,19 +1647,12 @@ static void sync_parent_gpu_trackers(uvm_parent_gpu_t *parent_gpu,
 
     // Sync the access counter clear tracker too.
     if (parent_gpu->access_counters_supported && parent_gpu->access_counter_buffer) {
-        NvU32 notif_buf_index;
-        for (notif_buf_index = 0; notif_buf_index < parent_gpu->rm_info.accessCntrBufferCount; notif_buf_index++) {
-            uvm_access_counter_buffer_t *access_counters = &parent_gpu->access_counter_buffer[notif_buf_index];
+        uvm_mutex_lock(&parent_gpu->access_counters_clear_tracker_lock);
+        status = uvm_tracker_wait(&parent_gpu->access_counters_clear_tracker);
+        uvm_mutex_unlock(&parent_gpu->access_counters_clear_tracker_lock);
 
-            if (access_counters->rm_info.accessCntrBufferHandle != 0) {
-                uvm_access_counters_isr_lock(access_counters);
-                status = uvm_tracker_wait(&access_counters->clear_tracker);
-                uvm_access_counters_isr_unlock(access_counters);
-
-                if (status != NV_OK)
-                    UVM_ASSERT(status == uvm_global_get_status());
-            }
-        }
+        if (status != NV_OK)
+            UVM_ASSERT(status == uvm_global_get_status());
     }
 }
 
@@ -1786,6 +1782,8 @@ static void uvm_parent_gpu_destroy(nv_kref_t *nv_kref)
 
     for_each_sub_processor_index(sub_processor_index)
         UVM_ASSERT(!parent_gpu->gpus[sub_processor_index]);
+
+    uvm_tracker_deinit(&parent_gpu->access_counters_clear_tracker);
 
     uvm_kvfree(parent_gpu);
 }
@@ -2880,6 +2878,9 @@ static NV_STATUS gpu_retain_by_uuid_locked(const NvProcessorUuid *gpu_uuid,
     status = uvm_rm_locked_call(nvUvmInterfaceGetGpuInfo(gpu_uuid, &client_info, gpu_info));
     if (status != NV_OK)
         goto error_unregister;
+
+    if (gpu_info->accessCntrBufferCount > 1)
+        gpu_info->accessCntrBufferCount = 1;
 
     if (parent_gpu != NULL) {
         // If the UUID has been seen before, and if SMC is enabled, then check

@@ -3329,7 +3329,7 @@ void uvm_pmm_gpu_device_p2p_init(uvm_gpu_t *gpu)
     // TODO: Bug 4672502: [Linux Upstream][UVM] Allow drivers to manage and
     // allocate PCI P2PDMA pages directly
     p2p_page = pfn_to_page(pci_start_pfn);
-    p2p_page->pgmap->ops = &uvm_device_p2p_pgmap_ops;
+    page_pgmap(p2p_page)->ops = &uvm_device_p2p_pgmap_ops;
     for (; page_to_pfn(p2p_page) < pci_end_pfn; p2p_page++)
         p2p_page->zone_device_data = NULL;
 
@@ -3344,7 +3344,7 @@ void uvm_pmm_gpu_device_p2p_deinit(uvm_gpu_t *gpu)
 
     if (gpu->device_p2p_initialised && !uvm_parent_gpu_is_coherent(gpu->parent)) {
         p2p_page = pfn_to_page(pci_start_pfn);
-        devm_memunmap_pages(&gpu->parent->pci_dev->dev, p2p_page->pgmap);
+        devm_memunmap_pages(&gpu->parent->pci_dev->dev, page_pgmap(p2p_page));
     }
 
     gpu->device_p2p_initialised = false;

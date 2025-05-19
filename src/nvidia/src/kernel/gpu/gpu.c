@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -6186,7 +6186,11 @@ gpuLogOobXidMessage_KERNEL
 {
     RM_API                                 *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV_STATUS                               status;
+    NvBool                                  bGspFatalError = NV_FALSE;
     NV2080_CTRL_INTERNAL_LOG_OOB_XID_PARAMS params = {0};
+    KernelGsp                              *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+
+    bGspFatalError = pKernelGsp->bFatalError;
 
     // Exclude conditions that indicate issues with GSP communication.
     if ((xid == GSP_ERROR) ||
@@ -6196,7 +6200,8 @@ gpuLogOobXidMessage_KERNEL
         !pGpu->gspRmInitialized ||
         pGpu->getProperty(pGpu, PDB_PROP_GPU_PREPARING_FULLCHIP_RESET) ||
         pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST) ||
-        !pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_CONNECTED))
+        !pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_CONNECTED) ||
+        bGspFatalError)
     {
         return;
     }

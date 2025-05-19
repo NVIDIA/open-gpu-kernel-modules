@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -52,6 +52,7 @@ kchangrpAllocFaultMethodBuffers_GV100
     HW_ENG_FAULT_METHOD_BUFFER  *pFaultMthdBuf  = NULL;
     NvU32                        gfid           = pKernelChannelGroup->gfid;
     TRANSFER_SURFACE             surf           = {0};
+    NvBool                       bReUseInitMem  = pGpu->getProperty(pGpu, PDB_PROP_GPU_REUSE_INIT_CONTING_MEM);
 
     //
     // Allocate method buffer if applicable
@@ -91,6 +92,12 @@ kchangrpAllocFaultMethodBuffers_GV100
     {
         // Get the right aperture/attribute
         faultBufApert = ADDR_SYSMEM;
+
+        if (bReUseInitMem)
+        {
+            faultBufApert = ADDR_FBMEM;
+        }
+
         faultBufAttr  = NV_MEMORY_CACHED;
         memdescOverrideInstLoc(DRF_VAL(_REG_STR_RM, _INST_LOC_3, _FAULT_METHOD_BUFFER, pGpu->instLocOverrides3),
                                "fault method buffer", &faultBufApert, &faultBufAttr);
@@ -112,7 +119,7 @@ kchangrpAllocFaultMethodBuffers_GV100
             goto fail;
         }
 
-        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_34, 
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_34,
                     pFaultMthdBuf->pMemDesc);
         if (status != NV_OK)
         {

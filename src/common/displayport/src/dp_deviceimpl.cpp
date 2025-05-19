@@ -3232,6 +3232,19 @@ bool DeviceImpl::getDeviceSpecificData(NvU8 *oui, NvU8 *devIdString,
     return true;
 }
 
+bool DeviceImpl::getParentSpecificData(NvU8 *oui, NvU8 *devIdString,
+                                       NvU8 *hwRevision, NvU8 *swMajorRevision,
+                                       NvU8 *swMinorRevision)
+{
+    if (this->parent == NULL)
+    {
+        return false;
+    }
+
+    return this->parent->getDeviceSpecificData(oui, devIdString, hwRevision,
+                                               swMajorRevision, swMinorRevision);
+}
+
 bool DeviceImpl::setModeList(DisplayPort::DpModesetParams *modeList, unsigned numModes)
 {
     // Create a dummy group for compoundQuery

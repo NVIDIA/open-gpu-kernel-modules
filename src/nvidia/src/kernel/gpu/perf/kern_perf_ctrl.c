@@ -111,6 +111,10 @@ subdeviceCtrlCmdPerfGetGpumonPerfmonUtilSamplesV2_KERNEL
                              pParams,
                              sizeof(*pParams)));
 
+    // Skip translation if the request from root namespace.
+    if (osIsInitNs())
+        return NV_OK;
+
     // Now translate the sample's procId.
     numEntries = pParams->bufSize / sizeof (NV2080_CTRL_PERF_GPUMON_PERFMON_UTIL_SAMPLE);
     NV_ASSERT_OR_RETURN(numEntries <= NV2080_CTRL_PERF_GPUMON_SAMPLE_COUNT_PERFMON_UTIL,

@@ -1073,7 +1073,7 @@ struct OBJGPU {
     NvBool (*__gpuIsInternalSkuFuseEnabled__)(struct OBJGPU * /*this*/);  // halified (2 hals) body
     NvBool (*__gpuGetIsCmpSku__)(struct OBJGPU * /*this*/);  // halified (2 hals) body
 
-    // 114 PDB properties
+    // 115 PDB properties
     NvBool PDB_PROP_GPU_HIGH_SPEED_BRIDGE_CONNECTED;
     NvBool PDB_PROP_GPU_IN_STANDBY;
     NvBool PDB_PROP_GPU_IN_HIBERNATE;
@@ -1187,6 +1187,7 @@ struct OBJGPU {
     NvBool PDB_PROP_GPU_FASTPATH_SEQ_ENABLED;
     NvBool PDB_PROP_GPU_PREPARING_FULLCHIP_RESET;
     NvBool PDB_PROP_GPU_RECOVERY_DRAIN_P2P_REQUIRED;
+    NvBool PDB_PROP_GPU_REUSE_INIT_CONTING_MEM;
     NvBool PDB_PROP_GPU_RUSD_POLLING_SUPPORT_MONOLITHIC;
 
     // Data members
@@ -1247,6 +1248,8 @@ struct OBJGPU {
     DEVICE_MAPPING *pDeviceMappingsByDeviceInstance[12];
     void *gpuCfgAddr;
     TIMEOUT_DATA timeoutData;
+    NvBool bBug5203024OverrideTimeoutsRegkeySet;
+    NvU32 bug5203024OverrideTimeouts;
     NvU32 computeModeRules;
     NvS32 computeModeRefCount;
     NvHandle hComputeModeReservation;
@@ -1427,6 +1430,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGPU;
 #define PDB_PROP_GPU_IS_VIRTUALIZATION_MODE_HOST_VGPU_BASE_NAME PDB_PROP_GPU_IS_VIRTUALIZATION_MODE_HOST_VGPU
 #define PDB_PROP_GPU_SKIP_TABLE_CE_MAP_BASE_CAST
 #define PDB_PROP_GPU_SKIP_TABLE_CE_MAP_BASE_NAME PDB_PROP_GPU_SKIP_TABLE_CE_MAP
+#define PDB_PROP_GPU_REUSE_INIT_CONTING_MEM_BASE_CAST
+#define PDB_PROP_GPU_REUSE_INIT_CONTING_MEM_BASE_NAME PDB_PROP_GPU_REUSE_INIT_CONTING_MEM
 #define PDB_PROP_GPU_IN_FATAL_ERROR_BASE_CAST
 #define PDB_PROP_GPU_IN_FATAL_ERROR_BASE_NAME PDB_PROP_GPU_IN_FATAL_ERROR
 #define PDB_PROP_GPU_VGA_ENABLED_BASE_CAST

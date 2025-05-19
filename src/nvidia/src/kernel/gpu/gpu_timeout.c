@@ -105,11 +105,15 @@ timeoutRegistryOverride
 {
     NvU32 data32 = 0;
 
-    NvU32 bug5203024OverrideTimeouts = (
-        (osReadRegistryDword(pGpu, NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT,
-                             &data32) == NV_OK) ?
-        data32 :
-        0);
+    pGpu->bBug5203024OverrideTimeoutsRegkeySet =
+        (osReadRegistryDword(pGpu,
+                             NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT,
+                             &data32) == NV_OK);
+
+    pGpu->bug5203024OverrideTimeouts =
+        pGpu->bBug5203024OverrideTimeoutsRegkeySet ? data32 : 0;
+
+    NvU32 bug5203024OverrideTimeouts = pGpu->bug5203024OverrideTimeouts;
 
     NvBool bOverrideDefaultTimeout = (DRF_VAL(_REG_STR,
                                               _RM_BUG5203024_OVERRIDE_TIMEOUT,

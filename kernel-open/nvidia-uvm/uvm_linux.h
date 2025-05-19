@@ -425,4 +425,8 @@ static inline pgprot_t uvm_pgprot_decrypted(pgprot_t prot)
     #define UVM_FOR_EACH_SGTABLE_DMA_PAGE_PRESENT() 1
 #endif
 
+#ifndef NV_PAGE_PGMAP_PRESENT
+#define page_pgmap(page) (page)->pgmap
+#endif
+
 #endif // _UVM_LINUX_H

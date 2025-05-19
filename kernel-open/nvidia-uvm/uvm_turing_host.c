@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2024 NVIDIA Corporation
+    Copyright (c) 2017-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -381,4 +381,12 @@ void uvm_hal_turing_access_counter_clear_targeted(uvm_push_t *push,
                                HWCONST(C46F, MEM_OP_D, ACCESS_COUNTER_CLR_TYPE, TARGETED) |
                                HWCONST(C46F, MEM_OP_D, ACCESS_COUNTER_CLR_TARGETED_TYPE, MIMC) |
                                HWVALUE(C46F, MEM_OP_D, ACCESS_COUNTER_CLR_TARGETED_BANK, buffer_entry->bank));
+}
+
+uvm_access_counter_clear_op_t
+uvm_hal_turing_access_counter_query_clear_op(uvm_parent_gpu_t *parent_gpu,
+                                             uvm_access_counter_buffer_entry_t **buffer_entries,
+                                             NvU32 num_entries)
+{
+    return UVM_ACCESS_COUNTER_CLEAR_OP_TARGETED;
 }

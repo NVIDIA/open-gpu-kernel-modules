@@ -471,6 +471,13 @@ static uvm_membar_t uvm_membar_max(uvm_membar_t membar_1, uvm_membar_t membar_2)
     return max(membar_1, membar_2);
 }
 
+typedef enum
+{
+    UVM_ACCESS_COUNTER_CLEAR_OP_NONE = 0,
+    UVM_ACCESS_COUNTER_CLEAR_OP_TARGETED,
+    UVM_ACCESS_COUNTER_CLEAR_OP_ALL
+} uvm_access_counter_clear_op_t;
+
 struct uvm_access_counter_buffer_entry_struct
 {
     // Address of the region for which a notification was sent

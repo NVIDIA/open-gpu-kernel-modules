@@ -458,7 +458,6 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                 data = NV2080_CTRL_GPU_INFO_INDEX_DMABUF_CAPABILITY_NO;
 
                 if (osDmabufIsSupported() &&
-                    (!IS_VIRTUAL(pGpu)) &&
                     (!gpuIsApmFeatureEnabled(pGpu)) &&
                     (!NVCPU_IS_PPC64LE))
                 {

@@ -27,7 +27,7 @@
 
 const char *uvm_lock_order_to_string(uvm_lock_order_t lock_order)
 {
-    BUILD_BUG_ON(UVM_LOCK_ORDER_COUNT != 37);
+    BUILD_BUG_ON(UVM_LOCK_ORDER_COUNT != 38);
 
     switch (lock_order) {
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_INVALID);
@@ -58,6 +58,7 @@ const char *uvm_lock_order_to_string(uvm_lock_order_t lock_order)
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_PMM);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_PMM_PMA);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_PMM_ROOT_CHUNK);
+        UVM_ENUM_STRING_CASE(UVM_LOCK_ACCESS_COUNTERS_CLEAR_OPS);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_CHANNEL);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_WLC_CHANNEL);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_TOOLS_VA_SPACE_LIST);

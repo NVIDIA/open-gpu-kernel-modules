@@ -336,6 +336,15 @@ void uvm_hal_maxwell_access_counter_clear_targeted_unsupported(uvm_push_t *push,
     UVM_ASSERT_MSG(false, "host access_counter_clear_targeted called on Maxwell GPU\n");
 }
 
+uvm_access_counter_clear_op_t
+uvm_hal_maxwell_access_counter_query_clear_op_unsupported(uvm_parent_gpu_t *parent_gpu,
+                                                          uvm_access_counter_buffer_entry_t **buffer_entries,
+                                                          NvU32 num_entries)
+{
+    UVM_ASSERT_MSG(false, "host access_counter_query_clear_op called on Maxwell GPU\n");
+    return UVM_ACCESS_COUNTER_CLEAR_OP_NONE;
+}
+
 NvU64 uvm_hal_maxwell_get_time(uvm_gpu_t *gpu)
 {
     NvU32 time0;

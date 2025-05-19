@@ -85,8 +85,20 @@ typedef struct
      * You can reorder or change below this point but update version.
      * Make sure to align it to 16B as ucode expect 16byte alignment to DMA efficiently.
      */
-    NvU32  videoPgPmuHandshake;    // Handshake between PMU and Video Ucode for SW controlled IDLE signal.
-    NvU64  rsvd2;                  // reserved field
+    NvU32  videoPgPmuHandshake;     // Handshake between PMU and Video Ucode for SW controlled IDLE signal.
+    
+    /*
+     * WAR to avoid triggering HS signing on older chips, as these bootargs are only used on RISCV anyways.
+     * Always define videngTimeoutMs for RM builds. Assumption is that ENG_TYPE will be undefined for RM builds
+     * Only define it in video ucode builds that enable GB10X_OVERRIDE_TIMEOUT in build cfgs.
+     */
+#if (!defined(ENG_TYPE) || defined(GB10X_OVERRIDE_TIMEOUT))
+    NvU32  videngTimeoutMs;         // SW WAR for bug 5203864, increasing timeouts on GB10x via regkey RmOverrideInternalTimeoutsMs.
+                                    // Specify the timeout value in ms. If the value is 0, do not override the timeouts sent from KMD and/or UMD.
+    NvU32  rsvd2;                   // reserved field
+#else
+    NvU64  rsvd2;                   // reserved field
+#endif
 } NV_VIDENG_BOOT_PARAMS, *PNV_VIDENG_BOOT_PARAMS;
 
 #endif // RMIFVIDENG_H

@@ -490,11 +490,21 @@ bool ConnectorImpl2x::compoundQueryAttachMSTGeneric(Group * target,
                         tail->bandwidth.compound_query_state.totalTimeSlots)
                     {
                         compoundQueryResult = false;
+                        if(this->bEnableLowerBppCheckForDsc)
+                        {
+                            tail->bandwidth.compound_query_state.timeslots_used_by_query -= linkConfig->slotsForPBN(base_pbn);
+                            tail->bandwidth.compound_query_state.bandwidthAllocatedForIndex &= ~(1 << compoundQueryCount);
+                        }
                         SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH)
                     }
                 }
                 tail = (DeviceImpl*)tail->getParent();
             }
+        }
+        // If the compoundQueryResult is false, we need to reset the compoundQueryLocalLinkPBN
+        if (!compoundQueryResult && this->bEnableLowerBppCheckForDsc)   
+        {
+            compoundQueryLocalLinkPBN -= slots_pbn;
         }
     }
     else

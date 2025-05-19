@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -169,6 +169,8 @@ kgspServiceFatalHwError_GB100
     NV_PRINTF(LEVEL_ERROR, "NV_PGSP_FALCON_IRQSTAT_FATAL_ERROR PENDING error_code 0x%x\n", errorCode);
     MODS_ARCH_ERROR_PRINTF("NV_PGSP_FALCON_IRQSTAT_FATAL_ERROR=0x%x\n", errorCode);
 
+    pKernelGsp->bFatalError = NV_TRUE;
+
     // Poison error
     if (FLD_TEST_DRF(_PGSP, _RISCV_FAULT_CONTAINMENT_SRCSTAT, _GLOBAL_MEM, _FAULTED, errorCode))
     {
@@ -190,9 +192,8 @@ kgspServiceFatalHwError_GB100
     else
     {
         nvErrorLog_va((void *)pGpu, ROBUST_CHANNEL_CONTAINED_ERROR, "GSP-RISCV instance 0 fatal error");
+        NV_ASSERT_OK(gpuMarkDeviceForReset(pGpu));
     }
 
-    pKernelGsp->bFatalError = NV_TRUE;
     kgspRcAndNotifyAllChannels(pGpu, pKernelGsp, ROBUST_CHANNEL_CONTAINED_ERROR, NV_TRUE);
-    NV_ASSERT_OK(gpuMarkDeviceForReset(pGpu));
 }

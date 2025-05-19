@@ -148,7 +148,7 @@ struct Subdevice {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct Subdevice *__nvoc_pbase_Subdevice;    // subdevice
 
-    // Vtable with 616 per-object function pointers
+    // Vtable with 620 per-object function pointers
     NV_STATUS (*__subdeviceCtrlCmdBiosGetInfoV2__)(struct Subdevice * /*this*/, NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS *);  // halified (2 hals) exported (id=0x20800810) body
     NV_STATUS (*__subdeviceCtrlCmdBiosGetNbsiV2__)(struct Subdevice * /*this*/, NV2080_CTRL_BIOS_GET_NBSI_V2_PARAMS *);  // exported (id=0x2080080e)
     NV_STATUS (*__subdeviceCtrlCmdBiosGetSKUInfo__)(struct Subdevice * /*this*/, NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS *);  // halified (2 hals) exported (id=0x20800808)
@@ -269,6 +269,10 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessPPSLS__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_PPSLS_PARAMS *);  // exported (id=0x2080307e)
     NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessMLPC__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_MLPC_PARAMS *);  // exported (id=0x2080307f)
     NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessPLIB__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_PLIB_PARAMS *);  // exported (id=0x20803080)
+    NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessPTASV2__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_PTASV2_PARAMS *);  // exported (id=0x20803093)
+    NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessSLLM_5NM__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_SLLM_5NM_PARAMS *);  // exported (id=0x20803094)
+    NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessPPRM__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_PPRM_PARAMS *);  // exported (id=0x20803091)
+    NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccess__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_PARAMS *);  // exported (id=0x20803090)
     NV_STATUS (*__subdeviceCtrlCmdNvlinkGetPlatformInfo__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_GET_PLATFORM_INFO_PARAMS *);  // exported (id=0x20803083)
     NV_STATUS (*__subdeviceCtrlCmdI2cReadBuffer__)(struct Subdevice * /*this*/, NV2080_CTRL_I2C_READ_BUFFER_PARAMS *);  // exported (id=0x20800601)
     NV_STATUS (*__subdeviceCtrlCmdI2cWriteBuffer__)(struct Subdevice * /*this*/, NV2080_CTRL_I2C_WRITE_BUFFER_PARAMS *);  // exported (id=0x20800602)
@@ -1121,6 +1125,14 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdNvlinkPRMAccessMLPC(arg_this, arg2) subdeviceCtrlCmdNvlinkPRMAccessMLPC_DISPATCH(arg_this, arg2)
 #define subdeviceCtrlCmdNvlinkPRMAccessPLIB_FNPTR(arg_this) arg_this->__subdeviceCtrlCmdNvlinkPRMAccessPLIB__
 #define subdeviceCtrlCmdNvlinkPRMAccessPLIB(arg_this, arg2) subdeviceCtrlCmdNvlinkPRMAccessPLIB_DISPATCH(arg_this, arg2)
+#define subdeviceCtrlCmdNvlinkPRMAccessPTASV2_FNPTR(arg_this) arg_this->__subdeviceCtrlCmdNvlinkPRMAccessPTASV2__
+#define subdeviceCtrlCmdNvlinkPRMAccessPTASV2(arg_this, arg2) subdeviceCtrlCmdNvlinkPRMAccessPTASV2_DISPATCH(arg_this, arg2)
+#define subdeviceCtrlCmdNvlinkPRMAccessSLLM_5NM_FNPTR(arg_this) arg_this->__subdeviceCtrlCmdNvlinkPRMAccessSLLM_5NM__
+#define subdeviceCtrlCmdNvlinkPRMAccessSLLM_5NM(arg_this, arg2) subdeviceCtrlCmdNvlinkPRMAccessSLLM_5NM_DISPATCH(arg_this, arg2)
+#define subdeviceCtrlCmdNvlinkPRMAccessPPRM_FNPTR(arg_this) arg_this->__subdeviceCtrlCmdNvlinkPRMAccessPPRM__
+#define subdeviceCtrlCmdNvlinkPRMAccessPPRM(arg_this, arg2) subdeviceCtrlCmdNvlinkPRMAccessPPRM_DISPATCH(arg_this, arg2)
+#define subdeviceCtrlCmdNvlinkPRMAccess_FNPTR(arg_this) arg_this->__subdeviceCtrlCmdNvlinkPRMAccess__
+#define subdeviceCtrlCmdNvlinkPRMAccess(arg_this, arg2) subdeviceCtrlCmdNvlinkPRMAccess_DISPATCH(arg_this, arg2)
 #define subdeviceCtrlCmdNvlinkGetPlatformInfo_FNPTR(arg_this) arg_this->__subdeviceCtrlCmdNvlinkGetPlatformInfo__
 #define subdeviceCtrlCmdNvlinkGetPlatformInfo(arg_this, arg2) subdeviceCtrlCmdNvlinkGetPlatformInfo_DISPATCH(arg_this, arg2)
 #define subdeviceCtrlCmdI2cReadBuffer_FNPTR(pSubdevice) pSubdevice->__subdeviceCtrlCmdI2cReadBuffer__
@@ -2701,6 +2713,22 @@ static inline NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessMLPC_DISPATCH(struct Subd
 
 static inline NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessPLIB_DISPATCH(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_PRM_ACCESS_PLIB_PARAMS *arg2) {
     return arg_this->__subdeviceCtrlCmdNvlinkPRMAccessPLIB__(arg_this, arg2);
+}
+
+static inline NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessPTASV2_DISPATCH(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_PRM_ACCESS_PTASV2_PARAMS *arg2) {
+    return arg_this->__subdeviceCtrlCmdNvlinkPRMAccessPTASV2__(arg_this, arg2);
+}
+
+static inline NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessSLLM_5NM_DISPATCH(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_PRM_ACCESS_SLLM_5NM_PARAMS *arg2) {
+    return arg_this->__subdeviceCtrlCmdNvlinkPRMAccessSLLM_5NM__(arg_this, arg2);
+}
+
+static inline NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessPPRM_DISPATCH(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_PRM_ACCESS_PPRM_PARAMS *arg2) {
+    return arg_this->__subdeviceCtrlCmdNvlinkPRMAccessPPRM__(arg_this, arg2);
+}
+
+static inline NV_STATUS subdeviceCtrlCmdNvlinkPRMAccess_DISPATCH(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_PRM_ACCESS_PARAMS *arg2) {
+    return arg_this->__subdeviceCtrlCmdNvlinkPRMAccess__(arg_this, arg2);
 }
 
 static inline NV_STATUS subdeviceCtrlCmdNvlinkGetPlatformInfo_DISPATCH(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_GET_PLATFORM_INFO_PARAMS *arg2) {
@@ -5084,6 +5112,14 @@ NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessPPSLS_IMPL(struct Subdevice *arg1, NV20
 NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessMLPC_IMPL(struct Subdevice *arg1, NV2080_CTRL_NVLINK_PRM_ACCESS_MLPC_PARAMS *arg2);
 
 NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessPLIB_IMPL(struct Subdevice *arg1, NV2080_CTRL_NVLINK_PRM_ACCESS_PLIB_PARAMS *arg2);
+
+NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessPTASV2_IMPL(struct Subdevice *arg1, NV2080_CTRL_NVLINK_PRM_ACCESS_PTASV2_PARAMS *arg2);
+
+NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessSLLM_5NM_IMPL(struct Subdevice *arg1, NV2080_CTRL_NVLINK_PRM_ACCESS_SLLM_5NM_PARAMS *arg2);
+
+NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessPPRM_IMPL(struct Subdevice *arg1, NV2080_CTRL_NVLINK_PRM_ACCESS_PPRM_PARAMS *arg2);
+
+NV_STATUS subdeviceCtrlCmdNvlinkPRMAccess_IMPL(struct Subdevice *arg1, NV2080_CTRL_NVLINK_PRM_ACCESS_PARAMS *arg2);
 
 NV_STATUS subdeviceCtrlCmdNvlinkGetPlatformInfo_IMPL(struct Subdevice *arg1, NV2080_CTRL_NVLINK_GET_PLATFORM_INFO_PARAMS *arg2);
 

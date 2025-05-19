@@ -63,6 +63,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += find_next_bit_wrap
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += iommu_is_dma_domain
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += for_each_sgtable_dma_page
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += folio_test_swapcache
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += page_pgmap
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += vm_ops_fault_removed_vma_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += mmu_notifier_ops_invalidate_range
@@ -81,3 +82,5 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += struct_page_has_zone_device_data
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_int_active_memcg
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_migrate_vma_setup
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present___iowrite64_lo_hi
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_make_device_exclusive

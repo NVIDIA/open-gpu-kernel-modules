@@ -2601,6 +2601,7 @@ _controllerParseStaticTable_v22
 
     switch (header.version)
     {
+        case NVPCF_CONTROLLER_STATIC_TABLE_VERSION_25:
         case NVPCF_CONTROLLER_STATIC_TABLE_VERSION_24:
         case NVPCF_CONTROLLER_STATIC_TABLE_VERSION_23:
         case NVPCF_CONTROLLER_STATIC_TABLE_VERSION_22:
@@ -2639,10 +2640,12 @@ _controllerParseStaticTable_v22
         }
     }
 
+    CONTROLLER_STATIC_TABLE_ENTRY_V22 entry = { 0 };
+
     // Parse each entry
     for (loop = 0; loop < header.entryCount; loop++)
     {
-        CONTROLLER_STATIC_TABLE_ENTRY_V22 entry = { 0 };
+        portMemSet(&entry, 0, sizeof(entry));
 
         NvU32 offset = header.headerSize +
             (loop * NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V22_SIZE_05);
@@ -2667,6 +2670,28 @@ _controllerParseStaticTable_v22
             case NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V22_FLAGS0_CLASS_DISABLED:
             default:
             {
+            }
+        }
+    }
+
+    if (header.version == NVPCF_CONTROLLER_STATIC_TABLE_VERSION_25)
+    {
+        switch(DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_V25, _PARAM0, _CPU_TDP_TYPE,entry.flags0))
+        {
+            case NVPCF_CONTROLLER_SBIOS_TABLE_CPU_TDP_CONTROL_DC_ONLY:
+            {
+                pParams->cpuTdpControlType = QBOOST_CPU_TDP_CONTROL_TYPE_DC_ONLY;
+                break;
+            }
+            case NVPCF_CONTROLLER_SBIOS_TABLE_CPU_TDP_CONTROL_DC_AC:
+            {
+                pParams->cpuTdpControlType = QBOOST_CPU_TDP_CONTROL_TYPE_DC_AC;
+                break;
+            }
+            default:
+            {
+                pParams->cpuTdpControlType = QBOOST_CPU_TDP_CONTROL_TYPE_DC_ONLY;
+                break;
             }
         }
     }

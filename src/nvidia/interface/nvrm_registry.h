@@ -64,7 +64,7 @@
 // Type Dword
 // Change all RM internal timeouts to experiment with Bug 5203024.
 //
-// Some timeouts may still silently clamp to differnt min/max values and this
+// Some timeouts may still silently clamp to different min/max values and this
 // regkey does NOT validate their range.
 //
 #define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT        "RmOverrideInternalTimeoutsMs"
@@ -82,6 +82,20 @@
 #define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT_FLAGS_SET_PMU_INTERNAL_TIMEOUT  27:27
 // Currently has no effect
 #define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT_FLAGS_SET_FECS_WATCHDOG_TIMEOUT 26:26
+
+
+//
+// This regkey is experimental
+//
+// Type Dword
+// Change video Watchdog and GP timeouts to experiment with Bug 5203024.
+// Stores the timeout value in ms.
+// If this regkey is set and has non-zero value, also disables MB timeouts.
+//
+// Some timeouts may still silently clamp to different min/max values and this
+// regkey does NOT validate their range.
+//
+#define NV_REG_STR_RM_BUG5203024_OVERRIDE_VIDEO_TIMEOUT        "RmVideoEngineTimeoutMs"
 
 
 //
@@ -1332,6 +1346,11 @@
 #define NV_REG_STR_RM_INTR_LOCKING_MODE_DEFAULT               (0x00000000)
 #define NV_REG_STR_RM_INTR_LOCKING_MODE_INTR_MASK             (0x00000001)
 
+#define NV_REG_INTERNAL_PANEL_DISCONNECTED         "RMInternalPanelDisconnected"
+#define NV_REG_INTERNAL_PANEL_DISCONNECTED_DISABLE  0x00000000
+#define NV_REG_INTERNAL_PANEL_DISCONNECTED_ENABLE   0x00000001
+#define NV_REG_INTERNAL_PANEL_DISCONNECTED_DEFAULT  RM_REG_INTERNAL_PANEL_DISCONNECTED_DISABLE
+
 #define NV_REG_STR_RM_PER_INTR_DPC_QUEUING        "RMDisablePerIntrDPCQueueing"
 // Type DWORD
 // This regkey is used to disable per interrupt DPC queuing.
@@ -1398,14 +1417,14 @@
 #define NV_REG_STR_RM_RC_WATCHDOG_DEFAULT                   NV_REG_STR_RM_RC_WATCHDOG_ENABLE
 
 #define NV_REG_STR_RM_WATCHDOG_TIMEOUT                      "RmWatchDogTimeOut"
-#define NV_REG_STR_RM_WATCHDOG_TIMEOUT_LOW                   0x00000007
-#define NV_REG_STR_RM_WATCHDOG_TIMEOUT_HI                    0x0000000C
-#define NV_REG_STR_RM_WATCHDOG_TIMEOUT_DEFAULT               NV_REG_STR_RM_WATCHDOG_TIMEOUT_LOW
+#define NV_REG_STR_RM_WATCHDOG_TIMEOUT_LOW                  5
+#define NV_REG_STR_RM_WATCHDOG_TIMEOUT_HI                   60
+#define NV_REG_STR_RM_WATCHDOG_TIMEOUT_DEFAULT              7
 
-#define NV_REG_STR_RM_WATCHDOG_INTERVAL                      "RmWatchDogInterval"
-#define NV_REG_STR_RM_WATCHDOG_INTERVAL_LOW                   0x00000007
-#define NV_REG_STR_RM_WATCHDOG_INTERVAL_HI                    0x0000000C
-#define NV_REG_STR_RM_WATCHDOG_INTERVAL_DEFAULT               NV_REG_STR_RM_WATCHDOG_INTERVAL_LOW
+#define NV_REG_STR_RM_WATCHDOG_INTERVAL                     "RmWatchDogInterval"
+#define NV_REG_STR_RM_WATCHDOG_INTERVAL_LOW                 5
+#define NV_REG_STR_RM_WATCHDOG_INTERVAL_HI                  30
+#define NV_REG_STR_RM_WATCHDOG_INTERVAL_DEFAULT             7
 
 // Enable/Disable watchcat in GSP-Plugin for Guest RPC
 // Default is Enabled
@@ -2619,6 +2638,19 @@
 #define NV_REG_STR_RM_RUSD_POLLING_INTERVAL_TESLA            100
 #define NV_REG_STR_RM_RUSD_POLLING_INTERVAL_MIN              100
 #define NV_REG_STR_RM_RUSD_POLLING_INTERVAL_MAX              1000
+
+//
+// Type: DWORD
+// This regkey enables some path to reuse the initially allocated continguous memory
+// instead of freeing it dynamically which causes memory fragmentation and
+// under low available memory configuration the allocation could fail and leads to BSOD
+// Enable the key to reuse the initially allocated mem withoug free and reallocate
+//   - Default for Blackwell and up
+// Disable the key to free and allocate dynamically
+//
+#define NV_REG_STR_RM_INIT_MEM_REUSE                           "RmInitMemReuse"
+#define NV_REG_STR_RM_INIT_MEM_REUSE_ENABLE                     0x00000001
+#define NV_REG_STR_RM_INIT_MEM_REUSE_DISABLE                    0x00000000
 
 //
 // Type DWORD (Boolean)

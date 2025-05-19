@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,6 +22,7 @@
  */
 
 #include "gpu/gpu.h"
+#include "gpu/gpu_access.h"
 #include "gpu/gpu_child_class_defs.h"
 #include "os/os.h"
 #include "nverror.h"
@@ -101,7 +102,7 @@ gpuReadPassThruConfigReg_GH100
     NvU32     *pData
 )
 {
-    *pData = GPU_REG_RD32(pGpu, DEVICE_BASE(NV_EP_PCFGM) + index);
+    *pData = GPU_REG_RD32_UNCHECKED(pGpu, DEVICE_BASE(NV_EP_PCFGM) + index);
 
     return NV_OK;
 }

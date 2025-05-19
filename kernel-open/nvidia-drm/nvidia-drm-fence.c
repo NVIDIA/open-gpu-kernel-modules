@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2025, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -1132,7 +1132,7 @@ static void __nv_drm_semsurf_fence_ctx_destroy(
      */
     nv_drm_workthread_shutdown(&ctx->worker);
 
-    nv_drm_del_timer_sync(&ctx->timer);
+    nv_timer_delete_sync(&ctx->timer.kernel_timer);
 
     /*
      * The semaphore surface could still be sending callbacks, so it is still

@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 570.144.
+version 570.153.02.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-570.144 driver release.  This can be achieved by installing
+570.153.02 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -185,7 +185,7 @@ table below).
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/570.144/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/570.153.02/README/kernel_open.html
 
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
@@ -954,6 +954,10 @@ Subsystem Device ID.
 | NVIDIA RTX PRO 6000 Blackwell Workstation Edition       | 2BB1 103C 204B |
 | NVIDIA RTX PRO 6000 Blackwell Workstation Edition       | 2BB1 10DE 204B |
 | NVIDIA RTX PRO 6000 Blackwell Workstation Edition       | 2BB1 17AA 204B |
+| NVIDIA RTX PRO 5000 Blackwell                           | 2BB3 1028 204D |
+| NVIDIA RTX PRO 5000 Blackwell                           | 2BB3 103C 204D |
+| NVIDIA RTX PRO 5000 Blackwell                           | 2BB3 10DE 204D |
+| NVIDIA RTX PRO 5000 Blackwell                           | 2BB3 17AA 204D |
 | NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition | 2BB4 1028 204C |
 | NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition | 2BB4 103C 204C |
 | NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition | 2BB4 10DE 204C |
@@ -964,6 +968,9 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 5080 Laptop GPU                      | 2C19           |
 | NVIDIA GeForce RTX 5090 Laptop GPU                      | 2C58           |
 | NVIDIA GeForce RTX 5080 Laptop GPU                      | 2C59           |
+| NVIDIA GeForce RTX 5060 Ti                              | 2D04           |
+| NVIDIA GeForce RTX 5070 Laptop GPU                      | 2D18           |
+| NVIDIA GeForce RTX 5070 Laptop GPU                      | 2D58           |
 | NVIDIA GeForce RTX 5070                                 | 2F04           |
 | NVIDIA GeForce RTX 5070 Ti Laptop GPU                   | 2F18           |
 | NVIDIA GeForce RTX 5070 Ti Laptop GPU                   | 2F58           |

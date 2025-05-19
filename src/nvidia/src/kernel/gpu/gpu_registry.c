@@ -225,6 +225,12 @@ gpuInitRegistryOverrides_KERNEL
         pGpu->userSharedData.pollingFrequencyMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_DEFAULT;
         pGpu->userSharedData.bPollFrequencyOverridden = NV_FALSE;
     }
+    
+    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_INIT_MEM_REUSE, &data32) == NV_OK) &&
+        (data32 == NV_REG_STR_RM_INIT_MEM_REUSE_DISABLE))
+    {
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_REUSE_INIT_CONTING_MEM, NV_FALSE);
+    }
 
     return NV_OK;
 }
