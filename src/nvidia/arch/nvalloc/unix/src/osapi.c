@@ -5979,24 +5979,3 @@ void NV_API_CALL rm_notify_gpu_removal(
     rm_notify_gpu_addition_removal_helper(nv, NV_FALSE);
     NV_EXIT_RM_RUNTIME(sp,fp);
 }
-
-NvBool NV_API_CALL rm_wait_for_bar_firewall(
-    nvidia_stack_t * sp,
-    NvU32 domain,
-    NvU8  bus,
-    NvU8  device,
-    NvU8  function,
-    NvU16 devId
-)
-{
-    NvBool ret;
-    void *fp = NULL;
-
-    // no state set up yet for threadstate or RM locks
-    NV_ENTER_RM_RUNTIME(sp,fp);
-    ret = gpumgrWaitForBarFirewall(domain, bus, device, function, devId);
-    NV_EXIT_RM_RUNTIME(sp,fp);
-
-    return ret;
-}
-

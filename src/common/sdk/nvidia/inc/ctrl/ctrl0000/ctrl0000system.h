@@ -2139,6 +2139,16 @@ typedef struct NV0000_CTRL_CMD_SYSTEM_GET_SYSTEM_POWER_LIMIT {
     NvU32 shortTimescaleBatteryCurrentLimitmA;
 } NV0000_CTRL_CMD_SYSTEM_GET_SYSTEM_POWER_LIMIT;
 
+/*!
+ * States for the Battery CPU TDP Control ability.
+ * _CPU_TDP_CONTROL_TYPE_DC_ONLY :==> Legacy setting for DC only CPU TDP Control
+ * _CPU_TDP_CONTROL_TYPE_DC_AC   :==> AC and DC both support CPU TDP Control
+ */
+typedef enum QBOOST_CPU_TDP_CONTROL_TYPE {
+    QBOOST_CPU_TDP_CONTROL_TYPE_DC_ONLY = 0,
+    QBOOST_CPU_TDP_CONTROL_TYPE_DC_AC = 1,
+} QBOOST_CPU_TDP_CONTROL_TYPE;
+
 #define NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS_MESSAGE_ID (0x3BU)
 
 typedef struct NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS {
@@ -2277,6 +2287,9 @@ typedef struct NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS {
 
     /* CPU TDP Limit to be set (milliwatts) */
     NvU32                                         cpuTdpmw;
+
+    /* CPU TDP Control Support */
+    QBOOST_CPU_TDP_CONTROL_TYPE                   cpuTdpControlType;
 } NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS;
 
 /* Define the filter types */

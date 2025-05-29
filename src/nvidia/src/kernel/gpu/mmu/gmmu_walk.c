@@ -328,16 +328,18 @@ _gmmuWalkCBLevelAlloc
             {
                 case ADDR_FBMEM:
                     if (RMCFG_FEATURE_PMA &&
-                        (pGVAS->flags & VASPACE_FLAGS_PTETABLE_PMA_MANAGED) &&
-                        (pGVAS->pPageTableMemPool != NULL))
+                        (pGVAS->flags & VASPACE_FLAGS_PTETABLE_PMA_MANAGED))
                     {
+                        NV_ASSERT_OR_RETURN(pUserCtx->pGpuState->pPageTableMemPool != NULL,
+                                            NV_ERR_INVALID_STATE);
+
                         pMemDescTemp->ActualSize = RM_ALIGN_UP(newMemSize, alignment);
-                        status = rmMemPoolAllocate(pGVAS->pPageTableMemPool,
+                        status = rmMemPoolAllocate(pUserCtx->pGpuState->pPageTableMemPool,
                                          (RM_POOL_ALLOC_MEMDESC*)pMemDescTemp);
                         break;
                     }
                 case ADDR_SYSMEM:
-                    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_143, 
+                    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_143,
                                     pMemDescTemp);
                     break;
                 default:
@@ -609,13 +611,11 @@ _gmmuWalkCBLevelFree
         }
         else
         {
-            if (RMCFG_FEATURE_PMA &&
-                (pUserCtx->pGVAS->flags & VASPACE_FLAGS_PTETABLE_PMA_MANAGED) &&
-                (pMemDesc[i]->pPageHandleList != NULL) &&
+            if ((pMemDesc[i]->pPageHandleList != NULL) &&
                 (listCount(pMemDesc[i]->pPageHandleList) != 0) &&
-                (pUserCtx->pGVAS->pPageTableMemPool != NULL))
+                (pUserCtx->pGpuState->pPageTableMemPool != NULL))
             {
-                rmMemPoolFree(pUserCtx->pGVAS->pPageTableMemPool,
+                rmMemPoolFree(pUserCtx->pGpuState->pPageTableMemPool,
                               (RM_POOL_ALLOC_MEMDESC*)pMemDesc[i],
                               pUserCtx->pGVAS->flags);
             }

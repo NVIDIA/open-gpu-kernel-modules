@@ -1345,6 +1345,11 @@
 #define NV_REG_STR_RM_INTR_LOCKING_MODE_DEFAULT               (0x00000000)
 #define NV_REG_STR_RM_INTR_LOCKING_MODE_INTR_MASK             (0x00000001)
 
+#define NV_REG_INTERNAL_PANEL_DISCONNECTED         "RMInternalPanelDisconnected"
+#define NV_REG_INTERNAL_PANEL_DISCONNECTED_DISABLE  0x00000000
+#define NV_REG_INTERNAL_PANEL_DISCONNECTED_ENABLE   0x00000001
+#define NV_REG_INTERNAL_PANEL_DISCONNECTED_DEFAULT  RM_REG_INTERNAL_PANEL_DISCONNECTED_DISABLE
+
 #define NV_REG_STR_RM_PER_INTR_DPC_QUEUING        "RMDisablePerIntrDPCQueueing"
 // Type DWORD
 // This regkey is used to disable per interrupt DPC queuing.
@@ -2666,6 +2671,19 @@
 #define NV_REG_STR_RM_RUSD_POLLING_INTERVAL_TESLA            100
 #define NV_REG_STR_RM_RUSD_POLLING_INTERVAL_MIN              100
 #define NV_REG_STR_RM_RUSD_POLLING_INTERVAL_MAX              1000
+
+//
+// Type: DWORD
+// This regkey enables some path to reuse the initially allocated continguous memory
+// instead of freeing it dynamically which causes memory fragmentation and
+// under low available memory configuration the allocation could fail and leads to BSOD
+// Enable the key to reuse the initially allocated mem withoug free and reallocate
+//   - Default for Blackwell and up
+// Disable the key to free and allocate dynamically
+//
+#define NV_REG_STR_RM_INIT_MEM_REUSE                           "RmInitMemReuse"
+#define NV_REG_STR_RM_INIT_MEM_REUSE_ENABLE                     0x00000001
+#define NV_REG_STR_RM_INIT_MEM_REUSE_DISABLE                    0x00000000
 
 //
 // Type DWORD (Boolean)

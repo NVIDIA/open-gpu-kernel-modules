@@ -3149,6 +3149,21 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_FOLL_LONGTERM_PRESENT" "" "types"
         ;;
 
+        has_enum_pidtype_tgid)
+            # Determine if PIDTYPE_TGID is present in the kernel as an enum
+            #
+            # Added by commit 6883f81aac6f ("pid: Implement PIDTYPE_TGID")
+            # in v4.19
+            #
+            CODE="
+            #include <linux/pid.h>
+
+            enum pid_type type = PIDTYPE_TGID;
+            "
+
+            compile_check_conftest "$CODE" "NV_HAS_ENUM_PIDTYPE_TGID" "" "types"
+        ;;
+
         vfio_pin_pages_has_vfio_device_arg)
             #
             # Determine if vfio_pin_pages() kABI accepts "struct vfio_device *"
@@ -7577,6 +7592,22 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_STRUCT_PAGE_HAS_ZONE_DEVICE_DATA" "" "types"
+        ;;
+
+        page_pgmap)
+            #
+            # Determine if the page_pgmap() function is present.
+            #
+            # Added by commit 82ba975e4c43 ("mm: allow compound zone device
+            # pages") in v6.14
+            #
+            CODE="
+            #include <linux/mmzone.h>
+            int conftest_page_pgmap(void) {
+                return page_pgmap(NULL);
+            }"
+
+            compile_check_conftest "$CODE" "NV_PAGE_PGMAP_PRESENT" "" "functions"
         ;;
 
     folio_test_swapcache)

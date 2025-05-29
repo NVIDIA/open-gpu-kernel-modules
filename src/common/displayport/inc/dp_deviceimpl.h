@@ -508,6 +508,9 @@ namespace DisplayPort
         virtual bool getDeviceSpecificData(NvU8 *oui, NvU8 *deviceIdString,
                                            NvU8 *hwRevision, NvU8 *swMajorRevision,
                                            NvU8 *swMinorRevision);
+        virtual bool getParentSpecificData(NvU8 *oui, NvU8 *deviceIdString,
+                                           NvU8 *hwRevision, NvU8 *swMajorRevision,
+                                           NvU8 *swMinorRevision);
 
         virtual bool setModeList(DisplayPort::DpModesetParams *pModeList, unsigned numModes);
     };

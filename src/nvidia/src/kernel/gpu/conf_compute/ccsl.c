@@ -447,6 +447,7 @@ ccslContextInitViaChannel_IMPL
     }
     *ppCtx = pCtx;
 
+    pCtx->msgCounterSize = CSL_MSG_CTR_32;
     pCtx->openrmCtx = NULL;
     pCtx->pDecryptBundles = NULL;
 
@@ -505,7 +506,6 @@ ccslContextInitViaChannel_IMPL
 
     pCtx->pEncStatsBuffer = pKernelChannel->pEncStatsBuf;
     pCtx->pMemDesc = pMemDesc;
-    pCtx->msgCounterSize = CSL_MSG_CTR_32;
 
     // Set values only used for GSP keys to invalid
     pCtx->globalKeyIdIn  = CC_GKEYID_GEN(CC_KEYSPACE_SIZE, 0);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -339,7 +339,7 @@ imexsessionapiDestruct_IMPL
     if (_checkDanglingExports(RES_GET_CLIENT(pImexSessionApi)))
     {
         fabricDisableMemAlloc(pFabric);
-        NV_PRINTF(LEVEL_ERROR, "Abrupt nvidia-imex daemon shutdown detected, disabled fabric allocations!\n");
+        NV_PRINTF(LEVEL_ERROR, "Abrupt nvidia-imex daemon shutdown detected, disabled fabric allocations\n");
     }
 
     // Invalidate export cache to block future imports on this node ID.
@@ -361,7 +361,7 @@ imexsessionapiDestruct_IMPL
     {
         if (rcAndDisableOutstandingClientsWithImportedMemory(NULL, NV_FABRIC_INVALID_NODE_ID))
         {
-            NV_PRINTF(LEVEL_ERROR, "Abrupt nvidia-imex daemon shutdown detected, robust channel recovery invoked!\n");
+            NV_PRINTF(LEVEL_ERROR, "Abrupt nvidia-imex daemon shutdown detected, robust channel recovery invoked\n");
         }
     }
 }
@@ -426,7 +426,10 @@ imexsessionapiCtrlCmdDisableImporters_IMPL
         return NV_ERR_NOT_SUPPORTED;
 
     if (rcAndDisableOutstandingClientsWithImportedMemory(NULL, pParams->nodeId))
-        NV_PRINTF(LEVEL_ERROR, "nvidia-imex daemon has invoked robust channel recovery!\n");
+    {
+        NV_PRINTF(LEVEL_ERROR, "nvidia-imex daemon has invoked robust channel recovery for remote node: %u\n",
+                  pParams->nodeId);
+    }
 
     return NV_OK;
 }

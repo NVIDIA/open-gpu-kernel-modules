@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2023, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2015-2025, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -234,15 +234,6 @@ unsigned long nv_drm_timer_now(void)
 unsigned long nv_drm_timeout_from_ms(NvU64 relative_timeout_ms)
 {
     return jiffies + msecs_to_jiffies(relative_timeout_ms);
-}
-
-bool nv_drm_del_timer_sync(nv_drm_timer *timer)
-{
-    if (del_timer_sync(&timer->kernel_timer)) {
-        return true;
-    } else {
-        return false;
-    }
 }
 
 #if defined(NV_DRM_FENCE_AVAILABLE)

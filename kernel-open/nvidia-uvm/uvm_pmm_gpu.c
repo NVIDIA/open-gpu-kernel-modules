@@ -419,8 +419,9 @@ static void chunk_pin(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
 
     // The passed-in subchunk is not the root chunk so the root chunk has to be
     // split.
-    UVM_ASSERT_MSG(chunk->state == UVM_PMM_GPU_CHUNK_STATE_IS_SPLIT, "chunk state %s\n",
-            uvm_pmm_gpu_chunk_state_string(chunk->state));
+    UVM_ASSERT_MSG(chunk->state == UVM_PMM_GPU_CHUNK_STATE_IS_SPLIT,
+                   "chunk state %s\n",
+                    uvm_pmm_gpu_chunk_state_string(chunk->state));
 
     chunk->suballoc->pinned_leaf_chunks++;
 }
@@ -448,8 +449,9 @@ static void chunk_unpin(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm_pmm_gpu_
 
     // The passed-in subchunk is not the root chunk so the root chunk has to be
     // split.
-    UVM_ASSERT_MSG(chunk->state == UVM_PMM_GPU_CHUNK_STATE_IS_SPLIT, "chunk state %s\n",
-            uvm_pmm_gpu_chunk_state_string(chunk->state));
+    UVM_ASSERT_MSG(chunk->state == UVM_PMM_GPU_CHUNK_STATE_IS_SPLIT,
+                   "chunk state %s\n",
+                   uvm_pmm_gpu_chunk_state_string(chunk->state));
 
     UVM_ASSERT(chunk->suballoc->pinned_leaf_chunks != 0);
     chunk->suballoc->pinned_leaf_chunks--;
@@ -774,8 +776,10 @@ static bool assert_chunk_mergeable(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
         UVM_ASSERT(chunk->suballoc->allocated == 0);
     }
     else {
-        UVM_ASSERT_MSG(chunk->suballoc->allocated == num_subchunks(chunk), "%u != %u\n",
-                chunk->suballoc->allocated, num_subchunks(chunk));
+        UVM_ASSERT_MSG(chunk->suballoc->allocated == num_subchunks(chunk),
+                       "%u != %u\n",
+                       chunk->suballoc->allocated,
+                       num_subchunks(chunk));
     }
 
     return true;
@@ -1263,11 +1267,13 @@ static NV_STATUS find_and_retain_va_block_to_evict(uvm_pmm_gpu_t *pmm, uvm_gpu_c
 
     uvm_spin_lock(&pmm->list_lock);
 
-    // All free chunks should have been pinned already by pin_free_chunks_func().
+    // All free chunks should have been pinned already by
+    // pin_free_chunks_func().
     UVM_ASSERT_MSG(chunk->state == UVM_PMM_GPU_CHUNK_STATE_ALLOCATED ||
                    chunk->state == UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED ||
                    chunk->state == UVM_PMM_GPU_CHUNK_STATE_IS_SPLIT,
-                   "state %s\n", uvm_pmm_gpu_chunk_state_string(chunk->state));
+                   "state %s\n",
+                   uvm_pmm_gpu_chunk_state_string(chunk->state));
 
     if (chunk->state == UVM_PMM_GPU_CHUNK_STATE_ALLOCATED) {
         UVM_ASSERT(chunk->va_block);
@@ -1754,8 +1760,10 @@ static NV_STATUS alloc_chunk_with_splits(uvm_pmm_gpu_t *pmm,
             UVM_ASSERT(chunk->parent->suballoc);
             UVM_ASSERT(uvm_gpu_chunk_get_size(chunk->parent) == uvm_chunk_find_next_size(chunk_sizes, cur_size));
             UVM_ASSERT(chunk->parent->type == type);
-            UVM_ASSERT_MSG(chunk->parent->suballoc->allocated <= num_subchunks(chunk->parent), "allocated %u num %u\n",
-                    chunk->parent->suballoc->allocated, num_subchunks(chunk->parent));
+            UVM_ASSERT_MSG(chunk->parent->suballoc->allocated <= num_subchunks(chunk->parent),
+                           "allocated %u num %u\n",
+                           chunk->parent->suballoc->allocated,
+                           num_subchunks(chunk->parent));
         }
 
         if (cur_size == chunk_size) {
@@ -2373,8 +2381,8 @@ static void free_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
         try_free = is_root;
     }
     else {
-        // Freeing a chunk can only fail if it requires merging. Take the PMM lock
-        // and free it with merges supported.
+        // Freeing a chunk can only fail if it requires merging. Take the PMM
+        // lock and free it with merges supported.
         uvm_mutex_lock(&pmm->lock);
         free_chunk_with_merges(pmm, chunk);
         uvm_mutex_unlock(&pmm->lock);
@@ -3333,7 +3341,7 @@ void uvm_pmm_gpu_device_p2p_init(uvm_gpu_t *gpu)
     // TODO: Bug 4672502: [Linux Upstream][UVM] Allow drivers to manage and
     // allocate PCI P2PDMA pages directly
     p2p_page = pfn_to_page(pci_start_pfn);
-    p2p_page->pgmap->ops = &uvm_device_p2p_pgmap_ops;
+    page_pgmap(p2p_page)->ops = &uvm_device_p2p_pgmap_ops;
     for (; page_to_pfn(p2p_page) < pci_end_pfn; p2p_page++)
         p2p_page->zone_device_data = NULL;
 
@@ -3348,7 +3356,7 @@ void uvm_pmm_gpu_device_p2p_deinit(uvm_gpu_t *gpu)
 
     if (gpu->device_p2p_initialised && !uvm_parent_gpu_is_coherent(gpu->parent)) {
         p2p_page = pfn_to_page(pci_start_pfn);
-        devm_memunmap_pages(&gpu->parent->pci_dev->dev, p2p_page->pgmap);
+        devm_memunmap_pages(&gpu->parent->pci_dev->dev, page_pgmap(p2p_page));
     }
 
     gpu->device_p2p_initialised = false;
@@ -3437,6 +3445,7 @@ NV_STATUS uvm_pmm_gpu_init(uvm_pmm_gpu_t *pmm)
 
     for (i = 0; i < UVM_PMM_GPU_MEMORY_TYPE_COUNT; i++) {
         pmm->chunk_sizes[i] = 0;
+
         // Add the common root chunk size to all memory types
         pmm->chunk_sizes[i] |= UVM_CHUNK_SIZE_MAX;
         for (j = 0; j < ARRAY_SIZE(chunk_size_init); j++)
@@ -3444,7 +3453,9 @@ NV_STATUS uvm_pmm_gpu_init(uvm_pmm_gpu_t *pmm)
 
         UVM_ASSERT(pmm->chunk_sizes[i] < UVM_CHUNK_SIZE_INVALID);
         UVM_ASSERT_MSG(hweight_long(pmm->chunk_sizes[i]) <= UVM_MAX_CHUNK_SIZES,
-                "chunk sizes %lu, max chunk sizes %u\n", hweight_long(pmm->chunk_sizes[i]), UVM_MAX_CHUNK_SIZES);
+                       "chunk sizes %lu, max chunk sizes %u\n",
+                       hweight_long(pmm->chunk_sizes[i]),
+                       UVM_MAX_CHUNK_SIZES);
     }
 
     status = init_caches(pmm);
@@ -3452,9 +3463,9 @@ NV_STATUS uvm_pmm_gpu_init(uvm_pmm_gpu_t *pmm)
         goto cleanup;
 
     // Assert that max physical address of the GPU is not unreasonably big for
-    // creating the flat array of root chunks. 256GB should provide a reasonable
-    // amount of future-proofing and results in 128K chunks which is still
-    // manageable.
+    // creating the flat array of root chunks. UVM_GPU_MAX_PHYS_MEM should
+    // provide a reasonable amount of future-proofing and results in 512K chunks
+    // which is still manageable.
     UVM_ASSERT_MSG(gpu->mem_info.max_allocatable_address < UVM_GPU_MAX_PHYS_MEM,
                    "Max physical address 0x%llx exceeds limit of 0x%llx\n",
                    gpu->mem_info.max_allocatable_address,

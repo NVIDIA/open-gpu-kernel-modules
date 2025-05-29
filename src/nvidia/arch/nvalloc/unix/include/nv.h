@@ -961,7 +961,6 @@ NvBool     NV_API_CALL  rm_isr                   (nvidia_stack_t *, nv_state_t *
 void       NV_API_CALL  rm_isr_bh                (nvidia_stack_t *, nv_state_t *);
 void       NV_API_CALL  rm_isr_bh_unlocked       (nvidia_stack_t *, nv_state_t *);
 NvBool     NV_API_CALL  rm_is_msix_allowed       (nvidia_stack_t *, nv_state_t *);
-NvBool     NV_API_CALL  rm_wait_for_bar_firewall (nvidia_stack_t *, NvU32 domain, NvU8 bus, NvU8 device, NvU8 function, NvU16 devId);
 NV_STATUS  NV_API_CALL  rm_power_management      (nvidia_stack_t *, nv_state_t *, nv_pm_action_t);
 NV_STATUS  NV_API_CALL  rm_stop_user_channels    (nvidia_stack_t *, nv_state_t *);
 NV_STATUS  NV_API_CALL  rm_restart_user_channels (nvidia_stack_t *, nv_state_t *);

@@ -614,19 +614,6 @@ nv_pci_probe
     }
 #endif /* NV_PCI_SRIOV_SUPPORT */
 
-    if (!rm_wait_for_bar_firewall(
-                sp,
-                NV_PCI_DOMAIN_NUMBER(pci_dev),
-                NV_PCI_BUS_NUMBER(pci_dev),
-                NV_PCI_SLOT_NUMBER(pci_dev),
-                PCI_FUNC(pci_dev->devfn),
-                pci_dev->device))
-    {
-        nv_printf(NV_DBG_ERRORS,
-            "NVRM: failed to wait for bar firewall to lower\n");
-        goto failed;
-    }
-
     if (!rm_is_supported_pci_device(
                 (pci_dev->class >> 16) & 0xFF,
                 (pci_dev->class >> 8) & 0xFF,

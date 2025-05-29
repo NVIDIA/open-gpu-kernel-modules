@@ -238,6 +238,8 @@ NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_set_memory_encrypted
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_set_memory_decrypted
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl___platform_driver_register
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present___platform_driver_register
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_hrtimer_setup
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_timer_delete_sync
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += dma_ops
 NV_CONFTEST_TYPE_COMPILE_TESTS += swiotlb_dma_ops
@@ -266,6 +268,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += of_property_for_each_u32_has_internal_args
 NV_CONFTEST_TYPE_COMPILE_TESTS += platform_driver_struct_remove_returns_void
 NV_CONFTEST_TYPE_COMPILE_TESTS += class_create_has_no_owner_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += class_devnode_has_const_arg
+NV_CONFTEST_TYPE_COMPILE_TESTS += has_enum_pidtype_tgid
 
 NV_CONFTEST_GENERIC_COMPILE_TESTS += dom0_kernel_present
 NV_CONFTEST_GENERIC_COMPILE_TESTS += nvidia_vgpu_kvm_build

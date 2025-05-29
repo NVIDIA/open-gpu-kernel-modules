@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -107,6 +107,7 @@ kdispConstructEngine_IMPL(OBJGPU        *pGpu,
                           ENGDESCRIPTOR  engDesc)
 {
     NV_STATUS status;
+    NvU32 data;
 
     //
     // NOTE: DO NOT call IpVersion _HAL functions in ConstructEngine.
@@ -144,6 +145,20 @@ kdispConstructEngine_IMPL(OBJGPU        *pGpu,
     NV_ASSERT_OR_RETURN(pKernelDisplay->pLowLatencySpinLock == NULL, NV_ERR_INVALID_STATE);
     pKernelDisplay->pLowLatencySpinLock = (PORT_SPINLOCK *) portSyncSpinlockCreate(portMemAllocatorGetGlobalNonPaged());
     NV_ASSERT_OR_RETURN((pKernelDisplay->pLowLatencySpinLock != NULL), NV_ERR_INSUFFICIENT_RESOURCES);
+
+    if ((osReadRegistryDword(pGpu, NV_REG_INTERNAL_PANEL_DISCONNECTED, &data) == NV_OK)
+        && (data == NV_REG_INTERNAL_PANEL_DISCONNECTED_ENABLE))
+    {
+        pKernelDisplay->setProperty(pKernelDisplay,
+                                    PDB_PROP_KDISP_INTERNAL_PANEL_DISCONNECTED,
+                                    NV_TRUE);
+    }
+    else
+    {
+        pKernelDisplay->setProperty(pKernelDisplay,
+                                    PDB_PROP_KDISP_INTERNAL_PANEL_DISCONNECTED,
+                                    NV_FALSE);
+    }
 
     return status;
 }
@@ -347,14 +362,17 @@ kdispInitBrightcStateLoad_IMPL(OBJGPU *pGpu,
     portMemSet(pBrightcInfo, 0, sizeof(*pBrightcInfo));
 
     pBrightcInfo->status = status;
-    if ((pKernelDisplay != NULL) && (pKernelDisplay->pStaticInfo->internalDispActiveMask != 0) && !bInternalSkuFuseEnabled)
+    if ((pKernelDisplay != NULL)
+        && (pKernelDisplay->pStaticInfo->internalDispActiveMask != 0)
+        && !(bInternalSkuFuseEnabled
+             || (pKernelDisplay->getProperty(pKernelDisplay, PDB_PROP_KDISP_INTERNAL_PANEL_DISCONNECTED))))
     {
         // Fill in the Backlight Method Data.
         pBrightcInfo->backLightDataSize = sizeof(pBrightcInfo->backLightData);
         status = osCallACPI_DSM(pGpu, ACPI_DSM_FUNCTION_CURRENT, NV_ACPI_GENERIC_FUNC_GETBACKLIGHT,
                                 (NvU32 *)(pBrightcInfo->backLightData),
                                 &pBrightcInfo->backLightDataSize);
-        pBrightcInfo->status = status;
+        pBrightcInfo->status = status; 
     }
 
     status = pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
@@ -1367,6 +1385,11 @@ kdispServiceLowLatencyIntrs_KERNEL
         for (i = 0; i < kdispGetNumHeads(pKernelDisplay); i++)
         {
             pKernelHead = KDISP_GET_HEAD(pKernelDisplay, i);
+            // Only reset the heads which we have serviced.
+            if ((pending & NVBIT(i)) == 0)
+            {
+                continue;
+            }
             kheadResetPendingLastData_HAL(pGpu, pKernelHead, pThreadState);
         }
     }

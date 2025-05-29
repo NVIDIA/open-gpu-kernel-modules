@@ -232,11 +232,12 @@ struct KernelDisplay {
     NV_STATUS (*__kdispGetChnStatusRegs__)(struct KernelDisplay * /*this*/, DISPCHNCLASS, NvU32, NvU32 *);  // halified (2 hals) body
     void (*__kdispApplyWarForBug3385499__)(OBJGPU *, struct KernelDisplay * /*this*/, DISPCHNCLASS, NvU32, NvU32);  // halified (2 hals) body
 
-    // 5 PDB properties
+    // 6 PDB properties
     NvBool PDB_PROP_KDISP_IMP_ALLOC_BW_IN_KERNEL_RM_DEF;
     NvBool PDB_PROP_KDISP_FEATURE_STRETCH_VBLANK_CAPABLE;
     NvBool PDB_PROP_KDISP_IN_AWAKEN_INTR;
     NvBool PDB_PROP_KDISP_HAS_SEPARATE_LOW_LATENCY_LINE;
+    NvBool PDB_PROP_KDISP_INTERNAL_PANEL_DISCONNECTED;
 
     // Data members
     struct DisplayInstanceMemory *pInst;
@@ -326,6 +327,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelDisplay;
 #define PDB_PROP_KDISP_IMP_ALLOC_BW_IN_KERNEL_RM_DEF_BASE_NAME PDB_PROP_KDISP_IMP_ALLOC_BW_IN_KERNEL_RM_DEF
 #define PDB_PROP_KDISP_FEATURE_STRETCH_VBLANK_CAPABLE_BASE_CAST
 #define PDB_PROP_KDISP_FEATURE_STRETCH_VBLANK_CAPABLE_BASE_NAME PDB_PROP_KDISP_FEATURE_STRETCH_VBLANK_CAPABLE
+#define PDB_PROP_KDISP_INTERNAL_PANEL_DISCONNECTED_BASE_CAST
+#define PDB_PROP_KDISP_INTERNAL_PANEL_DISCONNECTED_BASE_NAME PDB_PROP_KDISP_INTERNAL_PANEL_DISCONNECTED
 
 NV_STATUS __nvoc_objCreateDynamic_KernelDisplay(KernelDisplay**, Dynamic*, NvU32, va_list);
 

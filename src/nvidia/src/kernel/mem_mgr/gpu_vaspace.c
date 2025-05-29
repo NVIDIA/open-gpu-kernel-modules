@@ -344,25 +344,6 @@ _gvaspaceReserveVaForClientRm
                                    pGVAS->vaLimitServerRMOwned);
     NV_ASSERT_OR_GOTO(status == NV_OK, done);
 
-    if (pGVAS->flags & VASPACE_FLAGS_PTETABLE_PMA_MANAGED)
-    {
-        // Loop over each GPU associated with VAS.
-        FOR_EACH_GPU_IN_MASK_UC(32, pSys, pGpu, pVAS->gpuMask)
-        {
-            MemoryManager  *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-
-            if (pMemoryManager->pPageLevelReserve == NULL)
-            {
-                NV_ASSERT(0);
-                status = NV_ERR_INVALID_STATE;
-                break;
-            }
-        }
-        FOR_EACH_GPU_IN_MASK_UC_END
-
-        NV_ASSERT_OR_GOTO(status == NV_OK, done);
-    }
-
     // Loop over each GPU associated with VAS.
     FOR_EACH_GPU_IN_MASK_UC(32, pSys, pGpu, pVAS->gpuMask)
     {
@@ -1008,19 +989,6 @@ gvaspaceDestruct_IMPL(OBJGVASPACE *pGVAS)
         }
         FOR_EACH_GPU_IN_MASK_UC_END
 
-        FOR_EACH_GPU_IN_MASK_UC(32, pSys, pGpu, pVAS->gpuMask)
-        {
-            MemoryManager   *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-
-            if (RMCFG_FEATURE_PMA &&
-                pMemoryManager->pPageLevelReserve != NULL)
-            {
-                if (pGVAS->pPageTableMemPool != NULL)
-                    rmMemPoolRelease(pGVAS->pPageTableMemPool, pGVAS->flags);
-            }
-        }
-        FOR_EACH_GPU_IN_MASK_UC_END
-
         portMemFree(pGVAS->pGpuStates);
         pGVAS->pGpuStates = NULL;
     }
@@ -1092,6 +1060,29 @@ _gvaspaceGpuStateConstruct
     // Must be in UC.
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
 
+    if (RMCFG_FEATURE_PMA &&
+       (flags & VASPACE_FLAGS_PTETABLE_PMA_MANAGED))
+    {
+        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+        CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+        RsResourceRef *pDeviceRef = pCallContext->pResourceRef;
+        Device *pDevice;
+
+        NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
+
+        pDeviceRef = pCallContext->pResourceRef;
+        if (pDeviceRef->internalClassId != classId(Device))
+        {
+            NV_ASSERT_OK_OR_RETURN(refFindAncestorOfType(pDeviceRef, classId(Device), &pDeviceRef));
+        }
+
+        pDevice = dynamicCast(pDeviceRef->pResource, Device);
+        NV_ASSERT_OR_RETURN(pDevice != NULL, NV_ERR_INVALID_STATE);
+
+        NV_ASSERT_OK_OR_RETURN(
+           memmgrPageLevelPoolsGetInfo(pGpu, pMemoryManager, pDevice, &pGpuState->pPageTableMemPool));
+    }
+
     // Get GMMU format for this GPU.
     pFmt = kgmmuFmtGet(pKernelGmmu, GMMU_FMT_VERSION_DEFAULT, reqBigPageSize);
     NV_ASSERT_OR_RETURN(NULL != pFmt, NV_ERR_NOT_SUPPORTED);
@@ -1155,7 +1146,6 @@ _gvaspaceGpuStateConstruct
         vaStartInt = vaStart;
         vaLimitInt = vaLimitExt;
     }
-
 
     //
     // Shared management external limit is aligned to root PDE coverage.
@@ -1267,6 +1257,10 @@ _gvaspaceGpuStateDestruct
     _gvaspaceForceFreePageLevelInstances(pGVAS, pGpu, pGpuState);
 
     mmuWalkDestroy(pGpuState->pWalk);
+
+    if (pGpuState->pPageTableMemPool != NULL)
+        rmMemPoolRelease(pGpuState->pPageTableMemPool, pGVAS->flags);
+
     pGpuState->pWalk = NULL;
     NV_ASSERT(NULL == pGpuState->pMirroredRoot);
 
@@ -3311,7 +3305,7 @@ gvaspaceExternalRootDirRevoke_IMPL
 
         // Free the RM memory used to hold the memdesc struct.
         memdescDestroy(pMemDesc);
-        
+
         return status;
     }
 
@@ -5278,86 +5272,69 @@ gvaspaceReserveMempool_IMPL
     NvU32        flags
 )
 {
-    NV_STATUS               status           = NV_OK;
-    RM_POOL_ALLOC_MEM_RESERVE_INFO *pMemPool = NULL;
+    NvBool          bRetryInSys = !!(pGVAS->flags & VASPACE_FLAGS_RETRY_PTE_ALLOC_IN_SYS);
+    GVAS_GPU_STATE *pGpuState;
+    KernelGmmu     *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+    const GMMU_FMT *pFmt        = kgmmuFmtGet(pKernelGmmu, GMMU_FMT_VERSION_DEFAULT, 0);
+    NV_STATUS       status;
+    NvU64           poolSize;
 
-    if (RMCFG_FEATURE_PMA &&
-        pGVAS->flags & VASPACE_FLAGS_PTETABLE_PMA_MANAGED)
+    if ((pGVAS->flags & VASPACE_FLAGS_PTETABLE_PMA_MANAGED) == 0)
+        return NV_OK;
+
+    pGpuState   = gvaspaceGetGpuState(pGVAS, pGpu);
+    if ((pGpuState == NULL) ||
+        (pGpuState->pPageTableMemPool == NULL))
+        return NV_OK;
+
+    //
+    // Always assume worst case of 4K mapping even if client has
+    // requested bigger page size. This is to ensure that we have
+    // sufficient memory in pools. Some MODS tests query for free
+    // framebuffer and allocate the entire available. In such cases
+    // we can run into OOM errors during page table allocation when
+    // the test tries to map a big surface and the pools are short
+    // of memory.
+    //
+    if (ONEBITSET(pageSizeLockMask))
     {
-        KernelGmmu     *pKernelGmmu    = GPU_GET_KERNEL_GMMU(pGpu);
-        MemoryManager  *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-        const GMMU_FMT *pFmt           = kgmmuFmtGet(pKernelGmmu, GMMU_FMT_VERSION_DEFAULT, 0);
-
         //
-        // Always assume worst case of 4K mapping even if client has
-        // requested bigger page size. This is to ensure that we have
-        // sufficient memory in pools. Some MODS tests query for free
-        // framebuffer and allocate the entire available. In such cases
-        // we can run into OOM errors during page table allocation when
-        // the test tries to map a big surface and the pools are short
-        // of memory.
+        // There is a requirement of serial ATS enabled vaspaces to have
+        // both small and big page tables allocated at the same time. This
+        // is required for the 4K not valid feature. This is irrespective
+        // of the actual page size requested by the client.
         //
-        if (ONEBITSET(pageSizeLockMask))
+        if (gvaspaceIsAtsEnabled(pGVAS))
         {
-            //
-            // There is a requirement of serial ATS enabled vaspaces to have
-            // both small and big page tables allocated at the same time. This
-            // is required for the 4K not valid feature. This is irrespective
-            // of the actual page size requested by the client.
-            //
-            if (gvaspaceIsAtsEnabled(pGVAS))
-            {
-                pageSizeLockMask = RM_PAGE_SIZE | pGVAS->bigPageSize;
-            }
-            else if (!(flags & VASPACE_RESERVE_FLAGS_ALLOC_UPTO_TARGET_LEVEL_ONLY))
-            {
-                pageSizeLockMask = RM_PAGE_SIZE;
-            }
+            pageSizeLockMask = RM_PAGE_SIZE | pGVAS->bigPageSize;
         }
-        else
+        else if (!(flags & VASPACE_RESERVE_FLAGS_ALLOC_UPTO_TARGET_LEVEL_ONLY))
         {
-            NV_ASSERT_OR_RETURN(((pageSizeLockMask & RM_PAGE_SIZE) != 0),
-                                NV_ERR_INVALID_ARGUMENT);
+            pageSizeLockMask = RM_PAGE_SIZE;
         }
+    }
+    else
+    {
+        NV_ASSERT_OR_RETURN(((pageSizeLockMask & RM_PAGE_SIZE) != 0),
+                            NV_ERR_INVALID_ARGUMENT);
+    }
 
-        NvU64 poolSize = kgmmuGetSizeOfPageDirs(pGpu, pKernelGmmu, pFmt, 0, size - 1,
-                                                pageSizeLockMask) +
-                         kgmmuGetSizeOfPageTables(pGpu, pKernelGmmu, pFmt, 0, size - 1,
-                                                  pageSizeLockMask);
+    poolSize = kgmmuGetSizeOfPageDirs(pGpu, pKernelGmmu, pFmt, 0, size - 1, pageSizeLockMask) +
+               kgmmuGetSizeOfPageTables(pGpu, pKernelGmmu, pFmt, 0, size - 1, pageSizeLockMask);
 
-        NV_ASSERT_OK_OR_RETURN(memmgrPageLevelPoolsGetInfo(pGpu, pMemoryManager, pDevice, &pMemPool));
-        status = rmMemPoolReserve(pMemPool, poolSize, pGVAS->flags);
-        if ((pGVAS->flags & VASPACE_FLAGS_RETRY_PTE_ALLOC_IN_SYS) &&
-            (status == NV_ERR_NO_MEMORY))
-        {
-            //
-            // It is okay to change the status to NV_OK here since it is understood that
-            // we may run out of video memory at some time. The RETRY_PTE_ALLOC_IN_SYS
-            // flag ensures that RM retries allocating the page tables in sysmem if such
-            // a situation arises. So, running out of video memory here need not be fatal.
-            // It may be fatal if allocation in sysmem also fails. In that case RM will
-            // return an error from elsewhere.
-            //
-            status = NV_OK;
-        }
-        else
-        {
-            NV_ASSERT_OR_RETURN((NV_OK == status), status);
+    status = rmMemPoolReserve(pGpuState->pPageTableMemPool, poolSize, pGVAS->flags);
 
-            // setup page table pool in VA space if reservation to pool succeeds
-            if (pGVAS->pPageTableMemPool != NULL)
-            {
-                if (pGVAS->pPageTableMemPool != pMemPool)
-                {
-                    rmMemPoolRelease(pMemPool, pGVAS->flags);
-                    NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_STATE);
-                }
-            }
-            else
-            {
-                pGVAS->pPageTableMemPool = pMemPool;
-            }
-        }
+    if ((status == NV_ERR_NO_MEMORY) && bRetryInSys)
+    {
+        //
+        // It is okay to change the status to NV_OK here since it is understood that
+        // we may run out of video memory at some time. The RETRY_PTE_ALLOC_IN_SYS
+        // flag ensures that RM retries allocating the page tables in sysmem if such
+        // a situation arises. So, running out of video memory here need not be fatal.
+        // It may be fatal if allocation in sysmem also fails. In that case RM will
+        // return an error from elsewhere.
+        //
+        status = NV_OK;
     }
 
     return status;

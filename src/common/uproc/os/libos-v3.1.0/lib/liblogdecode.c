@@ -569,7 +569,7 @@ static int libos_printf_a(
             // Prefix every line with T:nnnn GPUn Ucode-task: filename(lineNumber):
             len = snprintf(
                 logDecode->curLineBufPtr, remain,
-                "T:%llu ", pRec->timeStamp);
+                "T:%llu ", pRec->timeStamp + pRec->log->localToGlobalTimerDelta);
             if (len < 0)
             {
                 return -1;
@@ -590,7 +590,7 @@ static int libos_printf_a(
             {
                 struct tm   tmStruct;
                 // Libos timestamp is a PTIMER value, which is UNIX time in ns
-                time_t      timeSec   = pRec->timeStamp / 1000000000;
+                time_t      timeSec   = (pRec->timeStamp + pRec->log->localToGlobalTimerDelta) / 1000000000;
 #if NVOS_IS_WINDOWS
                 // "The implementation of localtime_s in Microsoft CRT is incompatible with the
                 // C standard since it has reversed parameter order and returns errno_t."
@@ -1324,7 +1324,6 @@ static void libosExtractLogs_decode(LIBOS_LOG_DECODE *logDecode)
                 recSize * sizeof(NvU64));
 
             pPrevRec = (LIBOS_LOG_DECODE_RECORD *)&logDecode->scratchBuffer[dst];
-            pPrevRec->timeStamp += pLog->localToGlobalTimerDelta;
         }
 
         // Read in the next record from the log we just copied.

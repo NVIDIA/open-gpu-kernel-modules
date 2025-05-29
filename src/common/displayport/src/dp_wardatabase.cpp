@@ -600,18 +600,18 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             {
                 this->WARFlags.bDisableDscMaxBppLimit = true;
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Disable DSC max BPP limit of 16 for DSC.");
-            }       
-            else if (ProductID == 0x5CA7)
+            }
+            else if (ProductID == 0x5CA7 || ProductID == 0x9E9D || ProductID == 0x9EA0 || ProductID == 0x9EA5 || ProductID == 0x5CB7 ||
+                     ProductID == 0x9EA8 || ProductID == 0x9EAF || ProductID == 0x7846 || ProductID == 0x7849 || ProductID == 0x5CB5)
             {
                 this->WARFlags.bForceHeadShutdownOnModeTransition = true;
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Force head shutdown on Mode transition.");
             }
             break;
-        // Gigabyte
-        case 0x541C:
-            if (ProductID == 0x3215)
+        case 0xB306:
+            if (ProductID == 0x3228)
             {
-                // Gigabyte AORUS FO32U2P does not set DPCD 0x2217 to reflect correct CableID.
+                // ASUS PG32UQXR does not set DPCD 0x2217 to reflect correct CableID.
                 this->WARFlags.bSkipCableIdCheck = true;
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Panel does not expose cable capability. Ignoring it. Bug 4968411");
             }
@@ -643,7 +643,13 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 this->WARFlags.bDisableDownspread = true;
             }
             break;
-
+        case 0x545A: // VRT Varjo XR3
+            if (ProductID == 0x5841 || ProductID == 0x5842 || ProductID == 0x5843)
+            {
+                this->WARFlags.bDisableDownspread = true;
+                DP_PRINTF(DP_NOTICE, "DP-WAR> VRT monitor does not work with GB20x when downspread is enabled. Disabling downspread.");
+            }
+            break;
         default:
             break;
     }

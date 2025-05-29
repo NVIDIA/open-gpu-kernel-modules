@@ -10260,6 +10260,8 @@ NV_STATUS rpcDumpProtobufComponent_v18_12
     if (IS_GSP_CLIENT(pGpu))
     {
         rpc_dump_protobuf_component_v18_12 *rpc_params = &rpc_message->dump_protobuf_component_v18_12;
+        const NvU32 fixed_param_size = sizeof(rpc_message_header_v) + sizeof(*rpc_params);
+        NV_ASSERT_OR_RETURN(fixed_param_size <= pRpc->maxRpcSize, NV_ERR_INVALID_STATE);
 
         status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_DUMP_PROTOBUF_COMPONENT,
                                     sizeof(*rpc_params));
@@ -10271,7 +10273,7 @@ NV_STATUS rpcDumpProtobufComponent_v18_12
         rpc_params->countOnly    = ((pPrbEnc->flags & PRB_COUNT_ONLY) != 0);
         rpc_params->bugCheckCode = pNvDumpState->bugCheckCode;
         rpc_params->internalCode = pNvDumpState->internalCode;
-        rpc_params->bufferSize   = NV_MIN(pRpc->maxRpcSize, prbEncBufLeft(pPrbEnc));
+        rpc_params->bufferSize   = NV_MIN(pRpc->maxRpcSize - fixed_param_size, prbEncBufLeft(pPrbEnc));
 
         status = _issueRpcAndWait(pGpu, pRpc);
 

@@ -217,38 +217,19 @@ static NV_STATUS config_granularity_to_bytes(UVM_ACCESS_COUNTER_GRANULARITY gran
     return NV_OK;
 }
 
-// Clear the access counter notifications and add it to the per-GPU
-// per-notification-buffer clear tracker.
-static NV_STATUS access_counter_clear_notifications(uvm_gpu_t *gpu,
-                                                    uvm_access_counter_buffer_t *access_counters,
-                                                    uvm_access_counter_buffer_entry_t **notification_start,
-                                                    NvU32 num_notifications)
+static NV_STATUS parent_gpu_clear_tracker_wait(uvm_parent_gpu_t *parent_gpu)
 {
-    NvU32 i;
     NV_STATUS status;
-    uvm_push_t push;
 
-    status = uvm_push_begin(gpu->channel_manager, UVM_CHANNEL_TYPE_MEMOPS, &push, "Clear access counter batch");
-    if (status != NV_OK) {
-        UVM_ERR_PRINT("Error creating push to clear access counters: %s, GPU %s, notif buf index %u\n",
-                      nvstatusToString(status),
-                      uvm_gpu_name(gpu),
-                      access_counters->index);
-        return status;
-    }
+    uvm_mutex_lock(&parent_gpu->access_counters_clear_tracker_lock);
+    status = uvm_tracker_wait(&parent_gpu->access_counters_clear_tracker);
+    uvm_mutex_unlock(&parent_gpu->access_counters_clear_tracker_lock);
 
-    for (i = 0; i < num_notifications; i++)
-        gpu->parent->host_hal->access_counter_clear_targeted(&push, notification_start[i]);
-
-    uvm_push_end(&push);
-
-    uvm_tracker_remove_completed(&access_counters->clear_tracker);
-
-    return uvm_tracker_add_push_safe(&access_counters->clear_tracker, &push);
+    return status;
 }
 
-// Clear all access counters and add the operation to the per-GPU
-// per-notification-buffer clear tracker
+// Clear all access counters and add the operation to the per-GPU clear
+// tracker.
 static NV_STATUS access_counter_clear_all(uvm_gpu_t *gpu, uvm_access_counter_buffer_t *access_counters)
 {
     NV_STATUS status;
@@ -270,8 +251,52 @@ static NV_STATUS access_counter_clear_all(uvm_gpu_t *gpu, uvm_access_counter_buf
 
     uvm_push_end(&push);
 
-    uvm_tracker_remove_completed(&access_counters->clear_tracker);
-    return uvm_tracker_add_push_safe(&access_counters->clear_tracker, &push);
+    uvm_mutex_lock(&gpu->parent->access_counters_clear_tracker_lock);
+    uvm_tracker_remove_completed(&gpu->parent->access_counters_clear_tracker);
+    status = uvm_tracker_add_push_safe(&gpu->parent->access_counters_clear_tracker, &push);
+    uvm_mutex_unlock(&gpu->parent->access_counters_clear_tracker_lock);
+
+    return status;
+}
+
+// Clear the access counter notifications and add it to the per-GPU clear
+// tracker.
+static NV_STATUS access_counter_clear_notifications(uvm_gpu_t *gpu,
+                                                    uvm_access_counter_buffer_t *access_counters,
+                                                    uvm_access_counter_buffer_entry_t **notification_start,
+                                                    NvU32 num_notifications)
+{
+    NvU32 i;
+    NV_STATUS status;
+    uvm_push_t push;
+    uvm_access_counter_clear_op_t clear_op;
+
+    clear_op = gpu->parent->host_hal->access_counter_query_clear_op(gpu->parent, notification_start, num_notifications);
+    if (clear_op == UVM_ACCESS_COUNTER_CLEAR_OP_ALL)
+        return access_counter_clear_all(gpu, access_counters);
+
+    UVM_ASSERT(clear_op == UVM_ACCESS_COUNTER_CLEAR_OP_TARGETED);
+
+    status = uvm_push_begin(gpu->channel_manager, UVM_CHANNEL_TYPE_MEMOPS, &push, "Clear access counter batch");
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("Error creating push to clear access counters: %s, GPU %s, notif buf index %u\n",
+                      nvstatusToString(status),
+                      uvm_gpu_name(gpu),
+                      access_counters->index);
+        return status;
+    }
+
+    for (i = 0; i < num_notifications; i++)
+        gpu->parent->host_hal->access_counter_clear_targeted(&push, notification_start[i]);
+
+    uvm_push_end(&push);
+
+    uvm_mutex_lock(&gpu->parent->access_counters_clear_tracker_lock);
+    uvm_tracker_remove_completed(&gpu->parent->access_counters_clear_tracker);
+    status = uvm_tracker_add_push_safe(&gpu->parent->access_counters_clear_tracker, &push);
+    uvm_mutex_unlock(&gpu->parent->access_counters_clear_tracker_lock);
+
+    return status;
 }
 
 bool uvm_parent_gpu_access_counters_pending(uvm_parent_gpu_t *parent_gpu, NvU32 index)
@@ -374,8 +399,6 @@ NV_STATUS uvm_parent_gpu_init_access_counters(uvm_parent_gpu_t *parent_gpu, NvU3
     access_counters->notifications_ignored_count = 0;
     access_counters->test.reconfiguration_owner = NULL;
 
-    uvm_tracker_init(&access_counters->clear_tracker);
-
     access_counters->max_notifications = access_counters->rm_info.bufferSize /
                                          parent_gpu->access_counter_buffer_hal->entry_size(parent_gpu);
 
@@ -443,8 +466,6 @@ void uvm_parent_gpu_deinit_access_counters(uvm_parent_gpu_t *parent_gpu, NvU32 n
         UVM_ASSERT(status == NV_OK);
 
         access_counters->rm_info.accessCntrBufferHandle = 0;
-        uvm_tracker_deinit(&access_counters->clear_tracker);
-
         uvm_kvfree(batch_context->notification_cache);
         uvm_kvfree(batch_context->notifications);
         batch_context->notification_cache = NULL;
@@ -488,7 +509,7 @@ static NV_STATUS access_counters_take_ownership(uvm_gpu_t *gpu, NvU32 index, con
     if (status != NV_OK)
         goto error;
 
-    status = uvm_tracker_wait(&access_counters->clear_tracker);
+    status = parent_gpu_clear_tracker_wait(gpu->parent);
     if (status != NV_OK)
         goto error;
 
@@ -522,7 +543,7 @@ static void access_counters_yield_ownership(uvm_parent_gpu_t *parent_gpu, NvU32 
     UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.access_counters[index].service_lock));
 
     // Wait for any pending clear operation before releasing ownership
-    status = uvm_tracker_wait(&access_counters->clear_tracker);
+    status = parent_gpu_clear_tracker_wait(parent_gpu);
     if (status != NV_OK)
         UVM_ASSERT(status == uvm_global_get_status());
 
@@ -1751,28 +1772,21 @@ NV_STATUS uvm_api_clear_all_access_counters(UVM_CLEAR_ALL_ACCESS_COUNTERS_PARAMS
     uvm_va_space_up_read(va_space);
 
     for_each_gpu_in_mask(gpu, retained_gpus) {
-        NvU32 notif_buf_index;
+        uvm_access_counter_buffer_t *access_counters;
 
         if (!gpu->parent->access_counters_supported)
             continue;
 
-        for (notif_buf_index = 0; notif_buf_index < gpu->parent->rm_info.accessCntrBufferCount; notif_buf_index++) {
-            uvm_access_counter_buffer_t *access_counters = parent_gpu_access_counter_buffer_get(gpu->parent,
-                                                                                                notif_buf_index);
-            uvm_access_counters_isr_lock(access_counters);
+        // clear_all affects all the notification buffers, we issue it for
+        // the notif_buf_index 0.
+        access_counters = parent_gpu_access_counter_buffer_get(gpu->parent, 0);
+        status = access_counter_clear_all(gpu, access_counters);
+        if (status == NV_OK)
+            status = parent_gpu_clear_tracker_wait(gpu->parent);
 
-            // Access counters are not enabled. Nothing to clear.
-            if (gpu->parent->isr.access_counters[notif_buf_index].handling_ref_count) {
-                status = access_counter_clear_all(gpu, access_counters);
-                if (status == NV_OK)
-                    status = uvm_tracker_wait(&access_counters->clear_tracker);
-            }
-
-            uvm_access_counters_isr_unlock(access_counters);
-
-            if (status != NV_OK)
-                break;
-        }
+        // Break the loop if clear_all failed in any of the retained gpus.
+        if (status != NV_OK)
+            break;
     }
 
     for_each_gpu_in_mask(gpu, retained_gpus)
@@ -2055,7 +2069,9 @@ NV_STATUS uvm_test_reset_access_counters(UVM_TEST_RESET_ACCESS_COUNTERS_PARAMS *
     NV_STATUS status = NV_OK;
     uvm_gpu_t *gpu = NULL;
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
+    uvm_access_counter_buffer_t *access_counters;
     NvU32 notif_buf_index;
+    NvBool index0_state;
 
     if (params->mode >= UVM_TEST_ACCESS_COUNTER_RESET_MODE_MAX)
         return NV_ERR_INVALID_ARGUMENT;
@@ -2069,51 +2085,52 @@ NV_STATUS uvm_test_reset_access_counters(UVM_TEST_RESET_ACCESS_COUNTERS_PARAMS *
         goto exit_release_gpu;
     }
 
-    for (notif_buf_index = 0;
-         notif_buf_index < gpu->parent->rm_info.accessCntrBufferCount && status == NV_OK;
-         notif_buf_index++) {
-        uvm_access_counter_buffer_t *access_counters = parent_gpu_access_counter_buffer_get(gpu->parent,
-                                                                                            notif_buf_index);
+    uvm_mutex_lock(&gpu->parent->access_counters_enablement_lock);
 
-        uvm_access_counters_isr_lock(access_counters);
+    // Access counters not enabled. Nothing to reset
+    if (!uvm_parent_processor_mask_test(&va_space->access_counters_enabled_processors, gpu->parent->id)) {
+        uvm_mutex_unlock(&gpu->parent->access_counters_enablement_lock);
+        goto exit_release_gpu;
+    }
 
-        // Access counters not enabled. Nothing to reset
-        if (gpu->parent->isr.access_counters[notif_buf_index].handling_ref_count == 0)
-            goto exit_isr_unlock;
+    uvm_mutex_unlock(&gpu->parent->access_counters_enablement_lock);
 
-        if (params->mode == UVM_TEST_ACCESS_COUNTER_RESET_MODE_ALL) {
-            status = access_counter_clear_all(gpu, access_counters);
-        }
-        else {
-            uvm_access_counter_buffer_entry_t entry = { 0 };
-            uvm_access_counter_buffer_entry_t *notification = &entry;
+    // Clear operations affect all notification buffers, we use the
+    // notif_buf_index = 0;
+    notif_buf_index = 0;
+    access_counters = parent_gpu_access_counter_buffer_get(gpu->parent, notif_buf_index);
 
-            entry.bank = params->bank;
-            entry.tag = params->tag;
+    uvm_access_counters_isr_lock(access_counters);
 
-            status = access_counter_clear_notifications(gpu, access_counters, &notification, 1);
-        }
+    // Recheck access counters are enabled.
+    index0_state = gpu->parent->isr.access_counters[notif_buf_index].handling_ref_count == 0;
+    if (index0_state) {
+        NvU32 i;
 
-        if (status == NV_OK)
-            status = uvm_tracker_wait(&access_counters->clear_tracker);
+        for (i = notif_buf_index + 1; i < gpu->parent->rm_info.accessCntrBufferCount; i++)
+            UVM_ASSERT((gpu->parent->isr.access_counters[i].handling_ref_count == 0) == index0_state);
+
+        goto exit_isr_unlock;
+    }
+
+    if (params->mode == UVM_TEST_ACCESS_COUNTER_RESET_MODE_ALL) {
+        status = access_counter_clear_all(gpu, access_counters);
+    }
+    else {
+        uvm_access_counter_buffer_entry_t entry = { 0 };
+        uvm_access_counter_buffer_entry_t *notification = &entry;
+
+        entry.bank = params->bank;
+        entry.tag = params->tag;
+
+        status = access_counter_clear_notifications(gpu, access_counters, &notification, 1);
+    }
+
+    if (status == NV_OK)
+        status = parent_gpu_clear_tracker_wait(gpu->parent);
 
 exit_isr_unlock:
-        uvm_access_counters_isr_unlock(access_counters);
-
-        // We only need to clear_all() once.
-        if (params->mode == UVM_TEST_ACCESS_COUNTER_RESET_MODE_ALL) {
-            NvU32 i;
-
-            // Early exit of the main loop; since we only need to clear_all()
-            // once. Check that all the remaining notification buffers have
-            // access counters in same state.
-            NvBool index0_state = (gpu->parent->isr.access_counters[notif_buf_index].handling_ref_count == 0);
-            for (i = notif_buf_index + 1; i < gpu->parent->rm_info.accessCntrBufferCount; i++)
-                UVM_ASSERT((gpu->parent->isr.access_counters[i].handling_ref_count == 0) == index0_state);
-
-            break;
-        }
-    }
+    uvm_access_counters_isr_unlock(access_counters);
 
 exit_release_gpu:
     uvm_gpu_release(gpu);

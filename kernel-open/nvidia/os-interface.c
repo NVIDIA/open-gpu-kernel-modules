@@ -2672,7 +2672,11 @@ NV_STATUS NV_API_CALL os_offline_page_at_address
 
 void* NV_API_CALL os_get_pid_info(void)
 {
-    return get_task_pid(current, PIDTYPE_PID);
+#if defined(NV_HAS_ENUM_PIDTYPE_TGID)
+    return get_task_pid(current, PIDTYPE_TGID);
+#else
+    return get_task_pid(current->group_leader, PIDTYPE_PID);
+#endif
 }
 
 void NV_API_CALL os_put_pid_info(void *pid_info)

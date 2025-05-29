@@ -183,6 +183,10 @@ typedef struct GVAS_GPU_STATE
      */
     MEMORY_DESCRIPTOR_LIST unpackedMemDescList;
     /*!
+     * Memory pool for client page tables
+     */
+    RM_POOL_ALLOC_MEM_RESERVE_INFO *pPageTableMemPool;
+    /*!
      * Reserved page table entries for the GVA space.
      */
     ReservedPageTableEntriesList reservedPageTableEntries;
@@ -277,7 +281,6 @@ struct OBJGVASPACE {
     NvBool bRMInternalRestrictedVaRange;
     NvU64 vaStartServerRMOwned;
     NvU64 vaLimitServerRMOwned;
-    RM_POOL_ALLOC_MEM_RESERVE_INFO *pPageTableMemPool;
 };
 
 

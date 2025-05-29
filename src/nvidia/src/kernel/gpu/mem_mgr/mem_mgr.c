@@ -375,6 +375,13 @@ memmgrTestCeUtils
     NvU32              vidmemData    = 0xAABBCCDD;
     NvU32              sysmemData    = 0x11223345;
     NV_STATUS          status;
+    NvBool             bReUseInitMem  = pGpu->getProperty(pGpu, PDB_PROP_GPU_REUSE_INIT_CONTING_MEM);
+
+    // Under low sysmem case we skip the testing since it requries extra memory
+    if (bReUseInitMem)
+    {
+        return NV_OK;
+    }
 
     NV_ASSERT_OR_RETURN(pMemoryManager->pCeUtils != NULL, NV_ERR_INVALID_STATE);
 

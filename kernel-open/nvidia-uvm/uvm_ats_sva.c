@@ -139,7 +139,11 @@ static NvU32 smmu_vcmdq_read32(void __iomem *smmu_cmdqv_base, int reg)
 
 static void smmu_vcmdq_write64(void __iomem *smmu_cmdqv_base, int reg, NvU64 val)
 {
+#if NV_IS_EXPORT_SYMBOL_PRESENT___iowrite64_lo_hi
+    __iowrite64_lo_hi(val, SMMU_VCMDQ_BASE_ADDR(smmu_cmdqv_base, VCMDQ) + reg);
+#else
     iowrite64(val, SMMU_VCMDQ_BASE_ADDR(smmu_cmdqv_base, VCMDQ) + reg);
+#endif
 }
 
 // Fix for Bug 4130089: [GH180][r535] WAR for kernel not issuing SMMU

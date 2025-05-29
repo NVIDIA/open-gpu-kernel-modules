@@ -522,10 +522,6 @@ struct uvm_access_counter_buffer_struct
     // PCIe
     NvU32 cached_put;
 
-    // Tracker used to aggregate access counters clear operations, needed for
-    // GPU removal
-    uvm_tracker_t clear_tracker;
-
     // Current access counter configuration. During normal operation this
     // information is computed once during GPU initialization. However, tests
     // may override it to try different configuration values.
@@ -1212,6 +1208,11 @@ struct uvm_parent_gpu_struct
     // has rm_info.accessCntrBufferCount entries.
     uvm_access_counter_buffer_t *access_counter_buffer;
     uvm_mutex_t access_counters_enablement_lock;
+
+    // Tracker used to aggregate access counters clear operations, needed for
+    // GPU removal. It is only used when supports_access_counters is set.
+    uvm_tracker_t access_counters_clear_tracker;
+    uvm_mutex_t access_counters_clear_tracker_lock;
 
     // Number of uTLBs per GPC. This information is only valid on Pascal+ GPUs.
     NvU32 utlb_per_gpc_count;

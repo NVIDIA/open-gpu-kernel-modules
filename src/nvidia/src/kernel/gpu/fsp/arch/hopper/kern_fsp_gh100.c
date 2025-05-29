@@ -963,7 +963,6 @@ kfspGetGspBootArgs
 )
 {
     NV_STATUS status         = NV_OK;
-
     ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
     NV_ASSERT(pCC != NULL);
 
@@ -1004,6 +1003,7 @@ kfspSetupGspImages
     PBINDATA_STORAGE pGspImageHash;
     PBINDATA_STORAGE pGspImageSignature;
     PBINDATA_STORAGE pGspImagePublicKey;
+    NvBool bReUseInitMem  = pGpu->getProperty(pGpu, PDB_PROP_GPU_REUSE_INIT_CONTING_MEM);
     NvU32 pGspImageSize;
     NvU32 pGspImageMapSize;
     NvP64 pVaKernel = NULL;
@@ -1040,15 +1040,17 @@ kfspSetupGspImages
 
     pGspImageSize = bindataGetBufferSize(pGspImage);
     pGspImageMapSize = NV_ALIGN_UP(pGspImageSize, 0x1000);
+    if ((pKernelFsp->pGspFmcMemdesc == NULL) || !bReUseInitMem)
+    {
+        NV_ASSERT(pKernelFsp->pGspFmcMemdesc == NULL); // If we assert the pointer becomes a zombie.
+        status = memdescCreate(&pKernelFsp->pGspFmcMemdesc, pGpu, pGspImageMapSize,
+                               0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED, flags);
+        NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
-    status = memdescCreate(&pKernelFsp->pGspFmcMemdesc, pGpu, pGspImageMapSize,
-                           0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED, flags);
-    NV_ASSERT_OR_GOTO(status == NV_OK, failed);
-
-    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_7,
-                    pKernelFsp->pGspFmcMemdesc);
-    NV_ASSERT_OR_GOTO(status == NV_OK, failed);
-
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_7,
+                        pKernelFsp->pGspFmcMemdesc);
+        NV_ASSERT_OR_GOTO(status == NV_OK, failed);
+    }
     status = memdescMap(pKernelFsp->pGspFmcMemdesc, 0, pGspImageMapSize, NV_TRUE,
                         NV_PROTECT_READ_WRITE, &pVaKernel, &pPrivKernel);
     NV_ASSERT_OR_GOTO(status == NV_OK, failed);
@@ -1301,6 +1303,7 @@ kfspPrepareBootCommands_GH100
     NvP64 pVaKernel = NULL;
     NvP64 pPrivKernel = NULL;
     NvBool bIsKeepWPRGc6 = IS_GPU_GC6_STATE_EXITING(pGpu);
+    NvBool bReUseInitMem  = pGpu->getProperty(pGpu, PDB_PROP_GPU_REUSE_INIT_CONTING_MEM);
 
     statusBoot = kfspWaitForSecureBoot_HAL(pGpu, pKernelFsp);
 
@@ -1383,13 +1386,17 @@ kfspPrepareBootCommands_GH100
         // FSP (an unit inside GPU) and hence placed in unprotected sysmem
         //
         flags = MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
-        status = memdescCreate(&pKernelFsp->pSysmemFrtsMemdesc, pGpu, frtsSize,
-                               0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED, flags);
-        NV_ASSERT_OR_GOTO(status == NV_OK, failed);
+        if ((pKernelFsp->pSysmemFrtsMemdesc == NULL) || !bReUseInitMem)
+        {
+            NV_ASSERT(pKernelFsp->pSysmemFrtsMemdesc == NULL); // If we assert the pointer becomes a zombie.
+            status = memdescCreate(&pKernelFsp->pSysmemFrtsMemdesc, pGpu, frtsSize,
+                                   0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED, flags);
+            NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
-        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_8,
-                        pKernelFsp->pSysmemFrtsMemdesc);
-        NV_ASSERT_OR_GOTO(status == NV_OK, failed);
+            memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_8,
+                            pKernelFsp->pSysmemFrtsMemdesc);
+            NV_ASSERT_OR_GOTO(status == NV_OK, failed);
+        }
 
         // Set up a kernel mapping for future use in RM
         status = memdescMap(pKernelFsp->pSysmemFrtsMemdesc, 0, frtsSize, NV_TRUE,

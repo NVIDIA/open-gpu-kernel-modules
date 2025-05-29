@@ -4189,7 +4189,7 @@ int NV_API_CALL nv_stop_rc_timer(
 
     nv_printf(NV_DBG_INFO, "NVRM: stopping rc timer\n");
     nv->rc_timer_enabled = 0;
-    del_timer_sync(&nvl->rc_timer.kernel_timer);
+    nv_timer_delete_sync(&nvl->rc_timer.kernel_timer);
     nv_printf(NV_DBG_INFO, "NVRM: rc timer stopped\n");
 
     return 0;
@@ -4233,7 +4233,7 @@ void NV_API_CALL nv_stop_snapshot_timer(void)
     NV_SPIN_UNLOCK_IRQRESTORE(&nvl->snapshot_timer_lock, flags);
 
     if (timer_active)
-        del_timer_sync(&nvl->snapshot_timer.kernel_timer);
+        nv_timer_delete_sync(&nvl->snapshot_timer.kernel_timer);
 }
 
 void NV_API_CALL nv_flush_snapshot_timer(void)
