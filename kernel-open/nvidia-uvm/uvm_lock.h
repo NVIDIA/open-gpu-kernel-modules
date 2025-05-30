@@ -432,6 +432,11 @@
 //      Order: UVM_LOCK_ORDER_PMM_ROOT_CHUNK
 //      Exclusive bitlock (mutex) per each root chunk internal to PMM.
 //
+// - Access counters clear operations
+//     Order: UVM_LOCK_ACCESS_COUNTERS_CLEAR_OPS
+//
+//     It protects the parent_gpu's access counters clear tracker.
+//
 // - Channel lock
 //      Order: UVM_LOCK_ORDER_CHANNEL
 //      Spinlock (uvm_spinlock_t) or exclusive lock (mutex)
@@ -477,7 +482,7 @@
 //
 //      CE semaphore payloads are encrypted, and require to take the CSL lock
 //      (UVM_LOCK_ORDER_LEAF) to decrypt the payload.
-
+//
 // - CSL Context
 //      Order: UVM_LOCK_ORDER_CSL_CTX
 //      When the Confidential Computing feature is enabled, encrypt/decrypt
@@ -523,6 +528,7 @@ typedef enum
     UVM_LOCK_ORDER_PMM,
     UVM_LOCK_ORDER_PMM_PMA,
     UVM_LOCK_ORDER_PMM_ROOT_CHUNK,
+    UVM_LOCK_ACCESS_COUNTERS_CLEAR_OPS,
     UVM_LOCK_ORDER_CHANNEL,
     UVM_LOCK_ORDER_WLC_CHANNEL,
     UVM_LOCK_ORDER_TOOLS_VA_SPACE_LIST,

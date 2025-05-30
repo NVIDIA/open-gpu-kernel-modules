@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -212,12 +212,13 @@ struct KernelDisplay {
     NvU32 (*__kdispServiceAwakenIntr__)(OBJGPU *, struct KernelDisplay * /*this*/, struct THREAD_STATE_NODE *);  // halified (2 hals) body
     NV_STATUS (*__kdispComputeDpModeSettings__)(OBJGPU *, struct KernelDisplay * /*this*/, NvU32, DPMODESETDATA *, DPIMPINFO *);  // halified (3 hals) body
 
-    // 6 PDB properties
+    // 7 PDB properties
     NvBool PDB_PROP_KDISP_IMP_ENABLE;
     NvBool PDB_PROP_KDISP_IMP_ALLOC_BW_IN_KERNEL_RM_DEF;
     NvBool PDB_PROP_KDISP_FEATURE_STRETCH_VBLANK_CAPABLE;
     NvBool PDB_PROP_KDISP_IN_AWAKEN_INTR;
     NvBool PDB_PROP_KDISP_HAS_SEPARATE_LOW_LATENCY_LINE;
+    NvBool PDB_PROP_KDISP_INTERNAL_PANEL_DISCONNECTED;
 
     // Data members
     struct DisplayInstanceMemory *pInst;
@@ -302,6 +303,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelDisplay;
 #define PDB_PROP_KDISP_IMP_ENABLE_BASE_NAME PDB_PROP_KDISP_IMP_ENABLE
 #define PDB_PROP_KDISP_FEATURE_STRETCH_VBLANK_CAPABLE_BASE_CAST
 #define PDB_PROP_KDISP_FEATURE_STRETCH_VBLANK_CAPABLE_BASE_NAME PDB_PROP_KDISP_FEATURE_STRETCH_VBLANK_CAPABLE
+#define PDB_PROP_KDISP_INTERNAL_PANEL_DISCONNECTED_BASE_CAST
+#define PDB_PROP_KDISP_INTERNAL_PANEL_DISCONNECTED_BASE_NAME PDB_PROP_KDISP_INTERNAL_PANEL_DISCONNECTED
 
 NV_STATUS __nvoc_objCreateDynamic_KernelDisplay(KernelDisplay**, Dynamic*, NvU32, va_list);
 

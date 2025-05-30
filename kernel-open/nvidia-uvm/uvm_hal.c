@@ -218,6 +218,7 @@ static uvm_hal_class_ops_t host_table[] =
             .clear_faulted_channel_register = uvm_hal_maxwell_host_clear_faulted_channel_register_unsupported,
             .access_counter_clear_all = uvm_hal_maxwell_access_counter_clear_all_unsupported,
             .access_counter_clear_targeted = uvm_hal_maxwell_access_counter_clear_targeted_unsupported,
+            .access_counter_query_clear_op = uvm_hal_maxwell_access_counter_query_clear_op_unsupported,
             .get_time = uvm_hal_maxwell_get_time,
         }
     },
@@ -269,6 +270,7 @@ static uvm_hal_class_ops_t host_table[] =
             .tlb_invalidate_test = uvm_hal_turing_host_tlb_invalidate_test,
             .access_counter_clear_all = uvm_hal_turing_access_counter_clear_all,
             .access_counter_clear_targeted = uvm_hal_turing_access_counter_clear_targeted,
+            .access_counter_query_clear_op = uvm_hal_turing_access_counter_query_clear_op,
         }
     },
     {
@@ -308,12 +310,15 @@ static uvm_hal_class_ops_t host_table[] =
             .tlb_invalidate_all = uvm_hal_blackwell_host_tlb_invalidate_all,
             .tlb_invalidate_va = uvm_hal_blackwell_host_tlb_invalidate_va,
             .tlb_invalidate_test = uvm_hal_blackwell_host_tlb_invalidate_test,
+            .access_counter_query_clear_op = uvm_hal_blackwell_access_counter_query_clear_op_gb100,
         }
     },
     {
         .id = BLACKWELL_CHANNEL_GPFIFO_B,
         .parent_id = BLACKWELL_CHANNEL_GPFIFO_A,
-        .u.host_ops = {}
+        .u.host_ops = {
+            .access_counter_query_clear_op = uvm_hal_blackwell_access_counter_query_clear_op_gb20x
+        }
     },
 };
 

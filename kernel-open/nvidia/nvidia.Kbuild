@@ -260,6 +260,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += foll_longterm_present
 NV_CONFTEST_TYPE_COMPILE_TESTS += bus_type_has_iommu_ops
 NV_CONFTEST_TYPE_COMPILE_TESTS += class_create_has_no_owner_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += class_devnode_has_const_arg
+NV_CONFTEST_TYPE_COMPILE_TESTS += has_enum_pidtype_tgid
 
 NV_CONFTEST_GENERIC_COMPILE_TESTS += dom0_kernel_present
 NV_CONFTEST_GENERIC_COMPILE_TESTS += nvidia_vgpu_kvm_build

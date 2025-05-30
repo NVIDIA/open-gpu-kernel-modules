@@ -254,3 +254,31 @@ void uvm_hal_blackwell_host_tlb_invalidate_test(uvm_push_t *push,
                                    HWVALUE(C96F, MEM_OP_D, TLB_INVALIDATE_PDB_ADDR_HI, pdb_hi));
     }
 }
+
+uvm_access_counter_clear_op_t
+uvm_hal_blackwell_access_counter_query_clear_op_gb100(uvm_parent_gpu_t *parent_gpu,
+                                                      uvm_access_counter_buffer_entry_t **buffer_entries,
+                                                      NvU32 num_entries)
+{
+    if (parent_gpu->rm_info.accessCntrBufferCount > 1) {
+        NvU32 i;
+
+        for (i = 0; i < num_entries; i++) {
+            const uvm_access_counter_buffer_entry_t *entry = buffer_entries[i];
+
+            // The LSb identifies the die ID.
+            if ((entry->tag & 0x1) == 1)
+                return UVM_ACCESS_COUNTER_CLEAR_OP_ALL;
+        }
+    }
+
+    return UVM_ACCESS_COUNTER_CLEAR_OP_TARGETED;
+}
+
+uvm_access_counter_clear_op_t
+uvm_hal_blackwell_access_counter_query_clear_op_gb20x(uvm_parent_gpu_t *parent_gpu,
+                                                      uvm_access_counter_buffer_entry_t **buffer_entries,
+                                                      NvU32 num_entries)
+{
+    return UVM_ACCESS_COUNTER_CLEAR_OP_TARGETED;
+}
