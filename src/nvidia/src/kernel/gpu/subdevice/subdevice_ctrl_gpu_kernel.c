@@ -3829,12 +3829,13 @@ subdeviceCtrlCmdThermalSystemExecuteV2_IMPL(Subdevice *pSubdevice,
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NvU32 instructionListSize = pSystemExecuteParams->instructionListSize;
+    (void)instructionListSize;
 
     NV_STATUS status = NV_OK;
     NvBool bForwardRmctrl;
-    NvU32 instructionListSize;
 
-    for (NvU32 i = 0; i < pSystemExecuteParams->instructionListSize; i++)
+    for (NvU32 i = 0; i < instructionListSize; i++)
     {
         pSystemExecuteParams->instructionList[i].executed = NV_FALSE;
     }
@@ -3853,7 +3854,6 @@ subdeviceCtrlCmdThermalSystemExecuteV2_IMPL(Subdevice *pSubdevice,
     bForwardRmctrl = NV_FALSE;
 
     // Service values from cache
-    instructionListSize = pSystemExecuteParams->instructionListSize;
     for (NvU32 i = 0; i < instructionListSize; i++)
     {
         // Verify that the size of the union NV2080_CTRL_THERMAL_SYSTEM_INSTRUCTION_OPERANDS is dictated by

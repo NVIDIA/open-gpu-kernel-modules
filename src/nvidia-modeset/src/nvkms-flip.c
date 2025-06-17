@@ -1227,13 +1227,14 @@ void nvIdleLayerChannels(NVDevEvoRec *pDevEvo,
  * in-flight methods flip away from this surface.
  */
 void nvEvoClearSurfaceUsage(NVDevEvoRec *pDevEvo,
-                            NVSurfaceEvoPtr pSurfaceEvo)
+                            NVSurfaceEvoPtr pSurfaceEvo,
+                            const NvBool skipSync)
 {
     NvU32 head;
 
     /*
      * If the core channel is no longer allocated, we don't need to
-     * sync. This assumes the channels are allocated/deallocated
+     * clear usage/sync. This assumes the channels are allocated/deallocated
      * together.
      */
     if (pDevEvo->core) {
@@ -1242,16 +1243,20 @@ void nvEvoClearSurfaceUsage(NVDevEvoRec *pDevEvo,
             pDevEvo->hal->ClearSurfaceUsage(pDevEvo, pSurfaceEvo);
         }
 
-        nvRMSyncEvoChannel(pDevEvo, pDevEvo->core, __LINE__);
+        /* HALs with ClearSurfaceUsage() require sync to ensure completion. */
+        if (!skipSync ||
+            (pDevEvo->hal->ClearSurfaceUsage != NULL)) {
+            nvRMSyncEvoChannel(pDevEvo, pDevEvo->core, __LINE__);
 
-        for (head = 0; head < pDevEvo->numHeads; head++) {
-            NvU32 layer;
+            for (head = 0; head < pDevEvo->numHeads; head++) {
+                NvU32 layer;
 
-            for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
-                NVEvoChannelPtr pChannel =
-                    pDevEvo->head[head].layer[layer];
+                for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
+                    NVEvoChannelPtr pChannel =
+                        pDevEvo->head[head].layer[layer];
 
-                nvRMSyncEvoChannel(pDevEvo, pChannel, __LINE__);
+                    nvRMSyncEvoChannel(pDevEvo, pChannel, __LINE__);
+                }
             }
         }
     }

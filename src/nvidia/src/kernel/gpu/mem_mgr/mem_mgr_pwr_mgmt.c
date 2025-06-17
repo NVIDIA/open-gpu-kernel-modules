@@ -324,7 +324,8 @@ _memmgrAllocFbsrReservedRanges
                          pWprMeta->vgaWorkspaceSize;                                              // VGA Workspace
 
             // Check if CBC region needs to be saved
-            if (GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu)->bPreserveComptagBackingStoreOnSuspend)
+            if (GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu)->bPreserveComptagBackingStoreOnSuspend ||
+                pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GCOFF_SUPPORTED))
             {
                 NV0080_CTRL_FB_GET_COMPBIT_STORE_INFO_PARAMS compbitStoreInfoParams;
                 RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);

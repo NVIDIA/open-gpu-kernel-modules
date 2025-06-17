@@ -7604,7 +7604,7 @@ compile_test() {
             CODE="
             #include <linux/mmzone.h>
             int conftest_page_pgmap(void) {
-                return page_pgmap(NULL);
+                return page_pgmap();
             }"
 
             compile_check_conftest "$CODE" "NV_PAGE_PGMAP_PRESENT" "" "functions"

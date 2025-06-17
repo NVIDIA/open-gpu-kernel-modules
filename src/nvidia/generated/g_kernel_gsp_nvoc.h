@@ -1397,8 +1397,8 @@ static inline NvU32 kgspGetNonWprHeapSize_d505ea(struct OBJGPU *pGpu, struct Ker
     return 2097152;
 }
 
-static inline NvU32 kgspGetNonWprHeapSize_1bb8e3(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
-    return 2228224;
+static inline NvU32 kgspGetNonWprHeapSize_ad951d(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    return 2293760;
 }
 
 static inline NvU32 kgspGetNonWprHeapSize_5baef9(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {

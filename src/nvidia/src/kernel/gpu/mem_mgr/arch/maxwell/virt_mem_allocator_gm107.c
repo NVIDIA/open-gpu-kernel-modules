@@ -1912,8 +1912,10 @@ dmaUpdateVASpace_GF100
                 break;
     }
 
-    isVolatile |= !!(flags & DMA_UPDATE_VASPACE_FLAGS_VOLATILE);
-    isVolatile &= !(flags & DMA_UPDATE_VASPACE_FLAGS_NONVOLATILE);
+    {
+        isVolatile |= !!(flags & DMA_UPDATE_VASPACE_FLAGS_VOLATILE);
+        isVolatile &= !(flags & DMA_UPDATE_VASPACE_FLAGS_NONVOLATILE);
+    }
 
     encrypted = (flags & DMA_UPDATE_VASPACE_FLAGS_DISABLE_ENCRYPTION) ? 0 :
         memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ENCRYPTED);

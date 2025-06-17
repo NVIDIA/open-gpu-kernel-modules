@@ -309,7 +309,7 @@ fbsrBegin_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, FBSR_OP_TYPE op)
         if (IS_GSP_CLIENT(pGpu) || IS_VIRTUAL(pGpu))
         {
             pFbsr->pCe = NULL;
-            bVirtualMode = !IS_VIRTUAL(pGpu) ? NV_TRUE : NV_FALSE;
+            bVirtualMode = pMemoryManager->bUseVirtualCopyOnSuspend;
             NV_ASSERT_OK_OR_RETURN(memmgrInitCeUtils(pMemoryManager, NV_FALSE, bVirtualMode));
         }
 

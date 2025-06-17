@@ -102,7 +102,8 @@ void nvIdleLayerChannels(NVDevEvoRec *pDevEvo,
     NvU32 layerMaskPerSdApiHead[NVKMS_MAX_SUBDEVICES][NVKMS_MAX_HEADS_PER_DISP]);
 
 void nvEvoClearSurfaceUsage(NVDevEvoRec *pDevEvo,
-                            NVSurfaceEvoPtr pSurfaceEvo);
+                            NVSurfaceEvoPtr pSurfaceEvo,
+                            const NvBool skipSync);
 
 NvBool nvIdleBaseChannelOneApiHead(NVDispEvoRec *pDispEvo, NvU32 apiHead,
                                    NvBool *pStoppedBase);

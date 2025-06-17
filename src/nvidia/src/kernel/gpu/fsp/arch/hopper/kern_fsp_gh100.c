@@ -899,6 +899,11 @@ kfspGetGspUcodeArchive
                     {
                         return gspGetBinArchiveGspFmcSpdmGfwDebugSigned_HAL(pGsp);
                     }
+                    else
+                    {
+                        // When CC is enabled but SPDM is not enabled. Only for MODS.
+                        return gspGetBinArchiveGspFmcGfwDebugSigned_HAL(pGsp);
+                    }
                 }
                 else
                 {
@@ -936,6 +941,11 @@ kfspGetGspUcodeArchive
                         pSpdm->getProperty(pSpdm, PDB_PROP_SPDM_ENABLED))
                     {
                         return gspGetBinArchiveGspCcFmcGfwProdSigned_HAL(pGsp);
+                    }
+                    else
+                    {
+                        // When CC is enabled but SPDM is not enabled. Only for MODS.
+                        return gspGetBinArchiveGspFmcGfwDebugSigned_HAL(pGsp);
                     }
                 }
                 else
