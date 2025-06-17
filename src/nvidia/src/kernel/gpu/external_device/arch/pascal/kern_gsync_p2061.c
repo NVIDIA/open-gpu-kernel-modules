@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -256,25 +256,30 @@ gsyncGetSyncSkew_P2061_V204
     return NV_OK;
 }
 
+//
 // Determine and write the proper RasterSync Decode Mode to the CONTROL5 register
+// The RasterSync Decode Mode will be queried from the Server GPU, which may
+// not be the same GPU that we are writing this register via.
+//
 NV_STATUS
 gsyncSetRasterSyncDecodeMode_P2061_V300
 (
     OBJGPU            *pGpu,
+    OBJGPU            *pServerGpu,
     DACEXTERNALDEVICE *pExtDev
 )
 {
     NV2080_CTRL_INTERNAL_GSYNC_GET_RASTER_SYNC_DECODE_MODE_PARAMS
             rasterSyncDecodeModeParams;
-    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pServerGpu);
     NvU8    old_data, data;
 
     //
-    // Get the raster sync mode flag from the GPU
+    // Get the raster sync mode flag from the server GPU
     // This is only used in P2061 v3.00+ for gsyncSetRasterDecodeMode()
     //
-    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi, pGpu->hInternalClient,
-        pGpu->hInternalSubdevice, NV2080_CTRL_CMD_INTERNAL_GSYNC_GET_RASTER_SYNC_DECODE_MODE,
+    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi, pServerGpu->hInternalClient,
+        pServerGpu->hInternalSubdevice, NV2080_CTRL_CMD_INTERNAL_GSYNC_GET_RASTER_SYNC_DECODE_MODE,
         &rasterSyncDecodeModeParams, sizeof(rasterSyncDecodeModeParams)));
 
     NV_ASSERT_OK_OR_RETURN(readregu008_extdeviceTargeted(pGpu, pExtDev, (NvU8)NV_P2061_CONTROL5, &data));

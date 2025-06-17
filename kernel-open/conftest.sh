@@ -6602,22 +6602,22 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_DRIVER_HAS_DUMB_DESTROY" "" "types"
         ;;
 
-        memory_failure_has_trapno_arg)
+        memory_failure_queue_has_trapno_arg)
             #
-            # Check if memory_failure() has trapno parameter.
+            # Check if memory_failure_queue() has trapno parameter.
             #
             # Removed by commit 83b57531c58f ("mm/memory_failure: Remove
             # unused trapno from memory_failure") in v4.16.
             #
             CODE="
             #include <linux/mm.h>
-            void conftest_memory_failure_has_trapno_arg(unsigned long pfn,
+            void conftest_memory_failure_queue_has_trapno_arg(unsigned long pfn,
                                                         int trapno,
                                                         int flags) {
-                (void) memory_failure(pfn, trapno, flags);
+                memory_failure_queue(pfn, trapno, flags);
             }"
 
-            compile_check_conftest "$CODE" "NV_MEMORY_FAILURE_HAS_TRAPNO_ARG" "" "types"
+            compile_check_conftest "$CODE" "NV_MEMORY_FAILURE_QUEUE_HAS_TRAPNO_ARG" "" "types"
         ;;
 
         memory_failure_mf_sw_simulated_defined)
@@ -7571,7 +7571,7 @@ compile_test() {
             CODE="
             #include <linux/mmzone.h>
             int conftest_page_pgmap(void) {
-                return page_pgmap(NULL);
+                return page_pgmap();
             }"
 
             compile_check_conftest "$CODE" "NV_PAGE_PGMAP_PRESENT" "" "functions"

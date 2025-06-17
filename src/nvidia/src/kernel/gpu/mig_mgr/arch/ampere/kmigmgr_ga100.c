@@ -173,6 +173,11 @@ kmigmgrIsGPUInstanceFlagValid_GA100
     NvU32 gfxSizeFlag = DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG,
                                     _GFX_SIZE, gpuInstanceFlag);
 
+    if (!FLD_TEST_REF(NV2080_CTRL_GPU_PARTITION_FLAG_REQ_ALL_MEDIA, _DEFAULT, gpuInstanceFlag))
+    {
+        return NV_FALSE;
+    }
+
     switch (memSizeFlag)
     {
         case NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_FULL:

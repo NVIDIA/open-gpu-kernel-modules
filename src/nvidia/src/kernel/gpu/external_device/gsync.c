@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1178,7 +1178,7 @@ gsyncIsAnyHeadFramelocked(OBJGSYNC *pGsync)
             {
                 // Check if assigned slaves displays are there.
                 if ((NV_OK == pGsync->gsyncHal.gsyncRefSlaves(pGpu,
-                     pGsync->pExtDev, refRead, &assigned, &refresh)) &&
+                     pGsync, refRead, &assigned, &refresh)) &&
                     (assigned != 0))
                 {
                     return NV_TRUE;
@@ -1469,7 +1469,7 @@ gsyncGetControlSync(OBJGSYNC *pGsync,
         }
         else
         {
-            status |= pGsync->gsyncHal.gsyncRefSlaves(pGpu, pGsync->pExtDev, refFetchGet,
+            status |= pGsync->gsyncHal.gsyncRefSlaves(pGpu, pGsync, refFetchGet,
                 &pParams->displays, &pParams->refresh);
         }
     }
@@ -1545,10 +1545,10 @@ gsyncSetControlSync(OBJGSYNC *pGsync,
     }
     else
     {
-        status |= pGsync->gsyncHal.gsyncRefSlaves(pGpu, pGsync->pExtDev,
+        status |= pGsync->gsyncHal.gsyncRefSlaves(pGpu, pGsync,
             refRead, &assigned, &refresh);
         pParams->displays |= assigned;
-        status |= pGsync->gsyncHal.gsyncRefSlaves(pGpu, pGsync->pExtDev,
+        status |= pGsync->gsyncHal.gsyncRefSlaves(pGpu, pGsync,
             refSetCommit, &pParams->displays, &pParams->refresh);
     }
 
@@ -1599,10 +1599,10 @@ gsyncSetControlUnsync(OBJGSYNC *pGsync,
     }
     else
     {
-        status |= pGsync->gsyncHal.gsyncRefSlaves(pGpu, pGsync->pExtDev,
+        status |= pGsync->gsyncHal.gsyncRefSlaves(pGpu, pGsync,
             refRead, &assigned, &refresh);
         pParams->displays = assigned & ~pParams->displays;
-        status |= pGsync->gsyncHal.gsyncRefSlaves(pGpu, pGsync->pExtDev,
+        status |= pGsync->gsyncHal.gsyncRefSlaves(pGpu, pGsync,
             refSetCommit, &pParams->displays, &refresh);
     }
 
@@ -2385,7 +2385,7 @@ static NV_STATUS
 gsyncNullRefSlaves
 (
  OBJGPU       *pGpu,
- PDACEXTERNALDEVICE pExtDev,
+ OBJGSYNC     *pGsync,
  REFTYPE rType,
  NvU32 *pDisplayMasks,
  NvU32 *pRefresh
@@ -2498,6 +2498,7 @@ static NV_STATUS
 gsyncNullSetRasterSyncDecodeMode
 (
     OBJGPU            *pGpu,
+    OBJGPU            *pServerGpu,
     DACEXTERNALDEVICE *pExtDev
 )
 {
@@ -2507,11 +2508,11 @@ gsyncNullSetRasterSyncDecodeMode
     //
     NV2080_CTRL_INTERNAL_GSYNC_GET_RASTER_SYNC_DECODE_MODE_PARAMS
             rasterSyncDecodeModeParams;
-    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pServerGpu);
 
     // Pre-3.00 FW can only use NV2080_CTRL_CMD_INTERNAL_GSYNC_GET_RASTER_SYNC_DECODE_MODE
-    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi, pGpu->hInternalClient,
-        pGpu->hInternalSubdevice, NV2080_CTRL_CMD_INTERNAL_GSYNC_GET_RASTER_SYNC_DECODE_MODE,
+    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi, pServerGpu->hInternalClient,
+        pServerGpu->hInternalSubdevice, NV2080_CTRL_CMD_INTERNAL_GSYNC_GET_RASTER_SYNC_DECODE_MODE,
         &rasterSyncDecodeModeParams, sizeof(rasterSyncDecodeModeParams)));
 
     NV_CHECK_OR_RETURN(LEVEL_WARNING,

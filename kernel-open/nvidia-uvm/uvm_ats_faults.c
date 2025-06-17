@@ -767,6 +767,20 @@ NV_STATUS uvm_ats_service_access_counters(uvm_gpu_va_space_t *gpu_va_space,
                          &ats_context->access_counters.accessed_mask,
                          &ats_context->prefetch_state.residency_mask);
 
+    // Pretend that pages that are already resident at the destination GPU were
+    // migrated now. This makes sure that the access counter is cleared even if
+    // the accessed pages, were already resident on the target.
+    // TODO: Bug 5296998: [uvm][ats] Not clearing stale access counter
+    //                     notifications can lead to missed migrations
+    // The same problem of stale notification exists for migration to other
+    // locations than local vidmem. However, stale notifications to data
+    // migrated to another remote location are identical to those triggered
+    // by accessing memory that cannot or should not be migrated.
+    if (uvm_id_equal(ats_context->residency_id, gpu_va_space->gpu->id)) {
+        uvm_page_mask_copy(&ats_context->access_counters.migrated_mask,
+                           &ats_context->prefetch_state.residency_mask);
+    }
+
     for_each_va_block_subregion_in_mask(subregion, &ats_context->access_counters.accessed_mask, region) {
         NV_STATUS status;
         NvU64 start = base + (subregion.first * PAGE_SIZE);
@@ -779,7 +793,7 @@ NV_STATUS uvm_ats_service_access_counters(uvm_gpu_va_space_t *gpu_va_space,
 
         status = service_ats_requests(gpu_va_space, vma, start, length, access_type, service_type, ats_context);
 
-        // clear access counters if pages were migrated or migration needs to
+        // Clear access counters if pages were migrated or migration needs to
         // be retried
         if (status == NV_OK || status == NV_ERR_BUSY_RETRY)
             uvm_page_mask_region_fill(migrated_mask, subregion);

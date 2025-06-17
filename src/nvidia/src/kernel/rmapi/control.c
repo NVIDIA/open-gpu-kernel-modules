@@ -728,7 +728,7 @@ NV_STATUS serverControl_ValidateCookie
         (pRmCtrlExecuteCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL) &&
         !(pRmCtrlExecuteCookie->ctrlFlags & (RMCTRL_FLAGS_ROUTE_TO_VGPU_HOST | RMCTRL_FLAGS_PHYSICAL_IMPLEMENTED_ON_VGPU_GUEST)))
     {
-        if (!rmapiutilSkipErrorMessageForUnsupportedVgpuGuestControl(pRmCtrlParams->cmd))
+        if (!rmapiutilSkipErrorMessageForUnsupportedVgpuGuestControl(pRmCtrlParams->pGpu, pRmCtrlParams->cmd))
         {
             NV_PRINTF(LEVEL_ERROR, "Unsupported ROUTE_TO_PHYSICAL control 0x%x was called on vGPU guest\n", pRmCtrlParams->cmd);
         }

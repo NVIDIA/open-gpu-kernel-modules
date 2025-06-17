@@ -35,6 +35,7 @@
 #include "ctrl/ctrl2080.h"
 #include "ctrl/ctrl402c.h"
 #include "ctrl/ctrl90cc.h"
+#include "ctrl/ctrl90e6.h"
 #include "ctrl/ctrl90e7/ctrl90e7bbx.h"
 
 NV_STATUS
@@ -194,7 +195,7 @@ rmapiutilGetControlInfo
     return NV_ERR_OBJECT_NOT_FOUND;
 }
 
-NvBool rmapiutilSkipErrorMessageForUnsupportedVgpuGuestControl(NvU32 cmd)
+NvBool rmapiutilSkipErrorMessageForUnsupportedVgpuGuestControl(OBJGPU *pGpu, NvU32 cmd)
 {
     switch (cmd)
     {
@@ -238,6 +239,10 @@ NvBool rmapiutilSkipErrorMessageForUnsupportedVgpuGuestControl(NvU32 cmd)
         case NV402C_CTRL_CMD_I2C_GET_PORT_SPEED:
         case NV90E7_CTRL_CMD_BBX_GET_LAST_FLUSH_TIME:
             return NV_TRUE;
+
+        case NV90E6_CTRL_CMD_MASTER_GET_ERROR_INTR_OFFSET_MASK:
+            if (!IsTURINGorBetter(pGpu))
+                return NV_TRUE;
 
         default:
             return NV_FALSE;

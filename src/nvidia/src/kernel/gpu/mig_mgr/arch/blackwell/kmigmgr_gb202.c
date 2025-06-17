@@ -50,6 +50,14 @@ kmigmgrIsGPUInstanceFlagValid_GB202
     NvU32 gfxSizeFlag = DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG,
                                     _GFX_SIZE, gpuInstanceFlag);
 
+    // If incorrect all video flag, then fail
+    if (!(FLD_TEST_REF(NV2080_CTRL_GPU_PARTITION_FLAG_REQ_ALL_MEDIA, _DEFAULT, gpuInstanceFlag) ||
+        FLD_TEST_REF(NV2080_CTRL_GPU_PARTITION_FLAG_REQ_ALL_MEDIA, _ENABLE, gpuInstanceFlag) ||
+        FLD_TEST_REF(NV2080_CTRL_GPU_PARTITION_FLAG_REQ_ALL_MEDIA, _DISABLE, gpuInstanceFlag)))
+    {
+        return NV_FALSE;
+    }
+
     switch (memSizeFlag)
     {
         case NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_FULL:
@@ -141,6 +149,11 @@ kmigmgrIsGPUInstanceCombinationValid_GB202
         {
             return NV_FALSE;
         }
+
+        if (!FLD_TEST_REF(NV2080_CTRL_GPU_PARTITION_FLAG_REQ_ALL_MEDIA, _DEFAULT, gpuInstanceFlag))
+        {
+            return NV_FALSE;
+        }
     }
 
     switch (computeSizeFlag)
@@ -148,6 +161,8 @@ kmigmgrIsGPUInstanceCombinationValid_GB202
         case NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_FULL:
             NV_CHECK_OR_RETURN(LEVEL_SILENT, memSizeFlag == NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_FULL,
                                NV_FALSE);
+            NV_CHECK_OR_RETURN(LEVEL_SILENT, FLD_TEST_REF(NV2080_CTRL_GPU_PARTITION_FLAG_REQ_ALL_MEDIA, _DEFAULT,
+                               gpuInstanceFlag), NV_FALSE);
             break;
         case NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_HALF:
             NV_CHECK_OR_RETURN(LEVEL_SILENT, memSizeFlag == NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_HALF,

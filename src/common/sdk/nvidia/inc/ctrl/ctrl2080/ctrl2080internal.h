@@ -1003,7 +1003,7 @@ typedef struct NV2080_CTRL_INTERNAL_DISPLAY_SETUP_RG_LINE_INTR_PARAMS {
  *   validGfxCTSIdMask [OUT]
  *     # mask of CTS IDs that contain Gfx capable Grs which can be assigned under this profile
  */
-#define NV2080_CTRL_INTERNAL_GRMGR_PARTITION_MAX_TYPES      60
+#define NV2080_CTRL_INTERNAL_GRMGR_PARTITION_MAX_TYPES      90
 
 
 

@@ -153,7 +153,18 @@
 #define RESOURCE_RETIREMENT_FAILURE                     (157)
 #define CHANNEL_RETIREMENT_EVENT                        (160)
 #define CHANNEL_RETIREMENT_FAILURE                      (161)
-#define ROBUST_CHANNEL_LAST_ERROR                       (161)
+#define ROBUST_CHANNEL_UNUSED_ERROR_162                 (162)
+#define ROBUST_CHANNEL_UNUSED_ERROR_163                 (163)
+#define ROBUST_CHANNEL_UNUSED_ERROR_164                 (164)
+#define ROBUST_CHANNEL_UNUSED_ERROR_165                 (165)
+#define ROBUST_CHANNEL_UNUSED_ERROR_166                 (166)
+#define ROBUST_CHANNEL_UNUSED_ERROR_167                 (167)
+#define ROBUST_CHANNEL_UNUSED_ERROR_168                 (168)
+#define ROBUST_CHANNEL_UNUSED_ERROR_169                 (169)
+#define ROBUST_CHANNEL_UNUSED_ERROR_170                 (170)
+#define UNCORRECTABLE_DRAM_ERROR                        (171)
+#define UNCORRECTABLE_SRAM_ERROR                        (172)
+#define ROBUST_CHANNEL_LAST_ERROR                       (172)
 
 // Indexed CE reference
 #define ROBUST_CHANNEL_CE_ERROR(x)                                        \
