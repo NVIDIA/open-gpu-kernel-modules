@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2017 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,33 +47,13 @@
 #define NV_MSGBOX_CMD_ERR_MORE_PROCESSING_REQUIRED              0x000000F0
 
 //
-// Alternative encodings of the command word
-// These are distinguished by a non-zero value in the 29:29 bit,
-// previously known as _RSVD.
+// Alternative encodings of the command word.
+// These were distinguished by a non-zero value in the 29:29 bit.
+// Bit 29 is now reserved and must be 0 i.e. only standard requests will be processed
+// and debug requests would fail.
 //
 #define NV_MSGBOX_CMD_ENCODING                               29:29
 #define NV_MSGBOX_CMD_ENCODING_STANDARD                 0x00000000
-#define NV_MSGBOX_CMD_ENCODING_DEBUG                    0x00000001
-
-// Debug command structure
-#define NV_MSGBOX_DEBUG_CMD_OPCODE                             1:0
-#define NV_MSGBOX_DEBUG_CMD_OPCODE_READ_PRIV            0x00000000
-
-#define NV_MSGBOX_DEBUG_CMD_ARG                               23:2
-
-/* Utility command constructor macros */
-
-#define NV_MSGBOX_DEBUG_CMD(opcode, arg)                    \
-        (                                                   \
-            DRF_DEF(_MSGBOX, _DEBUG_CMD, _OPCODE, opcode) | \
-            DRF_NUM(_MSGBOX, _DEBUG_CMD, _ARG, (arg))     | \
-            DRF_DEF(_MSGBOX, _CMD, _STATUS, _NULL)        | \
-            DRF_DEF(_MSGBOX, _CMD, _ENCODING, _DEBUG)     | \
-            DRF_DEF(_MSGBOX, _CMD, _INTR, _PENDING)         \
-        )
-
-#define NV_MSGBOX_DEBUG_CMD_READ_PRIV(offset) \
-    NV_MSGBOX_DEBUG_CMD(_READ_PRIV, (offset) >> 2)
 
 #endif // _SMBPBI_PRIV_H_
 

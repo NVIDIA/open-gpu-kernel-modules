@@ -1901,3 +1901,16 @@ bool EvoMainLink::configureFec
 
     return false;
 }
+
+void EvoMainLink::applyStuffDummySymbolWAR(NvU32 head, bool enable)
+{
+    NV0073_CTRL_STUFF_DUMMY_SYMBOL_WAR_PARAMS params = {0};
+    params.subDeviceInstance = provider->getSubdeviceIndex();
+    params.head = head;
+    params.bEnable = enable ? NV_TRUE : NV_FALSE;
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_STUFF_DUMMY_SYMBOL_WAR, &params, sizeof(params));
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "Failed to program the dummy symbol WAR!: %d", enable);
+    }
+}

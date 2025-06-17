@@ -1156,14 +1156,14 @@ void nvEvoDecrementSurfaceRefCntsWithSync(NVDevEvoPtr pDevEvo,
 
     if (pSurfaceEvo->rmRefCnt == 0) {
         /*
-         * Don't sync if this surface was registered as not requiring display
-         * hardware access, to WAR timeouts that result from OGL unregistering
-         * a deferred request fifo causing a sync here that may timeout if
-         * GLS hasn't had the opportunity to release semaphores with pending
-         * flips. (Bug 2050970)
+         * Don't clear usage/sync if this surface was registered as not
+         * requiring display hardware access, to WAR timeouts that result from
+         * OGL unregistering a deferred request fifo causing a sync here that
+         * may timeout if GLS hasn't had the opportunity to release semaphores
+         * with pending flips. (Bug 2050970)
          */
-        if (!skipSync && pSurfaceEvo->requireDisplayHardwareAccess) {
-            nvEvoClearSurfaceUsage(pDevEvo, pSurfaceEvo);
+        if (pSurfaceEvo->requireDisplayHardwareAccess) {
+            nvEvoClearSurfaceUsage(pDevEvo, pSurfaceEvo, skipSync);
         }
 
         FreeSurfaceEvoRm(pDevEvo, pSurfaceEvo);

@@ -112,6 +112,20 @@ void ConnectorImpl2x::applyOuiWARs()
                 }
             }
             break;
+        case 0xAD6000:
+            if ((modelName[0] == 'M') &&
+                (modelName[1] == 'C') &&
+                (modelName[2] == '2') &&
+                (modelName[3] == '9') &&
+                (modelName[4] == '0') &&
+                (modelName[5] == 0x04U))
+            {
+                bApplyStuffDummySymbolsWAR = true;
+                bStuffDummySymbolsFor128b132b = false;
+                bStuffDummySymbolsFor8b10b = true;
+            }
+            break;
+        
     }
 }
 
@@ -637,6 +651,14 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             }
             break;
 
+        case 0xAC10:
+            if (ProductID == 0x42AD || ProductID == 0x42AC)
+            {
+                this->WARFlags.bApplyStuffDummySymbolsWAR   = true;
+                this->WARData.bStuffDummySymbolsFor128b132b = true;
+                this->WARData.bStuffDummySymbolsFor8b10b    = false;
+            }
+            break;
         default:
             break;
     }

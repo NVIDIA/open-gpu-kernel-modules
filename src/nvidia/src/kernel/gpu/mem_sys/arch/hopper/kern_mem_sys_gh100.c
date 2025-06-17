@@ -549,6 +549,38 @@ kmemsysNumaRemoveAllMemory_GH100
     return;
 }
 
+/*!
+ * @brief Return if a given swizzId is rejected by HW
+ */
+NvBool
+kmemsysIsSwizzIdRejectedByHW_GH100
+(
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem,
+    NvU32 swizzId
+)
+{
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    const KERNEL_MIG_MANAGER_STATIC_INFO *pStaticInfo = kmigmgrGetStaticInfo(pGpu, pKernelMIGManager);
+
+    NV_ASSERT_OR_RETURN(swizzId < KMIGMGR_MAX_GPU_SWIZZID, NV_TRUE);
+    NV_ASSERT_OR_RETURN(pStaticInfo != NULL, NV_TRUE);
+    NV_ASSERT_OR_RETURN(pStaticInfo->pSwizzIdFbMemPageRanges != NULL, NV_TRUE);
+
+    // empty range returned by AMAP means swizzID is rejected by HW
+    if (rangeIsEmpty(rangeMake(pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].lo,
+                               pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].hi)))
+    {
+        NV_PRINTF(LEVEL_INFO,
+            "GPU Instance Mem Config for swizzId = 0x%x is rejected by HW\n",
+            swizzId);
+
+        return NV_TRUE;
+    }
+
+    return NV_FALSE;
+}
+
 /*
  * @brief   Function to map swizzId to VMMU Segments
  */
@@ -571,9 +603,17 @@ kmemsysSwizzIdToVmmuSegmentsRange_GH100
     NV_ASSERT_OR_RETURN(pStaticInfo != NULL, NV_ERR_INVALID_STATE);
     NV_ASSERT_OR_RETURN(pStaticInfo->pSwizzIdFbMemPageRanges != NULL, NV_ERR_INVALID_STATE);
 
-    startingVmmuSegment = pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].lo;
-    memSizeInVmmuSegment = (pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].hi -
-                            pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].lo + 1);
+    if (kmemsysIsSwizzIdRejectedByHW_HAL(pGpu, pKernelMemorySystem, swizzId))
+    {
+        startingVmmuSegment = 0;
+        memSizeInVmmuSegment = 0;
+    }
+    else
+    {
+        startingVmmuSegment = pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].lo;
+        memSizeInVmmuSegment = (pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].hi -
+                                pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].lo + 1);
+    }
 
     if (memSizeInVmmuSegment > totalVmmuSegments)
     {

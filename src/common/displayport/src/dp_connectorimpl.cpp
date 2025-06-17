@@ -6057,7 +6057,11 @@ bool ConnectorImpl::allocateTimeslice(GroupImpl * targetGroup)
 
     // Check for available timeslots
     if (slot_count > freeSlots)
+    {
+        DP_PRINTF(DP_ERROR, "DP-TS> Failed to allocate timeslot!! Not enough free slots. slot_count: %d, freeSlots: %d", 
+                  slot_count, freeSlots);
         return false;
+    }
 
     for (ListElement * i = activeGroups.begin(); i != activeGroups.end(); i = i->next)
     {

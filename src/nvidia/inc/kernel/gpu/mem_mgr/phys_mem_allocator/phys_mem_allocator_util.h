@@ -183,16 +183,12 @@ void pmaFreeList(PMA *pPma, PRANGELISTTYPE *ppList);
  * @param[in] physAddrBase          The base address of this address tree
  * @param[in] pBlacklistPageBase    Structure that contains the blacklisted pages
  * @param[in] blacklistCount        Number of blacklisted pages
- * @param[in] bBlacklistFromInforom Whether the blacklisted pages are coming from
- *                                  inforom (i.e., from heap/PMA init) or not
- *                                  (i.e., from ECC interrupt handling)
  *
  * @return NV_OK
  *         NV_ERR_NO_MEMORY if memory allocation fails
  */
 NV_STATUS pmaRegisterBlacklistInfo(PMA *pPma, NvU64 physAddrBase,
-                                      PPMA_BLACKLIST_ADDRESS pBlacklistPageBase, NvU32 blacklistCount,
-                                      NvBool bBlacklistFromInforom);
+                                      PPMA_BLACKLIST_ADDRESS pBlacklistPageBase, NvU32 blacklistCount);
 
 /*!
  * @brief Query blacklisting states tracked by PMA

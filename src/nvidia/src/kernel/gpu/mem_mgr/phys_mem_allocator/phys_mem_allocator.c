@@ -534,7 +534,7 @@ pmaRegisterRegion
                                                            PMA_SCRUB_INITIALIZE);
     }
 
-    status = pmaRegisterBlacklistInfo(pPma, physBase, pBlacklistPageBase, blacklistCount, NV_TRUE);
+    status = pmaRegisterBlacklistInfo(pPma, physBase, pBlacklistPageBase, blacklistCount);
     if (status != NV_OK)
     {
         pPma->pMapInfo->pmaMapDestroy(pMap);
@@ -1971,7 +1971,7 @@ pmaAddToBlacklistTracking
     {
         blacklistPages.physOffset  = physAddr;
         blacklistPages.bIsDynamic  = NV_TRUE;
-        status = pmaRegisterBlacklistInfo(pPma, 0, &blacklistPages, 1, NV_FALSE);
+        status = pmaRegisterBlacklistInfo(pPma, 0, &blacklistPages, 1);
     }
     return status;
 }

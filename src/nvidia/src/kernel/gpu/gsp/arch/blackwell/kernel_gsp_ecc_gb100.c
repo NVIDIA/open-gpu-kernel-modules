@@ -137,4 +137,5 @@ kgspEccServiceUncorrError_GB100
     gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_ECC_DBE, NULL, 0, 0,
                             (NvU16)NV2080_CTRL_GPU_ECC_UNIT_GSP);
     nvErrorLog_va((void *)pGpu, errorType, "GSP-RISCV uncorrectable ECC error");
+    nvErrorLog_va((void *)pGpu, UNCORRECTABLE_SRAM_ERROR, "GSP-RISCV, Uncorrectable SRAM error");
 }

@@ -434,6 +434,7 @@ namespace DisplayPort
         void configureTriggerAll(NvU32 head, bool enable);
         virtual bool configureLinkRateTable(const NvU16 *pLinkRateTable, LinkRates *pLinkRates);
         bool configureFec(const bool bEnableFec);
+        virtual void applyStuffDummySymbolWAR(NvU32 head, bool enable);
     };
 
 }

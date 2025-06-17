@@ -169,6 +169,7 @@ namespace DisplayPort
             bool bDisableDownspread;
             bool bForceHeadShutdown;
             bool bDisableDscMaxBppLimit;
+            bool bApplyStuffDummySymbolsWAR;
             bool bSkipCableIdCheck;
             bool bAllocateManualTimeslots;
         }_WARFlags;
@@ -182,6 +183,8 @@ namespace DisplayPort
             unsigned maxLaneAtLowRate;  // Max lane count supported at RBR
             unsigned optimalLinkRate;   // Optimal link rate value to override
             unsigned optimalLaneCount;  // Optimal lane count value to override
+            bool     bStuffDummySymbolsFor128b132b;
+            bool     bStuffDummySymbolsFor8b10b;
         }_WARData;
 
         _WARData WARData;

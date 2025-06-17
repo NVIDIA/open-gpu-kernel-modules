@@ -9597,6 +9597,11 @@ NV_STATUS rpcGspSetSystemInfo_v17_00
            rpcInfo->bClockBoostSupported = pKernelFsp->bClockBoostSupported;
        }
 
+        if (RMCFG_FEATURE_PLATFORM_WINDOWS)
+        {
+            rpcInfo->bGspNocatEnabled = NV_TRUE;
+        }
+
         status = _issueRpcAsync(pGpu, pRpc);
     }
 

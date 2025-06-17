@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -140,7 +140,7 @@ typedef NV_STATUS GsyncSetInterlaceMode  (struct OBJGPU *, PDACEXTERNALDEVICE, N
 typedef NV_STATUS GsyncRefSwapBarrier    (struct OBJGPU *, PDACEXTERNALDEVICE, REFTYPE, NvBool *);
 typedef NV_STATUS GsyncRefSignal         (struct OBJGPU *, PDACEXTERNALDEVICE, REFTYPE, GSYNCSYNCSIGNAL, NvBool TestRate, NvU32 *);
 typedef NV_STATUS GsyncRefMaster         (struct OBJGPU *, OBJGSYNC *, REFTYPE, NvU32 *, NvU32 *, NvBool, NvBool);
-typedef NV_STATUS GsyncRefSlaves         (struct OBJGPU *, PDACEXTERNALDEVICE, REFTYPE, NvU32 *, NvU32 *);
+typedef NV_STATUS GsyncRefSlaves         (struct OBJGPU *, OBJGSYNC *, REFTYPE, NvU32 *, NvU32 *);
 typedef NV_STATUS GsyncGetCplStatus      (struct OBJGPU *, PDACEXTERNALDEVICE, GSYNCSTATUS, NvU32 *);
 typedef NV_STATUS GsyncSetWatchdog       (struct OBJGPU *, PDACEXTERNALDEVICE, NvU32);
 typedef NV_STATUS GsyncGetRevision       (struct OBJGPU *, OBJGSYNC *, GSYNCCAPSPARAMS *);
@@ -154,7 +154,7 @@ typedef NV_STATUS GsyncGetHouseSyncMode  (struct OBJGPU *, PDACEXTERNALDEVICE, N
 typedef NV_STATUS GsyncSetHouseSyncMode  (struct OBJGPU *, PDACEXTERNALDEVICE, NvU8);
 typedef NV_STATUS GsyncGetMulDiv         (struct OBJGPU *, DACEXTERNALDEVICE *, NV30F1_CTRL_GSYNC_MULTIPLY_DIVIDE_SETTINGS *);
 typedef NV_STATUS GsyncSetMulDiv         (struct OBJGPU *, DACEXTERNALDEVICE *, NV30F1_CTRL_GSYNC_MULTIPLY_DIVIDE_SETTINGS *);
-typedef NV_STATUS GsyncSetRasterSyncDecodeMode (struct OBJGPU *, DACEXTERNALDEVICE *);
+typedef NV_STATUS GsyncSetRasterSyncDecodeMode (struct OBJGPU *, struct OBJGPU *, DACEXTERNALDEVICE *);
 
 typedef struct GSYNC_HAL_IFACES {
 

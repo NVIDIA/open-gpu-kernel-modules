@@ -638,6 +638,18 @@ static void __nvoc_init_funcTable_KernelMemorySystem_1(KernelMemorySystem *pThis
         pThis->__kmemsysGetMaximumBlacklistPages__ = &kmemsysGetMaximumBlacklistPages_GA100;
     }
 
+    // kmemsysIsSwizzIdRejectedByHW -- halified (2 hals)
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000ec0UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB202 | GB203 | GB205 | GB206 | GB207 */ 
+    {
+        pThis->__kmemsysIsSwizzIdRejectedByHW__ = &kmemsysIsSwizzIdRejectedByHW_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__kmemsysIsSwizzIdRejectedByHW__ = &kmemsysIsSwizzIdRejectedByHW_3dd2c9;
+    }
+
     // kmemsysGetFbInfos -- halified (2 hals)
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
@@ -659,10 +671,10 @@ static void __nvoc_init_funcTable_KernelMemorySystem_1(KernelMemorySystem *pThis
     {
         pThis->__kmemsysIsNumaPartitionInUse__ = &kmemsysIsNumaPartitionInUse_3dd2c9;
     }
-} // End __nvoc_init_funcTable_KernelMemorySystem_1 with approximately 73 basic block(s).
+} // End __nvoc_init_funcTable_KernelMemorySystem_1 with approximately 75 basic block(s).
 
 
-// Initialize vtable(s) for 43 virtual method(s).
+// Initialize vtable(s) for 44 virtual method(s).
 void __nvoc_init_funcTable_KernelMemorySystem(KernelMemorySystem *pThis, RmHalspecOwner *pRmhalspecowner) {
 
     // Per-class vtable definition
@@ -701,7 +713,7 @@ void __nvoc_init_funcTable_KernelMemorySystem(KernelMemorySystem *pThis, RmHalsp
     pThis->__nvoc_base_OBJENGSTATE.__nvoc_vtable = &vtable.OBJENGSTATE;    // (engstate) super
     pThis->__nvoc_vtable = &vtable;    // (kmemsys) this
 
-    // Initialize vtable(s) with 29 per-object function pointer(s).
+    // Initialize vtable(s) with 30 per-object function pointer(s).
     __nvoc_init_funcTable_KernelMemorySystem_1(pThis, pRmhalspecowner);
 }
 

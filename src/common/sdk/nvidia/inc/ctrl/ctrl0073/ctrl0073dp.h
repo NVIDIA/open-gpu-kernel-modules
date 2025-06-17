@@ -3539,4 +3539,39 @@ typedef struct NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS {
     NV0073_CTRL_DP_IMP_WATERMARK          watermark;
 } NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS;
 
+/*
+ * NV0073_CTRL_CMD_STUFF_DUMMY_SYMBOL_WAR
+ *
+ * Some sink devices require extra padding between SDPs. This is programmed for GB20x+ GPUs.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   displayId
+ *     This parameter specifies the ID of the display for which the control
+ *     is being issued.  The display ID must be valid.
+ *   head
+ *     This parameter specifies the head index for the operation.
+ *   bEnable
+ *     Boolean to enable or disable the WAR.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+#define NV0073_CTRL_STUFF_DUMMY_SYMBOL_WAR_PARAMS_MESSAGE_ID (0x8DU)
+
+typedef struct NV0073_CTRL_STUFF_DUMMY_SYMBOL_WAR_PARAMS {
+    NvU32  subDeviceInstance;
+    NvU32  displayId;
+    NvU32  head;
+    NvBool bEnable;
+} NV0073_CTRL_STUFF_DUMMY_SYMBOL_WAR_PARAMS;
+
+#define NV0073_CTRL_CMD_STUFF_DUMMY_SYMBOL_WAR (0x73138dU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_STUFF_DUMMY_SYMBOL_WAR_PARAMS_MESSAGE_ID" */
+
 /* _ctrl0073dp_h_ */

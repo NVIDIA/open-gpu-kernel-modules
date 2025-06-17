@@ -267,7 +267,7 @@ static NV_STATUS vgpuExpandSysmemPfnBitMapList(OBJGPU *pGpu, NvU64 pfn)
         vgpuSysmemPfnInfo.guestMaxPfn  = node->nodeEndPfn;
         vgpuSysmemPfnInfo.sizeInBytes  = vgpuSysmemPfnInfo.guestMaxPfn / 8;
 
-    } while (vgpuSysmemPfnInfo.guestMaxPfn < pfn);
+    } while (vgpuSysmemPfnInfo.guestMaxPfn <= pfn);
 
     // Alloc the ref count buffer
     temp_pfn_ref_count = portMemAllocNonPaged(sizeof(NvU16) * vgpuSysmemPfnInfo.guestMaxPfn);
@@ -445,7 +445,7 @@ NV_STATUS vgpuUpdateSysmemPfnBitMap
 
         if (bAlloc)
         {
-            if (pfn > vgpuSysmemPfnInfo.guestMaxPfn)
+            if (pfn >= vgpuSysmemPfnInfo.guestMaxPfn)
             {
                 NV_PRINTF(LEVEL_INFO, "Update sysmem pfn bitmap for pfn: 0x%llx > guestMaxPfn: 0x%llx\n",
                           pfn, vgpuSysmemPfnInfo.guestMaxPfn);

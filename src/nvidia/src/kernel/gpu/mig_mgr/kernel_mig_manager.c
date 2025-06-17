@@ -1029,13 +1029,6 @@ _kmigmgrHandlePostSchedulingEnableCallback
         // Initialize static info derived from physical RM
         NV_ASSERT_OK_OR_RETURN(kmigmgrLoadStaticInfo_HAL(pGpu, pKernelMIGManager));
 
-        //
-        // Populate static GPU instance memory config which will be used to manage
-        // GPU instance memory
-        //
-        KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
-        NV_ASSERT_OK_OR_RETURN(kmemsysPopulateMIGGPUInstanceMemConfig_HAL(pGpu, pKernelMemorySystem));
-
         // KERNEL_ONLY variants require static info to detect reduced configs
         kmigmgrDetectReducedConfig_HAL(pGpu, pKernelMIGManager);
     }
@@ -1557,6 +1550,7 @@ kmigmgrLoadStaticInfo_KERNEL
     NV2080_CTRL_INTERNAL_STATIC_MIGMGR_GET_PARTITIONABLE_ENGINES_PARAMS params = {0};
     ENGTYPE_BIT_VECTOR partitionableNv2080Engines;
     NvU32 nv2080EngineType;
+    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
 
     NV_ASSERT_OR_RETURN(pPrivate != NULL, NV_ERR_INVALID_STATE);
 
@@ -1617,6 +1611,38 @@ kmigmgrLoadStaticInfo_KERNEL
                         sizeof(*pPrivate->staticInfo.pSkylineInfo)),
         failed);
 
+    pPrivate->staticInfo.pSwizzIdFbMemPageRanges = portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pSwizzIdFbMemPageRanges));
+    NV_CHECK_OR_ELSE(LEVEL_ERROR,
+        pPrivate->staticInfo.pSwizzIdFbMemPageRanges != NULL,
+        status = NV_ERR_NO_MEMORY;
+        goto failed;);
+    portMemSet(pPrivate->staticInfo.pSwizzIdFbMemPageRanges, 0x0, sizeof(*pPrivate->staticInfo.pSwizzIdFbMemPageRanges));
+
+    status = pRmApi->Control(pRmApi,
+                             pGpu->hInternalClient,
+                             pGpu->hInternalSubdevice,
+                             NV2080_CTRL_CMD_INTERNAL_STATIC_KMIGMGR_GET_SWIZZ_ID_FB_MEM_PAGE_RANGES,
+                             pPrivate->staticInfo.pSwizzIdFbMemPageRanges,
+                             sizeof(*pPrivate->staticInfo.pSwizzIdFbMemPageRanges));
+
+    if (status == NV_ERR_NOT_SUPPORTED)
+    {
+        // Only supported on specific GPU's
+        status = NV_OK;
+        portMemFree(pPrivate->staticInfo.pSwizzIdFbMemPageRanges);
+        pPrivate->staticInfo.pSwizzIdFbMemPageRanges = NULL;
+    }
+    else if (status != NV_OK)
+    {
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, status, failed);
+    }
+
+    //
+    // Populate static GPU instance memory config which will be used to manage
+    // GPU instance memory
+    //
+    NV_ASSERT_OK_OR_RETURN(kmemsysPopulateMIGGPUInstanceMemConfig_HAL(pGpu, pKernelMemorySystem));
+
     pPrivate->staticInfo.pCIProfiles = portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pCIProfiles));
     NV_CHECK_OR_ELSE(LEVEL_ERROR,
         pPrivate->staticInfo.pCIProfiles != NULL,
@@ -1652,32 +1678,6 @@ kmigmgrLoadStaticInfo_KERNEL
     if (IS_GSP_CLIENT(pGpu))
     {
         NV_CHECK(LEVEL_ERROR, kmigmgrEnableAllLCEs(pGpu, pKernelMIGManager, NV_FALSE) == NV_OK);
-    }
-
-    pPrivate->staticInfo.pSwizzIdFbMemPageRanges = portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pSwizzIdFbMemPageRanges));
-    NV_CHECK_OR_ELSE(LEVEL_ERROR,
-        pPrivate->staticInfo.pSwizzIdFbMemPageRanges != NULL,
-        status = NV_ERR_NO_MEMORY;
-        goto failed;);
-    portMemSet(pPrivate->staticInfo.pSwizzIdFbMemPageRanges, 0x0, sizeof(*pPrivate->staticInfo.pSwizzIdFbMemPageRanges));
-
-    status = pRmApi->Control(pRmApi,
-                             pGpu->hInternalClient,
-                             pGpu->hInternalSubdevice,
-                             NV2080_CTRL_CMD_INTERNAL_STATIC_KMIGMGR_GET_SWIZZ_ID_FB_MEM_PAGE_RANGES,
-                             pPrivate->staticInfo.pSwizzIdFbMemPageRanges,
-                             sizeof(*pPrivate->staticInfo.pSwizzIdFbMemPageRanges));
-
-    if (status == NV_ERR_NOT_SUPPORTED)
-    {
-        // Only supported on specific GPU's
-        status = NV_OK;
-        portMemFree(pPrivate->staticInfo.pSwizzIdFbMemPageRanges);
-        pPrivate->staticInfo.pSwizzIdFbMemPageRanges = NULL;
-    }
-    else if (status != NV_OK)
-    {
-        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, status, failed);
     }
 
     return status;
@@ -3932,13 +3932,6 @@ kmigmgrSetPartitioningMode_IMPL
     {
         // Initialize static info derived from physical RM
         NV_ASSERT_OK_OR_RETURN(kmigmgrLoadStaticInfo_HAL(pGpu, pKernelMIGManager));
-
-        //
-        // Populate static GPU instance memory config which will be used to manage
-        // GPU instance memory
-        //
-        KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
-        NV_ASSERT_OK_OR_RETURN(kmemsysPopulateMIGGPUInstanceMemConfig_HAL(pGpu, pKernelMemorySystem));
 
         NV_ASSERT_OK(gpuDisableAccounting(pGpu, NV_TRUE));
     }

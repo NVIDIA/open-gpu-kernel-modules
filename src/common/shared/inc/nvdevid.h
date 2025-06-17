@@ -172,6 +172,11 @@
 // A16
 #define NV_PCI_SUBID_DEVICE_PG171_SKU200             0x14A9
 
+// NVIDIA B200
+#define NV_PCI_SUBID_DEVICE_PG525_SKU220             0x1999
+#define NV_PCI_SUBID_DEVICE_PG525_SKU225             0x199B
+#define NV_PCI_SUBID_DEVICE_PG525_SKU230             0x20DA
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 //
 // CHIPSET IDs

@@ -298,6 +298,7 @@ namespace DisplayPort
         virtual bool dscCrcTransaction(NvBool bEnable, gpuDscCrc *data, NvU16 *headIndex){ return false; }
         virtual bool configureLinkRateTable(const NvU16 *pLinkRateTable, LinkRates *pLinkRates) = 0;
         virtual bool configureFec(const bool bEnableFec) = 0;
+        virtual void applyStuffDummySymbolWAR(NvU32 head, bool enable) = 0;
     };
 }
 

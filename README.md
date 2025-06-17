@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 570.153.02.
+version 570.169.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-570.153.02 driver release.  This can be achieved by installing
+570.169 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -185,7 +185,7 @@ table below).
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/570.153.02/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/570.169/README/kernel_open.html
 
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
@@ -966,11 +966,28 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 5070 Ti                              | 2C05           |
 | NVIDIA GeForce RTX 5090 Laptop GPU                      | 2C18           |
 | NVIDIA GeForce RTX 5080 Laptop GPU                      | 2C19           |
+| NVIDIA RTX PRO 4500 Blackwell                           | 2C31 1028 2051 |
+| NVIDIA RTX PRO 4500 Blackwell                           | 2C31 103C 2051 |
+| NVIDIA RTX PRO 4500 Blackwell                           | 2C31 10DE 2051 |
+| NVIDIA RTX PRO 4500 Blackwell                           | 2C31 17AA 2051 |
+| NVIDIA RTX PRO 4000 Blackwell                           | 2C34 1028 2052 |
+| NVIDIA RTX PRO 4000 Blackwell                           | 2C34 103C 2052 |
+| NVIDIA RTX PRO 4000 Blackwell                           | 2C34 10DE 2052 |
+| NVIDIA RTX PRO 4000 Blackwell                           | 2C34 17AA 2052 |
+| NVIDIA RTX PRO 5000 Blackwell Generation Laptop GPU     | 2C38           |
+| NVIDIA RTX PRO 4000 Blackwell Generation Laptop GPU     | 2C39           |
 | NVIDIA GeForce RTX 5090 Laptop GPU                      | 2C58           |
 | NVIDIA GeForce RTX 5080 Laptop GPU                      | 2C59           |
 | NVIDIA GeForce RTX 5060 Ti                              | 2D04           |
+| NVIDIA GeForce RTX 5060                                 | 2D05           |
 | NVIDIA GeForce RTX 5070 Laptop GPU                      | 2D18           |
+| NVIDIA GeForce RTX 5060 Laptop GPU                      | 2D19           |
+| NVIDIA RTX PRO 2000 Blackwell Generation Laptop GPU     | 2D39           |
 | NVIDIA GeForce RTX 5070 Laptop GPU                      | 2D58           |
+| NVIDIA GeForce RTX 5060 Laptop GPU                      | 2D59           |
+| NVIDIA RTX PRO 1000 Blackwell Generation Laptop GPU     | 2DB8           |
+| NVIDIA RTX PRO 500 Blackwell Generation Laptop GPU      | 2DB9           |
 | NVIDIA GeForce RTX 5070                                 | 2F04           |
 | NVIDIA GeForce RTX 5070 Ti Laptop GPU                   | 2F18           |
+| NVIDIA RTX PRO 3000 Blackwell Generation Laptop GPU     | 2F38           |
 | NVIDIA GeForce RTX 5070 Ti Laptop GPU                   | 2F58           |

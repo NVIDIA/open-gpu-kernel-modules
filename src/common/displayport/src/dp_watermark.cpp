@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -838,8 +838,10 @@ bool DisplayPort::isModePossibleMSTWithFEC
     return true;
 }
 
-unsigned DisplayPort::pbnForMode(const ModesetInfo & modesetInfo)
+unsigned DisplayPort::pbnForMode(const ModesetInfo & modesetInfo, bool bAccountSpread)
 {
+    NvU64 pbn_numerator, pbn_denominator;
+
     // When DSC is enabled consider depth will multiplied by 16
     unsigned dsc_factor = 1;
 
@@ -855,8 +857,14 @@ unsigned DisplayPort::pbnForMode(const ModesetInfo & modesetInfo)
         }
     }
 
-    unsigned pbnForMode = (NvU32)(divide_ceil(modesetInfo.pixelClockHz * modesetInfo.depth * 1006 * 64 / 8,
-                                    (NvU64)54000000 * 1000 * dsc_factor));
+    pbn_numerator = modesetInfo.pixelClockHz * modesetInfo.depth * 64 / 8;
+    pbn_denominator = 54000000ULL * dsc_factor;
 
-    return pbnForMode;
+    if (bAccountSpread)
+    {
+        pbn_numerator *= 1006;
+        pbn_denominator *= 1000;
+    }
+
+    return (NvU32)(divide_ceil(pbn_numerator, pbn_denominator));
 }

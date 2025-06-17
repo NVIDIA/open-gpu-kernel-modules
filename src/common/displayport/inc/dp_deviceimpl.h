@@ -391,6 +391,10 @@ namespace DisplayPort
             return maxModeBwRequired;
         }
 
+        bool getStuffDummySymbolsFor128b132b() const { return processedEdid.WARData.bStuffDummySymbolsFor128b132b; }
+        bool getStuffDummySymbolsFor8b10b() const { return processedEdid.WARData.bStuffDummySymbolsFor8b10b; }
+        bool getApplyStuffDummySymbolsWAR() const { return processedEdid.WARFlags.bApplyStuffDummySymbolsWAR; }
+
         virtual void queryGUID2();
 
         virtual bool getSDPExtnForColorimetrySupported();

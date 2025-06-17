@@ -229,7 +229,7 @@ struct KernelMemorySystem {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct KernelMemorySystem *__nvoc_pbase_KernelMemorySystem;    // kmemsys
 
-    // Vtable with 29 per-object function pointers
+    // Vtable with 30 per-object function pointers
     NV_STATUS (*__kmemsysGetFbNumaInfo__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvU64 *, NvU64 *, NvS32 *);  // halified (2 hals) body
     NV_STATUS (*__kmemsysReadUsableFbSize__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvU64 *);  // halified (2 hals) body
     NV_STATUS (*__kmemsysGetUsableFbSize__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvU64 *);  // halified (2 hals) body
@@ -257,6 +257,7 @@ struct KernelMemorySystem {
     NvU32 (*__kmemsysGetEccDedCountSize__)(OBJGPU *, struct KernelMemorySystem * /*this*/);  // halified (3 hals) body
     NvU32 (*__kmemsysGetEccDedCountRegAddr__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvU32, NvU32);  // halified (3 hals) body
     NvU16 (*__kmemsysGetMaximumBlacklistPages__)(OBJGPU *, struct KernelMemorySystem * /*this*/);  // halified (2 hals) body
+    NvBool (*__kmemsysIsSwizzIdRejectedByHW__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvU32);  // halified (2 hals)
     NV_STATUS (*__kmemsysGetFbInfos__)(OBJGPU *, struct KernelMemorySystem * /*this*/, struct RsClient *, Device *, NvHandle, NV2080_CTRL_FB_GET_INFO_V2_PARAMS *, NvU64 *);  // halified (2 hals)
     NvBool (*__kmemsysIsNumaPartitionInUse__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvU32);  // halified (2 hals) body
 
@@ -441,6 +442,9 @@ NV_STATUS __nvoc_objCreate_KernelMemorySystem(KernelMemorySystem**, Dynamic*, Nv
 #define kmemsysGetMaximumBlacklistPages_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__kmemsysGetMaximumBlacklistPages__
 #define kmemsysGetMaximumBlacklistPages(pGpu, pKernelMemorySystem) kmemsysGetMaximumBlacklistPages_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysGetMaximumBlacklistPages_HAL(pGpu, pKernelMemorySystem) kmemsysGetMaximumBlacklistPages_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysIsSwizzIdRejectedByHW_FNPTR(arg_this) arg_this->__kmemsysIsSwizzIdRejectedByHW__
+#define kmemsysIsSwizzIdRejectedByHW(arg1, arg_this, swizzId) kmemsysIsSwizzIdRejectedByHW_DISPATCH(arg1, arg_this, swizzId)
+#define kmemsysIsSwizzIdRejectedByHW_HAL(arg1, arg_this, swizzId) kmemsysIsSwizzIdRejectedByHW_DISPATCH(arg1, arg_this, swizzId)
 #define kmemsysGetFbInfos_FNPTR(arg_this) arg_this->__kmemsysGetFbInfos__
 #define kmemsysGetFbInfos(arg1, arg_this, arg3, arg4, hSubdevice, pParams, pFbInfoListIndicesUnset) kmemsysGetFbInfos_DISPATCH(arg1, arg_this, arg3, arg4, hSubdevice, pParams, pFbInfoListIndicesUnset)
 #define kmemsysGetFbInfos_HAL(arg1, arg_this, arg3, arg4, hSubdevice, pParams, pFbInfoListIndicesUnset) kmemsysGetFbInfos_DISPATCH(arg1, arg_this, arg3, arg4, hSubdevice, pParams, pFbInfoListIndicesUnset)
@@ -601,6 +605,10 @@ static inline NvU32 kmemsysGetEccDedCountRegAddr_DISPATCH(OBJGPU *pGpu, struct K
 
 static inline NvU16 kmemsysGetMaximumBlacklistPages_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
     return pKernelMemorySystem->__kmemsysGetMaximumBlacklistPages__(pGpu, pKernelMemorySystem);
+}
+
+static inline NvBool kmemsysIsSwizzIdRejectedByHW_DISPATCH(OBJGPU *arg1, struct KernelMemorySystem *arg_this, NvU32 swizzId) {
+    return arg_this->__kmemsysIsSwizzIdRejectedByHW__(arg1, arg_this, swizzId);
 }
 
 static inline NV_STATUS kmemsysGetFbInfos_DISPATCH(OBJGPU *arg1, struct KernelMemorySystem *arg_this, struct RsClient *arg3, Device *arg4, NvHandle hSubdevice, NV2080_CTRL_FB_GET_INFO_V2_PARAMS *pParams, NvU64 *pFbInfoListIndicesUnset) {
@@ -1033,6 +1041,12 @@ static inline NvU32 kmemsysGetEccDedCountRegAddr_4a4dee(OBJGPU *pGpu, struct Ker
 NvU16 kmemsysGetMaximumBlacklistPages_GM107(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
 
 NvU16 kmemsysGetMaximumBlacklistPages_GA100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
+NvBool kmemsysIsSwizzIdRejectedByHW_GH100(OBJGPU *arg1, struct KernelMemorySystem *arg2, NvU32 swizzId);
+
+static inline NvBool kmemsysIsSwizzIdRejectedByHW_3dd2c9(OBJGPU *arg1, struct KernelMemorySystem *arg2, NvU32 swizzId) {
+    return NV_FALSE;
+}
 
 static inline NV_STATUS kmemsysGetFbInfos_ac1694(OBJGPU *arg1, struct KernelMemorySystem *arg2, struct RsClient *arg3, Device *arg4, NvHandle hSubdevice, NV2080_CTRL_FB_GET_INFO_V2_PARAMS *pParams, NvU64 *pFbInfoListIndicesUnset) {
     return NV_OK;

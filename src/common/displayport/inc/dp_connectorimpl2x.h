@@ -93,6 +93,10 @@ namespace DisplayPort
 
         bool    bMstTimeslotBug4968411;
         bool    bApplyManualTimeslotBug4968411;
+        
+        bool    bApplyStuffDummySymbolsWAR;
+        bool    bStuffDummySymbolsFor128b132b;
+        bool    bStuffDummySymbolsFor8b10b;
 
         // Do not enable downspread while link training.
         bool    bDisableDownspread;

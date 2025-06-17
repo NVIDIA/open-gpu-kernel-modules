@@ -2596,7 +2596,6 @@ NV_STATUS NV_API_CALL os_offline_page_at_address
 {
 #if defined(CONFIG_MEMORY_FAILURE)
     int flags = 0;
-    int ret;
     NvU64 pfn;
     struct page *page = NV_GET_PAGE_STRUCT(address);
 
@@ -2621,22 +2620,18 @@ NV_STATUS NV_API_CALL os_offline_page_at_address
     flags |= MF_SW_SIMULATED;
 #endif
 
-#ifdef NV_MEMORY_FAILURE_HAS_TRAPNO_ARG
-    ret = memory_failure(pfn, 0, flags);
-#else
-    ret = memory_failure(pfn, flags);
-#endif
+    nv_printf(NV_DBG_INFO, "NVRM: offlining page at address: 0x%llx pfn: 0x%llx\n",
+              address, pfn);
 
-    if (ret != 0)
-    {
-        nv_printf(NV_DBG_ERRORS, "NVRM: page offlining failed. address: 0x%llx pfn: 0x%llx ret: %d\n",
-                  address, pfn, ret);
-        return NV_ERR_OPERATING_SYSTEM;
-    }
+#ifdef NV_MEMORY_FAILURE_QUEUE_HAS_TRAPNO_ARG
+    memory_failure_queue(pfn, 0, flags);
+#else
+    memory_failure_queue(pfn, flags);
+#endif
 
     return NV_OK;
 #else // !defined(CONFIG_MEMORY_FAILURE)
-    nv_printf(NV_DBG_ERRORS, "NVRM: memory_failure() not supported by kernel. page offlining failed. address: 0x%llx\n",
+    nv_printf(NV_DBG_ERRORS, "NVRM: memory_failure_queue() not supported by kernel. page offlining failed. address: 0x%llx\n",
               address);
     return NV_ERR_NOT_SUPPORTED;
 #endif
