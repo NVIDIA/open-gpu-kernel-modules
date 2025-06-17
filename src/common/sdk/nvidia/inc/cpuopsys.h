@@ -181,6 +181,10 @@
 #    endif
 #endif
 
+#if defined(__loongarch__) && (__loongarch_grlen == 64)
+#    define NVCPU_LOONGARCH64
+#endif
+
 #if defined(__arm__) || defined(_M_ARM)
 /*
  * 32-bit instruction set on, e.g., ARMv7 or AArch32 execution state
@@ -232,7 +236,8 @@
 
 #if defined(NVCPU_IA64) || defined(NVCPU_X86_64) || \
     defined(NV_MACINTOSH_64) || defined(NVCPU_AARCH64) || \
-    defined(NVCPU_PPC64LE) || defined(NVCPU_RISCV64)
+    defined(NVCPU_PPC64LE) || defined(NVCPU_RISCV64) || \
+    defined(NVCPU_LOONGARCH64)
 #   define NV_64_BITS          /* all architectures where pointers are 64 bits */
 #else
 /* we assume 32 bits. I don't see a need for NV_16_BITS. */
