@@ -327,6 +327,9 @@ namespace DisplayPort
         //
         bool        bForceHeadShutdownOnModeTransition;
 
+        // Set to true when we want to skip reset MST_EN before LT
+        bool        bSkipResetMSTMBeforeLt;
+
         bool        bReportDeviceLostBeforeNew;
         bool        bDisableSSC;
         bool        bEnableFastLT;

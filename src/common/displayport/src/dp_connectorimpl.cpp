@@ -2787,13 +2787,13 @@ bool ConnectorImpl::isHeadShutDownNeeded(Group * target,               // Group 
         // In case of mode transition (DSC <-> non-DSC), if the link config is same as previous mode, we need to shut down the head
         // since VBID[6] needs to be updated accordingly
         //
-        if ((bForceHeadShutdownOnModeTransition && 
+        if ((bForceHeadShutdownOnModeTransition &&
             ((modesetInfo.bEnableDsc && targetImpl->lastModesetInfo.bEnableDsc) &&
              (modesetInfo.bitsPerComponent != targetImpl->lastModesetInfo.bitsPerComponent))) ||
-            ((lowestSelected.getTotalDataRate() == activeLinkConfig.getTotalDataRate()) && 
-             (modesetInfo.bEnableDsc != targetImpl->lastModesetInfo.bEnableDsc))) 
+            ((lowestSelected.getTotalDataRate() == activeLinkConfig.getTotalDataRate()) &&
+             (modesetInfo.bEnableDsc != targetImpl->lastModesetInfo.bEnableDsc)))
         {
-            return true; 
+            return true;
         }
 
         // For dual DP while changing link config, we need to shut
@@ -5358,9 +5358,9 @@ bool ConnectorImpl::getValidLowestLinkConfig
         {
             //
             // If highest link rate is UHBR 128b132b and current selected config is 8b10b,
-            // FEC should not be enabled if DSC is not enabled since 
-            // 1. This function will be called only for SST and that too when preferred 
-            //  link config is not set. 
+            // FEC should not be enabled if DSC is not enabled since
+            // 1. This function will be called only for SST and that too when preferred
+            //  link config is not set.
             // 2. for SST and in 8b10b mode, FEC is enabled only when DSC is enabled
             //
             selectedConfig.enableFEC(false);
@@ -5655,8 +5655,9 @@ bool ConnectorImpl::validateLinkConfiguration(const LinkConfiguration & lConfig)
 bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
                           LinkTrainingType trainType)
 {
-    LinkTrainingType preferredTrainingType = trainType;
-    bool result = true;
+    LinkTrainingType preferredTrainingType  = trainType;
+    bool             result                 = true;
+    NvBool           bSkipSettingStreamMode = false;
 
     //  Validate link config against caps
     if (!force && !validateLinkConfiguration(lConfig))
@@ -5693,10 +5694,16 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
     }
 
     //
-    //    Don't set the stream if we're shutting off the link
-    //    or forcing the config
+    //    Don't set the stream if we're:
+    //    - forcing the config
+    //    - Skipping LT and the flag to skip stream mode setting is true
+    //    - shutting off the link
     //
-    if (!force && lConfig.lanes != 0)
+    bSkipSettingStreamMode = force ||
+                             (bSkipLt && this->bSkipResetMSTMBeforeLt) ||
+                             (lConfig.lanes == 0);
+
+    if (!bSkipSettingStreamMode)
     {
         if (isLinkActive())
         {
@@ -7009,6 +7016,8 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
                 {
                     bDelayAfterD3 = true;
                 }
+                // Do not reset MST_EN before LT for Sony SDM27Q10S in SST mode
+                this->bSkipResetMSTMBeforeLt = tmpEdid.WARFlags.bSkipResetMSTMBeforeLt;
 
                 // Panels use Legacy address range for interrupt reporting
                 if (tmpEdid.WARFlags.useLegacyAddress)
@@ -8294,6 +8303,7 @@ void ConnectorImpl::configInit()
     bDP2XPreferNonDSCForLowPClk = false;
     bDisableDscMaxBppLimit = false;
     bForceHeadShutdownOnModeTransition = false;
+    bSkipResetMSTMBeforeLt = false;
 }
 
 bool ConnectorImpl::dpUpdateDscStream(Group *target, NvU32 dscBpp)

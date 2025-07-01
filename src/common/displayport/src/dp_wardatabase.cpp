@@ -1,4 +1,4 @@
-/*
+ /*
  * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
@@ -615,12 +615,13 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 this->WARFlags.bSkipCableIdCheck = true;
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Panel does not expose cable capability. Ignoring it. Bug 4968411");
             }
-            else if(ProductID == 0x24b5 || ProductID == 0x32f2)
+            else if(ProductID == 0x24b5 || ProductID == 0x32f2 || ProductID == 0x27BC)
             {
                 //
                 // Asus ROG PG248QP  (0x24b5) Bug 5100062
                 // Asus ROG PG32UCDM (0x32f2) Bug 5088957
-                //
+                // Asus ROG PG27AQN  (0x27BC) Bug 5300665
+
                 this->WARFlags.bForceHeadShutdown = true;
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Force head shutdown.");
             }
@@ -648,6 +649,14 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             {
                 this->WARFlags.bDisableDownspread = true;
                 DP_PRINTF(DP_NOTICE, "DP-WAR> VRT monitor does not work with GB20x when downspread is enabled. Disabling downspread.");
+            }
+            break;
+
+        case 0xD94D: // Sony
+            if (ProductID == 0x07EE) // Sony SDM27Q10S
+            {
+                this->WARFlags.bSkipResetMSTMBeforeLt = true;
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Sony SDM27Q10S needs to skip reset MST_EN before LT");
             }
             break;
         default:

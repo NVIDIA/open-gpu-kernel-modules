@@ -186,7 +186,6 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_buf_ops_has_kmap
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_buf_ops_has_kmap_atomic
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_buf_ops_has_map
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_buf_ops_has_map_atomic
-NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_buf_has_dynamic_attachment
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_buf_attachment_has_peer2peer
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_set_mask_and_coherent
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += devm_clk_bulk_get_all
@@ -241,6 +240,8 @@ NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present___platform_driver_r
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_hrtimer_setup
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_timer_delete_sync
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl___vma_start_write
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_iommu_dev_enable_feature
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_iommu_dev_disable_feature
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += dma_ops
 NV_CONFTEST_TYPE_COMPILE_TESTS += swiotlb_dma_ops

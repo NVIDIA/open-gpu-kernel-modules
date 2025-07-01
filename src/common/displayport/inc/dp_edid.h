@@ -173,6 +173,7 @@ namespace DisplayPort
             bool bForceHeadShutdownOnModeTransition;
             bool bSkipCableIdCheck;
             bool bAllocateManualTimeslots;
+            bool bSkipResetMSTMBeforeLt;
         }_WARFlags;
 
         _WARFlags WARFlags;

@@ -1138,6 +1138,9 @@ AMD_X370_setupFunc
 )
 {
 
+    // WAR for bug 5107271 handling
+    pCl->setProperty(pCl, PDB_PROP_CL_WAR_AMD_5107271, NV_TRUE);
+
     // Set ASPM L0S\L1 properties
     _Set_ASPM_L0S_L1(pCl, NV_FALSE, NV_FALSE);
 

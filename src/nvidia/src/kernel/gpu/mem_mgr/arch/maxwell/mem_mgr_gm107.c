@@ -49,6 +49,7 @@
 
 #include "vgpu/rpc.h"
 #include "vgpu/vgpu_events.h"
+#include "nvdevid.h"
 
 //
 // statics
@@ -1428,14 +1429,36 @@ memmgrGetRsvdSizeForSr_GM107
     MemoryManager *pMemoryManager
 )
 {
+    //
+    // Temporary WAR to override WDDM S/R buffer for specific skus
+    // Bug 5327051
+    //
+    static const NvU16 gb20x_devid[] = { 0x2B8C };
+    NvU32  pciDeviceID = DRF_VAL(_PCI, _DEVID, _DEVICE, pGpu->idInfo.PCIDeviceID);
+    NvBool overrideFbsrRsvdBufferSize = NV_FALSE;
+
+    for (NvU32 i = 0; i < NV_ARRAY_ELEMENTS(gb20x_devid); i++)
+    {
+        if (pciDeviceID == gb20x_devid[i])
+        {
+            overrideFbsrRsvdBufferSize = NV_TRUE;
+            break;
+        }
+    }
+
     if (((pMemoryManager->Ram.fbTotalMemSizeMb >> 10) >= 31) || IS_GSP_CLIENT(pGpu))
     {
         //
         // We need to reserve more memory for S/R if
-        // 1. FB size is > 32GB  Bug Id: 2468357
+        // 1. FB size is >= 31GB  Bug Id: 2468357
         // 2. Or GSP is enabled  Bug Id: 4312881
         //
         return 512 * 1024 * 1024;
+    }
+    else if (overrideFbsrRsvdBufferSize)
+    {
+        // Bug 5327051: WAR to override WDDM S/R buffer for specific skus
+        return 300 * 1024 * 1024;
     }
     else
     {
