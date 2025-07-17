@@ -421,7 +421,7 @@ gisubscriptionCtrlCmdExecPartitionsCreate_IMPL
             .inst.request.requestFlags = pParams->flags
         };
 
-        if (!hypervisorIsVgxHyper())
+        if (!gpuIsSriovEnabled(pGpu))
         {
             request.inst.request.requestFlags = FLD_SET_DRF(C637_CTRL, _DMA_EXEC_PARTITIONS_CREATE_REQUEST, _WITH_PART_ID, _FALSE, request.inst.request.requestFlags);
         }

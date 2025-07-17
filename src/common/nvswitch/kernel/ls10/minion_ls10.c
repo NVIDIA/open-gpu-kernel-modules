@@ -934,7 +934,6 @@ cleanup:
     if (tempStatus != NVL_SUCCESS)
     {
         NVSWITCH_PRINT(device, ERROR, "Link %d Inband Buffer transfer for RX_BUFFER_CLEAR\n", linkId);
-        return;
     }
     if (device->link[linkId].inbandData.message != NULL)
     {

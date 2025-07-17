@@ -1864,7 +1864,7 @@ static void fill_dst_pfn(uvm_va_block_t *va_block,
 
     dpage = pfn_to_page(pfn);
     UVM_ASSERT(is_device_private_page(dpage));
-    UVM_ASSERT(dpage->pgmap->owner == &g_uvm_global);
+    UVM_ASSERT(page_pgmap(dpage)->owner == &g_uvm_global);
 
     hmm_mark_gpu_chunk_referenced(va_block, gpu, gpu_chunk);
     UVM_ASSERT(!page_count(dpage));
@@ -2281,6 +2281,39 @@ static void hmm_release_atomic_pages(uvm_va_block_t *va_block,
     }
 }
 
+static int hmm_make_device_exclusive_range(struct mm_struct *mm,
+                                           unsigned long start,
+                                           unsigned long end,
+                                           struct page **pages)
+{
+#if NV_IS_EXPORT_SYMBOL_PRESENT_make_device_exclusive
+    unsigned long addr;
+    int npages = 0;
+
+    for (addr = start; addr < end; addr += PAGE_SIZE) {
+        struct folio *folio;
+        struct page *page;
+
+        page = make_device_exclusive(mm, addr, &g_uvm_global, &folio);
+        if (IS_ERR(page)) {
+            while (npages) {
+                page = pages[--npages];
+                unlock_page(page);
+                put_page(page);
+            }
+            npages = PTR_ERR(page);
+            break;
+        }
+
+        pages[npages++] = page;
+    }
+
+    return npages;
+#else
+    return make_device_exclusive_range(mm, start, end, pages, &g_uvm_global);
+#endif
+}
+
 static NV_STATUS hmm_block_atomic_fault_locked(uvm_processor_id_t processor_id,
                                                uvm_va_block_t *va_block,
                                                uvm_va_block_retry_t *va_block_retry,
@@ -2336,11 +2369,10 @@ static NV_STATUS hmm_block_atomic_fault_locked(uvm_processor_id_t processor_id,
 
     uvm_mutex_unlock(&va_block->lock);
 
-    npages = make_device_exclusive_range(service_context->block_context.mm,
+    npages = hmm_make_device_exclusive_range(service_context->block_context.mm,
         uvm_va_block_cpu_page_address(va_block, region.first),
         uvm_va_block_cpu_page_address(va_block, region.outer - 1) + PAGE_SIZE,
-        pages + region.first,
-        &g_uvm_global);
+        pages + region.first);
 
     uvm_mutex_lock(&va_block->lock);
 

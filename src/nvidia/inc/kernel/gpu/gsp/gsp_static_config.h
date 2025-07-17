@@ -174,6 +174,7 @@ typedef struct GspSystemInfo
     BUSINFO chipsetIDInfo;
     ACPI_METHOD_DATA acpiMethodData;
     NvU32 hypervisorType;
+    NvU16 virtualConfigBits;
     NvBool bIsPassthru;
     NvU64 sysTimerOffsetNs;
     GSP_VF_INFO gspVFInfo;

@@ -3314,7 +3314,7 @@ NvU32 uvm_pmm_gpu_phys_to_virt(uvm_pmm_gpu_t *pmm, NvU64 phys_addr, NvU64 region
 
 static uvm_pmm_gpu_t *devmem_page_to_pmm(struct page *page)
 {
-    return container_of(page->pgmap, uvm_pmm_gpu_t, devmem.pagemap);
+    return container_of(page_pgmap(page), uvm_pmm_gpu_t, devmem.pagemap);
 }
 
 static uvm_gpu_chunk_t *devmem_page_to_chunk_locked(struct page *page)

@@ -75,70 +75,63 @@ $(foreach _module, $(NV_KERNEL_MODULES), \
  $(eval include $(src)/$(_module)/$(_module).Kbuild))
 
 
-#
-# Define CFLAGS that apply to all the NVIDIA kernel modules. EXTRA_CFLAGS
-# is deprecated since 2.6.24 in favor of ccflags-y, but we need to support
-# older kernels which do not have ccflags-y. Newer kernels append
-# $(EXTRA_CFLAGS) to ccflags-y for compatibility.
-#
-
-EXTRA_CFLAGS += -I$(src)/common/inc
-EXTRA_CFLAGS += -I$(src)
-EXTRA_CFLAGS += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-error -Wno-format-extra-args
-EXTRA_CFLAGS += -D__KERNEL__ -DMODULE -DNVRM
-EXTRA_CFLAGS += -DNV_VERSION_STRING=\"535.247.01\"
+ccflags-y += -I$(src)/common/inc
+ccflags-y += -I$(src)
+ccflags-y += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-format-extra-args
+ccflags-y += -D__KERNEL__ -DMODULE -DNVRM
+ccflags-y += -DNV_VERSION_STRING=\"535.261.03\"
 
 ifneq ($(SYSSRCHOST1X),)
- EXTRA_CFLAGS += -I$(SYSSRCHOST1X)
+ ccflags-y += -I$(SYSSRCHOST1X)
 endif
 
-EXTRA_CFLAGS += -Wno-unused-function
+ccflags-y += -Wno-unused-function
 
 ifneq ($(NV_BUILD_TYPE),debug)
- EXTRA_CFLAGS += -Wuninitialized
+ ccflags-y += -Wuninitialized
 endif
 
-EXTRA_CFLAGS += -fno-strict-aliasing
+ccflags-y += -fno-strict-aliasing
 
 ifeq ($(ARCH),arm64)
- EXTRA_CFLAGS += -mstrict-align
+ ccflags-y += -mstrict-align
 endif
 
 ifeq ($(NV_BUILD_TYPE),debug)
- EXTRA_CFLAGS += -g
- EXTRA_CFLAGS += $(call cc-option,-gsplit-dwarf,)
+ ccflags-y += -g
+ ccflags-y += $(call cc-option,-gsplit-dwarf,)
 endif
 
-EXTRA_CFLAGS += -ffreestanding
+ccflags-y += -ffreestanding
 
 ifeq ($(ARCH),arm64)
- EXTRA_CFLAGS += -mgeneral-regs-only -march=armv8-a
- EXTRA_CFLAGS += $(call cc-option,-mno-outline-atomics,)
+ ccflags-y += -mgeneral-regs-only -march=armv8-a
+ ccflags-y += $(call cc-option,-mno-outline-atomics,)
 endif
 
 ifeq ($(ARCH),x86_64)
- EXTRA_CFLAGS += -mno-red-zone -mcmodel=kernel
+ ccflags-y += -mno-red-zone -mcmodel=kernel
 endif
 
 ifeq ($(ARCH),powerpc)
- EXTRA_CFLAGS += -mlittle-endian -mno-strict-align -mno-altivec
+ ccflags-y += -mlittle-endian -mno-strict-align -mno-altivec
 endif
 
-EXTRA_CFLAGS += -DNV_UVM_ENABLE
-EXTRA_CFLAGS += $(call cc-option,-Werror=undef,)
-EXTRA_CFLAGS += -DNV_SPECTRE_V2=$(NV_SPECTRE_V2)
-EXTRA_CFLAGS += -DNV_KERNEL_INTERFACE_LAYER
+ccflags-y += -DNV_UVM_ENABLE
+ccflags-y += $(call cc-option,-Werror=undef,)
+ccflags-y += -DNV_SPECTRE_V2=$(NV_SPECTRE_V2)
+ccflags-y += -DNV_KERNEL_INTERFACE_LAYER
 
 #
 # Detect SGI UV systems and apply system-specific optimizations.
 #
 
 ifneq ($(wildcard /proc/sgi_uv),)
- EXTRA_CFLAGS += -DNV_CONFIG_X86_UV
+ ccflags-y += -DNV_CONFIG_X86_UV
 endif
 
 ifdef VGX_FORCE_VFIO_PCI_CORE
- EXTRA_CFLAGS += -DNV_VGPU_FORCE_VFIO_PCI_CORE
+ ccflags-y += -DNV_VGPU_FORCE_VFIO_PCI_CORE
 endif
 
 #
@@ -165,9 +158,11 @@ NV_CONFTEST_CMD := /bin/sh $(NV_CONFTEST_SCRIPT) \
 
 NV_CFLAGS_FROM_CONFTEST := $(shell $(NV_CONFTEST_CMD) build_cflags)
 
-NV_CONFTEST_CFLAGS = $(NV_CFLAGS_FROM_CONFTEST) $(EXTRA_CFLAGS) -fno-pie
+NV_CONFTEST_CFLAGS = $(NV_CFLAGS_FROM_CONFTEST) $(ccflags-y) -fno-pie
+NV_CONFTEST_CFLAGS += $(filter -std=%,$(KBUILD_CFLAGS))
 NV_CONFTEST_CFLAGS += $(call cc-disable-warning,pointer-sign)
 NV_CONFTEST_CFLAGS += $(call cc-option,-fshort-wchar,)
+NV_CONFTEST_CFLAGS += $(call cc-option,-Werror=incompatible-pointer-types,)
 
 NV_CONFTEST_COMPILE_TEST_HEADERS := $(obj)/conftest/macros.h
 NV_CONFTEST_COMPILE_TEST_HEADERS += $(obj)/conftest/functions.h

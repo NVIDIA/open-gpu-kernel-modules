@@ -139,7 +139,11 @@ NvU32 smmu_vcmdq_read32(void __iomem *smmu_cmdqv_base, int reg)
 
 static void smmu_vcmdq_write64(void __iomem *smmu_cmdqv_base, int reg, NvU64 val)
 {
+#if NV_IS_EXPORT_SYMBOL_PRESENT___iowrite64_lo_hi
+    __iowrite64_lo_hi(val, SMMU_VCMDQ_BASE_ADDR(smmu_cmdqv_base, VCMDQ) + reg);
+#else
     iowrite64(val, SMMU_VCMDQ_BASE_ADDR(smmu_cmdqv_base, VCMDQ) + reg);
+#endif
 }
 
 // Fix for Bug 4130089: [GH180][r535] WAR for kernel not issuing SMMU
@@ -304,12 +308,13 @@ void uvm_ats_smmu_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space, NvU64 addr, 
 
 NV_STATUS uvm_ats_sva_add_gpu(uvm_parent_gpu_t *parent_gpu)
 {
+#if NV_IS_EXPORT_SYMBOL_GPL_iommu_dev_enable_feature
     int ret;
 
     ret = iommu_dev_enable_feature(&parent_gpu->pci_dev->dev, IOMMU_DEV_FEAT_SVA);
     if (ret)
         return errno_to_nv_status(ret);
-
+#endif
     if (UVM_ATS_SMMU_WAR_REQUIRED())
         return uvm_ats_smmu_war_init(parent_gpu);
     else
@@ -321,7 +326,9 @@ void uvm_ats_sva_remove_gpu(uvm_parent_gpu_t *parent_gpu)
     if (UVM_ATS_SMMU_WAR_REQUIRED())
         uvm_ats_smmu_war_deinit(parent_gpu);
 
+#if NV_IS_EXPORT_SYMBOL_GPL_iommu_dev_disable_feature
     iommu_dev_disable_feature(&parent_gpu->pci_dev->dev, IOMMU_DEV_FEAT_SVA);
+#endif
 }
 
 NV_STATUS uvm_ats_sva_bind_gpu(uvm_gpu_va_space_t *gpu_va_space)

@@ -91,3 +91,4 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += ktime_get_real_ts64
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += ktime_get_raw_ts64
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += acpi_video_backlight_use_native
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += acpi_video_register_backlight
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_timer_delete_sync

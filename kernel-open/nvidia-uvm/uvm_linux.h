@@ -590,4 +590,9 @@ static inline pgprot_t uvm_pgprot_decrypted(pgprot_t prot)
   #include <asm/page.h>
   #define page_to_virt(x)    __va(PFN_PHYS(page_to_pfn(x)))
 #endif
+
+#ifndef NV_PAGE_PGMAP_PRESENT
+#define page_pgmap(page) (page)->pgmap
+#endif
+
 #endif // _UVM_LINUX_H

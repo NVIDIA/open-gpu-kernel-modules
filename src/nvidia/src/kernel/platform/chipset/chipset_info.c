@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -899,17 +899,6 @@ Intel_7A04_setupFunc
 )
 {
     pCl->setProperty(pCl, PDB_PROP_CL_HAS_RESIZABLE_BAR_ISSUE, NV_TRUE);
-
-    return NV_OK;
-}
-
-static NV_STATUS
-Intel_1B81_setupFunc
-(
-    OBJCL *pCl
-)
-{
-    pCl->setProperty(pCl, PDB_PROP_CL_RELAXED_ORDERING_NOT_CAPABLE, NV_TRUE);
 
     return NV_OK;
 }

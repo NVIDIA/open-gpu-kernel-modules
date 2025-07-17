@@ -216,6 +216,14 @@ void regCheckAndLogReadFailure(RegisterAccess *, NvU32 addr, NvU32 mask, NvU32 v
 // Get the address of a register given the Aperture and offset.
 #define REG_GET_ADDR(ap, offset) ioaprtGetRegAddr(ap, offset)
 
+//
+// These UNCHECKED macros are provided for extenuating circumstances to avoid the 0xbadf
+// sanity checking done by the usual register read utilities and must not be used generally
+//
+//
+#define GPU_REG_RD08_UNCHECKED(g,a) osDevReadReg008(g, gpuGetDeviceMapping(g, DEVICE_INDEX_GPU, 0), a)
+#define GPU_REG_RD32_UNCHECKED(g,a) osDevReadReg032(g, gpuGetDeviceMapping(g, DEVICE_INDEX_GPU, 0), a) 
+
 // GPU macros defined in terms of DEV_ macros
 #define GPU_REG_RD08(g,a) REG_INST_RD08(g,GPU,0,a)
 #define GPU_REG_RD16(g,a) REG_INST_RD16(g,GPU,0,a)

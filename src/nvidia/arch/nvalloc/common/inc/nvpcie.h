@@ -224,6 +224,20 @@
 
 #define NV_PCI_VIRTUAL_P2P_APPROVAL_SIGNATURE                   0x00503250
 
+#define NV_PCI_VIRTUAL_CONFIG_BITS_CAP_0                        0x000000D4
+#define NV_PCI_VIRTUAL_CONFIG_BITS_CAP_0_ID                            7:0
+#define NV_PCI_VIRTUAL_CONFIG_BITS_CAP_0_NEXT                         15:8
+#define NV_PCI_VIRTUAL_CONFIG_BITS_CAP_0_LENGTH                      23:16
+#define NV_PCI_VIRTUAL_CONFIG_BITS_CAP_0_SIG_LO                      31:24
+#define NV_PCI_VIRTUAL_CONFIG_BITS_CAP_1                        0x000000D8
+#define NV_PCI_VIRTUAL_CONFIG_BITS_CAP_1_SIG_HI                       15:0
+#define NV_PCI_VIRTUAL_CONFIG_BITS_CAP_1_VALUE                       31:16
+
+#define NV_PCI_VIRTUAL_CONFIG_BITS_SIGNATURE                    0x00535442  //"BTS"
+
+// Allocation of _VALUE bits
+#define NV_PCI_VIRTUAL_CONFIG_BITS_PCI_EGRESS_POISON_ENABLE            0:0
+
 // Chipset-specific definitions.
 // Intel SantaRosa definitions
 #define INTEL_2A00_CONFIG_SPACE_BASE        0x60

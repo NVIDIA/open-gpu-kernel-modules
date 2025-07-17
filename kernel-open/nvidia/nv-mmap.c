@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -804,3 +804,75 @@ void NV_API_CALL nv_set_safe_to_mmap_locked(
 
     nvl->safe_to_mmap = safe_to_mmap;
 }
+
+#if !NV_CAN_CALL_VMA_START_WRITE
+static NvBool nv_vma_enter_locked(struct vm_area_struct *vma, NvBool detaching)
+{
+    NvU32 tgt_refcnt = VMA_LOCK_OFFSET;
+    NvBool interrupted = NV_FALSE;
+    if (!detaching)
+    {
+        tgt_refcnt++;
+    }
+    if (!refcount_add_not_zero(VMA_LOCK_OFFSET, &vma->vm_refcnt))
+    {
+        return NV_FALSE;
+    }
+
+    rwsem_acquire(&vma->vmlock_dep_map, 0, 0, _RET_IP_);
+    prepare_to_rcuwait(&vma->vm_mm->vma_writer_wait);
+
+    for (;;)
+    {
+        set_current_state(TASK_UNINTERRUPTIBLE);
+        if (refcount_read(&vma->vm_refcnt) == tgt_refcnt)
+            break;
+
+        if (signal_pending_state(TASK_UNINTERRUPTIBLE, current))
+        {
+            interrupted = NV_TRUE;
+            break;
+        }
+
+        schedule();
+    }
+
+    // This is an open-coded version of finish_rcuwait().
+    rcu_assign_pointer(vma->vm_mm->vma_writer_wait.task, NULL);
+    __set_current_state(TASK_RUNNING);
+
+    if (interrupted)
+    {
+        // Clean up on error: release refcount and dep_map
+        refcount_sub_and_test(VMA_LOCK_OFFSET, &vma->vm_refcnt);
+        rwsem_release(&vma->vmlock_dep_map, _RET_IP_);
+        return NV_FALSE;
+    }
+
+    lock_acquired(&vma->vmlock_dep_map, _RET_IP_);
+    return NV_TRUE;
+}
+
+/*
+ * Helper function to handle VMA locking and refcount management.
+ */
+void nv_vma_start_write(struct vm_area_struct *vma)
+{
+    NvU32 mm_lock_seq;
+    NvBool locked;
+    if (__is_vma_write_locked(vma, &mm_lock_seq))
+        return;
+
+    locked = nv_vma_enter_locked(vma, NV_FALSE);
+
+    WRITE_ONCE(vma->vm_lock_seq, mm_lock_seq);
+    if (locked)
+    {
+        NvBool detached;
+        detached = refcount_sub_and_test(VMA_LOCK_OFFSET, &vma->vm_refcnt);
+        rwsem_release(&vma->vmlock_dep_map, _RET_IP_);
+        WARN_ON_ONCE(detached);
+    }
+}
+EXPORT_SYMBOL(nv_vma_start_write);
+#endif // !NV_CAN_CALL_VMA_START_WRITE

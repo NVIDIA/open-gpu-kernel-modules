@@ -314,7 +314,11 @@ static int nv_drm_connector_get_modes(struct drm_connector *connector)
 }
 
 static int nv_drm_connector_mode_valid(struct drm_connector    *connector,
+#if defined(NV_DRM_CONNECTOR_HELPER_FUNCS_MODE_VALID_HAS_CONST_MODE_ARG)
+                                       const struct drm_display_mode *mode)
+#else
                                        struct drm_display_mode *mode)
+#endif
 {
     struct drm_device *dev = connector->dev;
     struct nv_drm_device *nv_dev = to_nv_device(dev);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -562,6 +562,9 @@ err:
 
 void NV_API_CALL nv_cap_close_fd(int fd)
 {
+    struct file *file;
+    NvBool is_nv_cap_fd;
+
     if (fd == -1)
     {
         return;
@@ -575,6 +578,30 @@ void NV_API_CALL nv_cap_close_fd(int fd)
 
     /* Nothing to do, we are in exit path */
     if (current->files == NULL)
+    {
+        task_unlock(current);
+        return;
+    }
+
+    file = fget(fd);
+    if (file == NULL)
+    {
+        task_unlock(current);
+        return;
+    }
+
+    /* Make sure the fd belongs to the nv-cap-drv */
+    is_nv_cap_fd = (file->f_op == &g_nv_cap_drv_fops);
+
+    fput(file);
+
+    /*
+     * In some cases, we may be in shutdown path and execute
+     * in context of unrelated process. In that case we should
+     * not access any 'current' state, but instead let kernel
+     * clean up capability files on its own.
+     */
+    if (!is_nv_cap_fd)
     {
         task_unlock(current);
         return;

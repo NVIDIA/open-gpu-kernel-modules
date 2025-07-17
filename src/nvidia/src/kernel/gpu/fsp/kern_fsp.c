@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -229,8 +229,30 @@ kfspIsQueueEmpty_IMPL
     return (cmdqHead == cmdqTail);
 }
 
+/*
+ * @brief GpuWaitConditionFunc for MBOX receiver ready
+ *
+ * @param[in] pGpu          GPU object pointer
+ * @param[in] pCondData     KernelFsp object pointer
+ *
+ * @returns   NvBool        NV_TRUE if command and message fsp
+ *                          queues are empty
+ */
+static NvBool
+_kfspWaitForQueuesEmpty
+(
+    OBJGPU *pGpu,
+    void   *pCondData
+)
+{
+    KernelFsp *pKernelFsp = (KernelFsp*) pCondData;
+
+    return kfspIsQueueEmpty(pGpu, pKernelFsp) &&
+           kfspIsMsgQueueEmpty(pGpu, pKernelFsp);
+}
+
 /*!
- * @brief Wait for FSP RM command queue to be empty
+ * @brief Wait for FSP RM queues to be empty
  *
  * @param[in] pGpu       OBJGPU pointer
  * @param[in] pKernelFsp KernelFsp pointer
@@ -251,40 +273,11 @@ kfspPollForQueueEmpty_IMPL
         GPU_TIMEOUT_FLAGS_OSTIMER |
         GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
 
-    while (!kfspIsQueueEmpty(pGpu, pKernelFsp))
+    status = gpuTimeoutCondWait(pGpu, _kfspWaitForQueuesEmpty, pKernelFsp, &timeout);
+    if (status != NV_OK)
     {
-        //
-        // For now we assume that any response from FSP before RM message
-        // send is complete indicates an error and we should abort.
-        //
-        // Ongoing dicussion on usefullness of this check. Bug to be filed.
-        //
-        if (!kfspIsMsgQueueEmpty(pGpu, pKernelFsp))
-        {
-            kfspReadMessage(pGpu, pKernelFsp, NULL, 0);
-            NV_PRINTF(LEVEL_ERROR,
-                "Received error message from FSP while waiting for CMDQ to be empty.\n");
-            status = NV_ERR_GENERIC;
-            break;
-        }
-
-        osSpinLoop();
-
-        status = gpuCheckTimeout(pGpu, &timeout);
-        if (status != NV_OK)
-        {
-            if ((status == NV_ERR_TIMEOUT) &&
-                kfspIsQueueEmpty(pGpu, pKernelFsp))
-            {
-                status = NV_OK;
-            }
-            else
-            {
-                NV_PRINTF(LEVEL_ERROR,
-                    "Timed out waiting for FSP command queue to be empty.\n");
-            }
-            break;
-        }
+        NV_PRINTF(LEVEL_ERROR,
+            "Timed out waiting for FSP queues to be empty.\n");
     }
 
     return status;

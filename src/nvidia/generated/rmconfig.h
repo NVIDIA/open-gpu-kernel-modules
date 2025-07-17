@@ -294,6 +294,7 @@
 #define RMCFG_FEATURE_FEATURE_GH180               1  // RMconfig to encapsulate GH180 features
 #define RMCFG_FEATURE_MULTICAST_FABRIC            1  // Support for MULTICAST_FABRIC
 #define RMCFG_FEATURE_NVLINK_ERROR_THRESHOLD      1  // Support for NVLINK_ERROR_THRESHOLD
+#define RMCFG_FEATURE_TPC_REPAIR                  1  // Support for TPC swapping in-field
 #define RMCFG_FEATURE_FABRIC_LINEAR_ADDRESSING    1  // Unicast fabric memory management
 
 

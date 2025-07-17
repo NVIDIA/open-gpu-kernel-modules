@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1016,6 +1016,7 @@ struct OBJGPU {
     NvBool gpuLinkTerminationEnabled;
     NvBool gspRmInitialized;
     _GPU_PCIE_PEER_CLIQUE pciePeerClique;
+    NvU16 virtualConfigBits;
     NvU32 i2cPortForExtdev;
     GPUIDINFO idInfo;
     _GPU_CHIP_INFO chipInfo;

@@ -73,6 +73,7 @@ static void      objClGpuMapEnhCfgSpace(OBJGPU *, OBJCL *);
 static void      objClGpuUnmapEnhCfgSpace(OBJGPU *);
 static NV_STATUS objClGpuIs3DController(OBJGPU *);
 static void      objClLoadPcieVirtualP2PApproval(OBJGPU *);
+static void      objClLoadPcieVirtualConfigBits(OBJGPU *);
 static void      objClCheckForExternalGpu(OBJGPU *, OBJCL *);
 static void      _objClAdjustTcVcMap(OBJGPU *, OBJCL *, PORTDATA *);
 static void      _objClGetDownstreamAtomicsEnabledMask(void  *, NvU32, NvU32 *);
@@ -952,6 +953,9 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
 
     // Load PCI Express virtual P2P approval config
     objClLoadPcieVirtualP2PApproval(pGpu);
+
+    // Load additional configuraiton bits from virtualized cfg space
+    objClLoadPcieVirtualConfigBits(pGpu);
 
     //
     // Disable NOSNOOP bit for Passthrough.
@@ -4327,6 +4331,57 @@ objClLoadPcieVirtualP2PApproval(OBJGPU *pGpu)
     NV_PRINTF(LEVEL_INFO,
               "Hypervisor has assigned GPU%u to peer clique %u\n",
               gpuGetInstance(pGpu), pGpu->pciePeerClique.id);
+}
+
+static void
+objClLoadPcieVirtualConfigBits(OBJGPU *pGpu)
+{
+    void *handle;
+    NvU32 data32;
+    NvU8  cap;
+    NvU8  bus    = gpuGetBus(pGpu);
+    NvU8  device = gpuGetDevice(pGpu);
+    NvU32 domain = gpuGetDomain(pGpu);
+    NvU32 offset = 0;
+    NvU32 sig    = 0;
+
+    if (!IS_PASSTHRU(pGpu))
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "Skipping non-pass-through GPU%u\n", gpuGetInstance(pGpu));
+        return;
+    }
+
+    handle = osPciInitHandle(domain, bus, device, 0, NULL, NULL);
+
+    //
+    // Walk the list and find enable bits
+    //
+    cap = osPciReadByte(handle, PCI_CAPABILITY_LIST);
+    while ((cap != 0) && (sig != NV_PCI_VIRTUAL_CONFIG_BITS_SIGNATURE))
+    {
+        offset = cap;
+        data32 = osPciReadDword(handle, offset);
+        cap = (NvU8)((data32 >> 8) & 0xFF);
+
+        if ((data32 & CAP_ID_MASK) != CAP_ID_VENDOR_SPECIFIC)
+            continue;
+
+        sig = DRF_VAL(_PCI, _VIRTUAL_CONFIG_BITS_CAP_0, _SIG_LO, data32);
+        data32 = osPciReadDword(handle, offset + 4);
+        sig |= (DRF_VAL(_PCI, _VIRTUAL_CONFIG_BITS_CAP_1, _SIG_HI, data32) << 8);
+    }
+
+    if (sig == NV_PCI_VIRTUAL_CONFIG_BITS_SIGNATURE)
+    {
+        // data32 now contains the second dword of the capability structure.
+        pGpu->virtualConfigBits =
+            (NvU16) DRF_VAL(_PCI, _VIRTUAL_CONFIG_BITS_CAP_1, _VALUE, data32);
+
+        NV_PRINTF(LEVEL_INFO,
+                  "Hypervisor has specified config bits %u for GPU%u\n",
+                  pGpu->virtualConfigBits, gpuGetInstance(pGpu));
+    }
 }
 
 /*!

@@ -56,6 +56,7 @@ NV_CONFTEST_GENERIC_COMPILE_TESTS += is_export_symbol_gpl_refcount_dec_and_test
 NV_CONFTEST_GENERIC_COMPILE_TESTS += drm_alpha_blending_available
 NV_CONFTEST_GENERIC_COMPILE_TESTS += is_export_symbol_present_drm_gem_prime_fd_to_handle
 NV_CONFTEST_GENERIC_COMPILE_TESTS += is_export_symbol_present_drm_gem_prime_handle_to_fd
+NV_CONFTEST_GENERIC_COMPILE_TESTS += is_export_symbol_gpl___vma_start_write
 
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_dev_unref
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_reinit_primary_mode_group
@@ -137,3 +138,4 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += drm_unlocked_ioctl_flag_present
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_output_poll_changed
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_driver_has_date
 NV_CONFTEST_TYPE_COMPILE_TESTS += file_operations_fop_unsigned_offset_present
+NV_CONFTEST_TYPE_COMPILE_TESTS += drm_connector_helper_funcs_mode_valid_has_const_mode_arg

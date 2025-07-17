@@ -4013,33 +4013,6 @@ compile_test() {
             fi
         ;;
 
-        dma_buf_has_dynamic_attachment)
-            #
-            # Determine if the function dma_buf_attachment_is_dynamic()
-            # is present.
-            #
-            # Added by commit: 15fd552d186c
-            # ("dma-buf: change DMA-buf locking convention v3") in v5.5 (2018-07-03)
-            #
-            echo "$CONFTEST_PREAMBLE
-            #include <linux/dma-buf.h>
-            bool conftest_dma_buf_attachment_is_dynamic(void) {
-                return dma_buf_attachment_is_dynamic(NULL);
-            }" > conftest$$.c
-
-            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
-            rm -f conftest$$.c
-
-            if [ -f conftest$$.o ]; then
-                echo "#define NV_DMA_BUF_HAS_DYNAMIC_ATTACHMENT" | append_conftest "functions"
-                rm -f conftest$$.o
-                return
-            else
-                echo "#undef NV_DMA_BUF_HAS_DYNAMIC_ATTACHMENT" | append_conftest "functions"
-                return
-            fi
-        ;;
-
         dma_buf_attachment_has_peer2peer)
             #
             # Determine if peer2peer is present in struct dma_buf_attachment.
@@ -6687,6 +6660,22 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_UNLOCKED_IOCTL_FLAG_PRESENT" "" "types"
         ;;
 
+        page_pgmap)
+            #
+            # Determine if the page_pgmap() function is present.
+            #
+            # Added by commit 82ba975e4c43 ("mm: allow compound zone device
+            # pages") in v6.14
+            #
+            CODE="
+            #include <linux/mmzone.h>
+            int conftest_page_pgmap(void) {
+                return page_pgmap();
+            }"
+
+            compile_check_conftest "$CODE" "NV_PAGE_PGMAP_PRESENT" "" "functions"
+        ;;
+
     folio_test_swapcache)
             #
             # Determine if the folio_test_swapcache() function is present.
@@ -6742,6 +6731,33 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_DRIVER_HAS_DATE" "" "types"
+        ;;
+
+        drm_connector_helper_funcs_mode_valid_has_const_mode_arg)
+            #
+            # Determine if the 'mode' pointer argument is const in
+            # drm_connector_helper_funcs::mode_valid.
+            #
+            # The 'mode' pointer argument in
+            # drm_connector_helper_funcs::mode_valid was made const by commit
+            # 26d6fd81916e ("drm/connector: make mode_valid take a const struct
+            # drm_display_mode") in linux-next, expected in v6.15.
+            #
+            CODE="
+            #if defined(NV_DRM_DRM_ATOMIC_HELPER_H_PRESENT)
+            #include <drm/drm_atomic_helper.h>
+            #endif
+
+            static int conftest_drm_connector_mode_valid(struct drm_connector *connector,
+                                                         const struct drm_display_mode *mode) {
+                return 0;
+            }
+
+            const struct drm_connector_helper_funcs conftest_drm_connector_helper_funcs = {
+                .mode_valid = conftest_drm_connector_mode_valid,
+            };"
+
+            compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_HELPER_FUNCS_MODE_VALID_HAS_CONST_MODE_ARG" "" "types"
         ;;
 
         # When adding a new conftest entry, please use the correct format for
