@@ -1218,6 +1218,7 @@ struct OBJGPU {
     NvBool gspRmInitialized;
     NV_PM_DEPTH powerManagementDepth;
     _GPU_PCIE_PEER_CLIQUE pciePeerClique;
+    NvU16 virtualConfigBits;
     NvBool bGspNocatEnabled;
     NvU32 i2cPortForExtdev;
     GPUIDINFO idInfo;

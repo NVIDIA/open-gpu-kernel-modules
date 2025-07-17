@@ -369,6 +369,9 @@ ABI_CHECK_FIELD(GspSystemInfo, bFeatureStretchVblankCapable, 910, 1);
 ABI_CHECK_FIELD(GspSystemInfo, bEnableDynamicGranularityPageArrays, 911, 1);
 ABI_CHECK_FIELD(GspSystemInfo, bClockBoostSupported, 912, 1);
 ABI_CHECK_FIELD(GspSystemInfo, bRouteDispIntrsToCPU, 913, 1);
+ABI_CHECK_FIELD(GspSystemInfo, hostPageSize, 920, 8);
+ABI_CHECK_FIELD(GspSystemInfo, bGspNocatEnabled, 928, 1);
+ABI_CHECK_FIELD(GspSystemInfo, virtualConfigBits, 930, 2);
 
 
 ABI_CHECK_SIZE_EQ(JT_METHOD_DATA, 12);

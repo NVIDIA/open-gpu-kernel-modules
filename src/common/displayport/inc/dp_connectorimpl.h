@@ -260,6 +260,8 @@ namespace DisplayPort
         // Flag to check if the system is UEFI.
         bool        bIsUefiSystem;
 
+        bool        bSkipResetLinkStateDuringPlug;
+
         // Flag to check if LT should be skipped.
         bool        bSkipLt;
 
@@ -342,6 +344,8 @@ namespace DisplayPort
         bool        bForceHeadShutdownPerMonitor;
 
         bool        bEnableLowerBppCheckForDsc;
+
+        bool        bSkipSettingLinkStateDuringUnplug;
 
         //
         // Dual SST Partner connector object pointer

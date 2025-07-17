@@ -90,20 +90,22 @@
 //
 // Bug 4388987 : This regkey will disable reading PCON caps for MST.
 //
-#define NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED    "DP_BUG_4388987_WAR"
-#define NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION   "DP_DISABLE_TUNNEL_BW_ALLOCATION"
+#define NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED                  "DP_BUG_4388987_WAR"
+#define NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION                 "DP_DISABLE_TUNNEL_BW_ALLOCATION"
 
 // Bug 4793112 : On eDP panel, do not cache source OUI if it reads zero
-#define NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE            "DP_SKIP_ZERO_OUI_CACHE"
+#define NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE                          "DP_SKIP_ZERO_OUI_CACHE"
 
-#define NV_DP_REGKEY_DISABLE_FIX_FOR_5019537        "DP_DISABLE_5019537_FIX"
-#define NV_DP_REGKEY_ENABLE_FIX_FOR_5147205         "DP_ENABLE_5147205_FIX"
+#define NV_DP_REGKEY_DISABLE_FIX_FOR_5019537                      "DP_DISABLE_5019537_FIX"
+#define NV_DP_REGKEY_ENABLE_FIX_FOR_5147205                       "DP_ENABLE_5147205_FIX"
 
 // Bug 5088957 : Force head shutdown in DpLib
-#define NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN            "DP_WAR_5088957"
+#define NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN                          "DP_WAR_5088957"
 
 // Bug 5041041 : Enable Lower BPP check for DSC
 #define NV_DP_REGKEY_ENABLE_LOWER_BPP_CHECK_FOR_DSC "DP_ENABLE_LOWER_BPP_CHECK"
+
+#define NV_DP_REGKEY_SKIP_SETTING_LINK_STATE_DURING_UNPLUG        "DP_SKIP_SETTING_LINK_STATE_DURING_UNPLUG"
 
 
 // Data Base used to store all the regkey values.
@@ -147,6 +149,7 @@ struct DP_REGKEY_DATABASE
     bool  bEnable5147205Fix;
     bool  bForceHeadShutdown;
     bool  bEnableLowerBppCheckForDsc;
+    bool  bSkipSettingLinkStateDuringUnplug;
 };
 
 extern struct DP_REGKEY_DATABASE dpRegkeyDatabase;

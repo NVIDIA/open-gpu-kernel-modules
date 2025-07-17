@@ -1321,6 +1321,8 @@ void intrProcessDPCQueue_IMPL
     DPCQUEUE *pDPCQueue = &pIntr->dpcQueue;
     MC_ENGINE_BITVECTOR pendingEngines;
     NvU16 nextEngine;
+    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+    NvU32 faultsCopied = 0;
 
     do
     {
@@ -1353,6 +1355,14 @@ void intrProcessDPCQueue_IMPL
             if (!bitVectorTestAllCleared(&pendingEngines))
             {
                 nextEngine = bitVectorCountTrailingZeros(&pendingEngines);
+                //
+                // Service Non-Replayable interrupt in bottom-half
+                // in case it is triggered while handling other software events like p-state in VGPU.
+                //
+                if (IS_VIRTUAL(pGpu) && (nextEngine == MC_ENGINE_IDX_NON_REPLAYABLE_FAULT))
+                {
+                    kgmmuCopyMmuFaults_HAL(pGpu, pKernelGmmu, NULL, &faultsCopied, NON_REPLAYABLE_FAULT_BUFFER, NV_FALSE);
+                }
                 intrQueueInterruptBasedDpc(pGpu, pIntr, nextEngine);
                 bitVectorCopy(&pIntr->pmcIntrPending, &pendingEngines);
                 bitVectorClr(&pIntr->pmcIntrPending, nextEngine);

@@ -187,7 +187,6 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_buf_ops_has_kmap
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_buf_ops_has_kmap_atomic
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_buf_ops_has_map
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_buf_ops_has_map_atomic
-NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_buf_has_dynamic_attachment
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_buf_attachment_has_peer2peer
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_set_mask_and_coherent
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += devm_clk_bulk_get_all

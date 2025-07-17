@@ -4043,33 +4043,6 @@ compile_test() {
             fi
         ;;
 
-        dma_buf_has_dynamic_attachment)
-            #
-            # Determine if the function dma_buf_attachment_is_dynamic()
-            # is present.
-            #
-            # Added by commit: 15fd552d186c
-            # ("dma-buf: change DMA-buf locking convention v3") in v5.5 (2018-07-03)
-            #
-            echo "$CONFTEST_PREAMBLE
-            #include <linux/dma-buf.h>
-            bool conftest_dma_buf_attachment_is_dynamic(void) {
-                return dma_buf_attachment_is_dynamic(NULL);
-            }" > conftest$$.c
-
-            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
-            rm -f conftest$$.c
-
-            if [ -f conftest$$.o ]; then
-                echo "#define NV_DMA_BUF_HAS_DYNAMIC_ATTACHMENT" | append_conftest "functions"
-                rm -f conftest$$.o
-                return
-            else
-                echo "#undef NV_DMA_BUF_HAS_DYNAMIC_ATTACHMENT" | append_conftest "functions"
-                return
-            fi
-        ;;
-
         dma_buf_attachment_has_peer2peer)
             #
             # Determine if peer2peer is present in struct dma_buf_attachment.
@@ -6991,6 +6964,7 @@ compile_test() {
             # This functionality is needed when crypto_akcipher_verify is not present.
             #
             CODE="
+            #include <linux/math.h>
             #include <crypto/internal/ecc.h>
             void conftest_ecc_digits_from_bytes(void) {
                 (void)ecc_digits_from_bytes;

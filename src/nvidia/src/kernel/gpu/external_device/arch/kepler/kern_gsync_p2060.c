@@ -2442,14 +2442,6 @@ gsyncProgramMaster_P2060
             }
 
             //
-            // Set the RasterSync Decode Mode
-            // This may return an error if the FW and GPU combination is invalid
-            // In this case, the ServerGpu is the same Gpu
-            //
-            NV_CHECK_OK_OR_RETURN(LEVEL_WARNING,
-                pGsync->gsyncHal.gsyncSetRasterSyncDecodeMode(pGpu, pGpu, pGsync->pExtDev));
-
-            //
             // GPU will now be TS - Mark sync source for GPU on derived index.
             // This needs to be done first as only TS can write I_AM_MASTER bit.
             //
@@ -2729,8 +2721,6 @@ gsyncProgramSlaves_P2060
     NvBool      bCoupled, bHouseSelect, bLocalMaster, bEnableSlaves = (0 != Slaves);
     NV_STATUS   rmStatus = NV_OK;
     NvU32       numHeads = kdispGetNumHeads(pKernelDisplay);
-    OBJSYS      *pSys = SYS_GET_INSTANCE();
-    OBJGSYNCMGR *pGsyncMgr = SYS_GET_GSYNCMGR(pSys);
 
     // This utility fn returns display id's associated with each head.
     extdevGetBoundHeadsAndDisplayIds(pGpu, DisplayIds);
@@ -2813,72 +2803,6 @@ gsyncProgramSlaves_P2060
                      "Failed to write SYNC_SRC. Can not program slave.\n");
            return rmStatus;
        }
-    }
-
-    //
-    // The RasterSyncDecodeMode of this Gsync board needs to get written if
-    // the server GPU is not on it. Find the server GPU and write based on that
-    // GPU's RasterSyncDecodeMode value.
-    //
-    if (bEnableSlaves && !bLocalMaster && pGsyncMgr->gsyncCount > 1)
-    {
-        OBJGPU *pServerGpu = NULL;
-        NvU32 otherGsyncIndex;
-
-        // Loops only need to go until we find pServerGpu
-        for (otherGsyncIndex = 0;
-                (otherGsyncIndex < pGsyncMgr->gsyncCount) && (pServerGpu == NULL);
-                otherGsyncIndex++)
-        {
-            DACP2060EXTERNALDEVICE *pOtherExtDev =
-                (DACP2060EXTERNALDEVICE *)pGsyncMgr->gsyncTable[otherGsyncIndex].pExtDev;
-            NvU32 otherIfaceIndex;
-
-            if (pOtherExtDev == pThis)
-            {
-                //
-                // If the server GPU is on this same GSync board, we don't need
-                // to write anything, so don't bother checking
-                //
-                continue;
-            }
-
-            for (otherIfaceIndex = 0;
-                    (otherIfaceIndex < NV_P2060_MAX_IFACES_PER_GSYNC) && (pServerGpu == NULL);
-                    otherIfaceIndex++)
-            {
-                NvU32 otherHeadIndex;
-                NvU32 serverBitmask = 0;
-
-                if (!pOtherExtDev->Iface[otherIfaceIndex].GpuInfo.connected)
-                {
-                    continue;
-                }
-
-                for (otherHeadIndex = 0; otherHeadIndex < OBJ_MAX_HEADS; otherHeadIndex++)
-                {
-                    serverBitmask |= pOtherExtDev->Iface[otherIfaceIndex].Sync.Master[otherHeadIndex];
-                }
-
-                if (serverBitmask == 0)
-                {
-                    continue;
-                }
-
-                // This GPU is the server!
-                pServerGpu = gpumgrGetGpuFromId(pOtherExtDev->Iface[otherIfaceIndex].GpuInfo.gpuId);
-            }
-        }
-
-        if (pServerGpu != NULL)
-        {
-            //
-            // Set the RasterSync Decode Mode
-            // This may return an error if the FW and GPU combination is invalid
-            //
-            NV_CHECK_OK_OR_RETURN(LEVEL_WARNING,
-                pGsync->gsyncHal.gsyncSetRasterSyncDecodeMode(pGpu, pServerGpu, pGsync->pExtDev));
-        }
     }
 
     //

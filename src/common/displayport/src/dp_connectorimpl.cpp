@@ -171,21 +171,22 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
         this->bKeepLinkAliveMST = dpRegkeyDatabase.bOptLinkKeptAliveMst;
         this->bKeepLinkAliveSST = dpRegkeyDatabase.bOptLinkKeptAliveSst;
     }
-    this->bReportDeviceLostBeforeNew       = dpRegkeyDatabase.bReportDeviceLostBeforeNew;
-    this->bDisableSSC                      = dpRegkeyDatabase.bSscDisabled;
-    this->bEnableFastLT                    = dpRegkeyDatabase.bFastLinkTrainingEnabled;
-    this->bDscMstCapBug3143315             = dpRegkeyDatabase.bDscMstCapBug3143315;
-    this->bPowerDownPhyBeforeD3            = dpRegkeyDatabase.bPowerDownPhyBeforeD3;
-    this->bReassessMaxLink                 = dpRegkeyDatabase.bReassessMaxLink;
+    this->bReportDeviceLostBeforeNew        = dpRegkeyDatabase.bReportDeviceLostBeforeNew;
+    this->bDisableSSC                       = dpRegkeyDatabase.bSscDisabled;
+    this->bEnableFastLT                     = dpRegkeyDatabase.bFastLinkTrainingEnabled;
+    this->bDscMstCapBug3143315              = dpRegkeyDatabase.bDscMstCapBug3143315;
+    this->bPowerDownPhyBeforeD3             = dpRegkeyDatabase.bPowerDownPhyBeforeD3;
+    this->bReassessMaxLink                  = dpRegkeyDatabase.bReassessMaxLink;
     if (dpRegkeyDatabase.applyMaxLinkRateOverrides)
     {
-        this->maxLinkRateFromRegkey        = hal->mapLinkBandiwdthToLinkrate(dpRegkeyDatabase.applyMaxLinkRateOverrides); // BW to linkrate
+        this->maxLinkRateFromRegkey         = hal->mapLinkBandiwdthToLinkrate(dpRegkeyDatabase.applyMaxLinkRateOverrides); // BW to linkrate
     }
-    this->bForceDisableTunnelBwAllocation  = dpRegkeyDatabase.bForceDisableTunnelBwAllocation;
-    this->bSkipZeroOuiCache                = dpRegkeyDatabase.bSkipZeroOuiCache;
-    this->bDisable5019537Fix               = dpRegkeyDatabase.bDisable5019537Fix;
-    this->bForceHeadShutdownFromRegkey     = dpRegkeyDatabase.bForceHeadShutdown;
-    this->bEnableLowerBppCheckForDsc       = dpRegkeyDatabase.bEnableLowerBppCheckForDsc;
+    this->bForceDisableTunnelBwAllocation   = dpRegkeyDatabase.bForceDisableTunnelBwAllocation;
+    this->bSkipZeroOuiCache                 = dpRegkeyDatabase.bSkipZeroOuiCache;
+    this->bDisable5019537Fix                = dpRegkeyDatabase.bDisable5019537Fix;
+    this->bForceHeadShutdownFromRegkey      = dpRegkeyDatabase.bForceHeadShutdown;
+    this->bEnableLowerBppCheckForDsc        = dpRegkeyDatabase.bEnableLowerBppCheckForDsc;
+    this->bSkipSettingLinkStateDuringUnplug = dpRegkeyDatabase.bSkipSettingLinkStateDuringUnplug;
 }
 
 void ConnectorImpl::setPolicyModesetOrderMitigation(bool enabled)
@@ -945,6 +946,7 @@ Group * ConnectorImpl::resume(bool firmwareLinkHandsOff,
         activeGroups.insertBack((GroupImpl *)firmwareGroup);
 
         result = firmwareGroup;
+        bSkipResetLinkStateDuringPlug = true;
     }
 
     hal->overrideMultiStreamCap(bAllowMST);
@@ -6781,6 +6783,15 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
         // Tear down old message manager
         DP_ASSERT( !hal->getSupportsMultistream() || (hal->isAtLeastVersion(1, 2) && " Device supports multistream but not DP 1.2 !?!? "));
 
+        if (this->bSkipSettingLinkStateDuringUnplug)
+        {
+            if (!bSkipResetLinkStateDuringPlug)
+            {
+                linkState = DP_TRANSPORT_MODE_INIT;
+            }
+            bSkipResetLinkStateDuringPlug = false;
+        }
+
         // Check if we should be attempting a transition between MST<->SST
         if (main->hasMultistream())
         {
@@ -7101,7 +7112,12 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
         bKeepOptLinkAlive = false;
         bNoFallbackInPostLQA = false;
         bDscCapBasedOnParent = false;
-        linkState = DP_TRANSPORT_MODE_INIT;
+
+        if (!this->bSkipSettingLinkStateDuringUnplug)
+        {
+            linkState = DP_TRANSPORT_MODE_INIT;
+        }
+
         linkAwaitingTransition = false;
 
     }

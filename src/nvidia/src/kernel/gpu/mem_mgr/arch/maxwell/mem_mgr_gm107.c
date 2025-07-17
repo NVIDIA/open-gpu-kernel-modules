@@ -287,7 +287,11 @@ memmgrSetZbcReferenced
 
     subDevInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
 
-    NV_ASSERT_OR_RETURN_VOID(subdeviceGetByInstance(pClient, hDevice, subDevInst, &pSubdevice) == NV_OK);
+    if (subdeviceGetByInstance(pClient, hDevice, subDevInst, &pSubdevice) != NV_OK)
+    {
+        NV_PRINTF(LEVEL_INFO, "Found no subdevice for the ZBC surface\n");
+        return;
+    }
 
     hSubdevice = RES_GET_HANDLE(pSubdevice);
 

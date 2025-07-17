@@ -92,12 +92,6 @@ kchangrpAllocFaultMethodBuffers_GV100
     {
         // Get the right aperture/attribute
         faultBufApert = ADDR_SYSMEM;
-
-        if (bReUseInitMem)
-        {
-            faultBufApert = ADDR_FBMEM;
-        }
-
         faultBufAttr  = NV_MEMORY_CACHED;
         memdescOverrideInstLoc(DRF_VAL(_REG_STR_RM, _INST_LOC_3, _FAULT_METHOD_BUFFER, pGpu->instLocOverrides3),
                                "fault method buffer", &faultBufApert, &faultBufAttr);
@@ -110,6 +104,7 @@ kchangrpAllocFaultMethodBuffers_GV100
     {
         pFaultMthdBuf = &(pKernelChannelGroup->pMthdBuffers[index]);
 
+retryInFB:
         // Allocate and initialize MEMDESC
         status = memdescCreate(&(pFaultMthdBuf->pMemDesc), pGpu, bufSizeInBytes, 0,
                                NV_TRUE, faultBufApert, faultBufAttr, memDescFlags);
@@ -123,9 +118,15 @@ kchangrpAllocFaultMethodBuffers_GV100
                     pFaultMthdBuf->pMemDesc);
         if (status != NV_OK)
         {
-            DBG_BREAKPOINT();
             memdescDestroy(pFaultMthdBuf->pMemDesc);
             pFaultMthdBuf->pMemDesc = NULL;
+            if (bReUseInitMem && (faultBufApert == ADDR_SYSMEM))
+            {
+                 faultBufApert = ADDR_FBMEM;
+                 memDescFlags  |= MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE;
+                 goto retryInFB;
+            }
+            DBG_BREAKPOINT();
             goto fail;
         }
 

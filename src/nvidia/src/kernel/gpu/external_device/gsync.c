@@ -395,7 +395,19 @@ gsyncAttachGpu(PDACEXTERNALDEVICE pExtDev, OBJGPU *pGpu,
 
     pSys->setProperty(pSys, PDB_PROP_SYS_IS_GSYNC_ENABLED, NV_TRUE);
 
-    return gsyncStartupProvider(pGsync, externalDevice);
+    NV_ASSERT_OK_OR_RETURN(gsyncStartupProvider(pGsync, externalDevice));
+
+    if (pGsync->gpuCount == 1)
+    {
+        //
+        // Initialize the RasterSyncDecodeMode here.
+        // The timing source needs to agree with this, but all GPUs on the GSync
+        // should be the same, so we will use the type of the first GPU
+        //
+        NV_ASSERT_OK_OR_RETURN(pGsync->gsyncHal.gsyncSetRasterSyncDecodeMode(pGpu, pGpu, pGsync->pExtDev));
+    }
+
+    return NV_OK;
 }
 
 //
