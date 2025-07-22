@@ -3831,6 +3831,9 @@ subdeviceCtrlCmdThermalSystemExecuteV2_IMPL(Subdevice *pSubdevice,
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NvU32 instructionListSize = pSystemExecuteParams->instructionListSize;
     (void)instructionListSize;
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                       instructionListSize <= NV_ARRAY_ELEMENTS(pSystemExecuteParams->instructionList),
+                       NV_ERR_INVALID_ARGUMENT);
 
     NV_STATUS status = NV_OK;
     NvBool bForwardRmctrl;

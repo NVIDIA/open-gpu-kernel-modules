@@ -1912,6 +1912,8 @@ dmaUpdateVASpace_GF100
                 break;
     }
 
+    // We shouldn't modify volatility for MMIO page.
+    if (!memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
     {
         isVolatile |= !!(flags & DMA_UPDATE_VASPACE_FLAGS_VOLATILE);
         isVolatile &= !(flags & DMA_UPDATE_VASPACE_FLAGS_NONVOLATILE);
