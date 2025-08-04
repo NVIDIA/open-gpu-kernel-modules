@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,7 +23,7 @@
 
 /***************************** HW State Routines ***************************\
 *                                                                           *
-*         Blackwell specific Descriptor List management functions              *
+*         Blackwell specific Descriptor List management functions           *
 *                                                                           *
 \***************************************************************************/
 
@@ -35,11 +35,12 @@
 #include "nverror.h"
 #include "nvrm_registry.h"
 
+#include "published/blackwell/gb100/dev_vm.h"
 #include "published/blackwell/gb100/dev_boot.h"
 #include "published/blackwell/gb100/dev_boot_addendum.h"
+#include "published/blackwell/gb100/dev_mnoc_pri_zb.h"
 #include "published/blackwell/gb100/dev_pcfg_pf0.h"
 #include "published/blackwell/gb100/dev_nv_pcie_config_reg_addendum.h"
-
 
 static NV_STATUS _gpuFindPcieRegAddr_GB100(OBJGPU *pGpu, NvU32 regId, NvU32 *pRegAddr);
 static NvU32     _gpuGetPciePartitionId_GB100(OBJGPU *pGpu, NvU32 hwDefAddr);
@@ -47,11 +48,16 @@ static NvU32     _gpuGetPcieCfgCapId_GB100(OBJGPU *pGpu, NvU32 hwDefAddr);
 static NvU32     _gpuGetPcieExtCfgCapId_GB100(OBJGPU *pGpu, NvU32 hwDefAddr);
 static NvU32     _gpuGetPcieCfgMsgboxId_GB100(OBJGPU *pGpu, NvU32 hwDefAddr);
 static NV_STATUS _gpuGetPcieCfgCapBaseAddr_GB100(OBJGPU *pGpu, NvU32 hwDefAddr, NvU32 *pCapBaseAddr);
-static void      _gpuGetPcieExtCfgDvsecInfo_GB100(OBJGPU *pGpu, NvU32 hwDefAddr, NvU32 *pVenId, NvU32 *pDvsecLen);
 static NV_STATUS _gpuGetPcieExtCfgCapBaseAddr_GB100(OBJGPU *pGpu, NvU32 hwDefAddr, NvU32 *pCapBaseAddr);
 static NvU32     _gpuGetPcieCfgRegOffset_GB100(OBJGPU *pGpu, NvU32 hwDefAddr);
 static NvU32     _gpuGetPcieExtCfgRegOffset_GB100(OBJGPU *pGpu, NvU32 hwDefAddr);
-
+static NvBool    _gpuMnocMboxSendReceiverCond(OBJGPU *pGpu, void *pCondData);
+static NV_STATUS _gpuMnocMboxSendReceiverReady_GB100(OBJGPU *pGpu, IoAperture *pMboxAperture, NvU32 port, RMTIMEOUT *pTimeout);
+static NvBool    _gpuMnocMboxSendCreditCond(OBJGPU *pGpu, void *pCondData);
+static NV_STATUS _gpuMnocMboxSendCreditCheck_GB100(OBJGPU *pGpu, IoAperture *pMboxAperture, NvU32 port, RMTIMEOUT *pTimeout);
+static NV_STATUS _gpuMnocMboxSendErrorCheck_GB100(OBJGPU *pGpu, IoAperture *pMboxAperture, NvU32 port);
+static NvBool    _gpuMnocMboxPollCond(OBJGPU *pGpu, void *pCondData);
+static NV_STATUS _gpuMnocMboxPollForMsg_GB100(OBJGPU *pGpu, IoAperture *pMboxAperture, NvU32 port, RMTIMEOUT *pTimeout);
 
 //
 // List of GPU children that present for the chip. List entries contain$
@@ -249,7 +255,7 @@ _gpuFindPcieRegAddr_GB100
         //
         // In Type0 Header partition, there are no capability groups, so the
         // partition's base address is the base address we need
-        // 
+        //
         capBaseAddr = NV_PCIE_PARTITION_ID_TYPE0_HEADER_BASE_ADDR;
         offset      = hwDefAddr;
     }
@@ -393,11 +399,40 @@ gpuReadBusConfigCycle_GB100
 }
 
 /*!
+ * @brief Check if register being accessed is within guest BAR0 space.
+ *
+ * @param[in] pGpu   OBJGPU pointer
+ * @param[in] addr   Address being validated
+ */
+NV_STATUS
+gpuSanityCheckVirtRegAccess_GB100
+(
+    OBJGPU *pGpu,
+    NvU32   addr
+)
+{
+    // Not applicable in PV mode
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
+    {
+        return NV_OK;
+    }
+
+    // Check if address in NV_VIRTUAL_FUNCTION range, if not error out.
+    if ((addr < DRF_EXTENT(NV_VIRTUAL_FUNCTION_PRIV)) ||
+        ((addr >= DRF_BASE(NV_VIRTUAL_FUNCTION)) && (addr < DRF_EXTENT(NV_VIRTUAL_FUNCTION))))
+    {
+        return NV_OK;
+    }
+
+    return NV_ERR_INVALID_ADDRESS;
+}
+
+/*!
  * @brief Get the partition ID from PCIE Config Space
- * 
+ *
  * @param[in] pGpu      GPU object pointer
  * @param[in] hwDefAddr HW defined register address
- * 
+ *
  * @return Partition ID for the hwDefAddr
  */
 static NvU32
@@ -429,11 +464,11 @@ _gpuGetPciePartitionId_GB100
 /*!
  * @brief Get the base address of the capability group corresponding to the hwDefAddr
  *        in PCI Config Space partition
- * 
+ *
  * @param[in]  pGpu     GPU object pointer
  * @param[in]  hwDefAddr  Register address
  * @param[out] pRegAddr Final register address to be read
- * 
+ *
  * Overview:
  * 1. Get the details that uniquely identify group of the hwDefAddr i.e, msgboxId & capId
  * 2. Read base address of this partition to get to first node of linklist
@@ -447,7 +482,7 @@ _gpuGetPciePartitionId_GB100
  *     d. The differentiating factor for these registers is the MSGBOX_ID.
  *        Loop over until we find the right MSGBOX_ID, once found, we have
  *        the group address we are looking for, so exit.
- * 
+ *
  * @return NV_OK                   Success
  *         NV_ERR_INVALID_ADDRESS  Unrecognised hwDefAddr
  */
@@ -488,7 +523,7 @@ _gpuGetPcieCfgCapBaseAddr_GB100
     }
 
     targetMsgBoxId = _gpuGetPcieCfgMsgboxId_GB100(pGpu, hwDefAddr);
- 
+
     // 2. Read base address of this partition to get to first node of linklist
     regVal = osPciReadDword(pGpu->hPci, capBaseAddr);
     if (regVal == 0xFFFFFFFF)
@@ -561,7 +596,7 @@ _gpuGetPcieCfgCapBaseAddr_GB100
  * @param[in]  pGpu          GPU object pointer
  * @param[in]  hwDefAddr     HW defined register address
  * @param[out] pCapBaseAddr  Group address
- * 
+ *
  * Overview of linklist traversal:
  * 1. Get the details that uniquely identify group of the hwDefAddr i.e, capId, targetVendorId, targetDvsecLen
  * 2. Traverse the linked list to get the base address of the capability group
@@ -625,7 +660,7 @@ _gpuGetPcieExtCfgCapBaseAddr_GB100
 
     if (targetCapId == NV_PCIE_REG_CAP_ID_EXT_CFG_DVSEC_CAP)
     {
-        _gpuGetPcieExtCfgDvsecInfo_GB100(pGpu, hwDefAddr, &targetVendorId, &targetDvsecLen);
+        gpuGetPcieExtCfgDvsecInfo_HAL(pGpu, hwDefAddr, &targetVendorId, &targetDvsecLen);
     }
 
     // 2. Traverse the linked list to get the base address of the capability group
@@ -704,10 +739,10 @@ _gpuGetPcieExtCfgCapBaseAddr_GB100
 /*!
  * @brief Get the CAPABILITY_ID corresponding to hwDefAddr
  *        in PCI Config Space partition
- * 
+ *
  * @param[in]  pGpu      GPU object pointer
  * @param[in]  hwDefAddr HW defined register address
- * 
+ *
  * @return CAPABILITY_ID corresponding to the hwDefAddr
  */
 static NvU32
@@ -734,10 +769,10 @@ _gpuGetPcieCfgCapId_GB100
 /*!
  * @brief Get the CAPABILITY_ID corresponding to hwDefAddr
  *        in PCI Config Space partition
- * 
+ *
  * @param[in]  pGpu      GPU object pointer
  * @param[in]  hwDefAddr HW defined register address
- * 
+ *
  * @return CAPABILITY_ID corresponding to the hwDefAddr
  */
 static NvU32
@@ -764,10 +799,10 @@ _gpuGetPcieExtCfgCapId_GB100
 /*!
  * @brief Get the msgbox ID corresponding to hwDefAddr
  *        in PCI Config Space partition
- * 
+ *
  * @param[in] pGpu      GPU object pointer
  * @param[in] hwDefAddr HW defined register address
- * 
+ *
  * @return Msgbox ID for the hwDefAddr
  */
 static NvU32
@@ -796,14 +831,14 @@ _gpuGetPcieCfgMsgboxId_GB100
 /*!
  * @brief Get the DVSEC Info corresponding to a DVSEC register
  *        in Extended Config Space partition
- * 
+ *
  * @param[in]  pGpu      GPU object pointer
  * @param[in]  hwDefAddr HW defined register address
  * @param[out] pVenId    Vendor ID of the DVSEC register
  * @param[out] pDvsecLen DVSEC Length of the DVSEC register
  */
-static void
-_gpuGetPcieExtCfgDvsecInfo_GB100
+void
+gpuGetPcieExtCfgDvsecInfo_GB100
 (
     OBJGPU *pGpu,
     NvU32   hwDefAddr,
@@ -824,16 +859,16 @@ _gpuGetPcieExtCfgDvsecInfo_GB100
         }
     }
 
-    NV_ASSERT_FAILED("VendorId and Dvseclength fields not found\n");
+    NV_ASSERT_FAILED("VendorId and DvsecLength fields not found\n");
 }
 
 /*!
  * @brief Get the offset corresponding to hwDefAddr
  *        in Extended Config Space partition
- * 
+ *
  * @param[in] pGpu      GPU object pointer
  * @param[in] hwDefAddr HW defined register address
- * 
+ *
  * @return Offset of the register away from CAP_GRP base address
  */
 static NvU32
@@ -862,10 +897,10 @@ _gpuGetPcieCfgRegOffset_GB100
 /*!
  * @brief Get the offset corresponding to hwDefAddr
  *        in Extended Config Space partition
- * 
+ *
  * @param[in] pGpu      GPU object pointer
  * @param[in] hwDefAddr HW defined register address
- * 
+ *
  * @return Offset of the register away from CAP_GRP base address
  */
 static NvU32
@@ -950,43 +985,6 @@ gpuGetIdInfo_GB100(OBJGPU *pGpu)
             NV_PRINTF(LEVEL_INFO, "pci_dev_id = 0x%x\n", pGpu->idInfo.PCIDeviceID);
         }
     }
-}
-
-//
-// Workaround for Bug 5041782.
-//
-// This function is not created through HAL infrastructure. It needs to be
-// called when OBJGPU is not created. HAL infrastructure can't be used for
-// this case, so it has been added manually. It will be invoked directly by
-// gpumgrWaitForBarFirewall() after checking the GPU devId.
-//
-// See kfspWaitForSecureBoot_GH100
-#define GPU_FSP_BOOT_COMPLETION_TIMEOUT_US 4000000
-NvBool gpuWaitForBarFirewall_GB100(NvU32 domain, NvU8 bus, NvU8 device, NvU8 function)
-{
-    NvU32 data;
-    NvU32 timeUs = 0;
-    void *hPci = osPciInitHandle(domain, bus, device, function, NULL, NULL);
-
-    while (timeUs < GPU_FSP_BOOT_COMPLETION_TIMEOUT_US)
-    {
-        data = osPciReadDword(hPci,
-            NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_2_AND_GENERAL);
-
-        // Firewall is lowered if 0
-        if (DRF_VAL(_PF0_DESIGNATED,
-                    _VENDOR_SPECIFIC_0_HEADER_2_AND_GENERAL,
-                    _BAR_FIREWALL_STATUS,
-                    data) == 0)
-        {
-            return NV_TRUE;
-        }
-
-        osDelayUs(1000);
-        timeUs += 1000;
-    }
-
-    return NV_FALSE;
 }
 
 /*!
@@ -1107,7 +1105,7 @@ gpuIsDevModeEnabledInHw_GB100
 }
 
 /*!
- * Check if Nvlink multiGPU mode has been set 
+ * Check if Nvlink multiGPU mode has been set
  *
  * @param[in]  pGpu  GPU object pointer
  */
@@ -1118,8 +1116,13 @@ gpuIsMultiGpuNvleEnabledInHw_GB100
 )
 {
     NvU32 data;
-    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_CC_MULTI_GPU_NVLE_MODE_ENABLED, &data) == NV_OK) &&
-        (data == NV_REG_STR_RM_CC_MULTI_GPU_NVLE_MODE_ENABLED_YES))
+
+    //
+    // NVLink Multi-GPU mode is set when it is enabled via a regkey or when NVLE mode bit is set in HW.
+    // TODO : Nvlink multiGPU regkey to be removed once we have stable vbios, BUG 5178914
+    //
+    if (((osReadRegistryDword(pGpu, NV_REG_STR_RM_CC_MULTI_GPU_NVLE_MODE_ENABLED, &data) == NV_OK) &&
+        (data == NV_REG_STR_RM_CC_MULTI_GPU_NVLE_MODE_ENABLED_YES)) || gpuIsNvleModeEnabledInHw_HAL(pGpu))
     {
         return NV_TRUE;
     }
@@ -1139,5 +1142,496 @@ gpuIsNvleModeEnabledInHw_GB100
 {
     NvU32 val = GPU_REG_RD32(pGpu, NV_PMC_SCRATCH_RESET_2_CC);
     return FLD_TEST_DRF(_PMC, _SCRATCH_RESET_2_CC, _NVLE_MODE_ENABLED, _TRUE, val);
+}
+
+/*!
+ * @brief Wait before receiving the next message from mailbox
+ *
+ * @param[in]     pGpu     GPU object pointer
+ * @param[in]     pMboxAperture Aperture for accessing mailbox registers
+ * @param[in]     port     MNOC port number [0..3]
+ * @param[in]     pTimeout Timeout for operation
+ * @param[out]    pMsgBuf  Pointer to the message buffer
+ * @param[in/out] pMsgSize Message size in bytes
+ *
+ * @returns NV_OK upon successfully message received
+ */
+NV_STATUS
+gpuMnocMboxSyncRecv_GB100
+(
+    OBJGPU    *pGpu,
+    IoAperture *pMboxAperture,
+    NvU32      port,
+    RMTIMEOUT *pTimeout,
+    void      *pMsgBuf,
+    NvU32     *pMsgSize
+)
+{
+    NV_STATUS status;
+
+    // Wait for new message to be ready
+    status = _gpuMnocMboxPollForMsg_GB100(pGpu, pMboxAperture, port, pTimeout);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    // Read received message
+    return gpuMnocMboxRecv_HAL(pGpu, pMboxAperture, port, pMsgBuf, pMsgSize);
+}
+
+/*!
+ * @brief Send MNOC mailbox message
+ *        This function is used to send MNOC mailbox message
+ *
+ * Send API follows below steps to transmit message-
+ * 1. Polling for the mailbox send port to become ready
+ * 2. Configuring mailbox message size into to mailbox send port INFO register
+ * 3. Transmitting the message, (up to) 4 bytes at a time
+ *    a. Check for mailbox send port buffer overflow
+ * 4. Check for transmit error
+ *
+ * @param[in] pGpu     GPU object pointer
+ * @param[in] pMboxAperture Aperture for accessing mailbox registers
+ * @param[in] port     The mailbox port number [0..3]
+ * @param[in] pMsgBuf  Pointer to the message buffer
+ * @param[in] msgSize  Message size in bytes
+ *
+ * @returns NV_OK upon sending MNOC mailbox message successfully
+ */
+NV_STATUS
+gpuMnocMboxSend_GB100
+(
+    OBJGPU    *pGpu,
+    IoAperture *pMboxAperture,
+    NvU32      port,
+    RMTIMEOUT *pTimeout,
+    void      *pMsgBuf,
+    NvU32      msgSize
+)
+{
+    NvU32 copyDataSize;
+    NvU32 data;
+    NvU32 regVal;
+    NvU32 offset;
+
+    // Sanity check for message and size
+    if ((pMsgBuf == NULL)                         ||
+        (msgSize < gpuMnocMboxMinMessageSize_HAL(pGpu)) ||
+        (msgSize > gpuMnocMboxMaxMessageSize_HAL(pGpu)))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    // Timeout waiting (polling) for mailbox send port to become ready
+    if (_gpuMnocMboxSendReceiverReady_GB100(pGpu, pMboxAperture, port, pTimeout) != NV_OK)
+    {
+        return NV_ERR_NOT_READY;
+    }
+
+    // Configuring mailbox message size into the mailbox send port INFO register
+    regVal = REG_RD32(pMboxAperture, NV_MNOC_ZB_PRI_MESSAGE_INFO_0_RECEIVEMBOX(port));
+    regVal = FLD_SET_DRF_NUM(_MNOC_ZB_PRI, _MESSAGE_INFO_0_RECEIVEMBOX, _MESSAGE_SIZE,
+                             msgSize, regVal);
+    regVal = FLD_SET_DRF(_MNOC_ZB_PRI, _MESSAGE_INFO_0_RECEIVEMBOX, _MESSAGE_TRIGGER,
+                         _SET, regVal);
+    REG_WR32(pMboxAperture, NV_MNOC_ZB_PRI_MESSAGE_INFO_0_RECEIVEMBOX(port), regVal);
+
+    // Transmitting the message, (up to) 4 bytes at a time
+    offset = 0;
+    while (msgSize > 0)
+    {
+        // Check available credit after every 64 bytes (i.e. 16 dword) transfer
+        if ((offset == NV_ALIGN_UP(offset, 64)) &&
+            _gpuMnocMboxSendCreditCheck_GB100(pGpu, pMboxAperture, port, pTimeout) != NV_OK)
+        {
+            return NV_ERR_TIMEOUT;
+        }
+
+        // Transmitting message
+        data = 0x0;
+        copyDataSize = NV_MIN(sizeof(NvU32), msgSize);
+        portMemCopy(&data, copyDataSize, (NvU8*)((NvU8*)pMsgBuf + offset), copyDataSize);
+        REG_WR32(pMboxAperture, NV_MNOC_ZB_PRI_WDATA_0_RECEIVEMBOX(port), data);
+
+        offset  += copyDataSize;
+        msgSize -= copyDataSize;
+    }
+
+    // Check for transmit error
+    return _gpuMnocMboxSendErrorCheck_GB100(pGpu, pMboxAperture, port);
+}
+
+/*!
+ * @brief Receive MNOC mbox message
+ *        This function is used to receive MNOC mailbox message
+ *
+ * Receive MNOC mailbox API follows below steps
+ * 1. Reading received mailbox message size and sanity check for message size
+ * 2. Receive the whole message, (up to) 4 bytes at a time and copy into the receive buffer
+ *
+ * @param[in]     pGpu     GPU object pointer
+ * @param[in]     pMboxAperture Aperture for accessing mailbox registers
+ * @param[in]     port     The mailbox port number [0..3]
+ * @param[out]    pMsgBuf  Pointer to the message buffer
+ * @param[in/out] pMsgSize Message size in bytes
+ *
+ * @returns NV_OK upon successfully MNOC mbox message received
+ */
+NV_STATUS
+gpuMnocMboxRecv_GB100
+(
+    OBJGPU *pGpu,
+    IoAperture *pMboxAperture,
+    NvU32   port,
+    void   *pMsgBuf,
+    NvU32  *pMsgSize
+)
+{
+    NvU32 regVal;
+    NvU32 offset;
+    NvU32 recvMsgSize;
+    NvU32 copyDataSize;
+
+    // Sanity check for message buffer
+    if (pMsgBuf == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    // Sanity check for whether a message is actually available to be received
+    if (!gpuMnocMboxIsMsgAvailable_HAL(pGpu, pMboxAperture, port))
+    {
+        return NV_ERR_NOT_READY;
+    }
+
+    // Reading mailbox message size
+    regVal = REG_RD32(pMboxAperture, NV_MNOC_ZB_PRI_MESSAGE_INFO_0_SENDMBOX(port));
+    recvMsgSize = DRF_VAL(_MNOC_ZB_PRI, _MESSAGE_INFO_0_SENDMBOX, _MESSAGE_SIZE, regVal);
+
+    // Sanity check for received size
+    NV_ASSERT_OR_RETURN(recvMsgSize >= gpuMnocMboxMinMessageSize_HAL(pGpu), NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(recvMsgSize <= gpuMnocMboxMaxMessageSize_HAL(pGpu), NV_ERR_INVALID_STATE);
+
+    // Sanity check for input size
+    if (*pMsgSize < recvMsgSize)
+    {
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
+
+    // Receive the whole message, (up to) 4 bytes at a time
+    offset = 0;
+    while (recvMsgSize > 0)
+    {
+        // Reading received message from the mailbox receive port
+        regVal = REG_RD32(pMboxAperture, NV_MNOC_ZB_PRI_RDATA_0_SENDMBOX(port));
+        copyDataSize = NV_MIN(sizeof(NvU32), recvMsgSize);
+
+        // Copying mailbox message into receive buffer
+        portMemCopy(((NvU8*)pMsgBuf + offset), copyDataSize,
+                    (NvU8*)&regVal, copyDataSize);
+        offset += copyDataSize;
+        recvMsgSize -= copyDataSize;
+    }
+
+    // Updating how many bytes received
+    *pMsgSize = offset;
+
+    regVal = REG_RD32(pMboxAperture, NV_MNOC_ZB_PRI_MESSAGE_INFO_0_SENDMBOX(port));
+    // Check if there was any error while receiving mailbox message
+    if (FLD_TEST_DRF(_MNOC_ZB_PRI, _MESSAGE_INFO_0_SENDMBOX, _ERR, _TRUE, regVal))
+    {
+        return NV_ERR_GENERIC;
+    }
+    else if (offset < DRF_VAL(_MNOC_ZB_PRI, _MESSAGE_INFO_0_SENDMBOX, _MESSAGE_SIZE, regVal))
+    {
+        return NV_ERR_OUT_OF_RANGE;
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Check if next MNOC mailbox message is available
+ *
+ * @param[in] pGpu     GPU object pointer
+ * @param[in] pMboxAperture Aperture for accessing mailbox registers
+ * @param[in] port     MNOC mailbox port number [0..3]
+ *
+ * @returns   NV_TRUE  New message available
+ *            NV_FALSE New message not available
+ */
+NvBool
+gpuMnocMboxIsMsgAvailable_GB100
+(
+    OBJGPU *pGpu,
+    IoAperture *pMboxAperture,
+    NvU32   port
+)
+{
+    NvU32 regVal;
+
+    regVal = REG_RD32(pMboxAperture, NV_MNOC_ZB_PRI_MESSAGE_INFO_0_SENDMBOX(port));
+
+    return FLD_TEST_DRF(_MNOC_ZB_PRI, _MESSAGE_INFO_0_SENDMBOX, _MESSAGE_READY, _TRUE, regVal);
+}
+
+/*!
+ * @brief Enable MNOC interrupt
+ */
+void
+gpuMnocMboxInterruptEnable_GB100
+(
+    OBJGPU     *pGpu,
+    IoAperture *pMboxAperture,
+    NvU32       port
+)
+{
+    NvU32 regVal;
+
+    // Enable the MNOC mailbox interrupt at source level.
+    regVal = REG_RD32(pMboxAperture, NV_MNOC_ZB_PRI_MESSAGE_INFO_0_SENDMBOX(port));
+    regVal = FLD_SET_DRF(_MNOC_ZB_PRI, _MESSAGE_INFO_0_SENDMBOX, _INTR_ENABLE, _ENABLED, regVal);
+    REG_WR32(pMboxAperture, NV_MNOC_ZB_PRI_MESSAGE_INFO_0_SENDMBOX(port), regVal);
+}
+
+/*!
+ * @brief Disable MNOC interrupt
+ */
+void
+gpuMnocMboxInterruptDisable_GB100
+(
+    OBJGPU     *pGpu,
+    IoAperture *pMboxAperture,
+    NvU32       port
+)
+{
+    NvU32 regVal;
+
+    // Disable the MNOC mailbox interrupt at source level.
+    regVal = REG_RD32(pMboxAperture, NV_MNOC_ZB_PRI_MESSAGE_INFO_0_SENDMBOX(port));
+    regVal = FLD_SET_DRF(_MNOC_ZB_PRI, _MESSAGE_INFO_0_SENDMBOX, _INTR_ENABLE, _DISABLED, regVal);
+    REG_WR32(pMboxAperture, NV_MNOC_ZB_PRI_MESSAGE_INFO_0_SENDMBOX(port), regVal);
+}
+
+/*!
+ * @brief Is mailbox interrupt raised ?
+ */
+NvBool
+gpuMnocMboxInterruptRaised_GB100
+(
+    OBJGPU     *pGpu,
+    IoAperture *pMboxAperture,
+    NvU32       port
+)
+{
+    NvU32 regVal;
+
+    regVal = REG_RD32(pMboxAperture, NV_MNOC_ZB_PRI_MESSAGE_INFO_0_SENDMBOX(port));
+    return FLD_TEST_DRF(_MNOC_ZB_PRI, _MESSAGE_INFO_0_SENDMBOX, _INTR_STATUS, _SET, regVal);
+}
+
+/*!
+ * @brief clear mailbox interrupt
+ */
+void
+gpuMnocMboxInterruptClear_GB100
+(
+    OBJGPU     *pGpu,
+    IoAperture *pMboxAperture,
+    NvU32       port
+)
+{
+    NvU32 regVal;
+
+    regVal = REG_RD32(pMboxAperture, NV_MNOC_ZB_PRI_MESSAGE_INFO_0_SENDMBOX(port));
+    regVal = FLD_SET_DRF(_MNOC_ZB_PRI, _MESSAGE_INFO_0_SENDMBOX, _INTR_STATUS, _W1CLR, regVal);
+    REG_WR32(pMboxAperture, NV_MNOC_ZB_PRI_MESSAGE_INFO_0_SENDMBOX(port), regVal);
+}
+
+/*!
+ * @brief return the minimum transfer size thru MNOC MBOX
+ */
+NvU32
+gpuMnocMboxMinMessageSize_GB100
+(
+    OBJGPU *pGpu
+)
+{
+    return sizeof(NvU32);
+}
+
+/*!
+ * @brief return the maximum transfer size thru MNOC MBOX
+ */
+NvU32
+gpuMnocMboxMaxMessageSize_GB100
+(
+    OBJGPU *pGpu
+)
+{
+    return DRF_MASK(NV_MNOC_ZB_PRI_MESSAGE_INFO_0_SENDMBOX_MESSAGE_SIZE) + 1;
+}
+
+// Used with gpuTimeoutCondWait to wrap the arguments to the timeout condition checks
+typedef struct 
+{
+    IoAperture *pMboxAperture;
+    NvU32       port;
+} MnocWaitArg;
+
+/*!
+ * @brief GpuWaitConditionFunc for MBOX receiver ready
+ *
+ * @param[in] pGpu          GPU object pointer
+ * @param[in] pCondData     Wrapper around the aperture and port
+ *
+ * @returns   NV_TRUE       Receiver is ready
+ */
+NvBool
+_gpuMnocMboxSendReceiverCond
+(
+    OBJGPU *pGpu,
+    void   *pCondData
+)
+{
+    MnocWaitArg *pArg = (MnocWaitArg*) pCondData;
+    NvU32 regVal = REG_RD32(pArg->pMboxAperture, NV_MNOC_ZB_PRI_MESSAGE_INFO_0_RECEIVEMBOX(pArg->port));
+    // Check if receiver is ready for next message
+    return FLD_TEST_DRF(_MNOC_ZB_PRI, _MESSAGE_INFO_0_RECEIVEMBOX, _RECEIVE_READY, _TRUE, regVal);
+}
+
+/*!
+ * @brief Helper function is used to wait until the receiver is ready
+ *
+ * @param[in] pGpu     GPU object pointer
+ * @param[in] pMboxAperture Aperture for accessing mailbox registers
+ * @param[in] port     The mailbox port number [0..3]
+ *
+ * @returns NV_OK when receiver is ready
+ */
+static NV_STATUS
+_gpuMnocMboxSendReceiverReady_GB100
+(
+    OBJGPU     *pGpu,
+    IoAperture *pMboxAperture,
+    NvU32       port,
+    RMTIMEOUT  *pTimeout
+)
+{
+    MnocWaitArg waitArg = {pMboxAperture, port};
+    return gpuTimeoutCondWait(pGpu, _gpuMnocMboxSendReceiverCond, &waitArg, pTimeout);
+}
+
+/*!
+ * @brief GpuWaitConditionFunc for credit available
+ *
+ * @param[in] pGpu          GPU object pointer
+ * @param[in] pCondData     Wrapper around the aperture and port
+ *
+ * @returns   NV_TRUE       Credit is available
+ */
+NvBool
+_gpuMnocMboxSendCreditCond
+(
+    OBJGPU *pGpu,
+    void   *pCondData
+)
+{
+    MnocWaitArg *pArg = (MnocWaitArg*) pCondData;
+    NvU32 regVal = REG_RD32(pArg->pMboxAperture, NV_MNOC_ZB_PRI_MESSAGE_INFO_0_RECEIVEMBOX(pArg->port));
+    return FLD_TEST_DRF(_MNOC_ZB_PRI, _MESSAGE_INFO_0_RECEIVEMBOX, _CREDIT_AVAILABLE, _TRUE, regVal);
+}
+
+/*!
+ * @brief Helper function is used to check the receiver port credit availability
+ *
+ * @param[in] pGpu      GPU object pointer
+ * @param[in] pMboxAperture Aperture for accessing mailbox registers
+ * @param[in] port      The mailbox port number [0..3]
+ *
+ * @returns NV_OK when mailbox send port has send credit
+ */
+static NV_STATUS
+_gpuMnocMboxSendCreditCheck_GB100
+(
+    OBJGPU     *pGpu,
+    IoAperture *pMboxAperture,
+    NvU32       port,
+    RMTIMEOUT  *pTimeout
+)
+{
+    MnocWaitArg waitArg = {pMboxAperture, port};
+    return gpuTimeoutCondWait(pGpu, _gpuMnocMboxSendCreditCond, &waitArg, pTimeout);
+}
+
+/*!
+ * @brief Helper function is used to check message transmit error
+ *
+ * @param[in] pGpu      GPU object pointer
+ * @param[in] pMboxAperture Aperture for accessing mailbox registers
+ * @param[in] port      The mailbox port number [0..3]
+ *
+ * @returns NV_OK upon message successfully sent
+ */
+static NV_STATUS
+_gpuMnocMboxSendErrorCheck_GB100
+(
+    OBJGPU     *pGpu,
+    IoAperture *pMboxAperture,
+    NvU32       port
+)
+{
+    NvU32 regVal;
+
+    regVal = REG_RD32(pMboxAperture, NV_MNOC_ZB_PRI_MESSAGE_INFO_0_RECEIVEMBOX(port));
+
+    // Check if there was any error while sending mailbox message
+    if (FLD_TEST_DRF(_MNOC_ZB_PRI, _MESSAGE_INFO_0_RECEIVEMBOX, _ERR,_TRUE, regVal))
+        return NV_ERR_GENERIC;
+
+    return NV_OK;
+}
+
+/*!
+ * @brief GpuWaitConditionFunc for new MNOC message
+ *
+ * @param[in] pGpu          GPU object pointer
+ * @param[in] pCondData     Wrapper around the aperture and port
+ *
+ * @returns   NV_TRUE       New message ready at mailbox port
+ */
+NvBool
+_gpuMnocMboxPollCond
+(
+    OBJGPU *pGpu,
+    void   *pCondData
+)
+{
+    MnocWaitArg *pArg = (MnocWaitArg*) pCondData;
+    return gpuMnocMboxIsMsgAvailable_HAL(pGpu, pArg->pMboxAperture, pArg->port);
+}
+
+/*!
+ * @brief Poll for new MNOC message
+ *
+ * @param[in] pGpu          GPU object pointer
+ * @param[in] pMboxAperture Aperture for accessing mailbox registers
+ * @param[in] port          MNOC port number [0..3]
+ * @param[in] pTimeout      Timeout for operation
+ *
+ * @returns   NV_OK    New message ready at mailbox port
+ */
+static NV_STATUS
+_gpuMnocMboxPollForMsg_GB100
+(
+    OBJGPU     *pGpu,
+    IoAperture *pMboxAperture,
+    NvU32       port,
+    RMTIMEOUT  *pTimeout
+)
+{
+    MnocWaitArg waitArg = {pMboxAperture, port};
+    return gpuTimeoutCondWait(pGpu, _gpuMnocMboxPollCond, &waitArg, pTimeout);
 }
 

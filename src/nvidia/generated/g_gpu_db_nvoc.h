@@ -174,15 +174,17 @@ NV_STATUS __nvoc_objCreate_GpuDb(GpuDb**, Dynamic*, NvU32);
     __nvoc_objCreate_GpuDb((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS gpudbConstruct_IMPL(struct GpuDb *arg_pGpuDb);
+#define __nvoc_gpudbConstruct(arg_pGpuDb) gpudbConstruct_IMPL(arg_pGpuDb)
+
+void gpudbDestruct_IMPL(struct GpuDb *pGpuDb);
+#define __nvoc_gpudbDestruct(pGpuDb) gpudbDestruct_IMPL(pGpuDb)
+
+
+// Wrapper macros for halified functions
 
 // Dispatch functions
-NV_STATUS gpudbConstruct_IMPL(struct GpuDb *arg_pGpuDb);
-
-#define __nvoc_gpudbConstruct(arg_pGpuDb) gpudbConstruct_IMPL(arg_pGpuDb)
-void gpudbDestruct_IMPL(struct GpuDb *pGpuDb);
-
-#define __nvoc_gpudbDestruct(pGpuDb) gpudbDestruct_IMPL(pGpuDb)
 #undef PRIVATE_FIELD
 
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -42,20 +42,18 @@ intrInitSubtreeMap_GH100
     Intr   *pIntr
 )
 {
+    NvU8 i;
     NV2080_INTR_CATEGORY_SUBTREE_MAP *pCategoryEngine =
         &pIntr->subtreeMap[NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE];
-    pCategoryEngine->subtreeStart = NV_CPU_INTR_STALL_SUBTREE_START;
-    pCategoryEngine->subtreeEnd   = NV_CPU_INTR_STALL_SUBTREE_START;
+    pCategoryEngine->subtreeMask |= NVBIT64(NV_CPU_INTR_STALL_SUBTREE_START);
 
     NV2080_INTR_CATEGORY_SUBTREE_MAP *pCategoryEngineNotification =
         &pIntr->subtreeMap[NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE_NOTIFICATION];
-    pCategoryEngineNotification->subtreeStart = NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_SUBTREE(0);
-    pCategoryEngineNotification->subtreeEnd   = NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_SUBTREE(0);
+    pCategoryEngineNotification->subtreeMask |= NVBIT64(NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_SUBTREE(0));
 
     NV2080_INTR_CATEGORY_SUBTREE_MAP *pCategoryRunlistLocked =
         &pIntr->subtreeMap[NV2080_INTR_CATEGORY_RUNLIST];
-    pCategoryRunlistLocked->subtreeStart = NV_CPU_INTR_STALL_SUBTREE_LAST_SWRL;
-    pCategoryRunlistLocked->subtreeEnd   = NV_CPU_INTR_STALL_SUBTREE_LAST_SWRL;
+    pCategoryRunlistLocked->subtreeMask |= NVBIT64(NV_CPU_INTR_STALL_SUBTREE_LAST_SWRL);
 
     //
     // Don't reprogram NV_RUNLIST_INTR_TREE_LOCKLESS (runlist notification)
@@ -67,18 +65,21 @@ intrInitSubtreeMap_GH100
     //
     NV2080_INTR_CATEGORY_SUBTREE_MAP *pCategoryRunlistNotification =
         &pIntr->subtreeMap[NV2080_INTR_CATEGORY_RUNLIST_NOTIFICATION];
-    pCategoryRunlistNotification->subtreeStart = NV_CPU_INTR_STALL_SUBTREE_LAST;
-    pCategoryRunlistNotification->subtreeEnd   = NV_CPU_INTR_STALL_SUBTREE_LAST;
+    pCategoryRunlistNotification->subtreeMask |= NVBIT64(NV_CPU_INTR_STALL_SUBTREE_LAST);
 
     NV2080_INTR_CATEGORY_SUBTREE_MAP *pCategoryUvmOwned =
         &pIntr->subtreeMap[NV2080_INTR_CATEGORY_UVM_OWNED];
-    pCategoryUvmOwned->subtreeStart = NV_CPU_INTR_UVM_SUBTREE_START;
-    pCategoryUvmOwned->subtreeEnd   = NV_CPU_INTR_UVM_SUBTREE_LAST;
+    for (i = NV_CPU_INTR_UVM_SUBTREE_START; i <= NV_CPU_INTR_UVM_SUBTREE_LAST; i++)
+    {
+        pCategoryUvmOwned->subtreeMask |= NVBIT64(i);
+    }
 
     NV2080_INTR_CATEGORY_SUBTREE_MAP *pCategoryUvmShared =
         &pIntr->subtreeMap[NV2080_INTR_CATEGORY_UVM_SHARED];
-    pCategoryUvmShared->subtreeStart = NV_CPU_INTR_UVM_SHARED_SUBTREE_START;
-    pCategoryUvmShared->subtreeEnd   = NV_CPU_INTR_UVM_SHARED_SUBTREE_LAST;
+    for (i = NV_CPU_INTR_UVM_SHARED_SUBTREE_START; i <= NV_CPU_INTR_UVM_SHARED_SUBTREE_LAST; i++)
+    {
+        pCategoryUvmShared->subtreeMask |= NVBIT64(i);
+    }
 
     return NV_OK;
 }
@@ -192,4 +193,48 @@ intrSanityCheckEngineIntrNotificationVector_GH100
         NV_PRINTF(LEVEL_ERROR, "MC_ENGINE_IDX %u has invalid notification intr vector %u\n", mcEngine, vector);
         DBG_BREAKPOINT();
     }
+}
+
+NvU64
+intrGetIntrTopLegacyStallMask_GH100
+(
+    Intr   *pIntr
+)
+{
+    OBJGPU *pGpu = ENG_GET_GPU(pIntr);
+    NvU64 ret = intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE) |
+                intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_RUNLIST) |
+                intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_UVM_OWNED) |
+                intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_UVM_SHARED);
+
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_SWRL_GRANULAR_LOCKING))
+    {
+        ret |= intrGetIntrTopCategoryMask(pIntr,
+            NV2080_INTR_CATEGORY_RUNLIST_NOTIFICATION);
+    }
+
+    // Sanity check that Intr.subtreeMap is initialized
+    NV_ASSERT_OR_RETURN(ret != 0, ret);
+    return ret;
+}
+
+NvU64
+intrGetIntrTopLockedMask_GH100
+(
+    Intr   *pIntr
+)
+{
+    OBJGPU *pGpu = ENG_GET_GPU(pIntr);
+    NvU64 ret = intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE) |
+                intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_RUNLIST);
+
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_SWRL_GRANULAR_LOCKING))
+    {
+        ret |= intrGetIntrTopCategoryMask(pIntr,
+            NV2080_INTR_CATEGORY_RUNLIST_NOTIFICATION);
+    }
+
+    // Sanity check that Intr.subtreeMap is initialized
+    NV_ASSERT_OR_RETURN(ret != 0, ret);
+    return ret;
 }

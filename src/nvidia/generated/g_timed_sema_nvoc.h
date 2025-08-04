@@ -102,11 +102,6 @@ struct TimedSemaSwObject {
     struct ChannelDescendant *__nvoc_pbase_ChannelDescendant;    // chandes super
     struct TimedSemaSwObject *__nvoc_pbase_TimedSemaSwObject;    // tsema
 
-    // Vtable with 3 per-object function pointers
-    NV_STATUS (*__tsemaCtrlCmdFlush__)(struct TimedSemaSwObject * /*this*/, NV9074_CTRL_CMD_FLUSH_PARAMS *);  // exported (id=0x90740101)
-    NV_STATUS (*__tsemaCtrlCmdGetTime__)(struct TimedSemaSwObject * /*this*/, NV9074_CTRL_CMD_GET_TIME_PARAMS *);  // exported (id=0x90740102)
-    NV_STATUS (*__tsemaCtrlCmdRelease__)(struct TimedSemaSwObject * /*this*/, NV9074_CTRL_CMD_RELEASE_PARAMS *);  // exported (id=0x90740103)
-
     // Data members
     NvU32 NotifierHi;
     NvU32 NotifierLo;
@@ -197,15 +192,60 @@ NV_STATUS __nvoc_objCreate_TimedSemaSwObject(TimedSemaSwObject**, Dynamic*, NvU3
     __nvoc_objCreate_TimedSemaSwObject((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS tsemaConstruct_IMPL(struct TimedSemaSwObject *arg_pTimedSemSw, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_tsemaConstruct(arg_pTimedSemSw, arg_pCallContext, arg_pParams) tsemaConstruct_IMPL(arg_pTimedSemSw, arg_pCallContext, arg_pParams)
+
+void tsemaDestruct_IMPL(struct TimedSemaSwObject *pTimedSemSw);
+#define __nvoc_tsemaDestruct(pTimedSemSw) tsemaDestruct_IMPL(pTimedSemSw)
+
+NvBool tsemaCheckCallbackReleaseSem_IMPL(struct TimedSemaSwObject *pTimedSemSw);
+#ifdef __nvoc_timed_sema_h_disabled
+static inline NvBool tsemaCheckCallbackReleaseSem(struct TimedSemaSwObject *pTimedSemSw) {
+    NV_ASSERT_FAILED_PRECOMP("TimedSemaSwObject was disabled!");
+    return NV_FALSE;
+}
+#else // __nvoc_timed_sema_h_disabled
+#define tsemaCheckCallbackReleaseSem(pTimedSemSw) tsemaCheckCallbackReleaseSem_IMPL(pTimedSemSw)
+#endif // __nvoc_timed_sema_h_disabled
+
+NV_STATUS tsemaCtrlCmdFlush_IMPL(struct TimedSemaSwObject *pTimedSemaSwObject, NV9074_CTRL_CMD_FLUSH_PARAMS *pFlushParams);
+#ifdef __nvoc_timed_sema_h_disabled
+static inline NV_STATUS tsemaCtrlCmdFlush(struct TimedSemaSwObject *pTimedSemaSwObject, NV9074_CTRL_CMD_FLUSH_PARAMS *pFlushParams) {
+    NV_ASSERT_FAILED_PRECOMP("TimedSemaSwObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_timed_sema_h_disabled
+#define tsemaCtrlCmdFlush(pTimedSemaSwObject, pFlushParams) tsemaCtrlCmdFlush_IMPL(pTimedSemaSwObject, pFlushParams)
+#endif // __nvoc_timed_sema_h_disabled
+
+NV_STATUS tsemaCtrlCmdGetTime_IMPL(struct TimedSemaSwObject *pTimedSemaSwObject, NV9074_CTRL_CMD_GET_TIME_PARAMS *pGetTimeParams);
+#ifdef __nvoc_timed_sema_h_disabled
+static inline NV_STATUS tsemaCtrlCmdGetTime(struct TimedSemaSwObject *pTimedSemaSwObject, NV9074_CTRL_CMD_GET_TIME_PARAMS *pGetTimeParams) {
+    NV_ASSERT_FAILED_PRECOMP("TimedSemaSwObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_timed_sema_h_disabled
+#define tsemaCtrlCmdGetTime(pTimedSemaSwObject, pGetTimeParams) tsemaCtrlCmdGetTime_IMPL(pTimedSemaSwObject, pGetTimeParams)
+#endif // __nvoc_timed_sema_h_disabled
+
+NV_STATUS tsemaCtrlCmdRelease_IMPL(struct TimedSemaSwObject *pTimedSemaSwObject, NV9074_CTRL_CMD_RELEASE_PARAMS *pReleaseParams);
+#ifdef __nvoc_timed_sema_h_disabled
+static inline NV_STATUS tsemaCtrlCmdRelease(struct TimedSemaSwObject *pTimedSemaSwObject, NV9074_CTRL_CMD_RELEASE_PARAMS *pReleaseParams) {
+    NV_ASSERT_FAILED_PRECOMP("TimedSemaSwObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_timed_sema_h_disabled
+#define tsemaCtrlCmdRelease(pTimedSemaSwObject, pReleaseParams) tsemaCtrlCmdRelease_IMPL(pTimedSemaSwObject, pReleaseParams)
+#endif // __nvoc_timed_sema_h_disabled
+
+#define tsemaRelease(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pDevice) tsemaRelease_KERNEL(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pDevice)
+
+
+// Wrapper macros for halified functions
 #define tsemaGetSwMethods_FNPTR(pTimedSemSw) pTimedSemSw->__nvoc_metadata_ptr->vtable.__tsemaGetSwMethods__
 #define tsemaGetSwMethods(pTimedSemSw, ppMethods, pNumMethods) tsemaGetSwMethods_DISPATCH(pTimedSemSw, ppMethods, pNumMethods)
-#define tsemaCtrlCmdFlush_FNPTR(pTimedSemaSwObject) pTimedSemaSwObject->__tsemaCtrlCmdFlush__
-#define tsemaCtrlCmdFlush(pTimedSemaSwObject, pFlushParams) tsemaCtrlCmdFlush_DISPATCH(pTimedSemaSwObject, pFlushParams)
-#define tsemaCtrlCmdGetTime_FNPTR(pTimedSemaSwObject) pTimedSemaSwObject->__tsemaCtrlCmdGetTime__
-#define tsemaCtrlCmdGetTime(pTimedSemaSwObject, pGetTimeParams) tsemaCtrlCmdGetTime_DISPATCH(pTimedSemaSwObject, pGetTimeParams)
-#define tsemaCtrlCmdRelease_FNPTR(pTimedSemaSwObject) pTimedSemaSwObject->__tsemaCtrlCmdRelease__
-#define tsemaCtrlCmdRelease(pTimedSemaSwObject, pReleaseParams) tsemaCtrlCmdRelease_DISPATCH(pTimedSemaSwObject, pReleaseParams)
+#define tsemaRelease_HAL(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pDevice) tsemaRelease(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pDevice)
 #define tsemaIsSwMethodStalling_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesIsSwMethodStalling__
 #define tsemaIsSwMethodStalling(pChannelDescendant, hHandle) tsemaIsSwMethodStalling_DISPATCH(pChannelDescendant, hHandle)
 #define tsemaCheckMemInterUnmap_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesCheckMemInterUnmap__
@@ -272,18 +312,6 @@ NV_STATUS __nvoc_objCreate_TimedSemaSwObject(TimedSemaSwObject**, Dynamic*, NvU3
 // Dispatch functions
 static inline NV_STATUS tsemaGetSwMethods_DISPATCH(struct TimedSemaSwObject *pTimedSemSw, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pTimedSemSw->__nvoc_metadata_ptr->vtable.__tsemaGetSwMethods__(pTimedSemSw, ppMethods, pNumMethods);
-}
-
-static inline NV_STATUS tsemaCtrlCmdFlush_DISPATCH(struct TimedSemaSwObject *pTimedSemaSwObject, NV9074_CTRL_CMD_FLUSH_PARAMS *pFlushParams) {
-    return pTimedSemaSwObject->__tsemaCtrlCmdFlush__(pTimedSemaSwObject, pFlushParams);
-}
-
-static inline NV_STATUS tsemaCtrlCmdGetTime_DISPATCH(struct TimedSemaSwObject *pTimedSemaSwObject, NV9074_CTRL_CMD_GET_TIME_PARAMS *pGetTimeParams) {
-    return pTimedSemaSwObject->__tsemaCtrlCmdGetTime__(pTimedSemaSwObject, pGetTimeParams);
-}
-
-static inline NV_STATUS tsemaCtrlCmdRelease_DISPATCH(struct TimedSemaSwObject *pTimedSemaSwObject, NV9074_CTRL_CMD_RELEASE_PARAMS *pReleaseParams) {
-    return pTimedSemaSwObject->__tsemaCtrlCmdRelease__(pTimedSemaSwObject, pReleaseParams);
 }
 
 static inline NvBool tsemaIsSwMethodStalling_DISPATCH(struct TimedSemaSwObject *pChannelDescendant, NvU32 hHandle) {
@@ -413,9 +441,6 @@ static inline NV_STATUS tsemaGetOrAllocNotifShare_DISPATCH(struct TimedSemaSwObj
 NV_STATUS tsemaRelease_KERNEL(OBJGPU *pGpu, NvU64 semaphoreVA, NvU64 notifierVA, NvU32 hVASpace, NvU32 releasevalue, NvU32 completionStatus, struct Device *pDevice);
 
 
-#define tsemaRelease(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pDevice) tsemaRelease_KERNEL(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pDevice)
-#define tsemaRelease_HAL(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pDevice) tsemaRelease(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pDevice)
-
 NV_STATUS tsemaGetSwMethods_IMPL(struct TimedSemaSwObject *pTimedSemSw, const METHOD **ppMethods, NvU32 *pNumMethods);
 
 NV_STATUS tsemaCtrlCmdFlush_IMPL(struct TimedSemaSwObject *pTimedSemaSwObject, NV9074_CTRL_CMD_FLUSH_PARAMS *pFlushParams);
@@ -423,23 +448,6 @@ NV_STATUS tsemaCtrlCmdFlush_IMPL(struct TimedSemaSwObject *pTimedSemaSwObject, N
 NV_STATUS tsemaCtrlCmdGetTime_IMPL(struct TimedSemaSwObject *pTimedSemaSwObject, NV9074_CTRL_CMD_GET_TIME_PARAMS *pGetTimeParams);
 
 NV_STATUS tsemaCtrlCmdRelease_IMPL(struct TimedSemaSwObject *pTimedSemaSwObject, NV9074_CTRL_CMD_RELEASE_PARAMS *pReleaseParams);
-
-NV_STATUS tsemaConstruct_IMPL(struct TimedSemaSwObject *arg_pTimedSemSw, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_tsemaConstruct(arg_pTimedSemSw, arg_pCallContext, arg_pParams) tsemaConstruct_IMPL(arg_pTimedSemSw, arg_pCallContext, arg_pParams)
-void tsemaDestruct_IMPL(struct TimedSemaSwObject *pTimedSemSw);
-
-#define __nvoc_tsemaDestruct(pTimedSemSw) tsemaDestruct_IMPL(pTimedSemSw)
-NvBool tsemaCheckCallbackReleaseSem_IMPL(struct TimedSemaSwObject *pTimedSemSw);
-
-#ifdef __nvoc_timed_sema_h_disabled
-static inline NvBool tsemaCheckCallbackReleaseSem(struct TimedSemaSwObject *pTimedSemSw) {
-    NV_ASSERT_FAILED_PRECOMP("TimedSemaSwObject was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_timed_sema_h_disabled
-#define tsemaCheckCallbackReleaseSem(pTimedSemSw) tsemaCheckCallbackReleaseSem_IMPL(pTimedSemSw)
-#endif //__nvoc_timed_sema_h_disabled
 
 #undef PRIVATE_FIELD
 

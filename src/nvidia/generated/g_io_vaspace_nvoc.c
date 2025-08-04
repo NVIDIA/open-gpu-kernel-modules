@@ -324,6 +324,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJIOVASPACE =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_iovaspaceDestruct(OBJIOVASPACE*);
 void __nvoc_dtor_OBJVASPACE(OBJVASPACE*);
 void __nvoc_dtor_OBJIOVASPACE(OBJIOVASPACE *pThis) {
     __nvoc_iovaspaceDestruct(pThis);

@@ -20,9 +20,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "nvidia-drm-conftest.h" /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+#include "nvidia-drm-conftest.h" /* NV_DRM_AVAILABLE */
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #include "nvidia-drm-helper.h"
 #include "nvidia-drm-priv.h"
@@ -228,9 +228,6 @@ nv_drm_connector_detect(struct drm_connector *connector, bool force)
 }
 
 static struct drm_connector_funcs nv_connector_funcs = {
-#if defined NV_DRM_ATOMIC_HELPER_CONNECTOR_DPMS_PRESENT
-    .dpms                   = drm_atomic_helper_connector_dpms,
-#endif
     .destroy                = nv_drm_connector_destroy,
     .reset                  = drm_atomic_helper_connector_reset,
     .force                  = __nv_drm_connector_force,
@@ -588,16 +585,11 @@ nv_drm_get_connector(struct drm_device *dev,
                      char dpAddress[NVKMS_DP_ADDRESS_STRING_LENGTH])
 {
     struct drm_connector *connector = NULL;
-#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
     struct drm_connector_list_iter conn_iter;
-    nv_drm_connector_list_iter_begin(dev, &conn_iter);
-#else
-    struct drm_mode_config *config = &dev->mode_config;
-    mutex_lock(&config->mutex);
-#endif
+    drm_connector_list_iter_begin(dev, &conn_iter);
 
     /* Lookup for existing connector with same physical index */
-    nv_drm_for_each_connector(connector, &conn_iter, dev) {
+    drm_for_each_connector_iter(connector, &conn_iter) {
         struct nv_drm_connector *nv_connector = to_nv_connector(connector);
 
         if (nv_connector->physicalIndex == physicalIndex) {
@@ -612,11 +604,7 @@ nv_drm_get_connector(struct drm_device *dev,
     connector = NULL;
 
 done:
-#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
-    nv_drm_connector_list_iter_end(&conn_iter);
-#else
-    mutex_unlock(&config->mutex);
-#endif
+    drm_connector_list_iter_end(&conn_iter);
 
     if (!connector) {
         connector = nv_drm_connector_new(dev,

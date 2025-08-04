@@ -36,6 +36,7 @@
 #include "ctrl/ctrl0073/ctrl0073dp.h"
 #include "dp_printf.h"
 
+
 #define LOGICAL_LANES          4U
 #define EFF_BPP_NON_DSC_SCALER 256U
 #define EFF_BPP_DSC_SCALER     16U
@@ -122,11 +123,23 @@ bool ConnectorImpl2x::willLinkSupportModeSST
     const DscParams *pDscParams
 )
 {
+    NvBool result = false;
     LinkConfiguration lc = linkConfig;
     if (!main->isSupportedDPLinkConfig(lc))
         return false;
+
     // no headIndex (default 0) for mode enumeration.
-    return willLinkSupportMode(linkConfig, modesetInfo, 0, NULL, pDscParams);
+    result = willLinkSupportMode(linkConfig, modesetInfo, 0, NULL, pDscParams);
+    if (result && linkConfig.bIs128b132bChannelCoding)
+    {
+        unsigned base_pbn, slots, slots_pbn;
+        lc.pbnRequired(modesetInfo, base_pbn, slots, slots_pbn);
+        if (slots_pbn > lc.pbnTotal())
+        {
+            result = false;
+        }
+    }
+    return result;
 }
 
 bool ConnectorImpl2x::willLinkSupportMode
@@ -561,21 +574,11 @@ bool ConnectorImpl2x::compoundQueryAttachMSTGeneric(Group * target,
                         tail->bandwidth.compound_query_state.totalTimeSlots)
                     {
                         compoundQueryResult = false;
-                        if(this->bEnableLowerBppCheckForDsc)
-                        {
-                            tail->bandwidth.compound_query_state.timeslots_used_by_query -= linkConfig->slotsForPBN(base_pbn);
-                            tail->bandwidth.compound_query_state.bandwidthAllocatedForIndex &= ~(1 << compoundQueryCount);
-                        }
                         SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH)
                     }
                 }
                 tail = (DeviceImpl*)tail->getParent();
             }
-        }
-        // If the compoundQueryResult is false, we need to reset the compoundQueryLocalLinkPBN
-        if (!compoundQueryResult && this->bEnableLowerBppCheckForDsc)
-        {
-            compoundQueryLocalLinkPBN -= slots_pbn;
         }
     }
     else
@@ -618,20 +621,23 @@ bool ConnectorImpl2x::compoundQueryAttachMSTGeneric(Group * target,
  */
 bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &modesetParams)
 {
-    unsigned   twoChannelAudioHz         = modesetParams.modesetInfo.twoChannelAudioHz;
-    unsigned   eightChannelAudioHz       = modesetParams.modesetInfo.eightChannelAudioHz;
-    NvU64      pixelClockHz              = modesetParams.modesetInfo.pixelClockHz;
-    unsigned   rasterWidth               = modesetParams.modesetInfo.rasterWidth;
-    unsigned   rasterHeight              = modesetParams.modesetInfo.rasterHeight;
-    unsigned   rasterBlankStartX         = modesetParams.modesetInfo.rasterBlankStartX;
-    unsigned   rasterBlankEndX           = modesetParams.modesetInfo.rasterBlankEndX;
-    unsigned   depth                     = modesetParams.modesetInfo.depth;
-    bool       bLinkTrainingStatus       = true;
-    bool       bEnableFEC                = true;
-    bool       bEnableDsc                = modesetParams.modesetInfo.bEnableDsc;
-    bool       bEnablePassThroughForPCON = modesetParams.modesetInfo.bEnablePassThroughForPCON;
-    Device     *newDev                   = target->enumDevices(0);
-    DeviceImpl *dev                      = (DeviceImpl *)newDev;
+    unsigned   twoChannelAudioHz             = modesetParams.modesetInfo.twoChannelAudioHz;
+    unsigned   eightChannelAudioHz           = modesetParams.modesetInfo.eightChannelAudioHz;
+    NvU64      pixelClockHz                  = modesetParams.modesetInfo.pixelClockHz;
+    unsigned   rasterWidth                   = modesetParams.modesetInfo.rasterWidth;
+    unsigned   rasterHeight                  = modesetParams.modesetInfo.rasterHeight;
+    unsigned   rasterBlankStartX             = modesetParams.modesetInfo.rasterBlankStartX;
+    unsigned   rasterBlankEndX               = modesetParams.modesetInfo.rasterBlankEndX;
+    unsigned   depth                         = modesetParams.modesetInfo.depth;
+    bool       bLinkTrainingStatus           = true;
+    bool       bEnableFEC                    = true;
+    bool       bEnableDsc                    = modesetParams.modesetInfo.bEnableDsc;
+    bool       bEnablePassThroughForPCON     = modesetParams.modesetInfo.bEnablePassThroughForPCON;
+    Device     *newDev                       = target->enumDevices(0);
+    DeviceImpl *dev                          = (DeviceImpl *)newDev;
+    bool       bApplyStuffDummySymbolsWAR    = this->bApplyStuffDummySymbolsWAR;
+    bool       bStuffDummySymbolsFor128b132b = this->bStuffDummySymbolsFor128b132b;
+    bool       bStuffDummySymbolsFor8b10b    = this->bStuffDummySymbolsFor8b10b;
 
     if(preferredLinkConfig.isValid())
     {
@@ -668,6 +674,14 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
         DP_USED(buffer);
         DP_PRINTF(DP_NOTICE, "DP2xCONN>   | %s (%s) |", dev->getTopologyAddress().toString(buffer),
                   dev->isVideoSink() ? "VIDEO" : "BRANCH");
+
+        //
+        // Note: This makes an assumption that all devices in the group have the same values for 
+        //       bApplyStuffDummySymbolsWAR, bStuffDummySymbolsFor8b10b and bStuffDummySymbolsFor128b132b
+        //
+        bApplyStuffDummySymbolsWAR |= ((DeviceImpl *)dev)->getApplyStuffDummySymbolsWAR();
+        bStuffDummySymbolsFor128b132b |= ((DeviceImpl *)dev)->getStuffDummySymbolsFor128b132b();
+        bStuffDummySymbolsFor8b10b |= ((DeviceImpl *)dev)->getStuffDummySymbolsFor8b10b();
     }
 
     if (firmwareGroup && ((GroupImpl *)firmwareGroup)->headInFirmware)
@@ -855,6 +869,16 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
         }
     }
     bFromResumeToNAB = false;
+
+    // Apply dummy symbol WAR if link training succeeded and device requires dummy symbols
+    // for the channel coding mode as per the device's WAR flags
+    if (bLinkTrainingStatus && 
+        bApplyStuffDummySymbolsWAR && 
+        ((activeLinkConfig.bIs128b132bChannelCoding && bStuffDummySymbolsFor128b132b) ||
+         ((!activeLinkConfig.bIs128b132bChannelCoding) && bStuffDummySymbolsFor8b10b)))
+    {
+        main->applyStuffDummySymbolWAR(targetImpl->headIndex, true);
+    }
     return bLinkTrainingStatus;
 }
 
@@ -1199,7 +1223,6 @@ void ConnectorImpl2x::beforeDeleteStream(GroupImpl * group, bool forFlushMode)
         // Delete the stream
         hal->payloadTableClearACT();
         hal->payloadAllocate(group->streamIndex, group->timeslot.begin, 0);
-        main->triggerACT();
     }
 }
 
@@ -1215,7 +1238,7 @@ void ConnectorImpl2x::afterDeleteStream(GroupImpl * group)
         return ConnectorImpl::afterDeleteStream(group);
 
     DP_ASSERT(!group->isTimeslotAllocated());
-
+    main->triggerACT();
     if (group->isHeadAttached() && group->bWaitForDeAllocACT)
     {
         if (!hal->payloadWaitForACTReceived())
@@ -1255,6 +1278,7 @@ bool ConnectorImpl2x::train(const LinkConfiguration &lConfig, bool force, LinkTr
     {
         hal->overrideCableIdCap(lConfig.peakRate, false);
     }
+
     return trainResult;
 }
 
@@ -1266,12 +1290,24 @@ bool ConnectorImpl2x::train(const LinkConfiguration &lConfig, bool force, LinkTr
  */
 void ConnectorImpl2x::notifyDetachBegin(Group *target)
 {
+    bool bApplyStuffDummySymbolsWAR = this->bApplyStuffDummySymbolsWAR;
     if (!target)
         target = firmwareGroup;
 
     Device     *newDev  = target->enumDevices(0);
     DeviceImpl *dev     = (DeviceImpl *)newDev;
     GroupImpl  *group   = (GroupImpl*)target;
+
+    for (Device * d = target->enumDevices(0); d; d = target->enumDevices(d))
+    {
+        DeviceImpl * dev = (DeviceImpl *)d;
+        bApplyStuffDummySymbolsWAR |= dev->getApplyStuffDummySymbolsWAR();
+    }
+
+    if (bApplyStuffDummySymbolsWAR)
+    {
+        main->applyStuffDummySymbolWAR(group->headIndex, false);
+    }
 
     if (dev != NULL && dev->bApplyPclkWarBug4949066 == true)
     {
@@ -1807,6 +1843,9 @@ void ConnectorImpl2x::configInit()
     bMstTimeslotBug4968411 = false;
     bApplyManualTimeslotBug4968411 = false;
     bDisableDownspread              = false;
+    bApplyStuffDummySymbolsWAR      = false;
+    bStuffDummySymbolsFor128b132b   = false;
+    bStuffDummySymbolsFor8b10b      = false;
 
     applyDP2xRegkeyOverrides();
 }
@@ -1842,14 +1881,14 @@ void ConnectorImpl2x::handleEdidWARs(Edid & edid, DiscoveryManager::Device & dev
         }
     }
 
-    if (edid.WARFlags.bDP2XPreferNonDSCForLowPClk)
-    {
-        bDP2XPreferNonDSCForLowPClk = true;
-    }
-
     if (edid.WARFlags.bDisableDscMaxBppLimit)
     {
         bDisableDscMaxBppLimit = true;
+    }
+
+    if (edid.WARFlags.bDP2XPreferNonDSCForLowPClk)
+    {
+        bDP2XPreferNonDSCForLowPClk = true;
     }
 
     if (edid.WARFlags.bForceHeadShutdownOnModeTransition)

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -191,7 +191,7 @@ kbusInitRegistryOverrides(OBJGPU *pGpu, KernelBus *pKernelBus)
     }
     else
     {
-        pKernelBus->staticBar1ForceType = NV_REG_STR_RM_FORCE_STATIC_BAR1_DEFAULT;
+        pKernelBus->staticBar1ForceType = NV_REG_STR_RM_FORCE_STATIC_BAR1_AUTO;
     }
 
     //

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1701,7 +1701,7 @@ static NvU64 gpuacctGetCurrTime
 {
     NvU64 currTime = 0x00000000ffffffff;
     NvU32 currTimeHi, currTimeLo;
-    osGetCurrentTime(&currTimeHi, &currTimeLo);
+    osGetSystemTime(&currTimeHi, &currTimeLo);
 
     currTime = currTime & currTimeHi;
     currTime = (currTime * 1000000) + currTimeLo;

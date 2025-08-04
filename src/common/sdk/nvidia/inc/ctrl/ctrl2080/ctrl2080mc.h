@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -148,6 +148,9 @@ typedef struct NV2080_CTRL_MC_GET_ARCH_INFO_PARAMS {
 #define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB20B       (0x0000000B)
 
 
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB20C       (0x0000000C)
+
+
 
 /* Valid Chip sub revisions */
 #define NV2080_CTRL_MC_ARCH_INFO_SUBREVISION_NO_SUBREVISION (0x00000000)
@@ -219,7 +222,7 @@ typedef struct NV2080_CTRL_MC_GET_MANUFACTURER_PARAMS {
  *   NVOS_STATUS_ERROR_NOT_SUPPORTED
  */
 
-#define NV2080_CTRL_CMD_MC_CHANGE_REPLAYABLE_FAULT_OWNERSHIP (0x2080170c) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_MC_INTERFACE_ID << 8) | NV2080_CTRL_MC_CHANGE_REPLAYABLE_FAULT_OWNERSHIP_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_MC_CHANGE_REPLAYABLE_FAULT_OWNERSHIP          (0x2080170c) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_MC_INTERFACE_ID << 8) | NV2080_CTRL_MC_CHANGE_REPLAYABLE_FAULT_OWNERSHIP_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_MC_CHANGE_REPLAYABLE_FAULT_OWNERSHIP_PARAMS_MESSAGE_ID (0xCU)
 
@@ -313,5 +316,46 @@ typedef struct NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS {
     NvU32                            numEntries;
     NV2080_CTRL_MC_STATIC_INTR_ENTRY entries[NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_MAX];
 } NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS;
+
+
+/*!
+ * Categories of interrupts.
+ *
+ * Each of these categories get a separate range of interrupt subtrees (top
+ * level bits) corresponding to a set of interrupt leaves.
+ * Interrupt leaves may overlap between two or more categories.
+ * Interrupt leaves may or may not be contiguous.
+ */
+typedef enum NV2080_INTR_CATEGORY {
+    NV2080_INTR_CATEGORY_DEFAULT = 0,
+    NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE = 1,
+    NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE_NOTIFICATION = 2,
+    NV2080_INTR_CATEGORY_RUNLIST = 3,
+    NV2080_INTR_CATEGORY_RUNLIST_NOTIFICATION = 4,
+    NV2080_INTR_CATEGORY_UVM_OWNED = 5,
+    NV2080_INTR_CATEGORY_UVM_SHARED = 6,
+    NV2080_INTR_CATEGORY_ENUM_COUNT = 7,
+} NV2080_INTR_CATEGORY;
+
+#define NV2080_INTR_INVALID_SUBTREE NV_U8_MAX
+
+typedef struct NV2080_INTR_CATEGORY_SUBTREE_MAP {
+    // Maximum possible 64 subtrees, but 16 is enough for any existing silicon.
+    NV_DECLARE_ALIGNED(NvU64 subtreeMask, 8);
+} NV2080_INTR_CATEGORY_SUBTREE_MAP;
+
+/*
+ *  NV2080_CTRL_CMD_MC_GET_INTR_CATEGORY_SUBTREE_MAP
+ *
+ *  This command gets a mapping from every interrupt category -> subtrees used from
+ *  Host RM.
+ */
+#define NV2080_CTRL_CMD_MC_GET_INTR_CATEGORY_SUBTREE_MAP (0x2080170f) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_MC_INTERFACE_ID << 8) | NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS_MESSAGE_ID (0xFU)
+
+typedef struct NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS {
+    NV_DECLARE_ALIGNED(NV2080_INTR_CATEGORY_SUBTREE_MAP subtreeMap[NV2080_INTR_CATEGORY_ENUM_COUNT], 8);
+} NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS;
 
 /* _ctrl2080mc_h_ */

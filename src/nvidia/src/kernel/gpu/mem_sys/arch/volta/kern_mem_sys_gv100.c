@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -58,6 +58,13 @@ kmemsysGetFbNumaInfo_GV100
     status = osGetFbNumaInfo(pGpu, physAddr, rsvdPhysAddr, numaNodeId);
     if (status == NV_OK)
     {
+        if (pKernelMemorySystem->coherentCpuFbBaseOverride.bEnabled)
+        {
+            *physAddr = pKernelMemorySystem->coherentCpuFbBaseOverride.value;
+            NV_PRINTF(LEVEL_INFO, "NUMA FB Physical address overrided to 0x%llx via regkey.\n",
+                      *physAddr);
+        }
+
         NV_PRINTF(LEVEL_INFO, "NUMA FB Physical address: 0x%llx Node ID: 0x%x\n",
                   *physAddr, *numaNodeId);
     }
@@ -81,7 +88,7 @@ kmemsysNeedInvalidateGpuCacheOnMap_GV100
     OBJGPU              *pGpu,
     KernelMemorySystem  *pKernelMemorySystem,
     NvBool               bIsVolatile,
-    NvU32                aperture
+    GMMU_APERTURE        aperture
 )
 {
     //
@@ -89,9 +96,9 @@ kmemsysNeedInvalidateGpuCacheOnMap_GV100
     // because GPU's L2 is not coherent with CPU updates to sysmem
     // See bug 3342220 for more info
     //
-    return (!bIsVolatile && (aperture == NV_MMU_PTE_APERTURE_PEER_MEMORY ||
-                             aperture == NV_MMU_PTE_APERTURE_SYSTEM_COHERENT_MEMORY ||
-                             aperture == NV_MMU_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY));
+    return (!bIsVolatile && (aperture == GMMU_APERTURE_PEER ||
+                             aperture == GMMU_APERTURE_SYS_COH ||
+                             aperture == GMMU_APERTURE_SYS_NONCOH));
 }
 
 /*!

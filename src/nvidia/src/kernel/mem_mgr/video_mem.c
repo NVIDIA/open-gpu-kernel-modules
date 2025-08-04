@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,6 +24,7 @@
 #include "mem_mgr/video_mem.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/mem_mgr/heap.h"
+#include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/mem_utils.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
@@ -125,7 +126,7 @@ _vidmemPmaAllocate
     NV_MEMORY_ALLOCATION_PARAMS *pAllocData     = pAllocRequest->pUserParams;
     OBJGPU                      *pGpu           = pAllocRequest->pGpu;
     MemoryManager               *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    PMA                         *pPma           = &pHeap->pmaObject;
+    PMA                         *pPma           = pHeap->pPmaObject;
     NvU64                        size           = 0;
     NvU32                        pageCount      = 0;
     NvU32                        pmaInfoSize;
@@ -372,7 +373,7 @@ vidmemPmaFree
     NvU32           flags
 )
 {
-    PMA   *pPma  = &pHeap->pmaObject;
+    PMA   *pPma  = pHeap->pPmaObject;
     NvU32 pmaFreeFlags = flags;
 
     NV_ASSERT_OR_RETURN_VOID(NULL != pPmaAllocInfo);
@@ -545,7 +546,7 @@ vidmemConstruct_IMPL
     NvBool                       bRsvdHeap             = NV_FALSE;
     MEMORY_DESCRIPTOR           *pTopLevelMemDesc      = NULL;
     MEMORY_DESCRIPTOR           *pTempMemDesc          = NULL;
-    HWRESOURCE_INFO              hwResource;
+    HWRESOURCE_INFO              hwResource            = {0};
     RsClient                    *pRsClient             = pCallContext->pClient;
     RmClient                    *pRmClient             = dynamicCast(pRsClient, RmClient);
     RsResourceRef               *pResourceRef          = pCallContext->pResourceRef;
@@ -1326,13 +1327,11 @@ vidmemAllocResources
         }
         if (!FLD_TEST_DRF(OS32, _ATTR2, _ENABLE_LOCALIZED_MEMORY, _DEFAULT, pVidHeapAlloc->attr2))
         {
-            KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-            NvBool bIsMIGMemPartitioningEnabled = (pKernelMIGManager != NULL) && kmigmgrIsMIGMemPartitioningEnabled(pGpu, pKernelMIGManager);
-
             if (pMemoryManager->bLocalizedMemorySupported &&
-                !bIsMIGMemPartitioningEnabled)
+                !IS_MIG_ENABLED(pGpu))
             {
                 memdescSetFlag(pAllocRequest->pMemDesc, MEMDESC_FLAGS_ALLOC_AS_LOCALIZED, NV_TRUE);
+                pAllocRequest->pMemDesc->localizedMask = pMemoryManager->localizedMask;
             }
             else
             {

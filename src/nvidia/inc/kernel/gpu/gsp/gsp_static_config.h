@@ -164,6 +164,8 @@ typedef struct GspStaticConfigInfo_t
     EcidManufacturingInfo ecidInfo[MAX_GROUP_COUNT];
 
     FW_WPR_LAYOUT_OFFSET fwWprLayoutOffset;
+
+    NvBool bSystemRebootRequired;
 } GspStaticConfigInfo;
 
 // Pushed from CPU-RM to GSP-RM
@@ -203,6 +205,7 @@ typedef struct GspSystemInfo
     BUSINFO chipsetIDInfo;
     ACPI_METHOD_DATA acpiMethodData;
     NvU32 hypervisorType;
+    NvU16 virtualConfigBits;
     NvBool bIsPassthru;
     NvU64 sysTimerOffsetNs;
     GSP_VF_INFO gspVFInfo;
@@ -217,6 +220,7 @@ typedef struct GspSystemInfo
     NvBool bClockBoostSupported;
     NvU64  hostPageSize;
     NvBool bIsCmcBasedHws;
+    NvBool bGspNocatEnabled;
 } GspSystemInfo;
 
 

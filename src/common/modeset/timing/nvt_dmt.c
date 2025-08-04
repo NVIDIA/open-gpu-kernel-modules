@@ -179,9 +179,7 @@ NVT_STATUS NvTiming_EnumDMT(NvU32 dmtId, NVT_TIMING *pT)
     {
         *pT = DMT[dmtId - 1];
 
-        pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk,
-                                  (NvU32)10000*(NvU32)1000,
-                                  (NvU32)pT->HTotal*(NvU32)pT->VTotal);
+        pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk1khz, (NvU32)1000*(NvU32)1000, (NvU32)pT->HTotal*(NvU32)pT->VTotal);
         NVT_SNPRINTF((char *)pT->etc.name, 40, "DMT:#%d:%dx%dx%dHz",
                      dmtId, pT->HVisible, pT->VVisible, pT->etc.rr);
         ((char *)pT->etc.name)[39] = '\0';
@@ -254,7 +252,7 @@ NVT_STATUS NvTiming_CalcDMT(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT
             {
                 NVMISC_MEMSET(pT, 0, sizeof(NVT_TIMING));
                 *pT = *p;
-                pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk, (NvU32)10000*(NvU32)1000, (NvU32)pT->HTotal*(NvU32)pT->VTotal);
+                pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk1khz, (NvU32)1000*(NvU32)1000, (NvU32)pT->HTotal*(NvU32)pT->VTotal);
                 NVT_SNPRINTF((char *)pT->etc.name, 40, "DMT:%dx%dx%dHz",width, height, rr);
                 pT->etc.name[39] = '\0';
                 pT->etc.rgb444.bpc.bpc8 = 1;
@@ -294,7 +292,7 @@ NVT_STATUS NvTiming_CalcDMT_RB(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, 
             {
                 NVMISC_MEMSET(pT, 0, sizeof(NVT_TIMING));
                 *pT = *p;
-                pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk, (NvU32)10000*(NvU32)1000, (NvU32)pT->HTotal*(NvU32)pT->VTotal);
+                pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk1khz, (NvU32)1000*(NvU32)1000, (NvU32)pT->HTotal*(NvU32)pT->VTotal);
                 NVT_SNPRINTF((char *)pT->etc.name, 40, "DMT-RB:%dx%dx%dHz",width, height, rr);
                 pT->etc.name[39] = '\0';
                 pT->etc.rgb444.bpc.bpc8 = 1;
@@ -332,7 +330,7 @@ NVT_STATUS NvTiming_CalcDMT_RB2(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag,
             {
                 NVMISC_MEMSET(pT, 0, sizeof(NVT_TIMING));
                 *pT = *p;
-                pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk, (NvU32)10000*(NvU32)1000, (NvU32)pT->HTotal*(NvU32)pT->VTotal);
+                pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk1khz, (NvU32)1000*(NvU32)1000, (NvU32)pT->HTotal*(NvU32)pT->VTotal);
                 NVT_SNPRINTF((char *)pT->etc.name, 40, "DMT-RB2:%dx%dx%dHz",width, height, rr);
                 pT->etc.name[39] = '\0';
                 pT->etc.rgb444.bpc.bpc8 = 1;

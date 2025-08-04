@@ -25,6 +25,7 @@
 #define _NV_PROTO_H_
 
 #include "nv-pci.h"
+#include "nv-platform.h"
 
 extern const char *nv_device_name;
 

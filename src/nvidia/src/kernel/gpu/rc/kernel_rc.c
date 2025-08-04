@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -125,6 +125,12 @@ _krcInitRegistryOverrides
     {
         dword = NV_REG_STR_RM_BREAK_ON_RC_DEFAULT;
     }
+    else
+    {
+        NV_PRINTF(LEVEL_INFO,
+            "BreakOnRc set by regkey " NV_REG_STR_RM_BREAK_ON_RC "= 0x%08x\n",
+            dword);
+    }
 
     pKernelRc->bBreakOnRc = (dword == NV_REG_STR_RM_BREAK_ON_RC_ENABLE);
 
@@ -132,9 +138,11 @@ _krcInitRegistryOverrides
     if (DRF_VAL(_DEBUG, _BREAK_FLAGS, _RC, SYS_GET_INSTANCE()->debugFlags) ==
         NV_DEBUG_BREAK_FLAGS_RC_ENABLE)
     {
+        NV_PRINTF(LEVEL_INFO,
+                  "BreakOnRc overridden by NV_DEBUG_BREAK_FLAGS_RC\n");
         pKernelRc->bBreakOnRc = NV_TRUE;
     }
-
+    NV_PRINTF(LEVEL_INFO, "BreakOnRc = %d\n", pKernelRc->bBreakOnRc);
 
     if (osReadRegistryDword(pGpu,
                             NV_REG_STR_RM_WATCHDOG_TIMEOUT,
@@ -145,6 +153,29 @@ _krcInitRegistryOverrides
         pKernelRc->watchdogPersistent.timeoutSecs =
             NV_REG_STR_RM_WATCHDOG_TIMEOUT_DEFAULT;
     }
+
+    NvU32 data32 = 0;
+    NvU32 bug5203024OverrideTimeouts = (
+        (osReadRegistryDword(pGpu, NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT,
+                             &data32) == NV_OK) ?
+        data32 :
+        0);
+
+    NvBool bOverrideWatchdogTimeout = (DRF_VAL(_REG_STR,
+                                               _RM_BUG5203024_OVERRIDE_TIMEOUT,
+                                               _FLAGS_SET_RC_WATCHDOG_TIMEOUT,
+                                               bug5203024OverrideTimeouts) ==
+                                       1);
+    if (bOverrideWatchdogTimeout)
+    {
+        pKernelRc->watchdogPersistent.timeoutSecs =
+            DRF_VAL(_REG_STR, _RM_BUG5203024_OVERRIDE_TIMEOUT, _VALUE_MS,
+                    bug5203024OverrideTimeouts) / 1000;
+
+        NV_PRINTF(LEVEL_NOTICE, "RC Watchdog timeout forced to %d seconds.\n",
+                  pKernelRc->watchdogPersistent.timeoutSecs);
+    }
+
     if (osReadRegistryDword(pGpu,
                             NV_REG_STR_RM_WATCHDOG_INTERVAL,
                             &pKernelRc->watchdogPersistent.intervalSecs) !=
@@ -429,9 +460,8 @@ krcCheckBusError_KERNEL
     NvU32             clDevCtrlStatus          = 0;
     PcieAerCapability clAer;
 
-
     // PCI-E provides extended error reporting
-    if (pKernelBif == NULL || kbifGetBusIntfType_HAL(pKernelBif) !=
+    if (pKernelBif == NULL || gpuGetBusIntfType_HAL(pGpu) !=
                                   NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS)
     {
         return NV_OK;
@@ -484,45 +514,45 @@ krcCheckBusError_KERNEL
         (clAer.UncorrErrStatusReg != 0 || 
          (clAer.RooErrStatus & ~CL_AER_ROOT_ERROR_STATUS_ERR_COR_SUBCLASS_MASK) != 0))
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "PCI-E Advanced Error Reporting Corelogic Info:\n");
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "     Uncorr Error Status Register    : %08X\n",
                   clAer.UncorrErrStatusReg);
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "     Uncorr Error Mask Register      : %08X\n",
                   clAer.UncorrErrMaskReg);
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "     Uncorr Error Severity Register  : %08X\n",
                   clAer.UncorrErrSeverityReg);
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "     Corr Error Status Register      : %08X\n",
                   clAer.CorrErrStatusReg);
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "     Corr Error Mask Register        : %08X\n",
                   clAer.CorrErrMaskReg);
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "     Advanced Err Cap & Ctrl Register: %08X\n",
                   clAer.AEcapCrtlReg);
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "     Header Log [0-3]                : %08X\n",
                   clAer.HeaderLogReg.Header[0]);
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "     Header Log [4-7]                : %08X\n",
                   clAer.HeaderLogReg.Header[1]);
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "     Header Log [8-B]                : %08X\n",
                   clAer.HeaderLogReg.Header[2]);
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "     Header Log [C-F]                : %08X\n",
                   clAer.HeaderLogReg.Header[3]);
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "     Root Error Command Register     : %08X\n",
                   clAer.RootErrCmd);
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "     Root Error Status               : %08X\n",
                   clAer.RooErrStatus);
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "     Error Source ID Register        : %08X\n",
                   clAer.ErrSrcReg);
 
@@ -564,7 +594,7 @@ _krcValidateAndDumpToKernelLog(NvU64 *lastXidTimestamp)
 {
     NvU32 sec, usec;
 
-    if (((osGetCurrentTime(&sec, &usec) == NV_OK) &&
+    if (((osGetSystemTime(&sec, &usec) == NV_OK) &&
        ((((sec * 1000000) + usec) - *lastXidTimestamp) > 1000000)))
     {
         nvlogDumpToKernelLog(NV_TRUE);

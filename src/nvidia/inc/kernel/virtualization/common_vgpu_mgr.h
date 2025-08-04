@@ -38,6 +38,7 @@
 #define VGPU_SIGNATURE_SIZE                            NVA081_VGPU_SIGNATURE_SIZE
 #define VGPU_MAX_PLUGIN_CHANNELS                       5
 #define MAX_VGPU_DEVICES_PER_PGPU                      NVA081_MAX_VGPU_PER_PGPU
+#define MAX_VGPU_DEVICES_PER_PGPU_NON_MIG              NVA081_MAX_VGPU_PER_PGPU_NON_MIG
 #define MAX_VGPU_DEVICES_PER_GI                        NVA081_MAX_VGPU_PER_GI
 
 #define SET_GUEST_ID_ACTION_SET                        0
@@ -46,10 +47,11 @@
 // swrl count for MIG when running in non-timesliced mode
 #define OBJSCHED_SW_MIG_NO_TIMESLICE_RUNLIST_COUNT     1
 // swrl count for MIG when running in timesliced mode
-#define OBJSCHED_SW_MIG_TIMESLICE_RUNLIST_COUNT        13
+#define OBJSCHED_SW_MIG_TIMESLICE_RUNLIST_COUNT        (MAX_VGPU_DEVICES_PER_GI + 1)
 // swrl count for non-mig
-#define OBJSCHED_SW_RUNLIST_COUNT                      33
-
+#define OBJSCHED_SW_RUNLIST_COUNT                      (MAX_VGPU_DEVICES_PER_PGPU_NON_MIG + 1)
+//No. of Reserved CE Channels for KMD/OS in HYPER-V
+#define HYPERV_RESERVED_CE_CHANNELS_KMD                32
 
 typedef struct
 {

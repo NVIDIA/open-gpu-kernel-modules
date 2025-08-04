@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -88,6 +88,7 @@ _sec2AllocAndMapBuffer
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     NV_MEMORY_ALLOCATION_PARAMS memAllocParams;
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pSec2Utils->pGpu);
+    NVOS46_PARAMETERS mapDmaParams = {0};
 
     pSec2Buf->size = size;
 
@@ -141,13 +142,19 @@ _sec2AllocAndMapBuffer
     {
         cacheSnoopFlag = DRF_DEF(OS46, _FLAGS, _CACHE_SNOOP, _ENABLE);
     }
+
+    mapDmaParams.hClient   = pSec2Utils->hClient;
+    mapDmaParams.hDevice   = pSec2Utils->hDevice;
+    mapDmaParams.hDma      = pSec2Buf->hVirtMem;
+    mapDmaParams.hMemory   = pSec2Buf->hPhysMem;
+    mapDmaParams.length    = pSec2Buf->size;
+    mapDmaParams.flags     = DRF_DEF(OS46, _FLAGS, _KERNEL_MAPPING, _ENABLE) | cacheSnoopFlag;
+
     NV_CHECK_OK_OR_RETURN(
         LEVEL_ERROR,
-        pRmApi->Map(pRmApi, pSec2Utils->hClient, pSec2Utils->hDevice,
-                    pSec2Buf->hVirtMem, pSec2Buf->hPhysMem, 0, pSec2Buf->size,
-                    DRF_DEF(OS46, _FLAGS, _KERNEL_MAPPING, _ENABLE) | cacheSnoopFlag,
-                    &pSec2Buf->gpuVA));
+        pRmApi->Map(pRmApi, &mapDmaParams));
 
+    pSec2Buf->gpuVA = mapDmaParams.dmaOffset;
     pSec2Buf->pMemDesc = memmgrMemUtilsGetMemDescFromHandle(pMemoryManager, pSec2Utils->hClient, pSec2Buf->hPhysMem);
     return NV_OK;
 }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -68,6 +68,7 @@ typedef struct NVA084_ALLOC_PARAMETERS {
     NvU32      swizzId;
     NvU32      vgpuType;
     NvU32      vmPid;
+    NvU32      accountingPid;
     NvU32      numChannels;
     NvU32      numPluginChannels;
     NvU16      placementId;

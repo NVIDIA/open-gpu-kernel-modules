@@ -732,3 +732,8 @@ NvU64 crashcatReportXtval_V1(CrashCatReport *pReport)
 {
     return pReport->v1.riscv64CsrState.xtval;
 }
+
+NvBool crashcatReportIsWatchdog_V1(CrashCatReport *pReport)
+{
+    return crashcatReportV1SourceCauseType(&pReport->v1.report) == NV_CRASHCAT_CAUSE_TYPE_WATCHDOG;
+}

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -365,7 +365,7 @@ _memoryexportDetachParent
 
             // Update giIdMasks if the MIG instance is no more used..
             if (pExportInfo->attachedUsageCount[deviceInstance].migGi[swizzId] == 0)
-                pExportInfo->cachedParams.giIdMasks[deviceInstance] &= !NVBIT(swizzId);
+                pExportInfo->cachedParams.giIdMasks[deviceInstance] &= ~NVBIT(swizzId);
 
             // Drop refcount on GPU instance..
             NV_ASSERT_OK(kmigmgrDecRefCount(pKernelMIGGpuInstance->pShare));
@@ -385,7 +385,7 @@ _memoryexportDetachParent
 
         // Update deviceInstanceMask if the GPU is no more used..
         if (pExportInfo->attachedUsageCount[deviceInstance].gpu == 0)
-            pExportInfo->cachedParams.deviceInstanceMask &= !NVBIT(deviceInstance);
+            pExportInfo->cachedParams.deviceInstanceMask &= ~NVBIT(deviceInstance);
     }
 
     listRemove(&pExportInfo->parentInfoList, pParentInfo);

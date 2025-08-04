@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2020-2024 NVIDIA Corporation
+    Copyright (c) 2020-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -111,7 +111,14 @@ void uvm_hal_hopper_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->plc_supported = true;
 
-    parent_gpu->no_ats_range_required = true;
+    parent_gpu->ats.no_ats_range_required = true;
+
+    // Hopper doesn't prefetch translations for physical requests, so the only
+    // concern would be if we enabled physical ATS with 4K pages. In that case
+    // we could see a mix of cached valid and invalid translations in the same
+    // 64K region, which would require invalidation. But we don't enable
+    // physical ATS with 4K pages for this reason, see gpu_get_internal_pasid().
+    parent_gpu->ats.dma_map_invalidation = UVM_DMA_MAP_INVALIDATION_NONE;
 
     // In Hopper there are not enough HW key slots available to support
     // individual channel encryption keys, so channels on the same engine share

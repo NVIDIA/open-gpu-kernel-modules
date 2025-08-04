@@ -121,17 +121,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_VgpuApi =
     /*pExportInfo=*/        &__nvoc_export_info__VgpuApi
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_VgpuApi[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties_IMPL,
+        /*pFunc=*/      (void (*)(void)) &vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -146,7 +148,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_VgpuApi[
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) vgpuapiCtrlCmdVgpuDisplayCleanupSurface_IMPL,
+        /*pFunc=*/      (void (*)(void)) &vgpuapiCtrlCmdVgpuDisplayCleanupSurface_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -161,7 +163,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_VgpuApi[
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) vgpuapiCtrlCmdVGpuGetConfig_IMPL,
+        /*pFunc=*/      (void (*)(void)) &vgpuapiCtrlCmdVGpuGetConfig_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -172,7 +174,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_VgpuApi[
         /*func=*/       "vgpuapiCtrlCmdVGpuGetConfig"
 #endif
     },
-
 };
 
 
@@ -436,6 +437,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__VgpuApi =
     /*pExportEntries=*/ __nvoc_exported_method_def_VgpuApi
 };
 
+void __nvoc_vgpuapiDestruct(VgpuApi*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_VgpuApi(VgpuApi *pThis) {
     __nvoc_vgpuapiDestruct(pThis);
@@ -469,28 +471,11 @@ __nvoc_ctor_VgpuApi_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_VgpuApi_1(VgpuApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties -- exported (id=0xa0800103)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties__ = &vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties_IMPL;
-#endif
-
-    // vgpuapiCtrlCmdVgpuDisplayCleanupSurface -- exported (id=0xa0800104)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__vgpuapiCtrlCmdVgpuDisplayCleanupSurface__ = &vgpuapiCtrlCmdVgpuDisplayCleanupSurface_IMPL;
-#endif
-
-    // vgpuapiCtrlCmdVGpuGetConfig -- exported (id=0xa0800301)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__vgpuapiCtrlCmdVGpuGetConfig__ = &vgpuapiCtrlCmdVGpuGetConfig_IMPL;
-#endif
-} // End __nvoc_init_funcTable_VgpuApi_1 with approximately 3 basic block(s).
+} // End __nvoc_init_funcTable_VgpuApi_1
 
 
-// Initialize vtable(s) for 28 virtual method(s).
+// Initialize vtable(s) for 25 virtual method(s).
 void __nvoc_init_funcTable_VgpuApi(VgpuApi *pThis) {
-
-    // Initialize vtable(s) with 3 per-object function pointer(s).
     __nvoc_init_funcTable_VgpuApi_1(pThis);
 }
 

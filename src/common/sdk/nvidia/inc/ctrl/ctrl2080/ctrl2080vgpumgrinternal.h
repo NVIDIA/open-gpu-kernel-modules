@@ -212,6 +212,7 @@ typedef struct NV2080_HOST_VGPU_DEVICE {
     NvU32  gfid;
     NV_DECLARE_ALIGNED(NvU64 vgpuPciId, 8);
     NvU32  vgpuDeviceInstanceId;
+    NvU32  accountingPid;
     NV_DECLARE_ALIGNED(NvU64 fbUsed, 8);
     NvU32  encoderCapacity;
     NvU32  eccState;
@@ -498,5 +499,24 @@ typedef struct NV2080_CTRL_VGPU_MGR_INTERNAL_SET_VGPU_MIG_TIMESLICE_MODE_PARAMS 
     NvBool bMigTimeslicingModeEnabled;
 } NV2080_CTRL_VGPU_MGR_INTERNAL_SET_VGPU_MIG_TIMESLICE_MODE_PARAMS;
 
+
+
+/*
+ * NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_SET_POWER_STATE
+ *
+ * This command is used to share the Power State from KMD side to GSP-RM.
+ *
+ * state
+ *     This parameter contains Power State Information.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ */
+#define NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_SET_POWER_STATE (0x20804010) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_VGPU_MGR_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_SET_POWER_STATE_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_SET_POWER_STATE_PARAMS_MESSAGE_ID (0x10U)
+
+typedef struct NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_SET_POWER_STATE_PARAMS {
+    NvU32 state;
+} NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_SET_POWER_STATE_PARAMS;
 
 /* _ctrl2080vgpumgrinternal_h_ */

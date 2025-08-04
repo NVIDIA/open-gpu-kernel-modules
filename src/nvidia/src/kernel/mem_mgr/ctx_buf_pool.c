@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,6 +41,7 @@
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/gr/kernel_graphics.h"
 #include "gpu/mem_mgr/heap.h"
+#include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h"
 
 /*
  * @brief Are memory pools supported for context buffers
@@ -163,7 +164,7 @@ ctxBufPoolInit
                 return NV_ERR_INVALID_STATE;
         }
         NV_ASSERT_OK_OR_GOTO(status,
-            rmMemPoolSetup((void*)&pHeap->pmaObject, &pCtxBufPool->pMemPool[i],
+            rmMemPoolSetup((void*)pHeap->pPmaObject, &pCtxBufPool->pMemPool[i],
                            poolConfig),
             cleanup);
 

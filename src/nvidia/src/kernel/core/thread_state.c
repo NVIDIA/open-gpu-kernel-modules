@@ -246,7 +246,7 @@ NvU32 threadStateGetSetupFlags(void)
 static void _threadStateSetNextCpuYieldTime(THREAD_STATE_NODE *pThreadNode)
 {
     NvU64 timeInNs;
-    timeInNs = osGetCurrentTick();
+    timeInNs = osGetMonotonicTimeNs();
 
     pThreadNode->timeout.nextCpuYieldTime = timeInNs +
         (TIMEOUT_DEFAULT_OS_RESCHEDULE_INTERVAL_SECS) * 1000000 * 1000;
@@ -261,7 +261,7 @@ void threadStateYieldCpuIfNecessary(OBJGPU *pGpu, NvBool bQuiet)
     rmStatus = threadStateGetCurrent(&pThreadNode, pGpu);
     if ((rmStatus == NV_OK) && pThreadNode )
     {
-        timeInNs = osGetCurrentTick();
+        timeInNs = osGetMonotonicTimeNs();
         if (timeInNs >= pThreadNode->timeout.nextCpuYieldTime)
         {
             if (NV_OK == osSchedule())
@@ -310,7 +310,7 @@ static NV_STATUS _threadNodeInitTime(THREAD_STATE_NODE *pThreadNode)
         nonComputeTimeoutMsecs = TIMEOUT_DPC_ISR_INTERVAL_MS;
     }
 
-    timeInNs = osGetCurrentTick();
+    timeInNs = osGetMonotonicTimeNs();
 
     if (firstInit)
     {
@@ -422,7 +422,7 @@ static NV_STATUS _threadNodeCheckTimeout(OBJGPU *pGpu, THREAD_STATE_NODE *pThrea
         return NV_ERR_INVALID_STATE;
     }
 
-    timeInNs = osGetCurrentTick();
+    timeInNs = osGetMonotonicTimeNs();
     if (pElapsedTimeUs)
     {
         *pElapsedTimeUs = (timeInNs - pThreadNode->timeout.enterTime) / 1000;
@@ -1205,7 +1205,7 @@ NV_STATUS threadStateCheckTimeout(OBJGPU *pGpu, NvU64 *pElapsedTimeUs)
 
 static void _threadStateSetTimeoutOverride(THREAD_STATE_NODE *pThreadNode, NvU64 newTimeoutMs)
 {
-    NvU64 timeInNs = osGetCurrentTick();
+    NvU64 timeInNs = osGetMonotonicTimeNs();
 
     _threadStateSetNextCpuYieldTime(pThreadNode);
 

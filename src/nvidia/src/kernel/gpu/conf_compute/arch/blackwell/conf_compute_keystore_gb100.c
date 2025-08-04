@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -69,7 +69,6 @@ confComputeKeyStoreDeriveViaChannel_GB100
     ConfidentialCompute *pConfCompute,
     KernelChannel       *pKernelChannel,
     ROTATE_IV_TYPE       rotateOperation,
-    NvBool               bIncludeIvOrNonce,
     CC_KMB              *keyMaterialBundle
 )
 {
@@ -152,16 +151,29 @@ confComputeKeyStoreDeriveViaChannel_GB100
     return NV_ERR_NOT_SUPPORTED;
 }
 
+static void
+confComputeIncChannelCounter
+(
+   CC_AES_CRYPTOBUNDLE *cryptBundle
+)
+{
+    NvU64          channelCounter = CONCAT64(cryptBundle->iv[2], cryptBundle->iv[1]);
+    channelCounter++;
+    cryptBundle->iv[2] = NvU64_HI32(channelCounter);
+    cryptBundle->iv[1] = NvU64_LO32(channelCounter);
+}
+
 NV_STATUS
 confComputeKeyStoreRetrieveViaChannel_GB100
 (
-    ConfidentialCompute *pConfCompute,
-    KernelChannel       *pKernelChannel,
-    ROTATE_IV_TYPE       rotateOperation,
-    NvBool               bIncludeIvOrNonce,
-    CC_KMB              *keyMaterialBundle
+    ConfidentialCompute     *pConfCompute,
+    KernelChannel           *pKernelChannel,
+    ROTATE_IV_TYPE           rotateOperation,
+    CHANNEL_IV_OPERATION     ivOperation,
+    CC_KMB                  *keyMaterialBundle
 )
 {
+
     //
     // SEC2 Per Channel key support has not been added yet. Hence SEC2 keys need to be restored from keystore.
     // For CE, keys would be derived per channel.
@@ -169,45 +181,29 @@ confComputeKeyStoreRetrieveViaChannel_GB100
     //
     if (kchannelGetEngineType(pKernelChannel) == RM_ENGINE_TYPE_SEC2) {
         return confComputeKeyStoreRetrieveViaChannel_GH100(pConfCompute, pKernelChannel, rotateOperation,
-                                                           bIncludeIvOrNonce, keyMaterialBundle);
+                                                           ivOperation, keyMaterialBundle);
     }
     else if (RM_ENGINE_TYPE_IS_COPY(kchannelGetEngineType(pKernelChannel)))
     {
-        if ((rotateOperation == ROTATE_IV_ENCRYPT) || (rotateOperation == ROTATE_IV_ALL_VALID))
+        if (ivOperation < CHANNEL_IV_OPERATION_NONE || ivOperation >= CHANNEL_IV_OPERATION_INVALID)
         {
-            if (bIncludeIvOrNonce)
-            {
-                keyMaterialBundle->encryptBundle = pKernelChannel->clientKmb.encryptBundle;
-            }
-            else
-            {
-                portMemCopy(keyMaterialBundle->encryptBundle.key,
-                            sizeof(keyMaterialBundle->encryptBundle.key),
-                            pKernelChannel->clientKmb.encryptBundle.key,
-                            sizeof(pKernelChannel->clientKmb.encryptBundle.key));
-                portMemCopy(keyMaterialBundle->encryptBundle.ivMask,
-                            sizeof(keyMaterialBundle->encryptBundle.ivMask),
-                            pKernelChannel->clientKmb.encryptBundle.ivMask,
-                            sizeof(pKernelChannel->clientKmb.encryptBundle.ivMask));
-            }
+            return NV_ERR_INVALID_ARGUMENT;
         }
-        if ((rotateOperation == ROTATE_IV_DECRYPT) || (rotateOperation == ROTATE_IV_ALL_VALID))
+        const NvBool bIvRotate = (ivOperation == CHANNEL_IV_OPERATION_ROTATE_ONLY)
+                                  || (ivOperation == CHANNEL_IV_OPERATION_INCLUDE_AND_ROTATE);
+        const NvBool bRotateEncrypt = (rotateOperation == ROTATE_IV_ENCRYPT) || (rotateOperation == ROTATE_IV_ALL_VALID);
+        const NvBool bRotateDecrypt = (rotateOperation == ROTATE_IV_DECRYPT) || (rotateOperation == ROTATE_IV_ALL_VALID);
+
+        // Handle encryption IV rotation
+        if (bRotateEncrypt && bIvRotate)
         {
-            if (bIncludeIvOrNonce)
-            {
-                keyMaterialBundle->decryptBundle = pKernelChannel->clientKmb.decryptBundle;
-            }
-            else
-            {
-                portMemCopy(keyMaterialBundle->decryptBundle.key,
-                            sizeof(keyMaterialBundle->decryptBundle.key),
-                            pKernelChannel->clientKmb.decryptBundle.key,
-                            sizeof(pKernelChannel->clientKmb.decryptBundle.key));
-                portMemCopy(keyMaterialBundle->decryptBundle.ivMask,
-                            sizeof(keyMaterialBundle->decryptBundle.ivMask),
-                            pKernelChannel->clientKmb.decryptBundle.ivMask,
-                            sizeof(pKernelChannel->clientKmb.decryptBundle.ivMask));
-            }
+            confComputeIncChannelCounter(&keyMaterialBundle->encryptBundle);
+        }
+
+        // Handle decryption IV rotation
+        if (bRotateDecrypt && bIvRotate)
+        {
+            confComputeIncChannelCounter(&keyMaterialBundle->decryptBundle);
             keyMaterialBundle->bIsWorkLaunch = NV_FALSE;
         }
     }

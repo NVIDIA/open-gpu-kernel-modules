@@ -28,7 +28,6 @@
 #include "class/clc9b5.h"
 #include "class/clcab5.h"
 
-
 /*!
  * Function to verify which memory scubber (fast/slow) has to use in Hopper+ for scrubbering
  *

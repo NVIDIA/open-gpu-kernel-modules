@@ -63,13 +63,19 @@
 #define NV_DOORBELL_NOTIFY_LEAF_SERVICE_TMR_REQUEST_DIS                         (0x0)
 #define NV_DOORBELL_NOTIFY_LEAF_SERVICE_TMR_HANDLE                              (0 ? NV_DOORBELL_NOTIFY_LEAF_SERVICE_TMR_REQUEST)
 
+#define NV_DOORBELL_NOTIFY_LEAF_SERVICE_MMU_INFO_FAULT_REQUEST                  15:15
+#define NV_DOORBELL_NOTIFY_LEAF_SERVICE_MMU_INFO_FAULT_REQUEST_EN               (0x1)
+#define NV_DOORBELL_NOTIFY_LEAF_SERVICE_MMU_INFO_FAULT_REQUEST_DIS              (0x0)
+#define NV_DOORBELL_NOTIFY_LEAF_SERVICE_MMU_INFO_FAULT_HANDLE                   (0 ? NV_DOORBELL_NOTIFY_LEAF_SERVICE_MMU_INFO_FAULT_REQUEST)
+
 #define NV_DOORBELL_NOTIFY_LEAF_SERVICE_NON_REPLAYABLE_FAULT_REQUEST            16:16
 #define NV_DOORBELL_NOTIFY_LEAF_SERVICE_NON_REPLAYABLE_FAULT_REQUEST_EN         (0x1)
 #define NV_DOORBELL_NOTIFY_LEAF_SERVICE_NON_REPLAYABLE_FAULT_REQUEST_DIS        (0x0)
 #define NV_DOORBELL_NOTIFY_LEAF_SERVICE_NON_REPLAYABLE_FAULT_HANDLE             (0 ? NV_DOORBELL_NOTIFY_LEAF_SERVICE_NON_REPLAYABLE_FAULT_REQUEST)
 
 #define NV_DOORBELL_NOTIFY_LEAF_HOST_PF_MASK                                    (NVBIT(NV_DOORBELL_NOTIFY_LEAF_SERVICE_NON_REPLAYABLE_FAULT_HANDLE) | \
-                                                                                 NVBIT(NV_DOORBELL_NOTIFY_LEAF_SERVICE_TMR_HANDLE))
+                                                                                 NVBIT(NV_DOORBELL_NOTIFY_LEAF_SERVICE_TMR_HANDLE) | \
+                                                                                 NVBIT(NV_DOORBELL_NOTIFY_LEAF_SERVICE_MMU_INFO_FAULT_HANDLE) )
 
 // Host VF interrupts
 
@@ -90,5 +96,6 @@
 // used in VGPU-GSP RPC setup
 #define NV_VF_SCRATCH_REGISTER_GUEST_RPC_HI                                     0x3
 
-#define MAX_PARTITIONS_WITH_GFID                                                (32)
+#define MAX_PARTITIONS_WITH_GFID                                                (48)
+#define MAX_PARTITIONS_WITH_GFID_32VM                                           (32)
 #define MAX_PARTITIONS_WITH_GFID_MIG_ENABLED                                    (7)

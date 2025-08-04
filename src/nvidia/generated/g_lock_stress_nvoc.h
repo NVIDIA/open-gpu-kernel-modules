@@ -87,18 +87,6 @@ struct LockStressObject {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct LockStressObject *__nvoc_pbase_LockStressObject;    // lockStressObj
 
-    // Vtable with 10 per-object function pointers
-    NV_STATUS (*__lockStressObjCtrlCmdResetLockStressState__)(struct LockStressObject * /*this*/);  // exported (id=0x1000101)
-    NV_STATUS (*__lockStressObjCtrlCmdPerformLockStressAllRmLocks__)(struct LockStressObject * /*this*/, NV0100_CTRL_PERFORM_LOCK_STRESS_ALL_RM_LOCKS_PARAMS *);  // exported (id=0x1000102)
-    NV_STATUS (*__lockStressObjCtrlCmdPerformLockStressNoGpusLock__)(struct LockStressObject * /*this*/, NV0100_CTRL_PERFORM_LOCK_STRESS_NO_GPUS_LOCK_PARAMS *);  // exported (id=0x1000103)
-    NV_STATUS (*__lockStressObjCtrlCmdPerformLockStressApiLockReadMode__)(struct LockStressObject * /*this*/, NV0100_CTRL_PERFORM_LOCK_STRESS_API_LOCK_READ_MODE_PARAMS *);  // exported (id=0x1000104)
-    NV_STATUS (*__lockStressObjCtrlCmdPerformLockStressNoGpusLockApiLockReadMode__)(struct LockStressObject * /*this*/, NV0100_CTRL_PERFORM_LOCK_STRESS_NO_GPUS_LOCK_API_LOCK_READ_MODE_PARAMS *);  // exported (id=0x1000105)
-    NV_STATUS (*__lockStressObjCtrlCmdPerformLockStressInternalAllRmLocks__)(struct LockStressObject * /*this*/, NV0100_CTRL_PERFORM_LOCK_STRESS_INTERNAL_ALL_RM_LOCKS_PARAMS *);  // exported (id=0x1000106)
-    NV_STATUS (*__lockStressObjCtrlCmdPerformLockStressInternalNoGpusLock__)(struct LockStressObject * /*this*/, NV0100_CTRL_PERFORM_LOCK_STRESS_INTERNAL_NO_GPUS_LOCK_PARAMS *);  // exported (id=0x1000107)
-    NV_STATUS (*__lockStressObjCtrlCmdPerformLockStressInternalApiLockReadMode__)(struct LockStressObject * /*this*/, NV0100_CTRL_PERFORM_LOCK_STRESS_INTERNAL_API_LOCK_READ_MODE_PARAMS *);  // exported (id=0x1000108)
-    NV_STATUS (*__lockStressObjCtrlCmdPerformLockStressInternalNoGpusLockApiLockReadMode__)(struct LockStressObject * /*this*/, NV0100_CTRL_PERFORM_LOCK_STRESS_INTERNAL_NO_GPUS_LOCK_API_LOCK_READ_MODE_PARAMS *);  // exported (id=0x1000109)
-    NV_STATUS (*__lockStressObjCtrlCmdGetLockStressCounters__)(struct LockStressObject * /*this*/, NV0100_CTRL_GET_LOCK_STRESS_COUNTERS_PARAMS *);  // exported (id=0x100010a)
-
     // Data members
     NvHandle PRIVATE_FIELD(hInternalClient);
     NvHandle PRIVATE_FIELD(hInternalDevice);
@@ -172,27 +160,115 @@ NV_STATUS __nvoc_objCreate_LockStressObject(LockStressObject**, Dynamic*, NvU32,
     __nvoc_objCreate_LockStressObject((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
-#define lockStressObjCtrlCmdResetLockStressState_FNPTR(pResource) pResource->__lockStressObjCtrlCmdResetLockStressState__
-#define lockStressObjCtrlCmdResetLockStressState(pResource) lockStressObjCtrlCmdResetLockStressState_DISPATCH(pResource)
-#define lockStressObjCtrlCmdPerformLockStressAllRmLocks_FNPTR(pResource) pResource->__lockStressObjCtrlCmdPerformLockStressAllRmLocks__
-#define lockStressObjCtrlCmdPerformLockStressAllRmLocks(pResource, pParams) lockStressObjCtrlCmdPerformLockStressAllRmLocks_DISPATCH(pResource, pParams)
-#define lockStressObjCtrlCmdPerformLockStressNoGpusLock_FNPTR(pResource) pResource->__lockStressObjCtrlCmdPerformLockStressNoGpusLock__
-#define lockStressObjCtrlCmdPerformLockStressNoGpusLock(pResource, pParams) lockStressObjCtrlCmdPerformLockStressNoGpusLock_DISPATCH(pResource, pParams)
-#define lockStressObjCtrlCmdPerformLockStressApiLockReadMode_FNPTR(pResource) pResource->__lockStressObjCtrlCmdPerformLockStressApiLockReadMode__
-#define lockStressObjCtrlCmdPerformLockStressApiLockReadMode(pResource, pParams) lockStressObjCtrlCmdPerformLockStressApiLockReadMode_DISPATCH(pResource, pParams)
-#define lockStressObjCtrlCmdPerformLockStressNoGpusLockApiLockReadMode_FNPTR(pResource) pResource->__lockStressObjCtrlCmdPerformLockStressNoGpusLockApiLockReadMode__
-#define lockStressObjCtrlCmdPerformLockStressNoGpusLockApiLockReadMode(pResource, pParams) lockStressObjCtrlCmdPerformLockStressNoGpusLockApiLockReadMode_DISPATCH(pResource, pParams)
-#define lockStressObjCtrlCmdPerformLockStressInternalAllRmLocks_FNPTR(pResource) pResource->__lockStressObjCtrlCmdPerformLockStressInternalAllRmLocks__
-#define lockStressObjCtrlCmdPerformLockStressInternalAllRmLocks(pResource, pParams) lockStressObjCtrlCmdPerformLockStressInternalAllRmLocks_DISPATCH(pResource, pParams)
-#define lockStressObjCtrlCmdPerformLockStressInternalNoGpusLock_FNPTR(pResource) pResource->__lockStressObjCtrlCmdPerformLockStressInternalNoGpusLock__
-#define lockStressObjCtrlCmdPerformLockStressInternalNoGpusLock(pResource, pParams) lockStressObjCtrlCmdPerformLockStressInternalNoGpusLock_DISPATCH(pResource, pParams)
-#define lockStressObjCtrlCmdPerformLockStressInternalApiLockReadMode_FNPTR(pResource) pResource->__lockStressObjCtrlCmdPerformLockStressInternalApiLockReadMode__
-#define lockStressObjCtrlCmdPerformLockStressInternalApiLockReadMode(pResource, pParams) lockStressObjCtrlCmdPerformLockStressInternalApiLockReadMode_DISPATCH(pResource, pParams)
-#define lockStressObjCtrlCmdPerformLockStressInternalNoGpusLockApiLockReadMode_FNPTR(pResource) pResource->__lockStressObjCtrlCmdPerformLockStressInternalNoGpusLockApiLockReadMode__
-#define lockStressObjCtrlCmdPerformLockStressInternalNoGpusLockApiLockReadMode(pResource, pParams) lockStressObjCtrlCmdPerformLockStressInternalNoGpusLockApiLockReadMode_DISPATCH(pResource, pParams)
-#define lockStressObjCtrlCmdGetLockStressCounters_FNPTR(pResource) pResource->__lockStressObjCtrlCmdGetLockStressCounters__
-#define lockStressObjCtrlCmdGetLockStressCounters(pResource, pParams) lockStressObjCtrlCmdGetLockStressCounters_DISPATCH(pResource, pParams)
+// Wrapper macros for implementation functions
+NV_STATUS lockStressObjConstruct_IMPL(struct LockStressObject *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_lockStressObjConstruct(arg_pResource, arg_pCallContext, arg_pParams) lockStressObjConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+
+void lockStressObjDestruct_IMPL(struct LockStressObject *pResource);
+#define __nvoc_lockStressObjDestruct(pResource) lockStressObjDestruct_IMPL(pResource)
+
+NV_STATUS lockStressObjCtrlCmdResetLockStressState_IMPL(struct LockStressObject *pResource);
+#ifdef __nvoc_lock_stress_h_disabled
+static inline NV_STATUS lockStressObjCtrlCmdResetLockStressState(struct LockStressObject *pResource) {
+    NV_ASSERT_FAILED_PRECOMP("LockStressObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_lock_stress_h_disabled
+#define lockStressObjCtrlCmdResetLockStressState(pResource) lockStressObjCtrlCmdResetLockStressState_IMPL(pResource)
+#endif // __nvoc_lock_stress_h_disabled
+
+NV_STATUS lockStressObjCtrlCmdPerformLockStressAllRmLocks_IMPL(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_ALL_RM_LOCKS_PARAMS *pParams);
+#ifdef __nvoc_lock_stress_h_disabled
+static inline NV_STATUS lockStressObjCtrlCmdPerformLockStressAllRmLocks(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_ALL_RM_LOCKS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("LockStressObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_lock_stress_h_disabled
+#define lockStressObjCtrlCmdPerformLockStressAllRmLocks(pResource, pParams) lockStressObjCtrlCmdPerformLockStressAllRmLocks_IMPL(pResource, pParams)
+#endif // __nvoc_lock_stress_h_disabled
+
+NV_STATUS lockStressObjCtrlCmdPerformLockStressNoGpusLock_IMPL(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_NO_GPUS_LOCK_PARAMS *pParams);
+#ifdef __nvoc_lock_stress_h_disabled
+static inline NV_STATUS lockStressObjCtrlCmdPerformLockStressNoGpusLock(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_NO_GPUS_LOCK_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("LockStressObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_lock_stress_h_disabled
+#define lockStressObjCtrlCmdPerformLockStressNoGpusLock(pResource, pParams) lockStressObjCtrlCmdPerformLockStressNoGpusLock_IMPL(pResource, pParams)
+#endif // __nvoc_lock_stress_h_disabled
+
+NV_STATUS lockStressObjCtrlCmdPerformLockStressApiLockReadMode_IMPL(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_API_LOCK_READ_MODE_PARAMS *pParams);
+#ifdef __nvoc_lock_stress_h_disabled
+static inline NV_STATUS lockStressObjCtrlCmdPerformLockStressApiLockReadMode(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_API_LOCK_READ_MODE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("LockStressObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_lock_stress_h_disabled
+#define lockStressObjCtrlCmdPerformLockStressApiLockReadMode(pResource, pParams) lockStressObjCtrlCmdPerformLockStressApiLockReadMode_IMPL(pResource, pParams)
+#endif // __nvoc_lock_stress_h_disabled
+
+NV_STATUS lockStressObjCtrlCmdPerformLockStressNoGpusLockApiLockReadMode_IMPL(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_NO_GPUS_LOCK_API_LOCK_READ_MODE_PARAMS *pParams);
+#ifdef __nvoc_lock_stress_h_disabled
+static inline NV_STATUS lockStressObjCtrlCmdPerformLockStressNoGpusLockApiLockReadMode(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_NO_GPUS_LOCK_API_LOCK_READ_MODE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("LockStressObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_lock_stress_h_disabled
+#define lockStressObjCtrlCmdPerformLockStressNoGpusLockApiLockReadMode(pResource, pParams) lockStressObjCtrlCmdPerformLockStressNoGpusLockApiLockReadMode_IMPL(pResource, pParams)
+#endif // __nvoc_lock_stress_h_disabled
+
+NV_STATUS lockStressObjCtrlCmdPerformLockStressInternalAllRmLocks_IMPL(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_INTERNAL_ALL_RM_LOCKS_PARAMS *pParams);
+#ifdef __nvoc_lock_stress_h_disabled
+static inline NV_STATUS lockStressObjCtrlCmdPerformLockStressInternalAllRmLocks(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_INTERNAL_ALL_RM_LOCKS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("LockStressObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_lock_stress_h_disabled
+#define lockStressObjCtrlCmdPerformLockStressInternalAllRmLocks(pResource, pParams) lockStressObjCtrlCmdPerformLockStressInternalAllRmLocks_IMPL(pResource, pParams)
+#endif // __nvoc_lock_stress_h_disabled
+
+NV_STATUS lockStressObjCtrlCmdPerformLockStressInternalNoGpusLock_IMPL(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_INTERNAL_NO_GPUS_LOCK_PARAMS *pParams);
+#ifdef __nvoc_lock_stress_h_disabled
+static inline NV_STATUS lockStressObjCtrlCmdPerformLockStressInternalNoGpusLock(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_INTERNAL_NO_GPUS_LOCK_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("LockStressObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_lock_stress_h_disabled
+#define lockStressObjCtrlCmdPerformLockStressInternalNoGpusLock(pResource, pParams) lockStressObjCtrlCmdPerformLockStressInternalNoGpusLock_IMPL(pResource, pParams)
+#endif // __nvoc_lock_stress_h_disabled
+
+NV_STATUS lockStressObjCtrlCmdPerformLockStressInternalApiLockReadMode_IMPL(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_INTERNAL_API_LOCK_READ_MODE_PARAMS *pParams);
+#ifdef __nvoc_lock_stress_h_disabled
+static inline NV_STATUS lockStressObjCtrlCmdPerformLockStressInternalApiLockReadMode(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_INTERNAL_API_LOCK_READ_MODE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("LockStressObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_lock_stress_h_disabled
+#define lockStressObjCtrlCmdPerformLockStressInternalApiLockReadMode(pResource, pParams) lockStressObjCtrlCmdPerformLockStressInternalApiLockReadMode_IMPL(pResource, pParams)
+#endif // __nvoc_lock_stress_h_disabled
+
+NV_STATUS lockStressObjCtrlCmdPerformLockStressInternalNoGpusLockApiLockReadMode_IMPL(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_INTERNAL_NO_GPUS_LOCK_API_LOCK_READ_MODE_PARAMS *pParams);
+#ifdef __nvoc_lock_stress_h_disabled
+static inline NV_STATUS lockStressObjCtrlCmdPerformLockStressInternalNoGpusLockApiLockReadMode(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_INTERNAL_NO_GPUS_LOCK_API_LOCK_READ_MODE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("LockStressObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_lock_stress_h_disabled
+#define lockStressObjCtrlCmdPerformLockStressInternalNoGpusLockApiLockReadMode(pResource, pParams) lockStressObjCtrlCmdPerformLockStressInternalNoGpusLockApiLockReadMode_IMPL(pResource, pParams)
+#endif // __nvoc_lock_stress_h_disabled
+
+NV_STATUS lockStressObjCtrlCmdGetLockStressCounters_IMPL(struct LockStressObject *pResource, NV0100_CTRL_GET_LOCK_STRESS_COUNTERS_PARAMS *pParams);
+#ifdef __nvoc_lock_stress_h_disabled
+static inline NV_STATUS lockStressObjCtrlCmdGetLockStressCounters(struct LockStressObject *pResource, NV0100_CTRL_GET_LOCK_STRESS_COUNTERS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("LockStressObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_lock_stress_h_disabled
+#define lockStressObjCtrlCmdGetLockStressCounters(pResource, pParams) lockStressObjCtrlCmdGetLockStressCounters_IMPL(pResource, pParams)
+#endif // __nvoc_lock_stress_h_disabled
+
+
+// Wrapper macros for halified functions
 #define lockStressObjControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define lockStressObjControl(pGpuResource, pCallContext, pParams) lockStressObjControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define lockStressObjMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
@@ -245,46 +321,6 @@ NV_STATUS __nvoc_objCreate_LockStressObject(LockStressObject**, Dynamic*, NvU32,
 #define lockStressObjAddAdditionalDependants(pClient, pResource, pReference) lockStressObjAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
-static inline NV_STATUS lockStressObjCtrlCmdResetLockStressState_DISPATCH(struct LockStressObject *pResource) {
-    return pResource->__lockStressObjCtrlCmdResetLockStressState__(pResource);
-}
-
-static inline NV_STATUS lockStressObjCtrlCmdPerformLockStressAllRmLocks_DISPATCH(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_ALL_RM_LOCKS_PARAMS *pParams) {
-    return pResource->__lockStressObjCtrlCmdPerformLockStressAllRmLocks__(pResource, pParams);
-}
-
-static inline NV_STATUS lockStressObjCtrlCmdPerformLockStressNoGpusLock_DISPATCH(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_NO_GPUS_LOCK_PARAMS *pParams) {
-    return pResource->__lockStressObjCtrlCmdPerformLockStressNoGpusLock__(pResource, pParams);
-}
-
-static inline NV_STATUS lockStressObjCtrlCmdPerformLockStressApiLockReadMode_DISPATCH(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_API_LOCK_READ_MODE_PARAMS *pParams) {
-    return pResource->__lockStressObjCtrlCmdPerformLockStressApiLockReadMode__(pResource, pParams);
-}
-
-static inline NV_STATUS lockStressObjCtrlCmdPerformLockStressNoGpusLockApiLockReadMode_DISPATCH(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_NO_GPUS_LOCK_API_LOCK_READ_MODE_PARAMS *pParams) {
-    return pResource->__lockStressObjCtrlCmdPerformLockStressNoGpusLockApiLockReadMode__(pResource, pParams);
-}
-
-static inline NV_STATUS lockStressObjCtrlCmdPerformLockStressInternalAllRmLocks_DISPATCH(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_INTERNAL_ALL_RM_LOCKS_PARAMS *pParams) {
-    return pResource->__lockStressObjCtrlCmdPerformLockStressInternalAllRmLocks__(pResource, pParams);
-}
-
-static inline NV_STATUS lockStressObjCtrlCmdPerformLockStressInternalNoGpusLock_DISPATCH(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_INTERNAL_NO_GPUS_LOCK_PARAMS *pParams) {
-    return pResource->__lockStressObjCtrlCmdPerformLockStressInternalNoGpusLock__(pResource, pParams);
-}
-
-static inline NV_STATUS lockStressObjCtrlCmdPerformLockStressInternalApiLockReadMode_DISPATCH(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_INTERNAL_API_LOCK_READ_MODE_PARAMS *pParams) {
-    return pResource->__lockStressObjCtrlCmdPerformLockStressInternalApiLockReadMode__(pResource, pParams);
-}
-
-static inline NV_STATUS lockStressObjCtrlCmdPerformLockStressInternalNoGpusLockApiLockReadMode_DISPATCH(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_INTERNAL_NO_GPUS_LOCK_API_LOCK_READ_MODE_PARAMS *pParams) {
-    return pResource->__lockStressObjCtrlCmdPerformLockStressInternalNoGpusLockApiLockReadMode__(pResource, pParams);
-}
-
-static inline NV_STATUS lockStressObjCtrlCmdGetLockStressCounters_DISPATCH(struct LockStressObject *pResource, NV0100_CTRL_GET_LOCK_STRESS_COUNTERS_PARAMS *pParams) {
-    return pResource->__lockStressObjCtrlCmdGetLockStressCounters__(pResource, pParams);
-}
-
 static inline NV_STATUS lockStressObjControl_DISPATCH(struct LockStressObject *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pGpuResource->__nvoc_metadata_ptr->vtable.__lockStressObjControl__(pGpuResource, pCallContext, pParams);
 }
@@ -405,12 +441,6 @@ NV_STATUS lockStressObjCtrlCmdPerformLockStressInternalNoGpusLockApiLockReadMode
 
 NV_STATUS lockStressObjCtrlCmdGetLockStressCounters_IMPL(struct LockStressObject *pResource, NV0100_CTRL_GET_LOCK_STRESS_COUNTERS_PARAMS *pParams);
 
-NV_STATUS lockStressObjConstruct_IMPL(struct LockStressObject *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_lockStressObjConstruct(arg_pResource, arg_pCallContext, arg_pParams) lockStressObjConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
-void lockStressObjDestruct_IMPL(struct LockStressObject *pResource);
-
-#define __nvoc_lockStressObjDestruct(pResource) lockStressObjDestruct_IMPL(pResource)
 #undef PRIVATE_FIELD
 
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1418,7 +1418,10 @@ static NV_STATUS _rmapiControlCacheGetByInput
             return _rmapiControlCacheGetByInputTemplateMethod(hClient, hObject, cmd, 0,
                                                               params, sizeof(DispSpecificGetTypeCacheTable),
                                                               _dispSpecificGetTypeCacheHandler, NV_FALSE);
-
+        case NV0073_CTRL_CMD_DP_GET_CAPS:
+        return _rmapiControlCacheGetByInputTemplateMethod(hClient, hObject, cmd, 0,
+                                                          params, sizeof(DispDpGetCapsCacheTable),
+                                                          _dispDpGetCapsCacheHandler, NV_FALSE);
         default:
             NV_PRINTF(LEVEL_WARNING, "No implementation for cacheable by input cmd 0x%x\n", cmd);
             return NV_ERR_OBJECT_NOT_FOUND;
@@ -1494,7 +1497,10 @@ NV_STATUS _rmapiControlCacheSetByInput
             return _rmapiControlCacheGetByInputTemplateMethod(hClient, hObject, cmd, rmctrlFlags,
                                                               params, sizeof(DispSpecificGetTypeCacheTable),
                                                               _dispSpecificGetTypeCacheHandler, NV_TRUE);
-
+        case NV0073_CTRL_CMD_DP_GET_CAPS:
+            return _rmapiControlCacheGetByInputTemplateMethod(hClient, hObject, cmd, rmctrlFlags,
+                                                            params, sizeof(DispDpGetCapsCacheTable),
+                                                            _dispDpGetCapsCacheHandler, NV_TRUE);
         default:
             NV_PRINTF(LEVEL_WARNING, "No implementation for cacheable by input cmd 0x%x\n", cmd);
             return NV_ERR_OBJECT_NOT_FOUND;

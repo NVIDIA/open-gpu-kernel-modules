@@ -23,6 +23,7 @@
 
 #include "linux_nvswitch.h"
 #include "nv-procfs.h"
+#include "ioctl_nvswitch.h"
 
 #include <linux/fs.h>
 
@@ -60,6 +61,7 @@ nv_procfs_read_device_info
 )
 {
     NVSWITCH_DEV *nvswitch_dev = s->private;
+    char uuid_string[NVSWITCH_UUID_STRING_LENGTH] = { 0 };
 
     if (!nvswitch_dev)
     {
@@ -82,6 +84,11 @@ nv_procfs_read_device_info
     {
         seq_printf(s, "N/A\n");
     }
+
+    nvswitch_uuid_to_string(&nvswitch_dev->uuid, uuid_string, NVSWITCH_UUID_STRING_LENGTH);
+
+    seq_printf(s, "UUID: %s\n", uuid_string);
+    seq_printf(s, "Physical location ID: %04x\n", nvswitch_dev->phys_id);
 
     return 0;
 }

@@ -156,6 +156,21 @@ void __nvoc_init_halspec_ChipHal(ChipHal *pChipHal, NvU32 arch, NvU32 impl, NvU3
     {
         pChipHal->__nvoc_HalVarIdx = 74;
     }
+    // GB20C
+    else if(arch == 0x1B && impl == 0xC)
+    {
+        pChipHal->__nvoc_HalVarIdx = 75;
+    }
+    // T234D
+    else if(arch == 0x0 && impl == 0x0 && hidrev == 0x235)
+    {
+        pChipHal->__nvoc_HalVarIdx = 108;
+    }
+    // T264D
+    else if(arch == 0x0 && impl == 0x0 && hidrev == 0x265)
+    {
+        pChipHal->__nvoc_HalVarIdx = 110;
+    }
 }
 
 void __nvoc_init_halspec_TegraChipHal(TegraChipHal *pTegraChipHal, TEGRA_CHIP_TYPE tegraType)
@@ -198,6 +213,11 @@ void __nvoc_init_halspec_DispIpHal(DispIpHal *pDispIpHal, NvU32 ipver)
     {
         pDispIpHal->__nvoc_HalVarIdx = 11;
     }
+    // DISPv0402
+    else if(ipver == 0x4020000)
+    {
+        pDispIpHal->__nvoc_HalVarIdx = 12;
+    }
     // DISPv0404
     else if(ipver == 0x4040000)
     {
@@ -218,10 +238,15 @@ void __nvoc_init_halspec_DispIpHal(DispIpHal *pDispIpHal, NvU32 ipver)
     {
         pDispIpHal->__nvoc_HalVarIdx = 17;
     }
+    // DISPv0504
+    else if(ipver == 0x5040000)
+    {
+        pDispIpHal->__nvoc_HalVarIdx = 18;
+    }
     // DISPv0000
     else if(ipver == 0x0)
     {
-        pDispIpHal->__nvoc_HalVarIdx = 19;
+        pDispIpHal->__nvoc_HalVarIdx = 20;
     }
 }
 

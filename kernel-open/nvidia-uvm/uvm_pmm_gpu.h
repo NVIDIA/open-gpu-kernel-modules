@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -58,7 +58,7 @@
 #include "uvm_va_block_types.h"
 #include "uvm_linux.h"
 #include "uvm_types.h"
-#include "nv_uvm_types.h"
+#include "nv_uvm_user_types.h"
 #if UVM_IS_CONFIG_HMM() || defined(CONFIG_PCI_P2PDMA)
 #include <linux/memremap.h>
 #endif
@@ -351,6 +351,13 @@ typedef struct uvm_pmm_gpu_struct
         // uvm_pmm_gpu_mark_root_chunk_(un)used().
         struct list_head va_block_unused;
 
+        // List of discarded root GPU chunks, which are still mapped on the GPU.
+        // Chunks on this list are evicted with a lower priority than unused chunks.
+        //
+        // Updated by the VA block code with
+        // uvm_pmm_gpu_mark_root_chunk_discarded().
+        struct list_head va_block_discarded;
+
         // List of root chunks used by VA blocks
         struct list_head va_block_used;
 
@@ -424,6 +431,10 @@ static bool uvm_gpu_chunk_is_user(const uvm_gpu_chunk_t *chunk)
 // - For chunks smaller than a system page, this function returns the struct
 // page containing the chunk's starting address.
 struct page *uvm_gpu_chunk_to_page(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk);
+
+// Return the physical address of the given chunk. The GPU must support
+// coherence, (uvm_parent_gpu_is_coherent() should return true).
+NvU64 uvm_gpu_chunk_to_sys_addr(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk);
 
 // User memory allocator.
 //
@@ -555,6 +566,9 @@ void uvm_pmm_gpu_mark_root_chunk_used(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk
 
 // Mark an allocated user chunk as unused
 void uvm_pmm_gpu_mark_root_chunk_unused(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk);
+
+// Mark an allocated chunk as discarded
+void uvm_pmm_gpu_mark_root_chunk_discarded(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk);
 
 static bool uvm_gpu_chunk_same_root(uvm_gpu_chunk_t *chunk1, uvm_gpu_chunk_t *chunk2)
 {

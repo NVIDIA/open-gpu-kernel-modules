@@ -117,14 +117,16 @@ NV_STATUS __nvoc_objCreate_SpdmProxy(SpdmProxy**, Dynamic*, NvU32);
     __nvoc_objCreate_SpdmProxy((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+#define spdmProxyCtrlSpdmPartition(pGpu, pSpdmPartitionParams) spdmProxyCtrlSpdmPartition_IMPL(pGpu, pSpdmPartitionParams)
+
+
+// Wrapper macros for halified functions
+#define spdmProxyCtrlSpdmPartition_HAL(pGpu, pSpdmPartitionParams) spdmProxyCtrlSpdmPartition(pGpu, pSpdmPartitionParams)
 
 // Dispatch functions
 NV_STATUS spdmProxyCtrlSpdmPartition_IMPL(struct OBJGPU *pGpu, NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS *pSpdmPartitionParams);
 
-
-#define spdmProxyCtrlSpdmPartition(pGpu, pSpdmPartitionParams) spdmProxyCtrlSpdmPartition_IMPL(pGpu, pSpdmPartitionParams)
-#define spdmProxyCtrlSpdmPartition_HAL(pGpu, pSpdmPartitionParams) spdmProxyCtrlSpdmPartition(pGpu, pSpdmPartitionParams)
 
 #undef PRIVATE_FIELD
 

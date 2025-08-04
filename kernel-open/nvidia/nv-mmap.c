@@ -162,7 +162,7 @@ nvidia_vma_access(
             return -EINVAL;
 
         pageIndex = nv_array_index_no_speculate(pageIndex, at->num_pages);
-        kernel_mapping = (void *)(at->page_table[pageIndex]->virt_addr + pageOffset);
+        kernel_mapping = (void *)(at->page_table[pageIndex].virt_addr + pageOffset);
     }
     else
     {
@@ -205,15 +205,10 @@ found:
 }
 
 static vm_fault_t nvidia_fault(
-#if !defined(NV_VM_OPS_FAULT_REMOVED_VMA_ARG)
-    struct vm_area_struct *vma,
-#endif
     struct vm_fault *vmf
 )
 {
-#if defined(NV_VM_OPS_FAULT_REMOVED_VMA_ARG)
     struct vm_area_struct *vma = vmf->vma;
-#endif
     nv_linux_file_private_t *nvlfp = NV_GET_LINUX_FILE_PRIVATE(NV_VMA_FILE(vma));
     nv_linux_state_t *nvl = nvlfp->nvptr;
     nv_state_t *nv = NV_STATE_PTR(nvl);
@@ -394,7 +389,7 @@ static int nvidia_mmap_peer_io(
 
     BUG_ON(!at->flags.contig);
 
-    start = at->page_table[page_index]->phys_addr;
+    start = at->page_table[page_index].phys_addr;
     size = pages * PAGE_SIZE;
 
     ret = nv_io_remap_page_range(vma, start, size, vma->vm_start);
@@ -420,13 +415,22 @@ static int nvidia_mmap_sysmem(
     {
         j = nv_array_index_no_speculate(j, (page_index + pages));
 
+        //
+        // nv_remap_page_range() map a contiguous physical address space
+        // into the user virtual space.
+        // Use PFN based mapping api to create the mapping for
+        // reserved carveout (OS invisible memory, not managed by OS) too.
+        // Basically nv_remap_page_range() works for all kind of memory regions.
+        // Imported buffer can be either from OS or Non OS managed regions (reserved carveout).
+        // nv_remap_page_range() works well for all type of import buffers.
+        //
         if (
 #if defined(NV_VGPU_KVM_BUILD)
             at->flags.guest ||
 #endif
-            at->flags.carveout)
+            at->flags.carveout || at->import_sgt)
         {
-            ret = nv_remap_page_range(vma, start, at->page_table[j]->phys_addr,
+            ret = nv_remap_page_range(vma, start, at->page_table[j].phys_addr,
                                       PAGE_SIZE, vma->vm_page_prot);
         }
         else
@@ -435,12 +439,14 @@ static int nvidia_mmap_sysmem(
                 vma->vm_page_prot = nv_adjust_pgprot(vma->vm_page_prot);
 
             ret = vm_insert_page(vma, start,
-                                 NV_GET_PAGE_STRUCT(at->page_table[j]->phys_addr));
+                                 NV_GET_PAGE_STRUCT(at->page_table[j].phys_addr));
         }
 
         if (ret)
         {
             NV_ATOMIC_DEC(at->usage_count);
+            nv_printf(NV_DBG_ERRORS,
+                      "NVRM: Userspace mapping creation failed [%d]!\n", ret);
             return -EAGAIN;
         }
         start += PAGE_SIZE;

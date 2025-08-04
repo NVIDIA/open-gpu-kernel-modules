@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -130,26 +130,24 @@ static NV_STATUS _rmapiUnmapFromCpuWithSecInfo_STUB(RM_API *pRmApi, NvHandle hCl
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static NV_STATUS _rmapiMap_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx, NvHandle hMemory,
-                     NvU64 offset, NvU64 length, NvU32 flags, NvU64 *pDmaOffset)
+static NV_STATUS _rmapiMap_STUB(RM_API *pRmApi, NVOS46_PARAMETERS *pParms)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static NV_STATUS _rmapiMapWithSecInfo_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx, NvHandle hMemory,
-                                NvU64 offset, NvU64 length, NvU32 flags, NvU64 *pDmaOffset, API_SECURITY_INFO *pSecInfo)
+static NV_STATUS _rmapiMapWithSecInfo_STUB(RM_API *pRmApi, NVOS46_PARAMETERS *pParms,
+                                           API_SECURITY_INFO *pSecInfo)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static NV_STATUS _rmapiUnmap_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx,
-                       NvU32 flags, NvU64 dmaOffset, NvU64 size)
+static NV_STATUS _rmapiUnmap_STUB(RM_API *pRmApi, NVOS47_PARAMETERS *pParms)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static NV_STATUS _rmapiUnmapWithSecInfo_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx,
-                                  NvU32 flags, NvU64 dmaOffset, NvU64 size, API_SECURITY_INFO *pSecInfo)
+static NV_STATUS _rmapiUnmapWithSecInfo_STUB(RM_API *pRmApi, NVOS47_PARAMETERS *pParms,
+                                             API_SECURITY_INFO *pSecInfo)
 {
     return NV_ERR_NOT_SUPPORTED;
 }

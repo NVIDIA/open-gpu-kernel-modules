@@ -364,18 +364,6 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmC
 //    is enabled; see g_bRsAccessEnabled.
 //
 
-
-/*
- * On T234, RM is in kernel mode, so when RM is running in kernel mode it
- * does not allow usermode clients like MODs to call control calls that are
- * marked as KERNEL_PRIVILEGED.
- * So defining new macro DISPLAY_PRIVILEGED(i.e PRIVILEGED) for Tegra and mark
- * control calls needed by MODs with this so that MODs running as root can call
- * these control calls. However keeping same privilege level for DGPUs which
- * does not change the current behaviour.
- */
-#define DISPLAY_PRIVILEGED KERNEL_PRIVILEGED
-
 #endif // _CONTROL_H_
 
 

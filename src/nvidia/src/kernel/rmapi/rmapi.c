@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -581,7 +581,7 @@ rmapiLockAcquire(NvU32 flags, NvU32 module)
 
     // Get start wait time measuring lock wait times
     if (pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
-        startWaitTime = osGetCurrentTick();
+        startWaitTime = osGetMonotonicTimeNs();
 
     //
     // For conditional acquires and DISPATCH_LEVEL we want to exit
@@ -647,7 +647,7 @@ rmapiLockAcquire(NvU32 flags, NvU32 module)
     if (rmStatus == NV_OK)
     {
         NvU64 timestamp;
-        timestamp = osGetCurrentTick();
+        timestamp = osGetMonotonicTimeNs();
 
         // Update total API lock wait time if measuring lock times
         if (pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
@@ -690,7 +690,7 @@ rmapiLockAcquire(NvU32 flags, NvU32 module)
         // and released after they are which could lead to uninitialized memory
         // being present in TLS.
         //
-        *(NvU64*)pStartTime = osGetCurrentTick();
+        *(NvU64*)pStartTime = osGetMonotonicTimeNs();
     }
 
     return rmStatus;
@@ -708,7 +708,7 @@ rmapiLockRelease(void)
     if (pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
         startTime = (NvU64) tlsEntryGet(g_RmApiLock.tlsEntryId);
 
-    timestamp = osGetCurrentTick();
+    timestamp = osGetMonotonicTimeNs();
 
     RMTRACE_RMLOCK(_API_LOCK_RELEASE);
 

@@ -542,7 +542,7 @@ kgmmuFaultBufferFreeSharedMemory_GH100
     pMemDesc = pClientShadowFaultBuffer->pFaultBufferSharedMemDesc;
 
     memdescUnmap(pMemDesc,
-                 NV_TRUE, osGetCurrentProcess(),
+                 NV_TRUE,
                  pClientShadowFaultBuffer->pFaultBufferSharedMemoryAddress,
                  pClientShadowFaultBuffer->pFaultBufferSharedMemoryPriv);
 

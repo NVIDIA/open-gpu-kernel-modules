@@ -3985,7 +3985,8 @@ static void EvoResetChannelAccelerators91(NVDevEvoPtr pDevEvo,
 static NvU32 EvoAllocSurfaceDescriptor90(
     NVDevEvoPtr pDevEvo, NVSurfaceDescriptor *pSurfaceDesc,
     NvU32 memoryHandle, NvU32 localCtxDmaFlags,
-    NvU64 limit)
+    NvU64 limit,
+    NvBool mapToDisplayRm)
 {
     return nvCtxDmaAlloc(pDevEvo, &pSurfaceDesc->ctxDmaHandle,
                          memoryHandle,

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -607,6 +607,7 @@ gpuChildOrderList_GM200[] =
 {
     {classId(OBJVBIOS),           GCO_ALL},
     {classId(ConfidentialCompute),      GCO_ALL},
+    {classId(Spdm),               GCO_ALL},
     {classId(Pxuc),               GCO_ALL},
     {classId(OBJBIF),             GCO_ALL},
     {classId(KernelBif),          GCO_ALL},
@@ -653,6 +654,7 @@ gpuChildOrderList_GM200[] =
     {classId(OBJHDA),             GCO_LIST_DESTROY},
     {classId(Fan),             GCO_LIST_DESTROY},
     {classId(VirtMemAllocator),   GCO_ALL},
+    {classId(KernelHFRP),         GCO_ALL},
     {classId(OBJDISP),            GCO_LIST_INIT},
     {classId(KernelDisplay),      GCO_LIST_INIT},
     {classId(OBJHDA),             GCO_LIST_INIT},

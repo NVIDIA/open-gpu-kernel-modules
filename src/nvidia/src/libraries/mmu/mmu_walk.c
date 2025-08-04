@@ -29,7 +29,6 @@
 /*--------------------------------Includes------------------------------------*/
 #if defined(SRT_BUILD)
 
-#include "shrdebug.h"
 #else
 #include "os/os.h"
 #endif

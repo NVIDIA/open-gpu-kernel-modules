@@ -182,9 +182,36 @@ NV_STATUS __nvoc_objCreate_StandardMemory(StandardMemory**, Dynamic*, NvU32, CAL
     __nvoc_objCreate_StandardMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS stdmemConstruct_IMPL(struct StandardMemory *arg_pStandardMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_stdmemConstruct(arg_pStandardMemory, arg_pCallContext, arg_pParams) stdmemConstruct_IMPL(arg_pStandardMemory, arg_pCallContext, arg_pParams)
+
+NV_STATUS stdmemValidateParams_IMPL(struct OBJGPU *pGpu, struct RmClient *pRmClient, NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
+#define stdmemValidateParams(pGpu, pRmClient, pAllocData) stdmemValidateParams_IMPL(pGpu, pRmClient, pAllocData)
+
+void stdmemDumpInputAllocParams_IMPL(NV_MEMORY_ALLOCATION_PARAMS *pAllocData, CALL_CONTEXT *pCallContext);
+#define stdmemDumpInputAllocParams(pAllocData, pCallContext) stdmemDumpInputAllocParams_IMPL(pAllocData, pCallContext)
+
+void stdmemDumpOutputAllocParams_IMPL(NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
+#define stdmemDumpOutputAllocParams(pAllocData) stdmemDumpOutputAllocParams_IMPL(pAllocData)
+
+NvU64 stdmemQueryPageSize_IMPL(struct MemoryManager *pMemoryManager, NvHandle hClient, NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
+#define stdmemQueryPageSize(pMemoryManager, hClient, pAllocData) stdmemQueryPageSize_IMPL(pMemoryManager, hClient, pAllocData)
+
+#ifdef __nvoc_standard_mem_h_disabled
+static inline NvU64 stdmemGetSysmemPageSize(struct OBJGPU *pGpu, struct StandardMemory *pMemory) {
+    NV_ASSERT_FAILED_PRECOMP("StandardMemory was disabled!");
+    return 0;
+}
+#else // __nvoc_standard_mem_h_disabled
+#define stdmemGetSysmemPageSize(pGpu, pMemory) stdmemGetSysmemPageSize_IMPL(pGpu, pMemory)
+#endif // __nvoc_standard_mem_h_disabled
+
+
+// Wrapper macros for halified functions
 #define stdmemCanCopy_FNPTR(pStandardMemory) pStandardMemory->__nvoc_metadata_ptr->vtable.__stdmemCanCopy__
 #define stdmemCanCopy(pStandardMemory) stdmemCanCopy_DISPATCH(pStandardMemory)
+#define stdmemGetSysmemPageSize_HAL(pGpu, pMemory) stdmemGetSysmemPageSize(pGpu, pMemory)
 #define stdmemIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsDuplicate__
 #define stdmemIsDuplicate(pMemory, hMemory, pDuplicate) stdmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define stdmemGetMapAddrSpace_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memGetMapAddrSpace__
@@ -344,34 +371,8 @@ static inline void stdmemAddAdditionalDependants_DISPATCH(struct RsClient *pClie
 NvU64 stdmemGetSysmemPageSize_IMPL(struct OBJGPU *pGpu, struct StandardMemory *pMemory);
 
 
-#ifdef __nvoc_standard_mem_h_disabled
-static inline NvU64 stdmemGetSysmemPageSize(struct OBJGPU *pGpu, struct StandardMemory *pMemory) {
-    NV_ASSERT_FAILED_PRECOMP("StandardMemory was disabled!");
-    return 0;
-}
-#else //__nvoc_standard_mem_h_disabled
-#define stdmemGetSysmemPageSize(pGpu, pMemory) stdmemGetSysmemPageSize_IMPL(pGpu, pMemory)
-#endif //__nvoc_standard_mem_h_disabled
-
-#define stdmemGetSysmemPageSize_HAL(pGpu, pMemory) stdmemGetSysmemPageSize(pGpu, pMemory)
-
 NvBool stdmemCanCopy_IMPL(struct StandardMemory *pStandardMemory);
 
-NV_STATUS stdmemConstruct_IMPL(struct StandardMemory *arg_pStandardMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_stdmemConstruct(arg_pStandardMemory, arg_pCallContext, arg_pParams) stdmemConstruct_IMPL(arg_pStandardMemory, arg_pCallContext, arg_pParams)
-NV_STATUS stdmemValidateParams_IMPL(struct OBJGPU *pGpu, struct RmClient *pRmClient, NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
-
-#define stdmemValidateParams(pGpu, pRmClient, pAllocData) stdmemValidateParams_IMPL(pGpu, pRmClient, pAllocData)
-void stdmemDumpInputAllocParams_IMPL(NV_MEMORY_ALLOCATION_PARAMS *pAllocData, CALL_CONTEXT *pCallContext);
-
-#define stdmemDumpInputAllocParams(pAllocData, pCallContext) stdmemDumpInputAllocParams_IMPL(pAllocData, pCallContext)
-void stdmemDumpOutputAllocParams_IMPL(NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
-
-#define stdmemDumpOutputAllocParams(pAllocData) stdmemDumpOutputAllocParams_IMPL(pAllocData)
-NvU64 stdmemQueryPageSize_IMPL(struct MemoryManager *pMemoryManager, NvHandle hClient, NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
-
-#define stdmemQueryPageSize(pMemoryManager, hClient, pAllocData) stdmemQueryPageSize_IMPL(pMemoryManager, hClient, pAllocData)
 #undef PRIVATE_FIELD
 
 

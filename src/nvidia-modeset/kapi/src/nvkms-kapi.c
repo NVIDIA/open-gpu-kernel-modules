@@ -71,9 +71,10 @@ ct_assert(NVKMS_KAPI_LAYER_MAX == NVKMS_MAX_LAYERS_PER_HEAD);
      (1 << NVKMS_EVENT_TYPE_DYNAMIC_DPY_CONNECTED) | \
      (1 << NVKMS_EVENT_TYPE_FLIP_OCCURRED))
 
-static NvU32 EnumerateGpus(struct NvKmsKapiGpuInfo *kapiGpuInfo)
+static NvU32 EnumerateGpus(void (*gpuCallback)(const struct NvKmsKapiGpuInfo *info))
 {
     nv_gpu_info_t *gpu_info = NULL;
+    struct NvKmsKapiGpuInfo kapiGpuInfo;
     nvMIGDeviceDescription *activeDevices = NULL;
     NvU32 activeDeviceCount = 0;
     NvU32 gpuCount;
@@ -82,11 +83,13 @@ static NvU32 EnumerateGpus(struct NvKmsKapiGpuInfo *kapiGpuInfo)
     if (NV_OK != nvSMGGetDeviceList(&nvEvoGlobal.rmSmgContext,
                                     &activeDevices,
                                     &activeDeviceCount)) {
+        nvKmsKapiLogDebug("Failed to query SMG device list");
         return 0;
     }
 
     gpu_info = nvkms_alloc(NV_MAX_GPUS * sizeof(*gpu_info), NV_TRUE);
     if (!gpu_info) {
+        nvKmsKapiLogDebug("Out of memory");
         return 0;
     }
 
@@ -101,36 +104,27 @@ static NvU32 EnumerateGpus(struct NvKmsKapiGpuInfo *kapiGpuInfo)
         NvBool foundMig = NV_FALSE;
 
         for (NvU32 j = 0; j < activeDeviceCount; j++) {
-            /* Fail completely if we run out of array space. */
-            if (kapiGpuCount == NV_MAX_GPUS) {
-                nvKmsKapiLogDebug("Failed to enumerate devices: out of memory");
-                kapiGpuCount = 0;
-                break;
-            }
-
             /*
-             * Return an NvKmsKapiGpuInfo for each active device found for
-             * the current gpu_id. For regular GPUs this will only be one
-             * but in MIG mode the same gpu_id can host multiple MIG
+             * Pass back an NvKmsKapiGpuInfo for each active device found
+             * for the current gpu_id. For regular GPUs this will only be
+             * one but in MIG mode the same gpu_id can host multiple MIG
              * devices.
              */
             if (activeDevices[j].gpuId == gpu_info[i].gpu_id) {
-                kapiGpuInfo[kapiGpuCount].gpuInfo = gpu_info[i];
-                kapiGpuInfo[kapiGpuCount].migDevice = activeDevices[j].migDeviceId;
+                kapiGpuInfo.gpuInfo = gpu_info[i];
+                kapiGpuInfo.migDevice = activeDevices[j].migDeviceId;
+                gpuCallback(&kapiGpuInfo);
+
                 kapiGpuCount++;
                 foundMig = NV_TRUE;
             }
         }
 
         if (!foundMig) {
-            if (kapiGpuCount == NV_MAX_GPUS) {
-                nvKmsKapiLogDebug("Failed to enumerate devices: out of memory");
-                kapiGpuCount = 0;
-                break;
-            }
+            kapiGpuInfo.gpuInfo = gpu_info[i];
+            kapiGpuInfo.migDevice = NO_MIG_DEVICE;
+            gpuCallback(&kapiGpuInfo);
 
-            kapiGpuInfo[kapiGpuCount].gpuInfo = gpu_info[i];
-            kapiGpuInfo[kapiGpuCount].migDevice = NO_MIG_DEVICE;
             kapiGpuCount++;
         }
     }
@@ -510,6 +504,8 @@ static NvBool KmsAllocateDevice(struct NvKmsKapiDevice *device)
     device->caps.supportsInputColorRange =
         paramsAlloc->reply.supportsInputColorRange;
 
+    device->caps.supportsWindowMode =
+        paramsAlloc->reply.layerCaps[NVKMS_MAIN_LAYER].supportsWindowMode;
 
     /* XXX Add LUT support */
 
@@ -693,6 +689,9 @@ NvBool nvKmsKapiAllocateSystemMemory(struct NvKmsKapiDevice *device,
 
             pIOCoherencyModes = &device->isoIOCoherencyModes;
 
+            memAllocParams.attr2 = FLD_SET_DRF(OS32, _ATTR2, _ISO,
+                                               _YES, memAllocParams.attr2);
+
             break;
         case NVKMS_KAPI_ALLOCATION_TYPE_NOTIFIER:
             if (layout == NvKmsSurfaceMemoryLayoutBlockLinear) {
@@ -829,6 +828,9 @@ NvBool nvKmsKapiAllocateVideoMemory(struct NvKmsKapiDevice *device,
                 memAllocParams.attr =
                     FLD_SET_DRF(OS32, _ATTR, _PHYSICALITY, _CONTIGUOUS,
                                 memAllocParams.attr);
+
+            memAllocParams.attr2 = FLD_SET_DRF(OS32, _ATTR2, _ISO,
+                                               _YES, memAllocParams.attr2);
 
             /* XXX [JRJ] Note compression and scanout do not work together on
              * any current GPUs.  However, some use cases do involve scanning
@@ -1605,17 +1607,15 @@ static struct NvKmsKapiMemory *AllocMemoryObjectAndHandle(
     return memory;
 }
 
-static struct NvKmsKapiMemory* AllocateVideoMemory
+static struct NvKmsKapiMemory* AllocateMemory
 (
     struct NvKmsKapiDevice *device,
-    enum NvKmsSurfaceMemoryLayout layout,
-    enum NvKmsKapiAllocationType type,
-    NvU64 size,
-    NvU8 *compressible
+    struct NvKmsKapiAllocateMemoryParams *params
 )
 {
     struct NvKmsKapiMemory *memory = NULL;
     NvU32 hRmHandle;
+    NvBool allocSucceeded;
 
     memory = AllocMemoryObjectAndHandle(device, &hRmHandle);
 
@@ -1623,64 +1623,27 @@ static struct NvKmsKapiMemory* AllocateVideoMemory
         return NULL;
     }
 
-    if (!nvKmsKapiAllocateVideoMemory(device,
-                                      hRmHandle,
-                                      layout,
-                                      size,
-                                      type,
-                                      compressible)) {
+    allocSucceeded =
+        params->useVideoMemory
+            ? nvKmsKapiAllocateVideoMemory(device, hRmHandle, params->layout,
+                                           params->size, params->type,
+                                           params->compressible)
+            : nvKmsKapiAllocateSystemMemory(device, hRmHandle, params->layout,
+                                            params->size, params->type,
+                                            params->compressible);
+    if (!allocSucceeded) {
         nvKmsKapiFreeRmHandle(device, hRmHandle);
         FreeMemory(device, memory);
         return NULL;
     }
 
     memory->hRmHandle = hRmHandle;
-    memory->size = size;
-    memory->surfaceParams.layout = layout;
-    memory->isVidmem = NV_TRUE;
+    memory->size = params->size;
+    memory->surfaceParams.layout = params->layout;
+    memory->noDisplayCaching = params->noDisplayCaching;
+    memory->isVidmem = params->useVideoMemory;
 
-    if (layout == NvKmsSurfaceMemoryLayoutBlockLinear) {
-        memory->surfaceParams.blockLinear.genericMemory = NV_TRUE;
-    }
-
-    return memory;
-}
-
-static struct NvKmsKapiMemory* AllocateSystemMemory
-(
-    struct NvKmsKapiDevice *device,
-    enum NvKmsSurfaceMemoryLayout layout,
-    enum NvKmsKapiAllocationType type,
-    NvU64 size,
-    NvU8 *compressible
-)
-{
-    struct NvKmsKapiMemory *memory = NULL;
-    NvU32 hRmHandle;
-
-    memory = AllocMemoryObjectAndHandle(device, &hRmHandle);
-
-    if (!memory) {
-        return NULL;
-    }
-
-    if (!nvKmsKapiAllocateSystemMemory(device,
-                                       hRmHandle,
-                                       layout,
-                                       size,
-                                       type,
-                                       compressible)) {
-        nvKmsKapiFreeRmHandle(device, hRmHandle);
-        FreeMemory(device, memory);
-        return NULL;
-    }
-
-    memory->hRmHandle = hRmHandle;
-    memory->size = size;
-    memory->surfaceParams.layout = layout;
-    memory->isVidmem = NV_FALSE;
-
-    if (layout == NvKmsSurfaceMemoryLayoutBlockLinear) {
+    if (params->layout == NvKmsSurfaceMemoryLayoutBlockLinear) {
         memory->surfaceParams.blockLinear.genericMemory = NV_TRUE;
     }
 
@@ -2260,7 +2223,6 @@ static NvBool GetSurfaceParams(
     NvU32 *pNumPlanes,
     enum NvKmsSurfaceMemoryLayout *pLayout,
     NvU32 *pLog2GobsPerBlockY,
-    NvBool *pNoDisplayCaching,
     NvU32 pitch[])
 {
     const NvKmsSurfaceMemoryFormatInfo *pFormatInfo =
@@ -2354,7 +2316,6 @@ static NvBool GetSurfaceParams(
     *pNumPlanes = pFormatInfo->numPlanes;
     *pLayout = layout;
     *pLog2GobsPerBlockY = log2GobsPerBlockY;
-    *pNoDisplayCaching = params->noDisplayCaching;
 
     return NV_TRUE;
 }
@@ -2373,14 +2334,12 @@ static struct NvKmsKapiSurface* CreateSurface
     NvU32 log2GobsPerBlockY = 0;
     NvU32 numPlanes = 0;
     NvU32 pitch[NVKMS_MAX_PLANES_PER_SURFACE] = { 0 };
-    NvBool noDisplayCaching = NV_FALSE;
     NvU32 i;
 
     if (!GetSurfaceParams(params,
                           &numPlanes,
                           &layout,
                           &log2GobsPerBlockY,
-                          &noDisplayCaching,
                           pitch))
     {
         goto failed;
@@ -2423,9 +2382,9 @@ static struct NvKmsKapiSurface* CreateSurface
         paramsReg.request.planes[i].rmObjectSizeInBytes = memory->size;
         paramsReg.request.planes[i].offset = params->planes[i].offset;
         paramsReg.request.planes[i].pitch = pitch[i];
-    }
 
-    paramsReg.request.noDisplayCaching = noDisplayCaching;
+        paramsReg.request.noDisplayCaching |= memory->noDisplayCaching;
+    }
 
     status = nvkms_ioctl_from_kapi(device->pKmsOpen,
                                    NVKMS_IOCTL_REGISTER_SURFACE,
@@ -2443,6 +2402,8 @@ static struct NvKmsKapiSurface* CreateSurface
     }
 
     surface->hKmsHandle = paramsReg.reply.surfaceHandle;
+    surface->size.width = params->width;
+    surface->size.height = params->height;
 
 done:
     return surface;
@@ -3027,6 +2988,7 @@ static NvBool NvKmsKapiPrimaryLayerConfigToKms(
     struct NvKmsKapiDevice *device,
     const struct NvKmsKapiLayerRequestedConfig *layerRequestedConfig,
     const NvU32 head,
+    const struct NvKmsMode *mode,
     struct NvKmsFlipCommonParams *params,
     NvBool commit,
     NvBool bFromKmsSetMode)
@@ -3053,12 +3015,42 @@ static NvBool NvKmsKapiPrimaryLayerConfigToKms(
                 layerConfig->surface->hKmsHandle;
 
             if (params->layer[NVKMS_MAIN_LAYER].surface.handle[0] != 0) {
-                params->layer[NVKMS_MAIN_LAYER].sizeIn.val.width = layerConfig->srcWidth;
-                params->layer[NVKMS_MAIN_LAYER].sizeIn.val.height = layerConfig->srcHeight;
-                params->layer[NVKMS_MAIN_LAYER].sizeIn.specified = TRUE;
+                const NvU32 surfaceWidth = layerConfig->surface->size.width;
+                const NvU32 surfaceHeight = layerConfig->surface->size.height;
 
-                params->layer[NVKMS_MAIN_LAYER].sizeOut.val.width = layerConfig->dstWidth;
-                params->layer[NVKMS_MAIN_LAYER].sizeOut.val.height = layerConfig->dstHeight;
+                // If there's no scaling and the sizeOut is going to be clamped
+                // to size of the mode, then set the sizes to the size of the
+                // surface rather than the size requested in the layerConfig.
+                //
+                // GPUs prior to nvdisplay require the sizeIn to match the size
+                // of the surface.
+                if (!device->caps.supportsWindowMode &&
+                    layerConfig->srcWidth == layerConfig->dstWidth &&
+                    layerConfig->dstWidth >= mode->timings.hVisible &&
+                    layerConfig->dstX == 0 &&
+                    surfaceWidth > layerConfig->dstWidth) {
+
+                    params->layer[NVKMS_MAIN_LAYER].sizeIn.val.width = surfaceWidth;
+                    params->layer[NVKMS_MAIN_LAYER].sizeOut.val.width = surfaceWidth;
+                } else {
+                    params->layer[NVKMS_MAIN_LAYER].sizeIn.val.width = layerConfig->srcWidth;
+                    params->layer[NVKMS_MAIN_LAYER].sizeOut.val.width = layerConfig->dstWidth;
+                }
+
+                if (!device->caps.supportsWindowMode &&
+                    layerConfig->srcHeight == layerConfig->dstHeight &&
+                    layerConfig->dstHeight >= mode->timings.vVisible &&
+                    layerConfig->dstY == 0 &&
+                    surfaceHeight > layerConfig->dstHeight) {
+
+                    params->layer[NVKMS_MAIN_LAYER].sizeIn.val.height = surfaceHeight;
+                    params->layer[NVKMS_MAIN_LAYER].sizeOut.val.height = surfaceHeight;
+                } else {
+                    params->layer[NVKMS_MAIN_LAYER].sizeIn.val.height = layerConfig->srcHeight;
+                    params->layer[NVKMS_MAIN_LAYER].sizeOut.val.height = layerConfig->dstHeight;
+                }
+
+                params->layer[NVKMS_MAIN_LAYER].sizeIn.specified = TRUE;
                 params->layer[NVKMS_MAIN_LAYER].sizeOut.specified = TRUE;
             }
         }
@@ -3216,6 +3208,7 @@ static NvBool NvKmsKapiLayerConfigToKms(
     const struct NvKmsKapiLayerRequestedConfig *layerRequestedConfig,
     const NvU32 layer,
     const NvU32 head,
+    const struct NvKmsMode *mode,
     struct NvKmsFlipCommonParams *params,
     NvBool commit,
     NvBool bFromKmsSetMode)
@@ -3224,6 +3217,7 @@ static NvBool NvKmsKapiLayerConfigToKms(
         return NvKmsKapiPrimaryLayerConfigToKms(device,
                                                 layerRequestedConfig,
                                                 head,
+                                                mode,
                                                 params,
                                                 commit,
                                                 bFromKmsSetMode);
@@ -3416,6 +3410,7 @@ static NvBool NvKmsKapiRequestedModeSetConfigToKms(
                                            layerRequestedConfig,
                                            layer,
                                            head,
+                                           &paramsHead->mode,
                                            &paramsHead->flip,
                                            commit,
                                            NV_TRUE /* bFromKmsSetMode */)) {
@@ -3519,6 +3514,19 @@ static NvBool KmsSetMode(
         }
 
         status = NV_FALSE;
+    } else {
+        const NvU32 dispIdx = device->dispIdx;
+        int head;
+
+        // Cache the mode timings to be used later by
+        // NvKmsKapiPrimaryLayerConfigToKms.
+        for (head = 0; head < ARRAY_LEN(device->headState); head++) {
+            const struct NvKmsSetModeOneDispRequest *dispRequest =
+                &params->request.disp[dispIdx];
+            if (dispRequest->requestedHeadsBitMask & (1 << head)) {
+                device->headState[head].mode = dispRequest->head[head].mode;
+            }
+        }
     }
 
 done:
@@ -3614,6 +3622,7 @@ static NvBool KmsFlip(
                                                layerRequestedConfig,
                                                layer,
                                                head,
+                                               &device->headState[head].mode,
                                                flipParams,
                                                commit,
                                                NV_FALSE /* bFromKmsSetMode */);
@@ -4059,8 +4068,7 @@ NvBool nvKmsKapiGetFunctionsTableInternal
     funcsTable->getStaticDisplayInfo   = GetStaticDisplayInfo;
     funcsTable->getDynamicDisplayInfo  = GetDynamicDisplayInfo;
 
-    funcsTable->allocateVideoMemory  = AllocateVideoMemory;
-    funcsTable->allocateSystemMemory = AllocateSystemMemory;
+    funcsTable->allocateMemory       = AllocateMemory;
     funcsTable->importMemory         = ImportMemory;
     funcsTable->dupMemory            = DupMemory;
     funcsTable->exportMemory         = ExportMemory;

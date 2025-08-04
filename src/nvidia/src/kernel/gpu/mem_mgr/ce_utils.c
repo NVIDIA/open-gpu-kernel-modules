@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -260,7 +260,7 @@ ceutilsDestruct_IMPL
     {
         if (kbusIsBarAccessBlocked(GPU_GET_KERNEL_BUS(pGpu)))
         {
-            // 
+            //
             // When PCIE is blocked, mappings should be created, used and torn
             // down when they are used
             //
@@ -352,7 +352,7 @@ _ceUtilsFastScrubEnabled
     // LineLength is 4KB aligned
     //
 
-    return ((pChannel->type == FAST_SCRUBBER_CHANNEL) && 
+    return ((pChannel->type == FAST_SCRUBBER_CHANNEL) &&
             (!pChannelPbInfo->bCeMemcopy) &&
             (pChannelPbInfo->pattern == 0) &&
             (pChannelPbInfo->dstAddressSpace == ADDR_FBMEM) &&
@@ -383,12 +383,12 @@ _ceutilsSubmitPushBuffer
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pChannel->pGpu);
     NvBool bReleaseMapping = NV_FALSE;
 
-    // 
+    //
     // Use BAR1 if CPU access is allowed, otherwise allocate and init shadow
     // buffer for DMA access
     //
     NvU32 transferFlags = (pChannel->bUseBar1 ? TRANSFER_FLAGS_USE_BAR1 : TRANSFER_FLAGS_NONE) |
-                           TRANSFER_FLAGS_SHADOW_ALLOC | 
+                           TRANSFER_FLAGS_SHADOW_ALLOC |
                            TRANSFER_FLAGS_SHADOW_INIT_MEM;
     NV_PRINTF(LEVEL_INFO, "Actual size of copying to be pushed: %x\n", pChannelPbInfo->size);
 
@@ -400,7 +400,7 @@ _ceutilsSubmitPushBuffer
     }
 
     if (pChannel->pbCpuVA == NULL)
-    {    
+    {
         pChannel->pbCpuVA = memmgrMemDescBeginTransfer(pMemoryManager, pChannel->pChannelBufferMemdesc,
                                                        transferFlags);
         bReleaseMapping = NV_TRUE;
@@ -434,7 +434,7 @@ _ceutilsSubmitPushBuffer
         return NV_ERR_NO_FREE_FIFOS;
     }
 
-    // 
+    //
     // Pushbuffer can be written in a batch, but GPFIFO and doorbell require
     // careful ordering so we do each write one-by-one
     //
@@ -461,8 +461,8 @@ ceutilsMemset_IMPL
     OBJCHANNEL *pChannel = pCeUtils->pChannel;
     NV_STATUS   status = NV_OK;
 
-    NvU32 pteArraySize;
     NvU64 offset, memsetLength, size, pageGranularity;
+    ADDRESS_TRANSLATION addrTranslation;
     NvBool bContiguous;
 
     MEMORY_DESCRIPTOR *pMemDesc = pParams->pMemDesc;
@@ -485,8 +485,9 @@ ceutilsMemset_IMPL
     }
 
     size = memdescGetSize(pMemDesc);
-    pteArraySize = memdescGetPteArraySize(pMemDesc, AT_GPU);
-    bContiguous = (pMemDesc->_flags & MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS) || (pteArraySize == 1);
+
+    addrTranslation = FORCE_VMMU_TRANSLATION(pMemDesc, AT_GPU);
+    bContiguous =  memdescGetContiguity(pMemDesc, addrTranslation);
 
     if (pParams->offset >= size)
     {
@@ -515,25 +516,32 @@ ceutilsMemset_IMPL
     memsetLength = pParams->length;
     offset = pParams->offset;
 
-    //
-    // We need not just the physical address,
-    // but the physical address to be used by the engine
-    // ce2utils is only used for AT_GPU
-    //
-
     do
     {
         //
         // Use the memdesc phys addr for calculations, but the pte address for the value
         // programmed into CE
         //
-        NvU64 dstAddr = memdescGetPhysAddr(pMemDesc, AT_GPU, offset);
+        NvU64 dstAddr = memdescGetPhysAddr(pMemDesc, addrTranslation, offset);
         NvU64 maxContigSize = bContiguous ? memsetLength : (pageGranularity - dstAddr % pageGranularity);
         NvU32 memsetSizeContig = (NvU32)NV_MIN(NV_MIN(memsetLength, maxContigSize), CE_MAX_BYTES_PER_LINE);
 
+        // Fast scrubber must be aligned to 4K, use 4K if we can
+        if (pChannel->type == FAST_SCRUBBER_CHANNEL)
+        {
+            //
+            // If memsetSizeContig is less than MEMUTIL_SCRUB_LINE_LENGTH_ALIGNMENT, then we would
+            // round down to zero. In that case, we can't use the fast scrubber.
+            // 
+            if (memsetSizeContig > MEMUTIL_SCRUB_LINE_LENGTH_ALIGNMENT)
+            {
+                memsetSizeContig = NV_ALIGN_DOWN(memsetSizeContig, MEMUTIL_SCRUB_LINE_LENGTH_ALIGNMENT);
+            }
+        }
+
         NV_PRINTF(LEVEL_INFO, "CeUtils Memset dstAddr: %llx,  size: %x\n", dstAddr, memsetSizeContig);
 
-        channelPbInfo.dstAddr = memdescGetPtePhysAddr(pMemDesc, AT_GPU, offset);
+        channelPbInfo.dstAddr = memdescGetPtePhysAddr(pMemDesc, addrTranslation, offset);;
         channelPbInfo.size = memsetSizeContig;
         status = _ceutilsSubmitPushBuffer(pChannel, bPipelined, memsetSizeContig == memsetLength, &channelPbInfo);
         if (status != NV_OK)
@@ -578,6 +586,7 @@ ceutilsMemcopy_IMPL
     NV_STATUS   status = NV_OK;
 
     NvU64  srcSize, dstSize, copyLength, srcPageGranularity, dstPageGranularity;
+    ADDRESS_TRANSLATION srcAddrTranslation, dstAddrTranslation;
     NvBool bSrcContig, bDstContig;
 
     CHANNEL_PB_INFO channelPbInfo  = {0};
@@ -639,8 +648,10 @@ ceutilsMemcopy_IMPL
 
     srcPageGranularity = pSrcMemDesc->pageArrayGranularity;
     dstPageGranularity = pDstMemDesc->pageArrayGranularity;
-    bSrcContig = memdescGetContiguity(pSrcMemDesc, AT_GPU);
-    bDstContig = memdescGetContiguity(pDstMemDesc, AT_GPU);
+    srcAddrTranslation = FORCE_VMMU_TRANSLATION(pSrcMemDesc, AT_GPU);
+    dstAddrTranslation = FORCE_VMMU_TRANSLATION(pDstMemDesc, AT_GPU);
+    bSrcContig = memdescGetContiguity(pSrcMemDesc, srcAddrTranslation);
+    bDstContig = memdescGetContiguity(pDstMemDesc, dstAddrTranslation);
 
     copyLength = length;
 
@@ -650,8 +661,11 @@ ceutilsMemcopy_IMPL
         // This algorithm finds the maximum contig region from both src and dst
         // for each copy and iterate until we submitted the whole range to CE
         //
-        NvU64 srcAddr = memdescGetPhysAddr(pSrcMemDesc, AT_GPU, srcOffset);
-        NvU64 dstAddr = memdescGetPhysAddr(pDstMemDesc, AT_GPU, dstOffset);
+        // Use the memdesc phys addr for calculations, but the pte address for the value
+        // programmed into CE
+        //
+        NvU64 srcAddr = memdescGetPhysAddr(pSrcMemDesc, srcAddrTranslation, srcOffset);
+        NvU64 dstAddr = memdescGetPhysAddr(pDstMemDesc, dstAddrTranslation, dstOffset);
         NvU64 maxContigSizeSrc = bSrcContig ? copyLength : (srcPageGranularity - srcAddr % srcPageGranularity);
         NvU64 maxContigSizeDst = bDstContig ? copyLength : (dstPageGranularity - dstAddr % dstPageGranularity);
         NvU32 copySizeContig = (NvU32)NV_MIN(NV_MIN(copyLength, NV_MIN(maxContigSizeSrc, maxContigSizeDst)), CE_MAX_BYTES_PER_LINE);
@@ -659,8 +673,8 @@ ceutilsMemcopy_IMPL
         NV_PRINTF(LEVEL_INFO, "CeUtils Memcopy dstAddr: %llx, srcAddr: %llx, size: %x\n",
                   dstAddr, srcAddr, copySizeContig);
 
-        channelPbInfo.srcAddr = srcAddr;
-        channelPbInfo.dstAddr = dstAddr;
+        channelPbInfo.srcAddr = memdescGetPtePhysAddr(pSrcMemDesc, srcAddrTranslation, srcOffset);
+        channelPbInfo.dstAddr = memdescGetPtePhysAddr(pDstMemDesc, dstAddrTranslation, dstOffset);
         channelPbInfo.size = copySizeContig;
         status = _ceutilsSubmitPushBuffer(pChannel, bPipelined, copySizeContig == copyLength, &channelPbInfo);
         if (status != NV_OK)

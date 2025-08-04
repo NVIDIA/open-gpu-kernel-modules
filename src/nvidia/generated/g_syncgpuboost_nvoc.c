@@ -303,6 +303,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__SyncGpuBoost =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_syncgpuboostDestruct(SyncGpuBoost*);
 void __nvoc_dtor_RmResource(RmResource*);
 void __nvoc_dtor_SyncGpuBoost(SyncGpuBoost *pThis) {
     __nvoc_syncgpuboostDestruct(pThis);

@@ -25,10 +25,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE;
 
 // Forward declarations for KernelGsplite
 void __nvoc_init__OBJENGSTATE(OBJENGSTATE*);
-void __nvoc_init__KernelGsplite(KernelGsplite*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_funcTable_KernelGsplite(KernelGsplite*, RmHalspecOwner *pRmhalspecowner);
-NV_STATUS __nvoc_ctor_KernelGsplite(KernelGsplite*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_dataField_KernelGsplite(KernelGsplite*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init__KernelGsplite(KernelGsplite*, GpuHalspecOwner *pGpuhalspecowner);
+void __nvoc_init_funcTable_KernelGsplite(KernelGsplite*, GpuHalspecOwner *pGpuhalspecowner);
+NV_STATUS __nvoc_ctor_KernelGsplite(KernelGsplite*, GpuHalspecOwner *pGpuhalspecowner);
+void __nvoc_init_dataField_KernelGsplite(KernelGsplite*, GpuHalspecOwner *pGpuhalspecowner);
 void __nvoc_dtor_KernelGsplite(KernelGsplite*);
 
 // Structures used within RTTI (run-time type information)
@@ -204,6 +204,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelGsplite =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_kgspliteDestruct(KernelGsplite*);
 void __nvoc_dtor_OBJENGSTATE(OBJENGSTATE*);
 void __nvoc_dtor_KernelGsplite(KernelGsplite *pThis) {
     __nvoc_kgspliteDestruct(pThis);
@@ -211,27 +212,32 @@ void __nvoc_dtor_KernelGsplite(KernelGsplite *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_KernelGsplite(KernelGsplite *pThis, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+void __nvoc_init_dataField_KernelGsplite(KernelGsplite *pThis, GpuHalspecOwner *pGpuhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
-    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 
     // NVOC Property Hal field -- PDB_PROP_KGSPLITE_IS_MISSING
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->setProperty(pThis, PDB_PROP_KGSPLITE_IS_MISSING, NV_TRUE);
+    }
     // default
+    else
     {
         pThis->setProperty(pThis, PDB_PROP_KGSPLITE_IS_MISSING, NV_FALSE);
     }
 }
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
-NV_STATUS __nvoc_ctor_KernelGsplite(KernelGsplite *pThis, RmHalspecOwner *pRmhalspecowner) {
+NV_STATUS __nvoc_ctor_KernelGsplite(KernelGsplite *pThis, GpuHalspecOwner *pGpuhalspecowner) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
     if (status != NV_OK) goto __nvoc_ctor_KernelGsplite_fail_OBJENGSTATE;
-    __nvoc_init_dataField_KernelGsplite(pThis, pRmhalspecowner);
+    __nvoc_init_dataField_KernelGsplite(pThis, pGpuhalspecowner);
     goto __nvoc_ctor_KernelGsplite_exit; // Success
 
 __nvoc_ctor_KernelGsplite_fail_OBJENGSTATE:
@@ -241,23 +247,23 @@ __nvoc_ctor_KernelGsplite_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_KernelGsplite_1(KernelGsplite *pThis, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+static void __nvoc_init_funcTable_KernelGsplite_1(KernelGsplite *pThis, GpuHalspecOwner *pGpuhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
-    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 } // End __nvoc_init_funcTable_KernelGsplite_1
 
 
 // Initialize vtable(s) for 14 virtual method(s).
-void __nvoc_init_funcTable_KernelGsplite(KernelGsplite *pThis, RmHalspecOwner *pRmhalspecowner) {
-    __nvoc_init_funcTable_KernelGsplite_1(pThis, pRmhalspecowner);
+void __nvoc_init_funcTable_KernelGsplite(KernelGsplite *pThis, GpuHalspecOwner *pGpuhalspecowner) {
+    __nvoc_init_funcTable_KernelGsplite_1(pThis, pGpuhalspecowner);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__KernelGsplite(KernelGsplite *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init__KernelGsplite(KernelGsplite *pThis, GpuHalspecOwner *pGpuhalspecowner) {
 
     // Initialize pointers to inherited data.
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object;    // (obj) super^2
@@ -273,7 +279,7 @@ void __nvoc_init__KernelGsplite(KernelGsplite *pThis, RmHalspecOwner *pRmhalspec
     pThis->__nvoc_metadata_ptr = &__nvoc_metadata__KernelGsplite;    // (kgsplite) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_KernelGsplite(pThis, pRmhalspecowner);
+    __nvoc_init_funcTable_KernelGsplite(pThis, pGpuhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_KernelGsplite(KernelGsplite **ppThis, Dynamic *pParent, NvU32 createFlags)
@@ -281,7 +287,7 @@ NV_STATUS __nvoc_objCreate_KernelGsplite(KernelGsplite **ppThis, Dynamic *pParen
     NV_STATUS status;
     Object *pParentObj = NULL;
     KernelGsplite *pThis;
-    RmHalspecOwner *pRmhalspecowner;
+    GpuHalspecOwner *pGpuhalspecowner;
 
     // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelGsplite), (void**)&pThis, (void**)ppThis);
@@ -307,12 +313,12 @@ NV_STATUS __nvoc_objCreate_KernelGsplite(KernelGsplite **ppThis, Dynamic *pParen
         pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.pParent = NULL;
     }
 
-    if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
-        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
-    NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
+    if ((pGpuhalspecowner = dynamicCast(pParent, GpuHalspecOwner)) == NULL)
+        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, pParent);
+    NV_ASSERT_OR_RETURN(pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init__KernelGsplite(pThis, pRmhalspecowner);
-    status = __nvoc_ctor_KernelGsplite(pThis, pRmhalspecowner);
+    __nvoc_init__KernelGsplite(pThis, pGpuhalspecowner);
+    status = __nvoc_ctor_KernelGsplite(pThis, pGpuhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_KernelGsplite_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

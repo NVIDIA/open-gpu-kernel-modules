@@ -526,6 +526,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__UvmSwObject =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_uvmswDestruct(UvmSwObject*);
 void __nvoc_dtor_ChannelDescendant(ChannelDescendant*);
 void __nvoc_dtor_UvmSwObject(UvmSwObject *pThis) {
     __nvoc_uvmswDestruct(pThis);

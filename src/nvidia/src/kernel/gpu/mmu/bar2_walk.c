@@ -250,6 +250,7 @@ _bar2WalkCBFillEntries
                 for ( entryIndex = entryIndexLo; entryIndex <= entryIndexHi; entryIndex++ )
                 {
                     entryOffset = entryIndex * pLevelFmt->entrySize;
+                    // BAR2 address to write through is not localized
                     entryStart = memdescGetPhysAddr(pMemDesc, FORCE_VMMU_TRANSLATION(pMemDesc, addressTranslation), entryOffset);
                     for (i = 0; i < sizeInDWord; i++)
                     {
@@ -273,7 +274,7 @@ _bar2WalkCBFillEntries
             //
 
             NV_ASSERT_OR_RETURN_VOID(pKernelBus->virtualBar2[gfid].pPageLevels != NULL);
-
+            // BAR2 address to write through is not localized
             pMap = memdescGetPhysAddr(pMemDesc, addressTranslation, 0) -
                                   pKernelBus->bar2[gfid].pdeBase +
                                   pKernelBus->virtualBar2[gfid].pPageLevels;
@@ -314,7 +315,7 @@ _bar2WalkCBFillEntries
                         pLevelFmt->entrySize);
         }
 
-        memdescUnmapOld(pMemDesc, 1, 0, pMap, pPriv);
+        memdescUnmapOld(pMemDesc, 1, pMap, pPriv);
     }
 
     *pProgress = entryIndexHi - entryIndexLo + 1;
@@ -364,7 +365,7 @@ _bar2WalkCBUpdatePde
         {
             const GMMU_APERTURE       aperture = kgmmuGetMemAperture(pKernelGmmu, pSubMemDesc);
             const GMMU_FIELD_ADDRESS *pFldAddr = gmmuFmtPdePhysAddrFld(pPde, aperture);
-            const NvU64               physAddr = memdescGetPhysAddr(pSubMemDesc, AT_GPU, 0);
+            const NvU64               physAddr = memdescGetPtePhysAddr(pSubMemDesc, AT_GPU, 0);
 
             // Set fields within the temp PDE
             if (pFmt->version == GMMU_FMT_VERSION_3)
@@ -432,6 +433,7 @@ _bar2WalkCBUpdatePde
             }
             else
             {
+                // BAR2 address to write through is not localized
                 entryStart  = memdescGetPhysAddr(pMemDesc, AT_PA, entryOffset);
                 sizeInDWord = (NvU32)NV_CEIL(pLevelFmt->entrySize, sizeof(NvU32));
 
@@ -451,7 +453,7 @@ _bar2WalkCBUpdatePde
                  KBUS_BAR0_PRAMIN_DISABLED(pGpu))
         {
             NV_ASSERT(NULL != pKernelBus->virtualBar2[gfid].pPageLevels);
-
+            // BAR2 address to write through is not localized
             pMap = memdescGetPhysAddr(pMemDesc, AT_GPU, 0) -
                                   pKernelBus->bar2[gfid].pdeBase +
                                   pKernelBus->virtualBar2[gfid].pPageLevels;
@@ -474,7 +476,7 @@ _bar2WalkCBUpdatePde
                                &pPriv);
         NV_ASSERT_OR_RETURN(NV_OK == status, NV_FALSE);
         portMemCopy(pMap + entryOffset, pLevelFmt->entrySize, entry.v8, pLevelFmt->entrySize);
-        memdescUnmapOld(pMemDesc, 1, 0, pMap, pPriv);
+        memdescUnmapOld(pMemDesc, 1, pMap, pPriv);
     }
     else
     {
@@ -875,6 +877,7 @@ _bar2WalkCBWriteBuffer
         else
         {
             // Get the physical address of the memdesc
+            // BAR2 address to write through is not localized
             NvU64 phys = memdescGetPhysAddr(pOutputBufferDesc,
                                             FORCE_VMMU_TRANSLATION(pOutputBufferDesc, AT_GPU),
                                             firstEntryOffset);
@@ -922,7 +925,7 @@ _bar2WalkCBWriteBuffer
                 entryRangeSize);
 
 unmap_and_exit:
-    memdescUnmapOld(pStagingBufferDesc, NV_TRUE, 0, pStagingDescMapping, pPriv);
+    memdescUnmapOld(pStagingBufferDesc, NV_TRUE, pStagingDescMapping, pPriv);
 
     if (bRestore)
     {

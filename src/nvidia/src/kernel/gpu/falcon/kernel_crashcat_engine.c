@@ -281,7 +281,7 @@ void kcrashcatEngineUnmapBufferDescriptor_IMPL
     NvP64 pBuf = memdescGetKernelMapping(pMemDesc);
     NvP64 pPriv = memdescGetKernelMappingPriv(pMemDesc);
 
-    memdescUnmap(pMemDesc, NV_TRUE, 0, pBuf, pPriv);
+    memdescUnmap(pMemDesc, NV_TRUE, pBuf, pPriv);
     memdescSetKernelMapping(pMemDesc, NULL);
     memdescSetKernelMappingPriv(pMemDesc, NULL);
 

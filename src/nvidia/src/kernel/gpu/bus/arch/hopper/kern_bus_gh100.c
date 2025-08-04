@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -46,6 +46,7 @@
 #include "published/hopper/gh100/dev_ram.h"
 #include "published/hopper/gh100/pri_nv_xal_ep.h"
 #include "published/hopper/gh100/pri_nv_xal_ep_p2p.h"
+#include "published/hopper/gh100/dev_nv_xal_addendum.h"
 #include "published/hopper/gh100/dev_xtl_ep_pcfg_gpu.h"
 #include "published/hopper/gh100/dev_vm.h"
 #include "published/hopper/gh100/dev_mmu.h"
@@ -1244,11 +1245,8 @@ kbusMapCoherentCpuMapping_GH100
     RmPhysAddr startAddr    = memdescGetPhysAddr(pMemDesc, FORCE_VMMU_TRANSLATION(pMemDesc, AT_GPU), offset);
     NvU8       i            = 0;
 
-    //
-    // VGPU does not online memory, yet has multiple regions, so we need to use
-    // static mapping for the "onlined" region.
-    //
-    if (!hypervisorIsVgxHyper())
+    // Use osMapSystemMemory if GPU FB is onlined to kernel as a NUMA node OR running on MODS, else use static mapping.
+    if (osNumaOnliningEnabled(pGpu->pOsGpuInfo) || RMCFG_FEATURE_MODS_FEATURES)
     {
         if (_kbusMemoryIsInFbRegion(pKernelBus, pMemDesc, offset, COHERENT_CPU_MAPPING_RM_KERNEL_ONLINED_REGION))
         {
@@ -1303,16 +1301,13 @@ kbusUnmapCoherentCpuMapping_GH100
     NvU8 regionIndex = COHERENT_CPU_MAPPING_RM_KERNEL_ONLINED_REGION;
     NvU8 i           = 0;
 
-    //
-    // VGPU does not online memory, yet has multiple regions, so we need to use
-    // static mapping for the "onlined" region.
-    //
-    if (!hypervisorIsVgxHyper())
+    // Use osMapSystemMemory if GPU FB is onlined to kernel as a NUMA node OR running on MODS, else use static mapping.
+    if (osNumaOnliningEnabled(pGpu->pOsGpuInfo) || RMCFG_FEATURE_MODS_FEATURES)
     {
         if (_kbusMemoryIsInFbRegion(pKernelBus, pMemDesc, 0, COHERENT_CPU_MAPPING_RM_KERNEL_ONLINED_REGION))
         {
             kbusFlush_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), BUS_FLUSH_VIDEO_MEMORY);
-            osUnmapSystemMemory(pMemDesc, NV_TRUE, 0, pAddress, pPriv);
+            osUnmapSystemMemory(pMemDesc, NV_TRUE, pAddress, pPriv);
             kbusFlush_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), BUS_FLUSH_VIDEO_MEMORY);
             return;
         }
@@ -1479,8 +1474,8 @@ _kbusCreateStaticBar1IOMMUMapping
                                            pSrcGpu->busInfo.iovaspaceId));
 
     // To get the peer DMA address of the memory for the GPU was mapped to
-    memdescGetPhysAddrsForGpu(pPeerDmaMemDesc, pSrcGpu,
-                              AT_GPU, 0, 0, 1, &peerDmaAddr);
+    memdescGetPtePhysAddrsForGpu(pPeerDmaMemDesc, pSrcGpu,
+                                 AT_GPU, 0, 0, 1, &peerDmaAddr);
 
     // Check the if it is aligned to max RM_PAGE_SIZE 512M.
     if (!NV_IS_ALIGNED64(peerDmaAddr, RM_PAGE_SIZE_512M))
@@ -1579,8 +1574,8 @@ NV_STATUS kbusGetBar1P2PDmaInfo_GH100
     NV_ASSERT_OR_RETURN(pPeerDmaMemDesc != NULL, NV_ERR_NOT_SUPPORTED);
 
     // Get the peer GPU DMA address for the source GPU
-    memdescGetPhysAddrsForGpu(pPeerDmaMemDesc, pSrcGpu,
-                              AT_GPU, 0, 0, 1, pDmaAddress);
+    memdescGetPtePhysAddrsForGpu(pPeerDmaMemDesc, pSrcGpu,
+                                 AT_GPU, 0, 0, 1, pDmaAddress);
 
     *pDmaSize = memdescGetSize(pPeerDmaMemDesc);
 
@@ -1742,6 +1737,90 @@ _kbusGetC2CP2PPeerId
 )
 {
     NV_STATUS  status       = NV_OK;
+    KernelBif *pKernelBif0  = GPU_GET_KERNEL_BIF(pGpu0);
+    NvU32      peerId       = 0;
+
+    if (c2cPeer == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if (pKernelBif0 == NULL ||
+        kbifIsC2CP2PSupported_HAL(pGpu0, pKernelBif0, pGpu1) == NV_FALSE)
+    {
+        *c2cPeer = BUS_INVALID_PEER;
+        return NV_OK;
+    }
+
+    // Return if a peer ID is already allocated for P2P from pGpu0 to pGpu1
+    peerId = kbusGetPeerId_HAL(pGpu0, pKernelBus0, pGpu1);
+
+    if (peerId != BUS_INVALID_PEER)
+    {
+        status = NV_OK;
+        goto busGetC2CP2PPeerId_end;
+    }
+
+    // Peer ID 0 is used when the GPU is connected to itself through C2C (loopback)
+    if (pGpu0 == pGpu1)
+    {
+        if (pKernelBus0->p2pMapSpecifyId)
+        {
+            peerId = pKernelBus0->p2pMapPeerId;
+        }
+        else
+        {
+            peerId = 0;
+        }
+        goto busReserveC2CP2PPeerId;
+    }
+
+    //
+    // If no peer ID has been assigned yet and peer ID is not passed by the
+    // client, find the first unused peer ID.
+    //
+    if (*c2cPeer == BUS_INVALID_PEER)
+    {
+        peerId = kbusGetUnusedPeerId_HAL(pGpu0, pKernelBus0);
+
+        // If could not find a free peer ID, return error
+        if (peerId == BUS_INVALID_PEER)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "GPU%d: peerID not available for C2C P2P\n",
+                      pGpu0->gpuInstance);
+            return NV_ERR_GENERIC;
+        }
+    }
+    else
+    {
+        peerId = *c2cPeer;
+    }
+
+busReserveC2CP2PPeerId:
+
+    // Reserve the peer ID for C2C use
+    status = kbusReserveP2PPeerIds_HAL(pGpu0, pKernelBus0, NVBIT(peerId));
+
+busGetC2CP2PPeerId_end:
+    if (status == NV_OK)
+    {
+        if (*c2cPeer == BUS_INVALID_PEER)
+        {
+            NV_PRINTF(LEVEL_INFO, "- P2P: Using Default RM mapping for P2P.\n");
+            *c2cPeer = peerId;
+        }
+        else
+        {
+            if (*c2cPeer != peerId)
+            {
+                NV_PRINTF(LEVEL_ERROR, "- P2P: Incorrect PeerId: %d passed down to RM\n",
+                          *c2cPeer);
+                return NV_ERR_INVALID_ARGUMENT;
+            }
+        }
+    }
+
     return status;
 }
 
@@ -2009,7 +2088,7 @@ kbusDetermineFlaRangeAndAllocate_GH100
     NvU64      size
 )
 {
-    NV_STATUS      status        = NV_OK;
+    NV_STATUS      status = NV_OK;
 
     OBJSYS *pSys = SYS_GET_INSTANCE();
 
@@ -2019,7 +2098,10 @@ kbusDetermineFlaRangeAndAllocate_GH100
         return kbusDetermineFlaRangeAndAllocate_GA100(pGpu, pKernelBus, base, size);
     }
 
-    NV_ASSERT_OK_OR_RETURN(kbusAllocateFlaVaspace_HAL(pGpu, pKernelBus, 0x0, NVBIT64(52)));
+    base = 0x0;
+    size = NVBIT64(52);
+
+    NV_ASSERT_OK_OR_RETURN(kbusAllocateFlaVaspace_HAL(pGpu, pKernelBus, base, size));
 
     return status;
 }
@@ -2735,4 +2817,115 @@ kbusGetEccCounts_GH100
     count += DRF_VAL(_XAL_EP, _P2PREQ_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
 
     return count;
+}
+
+/*!
+ * @brief This function issues a sysmembar by writing to NV_XAL_EP_UFLUSH_FB_FLUSH, which
+ * tells HOST unit to flush all outstanding writes to the GPU from the PCIE path.
+ * It guarantees any writes to the FB before the sysmembar has taken effect on the GPU
+ * on the PCIE path.
+ *
+ * Hopper replaces common pending/outstanding bit in memops with a token system.
+ * To trigger a memop, SW issues a read of theregister as opposed to write of the memop.
+ * This read would trigger an injection of the memop in HW. Once HW injects the memop
+ * into the pipeline a free running token counter is incremented. The read return value
+ * for this memop would be the value of the trigger token
+ *
+ *
+ * NOTE: Must be called inside a SLI loop
+ */
+NV_STATUS
+kbusSendSysmembarSingle_GH100(OBJGPU *pGpu, KernelBus *pKernelBus)
+{
+    NV_STATUS    status = NV_OK;
+    NV_STATUS    timeoutStatus = NV_OK;
+    NvU32        cnt = 0;
+    RMTIMEOUT    timeout;
+    NvU32        startToken = 0;
+    NvU32        completedToken = 0;
+
+    if (API_GPU_IN_RESET_SANITY_CHECK(pGpu) || API_GPU_IN_RECOVERY_SANITY_CHECK(pGpu) ||
+        !API_GPU_ATTACHED_SANITY_CHECK(pGpu))
+    {
+        //
+        // When the GPU is in full chip reset or lost.
+        // We have the same check in busFlush path. But driver can send
+        // sysmembar without going through the flush path.
+        //
+        return NV_OK;
+    }
+
+    //
+    // XXX - This call can take an extended period of time,
+    // or is called near the bottom of the stack,
+    // so reset the timeout until we can address this.
+    //
+    threadStateResetTimeout(pGpu);
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+
+    startToken = GPU_REG_RD32(pGpu, NV_XAL_EP_UFLUSH_FB_FLUSH);
+    startToken = DRF_VAL( _XAL_EP_UFLUSH, _FB_FLUSH, _TOKEN, startToken);
+
+    while (((completedToken = GPU_REG_RD32(pGpu, NV_XAL_EP_UFLUSH_FB_FLUSH_COMPLETED)) &
+                DRF_SHIFTMASK(NV_XAL_EP_UFLUSH_FB_FLUSH_COMPLETED_STATUS))
+            == (NvU32)DRF_DEF(_XAL_EP_UFLUSH, _FB_FLUSH_COMPLETED, _STATUS, _BUSY) )
+    {
+        completedToken = DRF_VAL( _XAL_EP_UFLUSH, _FB_FLUSH_COMPLETED, _TOKEN, completedToken);
+
+        //
+        // When completedToken > startToken(including the wrapping around case), due to the nature
+        // of unsigned number, the value of "(startToken - completeToken) & tokenMask" will be
+        // at top of token range which will be bigger than NV_XAL_EP_MEMOP_MAX_OUTSTANDING. So it
+        // will break out from the loop.
+        //
+        // The loop will wait only when completedToken in the range of
+        // [startToken-NV_XAL_EP_MEMOP_MAX_OUTSTANDING, startToken].
+        //
+        if (((startToken - completedToken) & DRF_MASK(NV_XAL_EP_UFLUSH_FB_FLUSH_TOKEN)) > NV_XAL_EP_MEMOP_MAX_OUTSTANDING)
+        {
+            break;
+        }
+
+        //
+        // If there is a timeout, make sure we check the HW status one last
+        // time, in case our thread is preempted during heavy CPU load, and we
+        // don't get to run again until after the timeout has expired.  (Bug
+        // 467744.)
+        //
+        if (timeoutStatus == NV_ERR_TIMEOUT)
+        {
+#ifdef DEBUG
+            // to aid in debug, probe a normally harmless reg to trigger on
+            GPU_REG_RD32(pGpu, NV_XAL_EP_ZEROS);
+#endif
+
+            //
+            // This should not timeout, except for a HW bug.  Famous last words.
+            // On !DEBUG we just keep trucking, it's the best we can do.
+            // We don't want this breakpoint when a debug build is being used by special test
+            // equipment (e.g. ATE) that expects to hit this situation.  Bug 672073
+            //
+            NV_PRINTF(LEVEL_ERROR,
+                      "- timeout error waiting for startToken = 0x%x cnt=%d\n", startToken, cnt);
+
+            DBG_BREAKPOINT_REASON(NV_ERR_FATAL_ERROR);
+            status = NV_ERR_TIMEOUT;
+            break;
+        }
+
+        //
+        // If the GPU is in full chip reset or has fallen off the bus
+        // since the start of the loop, return to avoid hanging forever. In
+        // those cases the flush is meaningless, so just return success.
+        // See bugs 1557278 and 1598019.
+        //
+        NV_ASSERT_OR_RETURN(!API_GPU_IN_RESET_SANITY_CHECK(pGpu), NV_OK);
+        NV_ASSERT_OR_RETURN(API_GPU_ATTACHED_SANITY_CHECK(pGpu), NV_OK);
+
+        timeoutStatus = gpuCheckTimeout(pGpu, &timeout);
+        osSpinLoop();
+        cnt++;
+    }
+
+    return status;
 }

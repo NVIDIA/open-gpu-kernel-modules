@@ -29,6 +29,8 @@
  * Linux kernel.
  */
 
+#include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h"
+#include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator_private.h"
 #include "gpu/mem_mgr/phys_mem_allocator/numa.h"
 #include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator_util.h"
 #include "gpu/mem_mgr/mem_scrub.h"
@@ -393,7 +395,7 @@ static NV_STATUS _pmaNumaAllocatePages
         status = osAllocPagesNode((int)numaNodeId, (NvLength) pageSize, flags, &sysPhysAddr);
         if (status != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR, "Alloc from OS failed for i= %lld allocationCount = %lld pageSize = %lld!\n",
+            NV_PRINTF(LEVEL_INFO, "Alloc from OS failed for i= %lld allocationCount = %lld pageSize = %lld!\n",
                                    i, (NvU64) allocationCount, (NvU64) pageSize);
             break;
         }

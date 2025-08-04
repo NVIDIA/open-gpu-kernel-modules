@@ -96,6 +96,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__CrashCatEngine =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_crashcatEngineDestruct(CrashCatEngine*);
 void __nvoc_dtor_CrashCatEngine(CrashCatEngine *pThis) {
     __nvoc_crashcatEngineDestruct(pThis);
     PORT_UNREFERENCED_VARIABLE(pThis);

@@ -141,14 +141,18 @@ void __nvoc_init_halspec_DispIpHal(DispIpHal*, NvU32);
 // delete ~DISPv0400 & (TU102 | TU104 | TU106 | TU116 | TU117);
 // delete DISPv0401 & ~(GA102 | GA103 | GA104 | GA106 | GA107);
 // delete ~DISPv0401 & (GA102 | GA103 | GA104 | GA106 | GA107);
+// delete DISPv0402 & ~T234D;
+// delete ~DISPv0402 & T234D;
 // delete DISPv0404 & ~(AD102 | AD103 | AD104 | AD106 | AD107);
 // delete ~DISPv0404 & (AD102 | AD103 | AD104 | AD106 | AD107);
-// delete DISPv0501 & ~GB10B;
-// delete ~DISPv0501 & GB10B;
+// delete DISPv0501 & ~(GB10B | T264D);
+// delete ~DISPv0501 & (GB10B | T264D);
 // delete DISPv0502 & ~(GB202 | GB203 | GB205 | GB206 | GB207);
 // delete ~DISPv0502 & (GB202 | GB203 | GB205 | GB206 | GB207);
 // delete DISPv0503 & ~GB20B;
 // delete ~DISPv0503 & GB20B;
+// delete DISPv0504 & ~GB20C;
+// delete ~DISPv0504 & GB20C;
 
 
 /* DPU IP versions */

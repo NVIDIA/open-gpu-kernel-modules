@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2024 NVIDIA Corporation
+    Copyright (c) 2016-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -41,7 +41,48 @@ typedef enum
     UVM_APERTURE_PEER_6,
     UVM_APERTURE_PEER_7,
     UVM_APERTURE_PEER_MAX,
+
+    // SYS aperture is used for memory addresses in system physical address
+    // space, or device DMA space. This is currently used for system memory
+    // and certain types of peer memory.
+    // UVM always uses UVM_APERTURE_SYS to access system memory so the value
+    // is also used to denote 'sysmem' as a location (e.g. for page tables)
+    // It is directly encoded as SYS_COH in PTEs and CE/esched methods.
     UVM_APERTURE_SYS,
+
+    // On platforms that support the GPU coherently caching system memory,
+    // SYS_NON_COHERENT prevents other clients from snooping the GPU L2 cache.
+    // This allows noncoherent caching of system memory by GPUs on these
+    // platforms. UVM does not use SYS_NON_COHERENT for its internal mappings,
+    // however it may be used by UvmMapExternalAllocation() for external
+    // mappings. On fully coherent platforms, SYS_NON_COHERENT will be used in
+    // the following cases:
+    //
+    // +----------------------------------------------------------+------------+-------------+
+    // | RM Allocation Settings / UvmMapExternalAllocation() Flag |  Default   | ForceCached |
+    // +----------------------------------------------------------+------------+-------------+
+    // | GPU_CACHE_SNOOP_DISABLE + GPU CACHED                     | SYS_NONCOH | SYS_NONCOH  |
+    // | GPU_CACHE_SNOOPABLE_DEFER_TO_MAP + GPU CACHED            | SYS_NONCOH | SYS_NONCOH  |
+    // | GPU_CACHE_SNOOP_DISABLE + GPU UNCACHED                   | -          | SYS_NONCOH  |
+    // | GPU_CACHE_SNOOPABLE_DEFER_TO_MAP + GPU UNCACHED          | -          | SYS_NONCOH  |
+    // +----------------------------------------------------------+------------+-------------+
+    //
+    // The implementation of UvmMapExternalAllocation() relies on RM to
+    // actually generate PTEs (see nvUvmInterfaceGetExternalAllocPtes()) which
+    // means that UVM does not create these SYS_NON_COHERENT entries itself.
+    //
+    // However, in the kernel_driver_get_rm_ptes test, UVM creates
+    // SYS_NON_COHERENT PTEs to verify that RM is using the expected aperture on
+    // fully coherent platforms. These test PTEs are never actually used for
+    // translation.
+    //
+    // SYS_NON_COHERENT aperture is never used to denote a location and its use
+    // is more limited than the SYS aperture above.
+    UVM_APERTURE_SYS_NON_COHERENT,
+
+    // VID aperture is used for memory accesses in GPU's local vidmem.
+    // It's the only aperture used for local vidmem, so it's also used to
+    // denote vidmem location (e.g. for page tables)
     UVM_APERTURE_VID,
 
     // DEFAULT is a special value to let MMU pick the location of page tables
@@ -535,5 +576,25 @@ static uvm_prot_t uvm_fault_access_type_to_prot(uvm_fault_access_type_t access_t
             return UVM_PROT_READ_ONLY;
     }
 }
+
+// Indicates the type of GPU physical TLB invalidation required when
+// transitioning an IOMMU GPA mapping from invalid to valid (dma_map_page() and
+// friends).
+typedef enum
+{
+    UVM_DMA_MAP_INVALIDATION_NONE = 0,
+
+    // No actual invalidation of lines is required. A dummy invalidation is
+    // needed flush out non-fatal prefetch accesses which may have occurred
+    // while the mapping was still invalid.
+    UVM_DMA_MAP_INVALIDATION_FLUSH,
+
+    // Invalidate all matching GPA lines
+    UVM_DMA_MAP_INVALIDATION_FULL,
+
+    UVM_DMA_MAP_INVALIDATION_COUNT
+} uvm_dma_map_invalidation_t;
+
+const char *uvm_dma_map_invalidation_string(uvm_dma_map_invalidation_t inval_type);
 
 #endif // __UVM_HAL_TYPES_H__

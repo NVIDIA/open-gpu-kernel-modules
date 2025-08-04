@@ -56,7 +56,7 @@ typedef struct RomImgSrc
 } RomImgSrc;
 
 /*!
- * Equivalent to GPU_REG_RD08(pGpu, NV_PROM_DATA(offset)), but use raw OS read
+ * Equivalent to GPU_REG_RD08(pGpu, NV_PROM_DATA(offset)), but use GPU_REG_RD08_UNCHECKED
  * to avoid the 0xbadf sanity checking done by the usual register read
  * utilities.
  */
@@ -67,12 +67,11 @@ s_promRead08
     NvU32 offset
 )
 {
-    return osDevReadReg008(pGpu, gpuGetDeviceMapping(pGpu, DEVICE_INDEX_GPU, 0),
-                           NV_PROM_DATA(offset));
+    return GPU_REG_RD08_UNCHECKED(pGpu, NV_PROM_DATA(offset));
 }
 
 /*!
- * Equivalent to GPU_REG_RD32(pGpu, NV_PROM_DATA(offset)), but use raw OS read
+ * Equivalent to GPU_REG_RD32(pGpu, NV_PROM_DATA(offset)), but use GPU_REG_RD32_UNCHECKED
  * to avoid the 0xbadf sanity checking done by the usual register read
  * utilities.
  */
@@ -83,8 +82,7 @@ s_promRead32
     NvU32 offset
 )
 {
-    return osDevReadReg032(pGpu, gpuGetDeviceMapping(pGpu, DEVICE_INDEX_GPU, 0),
-                           NV_PROM_DATA(offset));
+    return GPU_REG_RD32_UNCHECKED(pGpu, NV_PROM_DATA(offset));
 }
 
 /*!

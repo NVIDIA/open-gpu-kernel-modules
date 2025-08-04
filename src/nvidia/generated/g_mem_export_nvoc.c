@@ -95,17 +95,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryExport =
     /*pExportInfo=*/        &__nvoc_export_info__MemoryExport
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MemoryExport[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) memoryexportCtrlExportMem_IMPL,
+        /*pFunc=*/      (void (*)(void)) &memoryexportCtrlExportMem_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
         /*flags=*/      0x109u,
         /*accessRight=*/0x0u,
@@ -120,7 +122,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MemoryEx
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) memoryexportCtrlImportMem_IMPL,
+        /*pFunc=*/      (void (*)(void)) &memoryexportCtrlImportMem_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
         /*flags=*/      0x109u,
         /*accessRight=*/0x0u,
@@ -135,7 +137,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MemoryEx
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) memoryexportCtrlGetInfo_IMPL,
+        /*pFunc=*/      (void (*)(void)) &memoryexportCtrlGetInfo_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
         /*flags=*/      0x10bu,
         /*accessRight=*/0x0u,
@@ -146,7 +148,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MemoryEx
         /*func=*/       "memoryexportCtrlGetInfo"
 #endif
     },
-
 };
 
 
@@ -360,6 +361,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__MemoryExport =
     /*pExportEntries=*/ __nvoc_exported_method_def_MemoryExport
 };
 
+void __nvoc_memoryexportDestruct(MemoryExport*);
 void __nvoc_dtor_RmResource(RmResource*);
 void __nvoc_dtor_MemoryExport(MemoryExport *pThis) {
     __nvoc_memoryexportDestruct(pThis);
@@ -393,28 +395,11 @@ __nvoc_ctor_MemoryExport_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_MemoryExport_1(MemoryExport *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // memoryexportCtrlExportMem -- exported (id=0xe00101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
-    pThis->__memoryexportCtrlExportMem__ = &memoryexportCtrlExportMem_IMPL;
-#endif
-
-    // memoryexportCtrlImportMem -- exported (id=0xe00102)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
-    pThis->__memoryexportCtrlImportMem__ = &memoryexportCtrlImportMem_IMPL;
-#endif
-
-    // memoryexportCtrlGetInfo -- exported (id=0xe00103)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
-    pThis->__memoryexportCtrlGetInfo__ = &memoryexportCtrlGetInfo_IMPL;
-#endif
-} // End __nvoc_init_funcTable_MemoryExport_1 with approximately 3 basic block(s).
+} // End __nvoc_init_funcTable_MemoryExport_1
 
 
-// Initialize vtable(s) for 24 virtual method(s).
+// Initialize vtable(s) for 21 virtual method(s).
 void __nvoc_init_funcTable_MemoryExport(MemoryExport *pThis) {
-
-    // Initialize vtable(s) with 3 per-object function pointer(s).
     __nvoc_init_funcTable_MemoryExport_1(pThis);
 }
 

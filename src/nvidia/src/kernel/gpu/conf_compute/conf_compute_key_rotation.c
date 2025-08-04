@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -95,8 +95,11 @@ performKeyRotation_WORKITEM
                 NV_ASSERT_OK(kchannelUpdateNotifierMem(pKernelChannel, NV_CHANNELGPFIFO_NOTIFICATION_TYPE_KEY_ROTATION_STATUS,
                                                        pConfCompute->keyRotationCount[h2dIndex], 0, (NvU32)pWorkItemInfo->status));
 
-                NV_PRINTF(LEVEL_INFO, "chid 0x%x (hChannel 0x%x) was NOT disabled for key rotation, writing notifier with val 0x%x\n",
-                    kchannelGetDebugTag(pKernelChannel), (NvU32)RES_GET_HANDLE(pKernelChannel), (NvU32)pWorkItemInfo->status);
+                NV_PRINTF(LEVEL_INFO,
+                    FMT_CHANNEL_DEBUG_TAG " (hChannel 0x%x) was NOT disabled for key rotation, writing notifier with val 0x%x\n",
+                    kchannelGetDebugTag(pKernelChannel),
+                    (NvU32)RES_GET_HANDLE(pKernelChannel),
+                    (NvU32)pWorkItemInfo->status);
                 // send events to clients if registered
                 kchannelNotifyEvent(pKernelChannel, NVC86F_NOTIFIERS_KEY_ROTATION, pConfCompute->keyRotationCount[h2dIndex],
                                     pWorkItemInfo->status, NULL, 0);
@@ -177,8 +180,10 @@ performKeyRotationByKeyPair
                                 (NvU16)KEY_ROTATION_STATUS_IDLE, NULL, 0);
 
             NV_PRINTF(LEVEL_SILENT,
-                      "chid 0x%x (hChannel 0x%x) was disabled for key rotation, writing notifier with KEY_ROTATION_STATUS_IDLE\n",
-                      kchannelGetDebugTag(pKernelChannel), (NvU32)RES_GET_HANDLE(pKernelChannel));
+                FMT_CHANNEL_DEBUG_TAG
+                " (hChannel 0x%x) was disabled for key rotation, writing notifier with KEY_ROTATION_STATUS_IDLE\n",
+                kchannelGetDebugTag(pKernelChannel),
+                (NvU32)RES_GET_HANDLE(pKernelChannel));
 
             // also reset channel sw state
             kchannelDisableForKeyRotation(pGpu, pKernelChannel, NV_FALSE);
@@ -277,8 +282,10 @@ confComputeCheckAndPerformKeyRotation_IMPL
         if (!kchannelIsDisabledForKeyRotation(pGpu, pKernelChannel))
         {
             NV_PRINTF(LEVEL_SILENT,
-                      "chid 0x%x (hChannel 0x%x) was NOT disabled for key rotation, can't start KR yet\n",
-                      kchannelGetDebugTag(pKernelChannel), (NvU32)RES_GET_HANDLE(pKernelChannel));
+                FMT_CHANNEL_DEBUG_TAG
+                " (hChannel 0x%x) was NOT disabled for key rotation, can't start KR yet\n",
+                kchannelGetDebugTag(pKernelChannel),
+                (NvU32)RES_GET_HANDLE(pKernelChannel));
             bIdle = NV_FALSE;
             break;
         }
@@ -344,10 +351,14 @@ confComputePerformKeyRotation_IMPL
     if (bWorkItem)
     {
         // Queue workitem to perform key rotation
-        NV_ASSERT_OK_OR_GOTO(status, osQueueWorkItemWithFlags(pGpu, performKeyRotation_WORKITEM, (void*)pWorkItemInfo,
-                                                              (OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
-                                                               OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW |
-                                                               OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS)), cleanup);
+        NV_ASSERT_OK_OR_GOTO(status,
+            osQueueWorkItem(pGpu,
+                            performKeyRotation_WORKITEM,
+                            (void *)pWorkItemInfo,
+                            (OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
+                             OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW |
+                             OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS)),
+            cleanup);
     }
     else
     {

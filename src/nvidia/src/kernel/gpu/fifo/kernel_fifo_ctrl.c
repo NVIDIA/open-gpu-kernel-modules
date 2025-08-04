@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -584,9 +584,10 @@ subdeviceCtrlCmdFifoUpdateChannelInfo_IMPL
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
-                        "kchannelCreateUserdMemDesc_HAL"
-                        "failed for hClient 0x%x and channel 0x%x status 0x%x\n",
-                        hClient, kchannelGetDebugTag(pKernelChannel), status);
+                "kchannelCreateUserdMemDesc_HAL" "failed for hClient 0x%x and " FMT_CHANNEL_DEBUG_TAG " status 0x%x\n",
+                hClient,
+                kchannelGetDebugTag(pKernelChannel),
+                status);
         }
     }
     else

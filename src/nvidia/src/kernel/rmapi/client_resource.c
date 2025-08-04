@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -389,6 +389,11 @@ CliGetSystemP2pCaps
             goto done;
         }
 
+        if (pGpuLocalLoop->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
+        {
+            continue;
+        }
+
         gpuMask |= NVBIT(gpuGetInstance(pGpuLocalLoop));
 
         for (peerGpuIndex = 0; peerGpuIndex < gpuCount; peerGpuIndex++)
@@ -400,6 +405,11 @@ CliGetSystemP2pCaps
                           gpuIds[peerGpuIndex]);
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto done;
+            }
+
+            if (pGpuPeer->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
+            {
+                continue;
             }
 
             if (pBusPeerIds != NULL)
@@ -3098,7 +3108,7 @@ nvpcf2xGetStaticParams_exit:
             NvU8 *pData = NULL;
             NvU32 i;
             NvU8 prevThreshold = 99;
-            NvU8 version;
+            NvU32 version;
             NvU16 size = NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_HEADER_SIZE_04 +
                          (NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_VERSION_10_MAX_ENTRIES *
                          NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_ENTRY_SIZE_11);
@@ -3509,7 +3519,7 @@ cliresCtrlCmdNvdGetDump_IMPL
 }
 
 /*!
- * @brief Get Timestamp. Returns a standard timestamp, osGetCurrentTime.
+ * @brief Get Timestamp. Returns a standard timestamp, osGetSystemTime.
  *
  * @returns NV_OK
  */
@@ -3530,7 +3540,7 @@ cliresCtrlCmdNvdGetTimestamp_IMPL
             NvU32 sec;
             NvU32 uSec;
 
-            osGetCurrentTime(&sec, &uSec);
+            osGetSystemTime(&sec, &uSec);
             pTimestampParams->timestamp = (((NvU64)sec) * 1000000) + uSec;
             break;
         }
@@ -5289,7 +5299,8 @@ cliresCtrlCmdGpuDisableNvlinkInit_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    return gpumgrSetGpuInitDisabledNvlinks(pParams->gpuId, pParams->mask, pParams->bSkipHwNvlinkDisable);
+    return gpumgrSetGpuInitDisabledNvlinks(pParams->gpuId, pParams->mask,
+                                           &pParams->links, pParams->bSkipHwNvlinkDisable);
 }
 
 NV_STATUS

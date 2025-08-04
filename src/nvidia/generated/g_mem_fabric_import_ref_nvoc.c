@@ -95,17 +95,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryFabricImportedRef =
     /*pExportInfo=*/        &__nvoc_export_info__MemoryFabricImportedRef
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MemoryFabricImportedRef[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) memoryfabricimportedrefCtrlValidate_IMPL,
+        /*pFunc=*/      (void (*)(void)) &memoryfabricimportedrefCtrlValidate_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
         /*flags=*/      0x10bu,
         /*accessRight=*/0x0u,
@@ -116,7 +118,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MemoryFa
         /*func=*/       "memoryfabricimportedrefCtrlValidate"
 #endif
     },
-
 };
 
 
@@ -330,6 +331,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__MemoryFabricImportedRef =
     /*pExportEntries=*/ __nvoc_exported_method_def_MemoryFabricImportedRef
 };
 
+void __nvoc_memoryfabricimportedrefDestruct(MemoryFabricImportedRef*);
 void __nvoc_dtor_RmResource(RmResource*);
 void __nvoc_dtor_MemoryFabricImportedRef(MemoryFabricImportedRef *pThis) {
     __nvoc_memoryfabricimportedrefDestruct(pThis);
@@ -363,18 +365,11 @@ __nvoc_ctor_MemoryFabricImportedRef_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_MemoryFabricImportedRef_1(MemoryFabricImportedRef *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // memoryfabricimportedrefCtrlValidate -- exported (id=0xfb0101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
-    pThis->__memoryfabricimportedrefCtrlValidate__ = &memoryfabricimportedrefCtrlValidate_IMPL;
-#endif
-} // End __nvoc_init_funcTable_MemoryFabricImportedRef_1 with approximately 1 basic block(s).
+} // End __nvoc_init_funcTable_MemoryFabricImportedRef_1
 
 
-// Initialize vtable(s) for 22 virtual method(s).
+// Initialize vtable(s) for 21 virtual method(s).
 void __nvoc_init_funcTable_MemoryFabricImportedRef(MemoryFabricImportedRef *pThis) {
-
-    // Initialize vtable(s) with 1 per-object function pointer(s).
     __nvoc_init_funcTable_MemoryFabricImportedRef_1(pThis);
 }
 

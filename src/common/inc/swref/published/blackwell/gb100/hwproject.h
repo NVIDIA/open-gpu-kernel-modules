@@ -25,5 +25,7 @@
 #define __gb100_hwproject_h__
 
 #define NV_LITTER_NUM_SUBCTX                64
+#define NV_LOCALIZATION_MODE_BIT_IN_ADDRESS_OFFSET             39
+
 
 #endif // __gb100_hwproject_h__

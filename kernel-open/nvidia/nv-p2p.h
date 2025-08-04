@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2011-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -132,10 +132,15 @@ struct nvidia_p2p_page {
     } registers;
 } nvidia_p2p_page_t;
 
-#define NVIDIA_P2P_PAGE_TABLE_VERSION   0x00010002
+#define NVIDIA_P2P_PAGE_TABLE_VERSION   0x00020000
 
 #define NVIDIA_P2P_PAGE_TABLE_VERSION_COMPATIBLE(p) \
     NVIDIA_P2P_VERSION_COMPATIBLE(p, NVIDIA_P2P_PAGE_TABLE_VERSION)
+
+/*
+ * Page Table Flags
+ */
+#define NVIDIA_P2P_PAGE_TABLE_FLAGS_CPU_CACHEABLE 0x1
 
 typedef
 struct nvidia_p2p_page_table {
@@ -144,6 +149,7 @@ struct nvidia_p2p_page_table {
     struct nvidia_p2p_page **pages;
     uint32_t entries;
     uint8_t *gpu_uuid;
+    uint32_t flags;
 } nvidia_p2p_page_table_t;
 
 /*
@@ -153,6 +159,9 @@ struct nvidia_p2p_page_table {
  *
  *   This API only supports pinned, GPU-resident memory, such as that provided
  *   by cudaMalloc().
+ *   This API does not support Coherent Driver-based Memory Management(CDMM) mode.
+ *   CDMM allows coherent GPU memory to be managed by the driver and not the OS.
+ *   This is done by the driver not onlining the memory as a NUMA node.
  *
  *   This API may sleep.
  *
@@ -201,7 +210,7 @@ int nvidia_p2p_get_pages( uint64_t p2p_token, uint32_t va_space,
  *   accessible to a third-party device. The pages will persist until
  *   explicitly freed by nvidia_p2p_put_pages_persistent().
  *
- *   Persistent GPU memory mappings are not supported on PowerPC,
+ *   Persistent GPU memory mappings are not supported on
  *   MIG-enabled devices and vGPU.
  *
  *   This API only supports pinned, GPU-resident memory, such as that provided

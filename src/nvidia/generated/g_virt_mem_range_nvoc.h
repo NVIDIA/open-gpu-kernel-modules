@@ -158,7 +158,12 @@ NV_STATUS __nvoc_objCreate_VirtualMemoryRange(VirtualMemoryRange**, Dynamic*, Nv
     __nvoc_objCreate_VirtualMemoryRange((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS vmrangeConstruct_IMPL(struct VirtualMemoryRange *arg_pVmRange, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_vmrangeConstruct(arg_pVmRange, arg_pCallContext, arg_pParams) vmrangeConstruct_IMPL(arg_pVmRange, arg_pCallContext, arg_pParams)
+
+
+// Wrapper macros for halified functions
 #define vmrangeMapTo_FNPTR(pVirtualMemory) pVirtualMemory->__nvoc_base_VirtualMemory.__nvoc_metadata_ptr->vtable.__virtmemMapTo__
 #define vmrangeMapTo(pVirtualMemory, pParams) vmrangeMapTo_DISPATCH(pVirtualMemory, pParams)
 #define vmrangeUnmapFrom_FNPTR(pVirtualMemory) pVirtualMemory->__nvoc_base_VirtualMemory.__nvoc_metadata_ptr->vtable.__virtmemUnmapFrom__
@@ -317,9 +322,6 @@ static inline void vmrangeAddAdditionalDependants_DISPATCH(struct RsClient *pCli
     pResource->__nvoc_metadata_ptr->vtable.__vmrangeAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-NV_STATUS vmrangeConstruct_IMPL(struct VirtualMemoryRange *arg_pVmRange, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_vmrangeConstruct(arg_pVmRange, arg_pCallContext, arg_pParams) vmrangeConstruct_IMPL(arg_pVmRange, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 

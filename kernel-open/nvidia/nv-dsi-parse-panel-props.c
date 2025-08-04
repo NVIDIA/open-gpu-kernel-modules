@@ -37,6 +37,7 @@ static u32 *dsi_read_prop_array
     u32 *array_size
 )
 {
+#if NV_SUPPORTS_PLATFORM_DEVICE
     u32 *val_array = NULL;
     u32 count = 0;
     int ret = 0;
@@ -44,12 +45,7 @@ static u32 *dsi_read_prop_array
     if (!prop)
         return NULL;
 
-#if defined(NV_OF_PROPERTY_COUNT_ELEMS_OF_SIZE_PRESENT) && NV_SUPPORTS_PLATFORM_DEVICE
     count = of_property_count_elems_of_size(np, prop->name, sizeof(u32));
-#else
-    nv_printf(NV_DBG_ERRORS, "NVRM: dsi_read_prop_array, of_property_count_elems_of_size not present\n");
-    return ERR_PTR(-ENOSYS);
-#endif
 
     if (count > 0)
     {
@@ -66,13 +62,8 @@ static u32 *dsi_read_prop_array
         return ERR_PTR(-ENOSYS);
     }
 
-#if defined(NV_OF_PROPERTY_READ_VARIABLE_U32_ARRAY_PRESENT) && NV_SUPPORTS_PLATFORM_DEVICE
     ret = of_property_read_variable_u32_array(np, prop->name,
             val_array, 0, count);
-#else
-    nv_printf(NV_DBG_ERRORS, "NVRM: dsi_read_prop_array, of_property_read_variable_u32_array not present\n");
-    ret = -ENOSYS;
-#endif
     if (IS_ERR(&ret))
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: dsi_read_prop_array, failed to read property %s", prop->name);
@@ -84,6 +75,10 @@ static u32 *dsi_read_prop_array
     *array_size = count;
 
     return val_array;
+#else
+    nv_printf(NV_DBG_ERRORS, "NVRM: dsi_read_prop_array, platform device not supported\n");
+    return ERR_PTR(-ENOSYS);
+#endif
 }
 
 static int dsi_get_panel_timings(struct device_node *np_panel, DSI_PANEL_INFO *panelInfo)
@@ -174,7 +169,7 @@ static int dsi_get_panel_gpio(struct device_node *node, DSI_PANEL_INFO *panel)
          return -ENOENT;
     }
 
-#if defined(NV_OF_GET_NAME_GPIO_PRESENT) && NV_SUPPORTS_PLATFORM_DEVICE
+#if NV_SUPPORTS_PLATFORM_DEVICE
     panel->panel_gpio[DSI_GPIO_LCD_RESET] =
         of_get_named_gpio(node, "nvidia,panel-rst-gpio", 0);
 
@@ -855,7 +850,7 @@ nv_dsi_panel_enable
     void            *dsiPanelInfo
 )
 {
-#if defined(NV_GPIO_DIRECTION_OUTPUT_PRESENT) && NV_SUPPORTS_PLATFORM_DEVICE
+#if NV_SUPPORTS_PLATFORM_DEVICE
     int ret = NV_OK;
     DSI_PANEL_INFO *panelInfo = dsiPanelInfo;
 
@@ -897,7 +892,7 @@ nv_dsi_panel_reset
     void            *dsiPanelInfo
 )
 {
-#if defined(NV_GPIO_DIRECTION_OUTPUT_PRESENT) && NV_SUPPORTS_PLATFORM_DEVICE
+#if NV_SUPPORTS_PLATFORM_DEVICE
     int ret = NV_OK;
     int en_panel_rst = -1;
     DSI_PANEL_INFO *panelInfo = dsiPanelInfo;
@@ -945,7 +940,7 @@ void nv_dsi_panel_disable
     void            *dsiPanelInfo
 )
 {
-#if defined(NV_GPIO_DIRECTION_OUTPUT_PRESENT) && NV_SUPPORTS_PLATFORM_DEVICE
+#if NV_SUPPORTS_PLATFORM_DEVICE
     DSI_PANEL_INFO *panelInfo = dsiPanelInfo;
 
     if (gpio_is_valid(panelInfo->panel_gpio[DSI_GPIO_BL_ENABLE])) {

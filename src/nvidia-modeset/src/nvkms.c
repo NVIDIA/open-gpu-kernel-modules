@@ -974,7 +974,7 @@ static NvBool GrabModesetOwnership(struct NvKmsPerOpenDev *pOpenDev)
     }
 
     pDevEvo->modesetOwner = pOpenDev;
-    pDevEvo->modesetOwnerChanged = TRUE;
+    pDevEvo->modesetOwnerOrSubOwnerChanged = TRUE;
 
     AssignFullNvKmsPermissions(pOpenDev);
     return TRUE;
@@ -1080,6 +1080,7 @@ static void RevokePermissionsInternal(
                 (typeBitmask & NVBIT(NV_KMS_PERMISSIONS_TYPE_SUB_OWNER))) {
                 FreeSwapGroups(pOpenDev);
                 pDevEvo->modesetSubOwner = NULL;
+                pDevEvo->modesetOwnerOrSubOwnerChanged = TRUE;
             }
 
             /*
@@ -1148,7 +1149,7 @@ static NvBool ReleaseModesetOwnership(struct NvKmsPerOpenDev *pOpenDev)
     FreeSwapGroups(pOpenDev);
 
     pDevEvo->modesetOwner = NULL;
-    pDevEvo->modesetOwnerChanged = TRUE;
+    pDevEvo->modesetOwnerOrSubOwnerChanged = TRUE;
     pDevEvo->handleConsoleHotplugs = TRUE;
 
     RestoreConsole(pDevEvo);
@@ -1642,6 +1643,7 @@ static void FreeDeviceReference(struct NvKmsPerOpen *pOpen,
         // If this pOpenDev is the modeset sub-owner, implicitly release it.
         if (pOpenDev->pDevEvo->modesetSubOwner == pOpenDev) {
             pOpenDev->pDevEvo->modesetSubOwner = NULL;
+            pOpenDev->pDevEvo->modesetOwnerOrSubOwnerChanged = TRUE;
         }
     }
 
@@ -3524,6 +3526,7 @@ static NvBool AcquirePermissions(struct NvKmsPerOpen *pOpen, void *pParamsVoid)
         }
 
         pOpenDev->pDevEvo->modesetSubOwner = pOpenDev;
+        pOpenDev->pDevEvo->modesetOwnerOrSubOwnerChanged = TRUE;
         AssignFullNvKmsPermissions(pOpenDev);
 
     } else {
@@ -6566,7 +6569,8 @@ static void AllocSurfaceCtxDmasForAllOpens(NVDevEvoRec *pDevEvo)
                             pSurfaceEvo->planes[planeIndex].rmHandle,
                             pSurfaceEvo->layout,
                             pSurfaceEvo->planes[planeIndex].rmObjectSizeInBytes - 1,
-                            &pSurfaceEvo->planes[planeIndex].surfaceDesc);
+                            &pSurfaceEvo->planes[planeIndex].surfaceDesc,
+                            pSurfaceEvo->mapToDisplayRm);
                 if (ret != NVOS_STATUS_SUCCESS) {
                     FreeSurfaceCtxDmasForAllOpens(pDevEvo);
                     nvAssert(!"Failed to re-allocate surface descriptor");

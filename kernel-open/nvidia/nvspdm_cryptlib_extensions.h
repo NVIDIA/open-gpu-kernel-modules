@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,3 +39,8 @@ bool libspdm_aead_aes_gcm_decrypt_prealloc(void *context,
         const uint8_t *tag, size_t tag_size,
         uint8_t *data_out, size_t *data_out_size);
 bool libspdm_check_crypto_backend(void);
+
+bool libspdm_encode_base64(const uint8_t *src, uint8_t *dst, size_t srclen, size_t *p_dstlen);
+bool libspdm_decode_base64(const uint8_t *src, uint8_t *dst, size_t srclen, size_t *p_dstlen);
+bool libspdm_pem_to_der(const uint8_t *pem_cert, uint8_t *der_cert, size_t pem_size, size_t *p_der_size);
+bool libspdm_der_to_pem(const uint8_t *der_cert, uint8_t *pem_cert, size_t der_size, size_t *p_pem_size);

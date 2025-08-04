@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,3 +34,65 @@
 
 #include "class/clc637.h"
 
+//
+// Control call to provide information about partitions which can be created on
+// this GPU.
+//
+NV_STATUS
+subdeviceCtrlCmdGpuGetSkylineInfo_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GPU_GET_SKYLINE_INFO_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    const KERNEL_MIG_MANAGER_STATIC_INFO *pStaticInfo = kmigmgrGetStaticInfo(pGpu, pKernelMIGManager);
+    NV2080_CTRL_INTERNAL_STATIC_GRMGR_GET_SKYLINE_INFO_PARAMS internalParams;
+    NvU32 i;
+
+    portMemSet(pParams, 0, sizeof(*pParams));
+    portMemSet(&internalParams, 0, sizeof(internalParams));
+
+    NV_CHECK_OR_RETURN(LEVEL_WARNING, !IS_VIRTUAL(pGpu), NV_ERR_NOT_SUPPORTED);
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+
+    // Call to physical RM directly in the event static info isn't populated yet
+    if ((pStaticInfo == NULL) || (pStaticInfo->pSkylineInfo == NULL))
+    {
+        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            pRmApi->Control(pRmApi,
+                        pGpu->hInternalClient,
+                        pGpu->hInternalSubdevice,
+                        NV2080_CTRL_CMD_INTERNAL_STATIC_GRMGR_GET_SKYLINE_INFO,
+                        &internalParams,
+                        sizeof(internalParams)));
+    }
+    else
+    {
+        portMemCopy(&internalParams, sizeof(internalParams),
+                    pStaticInfo->pSkylineInfo, sizeof(*pStaticInfo->pSkylineInfo));
+    }
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,internalParams.validEntries <= NV_ARRAY_ELEMENTS(pParams->skylineTable), NV_ERR_INVALID_STATE);
+
+    for (i = 0; i < internalParams.validEntries; i++)
+    {
+        NvU32 vgpcId;
+        pParams->skylineTable[i].maxInstances      = internalParams.skylineTable[i].maxInstances;
+        pParams->skylineTable[i].singletonVgpcMask = internalParams.skylineTable[i].singletonVgpcMask;
+        pParams->skylineTable[i].computeSizeFlag   = internalParams.skylineTable[i].computeSizeFlag;
+
+        for (vgpcId = 0; vgpcId < NV_ARRAY_ELEMENTS(internalParams.skylineTable[i].skylineVgpcSize); vgpcId++)
+        {
+            NV_ASSERT_OR_RETURN(vgpcId < NV_ARRAY_ELEMENTS(pParams->skylineTable[i].skylineVgpcSize), NV_ERR_INVALID_STATE);
+            pParams->skylineTable[i].skylineVgpcSize[vgpcId] =internalParams.skylineTable[i].skylineVgpcSize[vgpcId];
+        }
+    }
+    pParams->validEntries = internalParams.validEntries;
+
+    return NV_OK;
+}

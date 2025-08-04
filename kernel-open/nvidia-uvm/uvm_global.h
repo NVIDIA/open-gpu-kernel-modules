@@ -111,9 +111,9 @@ struct uvm_global_struct
 
     struct
     {
-        // Indicates whether the system HW supports ATS. This field is set once
-        // during global initialization (uvm_global_init), and can be read
-        // afterwards without acquiring any locks.
+        // Indicates whether any GPU in the system supports PASID ATS. This
+        // field is set once during global initialization (uvm_global_init), and
+        // can be read afterwards without acquiring any locks.
         bool supported;
 
         // On top of HW platform support, ATS support can be overridden using

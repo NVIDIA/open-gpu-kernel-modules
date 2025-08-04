@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -136,8 +136,7 @@ kbifStateInitLocked_IMPL
     kbifInitDmaCaps(pGpu, pKernelBif);
 
     // Check for OS w/o usable PAT support
-    if ((kbifGetBusIntfType_HAL(pKernelBif) ==
-         NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) &&
+    if ((gpuGetBusIntfType_HAL(pGpu) == NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) &&
         pOS->getProperty(pOS, PDB_PROP_OS_PAT_UNSUPPORTED))
     {
         NV_PRINTF(LEVEL_INFO,
@@ -740,23 +739,6 @@ kbifClearConfigErrors_IMPL
 }
 
 /*!
- * @brief The PCI bus family means it has the concept of bus/dev/func
- *        and compatible PCI config space.
- */
-NvBool
-kbifIsPciBusFamily_IMPL
-(
-    KernelBif *pKernelBif
-)
-{
-    NvU32 busType = kbifGetBusIntfType_HAL(pKernelBif);
-
-    return ((busType == NV2080_CTRL_BUS_INFO_TYPE_PCI) ||
-            (busType == NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) ||
-            (busType == NV2080_CTRL_BUS_INFO_TYPE_FPCI));
-}
-
-/*!
  * @brief Regkey Overrides for Bif
  *
  * @param[in]   pGpu          GPU object pointer
@@ -1078,8 +1060,7 @@ kbifControlGetPCIEInfo_IMPL
     NvU32   index = pBusInfo->index;
     NvU32   data  = 0;
 
-    if ((pKernelBif != NULL) &&
-        (kbifGetBusIntfType_HAL(pKernelBif) != NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS))
+    if (gpuGetBusIntfType_HAL(pGpu) != NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS)
     {
         // KMD cannot handle error codes for this ctrl call, hence returning
         // NV_OK, once KMD fixes the bug:3545197, RM can return NV_ERR_NOT_SUPPORTED
@@ -1524,6 +1505,7 @@ kbifResetFromTimeoutFullChip_IMPL
 
     return status;
 }
+
 
 NV_STATUS
 kbifWaitForConfigAccessAfterReset_IMPL

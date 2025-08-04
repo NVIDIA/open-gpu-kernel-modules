@@ -496,6 +496,7 @@ kheadReadPendingVblank_v03_00
     THREAD_STATE_NODE *pThreadState
 )
 {
+    KernelDisplay   *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
     NvU32  intr = pCachedIntr ? *pCachedIntr : GPU_REG_RD32_EX(pGpu, NV_PDISP_FE_RM_INTR_DISPATCH, pThreadState);
 
     if (!FLD_IDX_TEST_DRF(_PDISP, _FE_RM_INTR_DISPATCH, _HEAD_TIMING, pKernelHead->PublicId, _PENDING, intr))
@@ -504,10 +505,21 @@ kheadReadPendingVblank_v03_00
     }
 
     intr = GPU_REG_RD32_EX(pGpu, NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING(pKernelHead->PublicId), pThreadState);
-
-    if (FLD_TEST_DRF(_PDISP, _FE_EVT_STAT_HEAD_TIMING, _LAST_DATA, _PENDING, intr))
+    
+    if(pKernelDisplay->bIsPanelReplayEnabled == NV_TRUE)
     {
-        return NV_TRUE;
+        if (FLD_TEST_DRF(_PDISP, _FE_EVT_STAT_HEAD_TIMING, _VBLANK, _PENDING, intr))
+        {
+            return NV_TRUE;
+        }
+
+    }
+    else
+    {
+        if (FLD_TEST_DRF(_PDISP, _FE_EVT_STAT_HEAD_TIMING, _LAST_DATA, _PENDING, intr))
+        {
+            return NV_TRUE;
+        }
     }
 
     return NV_FALSE;

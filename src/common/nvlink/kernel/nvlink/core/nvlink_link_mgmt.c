@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,48 @@
 #include "../nvlink_helper.h"
 
 /**
+ * For the given link, are link state transitions symmetric, or do state
+ * transitions need to be initiated on both ends separately?
+ *
+ * @param[in]  link       NVLink link pointer
+ *
+ * return NV_TRUE if unilateral state transitions are supported
+ */
+NvBool
+nvlink_core_link_states_symmetric
+(
+    nvlink_link *link
+)
+{
+    return link->dev->bLinkStatesSymmetric;
+}
+
+/**
+ * For the given link, does this device support the given link state?
+ *
+ * @param[in]  link       NVLink link pointer
+ * @param[in]  linkState  Target Link State
+ *
+ * return NV_TRUE if the link supports the given state
+ */
+NvBool
+nvlink_core_link_state_supported
+(
+    nvlink_link *link,
+    NvU64        linkState
+)
+{
+    if (linkState >= NVLINK_LINKSTATE_INVALID)
+        return NV_FALSE;
+    
+    // Note: move to bitvector if any more link states are added
+    if (linkState >= 32)
+        return NV_FALSE;
+
+    return (link->dev->linkStateSupportedMask & NVBIT32(linkState)) != 0x0;
+}
+
+/**
  * For the given link, check whether the link state is at the requested state.
  *
  * @param[in]  link       NVLink link pointer
@@ -51,14 +93,14 @@ nvlink_core_check_link_state
         return NV_FALSE;
     }
 
+    // Skip checks for linkstates not supported by device
+    if (!nvlink_core_link_state_supported(link, linkState))
+        return NV_FALSE;
+
     switch (linkState)
     {
         case NVLINK_LINKSTATE_RESET:
         case NVLINK_LINKSTATE_SAFE:
-        if (link->version >= NVLINK_DEVICE_VERSION_50)
-            return NVL_SUCCESS;
-
-            // fall-through
         case NVLINK_LINKSTATE_OFF:
         case NVLINK_LINKSTATE_HS:
         {
@@ -294,22 +336,9 @@ nvlink_core_poll_link_state
         return NVL_BAD_ARGS;
     }
 
-    if (link->version >= NVLINK_DEVICE_VERSION_50)
-    {
-        switch (linkState)
-        {
-        case NVLINK_LINKSTATE_RESET:
-        case NVLINK_LINKSTATE_SAFE:
-            return NVL_SUCCESS;
-        case NVLINK_LINKSTATE_OFF:
-        case NVLINK_LINKSTATE_HS:
-        case NVLINK_LINKSTATE_ALI:
-        case NVLINK_LINKSTATE_SLEEP:
-        case NVLINK_LINKSTATE_ACTIVE_PENDING:
-        default:
-            break;
-        }
-    }
+    // Skip poll for linkstates not supported by device
+    if (!nvlink_core_link_state_supported(link, linkState))
+        return NVL_ERR_NOT_SUPPORTED;
 
     link->link_handlers->get_dl_link_mode(link, &currentLinkState);
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,9 +26,11 @@
 #include "os-interface.h"
 #include "nv-linux.h"
 
-#if defined(NV_LINUX_NVHOST_H_PRESENT) && defined(NV_LINUX_NVHOST_T194_H_PRESENT)
+#if defined(NV_LINUX_NVHOST_H_PRESENT)
 #include <linux/nvhost.h>
+#if defined(NV_LINUX_NVHOST_T194_H_PRESENT)
 #include <linux/nvhost_t194.h>
+#endif
 
 NV_STATUS nv_get_syncpoint_aperture
 (
@@ -42,25 +44,18 @@ NV_STATUS nv_get_syncpoint_aperture
     phys_addr_t base;
     size_t size;
 
-#if NV_IS_EXPORT_SYMBOL_PRESENT_nvhost_get_default_device
     host1x_pdev = nvhost_get_default_device();
     if (host1x_pdev == NULL) 
     {
         return NV_ERR_INVALID_DEVICE;
     }
-#endif
 
-#if NV_IS_EXPORT_SYMBOL_PRESENT_nvhost_syncpt_unit_interface_get_aperture && \
-    NV_IS_EXPORT_SYMBOL_PRESENT_nvhost_syncpt_unit_interface_get_byte_offset
     nvhost_syncpt_unit_interface_get_aperture(
         host1x_pdev, &base, &size);
 
     *physAddr = base;
     *limit = nvhost_syncpt_unit_interface_get_byte_offset(1);
     *offset = nvhost_syncpt_unit_interface_get_byte_offset(syncpointId);
-#else
-    return NV_ERR_NOT_SUPPORTED;
-#endif
 
      return NV_OK;
 }

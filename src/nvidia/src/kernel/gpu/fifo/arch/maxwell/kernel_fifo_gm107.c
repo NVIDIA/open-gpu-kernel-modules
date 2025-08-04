@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -552,8 +552,11 @@ kfifoChannelGetFifoContextMemDesc_GM107
     NV_ASSERT(!memdescHasSubDeviceMemDescs(*ppMemDesc));
 
     NV_PRINTF(LEVEL_INFO,
-              "Channel %d engine 0x%x engineState 0x%x *ppMemDesc %p\n",
-              kchannelGetDebugTag(pKernelChannel), ENG_FIFO, engineState, *ppMemDesc);
+        FMT_CHANNEL_DEBUG_TAG " engine 0x%x engineState 0x%x *ppMemDesc %p\n",
+        kchannelGetDebugTag(pKernelChannel),
+        ENG_FIFO,
+        engineState,
+        *ppMemDesc);
 
     return NV_OK;
 }
@@ -1426,7 +1429,6 @@ kfifoFreePreAllocUserD_GM107
         {
             memdescUnmap(pUserdInfo->userdPhysDesc[currentGpuInst],
                             NV_TRUE,
-                            osGetCurrentProcess(),
                             (void*)pUserdInfo->userdBar1CpuPtr,
                             (void*)pUserdInfo->userdBar1Priv);
         }

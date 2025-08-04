@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2024 NVIDIA Corporation
+    Copyright (c) 2016-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -839,12 +839,12 @@ static void record_cpu_fault(UvmEventCpuFaultInfo *info, uvm_perf_event_data_t *
     info->cpuId = event_data->fault.cpu.cpu_num;
 }
 
-static void uvm_tools_record_fault(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
+static void uvm_tools_record_fault(uvm_va_space_t *va_space,
+                                   uvm_perf_event_t event_id,
+                                   uvm_perf_event_data_t *event_data)
 {
-    uvm_va_space_t *va_space = event_data->fault.space;
-
     UVM_ASSERT(event_id == UVM_PERF_EVENT_FAULT);
-    UVM_ASSERT(event_data->fault.space);
+    UVM_ASSERT(va_space);
 
     uvm_assert_rwsem_locked(&va_space->lock);
     uvm_assert_rwsem_locked(&va_space->perf_events.lock);
@@ -1124,9 +1124,10 @@ static UvmEventMigrationCause g_make_resident_to_tools_migration_cause[UVM_MAKE_
     [UVM_MAKE_RESIDENT_CAUSE_API_HINT]             = UvmEventMigrationCauseUser,
 };
 
-static void uvm_tools_record_migration_cpu_to_cpu(uvm_va_space_t *va_space,
-                                                  uvm_perf_event_data_t *event_data)
+static void uvm_tools_record_migration_cpu_to_cpu(uvm_va_space_t *va_space, uvm_perf_event_data_t *event_data)
 {
+    UVM_ASSERT(va_space);
+
     if (tools_is_event_enabled_v1(va_space, UvmEventTypeMigration)) {
         UvmEventEntry entry;
         UvmEventMigrationInfo *info = &entry.eventData.migration;
@@ -1188,14 +1189,18 @@ static void uvm_tools_record_migration_cpu_to_cpu(uvm_va_space_t *va_space,
 // object in a call to block_copy_resident_pages_between have finished.
 // For CPU-to-CPU copies using memcpy, this event is notified when all of the
 // page copies does by block_copy_resident_pages have finished.
-static void uvm_tools_record_migration(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
+static void uvm_tools_record_migration(uvm_va_space_t *va_space,
+                                       uvm_perf_event_t event_id,
+                                       uvm_perf_event_data_t *event_data)
 {
     uvm_va_block_t *va_block = event_data->migration.block;
-    uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
 
+    UVM_ASSERT(va_space);
     UVM_ASSERT(event_id == UVM_PERF_EVENT_MIGRATION);
 
-    uvm_assert_mutex_locked(&va_block->lock);
+    if (va_block)
+        uvm_assert_mutex_locked(&va_block->lock);
+
     uvm_assert_rwsem_locked(&va_space->perf_events.lock);
     UVM_ASSERT(va_space->tools.enabled);
 
@@ -1375,20 +1380,16 @@ void uvm_tools_test_hmm_split_invalidate(uvm_va_space_t *va_space)
     uvm_up_read(&va_space->tools.lock);
 }
 
-// This function is used as a begin marker to group all migrations within a VA
-// block that are performed in the same call to
-// block_copy_resident_pages_between. All of these are pushed to the same
-// uvm_push_t object, and will be notified in burst when the last one finishes.
-void uvm_tools_record_block_migration_begin(uvm_va_block_t *va_block,
-                                            uvm_push_t *push,
-                                            uvm_processor_id_t dst_id,
-                                            int dst_nid,
-                                            uvm_processor_id_t src_id,
-                                            int src_nid,
-                                            NvU64 start,
-                                            uvm_make_resident_cause_t cause)
+void uvm_tools_record_migration_begin(uvm_va_space_t *va_space,
+                                      uvm_push_t *push,
+                                      uvm_processor_id_t dst_id,
+                                      int dst_nid,
+                                      uvm_processor_id_t src_id,
+                                      int src_nid,
+                                      NvU64 start,
+                                      uvm_make_resident_cause_t cause,
+                                      uvm_api_range_type_t type)
 {
-    uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
     uvm_range_group_range_t *range;
 
     // Calls from tools read/write functions to make_resident must not trigger
@@ -1426,7 +1427,7 @@ void uvm_tools_record_block_migration_begin(uvm_va_block_t *va_block,
         block_mig->range_group_id = UVM_RANGE_GROUP_ID_NONE;
 
         // During evictions, it is not safe to uvm_range_group_range_find() because the va_space lock is not held.
-        if (cause != UVM_MAKE_RESIDENT_CAUSE_EVICTION) {
+        if ((type == UVM_API_RANGE_TYPE_MANAGED) && (cause != UVM_MAKE_RESIDENT_CAUSE_EVICTION)) {
             range = uvm_range_group_range_find(va_space, start);
             if (range != NULL)
                 block_mig->range_group_id = range->range_group->id;

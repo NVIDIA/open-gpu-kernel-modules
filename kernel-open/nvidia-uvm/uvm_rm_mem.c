@@ -221,6 +221,13 @@ NV_STATUS uvm_rm_mem_alloc(uvm_gpu_t *gpu,
             alloc_info.pageSize = UVM_PAGE_SIZE_64K;
 
         status = uvm_rm_locked_call(nvUvmInterfaceMemoryAllocSys(gpu->rm_address_space, size, &gpu_va, &alloc_info));
+
+        // TODO: Bug 5042223
+        if (status == NV_ERR_NO_MEMORY && size >= UVM_PAGE_SIZE_64K) {
+            UVM_ERR_PRINT("nvUvmInterfaceMemoryAllocSys alloc failed with big page size, retry with default page size\n");
+            alloc_info.pageSize = UVM_PAGE_SIZE_DEFAULT;
+            status = uvm_rm_locked_call(nvUvmInterfaceMemoryAllocSys(gpu->rm_address_space, size, &gpu_va, &alloc_info));
+        }
     }
     else {
         status = uvm_rm_locked_call(nvUvmInterfaceMemoryAllocFB(gpu->rm_address_space, size, &gpu_va, &alloc_info));

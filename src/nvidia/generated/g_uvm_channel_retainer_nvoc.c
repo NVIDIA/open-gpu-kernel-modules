@@ -382,6 +382,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__UvmChannelRetainer =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_uvmchanrtnrDestruct(UvmChannelRetainer*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_UvmChannelRetainer(UvmChannelRetainer *pThis) {
     __nvoc_uvmchanrtnrDestruct(pThis);

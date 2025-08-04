@@ -177,7 +177,7 @@ deviceConstruct_IMPL
         }
     }
 
-    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
+    if (IS_VIRTUAL(pGpu) || IS_FW_CLIENT(pGpu))
     {
         physicalAllocFlags = flags & ~(NV_DEVICE_ALLOCATION_FLAGS_PLUGIN_CONTEXT
             | NV_DEVICE_ALLOCATION_FLAGS_HOST_VGPU_DEVICE);
@@ -233,7 +233,7 @@ deviceDestruct_IMPL
     {
         OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
         // vGpu support
-        if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
+        if (IS_VIRTUAL(pGpu) || IS_FW_CLIENT(pGpu))
         {
             RsResourceRef *pResourceRef = pCallContext->pResourceRef;
             NvHandle       hDevice = pResourceRef->hResource;

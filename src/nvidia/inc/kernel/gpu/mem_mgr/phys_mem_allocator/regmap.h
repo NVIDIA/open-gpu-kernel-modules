@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -229,9 +229,9 @@ void pmaRegmapGetSize(void *pMap, NvU64 *pBytesTotal);
  *
  * @param[in]  pMap         Pointer to the regmap for the region
  * @param[in]  pLargestFree Pointer that will return largest free in current region.
- *
+ * @param[in]  pLargestFreeOffset Pointer that will return the offset of the largest free chunk.
  */
-void pmaRegmapGetLargestFree(void *pMap, NvU64 *pLargestFree);
+void pmaRegmapGetLargestFree(void *pMap, NvU64 *pLargestFree, NvU64 *pLargestFreeOffset);
 
 
 /*!

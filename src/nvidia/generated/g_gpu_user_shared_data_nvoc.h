@@ -93,9 +93,6 @@ struct GpuUserSharedData {
     struct Memory *__nvoc_pbase_Memory;    // mem super
     struct GpuUserSharedData *__nvoc_pbase_GpuUserSharedData;    // gpushareddata
 
-    // Vtable with 1 per-object function pointer
-    NV_STATUS (*__gpushareddataCtrlCmdRequestDataPoll__)(struct GpuUserSharedData * /*this*/, NV00DE_CTRL_REQUEST_DATA_POLL_PARAMS *);  // exported (id=0xde0001)
-
     // Data members
     NvU64 polledDataMask;
 };
@@ -167,11 +164,27 @@ NV_STATUS __nvoc_objCreate_GpuUserSharedData(GpuUserSharedData**, Dynamic*, NvU3
     __nvoc_objCreate_GpuUserSharedData((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS gpushareddataConstruct_IMPL(struct GpuUserSharedData *arg_pData, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_gpushareddataConstruct(arg_pData, arg_pCallContext, arg_pParams) gpushareddataConstruct_IMPL(arg_pData, arg_pCallContext, arg_pParams)
+
+void gpushareddataDestruct_IMPL(struct GpuUserSharedData *pData);
+#define __nvoc_gpushareddataDestruct(pData) gpushareddataDestruct_IMPL(pData)
+
+NV_STATUS gpushareddataCtrlCmdRequestDataPoll_IMPL(struct GpuUserSharedData *pData, NV00DE_CTRL_REQUEST_DATA_POLL_PARAMS *pParams);
+#ifdef __nvoc_gpu_user_shared_data_h_disabled
+static inline NV_STATUS gpushareddataCtrlCmdRequestDataPoll(struct GpuUserSharedData *pData, NV00DE_CTRL_REQUEST_DATA_POLL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GpuUserSharedData was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gpu_user_shared_data_h_disabled
+#define gpushareddataCtrlCmdRequestDataPoll(pData, pParams) gpushareddataCtrlCmdRequestDataPoll_IMPL(pData, pParams)
+#endif // __nvoc_gpu_user_shared_data_h_disabled
+
+
+// Wrapper macros for halified functions
 #define gpushareddataCanCopy_FNPTR(pData) pData->__nvoc_metadata_ptr->vtable.__gpushareddataCanCopy__
 #define gpushareddataCanCopy(pData) gpushareddataCanCopy_DISPATCH(pData)
-#define gpushareddataCtrlCmdRequestDataPoll_FNPTR(pData) pData->__gpushareddataCtrlCmdRequestDataPoll__
-#define gpushareddataCtrlCmdRequestDataPoll(pData, pParams) gpushareddataCtrlCmdRequestDataPoll_DISPATCH(pData, pParams)
 #define gpushareddataIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsDuplicate__
 #define gpushareddataIsDuplicate(pMemory, hMemory, pDuplicate) gpushareddataIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define gpushareddataGetMapAddrSpace_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memGetMapAddrSpace__
@@ -226,10 +239,6 @@ NV_STATUS __nvoc_objCreate_GpuUserSharedData(GpuUserSharedData**, Dynamic*, NvU3
 // Dispatch functions
 static inline NvBool gpushareddataCanCopy_DISPATCH(struct GpuUserSharedData *pData) {
     return pData->__nvoc_metadata_ptr->vtable.__gpushareddataCanCopy__(pData);
-}
-
-static inline NV_STATUS gpushareddataCtrlCmdRequestDataPoll_DISPATCH(struct GpuUserSharedData *pData, NV00DE_CTRL_REQUEST_DATA_POLL_PARAMS *pParams) {
-    return pData->__gpushareddataCtrlCmdRequestDataPoll__(pData, pParams);
 }
 
 static inline NV_STATUS gpushareddataIsDuplicate_DISPATCH(struct GpuUserSharedData *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
@@ -336,12 +345,6 @@ NvBool gpushareddataCanCopy_IMPL(struct GpuUserSharedData *pData);
 
 NV_STATUS gpushareddataCtrlCmdRequestDataPoll_IMPL(struct GpuUserSharedData *pData, NV00DE_CTRL_REQUEST_DATA_POLL_PARAMS *pParams);
 
-NV_STATUS gpushareddataConstruct_IMPL(struct GpuUserSharedData *arg_pData, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_gpushareddataConstruct(arg_pData, arg_pCallContext, arg_pParams) gpushareddataConstruct_IMPL(arg_pData, arg_pCallContext, arg_pParams)
-void gpushareddataDestruct_IMPL(struct GpuUserSharedData *pData);
-
-#define __nvoc_gpushareddataDestruct(pData) gpushareddataDestruct_IMPL(pData)
 #undef PRIVATE_FIELD
 
 

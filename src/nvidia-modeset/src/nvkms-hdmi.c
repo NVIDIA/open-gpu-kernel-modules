@@ -1999,7 +1999,6 @@ NvBool nvHdmiFrlAssessLink(NVDpyEvoPtr pDpyEvo)
  */
 NvBool nvHdmiDpySupportsFrl(const NVDpyEvoRec *pDpyEvo)
 {
-    NvU32 passiveDpDongleMaxPclkKHz;
     const NVDevEvoRec *pDevEvo = pDpyEvo->pDispEvo->pDevEvo;
 
     nvAssert(nvDpyIsHdmiEvo(pDpyEvo));
@@ -2014,45 +2013,78 @@ NvBool nvHdmiDpySupportsFrl(const NVDpyEvoRec *pDpyEvo)
         return FALSE;
     }
 
+    /*
+     * Can't use FRL if the connector is not natively HDMI (e.g., if
+     * using a passive DP-to-HDMI dongle, or if overrideEdid/forceConnected
+     * attempted to force HDMI FRL on a DP connector).
+     */
+    if (pDpyEvo->pConnectorEvo->type != NVKMS_CONNECTOR_TYPE_HDMI) {
+        return FALSE;
+    }
+
     /* Can't use FRL if the HDMI sink doesn't support it. */
     if (!pDpyEvo->parsedEdid.valid ||
         !pDpyEvo->parsedEdid.info.hdmiForumInfo.max_FRL_Rate) {
         return FALSE;
     }
 
-    /* Can't use FRL if we are using a passive DP to HDMI dongle. */
-    if (nvDpyGetPassiveDpDongleType(pDpyEvo, &passiveDpDongleMaxPclkKHz) !=
-        NV_EVO_PASSIVE_DP_DONGLE_UNUSED) {
-        return FALSE;
-    }
-
     return TRUE;
 }
 
-NvU32 nvHdmiGetEffectivePixelClockKHz(const NVDpyEvoRec *pDpyEvo,
-                                       const NVHwModeTimingsEvo *pHwTimings,
-                                       const NVDpyAttributeColor *pDpyColor)
+NvBool nvHdmiIsTmdsPossible(const NVDpyEvoRec *pDpyEvo,
+                            const NVHwModeTimingsEvo *pHwTimings,
+                            const NVDpyAttributeColor *pDpyColor)
 {
+    /* For YUV420 HW mode, divide pixel clock by 2. */
     const NvU32 pixelClock = (pHwTimings->yuv420Mode == NV_YUV420_MODE_HW) ?
         (pHwTimings->pixelClock / 2) : pHwTimings->pixelClock;
+
+    ct_assert(NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10 ==
+              NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_MAX);
 
     nvAssert((pHwTimings->yuv420Mode == NV_YUV420_MODE_NONE) ||
                 (pDpyColor->format ==
                  NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420));
     nvAssert(nvDpyIsHdmiEvo(pDpyEvo));
+
+    /*
+     * HDMI requires 8+ BPC, enforced via nvDpyGetOutputColorFormatInfo() and
+     * IsColorBpcSupported(), so just assert instead of handling < 8 BPC.
+     */
     nvAssert(pDpyColor->bpc >= NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8);
 
-    /* YCbCr422 does not change the effective pixel clock. */
-    if (pDpyColor->format ==
-            NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422) {
-        return pixelClock;
+    /* For YCbCr422, compare without adjusting maximum pixel clock despite BPC. */
+    if (pDpyColor->format == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422) {
+        return (pixelClock <= pDpyEvo->maxSingleLinkPixelClockKHz);
     }
 
     /*
-     * For > 8 BPC, the effective pixel clock is adjusted upwards according to
-     * the ratio of the given BPC and 8 BPC.
+     * For 10 BPC, compare with hardware reduced limit if applicable, otherwise
+     * adjust maximum pixel clock by a ratio of 8/10 BPC.
      */
-    return ((pixelClock * pDpyColor->bpc) / 8ULL);
+    if (pDpyColor->bpc == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10) {
+        NvU32 hdmiTmds10BpcMaxPClkKHz =
+            pDpyEvo->pDispEvo->pDevEvo->caps.hdmiTmds10BpcMaxPClkMHz * 1000UL;
+        NvU32 adjustedMaxPixelClock =
+            (pDpyEvo->maxSingleLinkPixelClockKHz * 4ULL) / 5ULL;
+
+        /* Pixel clock must satisfy hdmiTmds10BpcMaxPClkKHz, if applicable. */
+        if ((hdmiTmds10BpcMaxPClkKHz > 0) &&
+            (pixelClock > hdmiTmds10BpcMaxPClkKHz)) {
+            return FALSE;
+        }
+
+        /* Pixel clock must also satisfy adjustedMaxPixelClock. */
+        if (pixelClock > adjustedMaxPixelClock) {
+            return FALSE;
+        }
+
+        return TRUE;
+    }
+
+    /* For 8 BPC, compare without adjusting maximum pixel clock. */
+    nvAssert(pDpyColor->bpc == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8);
+    return (pixelClock <= pDpyEvo->maxSingleLinkPixelClockKHz);
 }
 
 static NvU64 GetHdmiFrlLinkRate(HDMI_FRL_DATA_RATE frlRate)
@@ -2114,8 +2146,7 @@ static NvBool nvHdmiFrlQueryConfigOneBpc(
 
     nvAssert(nvDpyIsHdmiEvo(pDpyEvo));
     nvAssert(nvHdmiDpySupportsFrl(pDpyEvo));
-    nvAssert(nvHdmiGetEffectivePixelClockKHz(pDpyEvo, pHwTimings, pDpyColor) >
-                pDpyEvo->maxSingleLinkPixelClockKHz);
+    nvAssert(!nvHdmiIsTmdsPossible(pDpyEvo, pHwTimings, pDpyColor));
 
     /* See if we can find an NVT_TIMING for this mode from the EDID. */
     pNvtTiming = nvFindEdidNVT_TIMING(pDpyEvo, pModeTimings, pValidationParams);

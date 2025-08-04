@@ -180,10 +180,12 @@ typedef struct _NVEvoApiHandlesRec {
 
 typedef struct _NVSurfaceDescriptor
 {
+    NvU32 memoryHandle;
     NvU32 ctxDmaHandle;
     NvU32 memAperture;
     NvU64 memOffset;
     NvBool bValid;
+    NvBool isMemoryMappedForDisplayAccess;
 } NVSurfaceDescriptor;
 
 typedef struct _NVEvoDma
@@ -950,6 +952,7 @@ typedef struct {
     NvU8 legacyNotifierFormatSizeBytes[NVKMS_MAX_LAYERS_PER_HEAD];
     NvU8 dpYCbCr422MaxBpc;
     NvU8 hdmiYCbCr422MaxBpc;
+    NvU16 hdmiTmds10BpcMaxPClkMHz;
 } NVEvoCapsRec;
 
 typedef struct {
@@ -1065,10 +1068,10 @@ typedef struct _NVEvoDevRec {
     const struct NvKmsPerOpenDev *modesetOwner;
 
     /*!
-     * Indicates whether modeset ownership is changed since
+     * Indicates whether modeset ownership or sub-ownership has changed since
      * last modeset.
      */
-    NvBool modesetOwnerChanged;
+    NvBool modesetOwnerOrSubOwnerChanged;
 
     /*!
      * modesetSubOwner points to the pOpenDev of the client that called
@@ -1509,7 +1512,7 @@ typedef struct _NVHwModeTimingsEvo {
      * If true, then pixelClock is doubled.
      */
     NvBool hdmi3D     : 1;
-
+    NvBool dscPassThrough : 1;
     struct {
         /* The vrr type for which this mode is adjusted. */
         enum NvKmsDpyVRRType type;
@@ -2184,13 +2187,6 @@ static inline NvU32 nvGetPrimaryHwHead(const NVDispEvoRec *pDispEvo,
             NV_INVALID_HEAD;
 }
 
-typedef enum {
-    NV_EVO_PASSIVE_DP_DONGLE_UNUSED,
-    NV_EVO_PASSIVE_DP_DONGLE_DP2DVI,
-    NV_EVO_PASSIVE_DP_DONGLE_DP2HDMI_TYPE_1,
-    NV_EVO_PASSIVE_DP_DONGLE_DP2HDMI_TYPE_2,
-} NVEvoPassiveDpDongleType;
-
 typedef struct NVEdidRec {
     NvU8 *buffer;
     size_t length;
@@ -2837,6 +2833,9 @@ struct _NVSurfaceEvoRec {
 
     /* Keep track of prefetched surfaces. */
     NvU32 difrLastPrefetchPass;
+
+    /* Map memory allocation into display GPU's IOMMU space */
+    NvBool mapToDisplayRm;
 };
 
 typedef struct _NVDeferredRequestFifoRec {
@@ -3206,7 +3205,8 @@ typedef const struct _nv_evo_hal {
                                      NVSurfaceDescriptor *pSurfaceDesc,
                                      NvU32 memoryHandle,
                                      NvU32 localCtxDmaFlags,
-                                     NvU64 limit);
+                                     NvU64 limit,
+                                     NvBool mapToDisplayRm);
 
     void (*FreeSurfaceDescriptor) (NVDevEvoPtr pDevEvo,
                                    NvU32 deviceHandle,

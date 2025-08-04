@@ -76,21 +76,13 @@ void DPCDHALImpl::configureDpTunnelBwAllocation()
 {
     NvU8 byte = 0;
 
-    // Client has not requested or it is not enabled due to regkey override
-    if (!this->bEnableDpTunnelBwAllocationSupport)
-    {
-        bIsDpTunnelBwAllocationEnabled = false;
-        return;
-    }
-
-    bIsDpTunnelBwAllocationEnabled = false;
-
+    // 0xE000D, DP Tunneling capabilities for DIA
     if (AuxRetry::ack ==
         bus.read(NV_DPCD20_DP_TUNNEL_CAPABILITIES, &byte, sizeof byte))
     {
         caps.dpInTunnelingCaps.bIsSupported =
-            FLD_TEST_DRF(_DPCD20, _DP_TUNNEL_CAPABILITIES,
-                            _DPTUNNELING_SUPPORT, _YES, byte);
+        FLD_TEST_DRF(_DPCD20, _DP_TUNNEL_CAPABILITIES,
+                    _DPTUNNELING_SUPPORT, _YES, byte);
 
         caps.dpInTunnelingCaps.bIsPanelReplayOptimizationSupported =
             FLD_TEST_DRF(_DPCD20, _DP_TUNNEL_CAPABILITIES,
@@ -102,7 +94,14 @@ void DPCDHALImpl::configureDpTunnelBwAllocation()
                             _DPIN_BW_ALLOCATION_MODE_SUPPORT,
                             _YES, byte);
     }
+    // Client has not requested or it is not enabled due to regkey override
+    if (!this->bEnableDpTunnelBwAllocationSupport)
+    {
+        bIsDpTunnelBwAllocationEnabled = false;
+        return;
+    }
 
+    bIsDpTunnelBwAllocationEnabled = false;
 
     if (caps.dpInTunnelingCaps.bIsSupported)
     {
@@ -423,23 +422,6 @@ void DPCDHALImpl::parseAndReadCaps()
                     }
                     caps.repeaterCaps.bAuxlessALPMSupported =
                         FLD_TEST_DRF(_DPCD20, _PHY_REPEATER_ALPM_CAPS, _AUX_LESS, _SUPPORTED, buffer[9]);
-
-                    if (lttprIsAtLeastVersion(2, 0))
-                    {
-                        // 0xE000D, DP Tunneling capabilities for DIA which acts as LTTPR.
-                        if (AuxRetry::ack ==
-                                bus.read(NV_DPCD20_DP_TUNNEL_CAPABILITIES, &byte, sizeof byte))
-                        {
-                            caps.repeaterCaps.bDpTunnelingSupported =
-                                                FLD_TEST_DRF(_DPCD20, _DP_TUNNEL_CAPABILITIES,
-                                                            _DPTUNNELING_SUPPORT, _YES, byte);
-
-                            caps.repeaterCaps.bDpTunnelingBwAllocModeSupported =
-                                                FLD_TEST_DRF(_DPCD20, _DP_TUNNEL_CAPABILITIES,
-                                                            _DPIN_BW_ALLOCATION_MODE_SUPPORT,
-                                                            _YES, byte);
-                        }
-                    }
                 }
                 else
                 {

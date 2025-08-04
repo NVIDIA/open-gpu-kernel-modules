@@ -92,9 +92,14 @@ static uvm_aperture_t get_access_counter_inst_aperture(NvU32 *access_counter_ent
     switch (hw_aperture_value) {
         case NVC365_NOTIFY_BUF_ENTRY_APERTURE_VID_MEM:
             return UVM_APERTURE_VID;
-        case NVC365_NOTIFY_BUF_ENTRY_APERTURE_SYS_MEM_COHERENT:
         case NVC365_NOTIFY_BUF_ENTRY_APERTURE_SYS_MEM_NONCOHERENT:
-             return UVM_APERTURE_SYS;
+            // UVM does not use SYS_NON_COHERENT aperture for sysmem addresses
+            // but RM might. The value returned here denotes sysmem location
+            // to UVM so it's safe to return UVM_APERTURE_SYS even for
+            // SYS_MEM_NONCOHERENT.
+            /* falls through */
+        case NVC365_NOTIFY_BUF_ENTRY_APERTURE_SYS_MEM_COHERENT:
+            return UVM_APERTURE_SYS;
     }
 
     UVM_ASSERT_MSG(false, "Invalid inst aperture value: %d\n", hw_aperture_value);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -281,6 +281,132 @@ nvlink_lib_powerdown_links_from_active_to_L2_end:
     return status;
 }
 
+static NvlStatus
+_nvlink_lib_unilateral_powerdown_links_from_active_to_off
+(
+    nvlink_link **links,
+    NvU32         numLinks,
+    NvU32         flags
+)
+{
+    NvlStatus status = NVL_SUCCESS;
+    nvlink_link **ppTargetLinks = NULL;
+    NvU32 numTargetLinks;
+    NvU32 i;
+
+    if ((links == NULL) || (numLinks == 0))
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: No links to shutdown\n",
+            __FUNCTION__));
+
+        return NVL_ERR_GENERIC;
+    }
+
+    ppTargetLinks = (nvlink_link **)nvlink_malloc( sizeof(nvlink_link *) * (numLinks));
+    if (ppTargetLinks == NULL)
+    {
+        return NVL_NO_MEM;
+    }
+
+    // Acquire the top-level lock
+    status = nvlink_lib_top_lock_acquire();
+    if (status != NVL_SUCCESS)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: Failed to acquire top-level lock\n",
+            __FUNCTION__));
+
+        if (ppTargetLinks != NULL)
+            nvlink_free((void *)ppTargetLinks);
+
+        return NVL_ERR_GENERIC;
+    }
+
+    //
+    // Top-level lock is now acquired. Proceed to traversing the device
+    // and link lists
+    //
+
+    // Double check whether we can unilaterally shutdown links
+    if (!nvlink_core_link_states_symmetric(links[0]))
+    {
+        // Release the top-level lock
+        nvlink_lib_top_lock_release();
+
+        if (ppTargetLinks != NULL)
+            nvlink_free((void *)ppTargetLinks);
+
+        // We got here because no connections were found
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: No conns were found\n", __FUNCTION__));
+
+        return NVL_NOT_FOUND;
+    }
+
+    // Acquire the per-link locks for all links captured
+    status = nvlink_lib_link_locks_acquire(links, numLinks);
+    if (status != NVL_SUCCESS)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: Failed to acquire per-link locks\n",
+            __FUNCTION__));
+
+        // Release the top-level lock
+        nvlink_lib_top_lock_release();
+
+        if (ppTargetLinks != NULL)
+            nvlink_free((void *)ppTargetLinks);
+
+        return NVL_ERR_GENERIC;
+    }
+
+    // Sanity checking if the link is already in OFF/RESET state
+    numTargetLinks = 0;
+    for (i = 0; i < numLinks; i++)
+    {
+        // Check if link is in L2
+        if (nvlink_core_check_link_state(links[i], NVLINK_LINKSTATE_SLEEP))
+            continue;
+
+        // Check if link is OFF
+        if (nvlink_core_check_link_state(links[i], NVLINK_LINKSTATE_OFF))
+            continue;
+
+        // Check if link is in RESET
+        if (nvlink_core_check_link_state(links[i], NVLINK_LINKSTATE_RESET))
+            continue;
+
+        ppTargetLinks[numTargetLinks++] = links[i];
+    }
+
+    //
+    // All the required per-link locks are successfully acquired
+    // The connection list traversal is also complete now
+    // Release the top level-lock
+    //
+    nvlink_lib_top_lock_release();
+
+    if (numTargetLinks > 0)
+    {
+        //
+        // Squash status. If any side of link doesnt respond the link is
+        // shutdown unilaterally
+        //
+        (void)nvlink_core_unilateral_powerdown_links_from_active_to_off(ppTargetLinks,
+                                                                        numTargetLinks,
+                                                                        flags);
+    }
+
+    // Release the per-link locks
+    nvlink_lib_link_locks_release(links, numLinks);
+
+    if (ppTargetLinks != NULL)
+        nvlink_free((void *)ppTargetLinks);
+
+    return NVL_SUCCESS;
+}
+
 /**
  * [PSEUDO-CLEAN SHUTDOWN]
  *
@@ -388,9 +514,12 @@ nvlink_lib_powerdown_links_from_active_to_off
 
          // Release the top-level lock
         nvlink_lib_top_lock_release();
-        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
-            "%s: No conns were found\n", __FUNCTION__));
-        return NVL_NOT_FOUND;
+
+        //
+        // See if there are any disconnected links which support unilateral
+        // shutdown, and shut down those links if possible
+        //
+        return _nvlink_lib_unilateral_powerdown_links_from_active_to_off(links, numLinks, flags);
     }
 
     // Acquire the per-link locks for all links captured

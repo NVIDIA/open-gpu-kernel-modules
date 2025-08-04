@@ -121,19 +121,21 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_NvfbcSession =
     /*pExportInfo=*/        &__nvoc_export_info__NvfbcSession
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_NvfbcSession[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10008u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-        /*flags=*/      0x8u,
+        /*pFunc=*/      (void (*)(void)) &nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10008u)
+        /*flags=*/      0x10008u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xa0bd0101u,
         /*paramSize=*/  sizeof(NVA0BD_CTRL_NVFBC_SW_SESSION_UPDATE_INFO_PARAMS),
@@ -142,7 +144,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_NvfbcSes
         /*func=*/       "nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo"
 #endif
     },
-
 };
 
 
@@ -406,6 +407,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__NvfbcSession =
     /*pExportEntries=*/ __nvoc_exported_method_def_NvfbcSession
 };
 
+void __nvoc_nvfbcsessionDestruct(NvfbcSession*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_NvfbcSession(NvfbcSession *pThis) {
     __nvoc_nvfbcsessionDestruct(pThis);
@@ -439,18 +441,11 @@ __nvoc_ctor_NvfbcSession_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_NvfbcSession_1(NvfbcSession *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo -- exported (id=0xa0bd0101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo__ = &nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo_IMPL;
-#endif
-} // End __nvoc_init_funcTable_NvfbcSession_1 with approximately 1 basic block(s).
+} // End __nvoc_init_funcTable_NvfbcSession_1
 
 
-// Initialize vtable(s) for 26 virtual method(s).
+// Initialize vtable(s) for 25 virtual method(s).
 void __nvoc_init_funcTable_NvfbcSession(NvfbcSession *pThis) {
-
-    // Initialize vtable(s) with 1 per-object function pointer(s).
     __nvoc_init_funcTable_NvfbcSession_1(pThis);
 }
 

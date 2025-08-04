@@ -80,6 +80,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__PrereqTracker =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_prereqDestruct(PrereqTracker*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_PrereqTracker(PrereqTracker *pThis) {
     __nvoc_prereqDestruct(pThis);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,7 @@
 
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/mem_mgr/heap.h"
+#include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
 
@@ -89,7 +90,7 @@ kmigmgrCreateGPUInstanceCheck_GB10B
     }
     else
     {
-        pmaGetLargestFree(&pHeap->pmaObject, &largestFreeSize, &base, &unused);
+        pmaGetLargestFree(pHeap->pPmaObject, &largestFreeSize, &base, &unused);
     }
 
     // Make sure that no memory has been claimed from our partitionable range
@@ -145,6 +146,10 @@ kmigmgrIsGPUInstanceFlagValid_GB10B
     NvU32 gfxSizeFlag = DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG,
                                     _GFX_SIZE, gpuInstanceFlag);
 
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        kmigmgrIsGPUInstanceFlagLegal(pGpu, pKernelMIGManager, gpuInstanceFlag),
+        NV_FALSE);
+
     if (!FLD_TEST_REF(NV2080_CTRL_GPU_PARTITION_FLAG_REQ_ALL_MEDIA, _DEFAULT, gpuInstanceFlag))
     {
         return NV_FALSE;
@@ -155,8 +160,6 @@ kmigmgrIsGPUInstanceFlagValid_GB10B
         case NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_FULL:
             break;
         default:
-            NV_PRINTF(LEVEL_INFO, "Unrecognized GPU mem partitioning flag 0x%x\n",
-                      memSizeFlag);
             return NV_FALSE;
     }
 
@@ -167,8 +170,6 @@ kmigmgrIsGPUInstanceFlagValid_GB10B
         case NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_MINI_HALF:
             break;
         default:
-            NV_PRINTF(LEVEL_INFO, "Unrecognized GPU compute partitioning flag 0x%x\n",
-                      computeSizeFlag);
             return NV_FALSE;
     }
 
@@ -182,14 +183,7 @@ kmigmgrIsGPUInstanceFlagValid_GB10B
             break;
         case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_NONE:
             break;
-        // Cannot support these sizes since there is only one GFX Capable SYSPIPE
-        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_HALF:
-        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_MINI_HALF:
-        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_QUARTER:
-        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_EIGHTH:
         default:
-            NV_PRINTF(LEVEL_INFO, "Unrecognized GPU GFX partitioning flag 0x%x\n",
-                      gfxSizeFlag);
             return NV_FALSE;
     }
 
@@ -287,6 +281,46 @@ kmigmgrSwizzIdToSpan_GB10B
     NV_ASSERT_OR_RETURN(kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->pGrInfo != NULL, NV_RANGE_EMPTY);
 
     spanLen = kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->pGrInfo->infoList[NV2080_CTRL_GR_INFO_INDEX_MAX_PARTITIONABLE_GPCS].data;
+
+    switch (swizzId)
+    {
+        case 0:
+            ret = rangeMake(0, spanLen - 1);
+            break;
+        case 1:
+            ret = rangeMake(0, (spanLen/2) - 1);
+            break;
+        case 2:
+            ret = rangeMake(spanLen/2, spanLen - 1);
+            break;
+        default:
+            NV_PRINTF(LEVEL_ERROR, "Unsupported swizzid 0x%x\n", swizzId);
+            ret = NV_RANGE_EMPTY;
+            break;
+    }
+
+    return ret;
+}
+
+/*!
+ * @brief   Returns the GR span covered by the swizzId
+ */
+NV_RANGE
+kmigmgrSwizzIdToGrSpan_GB10B
+(
+    OBJGPU *pGpu,
+    KernelMIGManager *pKernelMIGManager,
+    NvU32 swizzId
+)
+{
+    KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+    NV_RANGE ret;
+    NvU8 spanLen;
+
+    NV_ASSERT_OR_RETURN(kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->bInitialized, NV_RANGE_EMPTY);
+    NV_ASSERT_OR_RETURN(kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->pGrInfo != NULL, NV_RANGE_EMPTY);
+
+    spanLen = kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->pGrInfo->infoList[NV2080_CTRL_GR_INFO_INDEX_MAX_MIG_ENGINES].data;
 
     switch (swizzId)
     {

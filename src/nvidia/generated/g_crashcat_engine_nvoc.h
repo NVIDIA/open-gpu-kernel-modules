@@ -175,7 +175,82 @@ NV_STATUS __nvoc_objCreate_CrashCatEngine(CrashCatEngine**, Dynamic*, NvU32);
     __nvoc_objCreate_CrashCatEngine((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS crashcatEngineConstruct_IMPL(struct CrashCatEngine *arg_);
+#define __nvoc_crashcatEngineConstruct(arg_) crashcatEngineConstruct_IMPL(arg_)
+
+void crashcatEngineDestruct_IMPL(struct CrashCatEngine *arg_this);
+#define __nvoc_crashcatEngineDestruct(arg_this) crashcatEngineDestruct_IMPL(arg_this)
+
+struct CrashCatReport * crashcatEngineGetNextCrashReport_IMPL(struct CrashCatEngine *arg_this);
+#ifdef __nvoc_crashcat_engine_h_disabled
+static inline struct CrashCatReport * crashcatEngineGetNextCrashReport(struct CrashCatEngine *arg_this) {
+    NV_ASSERT_FAILED_PRECOMP("CrashCatEngine was disabled!");
+    return NULL;
+}
+#else // __nvoc_crashcat_engine_h_disabled
+#define crashcatEngineGetNextCrashReport(arg_this) crashcatEngineGetNextCrashReport_IMPL(arg_this)
+#endif // __nvoc_crashcat_engine_h_disabled
+
+NV_STATUS crashcatEngineRegisterCrashBuffer_IMPL(struct CrashCatEngine *arg_this, NV_CRASHCAT_MEM_APERTURE aperture, NvU64 offset, NvU64 size, void *pEngPriv);
+#ifdef __nvoc_crashcat_engine_h_disabled
+static inline NV_STATUS crashcatEngineRegisterCrashBuffer(struct CrashCatEngine *arg_this, NV_CRASHCAT_MEM_APERTURE aperture, NvU64 offset, NvU64 size, void *pEngPriv) {
+    NV_ASSERT_FAILED_PRECOMP("CrashCatEngine was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_crashcat_engine_h_disabled
+#define crashcatEngineRegisterCrashBuffer(arg_this, aperture, offset, size, pEngPriv) crashcatEngineRegisterCrashBuffer_IMPL(arg_this, aperture, offset, size, pEngPriv)
+#endif // __nvoc_crashcat_engine_h_disabled
+
+void crashcatEngineUnregisterCrashBuffer_IMPL(struct CrashCatEngine *arg_this, NV_CRASHCAT_MEM_APERTURE aperture, NvU64 offset, NvU64 size);
+#ifdef __nvoc_crashcat_engine_h_disabled
+static inline void crashcatEngineUnregisterCrashBuffer(struct CrashCatEngine *arg_this, NV_CRASHCAT_MEM_APERTURE aperture, NvU64 offset, NvU64 size) {
+    NV_ASSERT_FAILED_PRECOMP("CrashCatEngine was disabled!");
+}
+#else // __nvoc_crashcat_engine_h_disabled
+#define crashcatEngineUnregisterCrashBuffer(arg_this, aperture, offset, size) crashcatEngineUnregisterCrashBuffer_IMPL(arg_this, aperture, offset, size)
+#endif // __nvoc_crashcat_engine_h_disabled
+
+void * crashcatEngineMapCrashBuffer_IMPL(struct CrashCatEngine *arg_this, NV_CRASHCAT_MEM_APERTURE aperture, NvU64 offset, NvU64 size);
+#ifdef __nvoc_crashcat_engine_h_disabled
+static inline void * crashcatEngineMapCrashBuffer(struct CrashCatEngine *arg_this, NV_CRASHCAT_MEM_APERTURE aperture, NvU64 offset, NvU64 size) {
+    NV_ASSERT_FAILED_PRECOMP("CrashCatEngine was disabled!");
+    return NULL;
+}
+#else // __nvoc_crashcat_engine_h_disabled
+#define crashcatEngineMapCrashBuffer(arg_this, aperture, offset, size) crashcatEngineMapCrashBuffer_IMPL(arg_this, aperture, offset, size)
+#endif // __nvoc_crashcat_engine_h_disabled
+
+void crashcatEngineUnmapCrashBuffer_IMPL(struct CrashCatEngine *arg_this, void *ptr);
+#ifdef __nvoc_crashcat_engine_h_disabled
+static inline void crashcatEngineUnmapCrashBuffer(struct CrashCatEngine *arg_this, void *ptr) {
+    NV_ASSERT_FAILED_PRECOMP("CrashCatEngine was disabled!");
+}
+#else // __nvoc_crashcat_engine_h_disabled
+#define crashcatEngineUnmapCrashBuffer(arg_this, ptr) crashcatEngineUnmapCrashBuffer_IMPL(arg_this, ptr)
+#endif // __nvoc_crashcat_engine_h_disabled
+
+void crashcatEngineSyncCrashBuffer_IMPL(struct CrashCatEngine *arg_this, void *ptr, NvU32 offset, NvU32 size);
+#ifdef __nvoc_crashcat_engine_h_disabled
+static inline void crashcatEngineSyncCrashBuffer(struct CrashCatEngine *arg_this, void *ptr, NvU32 offset, NvU32 size) {
+    NV_ASSERT_FAILED_PRECOMP("CrashCatEngine was disabled!");
+}
+#else // __nvoc_crashcat_engine_h_disabled
+#define crashcatEngineSyncCrashBuffer(arg_this, ptr, offset, size) crashcatEngineSyncCrashBuffer_IMPL(arg_this, ptr, offset, size)
+#endif // __nvoc_crashcat_engine_h_disabled
+
+NV_STATUS crashcatEngineLoadWayfinder_IMPL(struct CrashCatEngine *arg_this);
+#ifdef __nvoc_crashcat_engine_h_disabled
+static inline NV_STATUS crashcatEngineLoadWayfinder(struct CrashCatEngine *arg_this) {
+    NV_ASSERT_FAILED_PRECOMP("CrashCatEngine was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_crashcat_engine_h_disabled
+#define crashcatEngineLoadWayfinder(arg_this) crashcatEngineLoadWayfinder_IMPL(arg_this)
+#endif // __nvoc_crashcat_engine_h_disabled
+
+
+// Wrapper macros for halified functions
 #define crashcatEngineUnload_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__crashcatEngineUnload__
 #define crashcatEngineUnload(arg_this) crashcatEngineUnload_DISPATCH(arg_this)
 #define crashcatEngineConfigured_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__crashcatEngineConfigured__
@@ -239,86 +314,6 @@ static inline NvU32 crashcatEngineGetWFL0Offset_DISPATCH(struct CrashCatEngine *
 }
 
 void crashcatEngineUnload_IMPL(struct CrashCatEngine *arg1);
-
-NV_STATUS crashcatEngineConstruct_IMPL(struct CrashCatEngine *arg_);
-
-#define __nvoc_crashcatEngineConstruct(arg_) crashcatEngineConstruct_IMPL(arg_)
-void crashcatEngineDestruct_IMPL(struct CrashCatEngine *arg1);
-
-#define __nvoc_crashcatEngineDestruct(arg1) crashcatEngineDestruct_IMPL(arg1)
-struct CrashCatReport *crashcatEngineGetNextCrashReport_IMPL(struct CrashCatEngine *arg1);
-
-#ifdef __nvoc_crashcat_engine_h_disabled
-static inline struct CrashCatReport *crashcatEngineGetNextCrashReport(struct CrashCatEngine *arg1) {
-    NV_ASSERT_FAILED_PRECOMP("CrashCatEngine was disabled!");
-    return NULL;
-}
-#else //__nvoc_crashcat_engine_h_disabled
-#define crashcatEngineGetNextCrashReport(arg1) crashcatEngineGetNextCrashReport_IMPL(arg1)
-#endif //__nvoc_crashcat_engine_h_disabled
-
-NV_STATUS crashcatEngineRegisterCrashBuffer_IMPL(struct CrashCatEngine *arg1, NV_CRASHCAT_MEM_APERTURE aperture, NvU64 offset, NvU64 size, void *pEngPriv);
-
-#ifdef __nvoc_crashcat_engine_h_disabled
-static inline NV_STATUS crashcatEngineRegisterCrashBuffer(struct CrashCatEngine *arg1, NV_CRASHCAT_MEM_APERTURE aperture, NvU64 offset, NvU64 size, void *pEngPriv) {
-    NV_ASSERT_FAILED_PRECOMP("CrashCatEngine was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_crashcat_engine_h_disabled
-#define crashcatEngineRegisterCrashBuffer(arg1, aperture, offset, size, pEngPriv) crashcatEngineRegisterCrashBuffer_IMPL(arg1, aperture, offset, size, pEngPriv)
-#endif //__nvoc_crashcat_engine_h_disabled
-
-void crashcatEngineUnregisterCrashBuffer_IMPL(struct CrashCatEngine *arg1, NV_CRASHCAT_MEM_APERTURE aperture, NvU64 offset, NvU64 size);
-
-#ifdef __nvoc_crashcat_engine_h_disabled
-static inline void crashcatEngineUnregisterCrashBuffer(struct CrashCatEngine *arg1, NV_CRASHCAT_MEM_APERTURE aperture, NvU64 offset, NvU64 size) {
-    NV_ASSERT_FAILED_PRECOMP("CrashCatEngine was disabled!");
-}
-#else //__nvoc_crashcat_engine_h_disabled
-#define crashcatEngineUnregisterCrashBuffer(arg1, aperture, offset, size) crashcatEngineUnregisterCrashBuffer_IMPL(arg1, aperture, offset, size)
-#endif //__nvoc_crashcat_engine_h_disabled
-
-void *crashcatEngineMapCrashBuffer_IMPL(struct CrashCatEngine *arg1, NV_CRASHCAT_MEM_APERTURE aperture, NvU64 offset, NvU64 size);
-
-#ifdef __nvoc_crashcat_engine_h_disabled
-static inline void *crashcatEngineMapCrashBuffer(struct CrashCatEngine *arg1, NV_CRASHCAT_MEM_APERTURE aperture, NvU64 offset, NvU64 size) {
-    NV_ASSERT_FAILED_PRECOMP("CrashCatEngine was disabled!");
-    return NULL;
-}
-#else //__nvoc_crashcat_engine_h_disabled
-#define crashcatEngineMapCrashBuffer(arg1, aperture, offset, size) crashcatEngineMapCrashBuffer_IMPL(arg1, aperture, offset, size)
-#endif //__nvoc_crashcat_engine_h_disabled
-
-void crashcatEngineUnmapCrashBuffer_IMPL(struct CrashCatEngine *arg1, void *ptr);
-
-#ifdef __nvoc_crashcat_engine_h_disabled
-static inline void crashcatEngineUnmapCrashBuffer(struct CrashCatEngine *arg1, void *ptr) {
-    NV_ASSERT_FAILED_PRECOMP("CrashCatEngine was disabled!");
-}
-#else //__nvoc_crashcat_engine_h_disabled
-#define crashcatEngineUnmapCrashBuffer(arg1, ptr) crashcatEngineUnmapCrashBuffer_IMPL(arg1, ptr)
-#endif //__nvoc_crashcat_engine_h_disabled
-
-void crashcatEngineSyncCrashBuffer_IMPL(struct CrashCatEngine *arg1, void *ptr, NvU32 offset, NvU32 size);
-
-#ifdef __nvoc_crashcat_engine_h_disabled
-static inline void crashcatEngineSyncCrashBuffer(struct CrashCatEngine *arg1, void *ptr, NvU32 offset, NvU32 size) {
-    NV_ASSERT_FAILED_PRECOMP("CrashCatEngine was disabled!");
-}
-#else //__nvoc_crashcat_engine_h_disabled
-#define crashcatEngineSyncCrashBuffer(arg1, ptr, offset, size) crashcatEngineSyncCrashBuffer_IMPL(arg1, ptr, offset, size)
-#endif //__nvoc_crashcat_engine_h_disabled
-
-NV_STATUS crashcatEngineLoadWayfinder_IMPL(struct CrashCatEngine *arg1);
-
-#ifdef __nvoc_crashcat_engine_h_disabled
-static inline NV_STATUS crashcatEngineLoadWayfinder(struct CrashCatEngine *arg1) {
-    NV_ASSERT_FAILED_PRECOMP("CrashCatEngine was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_crashcat_engine_h_disabled
-#define crashcatEngineLoadWayfinder(arg1) crashcatEngineLoadWayfinder_IMPL(arg1)
-#endif //__nvoc_crashcat_engine_h_disabled
 
 #undef PRIVATE_FIELD
 

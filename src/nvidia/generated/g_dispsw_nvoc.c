@@ -166,17 +166,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_DispSwObject =
     /*pExportInfo=*/        &__nvoc_export_info__DispSwObject
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispSwObject[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) dispswCtrlCmdNotifyOnVblank_IMPL,
+        /*pFunc=*/      (void (*)(void)) &dispswCtrlCmdNotifyOnVblank_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -187,7 +189,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispSwOb
         /*func=*/       "dispswCtrlCmdNotifyOnVblank"
 #endif
     },
-
 };
 
 
@@ -550,6 +551,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__DispSwObject =
     /*pExportEntries=*/ __nvoc_exported_method_def_DispSwObject
 };
 
+void __nvoc_dispswDestruct(DispSwObject*);
 void __nvoc_dtor_ChannelDescendant(ChannelDescendant*);
 void __nvoc_dtor_DispSwObject(DispSwObject *pThis) {
     __nvoc_dispswDestruct(pThis);
@@ -593,18 +595,11 @@ static void __nvoc_init_funcTable_DispSwObject_1(DispSwObject *pThis, RmHalspecO
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
-
-    // dispswCtrlCmdNotifyOnVblank -- exported (id=0x90720101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__dispswCtrlCmdNotifyOnVblank__ = &dispswCtrlCmdNotifyOnVblank_IMPL;
-#endif
-} // End __nvoc_init_funcTable_DispSwObject_1 with approximately 1 basic block(s).
+} // End __nvoc_init_funcTable_DispSwObject_1
 
 
-// Initialize vtable(s) for 33 virtual method(s).
+// Initialize vtable(s) for 32 virtual method(s).
 void __nvoc_init_funcTable_DispSwObject(DispSwObject *pThis, RmHalspecOwner *pRmhalspecowner) {
-
-    // Initialize vtable(s) with 1 per-object function pointer(s).
     __nvoc_init_funcTable_DispSwObject_1(pThis, pRmhalspecowner);
 }
 

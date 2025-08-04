@@ -30,8 +30,6 @@
 struct drm_file;
 struct drm_device;
 
-#if defined(NV_DRM_FENCE_AVAILABLE)
-
 int nv_drm_fence_supported_ioctl(struct drm_device *dev,
                                  void *data, struct drm_file *filep);
 
@@ -56,8 +54,6 @@ int nv_drm_semsurf_fence_wait_ioctl(struct drm_device *dev,
 int nv_drm_semsurf_fence_attach_ioctl(struct drm_device *dev,
                                       void *data,
                                       struct drm_file *filep);
-
-#endif /* NV_DRM_FENCE_AVAILABLE */
 
 #endif /* NV_DRM_AVAILABLE */
 

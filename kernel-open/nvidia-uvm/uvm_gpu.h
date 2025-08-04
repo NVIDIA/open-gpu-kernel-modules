@@ -28,6 +28,7 @@
 #include "nvmisc.h"
 #include "uvm_types.h"
 #include "nv_uvm_types.h"
+#include "nv_uvm_user_types.h"
 #include "uvm_linux.h"
 #include "nv-kref.h"
 #include "uvm_common.h"
@@ -237,6 +238,8 @@ typedef struct
             // aligned region of a SAM VMA.
             uvm_page_mask_t migrated_mask;
 
+            // Access counters notification buffer index.
+            NvU32 buffer_index;
         } access_counters;
     };
 
@@ -708,11 +711,21 @@ struct uvm_gpu_struct
             int node_id;
         } numa;
 
+        // Coherent Driver-based Memory Management (CDMM) is a mode that allows
+        // coherent GPU memory to be managed by the driver and not the OS. This
+        // is done by the driver not onlining the memory as NUMA nodes. Having
+        // the field provides the most flexibility and is sync with the numa
+        // properties above. CDMM as a property applies to the entire system.
+        bool cdmm_enabled;
+
         // Physical address of the start of statically mapped fb memory in BAR1
         NvU64 static_bar1_start;
 
         // Size of statically mapped fb memory in BAR1.
         NvU64 static_bar1_size;
+
+        // Whether or not RM has iomapped the region write combined.
+        NvBool static_bar1_write_combined;
     } mem_info;
 
     struct
@@ -814,14 +827,6 @@ struct uvm_gpu_struct
         // Each bit in the bitlock protects a sysmem mapping.
         uvm_bit_locks_t bitlocks;
     } sysmem_mappings;
-
-    // Reverse lookup table used to query the user mapping associated with a
-    // sysmem (DMA) physical address.
-    //
-    // The system memory mapping information referred to by this field is
-    // different from that of sysmem_mappings, because it relates to user
-    // mappings (instead of kernel), and it is used in most configurations.
-    uvm_pmm_sysmem_mappings_t pmm_reverse_sysmem_mappings;
 
     struct
     {
@@ -1064,11 +1069,6 @@ struct uvm_parent_gpu_struct
 
     bool access_counters_supported;
 
-    // TODO: Bug 4637114: [UVM] Remove support for physical access counter
-    // notifications. Always set to false, until we remove the PMM reverse
-    // mapping code.
-    bool access_counters_can_use_physical_addresses;
-
     bool fault_cancel_va_supported;
 
     // True if the GPU has hardware support for scoped atomics
@@ -1094,10 +1094,6 @@ struct uvm_parent_gpu_struct
     bool map_remap_larger_page_promotion;
 
     bool plc_supported;
-
-    // If true, page_tree initialization pre-populates no_ats_ranges. It only
-    // affects ATS systems.
-    bool no_ats_range_required;
 
     // Parameters used by the TLB batching API
     struct
@@ -1317,15 +1313,32 @@ struct uvm_parent_gpu_struct
         NvU64 memory_window_end;
     } system_bus;
 
-    // WAR to issue ATS TLB invalidation commands ourselves.
     struct
     {
-        uvm_mutex_t smmu_lock;
-        struct page *smmu_cmdq;
-        void __iomem *smmu_cmdqv_base;
-        unsigned long smmu_prod;
-        unsigned long smmu_cons;
-    } smmu_war;
+        // TODO: Bug 5013952: Add per-GPU PASID ATS fields in addition to the
+        //       global ones.
+
+        // Whether this GPU uses non-PASID ATS (aka serial ATS) to translate
+        // IOVAs to SPAs.
+        bool non_pasid_ats_enabled : 1;
+
+        // If true, page_tree initialization pre-populates no_ats_ranges. It
+        // only affects ATS systems.
+        bool no_ats_range_required : 1;
+
+        // See the comments on uvm_dma_map_invalidation_t
+        uvm_dma_map_invalidation_t dma_map_invalidation;
+
+        // WAR to issue ATS TLB invalidation commands ourselves.
+        struct
+        {
+            uvm_mutex_t smmu_lock;
+            struct page *smmu_cmdq;
+            void __iomem *smmu_cmdqv_base;
+            unsigned long smmu_prod;
+            unsigned long smmu_cons;
+        } smmu_war;
+    } ats;
 
     struct
     {
@@ -1344,6 +1357,9 @@ struct uvm_parent_gpu_struct
     } egm;
 
     uvm_test_parent_gpu_inject_error_t test;
+
+    // PASID ATS
+    bool ats_supported;
 };
 
 NvU64 uvm_parent_gpu_dma_addr_to_gpu_addr(uvm_parent_gpu_t *parent_gpu, NvU64 dma_addr);
@@ -1693,6 +1709,13 @@ NV_STATUS uvm_gpu_check_nvlink_error_no_rm(uvm_gpu_t *gpu);
 // lifetime of that parent.
 NV_STATUS uvm_gpu_map_cpu_pages(uvm_gpu_t *gpu, struct page *page, size_t size, NvU64 *dma_address_out);
 
+// Like uvm_gpu_map_cpu_pages(), but skips issuing any GPU TLB invalidates
+// required by the architecture for invalid -> valid IOMMU transitions. It is
+// the caller's responsibility to perform those invalidates before accessing the
+// mappings, such as with uvm_mmu_tlb_invalidate_phys() or
+// uvm_hal_tlb_invalidate_phys().
+NV_STATUS uvm_gpu_map_cpu_pages_no_invalidate(uvm_gpu_t *gpu, struct page *page, size_t size, NvU64 *dma_address_out);
+
 // Unmap num_pages pages previously mapped with uvm_gpu_map_cpu_pages().
 void uvm_parent_gpu_unmap_cpu_pages(uvm_parent_gpu_t *parent_gpu, NvU64 dma_address, size_t size);
 
@@ -1706,18 +1729,18 @@ static void uvm_parent_gpu_unmap_cpu_page(uvm_parent_gpu_t *parent_gpu, NvU64 dm
     uvm_parent_gpu_unmap_cpu_pages(parent_gpu, dma_address, PAGE_SIZE);
 }
 
-// Allocate and map a page of system DMA memory on the GPU for physical access
+// Allocate and map system DMA memory on the GPU for physical access
 //
 // Returns
 // - the address of allocated memory in CPU virtual address space.
-// - the address of the page that can be used to access them on
+// - the address of the page(s) that can be used to access them on
 //   the GPU in the dma_address_out parameter. This address is usable by any GPU
 //   under the same parent for the lifetime of that parent.
-NV_STATUS uvm_gpu_dma_alloc_page(uvm_gpu_t *gpu, gfp_t gfp_flags, void **cpu_addr_out, NvU64 *dma_address_out);
+NV_STATUS uvm_gpu_dma_alloc(NvU64 size, uvm_gpu_t *gpu, gfp_t gfp_flags, void **cpu_addr_out, NvU64 *dma_address_out);
 
 // Unmap and free size bytes of contiguous sysmem DMA previously allocated
 // with uvm_gpu_dma_alloc_page().
-void uvm_parent_gpu_dma_free_page(uvm_parent_gpu_t *parent_gpu, void *cpu_addr, NvU64 dma_address);
+void uvm_parent_gpu_dma_free(NvU64 size, uvm_parent_gpu_t *parent_gpu, void *cpu_addr, NvU64 dma_address);
 
 // Returns whether the given range is within the GPU's addressable VA ranges.
 // It requires the input 'addr' to be in canonical form for platforms compliant
@@ -1745,6 +1768,11 @@ NvU64 uvm_parent_gpu_canonical_address(uvm_parent_gpu_t *parent_gpu, NvU64 addr)
 static bool uvm_parent_gpu_is_coherent(const uvm_parent_gpu_t *parent_gpu)
 {
     return parent_gpu->system_bus.memory_window_end > parent_gpu->system_bus.memory_window_start;
+}
+
+static bool uvm_parent_gpu_supports_ats(const uvm_parent_gpu_t *parent_gpu)
+{
+    return parent_gpu->ats_supported;
 }
 
 static bool uvm_parent_gpu_needs_pushbuffer_segments(uvm_parent_gpu_t *parent_gpu)

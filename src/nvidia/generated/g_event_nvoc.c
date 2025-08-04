@@ -85,6 +85,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__NotifShare =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_shrnotifDestruct(NotifShare*);
 void __nvoc_dtor_RsShared(RsShared*);
 void __nvoc_dtor_NotifShare(NotifShare *pThis) {
     __nvoc_shrnotifDestruct(pThis);
@@ -498,6 +499,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__Event =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_eventDestruct(Event*);
 void __nvoc_dtor_RmResource(RmResource*);
 void __nvoc_dtor_Event(Event *pThis) {
     __nvoc_eventDestruct(pThis);
@@ -701,6 +703,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__INotifier =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_inotifyDestruct(INotifier*);
 void __nvoc_dtor_INotifier(INotifier *pThis) {
     __nvoc_inotifyDestruct(pThis);
     PORT_UNREFERENCED_VARIABLE(pThis);
@@ -859,6 +862,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__Notifier =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_notifyDestruct(Notifier*);
 void __nvoc_dtor_INotifier(INotifier*);
 void __nvoc_dtor_Notifier(Notifier *pThis) {
     __nvoc_notifyDestruct(pThis);

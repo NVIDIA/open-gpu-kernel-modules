@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2013-2024 NVIDIA Corporation
+    Copyright (c) 2013-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -1456,17 +1456,19 @@ NV_STATUS UvmAllocDeviceP2P(NvProcessorUuid gpuUuid,
 // they will not be migrated.
 //
 // If the input virtual range corresponds to system-allocated pageable memory,
-// and UvmIsPageableMemoryAccessSupported reports that pageable memory access
-// is supported, then the driver will populate any unpopulated pages at the
+// and UvmIsPageableMemoryAccessSupported reports that pageable memory access is
+// supported, then the driver will populate any unpopulated pages at the
 // destination processor and migrate the data from any source location to the
-// destination. Pages in the VA range are migrated even if their preferred
-// location is set to a processor other than the destination processor.
-// If the accessed-by list of any of the pages in the VA range is not empty,
-// then mappings to those pages from all the appropriate processors are updated
-// to refer to the new location if establishing such a mapping is possible.
-// Otherwise, those mappings are cleared.
-// Note that in this case, software managed pageable memory does not support
-// migration of MAP_SHARED, file-backed, or PROT_NONE mappings.
+// destination. On coherent platforms, if the destination processor is a GPU and
+// the GPU is not a NUMA node, pages will be populated on the closest CPU NUMA
+// node if they are not already populated anywhere. Pages in the VA range are
+// migrated even if their preferred location is set to a processor other than
+// the destination processor. If the accessed-by list of any of the pages in the
+// VA range is not empty, then mappings to those pages from all the appropriate
+// processors are updated to refer to the new location if establishing such a
+// mapping is possible. Otherwise, those mappings are cleared. Note that in this
+// case, software managed pageable memory does not support migration of
+// MAP_SHARED, file-backed, or PROT_NONE mappings.
 //
 // If any pages in the given VA range are associated with a range group which
 // has been made non-migratable via UvmPreventMigrationRangeGroups, then those
@@ -2124,11 +2126,6 @@ NV_STATUS UvmUnmapExternal(void                  *base,
                            NvLength               length,
                            const NvProcessorUuid *gpuUuid);
 
-// TODO: Bug 2732305: Remove this declaration when the new external APIs have
-//       been implemented.
-NV_STATUS UvmUnmapExternalAllocation(void                  *base,
-                                     const NvProcessorUuid *gpuUuid);
-
 //------------------------------------------------------------------------------
 // UvmMapDynamicParallelismRegion
 //
@@ -2358,6 +2355,11 @@ NV_STATUS UvmDisableReadDuplication(void     *base,
 // When a page is in its preferred location, a fault from another processor will
 // not cause a migration if a mapping for that page from that processor can be
 // established without migrating the page.
+//
+// If the specified processor is a GPU and the GPU is not a NUMA node and the
+// input range is system-allocated pageable memory and the system supports
+// transparent access to pageable memory, preferred location will be set to the
+// closest CPU NUMA node.
 //
 // When a page that was allocated via either UvmAlloc or UvmMemMap migrates away
 // from its preferred location, the mapping on the preferred location's
@@ -2674,6 +2676,111 @@ NV_STATUS UvmSetAccessedBy(void                  *base,
 NV_STATUS UvmUnsetAccessedBy(void                  *base,
                              NvLength               length,
                              const NvProcessorUuid *accessedByUuid);
+
+//------------------------------------------------------------------------------
+// UvmDiscard
+//
+// Inform the UVM driver that the data in the specified virtual address range
+// is no longer needed.
+//
+// Both base and length must be aligned to the smallest page size supported by
+// the CPU. The VA range must lie within the largest possible virtual address
+// supported by the specified processor.
+//
+// The virtual address range specified by (base, length) must have been
+// allocated via a call to either UvmAlloc or UvmMemMap, or be supported
+// system-allocated pageable memory.
+//
+// If the input virtual range corresponds to system-allocated pageable memory,
+// and there is at least one GPU in the system that supports transparent access
+// to pageable memory, the behavior described in the next paragraphs does not
+// take effect.
+//
+// When a virtual address range is discarded using this API, any
+// read-duplicated copies are collapsed. UvmDiscard will not cause the
+// immediate migration of any pages covered by the specified virtual address
+// range.
+//
+// A discard operation done without the flag UVM_DISCARD_FLAGS_UNMAP will be
+// faster than an operation with that flag, but clearing the discard status can
+// only be done with a migration API call as described below.
+//
+// After a page has been discarded, reads and writes to/from discarded memory
+// have the following behavior:
+//
+//   * Reads and writes to/from memory discarded without
+//     UVM_DISCARD_FLAGS_UNMAP have undefined behavior.
+//   * Reads and writes to/from memory discarded without
+//     UVM_DISCARD_FLAGS_UNMAP will not clear the discard status.
+//   * Reads from memory discarded with UVM_DISCARD_FLAGS_UNMAP, including
+//     back-to-back reads, return indeterminate data.
+//   * Writes to memory discarded with UVM_DISCARD_FLAGS_UNMAP
+//     - are guaranteed to land and remove the discard status of the virtual
+//       address,
+//     - any reads after a write will observe the written data,
+//     - will collapse any read-duplicated copies of the virtual address.
+//
+// UvmDiscard can happen concurrently with memory migrations.Therefore, the
+// caller is responsible for serializing page accesses and/or migrations and
+// discard operations.
+//
+// Calls to UvmMigrate, UvmMigrateAsync, UvmPreventMigrationRangeGroups, or
+// UvmMigrateRangeGroup, on a discarded virtual address range will cause the
+// collapsing of any discarded read-duplicated pages and will clear the discard
+// status of all discarded pages in the migrated VA range.
+//
+// If discarded memory is evicted, the data in the pages backing the evicted
+// virtual range is not copied to the eviction destination and the discard
+// status of the evicted pages is not cleared. Pages that have been discarded
+// will be selected for eviction before pages that require copies during
+// eviction.
+//
+// If UvmEnableReadDuplication/UvmDisableReadDuplication is called on a
+// discarded virtual address range, the discard status of the range is not
+// cleared.
+//
+// If discarded pages are in a processor's accessed-by list, mappings to those
+// pages are not guaranteed be created on the processor while the page is
+// discarded.
+//
+// If UvmSetPreferredLocation is called on a discarded virtual address range,
+// data from the pages backing the range will not be copied if those pages
+// require migration as a result of setting the preferred location.
+//
+// Calling this API while a non-fault-capable GPU is registered, will result in
+// the API returning an error. If a non-fault-capable GPU is registered after
+// pages have been discarded, UvmPreventMigrationRangeGroup will clear the
+// discard status of the range.
+//
+// Arguments:
+//     base: (INPUT)
+//         Base address of the virtual address range.
+//
+//     length: (INPUT)
+//         Length, in bytes, of the range.
+//
+//     flags: (INPUT)
+//         UvmDiscard operation flags.
+//            UVM_DISCARD_FLAGS_UNMAP: The discarded pages will be unmapped.
+//            This allows future writes to remove the discard status.
+//
+// Errors:
+//     NV_ERR_INVALID_ADDRESS:
+//         base and length are not properly aligned, the range does not
+//         represent a valid UVM allocation, or the range is not covered by a
+//         single UVM managed VA range.
+//
+//     NV_ERR_INVALID_ARGUMENT:
+//         the flags parameter is not valid.
+//
+//     NV_ERR_INVALID_DEVICE:
+//         At least one non-fault-capable GPU has a registered VA space.
+//
+//     NV_ERR_NO_MEMORY:
+//         Internal memory allocation failed.
+//
+//------------------------------------------------------------------------------
+NV_STATUS UvmDiscard(void *base, NvLength length, NvU64 flags);
 
 //------------------------------------------------------------------------------
 // UvmEnableSystemWideAtomics

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -50,6 +50,10 @@ kmigmgrIsGPUInstanceFlagValid_GB100
     NvU32 gfxSizeFlag = DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG,
                                     _GFX_SIZE, gpuInstanceFlag);
 
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        kmigmgrIsGPUInstanceFlagLegal(pGpu, pKernelMIGManager, gpuInstanceFlag),
+        NV_FALSE);
+
     if (!FLD_TEST_REF(NV2080_CTRL_GPU_PARTITION_FLAG_REQ_ALL_MEDIA, _DEFAULT, gpuInstanceFlag))
     {
         return NV_FALSE;
@@ -63,8 +67,6 @@ kmigmgrIsGPUInstanceFlagValid_GB100
         case NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_EIGHTH:
             break;
         default:
-            NV_PRINTF(LEVEL_ERROR, "Unrecognized GPU mem partitioning flag 0x%x\n",
-                      memSizeFlag);
             return NV_FALSE;
     }
 
@@ -78,8 +80,6 @@ kmigmgrIsGPUInstanceFlagValid_GB100
         case NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_EIGHTH:
             break;
         default:
-            NV_PRINTF(LEVEL_ERROR, "Unrecognized GPU compute partitioning flag 0x%x\n",
-                      computeSizeFlag);
             return NV_FALSE;
     }
 
@@ -93,15 +93,7 @@ kmigmgrIsGPUInstanceFlagValid_GB100
             break;
         case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_NONE:
             break;
-        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_HALF:
-        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_MINI_HALF:
-        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_QUARTER:
-        case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_EIGHTH:
-            // Cannot support these sizes since there is only one GFX Capable SYSPIPE
-            return NV_FALSE;
         default:
-            NV_PRINTF(LEVEL_ERROR, "Unrecognized GPU GFX partitioning flag 0x%x\n",
-                      gfxSizeFlag);
             return NV_FALSE;
     }
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -98,6 +98,7 @@ _memUtilsAllocateReductionSema
     NvU32                       i;
     NV_STATUS                   lockStatus;
     RM_API                     *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    NVOS46_PARAMETERS           mapDmaParams = {0};
 
     rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
     // allocate physical memory for a bit map semaphore
@@ -156,19 +157,19 @@ _memUtilsAllocateReductionSema
         return NV_ERR_GENERIC;
     }
 
+    mapDmaParams.hClient   = pChannel->hClient;
+    mapDmaParams.hDevice   = pChannel->deviceId;
+    mapDmaParams.hDma      = pChannel->bitMapSemVirtId;
+    mapDmaParams.hMemory   = pChannel->bitMapSemPhysId;
+    mapDmaParams.length    = (((pChannel->blockCount + 31)/32)*4);
+
     NV_CHECK_OK_OR_GOTO(
         rmStatus,
         LEVEL_ERROR,
-        pRmApi->Map(pRmApi,
-                    pChannel->hClient,
-                    pChannel->deviceId,
-                    pChannel->bitMapSemVirtId,
-                    pChannel->bitMapSemPhysId, //hMemory,
-                    0,
-                    (((pChannel->blockCount + 31)/32)*4),
-                    NV04_MAP_MEMORY_FLAGS_NONE,
-                    &pChannel->pbGpuBitMapVA),
+        pRmApi->Map(pRmApi,  &mapDmaParams),
         exit_sema_creation);
+
+    pChannel->pbGpuBitMapVA = mapDmaParams.dmaOffset;
 
     NV_CHECK_OK_OR_GOTO(
         rmStatus,
@@ -487,18 +488,21 @@ memmgrMemUtilsMapFbAlias
         }
 
         NvU64 mapSize = NV_ALIGN_DOWN(remainingMapSize, pageSize);
+        NVOS46_PARAMETERS mapDmaParams = {0};
 
-        NV_ASSERT_OK_OR_RETURN(
-            pRmApi->Map(pRmApi,
-                        pChannel->hClient,
-                        pChannel->deviceId,
-                        pChannel->hFbAliasVA,
-                        pChannel->hFbAlias,
-                        currentFbOffset,
-                        mapSize,
-                        DRF_NUM(OS46, _FLAGS, _PAGE_SIZE, pageSizeMap) |
-                        DRF_DEF(OS46, _FLAGS, _DMA_OFFSET_FIXED, _TRUE),
-                        &currentVaddr));
+        mapDmaParams.hClient   = pChannel->hClient;
+        mapDmaParams.hDevice   = pChannel->deviceId;
+        mapDmaParams.hDma      = pChannel->hFbAliasVA;
+        mapDmaParams.hMemory   = pChannel->hFbAlias;
+        mapDmaParams.offset    = currentFbOffset;
+        mapDmaParams.length    = mapSize;
+        mapDmaParams.flags     = DRF_NUM(OS46, _FLAGS, _PAGE_SIZE, pageSizeMap) |
+                                 DRF_DEF(OS46, _FLAGS, _DMA_OFFSET_FIXED, _TRUE),
+        mapDmaParams.dmaOffset = currentVaddr;
+
+        NV_ASSERT_OK_OR_RETURN(pRmApi->Map(pRmApi, &mapDmaParams));
+
+        currentVaddr = mapDmaParams.dmaOffset;
 
         NV_PRINTF(LEVEL_INFO,
             "CeUtils VAS : FB (addr: %llx, size: %llx) identity mapped to VAS at addr: %llx, page size: 0x%llx\n",
@@ -543,6 +547,7 @@ memmgrMemUtilsChannelInitialize_GM107
     NvU32             cacheSnoopFlag      = 0 ;
     NvBool            bUseRmApiForBar1    = NV_FALSE;
     NvU32             transferFlags       = pChannel->bUseBar1 ? TRANSFER_FLAGS_USE_BAR1 : TRANSFER_FLAGS_NONE;
+    NVOS46_PARAMETERS mapDmaParams;
 
     // Legacy SLI support is not implemented
     NV_ASSERT_OR_RETURN(!IsSLIEnabled(pGpu) , NV_ERR_NOT_SUPPORTED);
@@ -824,21 +829,30 @@ memmgrMemUtilsChannelInitialize_GM107
     }
 
     // map the pushbuffer
-    rmStatus = pRmApi->Map(pRmApi, hClient, hDevice,
-                           hPushBuffer,
-                           hPhysMem, //hMemory,
-                           0,
-                           size,
-                           cacheSnoopFlag,
-                           &pChannel->pbGpuVA);
+    portMemSet(&mapDmaParams, 0, sizeof(mapDmaParams));
+    mapDmaParams.hClient   = hClient;
+    mapDmaParams.hDevice   = hDevice;
+    mapDmaParams.hDma      = hPushBuffer;
+    mapDmaParams.hMemory   = hPhysMem;
+    mapDmaParams.length    = size;
+    mapDmaParams.flags     = cacheSnoopFlag;
+
+    rmStatus = pRmApi->Map(pRmApi, &mapDmaParams);
+
+    pChannel->pbGpuVA = mapDmaParams.dmaOffset;
+
     // map the error notifier
-    rmStatus = pRmApi->Map(pRmApi, hClient, hDevice,
-                           hErrNotifierVirt,
-                           hErrNotifierPhys, //hMemory,
-                           0,
-                           pChannel->channelNotifierSize,
-                           DRF_DEF(OS46, _FLAGS, _KERNEL_MAPPING, _ENABLE) | cacheSnoopFlag,
-                           &pChannel->pbGpuNotifierVA);
+    portMemSet(&mapDmaParams, 0, sizeof(mapDmaParams));
+    mapDmaParams.hClient   = hClient;
+    mapDmaParams.hDevice   = hDevice;
+    mapDmaParams.hDma      = hErrNotifierVirt;
+    mapDmaParams.hMemory   = hErrNotifierPhys;
+    mapDmaParams.length    = pChannel->channelNotifierSize;
+    mapDmaParams.flags     = DRF_DEF(OS46, _FLAGS, _KERNEL_MAPPING, _ENABLE) | cacheSnoopFlag,
+
+    rmStatus = pRmApi->Map(pRmApi, &mapDmaParams);
+
+    pChannel->pbGpuNotifierVA = mapDmaParams.dmaOffset;
 
     NV_CHECK_OK_OR_GOTO(
         rmStatus,
@@ -862,18 +876,18 @@ memmgrMemUtilsChannelInitialize_GM107
         exit_free_client);
 
     // Set up pushbuffer and semaphore memdesc and memset the buffer
-    pChannel->pChannelBufferMemdesc = 
+    pChannel->pChannelBufferMemdesc =
         memmgrMemUtilsGetMemDescFromHandle(pMemoryManager, pChannel->hClient, hPhysMem);
     NV_ASSERT_OR_GOTO(pChannel->pChannelBufferMemdesc != NULL, exit_free_client);
 
     // Set up notifier memory
-    pChannel->pErrNotifierMemdesc = 
+    pChannel->pErrNotifierMemdesc =
         memmgrMemUtilsGetMemDescFromHandle(pMemoryManager, pChannel->hClient, hErrNotifierPhys);
     NV_ASSERT_OR_GOTO(pChannel->pErrNotifierMemdesc != NULL, exit_free_client);
 
     if (kbusIsBarAccessBlocked(GPU_GET_KERNEL_BUS(pGpu)))
     {
-        rmStatus = memmgrMemDescMemSet(pMemoryManager, pChannel->pChannelBufferMemdesc, 0, 
+        rmStatus = memmgrMemDescMemSet(pMemoryManager, pChannel->pChannelBufferMemdesc, 0,
                                        (TRANSFER_FLAGS_SHADOW_ALLOC | TRANSFER_FLAGS_SHADOW_INIT_MEM));
         NV_ASSERT_OR_GOTO(rmStatus == NV_OK, exit_free_client);
 
@@ -896,7 +910,7 @@ memmgrMemUtilsChannelInitialize_GM107
         }
         else
         {
-            // 
+            //
             // Most use cases can migrate to the internal memdescMap path for BAR1
             // And it is preferred because external path will not work with CC
             //
@@ -1081,7 +1095,7 @@ _memUtilsMapUserd_GM107
     //
     if (pChannel->bClientUserd && !bUseRmApiForBar1)
     {
-        pChannel->pUserdMemdesc = 
+        pChannel->pUserdMemdesc =
             memmgrMemUtilsGetMemDescFromHandle(pMemoryManager, hClientId, pChannel->hUserD);
         NV_ASSERT_OR_RETURN(pChannel->pUserdMemdesc != NULL, NV_ERR_GENERIC);
 
@@ -1108,7 +1122,7 @@ _memUtilsMapUserd_GM107
         kfifoGetUserdSizeAlign_HAL(GPU_GET_KERNEL_FIFO(pGpu), &userdSize, NULL);
 
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            pRmApi->MapToCpu(pRmApi, hClientId, hDeviceId, 
+            pRmApi->MapToCpu(pRmApi, hClientId, hDeviceId,
                              pChannel->bClientUserd ? pChannel->hUserD : hChannelId, 0,
                              userdSize, (void **)&pChannel->pControlGPFifo, 0));
     }
@@ -1486,6 +1500,7 @@ memmgrMemUtilsAllocateEccAllocScrubber_GM107
     NV_MEMORY_ALLOCATION_PARAMS memAllocParams;
     NV_STATUS                   lockStatus;
     RM_API                     *pRmApi           = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    NVOS46_PARAMETERS           mapDmaParams     = {0};
 
     NV_ASSERT_OK_OR_RETURN(channelAllocSubdevice(pGpu, pChannel));
 
@@ -1531,17 +1546,15 @@ memmgrMemUtilsAllocateEccAllocScrubber_GM107
         return NV_ERR_GENERIC;
     }
 
-    NV_ASSERT_OK(
-        pRmApi->Map(pRmApi,
-                    pEccSyncChannel->hClient,
-                    pEccSyncChannel->deviceId,
-                    pEccSyncChannel->bitMapSemVirtId,
-                    pEccSyncChannel->bitMapSemPhysId, //hMemory,
-                    0,
-                    (((pEccSyncChannel->blockCount + 31) / 32) * 4),
-                    NV04_MAP_MEMORY_FLAGS_NONE,
-                    &pEccSyncChannel->pbGpuBitMapVA));
+    mapDmaParams.hClient   = pEccSyncChannel->hClient;
+    mapDmaParams.hDevice   = pEccSyncChannel->deviceId;
+    mapDmaParams.hDma      = pEccSyncChannel->bitMapSemVirtId;
+    mapDmaParams.hMemory   = pEccSyncChannel->bitMapSemPhysId;
+    mapDmaParams.length    = (((pEccSyncChannel->blockCount + 31) / 32) * 4);
 
+    NV_ASSERT_OK(pRmApi->Map(pRmApi, &mapDmaParams));
+
+    pEccSyncChannel->pbGpuBitMapVA = mapDmaParams.dmaOffset;
     pEccSyncChannel->pbBitMapVA = pEccAsyncChannel->pbBitMapVA;
 
     return NV_OK;
@@ -1894,7 +1907,7 @@ _ceChannelUpdateGpFifo_GM107
         if (!kchannelIsRunlistSet(pGpu, pFifoKernelChannel))
         {
             NV_PRINTF(LEVEL_ERROR,
-                "FAILED Channel 0x%x is not assigned to runlist yet\n",
+                "FAILED " FMT_CHANNEL_DEBUG_TAG " is not assigned to runlist yet\n",
                 kchannelGetDebugTag(pFifoKernelChannel));
             return;
         }
@@ -2038,6 +2051,7 @@ _ceChannelPushMethodsBlock_GM107
         }
         else
         {
+
             bMemoryScrubEnable = memmgrMemUtilsCheckMemoryFastScrubEnable_HAL(pGpu,
                                                    pMemoryManager,
                                                    channel->hTdCopyClass,

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -50,6 +50,7 @@
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/subdevice/subdevice.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "mem_mgr/fabric_vaspace.h"
@@ -76,13 +77,21 @@ typedef struct mem_multicast_fabric_client_info
     Memory *pMemory;
 } MEM_MULTICAST_FABRIC_CLIENT_INFO;
 
+typedef struct mem_multicast_fabric_gpu_nvlink_attr
+{
+    NvU32   cliqueId;
+    NvU64   bwModeEpoch;
+    NvU8    bwMode;
+} MEM_MULTICAST_FABRIC_GPU_NVLINK_ATTR;
+
 typedef struct mem_multicast_fabric_gpu_info
 {
     void   *pGpuOsInfo;
     OBJGPU *pGpu;
     NvU64   gpuProbeHandle;
-    NvU32   cliqueId;
     NvBool  bMcflaAlloc;
+
+    MEM_MULTICAST_FABRIC_GPU_NVLINK_ATTR nvlAttr;
 
     //
     // Unique import event ID. Valid only if the GPU was remotely attached to
@@ -100,7 +109,8 @@ typedef struct mem_multicast_fabric_gpu_info
 
 typedef struct mem_multicast_fabric_remote_gpu_info
 {
-    NvU32 cliqueId;
+    MEM_MULTICAST_FABRIC_GPU_NVLINK_ATTR nvlAttr;
+
     NvU64 key;
 } MEM_MULTICAST_FABRIC_REMOTE_GPU_INFO;
 
@@ -224,6 +234,8 @@ _memMulticastFabricInitAttachEvent
 (
     NvU64                        gpuFabricProbeHandle,
     NvU64                        key,
+    NvU64                        bwModeEpoch,
+    NvU8                         bwMode,
     NvU32                        cliqueId,
     NvU16                        exportNodeId,
     NvU16                        index,
@@ -241,6 +253,8 @@ _memMulticastFabricInitAttachEvent
     pEvent->data.attach.gpuFabricProbeHandle = gpuFabricProbeHandle;
     pEvent->data.attach.key = key;
     pEvent->data.attach.cliqueId = cliqueId;
+    pEvent->data.attach.bwModeEpoch = bwModeEpoch;
+    pEvent->data.attach.bwMode = bwMode;
     pEvent->data.attach.index = index;
     pEvent->data.attach.exportNodeId = exportNodeId;
     portMemCopy(pEvent->data.attach.exportUuid, NV_MEM_EXPORT_UUID_LEN,
@@ -942,6 +956,7 @@ _memMulticastFabricSendInbandRequest
 static void
 _memorymulticastfabricDetachMem
 (
+    OBJGPU             *pGpu,
     FABRIC_VASPACE     *pFabricVAS,
     MEMORY_DESCRIPTOR  *pFabricMemDesc,
     NODE               *pMemNode
@@ -958,6 +973,7 @@ _memorymulticastfabricDetachMem
                                   pMemNode->keyStart,
                                   pPhysMemDesc,
                                   pAttachMemInfoNode->physMapLength);
+
 }
 
 static void
@@ -1517,8 +1533,30 @@ _memMulticastFabricAttachGpuPostProcessor
         goto installMemDesc;
     }
 
-    if (mcTeamStatus != NV_OK)
+    //
+    // If MSE (or any entity on the other side) replies back with
+    // NV_ERR_BUSY_RETRY, resubmit the request.
+    //
+    if (_memMulticastFabricIsPrime(pMulticastFabricDesc->allocFlags) &&
+        (mcTeamStatus == NV_ERR_BUSY_RETRY))
+    {
+        status = _memMulticastFabricSendInbandRequest(pGpu, pMulticastFabricDesc,
+                                        MEM_MULTICAST_FABRIC_TEAM_SETUP_REQUEST);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "MCFLA retry failed %x\n", status);
+            goto installMemDesc;
+        }
+        else
+        {
+            // Don't install memdesc as we are successfully retrying...
+            return;
+        }
+    }
+    else if (mcTeamStatus != NV_OK)
+    {
         goto installMemDesc;
+    }
 
     if (!_memMulticastFabricIsPrime(pMulticastFabricDesc->allocFlags))
         pMulticastFabricDesc->allocSize = mcAddressSize;
@@ -1630,7 +1668,31 @@ memorymulticastfabricTeamSetupResponseCallback
 
     pMulticastFabricDesc = fabricMulticastSetupCacheGet(pFabric, requestId);
 
-    if (pMulticastFabricDesc != NULL)
+    if ((pMulticastFabricDesc != NULL) && (mcTeamStatus == NV_ERR_BUSY_RETRY))
+    {
+        NvBool bRetrySuccess;
+
+        portSyncRwLockAcquireWrite(pMulticastFabricDesc->pLock);
+
+        pMulticastFabricDesc->bInbandReqInProgress = NV_FALSE;
+
+        _memMulticastFabricAttachGpuPostProcessor(pGpu,
+                                                  pMulticastFabricDesc,
+                                                  mcTeamStatus,
+                                                  mcTeamHandle,
+                                                  mcAddressBase,
+                                                  mcAddressSize);
+
+        bRetrySuccess = pMulticastFabricDesc->bInbandReqInProgress;
+
+        portSyncRwLockReleaseWrite(pMulticastFabricDesc->pLock);
+
+        if (!bRetrySuccess)
+            fabricMulticastSetupCacheDelete(pFabric, requestId);
+
+        portSyncRwLockReleaseWrite(pFabric->pMulticastFabricModuleLock);
+    }
+    else if (pMulticastFabricDesc != NULL)
     {
         fabricMulticastSetupCacheDelete(pFabric, requestId);
 
@@ -1713,6 +1775,70 @@ memorymulticastfabricConstruct_IMPL
                                         pCallContext, pParams);
 }
 
+static NV_STATUS
+_memorymulticastfabricValidateNvlAttrCommon
+(
+    MEM_MULTICAST_FABRIC_GPU_NVLINK_ATTR *pNvlAttr,
+    NvU32                                 cliqueId,
+    NvU8                                  bwMode,
+    NvU64                                 bwModeEpoch
+)
+{
+    if (pNvlAttr->cliqueId != cliqueId)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Clique ID mismatch %u:%u\n", pNvlAttr->cliqueId, cliqueId);
+        return NV_ERR_INVALID_DEVICE;
+    }
+
+    if (pNvlAttr->bwModeEpoch != bwModeEpoch)
+    {
+        NV_PRINTF(LEVEL_ERROR, "bwModeEpoch mismatch %llu:%llu\n", pNvlAttr->bwModeEpoch, bwModeEpoch);
+        return NV_ERR_INVALID_DEVICE;
+    }
+
+    if (pNvlAttr->bwMode != bwMode)
+    {
+        NV_PRINTF(LEVEL_ERROR, "bwMode mismatch %u:%u\n", pNvlAttr->bwMode, bwMode);
+        return NV_ERR_INVALID_DEVICE;
+    }
+
+    return NV_OK;
+}
+
+static NV_STATUS
+_memorymulticastfabricValidateNvlAttr
+(
+    MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc,
+    NvU32                            cliqueId,
+    NvU8                             bwMode,
+    NvU64                            bwModeEpoch
+)
+{
+    MEM_MULTICAST_FABRIC_GPU_INFO *pHead;
+    MEM_MULTICAST_FABRIC_REMOTE_GPU_INFO *pRemoteHead;
+
+    pHead = listHead(&pMulticastFabricDesc->gpuInfoList);
+    pRemoteHead = multimapFirstItem(&pMulticastFabricDesc->remoteGpuInfoMap);
+
+    if (pHead != NULL)
+    {
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            _memorymulticastfabricValidateNvlAttrCommon(&pHead->nvlAttr,
+                                                        cliqueId, bwMode,
+                                                        bwModeEpoch));
+    }
+
+    if (pRemoteHead != NULL)
+    {
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            _memorymulticastfabricValidateNvlAttrCommon(&pRemoteHead->nvlAttr,
+                                                        cliqueId, bwMode,
+                                                        bwModeEpoch));
+    }
+
+    return NV_OK;
+}
+
 //
 // Note this function is not always called with the GPU lock. Be careful
 // while accessing GPU state.
@@ -1730,8 +1856,6 @@ _memorymulticastfabricCtrlAttachGpu
     NV_STATUS status;
     FABRIC_VASPACE *pFabricVAS;
     MEM_MULTICAST_FABRIC_GPU_INFO *pNode;
-    MEM_MULTICAST_FABRIC_GPU_INFO *pHead;
-    MEM_MULTICAST_FABRIC_REMOTE_GPU_INFO *pRemoteHead;
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
 
     if (pParams->flags != 0)
@@ -1783,7 +1907,7 @@ _memorymulticastfabricCtrlAttachGpu
     }
 
     status = gpuFabricProbeGetFabricCliqueId(pGpu->pGpuFabricProbeInfoKernel,
-                                             &pNode->cliqueId);
+                                             &pNode->nvlAttr.cliqueId);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -1791,20 +1915,18 @@ _memorymulticastfabricCtrlAttachGpu
         goto fail;
     }
 
-    pHead = listHead(&pMulticastFabricDesc->gpuInfoList);
-    pRemoteHead = multimapFirstItem(&pMulticastFabricDesc->remoteGpuInfoMap);
+    pNode->nvlAttr.bwMode = knvlinkGetBWMode(pGpu, GPU_GET_KERNEL_NVLINK(pGpu));
 
-    if ((pHead != NULL) && (pHead->cliqueId != pNode->cliqueId))
-    {
-        NV_PRINTF(LEVEL_ERROR, "Clique ID mismatch\n");
-        status = NV_ERR_INVALID_DEVICE;
-        goto fail;
-    }
+    pNode->nvlAttr.bwModeEpoch = knvlinkGetBWModeEpoch(pGpu,
+                                                       GPU_GET_KERNEL_NVLINK(pGpu));
 
-    if ((pRemoteHead != NULL) && (pRemoteHead->cliqueId != pNode->cliqueId))
+    status = _memorymulticastfabricValidateNvlAttr(pMulticastFabricDesc,
+                                                   pNode->nvlAttr.cliqueId,
+                                                   pNode->nvlAttr.bwMode,
+                                                   pNode->nvlAttr.bwModeEpoch);
+    if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "Clique ID mismatch\n");
-        status = NV_ERR_INVALID_DEVICE;
+        NV_PRINTF(LEVEL_ERROR, "Clique ID etc. validation failed\n");
         goto fail;
     }
 
@@ -1864,7 +1986,9 @@ _memorymulticastfabricCtrlAttachGpu
 
         _memMulticastFabricInitAttachEvent(pNode->gpuProbeHandle,
                                            pMulticastFabricDesc->inbandReqId,
-                                           pNode->cliqueId,
+                                           pNode->nvlAttr.bwModeEpoch,
+                                           pNode->nvlAttr.bwMode,
+                                           pNode->nvlAttr.cliqueId,
                                            pMulticastFabricDesc->exportNodeId,
                                            pMulticastFabricDesc->index,
                                            &pMulticastFabricDesc->expUuid,
@@ -2065,10 +2189,6 @@ _memorymulticastfabricCtrlAttachRemoteGpu
 {
     MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc =
                                 pMemoryMulticastFabric->pMulticastFabricDesc;
-    MEM_MULTICAST_FABRIC_GPU_INFO *pHead =
-                        listHead(&pMulticastFabricDesc->gpuInfoList);
-    MEM_MULTICAST_FABRIC_REMOTE_GPU_INFO *pRemoteHead =
-                    multimapFirstItem(&pMulticastFabricDesc->remoteGpuInfoMap);
     MEM_MULTICAST_FABRIC_REMOTE_GPU_INFO *pNode;
     MEM_MULTICAST_FABRIC_GPU_INFO *pIter;
     MemMulticastFabricRemoteGpuInfoMapSubmap *pSubmap = NULL;
@@ -2101,17 +2221,13 @@ _memorymulticastfabricCtrlAttachRemoteGpu
         goto fail;
     }
 
-    if ((pHead != NULL) && (pHead->cliqueId != pParams->cliqueId))
+    status = _memorymulticastfabricValidateNvlAttr(pMulticastFabricDesc,
+                                                   pParams->cliqueId,
+                                                   pParams->bwMode,
+                                                   pParams->bwModeEpoch);
+    if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "Clique ID mismatch\n");
-        status = NV_ERR_INVALID_DEVICE;
-        goto fail;
-    }
-
-    if ((pRemoteHead != NULL) && (pRemoteHead->cliqueId != pParams->cliqueId))
-    {
-        NV_PRINTF(LEVEL_ERROR, "Clique ID mismatch\n");
-        status = NV_ERR_INVALID_DEVICE;
+        NV_PRINTF(LEVEL_ERROR, "Clique ID etc. validation failed\n");
         goto fail;
     }
 
@@ -2160,7 +2276,9 @@ _memorymulticastfabricCtrlAttachRemoteGpu
     portMemSet(pNode, 0, sizeof(*pNode));
 
     pNode->key = pParams->key;
-    pNode->cliqueId = pParams->cliqueId;
+    pNode->nvlAttr.cliqueId = pParams->cliqueId;
+    pNode->nvlAttr.bwMode = pParams->bwMode;
+    pNode->nvlAttr.bwModeEpoch = pParams->bwModeEpoch;
 
     if ((pMulticastFabricDesc->numAttachedGpus + 1)
                                     == pMulticastFabricDesc->numMaxGpus)
@@ -2365,7 +2483,7 @@ _memorymulticastfabricCtrlDetachMem
     pFabricVAS = dynamicCast(pGpuInfo->pGpu->pFabricVAS, FABRIC_VASPACE);
     NV_ASSERT_OR_RETURN(pFabricVAS != NULL, NV_ERR_INVALID_STATE);
 
-    _memorymulticastfabricDetachMem(pFabricVAS, pFabricMemDesc, pNode);
+    _memorymulticastfabricDetachMem(pGpu, pFabricVAS, pFabricMemDesc, pNode);
 
     if (bRemoveInterMapping)
     {
@@ -2513,7 +2631,6 @@ _memorymulticastfabricCtrlAttachMem
     MEM_MULTICAST_FABRIC_ATTACH_MEM_INFO_NODE *pNode;
     NvU32 gpuMask = NVBIT(gpuGetInstance(pGpu));
     RsInterMapping *pInterMapping;
-
     if (!rmGpuGroupLockIsOwner(0, GPU_LOCK_GRP_MASK, &gpuMask))
         return NV_ERR_INVALID_LOCK_STATE;
 
@@ -2569,12 +2686,12 @@ _memorymulticastfabricCtrlAttachMem
 
     portMemSet(pNode, 0, sizeof(*pNode));
 
-    pNode->node.keyStart = pParams->offset;
-    pNode->node.keyEnd   = pParams->offset;
-    pNode->physMapLength = pParams->mapLength;
-    pNode->pPhysMemDesc  = pPhysMemDesc;
-    pNode->pInterMapping = pInterMapping;
-    pNode->node.Data     = pNode;
+    pNode->node.keyStart    = pParams->offset;
+    pNode->node.keyEnd      = pParams->offset;
+    pNode->physMapLength    = pParams->mapLength;
+    pNode->pPhysMemDesc     = pPhysMemDesc;
+    pNode->pInterMapping    = pInterMapping;
+    pNode->node.Data        = pNode;
 
     status = btreeInsert(&pNode->node, &pGpuInfo->pAttachMemInfoTree);
     if (status != NV_OK)

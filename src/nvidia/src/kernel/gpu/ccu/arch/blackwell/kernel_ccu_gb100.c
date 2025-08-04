@@ -67,12 +67,12 @@ kccuGetBufSize_GB100
     pKernelCcu->devBufSize = 2 * (inParams.ccuSampleSize - sizeof(NvU64));
     // Plus head & tail timestamp size + mig-SwizzId size
     pKernelCcu->devSharedBufSize = pKernelCcu->devBufSize +
-                                   2 * CCU_TIMESTAMP_SIZE + CCU_MIG_SWIZZID_SIZE;
+                                   2 * CCU_TIMESTAMP_SIZE + CCU_LPWR_MODE_SIZE + CCU_MIG_SWIZZID_SIZE;
 
     pKernelCcu->migBufSize = inParams.ccuSampleSize - sizeof(NvU64);
     // Plus head & tail timestamp size + mig-SwizzId size + compute-instId size
     pKernelCcu->migSharedBufSize = pKernelCcu->migBufSize + 
-                                   2 * CCU_TIMESTAMP_SIZE + CCU_MIG_SWIZZID_SIZE + CCU_MIG_COMPUTEID_SIZE;
+                                   2 * CCU_TIMESTAMP_SIZE + CCU_LPWR_MODE_SIZE + CCU_MIG_SWIZZID_SIZE + CCU_MIG_COMPUTEID_SIZE;
 
     return NV_OK;
 }

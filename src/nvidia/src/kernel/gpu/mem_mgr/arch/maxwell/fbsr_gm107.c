@@ -268,7 +268,7 @@ fbsrDestroy_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr)
     {
         if (pFbsr->pSysMemDesc)
         {
-            memdescUnmapOld(pFbsr->pSysMemDesc, 1 /*kernel*/, 0,
+            memdescUnmapOld(pFbsr->pSysMemDesc, 1 /*kernel*/,
                             (pFbsr->type == FBSR_TYPE_FILE) ? (void*)pFbsr->pDmaBuffer :
                                                               (void*)pFbsr->pPinnedBuffer,
                             pFbsr->pMapCookie);

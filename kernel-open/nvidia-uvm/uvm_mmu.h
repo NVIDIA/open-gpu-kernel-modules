@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -296,8 +296,26 @@ struct uvm_page_tree_struct
     bool location_sys_fallback;
 
     // When the pagetables are located in sysmem, RM is responsible for the DMA
-    // mapping used as the pdb. This address is returned from
+    // mapping used as the PDB. This address is returned to UVM via
     // nvUvmInterfaceSetPageDirectory().
+    //
+    // However, for code base simplicity, UVM performs TLB invalidations using
+    // the page directory base before it has been actually programmed as the
+    // GPU's PDB. This is harmless - hardware will drop an invalidate targeting
+    // a PDB that is not in the PDB cache. This occurs in page_tree_ats_init()
+    // which issues TLB invalidates in process of writing GPU PTEs before
+    // nvUvmInterfaceSetPageDirectory() has been called.
+    //
+    // To accomodate this code structure, prior to calling
+    // nvUvmInterfaceSetPageDirectory(), pdb_rm_dma_address holds UVM's DMA
+    // address of the page directory as a dummy PDB address. This is used for
+    // TLB invalidations that are not required but performed to avoid adding
+    // special cases. Using UVM's DMA address is OK as the DMA mapping created
+    // for the page directory is unique and so cannot be already in use as a PDB
+    // and thus must not be in the TLB.
+    //
+    // After calling nvUvmInterfaceSetPageDirectory(), pdb_rm_dma_address holds
+    // the GPU's PDB as programmed by RM and required for TLB invalidations.
     uvm_gpu_phys_address_t pdb_rm_dma_address;
 
     struct
@@ -699,6 +717,14 @@ static uvm_aperture_t uvm_page_table_range_aperture(uvm_page_table_range_t *rang
 // if virtual mappings are required for other accesses. This is only needed when
 // CE has system-wide physical addressing restrictions.
 uvm_gpu_address_t uvm_mmu_gpu_address(uvm_gpu_t *gpu, uvm_gpu_phys_address_t phys_addr);
+
+// Synchronously invalidate cached physical mappings if the gpu requires it (aka
+// dma addresses, IOVAs, and GPAs). See uvm_dma_map_invalidation_t.
+NV_STATUS uvm_mmu_tlb_invalidate_phys(uvm_gpu_t *gpu);
+
+// Invalidate L2 cache when noncoherent sysmem mappings are unmapped.
+// This is done for systems with write-back cache i.e. iGPUs as of now.
+NV_STATUS uvm_mmu_l2_invalidate_noncoh_sysmem(uvm_gpu_t *gpu);
 
 NV_STATUS uvm_test_invalidate_tlb(UVM_TEST_INVALIDATE_TLB_PARAMS *params, struct file *filp);
 

@@ -1,5 +1,5 @@
 /*
-* SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+* SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 * SPDX-License-Identifier: MIT
 *
 * Permission is hereby granted, free of charge, to any person obtaining a
@@ -54,6 +54,232 @@ void libspdm_x509_stack_free(void *x509_stack)
 {
     LIBSPDM_ASSERT(false);
 }
+
+#ifdef USE_LKCA
+bool libspdm_encode_base64(const uint8_t *src, uint8_t *dst, size_t srclen, size_t *p_dstlen)
+{
+    static const uint8_t base64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    size_t i;
+    size_t tmp;
+    size_t size;
+    uint8_t *ptr = dst;
+
+    for (i = 0; (i + 2) < srclen; i += 3)
+    {
+        if (ptr - dst + 4 > *p_dstlen)
+        {
+            goto Exit;
+        }
+        tmp = (src[i] << 16) | (src[i+1] << 8) | (src[i+2]);
+        *ptr++ = base64[(tmp >> 18) & 63];
+        *ptr++ = base64[(tmp >> 12) & 63];
+        *ptr++ = base64[(tmp >> 6) & 63];
+        *ptr++ = base64[tmp & 63];
+    }
+
+    // 1 byte extra
+    if (i == srclen - 1)
+    {
+        if (ptr - dst + 4 > *p_dstlen)
+        {
+            goto Exit;
+        }
+        tmp = src[i] << 4;
+        *ptr++ = base64[(tmp >> 6) & 63];
+        *ptr++ = base64[tmp & 63];
+        *ptr++ = '=';
+        *ptr++ = '=';
+    }
+
+    // 2 byte extra
+    if (i == srclen - 2)
+    {
+        if (ptr - dst + 4 > *p_dstlen)
+        {
+            goto Exit;
+        }
+        tmp = ((src[i] << 8) | (src[i+1])) << 2;
+        *ptr++ = base64[(tmp >> 12) & 63];
+        *ptr++ = base64[(tmp >> 6) & 63];
+        *ptr++ = base64[tmp & 63];
+        *ptr++ = '=';
+    }
+
+    *p_dstlen = ptr - dst;
+    return true;
+Exit:
+    *p_dstlen = 0;
+    return false;
+}
+
+typedef enum {
+    BASE64_CONV_VALID,
+    BASE64_CONV_PAD,
+    BASE64_CONV_INVALID
+} BASE64_CONV;
+
+static BASE64_CONV libspdm_decode_base64_chr(uint8_t b64_chr, uint8_t *value)
+{
+    if (b64_chr >= 'A' && b64_chr <= 'Z')
+    {
+        *value = b64_chr - 'A';
+    }
+    else if (b64_chr >= 'a' && b64_chr <= 'z')
+    {
+        *value = b64_chr - 'a' + 26;
+    }
+    else if (b64_chr >= '0' && b64_chr <= '9')
+    {
+        *value = b64_chr -'0' + 52;
+    }
+    else if (b64_chr == '+' || b64_chr == '-')
+    {
+        *value = 62;
+    }
+    else if (b64_chr == '/' || b64_chr == '_')
+    {
+        *value = 63;
+    }
+    else if (b64_chr == '=')
+    {
+        *value = 0;
+        return BASE64_CONV_PAD;
+    }
+    else
+    {
+        return BASE64_CONV_INVALID;
+    }
+
+    return BASE64_CONV_VALID;
+}
+
+static bool libspdm_decode_base64_stripped(const uint8_t *src, uint8_t *dst, size_t srclen, size_t *p_dstlen)
+{
+    const uint8_t *p_read;
+    uint8_t *p_write;
+    uint8_t i;
+    uint8_t bytes;
+    uint32_t bin_value;
+    uint8_t char_value;
+
+    if (src == NULL || dst == NULL || srclen % 4 != 0)
+    {
+        return false;
+    }
+    for (p_read = src, p_write = dst; p_read < src + srclen; p_read += 4)
+    {
+        for (i = 0, bytes = 3, bin_value = 0; i < 4; i++)
+        {
+            if (libspdm_decode_base64_chr(p_read[i], &char_value) == BASE64_CONV_PAD)
+            {
+                bytes--;
+                // fallthrough
+                bin_value <<= 6;
+                bin_value |= char_value;
+            }
+            else if (libspdm_decode_base64_chr(p_read[i], &char_value) == BASE64_CONV_VALID)
+            {
+                bin_value <<= 6;
+                bin_value |= char_value;
+            }
+            else
+            {
+                // attempting to decode an invalid character
+                goto Exit;
+            }
+        }
+
+        if (p_write - dst + bytes > *p_dstlen)
+        {
+            // buffer too small
+            goto Exit;
+        }
+
+        switch (bytes)
+        {
+        case 3:
+            *p_write++ = (bin_value & 0x00ff0000) >> 16;
+            *p_write++ = (bin_value & 0x0000ff00) >> 8;
+            *p_write++ = (bin_value & 0x000000ff);
+            break;
+        case 2:
+            *p_write++ = (bin_value & 0x00ff0000) >> 16;
+            *p_write++ = (bin_value & 0x0000ff00) >> 8;
+            break;
+        case 1:
+            *p_write++ = (bin_value & 0x00ff0000) >> 16;
+            break;
+        default:
+            // invalid state in base64
+            goto Exit;
+        }
+    }
+    *p_dstlen = p_write - dst;
+    return true;
+Exit:
+    *p_dstlen = 0;
+    return false;
+}
+
+bool libspdm_decode_base64(const uint8_t *src, uint8_t *dst, size_t srclen, size_t *p_dstlen)
+{
+    size_t s_progress;
+    size_t d_progress;
+    size_t decode_size;
+    size_t decoded_size;
+
+    // for each round we decode 64 bytes and skip the linebreaks
+    for (s_progress = d_progress = 0; s_progress < srclen; s_progress += 65)
+    {
+        if (s_progress + 65 < srclen)
+        {
+            decode_size = 64;
+        }
+        else
+        {
+            // -1 to avoid decoding the '\n' byte in the end
+            decode_size = srclen - s_progress - 1;
+        }
+        // calculate the size after decoding
+        decoded_size = (decode_size / 4) * 3;
+        if (src[decode_size - 1] == '=')
+        {
+            decoded_size--;
+        }
+        if (src[decoded_size - 2] == '=')
+        {
+            decoded_size--;
+        }
+        // break early if the buffer is too small
+        if (*p_dstlen - d_progress < decoded_size)
+        {
+            break;
+        }
+        if (!libspdm_decode_base64_stripped(src + s_progress, dst + d_progress, decode_size, &decoded_size))
+        {
+            return false;
+        }
+        d_progress += decoded_size;
+    }
+    if (s_progress < srclen)
+    {
+        *p_dstlen = 0;
+        return false;
+    }
+    *p_dstlen = d_progress;
+    return true;
+}
+#else // USE_LKCA
+bool libspdm_encode_base64(const uint8_t *src, uint8_t *dst, size_t srclen, size_t *p_dstlen)
+{
+    return false;
+}
+
+bool libspdm_decode_base64(const uint8_t *src, uint8_t *dst, size_t srclen, size_t *p_dstlen)
+{
+    return false;
+}
+#endif // USE_LKCA
 
 static bool lkca_asn1_get_tag(uint8_t const *ptr, uint8_t const *end,
                               size_t *length, uint32_t tag)

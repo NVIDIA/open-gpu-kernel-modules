@@ -108,11 +108,6 @@ struct ImexSessionApi {
     struct RmResource *__nvoc_pbase_RmResource;    // rmres super
     struct ImexSessionApi *__nvoc_pbase_ImexSessionApi;    // imexsessionapi
 
-    // Vtable with 3 per-object function pointers
-    NV_STATUS (*__imexsessionapiCtrlCmdGetFabricEvents__)(struct ImexSessionApi * /*this*/, NV00F1_CTRL_GET_FABRIC_EVENTS_PARAMS *);  // exported (id=0xf10001)
-    NV_STATUS (*__imexsessionapiCtrlCmdFinishMemUnimport__)(struct ImexSessionApi * /*this*/, NV00F1_CTRL_FINISH_MEM_UNIMPORT_PARAMS *);  // exported (id=0xf10002)
-    NV_STATUS (*__imexsessionapiCtrlCmdDisableImporters__)(struct ImexSessionApi * /*this*/, NV00F1_CTRL_DISABLE_IMPORTERS_PARAMS *);  // exported (id=0xf10003)
-
     // Data members
     NvU64 dupedCapDescriptor;
     NvU32 PRIVATE_FIELD(flags);
@@ -180,13 +175,45 @@ NV_STATUS __nvoc_objCreate_ImexSessionApi(ImexSessionApi**, Dynamic*, NvU32, str
     __nvoc_objCreate_ImexSessionApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
-#define imexsessionapiCtrlCmdGetFabricEvents_FNPTR(pImexSessionApi) pImexSessionApi->__imexsessionapiCtrlCmdGetFabricEvents__
-#define imexsessionapiCtrlCmdGetFabricEvents(pImexSessionApi, pParams) imexsessionapiCtrlCmdGetFabricEvents_DISPATCH(pImexSessionApi, pParams)
-#define imexsessionapiCtrlCmdFinishMemUnimport_FNPTR(pImexSessionApi) pImexSessionApi->__imexsessionapiCtrlCmdFinishMemUnimport__
-#define imexsessionapiCtrlCmdFinishMemUnimport(pImexSessionApi, pParams) imexsessionapiCtrlCmdFinishMemUnimport_DISPATCH(pImexSessionApi, pParams)
-#define imexsessionapiCtrlCmdDisableImporters_FNPTR(pImexSessionApi) pImexSessionApi->__imexsessionapiCtrlCmdDisableImporters__
-#define imexsessionapiCtrlCmdDisableImporters(pImexSessionApi, pParams) imexsessionapiCtrlCmdDisableImporters_DISPATCH(pImexSessionApi, pParams)
+// Wrapper macros for implementation functions
+NV_STATUS imexsessionapiConstruct_IMPL(struct ImexSessionApi *arg_pImexSessionApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_imexsessionapiConstruct(arg_pImexSessionApi, arg_pCallContext, arg_pParams) imexsessionapiConstruct_IMPL(arg_pImexSessionApi, arg_pCallContext, arg_pParams)
+
+void imexsessionapiDestruct_IMPL(struct ImexSessionApi *pImexSessionApi);
+#define __nvoc_imexsessionapiDestruct(pImexSessionApi) imexsessionapiDestruct_IMPL(pImexSessionApi)
+
+NV_STATUS imexsessionapiCtrlCmdGetFabricEvents_IMPL(struct ImexSessionApi *pImexSessionApi, NV00F1_CTRL_GET_FABRIC_EVENTS_PARAMS *pParams);
+#ifdef __nvoc_imex_session_api_h_disabled
+static inline NV_STATUS imexsessionapiCtrlCmdGetFabricEvents(struct ImexSessionApi *pImexSessionApi, NV00F1_CTRL_GET_FABRIC_EVENTS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ImexSessionApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_imex_session_api_h_disabled
+#define imexsessionapiCtrlCmdGetFabricEvents(pImexSessionApi, pParams) imexsessionapiCtrlCmdGetFabricEvents_IMPL(pImexSessionApi, pParams)
+#endif // __nvoc_imex_session_api_h_disabled
+
+NV_STATUS imexsessionapiCtrlCmdFinishMemUnimport_IMPL(struct ImexSessionApi *pImexSessionApi, NV00F1_CTRL_FINISH_MEM_UNIMPORT_PARAMS *pParams);
+#ifdef __nvoc_imex_session_api_h_disabled
+static inline NV_STATUS imexsessionapiCtrlCmdFinishMemUnimport(struct ImexSessionApi *pImexSessionApi, NV00F1_CTRL_FINISH_MEM_UNIMPORT_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ImexSessionApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_imex_session_api_h_disabled
+#define imexsessionapiCtrlCmdFinishMemUnimport(pImexSessionApi, pParams) imexsessionapiCtrlCmdFinishMemUnimport_IMPL(pImexSessionApi, pParams)
+#endif // __nvoc_imex_session_api_h_disabled
+
+NV_STATUS imexsessionapiCtrlCmdDisableImporters_IMPL(struct ImexSessionApi *pImexSessionApi, NV00F1_CTRL_DISABLE_IMPORTERS_PARAMS *pParams);
+#ifdef __nvoc_imex_session_api_h_disabled
+static inline NV_STATUS imexsessionapiCtrlCmdDisableImporters(struct ImexSessionApi *pImexSessionApi, NV00F1_CTRL_DISABLE_IMPORTERS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ImexSessionApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_imex_session_api_h_disabled
+#define imexsessionapiCtrlCmdDisableImporters(pImexSessionApi, pParams) imexsessionapiCtrlCmdDisableImporters_IMPL(pImexSessionApi, pParams)
+#endif // __nvoc_imex_session_api_h_disabled
+
+
+// Wrapper macros for halified functions
 #define imexsessionapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define imexsessionapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) imexsessionapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define imexsessionapiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
@@ -231,18 +258,6 @@ NV_STATUS __nvoc_objCreate_ImexSessionApi(ImexSessionApi**, Dynamic*, NvU32, str
 #define imexsessionapiAddAdditionalDependants(pClient, pResource, pReference) imexsessionapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
-static inline NV_STATUS imexsessionapiCtrlCmdGetFabricEvents_DISPATCH(struct ImexSessionApi *pImexSessionApi, NV00F1_CTRL_GET_FABRIC_EVENTS_PARAMS *pParams) {
-    return pImexSessionApi->__imexsessionapiCtrlCmdGetFabricEvents__(pImexSessionApi, pParams);
-}
-
-static inline NV_STATUS imexsessionapiCtrlCmdFinishMemUnimport_DISPATCH(struct ImexSessionApi *pImexSessionApi, NV00F1_CTRL_FINISH_MEM_UNIMPORT_PARAMS *pParams) {
-    return pImexSessionApi->__imexsessionapiCtrlCmdFinishMemUnimport__(pImexSessionApi, pParams);
-}
-
-static inline NV_STATUS imexsessionapiCtrlCmdDisableImporters_DISPATCH(struct ImexSessionApi *pImexSessionApi, NV00F1_CTRL_DISABLE_IMPORTERS_PARAMS *pParams) {
-    return pImexSessionApi->__imexsessionapiCtrlCmdDisableImporters__(pImexSessionApi, pParams);
-}
-
 static inline NvBool imexsessionapiAccessCallback_DISPATCH(struct ImexSessionApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
@@ -333,12 +348,6 @@ NV_STATUS imexsessionapiCtrlCmdFinishMemUnimport_IMPL(struct ImexSessionApi *pIm
 
 NV_STATUS imexsessionapiCtrlCmdDisableImporters_IMPL(struct ImexSessionApi *pImexSessionApi, NV00F1_CTRL_DISABLE_IMPORTERS_PARAMS *pParams);
 
-NV_STATUS imexsessionapiConstruct_IMPL(struct ImexSessionApi *arg_pImexSessionApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_imexsessionapiConstruct(arg_pImexSessionApi, arg_pCallContext, arg_pParams) imexsessionapiConstruct_IMPL(arg_pImexSessionApi, arg_pCallContext, arg_pParams)
-void imexsessionapiDestruct_IMPL(struct ImexSessionApi *pImexSessionApi);
-
-#define __nvoc_imexsessionapiDestruct(pImexSessionApi) imexsessionapiDestruct_IMPL(pImexSessionApi)
 #undef PRIVATE_FIELD
 
 

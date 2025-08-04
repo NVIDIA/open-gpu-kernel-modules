@@ -161,7 +161,6 @@ faultbufUnmap_IMPL
     // Unmap it
     memdescUnmap(pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].hwFaultBuffers[REPLAYABLE_FAULT_BUFFER].pFaultBufferMemDesc,
                  bKernel,
-                 pCpuMapping->processId,
                  pCpuMapping->pLinearAddress,
                  pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].hwFaultBuffers[REPLAYABLE_FAULT_BUFFER].hCpuFaultBuffer);
 

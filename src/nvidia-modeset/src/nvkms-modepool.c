@@ -43,6 +43,7 @@
 typedef struct {
     enum NvKmsModeSource source;
     NvBool patchedStereoTimings;
+    NvBool dscPassThrough;
 } EvoValidateModeFlags;
 
 static NvBool
@@ -404,6 +405,10 @@ ValidateModeIndexEdid(NVDpyEvoPtr pDpyEvo,
         GetHdmi3DValue(pDpyEvo, pParams, &timing, &hdmi3D,
                        &pReply->hdmi3DAvailable);
         nvKmsUpdateNvModeTimingsForHdmi3D(&kmsMode.timings, hdmi3D);
+
+        if (!!(timing.etc.flag & NVT_FLAG_DISPLAYID_T7_DSC_PASSTHRU)) {
+            flags.dscPassThrough = TRUE;
+        }
 
         kmsMode.timings.yuv420Mode = GetYUV420Value(pDpyEvo, pParams, &timing);
 
@@ -890,8 +895,7 @@ static NvBool IsVesaMode(const NvModeTimings *pModeTimings,
  */
 
 static void LogModeValidationBegin(NVEvoInfoStringPtr pInfoString,
-                                   const NvModeTimings *pModeTimings,
-                                   const char *modeName)
+                                   const NvModeTimings *pModeTimings)
 {
     nvEvoLogInfoString(pInfoString, "%d x %d @ %d Hz%s",
                        pModeTimings->hVisible,
@@ -921,7 +925,6 @@ static void LogModeValidationEnd(const NVDispEvoRec *pDispEvo,
         nvFree(buf);
     }
 }
-
 
 /*!
  * Print mode timings to the NVEvoInfoStringPtr.
@@ -963,6 +966,7 @@ void nvEvoLogModeValidationModeTimings(NVEvoInfoStringPtr
                        pModeTimings->hSyncNeg ? "-H " : "",
                        pModeTimings->vSyncPos ? "+V " : "",
                        pModeTimings->vSyncNeg ? "-V " : "");
+
 
     if (pModeTimings->interlaced && pModeTimings->doubleScan) {
         extra = "Interlace DoubleScan";
@@ -1529,6 +1533,13 @@ static NvBool ValidateModeTimings(
         return FALSE;
     }
 
+    if (flags->dscPassThrough &&
+            (pParams->dscMode == NVKMS_DSC_MODE_FORCE_DISABLE)) {
+        LogModeValidationEnd(pDispEvo, pInfoString,
+                             "Mode is only supported with DSC pass-through, but DSC is force disabled");
+        return FALSE;
+    }
+
     return TRUE;
 }
 
@@ -1644,12 +1655,15 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
 
     /* begin logging of ModeValidation for this mode */
 
-    LogModeValidationBegin(pInfoString, pModeTimings, modeName);
+    LogModeValidationBegin(pInfoString, pModeTimings);
 
     if (!ValidateModeTimings(pDpyEvo, pKmsMode, flags, pParams,
                              pInfoString, pValidSyncs)) {
         goto done;
     }
+
+    nvEvoLogInfoString(pInfoString,
+            "DSCPassThrough: %s", flags->dscPassThrough ? "Yes" : "No");
 
     if (pTimingsEvo->yuv420Mode != NV_YUV420_MODE_NONE) {
         dpyColor.format = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420;
@@ -1685,6 +1699,7 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
                                      pKmsMode,
                                      NULL, /* pViewPortSizeIn */
                                      NULL, /* pViewPortOut */
+                                     flags->dscPassThrough,
                                      &dpyColor,
                                      pTimingsEvo,
                                      pParams,
@@ -1939,6 +1954,10 @@ static NvBool ConstructModeTimingsMetaData(
             return FALSE;
         }
 
+        if (!!(timing.etc.flag & NVT_FLAG_DISPLAYID_T7_DSC_PASSTHRU)) {
+            flags.dscPassThrough = TRUE;
+        }
+
         if (pParams->stereoMode == NVKMS_STEREO_HDMI_3D) {
             if (!nvDpyEvoSupportsHdmi3D(pDpyEvo)) {
                 nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
@@ -2035,6 +2054,7 @@ NvBool nvValidateModeForModeset(NVDpyEvoRec *pDpyEvo,
                                      &kmsMode,
                                      pViewPortSizeIn,
                                      pViewPortOut,
+                                     flags.dscPassThrough,
                                      pDpyColor,
                                      pTimingsEvo,
                                      pParams,

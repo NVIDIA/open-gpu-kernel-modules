@@ -2047,6 +2047,12 @@ typedef struct NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS {
  * bDynamicHdrTonemapping
  * if bLtmEnable = true, and if set to true, and output is HDR, enable dynamic per frame HDR tonemapping. Set to false by default.
  *
+ * maxDisplayLuminance
+ * maximum display luminance
+ *
+ * luminanceSscalingFactor
+ * HDR tone mapping luminance scaling factor
+ *
  * Possible status values returned include:
  * NV_OK
  * NV_ERR_NOT_SUPPORTED
@@ -2068,6 +2074,8 @@ typedef struct NV0073_CTRL_SPECIFIC_DISPLAY_BRIGHTNESS_LTM_PARAMS {
     NvU16  detailGain;
     NvBool bContentAdaptiveBrightness;
     NvBool bDynamicHdrTonemapping;
+    NvU32  maxDisplayLuminance;
+    NvU32  luminanceScalingFactor;
 } NV0073_CTRL_SPECIFIC_DISPLAY_BRIGHTNESS_LTM_PARAMS;
 
 #define NV0073_CTRL_SPECIFIC_GET_DISPLAY_BRIGHTNESS_LTM_PARAMS_MESSAGE_ID (0xAFU)

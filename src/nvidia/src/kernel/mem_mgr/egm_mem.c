@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -53,13 +53,10 @@ egmmemConstruct_IMPL
     FB_ALLOC_PAGE_FORMAT        *pFbAllocPageFormat = NULL;
     RM_ATTR_PAGE_SIZE            pageSizeAttr;
     MEMORY_DESCRIPTOR *pMemDesc;
-    HWRESOURCE_INFO hwResource;
+    HWRESOURCE_INFO hwResource = {0};
     NvU64 sizeOut;
     NvU64 offsetOut;
     NvU32 flags;
-    NvU32 gpuCacheAttrib;
-    NvU32 Cache;
-
 
     // Copy-construction has already been done by the base Memory class
     if (RS_IS_COPY_CTOR(pParams))
@@ -123,22 +120,18 @@ egmmemConstruct_IMPL
     sizeOut = pMemDesc->Size;
     pAllocData->limit = sizeOut - 1;
 
-    memSetSysmemCacheAttrib(pGpu, pAllocData, &Cache, &gpuCacheAttrib);
+    memSetSysmemCacheAttrib(pGpu, pAllocData, pMemDesc);
 
     flags = DRF_DEF(OS02, _FLAGS, _LOCATION, _PCI) |
             DRF_DEF(OS02, _FLAGS, _MAPPING, _NO_MAP) |
             DRF_NUM(OS02, _FLAGS, _COHERENCY, DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr));
 
     NV_ASSERT(memdescGetAddressSpace(pMemDesc) == ADDR_EGM);
-    memdescSetCpuCacheAttrib(pMemDesc, Cache);
 
     if (pCallContext->secInfo.privLevel < RS_PRIV_LEVEL_KERNEL)
         memdescSetFlag(pMemDesc, MEMDESC_FLAGS_KERNEL_MODE, NV_FALSE);
 
     memdescSetFlag(pMemDesc, MEMDESC_FLAGS_SYSMEM_OWNED_BY_CLIENT, NV_TRUE);
-
-    memdescSetGpuCacheAttrib(pMemDesc, gpuCacheAttrib);
-
 
     pageSizeAttr = dmaNvos32ToPageSizeAttr(pAllocData->attr, pAllocData->attr2);
     NV_ASSERT_OK_OR_GOTO(rmStatus, memmgrSetMemDescPageSize_HAL(pGpu, GPU_GET_MEMORY_MANAGER(pGpu), pMemDesc,

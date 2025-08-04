@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -63,16 +63,10 @@ static inline pgprot_t pgprot_modify_writecombine(pgprot_t old_prot)
 extern NvBool nvos_is_chipset_io_coherent(void);
 /*
  * Don't rely on the kernel's definition of pgprot_noncached(), as on 64-bit
- * ARM that's not for system memory, but device memory instead. For I/O cache
- * coherent systems, use cached mappings instead of uncached.
+ * ARM that's not for system memory, but device memory instead.
  */
 #define NV_PGPROT_UNCACHED(old_prot)   \
-    ((nvos_is_chipset_io_coherent()) ? \
-     (old_prot) :                      \
-     __pgprot_modify((old_prot), PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC)))
-#elif defined(NVCPU_PPC64LE)
-/* Don't attempt to mark sysmem pages as uncached on ppc64le */
-#define NV_PGPROT_UNCACHED(old_prot)          old_prot
+     __pgprot_modify((old_prot), PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC))
 #else
 #define NV_PGPROT_UNCACHED(old_prot)          pgprot_noncached(old_prot)
 #endif
@@ -94,32 +88,6 @@ extern NvBool nvos_is_chipset_io_coherent(void);
     NV_PGPROT_WRITE_COMBINED_DEVICE(old_prot)
 #define NV_PGPROT_READ_ONLY(old_prot)                                         \
     __pgprot(pgprot_val((old_prot)) & ~_PAGE_RW)
-#elif defined(NVCPU_PPC64LE)
-/*
- * Some kernels use H_PAGE instead of _PAGE
- */
-#if defined(_PAGE_RW)
-#define NV_PAGE_RW _PAGE_RW
-#elif defined(H_PAGE_RW)
-#define NV_PAGE_RW H_PAGE_RW
-#else
-#warning "The kernel does not provide page protection defines!"
-#endif
-
-#if defined(_PAGE_4K_PFN)
-#define NV_PAGE_4K_PFN _PAGE_4K_PFN
-#elif defined(H_PAGE_4K_PFN)
-#define NV_PAGE_4K_PFN H_PAGE_4K_PFN
-#else
-#undef NV_PAGE_4K_PFN
-#endif
-
-#define NV_PGPROT_WRITE_COMBINED_DEVICE(old_prot)                             \
-    pgprot_writecombine(old_prot)
-/* Don't attempt to mark sysmem pages as write combined on ppc64le */
-#define NV_PGPROT_WRITE_COMBINED(old_prot)    old_prot
-#define NV_PGPROT_READ_ONLY(old_prot)                                         \
-    __pgprot(pgprot_val((old_prot)) & ~NV_PAGE_RW)
 #elif defined(NVCPU_RISCV64)
 #define NV_PGPROT_WRITE_COMBINED_DEVICE(old_prot)                             \
     pgprot_writecombine(old_prot)

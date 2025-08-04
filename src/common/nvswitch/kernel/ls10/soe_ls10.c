@@ -704,12 +704,12 @@ nvswitch_soe_clear_engine_interrupt_counter_ls10
             SOE_VBIOS_REVLOCK_ENGINE_COUNTERS))
     {
         NVSWITCH_PRINT(device, INFO,
-            "%s: Skipping clearing Engine Interrupt Counter and disabiling NVLW interrupt.  Update firmware "
+            "%s: Skipping clearing Engine Interrupt Counter via SOE.  Update firmware "
             "from .%02X to .%02X\n",
             __FUNCTION__, (NvU32)((params.version & SOE_VBIOS_VERSION_MASK) >> 16), 
             SOE_VBIOS_REVLOCK_ENGINE_COUNTERS);
 
-        return NVL_SUCCESS; // -NVL_ERR_NOT_SUPPORTED
+        return -NVL_ERR_NOT_SUPPORTED;
     }
 
     pFlcn = device->pSoe->pFlcn;
@@ -1639,6 +1639,13 @@ _soeI2CAccessSend
     RM_FLCN_CMD_SOE     cmd;
     RM_SOE_CORE_CMD_I2C *pI2cCmd;
     NVSWITCH_TIMEOUT    timeout;
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
 
     nvswitch_os_memset(&cmd, 0, sizeof(cmd));
 

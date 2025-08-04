@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,10 +24,7 @@
 #include <linux/of.h>
 #include <linux/of_platform.h>
 #include <linux/platform_device.h>
-
-#if defined NV_LINUX_OF_DEVICE_H_PRESENT
 #include <linux/of_device.h>
-#endif
 
 #include "nv-platform.h"
 #include "nv-linux.h"
@@ -340,7 +337,6 @@ void nv_soc_free_irqs(nv_state_t *nv)
     {
         nv_soc_free_irq_by_type(nv, NV_SOC_IRQ_TCPC2DISP_TYPE);
     }
-
 }
 
 static void nv_platform_free_device_dpaux(nv_state_t *nv)
@@ -374,7 +370,6 @@ static void nv_platform_free_device_dpaux(nv_state_t *nv)
 static int nv_platform_alloc_device_dpaux(struct platform_device *plat_dev, nv_state_t *nv)
 {
 #if NV_SUPPORTS_PLATFORM_DEVICE
-    static const size_t MAX_LENGTH = 10;
     const char *sdpaux = "dpaux";
     int dpauxindex = 0;
     int irq = 0;
@@ -429,7 +424,7 @@ static int nv_platform_alloc_device_dpaux(struct platform_device *plat_dev, nv_s
 
     for (dpauxindex = 0; dpauxindex < nv->num_dpaux_instance; dpauxindex++)
     {
-        char sdpaux_device[MAX_LENGTH];
+        char sdpaux_device[10];
         snprintf(sdpaux_device, sizeof(sdpaux_device), "%s%d", sdpaux, dpauxindex);
 
         NV_KMALLOC(nv->dpaux[dpauxindex], sizeof(*(nv->dpaux[dpauxindex])));
@@ -514,6 +509,25 @@ NV_STATUS NV_API_CALL nv_soc_device_reset(nv_state_t *nv)
             }
         }
 
+        if (nvl->hdacodec_reset != NULL)
+        {
+            /*
+             * HDACODEC reset control is shared between display driver and audio driver.
+             * Since reset_control_reset toggles the reset signal, we prefer to use
+             * reset_control_deassert. Additionally, since Audio driver uses
+             * reset_control_bulk_deassert() which internally calls reset_control_deassert,
+             * we must use reset_control_deassert, because consumers must not use
+             * reset_control_reset on shared reset lines when reset_control_deassert has
+             * been used.
+             */
+            rc = reset_control_deassert(nvl->hdacodec_reset);
+            if (rc != 0)
+            {
+                status = NV_ERR_GENERIC;
+                nv_printf(NV_DBG_ERRORS, "NVRM: hdacodec reset_control_deassert failed, rc: %d\n", rc);
+                goto out;
+            }
+        }
     }
 out:
     return status;
@@ -558,69 +572,94 @@ static NV_STATUS nv_platform_get_iommu_availability(struct platform_device *plat
     struct device_node *niso_np_with_iommus = NULL;
     struct device_node *niso_np = NULL;
     struct device_node *iso_np = NULL;
-    NvU32 value = 0;
     NV_STATUS status = NV_OK;
-    bool single_smmu = NV_TRUE;
 
     nv->iommus.iso_iommu_present = NV_FALSE;
     nv->iommus.niso_iommu_present = NV_FALSE;
 
-    /* NV_U32_MAX is used to indicate that the platform does not support SMMU */
-    nv->iommus.dispIsoStreamId = NV_U32_MAX;
-    nv->iommus.dispNisoStreamId = NV_U32_MAX;
-
     iso_np = of_parse_phandle(np, "iommus", 0);
     if (iso_np && of_device_is_available(iso_np)) {
-
-        /* Parse ISO StreamID. Second entry in iommu property has Stream ID */
-        if (of_property_read_u32_index(np, "iommus", 1, &value))
-        {
-            nv_printf(NV_DBG_ERRORS, "NVRM: nv_platform_get_iommu_availability, failed to parse ISO StreamID\n");
-            status = NV_ERR_GENERIC;
-            goto free_iso_np;
-        }
-        /* LSB 8 bits represent the Stream ID */
-        nv->iommus.dispIsoStreamId = (value & 0xFF);
+        nv->iommus.iso_iommu_present = NV_TRUE;
     }
-
-    single_smmu = of_property_read_bool(np, "single_stage_iso_smmu");
-    nv->iommus.iso_iommu_present = !single_smmu;
 
     niso_np = of_get_child_by_name(np, "nvdisplay-niso");
     if (niso_np) {
         niso_np_with_iommus = of_parse_phandle(niso_np, "iommus", 0);
         if (niso_np_with_iommus && of_device_is_available(niso_np_with_iommus)) {
             nv->iommus.niso_iommu_present = NV_TRUE;
-
-            /* Parse NISO StreamID. Second entry in iommu property has Stream ID */
-            if (of_property_read_u32_index(niso_np, "iommus", 1, &value))
-            {
-                nv_printf(NV_DBG_ERRORS, "NVRM: nv_platform_get_iommu_availability, failed to parse NISO StreamID\n");
-                status = NV_ERR_GENERIC;
-                goto free_niso_np;
-            }
-            /* LSB 8 bits represent the Stream ID */
-            nv->iommus.dispNisoStreamId = (value & 0xFF);
         }
     }
 
-free_niso_np:
     if (niso_np_with_iommus)
         of_node_put(niso_np_with_iommus);
 
     if (niso_np)
         of_node_put(niso_np);
 
-free_iso_np:
     if (iso_np)
         of_node_put(iso_np);
 
     return status;
 }
 
+#define DISP_DT_SMMU_STREAM_ID_MASK     0xFF
+// This function gets called only for Tegra
+static NV_STATUS nv_platform_get_iso_niso_stream_ids(struct platform_device *plat_dev,
+                                              nv_state_t *nv)
+{
+    struct device_node *np = plat_dev->dev.of_node;
+    NvU32 value = 0;
+    NV_STATUS status = NV_OK;
+    int ret = 0;
+
+    /* NV_U32_MAX is used to indicate that the platform does not support SMMU */
+    nv->iommus.dispIsoStreamId = NV_U32_MAX;
+    nv->iommus.dispNisoStreamId = NV_U32_MAX;
+
+    /* Parse ISO StreamID */
+    ret = of_property_read_u32(np, "iso_sid", &value);
+    if (ret == 0)
+    {
+        nv->iommus.dispIsoStreamId = (value & DISP_DT_SMMU_STREAM_ID_MASK);
+    }
+    else if (ret == -EINVAL)
+    {
+        /* iso_sid will not be specified in device tree if SMMU needs to be bypassed. Continue without failing */
+        nv_printf(NV_DBG_INFO, "NVRM: nv_platform_get_iso_niso_stream_ids, iso_sid not specified under display node\n");
+     }
+     else
+     {
+        nv_printf(NV_DBG_ERRORS, "NVRM: nv_platform_get_iso_niso_stream_ids, iso_sid has invalid value\n");
+        status = NV_ERR_GENERIC;
+        goto fail;
+     }
+
+    /* Parse NISO StreamID */
+    ret = of_property_read_u32(np, "niso_sid", &value);
+    if (ret == 0)
+    {
+        nv->iommus.dispNisoStreamId = (value & DISP_DT_SMMU_STREAM_ID_MASK);
+    }
+    else if (ret == -EINVAL)
+    {
+        /* niso_sid will not be specified in device tree if SMMU needs to be bypassed. Continue without failing */
+        nv_printf(NV_DBG_INFO, "NVRM: nv_platform_get_iso_niso_stream_ids, niso_sid not specified under display node\n");
+    }
+    else
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: nv_platform_get_iso_niso_stream_ids, niso_sid has invalid value\n");
+        status = NV_ERR_GENERIC;
+        goto fail;
+    }
+
+fail:
+    return status;
+}
+
 static int nv_platform_register_mapping_devs(struct platform_device *plat_dev,
                                              nv_state_t *nv)
 {
+#if NV_SUPPORTS_PLATFORM_DEVICE
     struct device_node *np = plat_dev->dev.of_node;
     struct device_node *niso_np = NULL;
     struct platform_device *niso_plat_dev = NULL;
@@ -636,12 +675,7 @@ static int nv_platform_register_mapping_devs(struct platform_device *plat_dev,
         goto register_mapping_devs_end;
     }
 
-#if defined(NV_DEVM_OF_PLATFORM_POPULATE_PRESENT) && NV_SUPPORTS_PLATFORM_DEVICE
     rc = devm_of_platform_populate(&plat_dev->dev);
-#else
-    nv_printf(NV_DBG_ERRORS, "NVRM: devm_of_platform_populate not present\n");
-    rc = -ENOSYS;
-#endif
     if (rc != 0)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: devm_of_platform_populate failed\n");
@@ -656,23 +690,13 @@ static int nv_platform_register_mapping_devs(struct platform_device *plat_dev,
         goto register_mapping_devs_end;
     }
 
-#if defined(NV_OF_DMA_CONFIGURE_PRESENT)
-#if defined(NV_OF_DMA_CONFIGURE_HAS_INT_RETURN_TYPE)
     rc = of_dma_configure(
-#else
-    rc = 0;
-    of_dma_configure(
-#endif
         &niso_plat_dev->dev,
         niso_np
 #if NV_OF_DMA_CONFIGURE_ARGUMENT_COUNT > 2
         , true
 #endif
     );
-#else
-    nv_printf(NV_DBG_ERRORS, "NVRM: of_dma_configure not present\n");
-    rc = -ENOSYS;
-#endif
     if (rc != 0)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: nv_of_dma_configure failed for niso\n");
@@ -687,6 +711,9 @@ static int nv_platform_register_mapping_devs(struct platform_device *plat_dev,
 register_mapping_devs_end:
     of_node_put(niso_np);
     return rc;
+#else
+    return -ENOSYS;
+#endif
 }
 
 static int nv_platform_parse_dcb(struct platform_device *plat_dev,
@@ -694,13 +721,8 @@ static int nv_platform_parse_dcb(struct platform_device *plat_dev,
 {
     int ret;
 
-#if defined(NV_OF_PROPERTY_COUNT_ELEMS_OF_SIZE_PRESENT)
     struct device_node *np = plat_dev->dev.of_node;
     ret = of_property_count_elems_of_size(np, "nvidia,dcb-image", sizeof(u8));
-#else
-    nv_printf(NV_DBG_ERRORS, "of_property_count_elems_of_size not present\n");
-    return -ENOSYS;
-#endif
     if (ret > 0)
     {
         nv->soc_dcb_size = ret;
@@ -713,13 +735,8 @@ static int nv_platform_parse_dcb(struct platform_device *plat_dev,
         }
     }
 
-#if defined(NV_OF_PROPERTY_READ_VARIABLE_U8_ARRAY_PRESENT)
     ret = of_property_read_variable_u8_array(np, "nvidia,dcb-image",
             nv->soc_dcb_blob, 0, nv->soc_dcb_size);
-#else
-    nv_printf(NV_DBG_ERRORS, "of_property_read_variable_u8_array not present\n");
-    ret = -ENOSYS;
-#endif
     if (IS_ERR(&ret))
     {
         nv_printf(NV_DBG_ERRORS, "failed to read dcb blob");
@@ -821,11 +838,19 @@ static int nv_platform_device_display_probe(struct platform_device *plat_dev)
 
     nv->os_state = (void *) nvl;
 
-    // Check ISO/NISO SMMU status and parse StreamIDs
+    // Check ISO/NISO SMMU status
     status = nv_platform_get_iommu_availability(plat_dev, nv);
     if (status != NV_OK)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: nv_platform_device_display_probe: parsing iommu node failed\n");
+        goto err_release_mem_region_regs;
+    }
+
+    // Parse ISO/NISO SMMU StreamIDs
+    status = nv_platform_get_iso_niso_stream_ids(plat_dev, nv);
+    if (status != NV_OK)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: nv_platform_device_display_probe: parsing ISO/NISO StreamIDs failed\n");
         goto err_release_mem_region_regs;
     }
 
@@ -848,7 +873,7 @@ static int nv_platform_device_display_probe(struct platform_device *plat_dev)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate hdacodecregs memory\n");
         rc = -ENOMEM;
-        goto err_release_mem_region_regs;
+        goto err_remove_dpaux_device;
     }
     os_mem_set(nv->hdacodec_regs, 0, sizeof(*(nv->hdacodec_regs)));
 
@@ -873,6 +898,7 @@ static int nv_platform_device_display_probe(struct platform_device *plat_dev)
     nv->hdacodec_regs->cpu_address = res_addr;
     nv->hdacodec_regs->size = res_size;
     nv->soc_is_dpalt_mode_supported = false;
+    nv->soc_is_hfrp_supported = false;
 
     nv->hdacodec_irq = platform_get_irq_byname(plat_dev, "hdacodec");
     if (nv->hdacodec_irq < 0)
@@ -895,6 +921,12 @@ static int nv_platform_device_display_probe(struct platform_device *plat_dev)
             nv->tcpc2disp_irq = irq;
             nv->soc_is_dpalt_mode_supported = true;
         }
+    }
+
+    rc = of_property_read_bool(nvl->dev->of_node, "nvidia,hfrp-supported");
+    if (rc == true)
+    {
+        nv->soc_is_hfrp_supported = true;
     }
 
     NV_KMALLOC(nv->mipical_regs, sizeof(*(nv->mipical_regs)));
@@ -996,6 +1028,25 @@ static int nv_platform_device_display_probe(struct platform_device *plat_dev)
             nvl->mipi_cal_reset = NULL;
         }
 
+        /*
+         * In T23x, HDACODEC is part of the same power domain as NVDisplay, so
+         * unpowergating the DISP domain also results in the HDACODEC reset
+         * being de-asserted. However, in T26x, HDACODEC is being moved
+         * out to a separate always-on domain, so we need to explicitly de-assert
+         * the HDACODEC reset in RM. We don't have good way to differentiate
+         * between T23x vs T264x at this place. So if there is failure to read
+         * "hdacodec_reset" from DT silently ignore it for now. In long term we
+         * should really look into using the devm_reset_control_bulk* APIs and
+         * see if this is feasible if we're ultimately just getting and
+         * asserting/deasserting all of the resets specified in DT together all of
+         * the time, and if there's no scenarios in which we need to only use a 
+         * specific set of reset(s) at a given point.
+         */
+        nvl->hdacodec_reset = devm_reset_control_get(nvl->dev, "hdacodec_reset");
+        if (IS_ERR(nvl->hdacodec_reset))
+        {
+            nvl->hdacodec_reset = NULL;
+        }
     }
 
     status = nv_imp_icc_get(nv);
@@ -1098,21 +1149,21 @@ static int nv_platform_device_display_probe(struct platform_device *plat_dev)
      * TODO: procfs, vt_switch, dynamic_power_management
      */
 
-    nv_kmem_cache_free_stack(sp);
-
     dma_set_mask(nv->dma_dev->dev, DMA_BIT_MASK(39));
-#if defined(NV_DMA_SET_MASK_AND_COHERENT_PRESENT)
     if (nv->niso_dma_dev != NULL)
     {
         dma_set_mask_and_coherent(nv->niso_dma_dev->dev, DMA_BIT_MASK(39));
     }
-#else
-    nv_printf(NV_DBG_INFO, "NVRM: Using default 32-bit DMA mask\n");
-#endif
 
     rc = os_alloc_mutex(&nvl->soc_bh_mutex);
+    if (rc != 0)
+    {
+        goto err_remove_device;
+    }
 
-    return rc;
+    nv_kmem_cache_free_stack(sp);
+
+    return 0;
 
 err_remove_device:
     LOCK_NV_LINUX_DEVICES();
@@ -1127,24 +1178,27 @@ err_destroy_lock:
 err_put_icc_handle:
     nv_imp_icc_put(nv);
 err_destroy_clk_handles:
-    nv_clk_clear_handles(nv);
-err_remove_dpaux_device:
-    nv_platform_free_device_dpaux(nv);
+    if (!skip_clk_rsts)
+    {
+        nv_clk_clear_handles(nv);
+    }
 err_release_mem_mipical_region_regs:
     release_mem_region(nv->mipical_regs->cpu_address, nv->mipical_regs->size);
 err_free_mipical_regs:
     NV_KFREE(nv->mipical_regs, sizeof(*(nv->mipical_regs)));
 err_release_mem_hdacodec_region_regs:
     release_mem_region(nv->hdacodec_regs->cpu_address, nv->hdacodec_regs->size);
-err_release_mem_region_regs:
-    release_mem_region(nv->regs->cpu_address, nv->regs->size);
 err_free_nv_codec_regs:
     NV_KFREE(nv->hdacodec_regs, sizeof(*(nv->hdacodec_regs)));
+err_remove_dpaux_device:
+    nv_platform_free_device_dpaux(nv);
+err_release_mem_region_regs:
+    release_mem_region(nv->regs->cpu_address, nv->regs->size);
 err_free_nv_regs:
     NV_KFREE(nv->regs, sizeof(*(nv->regs)));
 err_free_nvl:
-    NV_KFREE(nvl, sizeof(*nvl));
     platform_set_drvdata(plat_dev, NULL);
+    NV_KFREE(nvl, sizeof(*nvl));
 err_free_stack:
     nv_kmem_cache_free_stack(sp);
 
@@ -1253,40 +1307,18 @@ static int nv_platform_device_probe(struct platform_device *plat_dev)
 {
     int rc = 0;
 
-    if (plat_dev->dev.of_node)
-    {
-        {
 #if NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE
-            rc = nv_platform_device_display_probe(plat_dev);
+    rc = nv_platform_device_display_probe(plat_dev);
 #endif
-        }
-    }
-    else
-    {
-#if NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE
-        rc = nv_platform_device_display_probe(plat_dev);
-#endif
-    }
 
     return rc;
 }
 
 static void nv_platform_device_remove(struct platform_device *plat_dev)
 {
-    if (plat_dev->dev.of_node)
-    {
-        {
 #if NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE
-            nv_platform_device_display_remove(plat_dev);
+    nv_platform_device_display_remove(plat_dev);
 #endif
-        }
-    }
-    else
-    {
-#if NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE
-        nv_platform_device_display_remove(plat_dev);
-#endif
-    }
 }
 
 #if defined(NV_PLATFORM_DRIVER_STRUCT_REMOVE_RETURNS_VOID) /* Linux v6.11 */
@@ -1306,6 +1338,7 @@ static int nv_platform_device_remove_wrapper(struct platform_device *pdev)
 const struct of_device_id nv_platform_device_table[] =
 {
     { .compatible = "nvidia,tegra234-display",},
+    { .compatible = "nvidia,tegra264-display",},
     {},
 };
 MODULE_DEVICE_TABLE(of, nv_platform_device_table);
@@ -1332,6 +1365,11 @@ int nv_platform_count_devices(void)
     int count = 0;
     struct device_node *np = NULL;
 
+    if (NVreg_RegisterPlatformDeviceDriver == 0)
+    {
+        return 0;
+    }
+
     while ((np = of_find_matching_node(np, nv_platform_device_table)))
     {
         count++;
@@ -1343,7 +1381,12 @@ int nv_platform_count_devices(void)
 int nv_platform_register_driver(void)
 {
 #if NV_SUPPORTS_PLATFORM_DEVICE
-    return platform_driver_register(&nv_platform_driver);
+    if (NVreg_RegisterPlatformDeviceDriver > 0)
+    {
+        return platform_driver_register(&nv_platform_driver);
+    }
+
+    return 0;
 #else
     nv_printf(NV_DBG_ERRORS, "NVRM: Not registering platform driver\n");
     return -1;
@@ -1353,7 +1396,10 @@ int nv_platform_register_driver(void)
 void nv_platform_unregister_driver(void)
 {
 #if NV_SUPPORTS_PLATFORM_DEVICE
-    platform_driver_unregister(&nv_platform_driver);
+    if (NVreg_RegisterPlatformDeviceDriver > 0)
+    {
+        platform_driver_unregister(&nv_platform_driver);
+    }
 #endif
 }
 
@@ -1363,11 +1409,85 @@ unsigned int NV_API_CALL nv_soc_fuse_register_read (unsigned int addr)
 {
    unsigned int data = 0;
 
-#if NV_IS_EXPORT_SYMBOL_PRESENT_tegra_fuse_control_read
+#if NV_SUPPORTS_PLATFORM_DEVICE && NV_IS_EXPORT_SYMBOL_PRESENT_tegra_fuse_control_read
    tegra_fuse_control_read ((unsigned long)(addr), &data);
 #endif
 
    return data;
+}
+
+#if NV_IS_EXPORT_SYMBOL_PRESENT_tsec_comms_send_cmd
+extern int tsec_comms_send_cmd(void* cmd, unsigned int queue_id, nv_soc_tsec_cb_func_t cb_func, void* cb_context);
+unsigned int NV_API_CALL nv_soc_tsec_send_cmd(void* cmd, nv_soc_tsec_cb_func_t cb_func, void* cb_context)
+{
+    return (unsigned int)tsec_comms_send_cmd(cmd, 0, cb_func, cb_context);
+}
+#else
+unsigned int NV_API_CALL nv_soc_tsec_send_cmd(void* cmd, nv_soc_tsec_cb_func_t cb_func, void* cb_context)
+{
+    return (unsigned int)NV_ERR_NOT_SUPPORTED;
+}
+#endif // NV_IS_EXPORT_SYMBOL_PRESENT_tsec_comms_send_cmd
+
+#if NV_IS_EXPORT_SYMBOL_PRESENT_tsec_comms_set_init_cb
+extern int tsec_comms_set_init_cb(nv_soc_tsec_cb_func_t cb_func, void* cb_context);
+unsigned int NV_API_CALL nv_soc_tsec_event_register(nv_soc_tsec_cb_func_t cb_func, void* cb_context, NvBool is_init_event)
+{
+    if (is_init_event)
+    {
+        return (unsigned int)tsec_comms_set_init_cb(cb_func, cb_context);
+    }
+    else
+    {
+         // TODO: Add DeInit Event support for TSEC if required
+        return 0;
+    }
+}
+#else
+unsigned int NV_API_CALL nv_soc_tsec_event_register(nv_soc_tsec_cb_func_t cb_func, void* cb_context, NvBool is_init_event)
+{
+    return (unsigned int)NV_ERR_NOT_SUPPORTED;
+}
+#endif // NV_IS_EXPORT_SYMBOL_PRESENT_tsec_comms_set_init_cb
+
+#if NV_IS_EXPORT_SYMBOL_PRESENT_tsec_comms_clear_init_cb
+extern void tsec_comms_clear_init_cb(void);
+unsigned int NV_API_CALL nv_soc_tsec_event_unregister(NvBool is_init_event)
+{
+    if (is_init_event)
+    {
+        tsec_comms_clear_init_cb();
+	return 0;
+    }
+    else
+    {
+         // TODO: Add DeInit Event support for TSEC if required
+        return 0;
+    }
+}
+#else
+unsigned int NV_API_CALL nv_soc_tsec_event_unregister(NvBool is_init_event)
+{
+    return (unsigned int)NV_ERR_NOT_SUPPORTED;
+}
+#endif // NV_IS_EXPORT_SYMBOL_PRESENT_tsec_comms_clear_init_cb
+
+void* NV_API_CALL nv_soc_tsec_alloc_mem_desc(NvU32 num_bytes, NvU32 *flcn_addr)
+{
+#if NV_IS_EXPORT_SYMBOL_PRESENT_tsec_comms_alloc_mem_from_gscco
+    extern void *tsec_comms_alloc_mem_from_gscco(u32 size_in_bytes, u32 *gscco_offset);
+    return tsec_comms_alloc_mem_from_gscco(num_bytes, flcn_addr);
+#else
+    return NULL;
+#endif // NV_IS_EXPORT_SYMBOL_PRESENT_tsec_comms_alloc_mem_from_gscco
+}
+
+void NV_API_CALL nv_soc_tsec_free_mem_desc(void *mem_desc)
+{
+#if NV_IS_EXPORT_SYMBOL_PRESENT_tsec_comms_free_gscco_mem
+    extern void tsec_comms_free_gscco_mem(void *page_va);
+    tsec_comms_free_gscco_mem(mem_desc);
+#endif // NV_IS_EXPORT_SYMBOL_PRESENT_tsec_comms_free_gscco_mem
 }
 
 NV_STATUS nv_get_valid_window_head_mask(nv_state_t *nv, NvU64 *window_head_mask)

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,6 +38,7 @@
 #define NV_PGSP_FALCON_ENGINE_RESET_STATUS_ASSERTED                                                      0x00000000     /* R-E-V */
 #define NV_PGSP_FALCON_ENGINE_RESET_STATUS_DEASSERTED                                                    0x00000002     /* R---V */
 #define NV_PGSP_MAILBOX(i)                                                                               (0x110804+(i)*4) /* RW-4A */
+#define NV_PGSP_MAILBOX__SIZE_1                                                                          4              /*       */
 #define NV_PGSP_EMEMC(i)                                                                                 (0x110ac0+(i)*8) /* RW-4A */
 #define NV_PGSP_EMEMC__SIZE_1                                                                            8              /*       */
 #define NV_PGSP_EMEMC_OFFS                                                                               7:2            /* RWIVF */

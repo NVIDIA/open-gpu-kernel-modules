@@ -25,26 +25,18 @@
 
 #include "nvidia-drm-conftest.h"
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #if defined(NV_DRM_DRMP_H_PRESENT)
 #include <drm/drmP.h>
 #endif
 
-#if defined(NV_DRM_DRM_FRAMEBUFFER_H_PRESENT)
 #include <drm/drm_framebuffer.h>
-#endif
 
-#include "nvidia-drm-gem-nvkms-memory.h"
 #include "nvkms-kapi.h"
 
 struct nv_drm_framebuffer {
     struct NvKmsKapiSurface *pSurface;
-
-#if !defined(NV_DRM_FRAMEBUFFER_OBJ_PRESENT)
-    struct drm_gem_object*
-        obj[NVKMS_MAX_PLANES_PER_SURFACE];
-#endif
 
     struct drm_framebuffer base;
 };
@@ -58,34 +50,11 @@ static inline struct nv_drm_framebuffer *to_nv_framebuffer(
     return container_of(fb, struct nv_drm_framebuffer, base);
 }
 
-static inline struct drm_gem_object *nv_fb_get_gem_obj(
-    struct drm_framebuffer *fb,
-    uint32_t plane)
-{
-#if defined(NV_DRM_FRAMEBUFFER_OBJ_PRESENT)
-    return fb->obj[plane];
-#else
-    return to_nv_framebuffer(fb)->obj[plane];
-#endif
-}
-
-static inline void nv_fb_set_gem_obj(
-    struct drm_framebuffer *fb,
-    uint32_t plane,
-    struct drm_gem_object *obj)
-{
-#if defined(NV_DRM_FRAMEBUFFER_OBJ_PRESENT)
-    fb->obj[plane] = obj;
-#else
-    to_nv_framebuffer(fb)->obj[plane] = obj;
-#endif
-}
-
-struct drm_framebuffer *nv_drm_internal_framebuffer_create(
+struct drm_framebuffer *nv_drm_framebuffer_create(
     struct drm_device *dev,
     struct drm_file *file,
-    struct drm_mode_fb_cmd2 *cmd);
+    const struct drm_mode_fb_cmd2 *cmd);
 
-#endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+#endif /* NV_DRM_AVAILABLE */
 
 #endif /* __NVIDIA_DRM_FB_H__ */

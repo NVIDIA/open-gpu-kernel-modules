@@ -164,7 +164,28 @@ NV_STATUS __nvoc_objCreate_NvjpgContext(NvjpgContext**, Dynamic*, NvU32, struct 
     __nvoc_objCreate_NvjpgContext((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+#ifdef __nvoc_kernel_nvjpg_ctx_h_disabled
+static inline NV_STATUS nvjpgctxConstructHal(struct NvjpgContext *pNvjpgContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("NvjpgContext was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_nvjpg_ctx_h_disabled
+#define nvjpgctxConstructHal(pNvjpgContext, pCallContext, pParams) nvjpgctxConstructHal_KERNEL(pNvjpgContext, pCallContext, pParams)
+#endif // __nvoc_kernel_nvjpg_ctx_h_disabled
+
+#ifdef __nvoc_kernel_nvjpg_ctx_h_disabled
+static inline void nvjpgctxDestructHal(struct NvjpgContext *pNvjpgContext) {
+    NV_ASSERT_FAILED_PRECOMP("NvjpgContext was disabled!");
+}
+#else // __nvoc_kernel_nvjpg_ctx_h_disabled
+#define nvjpgctxDestructHal(pNvjpgContext) nvjpgctxDestructHal_KERNEL(pNvjpgContext)
+#endif // __nvoc_kernel_nvjpg_ctx_h_disabled
+
+
+// Wrapper macros for halified functions
+#define nvjpgctxConstructHal_HAL(pNvjpgContext, pCallContext, pParams) nvjpgctxConstructHal(pNvjpgContext, pCallContext, pParams)
+#define nvjpgctxDestructHal_HAL(pNvjpgContext) nvjpgctxDestructHal(pNvjpgContext)
 #define nvjpgctxGetSwMethods_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesGetSwMethods__
 #define nvjpgctxGetSwMethods(pChannelDescendant, ppMethods, pNumMethods) nvjpgctxGetSwMethods_DISPATCH(pChannelDescendant, ppMethods, pNumMethods)
 #define nvjpgctxIsSwMethodStalling_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesIsSwMethodStalling__
@@ -362,29 +383,8 @@ static inline NV_STATUS nvjpgctxGetOrAllocNotifShare_DISPATCH(struct NvjpgContex
 NV_STATUS nvjpgctxConstructHal_KERNEL(struct NvjpgContext *pNvjpgContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 
 
-#ifdef __nvoc_kernel_nvjpg_ctx_h_disabled
-static inline NV_STATUS nvjpgctxConstructHal(struct NvjpgContext *pNvjpgContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("NvjpgContext was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_nvjpg_ctx_h_disabled
-#define nvjpgctxConstructHal(pNvjpgContext, pCallContext, pParams) nvjpgctxConstructHal_KERNEL(pNvjpgContext, pCallContext, pParams)
-#endif //__nvoc_kernel_nvjpg_ctx_h_disabled
-
-#define nvjpgctxConstructHal_HAL(pNvjpgContext, pCallContext, pParams) nvjpgctxConstructHal(pNvjpgContext, pCallContext, pParams)
-
 void nvjpgctxDestructHal_KERNEL(struct NvjpgContext *pNvjpgContext);
 
-
-#ifdef __nvoc_kernel_nvjpg_ctx_h_disabled
-static inline void nvjpgctxDestructHal(struct NvjpgContext *pNvjpgContext) {
-    NV_ASSERT_FAILED_PRECOMP("NvjpgContext was disabled!");
-}
-#else //__nvoc_kernel_nvjpg_ctx_h_disabled
-#define nvjpgctxDestructHal(pNvjpgContext) nvjpgctxDestructHal_KERNEL(pNvjpgContext)
-#endif //__nvoc_kernel_nvjpg_ctx_h_disabled
-
-#define nvjpgctxDestructHal_HAL(pNvjpgContext) nvjpgctxDestructHal(pNvjpgContext)
 
 static inline NV_STATUS __nvoc_nvjpgctxConstruct(struct NvjpgContext *arg_pNvjpgContext, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams) {
     return nvjpgctxConstructHal(arg_pNvjpgContext, arg_pCallContext, arg_pParams);

@@ -105,6 +105,14 @@ extern "C" {
 #endif
 #endif
 
+#if !defined(NV_ASSERT_FAILED_BACKTRACE_ENABLE)
+#if defined(NVRM) && NVOS_IS_UNIX && !defined(NVWATCH) && defined(DEBUG)
+#define NV_ASSERT_FAILED_BACKTRACE_ENABLE            1
+#else
+#define NV_ASSERT_FAILED_BACKTRACE_ENABLE            0
+#endif
+#endif
+
 #if !defined(COVERITY_ASSERT_FAIL)
 #if defined(__COVERITY__)
 void __coverity_panic__(void);
@@ -129,24 +137,32 @@ void __coverity_panic__(void);
  *          for both NVLOG and NV_PRINTF.
  *          The _FUNC macros are used for pre-compiled headers on most platforms.
  */
+
+#if NV_ASSERT_FAILED_USES_STRINGS
+#define NV_ASSERT_FAILED_FUNC_COMMA_PARAM(exprStr)   , exprStr, __FILE__, __LINE__
+#define NV_ASSERT_FAILED_FUNC_PARAM(exprStr)         exprStr, __FILE__, __LINE__
+#define NV_ASSERT_FAILED_FUNC_COMMA_TYPE             ,const char *pszExpr, const char *pszFileName, NvU32 lineNum
+#define NV_ASSERT_FAILED_FUNC_TYPE                   const char *pszExpr, const char *pszFileName, NvU32 lineNum
+#else
+#define NV_ASSERT_FAILED_FUNC_COMMA_PARAM(exprStr)   , __LINE__
+#define NV_ASSERT_FAILED_FUNC_PARAM(exprStr)         __LINE__
+#define NV_ASSERT_FAILED_FUNC_COMMA_TYPE             , NvU32 lineNum
+#define NV_ASSERT_FAILED_FUNC_TYPE                   NvU32 lineNum
+#endif
+
 #if defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVOS_IS_LIBOS)
 
 void nvAssertInit(void);
 void nvAssertDestroy(void);
 
-#if NV_JOURNAL_ASSERT_ENABLE
-void nvAssertFailed(void);
-void nvAssertOkFailed(NvU32 status);
-#else
-#define nvAssertFailed(...)
-#define nvAssertOkFailed(...)
-#endif
+void nvAssertFailed(NV_ASSERT_FAILED_FUNC_TYPE);
+void nvAssertOkFailed(NvU32 status NV_ASSERT_FAILED_FUNC_COMMA_TYPE);
 
 #define NV_ASSERT_FAILED(exprStr)                                              \
     do {                                                                       \
         NV_LOG_SPECIAL(LEVEL_ERROR, RM_GSP_LOG_SPECIAL_ASSERT_FAILED,          \
                        exprStr "\n");                                          \
-        nvAssertFailed();                                                      \
+        nvAssertFailed(0);                                                     \
         COVERITY_ASSERT_FAIL();                                                \
         PORT_BREAKPOINT();                                                     \
     } while(0)
@@ -155,7 +171,7 @@ void nvAssertOkFailed(NvU32 status);
     do {                                                                       \
         NV_LOG_SPECIAL(LEVEL_ERROR, RM_GSP_LOG_SPECIAL_ASSERT_OK_FAILED,       \
                        exprStr "\n", status);                                  \
-        nvAssertOkFailed(status);                                              \
+        nvAssertOkFailed(status, 0);                                           \
         COVERITY_ASSERT_FAIL();                                                \
         PORT_BREAKPOINT();                                                     \
     } while(0)
@@ -173,18 +189,6 @@ void nvAssertOkFailed(NvU32 status);
     } while (0)
 
 #else // defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVOS_IS_LIBOS)
-
-#if NV_ASSERT_FAILED_USES_STRINGS
-#define NV_ASSERT_FAILED_FUNC_COMMA_PARAM(exprStr)   , exprStr, __FILE__, __LINE__
-#define NV_ASSERT_FAILED_FUNC_PARAM(exprStr)         exprStr, __FILE__, __LINE__
-#define NV_ASSERT_FAILED_FUNC_COMMA_TYPE             ,const char *pszExpr, const char *pszFileName, NvU32 lineNum
-#define NV_ASSERT_FAILED_FUNC_TYPE                   const char *pszExpr, const char *pszFileName, NvU32 lineNum
-#else
-#define NV_ASSERT_FAILED_FUNC_COMMA_PARAM(exprStr)   , __LINE__
-#define NV_ASSERT_FAILED_FUNC_PARAM(exprStr)         __LINE__
-#define NV_ASSERT_FAILED_FUNC_COMMA_TYPE             , NvU32 lineNum
-#define NV_ASSERT_FAILED_FUNC_TYPE                   NvU32 lineNum
-#endif
 
 void nvAssertInit(void);
 void nvAssertDestroy(void);

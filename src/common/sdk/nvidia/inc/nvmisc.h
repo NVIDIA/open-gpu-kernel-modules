@@ -580,7 +580,6 @@ nvMaskPos32(const NvU32 mask, const NvU32 bitIdx)
     n64 = BIT_IDX_64(LOWESTBIT(n64));\
 }
 
-
 // Destructive operation on n32
 #define HIGHESTBITIDX_32(n32)   \
 {                               \
@@ -590,6 +589,17 @@ nvMaskPos32(const NvU32 mask, const NvU32 bitIdx)
         count++;                \
     }                           \
     n32 = count;                \
+}
+
+// Destructive operation on n64
+#define HIGHESTBITIDX_64(n64)   \
+{                               \
+    NvU64 count = 0;            \
+    while (n64 >>= 1)           \
+    {                           \
+        count++;                \
+    }                           \
+    n64 = count;                \
 }
 
 // Destructive operation on n32

@@ -80,6 +80,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJGPUBOOSTMGR =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_gpuboostmgrDestruct(OBJGPUBOOSTMGR*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_OBJGPUBOOSTMGR(OBJGPUBOOSTMGR *pThis) {
     __nvoc_gpuboostmgrDestruct(pThis);

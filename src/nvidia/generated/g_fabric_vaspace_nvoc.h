@@ -193,7 +193,147 @@ NV_STATUS __nvoc_objCreate_FABRIC_VASPACE(FABRIC_VASPACE**, Dynamic*, NvU32);
     __nvoc_objCreate_FABRIC_VASPACE((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+void fabricvaspaceDestruct_IMPL(struct FABRIC_VASPACE *pFabricVAS);
+#define __nvoc_fabricvaspaceDestruct(pFabricVAS) fabricvaspaceDestruct_IMPL(pFabricVAS)
+
+NV_STATUS fabricvaspaceAllocNonContiguous_IMPL(struct FABRIC_VASPACE *pFabricVAS, NvU64 size, NvU64 align, NvU64 rangeLo, NvU64 rangeHi, NvU64 pageSize, VAS_ALLOC_FLAGS flags, NvU64 **ppAddr, NvU32 *pNumAddr);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline NV_STATUS fabricvaspaceAllocNonContiguous(struct FABRIC_VASPACE *pFabricVAS, NvU64 size, NvU64 align, NvU64 rangeLo, NvU64 rangeHi, NvU64 pageSize, VAS_ALLOC_FLAGS flags, NvU64 **ppAddr, NvU32 *pNumAddr) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceAllocNonContiguous(pFabricVAS, size, align, rangeLo, rangeHi, pageSize, flags, ppAddr, pNumAddr) fabricvaspaceAllocNonContiguous_IMPL(pFabricVAS, size, align, rangeLo, rangeHi, pageSize, flags, ppAddr, pNumAddr)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
+void fabricvaspaceBatchFree_IMPL(struct FABRIC_VASPACE *pFabricVAS, NvU64 *pAddr, NvU32 numAddr, NvU32 stride);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline void fabricvaspaceBatchFree(struct FABRIC_VASPACE *pFabricVAS, NvU64 *pAddr, NvU32 numAddr, NvU32 stride) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceBatchFree(pFabricVAS, pAddr, numAddr, stride) fabricvaspaceBatchFree_IMPL(pFabricVAS, pAddr, numAddr, stride)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
+NV_STATUS fabricvaspaceGetFreeHeap_IMPL(struct FABRIC_VASPACE *pFabricVAS, NvU64 *pFreeSize);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline NV_STATUS fabricvaspaceGetFreeHeap(struct FABRIC_VASPACE *pFabricVAS, NvU64 *pFreeSize) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceGetFreeHeap(pFabricVAS, pFreeSize) fabricvaspaceGetFreeHeap_IMPL(pFabricVAS, pFreeSize)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
+NV_STATUS fabricvaspaceGetGpaMemdesc_IMPL(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pFabricMemdesc, struct OBJGPU *pMappingGpu, MEMORY_DESCRIPTOR **ppAdjustedMemdesc);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline NV_STATUS fabricvaspaceGetGpaMemdesc(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pFabricMemdesc, struct OBJGPU *pMappingGpu, MEMORY_DESCRIPTOR **ppAdjustedMemdesc) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceGetGpaMemdesc(pFabricVAS, pFabricMemdesc, pMappingGpu, ppAdjustedMemdesc) fabricvaspaceGetGpaMemdesc_IMPL(pFabricVAS, pFabricMemdesc, pMappingGpu, ppAdjustedMemdesc)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
+void fabricvaspacePutGpaMemdesc_IMPL(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pMemDesc);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline void fabricvaspacePutGpaMemdesc(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pMemDesc) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspacePutGpaMemdesc(pFabricVAS, pMemDesc) fabricvaspacePutGpaMemdesc_IMPL(pFabricVAS, pMemDesc)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
+NV_STATUS fabricvaspaceVaToGpaMapInsert_IMPL(struct FABRIC_VASPACE *pFabricVAS, NvU64 vAddr, MEMORY_DESCRIPTOR *pVidMemDesc, NvU64 offset);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline NV_STATUS fabricvaspaceVaToGpaMapInsert(struct FABRIC_VASPACE *pFabricVAS, NvU64 vAddr, MEMORY_DESCRIPTOR *pVidMemDesc, NvU64 offset) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceVaToGpaMapInsert(pFabricVAS, vAddr, pVidMemDesc, offset) fabricvaspaceVaToGpaMapInsert_IMPL(pFabricVAS, vAddr, pVidMemDesc, offset)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
+void fabricvaspaceVaToGpaMapRemove_IMPL(struct FABRIC_VASPACE *pFabricVAS, NvU64 vAddr);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline void fabricvaspaceVaToGpaMapRemove(struct FABRIC_VASPACE *pFabricVAS, NvU64 vAddr) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceVaToGpaMapRemove(pFabricVAS, vAddr) fabricvaspaceVaToGpaMapRemove_IMPL(pFabricVAS, vAddr)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
+NV_STATUS fabricvaspaceAllocMulticast_IMPL(struct FABRIC_VASPACE *pFabricVAS, NvU64 pageSize, NvU64 alignment, VAS_ALLOC_FLAGS flags, NvU64 base, NvU64 size);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline NV_STATUS fabricvaspaceAllocMulticast(struct FABRIC_VASPACE *pFabricVAS, NvU64 pageSize, NvU64 alignment, VAS_ALLOC_FLAGS flags, NvU64 base, NvU64 size) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceAllocMulticast(pFabricVAS, pageSize, alignment, flags, base, size) fabricvaspaceAllocMulticast_IMPL(pFabricVAS, pageSize, alignment, flags, base, size)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
+NV_STATUS fabricvaspaceMapPhysMemdesc_IMPL(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pFabricMemDesc, NvU64 fabricOffset, MEMORY_DESCRIPTOR *pPhysMemDesc, NvU64 physOffset, NvU64 physMapLength, NvU32 flags);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline NV_STATUS fabricvaspaceMapPhysMemdesc(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pFabricMemDesc, NvU64 fabricOffset, MEMORY_DESCRIPTOR *pPhysMemDesc, NvU64 physOffset, NvU64 physMapLength, NvU32 flags) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceMapPhysMemdesc(pFabricVAS, pFabricMemDesc, fabricOffset, pPhysMemDesc, physOffset, physMapLength, flags) fabricvaspaceMapPhysMemdesc_IMPL(pFabricVAS, pFabricMemDesc, fabricOffset, pPhysMemDesc, physOffset, physMapLength, flags)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
+void fabricvaspaceUnmapPhysMemdesc_IMPL(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pFabricMemDesc, NvU64 fabricOffset, MEMORY_DESCRIPTOR *pPhysMemDesc, NvU64 physMapLength);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline void fabricvaspaceUnmapPhysMemdesc(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pFabricMemDesc, NvU64 fabricOffset, MEMORY_DESCRIPTOR *pPhysMemDesc, NvU64 physMapLength) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceUnmapPhysMemdesc(pFabricVAS, pFabricMemDesc, fabricOffset, pPhysMemDesc, physMapLength) fabricvaspaceUnmapPhysMemdesc_IMPL(pFabricVAS, pFabricMemDesc, fabricOffset, pPhysMemDesc, physMapLength)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
+NV_STATUS fabricvaspaceInitUCRange_IMPL(struct FABRIC_VASPACE *pFabricVAS, struct OBJGPU *pGpu, NvU64 ucFabricBase, NvU64 ucFabricSize);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline NV_STATUS fabricvaspaceInitUCRange(struct FABRIC_VASPACE *pFabricVAS, struct OBJGPU *pGpu, NvU64 ucFabricBase, NvU64 ucFabricSize) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceInitUCRange(pFabricVAS, pGpu, ucFabricBase, ucFabricSize) fabricvaspaceInitUCRange_IMPL(pFabricVAS, pGpu, ucFabricBase, ucFabricSize)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
+void fabricvaspaceClearUCRange_IMPL(struct FABRIC_VASPACE *pFabricVAS);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline void fabricvaspaceClearUCRange(struct FABRIC_VASPACE *pFabricVAS) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceClearUCRange(pFabricVAS) fabricvaspaceClearUCRange_IMPL(pFabricVAS)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
+NV_STATUS fabricvaspaceGetPageLevelInfo_IMPL(struct FABRIC_VASPACE *pFabricVAS, struct OBJGPU *pGpu, NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pParams);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline NV_STATUS fabricvaspaceGetPageLevelInfo(struct FABRIC_VASPACE *pFabricVAS, struct OBJGPU *pGpu, NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceGetPageLevelInfo(pFabricVAS, pGpu, pParams) fabricvaspaceGetPageLevelInfo_IMPL(pFabricVAS, pGpu, pParams)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
+NvBool fabricvaspaceIsInUse_IMPL(struct FABRIC_VASPACE *pFabricVAS);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline NvBool fabricvaspaceIsInUse(struct FABRIC_VASPACE *pFabricVAS) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+    return NV_FALSE;
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceIsInUse(pFabricVAS) fabricvaspaceIsInUse_IMPL(pFabricVAS)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
+
+// Wrapper macros for halified functions
 #define fabricvaspaceConstruct__FNPTR(pFabricVAS) pFabricVAS->__nvoc_metadata_ptr->vtable.__fabricvaspaceConstruct___
 #define fabricvaspaceConstruct_(pFabricVAS, classId, vaspaceId, vaStart, vaLimit, vaStartInternal, vaLimitInternal, flags) fabricvaspaceConstruct__DISPATCH(pFabricVAS, classId, vaspaceId, vaStart, vaLimit, vaStartInternal, vaLimitInternal, flags)
 #define fabricvaspaceAlloc_FNPTR(pFabricVAS) pFabricVAS->__nvoc_metadata_ptr->vtable.__fabricvaspaceAlloc__
@@ -397,158 +537,6 @@ static inline NvU64 fabricvaspaceGetUCFlaStart(struct FABRIC_VASPACE *pFabricVAS
 static inline NvU64 fabricvaspaceGetUCFlaLimit(struct FABRIC_VASPACE *pFabricVAS) {
     return pFabricVAS->ucFabricLimit;
 }
-
-void fabricvaspaceDestruct_IMPL(struct FABRIC_VASPACE *pFabricVAS);
-
-#define __nvoc_fabricvaspaceDestruct(pFabricVAS) fabricvaspaceDestruct_IMPL(pFabricVAS)
-NV_STATUS fabricvaspaceAllocNonContiguous_IMPL(struct FABRIC_VASPACE *pFabricVAS, NvU64 size, NvU64 align, NvU64 rangeLo, NvU64 rangeHi, NvU64 pageSize, VAS_ALLOC_FLAGS flags, NvU64 **ppAddr, NvU32 *pNumAddr);
-
-#ifdef __nvoc_fabric_vaspace_h_disabled
-static inline NV_STATUS fabricvaspaceAllocNonContiguous(struct FABRIC_VASPACE *pFabricVAS, NvU64 size, NvU64 align, NvU64 rangeLo, NvU64 rangeHi, NvU64 pageSize, VAS_ALLOC_FLAGS flags, NvU64 **ppAddr, NvU32 *pNumAddr) {
-    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_fabric_vaspace_h_disabled
-#define fabricvaspaceAllocNonContiguous(pFabricVAS, size, align, rangeLo, rangeHi, pageSize, flags, ppAddr, pNumAddr) fabricvaspaceAllocNonContiguous_IMPL(pFabricVAS, size, align, rangeLo, rangeHi, pageSize, flags, ppAddr, pNumAddr)
-#endif //__nvoc_fabric_vaspace_h_disabled
-
-void fabricvaspaceBatchFree_IMPL(struct FABRIC_VASPACE *pFabricVAS, NvU64 *pAddr, NvU32 numAddr, NvU32 stride);
-
-#ifdef __nvoc_fabric_vaspace_h_disabled
-static inline void fabricvaspaceBatchFree(struct FABRIC_VASPACE *pFabricVAS, NvU64 *pAddr, NvU32 numAddr, NvU32 stride) {
-    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
-}
-#else //__nvoc_fabric_vaspace_h_disabled
-#define fabricvaspaceBatchFree(pFabricVAS, pAddr, numAddr, stride) fabricvaspaceBatchFree_IMPL(pFabricVAS, pAddr, numAddr, stride)
-#endif //__nvoc_fabric_vaspace_h_disabled
-
-NV_STATUS fabricvaspaceGetFreeHeap_IMPL(struct FABRIC_VASPACE *pFabricVAS, NvU64 *pFreeSize);
-
-#ifdef __nvoc_fabric_vaspace_h_disabled
-static inline NV_STATUS fabricvaspaceGetFreeHeap(struct FABRIC_VASPACE *pFabricVAS, NvU64 *pFreeSize) {
-    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_fabric_vaspace_h_disabled
-#define fabricvaspaceGetFreeHeap(pFabricVAS, pFreeSize) fabricvaspaceGetFreeHeap_IMPL(pFabricVAS, pFreeSize)
-#endif //__nvoc_fabric_vaspace_h_disabled
-
-NV_STATUS fabricvaspaceGetGpaMemdesc_IMPL(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pFabricMemdesc, struct OBJGPU *pMappingGpu, MEMORY_DESCRIPTOR **ppAdjustedMemdesc);
-
-#ifdef __nvoc_fabric_vaspace_h_disabled
-static inline NV_STATUS fabricvaspaceGetGpaMemdesc(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pFabricMemdesc, struct OBJGPU *pMappingGpu, MEMORY_DESCRIPTOR **ppAdjustedMemdesc) {
-    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_fabric_vaspace_h_disabled
-#define fabricvaspaceGetGpaMemdesc(pFabricVAS, pFabricMemdesc, pMappingGpu, ppAdjustedMemdesc) fabricvaspaceGetGpaMemdesc_IMPL(pFabricVAS, pFabricMemdesc, pMappingGpu, ppAdjustedMemdesc)
-#endif //__nvoc_fabric_vaspace_h_disabled
-
-void fabricvaspacePutGpaMemdesc_IMPL(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pMemDesc);
-
-#ifdef __nvoc_fabric_vaspace_h_disabled
-static inline void fabricvaspacePutGpaMemdesc(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pMemDesc) {
-    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
-}
-#else //__nvoc_fabric_vaspace_h_disabled
-#define fabricvaspacePutGpaMemdesc(pFabricVAS, pMemDesc) fabricvaspacePutGpaMemdesc_IMPL(pFabricVAS, pMemDesc)
-#endif //__nvoc_fabric_vaspace_h_disabled
-
-NV_STATUS fabricvaspaceVaToGpaMapInsert_IMPL(struct FABRIC_VASPACE *pFabricVAS, NvU64 vAddr, MEMORY_DESCRIPTOR *pVidMemDesc, NvU64 offset);
-
-#ifdef __nvoc_fabric_vaspace_h_disabled
-static inline NV_STATUS fabricvaspaceVaToGpaMapInsert(struct FABRIC_VASPACE *pFabricVAS, NvU64 vAddr, MEMORY_DESCRIPTOR *pVidMemDesc, NvU64 offset) {
-    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_fabric_vaspace_h_disabled
-#define fabricvaspaceVaToGpaMapInsert(pFabricVAS, vAddr, pVidMemDesc, offset) fabricvaspaceVaToGpaMapInsert_IMPL(pFabricVAS, vAddr, pVidMemDesc, offset)
-#endif //__nvoc_fabric_vaspace_h_disabled
-
-void fabricvaspaceVaToGpaMapRemove_IMPL(struct FABRIC_VASPACE *pFabricVAS, NvU64 vAddr);
-
-#ifdef __nvoc_fabric_vaspace_h_disabled
-static inline void fabricvaspaceVaToGpaMapRemove(struct FABRIC_VASPACE *pFabricVAS, NvU64 vAddr) {
-    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
-}
-#else //__nvoc_fabric_vaspace_h_disabled
-#define fabricvaspaceVaToGpaMapRemove(pFabricVAS, vAddr) fabricvaspaceVaToGpaMapRemove_IMPL(pFabricVAS, vAddr)
-#endif //__nvoc_fabric_vaspace_h_disabled
-
-NV_STATUS fabricvaspaceAllocMulticast_IMPL(struct FABRIC_VASPACE *pFabricVAS, NvU64 pageSize, NvU64 alignment, VAS_ALLOC_FLAGS flags, NvU64 base, NvU64 size);
-
-#ifdef __nvoc_fabric_vaspace_h_disabled
-static inline NV_STATUS fabricvaspaceAllocMulticast(struct FABRIC_VASPACE *pFabricVAS, NvU64 pageSize, NvU64 alignment, VAS_ALLOC_FLAGS flags, NvU64 base, NvU64 size) {
-    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_fabric_vaspace_h_disabled
-#define fabricvaspaceAllocMulticast(pFabricVAS, pageSize, alignment, flags, base, size) fabricvaspaceAllocMulticast_IMPL(pFabricVAS, pageSize, alignment, flags, base, size)
-#endif //__nvoc_fabric_vaspace_h_disabled
-
-NV_STATUS fabricvaspaceMapPhysMemdesc_IMPL(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pFabricMemDesc, NvU64 fabricOffset, MEMORY_DESCRIPTOR *pPhysMemDesc, NvU64 physOffset, NvU64 physMapLength, NvU32 flags);
-
-#ifdef __nvoc_fabric_vaspace_h_disabled
-static inline NV_STATUS fabricvaspaceMapPhysMemdesc(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pFabricMemDesc, NvU64 fabricOffset, MEMORY_DESCRIPTOR *pPhysMemDesc, NvU64 physOffset, NvU64 physMapLength, NvU32 flags) {
-    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_fabric_vaspace_h_disabled
-#define fabricvaspaceMapPhysMemdesc(pFabricVAS, pFabricMemDesc, fabricOffset, pPhysMemDesc, physOffset, physMapLength, flags) fabricvaspaceMapPhysMemdesc_IMPL(pFabricVAS, pFabricMemDesc, fabricOffset, pPhysMemDesc, physOffset, physMapLength, flags)
-#endif //__nvoc_fabric_vaspace_h_disabled
-
-void fabricvaspaceUnmapPhysMemdesc_IMPL(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pFabricMemDesc, NvU64 fabricOffset, MEMORY_DESCRIPTOR *pPhysMemDesc, NvU64 physMapLength);
-
-#ifdef __nvoc_fabric_vaspace_h_disabled
-static inline void fabricvaspaceUnmapPhysMemdesc(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pFabricMemDesc, NvU64 fabricOffset, MEMORY_DESCRIPTOR *pPhysMemDesc, NvU64 physMapLength) {
-    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
-}
-#else //__nvoc_fabric_vaspace_h_disabled
-#define fabricvaspaceUnmapPhysMemdesc(pFabricVAS, pFabricMemDesc, fabricOffset, pPhysMemDesc, physMapLength) fabricvaspaceUnmapPhysMemdesc_IMPL(pFabricVAS, pFabricMemDesc, fabricOffset, pPhysMemDesc, physMapLength)
-#endif //__nvoc_fabric_vaspace_h_disabled
-
-NV_STATUS fabricvaspaceInitUCRange_IMPL(struct FABRIC_VASPACE *pFabricVAS, struct OBJGPU *pGpu, NvU64 ucFabricBase, NvU64 ucFabricSize);
-
-#ifdef __nvoc_fabric_vaspace_h_disabled
-static inline NV_STATUS fabricvaspaceInitUCRange(struct FABRIC_VASPACE *pFabricVAS, struct OBJGPU *pGpu, NvU64 ucFabricBase, NvU64 ucFabricSize) {
-    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_fabric_vaspace_h_disabled
-#define fabricvaspaceInitUCRange(pFabricVAS, pGpu, ucFabricBase, ucFabricSize) fabricvaspaceInitUCRange_IMPL(pFabricVAS, pGpu, ucFabricBase, ucFabricSize)
-#endif //__nvoc_fabric_vaspace_h_disabled
-
-void fabricvaspaceClearUCRange_IMPL(struct FABRIC_VASPACE *pFabricVAS);
-
-#ifdef __nvoc_fabric_vaspace_h_disabled
-static inline void fabricvaspaceClearUCRange(struct FABRIC_VASPACE *pFabricVAS) {
-    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
-}
-#else //__nvoc_fabric_vaspace_h_disabled
-#define fabricvaspaceClearUCRange(pFabricVAS) fabricvaspaceClearUCRange_IMPL(pFabricVAS)
-#endif //__nvoc_fabric_vaspace_h_disabled
-
-NV_STATUS fabricvaspaceGetPageLevelInfo_IMPL(struct FABRIC_VASPACE *pFabricVAS, struct OBJGPU *pGpu, NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pParams);
-
-#ifdef __nvoc_fabric_vaspace_h_disabled
-static inline NV_STATUS fabricvaspaceGetPageLevelInfo(struct FABRIC_VASPACE *pFabricVAS, struct OBJGPU *pGpu, NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_fabric_vaspace_h_disabled
-#define fabricvaspaceGetPageLevelInfo(pFabricVAS, pGpu, pParams) fabricvaspaceGetPageLevelInfo_IMPL(pFabricVAS, pGpu, pParams)
-#endif //__nvoc_fabric_vaspace_h_disabled
-
-NvBool fabricvaspaceIsInUse_IMPL(struct FABRIC_VASPACE *pFabricVAS);
-
-#ifdef __nvoc_fabric_vaspace_h_disabled
-static inline NvBool fabricvaspaceIsInUse(struct FABRIC_VASPACE *pFabricVAS) {
-    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_fabric_vaspace_h_disabled
-#define fabricvaspaceIsInUse(pFabricVAS) fabricvaspaceIsInUse_IMPL(pFabricVAS)
-#endif //__nvoc_fabric_vaspace_h_disabled
 
 #undef PRIVATE_FIELD
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -258,6 +258,16 @@ NvlStatus nvlink_core_powerdown_intranode_conns_from_active_to_L2(nvlink_intrano
 /**
  * [PSEUDO-CLEAN SHUTDOWN]
  *
+ * Shutdown the given array of links from ACTIVE to OFF state
+ */
+NvlStatus
+nvlink_core_unilateral_powerdown_links_from_active_to_off(nvlink_link **ppLinks,
+                                                          NvU32         linkCount,
+                                                          NvU32         flags);
+
+/**
+ * [PSEUDO-CLEAN SHUTDOWN]
+ *
  * Shutdown the given array of intranode connections from ACTIVE to OFF state
  */
 NvlStatus nvlink_core_powerdown_intranode_conns_from_active_to_off(nvlink_intranode_conn **conns,
@@ -349,6 +359,17 @@ void nvlink_core_copy_internode_conn_info(nvlink_remote_endpoint_info *remote_en
 /************************************************************************************************/
 /******************************* NVLink link management functions *******************************/
 /************************************************************************************************/
+
+/**
+ * For the given link, are link state transitions symmetric, or do state
+ * transitions need to be initiated on both ends separately?
+ */
+NvBool nvlink_core_link_states_symmetric(nvlink_link *link);
+
+/**
+ * For the given link, does this device support the given link state?
+ */
+NvBool nvlink_core_link_state_supported(nvlink_link *link, NvU64 linkState);
 
 /**
  * For the given link, check whether the link state is at the requested state

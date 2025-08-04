@@ -33,6 +33,9 @@
 #include "os/os.h"
 #include "gpu/eng_desc.h"
 #include "nverror.h"
+#include "gpu/hfrp/kernel_hfrp.h"
+#include "kernel/gpu/hfrp/kern_hfrp_common.h"
+#include "kernel/gpu/hfrp/kern_hfrp_commands_responses.h"
 
 #include "published/blackwell/gb20b/dev_boot.h"
 #include "published/blackwell/gb20b/dev_xtl_ep_pcfg_gpu.h"
@@ -75,11 +78,12 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB20B[] =
     GPU_CHILD_PRESENT(SwIntr, 1),
     GPU_CHILD_PRESENT(KernelPerf, 1),
     GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(KernelSec2, 1),
     GPU_CHILD_PRESENT(Spdm, 1),
     GPU_CHILD_PRESENT(ConfidentialCompute, 1),
-    GPU_CHILD_PRESENT(KernelFsp, 1),
     GPU_CHILD_PRESENT(KernelGsp, 1),
     GPU_CHILD_PRESENT(KernelGsplite, 1),
+    GPU_CHILD_PRESENT(KernelHFRP, 1),
 };
 
 const GPUCHILDPRESENT *
@@ -177,3 +181,86 @@ gpuHandleSecFault_GB20B
                             SEC_FAULT_ERROR);
 }
 
+/*!
+ * @brief Power on GPU
+ *
+ * This function implements HFRP command to power on the GPU.
+ *
+ * @param[in] pGpu      GPU object pointer
+ *
+ * @return  NV_OK
+ *     If GPU showed up on the bus.
+ *
+ * @return   Bubbles up errors from @ref osGC6PowerControl on failure.
+ */
+NV_STATUS
+gpuPowerOn_GB20B(OBJGPU *pGpu)
+{
+
+    NV_STATUS   status       = NV_OK;
+    NvU32       responseSize = 0;
+    KernelHFRP *pKernelHfrp  = GPU_GET_KERNEL_HFRP(pGpu);
+
+    CMD_SOC_SET_DEVICE_POWER_STATE_PARAMS powerState;
+    powerState.deviceId   = NV_CMD_SOC_SET_DEVICE_POWER_STATE_PARAM_DEVICE_ID_IGPU;
+    powerState.powerState = NV_CMD_SOC_SET_DEVICE_POWER_STATE_PARAM_POWER_STATE_D0;
+
+    NV_ASSERT_OR_RETURN(pKernelHfrp != NULL, NV_ERR_INVALID_POINTER);
+
+    if (!pKernelHfrp->getProperty(pKernelHfrp, PDB_PROP_KHFRP_IS_ENABLED))
+    {
+        return NV_OK;
+    }
+
+    status = khfrpPostCommandBlocking(pKernelHfrp, HFRP_CMD_SOC_SET_DEVICE_POWER_STATE, &powerState, sizeof(powerState),
+                 NULL, NULL, &responseSize, &status);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "ERROR: HFRP_CMD_fialed to turn off SOC power\n");
+        return status;
+    }
+    return status;
+}
+/*!
+ * @brief Power off GPU
+ *
+ * This function implements HFRP command to power off the GPU.
+ *
+ * @param[in] pGpu      GPU object pointer
+ *
+ * @return  NV_OK
+ *     If GPU showed up on the bus.
+ *
+ * @return   Bubbles up errors from HFRP command failure.
+ */
+NV_STATUS
+gpuPowerOff_GB20B(OBJGPU *pGpu)
+{
+    NV_STATUS   status       = NV_OK;
+    NvU32       responseSize = 0;
+    KernelHFRP *pKernelHfrp  = GPU_GET_KERNEL_HFRP(pGpu);
+
+    CMD_SOC_SET_DEVICE_POWER_STATE_PARAMS powerState;
+    powerState.deviceId = NV_CMD_SOC_SET_DEVICE_POWER_STATE_PARAM_DEVICE_ID_IGPU;
+    powerState.powerState = NV_CMD_SOC_SET_DEVICE_POWER_STATE_PARAM_POWER_STATE_D3;
+
+    NV_ASSERT_OR_RETURN(pKernelHfrp != NULL, NV_ERR_INVALID_POINTER);
+
+    if (!pKernelHfrp->getProperty(pKernelHfrp, PDB_PROP_KHFRP_IS_ENABLED))
+    {
+        return NV_OK;
+    }
+
+    status = khfrpPostCommandBlocking(pKernelHfrp, HFRP_CMD_SOC_SET_DEVICE_POWER_STATE, &powerState, sizeof(powerState),
+                 NULL, NULL, &responseSize, &status);
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "ERROR: HFRP_CMD_fialed to turn off SOC power\n");
+        return status;
+    }
+
+    return status;
+}

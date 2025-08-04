@@ -160,7 +160,21 @@ NV_STATUS __nvoc_objCreate_PerfBuffer(PerfBuffer**, Dynamic*, NvU32, struct CALL
     __nvoc_objCreate_PerfBuffer((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+#define __nvoc_perfbufferDestruct(pResource) perfbufferDestruct_b3696a(pResource)
+
+NV_STATUS perfbufferPrivilegeCheck_IMPL(struct PerfBuffer *pPerfBuffer);
+#ifdef __nvoc_kern_perfbuffer_h_disabled
+static inline NV_STATUS perfbufferPrivilegeCheck(struct PerfBuffer *pPerfBuffer) {
+    NV_ASSERT_FAILED_PRECOMP("PerfBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kern_perfbuffer_h_disabled
+#define perfbufferPrivilegeCheck(pPerfBuffer) perfbufferPrivilegeCheck_IMPL(pPerfBuffer)
+#endif // __nvoc_kern_perfbuffer_h_disabled
+
+
+// Wrapper macros for halified functions
 #define perfbufferConstructHal_FNPTR(pResource) pResource->__perfbufferConstructHal__
 #define perfbufferConstructHal(pResource, pCallContext, pParams) perfbufferConstructHal_DISPATCH(pResource, pCallContext, pParams)
 #define perfbufferConstructHal_HAL(pResource, pCallContext, pParams) perfbufferConstructHal_DISPATCH(pResource, pCallContext, pParams)
@@ -325,7 +339,6 @@ static inline void perfbufferDestruct_b3696a(struct PerfBuffer *pResource) {
 }
 
 
-#define __nvoc_perfbufferDestruct(pResource) perfbufferDestruct_b3696a(pResource)
 NV_STATUS perfbufferConstructHal_KERNEL(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 
 static inline NV_STATUS perfbufferConstructHal_46f6a7(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
@@ -335,17 +348,6 @@ static inline NV_STATUS perfbufferConstructHal_46f6a7(struct PerfBuffer *pResour
 static inline NV_STATUS __nvoc_perfbufferConstruct(struct PerfBuffer *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams) {
     return perfbufferConstructHal(arg_pResource, arg_pCallContext, arg_pParams);
 }
-
-NV_STATUS perfbufferPrivilegeCheck_IMPL(struct PerfBuffer *pPerfBuffer);
-
-#ifdef __nvoc_kern_perfbuffer_h_disabled
-static inline NV_STATUS perfbufferPrivilegeCheck(struct PerfBuffer *pPerfBuffer) {
-    NV_ASSERT_FAILED_PRECOMP("PerfBuffer was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_perfbuffer_h_disabled
-#define perfbufferPrivilegeCheck(pPerfBuffer) perfbufferPrivilegeCheck_IMPL(pPerfBuffer)
-#endif //__nvoc_kern_perfbuffer_h_disabled
 
 #undef PRIVATE_FIELD
 

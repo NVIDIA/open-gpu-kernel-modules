@@ -498,6 +498,7 @@ NV_STATUS RmThirdPartyP2PBAR1GetPages
     NvU32     **ppWreqMbH,
     NvU32     **ppRreqMbH,
     NvU32      *pEntries,
+    NvBool     *pbMemCpuCacheable,
     OBJGPU     *pGpu,
     Subdevice  *pSubDevice,
     PCLI_THIRD_PARTY_P2P_MAPPING_INFO pMappingInfo,
@@ -521,6 +522,7 @@ NV_STATUS RmThirdPartyP2PBAR1GetPages
     NV_ASSERT_OR_RETURN((pThirdPartyP2PInfo != NULL), NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN((ppPhysicalAddresses != NULL), NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN((pEntries != NULL), NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN((pbMemCpuCacheable != NULL), NV_ERR_INVALID_ARGUMENT);
 
     pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
 
@@ -624,6 +626,9 @@ NV_STATUS RmThirdPartyP2PBAR1GetPages
         portMemSet(*ppRreqMbH, 0, sizeof((*ppRreqMbH)[0]) * (*pEntries));
     }
 
+    // BAR1 mappings are not CPU-cacheable
+    *pbMemCpuCacheable = NV_FALSE;
+
     return NV_OK;
 
 out:
@@ -646,7 +651,8 @@ NV_STATUS RmThirdPartyP2PNVLinkGetPages
     NvU32            **ppWreqMbH,
     NvU32            **ppRreqMbH,
     NvU64            **ppPhysicalAddresses,
-    NvU32             *pEntries
+    NvU32             *pEntries,
+    NvBool            *pbMemCpuCacheable
 )
 {
     NvU64 lastAddress;
@@ -686,6 +692,9 @@ NV_STATUS RmThirdPartyP2PNVLinkGetPages
 
     *pEntries = entries;
 
+    // Mappings over nvlink/c2c are CPU-cacheable
+    *pbMemCpuCacheable = NV_TRUE;
+
     return NV_OK;
 }
 
@@ -704,6 +713,7 @@ NV_STATUS RmP2PGetPagesUsingVidmemInfo
     NvU32                           **ppWreqMbH,
     NvU32                           **ppRreqMbH,
     NvU32                            *pEntries,
+    NvBool                           *pbMemCpuCacheable,
     void                             *pPlatformData,
     void                            (*pFreeCallback)(void *pData),
     void                             *pData,
@@ -747,13 +757,14 @@ NV_STATUS RmP2PGetPagesUsingVidmemInfo
         status = RmThirdPartyP2PNVLinkGetPages(pGpu, address, length,
                                                offset, pMemDesc, ppWreqMbH,
                                                ppRreqMbH, ppPhysicalAddresses,
-                                               pEntries);
+                                               pEntries, pbMemCpuCacheable);
     }
     else
     {
         status = RmThirdPartyP2PBAR1GetPages(address, length, offset, bForcePcie,
                                              pClient, pVidmemInfo, ppPhysicalAddresses,
-                                             ppWreqMbH, ppRreqMbH, pEntries,
+                                             ppWreqMbH, ppRreqMbH,
+                                             pEntries, pbMemCpuCacheable,
                                              pGpu, pSubDevice, pMappingInfo,
                                              pThirdPartyP2PInfo);
     }
@@ -777,6 +788,7 @@ NV_STATUS RmP2PValidateAddressRangeOrGetPages
     NvU32        **ppWreqMbH,
     NvU32        **ppRreqMbH,
     NvU32         *pEntries,
+    NvBool        *pbMemCpuCacheable,
     void          *pPlatformData,
     void         (*pFreeCallback)(void *pData),
     void          *pData,
@@ -806,9 +818,9 @@ NV_STATUS RmP2PValidateAddressRangeOrGetPages
     status = RmP2PGetPagesUsingVidmemInfo(address, length, offset, NV_FALSE,
                                           pThirdPartyP2P, ppPhysicalAddresses,
                                           ppWreqMbH, ppRreqMbH,
-                                          pEntries, pPlatformData, pFreeCallback,
-                                          pData, pGpu, pSubDevice, pVASpaceInfo,
-                                          pThirdPartyP2PInfo, pVidmemInfo);
+                                          pEntries, pbMemCpuCacheable,pPlatformData,
+                                          pFreeCallback, pData, pGpu, pSubDevice,
+                                          pVASpaceInfo, pThirdPartyP2PInfo, pVidmemInfo);
     if (status != NV_OK)
     {
         return status;
@@ -866,7 +878,7 @@ NV_STATUS RmP2PGetVASpaceInfoWithoutToken
         // updating mapping info in range validation.
         //
         status = RmP2PValidateAddressRangeOrGetPages(address, length, pThirdPartyP2P,
-                                                     NULL, NULL, NULL, NULL,
+                                                     NULL, NULL, NULL, NULL, NULL,
                                                      pPlatformData, pFreeCallback,
                                                      pData, pGpu, pSubdevice,
                                                      pVASpaceInfo, pThirdPartyP2P);
@@ -1027,6 +1039,7 @@ static NV_STATUS _rmP2PGetPages(
     NvU32      *pWreqMbH,
     NvU32      *pRreqMbH,
     NvU32      *pEntries,
+    NvBool     *pbMemCpuCacheable,
     OBJGPU    **ppGpu,
     void       *pPlatformData,
     void      (*pFreeCallback)(void *pData),
@@ -1096,8 +1109,9 @@ static NV_STATUS _rmP2PGetPages(
 
     status = RmP2PValidateAddressRangeOrGetPages(address, length, pThirdPartyP2P,
                                                  &pPhysicalAddresses, &pWreqMbH,
-                                                 &pRreqMbH, pEntries, pPlatformData,
-                                                 pFreeCallback, pData, pGpu, pSubdevice,
+                                                 &pRreqMbH, pEntries, pbMemCpuCacheable,
+                                                 pPlatformData, pFreeCallback,
+                                                 pData, pGpu, pSubdevice,
                                                  pVASpaceInfo, pThirdPartyP2P);
     if (status != NV_OK)
     {
@@ -1323,6 +1337,7 @@ NV_STATUS RmP2PGetPagesPersistent(
     void      **p2pObject,
     NvU64      *pPhysicalAddresses,
     NvU32      *pEntries,
+    NvBool     *pbMemCpuCacheable,
     NvBool      bForcePcie,
     void       *pPlatformData,
     void       *pGpuInfo,
@@ -1445,8 +1460,9 @@ NV_STATUS RmP2PGetPagesPersistent(
     status = RmP2PGetPagesUsingVidmemInfo(address, length, offset, bForcePcie,
                                           pThirdPartyP2PInternal,
                                           &pPhysicalAddresses, NULL, NULL,
-                                          pEntries, pPlatformData, NULL, NULL,
-                                          pGpu, pThirdPartyP2PInternal->pSubdevice,
+                                          pEntries, pbMemCpuCacheable, pPlatformData,
+                                          NULL, NULL, pGpu,
+                                          pThirdPartyP2PInternal->pSubdevice,
                                           NULL, pThirdPartyP2PInternal, pVidmemInfo);
     if (status != NV_OK)
     {
@@ -1494,6 +1510,8 @@ NV_STATUS RmP2PGetPages(
     void       *pData
 )
 {
+    NvBool bMemCpuCacheable;
+
     if (pFreeCallback == NULL || pData == NULL)
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -1504,7 +1522,7 @@ NV_STATUS RmP2PGetPages(
 
     return _rmP2PGetPages(p2pToken, vaSpaceToken, address, length,
                           pPhysicalAddresses, pWreqMbH, pRreqMbH,
-                          pEntries, ppGpu, pPlatformData,
+                          pEntries, &bMemCpuCacheable, ppGpu, pPlatformData,
                           pFreeCallback, pData);
 }
 
@@ -1517,13 +1535,14 @@ NV_STATUS RmP2PGetPagesWithoutCallbackRegistration(
     NvU32      *pWreqMbH,
     NvU32      *pRreqMbH,
     NvU32      *pEntries,
+    NvBool     *pbMemCpuCacheable,
     OBJGPU    **ppGpu,
     void       *pPlatformData
 )
 {
     return _rmP2PGetPages(p2pToken, vaSpaceToken, address, length,
                           pPhysicalAddresses, pWreqMbH, pRreqMbH,
-                          pEntries, ppGpu, pPlatformData,
+                          pEntries, pbMemCpuCacheable, ppGpu, pPlatformData,
                           NULL, NULL);
 }
 

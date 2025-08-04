@@ -145,7 +145,9 @@ NV_STATUS __nvoc_objCreate_RegisterAperture(RegisterAperture**, Dynamic*, NvU32)
     __nvoc_objCreate_RegisterAperture((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+
+// Wrapper macros for halified functions
 #define regaprtReadReg08_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__regaprtReadReg08__
 #define regaprtReadReg08(pAperture, addr) regaprtReadReg08_DISPATCH(pAperture, addr)
 #define regaprtReadReg16_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__regaprtReadReg16__

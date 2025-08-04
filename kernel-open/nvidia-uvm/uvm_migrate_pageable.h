@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2024 NVIDIA Corporation
+    Copyright (c) 2018-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -29,6 +29,9 @@
 #include "uvm_populate_pageable.h"
 #include "uvm_forward_decl.h"
 #include "uvm_processors.h"
+#include "uvm_va_block_types.h"
+
+#include <linux/nodemask.h>
 
 typedef struct
 {
@@ -43,8 +46,13 @@ typedef struct
     uvm_populate_permissions_t      populate_permissions;
     NvU32                           populate_flags;
     bool                            skip_mapped : 1;
+    uvm_make_resident_cause_t       cause;
     bool                            populate_on_cpu_alloc_failures : 1;
     bool                            populate_on_migrate_vma_failures : 1;
+
+    // access_counters_buffer_index is only valid if cause is
+    // UVM_MAKE_RESIDENT_CAUSE_ACCESS_COUNTER.
+    NvU32                           access_counters_buffer_index;
     NvU64                           *user_space_start;
     NvU64                           *user_space_length;
 
@@ -73,6 +81,25 @@ typedef struct
 
 typedef struct
 {
+    DECLARE_BITMAP(page_mask, UVM_MIGRATE_VMA_MAX_PAGES);
+} uvm_migrate_vma_page_mask_t;
+
+typedef struct
+{
+    // Scatter list managing the necessary copying GPU's IOMMU mappings
+    // used to copy pages from a source processor.
+    struct sg_table sgt_from;
+
+    // The copying GPUs that performs the copy from the source processors
+    // for which IOMMU mappings are created.
+    uvm_gpu_t *sgt_from_gpu;
+
+    // Number of DMA mapped pages in this scatterlist.
+    unsigned long dma_count;
+} uvm_sgt_t;
+
+typedef struct
+{
     // Input parameters
     uvm_migrate_args_t  *uvm_migrate_args;
 
@@ -91,21 +118,21 @@ typedef struct
     // (c) pages are already mapped and such pages were requested to not be
     // migrated via skip_mapped.
     // (d) pages which couldn't be migrated by the kernel.
-    DECLARE_BITMAP(populate_pages_mask, UVM_MIGRATE_VMA_MAX_PAGES);
+    uvm_migrate_vma_page_mask_t populate_pages_mask;
 
     // Mask of pages that failed allocation on the destination
-    DECLARE_BITMAP(allocation_failed_mask, UVM_MIGRATE_VMA_MAX_PAGES);
+    uvm_migrate_vma_page_mask_t allocation_failed_mask;
 
     // Mask of pages which are already resident at the destination.
-    DECLARE_BITMAP(dst_resident_pages_mask, UVM_MIGRATE_VMA_MAX_PAGES);
+    uvm_migrate_vma_page_mask_t dst_resident_pages_mask;
 
     // Global state managed by the caller
     //
     // These are scratch masks that can be used by the migrate_vma caller to
     // save output page masks and orchestrate the migrate_vma
     // retries/population calls if needed.
-    DECLARE_BITMAP(scratch1_mask, UVM_MIGRATE_VMA_MAX_PAGES);
-    DECLARE_BITMAP(scratch2_mask, UVM_MIGRATE_VMA_MAX_PAGES);
+    uvm_migrate_vma_page_mask_t scratch1_mask;
+    uvm_migrate_vma_page_mask_t scratch2_mask;
 
     // Arrays used by migrate_vma to store the src/dst pfns
     unsigned long dst_pfn_array[UVM_MIGRATE_VMA_MAX_PAGES];
@@ -116,31 +143,34 @@ typedef struct
     uvm_tracker_t tracker;
 
     struct {
-        // Number of pages for which IOMMU mapping were created
-        unsigned long num_pages;
+        // Scatter table managing the IOMMU mappings for anonymous pages.
+        uvm_sgt_t anon_sgt;
 
-        // Scatter list managing the necessary copying GPU's IOMMU mappings
-        // used to populate anon pages.
-        struct sg_table sgt_anon;
-        uvm_gpu_t *sgt_anon_gpu;
+        // Scatter table managing the IOMMU mappings for pages resident on
+        // GPUs.
+        uvm_sgt_t sgt_gpu[UVM_ID_MAX_GPUS];
 
-        // Scatter list managing the necessary copying GPU's IOMMU mappings
-        // used to copy pages from a source processor.
-        struct sg_table sgt_from[UVM_ID_MAX_PROCESSORS];
-
-        // The copying GPUs that performs the copy from the source processors
-        // for which IOMMU mappings are created.
-        uvm_gpu_t *sgt_from_gpus[UVM_ID_MAX_PROCESSORS];
+        // Scatter table managing the IOMMU mappings for pages resident on CPU
+        // NUMA nodes. The array size is num_possible_nodes() and should be
+        // indexed by the position of CPU node ID relative to other set bits
+        // in node_possible_map nodemask.
+        uvm_sgt_t *sgt_cpu;
     } dma;
 
-    // Processors where pages are resident before calling migrate_vma
-    uvm_processor_mask_t src_processors;
+    // GPU processors where pages are resident before calling migrate_vma.
+    uvm_processor_mask_t src_gpus;
+
+    // CPU NUMA nodes where pages are resident before calling migrate_vma.
+    nodemask_t src_cpu_nodemask;
 
     // Array of per-processor page masks with the pages that are resident
     // before calling migrate_vma.
     struct {
-        DECLARE_BITMAP(page_mask, UVM_MIGRATE_VMA_MAX_PAGES);
+        uvm_migrate_vma_page_mask_t proc_page_mask;
     } processors[UVM_ID_MAX_PROCESSORS];
+
+    // CPU Processors where pages are resident before calling migrate_vma
+    uvm_migrate_vma_page_mask_t *cpu_page_mask;
 
     // Number of pages in the migrate_vma call
     unsigned long num_pages;

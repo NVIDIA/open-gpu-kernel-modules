@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -50,6 +50,9 @@ extern nv_cap_t *nvidia_caps_root;
 
 extern const NvBool nv_is_rm_firmware_supported_os;
 
+#include <nvi2c.h>
+#include <nvimpshared.h>
+
 #include <nv-kernel-interface-api.h>
 
 #define GPU_UUID_LEN    (16)
@@ -83,6 +86,18 @@ extern const NvBool nv_is_rm_firmware_supported_os;
 
 #define NV_RM_DEVICE_INTR_ADDRESS 0x100
 
+/*
+ * Clock domain identifier, which is used for fetching the engine
+ * load backed by the specified clock domain for Tegra platforms
+ * conforming linux devfreq framework to realize dynamic frequency
+ * scaling.
+ */
+typedef enum _TEGRASOC_DEVFREQ_CLK
+{
+    TEGRASOC_DEVFREQ_CLK_GPC,
+    TEGRASOC_DEVFREQ_CLK_NVD,
+} TEGRASOC_DEVFREQ_CLK;
+
 /*!
  * @brief The order of the display clocks in the below defined enum
  * should be synced with below mapping array and macro.
@@ -105,6 +120,12 @@ typedef enum _TEGRASOC_WHICH_CLK
     TEGRASOC_WHICH_CLK_NVDISPLAY_DISP,
     TEGRASOC_WHICH_CLK_NVDISPLAY_P0,
     TEGRASOC_WHICH_CLK_NVDISPLAY_P1,
+    TEGRASOC_WHICH_CLK_NVDISPLAY_P2,
+    TEGRASOC_WHICH_CLK_NVDISPLAY_P3,
+    TEGRASOC_WHICH_CLK_NVDISPLAY_P4,
+    TEGRASOC_WHICH_CLK_NVDISPLAY_P5,
+    TEGRASOC_WHICH_CLK_NVDISPLAY_P6,
+    TEGRASOC_WHICH_CLK_NVDISPLAY_P7,
     TEGRASOC_WHICH_CLK_DPAUX0,
     TEGRASOC_WHICH_CLK_FUSE,
     TEGRASOC_WHICH_CLK_DSIPLL_VCO,
@@ -123,9 +144,21 @@ typedef enum _TEGRASOC_WHICH_CLK
     TEGRASOC_WHICH_CLK_VPLL0_REF,
     TEGRASOC_WHICH_CLK_VPLL0,
     TEGRASOC_WHICH_CLK_VPLL1,
+    TEGRASOC_WHICH_CLK_VPLL2,
+    TEGRASOC_WHICH_CLK_VPLL3,
+    TEGRASOC_WHICH_CLK_VPLL4,
+    TEGRASOC_WHICH_CLK_VPLL5,
+    TEGRASOC_WHICH_CLK_VPLL6,
+    TEGRASOC_WHICH_CLK_VPLL7,
     TEGRASOC_WHICH_CLK_NVDISPLAY_P0_REF,
     TEGRASOC_WHICH_CLK_RG0,
     TEGRASOC_WHICH_CLK_RG1,
+    TEGRASOC_WHICH_CLK_RG2,
+    TEGRASOC_WHICH_CLK_RG3,
+    TEGRASOC_WHICH_CLK_RG4,
+    TEGRASOC_WHICH_CLK_RG5,
+    TEGRASOC_WHICH_CLK_RG6,
+    TEGRASOC_WHICH_CLK_RG7,
     TEGRASOC_WHICH_CLK_DISPPLL,
     TEGRASOC_WHICH_CLK_DISPHUBPLL,
     TEGRASOC_WHICH_CLK_DSI_LP,
@@ -133,9 +166,20 @@ typedef enum _TEGRASOC_WHICH_CLK
     TEGRASOC_WHICH_CLK_DSI_PIXEL,
     TEGRASOC_WHICH_CLK_PRE_SOR0,
     TEGRASOC_WHICH_CLK_PRE_SOR1,
+    TEGRASOC_WHICH_CLK_PRE_SOR2,
+    TEGRASOC_WHICH_CLK_PRE_SOR3,
     TEGRASOC_WHICH_CLK_DP_LINKA_REF,
+    TEGRASOC_WHICH_CLK_DP_LINKB_REF,
+    TEGRASOC_WHICH_CLK_DP_LINKC_REF,
+    TEGRASOC_WHICH_CLK_DP_LINKD_REF,
     TEGRASOC_WHICH_CLK_SOR_LINKA_INPUT,
+    TEGRASOC_WHICH_CLK_SOR_LINKB_INPUT,
+    TEGRASOC_WHICH_CLK_SOR_LINKC_INPUT,
+    TEGRASOC_WHICH_CLK_SOR_LINKD_INPUT,
     TEGRASOC_WHICH_CLK_SOR_LINKA_AFIFO,
+    TEGRASOC_WHICH_CLK_SOR_LINKB_AFIFO,
+    TEGRASOC_WHICH_CLK_SOR_LINKC_AFIFO,
+    TEGRASOC_WHICH_CLK_SOR_LINKD_AFIFO,
     TEGRASOC_WHICH_CLK_SOR_LINKA_AFIFO_M,
     TEGRASOC_WHICH_CLK_RG0_M,
     TEGRASOC_WHICH_CLK_RG1_M,
@@ -144,17 +188,36 @@ typedef enum _TEGRASOC_WHICH_CLK
     TEGRASOC_WHICH_CLK_PLLHUB,
     TEGRASOC_WHICH_CLK_SOR0,
     TEGRASOC_WHICH_CLK_SOR1,
+    TEGRASOC_WHICH_CLK_SOR2,
+    TEGRASOC_WHICH_CLK_SOR3,
     TEGRASOC_WHICH_CLK_SOR_PADA_INPUT,
+    TEGRASOC_WHICH_CLK_SOR_PADB_INPUT,
+    TEGRASOC_WHICH_CLK_SOR_PADC_INPUT,
+    TEGRASOC_WHICH_CLK_SOR_PADD_INPUT,
+    TEGRASOC_WHICH_CLK_SOR0_PAD,
+    TEGRASOC_WHICH_CLK_SOR1_PAD,
+    TEGRASOC_WHICH_CLK_SOR2_PAD,
+    TEGRASOC_WHICH_CLK_SOR3_PAD,
     TEGRASOC_WHICH_CLK_PRE_SF0,
     TEGRASOC_WHICH_CLK_SF0,
     TEGRASOC_WHICH_CLK_SF1,
+    TEGRASOC_WHICH_CLK_SF2,
+    TEGRASOC_WHICH_CLK_SF3,
+    TEGRASOC_WHICH_CLK_SF4,
+    TEGRASOC_WHICH_CLK_SF5,
+    TEGRASOC_WHICH_CLK_SF6,
+    TEGRASOC_WHICH_CLK_SF7,
     TEGRASOC_WHICH_CLK_DSI_PAD_INPUT,
     TEGRASOC_WHICH_CLK_PRE_SOR0_REF,
     TEGRASOC_WHICH_CLK_PRE_SOR1_REF,
     TEGRASOC_WHICH_CLK_SOR0_PLL_REF,
     TEGRASOC_WHICH_CLK_SOR1_PLL_REF,
+    TEGRASOC_WHICH_CLK_SOR2_PLL_REF,
+    TEGRASOC_WHICH_CLK_SOR3_PLL_REF,
     TEGRASOC_WHICH_CLK_SOR0_REF,
     TEGRASOC_WHICH_CLK_SOR1_REF,
+    TEGRASOC_WHICH_CLK_SOR2_REF,
+    TEGRASOC_WHICH_CLK_SOR3_REF,
     TEGRASOC_WHICH_CLK_OSC,
     TEGRASOC_WHICH_CLK_DSC,
     TEGRASOC_WHICH_CLK_MAUD,
@@ -168,6 +231,18 @@ typedef enum _TEGRASOC_WHICH_CLK
     TEGRASOC_WHICH_CLK_PLLA_DISP,
     TEGRASOC_WHICH_CLK_PLLA_DISPHUB,
     TEGRASOC_WHICH_CLK_PLLA,
+    TEGRASOC_WHICH_CLK_VPLLX_SOR0_MUXED,
+    TEGRASOC_WHICH_CLK_VPLLX_SOR1_MUXED,
+    TEGRASOC_WHICH_CLK_VPLLX_SOR2_MUXED,
+    TEGRASOC_WHICH_CLK_VPLLX_SOR3_MUXED,
+    TEGRASOC_WHICH_CLK_SF0_SOR,
+    TEGRASOC_WHICH_CLK_SF1_SOR,
+    TEGRASOC_WHICH_CLK_SF2_SOR,
+    TEGRASOC_WHICH_CLK_SF3_SOR,
+    TEGRASOC_WHICH_CLK_SF4_SOR,
+    TEGRASOC_WHICH_CLK_SF5_SOR,
+    TEGRASOC_WHICH_CLK_SF6_SOR,
+    TEGRASOC_WHICH_CLK_SF7_SOR,
     TEGRASOC_WHICH_CLK_EMC,
     TEGRASOC_WHICH_CLK_GPU_FIRST,
     TEGRASOC_WHICH_CLK_GPU_SYS = TEGRASOC_WHICH_CLK_GPU_FIRST,
@@ -339,12 +414,8 @@ typedef struct nv_soc_irq_info_s {
 #define NV_MAX_SOC_IRQS              10
 #define NV_MAX_DPAUX_NUM_DEVICES     4
 
-#define NV_MAX_SOC_DPAUX_NUM_DEVICES 2
+#define NV_MAX_SOC_DPAUX_NUM_DEVICES 4
 
-
-#define NV_IGPU_LEGACY_STALL_IRQ     70
-#define NV_IGPU_MAX_STALL_IRQS       3
-#define NV_IGPU_MAX_NONSTALL_IRQS    1
 /*
  * per device state
  */
@@ -390,7 +461,6 @@ typedef struct nv_state_t
     nv_aperture_t *mipical_regs;
     nv_aperture_t *fb, ud;
     nv_aperture_t *simregs;
-    nv_aperture_t *emc_regs;
 
     NvU32  num_dpaux_instance;
     NvU32  interrupt_line;
@@ -404,12 +474,14 @@ typedef struct nv_state_t
     NvU32 soc_dcb_size;
     NvU32 disp_sw_soc_chip_id;
     NvBool soc_is_dpalt_mode_supported;
+    NvBool soc_is_hfrp_supported;
 
-    NvU32 igpu_stall_irq[NV_IGPU_MAX_STALL_IRQS];
-    NvU32 igpu_nonstall_irq;
-    NvU32 num_stall_irqs;
     NvU64 dma_mask;
-    
+
+    NvBool is_tegra_pci_igpu;
+    NvBool supports_tegra_igpu_rg;
+    NvBool is_tegra_pci_igpu_rg_enabled;
+
     NvBool primary_vga;
 
     NvU32 sim_env;
@@ -488,6 +560,13 @@ typedef struct nv_state_t
     /* Bool to check if the GPU has a coherent sysmem link */
     NvBool coherent;
 
+    /*
+     * Bool to check if GPU memory is backed by struct page.
+     * False for non-coherent platforms. May also be false
+     * on coherent platforms if GPU memory is not onlined to the kernel.
+     */
+    NvBool mem_has_struct_page;
+
     /* OS detected GPU has ATS capability */
     NvBool ats_support;
     /*
@@ -508,6 +587,9 @@ typedef struct nv_state_t
 
     /* Console is managed by drm drivers or NVKMS */
     NvBool client_managed_console;
+
+    /* Bool to check if power management is supported */
+    NvBool is_pm_supported;
 } nv_state_t;
 
 #define NVFP_TYPE_NONE       0x0
@@ -574,24 +656,23 @@ typedef NV_STATUS (*nvPmaEvictRangeCallback)(void *, NvU64, NvU64, nvgpuGpuMemor
  * flags
  */
 
-#define NV_FLAG_OPEN                    0x0001
-#define NV_FLAG_EXCLUDE                 0x0002
-#define NV_FLAG_CONTROL                 0x0004
-// Unused                               0x0008
-#define NV_FLAG_SOC_DISPLAY             0x0010
-#define NV_FLAG_USES_MSI                0x0020
-#define NV_FLAG_USES_MSIX               0x0040
-#define NV_FLAG_PASSTHRU                0x0080
-#define NV_FLAG_SUSPENDED               0x0100
-#define NV_FLAG_SOC_IGPU                0x0200
+#define NV_FLAG_OPEN                        0x0001
+#define NV_FLAG_EXCLUDE                     0x0002
+#define NV_FLAG_CONTROL                     0x0004
+#define NV_FLAG_PCI_P2P_UNSUPPORTED_CHIPSET 0x0008
+#define NV_FLAG_SOC_DISPLAY                 0x0010
+#define NV_FLAG_USES_MSI                    0x0020
+#define NV_FLAG_USES_MSIX                   0x0040
+#define NV_FLAG_PASSTHRU                    0x0080
+#define NV_FLAG_SUSPENDED                   0x0100
 /* To be set when an FLR needs to be triggered after device shut down. */
-#define NV_FLAG_TRIGGER_FLR             0x0400
-#define NV_FLAG_PERSISTENT_SW_STATE     0x0800
-#define NV_FLAG_IN_RECOVERY             0x1000
-#define NV_FLAG_PCI_REMOVE_IN_PROGRESS  0x2000
-#define NV_FLAG_UNBIND_LOCK             0x4000
+#define NV_FLAG_TRIGGER_FLR                 0x0400
+#define NV_FLAG_PERSISTENT_SW_STATE         0x0800
+#define NV_FLAG_IN_RECOVERY                 0x1000
+#define NV_FLAG_PCI_REMOVE_IN_PROGRESS      0x2000
+#define NV_FLAG_UNBIND_LOCK                 0x4000
 /* To be set when GPU is not present on the bus, to help device teardown */
-#define NV_FLAG_IN_SURPRISE_REMOVAL     0x8000
+#define NV_FLAG_IN_SURPRISE_REMOVAL         0x8000
 
 typedef enum
 {
@@ -631,14 +712,19 @@ typedef struct
     const char *db_support;
 } nv_power_info_t;
 
+typedef enum
+{
+    NV_MEMORY_TYPE_SYSTEM,      /* Memory mapped for ROM, SBIOS and physical RAM. */
+    NV_MEMORY_TYPE_REGISTERS,
+    NV_MEMORY_TYPE_FRAMEBUFFER,
+    NV_MEMORY_TYPE_DEVICE_MMIO, /* All kinds of MMIO referred by NVRM e.g. BARs and MCFG of device */
+} nv_memory_type_t;
+
 #define NV_PRIMARY_VGA(nv)      ((nv)->primary_vga)
 
 #define NV_IS_CTL_DEVICE(nv)    ((nv)->flags & NV_FLAG_CONTROL)
 #define NV_IS_SOC_DISPLAY_DEVICE(nv)    \
         ((nv)->flags & NV_FLAG_SOC_DISPLAY)
-
-#define NV_IS_SOC_IGPU_DEVICE(nv)    \
-        ((nv)->flags & NV_FLAG_SOC_IGPU)
 
 #define NV_IS_DEVICE_IN_SURPRISE_REMOVAL(nv)    \
         (((nv)->flags & NV_FLAG_IN_SURPRISE_REMOVAL) != 0)
@@ -789,9 +875,9 @@ static inline NvBool IS_IMEM_OFFSET(nv_state_t *nv, NvU64 offset, NvU64 length)
 
 NvU32      NV_API_CALL  nv_get_dev_minor         (nv_state_t *);
 void*      NV_API_CALL  nv_alloc_kernel_mapping  (nv_state_t *, void *, NvU64, NvU32, NvU64, void **);
-NV_STATUS  NV_API_CALL  nv_free_kernel_mapping   (nv_state_t *, void *, void *, void *);
+void       NV_API_CALL  nv_free_kernel_mapping   (nv_state_t *, void *, void *, void *);
 NV_STATUS  NV_API_CALL  nv_alloc_user_mapping    (nv_state_t *, void *, NvU64, NvU32, NvU64, NvU32, NvU64 *, void **);
-NV_STATUS  NV_API_CALL  nv_free_user_mapping     (nv_state_t *, void *, NvU64, void *);
+void       NV_API_CALL  nv_free_user_mapping     (nv_state_t *, void *, NvU64, void *);
 NV_STATUS  NV_API_CALL  nv_add_mapping_context_to_file (nv_state_t *, nv_usermap_access_params_t*, NvU32, void *, NvU64, NvU32);
 
 NvU64  NV_API_CALL  nv_get_kern_phys_address     (NvU64);
@@ -813,7 +899,8 @@ void      NV_API_CALL   nv_unregister_peer_io_mem(nv_state_t *, void *);
 
 struct sg_table;
 
-NV_STATUS NV_API_CALL   nv_register_sgt          (nv_state_t *, NvU64 *, NvU64, NvU32, void **, struct sg_table *, void *);
+NV_STATUS NV_API_CALL   nv_register_sgt          (nv_state_t *, NvU64 *, NvU64, NvU32, void **,
+                                                  struct sg_table *, void *, NvBool);
 void      NV_API_CALL   nv_unregister_sgt        (nv_state_t *, struct sg_table **, void **, void *);
 NV_STATUS NV_API_CALL   nv_register_phys_pages   (nv_state_t *, NvU64 *, NvU64, NvU32, void **);
 void      NV_API_CALL   nv_unregister_phys_pages (nv_state_t *, void *);
@@ -824,12 +911,14 @@ NV_STATUS  NV_API_CALL  nv_dma_map_alloc         (nv_dma_device_t *, NvU64, NvU6
 NV_STATUS  NV_API_CALL  nv_dma_unmap_alloc       (nv_dma_device_t *, NvU64, NvU64 *, void **);
 
 NV_STATUS  NV_API_CALL  nv_dma_map_peer          (nv_dma_device_t *, nv_dma_device_t *, NvU8, NvU64, NvU64 *);
+NV_STATUS  NV_API_CALL  nv_dma_map_non_pci_peer  (nv_dma_device_t *, NvU64, NvU64 *);
 void       NV_API_CALL  nv_dma_unmap_peer        (nv_dma_device_t *, NvU64, NvU64);
 
 NV_STATUS  NV_API_CALL  nv_dma_map_mmio          (nv_dma_device_t *, NvU64, NvU64 *);
 void       NV_API_CALL  nv_dma_unmap_mmio        (nv_dma_device_t *, NvU64, NvU64);
 
 void       NV_API_CALL  nv_dma_cache_invalidate  (nv_dma_device_t *, void *);
+NvBool     NV_API_CALL  nv_grdma_pci_topology_supported(nv_state_t *, nv_dma_device_t *);
 
 NvS32  NV_API_CALL  nv_start_rc_timer            (nv_state_t *);
 NvS32  NV_API_CALL  nv_stop_rc_timer             (nv_state_t *);
@@ -902,8 +991,8 @@ struct drm_gem_object;
 
 NV_STATUS NV_API_CALL nv_dma_import_sgt  (nv_dma_device_t *, struct sg_table *, struct drm_gem_object *);
 void NV_API_CALL nv_dma_release_sgt(struct sg_table *, struct drm_gem_object *);
-NV_STATUS NV_API_CALL nv_dma_import_dma_buf      (nv_dma_device_t *, struct dma_buf *, NvU32 *, struct sg_table **, nv_dma_buf_t **);
-NV_STATUS NV_API_CALL nv_dma_import_from_fd      (nv_dma_device_t *, NvS32, NvU32 *, struct sg_table **, nv_dma_buf_t **);
+NV_STATUS NV_API_CALL nv_dma_import_dma_buf      (nv_dma_device_t *, struct dma_buf *, NvBool, NvU32 *, struct sg_table **, nv_dma_buf_t **);
+NV_STATUS NV_API_CALL nv_dma_import_from_fd      (nv_dma_device_t *, NvS32, NvBool, NvU32 *, struct sg_table **, nv_dma_buf_t **);
 void      NV_API_CALL nv_dma_release_dma_buf     (nv_dma_buf_t *);
 
 void      NV_API_CALL nv_schedule_uvm_isr        (nv_state_t *);
@@ -914,6 +1003,10 @@ void      NV_API_CALL nv_schedule_uvm_resume_p2p (NvU8 *);
 NvBool    NV_API_CALL nv_platform_supports_s0ix  (void);
 NvBool    NV_API_CALL nv_s2idle_pm_configured    (void);
 
+NvBool    NV_API_CALL nv_pci_tegra_register_power_domain    (nv_state_t *, NvBool);
+NvBool    NV_API_CALL nv_pci_tegra_pm_init        (nv_state_t *);
+void      NV_API_CALL nv_pci_tegra_pm_deinit      (nv_state_t *);
+
 NvBool    NV_API_CALL nv_is_chassis_notebook      (void);
 void      NV_API_CALL nv_allow_runtime_suspend    (nv_state_t *nv);
 void      NV_API_CALL nv_disallow_runtime_suspend (nv_state_t *nv);
@@ -922,9 +1015,58 @@ typedef void (*nvTegraDceClientIpcCallback)(NvU32, NvU32, NvU32, void *, void *)
 
 NV_STATUS NV_API_CALL nv_get_num_phys_pages      (void *, NvU32 *);
 NV_STATUS NV_API_CALL nv_get_phys_pages          (void *, void *, NvU32 *);
-
 void      NV_API_CALL nv_get_disp_smmu_stream_ids (nv_state_t *, NvU32 *, NvU32 *);
 
+typedef struct TEGRA_IMP_IMPORT_DATA TEGRA_IMP_IMPORT_DATA;
+typedef struct nv_i2c_msg_s nv_i2c_msg_t;
+
+NV_STATUS NV_API_CALL nv_bpmp_send_mrq           (nv_state_t *, NvU32, const void *, NvU32, void *, NvU32, NvS32 *, NvS32 *);
+NV_STATUS NV_API_CALL nv_i2c_transfer(nv_state_t *, NvU32, NvU8, nv_i2c_msg_t *, int);
+void      NV_API_CALL nv_i2c_unregister_clients(nv_state_t *);
+NV_STATUS NV_API_CALL nv_i2c_bus_status(nv_state_t *, NvU32, NvS32 *, NvS32 *);
+NV_STATUS NV_API_CALL nv_imp_get_import_data     (TEGRA_IMP_IMPORT_DATA *);
+NV_STATUS NV_API_CALL nv_imp_enable_disable_rfl  (nv_state_t *nv, NvBool bEnable);
+NV_STATUS NV_API_CALL nv_imp_icc_set_bw          (nv_state_t *nv, NvU32 avg_bw_kbps, NvU32 floor_bw_kbps);
+NV_STATUS NV_API_CALL nv_get_num_dpaux_instances(nv_state_t *nv, NvU32 *num_instances);
+NV_STATUS NV_API_CALL nv_get_tegra_brightness_level(nv_state_t *, NvU32 *);
+NV_STATUS NV_API_CALL nv_set_tegra_brightness_level(nv_state_t *, NvU32);
+
+NV_STATUS NV_API_CALL nv_soc_device_reset        (nv_state_t *);
+NV_STATUS NV_API_CALL nv_soc_pm_powergate        (nv_state_t *);
+NV_STATUS NV_API_CALL nv_soc_pm_unpowergate      (nv_state_t *);
+NV_STATUS NV_API_CALL nv_gpio_get_pin_state(nv_state_t *, NvU32, NvU32 *);
+void      NV_API_CALL nv_gpio_set_pin_state(nv_state_t *, NvU32, NvU32);
+NV_STATUS NV_API_CALL nv_gpio_set_pin_direction(nv_state_t *, NvU32, NvU32);
+NV_STATUS NV_API_CALL nv_gpio_get_pin_direction(nv_state_t *, NvU32, NvU32 *);
+NV_STATUS NV_API_CALL nv_gpio_get_pin_number(nv_state_t *, NvU32, NvU32 *);
+NvBool    NV_API_CALL nv_gpio_get_pin_interrupt_status(nv_state_t *, NvU32, NvU32);
+NV_STATUS NV_API_CALL nv_gpio_set_pin_interrupt(nv_state_t *, NvU32, NvU32);
+NvU32     NV_API_CALL nv_tegra_get_rm_interface_type(NvU32);
+NV_STATUS NV_API_CALL nv_tegra_dce_register_ipc_client(NvU32, void *, nvTegraDceClientIpcCallback, NvU32 *);
+NV_STATUS NV_API_CALL nv_tegra_dce_client_ipc_send_recv(NvU32, void *, NvU32);
+NV_STATUS NV_API_CALL nv_tegra_dce_unregister_ipc_client(NvU32);
+NV_STATUS NV_API_CALL nv_dsi_parse_panel_props(nv_state_t *, void *);
+NvBool    NV_API_CALL nv_dsi_is_panel_connected(nv_state_t *);
+NV_STATUS NV_API_CALL nv_dsi_panel_enable(nv_state_t *, void *);
+NV_STATUS NV_API_CALL nv_dsi_panel_reset(nv_state_t *, void *);
+void      NV_API_CALL nv_dsi_panel_disable(nv_state_t *, void *);
+void      NV_API_CALL nv_dsi_panel_cleanup(nv_state_t *, void *);
+NV_STATUS NV_API_CALL nv_soc_mipi_cal_reset(nv_state_t *);
+NvU32     NV_API_CALL nv_soc_fuse_register_read (NvU32 addr);
+NvBool    NV_API_CALL nv_get_hdcp_enabled(nv_state_t *nv);
+NV_STATUS NV_API_CALL nv_get_valid_window_head_mask(nv_state_t *nv, NvU64 *);
+NV_STATUS NV_API_CALL nv_dp_uphy_pll_init(nv_state_t *, NvU32, NvU32);
+NV_STATUS NV_API_CALL nv_dp_uphy_pll_deinit(nv_state_t *);
+NV_STATUS NV_API_CALL nv_soc_i2c_hsp_semaphore_acquire(NvU32 ownerId, NvBool bAcquire, NvU64 timeout);
+typedef void (*nv_soc_tsec_cb_func_t)(void*, void*);
+NvU32     NV_API_CALL nv_soc_tsec_send_cmd(void* cmd, nv_soc_tsec_cb_func_t cb_func, void* cb_context);
+NvU32     NV_API_CALL nv_soc_tsec_event_register(nv_soc_tsec_cb_func_t cb_func, void* cb_context, NvBool is_init_event);
+NvU32     NV_API_CALL nv_soc_tsec_event_unregister(NvBool is_init_event);
+void*     NV_API_CALL nv_soc_tsec_alloc_mem_desc(NvU32 num_bytes, NvU32 *flcn_addr);
+void      NV_API_CALL nv_soc_tsec_free_mem_desc(void *mem_desc);
+NvBool    NV_API_CALL nv_is_clk_enabled          (nv_state_t *, TEGRASOC_WHICH_CLK);
+NV_STATUS NV_API_CALL nv_set_parent              (nv_state_t *, TEGRASOC_WHICH_CLK, TEGRASOC_WHICH_CLK);
+NV_STATUS NV_API_CALL nv_get_parent              (nv_state_t *, TEGRASOC_WHICH_CLK, TEGRASOC_WHICH_CLK*);
 NV_STATUS NV_API_CALL nv_clk_get_handles         (nv_state_t *);
 void      NV_API_CALL nv_clk_clear_handles       (nv_state_t *);
 NV_STATUS NV_API_CALL nv_enable_clk              (nv_state_t *, TEGRASOC_WHICH_CLK);
@@ -961,6 +1103,7 @@ NvBool     NV_API_CALL  rm_isr                   (nvidia_stack_t *, nv_state_t *
 void       NV_API_CALL  rm_isr_bh                (nvidia_stack_t *, nv_state_t *);
 void       NV_API_CALL  rm_isr_bh_unlocked       (nvidia_stack_t *, nv_state_t *);
 NvBool     NV_API_CALL  rm_is_msix_allowed       (nvidia_stack_t *, nv_state_t *);
+NV_STATUS  NV_API_CALL  rm_pmu_perfmon_get_load  (nvidia_stack_t *, nv_state_t *, NvU32 *, TEGRASOC_DEVFREQ_CLK);
 NV_STATUS  NV_API_CALL  rm_power_management      (nvidia_stack_t *, nv_state_t *, nv_pm_action_t);
 NV_STATUS  NV_API_CALL  rm_stop_user_channels    (nvidia_stack_t *, nv_state_t *);
 NV_STATUS  NV_API_CALL  rm_restart_user_channels (nvidia_stack_t *, nv_state_t *);
@@ -1008,14 +1151,16 @@ void       NV_API_CALL  rm_request_dnotifier_state          (nvidia_stack_t *, n
 void       NV_API_CALL  rm_disable_gpu_state_persistence    (nvidia_stack_t *sp, nv_state_t *);
 NV_STATUS  NV_API_CALL  rm_p2p_init_mapping       (nvidia_stack_t *, NvU64, NvU64 *, NvU64 *, NvU64 *, NvU64 *, NvU64, NvU64, NvU64, NvU64, void (*)(void *), void *);
 NV_STATUS  NV_API_CALL  rm_p2p_destroy_mapping    (nvidia_stack_t *, NvU64);
-NV_STATUS  NV_API_CALL  rm_p2p_get_pages          (nvidia_stack_t *, NvU64, NvU32, NvU64, NvU64, NvU64 *, NvU32 *, NvU32 *, NvU32 *, NvU8 **, void *);
+NV_STATUS  NV_API_CALL  rm_p2p_get_pages          (nvidia_stack_t *, NvU64, NvU32, NvU64, NvU64, NvU64 *, NvU32 *, NvU32 *, NvU32 *, NvU8 **, void *, NvBool *);
 NV_STATUS  NV_API_CALL  rm_p2p_get_gpu_info       (nvidia_stack_t *, NvU64, NvU64, NvU8 **, void **);
-NV_STATUS  NV_API_CALL  rm_p2p_get_pages_persistent (nvidia_stack_t *,  NvU64, NvU64, void **, NvU64 *, NvU32 *, NvBool, void *, void *, void **);
+NV_STATUS  NV_API_CALL  rm_p2p_get_pages_persistent (nvidia_stack_t *,  NvU64, NvU64, void **, NvU64 *, NvU32 *, NvBool, void *, void *, void **, NvBool *);
 NV_STATUS  NV_API_CALL  rm_p2p_register_callback  (nvidia_stack_t *, NvU64, NvU64, NvU64, void *, void (*)(void *), void *);
 NV_STATUS  NV_API_CALL  rm_p2p_put_pages          (nvidia_stack_t *, NvU64, NvU32, NvU64, void *);
 NV_STATUS  NV_API_CALL  rm_p2p_put_pages_persistent(nvidia_stack_t *, void *, void *, void *);
 NV_STATUS  NV_API_CALL  rm_p2p_dma_map_pages      (nvidia_stack_t *, nv_dma_device_t *, NvU8 *, NvU64, NvU32, NvU64 *, void **);
-NV_STATUS  NV_API_CALL  rm_dma_buf_dup_mem_handle (nvidia_stack_t *, nv_state_t *, NvHandle, NvHandle, NvHandle, NvHandle, void *, NvHandle, NvU64, NvU64, NvHandle *, void **);
+NV_STATUS  NV_API_CALL  rm_dma_buf_dup_mem_handle (nvidia_stack_t *, nv_state_t *, NvHandle, NvHandle, NvHandle,
+                                                   NvHandle, void *, NvHandle, NvU64, NvU64, NvHandle *, void **,
+                                                   NvBool *, NvU32 *, NvBool *, nv_memory_type_t *);
 void       NV_API_CALL  rm_dma_buf_undup_mem_handle(nvidia_stack_t *, nv_state_t *, NvHandle, NvHandle);
 NV_STATUS  NV_API_CALL  rm_dma_buf_map_mem_handle (nvidia_stack_t *, nv_state_t *,
                                                    NvHandle, NvHandle, MemoryRange,
@@ -1026,7 +1171,7 @@ void       NV_API_CALL  rm_dma_buf_unmap_mem_handle(nvidia_stack_t *, nv_state_t
 NV_STATUS  NV_API_CALL  rm_dma_buf_get_client_and_device(nvidia_stack_t *,
                                                 nv_state_t *, NvHandle, NvHandle,
                                                 NvU8, NvHandle *, NvHandle *,
-                                                NvHandle *, void **, NvBool *);
+                                                NvHandle *, void **, NvBool *, NvBool *);
 void       NV_API_CALL  rm_dma_buf_put_client_and_device(nvidia_stack_t *, nv_state_t *, NvHandle, NvHandle, NvHandle, void *);
 
 void       NV_API_CALL rm_kernel_rmapi_op(nvidia_stack_t *sp, void *ops_cmd);
@@ -1046,6 +1191,7 @@ NV_STATUS  NV_API_CALL rm_set_external_kernel_client_count(nvidia_stack_t *, nv_
 NV_STATUS  NV_API_CALL rm_schedule_gpu_wakeup(nvidia_stack_t *, nv_state_t *);
 NvBool     NV_API_CALL rm_disable_iomap_wc(void);
 
+void       NV_API_CALL rm_init_tegra_dynamic_power_management(nvidia_stack_t *, nv_state_t *);
 void       NV_API_CALL rm_init_dynamic_power_management(nvidia_stack_t *, nv_state_t *, NvBool);
 void       NV_API_CALL rm_cleanup_dynamic_power_management(nvidia_stack_t *, nv_state_t *);
 void       NV_API_CALL rm_enable_dynamic_power_management(nvidia_stack_t *, nv_state_t *);
@@ -1070,7 +1216,7 @@ NV_STATUS  NV_API_CALL  nv_vgpu_get_type_ids(nvidia_stack_t *, nv_state_t *, NvU
 NV_STATUS  NV_API_CALL  nv_vgpu_get_type_info(nvidia_stack_t *, nv_state_t *, NvU32, char *, int, NvU8);
 NV_STATUS  NV_API_CALL  nv_vgpu_get_bar_info(nvidia_stack_t *, nv_state_t *, const NvU8 *, NvU64 *,
                                              NvU64 *, NvU64 *, NvU32 *, NvBool *, NvU8 *);
-NV_STATUS  NV_API_CALL  nv_vgpu_update_sysfs_info(nvidia_stack_t *, nv_state_t *, const NvU8 *, NvU32, NvU32);
+NV_STATUS  NV_API_CALL  nv_vgpu_update_sysfs_info(nvidia_stack_t *, nv_state_t *, const NvU8 *, NvU32, NvU32 *);
 NV_STATUS  NV_API_CALL  nv_vgpu_get_hbm_info(nvidia_stack_t *, nv_state_t *, const NvU8 *, NvU64 *, NvU64 *);
 NV_STATUS  NV_API_CALL  nv_vgpu_process_vf_info(nvidia_stack_t *, nv_state_t *, NvU8, NvU32, NvU8, NvU8, NvU8, NvBool, void *);
 NV_STATUS  NV_API_CALL  nv_gpu_bind_event(nvidia_stack_t *, NvU32, NvBool *);

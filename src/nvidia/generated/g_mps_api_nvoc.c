@@ -303,6 +303,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__MpsApi =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_mpsApiDestruct(MpsApi*);
 void __nvoc_dtor_RmResource(RmResource*);
 void __nvoc_dtor_MpsApi(MpsApi *pThis) {
     __nvoc_mpsApiDestruct(pThis);

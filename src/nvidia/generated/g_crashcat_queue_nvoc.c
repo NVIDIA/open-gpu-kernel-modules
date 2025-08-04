@@ -80,6 +80,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__CrashCatQueue =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_crashcatQueueDestruct(CrashCatQueue*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_CrashCatQueue(CrashCatQueue *pThis) {
     __nvoc_crashcatQueueDestruct(pThis);

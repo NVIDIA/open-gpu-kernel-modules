@@ -168,9 +168,10 @@ namespace DisplayPort
             bool bIgnoreDscCap;           // Ignore DSC even if sink reports DSC capability
             bool bDisableDownspread;
             bool bForceHeadShutdown;
-            bool bDP2XPreferNonDSCForLowPClk;
             bool bDisableDscMaxBppLimit;
+            bool bApplyStuffDummySymbolsWAR;
             bool bForceHeadShutdownOnModeTransition;
+            bool bDP2XPreferNonDSCForLowPClk;
             bool bSkipCableIdCheck;
             bool bAllocateManualTimeslots;
             bool bSkipResetMSTMBeforeLt;
@@ -185,6 +186,8 @@ namespace DisplayPort
             unsigned maxLaneAtLowRate;  // Max lane count supported at RBR
             unsigned optimalLinkRate;   // Optimal link rate value to override
             unsigned optimalLaneCount;  // Optimal lane count value to override
+            bool     bStuffDummySymbolsFor128b132b;
+            bool     bStuffDummySymbolsFor8b10b;
         }_WARData;
 
         _WARData WARData;

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -322,8 +322,9 @@ NV_STATUS kflcnFreeContext_IMPL
     if (pCtxMemDesc == NULL)
     {
         NV_PRINTF(LEVEL_WARNING,
-                  "The channel 0x%x does not have a falcon engine instance for engDesc=0x%x\n",
-                  kchannelGetDebugTag(pKernelChannel), pKernelFalcon->physEngDesc);
+            FMT_CHANNEL_DEBUG_TAG " does not have a falcon engine instance for engDesc=0x%x\n",
+            kchannelGetDebugTag(pKernelChannel),
+            pKernelFalcon->physEngDesc);
         return NV_OK;
     }
 

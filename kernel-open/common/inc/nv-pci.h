@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,6 +36,6 @@ int nv_pci_count_devices(void);
 NvU8 nv_find_pci_capability(struct pci_dev *, NvU8);
 int nvidia_dev_get_pci_info(const NvU8 *, struct pci_dev **, NvU64 *, NvU64 *);
 nv_linux_state_t * find_pci(NvU32, NvU8, NvU8, NvU8);
-NvBool nv_pci_is_valid_topology_for_direct_pci(nv_state_t *, struct device *);
-
+NvBool nv_pci_is_valid_topology_for_direct_pci(nv_state_t *, struct pci_dev *);
+NvBool nv_pci_has_common_pci_switch(nv_state_t *nv, struct pci_dev *);
 #endif

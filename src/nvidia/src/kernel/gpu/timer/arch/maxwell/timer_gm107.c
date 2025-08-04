@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,7 @@
 *   The GM107 specific HAL TMR routines reside in this file.                *
 *                                                                           *
 \***************************************************************************/
+#define NVOC_OBJTMR_H_PRIVATE_ACCESS_ALLOWED
 /* ------------------------- Includes --------------------------------------- */
 #include "gpu/gpu.h"
 #include "gpu/timer/objtmr.h"
@@ -60,10 +61,10 @@ tmrSetCurrentTime_GM107
     // We get the time in seconds and microseconds since 1970
     // Note that we don't really need the real time of day
     //
-    osGetCurrentTime(&seconds, &useconds);
+    osGetSystemTime(&seconds, &useconds);
 
     NV_PRINTF(LEVEL_INFO,
-              "osGetCurrentTime returns 0x%x seconds, 0x%x useconds\n",
+              "osGetSystemTime returns 0x%x seconds, 0x%x useconds\n",
               seconds, useconds);
 
     //

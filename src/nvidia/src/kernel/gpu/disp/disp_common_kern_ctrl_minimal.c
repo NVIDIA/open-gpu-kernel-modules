@@ -133,6 +133,10 @@ dispcmnCtrlCmdSystemAllocateDisplayBandwidth_IMPL
         return status;
     }
 
+    status = dispapiValidateRmctrlPriv(pGpu);
+    if (status != NV_OK)
+        return status;
+
     pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
     if (pKernelDisplay->getProperty(pKernelDisplay,
                                     PDB_PROP_KDISP_IMP_ALLOC_BW_IN_KERNEL_RM_DEF))
@@ -165,6 +169,39 @@ dispcmnCtrlCmdSystemAllocateDisplayBandwidth_IMPL
                             NV0073_CTRL_CMD_SYSTEM_INTERNAL_ALLOCATE_DISPLAY_BANDWIDTH,
                             pParams, sizeof(*pParams));
     }
+    return status;
+}
+
+NV_STATUS
+dispcmnCtrlCmdSystemGetVblankEnable_IMPL
+(
+    DispCommon *pDispCommon,
+    NV0073_CTRL_SYSTEM_GET_VBLANK_ENABLE_PARAMS *pVBEnableParams
+)
+{
+    OBJGPU        *pGpu;
+    KernelDisplay *pKernelDisplay;
+    KernelHead    *pKernelHead;
+    NV_STATUS status = NV_OK;
+    // client gave us a subdevice #: get right pGpu for it
+    status = dispapiSetUnicastAndSynchronize_HAL(
+                               staticCast(pDispCommon, DisplayApi),
+                               DISPAPI_GET_GPUGRP(pDispCommon),
+                               &pGpu,
+                               NULL,
+                               pVBEnableParams->subDeviceInstance);
+    if(status != NV_OK)
+    {
+        return status;
+    }
+
+    pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    pKernelHead = KDISP_GET_HEAD(pKernelDisplay,pVBEnableParams->head);
+    NV_ASSERT_OR_RETURN(pKernelHead != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    pVBEnableParams->bEnabled = (kheadReadVblankIntrState(pGpu, pKernelHead) !=
+                                 NV_HEAD_VBLANK_INTR_UNAVAILABLE);
+
     return status;
 }
 
@@ -380,62 +417,6 @@ dispcmnCtrlCmdSystemGetVblankCounter_IMPL
     return NV_OK;
 }
 
-/*
- * @brief This call engages the WAR for VR where the Pstate
- *        switching can cause delay in serving Vblank interrupts
- *        by servicing disp interrupts inline.
- *
- * @return
- *   NV_OK
- *     The request successfully completed.
- *   NV_ERR_INVALID_ARGUMENT
- *     Invalid argument is passed.
- */
-NV_STATUS
-dispcmnCtrlCmdInlineDispIntrServiceWarForVr_IMPL
-(
-    DispCommon *pDispCommon,
-    NV0073_CTRL_SYSTEM_INLINE_DISP_INTR_SERVICE_WAR_FOR_VR_PARAMS *pParams
-)
-{
-    OBJGPU   *pGpu  = NULL;
-    RM_API   *pRmApi;
-    NV_STATUS status;
-    KernelDisplay *pKernelDisplay = NULL;
-
-    // Get the right pGpu from subdevice instance given by client
-    status = dispapiSetUnicastAndSynchronize_HAL(
-                               staticCast(pDispCommon, DisplayApi),
-                               DISPAPI_GET_GPUGRP(pDispCommon),
-                               &pGpu,
-                               NULL,
-                               pParams->subDeviceInstance);
-
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-
-    pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
-    if (pKernelDisplay == NULL)
-        SLI_LOOP_RETURN(NV_ERR_INVALID_STATE);
-
-    pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-
-    status = pRmApi->Control(pRmApi,
-                           RES_GET_CLIENT_HANDLE(pDispCommon),
-                           RES_GET_HANDLE(pDispCommon),
-                           NV0073_CTRL_CMD_INTERNAL_INLINE_DISP_INTR_SERVICE_WAR_FOR_VR,
-                           pParams,
-                           sizeof(*pParams));
-
-    SLI_LOOP_END
-
-    return NV_OK;
-}
-
 /*!
  * @brief Function to handle NV0073_CTRL_CMD_CALCULATE_DP_IMP control call.
  *        Check if the requested mode is supported by the link.
@@ -616,6 +597,10 @@ dispcmnCtrlCmdSystemGetLoadVCounterInfo_IMPL
                                NULL,
                                pLoadVCounterInfoParams->subDeviceInstance);
 
+    if (status != NV_OK)
+        return status;
+
+    status = dispapiValidateRmctrlPriv(pGpu);
     if (status != NV_OK)
         return status;
 

@@ -41,6 +41,7 @@
 
 #define MAX_DECRYPT_BUNDLES 16
 
+#define USE_LKCA_SPDM_APIS 1 /* Use LKCA APIs */
 static void
 ccslSplit32(NvU8 *dst, NvU32 num)
 {
@@ -392,10 +393,12 @@ static KernelChannel *getKernelChannelViaChannelHandle(NvHandle hClient, NvHandl
 
 static void openrmCtxFree(void *openrmCtx)
 {
+#if RMCFG_FEATURE_PLATFORM_UNIX && RMCFG_MODULE_SPDM && USE_LKCA_SPDM_APIS
     if (openrmCtx != NULL)
     {
         libspdm_aead_free(openrmCtx);
     }
+#endif
 }
 
 NV_STATUS
@@ -451,11 +454,13 @@ ccslContextInitViaChannel_IMPL
     pCtx->openrmCtx = NULL;
     pCtx->pDecryptBundles = NULL;
 
+#if RMCFG_FEATURE_PLATFORM_UNIX && RMCFG_MODULE_SPDM && USE_LKCA_SPDM_APIS
     if (!libspdm_aead_gcm_prealloc(&pCtx->openrmCtx))
     {
         status = NV_ERR_NO_MEMORY;
         goto ccslContextInitViaChannelCleanup;
     }
+#endif
 
     pCtx->pDecryptBundles = portMemAllocNonPaged(sizeof(*pCtx->pDecryptBundles) * MAX_DECRYPT_BUNDLES);
     if (pCtx->pDecryptBundles == NULL)
@@ -575,11 +580,13 @@ ccslContextInitViaKeyId_KERNEL
     // Ensure all pointers are default set to NULL, in case we get out of sync with channel context values
     portMemSet(pCtx, 0, sizeof(*pCtx));
 
+#if RMCFG_FEATURE_PLATFORM_UNIX && RMCFG_MODULE_SPDM && USE_LKCA_SPDM_APIS
     if (!libspdm_aead_gcm_prealloc(&pCtx->openrmCtx))
     {
         portMemFree(pCtx);
         return NV_ERR_NO_MEMORY;
     }
+#endif
 
     pCtx->pEncStatsBuffer = (CC_CRYPTOBUNDLE_STATS *)portMemAllocNonPaged(sizeof(CC_CRYPTOBUNDLE_STATS));
     if (pCtx->pEncStatsBuffer == NULL)
@@ -852,7 +859,11 @@ ccslEncryptWithIv_IMPL
         iv[i] = encryptIv[i] ^ pCtx->ivMaskOut[i];
     }
 
+#if USE_LKCA_SPDM_APIS
     if(!libspdm_aead_aes_gcm_encrypt_prealloc(pCtx->openrmCtx,
+#else
+    if(!libspdm_aead_aes_gcm_encrypt(
+#endif
         (NvU8 *)pCtx->keyOut, CC_AES_256_GCM_KEY_SIZE_BYTES,
         iv, CC_AES_256_GCM_IV_SIZE_BYTES, aadBuffer, aadSize,
         inputBuffer, bufferSize, authTagBuffer, 16,
@@ -899,7 +910,11 @@ ccslEncrypt_KERNEL
         iv[i] = pCtx->ivOut[i] ^ pCtx->ivMaskOut[i];
     }
 
+#if USE_LKCA_SPDM_APIS
     if(!libspdm_aead_aes_gcm_encrypt_prealloc(pCtx->openrmCtx,
+#else
+    if(!libspdm_aead_aes_gcm_encrypt(
+#endif
         (NvU8 *)pCtx->keyOut, CC_AES_256_GCM_KEY_SIZE_BYTES,
         iv, CC_AES_256_GCM_IV_SIZE_BYTES, aadBuffer, aadSize,
         inputBuffer, bufferSize, authTagBuffer, 16,
@@ -997,7 +1012,11 @@ ccslDecrypt_KERNEL
         }
     }
 
+#if USE_LKCA_SPDM_APIS
     if(!libspdm_aead_aes_gcm_decrypt_prealloc(pCtx->openrmCtx,
+#else
+    if(!libspdm_aead_aes_gcm_decrypt(
+#endif
         keyIn, CC_AES_256_GCM_KEY_SIZE_BYTES,
         iv, CC_AES_256_GCM_IV_SIZE_BYTES, aadBuffer, aadSize,
         inputBuffer, bufferSize, (NvU8 *) authTagBuffer, 16,

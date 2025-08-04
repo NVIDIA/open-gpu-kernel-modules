@@ -88,12 +88,6 @@ struct GenericEngineApi {
     struct RmResource *__nvoc_pbase_RmResource;    // rmres super^2
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct GenericEngineApi *__nvoc_pbase_GenericEngineApi;    // genapi
-
-    // Vtable with 4 per-object function pointers
-    NV_STATUS (*__genapiCtrlCmdMasterGetErrorIntrOffsetMask__)(struct GenericEngineApi * /*this*/, NV90E6_CTRL_MASTER_GET_ERROR_INTR_OFFSET_MASK_PARAMS *);  // exported (id=0x90e60101)
-    NV_STATUS (*__genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask__)(struct GenericEngineApi * /*this*/, NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS *);  // exported (id=0x90e60102)
-    NV_STATUS (*__genapiCtrlCmdBBXGetLastFlushTime__)(struct GenericEngineApi * /*this*/, NV90E7_CTRL_BBX_GET_LAST_FLUSH_TIME_PARAMS *);  // exported (id=0x90e70113)
-    NV_STATUS (*__genapiCtrlCmdBBXIsNVMFlushEnabled__)(struct GenericEngineApi * /*this*/, NV90E7_CTRL_BBX_IS_NVM_FLUSH_ENABLED_PARAMS *);  // exported (id=0x90e70119)
 };
 
 
@@ -162,21 +156,61 @@ NV_STATUS __nvoc_objCreate_GenericEngineApi(GenericEngineApi**, Dynamic*, NvU32,
     __nvoc_objCreate_GenericEngineApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS genapiConstruct_IMPL(struct GenericEngineApi *arg_pGenericEngineApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_genapiConstruct(arg_pGenericEngineApi, arg_pCallContext, arg_pParams) genapiConstruct_IMPL(arg_pGenericEngineApi, arg_pCallContext, arg_pParams)
+
+void genapiDestruct_IMPL(struct GenericEngineApi *pGenericEngineApi);
+#define __nvoc_genapiDestruct(pGenericEngineApi) genapiDestruct_IMPL(pGenericEngineApi)
+
+NV_STATUS genapiCtrlCmdMasterGetErrorIntrOffsetMask_IMPL(struct GenericEngineApi *pGenericEngineApi, NV90E6_CTRL_MASTER_GET_ERROR_INTR_OFFSET_MASK_PARAMS *pParams);
+#ifdef __nvoc_generic_engine_h_disabled
+static inline NV_STATUS genapiCtrlCmdMasterGetErrorIntrOffsetMask(struct GenericEngineApi *pGenericEngineApi, NV90E6_CTRL_MASTER_GET_ERROR_INTR_OFFSET_MASK_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GenericEngineApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_generic_engine_h_disabled
+#define genapiCtrlCmdMasterGetErrorIntrOffsetMask(pGenericEngineApi, pParams) genapiCtrlCmdMasterGetErrorIntrOffsetMask_IMPL(pGenericEngineApi, pParams)
+#endif // __nvoc_generic_engine_h_disabled
+
+NV_STATUS genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask_IMPL(struct GenericEngineApi *pGenericEngineApi, NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS *pParams);
+#ifdef __nvoc_generic_engine_h_disabled
+static inline NV_STATUS genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask(struct GenericEngineApi *pGenericEngineApi, NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GenericEngineApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_generic_engine_h_disabled
+#define genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask(pGenericEngineApi, pParams) genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask_IMPL(pGenericEngineApi, pParams)
+#endif // __nvoc_generic_engine_h_disabled
+
+NV_STATUS genapiCtrlCmdBBXGetLastFlushTime_IMPL(struct GenericEngineApi *pGenericEngineApi, NV90E7_CTRL_BBX_GET_LAST_FLUSH_TIME_PARAMS *pParams);
+#ifdef __nvoc_generic_engine_h_disabled
+static inline NV_STATUS genapiCtrlCmdBBXGetLastFlushTime(struct GenericEngineApi *pGenericEngineApi, NV90E7_CTRL_BBX_GET_LAST_FLUSH_TIME_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GenericEngineApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_generic_engine_h_disabled
+#define genapiCtrlCmdBBXGetLastFlushTime(pGenericEngineApi, pParams) genapiCtrlCmdBBXGetLastFlushTime_IMPL(pGenericEngineApi, pParams)
+#endif // __nvoc_generic_engine_h_disabled
+
+NV_STATUS genapiCtrlCmdBBXIsNVMFlushEnabled_IMPL(struct GenericEngineApi *pGenericEngineApi, NV90E7_CTRL_BBX_IS_NVM_FLUSH_ENABLED_PARAMS *pParams);
+#ifdef __nvoc_generic_engine_h_disabled
+static inline NV_STATUS genapiCtrlCmdBBXIsNVMFlushEnabled(struct GenericEngineApi *pGenericEngineApi, NV90E7_CTRL_BBX_IS_NVM_FLUSH_ENABLED_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GenericEngineApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_generic_engine_h_disabled
+#define genapiCtrlCmdBBXIsNVMFlushEnabled(pGenericEngineApi, pParams) genapiCtrlCmdBBXIsNVMFlushEnabled_IMPL(pGenericEngineApi, pParams)
+#endif // __nvoc_generic_engine_h_disabled
+
+
+// Wrapper macros for halified functions
 #define genapiMap_FNPTR(pGenericEngineApi) pGenericEngineApi->__nvoc_metadata_ptr->vtable.__genapiMap__
 #define genapiMap(pGenericEngineApi, pCallContext, pParams, pCpuMapping) genapiMap_DISPATCH(pGenericEngineApi, pCallContext, pParams, pCpuMapping)
 #define genapiGetMapAddrSpace_FNPTR(pGenericEngineApi) pGenericEngineApi->__nvoc_metadata_ptr->vtable.__genapiGetMapAddrSpace__
 #define genapiGetMapAddrSpace(pGenericEngineApi, pCallContext, mapFlags, pAddrSpace) genapiGetMapAddrSpace_DISPATCH(pGenericEngineApi, pCallContext, mapFlags, pAddrSpace)
 #define genapiControl_FNPTR(pGenericEngineApi) pGenericEngineApi->__nvoc_metadata_ptr->vtable.__genapiControl__
 #define genapiControl(pGenericEngineApi, pCallContext, pParams) genapiControl_DISPATCH(pGenericEngineApi, pCallContext, pParams)
-#define genapiCtrlCmdMasterGetErrorIntrOffsetMask_FNPTR(pGenericEngineApi) pGenericEngineApi->__genapiCtrlCmdMasterGetErrorIntrOffsetMask__
-#define genapiCtrlCmdMasterGetErrorIntrOffsetMask(pGenericEngineApi, pParams) genapiCtrlCmdMasterGetErrorIntrOffsetMask_DISPATCH(pGenericEngineApi, pParams)
-#define genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask_FNPTR(pGenericEngineApi) pGenericEngineApi->__genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask__
-#define genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask(pGenericEngineApi, pParams) genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask_DISPATCH(pGenericEngineApi, pParams)
-#define genapiCtrlCmdBBXGetLastFlushTime_FNPTR(pGenericEngineApi) pGenericEngineApi->__genapiCtrlCmdBBXGetLastFlushTime__
-#define genapiCtrlCmdBBXGetLastFlushTime(pGenericEngineApi, pParams) genapiCtrlCmdBBXGetLastFlushTime_DISPATCH(pGenericEngineApi, pParams)
-#define genapiCtrlCmdBBXIsNVMFlushEnabled_FNPTR(pGenericEngineApi) pGenericEngineApi->__genapiCtrlCmdBBXIsNVMFlushEnabled__
-#define genapiCtrlCmdBBXIsNVMFlushEnabled(pGenericEngineApi, pParams) genapiCtrlCmdBBXIsNVMFlushEnabled_DISPATCH(pGenericEngineApi, pParams)
 #define genapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
 #define genapiUnmap(pGpuResource, pCallContext, pCpuMapping) genapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
 #define genapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
@@ -233,22 +267,6 @@ static inline NV_STATUS genapiGetMapAddrSpace_DISPATCH(struct GenericEngineApi *
 
 static inline NV_STATUS genapiControl_DISPATCH(struct GenericEngineApi *pGenericEngineApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pGenericEngineApi->__nvoc_metadata_ptr->vtable.__genapiControl__(pGenericEngineApi, pCallContext, pParams);
-}
-
-static inline NV_STATUS genapiCtrlCmdMasterGetErrorIntrOffsetMask_DISPATCH(struct GenericEngineApi *pGenericEngineApi, NV90E6_CTRL_MASTER_GET_ERROR_INTR_OFFSET_MASK_PARAMS *pParams) {
-    return pGenericEngineApi->__genapiCtrlCmdMasterGetErrorIntrOffsetMask__(pGenericEngineApi, pParams);
-}
-
-static inline NV_STATUS genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask_DISPATCH(struct GenericEngineApi *pGenericEngineApi, NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS *pParams) {
-    return pGenericEngineApi->__genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask__(pGenericEngineApi, pParams);
-}
-
-static inline NV_STATUS genapiCtrlCmdBBXGetLastFlushTime_DISPATCH(struct GenericEngineApi *pGenericEngineApi, NV90E7_CTRL_BBX_GET_LAST_FLUSH_TIME_PARAMS *pParams) {
-    return pGenericEngineApi->__genapiCtrlCmdBBXGetLastFlushTime__(pGenericEngineApi, pParams);
-}
-
-static inline NV_STATUS genapiCtrlCmdBBXIsNVMFlushEnabled_DISPATCH(struct GenericEngineApi *pGenericEngineApi, NV90E7_CTRL_BBX_IS_NVM_FLUSH_ENABLED_PARAMS *pParams) {
-    return pGenericEngineApi->__genapiCtrlCmdBBXIsNVMFlushEnabled__(pGenericEngineApi, pParams);
 }
 
 static inline NV_STATUS genapiUnmap_DISPATCH(struct GenericEngineApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
@@ -353,12 +371,6 @@ NV_STATUS genapiCtrlCmdBBXGetLastFlushTime_IMPL(struct GenericEngineApi *pGeneri
 
 NV_STATUS genapiCtrlCmdBBXIsNVMFlushEnabled_IMPL(struct GenericEngineApi *pGenericEngineApi, NV90E7_CTRL_BBX_IS_NVM_FLUSH_ENABLED_PARAMS *pParams);
 
-NV_STATUS genapiConstruct_IMPL(struct GenericEngineApi *arg_pGenericEngineApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_genapiConstruct(arg_pGenericEngineApi, arg_pCallContext, arg_pParams) genapiConstruct_IMPL(arg_pGenericEngineApi, arg_pCallContext, arg_pParams)
-void genapiDestruct_IMPL(struct GenericEngineApi *pGenericEngineApi);
-
-#define __nvoc_genapiDestruct(pGenericEngineApi) genapiDestruct_IMPL(pGenericEngineApi)
 #undef PRIVATE_FIELD
 
 

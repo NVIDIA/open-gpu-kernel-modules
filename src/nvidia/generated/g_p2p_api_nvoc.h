@@ -175,7 +175,15 @@ NV_STATUS __nvoc_objCreate_P2PApi(P2PApi**, Dynamic*, NvU32, struct CALL_CONTEXT
     __nvoc_objCreate_P2PApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS p2papiConstruct_IMPL(struct P2PApi *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_p2papiConstruct(arg_pResource, arg_pCallContext, arg_pParams) p2papiConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+
+void p2papiDestruct_IMPL(struct P2PApi *pResource);
+#define __nvoc_p2papiDestruct(pResource) p2papiDestruct_IMPL(pResource)
+
+
+// Wrapper macros for halified functions
 #define p2papiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define p2papiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) p2papiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define p2papiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
@@ -304,12 +312,6 @@ static inline void p2papiAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__nvoc_metadata_ptr->vtable.__p2papiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-NV_STATUS p2papiConstruct_IMPL(struct P2PApi *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_p2papiConstruct(arg_pResource, arg_pCallContext, arg_pParams) p2papiConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
-void p2papiDestruct_IMPL(struct P2PApi *pResource);
-
-#define __nvoc_p2papiDestruct(pResource) p2papiDestruct_IMPL(pResource)
 #undef PRIVATE_FIELD
 
 

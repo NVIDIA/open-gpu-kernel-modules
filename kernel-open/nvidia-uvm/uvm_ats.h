@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2024 NVIDIA Corporation
+    Copyright (c) 2018-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -32,6 +32,27 @@
 
 #define UVM_ATS_SUPPORTED() UVM_ATS_SVA_SUPPORTED()
 
+typedef enum
+{
+    // The VA space has been initialized on a system that supports ATS but it is
+    // unknown yet whether it will hold ATS capable GPUs or not.
+    UVM_ATS_VA_SPACE_ATS_UNSET = 0,
+
+    // The VA space only allows registering GPUs that support ATS. This state is
+    // entered on a system that supports ATS by:
+    //   - Registering an ATS capable GPU
+    //   - Migrating or setting a policy on pageable memory
+    // Once entered, this state is never left.
+    UVM_ATS_VA_SPACE_ATS_SUPPORTED,
+
+    // The VA space only allows registering GPUs that do not support ATS. This
+    // state is entered by:
+    //   - Initialization on platforms that do not support ATS
+    //   - Registering a non ATS capable GPU on platforms that do support ATS
+    // Once entered, this state is never left.
+    UVM_ATS_VA_SPACE_ATS_UNSUPPORTED
+} uvm_ats_va_space_state_t;
+
 typedef struct
 {
     // Mask of gpu_va_spaces which are registered for ATS access. The mask is
@@ -43,6 +64,19 @@ typedef struct
     uvm_rw_semaphore_t lock;
 
     uvm_sva_va_space_t sva;
+
+    // Tracks if ATS is supported in this va_space. The state is set during GPU
+    // registration or some ATS related calls, and is protected as an atomic.
+    // This is because during some ATS related API calls a VA space can
+    // transition from UNSET to ATS_SUPPORTED. In these cases the va_space's
+    // semaphore is only held in a read-locked state. A race results in the
+    // duplicate writing of ATS_SUPPORTED to the state value. 
+    // This OK as the only possible transition here is
+    // UVM_ATS_VA_SPACE_ATS_UNSET -> UVM_ATS_VA_SPACE_ATS_SUPPORTED.
+    // Entering UVM_ATS_VA_SPACE_ATS_UNSUPPORTED requires registering a
+    // GPU in the VA space which must hold the lock in write mode.
+    // Enums from uvm_ats_va_space_state_t are stored in this atomic_t value.
+    atomic_t state;
 } uvm_ats_va_space_t;
 
 typedef struct

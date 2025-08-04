@@ -176,7 +176,24 @@ NV_STATUS __nvoc_objCreate_RgLineCallback(RgLineCallback**, Dynamic*, NvU32, str
     __nvoc_objCreate_RgLineCallback((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS rglcbConstruct_IMPL(struct RgLineCallback *arg_pRgLineCallback, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_rglcbConstruct(arg_pRgLineCallback, arg_pCallContext, arg_pParams) rglcbConstruct_IMPL(arg_pRgLineCallback, arg_pCallContext, arg_pParams)
+
+void rglcbDestruct_IMPL(struct RgLineCallback *pRgLineCallback);
+#define __nvoc_rglcbDestruct(pRgLineCallback) rglcbDestruct_IMPL(pRgLineCallback)
+
+void rglcbInvoke_IMPL(struct RgLineCallback *pRgLineCallback, NvBool bIsIrqlIsr);
+#ifdef __nvoc_rg_line_callback_h_disabled
+static inline void rglcbInvoke(struct RgLineCallback *pRgLineCallback, NvBool bIsIrqlIsr) {
+    NV_ASSERT_FAILED_PRECOMP("RgLineCallback was disabled!");
+}
+#else // __nvoc_rg_line_callback_h_disabled
+#define rglcbInvoke(pRgLineCallback, bIsIrqlIsr) rglcbInvoke_IMPL(pRgLineCallback, bIsIrqlIsr)
+#endif // __nvoc_rg_line_callback_h_disabled
+
+
+// Wrapper macros for halified functions
 #define rglcbControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define rglcbControl(pGpuResource, pCallContext, pParams) rglcbControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define rglcbMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
@@ -328,22 +345,6 @@ static inline NvU32 rglcbGetRefCount_DISPATCH(struct RgLineCallback *pResource) 
 static inline void rglcbAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct RgLineCallback *pResource, RsResourceRef *pReference) {
     pResource->__nvoc_metadata_ptr->vtable.__rglcbAddAdditionalDependants__(pClient, pResource, pReference);
 }
-
-NV_STATUS rglcbConstruct_IMPL(struct RgLineCallback *arg_pRgLineCallback, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_rglcbConstruct(arg_pRgLineCallback, arg_pCallContext, arg_pParams) rglcbConstruct_IMPL(arg_pRgLineCallback, arg_pCallContext, arg_pParams)
-void rglcbDestruct_IMPL(struct RgLineCallback *pRgLineCallback);
-
-#define __nvoc_rglcbDestruct(pRgLineCallback) rglcbDestruct_IMPL(pRgLineCallback)
-void rglcbInvoke_IMPL(struct RgLineCallback *pRgLineCallback, NvBool bIsIrqlIsr);
-
-#ifdef __nvoc_rg_line_callback_h_disabled
-static inline void rglcbInvoke(struct RgLineCallback *pRgLineCallback, NvBool bIsIrqlIsr) {
-    NV_ASSERT_FAILED_PRECOMP("RgLineCallback was disabled!");
-}
-#else //__nvoc_rg_line_callback_h_disabled
-#define rglcbInvoke(pRgLineCallback, bIsIrqlIsr) rglcbInvoke_IMPL(pRgLineCallback, bIsIrqlIsr)
-#endif //__nvoc_rg_line_callback_h_disabled
 
 #undef PRIVATE_FIELD
 

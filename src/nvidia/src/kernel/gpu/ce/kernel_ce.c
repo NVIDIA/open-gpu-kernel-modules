@@ -607,7 +607,8 @@ kceGetCeFromNvlinkConfig_IMPL
 
         // Check if GPU supports NVLink for P2P
         if (NV2080_CTRL_NVLINK_GET_CAP(nvlinkCaps, NV2080_CTRL_NVLINK_CAPS_P2P_SUPPORTED))
-            rmStatus = kceGetP2PCes(pKCe, pGpu, gpuMask, nvlinkP2PCeMask);
+            if (nvlinkP2PCeMask)
+                rmStatus = kceGetP2PCes(pKCe, pGpu, gpuMask, nvlinkP2PCeMask);
     }
 
     return rmStatus;

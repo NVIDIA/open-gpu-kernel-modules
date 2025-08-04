@@ -86,12 +86,6 @@ static inline int nv_pci_enable_msix(nv_linux_state_t *nvl, int nvec)
 {
     int rc = 0;
 
-    /*
-     * pci_enable_msix_range() replaced pci_enable_msix() in 3.14-rc1:
-     * 2014-01-03  302a2523c277bea0bbe8340312b09507905849ed
-     */
-
-#if defined(NV_PCI_ENABLE_MSIX_RANGE_PRESENT)
     // We require all the vectors we are requesting so use the same min and max
     rc = pci_enable_msix_range(nvl->pci_dev, nvl->msix_entries, nvec, nvec);
     if (rc < 0)
@@ -99,13 +93,6 @@ static inline int nv_pci_enable_msix(nv_linux_state_t *nvl, int nvec)
         return NV_ERR_OPERATING_SYSTEM;
     }
     WARN_ON(nvec != rc);
-#else
-    rc = pci_enable_msix(nvl->pci_dev, nvl->msix_entries, nvec);
-    if (rc != 0)
-    {
-        return NV_ERR_OPERATING_SYSTEM;
-    }
-#endif
 
     nvl->num_intr = nvec;
     return NV_OK;

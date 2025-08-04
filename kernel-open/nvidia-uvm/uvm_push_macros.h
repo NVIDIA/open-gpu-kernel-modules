@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -81,8 +81,20 @@
 // Host methods ignore the subchannel, just use 0
 #define UVM_SUBCHANNEL_HOST 0
 
-// Starting with Kepler HW settled on using a fixed subchannel for CE.
+// HW uses a fixed subchannel for CE.
 #define UVM_SUBCHANNEL_CE NVA06F_SUBCHANNEL_COPY_ENGINE
+
+// Subchannel for UVM SW methods. The largest fixed HW subchannel is 4, meaning
+// subchannels 5-7 are reserved for SW use. See cla06fsubch.h. RM does not care
+// which of those we use.
+#define UVM_SUBCHANNEL_SW 5
+
+// NVA06F_SUBCHANNEL_COMPUTE is a semi-arbitrary value for UVM_SUBCHANNEL_SEC2.
+// We need a "unique" subchannel across all subchannels UVM submits work. This
+// is used when we are post-processing a pushbuffer and we need to extract SEC2
+// methods from a it, having a unique subchannel facilitates the SEC2 method
+// identification.
+#define UVM_SUBCHANNEL_SEC2 NVA06F_SUBCHANNEL_COMPUTE
 
 #define UVM_SUBCHANNEL_A16F UVM_SUBCHANNEL_HOST
 
@@ -90,6 +102,7 @@
 #define UVM_SUBCHANNEL_B0B5 UVM_SUBCHANNEL_CE
 
 #define UVM_SUBCHANNEL_C06F UVM_SUBCHANNEL_HOST
+#define UVM_SUBCHANNEL_C076 UVM_SUBCHANNEL_SW
 #define UVM_SUBCHANNEL_C0B5 UVM_SUBCHANNEL_CE
 
 #define UVM_SUBCHANNEL_C36F UVM_SUBCHANNEL_HOST
@@ -105,17 +118,6 @@
 
 #define UVM_SUBCHANNEL_C96F UVM_SUBCHANNEL_HOST
 
-// Channel for UVM SW methods. This is defined in nv_uvm_types.h. RM does not
-// care about the specific number as long as it's bigger than the largest HW
-// value. For example, Kepler reserves subchannels 5-7 for software objects.
-#define UVM_SUBCHANNEL_C076 UVM_SW_OBJ_SUBCHANNEL
-
-// NVA06F_SUBCHANNEL_COMPUTE is a semi-arbitrary value for UVM_SUBCHANNEL_SEC2.
-// We need a "unique" subchannel across all subchannels UVM submits work. This
-// is used when we are post-processing a pushbuffer and we need to extract SEC2
-// methods from a it, having a unique subchannel facilitates the SEC2 method
-// identification.
-#define UVM_SUBCHANNEL_SEC2 NVA06F_SUBCHANNEL_COMPUTE
 #define UVM_SUBCHANNEL_CBA2 UVM_SUBCHANNEL_SEC2
 
 #define UVM_METHOD_SIZE 4

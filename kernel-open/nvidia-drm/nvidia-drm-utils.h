@@ -25,7 +25,7 @@
 
 #include "nvidia-drm-conftest.h"
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #include "nvkms-kapi.h"
 
@@ -49,6 +49,6 @@ void nvkms_display_mode_to_drm_mode(
 void drm_mode_to_nvkms_display_mode(const struct drm_display_mode *src,
                                     struct NvKmsKapiDisplayMode *dst);
 
-#endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+#endif /* NV_DRM_AVAILABLE */
 
 #endif /* __NVIDIA_DRM_UTILS_H__ */

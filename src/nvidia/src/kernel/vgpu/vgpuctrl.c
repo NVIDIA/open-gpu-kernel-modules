@@ -50,15 +50,9 @@ vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties_IMPL
     //
     if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_EXTERNAL_HEAP_CONTROL))
     {
-        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
         Memory *pMemory = NULL;
 
-        NvU64   physOffset = 0;
-        NvU32   pageKind = 0;
-        // unused
-        NvU32   _memAperture, _comprOffset, _comprFormat;
-        NvU32   _lineMin, _lineMax, _zcullId, _gpuCacheAttr, _gpuP2PCacheAttr;
-        NvU64   _contigSegmentSize;
+        NvU64   physOffset;
 
         // Find the allocation from the hMemory
         rmStatus = memGetByHandle(RES_GET_CLIENT(pVgpuApi), pParams->hMemory, &pMemory);
@@ -75,21 +69,12 @@ vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties_IMPL
             return NV_ERR_INVALID_OBJECT;
         }
 
-        // Look up the page kind.
-        rmStatus = memmgrGetSurfacePhysAttr_HAL(pGpu, pMemoryManager, pMemory,
-                                                &physOffset, &_memAperture, &pageKind,
-                                                &_comprOffset, &_comprFormat, &_lineMin, &_lineMax,
-                                                &_zcullId, &_gpuCacheAttr, &_gpuP2PCacheAttr,
-                                                &_contigSegmentSize);
-        if (rmStatus != NV_OK)
-            return rmStatus;
-
-        physOffset += pParams->offset;
-        if (physOffset > 0xffffffffull)
+        physOffset = memdescGetPhysAddr(pMemory->pMemDesc, AT_GPU, pParams->offset);
+        if (physOffset > NV_U32_MAX)
             return NV_ERR_INVALID_OFFSET;
 
         pParams->offset = NvU64_LO32(physOffset);
-        pParams->surfaceKind = pageKind;
+        pParams->surfaceKind = memdescGetPteKind(pMemory->pMemDesc);
     }
 
     NV_RM_RPC_SET_SURFACE_PROPERTIES(pGpu, RES_GET_CLIENT_HANDLE(pVgpuApi),
@@ -108,7 +93,7 @@ vgpuapiCtrlCmdVgpuDisplayCleanupSurface_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pVgpuApi);
     NV_STATUS rmStatus = NV_OK;
 
-    NV_RM_RPC_CLEANUP_SURFACE(pGpu, pParams, rmStatus);
+    NV_RM_RPC_CLEANUP_SURFACE(pGpu, RES_GET_CLIENT_HANDLE(pVgpuApi), pParams, rmStatus);
 
     return rmStatus;
 }

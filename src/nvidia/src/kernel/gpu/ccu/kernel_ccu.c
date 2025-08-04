@@ -151,8 +151,10 @@ _kccuAllocMemory
         (NvP64)((NvUPtr)pKernelCcu->shrBuf[idx].pKernelMapInfo->addr + CCU_TIMESTAMP_SIZE);
     pKernelCcu->shrBuf[idx].pCounterDstInfo->pTailTimeStamp =
         (NvU64 *)((NvUPtr)pKernelCcu->shrBuf[idx].pCounterDstInfo->pCounterBlock + counterBlockSize);
+    pKernelCcu->shrBuf[idx].pCounterDstInfo->pLpwrFeatureEngagedMask =
+        (NvU32 *)((NvUPtr)pKernelCcu->shrBuf[idx].pCounterDstInfo->pTailTimeStamp + CCU_TIMESTAMP_SIZE);
     pKernelCcu->shrBuf[idx].pCounterDstInfo->pSwizzId =
-        (NvU8 *)((NvUPtr)pKernelCcu->shrBuf[idx].pCounterDstInfo->pTailTimeStamp + CCU_TIMESTAMP_SIZE);
+        (NvU8 *)((NvUPtr)pKernelCcu->shrBuf[idx].pCounterDstInfo->pLpwrFeatureEngagedMask + CCU_LPWR_MODE_SIZE);
     pKernelCcu->shrBuf[idx].pCounterDstInfo->pComputeId =
         (NvU8 *)((NvUPtr)pKernelCcu->shrBuf[idx].pCounterDstInfo->pSwizzId + CCU_MIG_SWIZZID_SIZE);
         pKernelCcu->shrBuf[idx].pCounterDstInfo->counterBlockSize = counterBlockSize;
@@ -202,7 +204,7 @@ kccuShrBufIdxCleanup_IMPL
     }
     else
     {
-        memdescUnmap(pMemDesc, NV_TRUE, osGetCurrentProcess(),
+        memdescUnmap(pMemDesc, NV_TRUE,
                 pKernelCcu->shrBuf[idx].pKernelMapInfo->addr,
                 pKernelCcu->shrBuf[idx].pKernelMapInfo->priv);
     }

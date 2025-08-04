@@ -6903,7 +6903,7 @@ static NvBool GetDfpHdmiProtocol(const NVDpyEvoRec *pDpyEvo,
     const NvU32 rmProtocol = pConnectorEvo->or.protocol;
     const NvKmsDpyOutputColorFormatInfo colorFormatsInfo =
         nvDpyGetOutputColorFormatInfo(pDpyEvo);
-    const NvBool forceHdmiFrlIsSupported = FALSE;
+    const NvBool forceHdmiFrlIfSupported = FALSE;
 
     nvAssert(rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_DUAL_TMDS ||
              rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A ||
@@ -6912,11 +6912,10 @@ static NvBool GetDfpHdmiProtocol(const NVDpyEvoRec *pDpyEvo,
     /* Override protocol if this mode requires HDMI FRL. */
     /* If we don't require boot clocks... */
     if (((overrides & NVKMS_MODE_VALIDATION_REQUIRE_BOOT_CLOCKS) == 0) &&
-            ((nvHdmiGetEffectivePixelClockKHz(pDpyEvo, pTimings, pDpyColor) >
-                pDpyEvo->maxSingleLinkPixelClockKHz) ||
-             forceHdmiFrlIsSupported) &&
-            /* If FRL is supported... */
-            nvHdmiDpySupportsFrl(pDpyEvo)) {
+        (!nvHdmiIsTmdsPossible(pDpyEvo, pTimings, pDpyColor) ||
+         forceHdmiFrlIfSupported) &&
+        /* If FRL is supported... */
+        nvHdmiDpySupportsFrl(pDpyEvo)) {
 
         /* Hardware does not support HDMI FRL with YUV422 */
         if ((pDpyColor->format ==
@@ -6930,9 +6929,7 @@ static NvBool GetDfpHdmiProtocol(const NVDpyEvoRec *pDpyEvo,
     }
 
     do {
-        if (nvHdmiGetEffectivePixelClockKHz(pDpyEvo, pTimings, pDpyColor) <=
-               pDpyEvo->maxSingleLinkPixelClockKHz) {
-
+        if (nvHdmiIsTmdsPossible(pDpyEvo, pTimings, pDpyColor)) {
             switch (rmProtocol) {
                 case NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_DUAL_TMDS:
                     /*
@@ -7093,6 +7090,7 @@ static NvBool ConstructHwModeTimingsEvoDfp(const NVDpyEvoRec *pDpyEvo,
                                            const NvModeTimings *pModeTimings,
                                            const struct NvKmsSize *pViewPortSizeIn,
                                            const struct NvKmsRect *pViewPortOut,
+                                           const NvBool dscPassThrough,
                                            NVDpyAttributeColor *pDpyColor,
                                            NVHwModeTimingsEvoPtr pTimings,
                                            const struct
@@ -7102,6 +7100,26 @@ static NvBool ConstructHwModeTimingsEvoDfp(const NVDpyEvoRec *pDpyEvo,
     NvBool ret;
 
     ConstructHwModeTimingsFromNvModeTimings(pModeTimings, pTimings);
+
+    pTimings->dscPassThrough = dscPassThrough;
+    if (pTimings->dscPassThrough &&
+            (pDpyColor->format !=
+             NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB)) {
+        const NvKmsDpyOutputColorFormatInfo colorFormatsInfo =
+            nvDpyGetOutputColorFormatInfo(pDpyEvo);
+
+        if (colorFormatsInfo.rgb444.maxBpc ==
+                NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) {
+            return FALSE;
+        }
+
+        nvkms_memset(pDpyColor, 0, sizeof(*pDpyColor));
+
+        pDpyColor->colorimetry = NVKMS_OUTPUT_COLORIMETRY_DEFAULT;
+        pDpyColor->format = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB;
+        pDpyColor->bpc = colorFormatsInfo.rgb444.maxBpc;
+        pDpyColor->range = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL;
+    }
 
     ret = GetDfpProtocol(pDpyEvo, pParams, pDpyColor, pTimings);
 
@@ -7275,6 +7293,7 @@ NvBool nvConstructHwModeTimingsEvo(const NVDpyEvoRec *pDpyEvo,
                                    const struct NvKmsMode *pKmsMode,
                                    const struct NvKmsSize *pViewPortSizeIn,
                                    const struct NvKmsRect *pViewPortOut,
+                                   const NvBool dscPassThrough,
                                    NVDpyAttributeColor *pDpyColor,
                                    NVHwModeTimingsEvoPtr pTimings,
                                    const struct NvKmsModeValidationParams
@@ -7291,10 +7310,12 @@ NvBool nvConstructHwModeTimingsEvo(const NVDpyEvoRec *pDpyEvo,
         ret = ConstructHwModeTimingsEvoDfp(pDpyEvo,
                                            &pKmsMode->timings,
                                            pViewPortSizeIn, pViewPortOut,
+                                           dscPassThrough,
                                            pDpyColor, pTimings, pParams,
                                            pInfoString);
     } else if (pConnectorEvo->legacyType ==
                NV0073_CTRL_SPECIFIC_DISPLAY_TYPE_CRT) {
+        nvAssert(dscPassThrough == FALSE);
         ret = ConstructHwModeTimingsEvoCrt(pConnectorEvo,
                                            &pKmsMode->timings,
                                            pViewPortSizeIn, pViewPortOut,
@@ -9997,11 +10018,11 @@ NvBool nvEvoIsConsoleActive(const NVDevEvoRec *pDevEvo)
      * console or the NVKMS console might be active.
      *
      * If (pDevEvo->modesetOwner != NULL) but
-     * pDevEvo->modesetOwnerChanged is TRUE, that means the modeset
+     * pDevEvo->modesetOwnerOrSubOwnerChanged is TRUE, that means the modeset
      * ownership is grabbed by the external client but it hasn't
-     * performed any modeset and the console is still active.
+     * performed any modeset and the console might still be active.
      */
-    if ((pDevEvo->modesetOwner == NULL) || pDevEvo->modesetOwnerChanged) {
+    if ((pDevEvo->modesetOwner == NULL) || pDevEvo->modesetOwnerOrSubOwnerChanged) {
         NvU32 sd;
         const NVDispEvoRec *pDispEvo;
         FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {

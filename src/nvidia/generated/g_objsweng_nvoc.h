@@ -87,6 +87,9 @@ struct OBJSWENG {
     struct Object *__nvoc_pbase_Object;    // obj super^2
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct OBJSWENG *__nvoc_pbase_OBJSWENG;    // sweng
+
+    // 1 PDB property
+//  NvBool PDB_PROP_SWENG_IS_MISSING inherited from OBJENGSTATE
 };
 
 
@@ -141,6 +144,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJSWENG;
 #define PDB_PROP_SWENG_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_SWENG_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 
+
 NV_STATUS __nvoc_objCreateDynamic_OBJSWENG(OBJSWENG**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJSWENG(OBJSWENG**, Dynamic*, NvU32);
@@ -148,7 +152,9 @@ NV_STATUS __nvoc_objCreate_OBJSWENG(OBJSWENG**, Dynamic*, NvU32);
     __nvoc_objCreate_OBJSWENG((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+
+// Wrapper macros for halified functions
 #define swengConstructEngine_FNPTR(pSweng) pSweng->__nvoc_metadata_ptr->vtable.__swengConstructEngine__
 #define swengConstructEngine(pGpu, pSweng, arg3) swengConstructEngine_DISPATCH(pGpu, pSweng, arg3)
 #define swengInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__

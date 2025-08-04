@@ -164,7 +164,28 @@ NV_STATUS __nvoc_objCreate_OfaContext(OfaContext**, Dynamic*, NvU32, struct CALL
     __nvoc_objCreate_OfaContext((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+#ifdef __nvoc_kernel_ofa_ctx_h_disabled
+static inline NV_STATUS ofactxConstructHal(struct OfaContext *pOfaContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("OfaContext was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_ofa_ctx_h_disabled
+#define ofactxConstructHal(pOfaContext, pCallContext, pParams) ofactxConstructHal_KERNEL(pOfaContext, pCallContext, pParams)
+#endif // __nvoc_kernel_ofa_ctx_h_disabled
+
+#ifdef __nvoc_kernel_ofa_ctx_h_disabled
+static inline void ofactxDestructHal(struct OfaContext *pOfaContext) {
+    NV_ASSERT_FAILED_PRECOMP("OfaContext was disabled!");
+}
+#else // __nvoc_kernel_ofa_ctx_h_disabled
+#define ofactxDestructHal(pOfaContext) ofactxDestructHal_KERNEL(pOfaContext)
+#endif // __nvoc_kernel_ofa_ctx_h_disabled
+
+
+// Wrapper macros for halified functions
+#define ofactxConstructHal_HAL(pOfaContext, pCallContext, pParams) ofactxConstructHal(pOfaContext, pCallContext, pParams)
+#define ofactxDestructHal_HAL(pOfaContext) ofactxDestructHal(pOfaContext)
 #define ofactxGetSwMethods_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesGetSwMethods__
 #define ofactxGetSwMethods(pChannelDescendant, ppMethods, pNumMethods) ofactxGetSwMethods_DISPATCH(pChannelDescendant, ppMethods, pNumMethods)
 #define ofactxIsSwMethodStalling_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesIsSwMethodStalling__
@@ -362,29 +383,8 @@ static inline NV_STATUS ofactxGetOrAllocNotifShare_DISPATCH(struct OfaContext *p
 NV_STATUS ofactxConstructHal_KERNEL(struct OfaContext *pOfaContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 
 
-#ifdef __nvoc_kernel_ofa_ctx_h_disabled
-static inline NV_STATUS ofactxConstructHal(struct OfaContext *pOfaContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("OfaContext was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_ofa_ctx_h_disabled
-#define ofactxConstructHal(pOfaContext, pCallContext, pParams) ofactxConstructHal_KERNEL(pOfaContext, pCallContext, pParams)
-#endif //__nvoc_kernel_ofa_ctx_h_disabled
-
-#define ofactxConstructHal_HAL(pOfaContext, pCallContext, pParams) ofactxConstructHal(pOfaContext, pCallContext, pParams)
-
 void ofactxDestructHal_KERNEL(struct OfaContext *pOfaContext);
 
-
-#ifdef __nvoc_kernel_ofa_ctx_h_disabled
-static inline void ofactxDestructHal(struct OfaContext *pOfaContext) {
-    NV_ASSERT_FAILED_PRECOMP("OfaContext was disabled!");
-}
-#else //__nvoc_kernel_ofa_ctx_h_disabled
-#define ofactxDestructHal(pOfaContext) ofactxDestructHal_KERNEL(pOfaContext)
-#endif //__nvoc_kernel_ofa_ctx_h_disabled
-
-#define ofactxDestructHal_HAL(pOfaContext) ofactxDestructHal(pOfaContext)
 
 static inline NV_STATUS __nvoc_ofactxConstruct(struct OfaContext *arg_pOfaContext, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams) {
     return ofactxConstructHal(arg_pOfaContext, arg_pCallContext, arg_pParams);

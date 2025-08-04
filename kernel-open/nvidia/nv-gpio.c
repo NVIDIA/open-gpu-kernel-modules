@@ -30,15 +30,6 @@
 
 #define NV_GPIOF_DIR_IN    (1 << 0)
 
-/*!
- * @brief Mapping array of OS GPIO function ID to OS function name,
- * this name is used to get GPIO number from Device Tree.
- */
-static const char *osMapGpioFunc[] = {
-    [NV_OS_GPIO_FUNC_HOTPLUG_A] = "os_gpio_hotplug_a",
-    [NV_OS_GPIO_FUNC_HOTPLUG_B] = "os_gpio_hotplug_b",
-};
-
 NV_STATUS NV_API_CALL nv_gpio_get_pin_state
 (
     nv_state_t *nv,
@@ -46,17 +37,13 @@ NV_STATUS NV_API_CALL nv_gpio_get_pin_state
     NvU32 *pinValue
 )
 {
+#if NV_SUPPORTS_PLATFORM_DEVICE
     int ret;
 
-#if defined(NV_GPIO_GET_VALUE_PRESENT) && NV_SUPPORTS_PLATFORM_DEVICE
     ret = gpio_get_value(pinNum);
-#else
-    nv_printf(NV_DBG_ERRORS, "gpio_get_value not present\n");
-    return NV_ERR_GENERIC;
-#endif
     if (ret < 0)
     {
-        nv_printf(NV_DBG_ERRORS, "%s: failed with err: %d\n",
+        nv_printf(NV_DBG_ERRORS, "NVRM: %s: failed with err: %d\n",
                   __func__, ret);
         return NV_ERR_GENERIC;
     }
@@ -64,6 +51,10 @@ NV_STATUS NV_API_CALL nv_gpio_get_pin_state
     *pinValue = ret;
 
     return NV_OK;
+#else
+    nv_printf(NV_DBG_ERRORS, "NVRM: platform device support not present\n");
+    return NV_ERR_GENERIC;
+#endif
 }
 
 void NV_API_CALL nv_gpio_set_pin_state
@@ -73,10 +64,10 @@ void NV_API_CALL nv_gpio_set_pin_state
     NvU32 pinValue
 )
 {
-#if defined(NV_GPIO_SET_VALUE_PRESENT) && NV_SUPPORTS_PLATFORM_DEVICE
+#if NV_SUPPORTS_PLATFORM_DEVICE
     gpio_set_value(pinNum, pinValue);
 #else
-    nv_printf(NV_DBG_ERRORS, "gpio_set_value not present\n");
+    nv_printf(NV_DBG_ERRORS, "NVRM: platform device support not present\n");
 #endif
 }
 
@@ -87,35 +78,30 @@ NV_STATUS NV_API_CALL nv_gpio_set_pin_direction
     NvU32 direction
 )
 {
+#if NV_SUPPORTS_PLATFORM_DEVICE
     int ret;
 
     if (direction)
     {
-#if defined(NV_GPIO_DIRECTION_INPUT_PRESENT) && NV_SUPPORTS_PLATFORM_DEVICE
         ret = gpio_direction_input(pinNum);
-#else
-        nv_printf(NV_DBG_ERRORS, "gpio_direction_input not present\n");
-        return NV_ERR_GENERIC;
-#endif
     }
     else
     {
-#if defined(NV_GPIO_DIRECTION_OUTPUT_PRESENT) && NV_SUPPORTS_PLATFORM_DEVICE
         ret = gpio_direction_output(pinNum, 0);
-#else
-        nv_printf(NV_DBG_ERRORS, "gpio_direction_output not present\n");
-        return NV_ERR_GENERIC;
-#endif
     }
 
     if (ret)
     {
-        nv_printf(NV_DBG_ERRORS, "%s: failed with err: %d\n",
+        nv_printf(NV_DBG_ERRORS, "NVRM: %s: failed with err: %d\n",
                   __func__, ret);
         return NV_ERR_GENERIC;
     }
 
     return NV_OK;
+#else
+    nv_printf(NV_DBG_ERRORS, "NVRM: platform device support not present\n");
+    return NV_ERR_GENERIC;
+#endif
 }
 
 NV_STATUS NV_API_CALL nv_gpio_get_pin_direction
@@ -135,7 +121,7 @@ NV_STATUS NV_API_CALL nv_gpio_get_pin_direction
     ret = nv_gpio_get_direction(pinNum);
     if (ret)
     {
-        nv_printf(NV_DBG_ERRORS, "%s: failed with err: %d\n",
+        nv_printf(NV_DBG_ERRORS, "NVRM: %s: failed with err: %d\n",
                   __func__, ret);
         return NV_ERR_GENERIC;
     }
@@ -152,40 +138,44 @@ NV_STATUS NV_API_CALL nv_gpio_get_pin_number
     NvU32 *pinNum
 )
 {
+#if NV_SUPPORTS_PLATFORM_DEVICE
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
     int rc;
 
-    (void)nvl;
+    /*!
+     * @brief Mapping array of OS GPIO function ID to OS function name,
+     * this name is used to get GPIO number from Device Tree.
+     */
+    static const char *osMapGpioFunc[] = {
+        [NV_OS_GPIO_FUNC_HOTPLUG_A] = "os_gpio_hotplug_a",
+        [NV_OS_GPIO_FUNC_HOTPLUG_B] = "os_gpio_hotplug_b",
+        [NV_OS_GPIO_FUNC_HOTPLUG_C] = "os_gpio_hotplug_c",
+        [NV_OS_GPIO_FUNC_HOTPLUG_D] = "os_gpio_hotplug_d",
+    };
 
-#if defined(NV_OF_GET_NAME_GPIO_PRESENT) && NV_SUPPORTS_PLATFORM_DEVICE
     rc = of_get_named_gpio(nvl->dev->of_node, osMapGpioFunc[function], 0);
-#else
-    nv_printf(NV_DBG_ERRORS, "of_get_named_gpio not present\n");
-    return NV_ERR_GENERIC;
-#endif
     if (rc < 0)
     {
-        nv_printf(NV_DBG_ERRORS, "of_get_name_gpio failed for gpio - %s, rc - %d\n",
+        nv_printf(NV_DBG_ERRORS, "NVRM: of_get_name_gpio failed for gpio - %s, rc - %d\n",
                   osMapGpioFunc[function], rc);
         return NV_ERR_GENERIC;
     }
     *pinNum = rc;
 
-#if defined(NV_DEVM_GPIO_REQUEST_ONE_PRESENT) && NV_SUPPORTS_PLATFORM_DEVICE
     rc = devm_gpio_request_one(nvl->dev, *pinNum, NV_GPIOF_DIR_IN,
                                osMapGpioFunc[function]);
-#else
-    nv_printf(NV_DBG_ERRORS, "devm_gpio_request_one not present\n");
-    return NV_ERR_GENERIC;
-#endif
     if (rc < 0)
     {
-        nv_printf(NV_DBG_ERRORS, "request gpio failed for gpio - %s, rc - %d\n",
+        nv_printf(NV_DBG_ERRORS, "NVRM: request gpio failed for gpio - %s, rc - %d\n",
                   osMapGpioFunc[function], rc);
         return NV_ERR_GENERIC;
     }
 
     return NV_OK;
+#else
+    nv_printf(NV_DBG_ERRORS, "NVRM: platform device support not present\n");
+    return NV_ERR_GENERIC;
+#endif
 }
 
 NvBool NV_API_CALL nv_gpio_get_pin_interrupt_status
@@ -195,6 +185,7 @@ NvBool NV_API_CALL nv_gpio_get_pin_interrupt_status
     NvU32 direction
 )
 {
+#if NV_SUPPORTS_PLATFORM_DEVICE
     NvU32 irqGpioPin;
     NvU32 pinValue;
 
@@ -209,18 +200,17 @@ NvBool NV_API_CALL nv_gpio_get_pin_interrupt_status
         return NV_FALSE;
     }
 
-#if defined(NV_GPIO_GET_VALUE_PRESENT) && NV_SUPPORTS_PLATFORM_DEVICE
     pinValue = gpio_get_value(pinNum);
-#else
-    nv_printf(NV_DBG_ERRORS, "gpio_get_value not present\n");
-    return NV_FALSE;
-#endif
     if (pinValue != direction)
     {
         return NV_FALSE;
     }
 
     return NV_TRUE;
+#else
+    nv_printf(NV_DBG_ERRORS, "NVRM: platform device support not present\n");
+    return NV_FALSE;
+#endif
 }
 
 NV_STATUS NV_API_CALL nv_gpio_set_pin_interrupt
@@ -230,16 +220,12 @@ NV_STATUS NV_API_CALL nv_gpio_set_pin_interrupt
     NvU32 trigger_level
 )
 {
+#if NV_SUPPORTS_PLATFORM_DEVICE
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
     int rc;
     int irq_num;
 
-#if defined(NV_GPIO_TO_IRQ_PRESENT) && NV_SUPPORTS_PLATFORM_DEVICE
     irq_num = gpio_to_irq(pinNum);
-#else
-    nv_printf(NV_DBG_ERRORS, "gpio_to_irq not present\n");
-    return NV_ERR_GENERIC;
-#endif
 
     /*
      * Ignore setting interrupt for falling trigger for hotplug gpio pin
@@ -261,7 +247,7 @@ NV_STATUS NV_API_CALL nv_gpio_set_pin_interrupt
                             "hdmi-hotplug");
     if (rc < 0)
     {
-        nv_printf(NV_DBG_ERRORS, "IRQ registration failed for gpio - %d, rc - %d\n",
+        nv_printf(NV_DBG_ERRORS, "NVRM: IRQ registration failed for gpio - %d, rc - %d\n",
                   pinNum, rc);
         return NV_ERR_GENERIC;
     }
@@ -270,4 +256,8 @@ NV_STATUS NV_API_CALL nv_gpio_set_pin_interrupt
     disable_irq_nosync(irq_num);
 
     return NV_OK;
+#else
+    nv_printf(NV_DBG_ERRORS, "NVRM: platform device support not present\n");
+    return NV_ERR_GENERIC;
+#endif
 }

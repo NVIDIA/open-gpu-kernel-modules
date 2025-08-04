@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -27,6 +27,7 @@
 #include "uvm_global.h"
 #include "uvm_gpu.h"
 #include "uvm_mmu.h"
+#include "uvm_hal_types.h"
 #include "uvm_hal.h"
 #include "uvm_kvmalloc.h"
 #include "uvm_pte_batch.h"
@@ -35,6 +36,7 @@
 #include "uvm_mem.h"
 #include "uvm_va_space.h"
 
+#include <asm/io.h>
 #include <linux/mm.h>
 
 // The page tree has 6 levels on Hopper+ GPUs, and the root is never freed by a
@@ -291,14 +293,29 @@ static struct page *uvm_mmu_page_table_page(uvm_gpu_t *gpu, uvm_mmu_page_table_a
 
 static void *uvm_mmu_page_table_cpu_map(uvm_gpu_t *gpu, uvm_mmu_page_table_alloc_t *phys_alloc)
 {
-    struct page *page = uvm_mmu_page_table_page(gpu, phys_alloc);
-    NvU64 page_offset = offset_in_page(phys_alloc->addr.address);
-    return (char *)kmap(page) + page_offset;
+    // CDMM implies there are no struct pages corresponding to the
+    // GPU memory physical address.
+    if (gpu->mem_info.cdmm_enabled) {
+        NvU64 addr = uvm_gpu_chunk_to_sys_addr(&gpu->pmm, phys_alloc->handle.chunk);
+        // Using cached access for coherent systems, there should be no conflicts
+        // for the vidmem region
+        // Since we use ioremap_cache(), we don't need to use the ioread/write
+        // helpers to access the memory. The underlying memory is not real IO
+        // memory with potential side effects.
+        return nv_ioremap_cache(addr, PAGE_SIZE);
+    }
+    else {
+        NvU64 page_offset = offset_in_page(phys_alloc->addr.address);
+        return kmap(uvm_mmu_page_table_page(gpu, phys_alloc)) + page_offset;
+    }
 }
 
-static void uvm_mmu_page_table_cpu_unmap(uvm_gpu_t *gpu, uvm_mmu_page_table_alloc_t *phys_alloc)
+static void uvm_mmu_page_table_cpu_unmap(uvm_gpu_t *gpu, uvm_mmu_page_table_alloc_t *phys_alloc, void *ptr)
 {
-    kunmap(uvm_mmu_page_table_page(gpu, phys_alloc));
+    if (gpu->mem_info.cdmm_enabled)
+        nv_iounmap(ptr, PAGE_SIZE);
+    else
+        kunmap(uvm_mmu_page_table_page(gpu, phys_alloc));
 }
 
 static void uvm_mmu_page_table_cpu_memset_8(uvm_gpu_t *gpu,
@@ -316,7 +333,7 @@ static void uvm_mmu_page_table_cpu_memset_8(uvm_gpu_t *gpu,
     for (i = 0; i < num_entries; i++)
         ptr[start_index + i] = pattern;
 
-    uvm_mmu_page_table_cpu_unmap(gpu, phys_alloc);
+    uvm_mmu_page_table_cpu_unmap(gpu, phys_alloc, ptr);
 }
 
 static void uvm_mmu_page_table_cpu_memset_16(uvm_gpu_t *gpu,
@@ -338,7 +355,7 @@ static void uvm_mmu_page_table_cpu_memset_16(uvm_gpu_t *gpu,
     for (i = 0; i < num_entries; i++)
         memcpy(&ptr[start_index + i], pattern, sizeof(*ptr));
 
-    uvm_mmu_page_table_cpu_unmap(gpu, phys_alloc);
+    uvm_mmu_page_table_cpu_unmap(gpu, phys_alloc, ptr);
 }
 
 static void pde_fill_cpu(uvm_page_tree_t *tree,
@@ -864,7 +881,7 @@ static bool page_tree_ats_init_required(uvm_page_tree_t *tree)
     if (!tree->gpu_va_space->ats.enabled)
         return false;
 
-    return tree->gpu->parent->no_ats_range_required;
+    return tree->gpu->parent->ats.no_ats_range_required;
 }
 
 static NV_STATUS page_tree_ats_init(uvm_page_tree_t *tree)
@@ -1129,6 +1146,12 @@ NV_STATUS uvm_page_tree_init(uvm_gpu_t *gpu,
 
     if (tree->root == NULL)
         return NV_ERR_NO_MEMORY;
+
+
+    // Refer to the comment for struct uvm_page_tree_struct::pdb_rm_dma_address
+    // in uvm_mmu.h.
+    if (tree->root->phys_alloc.addr.aperture == UVM_APERTURE_SYS)
+        tree->pdb_rm_dma_address = tree->root->phys_alloc.addr;
 
     if (gpu->parent->map_remap_larger_page_promotion) {
         status = map_remap_init(tree);
@@ -2928,6 +2951,54 @@ uvm_gpu_address_t uvm_mmu_gpu_address(uvm_gpu_t *gpu, uvm_gpu_phys_address_t phy
         return uvm_gpu_address_virtual_from_vidmem_phys(gpu, phys_addr.address);
 
     return uvm_gpu_address_from_phys(phys_addr);
+}
+
+NV_STATUS uvm_mmu_tlb_invalidate_phys(uvm_gpu_t *gpu)
+{
+    uvm_dma_map_invalidation_t inval_type = gpu->parent->ats.dma_map_invalidation;
+    uvm_push_t push;
+    NV_STATUS status;
+
+    if (inval_type == UVM_DMA_MAP_INVALIDATION_NONE)
+        return NV_OK;
+ 
+    status = uvm_push_begin(gpu->channel_manager,
+                            UVM_CHANNEL_TYPE_MEMOPS,
+                            &push,
+                            "Invalidating physical ATS translations using %s",
+                            uvm_dma_map_invalidation_string(inval_type));
+    if (status != NV_OK)
+        return status;
+
+    uvm_hal_tlb_invalidate_phys(&push, inval_type);
+    return uvm_push_end_and_wait(&push);
+}
+
+NV_STATUS uvm_mmu_l2_invalidate_noncoh_sysmem(uvm_gpu_t *gpu)
+{
+    uvm_push_t push;
+    NV_STATUS status;
+
+    // L2 cache invalidation is only done for systems with write-back 
+    // cache which is iGPUs as of now.
+    UVM_ASSERT(gpu->parent->is_integrated_gpu);
+
+    status = uvm_push_begin(gpu->channel_manager,
+                            UVM_CHANNEL_TYPE_MEMOPS,
+                            &push,
+                            "L2 cache invalidate for sysmem");
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("L2 cache invalidation: Failed to begin push, status: %s\n", nvstatusToString(status));
+        return status;
+    }
+
+    gpu->parent->host_hal->l2_invalidate_noncoh_sysmem(&push);
+
+    status = uvm_push_end_and_wait(&push);
+    if (status != NV_OK) 
+        UVM_ERR_PRINT("ERROR: L2 cache invalidation: Failed to complete push, status: %s\n", nvstatusToString(status));
+
+    return status;
 }
 
 NV_STATUS uvm_test_invalidate_tlb(UVM_TEST_INVALIDATE_TLB_PARAMS *params, struct file *filp)

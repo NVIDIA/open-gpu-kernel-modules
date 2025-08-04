@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -964,6 +964,18 @@ typedef struct KernelPmu KernelPmu;
 #endif /* __nvoc_class_id_KernelPmu */
 
 
+struct GCX;
+
+#ifndef __NVOC_CLASS_GCX_TYPEDEF__
+#define __NVOC_CLASS_GCX_TYPEDEF__
+typedef struct GCX GCX;
+#endif /* __NVOC_CLASS_GCX_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_GCX
+#define __nvoc_class_id_GCX 0x4507c4
+#endif /* __nvoc_class_id_GCX */
+
+
 struct Lpwr;
 
 #ifndef __NVOC_CLASS_Lpwr_TYPEDEF__
@@ -1532,6 +1544,18 @@ typedef struct KernelGsplite KernelGsplite;
 #endif /* __nvoc_class_id_KernelGsplite */
 
 
+struct KernelHFRP;
+
+#ifndef __NVOC_CLASS_KernelHFRP_TYPEDEF__
+#define __NVOC_CLASS_KernelHFRP_TYPEDEF__
+typedef struct KernelHFRP KernelHFRP;
+#endif /* __NVOC_CLASS_KernelHFRP_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_KernelHFRP
+#define __nvoc_class_id_KernelHFRP 0xa9fc13
+#endif /* __nvoc_class_id_KernelHFRP */
+
+
 struct Spdm;
 
 #ifndef __NVOC_CLASS_Spdm_TYPEDEF__
@@ -1604,6 +1628,7 @@ typedef struct Spdm Spdm;
 #define ENG_CLASS_DPAUX                classId(OBJDPAUX)
 #define ENG_CLASS_PMU                  classId(Pmu)
 #define ENG_CLASS_KERNEL_PMU           classId(KernelPmu)
+#define ENG_CLASS_GCX                  classId(GCX)
 #define ENG_CLASS_LPWR                 classId(Lpwr)
 #define ENG_CLASS_ISOHUB               classId(OBJISOHUB)
 #define ENG_CLASS_PMGR                 classId(Pmgr)
@@ -1651,6 +1676,7 @@ typedef struct Spdm Spdm;
 #define ENG_CLASS_HSHUB                classId(Hshub)
 #define ENG_CLASS_KERNEL_IOCTRL        classId(KernelIoctrl)
 #define ENG_CLASS_OFA                  classId(OBJOFA)
+#define ENG_CLASS_KERNEL_HFRP          classId(KernelHFRP)
 
 
 //
@@ -1718,6 +1744,7 @@ typedef struct Spdm Spdm;
 #define ENG_DPAUX                MKENGDESC(ENG_CLASS_DPAUX,                0)
 #define ENG_PMU                  MKENGDESC(ENG_CLASS_PMU,                  0)
 #define ENG_KERNEL_PMU           MKENGDESC(ENG_CLASS_KERNEL_PMU,           0)
+#define ENG_GCX                  MKENGDESC(ENG_CLASS_GCX,                  0)
 #define ENG_LPWR                 MKENGDESC(ENG_CLASS_LPWR,            0)
 #define ENG_ISOHUB               MKENGDESC(ENG_CLASS_ISOHUB,          0)
 #define ENG_PMGR                 MKENGDESC(ENG_CLASS_PMGR,            0)
@@ -1770,7 +1797,6 @@ typedef struct Spdm Spdm;
 
 // Indexed MSENC Engine Tag Reference
 #define ENG_NVENC(x)             MKENGDESC(ENG_CLASS_NVENC,           x)
-// Bug 4175886 - Use this new value for all chips once GB20X is released
 #define ENG_NVENC__SIZE_1        4
 #define IS_MSENC(engDesc)        (ENGDESC_FIELD(engDesc, _CLASS) == classId(OBJMSENC))
 #define GET_MSENC_IDX(engDesc)   ENGDESC_FIELD(engDesc, _INST)
@@ -1828,6 +1854,8 @@ typedef struct Spdm Spdm;
 #define ENG_OFA__SIZE_1             2
 #define IS_OFA(engDesc)             (ENGDESC_FIELD(engDesc, _CLASS) == classId(OBJOFA))
 #define GET_OFA_IDX(engDesc)        ENGDESC_FIELD(engDesc, _INST)
+
+#define ENG_KERNEL_HFRP          MKENGDESC(ENG_CLASS_KERNEL_HFRP,           0)
 
 #endif // _ENG_DESC_H_
 

@@ -24,6 +24,7 @@
 --undefined=rm_isr_bh_unlocked
 --undefined=rm_is_msix_allowed
 --undefined=rm_perform_version_check
+--undefined=rm_pmu_perfmon_get_load
 --undefined=rm_power_management
 --undefined=rm_stop_user_channels
 --undefined=rm_restart_user_channels
@@ -196,6 +197,7 @@
 --undefined=rm_check_for_gpu_surprise_removal
 --undefined=rm_set_external_kernel_client_count
 --undefined=rm_schedule_gpu_wakeup
+--undefined=rm_init_tegra_dynamic_power_management
 --undefined=rm_init_dynamic_power_management
 --undefined=rm_cleanup_dynamic_power_management
 --undefined=rm_enable_dynamic_power_management

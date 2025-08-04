@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,7 +39,7 @@ typedef struct CALL_CONTEXT CALL_CONTEXT;
 typedef struct MEMORY_DESCRIPTOR MEMORY_DESCRIPTOR;
 typedef struct RS_RES_FREE_PARAMS_INTERNAL RS_RES_FREE_PARAMS_INTERNAL;
 typedef struct RS_LOCK_INFO RS_LOCK_INFO;
-typedef struct NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS; 
+typedef struct NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS;
 typedef NvU32 NV_ADDRESS_SPACE;
 
 extern RsServer    g_resServ;
@@ -249,20 +249,17 @@ struct _RM_API
                                          NvP64 pLinearAddress, NvU32 flags, NvU32 ProcessId, API_SECURITY_INFO *pSecInfo);
 
     // Map dma memory with default security attributes. Provides RM internal implementation for NvRmMapMemoryDma().
-    NV_STATUS (*Map)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx, NvHandle hMemory,
-                     NvU64 offset, NvU64 length, NvU32 flags, NvU64 *pDmaOffset);
+    NV_STATUS (*Map)(struct _RM_API *pRmApi, NVOS46_PARAMETERS *pParms);
 
     // Map dma memory. Provides RM internal implementation for NvRmMapMemoryDma().
-    NV_STATUS (*MapWithSecInfo)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx, NvHandle hMemory,
-                                NvU64 offset, NvU64 length, NvU32 flags, NvU64 *pDmaOffset, API_SECURITY_INFO *pSecInfo);
+    NV_STATUS (*MapWithSecInfo)(struct _RM_API *pRmApi, NVOS46_PARAMETERS *pParms, API_SECURITY_INFO *pSecInfo);
 
     // Unmap dma memory with default security attributes
-    NV_STATUS (*Unmap)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx,
-                       NvU32 flags, NvU64 dmaOffset, NvU64 size);
+    NV_STATUS (*Unmap)(struct _RM_API *pRmApi, NVOS47_PARAMETERS *pParms);
 
     // Unmap dma memory
-    NV_STATUS (*UnmapWithSecInfo)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx,
-                                  NvU32 flags, NvU64 dmaOffset, NvU64 size, API_SECURITY_INFO *pSecInfo);
+    NV_STATUS (*UnmapWithSecInfo)(struct _RM_API *pRmApi, NVOS47_PARAMETERS *pParms, API_SECURITY_INFO *pSecInfo);
+
 
     API_SECURITY_INFO  defaultSecInfo;
     NvBool             bHasDefaultSecInfo;

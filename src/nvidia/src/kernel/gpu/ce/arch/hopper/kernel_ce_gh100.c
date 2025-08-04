@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1259,14 +1259,27 @@ NV_STATUS kceGetP2PCes_GH100(KernelCE *pKCe, OBJGPU *pGpu, NvU32 gpuMask, NvU32 
 /*! Determine if CE support confidential compute secure copy */
 NvBool kceIsSecureCe_GH100(OBJGPU *pGpu, KernelCE *pKCe)
 {
-    NV_STATUS status;
-    NvU8 ceCaps[NV2080_CTRL_CE_CAPS_TBL_SIZE];
+    NV2080_CTRL_CE_GET_CAPS_V2_PARAMS physicalCaps;
 
-    NV_ASSERT_OK_OR_ELSE(status,
-        kceGetDeviceCaps(pGpu, pKCe, RM_ENGINE_TYPE_COPY(pKCe->publicID), ceCaps),
-        return NV_FALSE);
+    // Only check LCEs mapped to a physical CE
+    // TODO Bug 5132562
+    if (pKCe->bStubbed)
+    {
+        NV_PRINTF(LEVEL_INFO, "Skipping stubbed CE %d\n", pKCe->publicID);
+        return NV_FALSE;
+    }
 
-    return (NV2080_CTRL_CE_GET_CAP(ceCaps, NV2080_CTRL_CE_CAPS_CE_CC_SECURE) != 0) ?
+    portMemSet(&physicalCaps, 0, sizeof(physicalCaps));
+    physicalCaps.ceEngineType = NV2080_ENGINE_TYPE_COPY(pKCe->publicID);
+
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                           pGpu->hInternalClient,
+                           pGpu->hInternalSubdevice,
+                           NV2080_CTRL_CMD_CE_GET_PHYSICAL_CAPS,
+                           &physicalCaps,
+                           sizeof(physicalCaps)));
+
+    return (NV2080_CTRL_CE_GET_CAP(physicalCaps.capsTbl, NV2080_CTRL_CE_CAPS_CE_CC_SECURE) != 0) ?
                NV_TRUE : NV_FALSE;
 };
-

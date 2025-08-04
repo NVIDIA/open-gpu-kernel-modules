@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -153,7 +153,12 @@ NV_STATUS __nvoc_objCreate_BinaryApi(BinaryApi**, Dynamic*, NvU32, struct CALL_C
     __nvoc_objCreate_BinaryApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS binapiConstruct_IMPL(struct BinaryApi *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_binapiConstruct(arg_pResource, arg_pCallContext, arg_pParams) binapiConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+
+
+// Wrapper macros for halified functions
 #define binapiControl_FNPTR(pResource) pResource->__nvoc_metadata_ptr->vtable.__binapiControl__
 #define binapiControl(pResource, pCallContext, pParams) binapiControl_DISPATCH(pResource, pCallContext, pParams)
 #define binapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
@@ -308,9 +313,6 @@ static inline void binapiAddAdditionalDependants_DISPATCH(struct RsClient *pClie
 
 NV_STATUS binapiControl_IMPL(struct BinaryApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
-NV_STATUS binapiConstruct_IMPL(struct BinaryApi *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_binapiConstruct(arg_pResource, arg_pCallContext, arg_pParams) binapiConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 
@@ -418,7 +420,12 @@ NV_STATUS __nvoc_objCreate_BinaryApiPrivileged(BinaryApiPrivileged**, Dynamic*, 
     __nvoc_objCreate_BinaryApiPrivileged((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS binapiprivConstruct_IMPL(struct BinaryApiPrivileged *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_binapiprivConstruct(arg_pResource, arg_pCallContext, arg_pParams) binapiprivConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+
+
+// Wrapper macros for halified functions
 #define binapiprivControl_FNPTR(pResource) pResource->__nvoc_metadata_ptr->vtable.__binapiprivControl__
 #define binapiprivControl(pResource, pCallContext, pParams) binapiprivControl_DISPATCH(pResource, pCallContext, pParams)
 #define binapiprivMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_BinaryApi.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
@@ -573,9 +580,6 @@ static inline void binapiprivAddAdditionalDependants_DISPATCH(struct RsClient *p
 
 NV_STATUS binapiprivControl_IMPL(struct BinaryApiPrivileged *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
-NV_STATUS binapiprivConstruct_IMPL(struct BinaryApiPrivileged *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_binapiprivConstruct(arg_pResource, arg_pCallContext, arg_pParams) binapiprivConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 

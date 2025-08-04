@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -183,6 +183,13 @@ typedef struct NV0041_CTRL_GET_SURFACE_ZCULL_ID_PARAMS {
  *         This surface has compression resources bound to it.
  *       NV0041_CTRL_SURFACE_INFO_ATTRS_ZCULL
  *         This surface has zcull resources bound to it.
+ *   NV0041_CTRL_SURFACE_INFO_INDEX_PHYS_SIZE_LO
+ *     This index is used to request the low 32 bits of the physically allocated
+ *     size (64 bit value) in units of bytes for the associated surface.
+ *   NV0041_CTRL_SURFACE_INFO_INDEX_PHYS_SIZE_HI
+ *     This index is used to request the high 32 bits of the physically
+ *     allocated size (64 bit value) in units of bytes for the associated
+ *     surface.
  *   NV0041_CTRL_SURFACE_INFO_INDEX_COMPR_COVERAGE
  *     This index is used to request the compression coverage (if any)
  *     in units of 64K for the associated surface.  A value of zero indicates
@@ -192,7 +199,8 @@ typedef struct NV0041_CTRL_GET_SURFACE_ZCULL_ID_PARAMS {
  *   NV0041_CTRL_SURFACE_INFO_INDEX_PHYS_SIZE
  *     This index is used to request the physically allocated size in units
  *     of 4K(NV0041_CTRL_SURFACE_INFO_PHYS_SIZE_SCALE_FACTOR) for the associated
- *     surface.
+ *     surface. This interface is obsoleted by
+ *     NV0041_CTRL_SURFACE_INFO_INDEX_PHYS_SIZE_{LO,HI}.
  *   NV0041_CTRL_SURFACE_INFO_INDEX_PHYS_ATTR
  *     This index is used to request the surface attribute field. The returned
  *     field value can be decoded using the NV0041_CTRL_SURFACE_INFO_PHYS_ATTR_*
@@ -205,6 +213,8 @@ typedef NVXXXX_CTRL_XXX_INFO NV0041_CTRL_SURFACE_INFO;
 
 /* valid surface info index values */
 #define NV0041_CTRL_SURFACE_INFO_INDEX_ATTRS                           (0x00000001)
+#define NV0041_CTRL_SURFACE_INFO_INDEX_PHYS_SIZE_LO                    (0x00000002)
+#define NV0041_CTRL_SURFACE_INFO_INDEX_PHYS_SIZE_HI                    (0x00000003)
 #define NV0041_CTRL_SURFACE_INFO_INDEX_COMPR_COVERAGE                  (0x00000005)
 #define NV0041_CTRL_SURFACE_INFO_INDEX_PHYS_SIZE                       (0x00000007)
 #define NV0041_CTRL_SURFACE_INFO_INDEX_PHYS_ATTR                       (0x00000008)
@@ -449,5 +459,36 @@ typedef struct NV0041_CTRL_CMD_SET_TAG_PARAMS {
 typedef struct NV0041_CTRL_CMD_GET_TAG_PARAMS {
     NvU32 tag; /* [out] */
 } NV0041_CTRL_CMD_GET_TAG_PARAMS;
+
+/*
+ * NV0041_CTRL_CMD_MAP_MEMORY_FOR_GPU_ACCESS
+ *
+ * Map system memory into IOMMU VAS of a GPU described by hSubdevice
+ * Returns the address
+ *
+ */
+#define NV0041_CTRL_CMD_MAP_MEMORY_FOR_GPU_ACCESS (0x410122) /* finn: Evaluated from "(FINN_NV01_ROOT_USER_MEMORY_INTERFACE_ID << 8) | NV0041_CTRL_MAP_MEMORY_FOR_GPU_ACCESS_PARAMS_MESSAGE_ID" */
+
+#define NV0041_CTRL_MAP_MEMORY_FOR_GPU_ACCESS_PARAMS_MESSAGE_ID (0x22U)
+
+typedef struct NV0041_CTRL_MAP_MEMORY_FOR_GPU_ACCESS_PARAMS {
+    NvHandle hSubdevice;
+    NV_DECLARE_ALIGNED(NvU64 address, 8);
+} NV0041_CTRL_MAP_MEMORY_FOR_GPU_ACCESS_PARAMS;
+
+
+/*
+ * NV0041_CTRL_CMD_UNMAP_MEMORY_FOR_GPU_ACCESS
+ *
+ * See NV0041_CTRL_CMD_MAP_MEMORY_FOR_GPU_ACCESS
+ *
+ */
+#define NV0041_CTRL_CMD_UNMAP_MEMORY_FOR_GPU_ACCESS (0x410153) /* finn: Evaluated from "(FINN_NV01_ROOT_USER_MEMORY_INTERFACE_ID << 8) | NV0041_CTRL_UNMAP_MEMORY_FOR_GPU_ACCESS_PARAMS_MESSAGE_ID" */
+
+#define NV0041_CTRL_UNMAP_MEMORY_FOR_GPU_ACCESS_PARAMS_MESSAGE_ID (0x53U)
+
+typedef struct NV0041_CTRL_UNMAP_MEMORY_FOR_GPU_ACCESS_PARAMS {
+    NvHandle hSubdevice;
+} NV0041_CTRL_UNMAP_MEMORY_FOR_GPU_ACCESS_PARAMS;
 
 /* _ctrl0041_h_ */

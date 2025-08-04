@@ -95,22 +95,24 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_FmSessionApi =
     /*pExportInfo=*/        &__nvoc_export_info__FmSessionApi
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_FmSessionApi[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) fmsessionapiCtrlCmdSetFmState_IMPL,
+        /*pFunc=*/      (void (*)(void)) &fmsessionapiCtrlCmdSetFmState_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xf0101u,
-        /*paramSize=*/  0,
+        /*paramSize=*/  0 /* Singleton parameter list */,
         /*pClassInfo=*/ &(__nvoc_class_def_FmSessionApi.classInfo),
 #if NV_PRINTF_STRINGS_ALLOWED
         /*func=*/       "fmsessionapiCtrlCmdSetFmState"
@@ -120,18 +122,17 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_FmSessio
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) fmsessionapiCtrlCmdClearFmState_IMPL,
+        /*pFunc=*/      (void (*)(void)) &fmsessionapiCtrlCmdClearFmState_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xf0102u,
-        /*paramSize=*/  0,
+        /*paramSize=*/  0 /* Singleton parameter list */,
         /*pClassInfo=*/ &(__nvoc_class_def_FmSessionApi.classInfo),
 #if NV_PRINTF_STRINGS_ALLOWED
         /*func=*/       "fmsessionapiCtrlCmdClearFmState"
 #endif
     },
-
 };
 
 
@@ -342,6 +343,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__FmSessionApi =
     /*pExportEntries=*/ __nvoc_exported_method_def_FmSessionApi
 };
 
+void __nvoc_fmsessionapiDestruct(FmSessionApi*);
 void __nvoc_dtor_RmResource(RmResource*);
 void __nvoc_dtor_FmSessionApi(FmSessionApi *pThis) {
     __nvoc_fmsessionapiDestruct(pThis);
@@ -375,23 +377,11 @@ __nvoc_ctor_FmSessionApi_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_FmSessionApi_1(FmSessionApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // fmsessionapiCtrlCmdSetFmState -- exported (id=0xf0101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__fmsessionapiCtrlCmdSetFmState__ = &fmsessionapiCtrlCmdSetFmState_IMPL;
-#endif
-
-    // fmsessionapiCtrlCmdClearFmState -- exported (id=0xf0102)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__fmsessionapiCtrlCmdClearFmState__ = &fmsessionapiCtrlCmdClearFmState_IMPL;
-#endif
-} // End __nvoc_init_funcTable_FmSessionApi_1 with approximately 2 basic block(s).
+} // End __nvoc_init_funcTable_FmSessionApi_1
 
 
-// Initialize vtable(s) for 23 virtual method(s).
+// Initialize vtable(s) for 21 virtual method(s).
 void __nvoc_init_funcTable_FmSessionApi(FmSessionApi *pThis) {
-
-    // Initialize vtable(s) with 2 per-object function pointer(s).
     __nvoc_init_funcTable_FmSessionApi_1(pThis);
 }
 

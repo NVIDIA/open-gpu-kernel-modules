@@ -153,7 +153,15 @@ NV_STATUS __nvoc_objCreate_MemoryHwResources(MemoryHwResources**, Dynamic*, NvU3
     __nvoc_objCreate_MemoryHwResources((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS hwresConstruct_IMPL(struct MemoryHwResources *arg_pMemoryHwResources, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_hwresConstruct(arg_pMemoryHwResources, arg_pCallContext, arg_pParams) hwresConstruct_IMPL(arg_pMemoryHwResources, arg_pCallContext, arg_pParams)
+
+void hwresDestruct_IMPL(struct MemoryHwResources *pMemoryHwResources);
+#define __nvoc_hwresDestruct(pMemoryHwResources) hwresDestruct_IMPL(pMemoryHwResources)
+
+
+// Wrapper macros for halified functions
 #define hwresCanCopy_FNPTR(pMemoryHwResources) pMemoryHwResources->__nvoc_metadata_ptr->vtable.__hwresCanCopy__
 #define hwresCanCopy(pMemoryHwResources) hwresCanCopy_DISPATCH(pMemoryHwResources)
 #define hwresIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsDuplicate__
@@ -314,12 +322,6 @@ static inline void hwresAddAdditionalDependants_DISPATCH(struct RsClient *pClien
 
 NvBool hwresCanCopy_IMPL(struct MemoryHwResources *pMemoryHwResources);
 
-NV_STATUS hwresConstruct_IMPL(struct MemoryHwResources *arg_pMemoryHwResources, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_hwresConstruct(arg_pMemoryHwResources, arg_pCallContext, arg_pParams) hwresConstruct_IMPL(arg_pMemoryHwResources, arg_pCallContext, arg_pParams)
-void hwresDestruct_IMPL(struct MemoryHwResources *pMemoryHwResources);
-
-#define __nvoc_hwresDestruct(pMemoryHwResources) hwresDestruct_IMPL(pMemoryHwResources)
 #undef PRIVATE_FIELD
 
 

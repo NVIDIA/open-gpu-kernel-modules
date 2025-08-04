@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVidia Corporation
+    Copyright (c) 2015-2025 NVidia Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -26,7 +26,7 @@
 
 #include "uvm_types.h"
 #include "uvm_ioctl.h"
-#include "nv_uvm_types.h"
+#include "nv_uvm_user_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -943,7 +943,7 @@ typedef struct
 {
     NvProcessorUuid                 gpu_uuid;                                           // In
 
-    // Type UVM_ACCESS_COUNTER_GRANULARITY from nv_uvm_types.h
+    // Type UVM_ACCESS_COUNTER_GRANULARITY from nv_uvm_user_types.h
     NvU32                           granularity;                                        // In
 
     NvU32                           threshold;                                          // In
@@ -1057,14 +1057,6 @@ typedef struct
     NvU64                           pin_ns                           NV_ALIGN_BYTES(8); // In
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_SET_PAGE_THRASHING_POLICY_PARAMS;
-
-#define UVM_TEST_PMM_SYSMEM                              UVM_TEST_IOCTL_BASE(64)
-typedef struct
-{
-    NvU64                           range_address1                   NV_ALIGN_BYTES(8); // In
-    NvU64                           range_address2                   NV_ALIGN_BYTES(8); // In
-    NV_STATUS                       rmStatus;                                           // Out
-} UVM_TEST_PMM_SYSMEM_PARAMS;
 
 #define UVM_TEST_PMM_REVERSE_MAP                         UVM_TEST_IOCTL_BASE(65)
 typedef struct
@@ -1559,6 +1551,32 @@ typedef struct
 
     NV_STATUS rmStatus;                     // Out
 } UVM_TEST_QUERY_ACCESS_COUNTERS_PARAMS;
+
+#define UVM_TEST_VA_BLOCK_DISCARD_STATUS                 UVM_TEST_IOCTL_BASE(110)
+typedef struct
+{
+    NvU64 lookup_address;                                // In
+    NvBool discarded;                                    // Out
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_VA_BLOCK_DISCARD_STATUS_PARAMS;
+
+typedef enum
+{
+    UVM_TEST_VA_BLOCK_DISCARD_PMM_STATE_INVALID = 0,
+    UVM_TEST_VA_BLOCK_DISCARD_PMM_STATE_UNUSED,
+    UVM_TEST_VA_BLOCK_DISCARD_PMM_STATE_DISCARDED,
+    UVM_TEST_VA_BLOCK_DISCARD_PMM_STATE_USED,
+    UVM_TEST_VA_BLOCK_DISCARD_PMM_STATE_COUNT
+} UVM_TEST_VA_BLOCK_DISCARD_PMM_STATE;
+
+#define UVM_TEST_VA_BLOCK_DISCARD_CHECK_PMM_STATE        UVM_TEST_IOCTL_BASE(111)
+typedef struct
+{
+    NvU64 address;                                       // In
+    NvProcessorUuid gpu_uuid;                            // In
+    UVM_TEST_VA_BLOCK_DISCARD_PMM_STATE state;           // Out
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_VA_BLOCK_DISCARD_CHECK_PMM_STATE_PARAMS;
 
 #ifdef __cplusplus
 }

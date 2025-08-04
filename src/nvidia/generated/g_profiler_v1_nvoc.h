@@ -87,13 +87,6 @@ struct Profiler {
     struct RmResource *__nvoc_pbase_RmResource;    // rmres super^2
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct Profiler *__nvoc_pbase_Profiler;    // profiler
-
-    // Vtable with 5 per-object function pointers
-    NV_STATUS (*__profilerCtrlCmdProfilerReserveHwpm__)(struct Profiler * /*this*/);  // exported (id=0x90cc0101)
-    NV_STATUS (*__profilerCtrlCmdProfilerReleaseHwpm__)(struct Profiler * /*this*/);  // exported (id=0x90cc0102)
-    NV_STATUS (*__profilerCtrlCmdProfilerGetHwpmReservationInfo__)(struct Profiler * /*this*/, NV90CC_CTRL_HWPM_GET_RESERVATION_INFO_PARAMS *);  // exported (id=0x90cc0103)
-    NV_STATUS (*__profilerCtrlCmdProfilerRequestCgControls__)(struct Profiler * /*this*/, NV90CC_CTRL_POWER_REQUEST_FEATURES_PARAMS *);  // exported (id=0x90cc0301)
-    NV_STATUS (*__profilerCtrlCmdProfilerReleaseCgControls__)(struct Profiler * /*this*/, NV90CC_CTRL_POWER_RELEASE_FEATURES_PARAMS *);  // exported (id=0x90cc0302)
 };
 
 
@@ -162,19 +155,96 @@ NV_STATUS __nvoc_objCreate_Profiler(Profiler**, Dynamic*, NvU32, struct CALL_CON
     __nvoc_objCreate_Profiler((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS profilerConstruct_IMPL(struct Profiler *arg_pProfiler, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_profilerConstruct(arg_pProfiler, arg_pCallContext, arg_pParams) profilerConstruct_IMPL(arg_pProfiler, arg_pCallContext, arg_pParams)
+
+#ifdef __nvoc_profiler_v1_h_disabled
+static inline NvBool profilerIsProfilingPermitted(struct Profiler *pProfiler) {
+    NV_ASSERT_FAILED_PRECOMP("Profiler was disabled!");
+    return NV_FALSE;
+}
+#else // __nvoc_profiler_v1_h_disabled
+#define profilerIsProfilingPermitted(pProfiler) profilerIsProfilingPermitted_IMPL(pProfiler)
+#endif // __nvoc_profiler_v1_h_disabled
+
+#ifdef __nvoc_profiler_v1_h_disabled
+static inline NV_STATUS profilerConstructState(struct Profiler *pProfiler, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Profiler was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v1_h_disabled
+#define profilerConstructState(pProfiler, pCallContext, pParams) profilerConstructState_ac1694(pProfiler, pCallContext, pParams)
+#endif // __nvoc_profiler_v1_h_disabled
+
+#define __nvoc_profilerDestruct(pProfiler) profilerDestruct_d44104(pProfiler)
+
+#ifdef __nvoc_profiler_v1_h_disabled
+static inline NV_STATUS profilerControlHwpmSupported(struct Profiler *pProfiler, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Profiler was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v1_h_disabled
+#define profilerControlHwpmSupported(pProfiler, pParams) profilerControlHwpmSupported_ac1694(pProfiler, pParams)
+#endif // __nvoc_profiler_v1_h_disabled
+
+NV_STATUS profilerCtrlCmdProfilerReserveHwpm_IMPL(struct Profiler *pProfiler);
+#ifdef __nvoc_profiler_v1_h_disabled
+static inline NV_STATUS profilerCtrlCmdProfilerReserveHwpm(struct Profiler *pProfiler) {
+    NV_ASSERT_FAILED_PRECOMP("Profiler was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v1_h_disabled
+#define profilerCtrlCmdProfilerReserveHwpm(pProfiler) profilerCtrlCmdProfilerReserveHwpm_IMPL(pProfiler)
+#endif // __nvoc_profiler_v1_h_disabled
+
+NV_STATUS profilerCtrlCmdProfilerReleaseHwpm_IMPL(struct Profiler *pProfiler);
+#ifdef __nvoc_profiler_v1_h_disabled
+static inline NV_STATUS profilerCtrlCmdProfilerReleaseHwpm(struct Profiler *pProfiler) {
+    NV_ASSERT_FAILED_PRECOMP("Profiler was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v1_h_disabled
+#define profilerCtrlCmdProfilerReleaseHwpm(pProfiler) profilerCtrlCmdProfilerReleaseHwpm_IMPL(pProfiler)
+#endif // __nvoc_profiler_v1_h_disabled
+
+NV_STATUS profilerCtrlCmdProfilerGetHwpmReservationInfo_IMPL(struct Profiler *pProfiler, NV90CC_CTRL_HWPM_GET_RESERVATION_INFO_PARAMS *pParams);
+#ifdef __nvoc_profiler_v1_h_disabled
+static inline NV_STATUS profilerCtrlCmdProfilerGetHwpmReservationInfo(struct Profiler *pProfiler, NV90CC_CTRL_HWPM_GET_RESERVATION_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Profiler was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v1_h_disabled
+#define profilerCtrlCmdProfilerGetHwpmReservationInfo(pProfiler, pParams) profilerCtrlCmdProfilerGetHwpmReservationInfo_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v1_h_disabled
+
+NV_STATUS profilerCtrlCmdProfilerRequestCgControls_IMPL(struct Profiler *pProfiler, NV90CC_CTRL_POWER_REQUEST_FEATURES_PARAMS *pParams);
+#ifdef __nvoc_profiler_v1_h_disabled
+static inline NV_STATUS profilerCtrlCmdProfilerRequestCgControls(struct Profiler *pProfiler, NV90CC_CTRL_POWER_REQUEST_FEATURES_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Profiler was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v1_h_disabled
+#define profilerCtrlCmdProfilerRequestCgControls(pProfiler, pParams) profilerCtrlCmdProfilerRequestCgControls_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v1_h_disabled
+
+NV_STATUS profilerCtrlCmdProfilerReleaseCgControls_IMPL(struct Profiler *pProfiler, NV90CC_CTRL_POWER_RELEASE_FEATURES_PARAMS *pParams);
+#ifdef __nvoc_profiler_v1_h_disabled
+static inline NV_STATUS profilerCtrlCmdProfilerReleaseCgControls(struct Profiler *pProfiler, NV90CC_CTRL_POWER_RELEASE_FEATURES_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Profiler was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v1_h_disabled
+#define profilerCtrlCmdProfilerReleaseCgControls(pProfiler, pParams) profilerCtrlCmdProfilerReleaseCgControls_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v1_h_disabled
+
+
+// Wrapper macros for halified functions
+#define profilerIsProfilingPermitted_HAL(pProfiler) profilerIsProfilingPermitted(pProfiler)
+#define profilerConstructState_HAL(pProfiler, pCallContext, pParams) profilerConstructState(pProfiler, pCallContext, pParams)
 #define profilerControl_FNPTR(pProfiler) pProfiler->__nvoc_metadata_ptr->vtable.__profilerControl__
 #define profilerControl(pProfiler, pCallContext, pParams) profilerControl_DISPATCH(pProfiler, pCallContext, pParams)
-#define profilerCtrlCmdProfilerReserveHwpm_FNPTR(pProfiler) pProfiler->__profilerCtrlCmdProfilerReserveHwpm__
-#define profilerCtrlCmdProfilerReserveHwpm(pProfiler) profilerCtrlCmdProfilerReserveHwpm_DISPATCH(pProfiler)
-#define profilerCtrlCmdProfilerReleaseHwpm_FNPTR(pProfiler) pProfiler->__profilerCtrlCmdProfilerReleaseHwpm__
-#define profilerCtrlCmdProfilerReleaseHwpm(pProfiler) profilerCtrlCmdProfilerReleaseHwpm_DISPATCH(pProfiler)
-#define profilerCtrlCmdProfilerGetHwpmReservationInfo_FNPTR(pProfiler) pProfiler->__profilerCtrlCmdProfilerGetHwpmReservationInfo__
-#define profilerCtrlCmdProfilerGetHwpmReservationInfo(pProfiler, pParams) profilerCtrlCmdProfilerGetHwpmReservationInfo_DISPATCH(pProfiler, pParams)
-#define profilerCtrlCmdProfilerRequestCgControls_FNPTR(pProfiler) pProfiler->__profilerCtrlCmdProfilerRequestCgControls__
-#define profilerCtrlCmdProfilerRequestCgControls(pProfiler, pParams) profilerCtrlCmdProfilerRequestCgControls_DISPATCH(pProfiler, pParams)
-#define profilerCtrlCmdProfilerReleaseCgControls_FNPTR(pProfiler) pProfiler->__profilerCtrlCmdProfilerReleaseCgControls__
-#define profilerCtrlCmdProfilerReleaseCgControls(pProfiler, pParams) profilerCtrlCmdProfilerReleaseCgControls_DISPATCH(pProfiler, pParams)
+#define profilerControlHwpmSupported_HAL(pProfiler, pParams) profilerControlHwpmSupported(pProfiler, pParams)
 #define profilerMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
 #define profilerMap(pGpuResource, pCallContext, pParams, pCpuMapping) profilerMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define profilerUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
@@ -227,26 +297,6 @@ NV_STATUS __nvoc_objCreate_Profiler(Profiler**, Dynamic*, NvU32, struct CALL_CON
 // Dispatch functions
 static inline NV_STATUS profilerControl_DISPATCH(struct Profiler *pProfiler, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pProfiler->__nvoc_metadata_ptr->vtable.__profilerControl__(pProfiler, pCallContext, pParams);
-}
-
-static inline NV_STATUS profilerCtrlCmdProfilerReserveHwpm_DISPATCH(struct Profiler *pProfiler) {
-    return pProfiler->__profilerCtrlCmdProfilerReserveHwpm__(pProfiler);
-}
-
-static inline NV_STATUS profilerCtrlCmdProfilerReleaseHwpm_DISPATCH(struct Profiler *pProfiler) {
-    return pProfiler->__profilerCtrlCmdProfilerReleaseHwpm__(pProfiler);
-}
-
-static inline NV_STATUS profilerCtrlCmdProfilerGetHwpmReservationInfo_DISPATCH(struct Profiler *pProfiler, NV90CC_CTRL_HWPM_GET_RESERVATION_INFO_PARAMS *pParams) {
-    return pProfiler->__profilerCtrlCmdProfilerGetHwpmReservationInfo__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerCtrlCmdProfilerRequestCgControls_DISPATCH(struct Profiler *pProfiler, NV90CC_CTRL_POWER_REQUEST_FEATURES_PARAMS *pParams) {
-    return pProfiler->__profilerCtrlCmdProfilerRequestCgControls__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerCtrlCmdProfilerReleaseCgControls_DISPATCH(struct Profiler *pProfiler, NV90CC_CTRL_POWER_RELEASE_FEATURES_PARAMS *pParams) {
-    return pProfiler->__profilerCtrlCmdProfilerReleaseCgControls__(pProfiler, pParams);
 }
 
 static inline NV_STATUS profilerMap_DISPATCH(struct Profiler *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
@@ -348,54 +398,20 @@ static inline void profilerAddAdditionalDependants_DISPATCH(struct RsClient *pCl
 NvBool profilerIsProfilingPermitted_IMPL(struct Profiler *pProfiler);
 
 
-#ifdef __nvoc_profiler_v1_h_disabled
-static inline NvBool profilerIsProfilingPermitted(struct Profiler *pProfiler) {
-    NV_ASSERT_FAILED_PRECOMP("Profiler was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_profiler_v1_h_disabled
-#define profilerIsProfilingPermitted(pProfiler) profilerIsProfilingPermitted_IMPL(pProfiler)
-#endif //__nvoc_profiler_v1_h_disabled
-
-#define profilerIsProfilingPermitted_HAL(pProfiler) profilerIsProfilingPermitted(pProfiler)
-
 static inline NV_STATUS profilerConstructState_ac1694(struct Profiler *pProfiler, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
     return NV_OK;
 }
 
-
-#ifdef __nvoc_profiler_v1_h_disabled
-static inline NV_STATUS profilerConstructState(struct Profiler *pProfiler, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("Profiler was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_profiler_v1_h_disabled
-#define profilerConstructState(pProfiler, pCallContext, pParams) profilerConstructState_ac1694(pProfiler, pCallContext, pParams)
-#endif //__nvoc_profiler_v1_h_disabled
-
-#define profilerConstructState_HAL(pProfiler, pCallContext, pParams) profilerConstructState(pProfiler, pCallContext, pParams)
 
 static inline void profilerDestruct_d44104(struct Profiler *pProfiler) {
     return;
 }
 
 
-#define __nvoc_profilerDestruct(pProfiler) profilerDestruct_d44104(pProfiler)
 static inline NV_STATUS profilerControlHwpmSupported_ac1694(struct Profiler *pProfiler, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return NV_OK;
 }
 
-
-#ifdef __nvoc_profiler_v1_h_disabled
-static inline NV_STATUS profilerControlHwpmSupported(struct Profiler *pProfiler, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("Profiler was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_profiler_v1_h_disabled
-#define profilerControlHwpmSupported(pProfiler, pParams) profilerControlHwpmSupported_ac1694(pProfiler, pParams)
-#endif //__nvoc_profiler_v1_h_disabled
-
-#define profilerControlHwpmSupported_HAL(pProfiler, pParams) profilerControlHwpmSupported(pProfiler, pParams)
 
 NV_STATUS profilerControl_IMPL(struct Profiler *pProfiler, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
@@ -409,9 +425,6 @@ NV_STATUS profilerCtrlCmdProfilerRequestCgControls_IMPL(struct Profiler *pProfil
 
 NV_STATUS profilerCtrlCmdProfilerReleaseCgControls_IMPL(struct Profiler *pProfiler, NV90CC_CTRL_POWER_RELEASE_FEATURES_PARAMS *pParams);
 
-NV_STATUS profilerConstruct_IMPL(struct Profiler *arg_pProfiler, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_profilerConstruct(arg_pProfiler, arg_pCallContext, arg_pParams) profilerConstruct_IMPL(arg_pProfiler, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 

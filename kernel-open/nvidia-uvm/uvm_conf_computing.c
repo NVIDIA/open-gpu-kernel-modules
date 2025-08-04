@@ -92,15 +92,57 @@ static uvm_gpu_t *dma_buffer_pool_to_gpu(uvm_conf_computing_dma_buffer_pool_t *d
     return container_of(dma_buffer_pool, uvm_gpu_t, conf_computing.dma_buffer_pool);
 }
 
+static NV_STATUS dma_buffer_alloc(uvm_gpu_t *gpu, uvm_conf_computing_dma_buffer_t *dma_buffer)
+{
+    uvm_mem_alloc_params_t params = { 0 };
+    NV_STATUS status;
+    uvm_mem_t *mem;
+
+    BUILD_BUG_ON(UVM_CONF_COMPUTING_DMA_BUFFER_SIZE % UVM_PAGE_SIZE_2M);
+
+    params.size = UVM_CONF_COMPUTING_DMA_BUFFER_SIZE;
+    params.page_size = UVM_PAGE_SIZE_2M;
+    params.dma_owner = gpu;
+
+    status = uvm_mem_alloc(&params, &mem);
+    if (status != NV_OK)
+        return status;
+
+    status = uvm_mem_map_cpu_kernel(mem);
+    if (status != NV_OK)
+        goto err;
+
+    status = uvm_mem_map_gpu_kernel(mem, gpu);
+    if (status != NV_OK)
+        goto err;
+
+    dma_buffer->alloc = mem;
+    return NV_OK;
+
+ err:
+    uvm_mem_free(mem);
+    return status;
+}
+
+#define AUTH_TAGS_SIZE ((UVM_CONF_COMPUTING_DMA_BUFFER_SIZE / PAGE_SIZE) * UVM_CONF_COMPUTING_AUTH_TAG_SIZE)
+
+static NV_STATUS auth_tag_alloc(uvm_gpu_t *gpu, uvm_conf_computing_dma_buffer_t *dma_buffer) {
+    NV_STATUS status;
+
+    status = uvm_mem_alloc_sysmem_dma_and_map_cpu_kernel(AUTH_TAGS_SIZE, gpu, NULL, &(dma_buffer->auth_tag));
+    if (status != NV_OK)
+        return status;
+
+    return uvm_mem_map_gpu_kernel(dma_buffer->auth_tag, gpu);
+}
+
 // Allocate and map a new DMA stage buffer to CPU and GPU (VA)
 static NV_STATUS dma_buffer_create(uvm_conf_computing_dma_buffer_pool_t *dma_buffer_pool,
                                    uvm_conf_computing_dma_buffer_t **dma_buffer_out)
 {
     uvm_gpu_t *dma_owner;
     uvm_conf_computing_dma_buffer_t *dma_buffer;
-    uvm_mem_t *alloc = NULL;
-    NV_STATUS status = NV_OK;
-    size_t auth_tags_size = (UVM_CONF_COMPUTING_DMA_BUFFER_SIZE / PAGE_SIZE) * UVM_CONF_COMPUTING_AUTH_TAG_SIZE;
+    NV_STATUS status;
 
     dma_buffer = uvm_kvmalloc_zero(sizeof(*dma_buffer));
     if (!dma_buffer)
@@ -110,23 +152,11 @@ static NV_STATUS dma_buffer_create(uvm_conf_computing_dma_buffer_pool_t *dma_buf
     uvm_tracker_init(&dma_buffer->tracker);
     INIT_LIST_HEAD(&dma_buffer->node);
 
-    status = uvm_mem_alloc_sysmem_dma_and_map_cpu_kernel(UVM_CONF_COMPUTING_DMA_BUFFER_SIZE, dma_owner, NULL, &alloc);
+    status = dma_buffer_alloc(dma_owner, dma_buffer);
     if (status != NV_OK)
         goto err;
 
-    dma_buffer->alloc = alloc;
-
-    status = uvm_mem_map_gpu_kernel(alloc, dma_owner);
-    if (status != NV_OK)
-        goto err;
-
-    status = uvm_mem_alloc_sysmem_dma_and_map_cpu_kernel(auth_tags_size, dma_owner, NULL, &alloc);
-    if (status != NV_OK)
-        goto err;
-
-    dma_buffer->auth_tag = alloc;
-
-    status = uvm_mem_map_gpu_kernel(alloc, dma_owner);
+    status = auth_tag_alloc(dma_owner, dma_buffer);
     if (status != NV_OK)
         goto err;
 

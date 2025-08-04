@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2002-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2002-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -52,7 +52,7 @@ kbusControlGetCaps
     NvU32 caps = 0;
 
     // if the Chip is integrated.
-    if ( IsTEGRA(pGpu) || pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_SOC_SDM ))
+    if (IsTEGRA(pGpu) || pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB))
     {
         caps |= NV2080_CTRL_BUS_INFO_CAPS_CHIP_INTEGRATED;
     }
@@ -170,6 +170,18 @@ deviceCtrlCmdHostGetCapsV2_IMPL
     return rmStatus;
 }
 
+NV_STATUS
+deviceCtrlCmdHostGetCapsV2_SOC
+(
+    Device *pDevice,
+    NV0080_CTRL_HOST_GET_CAPS_V2_PARAMS *pHostCapsParamsV2
+)
+{
+    portMemSet(pHostCapsParamsV2, '\0', sizeof(pHostCapsParamsV2));
+
+    return NV_OK;
+}
+
 //
 // BUS RM SubDevice Controls
 //
@@ -181,9 +193,8 @@ subdeviceCtrlCmdBusGetPciInfo_IMPL
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
 
-    if (pKernelBif == NULL || !kbifIsPciBusFamily(pKernelBif))
+    if (!gpuIsPciBusFamily(pGpu))
     {
         return NV_ERR_NOT_SUPPORTED;
     }
@@ -327,7 +338,7 @@ getBusInfos(OBJGPU *pGpu, NV2080_CTRL_BUS_INFO *pBusInfos, NvU32 busInfoListSize
         {
             case NV2080_CTRL_BUS_INFO_INDEX_TYPE:
             {
-                pBusInfos[i].data = kbifGetBusIntfType_HAL(pKernelBif);
+                pBusInfos[i].data = gpuGetBusIntfType_HAL(pGpu);
                 break;
             }
             case NV2080_CTRL_BUS_INFO_INDEX_INTLINE:
@@ -342,7 +353,7 @@ getBusInfos(OBJGPU *pGpu, NV2080_CTRL_BUS_INFO *pBusInfos, NvU32 busInfoListSize
             }
             case NV2080_CTRL_BUS_INFO_INDEX_PCIE_GPU_LINK_CAPS:
             {
-                if (kbifIsPciBusFamily(pKernelBif) && IS_VIRTUAL(pGpu))
+                if (gpuIsPciBusFamily(pGpu) && IS_VIRTUAL(pGpu))
                 {
                     VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
                     pBusInfos[i].data = pVSI->pcieGpuLinkCaps;
@@ -387,7 +398,7 @@ getBusInfos(OBJGPU *pGpu, NV2080_CTRL_BUS_INFO *pBusInfos, NvU32 busInfoListSize
             case NV2080_CTRL_BUS_INFO_INDEX_PCIE_GPU_LINK_UNSUPPORTED_REQUESTS_CLEAR:
             case NV2080_CTRL_BUS_INFO_INDEX_MSI_INFO:
             {
-                if (kbifIsPciBusFamily(pKernelBif))
+                if (gpuIsPciBusFamily(pGpu))
                 {
                     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kbifControlGetPCIEInfo(pGpu, pKernelBif, &pBusInfos[i]));
                 }
@@ -503,7 +514,7 @@ getBusInfos(OBJGPU *pGpu, NV2080_CTRL_BUS_INFO *pBusInfos, NvU32 busInfoListSize
             }
             case NV2080_CTRL_BUS_INFO_INDEX_BUS_NUMBER:
             {
-                if (kbifIsPciBusFamily(pKernelBif))
+                if (gpuIsPciBusFamily(pGpu))
                 {
                     pBusInfos[i].data = gpuGetBus(pGpu);
                 }
@@ -515,7 +526,7 @@ getBusInfos(OBJGPU *pGpu, NV2080_CTRL_BUS_INFO *pBusInfos, NvU32 busInfoListSize
             }
             case NV2080_CTRL_BUS_INFO_INDEX_DEVICE_NUMBER:
             {
-                if (kbifIsPciBusFamily(pKernelBif))
+                if (gpuIsPciBusFamily(pGpu))
                 {
                     pBusInfos[i].data = gpuGetDevice(pGpu);
                 }
@@ -532,7 +543,7 @@ getBusInfos(OBJGPU *pGpu, NV2080_CTRL_BUS_INFO *pBusInfos, NvU32 busInfoListSize
                 // We no longer support AGP/PCIe bridges so Bus/GPU interface
                 // types are the same
                 //
-                pBusInfos[i].data = kbifGetBusIntfType_HAL(pKernelBif);
+                pBusInfos[i].data = gpuGetBusIntfType_HAL(pGpu);
                 break;
             }
             case NV2080_CTRL_BUS_INFO_INDEX_DOMAIN_NUMBER:
@@ -620,7 +631,7 @@ subdeviceCtrlCmdBusGetPciBarInfo_IMPL
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvU32 i;
 
-    if (!kbifIsPciBusFamily(GPU_GET_KERNEL_BIF(pGpu)))
+    if (!gpuIsPciBusFamily(pGpu))
     {
         return NV_ERR_NOT_SUPPORTED;
     }

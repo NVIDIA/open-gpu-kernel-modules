@@ -21,28 +21,26 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/**
- * @file
- * @brief UTIL module implementation implements helpter functions for
- *
- */
-
 #include "nvport/nvport.h"
 #include "utils/nvassert.h"
 
-#if defined(NVRM) && !defined(NVWATCH)
+#if defined(NVRM) && !defined(NVWATCH) && !defined(GSP_PLUGIN_BUILD)
 #include "containers/map.h"
 #include "os/os.h"
 #include "nvrm_registry.h"
 #include "rmconfig.h"
-#elif !defined(RMCFG_FEATURE_ENABLED)
-#define RMCFG_FEATURE_x 0
+#else
+#if !defined(RMCFG_MODULE_ENABLED)
+#define RMCFG_MODULE_x 0
 #endif
 
-#if NV_PRINTF_ENABLED || NV_JOURNAL_ASSERT_ENABLE
+#if !defined(RMCFG_IS_PLATFORM)
+#define RMCFG_FEATURE_PLATFORM_x 0
+#endif
+#endif
 
+#if RMCFG_MODULE_RCDB && NV_JOURNAL_ASSERT_ENABLE
 // Hook NV_ASSERT into RCDB.
-#if NV_JOURNAL_ASSERT_ENABLE
 void rcdbRmAssert(NvU32 lineNum, NvU64 ip);
 void rcdbRmAssertStatus(NvU32 status, NvU32 lineNum, NvU64 ip);
 #define NV_JOURNAL_ASSERT_FAILURE(lineNum, ip)                  rcdbRmAssert(lineNum, (NvU64)(ip))
@@ -50,28 +48,16 @@ void rcdbRmAssertStatus(NvU32 status, NvU32 lineNum, NvU64 ip);
 #else
 #define NV_JOURNAL_ASSERT_FAILURE(lineNum, ip)                  ((void)0)
 #define NV_JOURNAL_ASSERT_FAILURE_STATUS(lineNum, ip, status)   ((void)0)
-#endif /* NV_JOURNAL_ASSERT_ENABLE*/
-
-#if defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVOS_IS_LIBOS)
-
-#if NV_JOURNAL_ASSERT_ENABLE
-/*
- * Helper function for NV_ASSERT_FAILED
- */
-void
-nvAssertFailed(void)
-{
-    NV_JOURNAL_ASSERT_FAILURE(NV_RM_ASSERT_UNKNOWN_LINE_NUM, portUtilGetReturnAddress());
-}
-
-void
-nvAssertOkFailed(NvU32 status)
-{
-    NV_JOURNAL_ASSERT_FAILURE_STATUS(NV_RM_ASSERT_UNKNOWN_LINE_NUM, portUtilGetReturnAddress(), status);
-}
 #endif
 
-#else //defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVOS_IS_LIBOS)
+#if NV_ASSERT_FAILED_BACKTRACE_ENABLE
+static void nvAssertFailedBacktrace(NvU64 ip);
+
+// Print call stack in dmesg when assert fails
+#define NV_ASSERT_FAILED_BACKTRACE(ip)                          do {nvAssertFailedBacktrace(ip);} while(0)
+#else
+#define NV_ASSERT_FAILED_BACKTRACE(ip)                          ((void)0)
+#endif
 
 #if NV_ASSERT_FAILED_USES_STRINGS
 #define NV_ASSERT_FAILED_PRINTF_FMT                  "%s @ %s:%d\n"
@@ -81,8 +67,13 @@ nvAssertOkFailed(NvU32 status)
 #define NV_ASSERT_FAILED_PRINTF_PARAM                ip
 #endif
 
+#if !RMCFG_FEATURE_PLATFORM_GSP && !defined(GSP_PLUGIN_BUILD)
 #define NV_ASSERT_PRINTF(level, fmt, ...)            NV_PRINTF_STRING          \
     (NV_PRINTF_MODULE, level, NV_PRINTF_ADD_PREFIX(fmt), ##__VA_ARGS__)
+#else
+#define NV_ASSERT_PRINTF(level, fmt, ...)
+#define NV_ASSERT_LOG(level, fmt, ...)
+#endif
 
 #define PATH_SEP   '/'
 
@@ -107,6 +98,7 @@ static const char *trimFN(const char *pszFileName)
 }
 #endif
 
+#if NV_PRINTF_ENABLED || NV_JOURNAL_ASSERT_ENABLE
 /*
  * Helper function for NV_ASSERT_FAILED
  */
@@ -123,6 +115,7 @@ nvAssertFailed
         NV_ASSERT_FAILED_PRINTF_PARAM);
     NV_ASSERT_LOG(LEVEL_ERROR, "Assertion failed @ 0x%016x", ip);
     NV_JOURNAL_ASSERT_FAILURE(lineNum, ip);
+    NV_ASSERT_FAILED_BACKTRACE(ip);
 }
 
 /*
@@ -144,6 +137,7 @@ nvAssertOkFailed
     NV_ASSERT_LOG(LEVEL_ERROR, "Assertion failed: 0x%08X returned from 0x%016llx",
         status, ip);
     NV_JOURNAL_ASSERT_FAILURE_STATUS(lineNum, ip, status);
+    NV_ASSERT_FAILED_BACKTRACE(ip);
 }
 
 /*
@@ -199,6 +193,7 @@ nvAssertFailedNoLog
     NV_ASSERT_PRINTF(LEVEL_ERROR, "Assertion failed: " NV_ASSERT_FAILED_PRINTF_FMT,
         NV_ASSERT_FAILED_PRINTF_PARAM);
     NV_JOURNAL_ASSERT_FAILURE(lineNum, ip);
+    NV_ASSERT_FAILED_BACKTRACE(ip);
 }
 
 /*
@@ -218,6 +213,7 @@ nvAssertOkFailedNoLog
         "Assertion failed: %s (0x%08X) returned from " NV_ASSERT_FAILED_PRINTF_FMT,
         nvstatusToString(status), status, NV_ASSERT_FAILED_PRINTF_PARAM);
     NV_JOURNAL_ASSERT_FAILURE_STATUS(lineNum, ip, status);
+    NV_ASSERT_FAILED_BACKTRACE(ip);
 }
 
 /*
@@ -256,10 +252,9 @@ nvCheckOkFailedNoLog
         nvstatusToString(status), status, NV_ASSERT_FAILED_PRINTF_PARAM);
 }
 
-#endif // defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVOS_IS_LIBOS)
-#endif // NV_PRINTF_ENABLED || NV_JOURNAL_ASSERT_ENABLE
+#endif
 
-#if defined(NV_ASSERT_FAILED_BACKTRACE)
+#if NV_ASSERT_FAILED_BACKTRACE_ENABLE
 MAKE_MAP(AssertedIPMap, NvU8);
 
 static struct
@@ -341,7 +336,7 @@ void nvAssertDestroy(void)
     osAssertInternal.init = 0;
 }
 
-#elif defined(NVRM) && !defined(NVWATCH) // ignore in nvlog_decoder/nvwatch build
+#else
 
 // We do not expose NV_ASSERT_FAILED_BACKTRACE outside this file. The callers will use these stubs.
 void nvAssertInit(void)

@@ -179,7 +179,7 @@ uvmDisableAccessCntr_GV100
                 // Map another page with entries to clear
                 if (getPtr % entriesPerPage == 0)
                 {
-                    memdescUnmap(pMemDesc, NV_TRUE, osGetCurrentProcess(), pAddr, pPriv);
+                    memdescUnmap(pMemDesc, NV_TRUE, pAddr, pPriv);
                     status = memdescMap(pMemDesc, (getPtr / entriesPerPage) * RM_PAGE_SIZE, RM_PAGE_SIZE,
                                         NV_TRUE, NV_PROTECT_READ_WRITE, &pAddr, &pPriv);
                     if (status != NV_OK)
@@ -197,7 +197,7 @@ uvmDisableAccessCntr_GV100
 
             uvmWriteAccessCntrBufferGetPtr_HAL(pGpu, pUvm, accessCounterIndex, getPtr);
 
-            memdescUnmap(pMemDesc, NV_TRUE, osGetCurrentProcess(), pAddr, pPriv);
+            memdescUnmap(pMemDesc, NV_TRUE, pAddr, pPriv);
         }
     }
     else
@@ -336,7 +336,7 @@ uvmInitAccessCntrBuffer_GV100
     }
     portMemSet(NvP64_VALUE(pAddr), 0, memdescGetSize(pUvmAccessCntrBufferDesc));
 
-    memdescUnmap(pUvmAccessCntrBufferDesc, NV_TRUE, osGetCurrentProcess(), pAddr, pPriv);
+    memdescUnmap(pUvmAccessCntrBufferDesc, NV_TRUE, pAddr, pPriv);
 
     pAccessCounterBuffer->pUvmAccessCntrAllocMemDesc = pUvmAccessCntrBufferDesc;
 

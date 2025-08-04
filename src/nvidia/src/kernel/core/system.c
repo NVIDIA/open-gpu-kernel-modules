@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -197,7 +197,7 @@ sysConstruct_IMPL(OBJSYS *pSys)
     }
 
     // Use the monotonic system clock for a unique value
-    osGetCurrentTime(&sec, &uSec);
+    osGetSystemTime(&sec, &uSec);
     pSys->rmInstanceId = (NvU64)sec * 1000000 + (NvU64)uSec;
 
     {
@@ -799,6 +799,12 @@ sysInitRegistryOverrides_IMPL
             == NV_OK)
     {
         pSys->setProperty(pSys, PDB_PROP_SYS_ENABLE_FORCE_SHARED_LOCK, !!data32);
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_ALLOW_UNKNOWN_4PART_IDS, &data32)
+            == NV_OK)
+    {
+        pSys->setProperty(pSys, PDB_PROP_SYS_ALLOW_UNKNOWN_4PART_IDS, !!data32);
     }
 
     gpumgrSetGpuNvlinkBwModeFromRegistry(pGpu);

@@ -385,6 +385,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__LockTestRelaxedDupObject =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_lockTestRelaxedDupObjDestruct(LockTestRelaxedDupObject*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_LockTestRelaxedDupObject(LockTestRelaxedDupObject *pThis) {
     __nvoc_lockTestRelaxedDupObjDestruct(pThis);

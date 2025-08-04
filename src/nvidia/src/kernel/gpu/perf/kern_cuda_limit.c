@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -105,6 +105,10 @@ deviceCtrlCmdKPerfCudaLimitSetControl_IMPL
     NV_STATUS  status = NV_OK;
 
     if (IS_VIRTUAL(pGpu))
+    {
+        return NV_OK;
+    }
+    else if (pGpu->getProperty(pGpu, PDB_PROP_GPU_CLKS_IN_TEGRA_SOC))
     {
         return NV_OK;
     }

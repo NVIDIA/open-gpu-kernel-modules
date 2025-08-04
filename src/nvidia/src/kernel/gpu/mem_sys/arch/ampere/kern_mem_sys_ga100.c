@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -136,17 +136,24 @@ kmemsysInitFlushSysmemBuffer_GA100
  * @param[in] pGpu                OBJGPU pointer
  * @param[in[ pKernelMemorySystem KernelMemorySystem pointer
  *
- * @returns void
+ * @returns NV_STATUS - NV_OK if sysmemFlushBuffer is valid otherwise NV_ERR_INVALID_STATE
  */
-void
+NV_STATUS
 kmemsysAssertSysmemFlushBufferValid_GA100
 (
     OBJGPU *pGpu,
     KernelMemorySystem *pKernelMemorySystem
 )
 {
-    NV_ASSERT((GPU_REG_RD_DRF(pGpu, _PFB, _NISO_FLUSH_SYSMEM_ADDR, _ADR_39_08) != 0)
-               || (GPU_REG_RD_DRF(pGpu, _PFB,  _NISO_FLUSH_SYSMEM_ADDR_HI, _ADR_63_40) != 0));
+    NvU32 regPfbNisoFlushSysmemAddrValLo = GPU_REG_RD_DRF(pGpu, _PFB, _NISO_FLUSH_SYSMEM_ADDR, _ADR_39_08);
+    NvU32 regPfbNisoFlushSysmemAddrValHi = GPU_REG_RD_DRF(pGpu, _PFB, _NISO_FLUSH_SYSMEM_ADDR_HI, _ADR_63_40);
+
+    if (regPfbNisoFlushSysmemAddrValLo == 0 && regPfbNisoFlushSysmemAddrValHi == 0)
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
+    return NV_OK;
 }
 
 /*!

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -147,6 +147,8 @@ _createTempMemDesc
     pMemdescData->physAttrs = *pPhysAttrs;
     pMemdescData->memFlags = memFlags;
     pMemdescData->cliqueId = pAttrs->cliqueId;
+    pMemdescData->bwMode = pAttrs->bwMode;
+    pMemdescData->bwModeEpoch = pAttrs->bwModeEpoch;
 
     // Associate the memdesc data release callback function.
     memdescSetMemData(pMemDesc, (void *)pMemdescData, NULL);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -60,11 +60,19 @@ static NV_STATUS _kbusInitP2P_GM107(OBJGPU *, KernelBus *);
 static NV_STATUS _kbusDestroyP2P_GM107(OBJGPU *, KernelBus *);
 static void _kbusLinkP2P_GM107(OBJGPU *, KernelBus *);
 
+// Reuse Mapping callbacks
+static NV_STATUS _kbusInternalBar1Map(void *, void *, MemoryRange, NvU64,
+    void *, ReuseMappingDbAddMappingCallback);
+static void _kbusInternalBar1Unmap(void *, void *, MemoryRange);
+
+static NvU32 _kbusGetCurrentGfid(OBJGPU *pGpu, KernelBus *pKernelBus);
+
+static void _kbusDestroyMemdescBar1Cb(OBJGPU *pGpu, void *pCtx, MEMORY_DESCRIPTOR *pMemDesc);
+
 static NvU32 _kbusGetSizeOfBar2PageDir_GM107(NvU64 vaBase, NvU64 vaLimit, NvU64 vaPerEntry, NvU32 entrySize);
 
 NV_STATUS _kbusMapAperture_GM107(OBJGPU *, KernelBus *, PMEMORY_DESCRIPTOR, OBJVASPACE *, NvU64, NvU64 *,
-                                 NvU64 *, NvU32 mapFlags, Device *pDevice);
-NV_STATUS _kbusUnmapAperture_GM107(OBJGPU *, KernelBus *, OBJVASPACE *, PMEMORY_DESCRIPTOR, NvU64);
+                                 NvU64 *, NvU32 mapFlags, NvU32 swizzId);
 MEMORY_DESCRIPTOR* kbusCreateStagingMemdesc(OBJGPU *pGpu);
 
 // This is the peer number assignment for SLI with
@@ -1018,6 +1026,7 @@ kbusInitBar1_GM107(OBJGPU *pGpu, KernelBus *pKernelBus, NvU32 gfid)
     }
 
     gpuMask = NVBIT(pGpu->gpuInstance);
+    pKernelBus->bar1[gfid].gfid = gfid;
 
     rmStatus = vmmCreateVaspace(pVmm, FERMI_VASPACE_A, 0, gpuMask,
                                 0, vaRangeMax, 0, 0, NULL,
@@ -1031,6 +1040,16 @@ kbusInitBar1_GM107(OBJGPU *pGpu, KernelBus *pKernelBus, NvU32 gfid)
         return rmStatus;
     }
 
+    //
+    // Initialize reuse database. Initialization is guaranteed to succeed, and no
+    // cleanup is necessary on unwind because we do no allocations and don't touch HW
+    //
+    reusemappingdbInit(&pKernelBus->bar1[gfid].reuseDb, portMemAllocatorGetGlobalNonPaged(),
+        &pKernelBus->bar1[gfid], _kbusInternalBar1Map, _kbusInternalBar1Unmap, NULL);
+
+    // Initialize BAR1 mapping flags multimap
+    mapInit(&(pKernelBus->bar1[gfid].mappingFlagsMap), portMemAllocatorGetGlobalNonPaged());
+    mapInit(&(pKernelBus->bar1[gfid].reverseMap), portMemAllocatorGetGlobalNonPaged());
 
     // Restrict normal BAR1 alloc to be within the aperture
     pVASpaceHeap = vaspaceGetHeap(pKernelBus->bar1[gfid].pVAS);
@@ -1182,9 +1201,14 @@ kbusInitBar1_GM107(OBJGPU *pGpu, KernelBus *pKernelBus, NvU32 gfid)
 
     if (bStaticBar1Supported)
     {
+        //
+        // To support 512MB page sizes, we need to align the BAR1 offset to 512MB.
+        // This will lose up to (but not including) 512MB of BAR1 space.
+        //
+        NvU64 bar1Offset = NV_ALIGN_UP(consoleSize + pKernelBus->p2pPcie.writeMailboxTotalSize, RM_PAGE_SIZE_512M);
         // Enable the static BAR1 mapping for the BAR1 P2P
         NV_ASSERT_OK_OR_GOTO(rmStatus,
-                             kbusEnableStaticBar1Mapping_HAL(pGpu, pKernelBus, gfid),
+                             kbusEnableStaticBar1Mapping_HAL(pGpu, pKernelBus, gfid, bar1Offset),
                              kbusInitBar1_failed);
     }
 
@@ -1327,6 +1351,9 @@ kbusDestroyBar1_GM107
         }
 
         vmmDestroyVaspace(pVmm, pKernelBus->bar1[gfid].pVAS);
+        reusemappingdbDestruct(&pKernelBus->bar1[gfid].reuseDb);
+        mapDestroy(&(pKernelBus->bar1[gfid].mappingFlagsMap));
+        mapDestroy(&(pKernelBus->bar1[gfid].reverseMap));
 
         pKernelBus->bar1[gfid].pVAS = NULL;
     }
@@ -2548,7 +2575,7 @@ _kbusWalkCBMapNextEntries_RmAperture
                         pLevelFmt->entrySize);
         }
 
-        memdescUnmapOld(pMemDesc, 1, 0, pMap, pPriv);
+        memdescUnmapOld(pMemDesc, 1, pMap, pPriv);
     }
 
     *pProgress = entryIndexHi - entryIndexLo + 1;
@@ -2794,26 +2821,186 @@ kbusUpdateRmAperture_GM107
     return status;
 }
 
-/**
- * @brief This function is used to return the BAR1 VA space.
- *        BAR1 VA space per-GPU, no longer shared
- */
-OBJVASPACE *kbusGetBar1VASpace_GM107(OBJGPU *pGpu, KernelBus *pKernelBus)
+// Helper function to get current GFID.
+static NvU32
+_kbusGetCurrentGfid
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus
+)
 {
     NvU32             gfid;
     NvBool            bCallingContextPlugin;
 
-    NV_ASSERT_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid) == NV_OK, NULL);
-    NV_ASSERT_OR_RETURN(vgpuIsCallingContextPlugin(pGpu, &bCallingContextPlugin) == NV_OK, NULL);
+    NV_ASSERT_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid) == NV_OK, INVALID_P2P_GFID);
+    NV_ASSERT_OR_RETURN(vgpuIsCallingContextPlugin(pGpu, &bCallingContextPlugin) == NV_OK, INVALID_P2P_GFID);
     if (bCallingContextPlugin || !gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
     {
         gfid = GPU_GFID_PF;
     }
 
-    return pKernelBus->bar1[gfid].pVAS;
+    return gfid;
 }
 
-MAKE_VECTOR(MemoryRangeVector, MemoryRange);
+/**
+ * @brief This function is used to return the BAR1 VA space.
+ *        BAR1 VA space per-GPU, no longer shared
+ */
+OBJVASPACE *
+kbusGetBar1VASpace_GM107
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    NvU32  gfid = _kbusGetCurrentGfid(pGpu, pKernelBus);
+    return gfid == INVALID_P2P_GFID ? NULL : pKernelBus->bar1[gfid].pVAS;
+}
+
+// Internal callback to actually map when reuse DB requests it
+static NV_STATUS
+_kbusInternalBar1Map
+(
+    void       *pGlobalCtx,
+    void       *pAllocCtx,
+    MemoryRange physRange,
+    NvU64       cachingFlags,
+    void       *pToken,
+    ReuseMappingDbAddMappingCallback pCallback
+)
+{
+    Bar1VaInfo *pVaInfo         = (Bar1VaInfo *) pGlobalCtx;
+    Bar1VaInfo *pFirstVaInfo    = pVaInfo - pVaInfo->gfid;
+    KernelBus  *pKernelBus      = NV_CONTAINEROF(pFirstVaInfo, KernelBus, bar1);
+    OBJGPU     *pGpu            = ENG_GET_GPU(pKernelBus);
+    OBJVASPACE *pVAS            = pVaInfo->pVAS;
+    VirtMemAllocator *pDma      = GPU_GET_DMA(pGpu);
+    NvU64       curMappingSize  = physRange.size;
+    Bar1MappingType *pType      = (Bar1MappingType *) pAllocCtx;
+    NvU32        mapFlags       = pType->mappingFlags;
+    NvU32        swizzId        = pType->swizzId;
+    MemoryRange  mapRange;
+    Bar1MappingType **ppVaToType;
+    NV_STATUS    status         = NV_OK;
+    //
+    // pageSize is used to ensure that all chunks are aligned to the OS's page size.
+    // Only used in this function's algorithm, not internally by DMA code
+    //
+    NvU64 pageSize = osGetPageSize();
+
+outer_loop:
+    while (physRange.size != 0)
+    {
+        curMappingSize = NV_MIN(curMappingSize, physRange.size);
+        mapRange.size = curMappingSize;
+
+        NV_CHECK_OK_OR_ELSE(status, LEVEL_INFO,
+                            _kbusMapAperture_GM107(pGpu, pKernelBus, pType->pMemDesc, pVAS,
+                                                   physRange.start, &mapRange.start,
+                                                   &mapRange.size, mapFlags, swizzId),
+            {
+                NV_CHECK_OR_RETURN(LEVEL_INFO,  pageSize != curMappingSize, status);
+                NV_CHECK_OR_RETURN(LEVEL_INFO,
+                    !(cachingFlags & REUSE_MAPPING_DB_MAP_FLAGS_SINGLE_RANGE), status);
+
+                curMappingSize = NV_ALIGN_UP64(curMappingSize >> 1, pageSize);
+                goto outer_loop; // We can't use continue because OK_OR_ELSE is implemented by do{...}while(0)
+            });
+
+        ppVaToType = mapInsertNew(&pVaInfo->reverseMap,  mapRange.start);
+        NV_ASSERT_TRUE_OR_GOTO(status, ppVaToType != NULL, NV_ERR_NO_MEMORY, map_cleanup);
+        *ppVaToType = pType;
+
+        NV_ASSERT_OK_OR_GOTO(status, pCallback(pToken, physRange.start, mapRange.start, curMappingSize), va_cleanup);
+
+        physRange.start += curMappingSize;
+        physRange.size -= curMappingSize;
+    }
+
+    return NV_OK;
+
+    // We only need to cleanup most recently-allocated node, as others are cleaned up via callback in the library
+va_cleanup:
+    mapRemove(&pVaInfo->reverseMap,  ppVaToType);
+map_cleanup:
+    dmaFreeMapping_HAL(pGpu, pDma, pVAS, mapRange.start, pType->pMemDesc, 0, NULL);
+    return status;
+}
+
+static void
+_kbusInternalBar1Unmap
+(
+    void *pGlobalCtx,
+    void *pAllocCtx,
+    MemoryRange virtRange
+)
+{
+    Bar1VaInfo *pVaInfo         = (Bar1VaInfo *) pGlobalCtx;
+    Bar1VaInfo *pFirstVaInfo    = pVaInfo - pVaInfo->gfid;
+    KernelBus  *pKernelBus      = NV_CONTAINEROF(pFirstVaInfo, KernelBus, bar1);
+    OBJGPU     *pGpu            = ENG_GET_GPU(pKernelBus);
+    OBJVASPACE *pVAS            = pVaInfo->pVAS;
+    Bar1MappingType  *pType     = (Bar1MappingType *) pAllocCtx;
+    VirtMemAllocator *pDma      = GPU_GET_DMA(pGpu);
+    Bar1MappingType  **ppVaToType;
+
+    // TODO: remove with addition to GSP macro.
+    PORT_UNREFERENCED_VARIABLE(pKernelBus);
+
+    // Remove VA->type map
+    ppVaToType = mapFind(&pVaInfo->reverseMap, virtRange.start);
+    mapRemove(&pVaInfo->reverseMap, ppVaToType);
+
+    // TODO: investigate whether the tegra wbinvd flush is really necessary, seems only useful for SYSMEM_COH
+    memdescFlushCpuCaches(pGpu, pType->pMemDesc);
+
+    dmaFreeMapping_HAL(pGpu, pDma, pVAS, virtRange.start, pType->pMemDesc, 0, NULL);
+}
+
+static void
+_kbusDestroyMemdescBar1Cb
+(
+    OBJGPU *pGpu,
+    void *pCtx,
+    MEMORY_DESCRIPTOR *pMemDesc
+)
+{
+    Bar1VaInfo *pBar1VaInfo = (Bar1VaInfo *) pCtx;
+    Bar1MappingTypeSubmapStruct *pSubmap = mapFind(&(pBar1VaInfo->mappingFlagsMap), (NvU64) pMemDesc);
+    if (pSubmap == NULL)
+    {
+        return;
+    }
+
+    // Destroy submap (which should be empty at this point) and remove from parent map.
+    mapDestroy(&pSubmap->mappingSubmap);
+    mapRemove(&(pBar1VaInfo->mappingFlagsMap), pSubmap);
+}
+
+#define NV_BUS_MAPPING_TYPE_INTERNAL_FLAGS_BUS_FLAG 31:0
+#define NV_BUS_MAPPING_TYPE_INTERNAL_FLAGS_SWIZZ_ID 63:32
+
+// Flags affecting mapping reuse
+#define BUS_FLAGS_AFFECTING_MAPPING_MASK \
+    (BUS_MAP_FB_FLAGS_MAP_RSVD_BAR1     |\
+    BUS_MAP_FB_FLAGS_DISABLE_ENCRYPTION |\
+    BUS_MAP_FB_FLAGS_MAP_DOWNWARDS      |\
+    BUS_MAP_FB_FLAGS_READ_ONLY          |\
+    BUS_MAP_FB_FLAGS_WRITE_ONLY)
+
+//
+// Flags not affecting mapping reuse. Fixed offsets aren't tracked by the reuse structure
+// yet so that flag is in this list.
+//
+#define BUS_FLAGS_NOT_AFFECTING_MAPPING_MASK \
+    (BUS_MAP_FB_FLAGS_MAP_UNICAST           |\
+    BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED       |\
+    BUS_MAP_FB_FLAGS_PRE_INIT               |\
+    BUS_MAP_FB_FLAGS_ALLOW_DISCONTIG        |\
+    BUS_MAP_FB_FLAGS_UNMANAGED_MEM_AREA)
+
+ct_assert((BUS_FLAGS_AFFECTING_MAPPING_MASK & BUS_FLAGS_NOT_AFFECTING_MAPPING_MASK) == 0);
+ct_assert((BUS_FLAGS_NOT_AFFECTING_MAPPING_MASK | BUS_FLAGS_AFFECTING_MAPPING_MASK) == BUS_MAP_FB_FLAGS_ALL_FLAGS);
 
 //
 // Note: When static BAR1 is enabled, this function may be called without
@@ -2833,25 +3020,47 @@ kbusMapFbAperture_GM107
     Device     *pDevice
 )
 {
-    NvBool           bBcState = gpumgrGetBcEnabledStatus(pGpu);
-    OBJVASPACE      *pVAS = kbusGetBar1VASpace_HAL(pGpu, pKernelBus);
+    OBJVASPACE      *pVAS;
+    Bar1VaInfo      *pBar1VaInfo;
     NV_STATUS        rmStatus   = NV_OK;
-    MemoryRangeVector vect;
-    NvU64 totalMapped = 0;
-    NvU64 curMappingSize = mapRange.size;
-    //
-    // pageSize is used to ensure that all chunks are aligned to the OS's page size.
-    // Only used in this function's algorithm, not internally by DMA code
-    //
-    NvU64 pageSize = osGetPageSize();
+    NvU32            gfid       = _kbusGetCurrentGfid(pGpu, pKernelBus);
+    NvBool           bNewSubmap = NV_FALSE;
+    NvBool           bNewType   = NV_FALSE;
+    NvU32            swizzId    = KMIGMGR_SWIZZID_INVALID;
+    NvU64            mappingFlags = 0;
+    NvU64            submemOffset = 0;
+    NvU32            flagsAffectingMapping = BUS_FLAGS_AFFECTING_MAPPING_MASK & flags;
+    MEMORY_DESCRIPTOR           *pRootMemDesc;
+    Bar1MappingTypeSubmapStruct *pSubmap;
+    Bar1MappingType             *pMappingType;
+    // TODO: Remove NO_REUSE on discontig when we support multi-range reuse.
+    NvBool                       bDiscontig = !!(flags & BUS_MAP_FB_FLAGS_ALLOW_DISCONTIG);
+    NvBool                       bReuse = pKernelBus->bBar1ReuseEnabled && (!bDiscontig);
+    NvU64                        cachingFlags =
+        (bDiscontig ? 0 : REUSE_MAPPING_DB_MAP_FLAGS_SINGLE_RANGE) |
+        (bReuse     ? 0 : REUSE_MAPPING_DB_MAP_FLAGS_NO_REUSE);
 
     // BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED effectively implies we have a preallocated memArea.
     flags |= (flags & BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED) ? BUS_MAP_FB_FLAGS_UNMANAGED_MEM_AREA : 0;
 
     NV_ASSERT((flags & BUS_MAP_FB_FLAGS_FERMI_INVALID) == 0);
-    NV_ASSERT_OR_RETURN(pVAS != NULL, NV_ERR_INVALID_STATE);
     NV_ASSERT_OR_RETURN(!(flags & BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED) || pMemArea->numRanges == 1,
         NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(gfid != INVALID_P2P_GFID, NV_ERR_INVALID_STATE);
+
+    pBar1VaInfo = &pKernelBus->bar1[gfid];
+    pVAS = pBar1VaInfo->pVAS;
+
+    //
+    // Use root memdesc if the PTE kind is the same. This is a temporary solution to enable reuse
+    // until the reuse structure gains support for PTE kind.
+    //
+    pRootMemDesc = memdescGetRootMemDesc(pMemDesc, &submemOffset);
+    if (memdescGetPteKind(pRootMemDesc) == memdescGetPteKind(pMemDesc))
+    {
+        pMemDesc = pRootMemDesc;
+        mapRange.start += submemOffset;
+    }
 
     //
     // Try to get a static BAR1 mapping. If static BAR1 is not enabled
@@ -2876,75 +3085,120 @@ kbusMapFbAperture_GM107
     NV_ASSERT_OR_RETURN(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)),
                         NV_ERR_INVALID_LOCK_STATE);
 
+    // Get swizzId for use as a key into the mapping struct.
+    if (IS_MIG_IN_USE(pGpu))
+    {
+        if (pDevice != NULL)
+        {
+            MIG_INSTANCE_REF ref;
+            KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+
+            NV_ASSERT_OR_RETURN(pDevice != NULL, NV_ERR_INVALID_ARGUMENT);
+            NV_ASSERT_OK_OR_RETURN(kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                       pDevice, &ref));
+            swizzId = ref.pKernelMIGGpuInstance->swizzId;
+        }
+        else if (pMemDesc->pHeap != NULL)
+        {
+            KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+            KERNEL_MIG_GPU_INSTANCE *pCurrKernelMIGGPUInstance = NULL;
+            KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance = NULL;
+
+            FOR_EACH_VALID_GPU_INSTANCE(pGpu, pKernelMIGManager, pCurrKernelMIGGPUInstance)
+            {
+                if (pCurrKernelMIGGPUInstance->pMemoryPartitionHeap == pMemDesc->pHeap)
+                {
+                    pKernelMIGGPUInstance = pCurrKernelMIGGPUInstance;
+                    break;
+                }
+            }
+            FOR_EACH_VALID_GPU_INSTANCE_END();
+
+            NV_ASSERT_OR_RETURN(pKernelMIGGPUInstance != NULL, NV_ERR_INVALID_STATE);
+            swizzId = pKernelMIGGPUInstance->swizzId;
+        }
+    }
+
+    mappingFlags = DRF_NUM64(_BUS, _MAPPING_TYPE_INTERNAL_FLAGS, _BUS_FLAG, flagsAffectingMapping);
+    mappingFlags = FLD_SET_DRF_NUM64(_BUS, _MAPPING_TYPE_INTERNAL_FLAGS, _SWIZZ_ID, swizzId, mappingFlags);
+
     rmStatus = NV_OK;
 
-    // Set BC to enabled in UC flag not passed
-    gpumgrSetBcEnabledStatus(pGpu, IsSLIEnabled(pGpu) && ((flags & BUS_MAP_FB_FLAGS_MAP_UNICAST) == 0) &&
-        ((flags & BUS_MAP_FB_FLAGS_PRE_INIT) == 0));
-
-    vectInit(&vect, portMemAllocatorGetGlobalNonPaged(), 0);
-
+    // TODO: work this into reuse.
     if(flags & BUS_MAP_FB_FLAGS_UNMANAGED_MEM_AREA)
     {
         pMemArea->numRanges = 1;
         pMemArea->pRanges[0].size = mapRange.size;
         rmStatus = _kbusMapAperture_GM107(pGpu, pKernelBus, pMemDesc, pVAS, mapRange.start,
-            &pMemArea->pRanges[0].start, &pMemArea->pRanges[0].size, flags, pDevice);
+            &pMemArea->pRanges[0].start, &pMemArea->pRanges[0].size, flags, swizzId);
         goto cleanup;
     }
 
-    while (totalMapped < mapRange.size)
+    // Find/create the submap corresponding to this memdesc
+    pSubmap = mapFind(&(pBar1VaInfo->mappingFlagsMap), (NvU64) pMemDesc);
+    if (pSubmap == NULL)
     {
-        MemoryRange memRange;
-        NvU64 cap = vectCapacity(&vect);
+        pSubmap = mapInsertNew(&(pBar1VaInfo->mappingFlagsMap), (NvU64) pMemDesc);
+        NV_ASSERT_OR_RETURN(pSubmap != NULL, NV_ERR_NO_MEMORY);
 
-        // Round out the ends with potentially non-aligned size
-        curMappingSize = NV_MIN(curMappingSize, mapRange.size - totalMapped);
-        memRange = mrangeMake(0, curMappingSize);
-
-        if (cap == vectCount(&vect))
-        {
-            // Preallocate capacity to get rid of complicated error paths
-            NvU64 nextCap = (cap == 0) ? 8 : (cap * 2);
-            NV_ASSERT_OK_OR_GOTO(rmStatus, vectReserve(&vect, nextCap), err);
-        }
-
-        rmStatus = _kbusMapAperture_GM107(pGpu, pKernelBus, pMemDesc, pVAS, mapRange.start + totalMapped,
-            &memRange.start, &memRange.size, flags, pDevice);
-
-        if (rmStatus != NV_OK)
-        {
-            NV_CHECK_OR_GOTO(LEVEL_INFO, curMappingSize > pageSize, err);
-            NV_CHECK_OR_GOTO(LEVEL_INFO, (flags & BUS_MAP_FB_FLAGS_ALLOW_DISCONTIG) &&
-                pKernelBus->bBar1DiscontigEnabled, err);
-            curMappingSize = NV_ALIGN_UP64(curMappingSize >> 1, pageSize);
-            continue;
-        }
-
-        totalMapped += curMappingSize;
-        vectAppend(&vect,  &memRange); // Guaranteed to succeed
+        mapInit(&pSubmap->mappingSubmap, portMemAllocatorGetGlobalNonPaged());
+        pSubmap->callback.destroyCallback = _kbusDestroyMemdescBar1Cb;
+        pSubmap->callback.pObject = pBar1VaInfo;
+        memdescAddDestroyCallback(pMemDesc, &pSubmap->callback);
+        bNewSubmap = NV_TRUE;
     }
 
-    pMemArea->numRanges = vectCount(&vect);
-    pMemArea->pRanges = portMemAllocNonPaged(sizeof(MemoryRange) * pMemArea->numRanges);
-    NV_ASSERT_TRUE_OR_GOTO(rmStatus, pMemArea->pRanges != NULL, NV_ERR_NO_MEMORY, err);
-    portMemCopy(pMemArea->pRanges, sizeof(MemoryRange) * pMemArea->numRanges,
-        vectAt(&vect, 0), sizeof(MemoryRange) * pMemArea->numRanges);
+    // Find/create the mapping type struct for this set of flags/swizzId.
+    pMappingType = mapFind(&pSubmap->mappingSubmap, (NvU64) mappingFlags);
+    if (pMappingType == NULL)
+    {
+        pMappingType = mapInsertNew(&pSubmap->mappingSubmap, (NvU64) mappingFlags);
+        NV_ASSERT_TRUE_OR_GOTO(rmStatus, pMappingType != NULL, NV_ERR_NO_MEMORY, err_submap);
+        pMappingType->pMemDesc     = pMemDesc;
+        pMappingType->mappingFlags = flagsAffectingMapping;
+        pMappingType->swizzId      = swizzId;
+        pMappingType->refCount     = 0;
+        bNewType = NV_TRUE;
+    }
 
+    if (flags & BUS_MAP_FB_FLAGS_ALLOW_DISCONTIG)
+    {
+        //
+        // Try with single range first, fall through to discontig if cannot get
+        // TODO: remove when multi-range reuse added.
+        //
+        rmStatus = reusemappingdbMap(&pBar1VaInfo->reuseDb, pMappingType,
+            mapRange, pMemArea, REUSE_MAPPING_DB_MAP_FLAGS_SINGLE_RANGE);
+
+        if (rmStatus == NV_OK)
+        {
+            pMappingType->refCount++;
+            goto cleanup;
+        }
+    }
+
+    NV_ASSERT_OK_OR_GOTO(rmStatus, reusemappingdbMap(&pBar1VaInfo->reuseDb, pMappingType,
+            mapRange, pMemArea, cachingFlags), err_mapping);
+
+    pMappingType->refCount++;
     goto cleanup;
 
-err:
-    while (!vectIsEmpty(&vect))
+err_mapping:
+    // Cleanup newly created type
+    if (bNewType)
     {
-        NvU64 idx = vectCount(&vect) - 1llu;
-        _kbusUnmapAperture_GM107(pGpu, pKernelBus, pVAS, pMemDesc,
-            vectAt(&vect, idx)->start);
-        vectRemove(&vect, idx);
+        mapRemove(&pSubmap->mappingSubmap, pMappingType);
+    }
+err_submap:
+    // Cleanup newly created submap
+    if (bNewSubmap)
+    {
+        memdescRemoveDestroyCallback(pMemDesc, &pSubmap->callback);
+        mapDestroy(&pSubmap->mappingSubmap);
+        mapRemove(&(pBar1VaInfo->mappingFlagsMap), pSubmap);
     }
 
 cleanup:
-    vectDestroy(&vect);
-    gpumgrSetBcEnabledStatus(pGpu, bBcState);
     kbusUpdateRusdStatistics(pGpu);
     return rmStatus;
 }
@@ -2959,12 +3213,25 @@ kbusUnmapFbAperture_GM107
     NvU32       flags
 )
 {
-    NV_STATUS       rmStatus    = NV_OK;
-    NvBool          bBcState    = gpumgrGetBcEnabledStatus(pGpu);
-    OBJVASPACE     *pVAS        = kbusGetBar1VASpace_HAL(pGpu, pKernelBus);;
-    NvU64           idx;
+    NV_STATUS        rmStatus    = NV_OK;
+    Bar1VaInfo      *pBar1VaInfo;
+    NvU64            idx;
+    NvU32            gfid = _kbusGetCurrentGfid(pGpu, pKernelBus);
+    MEMORY_DESCRIPTOR           *pRootMemDesc;
+    Bar1MappingTypeSubmapStruct *pSubmap;
+    Bar1MappingType             *pMappingType;
+    Bar1MappingType            **ppMappingType;
 
-    NV_ASSERT_OR_RETURN(pVAS != NULL, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(gfid != INVALID_P2P_GFID, NV_ERR_INVALID_STATE);
+
+    pBar1VaInfo = &pKernelBus->bar1[gfid];
+
+    // Use root memdesc if the PTE kind is the same
+    pRootMemDesc = memdescGetRootMemDesc(pMemDesc, NULL);
+    if (memdescGetPteKind(pRootMemDesc) == memdescGetPteKind(pMemDesc))
+    {
+        pMemDesc = pRootMemDesc;
+    }
 
     rmStatus = kbusDecreaseStaticBar1Refcount_HAL(pGpu, pKernelBus, pMemDesc, &memArea);
 
@@ -2982,27 +3249,48 @@ kbusUnmapFbAperture_GM107
         goto done;
     }
 
-    // Set BC to enabled if UC flag not passed
-    gpumgrSetBcEnabledStatus(pGpu, IsSLIEnabled(pGpu) && ((flags & BUS_MAP_FB_FLAGS_MAP_UNICAST) == 0) &&
-        ((flags & BUS_MAP_FB_FLAGS_PRE_INIT) == 0));
-
-    // TODO: investigate whether the tegra wbinvd flush is really necessary, seems only useful for SYSMEM_COH
-    memdescFlushCpuCaches(pGpu, pMemDesc);
-
+    // TODO: work this into reuse.
     rmStatus = NV_OK;
-
-
-    for (idx = 0; idx < memArea.numRanges; idx++)
+    if (flags & BUS_MAP_FB_FLAGS_UNMANAGED_MEM_AREA)
     {
-        NV_STATUS curStatus = _kbusUnmapAperture_GM107(pGpu, pKernelBus, pVAS, pMemDesc, memArea.pRanges[idx].start & (~RM_PAGE_MASK));
-        if (rmStatus == NV_OK)
-        {
-            rmStatus = curStatus;
-        }
+        VirtMemAllocator *pDma = GPU_GET_DMA(pGpu);
+        OBJVASPACE       *pVAS = pBar1VaInfo->pVAS;
+
+        // TODO: investigate whether the tegra wbinvd flush is really necessary, seems only useful for SYSMEM_COH
+        memdescFlushCpuCaches(pGpu, pMemDesc);
+        dmaFreeMapping_HAL(pGpu, pDma, pVAS, memArea.pRanges[0].start, pMemDesc, 0, NULL);
+
+        goto done;
     }
 
-    gpumgrSetBcEnabledStatus(pGpu, bBcState);
+    // All ranges in this area must have the same type, and VA->type must be created on map
+    ppMappingType = mapFind(&pBar1VaInfo->reverseMap, memArea.pRanges[0].start);
+    NV_ASSERT_TRUE_OR_GOTO(rmStatus, ppMappingType != NULL, NV_ERR_INVALID_STATE, done);
+    pMappingType = *ppMappingType;
 
+    // Find submap that has the submap<->type map
+    pSubmap = mapFind(&(pBar1VaInfo->mappingFlagsMap), (NvU64) pMemDesc);
+    NV_ASSERT_TRUE_OR_GOTO(rmStatus, pSubmap != NULL, NV_ERR_INVALID_STATE, done);
+
+    // Unmap each range individually. Non-reused ranges are automatically taken care of.
+    for (idx = 0; idx < memArea.numRanges; idx++)
+    {
+        reusemappingdbUnmap(&pBar1VaInfo->reuseDb, pMappingType, memArea.pRanges[idx]);
+    }
+
+    // Delete map and supermap if we reduce refcount to 0.
+    pMappingType->refCount--;
+    if (pMappingType->refCount == 0)
+    {
+        mapRemove(&pSubmap->mappingSubmap, pMappingType);
+    }
+
+    if (mapCount(&pSubmap->mappingSubmap) == 0)
+    {
+        memdescRemoveDestroyCallback(pMemDesc, &pSubmap->callback);
+        mapDestroy(&pSubmap->mappingSubmap);
+        mapRemove(&(pBar1VaInfo->mappingFlagsMap), pSubmap);
+    }
 done:
     kbusUpdateRusdStatistics(pGpu);
 
@@ -3125,79 +3413,23 @@ _kbusMapAperture_GM107
     NvU64             *pAperOffset,
     NvU64             *pLength,
     NvU32              mapFlags,
-    Device            *pDevice
+    NvU32              swizzId
 )
 {
     NV_STATUS           rmStatus = NV_ERR_GENERIC;
     VirtMemAllocator   *pDma;
     NvU32               dmaFlags = kbusConvertBusMapFlagsToDmaFlags(pKernelBus, pMemDesc, mapFlags);
     MEMORY_DESCRIPTOR  *pTempMemDesc;
-    NvU32               swizzId = KMIGMGR_SWIZZID_INVALID;
 
     pDma  = GPU_GET_DMA(pGpu);
-
-    if (IS_MIG_IN_USE(pGpu))
-    {
-        if (pDevice != NULL)
-        {
-            MIG_INSTANCE_REF ref;
-            KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-
-            NV_ASSERT_OR_RETURN(pDevice != NULL, NV_ERR_INVALID_ARGUMENT);
-            NV_ASSERT_OK_OR_RETURN(kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
-                                       pDevice, &ref));
-            swizzId = ref.pKernelMIGGpuInstance->swizzId;
-        }
-        else if (pMemDesc->pHeap != NULL)
-        {
-            KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-            KERNEL_MIG_GPU_INSTANCE *pCurrKernelMIGGPUInstance = NULL;
-            KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance = NULL;
-
-            FOR_EACH_VALID_GPU_INSTANCE(pGpu, pKernelMIGManager, pCurrKernelMIGGPUInstance)
-            {
-                if (pCurrKernelMIGGPUInstance->pMemoryPartitionHeap == pMemDesc->pHeap)
-                {
-                    pKernelMIGGPUInstance = pCurrKernelMIGGPUInstance;
-                    break;
-                }
-            }
-            FOR_EACH_VALID_GPU_INSTANCE_END();
-
-            NV_ASSERT_OR_RETURN(pKernelMIGGPUInstance != NULL, NV_ERR_INVALID_STATE);
-            swizzId = pKernelMIGGPUInstance->swizzId;
-        }
-    }
 
     rmStatus = memdescCreateSubMem(&pTempMemDesc, pMemDesc, pGpu, offset, *pLength);
     if (NV_OK == rmStatus)
     {
-        rmStatus = dmaAllocMapping_HAL(pGpu, pDma, pVAS, pTempMemDesc, pAperOffset, dmaFlags, NULL, swizzId);
+        rmStatus = dmaAllocMapping_HAL(pGpu, pDma, pVAS, pTempMemDesc, pAperOffset, dmaFlags, 0, NULL, swizzId);
         memdescFree(pTempMemDesc);
         memdescDestroy(pTempMemDesc);
     }
-
-    return rmStatus;
-}
-
-//
-// _kbusUnmapAperture_GM107
-// Helper function: Given offset and range, free VA address space.
-//
-NV_STATUS
-_kbusUnmapAperture_GM107
-(
-    OBJGPU            *pGpu,
-    KernelBus         *pKernelBus,
-    OBJVASPACE        *pVAS,
-    MEMORY_DESCRIPTOR *pMemDesc,
-    NvU64              aperOffset
-)
-{
-    NV_STATUS           rmStatus = NV_OK;
-    VirtMemAllocator   *pDma = GPU_GET_DMA(pGpu);
-
-    rmStatus = dmaFreeMapping_HAL(pGpu, pDma, pVAS, aperOffset, pMemDesc, 0, NULL);
 
     return rmStatus;
 }
@@ -5780,7 +6012,7 @@ kbusMemoryCopy_GM107
         if (status != NV_OK)
         {
             if (pSrcMem != NULL)
-                memdescUnmapOld(pSrcMemDesc, 1 /* kernel */, 0, pSrcMem, pSrcPriv);
+                memdescUnmapOld(pSrcMemDesc, 1 /* kernel */, pSrcMem, pSrcPriv);
             DBG_BREAKPOINT();
             return status;
         }
@@ -5911,9 +6143,9 @@ kbusMemoryCopy_GM107
     }
 
     if (pSrcMem != NULL)
-        memdescUnmapOld(pSrcMemDesc, 1 /* kernel */, 0, pSrcMem, pSrcPriv);
+        memdescUnmapOld(pSrcMemDesc, 1 /* kernel */, pSrcMem, pSrcPriv);
     if (pDstMem != NULL)
-        memdescUnmapOld(pDstMemDesc, 1 /* kernel */, 0, pDstMem, pDstPriv);
+        memdescUnmapOld(pDstMemDesc, 1 /* kernel */, pDstMem, pDstPriv);
 
     return NV_OK;
 }
@@ -5970,7 +6202,7 @@ kbusMemoryCopyFromPtr_GM107
 
         portMemCopy(pDstMem, size, pSrcMem, size);
 
-        memdescUnmapOld(pDstMemDesc, 1 /* kernel */, 0, pDstMem, pDstPriv);
+        memdescUnmapOld(pDstMemDesc, 1 /* kernel */, pDstMem, pDstPriv);
     }
     else
     {
@@ -6069,7 +6301,7 @@ kbusMemoryCopyToPtr_GM107
 
         portMemCopy(pDstMem, size, pSrcMem, size);
 
-        memdescUnmapOld(pSrcMemDesc, 1 /* kernel */, 0, pSrcMem, pSrcPriv);
+        memdescUnmapOld(pSrcMemDesc, 1 /* kernel */, pSrcMem, pSrcPriv);
     }
     else
     {
@@ -6190,3 +6422,4 @@ NV_STATUS kbusGetEffectiveAddressSpace_GM107(OBJGPU *pGpu,
 
     return NV_OK;
 }
+

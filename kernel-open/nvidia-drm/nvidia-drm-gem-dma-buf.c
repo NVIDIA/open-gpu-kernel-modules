@@ -24,17 +24,13 @@
 
 #if defined(NV_DRM_AVAILABLE)
 
-#if defined(NV_DRM_DRM_PRIME_H_PRESENT)
 #include <drm/drm_prime.h>
-#endif
 
 #if defined(NV_DRM_DRMP_H_PRESENT)
 #include <drm/drmP.h>
 #endif
 
-#if defined(NV_DRM_DRM_DRV_H_PRESENT)
 #include <drm/drm_drv.h>
-#endif
 
 #include "nvidia-drm-gem-dma-buf.h"
 #include "nvidia-drm-ioctl.h"
@@ -47,12 +43,10 @@ void __nv_drm_gem_dma_buf_free(struct nv_drm_gem_object *nv_gem)
     struct nv_drm_device *nv_dev = nv_gem->nv_dev;
     struct nv_drm_gem_dma_buf *nv_dma_buf = to_nv_dma_buf(nv_gem);
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
     if (nv_dma_buf->base.pMemory) {
         /* Free NvKmsKapiMemory handle associated with this gem object */
         nvKms->freeMemory(nv_dev->pDevice, nv_dma_buf->base.pMemory);
     }
-#endif
 
     drm_prime_gem_destroy(&nv_gem->base, nv_dma_buf->sgt);
 
@@ -157,13 +151,11 @@ nv_drm_gem_prime_import_sg_table(struct drm_device *dev,
     BUG_ON(dma_buf->size % PAGE_SIZE);
 
     pMemory = NULL;
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
     if (drm_core_check_feature(dev, DRIVER_MODESET)) {
         pMemory = nvKms->getSystemMemoryHandleFromDmaBuf(nv_dev->pDevice,
                                                   (NvP64)(NvUPtr)dma_buf,
                                                   dma_buf->size - 1);
     }
-#endif
 
     nv_drm_gem_object_init(nv_dev, &nv_dma_buf->base,
                            &__nv_gem_dma_buf_ops, dma_buf->size, pMemory);
@@ -194,7 +186,7 @@ int nv_drm_gem_export_dmabuf_memory_ioctl(struct drm_device *dev,
     }
 
     if ((nv_dma_buf = nv_drm_gem_object_dma_buf_lookup(
-             dev, filep, p->handle)) == NULL) {
+             filep, p->handle)) == NULL) {
         ret = -EINVAL;
         NV_DRM_DEV_LOG_ERR(
             nv_dev,
@@ -203,7 +195,6 @@ int nv_drm_gem_export_dmabuf_memory_ioctl(struct drm_device *dev,
         goto done;
     }
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
     if (drm_core_check_feature(dev, DRIVER_MODESET)) {
         if (!nv_dma_buf->base.pMemory) {
             /*
@@ -218,7 +209,6 @@ int nv_drm_gem_export_dmabuf_memory_ioctl(struct drm_device *dev,
                              nv_dma_buf->base.base.size - 1);
         }
     }
-#endif
 
     if (!nv_dma_buf->base.pMemory && !pTmpMemory) {
         ret = -ENOMEM;

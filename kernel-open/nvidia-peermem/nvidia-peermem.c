@@ -242,6 +242,61 @@ err:
     return 0;
 }
 
+/* acquire return code: 1 mine, 0 - not mine */
+static int nv_mem_acquire_nc(unsigned long addr, size_t size, void *peer_mem_private_data,
+                             char *peer_mem_name, void **client_context)
+{
+
+    int ret = 0;
+    struct nv_mem_context *nv_mem_context;
+
+    nv_mem_context = kzalloc(sizeof *nv_mem_context, GFP_KERNEL);
+    if (!nv_mem_context)
+        /* Error case handled as not mine */
+        return 0;
+
+    nv_mem_context->pad1 = NV_MEM_CONTEXT_MAGIC;
+    nv_mem_context->page_virt_start = addr & GPU_PAGE_MASK;
+    nv_mem_context->page_virt_end   = (addr + size + GPU_PAGE_SIZE - 1) & GPU_PAGE_MASK;
+    nv_mem_context->mapped_size  = nv_mem_context->page_virt_end - nv_mem_context->page_virt_start;
+    nv_mem_context->pad2 = NV_MEM_CONTEXT_MAGIC;
+
+#ifdef NVIDIA_P2P_CAP_GET_PAGES_PERSISTENT_API
+    ret = nvidia_p2p_get_pages_persistent(nv_mem_context->page_virt_start,
+                                          nv_mem_context->mapped_size,
+                                          &nv_mem_context->page_table, 0);
+#else
+    ret = nvidia_p2p_get_pages(0, 0, nv_mem_context->page_virt_start, nv_mem_context->mapped_size,
+                               &nv_mem_context->page_table, NULL, NULL);
+#endif
+    if (ret < 0)
+        goto err;
+
+#ifdef NVIDIA_P2P_CAP_GET_PAGES_PERSISTENT_API
+    ret = nvidia_p2p_put_pages_persistent(nv_mem_context->page_virt_start,
+                                          nv_mem_context->page_table, 0);
+#else
+    ret = nvidia_p2p_put_pages(0, 0, nv_mem_context->page_virt_start,
+                               nv_mem_context->page_table);
+#endif
+    if (ret < 0) {
+        peer_err("nv_mem_acquire -- error %d while calling nvidia_p2p_put_pages()\n", ret);
+        goto err;
+    }
+
+    /* 1 means mine */
+    *client_context = nv_mem_context;
+    __module_get(THIS_MODULE);
+    return 1;
+
+err:
+    memset(nv_mem_context, 0, sizeof(*nv_mem_context));
+    kfree(nv_mem_context);
+
+    /* Error case handled as not mine */
+    return 0;
+}
+
 static int nv_dma_map(struct sg_table *sg_head, void *context,
                       struct device *dma_device, int dmasync,
                       int *nmap)
@@ -477,7 +532,7 @@ static int nv_mem_get_pages_nc(unsigned long addr,
 }
 
 static struct peer_memory_client nv_mem_client_nc = {
-    .acquire        = nv_mem_acquire,
+    .acquire        = nv_mem_acquire_nc,
     .get_pages      = nv_mem_get_pages_nc,
     .dma_map        = nv_dma_map,
     .dma_unmap      = nv_dma_unmap,

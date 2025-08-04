@@ -95,17 +95,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_ConfidentialComputeApi =
     /*pExportInfo=*/        &__nvoc_export_info__ConfidentialComputeApi
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ConfidentialComputeApi[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdSystemSetSecurityPolicy_IMPL,
+        /*pFunc=*/      (void (*)(void)) &confComputeApiCtrlCmdSystemSetSecurityPolicy_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*flags=*/      0x4u,
         /*accessRight=*/0x0u,
@@ -120,7 +122,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdSystemGetSecurityPolicy_IMPL,
+        /*pFunc=*/      (void (*)(void)) &confComputeApiCtrlCmdSystemGetSecurityPolicy_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -135,7 +137,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdSystemGetCapabilities_IMPL,
+        /*pFunc=*/      (void (*)(void)) &confComputeApiCtrlCmdSystemGetCapabilities_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -150,7 +152,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdSystemGetGpusState_IMPL,
+        /*pFunc=*/      (void (*)(void)) &confComputeApiCtrlCmdSystemGetGpusState_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -165,7 +167,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdSystemSetGpusState_IMPL,
+        /*pFunc=*/      (void (*)(void)) &confComputeApiCtrlCmdSystemSetGpusState_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*flags=*/      0x4u,
         /*accessRight=*/0x0u,
@@ -180,7 +182,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdGpuGetVidmemSize_IMPL,
+        /*pFunc=*/      (void (*)(void)) &confComputeApiCtrlCmdGpuGetVidmemSize_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -195,7 +197,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdGpuSetVidmemSize_IMPL,
+        /*pFunc=*/      (void (*)(void)) &confComputeApiCtrlCmdGpuSetVidmemSize_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*flags=*/      0x4u,
         /*accessRight=*/0x0u,
@@ -210,7 +212,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdGetGpuCertificate_IMPL,
+        /*pFunc=*/      (void (*)(void)) &confComputeApiCtrlCmdGetGpuCertificate_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -225,7 +227,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdGetGpuAttestationReport_IMPL,
+        /*pFunc=*/      (void (*)(void)) &confComputeApiCtrlCmdGetGpuAttestationReport_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -240,7 +242,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdGpuGetNumSecureChannels_IMPL,
+        /*pFunc=*/      (void (*)(void)) &confComputeApiCtrlCmdGpuGetNumSecureChannels_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -255,7 +257,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL,
+        /*pFunc=*/      (void (*)(void)) &confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -266,7 +268,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
         /*func=*/       "confComputeApiCtrlCmdGpuGetKeyRotationState"
 #endif
     },
-
 };
 
 
@@ -477,6 +478,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__ConfidentialComputeApi =
     /*pExportEntries=*/ __nvoc_exported_method_def_ConfidentialComputeApi
 };
 
+void __nvoc_confComputeApiDestruct(ConfidentialComputeApi*);
 void __nvoc_dtor_RmResource(RmResource*);
 void __nvoc_dtor_ConfidentialComputeApi(ConfidentialComputeApi *pThis) {
     __nvoc_confComputeApiDestruct(pThis);
@@ -510,68 +512,11 @@ __nvoc_ctor_ConfidentialComputeApi_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_ConfidentialComputeApi_1(ConfidentialComputeApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // confComputeApiCtrlCmdSystemGetCapabilities -- exported (id=0xcb330101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__confComputeApiCtrlCmdSystemGetCapabilities__ = &confComputeApiCtrlCmdSystemGetCapabilities_IMPL;
-#endif
-
-    // confComputeApiCtrlCmdSystemGetGpusState -- exported (id=0xcb330104)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__confComputeApiCtrlCmdSystemGetGpusState__ = &confComputeApiCtrlCmdSystemGetGpusState_IMPL;
-#endif
-
-    // confComputeApiCtrlCmdSystemSetGpusState -- exported (id=0xcb330105)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
-    pThis->__confComputeApiCtrlCmdSystemSetGpusState__ = &confComputeApiCtrlCmdSystemSetGpusState_IMPL;
-#endif
-
-    // confComputeApiCtrlCmdGpuGetVidmemSize -- exported (id=0xcb330106)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__confComputeApiCtrlCmdGpuGetVidmemSize__ = &confComputeApiCtrlCmdGpuGetVidmemSize_IMPL;
-#endif
-
-    // confComputeApiCtrlCmdGpuSetVidmemSize -- exported (id=0xcb330107)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
-    pThis->__confComputeApiCtrlCmdGpuSetVidmemSize__ = &confComputeApiCtrlCmdGpuSetVidmemSize_IMPL;
-#endif
-
-    // confComputeApiCtrlCmdGetGpuCertificate -- exported (id=0xcb330109)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__confComputeApiCtrlCmdGetGpuCertificate__ = &confComputeApiCtrlCmdGetGpuCertificate_IMPL;
-#endif
-
-    // confComputeApiCtrlCmdGetGpuAttestationReport -- exported (id=0xcb33010a)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__confComputeApiCtrlCmdGetGpuAttestationReport__ = &confComputeApiCtrlCmdGetGpuAttestationReport_IMPL;
-#endif
-
-    // confComputeApiCtrlCmdGpuGetNumSecureChannels -- exported (id=0xcb33010b)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__confComputeApiCtrlCmdGpuGetNumSecureChannels__ = &confComputeApiCtrlCmdGpuGetNumSecureChannels_IMPL;
-#endif
-
-    // confComputeApiCtrlCmdSystemGetSecurityPolicy -- exported (id=0xc56f010e)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__confComputeApiCtrlCmdSystemGetSecurityPolicy__ = &confComputeApiCtrlCmdSystemGetSecurityPolicy_IMPL;
-#endif
-
-    // confComputeApiCtrlCmdSystemSetSecurityPolicy -- exported (id=0xc56f010d)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
-    pThis->__confComputeApiCtrlCmdSystemSetSecurityPolicy__ = &confComputeApiCtrlCmdSystemSetSecurityPolicy_IMPL;
-#endif
-
-    // confComputeApiCtrlCmdGpuGetKeyRotationState -- exported (id=0xcb33010c)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__confComputeApiCtrlCmdGpuGetKeyRotationState__ = &confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL;
-#endif
-} // End __nvoc_init_funcTable_ConfidentialComputeApi_1 with approximately 11 basic block(s).
+} // End __nvoc_init_funcTable_ConfidentialComputeApi_1
 
 
-// Initialize vtable(s) for 32 virtual method(s).
+// Initialize vtable(s) for 21 virtual method(s).
 void __nvoc_init_funcTable_ConfidentialComputeApi(ConfidentialComputeApi *pThis) {
-
-    // Initialize vtable(s) with 11 per-object function pointer(s).
     __nvoc_init_funcTable_ConfidentialComputeApi_1(pThis);
 }
 

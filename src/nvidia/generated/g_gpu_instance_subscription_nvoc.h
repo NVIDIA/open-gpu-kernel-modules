@@ -95,16 +95,6 @@ struct GPUInstanceSubscription {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct GPUInstanceSubscription *__nvoc_pbase_GPUInstanceSubscription;    // gisubscription
 
-    // Vtable with 8 per-object function pointers
-    NV_STATUS (*__gisubscriptionCtrlCmdExecPartitionsCreate__)(struct GPUInstanceSubscription * /*this*/, NVC637_CTRL_EXEC_PARTITIONS_CREATE_PARAMS *);  // exported (id=0xc6370101)
-    NV_STATUS (*__gisubscriptionCtrlCmdExecPartitionsDelete__)(struct GPUInstanceSubscription * /*this*/, NVC637_CTRL_EXEC_PARTITIONS_DELETE_PARAMS *);  // exported (id=0xc6370102)
-    NV_STATUS (*__gisubscriptionCtrlCmdExecPartitionsGet__)(struct GPUInstanceSubscription * /*this*/, NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS *);  // exported (id=0xc6370103)
-    NV_STATUS (*__gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity__)(struct GPUInstanceSubscription * /*this*/, NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS *);  // exported (id=0xc63701a9)
-    NV_STATUS (*__gisubscriptionCtrlCmdExecPartitionsGetActiveIds__)(struct GPUInstanceSubscription * /*this*/, NVC637_CTRL_EXEC_PARTITIONS_GET_ACTIVE_IDS_PARAMS *);  // exported (id=0xc6370104)
-    NV_STATUS (*__gisubscriptionCtrlCmdExecPartitionsExport__)(struct GPUInstanceSubscription * /*this*/, NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *);  // exported (id=0xc6370105)
-    NV_STATUS (*__gisubscriptionCtrlCmdExecPartitionsImport__)(struct GPUInstanceSubscription * /*this*/, NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *);  // exported (id=0xc6370106)
-    NV_STATUS (*__gisubscriptionCtrlCmdGetUuid__)(struct GPUInstanceSubscription * /*this*/, NVC637_CTRL_GET_UUID_PARAMS *);  // exported (id=0xc63701aa)
-
     // Data members
     KERNEL_MIG_GPU_INSTANCE *PRIVATE_FIELD(pKernelMIGGpuInstance);
     NvBool PRIVATE_FIELD(bDeviceProfiling);
@@ -131,16 +121,6 @@ struct GPUInstanceSubscription_PRIVATE {
     struct RmResource *__nvoc_pbase_RmResource;    // rmres super^2
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct GPUInstanceSubscription *__nvoc_pbase_GPUInstanceSubscription;    // gisubscription
-
-    // Vtable with 8 per-object function pointers
-    NV_STATUS (*__gisubscriptionCtrlCmdExecPartitionsCreate__)(struct GPUInstanceSubscription * /*this*/, NVC637_CTRL_EXEC_PARTITIONS_CREATE_PARAMS *);  // exported (id=0xc6370101)
-    NV_STATUS (*__gisubscriptionCtrlCmdExecPartitionsDelete__)(struct GPUInstanceSubscription * /*this*/, NVC637_CTRL_EXEC_PARTITIONS_DELETE_PARAMS *);  // exported (id=0xc6370102)
-    NV_STATUS (*__gisubscriptionCtrlCmdExecPartitionsGet__)(struct GPUInstanceSubscription * /*this*/, NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS *);  // exported (id=0xc6370103)
-    NV_STATUS (*__gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity__)(struct GPUInstanceSubscription * /*this*/, NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS *);  // exported (id=0xc63701a9)
-    NV_STATUS (*__gisubscriptionCtrlCmdExecPartitionsGetActiveIds__)(struct GPUInstanceSubscription * /*this*/, NVC637_CTRL_EXEC_PARTITIONS_GET_ACTIVE_IDS_PARAMS *);  // exported (id=0xc6370104)
-    NV_STATUS (*__gisubscriptionCtrlCmdExecPartitionsExport__)(struct GPUInstanceSubscription * /*this*/, NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *);  // exported (id=0xc6370105)
-    NV_STATUS (*__gisubscriptionCtrlCmdExecPartitionsImport__)(struct GPUInstanceSubscription * /*this*/, NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *);  // exported (id=0xc6370106)
-    NV_STATUS (*__gisubscriptionCtrlCmdGetUuid__)(struct GPUInstanceSubscription * /*this*/, NVC637_CTRL_GET_UUID_PARAMS *);  // exported (id=0xc63701aa)
 
     // Data members
     KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance;
@@ -215,25 +195,126 @@ NV_STATUS __nvoc_objCreate_GPUInstanceSubscription(GPUInstanceSubscription**, Dy
     __nvoc_objCreate_GPUInstanceSubscription((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS gisubscriptionGetGPUInstanceSubscription_IMPL(struct RsClient *arg1, NvHandle arg2, struct GPUInstanceSubscription **arg3);
+#define gisubscriptionGetGPUInstanceSubscription(arg1, arg2, arg3) gisubscriptionGetGPUInstanceSubscription_IMPL(arg1, arg2, arg3)
+
+NvBool gisubscriptionShouldClassBeFreedOnUnsubscribe_IMPL(NvU32 internalClassId);
+#define gisubscriptionShouldClassBeFreedOnUnsubscribe(internalClassId) gisubscriptionShouldClassBeFreedOnUnsubscribe_IMPL(internalClassId)
+
+void gisubscriptionCleanupOnUnsubscribe_IMPL(CALL_CONTEXT *arg1);
+#define gisubscriptionCleanupOnUnsubscribe(arg1) gisubscriptionCleanupOnUnsubscribe_IMPL(arg1)
+
+NV_STATUS gisubscriptionConstruct_IMPL(struct GPUInstanceSubscription *arg_pGPUInstanceSubscription, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_gisubscriptionConstruct(arg_pGPUInstanceSubscription, arg_pCallContext, arg_pParams) gisubscriptionConstruct_IMPL(arg_pGPUInstanceSubscription, arg_pCallContext, arg_pParams)
+
+NV_STATUS gisubscriptionCopyConstruct_IMPL(struct GPUInstanceSubscription *arg_this, CALL_CONTEXT *arg2, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg3);
+#ifdef __nvoc_gpu_instance_subscription_h_disabled
+static inline NV_STATUS gisubscriptionCopyConstruct(struct GPUInstanceSubscription *arg_this, CALL_CONTEXT *arg2, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg3) {
+    NV_ASSERT_FAILED_PRECOMP("GPUInstanceSubscription was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gpu_instance_subscription_h_disabled
+#define gisubscriptionCopyConstruct(arg_this, arg2, arg3) gisubscriptionCopyConstruct_IMPL(arg_this, arg2, arg3)
+#endif // __nvoc_gpu_instance_subscription_h_disabled
+
+void gisubscriptionDestruct_IMPL(struct GPUInstanceSubscription *arg_this);
+#define __nvoc_gisubscriptionDestruct(arg_this) gisubscriptionDestruct_IMPL(arg_this)
+
+NvBool gisubscriptionIsDuped_IMPL(struct GPUInstanceSubscription *arg_this);
+#ifdef __nvoc_gpu_instance_subscription_h_disabled
+static inline NvBool gisubscriptionIsDuped(struct GPUInstanceSubscription *arg_this) {
+    NV_ASSERT_FAILED_PRECOMP("GPUInstanceSubscription was disabled!");
+    return NV_FALSE;
+}
+#else // __nvoc_gpu_instance_subscription_h_disabled
+#define gisubscriptionIsDuped(arg_this) gisubscriptionIsDuped_IMPL(arg_this)
+#endif // __nvoc_gpu_instance_subscription_h_disabled
+
+NV_STATUS gisubscriptionCtrlCmdExecPartitionsCreate_IMPL(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_CREATE_PARAMS *arg2);
+#ifdef __nvoc_gpu_instance_subscription_h_disabled
+static inline NV_STATUS gisubscriptionCtrlCmdExecPartitionsCreate(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_CREATE_PARAMS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("GPUInstanceSubscription was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gpu_instance_subscription_h_disabled
+#define gisubscriptionCtrlCmdExecPartitionsCreate(arg_this, arg2) gisubscriptionCtrlCmdExecPartitionsCreate_IMPL(arg_this, arg2)
+#endif // __nvoc_gpu_instance_subscription_h_disabled
+
+NV_STATUS gisubscriptionCtrlCmdExecPartitionsDelete_IMPL(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_DELETE_PARAMS *arg2);
+#ifdef __nvoc_gpu_instance_subscription_h_disabled
+static inline NV_STATUS gisubscriptionCtrlCmdExecPartitionsDelete(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_DELETE_PARAMS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("GPUInstanceSubscription was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gpu_instance_subscription_h_disabled
+#define gisubscriptionCtrlCmdExecPartitionsDelete(arg_this, arg2) gisubscriptionCtrlCmdExecPartitionsDelete_IMPL(arg_this, arg2)
+#endif // __nvoc_gpu_instance_subscription_h_disabled
+
+NV_STATUS gisubscriptionCtrlCmdExecPartitionsGet_IMPL(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS *arg2);
+#ifdef __nvoc_gpu_instance_subscription_h_disabled
+static inline NV_STATUS gisubscriptionCtrlCmdExecPartitionsGet(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("GPUInstanceSubscription was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gpu_instance_subscription_h_disabled
+#define gisubscriptionCtrlCmdExecPartitionsGet(arg_this, arg2) gisubscriptionCtrlCmdExecPartitionsGet_IMPL(arg_this, arg2)
+#endif // __nvoc_gpu_instance_subscription_h_disabled
+
+NV_STATUS gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity_IMPL(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS *arg2);
+#ifdef __nvoc_gpu_instance_subscription_h_disabled
+static inline NV_STATUS gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("GPUInstanceSubscription was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gpu_instance_subscription_h_disabled
+#define gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity(arg_this, arg2) gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity_IMPL(arg_this, arg2)
+#endif // __nvoc_gpu_instance_subscription_h_disabled
+
+NV_STATUS gisubscriptionCtrlCmdExecPartitionsGetActiveIds_IMPL(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_GET_ACTIVE_IDS_PARAMS *arg2);
+#ifdef __nvoc_gpu_instance_subscription_h_disabled
+static inline NV_STATUS gisubscriptionCtrlCmdExecPartitionsGetActiveIds(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_GET_ACTIVE_IDS_PARAMS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("GPUInstanceSubscription was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gpu_instance_subscription_h_disabled
+#define gisubscriptionCtrlCmdExecPartitionsGetActiveIds(arg_this, arg2) gisubscriptionCtrlCmdExecPartitionsGetActiveIds_IMPL(arg_this, arg2)
+#endif // __nvoc_gpu_instance_subscription_h_disabled
+
+NV_STATUS gisubscriptionCtrlCmdExecPartitionsExport_IMPL(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *arg2);
+#ifdef __nvoc_gpu_instance_subscription_h_disabled
+static inline NV_STATUS gisubscriptionCtrlCmdExecPartitionsExport(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("GPUInstanceSubscription was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gpu_instance_subscription_h_disabled
+#define gisubscriptionCtrlCmdExecPartitionsExport(arg_this, arg2) gisubscriptionCtrlCmdExecPartitionsExport_IMPL(arg_this, arg2)
+#endif // __nvoc_gpu_instance_subscription_h_disabled
+
+NV_STATUS gisubscriptionCtrlCmdExecPartitionsImport_IMPL(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *arg2);
+#ifdef __nvoc_gpu_instance_subscription_h_disabled
+static inline NV_STATUS gisubscriptionCtrlCmdExecPartitionsImport(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("GPUInstanceSubscription was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gpu_instance_subscription_h_disabled
+#define gisubscriptionCtrlCmdExecPartitionsImport(arg_this, arg2) gisubscriptionCtrlCmdExecPartitionsImport_IMPL(arg_this, arg2)
+#endif // __nvoc_gpu_instance_subscription_h_disabled
+
+NV_STATUS gisubscriptionCtrlCmdGetUuid_IMPL(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_GET_UUID_PARAMS *arg2);
+#ifdef __nvoc_gpu_instance_subscription_h_disabled
+static inline NV_STATUS gisubscriptionCtrlCmdGetUuid(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_GET_UUID_PARAMS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("GPUInstanceSubscription was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gpu_instance_subscription_h_disabled
+#define gisubscriptionCtrlCmdGetUuid(arg_this, arg2) gisubscriptionCtrlCmdGetUuid_IMPL(arg_this, arg2)
+#endif // __nvoc_gpu_instance_subscription_h_disabled
+
+
+// Wrapper macros for halified functions
 #define gisubscriptionCanCopy_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__gisubscriptionCanCopy__
 #define gisubscriptionCanCopy(arg_this) gisubscriptionCanCopy_DISPATCH(arg_this)
-#define gisubscriptionCtrlCmdExecPartitionsCreate_FNPTR(arg_this) arg_this->__gisubscriptionCtrlCmdExecPartitionsCreate__
-#define gisubscriptionCtrlCmdExecPartitionsCreate(arg_this, arg2) gisubscriptionCtrlCmdExecPartitionsCreate_DISPATCH(arg_this, arg2)
-#define gisubscriptionCtrlCmdExecPartitionsDelete_FNPTR(arg_this) arg_this->__gisubscriptionCtrlCmdExecPartitionsDelete__
-#define gisubscriptionCtrlCmdExecPartitionsDelete(arg_this, arg2) gisubscriptionCtrlCmdExecPartitionsDelete_DISPATCH(arg_this, arg2)
-#define gisubscriptionCtrlCmdExecPartitionsGet_FNPTR(arg_this) arg_this->__gisubscriptionCtrlCmdExecPartitionsGet__
-#define gisubscriptionCtrlCmdExecPartitionsGet(arg_this, arg2) gisubscriptionCtrlCmdExecPartitionsGet_DISPATCH(arg_this, arg2)
-#define gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity_FNPTR(arg_this) arg_this->__gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity__
-#define gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity(arg_this, arg2) gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity_DISPATCH(arg_this, arg2)
-#define gisubscriptionCtrlCmdExecPartitionsGetActiveIds_FNPTR(arg_this) arg_this->__gisubscriptionCtrlCmdExecPartitionsGetActiveIds__
-#define gisubscriptionCtrlCmdExecPartitionsGetActiveIds(arg_this, arg2) gisubscriptionCtrlCmdExecPartitionsGetActiveIds_DISPATCH(arg_this, arg2)
-#define gisubscriptionCtrlCmdExecPartitionsExport_FNPTR(arg_this) arg_this->__gisubscriptionCtrlCmdExecPartitionsExport__
-#define gisubscriptionCtrlCmdExecPartitionsExport(arg_this, arg2) gisubscriptionCtrlCmdExecPartitionsExport_DISPATCH(arg_this, arg2)
-#define gisubscriptionCtrlCmdExecPartitionsImport_FNPTR(arg_this) arg_this->__gisubscriptionCtrlCmdExecPartitionsImport__
-#define gisubscriptionCtrlCmdExecPartitionsImport(arg_this, arg2) gisubscriptionCtrlCmdExecPartitionsImport_DISPATCH(arg_this, arg2)
-#define gisubscriptionCtrlCmdGetUuid_FNPTR(arg_this) arg_this->__gisubscriptionCtrlCmdGetUuid__
-#define gisubscriptionCtrlCmdGetUuid(arg_this, arg2) gisubscriptionCtrlCmdGetUuid_DISPATCH(arg_this, arg2)
 #define gisubscriptionControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define gisubscriptionControl(pGpuResource, pCallContext, pParams) gisubscriptionControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define gisubscriptionMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
@@ -286,38 +367,6 @@ NV_STATUS __nvoc_objCreate_GPUInstanceSubscription(GPUInstanceSubscription**, Dy
 // Dispatch functions
 static inline NvBool gisubscriptionCanCopy_DISPATCH(struct GPUInstanceSubscription *arg_this) {
     return arg_this->__nvoc_metadata_ptr->vtable.__gisubscriptionCanCopy__(arg_this);
-}
-
-static inline NV_STATUS gisubscriptionCtrlCmdExecPartitionsCreate_DISPATCH(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_CREATE_PARAMS *arg2) {
-    return arg_this->__gisubscriptionCtrlCmdExecPartitionsCreate__(arg_this, arg2);
-}
-
-static inline NV_STATUS gisubscriptionCtrlCmdExecPartitionsDelete_DISPATCH(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_DELETE_PARAMS *arg2) {
-    return arg_this->__gisubscriptionCtrlCmdExecPartitionsDelete__(arg_this, arg2);
-}
-
-static inline NV_STATUS gisubscriptionCtrlCmdExecPartitionsGet_DISPATCH(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS *arg2) {
-    return arg_this->__gisubscriptionCtrlCmdExecPartitionsGet__(arg_this, arg2);
-}
-
-static inline NV_STATUS gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity_DISPATCH(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS *arg2) {
-    return arg_this->__gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity__(arg_this, arg2);
-}
-
-static inline NV_STATUS gisubscriptionCtrlCmdExecPartitionsGetActiveIds_DISPATCH(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_GET_ACTIVE_IDS_PARAMS *arg2) {
-    return arg_this->__gisubscriptionCtrlCmdExecPartitionsGetActiveIds__(arg_this, arg2);
-}
-
-static inline NV_STATUS gisubscriptionCtrlCmdExecPartitionsExport_DISPATCH(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *arg2) {
-    return arg_this->__gisubscriptionCtrlCmdExecPartitionsExport__(arg_this, arg2);
-}
-
-static inline NV_STATUS gisubscriptionCtrlCmdExecPartitionsImport_DISPATCH(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *arg2) {
-    return arg_this->__gisubscriptionCtrlCmdExecPartitionsImport__(arg_this, arg2);
-}
-
-static inline NV_STATUS gisubscriptionCtrlCmdGetUuid_DISPATCH(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_GET_UUID_PARAMS *arg2) {
-    return arg_this->__gisubscriptionCtrlCmdGetUuid__(arg_this, arg2);
 }
 
 static inline NV_STATUS gisubscriptionControl_DISPATCH(struct GPUInstanceSubscription *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -443,43 +492,6 @@ static inline KERNEL_MIG_GPU_INSTANCE *gisubscriptionGetMIGGPUInstance(struct GP
     struct GPUInstanceSubscription_PRIVATE *pGPUInstanceSubscription_PRIVATE = (struct GPUInstanceSubscription_PRIVATE *)pGPUInstanceSubscription;
     return pGPUInstanceSubscription_PRIVATE->pKernelMIGGpuInstance;
 }
-
-NV_STATUS gisubscriptionGetGPUInstanceSubscription_IMPL(struct RsClient *arg1, NvHandle arg2, struct GPUInstanceSubscription **arg3);
-
-#define gisubscriptionGetGPUInstanceSubscription(arg1, arg2, arg3) gisubscriptionGetGPUInstanceSubscription_IMPL(arg1, arg2, arg3)
-NvBool gisubscriptionShouldClassBeFreedOnUnsubscribe_IMPL(NvU32 internalClassId);
-
-#define gisubscriptionShouldClassBeFreedOnUnsubscribe(internalClassId) gisubscriptionShouldClassBeFreedOnUnsubscribe_IMPL(internalClassId)
-void gisubscriptionCleanupOnUnsubscribe_IMPL(CALL_CONTEXT *arg1);
-
-#define gisubscriptionCleanupOnUnsubscribe(arg1) gisubscriptionCleanupOnUnsubscribe_IMPL(arg1)
-NV_STATUS gisubscriptionConstruct_IMPL(struct GPUInstanceSubscription *arg_pGPUInstanceSubscription, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_gisubscriptionConstruct(arg_pGPUInstanceSubscription, arg_pCallContext, arg_pParams) gisubscriptionConstruct_IMPL(arg_pGPUInstanceSubscription, arg_pCallContext, arg_pParams)
-NV_STATUS gisubscriptionCopyConstruct_IMPL(struct GPUInstanceSubscription *arg1, CALL_CONTEXT *arg2, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg3);
-
-#ifdef __nvoc_gpu_instance_subscription_h_disabled
-static inline NV_STATUS gisubscriptionCopyConstruct(struct GPUInstanceSubscription *arg1, CALL_CONTEXT *arg2, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg3) {
-    NV_ASSERT_FAILED_PRECOMP("GPUInstanceSubscription was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_gpu_instance_subscription_h_disabled
-#define gisubscriptionCopyConstruct(arg1, arg2, arg3) gisubscriptionCopyConstruct_IMPL(arg1, arg2, arg3)
-#endif //__nvoc_gpu_instance_subscription_h_disabled
-
-void gisubscriptionDestruct_IMPL(struct GPUInstanceSubscription *arg1);
-
-#define __nvoc_gisubscriptionDestruct(arg1) gisubscriptionDestruct_IMPL(arg1)
-NvBool gisubscriptionIsDuped_IMPL(struct GPUInstanceSubscription *arg1);
-
-#ifdef __nvoc_gpu_instance_subscription_h_disabled
-static inline NvBool gisubscriptionIsDuped(struct GPUInstanceSubscription *arg1) {
-    NV_ASSERT_FAILED_PRECOMP("GPUInstanceSubscription was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_gpu_instance_subscription_h_disabled
-#define gisubscriptionIsDuped(arg1) gisubscriptionIsDuped_IMPL(arg1)
-#endif //__nvoc_gpu_instance_subscription_h_disabled
 
 #undef PRIVATE_FIELD
 

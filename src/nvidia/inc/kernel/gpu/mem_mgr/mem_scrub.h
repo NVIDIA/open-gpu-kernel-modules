@@ -129,7 +129,7 @@ NV_STATUS scrubberConstruct(struct OBJGPU *pGpu, struct Heap *pHeap);
  *
  */
 
-void scrubberDestruct(struct OBJGPU *pGpu, struct Heap *pHeap, OBJMEMSCRUB *pMemscrub);
+void scrubberDestruct(struct OBJGPU *pGpu, struct Heap *pHeap);
 
 
 /**

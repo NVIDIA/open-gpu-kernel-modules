@@ -157,7 +157,15 @@ NV_STATUS __nvoc_objCreate_ExtendedGpuMemory(ExtendedGpuMemory**, Dynamic*, NvU3
     __nvoc_objCreate_ExtendedGpuMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS egmmemConstruct_IMPL(struct ExtendedGpuMemory *arg_pStandardMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_egmmemConstruct(arg_pStandardMemory, arg_pCallContext, arg_pParams) egmmemConstruct_IMPL(arg_pStandardMemory, arg_pCallContext, arg_pParams)
+
+NV_STATUS egmmemValidateParams_IMPL(struct OBJGPU *pGpu, struct RmClient *pRmClient, NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
+#define egmmemValidateParams(pGpu, pRmClient, pAllocData) egmmemValidateParams_IMPL(pGpu, pRmClient, pAllocData)
+
+
+// Wrapper macros for halified functions
 #define egmmemCanCopy_FNPTR(pStandardMemory) pStandardMemory->__nvoc_base_StandardMemory.__nvoc_metadata_ptr->vtable.__stdmemCanCopy__
 #define egmmemCanCopy(pStandardMemory) egmmemCanCopy_DISPATCH(pStandardMemory)
 #define egmmemIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsDuplicate__
@@ -316,12 +324,6 @@ static inline void egmmemAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__nvoc_metadata_ptr->vtable.__egmmemAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-NV_STATUS egmmemConstruct_IMPL(struct ExtendedGpuMemory *arg_pStandardMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_egmmemConstruct(arg_pStandardMemory, arg_pCallContext, arg_pParams) egmmemConstruct_IMPL(arg_pStandardMemory, arg_pCallContext, arg_pParams)
-NV_STATUS egmmemValidateParams_IMPL(struct OBJGPU *pGpu, struct RmClient *pRmClient, NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
-
-#define egmmemValidateParams(pGpu, pRmClient, pAllocData) egmmemValidateParams_IMPL(pGpu, pRmClient, pAllocData)
 #undef PRIVATE_FIELD
 
 

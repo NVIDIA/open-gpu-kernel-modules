@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -151,9 +151,9 @@
 // no trace output
 #define _MMUXLATEVADDR_FLAG_XLATE_ONLY          _MMUXLATEVADDR_FLAG_VALIDATE_TERSELY
 
-static NV_STATUS _dmaGetFabricAddress(OBJGPU *pGpu, NvU32 aperture, NvU32 kind,
+static NV_STATUS _dmaGetFabricAddress(OBJGPU *pGpu, GMMU_APERTURE aperture, NvU32 kind,
                                         NvU64 *fabricAddr);
-static NV_STATUS _dmaGetFabricEgmAddress(OBJGPU *pGpu, NvU32 aperture, NvU32 kind,
+static NV_STATUS _dmaGetFabricEgmAddress(OBJGPU *pGpu, GMMU_APERTURE aperture, NvU32 kind,
                                         NvU64 *fabricEgmAddr);
 
 static NV_STATUS
@@ -177,6 +177,32 @@ typedef struct VASINFO_MAXWELL
     VAS_ALLOC_FLAGS flags;
     VA_MANAGEMENT management; // Level of management.
 } VASINFO_MAXWELL, *PVASINFO_MAXWELL;
+
+NvBool
+dmaIsDefaultGpuUncached_GM107
+(
+    VirtMemAllocator *pDma,
+    MEMORY_DESCRIPTOR *pMemDesc,
+    GMMU_APERTURE aperture,
+    NvBool bIndirectPeer
+)
+{
+    switch (aperture)
+    {
+        case GMMU_APERTURE_PEER:
+            return (memdescGetGpuP2PCacheAttrib(pMemDesc) == NV_MEMORY_UNCACHED);
+        case GMMU_APERTURE_SYS_COH:
+        case GMMU_APERTURE_SYS_NONCOH:
+            if (bIndirectPeer)
+                return (memdescGetGpuP2PCacheAttrib(pMemDesc) == NV_MEMORY_UNCACHED);
+            else
+                return (memdescGetGpuCacheAttrib(pMemDesc) == NV_MEMORY_UNCACHED);
+        case GMMU_APERTURE_VIDEO:
+            return NV_FALSE;
+        default:
+            NV_ASSERT_OR_RETURN(0, NV_FALSE);
+    }
+}
 
 /*!
  * @brief Allocate virtual memory and map it to physical memory.
@@ -207,6 +233,7 @@ dmaAllocMapping_GM107
     MEMORY_DESCRIPTOR  *pMemDesc,
     NvU64              *pVaddr,
     NvU32               flags,
+    NvU32               flags2,
     CLI_DMA_ALLOC_MAP_INFO *pCliMapInfo,
     NvU32               swizzId
 )
@@ -241,9 +268,11 @@ dmaAllocMapping_GM107
         NvU64              vaRangeHi;
         NvU32              kind;
         NvU32              priv;
-        NvU32              cacheSnoop;
+        NvU32              cpuCacheSnoop;
+        NvU32              gpuCacheSnoop;
         COMPR_INFO         comprInfo;
-        NvU32              aperture;
+        GMMU_APERTURE      aperture;
+        NvBool             bVolatile;
         NvU32              tlbLock;
         NvU32              p2p;
         NvU32              writeOnly;
@@ -266,7 +295,7 @@ dmaAllocMapping_GM107
         NvU64              vaspaceBigPageSize;
         NvBool             bIsMemContiguous;
         NvU64              fabricAddr;
-        NvU32              indirectPeer;
+        NvBool             bIndirectPeer;
         NvBool             bFlaImport;
         NV_RANGE           totalVaRange;
         MEMORY_DESCRIPTOR *pRootMemDesc;
@@ -276,6 +305,7 @@ dmaAllocMapping_GM107
         NvU8               pageShift;
         NvU64              physPageSize;
         NvU64              pageArrayFlags;
+        NvBool             bNeedL2InvalidateAtUnmap;
     } *pLocals = portMemAllocNonPaged(sizeof(*pLocals));
     // Heap Allocate to avoid stack overflow
 
@@ -301,26 +331,66 @@ dmaAllocMapping_GM107
     pLocals->bIsBar1            = (vaspaceGetFlags(pVAS) & VASPACE_FLAGS_BAR_BAR1) != 0;
     pLocals->bIsMIGMemPartitioningEnabled = (pKernelMIGManager != NULL) && kmigmgrIsMIGMemPartitioningEnabled(pGpu, pKernelMIGManager);
 
-    pLocals->cacheSnoop = (NVOS46_FLAGS_CACHE_SNOOP_ENABLE == DRF_VAL(OS46, _FLAGS, _CACHE_SNOOP, flags));
     pLocals->writeOnly  = (NVOS46_FLAGS_ACCESS_WRITE_ONLY == DRF_VAL(OS46, _FLAGS, _ACCESS, flags));
     pLocals->readOnly   = (NVOS46_FLAGS_ACCESS_READ_ONLY == DRF_VAL(OS46, _FLAGS, _ACCESS, flags)) ?
                            DMA_UPDATE_VASPACE_FLAGS_READ_ONLY : 0;
     pLocals->tlbLock    = (NVOS46_FLAGS_TLB_LOCK_ENABLE == DRF_VAL(OS46, _FLAGS, _TLB_LOCK, flags)) ?
                            DMA_UPDATE_VASPACE_FLAGS_TLB_LOCK : 0;
-    
-    switch(DRF_VAL(OS46, _FLAGS, _GPU_CACHEABLE, flags))
+
+    //
+    // Resolve whether GPU accesses to this mapping will snoop the CPU cache.
+    // This flag has no effect on fully coherent platforms. Only applies to sysmem.
+    //
+    switch (memdescGetCpuCacheSnoop(pMemDesc))
     {
-        case NVOS46_FLAGS_GPU_CACHEABLE_DEFAULT:
-        case NVOS46_FLAGS_GPU_CACHEABLE_INVALID:
-            // The default case is to use the underlying allocation's cache attribute
-            pLocals->volatileFlags = 0;
+        case MEMDESC_CACHE_SNOOP_ENABLE:
+            pLocals->cpuCacheSnoop = NV_TRUE;
             break;
-        case NVOS46_FLAGS_GPU_CACHEABLE_NO:
-            pLocals->volatileFlags = DMA_UPDATE_VASPACE_FLAGS_VOLATILE;
+        case MEMDESC_CACHE_SNOOP_DISABLE:
+            pLocals->cpuCacheSnoop = NV_FALSE;
             break;
-        case NVOS46_FLAGS_GPU_CACHEABLE_YES:
-            pLocals->volatileFlags = DMA_UPDATE_VASPACE_FLAGS_NONVOLATILE;
+        case MEMDESC_CACHE_SNOOP_DEFER_TO_MAP:
+            pLocals->cpuCacheSnoop = FLD_TEST_DRF(OS46, _FLAGS, _CACHE_SNOOP, _ENABLE, flags);
             break;
+        default:
+            status = NV_ERR_INVALID_STATE;
+            NV_ASSERT_OK_OR_GOTO(status, status, cleanup);
+    }
+
+    //
+    // Resolve whether CPU/IO device accesses to this mapping will snoop the GPU cache.
+    // This flag has no effect on non-fully coherent platforms.
+    //
+    switch (memdescGetGpuCacheSnoop(pMemDesc))
+    {
+        case MEMDESC_CACHE_SNOOP_ENABLE:
+            pLocals->gpuCacheSnoop = NV_TRUE;
+
+            // Sanity check the GPU cache snoop flag aligns with allocation time choice.
+            if (FLD_TEST_DRF(OS46, _FLAGS2, _GPU_CACHE_SNOOP, _DISABLE, flags2))
+            {
+                NV_PRINTF(LEVEL_INFO, "GPU cache snoop flag is enabled at allocation time, but the mapping is requested with cache snoop disabled.\n");
+                status = NV_ERR_INVALID_ARGUMENT;
+                goto cleanup;
+            }
+            break;
+        case MEMDESC_CACHE_SNOOP_DISABLE:
+            pLocals->gpuCacheSnoop = NV_FALSE;
+
+            // Sanity check the GPU cache snoop flag aligns with allocation time choice.
+            if (FLD_TEST_DRF(OS46, _FLAGS2, _GPU_CACHE_SNOOP, _ENABLE, flags2))
+            {
+                NV_PRINTF(LEVEL_INFO, "GPU cache snoop flag is disabled at allocation time, but the mapping is requested with cache snoop enabled.\n");
+                status = NV_ERR_INVALID_ARGUMENT;
+                goto cleanup;
+            }
+            break;
+        case MEMDESC_CACHE_SNOOP_DEFER_TO_MAP:
+            pLocals->gpuCacheSnoop = FLD_TEST_DRF(OS46, _FLAGS2, _GPU_CACHE_SNOOP, _ENABLE, flags2);
+            break;
+        default:
+            status = NV_ERR_INVALID_STATE;
+            NV_ASSERT_OK_OR_GOTO(status, status, cleanup);
     }
 
     switch (DRF_VAL(OS46, _FLAGS, _SHADER_ACCESS, flags))
@@ -350,6 +420,8 @@ dmaAllocMapping_GM107
     NV_ASSERT_OK_OR_GOTO(status, vgpuIsCallingContextPlugin(pGpu, &bCallingContextPlugin), cleanup);
     if (bCallingContextPlugin)
         addressTranslation = FORCE_VMMU_TRANSLATION(pMemDesc, addressTranslation);
+
+    NV_ASSERT_OK_OR_GOTO(status, vgpuGetCallingContextGfid(pGpu, &gfid), cleanup);
 
     if (pFabricVAS != NULL)
     {
@@ -521,11 +593,7 @@ dmaAllocMapping_GM107
     }
     else
     {
-        // FIXME: This is broken for page size > 4KB and page offset
-        //        that crosses a page boundary (can overrun pPteArray).
-        // --
-        // page count is one more than integral division in case of presence of offset hence being rounded up
-        pLocals->pteCount = RM_ALIGN_UP((pLocals->pTempMemDesc->Size + pLocals->pageOffset), pLocals->pageArrayGranularity) >> BIT_IDX_32(pLocals->pageArrayGranularity);
+        pLocals->pteCount = pLocals->pTempMemDesc->PageCount;
     }
 
     // Disable PLC Compression for FLA->PA Mapping because of the HW Bug: 3046774
@@ -557,8 +625,6 @@ dmaAllocMapping_GM107
         {
             pLocals->overMap = pLocals->pageCount;
         }
-
-        NV_ASSERT_OK_OR_GOTO(status, vgpuGetCallingContextGfid(pGpu, &gfid), cleanup);
 
         // BAR1 VA space is split when MIG mem partitioning is enabled
         if (pLocals->bIsBar1 && pLocals->bIsMIGMemPartitioningEnabled && IS_GFID_PF(gfid))
@@ -889,7 +955,7 @@ dmaAllocMapping_GM107
     {
         if (gpumgrCheckIndirectPeer(pGpu, pLocals->pRootMemDesc->pGpu))
         {
-            pLocals->indirectPeer = DMA_UPDATE_VASPACE_FLAGS_INDIRECT_PEER;
+            pLocals->bIndirectPeer = NV_TRUE;
         }
     }
 
@@ -920,22 +986,22 @@ dmaAllocMapping_GM107
             pLocals->pageArrayFlags |= DMA_PAGE_ARRARY_FLAGS_LOCALIZED;
         }
         dmaPageArrayInitWithFlags(&pLocals->pageArray, pLocals->pPteArray, pLocals->pteCount,
-                                  pLocals->pageArrayFlags);
+                                  pLocals->pageArrayFlags, pLocals->pTempMemDesc->localizedMask);
 
         // Get pLocals->aperture
         if (memdescGetAddressSpace(pLocals->pTempMemDesc) == ADDR_FBMEM)
         {
             if (pLocals->p2p)
             {
-                pLocals->aperture = NV_MMU_PTE_APERTURE_PEER_MEMORY;
+                pLocals->aperture = GMMU_APERTURE_PEER;
             }
-            else if (pLocals->indirectPeer)
+            else if (pLocals->bIndirectPeer)
             {
-                pLocals->aperture = NV_MMU_PTE_APERTURE_SYSTEM_COHERENT_MEMORY;
+                pLocals->aperture = GMMU_APERTURE_SYS_COH;
             }
             else
             {
-                pLocals->aperture = NV_MMU_PTE_APERTURE_VIDEO_MEMORY;
+                pLocals->aperture = GMMU_APERTURE_VIDEO;
             }
 
         }
@@ -965,7 +1031,7 @@ dmaAllocMapping_GM107
                 SLI_LOOP_BREAK;
             }
 
-            pLocals->aperture = NV_MMU_PTE_APERTURE_PEER_MEMORY;
+            pLocals->aperture = GMMU_APERTURE_PEER;
 
             if (!memIsGpuMapAllowed(pLocals->pMemory, pMappingGpu))
             {
@@ -1012,7 +1078,7 @@ dmaAllocMapping_GM107
         }
         else if (memdescIsEgm(pLocals->pTempMemDesc))
         {
-            pLocals->aperture = NV_MMU_PTE_APERTURE_PEER_MEMORY;
+            pLocals->aperture = GMMU_APERTURE_PEER;
 
             if (pLocals->p2p)
             {
@@ -1046,15 +1112,37 @@ dmaAllocMapping_GM107
 
             if (memdescGetFlag(pAdjustedMemDesc, MEMDESC_FLAGS_ALLOC_SKED_REFLECTED))
             {
-                pLocals->aperture = NV_MMU_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY;
+                pLocals->aperture = GMMU_APERTURE_SYS_NONCOH;
             }
-            else if (pLocals->cacheSnoop || memdescGetFlag(pAdjustedMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
+            //
+            // Coherent platforms like tegra use the aperture field as a way
+            // to signal whether the CPU (or other IO devices) will snoop the GPU cache.
+            //
+            else if (pMemoryManager->bPlatformFullyCoherent)
             {
-                pLocals->aperture = NV_MMU_PTE_APERTURE_SYSTEM_COHERENT_MEMORY;
+                if (pLocals->gpuCacheSnoop)
+                {
+                    pLocals->aperture = GMMU_APERTURE_SYS_COH;
+                }
+                else
+                {
+                    pLocals->aperture = GMMU_APERTURE_SYS_NONCOH;
+                }
             }
+            //
+            // For platforms that do not support full coherency, the aperture flag signals
+            // whether the GPU will snoop the CPU cache.
+            //
             else
             {
-                pLocals->aperture = NV_MMU_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY;
+                if (pLocals->cpuCacheSnoop)
+                {
+                    pLocals->aperture = GMMU_APERTURE_SYS_COH;
+                }
+                else
+                {
+                    pLocals->aperture = GMMU_APERTURE_SYS_NONCOH;
+                }
             }
         }
 
@@ -1071,7 +1159,7 @@ dmaAllocMapping_GM107
             }
         }
 
-        if (pLocals->aperture == NV_MMU_PTE_APERTURE_PEER_MEMORY &&
+        if (pLocals->aperture == GMMU_APERTURE_PEER &&
             pLocals->peerNumber == BUS_INVALID_PEER)
         {
             status = NV_ERR_INVALID_STATE;
@@ -1079,8 +1167,8 @@ dmaAllocMapping_GM107
             SLI_LOOP_BREAK;
         }
 
-        if ((gpuIsSriovEnabled(pGpu) || IS_VIRTUAL_WITH_SRIOV(pGpu)) &&
-            (pLocals->aperture == NV_MMU_PTE_APERTURE_VIDEO_MEMORY) &&
+        if (((gpuIsSriovEnabled(pGpu) && IS_GFID_VF(gfid)) || IS_VIRTUAL_WITH_SRIOV(pGpu)) &&
+            (pLocals->aperture == GMMU_APERTURE_VIDEO) &&
             (pLocals->pageSize > gpuGetVmmuSegmentSize(pGpu)))
         {
             NV_CHECK_FAILED(LEVEL_ERROR, "Vidmem page size is limited by VMMU segment size when GPU is in SRIOV mode");
@@ -1133,6 +1221,54 @@ dmaAllocMapping_GM107
             }
         }
 
+        pLocals->bVolatile = dmaIsDefaultGpuUncached_HAL(pDma, pLocals->pTempMemDesc,
+                                                         pLocals->aperture, pLocals->bIndirectPeer);
+
+        // We shouldn't modify volatility for MMIO page.
+        if (!memdescGetFlag(pLocals->pTempMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
+        {
+            switch (DRF_VAL(OS46, _FLAGS, _GPU_CACHEABLE, flags))
+            {
+                case NVOS46_FLAGS_GPU_CACHEABLE_DEFAULT:
+                case NVOS46_FLAGS_GPU_CACHEABLE_INVALID:
+                    // The default case is to use the underlying allocation's cache attribute
+                    break;
+                case NVOS46_FLAGS_GPU_CACHEABLE_NO:
+                    pLocals->bVolatile = NV_TRUE;
+                    break;
+                case NVOS46_FLAGS_GPU_CACHEABLE_YES:
+                    pLocals->bVolatile = NV_FALSE;
+                    break;
+            }
+        }
+
+        if (pMemoryManager->bPlatformFullyCoherent &&
+            pLocals->aperture == GMMU_APERTURE_SYS_NONCOH &&
+            pLocals->bVolatile)
+        {
+            //
+            // On fully coherent systems, platform atomics are not supported for SYS_NCOH + VOL=1 mappings.
+            // Restricting this case is not viable as it requires clients to choose between the less
+            // performant SYS_COH mode or the more performant SYS_NCOH mode with cache mgmt ops to maintain
+            // functional correctness.
+            //
+
+            NV_PRINTF(LEVEL_INFO, "SYS_NCOH + VOL=1 mappings do not support platform atomics.\n");
+        }
+
+        pLocals->bNeedL2InvalidateAtUnmap = kmemsysNeedInvalidateGpuCacheOnUnmap(pGpu, pKernelMemorySystem,
+                                                                                 pLocals->bVolatile, pLocals->aperture);
+        if (pCliMapInfo != NULL)
+        {
+            pCliMapInfo->pDmaMappingInfo->aperture = pLocals->aperture;
+            pCliMapInfo->pDmaMappingInfo->bNeedL2InvalidateAtUnmap = pLocals->bNeedL2InvalidateAtUnmap;
+        }
+        else
+        {
+            NV_ASSERT_TRUE_OR_GOTO(status, !pLocals->bNeedL2InvalidateAtUnmap,
+                                   NV_ERR_INVALID_ARGUMENT, fail_post_register);
+        }
+
         pDma = GPU_GET_DMA(pGpu);
 
         status = dmaUpdateVASpace_HAL(pGpu, pDma,
@@ -1141,13 +1277,13 @@ dmaAllocMapping_GM107
                                       NULL,
                                       pLocals->vaLo, pLocals->vaHi,
                                       DMA_UPDATE_VASPACE_FLAGS_UPDATE_ALL | pLocals->readOnly | pLocals->priv |
-                                          pLocals->tlbLock | pLocals->shaderFlags | pLocals->disableEncryption |
-                                          pLocals->indirectPeer | pLocals->volatileFlags,
+                                          pLocals->tlbLock | pLocals->shaderFlags | pLocals->disableEncryption,
                                      &pLocals->pageArray, pLocals->overMap,
                                      &pLocals->comprInfo,
                                       0,
                                       NV_MMU_PTE_VALID_TRUE,
                                       pLocals->aperture,
+                                      pLocals->bVolatile,
                                       pLocals->peerNumber,
                                       pLocals->fabricAddr,
                                       pLocals->deferInvalidate,
@@ -1318,7 +1454,9 @@ dmaFreeMapping_GM107
                                           NULL, 0,
                                           NULL, 0,
                                           NV_MMU_PTE_VALID_FALSE,
-                                          kgmmuGetHwPteApertureFromMemdesc(GPU_GET_KERNEL_GMMU(pGpu), pTempMemDesc), 0,
+                                          GMMU_APERTURE_INVALID,
+                                          NV_FALSE,
+                                          0,
                                           NVLINK_INVALID_FABRIC_ADDR,
                                           deferInvalidate,
                                           NV_FALSE,
@@ -1348,10 +1486,18 @@ dmaFreeMapping_GM107
             (p2p != NVOS46_FLAGS_P2P_ENABLE_NONE))
         {
             KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
-            kmemsysCacheOp_HAL(pGpu, pKernelMemorySystem, pMemDesc, FB_CACHE_PEER_MEMORY,
+            kmemsysCacheOp_HAL(pGpu, pKernelMemorySystem, NULL, FB_CACHE_PEER_MEMORY,
                                FB_CACHE_INVALIDATE);
         }
     SLI_LOOP_END
+
+    if (pCliMapInfo != NULL && pCliMapInfo->pDmaMappingInfo->bNeedL2InvalidateAtUnmap)
+    {
+        GMMU_APERTURE aperture = (pCliMapInfo->pDmaMappingInfo->aperture == GMMU_APERTURE_PEER) ?
+            FB_CACHE_PEER_MEMORY : FB_CACHE_SYSTEM_MEMORY;
+
+        kmemsysCacheOp_HAL(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu), NULL, aperture, FB_CACHE_INVALIDATE);
+    }
 
     return status;
 }
@@ -1720,7 +1866,7 @@ _gmmuWalkCBMapNextEntries_RmAperture
 static NV_STATUS _dmaGetFabricAddress
 (
     OBJGPU         *pGpu,
-    NvU32           aperture,
+    GMMU_APERTURE   aperture,
     NvU32           kind,
     NvU64           *fabricAddr
 )
@@ -1735,7 +1881,7 @@ static NV_STATUS _dmaGetFabricAddress
         return NV_OK;
     }
 
-    if (aperture != NV_MMU_PTE_APERTURE_PEER_MEMORY)
+    if (aperture != GMMU_APERTURE_PEER)
     {
         return NV_OK;
     }
@@ -1763,7 +1909,7 @@ static NV_STATUS _dmaGetFabricAddress
 static NV_STATUS _dmaGetFabricEgmAddress
 (
     OBJGPU         *pGpu,
-    NvU32           aperture,
+    GMMU_APERTURE   aperture,
     NvU32           kind,
     NvU64           *fabricEgmAddr
 )
@@ -1778,7 +1924,7 @@ static NV_STATUS _dmaGetFabricEgmAddress
         return NV_OK;
     }
 
-    if (aperture != NV_MMU_PTE_APERTURE_PEER_MEMORY)
+    if (aperture != GMMU_APERTURE_PEER)
     {
         return NV_OK;
     }
@@ -1820,7 +1966,8 @@ dmaUpdateVASpace_GF100
     COMPR_INFO *pComprInfo,
     NvU64       surfaceOffset,
     NvU32       valid,
-    NvU32       aperture,
+    GMMU_APERTURE aperture,
+    NvBool      isVolatile,
     NvU32       peer,
     NvU64       fabricAddr,
     NvU32       deferInvalidate,
@@ -1832,13 +1979,13 @@ dmaUpdateVASpace_GF100
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     NvBool      readPte = NV_FALSE;
     NV_STATUS   status = NV_OK;
-    NvBool      isVolatile = NV_TRUE;
     NvU32       encrypted = 0;
     NvU32       tlbLock;
     NvU32       readOnly;
     NvU32       priv;
     NvU32       writeDisable;
     NvU32       readDisable;
+    NvU32       forceAccessCounterDisable;
     NvU64       vaSpaceBigPageSize = 0;
     KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig =
@@ -1849,7 +1996,6 @@ dmaUpdateVASpace_GF100
     NvBool      bUnmap = !bFillPteMem &&
                          (flags & DMA_UPDATE_VASPACE_FLAGS_UPDATE_VALID) &&
                          (SF_VAL(_MMU, _PTE_VALID, valid) == NV_MMU_PTE_VALID_FALSE);
-    NvBool      bIsIndirectPeer;
     VAS_PTE_UPDATE_TYPE update_type;
 
     {
@@ -1868,7 +2014,7 @@ dmaUpdateVASpace_GF100
     readOnly = (flags & DMA_UPDATE_VASPACE_FLAGS_READ_ONLY) ? NV_MMU_PTE_READ_ONLY_TRUE : NV_MMU_PTE_READ_ONLY_FALSE;
     writeDisable = !!(flags & DMA_UPDATE_VASPACE_FLAGS_SHADER_READ_ONLY);
     readDisable = !!(flags & DMA_UPDATE_VASPACE_FLAGS_SHADER_WRITE_ONLY);
-    bIsIndirectPeer = !!(flags & DMA_UPDATE_VASPACE_FLAGS_INDIRECT_PEER);
+    forceAccessCounterDisable = !!(flags & DMA_UPDATE_VASPACE_FLAGS_FORCE_ACD);
 
     NV_ASSERT_OR_RETURN(pageSize, NV_ERR_INVALID_ARGUMENT);
 
@@ -1893,32 +2039,6 @@ dmaUpdateVASpace_GF100
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    switch (aperture)
-    {
-        case NV_MMU_PTE_APERTURE_PEER_MEMORY:
-            isVolatile = (memdescGetGpuP2PCacheAttrib(pMemDesc) == NV_MEMORY_UNCACHED) ? NV_TRUE : NV_FALSE;
-                break;
-        case NV_MMU_PTE_APERTURE_SYSTEM_COHERENT_MEMORY:
-        case NV_MMU_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY:
-                if (bIsIndirectPeer)
-                    isVolatile = (memdescGetGpuP2PCacheAttrib(pMemDesc) == NV_MEMORY_UNCACHED) ? NV_TRUE : NV_FALSE;
-                else
-                    isVolatile = (memdescGetGpuCacheAttrib(pMemDesc) == NV_MEMORY_UNCACHED) ? NV_TRUE : NV_FALSE;
-
-                break;
-        default:
-        case NV_MMU_PTE_APERTURE_VIDEO_MEMORY:
-                isVolatile = NV_FALSE;
-                break;
-    }
-
-    // We shouldn't modify volatility for MMIO page.
-    if (!memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
-    {
-        isVolatile |= !!(flags & DMA_UPDATE_VASPACE_FLAGS_VOLATILE);
-        isVolatile &= !(flags & DMA_UPDATE_VASPACE_FLAGS_NONVOLATILE);
-    }
-
     encrypted = (flags & DMA_UPDATE_VASPACE_FLAGS_DISABLE_ENCRYPTION) ? 0 :
         memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ENCRYPTED);
 
@@ -1938,15 +2058,24 @@ dmaUpdateVASpace_GF100
                     (SF_VAL(_MMU, _PTE_VALID, valid) == NV_MMU_PTE_VALID_FALSE));
     }
 
-    //
-    // Compressed surfaces must be aligned to the compression page size
-    // but don't check for LDDM which may pass in unaligned surfaces incrementally.
-    // Chips that support full comp tag lines will support the VA being aligned to
-    // the big page size. This is because the PA alignement chooses between even/odd pages
-    // and SW programs the PA alignment.
-    //
-    if (pDma->bDmaEnableFullCompTagLine)
+    if (pMemoryManager->bSmallPageCompression && pMemorySystemConfig->bUseRawModeComptaglineAllocation)
     {
+        //
+        // Allow 4K-aligned compressed mappings on Tegra with raw mode
+        // For legacy compression mode VA bits are used for comptag addressing
+        // This means that differently aligned aliased mappings will see different compresison states
+        //
+        alignSize = RM_PAGE_SIZE;
+    }
+    else if (pDma->bDmaEnableFullCompTagLine)
+    {
+        //
+        // Compressed surfaces must be aligned to the compression page size
+        // but don't check for LDDM which may pass in unaligned surfaces incrementally.
+        // Chips that support full comp tag lines will support the VA being aligned to
+        // the big page size. This is because the PA alignement chooses between even/odd pages
+        // and SW programs the PA alignment.
+        //
         alignSize = vaSpaceBigPageSize;
     }
 
@@ -2002,7 +2131,7 @@ dmaUpdateVASpace_GF100
     }
 
     // Zero peer on non-peer requests to simplify pte construction
-    if (aperture != NV_MMU_PTE_APERTURE_PEER_MEMORY)
+    if (aperture != GMMU_APERTURE_PEER)
     {
         peer = 0;
     }
@@ -2076,7 +2205,7 @@ dmaUpdateVASpace_GF100
         if (kmemsysNeedInvalidateGpuCacheOnMap_HAL(pGpu, pKernelMemorySystem, isVolatile, aperture))
         {
             kmemsysCacheOp_HAL(pGpu, pKernelMemorySystem, pMemDesc,
-                               (aperture == NV_MMU_PTE_APERTURE_PEER_MEMORY) ? FB_CACHE_PEER_MEMORY : FB_CACHE_SYSTEM_MEMORY,
+                               (aperture == GMMU_APERTURE_PEER) ? FB_CACHE_PEER_MEMORY : FB_CACHE_SYSTEM_MEMORY,
                                FB_CACHE_EVICT);
         }
 
@@ -2091,8 +2220,7 @@ dmaUpdateVASpace_GF100
             {
                 nvFieldSetBool(&pFmt->pPte->fldValid, NV_TRUE,
                                mapIter.pteTemplate);
-                nvFieldSet32(&pFmt->pPte->fldAperture._enum.desc,
-                             aperture, mapIter.pteTemplate);
+                gmmuFieldSetAperture(&pFmt->pPte->fldAperture, aperture, mapIter.pteTemplate);
                 nvFieldSet32(&pFmt->pPte->fldPeerIndex, peer,
                              mapIter.pteTemplate);
                 nvFieldSet32(&pFmt->pPte->fldKind, kindNoCompression,
@@ -2126,6 +2254,12 @@ dmaUpdateVASpace_GF100
                     ptePcfSw |= (1 << SW_MMU_PCF_INVALID_IDX);
                 }
             }
+
+            if (forceAccessCounterDisable)
+            {
+                ptePcfSw &= ~(1 << SW_MMU_PCF_ACE_IDX);
+                NV_PRINTF(LEVEL_INFO, "force ACD=true with ptePcfSw = 0x%X\n", ptePcfSw);
+            }
             NV_CHECK_OR_RETURN(LEVEL_ERROR,
                                (kgmmuTranslatePtePcfFromSw_HAL(pKernelGmmu, ptePcfSw, &ptePcfHw) == NV_OK),
                                NV_ERR_INVALID_ARGUMENT);
@@ -2147,8 +2281,7 @@ dmaUpdateVASpace_GF100
             {
                 nvFieldSetBool(&pFmt->pPte->fldValid, !!valid,
                                mapIter.pteTemplate);
-                nvFieldSet32(&pFmt->pPte->fldAperture._enum.desc,
-                             aperture, mapIter.pteTemplate);
+                gmmuFieldSetAperture(&pFmt->pPte->fldAperture, aperture, mapIter.pteTemplate);
                 nvFieldSet32(&pFmt->pPte->fldPeerIndex, peer,
                              mapIter.pteTemplate);
 
@@ -2360,7 +2493,8 @@ dmaMapBuffer_GM107
     KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
     NvU32       kind;
     COMPR_INFO  comprInfo;
-    NvU32       pteCount, aperture;
+    NvU32       pteCount;
+    GMMU_APERTURE aperture;
     NvU64       mapLength;
     NvU64       vaddr;
     NV_STATUS   status = NV_OK;
@@ -2496,15 +2630,15 @@ dmaMapBuffer_GM107
 
     if (memdescGetAddressSpace(pSubDevMemDesc) == ADDR_FBMEM)
     {
-        aperture = NV_MMU_PTE_APERTURE_VIDEO_MEMORY;
+        aperture = GMMU_APERTURE_VIDEO;
     }
     else if (memdescGetCpuCacheAttrib(pSubDevMemDesc) == NV_MEMORY_CACHED)
     {
-        aperture = NV_MMU_PTE_APERTURE_SYSTEM_COHERENT_MEMORY;
+        aperture = GMMU_APERTURE_SYS_COH;
     }
     else
     {
-        aperture = NV_MMU_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY;
+        aperture = GMMU_APERTURE_SYS_NONCOH;
     }
 
     status = dmaUpdateVASpace_HAL(pGpu, pDma, pVAS,
@@ -2515,7 +2649,9 @@ dmaMapBuffer_GM107
                                  &pageArray, 0, &comprInfo,
                                   0,
                                   NV_MMU_PTE_VALID_TRUE,
-                                  aperture, 0,
+                                  aperture,
+                                  dmaIsDefaultGpuUncached_HAL(pDma, pSubDevMemDesc, aperture, NV_FALSE),
+                                  0,
                                   NVLINK_INVALID_FABRIC_ADDR,
                                   NV_FALSE, NV_FALSE,
                                   pageSize);

@@ -52,12 +52,11 @@ int nv_drm_gem_import_userspace_memory_ioctl(struct drm_device *dev,
 
 static inline
 struct nv_drm_gem_user_memory *nv_drm_gem_object_user_memory_lookup(
-    struct drm_device *dev,
     struct drm_file *filp,
     u32 handle)
 {
     struct nv_drm_gem_object *nv_gem =
-            nv_drm_gem_object_lookup(dev, filp, handle);
+            nv_drm_gem_object_lookup(filp, handle);
 
     if (nv_gem != NULL && nv_gem->ops != &__nv_gem_user_memory_ops) {
         nv_drm_gem_object_unreference_unlocked(nv_gem);

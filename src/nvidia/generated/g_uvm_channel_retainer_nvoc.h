@@ -173,7 +173,25 @@ NV_STATUS __nvoc_objCreate_UvmChannelRetainer(UvmChannelRetainer**, Dynamic*, Nv
     __nvoc_objCreate_UvmChannelRetainer((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS uvmchanrtnrConstruct_IMPL(struct UvmChannelRetainer *arg_pUvmChannelRetainer, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_uvmchanrtnrConstruct(arg_pUvmChannelRetainer, arg_pCallContext, arg_pParams) uvmchanrtnrConstruct_IMPL(arg_pUvmChannelRetainer, arg_pCallContext, arg_pParams)
+
+void uvmchanrtnrDestruct_IMPL(struct UvmChannelRetainer *pUvmChannelRetainer);
+#define __nvoc_uvmchanrtnrDestruct(pUvmChannelRetainer) uvmchanrtnrDestruct_IMPL(pUvmChannelRetainer)
+
+#ifdef __nvoc_uvm_channel_retainer_h_disabled
+static inline NvBool uvmchanrtnrIsAllocationAllowed(struct UvmChannelRetainer *pUvmChannelRetainer, CALL_CONTEXT *pCallContext, struct KernelChannel *pKernelChannel) {
+    NV_ASSERT_FAILED_PRECOMP("UvmChannelRetainer was disabled!");
+    return NV_FALSE;
+}
+#else // __nvoc_uvm_channel_retainer_h_disabled
+#define uvmchanrtnrIsAllocationAllowed(pUvmChannelRetainer, pCallContext, pKernelChannel) uvmchanrtnrIsAllocationAllowed_IMPL(pUvmChannelRetainer, pCallContext, pKernelChannel)
+#endif // __nvoc_uvm_channel_retainer_h_disabled
+
+
+// Wrapper macros for halified functions
+#define uvmchanrtnrIsAllocationAllowed_HAL(pUvmChannelRetainer, pCallContext, pKernelChannel) uvmchanrtnrIsAllocationAllowed(pUvmChannelRetainer, pCallContext, pKernelChannel)
 #define uvmchanrtnrControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define uvmchanrtnrControl(pGpuResource, pCallContext, pParams) uvmchanrtnrControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define uvmchanrtnrMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
@@ -329,23 +347,6 @@ static inline void uvmchanrtnrAddAdditionalDependants_DISPATCH(struct RsClient *
 NvBool uvmchanrtnrIsAllocationAllowed_IMPL(struct UvmChannelRetainer *pUvmChannelRetainer, CALL_CONTEXT *pCallContext, struct KernelChannel *pKernelChannel);
 
 
-#ifdef __nvoc_uvm_channel_retainer_h_disabled
-static inline NvBool uvmchanrtnrIsAllocationAllowed(struct UvmChannelRetainer *pUvmChannelRetainer, CALL_CONTEXT *pCallContext, struct KernelChannel *pKernelChannel) {
-    NV_ASSERT_FAILED_PRECOMP("UvmChannelRetainer was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_uvm_channel_retainer_h_disabled
-#define uvmchanrtnrIsAllocationAllowed(pUvmChannelRetainer, pCallContext, pKernelChannel) uvmchanrtnrIsAllocationAllowed_IMPL(pUvmChannelRetainer, pCallContext, pKernelChannel)
-#endif //__nvoc_uvm_channel_retainer_h_disabled
-
-#define uvmchanrtnrIsAllocationAllowed_HAL(pUvmChannelRetainer, pCallContext, pKernelChannel) uvmchanrtnrIsAllocationAllowed(pUvmChannelRetainer, pCallContext, pKernelChannel)
-
-NV_STATUS uvmchanrtnrConstruct_IMPL(struct UvmChannelRetainer *arg_pUvmChannelRetainer, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_uvmchanrtnrConstruct(arg_pUvmChannelRetainer, arg_pCallContext, arg_pParams) uvmchanrtnrConstruct_IMPL(arg_pUvmChannelRetainer, arg_pCallContext, arg_pParams)
-void uvmchanrtnrDestruct_IMPL(struct UvmChannelRetainer *pUvmChannelRetainer);
-
-#define __nvoc_uvmchanrtnrDestruct(pUvmChannelRetainer) uvmchanrtnrDestruct_IMPL(pUvmChannelRetainer)
 #undef PRIVATE_FIELD
 
 

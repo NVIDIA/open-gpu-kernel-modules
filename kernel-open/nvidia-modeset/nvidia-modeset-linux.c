@@ -209,6 +209,225 @@ NvBool nvkms_kernel_supports_syncpts(void)
 /*************************************************************************
  * NVKMS interface for nvhost unit for sync point APIs.
  *************************************************************************/
+#if defined(NV_LINUX_NVHOST_H_PRESENT) && defined(CONFIG_TEGRA_GRHOST)
+
+#undef NVKMS_SYNCPT_STUBS_NEEDED
+
+#include <linux/nvhost.h>
+
+NvBool nvkms_syncpt_op(
+    enum NvKmsSyncPtOp op,
+    NvKmsSyncPtOpParams *params)
+{
+    struct platform_device *pdev = nvhost_get_default_device();
+
+    switch (op) {
+
+    case NVKMS_SYNCPT_OP_ALLOC:
+        params->alloc.id = nvhost_get_syncpt_client_managed(
+                                pdev, params->alloc.syncpt_name);
+        break;
+
+    case NVKMS_SYNCPT_OP_PUT:
+        nvhost_syncpt_put_ref_ext(pdev, params->put.id);
+        break;
+
+    case NVKMS_SYNCPT_OP_FD_TO_ID_AND_THRESH: {
+
+        struct nvhost_fence *fence;
+        NvU32 id, thresh;
+
+        fence = nvhost_fence_get(params->fd_to_id_and_thresh.fd);
+        if (fence == NULL) {
+            return NV_FALSE;
+        }
+
+        if (nvhost_fence_num_pts(fence) > 1) {
+            /*! Syncpoint fence fd contains more than one syncpoint */
+            nvhost_fence_put(fence);
+            return NV_FALSE;
+        }
+
+        if (nvhost_fence_get_pt(fence, 0, &id, &thresh) != 0) {
+            nvhost_fence_put(fence);
+            return NV_FALSE;
+        }
+
+        params->fd_to_id_and_thresh.id = id;
+        params->fd_to_id_and_thresh.thresh = thresh;
+
+        nvhost_fence_put(fence);
+
+        break;
+    }
+
+    case NVKMS_SYNCPT_OP_ID_AND_THRESH_TO_FD:
+        nvhost_syncpt_create_fence_single_ext(
+                pdev,
+                params->id_and_thresh_to_fd.id,
+                params->id_and_thresh_to_fd.thresh,
+                "nvkms-fence",
+                &params->id_and_thresh_to_fd.fd);
+        break;
+
+    case NVKMS_SYNCPT_OP_READ_MINVAL:
+        params->read_minval.minval =
+                nvhost_syncpt_read_minval(pdev, params->read_minval.id);
+        break;
+
+    }
+
+    return NV_TRUE;
+}
+
+#elif defined(NV_LINUX_HOST1X_NEXT_H_PRESENT) && defined(NV_LINUX_NVHOST_H_PRESENT)
+
+#include <linux/dma-fence.h>
+#include <linux/file.h>
+#include <linux/host1x-next.h>
+#include <linux/sync_file.h>
+
+/*
+ * If the host1x.h header is present, then we are using the upstream
+ * host1x driver and so make sure CONFIG_TEGRA_HOST1X is defined to pick
+ * up the correct prototypes/definitions in nvhost.h.
+ */
+#define CONFIG_TEGRA_HOST1X
+
+#include <linux/nvhost.h>
+
+#undef NVKMS_SYNCPT_STUBS_NEEDED
+
+NvBool nvkms_syncpt_op(
+    enum NvKmsSyncPtOp op,
+    NvKmsSyncPtOpParams *params)
+{
+    struct host1x_syncpt *host1x_sp;
+    struct platform_device *pdev;
+    struct host1x *host1x;
+
+    pdev = nvhost_get_default_device();
+    if (pdev == NULL) {
+        nvkms_log(NVKMS_LOG_LEVEL_ERROR, NVKMS_LOG_PREFIX,
+                  "Failed to get nvhost default pdev");
+         return NV_FALSE;
+    }
+
+    host1x = nvhost_get_host1x(pdev);
+    if (host1x == NULL) {
+        nvkms_log(NVKMS_LOG_LEVEL_ERROR, NVKMS_LOG_PREFIX,
+                  "Failed to get host1x");
+        return  NV_FALSE;
+    }
+
+    switch (op) {
+
+    case NVKMS_SYNCPT_OP_ALLOC:
+        host1x_sp = host1x_syncpt_alloc(host1x,
+                                        HOST1X_SYNCPT_CLIENT_MANAGED,
+                                        params->alloc.syncpt_name);
+        if (host1x_sp == NULL) {
+            return NV_FALSE;
+        }
+
+        params->alloc.id = host1x_syncpt_id(host1x_sp);
+        break;
+
+    case NVKMS_SYNCPT_OP_PUT:
+        host1x_sp = host1x_syncpt_get_by_id_noref(host1x, params->put.id);
+        if (host1x_sp == NULL) {
+            return NV_FALSE;
+        }
+
+        host1x_syncpt_put(host1x_sp);
+        break;
+
+    case NVKMS_SYNCPT_OP_FD_TO_ID_AND_THRESH: {
+
+        struct dma_fence *f;
+        NvU32 id, thresh;
+        int err;
+
+        f = sync_file_get_fence(params->fd_to_id_and_thresh.fd);
+        if (f == NULL) {
+            return NV_FALSE;
+        }
+
+        if (dma_fence_is_array(f)) {
+            struct dma_fence_array *array = to_dma_fence_array(f);
+
+            if (array->num_fences > 1) {
+                /* Syncpoint fence fd contains more than one syncpoint */
+                dma_fence_put(f);
+                return NV_FALSE;
+            }
+
+            f = array->fences[0];
+        }
+
+        err = host1x_fence_extract(f, &id, &thresh);
+        dma_fence_put(f);
+
+        if (err < 0) {
+            return NV_FALSE;
+        }
+
+        params->fd_to_id_and_thresh.id = id;
+        params->fd_to_id_and_thresh.thresh = thresh;
+
+        break;
+    }
+
+    case NVKMS_SYNCPT_OP_ID_AND_THRESH_TO_FD: {
+
+        struct sync_file *file;
+        struct dma_fence *f;
+        int fd;
+
+        host1x_sp = host1x_syncpt_get_by_id_noref(host1x,
+                                params->id_and_thresh_to_fd.id);
+        if (host1x_sp == NULL) {
+            return NV_FALSE;
+        }
+
+        f = host1x_fence_create(host1x_sp,
+                                params->id_and_thresh_to_fd.thresh, true);
+        if (IS_ERR(f)) {
+            return NV_FALSE;
+        }
+
+        fd = get_unused_fd_flags(O_CLOEXEC);
+        if (fd < 0) {
+            dma_fence_put(f);
+            return NV_FALSE;
+        }
+
+        file = sync_file_create(f);
+        dma_fence_put(f);
+
+        if (!file) {
+            return NV_FALSE;
+        }
+
+        fd_install(fd, file->file);
+
+        params->id_and_thresh_to_fd.fd = fd;
+        break;
+    }
+
+    case NVKMS_SYNCPT_OP_READ_MINVAL:
+        host1x_sp = host1x_syncpt_get_by_id_noref(host1x, params->read_minval.id);
+        if (host1x_sp == NULL) {
+            return NV_FALSE;
+        }
+
+        params->read_minval.minval = host1x_syncpt_read(host1x_sp);
+        break;
+    }
+
+    return NV_TRUE;
+}
+#endif
 
 #ifdef NVKMS_SYNCPT_STUBS_NEEDED
 /* Unsupported STUB for nvkms_syncpt APIs */
@@ -819,12 +1038,6 @@ inline static void nvkms_timer_callback_typed_data(struct timer_list *timer)
     _nvkms_timer_callback_internal(nvkms_timer);
 }
 
-inline static void nvkms_timer_callback_anon_data(unsigned long arg)
-{
-    struct nvkms_timer_t *nvkms_timer = (struct nvkms_timer_t *) arg;
-    _nvkms_timer_callback_internal(nvkms_timer);
-}
-
 static void
 nvkms_init_timer(struct nvkms_timer_t *timer, nvkms_timer_proc_t *proc,
                  void *dataPtr, NvU32 dataU32, NvBool isRefPtr, NvU64 usec)
@@ -857,13 +1070,7 @@ nvkms_init_timer(struct nvkms_timer_t *timer, nvkms_timer_proc_t *proc,
         timer->kernel_timer_created = NV_FALSE;
         nvkms_queue_work(&nvkms_kthread_q, &timer->nv_kthread_q_item);
     } else {
-#if defined(NV_TIMER_SETUP_PRESENT)
         timer_setup(&timer->kernel_timer, nvkms_timer_callback_typed_data, 0);
-#else
-        init_timer(&timer->kernel_timer);
-        timer->kernel_timer.function = nvkms_timer_callback_anon_data;
-        timer->kernel_timer.data = (unsigned long) timer;
-#endif
 
         timer->kernel_timer_created = NV_TRUE;
         mod_timer(&timer->kernel_timer, jiffies + NVKMS_USECS_TO_JIFFIES(usec));
@@ -1142,6 +1349,7 @@ static void nvkms_kapi_event_kthread_q_callback(void *arg)
 
 static struct nvkms_per_open *nvkms_open_common(enum NvKmsClientType type,
                                          struct NvKmsKapiDevice *device,
+                                         NvBool interruptible,
                                          int *status)
 {
     struct nvkms_per_open *popen = NULL;
@@ -1155,10 +1363,13 @@ static struct nvkms_per_open *nvkms_open_common(enum NvKmsClientType type,
 
     popen->type = type;
 
-    *status = down_interruptible(&nvkms_lock);
-
-    if (*status != 0) {
-        goto failed;
+    if (interruptible) {
+        *status = down_interruptible(&nvkms_lock);
+        if (*status != 0) {
+            goto failed;
+        }
+    } else {
+        down(&nvkms_lock);
     }
 
     popen->data = nvKmsOpen(current->tgid, type, popen);
@@ -1258,15 +1469,19 @@ static void nvkms_close_popen(struct nvkms_per_open *popen)
 static int nvkms_ioctl_common
 (
     struct nvkms_per_open *popen,
-    NvU32 cmd, NvU64 address, const size_t size
+    NvU32 cmd, NvU64 address, const size_t size,
+    NvBool interruptible
 )
 {
-    int status;
     NvBool ret;
 
-    status = down_interruptible(&nvkms_lock);
-    if (status != 0) {
-        return status;
+    if (interruptible) {
+        int status = down_interruptible(&nvkms_lock);
+        if (status != 0) {
+            return status;
+        }
+    } else {
+        down(&nvkms_lock);
     }
 
     if (popen->data != NULL) {
@@ -1293,7 +1508,10 @@ struct nvkms_per_open* nvkms_open_from_kapi
     struct nvkms_per_open *ret;
 
     nvkms_read_lock_pm_lock();
-    ret = nvkms_open_common(NVKMS_CLIENT_KERNEL_SPACE, device, &status);
+    ret = nvkms_open_common(NVKMS_CLIENT_KERNEL_SPACE,
+                            device,
+                            NV_FALSE /* interruptible */,
+                            &status);
     nvkms_read_unlock_pm_lock();
 
     return ret;
@@ -1312,13 +1530,15 @@ NvBool nvkms_ioctl_from_kapi_try_pmlock
 {
     NvBool ret;
 
+    // XXX PM lock must be allowed to fail, see bug 4432810.
     if (nvkms_read_trylock_pm_lock()) {
         return NV_FALSE;
     }
 
     ret = nvkms_ioctl_common(popen,
                              cmd,
-                             (NvU64)(NvUPtr)params_address, param_size) == 0;
+                             (NvU64)(NvUPtr)params_address, param_size,
+                             NV_FALSE /* interruptible */) == 0;
     nvkms_read_unlock_pm_lock();
 
     return ret;
@@ -1335,7 +1555,8 @@ NvBool nvkms_ioctl_from_kapi
     nvkms_read_lock_pm_lock();
     ret = nvkms_ioctl_common(popen,
                              cmd,
-                             (NvU64)(NvUPtr)params_address, param_size) == 0;
+                             (NvU64)(NvUPtr)params_address, param_size,
+                             NV_FALSE /* interruptible */) == 0;
     nvkms_read_unlock_pm_lock();
 
     return ret;
@@ -1504,9 +1725,7 @@ static size_t nvkms_config_file_open
     struct inode *file_inode;
     size_t file_size = 0;
     size_t read_size = 0;
-#if defined(NV_KERNEL_READ_HAS_POINTER_POS_ARG)
     loff_t pos = 0;
-#endif
 
     *buff = NULL;
     
@@ -1549,14 +1768,8 @@ static size_t nvkms_config_file_open
      * kernel_read_file for kernels >= 4.6
      */
     while ((read_size < file_size) && (i++ < NVKMS_READ_FILE_MAX_LOOPS)) {
-#if defined(NV_KERNEL_READ_HAS_POINTER_POS_ARG)
         ssize_t ret = kernel_read(file, *buff + read_size,
                                   file_size - read_size, &pos);
-#else
-        ssize_t ret = kernel_read(file, read_size,
-                                  *buff + read_size,
-                                  file_size - read_size);
-#endif
         if (ret <= 0) {
             break;
         }
@@ -1677,7 +1890,10 @@ static int nvkms_open(struct inode *inode, struct file *filp)
     }
 
     filp->private_data =
-        nvkms_open_common(NVKMS_CLIENT_USER_SPACE, NULL, &status);
+        nvkms_open_common(NVKMS_CLIENT_USER_SPACE,
+                          NULL,
+                          NV_TRUE /* interruptible */,
+                          &status);
 
     nvkms_read_unlock_pm_lock();
 
@@ -1736,7 +1952,8 @@ static int nvkms_ioctl(struct inode *inode, struct file *filp,
     status = nvkms_ioctl_common(popen,
                                 params.cmd,
                                 params.address,
-                                params.size);
+                                params.size,
+                                NV_TRUE /* interruptible */);
 
     nvkms_read_unlock_pm_lock();
 

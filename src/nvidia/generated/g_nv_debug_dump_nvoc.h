@@ -195,6 +195,7 @@ struct NvDebugDump {
     struct NvDebugDump *__nvoc_pbase_NvDebugDump;    // nvd
 
     // 1 PDB property
+//  NvBool PDB_PROP_NVD_IS_MISSING inherited from OBJENGSTATE
 
     // Data members
     NVD_DEBUG_BUFFER *pHeadDebugBuffer;
@@ -253,6 +254,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_NvDebugDump;
 #define PDB_PROP_NVD_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_NVD_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 
+
 NV_STATUS __nvoc_objCreateDynamic_NvDebugDump(NvDebugDump**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_NvDebugDump(NvDebugDump**, Dynamic*, NvU32);
@@ -260,7 +262,102 @@ NV_STATUS __nvoc_objCreate_NvDebugDump(NvDebugDump**, Dynamic*, NvU32);
     __nvoc_objCreate_NvDebugDump((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+void nvdDestruct_IMPL(struct NvDebugDump *pNvd);
+#define __nvoc_nvdDestruct(pNvd) nvdDestruct_IMPL(pNvd)
+
+NV_STATUS nvdDumpComponent_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvU32 component, NVDUMP_BUFFER *pBuffer, NVDUMP_BUFFER_POLICY policy, PrbBufferCallback *pBufferCallback);
+#ifdef __nvoc_nv_debug_dump_h_disabled
+static inline NV_STATUS nvdDumpComponent(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvU32 component, NVDUMP_BUFFER *pBuffer, NVDUMP_BUFFER_POLICY policy, PrbBufferCallback *pBufferCallback) {
+    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_nv_debug_dump_h_disabled
+#define nvdDumpComponent(pGpu, pNvd, component, pBuffer, policy, pBufferCallback) nvdDumpComponent_IMPL(pGpu, pNvd, component, pBuffer, policy, pBufferCallback)
+#endif // __nvoc_nv_debug_dump_h_disabled
+
+NV_STATUS nvdAllocDebugBuffer_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvU32 arg3, NvU32 *arg4, MEMORY_DESCRIPTOR **arg5);
+#ifdef __nvoc_nv_debug_dump_h_disabled
+static inline NV_STATUS nvdAllocDebugBuffer(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvU32 arg3, NvU32 *arg4, MEMORY_DESCRIPTOR **arg5) {
+    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_nv_debug_dump_h_disabled
+#define nvdAllocDebugBuffer(pGpu, pNvd, arg3, arg4, arg5) nvdAllocDebugBuffer_IMPL(pGpu, pNvd, arg3, arg4, arg5)
+#endif // __nvoc_nv_debug_dump_h_disabled
+
+NV_STATUS nvdFreeDebugBuffer_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, MEMORY_DESCRIPTOR *arg3);
+#ifdef __nvoc_nv_debug_dump_h_disabled
+static inline NV_STATUS nvdFreeDebugBuffer(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, MEMORY_DESCRIPTOR *arg3) {
+    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_nv_debug_dump_h_disabled
+#define nvdFreeDebugBuffer(pGpu, pNvd, arg3) nvdFreeDebugBuffer_IMPL(pGpu, pNvd, arg3)
+#endif // __nvoc_nv_debug_dump_h_disabled
+
+NV_STATUS nvdDumpDebugBuffers_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *arg3);
+#ifdef __nvoc_nv_debug_dump_h_disabled
+static inline NV_STATUS nvdDumpDebugBuffers(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *arg3) {
+    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_nv_debug_dump_h_disabled
+#define nvdDumpDebugBuffers(pGpu, pNvd, arg3) nvdDumpDebugBuffers_IMPL(pGpu, pNvd, arg3)
+#endif // __nvoc_nv_debug_dump_h_disabled
+
+NV_STATUS nvdEngineSignUp_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvdDumpEngineFunc *arg3, NvU32 engDesc, NvU32 flags, void *arg6);
+#ifdef __nvoc_nv_debug_dump_h_disabled
+static inline NV_STATUS nvdEngineSignUp(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvdDumpEngineFunc *arg3, NvU32 engDesc, NvU32 flags, void *arg6) {
+    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_nv_debug_dump_h_disabled
+#define nvdEngineSignUp(pGpu, pNvd, arg3, engDesc, flags, arg6) nvdEngineSignUp_IMPL(pGpu, pNvd, arg3, engDesc, flags, arg6)
+#endif // __nvoc_nv_debug_dump_h_disabled
+
+NV_STATUS nvdEngineRelease_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd);
+#ifdef __nvoc_nv_debug_dump_h_disabled
+static inline NV_STATUS nvdEngineRelease(struct OBJGPU *pGpu, struct NvDebugDump *pNvd) {
+    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_nv_debug_dump_h_disabled
+#define nvdEngineRelease(pGpu, pNvd) nvdEngineRelease_IMPL(pGpu, pNvd)
+#endif // __nvoc_nv_debug_dump_h_disabled
+
+NV_STATUS nvdDoEngineDump_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState, NvU32 arg5);
+#ifdef __nvoc_nv_debug_dump_h_disabled
+static inline NV_STATUS nvdDoEngineDump(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState, NvU32 arg5) {
+    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_nv_debug_dump_h_disabled
+#define nvdDoEngineDump(pGpu, pNvd, pPrbEnc, pNvDumpState, arg5) nvdDoEngineDump_IMPL(pGpu, pNvd, pPrbEnc, pNvDumpState, arg5)
+#endif // __nvoc_nv_debug_dump_h_disabled
+
+NV_STATUS nvdDumpAllEngines_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState);
+#ifdef __nvoc_nv_debug_dump_h_disabled
+static inline NV_STATUS nvdDumpAllEngines(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState) {
+    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_nv_debug_dump_h_disabled
+#define nvdDumpAllEngines(pGpu, pNvd, pPrbEnc, pNvDumpState) nvdDumpAllEngines_IMPL(pGpu, pNvd, pPrbEnc, pNvDumpState)
+#endif // __nvoc_nv_debug_dump_h_disabled
+
+NV_STATUS nvdFindEngine_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvU32 engDesc, NVD_ENGINE_CALLBACK **ppEngineCallback);
+#ifdef __nvoc_nv_debug_dump_h_disabled
+static inline NV_STATUS nvdFindEngine(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvU32 engDesc, NVD_ENGINE_CALLBACK **ppEngineCallback) {
+    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_nv_debug_dump_h_disabled
+#define nvdFindEngine(pGpu, pNvd, engDesc, ppEngineCallback) nvdFindEngine_IMPL(pGpu, pNvd, engDesc, ppEngineCallback)
+#endif // __nvoc_nv_debug_dump_h_disabled
+
+
+// Wrapper macros for halified functions
 #define nvdConstructEngine_FNPTR(pNvd) pNvd->__nvoc_metadata_ptr->vtable.__nvdConstructEngine__
 #define nvdConstructEngine(pGpu, pNvd, arg3) nvdConstructEngine_DISPATCH(pGpu, pNvd, arg3)
 #define nvdStateInitLocked_FNPTR(pNvd) pNvd->__nvoc_metadata_ptr->vtable.__nvdStateInitLocked__
@@ -350,108 +447,6 @@ static inline NvBool nvdIsPresent_DISPATCH(struct OBJGPU *pGpu, struct NvDebugDu
 NV_STATUS nvdConstructEngine_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, ENGDESCRIPTOR arg3);
 
 NV_STATUS nvdStateInitLocked_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd);
-
-void nvdDestruct_IMPL(struct NvDebugDump *pNvd);
-
-#define __nvoc_nvdDestruct(pNvd) nvdDestruct_IMPL(pNvd)
-NV_STATUS nvdDumpComponent_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvU32 component, NVDUMP_BUFFER *pBuffer, NVDUMP_BUFFER_POLICY policy, PrbBufferCallback *pBufferCallback);
-
-#ifdef __nvoc_nv_debug_dump_h_disabled
-static inline NV_STATUS nvdDumpComponent(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvU32 component, NVDUMP_BUFFER *pBuffer, NVDUMP_BUFFER_POLICY policy, PrbBufferCallback *pBufferCallback) {
-    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_nv_debug_dump_h_disabled
-#define nvdDumpComponent(pGpu, pNvd, component, pBuffer, policy, pBufferCallback) nvdDumpComponent_IMPL(pGpu, pNvd, component, pBuffer, policy, pBufferCallback)
-#endif //__nvoc_nv_debug_dump_h_disabled
-
-NV_STATUS nvdAllocDebugBuffer_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvU32 arg3, NvU32 *arg4, MEMORY_DESCRIPTOR **arg5);
-
-#ifdef __nvoc_nv_debug_dump_h_disabled
-static inline NV_STATUS nvdAllocDebugBuffer(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvU32 arg3, NvU32 *arg4, MEMORY_DESCRIPTOR **arg5) {
-    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_nv_debug_dump_h_disabled
-#define nvdAllocDebugBuffer(pGpu, pNvd, arg3, arg4, arg5) nvdAllocDebugBuffer_IMPL(pGpu, pNvd, arg3, arg4, arg5)
-#endif //__nvoc_nv_debug_dump_h_disabled
-
-NV_STATUS nvdFreeDebugBuffer_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, MEMORY_DESCRIPTOR *arg3);
-
-#ifdef __nvoc_nv_debug_dump_h_disabled
-static inline NV_STATUS nvdFreeDebugBuffer(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, MEMORY_DESCRIPTOR *arg3) {
-    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_nv_debug_dump_h_disabled
-#define nvdFreeDebugBuffer(pGpu, pNvd, arg3) nvdFreeDebugBuffer_IMPL(pGpu, pNvd, arg3)
-#endif //__nvoc_nv_debug_dump_h_disabled
-
-NV_STATUS nvdDumpDebugBuffers_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *arg3);
-
-#ifdef __nvoc_nv_debug_dump_h_disabled
-static inline NV_STATUS nvdDumpDebugBuffers(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *arg3) {
-    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_nv_debug_dump_h_disabled
-#define nvdDumpDebugBuffers(pGpu, pNvd, arg3) nvdDumpDebugBuffers_IMPL(pGpu, pNvd, arg3)
-#endif //__nvoc_nv_debug_dump_h_disabled
-
-NV_STATUS nvdEngineSignUp_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvdDumpEngineFunc *arg3, NvU32 engDesc, NvU32 flags, void *arg6);
-
-#ifdef __nvoc_nv_debug_dump_h_disabled
-static inline NV_STATUS nvdEngineSignUp(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvdDumpEngineFunc *arg3, NvU32 engDesc, NvU32 flags, void *arg6) {
-    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_nv_debug_dump_h_disabled
-#define nvdEngineSignUp(pGpu, pNvd, arg3, engDesc, flags, arg6) nvdEngineSignUp_IMPL(pGpu, pNvd, arg3, engDesc, flags, arg6)
-#endif //__nvoc_nv_debug_dump_h_disabled
-
-NV_STATUS nvdEngineRelease_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd);
-
-#ifdef __nvoc_nv_debug_dump_h_disabled
-static inline NV_STATUS nvdEngineRelease(struct OBJGPU *pGpu, struct NvDebugDump *pNvd) {
-    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_nv_debug_dump_h_disabled
-#define nvdEngineRelease(pGpu, pNvd) nvdEngineRelease_IMPL(pGpu, pNvd)
-#endif //__nvoc_nv_debug_dump_h_disabled
-
-NV_STATUS nvdDoEngineDump_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState, NvU32 arg5);
-
-#ifdef __nvoc_nv_debug_dump_h_disabled
-static inline NV_STATUS nvdDoEngineDump(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState, NvU32 arg5) {
-    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_nv_debug_dump_h_disabled
-#define nvdDoEngineDump(pGpu, pNvd, pPrbEnc, pNvDumpState, arg5) nvdDoEngineDump_IMPL(pGpu, pNvd, pPrbEnc, pNvDumpState, arg5)
-#endif //__nvoc_nv_debug_dump_h_disabled
-
-NV_STATUS nvdDumpAllEngines_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState);
-
-#ifdef __nvoc_nv_debug_dump_h_disabled
-static inline NV_STATUS nvdDumpAllEngines(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState) {
-    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_nv_debug_dump_h_disabled
-#define nvdDumpAllEngines(pGpu, pNvd, pPrbEnc, pNvDumpState) nvdDumpAllEngines_IMPL(pGpu, pNvd, pPrbEnc, pNvDumpState)
-#endif //__nvoc_nv_debug_dump_h_disabled
-
-NV_STATUS nvdFindEngine_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvU32 engDesc, NVD_ENGINE_CALLBACK **ppEngineCallback);
-
-#ifdef __nvoc_nv_debug_dump_h_disabled
-static inline NV_STATUS nvdFindEngine(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvU32 engDesc, NVD_ENGINE_CALLBACK **ppEngineCallback) {
-    NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_nv_debug_dump_h_disabled
-#define nvdFindEngine(pGpu, pNvd, engDesc, ppEngineCallback) nvdFindEngine_IMPL(pGpu, pNvd, engDesc, ppEngineCallback)
-#endif //__nvoc_nv_debug_dump_h_disabled
 
 #undef PRIVATE_FIELD
 

@@ -534,9 +534,6 @@
 #define NV_MMU_VER3_PTE_PCF_PRIVILEGE_RO_NO_ATOMIC_UNCACHED_ACD                             0x0000001F /* RW--V */
 #define NV_MMU_VER3_PTE_KIND                                           11:8 /* RWXVF */
 #define NV_MMU_VER3_PTE_ADDRESS                                         51:12 /* RWXVF */
-#define NV_MMU_VER3_PTE_ADDRESS_SYS                                     51:12 /* RWXVF */
-#define NV_MMU_VER3_PTE_ADDRESS_PEER                                    51:12 /* RWXVF */
-#define NV_MMU_VER3_PTE_ADDRESS_VID                                     39:12 /* RWXVF */
 #define NV_MMU_VER3_PTE_PEER_ID                63:(64-3) /* RWXVF */
 #define NV_MMU_VER3_PTE_PEER_ID_0                                 0x00000000 /* RW--V */
 #define NV_MMU_VER3_PTE_PEER_ID_1                                 0x00000001 /* RW--V */

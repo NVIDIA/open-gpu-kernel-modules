@@ -89,6 +89,9 @@ struct SwIntr {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct IntrService *__nvoc_pbase_IntrService;    // intrserv super
     struct SwIntr *__nvoc_pbase_SwIntr;    // swintr
+
+    // 1 PDB property
+//  NvBool PDB_PROP_SWINTR_IS_MISSING inherited from OBJENGSTATE
 };
 
 
@@ -148,6 +151,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_SwIntr;
 #define PDB_PROP_SWINTR_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_SWINTR_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 
+
 NV_STATUS __nvoc_objCreateDynamic_SwIntr(SwIntr**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_SwIntr(SwIntr**, Dynamic*, NvU32);
@@ -155,7 +159,9 @@ NV_STATUS __nvoc_objCreate_SwIntr(SwIntr**, Dynamic*, NvU32);
     __nvoc_objCreate_SwIntr((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+
+// Wrapper macros for halified functions
 #define swintrRegisterIntrService_FNPTR(pSwIntr) pSwIntr->__nvoc_metadata_ptr->vtable.__swintrRegisterIntrService__
 #define swintrRegisterIntrService(pGpu, pSwIntr, pRecords) swintrRegisterIntrService_DISPATCH(pGpu, pSwIntr, pRecords)
 #define swintrServiceInterrupt_FNPTR(pSwIntr) pSwIntr->__nvoc_metadata_ptr->vtable.__swintrServiceInterrupt__

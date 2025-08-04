@@ -162,6 +162,7 @@ namespace DisplayPort
         bool _isDownspreadSupported;
         bool _bAvoidHBR3;
         bool _bAvoidHBR3DisabledByRegkey;
+        bool _bIsDpTunnelingHwBugWarEnabled;
         //
         // LTTPR count reported by RM, it might not be the same with DPLib probe
         // For example, some Intel LTTPR might not be ready to response 0xF0000 probe
@@ -275,7 +276,10 @@ namespace DisplayPort
         {
             return _bAvoidHBR3 && !_bAvoidHBR3DisabledByRegkey;
         }
-
+        virtual bool isDpTunnelingHwBugWarEnabled()
+        {
+            return _bIsDpTunnelingHwBugWarEnabled;
+        }
         // Get GPU DSC capabilities
         virtual void getDscCaps(bool *pbDscSupported,
                                 unsigned *pEncoderColorFormatMask,
@@ -437,6 +441,7 @@ namespace DisplayPort
         void configureTriggerAll(NvU32 head, bool enable);
         virtual bool configureLinkRateTable(const NvU16 *pLinkRateTable, LinkRates *pLinkRates);
         bool configureFec(const bool bEnableFec);
+        virtual void applyStuffDummySymbolWAR(NvU32 head, bool enable);
     };
 
 }

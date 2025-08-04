@@ -99,15 +99,15 @@ struct KernelFsp {
     struct KernelFsp *__nvoc_pbase_KernelFsp;    // kfsp
 
     // Vtable with 27 per-object function pointers
-    NV_STATUS (*__kfspSendPacket__)(OBJGPU *, struct KernelFsp * /*this*/, NvU8 *, NvU32);  // halified (3 hals) body
-    NV_STATUS (*__kfspReadPacket__)(OBJGPU *, struct KernelFsp * /*this*/, NvU8 *, NvU32, NvU32 *);  // halified (3 hals) body
-    NvBool (*__kfspCanSendPacket__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (3 hals) body
-    NvBool (*__kfspIsResponseAvailable__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (3 hals) body
+    NV_STATUS (*__kfspSendPacket__)(OBJGPU *, struct KernelFsp * /*this*/, NvU8 *, NvU32);  // halified (2 hals) body
+    NV_STATUS (*__kfspReadPacket__)(OBJGPU *, struct KernelFsp * /*this*/, NvU8 *, NvU32, NvU32 *);  // halified (2 hals) body
+    NvBool (*__kfspCanSendPacket__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
+    NvBool (*__kfspIsResponseAvailable__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
     NvBool (*__kfspGspFmcIsEnforced__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kfspPrepareBootCommands__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kfspSendBootCommands__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kfspPrepareAndSendBootCommands__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
-    NV_STATUS (*__kfspWaitForSecureBoot__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (5 hals) body
+    NV_STATUS (*__kfspWaitForSecureBoot__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (4 hals) body
     NvU32 (*__kfspGetMaxSendPacketSize__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
     NvU32 (*__kfspGetMaxRecvPacketSize__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
     NvU8 (*__kfspNvdmToSeid__)(OBJGPU *, struct KernelFsp * /*this*/, NvU8);  // halified (2 hals) body
@@ -117,7 +117,7 @@ struct KernelFsp {
     NV_STATUS (*__kfspValidateMctpPayloadHeader__)(OBJGPU *, struct KernelFsp * /*this*/, NvU8 *, NvU32);  // halified (2 hals) body
     NV_STATUS (*__kfspProcessNvdmMessage__)(OBJGPU *, struct KernelFsp * /*this*/, NvU8 *, NvU32);  // halified (2 hals) body
     NV_STATUS (*__kfspProcessCommandResponse__)(OBJGPU *, struct KernelFsp * /*this*/, NvU8 *, NvU32);  // halified (2 hals) body
-    void (*__kfspDumpDebugState__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (4 hals) body
+    void (*__kfspDumpDebugState__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (3 hals) body
     NV_STATUS (*__kfspErrorCode2NvStatusMap__)(OBJGPU *, struct KernelFsp * /*this*/, NvU32);  // halified (2 hals) body
     NvU64 (*__kfspGetExtraReservedMemorySize__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kfspWaitForGspTargetMaskReleased__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
@@ -127,14 +127,14 @@ struct KernelFsp {
     void (*__kfspCheckForClockBoostCapability__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kfspSendClockBoostRpc__)(OBJGPU *, struct KernelFsp * /*this*/, NvU8);  // halified (2 hals) body
 
-    // 8 PDB properties
+    // 7 PDB properties
+//  NvBool PDB_PROP_KFSP_IS_MISSING inherited from OBJENGSTATE
     NvBool PDB_PROP_KFSP_FSP_FUSE_ERROR_CHECK_ENABLED;
     NvBool PDB_PROP_KFSP_BOOT_COMMAND_OK;
     NvBool PDB_PROP_KFSP_GSP_MODE_GSPRM;
     NvBool PDB_PROP_KFSP_DISABLE_FRTS_SYSMEM;
     NvBool PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM;
     NvBool PDB_PROP_KFSP_DISABLE_GSPFMC;
-    NvBool PDB_PROP_KFSP_RM_BOOT_GSP;
 
     // Data members
     MEMORY_DESCRIPTOR *pSysmemFrtsMemdesc;
@@ -204,22 +204,21 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelFsp;
 #endif //__nvoc_kern_fsp_h_disabled
 
 // Property macros
-#define PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM_BASE_CAST
-#define PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM_BASE_NAME PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM
-#define PDB_PROP_KFSP_DISABLE_GSPFMC_BASE_CAST
-#define PDB_PROP_KFSP_DISABLE_GSPFMC_BASE_NAME PDB_PROP_KFSP_DISABLE_GSPFMC
 #define PDB_PROP_KFSP_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_KFSP_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
-#define PDB_PROP_KFSP_GSP_MODE_GSPRM_BASE_CAST
-#define PDB_PROP_KFSP_GSP_MODE_GSPRM_BASE_NAME PDB_PROP_KFSP_GSP_MODE_GSPRM
 #define PDB_PROP_KFSP_FSP_FUSE_ERROR_CHECK_ENABLED_BASE_CAST
 #define PDB_PROP_KFSP_FSP_FUSE_ERROR_CHECK_ENABLED_BASE_NAME PDB_PROP_KFSP_FSP_FUSE_ERROR_CHECK_ENABLED
 #define PDB_PROP_KFSP_BOOT_COMMAND_OK_BASE_CAST
 #define PDB_PROP_KFSP_BOOT_COMMAND_OK_BASE_NAME PDB_PROP_KFSP_BOOT_COMMAND_OK
-#define PDB_PROP_KFSP_RM_BOOT_GSP_BASE_CAST
-#define PDB_PROP_KFSP_RM_BOOT_GSP_BASE_NAME PDB_PROP_KFSP_RM_BOOT_GSP
+#define PDB_PROP_KFSP_GSP_MODE_GSPRM_BASE_CAST
+#define PDB_PROP_KFSP_GSP_MODE_GSPRM_BASE_NAME PDB_PROP_KFSP_GSP_MODE_GSPRM
 #define PDB_PROP_KFSP_DISABLE_FRTS_SYSMEM_BASE_CAST
 #define PDB_PROP_KFSP_DISABLE_FRTS_SYSMEM_BASE_NAME PDB_PROP_KFSP_DISABLE_FRTS_SYSMEM
+#define PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM_BASE_CAST
+#define PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM_BASE_NAME PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM
+#define PDB_PROP_KFSP_DISABLE_GSPFMC_BASE_CAST
+#define PDB_PROP_KFSP_DISABLE_GSPFMC_BASE_NAME PDB_PROP_KFSP_DISABLE_GSPFMC
+
 
 NV_STATUS __nvoc_objCreateDynamic_KernelFsp(KernelFsp**, Dynamic*, NvU32, va_list);
 
@@ -228,7 +227,57 @@ NV_STATUS __nvoc_objCreate_KernelFsp(KernelFsp**, Dynamic*, NvU32);
     __nvoc_objCreate_KernelFsp((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+void kfspCleanupBootState_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+#ifdef __nvoc_kern_fsp_h_disabled
+static inline void kfspCleanupBootState(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    NV_ASSERT_FAILED_PRECOMP("KernelFsp was disabled!");
+}
+#else // __nvoc_kern_fsp_h_disabled
+#define kfspCleanupBootState(pGpu, pKernelFsp) kfspCleanupBootState_IMPL(pGpu, pKernelFsp)
+#endif // __nvoc_kern_fsp_h_disabled
+
+void kfspReleaseProxyImage_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+#ifdef __nvoc_kern_fsp_h_disabled
+static inline void kfspReleaseProxyImage(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    NV_ASSERT_FAILED_PRECOMP("KernelFsp was disabled!");
+}
+#else // __nvoc_kern_fsp_h_disabled
+#define kfspReleaseProxyImage(pGpu, pKernelFsp) kfspReleaseProxyImage_IMPL(pGpu, pKernelFsp)
+#endif // __nvoc_kern_fsp_h_disabled
+
+NV_STATUS kfspSendAndReadMessage_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPayload, NvU32 size, NvU32 nvdmType, NvU8 *pResponsePayload, NvU32 responseBufferSize);
+#ifdef __nvoc_kern_fsp_h_disabled
+static inline NV_STATUS kfspSendAndReadMessage(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPayload, NvU32 size, NvU32 nvdmType, NvU8 *pResponsePayload, NvU32 responseBufferSize) {
+    NV_ASSERT_FAILED_PRECOMP("KernelFsp was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kern_fsp_h_disabled
+#define kfspSendAndReadMessage(pGpu, pKernelFsp, pPayload, size, nvdmType, pResponsePayload, responseBufferSize) kfspSendAndReadMessage_IMPL(pGpu, pKernelFsp, pPayload, size, nvdmType, pResponsePayload, responseBufferSize)
+#endif // __nvoc_kern_fsp_h_disabled
+
+NV_STATUS kfspPollForCanSend_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+#ifdef __nvoc_kern_fsp_h_disabled
+static inline NV_STATUS kfspPollForCanSend(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    NV_ASSERT_FAILED_PRECOMP("KernelFsp was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kern_fsp_h_disabled
+#define kfspPollForCanSend(pGpu, pKernelFsp) kfspPollForCanSend_IMPL(pGpu, pKernelFsp)
+#endif // __nvoc_kern_fsp_h_disabled
+
+NV_STATUS kfspPollForResponse_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+#ifdef __nvoc_kern_fsp_h_disabled
+static inline NV_STATUS kfspPollForResponse(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    NV_ASSERT_FAILED_PRECOMP("KernelFsp was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kern_fsp_h_disabled
+#define kfspPollForResponse(pGpu, pKernelFsp) kfspPollForResponse_IMPL(pGpu, pKernelFsp)
+#endif // __nvoc_kern_fsp_h_disabled
+
+
+// Wrapper macros for halified functions
 #define kfspConstructEngine_FNPTR(pKernelFsp) pKernelFsp->__nvoc_metadata_ptr->vtable.__kfspConstructEngine__
 #define kfspConstructEngine(pGpu, pKernelFsp, arg3) kfspConstructEngine_DISPATCH(pGpu, pKernelFsp, arg3)
 #define kfspStateUnload_FNPTR(pKernelFsp) pKernelFsp->__nvoc_metadata_ptr->vtable.__kfspStateUnload__
@@ -520,33 +569,25 @@ NV_STATUS kfspSendAndReadMessageAsync_IMPL(OBJGPU *pGpu, struct KernelFsp *pKern
 
 NV_STATUS kfspSendPacket_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 packetSize);
 
-NV_STATUS kfspSendPacket_GB20B(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 packetSize);
-
-static inline NV_STATUS kfspSendPacket_46f6a7(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 packetSize) {
+static inline NV_STATUS kfspSendPacket_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 packetSize) {
     return NV_ERR_NOT_SUPPORTED;
 }
 
 NV_STATUS kfspReadPacket_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 maxPacketSize, NvU32 *bytesRead);
 
-NV_STATUS kfspReadPacket_GB20B(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 maxPacketSize, NvU32 *bytesRead);
-
-static inline NV_STATUS kfspReadPacket_46f6a7(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 maxPacketSize, NvU32 *bytesRead) {
+static inline NV_STATUS kfspReadPacket_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 maxPacketSize, NvU32 *bytesRead) {
     return NV_ERR_NOT_SUPPORTED;
 }
 
 NvBool kfspCanSendPacket_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-NvBool kfspCanSendPacket_GB20B(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
-
-static inline NvBool kfspCanSendPacket_3dd2c9(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+static inline NvBool kfspCanSendPacket_d69453(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
     return NV_FALSE;
 }
 
 NvBool kfspIsResponseAvailable_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-NvBool kfspIsResponseAvailable_GB20B(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
-
-static inline NvBool kfspIsResponseAvailable_3dd2c9(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+static inline NvBool kfspIsResponseAvailable_d69453(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
     return NV_FALSE;
 }
 
@@ -579,8 +620,6 @@ NV_STATUS kfspWaitForSecureBoot_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp
 NV_STATUS kfspWaitForSecureBoot_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 NV_STATUS kfspWaitForSecureBoot_GB202(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
-
-NV_STATUS kfspWaitForSecureBoot_GB20B(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 static inline NV_STATUS kfspWaitForSecureBoot_46f6a7(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
     return NV_ERR_NOT_SUPPORTED;
@@ -642,9 +681,7 @@ static inline NV_STATUS kfspProcessCommandResponse_395e98(OBJGPU *pGpu, struct K
 
 void kfspDumpDebugState_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-void kfspDumpDebugState_GB202(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
-
-void kfspDumpDebugState_GB20B(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+void kfspDumpDebugState_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 static inline void kfspDumpDebugState_b3696a(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
     return;
@@ -697,59 +734,6 @@ NV_STATUS kfspSendClockBoostRpc_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp
 static inline NV_STATUS kfspSendClockBoostRpc_56cd7a(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 cmd) {
     return NV_OK;
 }
-
-void kfspCleanupBootState_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
-
-#ifdef __nvoc_kern_fsp_h_disabled
-static inline void kfspCleanupBootState(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFsp was disabled!");
-}
-#else //__nvoc_kern_fsp_h_disabled
-#define kfspCleanupBootState(pGpu, pKernelFsp) kfspCleanupBootState_IMPL(pGpu, pKernelFsp)
-#endif //__nvoc_kern_fsp_h_disabled
-
-void kfspReleaseProxyImage_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
-
-#ifdef __nvoc_kern_fsp_h_disabled
-static inline void kfspReleaseProxyImage(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFsp was disabled!");
-}
-#else //__nvoc_kern_fsp_h_disabled
-#define kfspReleaseProxyImage(pGpu, pKernelFsp) kfspReleaseProxyImage_IMPL(pGpu, pKernelFsp)
-#endif //__nvoc_kern_fsp_h_disabled
-
-NV_STATUS kfspSendAndReadMessage_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPayload, NvU32 size, NvU32 nvdmType, NvU8 *pResponsePayload, NvU32 responseBufferSize);
-
-#ifdef __nvoc_kern_fsp_h_disabled
-static inline NV_STATUS kfspSendAndReadMessage(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPayload, NvU32 size, NvU32 nvdmType, NvU8 *pResponsePayload, NvU32 responseBufferSize) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFsp was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_fsp_h_disabled
-#define kfspSendAndReadMessage(pGpu, pKernelFsp, pPayload, size, nvdmType, pResponsePayload, responseBufferSize) kfspSendAndReadMessage_IMPL(pGpu, pKernelFsp, pPayload, size, nvdmType, pResponsePayload, responseBufferSize)
-#endif //__nvoc_kern_fsp_h_disabled
-
-NV_STATUS kfspPollForCanSend_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
-
-#ifdef __nvoc_kern_fsp_h_disabled
-static inline NV_STATUS kfspPollForCanSend(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFsp was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_fsp_h_disabled
-#define kfspPollForCanSend(pGpu, pKernelFsp) kfspPollForCanSend_IMPL(pGpu, pKernelFsp)
-#endif //__nvoc_kern_fsp_h_disabled
-
-NV_STATUS kfspPollForResponse_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
-
-#ifdef __nvoc_kern_fsp_h_disabled
-static inline NV_STATUS kfspPollForResponse(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFsp was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_fsp_h_disabled
-#define kfspPollForResponse(pGpu, pKernelFsp) kfspPollForResponse_IMPL(pGpu, pKernelFsp)
-#endif //__nvoc_kern_fsp_h_disabled
 
 #undef PRIVATE_FIELD
 

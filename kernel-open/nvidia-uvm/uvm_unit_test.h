@@ -24,6 +24,7 @@
 #define __UVM_UNIT_TEST_H__
 
 #include "nvstatus.h"
+#include "uvm_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,7 +40,7 @@ extern "C" {
 // if it has not already occurred.
 //
 //-----------------------------------------------------------------------------
-struct UvmGlobalState_tag *UvmGetGlobalStatePointer(void);
+UvmGlobalState *UvmGetGlobalStatePointer(void);
 
 //-----------------------------------------------------------------------------
 // UvmSetGlobalStatePointer
@@ -61,7 +62,7 @@ struct UvmGlobalState_tag *UvmGetGlobalStatePointer(void);
 //         pGlobalState is NULL.
 //
 //-----------------------------------------------------------------------------
-NV_STATUS UvmSetGlobalStatePointer(struct UvmGlobalState_tag *pGlobalState);
+NV_STATUS UvmSetGlobalStatePointer(UvmGlobalState *pGlobalState);
 
 //
 // TODO: Bug 1766104: Remove this with uvmfull

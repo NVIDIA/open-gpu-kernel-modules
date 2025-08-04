@@ -165,7 +165,15 @@ NV_STATUS __nvoc_objCreate_MpsApi(MpsApi**, Dynamic*, NvU32, CALL_CONTEXT *arg_p
     __nvoc_objCreate_MpsApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS mpsApiConstruct_IMPL(struct MpsApi *arg_pMpsApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_mpsApiConstruct(arg_pMpsApi, arg_pCallContext, arg_pParams) mpsApiConstruct_IMPL(arg_pMpsApi, arg_pCallContext, arg_pParams)
+
+void mpsApiDestruct_IMPL(struct MpsApi *pMpsApi);
+#define __nvoc_mpsApiDestruct(pMpsApi) mpsApiDestruct_IMPL(pMpsApi)
+
+
+// Wrapper macros for halified functions
 #define mpsApiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define mpsApiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) mpsApiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define mpsApiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
@@ -294,12 +302,6 @@ static inline void mpsApiAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__nvoc_metadata_ptr->vtable.__mpsApiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-NV_STATUS mpsApiConstruct_IMPL(struct MpsApi *arg_pMpsApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_mpsApiConstruct(arg_pMpsApi, arg_pCallContext, arg_pParams) mpsApiConstruct_IMPL(arg_pMpsApi, arg_pCallContext, arg_pParams)
-void mpsApiDestruct_IMPL(struct MpsApi *pMpsApi);
-
-#define __nvoc_mpsApiDestruct(pMpsApi) mpsApiDestruct_IMPL(pMpsApi)
 #undef PRIVATE_FIELD
 
 

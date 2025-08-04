@@ -122,6 +122,40 @@ NV_STATUS deserialize_NV2080_CTRL_MC_GET_ENGINE_NOTIFICATION_INTR_VECTORS_PARAMS
     return NVOS_STATUS_SUCCESS;
 }
 
+
+NV_STATUS deserialize_NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS_v2B_0A(
+    NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS *pOutput,
+    NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (offset == NULL)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS_v2B_0A *pInput = NULL;
+    if (pOutput && buffer)
+    {
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(*pInput))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+
+        pInput = (void*)(buffer + *offset);
+
+        NvU32 i;
+        for (i = 0; i < NV2080_INTR_CATEGORY_ENUM_COUNT_v2B_0A; i++)
+        {
+            pOutput->subtreeMap[i].subtreeMask = pInput->subtreeMap[i].subtreeMask;
+        }
+    }
+
+    *offset += sizeof(*pInput);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
+
 NV_STATUS deserialize_NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS_v1E_09(NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS *mcStaticIntrTable, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
 {
     if (!offset)
@@ -336,7 +370,7 @@ NV_STATUS deserialize_NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS_v1A_1F(NV
     return NVOS_STATUS_SUCCESS;
 }
 
-NV_STATUS deserialize_NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_v2B_09(NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS *grSmIssueRateModifierV2, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+NV_STATUS deserialize_NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_v2B_06(NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS *grSmIssueRateModifierV2, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
 {
     if (!offset)
     {
@@ -346,32 +380,72 @@ NV_STATUS deserialize_NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_v2B_09
     // If pVSI and buffer are valid, then copy data and return the offset
     if (grSmIssueRateModifierV2 && buffer)
     {
-        NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_v2B_09 *gr_get_sm_issue_rate_modifier_v2B_09 = NULL;
+        NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_v2B_06 *gr_get_sm_issue_rate_modifier_v2B_06 = NULL;
         NvU32 i = 0;
 
         if ((bufferSize < *offset) ||
-            (bufferSize < (*offset + sizeof(NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_v2B_09))))
+            (bufferSize < (*offset + sizeof(NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_v2B_06))))
         {
             return NV_ERR_BUFFER_TOO_SMALL;
         }
 
-        gr_get_sm_issue_rate_modifier_v2B_09 = (void*)(buffer + *offset);
+        gr_get_sm_issue_rate_modifier_v2B_06 = (void*)(buffer + *offset);
 
-        grSmIssueRateModifierV2->smIssueRateModifierListSize = gr_get_sm_issue_rate_modifier_v2B_09->smIssueRateModifierListSize;
+        grSmIssueRateModifierV2->smIssueRateModifierListSize = gr_get_sm_issue_rate_modifier_v2B_06->smIssueRateModifierListSize;
 
-        if (gr_get_sm_issue_rate_modifier_v2B_09->smIssueRateModifierListSize >= NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_MAX_LIST_SIZE_v2B_09)
+        if (gr_get_sm_issue_rate_modifier_v2B_06->smIssueRateModifierListSize >= NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_MAX_LIST_SIZE_v2B_06)
         {
             return NV_ERR_OUT_OF_RANGE;
         }
 
-        for (i = 0; i < gr_get_sm_issue_rate_modifier_v2B_09->smIssueRateModifierListSize; i++)
+        for (i = 0; i < gr_get_sm_issue_rate_modifier_v2B_06->smIssueRateModifierListSize; i++)
         {
-            grSmIssueRateModifierV2->smIssueRateModifierList[i].index = gr_get_sm_issue_rate_modifier_v2B_09->smIssueRateModifierList[i].index;
-            grSmIssueRateModifierV2->smIssueRateModifierList[i].data  = gr_get_sm_issue_rate_modifier_v2B_09->smIssueRateModifierList[i].data;
+            grSmIssueRateModifierV2->smIssueRateModifierList[i].index = gr_get_sm_issue_rate_modifier_v2B_06->smIssueRateModifierList[i].index;
+            grSmIssueRateModifierV2->smIssueRateModifierList[i].data  = gr_get_sm_issue_rate_modifier_v2B_06->smIssueRateModifierList[i].data;
         }
     }
 
-    *offset += sizeof(NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_v2B_09);
+    *offset += sizeof(NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_v2B_06);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
+NV_STATUS deserialize_NV2080_CTRL_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS_v2B_10(NV2080_CTRL_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS *grSmIssueThrottleCtrl, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (!offset)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    // If pVSI and buffer are valid, then copy data and return the offset
+    if (grSmIssueThrottleCtrl && buffer)
+    {
+        NV2080_CTRL_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS_v2B_10 *gr_get_sm_issue_throttle_ctrl_v2B_10 = NULL;
+        NvU32 i = 0;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(NV2080_CTRL_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS_v2B_10))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+
+        gr_get_sm_issue_throttle_ctrl_v2B_10 = (void*)(buffer + *offset);
+
+        grSmIssueThrottleCtrl->smIssueThrottleCtrlListSize = gr_get_sm_issue_throttle_ctrl_v2B_10->smIssueThrottleCtrlListSize;
+
+        if (gr_get_sm_issue_throttle_ctrl_v2B_10->smIssueThrottleCtrlListSize >= NV2080_CTRL_GR_SM_ISSUE_THROTTLE_CTRL_MAX_LIST_SIZE_v2B_10)
+        {
+            return NV_ERR_OUT_OF_RANGE;
+        }
+
+        for (i = 0; i < gr_get_sm_issue_throttle_ctrl_v2B_10->smIssueThrottleCtrlListSize; i++)
+        {
+            grSmIssueThrottleCtrl->smIssueThrottleCtrlList[i].index = gr_get_sm_issue_throttle_ctrl_v2B_10->smIssueThrottleCtrlList[i].index;
+            grSmIssueThrottleCtrl->smIssueThrottleCtrlList[i].data  = gr_get_sm_issue_throttle_ctrl_v2B_10->smIssueThrottleCtrlList[i].data;
+        }
+    }
+
+    *offset += sizeof(NV2080_CTRL_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS_v2B_10);
 
     return NVOS_STATUS_SUCCESS;
 }
@@ -531,6 +605,52 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS_
     }
 
     *offset += sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS_v2A_02);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS_v2B_0B(NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS *smOrderParams, NvU8 *buffer,
+                                                                                       NvU32 bufferSize, NvU32 *offset)
+{
+    if (!offset)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (smOrderParams && buffer)
+    {
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS_v2B_0B *sm_order_v2B_0B = NULL;
+        NvU32 i = 0, j = 0;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS_v2B_0B))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+
+        sm_order_v2B_0B = (void*)(buffer + *offset);
+
+        for (i = 0; i < NV2080_CTRL_INTERNAL_GR_MAX_ENGINES_1B_04; i++)
+        {
+            for (j = 0; j <NV2080_CTRL_INTERNAL_GR_MAX_SM_v1E_03; j++)
+            {
+                smOrderParams->globalSmOrder[i].globalSmId[j].gpcId = sm_order_v2B_0B->globalSmOrder[i].globalSmId[j].gpcId;
+                smOrderParams->globalSmOrder[i].globalSmId[j].localTpcId = sm_order_v2B_0B->globalSmOrder[i].globalSmId[j].localTpcId;
+                smOrderParams->globalSmOrder[i].globalSmId[j].localSmId = sm_order_v2B_0B->globalSmOrder[i].globalSmId[j].localSmId;
+                smOrderParams->globalSmOrder[i].globalSmId[j].globalTpcId = sm_order_v2B_0B->globalSmOrder[i].globalSmId[j].globalTpcId;
+                smOrderParams->globalSmOrder[i].globalSmId[j].virtualGpcId = sm_order_v2B_0B->globalSmOrder[i].globalSmId[j].virtualGpcId;
+                smOrderParams->globalSmOrder[i].globalSmId[j].migratableTpcId = sm_order_v2B_0B->globalSmOrder[i].globalSmId[j].migratableTpcId;
+                smOrderParams->globalSmOrder[i].globalSmId[j].physicalCpcId = sm_order_v2B_0B->globalSmOrder[i].globalSmId[j].physicalCpcId;
+                smOrderParams->globalSmOrder[i].globalSmId[j].virtualTpcId = sm_order_v2B_0B->globalSmOrder[i].globalSmId[j].virtualTpcId;
+                smOrderParams->globalSmOrder[i].globalSmId[j].ugpuId = sm_order_v2B_0B->globalSmOrder[i].globalSmId[j].ugpuId;
+            }
+
+            smOrderParams->globalSmOrder[i].numSm = sm_order_v2B_0B->globalSmOrder[i].numSm;
+            smOrderParams->globalSmOrder[i].numTpc = sm_order_v2B_0B->globalSmOrder[i].numTpc;
+        }
+    }
+
+    *offset += sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS_v2B_0B);
 
     return NVOS_STATUS_SUCCESS;
 }
@@ -713,7 +833,7 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_
     return NVOS_STATUS_SUCCESS;
 }
 
-NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_v2B_09(NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS *smIssueRateModifierV2, NvU8 *buffer,
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_v2B_06(NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS *smIssueRateModifierV2, NvU8 *buffer,
                                                                                                  NvU32 bufferSize, NvU32 *offset)
 {
     if (!offset)
@@ -723,36 +843,80 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_
 
     if (smIssueRateModifierV2 && buffer)
     {
-        NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_v2B_09 *rate_modifier_v2B_09 = NULL;
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_v2B_06 *rate_modifier_v2B_06 = NULL;
         NvU32 i = 0;
         NvU32 j = 0;
 
         if ((bufferSize < *offset) ||
-            (bufferSize < (*offset + sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_v2B_09))))
+            (bufferSize < (*offset + sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_v2B_06))))
         {
             return NV_ERR_BUFFER_TOO_SMALL;
         }
 
-        rate_modifier_v2B_09 = (void*)(buffer + *offset);
+        rate_modifier_v2B_06 = (void*)(buffer + *offset);
 
         for (i = 0; i < NV2080_CTRL_INTERNAL_GR_MAX_ENGINES_1B_04; i++)
         {
-            smIssueRateModifierV2->smIssueRateModifierV2[i].smIssueRateModifierListSize = rate_modifier_v2B_09->smIssueRateModifierV2[i].smIssueRateModifierListSize;
+            smIssueRateModifierV2->smIssueRateModifierV2[i].smIssueRateModifierListSize = rate_modifier_v2B_06->smIssueRateModifierV2[i].smIssueRateModifierListSize;
 
-            if (rate_modifier_v2B_09->smIssueRateModifierV2[i].smIssueRateModifierListSize >= NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_MAX_LIST_SIZE_v2B_09)
+            if (rate_modifier_v2B_06->smIssueRateModifierV2[i].smIssueRateModifierListSize >= NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_MAX_LIST_SIZE_v2B_06)
             {
                 return NV_ERR_OUT_OF_RANGE;
             }
 
-            for (j = 0; j < rate_modifier_v2B_09->smIssueRateModifierV2[i].smIssueRateModifierListSize; j++)
+            for (j = 0; j < rate_modifier_v2B_06->smIssueRateModifierV2[i].smIssueRateModifierListSize; j++)
             {
-                smIssueRateModifierV2->smIssueRateModifierV2[i].smIssueRateModifierList[j].index = rate_modifier_v2B_09->smIssueRateModifierV2[i].smIssueRateModifierList[j].index;
-                smIssueRateModifierV2->smIssueRateModifierV2[i].smIssueRateModifierList[j].data  = rate_modifier_v2B_09->smIssueRateModifierV2[i].smIssueRateModifierList[j].data;
+                smIssueRateModifierV2->smIssueRateModifierV2[i].smIssueRateModifierList[j].index = rate_modifier_v2B_06->smIssueRateModifierV2[i].smIssueRateModifierList[j].index;
+                smIssueRateModifierV2->smIssueRateModifierV2[i].smIssueRateModifierList[j].data  = rate_modifier_v2B_06->smIssueRateModifierV2[i].smIssueRateModifierList[j].data;
             }
         }
     }
 
-    *offset += sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_v2B_09);
+    *offset += sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_v2B_06);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS_v2B_10(NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS *smIssueThrottleCtrl, NvU8 *buffer,
+                                                                                              NvU32 bufferSize, NvU32 *offset)
+{
+    if (!offset)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (smIssueThrottleCtrl && buffer)
+    {
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS_v2B_10 *throttle_ctrl_v2B_10 = NULL;
+        NvU32 i = 0;
+        NvU32 j = 0;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS_v2B_10))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+
+        throttle_ctrl_v2B_10 = (void*)(buffer + *offset);
+
+        for (i = 0; i < NV2080_CTRL_INTERNAL_GR_MAX_ENGINES_1B_04; i++)
+        {
+            smIssueThrottleCtrl->smIssueThrottleCtrl[i].smIssueThrottleCtrlListSize = throttle_ctrl_v2B_10->smIssueThrottleCtrl[i].smIssueThrottleCtrlListSize;
+
+            if (throttle_ctrl_v2B_10->smIssueThrottleCtrl[i].smIssueThrottleCtrlListSize >= NV2080_CTRL_GR_SM_ISSUE_THROTTLE_CTRL_MAX_LIST_SIZE_v2B_10)
+            {
+                return NV_ERR_OUT_OF_RANGE;
+            }
+
+            for (j = 0; j < throttle_ctrl_v2B_10->smIssueThrottleCtrl[i].smIssueThrottleCtrlListSize; j++)
+            {
+                smIssueThrottleCtrl->smIssueThrottleCtrl[i].smIssueThrottleCtrlList[j].index = throttle_ctrl_v2B_10->smIssueThrottleCtrl[i].smIssueThrottleCtrlList[j].index;
+                smIssueThrottleCtrl->smIssueThrottleCtrl[i].smIssueThrottleCtrlList[j].data  = throttle_ctrl_v2B_10->smIssueThrottleCtrl[i].smIssueThrottleCtrlList[j].data;
+            }
+        }
+    }
+
+    *offset += sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS_v2B_10);
 
     return NVOS_STATUS_SUCCESS;
 }
@@ -800,6 +964,65 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PAR
     }
 
     *offset += sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS_v1D_03);
+
+    return NVOS_STATUS_SUCCESS;
+
+}
+
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS_v2B_01(
+    NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS *floorsweepMaskParams,
+    NvU8 *buffer,
+    NvU32 bufferSize,
+    NvU32 *offset
+)
+{
+    if (offset == NULL)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (floorsweepMaskParams && buffer)
+    {
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS_v2B_01 *floorsweep_mask_params_v2B_01 = NULL;
+        NvU32 i = 0, j = 0;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS_v2B_01))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+
+        floorsweep_mask_params_v2B_01 = (void*)(buffer + *offset);
+
+        for (i = 0; i < NV2080_CTRL_INTERNAL_GR_MAX_ENGINES_1B_04; i++)
+        {
+            for (j = 0; j < NV2080_CTRL_INTERNAL_GR_MAX_GPC_v2B_01; j++)
+            {
+                floorsweepMaskParams->floorsweepingMasks[i].tpcMask[j] = 
+                    floorsweep_mask_params_v2B_01->floorsweepingMasks[i].tpcMask[j];
+                floorsweepMaskParams->floorsweepingMasks[i].tpcCount[j] = 
+                    floorsweep_mask_params_v2B_01->floorsweepingMasks[i].tpcCount[j];
+                floorsweepMaskParams->floorsweepingMasks[i].numPesPerGpc[j] = 
+                    floorsweep_mask_params_v2B_01->floorsweepingMasks[i].numPesPerGpc[j];
+                floorsweepMaskParams->floorsweepingMasks[i].mmuPerGpc[j] = 
+                    floorsweep_mask_params_v2B_01->floorsweepingMasks[i].mmuPerGpc[j];
+                floorsweepMaskParams->floorsweepingMasks[i].zcullMask[j] = 
+                    floorsweep_mask_params_v2B_01->floorsweepingMasks[i].zcullMask[j];
+            }
+
+            floorsweepMaskParams->floorsweepingMasks[i].gpcMask = 
+                floorsweep_mask_params_v2B_01->floorsweepingMasks[i].gpcMask;
+            floorsweepMaskParams->floorsweepingMasks[i].physGpcMask = 
+                floorsweep_mask_params_v2B_01->floorsweepingMasks[i].physGpcMask;
+
+            for (j = 0; j < NV2080_CTRL_INTERNAL_MAX_TPC_PER_GPC_COUNT_v1C_03; j++)
+            {
+                floorsweepMaskParams->floorsweepingMasks[i].tpcToPesMap[j] = floorsweep_mask_params_v2B_01->floorsweepingMasks[i].tpcToPesMap[j];
+            }
+        }
+    }
+
+    *offset += sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS_v2B_01);
 
     return NVOS_STATUS_SUCCESS;
 
@@ -1007,7 +1230,7 @@ NV_STATUS deserialize_VGPU_STATIC_DATA_v25_0E(VGPU_STATIC_INFO *pVSI, NvU8 *buff
 
         // Removed grBufferSize, gfxpBufferSize and gfxpBufferAlignment from VGPU_STATIC_INFO
 
-        portMemCopy(pVSI->jpegCaps, sizeof(pVSI->jpegCaps),
+        portMemCopy((void*)&pVSI->jpegCaps[0].capsTbl, sizeof(pVSI->jpegCaps[0].capsTbl),
                     vgpu_static_data_v25_0E->jpegCaps, sizeof(vgpu_static_data_v25_0E->jpegCaps));
     }
 
@@ -1077,7 +1300,7 @@ NV_STATUS deserialize_VGPU_STATIC_DATA_v27_00(VGPU_STATIC_INFO *pVSI, NvU8 *buff
 
         // Removed grBufferSize, gfxpBufferSize and gfxpBufferAlignment from VGPU_STATIC_INFO
 
-        portMemCopy(pVSI->jpegCaps, sizeof(pVSI->jpegCaps),
+        portMemCopy((void*)&pVSI->jpegCaps[0].capsTbl, sizeof(pVSI->jpegCaps[0].capsTbl),
                     vgpu_static_data_v27_00->jpegCaps, sizeof(vgpu_static_data_v27_00->jpegCaps));
     }
 
@@ -1143,7 +1366,7 @@ NV_STATUS deserialize_VGPU_STATIC_DATA_v27_01(VGPU_STATIC_INFO *pVSI, NvU8 *buff
         {
             pVSI->engineList[i] = vgpu_static_data_v27_01->engineList[i];
         }
-        portMemCopy(pVSI->jpegCaps, sizeof(pVSI->jpegCaps),
+        portMemCopy((void*)&pVSI->jpegCaps[0].capsTbl, sizeof(pVSI->jpegCaps[0].capsTbl),
                     vgpu_static_data_v27_01->jpegCaps, sizeof(vgpu_static_data_v27_01->jpegCaps));
     }
     *offset += sizeof(VGPU_STATIC_DATA_v27_01);
@@ -1205,10 +1428,75 @@ NV_STATUS deserialize_VGPU_STATIC_DATA_v2A_07(VGPU_STATIC_INFO *pVSI, NvU8 *buff
         {
             pVSI->engineList[i] = vgpu_static_data_v2A_07->engineList[i];
         }
-        portMemCopy(pVSI->jpegCaps, sizeof(pVSI->jpegCaps),
+        portMemCopy((void*)&pVSI->jpegCaps[0].capsTbl, sizeof(pVSI->jpegCaps[0].capsTbl),
                     vgpu_static_data_v2A_07->jpegCaps, sizeof(vgpu_static_data_v2A_07->jpegCaps));
     }
     *offset += sizeof(VGPU_STATIC_DATA_v2A_07);
+    return NVOS_STATUS_SUCCESS;
+}
+
+NV_STATUS deserialize_VGPU_STATIC_DATA_v2B_08(VGPU_STATIC_INFO *pVSI, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (offset == NULL)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+    // If pVSI and buffer are valid, then copy data and return the offset
+    if (pVSI && buffer)
+    {
+        VGPU_STATIC_DATA_v2B_08 *vgpu_static_data_v2B_08 = NULL;
+        NvU32 i;
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(VGPU_STATIC_DATA_v2B_08))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+        vgpu_static_data_v2B_08 = (void*)(buffer + *offset);
+        pVSI->fbTaxLength            = vgpu_static_data_v2B_08->fbTaxLength;
+        pVSI->fbLength               = vgpu_static_data_v2B_08->fbLength;
+        pVSI->fbBusWidth             = vgpu_static_data_v2B_08->fbBusWidth;
+        pVSI->fbioMask               = vgpu_static_data_v2B_08->fbioMask;
+        pVSI->fbpMask                = vgpu_static_data_v2B_08->fbpMask;
+        pVSI->ltcMask                = vgpu_static_data_v2B_08->ltcMask;
+        pVSI->ltsCount               = vgpu_static_data_v2B_08->ltsCount;
+        pVSI->subProcessIsolation    = vgpu_static_data_v2B_08->subProcessIsolation;
+        pVSI->sizeL2Cache            = vgpu_static_data_v2B_08->sizeL2Cache;
+        pVSI->poisonFuseEnabled      = vgpu_static_data_v2B_08->poisonFuseEnabled;
+        pVSI->guestManagedHwAlloc    = vgpu_static_data_v2B_08->guestManagedHwAlloc;
+
+        // gpuname
+        portMemCopy(pVSI->adapterName, sizeof(pVSI->adapterName),
+                    vgpu_static_data_v2B_08->gpuName.adapterName, sizeof(pVSI->adapterName));
+        portMemCopy(pVSI->adapterName_Unicode, sizeof(pVSI->adapterName_Unicode),
+                    vgpu_static_data_v2B_08->gpuName.adapterName_Unicode, sizeof(pVSI->adapterName_Unicode));
+        portMemCopy(pVSI->shortGpuNameString, sizeof(pVSI->shortGpuNameString),
+                    vgpu_static_data_v2B_08->gpuName.shortGpuNameString, sizeof(pVSI->adapterName));
+        pVSI->bSplitVasBetweenServerClientRm = vgpu_static_data_v2B_08->bSplitVasBetweenServerClientRm;
+        pVSI->maxSupportedPageSize           = vgpu_static_data_v2B_08->maxSupportedPageSize;
+        pVSI->bFlaSupported                  = vgpu_static_data_v2B_08->bFlaSupported;
+        pVSI->bPerRunlistChannelRamEnabled   = vgpu_static_data_v2B_08->bPerRunlistChannelRamEnabled;
+        pVSI->bAtsSupported                  = vgpu_static_data_v2B_08->bAtsSupported;
+        pVSI->bPerSubCtxheaderSupported      = vgpu_static_data_v2B_08->bPerSubCtxheaderSupported;
+        pVSI->bC2CLinkUp                     = vgpu_static_data_v2B_08->bC2CLinkUp;
+        pVSI->bLocalEgmEnabled               = vgpu_static_data_v2B_08->bLocalEgmEnabled;
+        pVSI->localEgmPeerId                 = vgpu_static_data_v2B_08->localEgmPeerId;
+        pVSI->bSelfHostedMode                = vgpu_static_data_v2B_08->bSelfHostedMode;
+        pVSI->ceFaultMethodBufferDepth       = vgpu_static_data_v2B_08->ceFaultMethodBufferDepth;
+        pVSI->pcieGpuLinkCaps                = vgpu_static_data_v2B_08->pcieGpuLinkCaps;
+        portMemCopy(pVSI->grCapsBits, sizeof(pVSI->grCapsBits),
+                    vgpu_static_data_v2B_08->grCapsBits, sizeof(vgpu_static_data_v2B_08->grCapsBits));
+
+        for (i = 0; i < NVGPU_VGPU_ENGINE_LIST_MASK_ARRAY_MAX_v27_01; i++)
+        {
+            pVSI->engineList[i] = vgpu_static_data_v2B_08->engineList[i];
+        }
+        for (i = 0; i < NV2080_ENGINE_TYPE_NVJPEG_SIZE; i++)
+        {
+            portMemCopy((void*)&pVSI->jpegCaps[i], sizeof(pVSI->jpegCaps[i]),
+                        (void*)&vgpu_static_data_v2B_08->jpegCaps[i], sizeof(vgpu_static_data_v2B_08->jpegCaps[i]));
+        }
+    }
+    *offset += sizeof(VGPU_STATIC_DATA_v2B_08);
     return NVOS_STATUS_SUCCESS;
 }
 
@@ -1387,6 +1675,51 @@ NV_STATUS deserialize_NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS_v03_00(NV2080
     }
 
     *offset += sizeof(NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS_v03_00);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
+NV_STATUS deserialize_NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS_v2B_02(NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS *fbRegionInfoParams,
+                                                                          NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (!offset)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    // If fbRegionInfoParams and buffer are valid, then copy data and return the offset
+    if (fbRegionInfoParams && buffer)
+    {
+        NvU32 i;
+        NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS_v2B_02 *fbRegionInfoParams_v2B_02 = NULL;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS_v2B_02))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+
+        fbRegionInfoParams_v2B_02 = (void*)(buffer + *offset);
+
+        fbRegionInfoParams->numFBRegions = fbRegionInfoParams_v2B_02->numFBRegions;
+
+        for(i = 0; i < NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_MAX_ENTRIES; i++)
+        {
+            fbRegionInfoParams->fbRegion[i].base              = fbRegionInfoParams_v2B_02->fbRegion[i].base;
+            fbRegionInfoParams->fbRegion[i].limit             = fbRegionInfoParams_v2B_02->fbRegion[i].limit;
+            fbRegionInfoParams->fbRegion[i].reserved          = fbRegionInfoParams_v2B_02->fbRegion[i].reserved;
+            fbRegionInfoParams->fbRegion[i].performance       = fbRegionInfoParams_v2B_02->fbRegion[i].performance;
+            fbRegionInfoParams->fbRegion[i].supportCompressed = fbRegionInfoParams_v2B_02->fbRegion[i].supportCompressed;
+            fbRegionInfoParams->fbRegion[i].supportISO        = fbRegionInfoParams_v2B_02->fbRegion[i].supportISO;
+            fbRegionInfoParams->fbRegion[i].bProtected        = fbRegionInfoParams_v2B_02->fbRegion[i].bProtected;
+            portMemCopy(&fbRegionInfoParams->fbRegion[i].blackList,
+                        sizeof(fbRegionInfoParams->fbRegion[i].blackList),
+                        &fbRegionInfoParams_v2B_02->fbRegion[i].blackList,
+                        sizeof(fbRegionInfoParams_v2B_02->fbRegion[i].blackList));
+        }
+    }
+
+    *offset += sizeof(NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS_v2B_02);
 
     return NVOS_STATUS_SUCCESS;
 }
@@ -2236,6 +2569,60 @@ NV_STATUS deserialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS_v15_02(NV208
     }
 
     *offset += sizeof(NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS_v15_02);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
+NV_STATUS deserialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS_v2B_11(NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS *nvlinkCaps, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (!offset)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    // If nvlinkCaps and buffer are valid, then copy data and return the offset
+    if (nvlinkCaps && buffer)
+    {
+        NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS_v2B_11 *get_nvlink_caps_v2B_11 = NULL;
+        NV2080_CTRL_NVLINK_LINK_MASK_v2B_11                  *discoveredLinks_s;
+        NV2080_CTRL_NVLINK_LINK_MASK                         *discoveredLinks_d;
+        NV2080_CTRL_NVLINK_LINK_MASK_v2B_11                  *enabledLinks_s;
+        NV2080_CTRL_NVLINK_LINK_MASK                         *enabledLinks_d;
+        NvU32                                                i;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS_v2B_11))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+
+        get_nvlink_caps_v2B_11 = (void*)(buffer + *offset);
+
+        nvlinkCaps->capsTbl              = get_nvlink_caps_v2B_11->capsTbl;
+        nvlinkCaps->lowestNvlinkVersion  = get_nvlink_caps_v2B_11->lowestNvlinkVersion;
+        nvlinkCaps->highestNvlinkVersion = get_nvlink_caps_v2B_11->highestNvlinkVersion;
+        nvlinkCaps->lowestNciVersion     = get_nvlink_caps_v2B_11->lowestNciVersion;
+        nvlinkCaps->highestNciVersion    = get_nvlink_caps_v2B_11->highestNciVersion;
+        nvlinkCaps->discoveredLinkMask   = get_nvlink_caps_v2B_11->discoveredLinkMask;
+        nvlinkCaps->enabledLinkMask      = get_nvlink_caps_v2B_11->enabledLinkMask;
+
+        discoveredLinks_s = &get_nvlink_caps_v2B_11->discoveredLinks;
+        discoveredLinks_d = &nvlinkCaps->discoveredLinks;
+
+        discoveredLinks_d->lenMasks = discoveredLinks_s->lenMasks;
+        for (i = 0; i < NV2080_CTRL_NVLINK_MAX_MASK_SIZE_v2B_11; i++)
+            discoveredLinks_d->masks[i] = discoveredLinks_s->masks[i];
+
+        enabledLinks_s = &get_nvlink_caps_v2B_11->enabledLinks;
+        enabledLinks_d = &nvlinkCaps->enabledLinks;
+
+        enabledLinks_d->lenMasks = enabledLinks_s->lenMasks;
+        for (i = 0; i < NV2080_CTRL_NVLINK_MAX_MASK_SIZE_v2B_11; i++)
+            enabledLinks_d->masks[i] = enabledLinks_s->masks[i];
+
+    }
+
+    *offset += sizeof(NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS_v2B_11);
 
     return NVOS_STATUS_SUCCESS;
 }

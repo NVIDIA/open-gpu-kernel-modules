@@ -256,13 +256,17 @@ memdescCreate
         if (((AddressSpace == ADDR_SYSMEM) || (AddressSpace == ADDR_UNKNOWN)) &&
             !(Flags & MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL))
         {
+            NvU64 pageSize = osGetPageSize();
+
             if (pMemoryManager && pMemoryManager->sysmemPageSize)
             {
-                allocSize = RM_ALIGN_UP(allocSize, pMemoryManager->sysmemPageSize);
-                if (allocSize < Size)
-                {
-                    return NV_ERR_INVALID_ARGUMENT;
-                }
+                pageSize = pMemoryManager->sysmemPageSize;
+            }
+
+            allocSize = RM_ALIGN_UP(allocSize, pageSize);
+            if (allocSize < Size)
+            {
+                return NV_ERR_INVALID_ARGUMENT;
             }
         }
 
@@ -408,6 +412,16 @@ memdescCreate
     if (Flags & MEMDESC_FLAGS_GUEST_ALLOCATED)
     {
         NV_ASSERT_OK_OR_GOTO(status, _memdescSetGuestAllocatedFlag(pGpu, pMemDesc, NV_TRUE), failed);
+    }
+
+    //
+    // Set localized flag if we alread know we're localized. Must be set manually if flag is set
+    // after memdesc creation
+    //
+    if (Flags & MEMDESC_FLAGS_ALLOC_AS_LOCALIZED)
+    {
+        MEMORY_DESCRIPTOR *pRootMemDesc = memdescGetRootMemDesc(pMemDesc, NULL);
+        pMemDesc->localizedMask = GPU_GET_MEMORY_MANAGER(pRootMemDesc->pGpu)->localizedMask;
     }
 
 failed:
@@ -722,12 +736,8 @@ _memdescAllocEgmArray
     MEMORY_DESCRIPTOR *pMemDesc
 )
 {
-    //
-    // Since we allocate an extra PTE, we need to account for that in case we
-    // need it for the EGM array. This is why there is a '+ 1' for pageCount.
-    //
     NvU64 i;
-    NvU64 pageCount = pMemDesc->PageCount + 1;
+    NvU64 pageCount = pMemDesc->PageCount;
 
     //
     // Get the root memory descriptor's memory manager to be able to get the
@@ -1945,14 +1955,12 @@ memdescUnmapOld
 (
     MEMORY_DESCRIPTOR *pMemDesc,
     NvBool Kernel,
-    NvU32 ProcessId,
     void *Address,
     void *Priv
 )
 {
     memdescUnmap(pMemDesc,
                  Kernel,
-                 ProcessId,
                  NV_PTR_TO_NvP64(Address),
                  NV_PTR_TO_NvP64(Priv));
 }
@@ -1962,7 +1970,6 @@ memdescUnmapOld
  *
  *  @param[in]   pMemDesc       Memory descriptor to unmap
  *  @param[in]   Kernel         Kernel or user address space
- *  @param[in]   ProcessId      Process ID if user space
  *  @param[in]   Address        Mapped address
  *  @param[in]   Priv           Return priv cookie from memdescMap
  *
@@ -1973,7 +1980,6 @@ memdescUnmap
 (
     MEMORY_DESCRIPTOR *pMemDesc,
     NvBool Kernel,
-    NvU32 ProcessId,
     NvP64 Address,
     NvP64 Priv
 )
@@ -1989,7 +1995,7 @@ memdescUnmap
         case ADDR_SYSMEM:
         case ADDR_EGM:
         {
-            osUnmapSystemMemory(pMemDesc, Kernel, ProcessId, Address, Priv);
+            osUnmapSystemMemory(pMemDesc, Kernel, Address, Priv);
             break;
         }
 
@@ -2241,7 +2247,7 @@ void memdescUnmapInternal
         {
             case MEMDESC_MAP_INTERNAL_TYPE_GSP:
             case MEMDESC_MAP_INTERNAL_TYPE_SYSMEM_DIRECT:
-                memdescUnmapOld(pMemDesc, NV_TRUE, 0,
+                memdescUnmapOld(pMemDesc, NV_TRUE,
                                 pMemDesc->_pInternalMapping, pMemDesc->_pInternalMappingPriv);
                 break;
 
@@ -2663,6 +2669,8 @@ memdescCreateSubMem
     pMemDescNew->pageArrayGranularity = pageArrayGranularity;
     pMemDescNew->_gpuCacheAttrib = pMemDesc->_gpuCacheAttrib;
     pMemDescNew->_gpuP2PCacheAttrib  = pMemDesc->_gpuP2PCacheAttrib;
+    pMemDescNew->cpuCacheSnoop       = pMemDesc->cpuCacheSnoop;
+    pMemDescNew->gpuCacheSnoop       = pMemDesc->gpuCacheSnoop;
     pMemDescNew->gfid                = pMemDesc->gfid;
     pMemDescNew->bUsingSuballocator  = pMemDesc->bUsingSuballocator;
     pMemDescNew->_pParentDescriptor  = pMemDesc;
@@ -2683,19 +2691,21 @@ memdescCreateSubMem
         RmPhysAddr Base = pMemDesc->_pteArray[0] + pMemDesc->PteAdjust + Offset;
         pMemDescNew->_pteArray[0] = Base & ~pageArrayGranularityMask;
         pMemDescNew->PteAdjust   = NvU64_LO32(Base) & pageArrayGranularityMask;
-
-        if (memdescIsEgm(pMemDesc))
-        {
-            NV_ASSERT_OK_OR_GOTO(status,
-                                 _memdescAllocEgmArray(pMemDescNew),
-                                 fail);
-        }
     }
     else
     {
         // More complicated...
         RmPhysAddr Adjust;
-        NvU32 PageIndex, i;
+        NvU32 PageIndex;
+        const NvU32 pageMask = GET_PAGE_MASK(pMemDescNew->pageArrayGranularity);
+        //
+        // The last bitwise AND with the pageMask makes sure the value is cleaned
+        // and we don't end up with numBytesToPageAlignedSize == pageArrayGranularity.
+        //
+        NvU32 numBytesToPageAlignedSize = (pMemDescNew->pageArrayGranularity -
+            (Size & pageMask)) & pageMask;
+        NvBool bNeedExtraPage;
+        NvU64 alignedSize;
 
         // We start this many bytes into the memory alloc
         Adjust = pMemDesc->PteAdjust + Offset;
@@ -2704,41 +2714,32 @@ memdescCreateSubMem
         PageIndex = (NvU32)(Adjust >> pageArrayGranularityShift);
         pMemDescNew->PteAdjust = NvU64_LO32(Adjust) & pageArrayGranularityMask;
 
+        //
+        // Calculate how many bytes are left to being page aligned.
+        // If the offset within the tracking page is:
+        // 1) Smaller than the number of bytes left -
+        //    PageCount equals the aligned Size.
+        // 2) Larger than the number of bytes left -
+        //    The submem description will always span an extra page.
+        //
+        bNeedExtraPage = (pMemDescNew->PteAdjust > numBytesToPageAlignedSize);
+
+        alignedSize = NV_ALIGN_UP64(Size, pMemDescNew->pageArrayGranularity);
+        pMemDescNew->PageCount = (alignedSize >> GET_PAGE_SHIFT(pMemDesc->pageArrayGranularity)) + (bNeedExtraPage ? 1 :0);
+        pMemDescNew->ActualSize = pMemDescNew->PageCount * pMemDescNew->pageArrayGranularity;
+
         // Fill in the PTEs; remember to copy the extra PTE, in case we need it
         if (pMemDesc->PageCount)
         {
-            for (i = 0; i < pMemDescNew->PageCount+1; i++)
-            {
-                NvU32 j = i + PageIndex;
-                if (j < pMemDesc->PageCount)
-                {
-                    pMemDescNew->_pteArray[i] = pMemDesc->_pteArray[j];
-                }
-                else
-                {
-                    //
-                    // This case can happen with page size greater than 4KB.
-                    // Since pages are always tracked at 4KB granularity the
-                    // subset description may overflow the parent memdesc.
-                    //
-                    // In this case the best we can do is describe the contiguous
-                    // memory after the last 4KB page in the sub-memdesc.
-                    //
-                    // TODO: Tracking memdesc pages at native page size would
-                    //       remove the need for several hacks, including this one.
-                    //
-                    NV_ASSERT(i > 0);
-                    pMemDescNew->_pteArray[i] = pMemDescNew->_pteArray[i - 1] + pMemDescNew->pageArrayGranularity;
-                }
-            }
-
-            if (memdescIsEgm(pMemDesc))
-            {
-                NV_ASSERT_OK_OR_GOTO(status,
-                                     _memdescAllocEgmArray(pMemDescNew),
-                                     fail);
-            }
+            memdescFillPages(pMemDescNew, 0, &pMemDesc->_pteArray[PageIndex], pMemDescNew->PageCount, pMemDescNew->pageArrayGranularity);
         }
+    }
+
+    if (memdescIsEgm(pMemDesc))
+    {
+        NV_ASSERT_OK_OR_GOTO(status,
+                             _memdescAllocEgmArray(pMemDescNew),
+                             fail);
     }
 
     if ((pMemDesc->_addressSpace == ADDR_SYSMEM) &&
@@ -3032,11 +3033,10 @@ void memdescGetPtePhysAddrsForGpu(MEMORY_DESCRIPTOR *pMemDesc,
             pAddresses[i] = pteArray[pageIndex] + (offset & pageArrayGranularityMask);
         }
 
-        // TODO: localized doesn't require virt mem
         if (pMemDesc->_flags & MEMDESC_FLAGS_ALLOC_AS_LOCALIZED)
         {
-            // Set the bit in the address itself
-            pAddresses[i] |= DMA_PAGE_ARRAY_LOCALIZED_OFFSET;
+            // Set the bit in the physical address itself
+            pAddresses[i] |= pMemDesc->localizedMask;
         }
 
         offset += stride;
@@ -3065,6 +3065,28 @@ void memdescGetPhysAddrs(MEMORY_DESCRIPTOR *pMemDesc,
     memdescGetPhysAddrsForGpu(pMemDesc, pMemDesc->pGpu, addressTranslation, offset, stride, count, pAddresses);
 }
 
+/*!
+ *  @brief Return the physical addresses of pMemdesc
+ *         for use in a PTE or to give to HW
+ *  @param[in]  pMemDesc           Memory descriptor used
+ *  @param[in]  addressTranslation Address translation identifier
+ *  @param[in]  offset             Offset into memory descriptor
+ *  @param[in]  stride             How much to advance the offset for each
+ *                                 consecutive address
+ *  @param[in]  count              How many addresses to retrieve
+ *  @param[out] pAddresses         Returned array of addresses
+ *
+ */
+void memdescGetPtePhysAddrs(MEMORY_DESCRIPTOR *pMemDesc,
+                            ADDRESS_TRANSLATION addressTranslation,
+                            NvU64 offset,
+                            NvU64 stride,
+                            NvU64 count,
+                            RmPhysAddr *pAddresses)
+{
+    memdescGetPtePhysAddrsForGpu(pMemDesc, pMemDesc->pGpu, addressTranslation, offset, stride, count, pAddresses);
+
+}
 
 /*!
  *  @brief Return the physical address of pMemdesc+Offset
@@ -3682,12 +3704,12 @@ void memdescPrintMemdesc
 #if NV_PRINTF_ENABLED
     NvU32 i;
 
-    if ((DBG_RMMSG_CHECK(LEVEL_INFO) == 0) || (pPrefixMessage == NULL) || (pMemDesc == NULL))
+    if ((DBG_RMMSG_CHECK(LEVEL_NOTICE) == 0) || (pPrefixMessage == NULL) || (pMemDesc == NULL))
     {
         return;
     }
 
-    NV_PRINTF(LEVEL_INFO,
+    NV_PRINTF(LEVEL_NOTICE,
                 "%s Aperture %s starting at 0x%llx and of size 0x%llx\n",
                 pPrefixMessage,
                 memdescGetApertureString(pMemDesc->_addressSpace),
@@ -3700,7 +3722,7 @@ void memdescPrintMemdesc
     {
         for (i = 0; i < pMemDesc->PageCount; i++)
         {
-            NV_PRINTF(LEVEL_INFO,
+            NV_PRINTF(LEVEL_NOTICE,
                         "     contains page starting @0x%llx\n",
                         pMemDesc->_pteArray[i]);
         }
@@ -3714,7 +3736,7 @@ void memdescPrintMemdesc
             PIOVAMAPPING pIovaMap = pMemDesc->_pIommuMappings;
             while (pIovaMap != NULL)
             {
-                NV_PRINTF(LEVEL_INFO,
+                NV_PRINTF(LEVEL_NOTICE,
                     "Has additional IOMMU mapping for IOVA space 0x%x starting @ 0x%llx\n",
                     pIovaMap->iovaspaceId,
                     pIovaMap->iovaArray[0]);
@@ -3723,7 +3745,7 @@ void memdescPrintMemdesc
         }
         else
         {
-            NV_PRINTF(LEVEL_INFO,
+            NV_PRINTF(LEVEL_NOTICE,
                 "Has additional IOMMU mapping starting @ 0x%llx\n",
                 memdescGetPhysAddr(pMemDesc, AT_PA, 0));
         }
@@ -4738,7 +4760,7 @@ memdescOverridePhysicalAddressWidthWindowsWAR
 {
     if (RMCFG_FEATURE_PLATFORM_WINDOWS)
     {
-        if (addressWidth < gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM))
+        if (addressWidth < gpuarchGetSystemPhysAddrWidth_HAL(gpuGetArch(pGpu)))
         {
             pMemDesc->_flags |= MEMDESC_FLAGS_OVERRIDE_SYSTEM_ADDRESS_LIMIT;
             pMemDesc->_overridenAddressWidth = addressWidth;
@@ -4880,14 +4902,12 @@ memdescFillMemdescForPhysAttr
     NvU64 *pOffset,
     NvU32 *pMemAperture,
     NvU32 *pMemKind,
-    NvU32 *pZCullId,
     NvU32 *pGpuCacheAttr,
     NvU32 *pGpuP2PCacheAttr,
     NvU64 *contigSegmentSize
 )
 {
     NvU64 surfOffset = *pOffset, surfBase, surfLimit;
-    NvU32 zcbitmap;
 
     surfBase  = memdescGetPhysAddr(pMemDesc, addressTranslation, 0);
     surfLimit = surfBase + pMemDesc->Size - 1;
@@ -4938,10 +4958,6 @@ memdescFillMemdescForPhysAttr
     {
         *pGpuP2PCacheAttr = NV0041_CTRL_GET_SURFACE_PHYS_ATTR_GPU_CACHED_UNKNOWN;
     }
-
-    zcbitmap = FB_HWRESID_ZCULL_VAL_FERMI(memdescGetHwResId(pMemDesc)); //bitmap form... need a scalar
-    for ( *pZCullId = 0;  zcbitmap; zcbitmap >>= 1, *pZCullId += 1) {;;;}
-    *pZCullId -= 1; // side effect if there is no zcull id of setting ~0
 
     *contigSegmentSize = surfLimit - (surfBase + surfOffset) + 1;
 

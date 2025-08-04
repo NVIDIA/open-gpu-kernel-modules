@@ -29,8 +29,20 @@
 irqreturn_t     nvidia_isr              (int, void *);
 irqreturn_t     nvidia_isr_kthread_bh   (int, void *);
 
-#define NV_SUPPORTS_PLATFORM_DEVICE 0
+int       nv_platform_register_driver(void);
+void      nv_platform_unregister_driver(void);
+int       nv_platform_count_devices(void);
+int       nv_soc_register_irqs(nv_state_t *nv);
+void      nv_soc_free_irqs(nv_state_t *nv);
 
-#define NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE 0
+#define NV_SUPPORTS_PLATFORM_DEVICE NV_IS_EXPORT_SYMBOL_PRESENT___platform_driver_register
+
+#if defined(NV_LINUX_PLATFORM_TEGRA_DCE_DCE_CLIENT_IPC_H_PRESENT)
+#define NV_SUPPORTS_DCE_CLIENT_IPC 1
+#else
+#define NV_SUPPORTS_DCE_CLIENT_IPC 0
+#endif
+
+#define NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE (NV_SUPPORTS_PLATFORM_DEVICE && NV_SUPPORTS_DCE_CLIENT_IPC)
 
 #endif

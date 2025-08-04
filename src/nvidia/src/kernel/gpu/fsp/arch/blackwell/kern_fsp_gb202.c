@@ -90,46 +90,10 @@ kfspWaitForSecureBoot_GB202
                      GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1)),
                      GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(2)),
                      GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(3)));
+
+        kfspDumpDebugState_HAL(pGpu, pKernelFsp);
     }
 
     return status;
 }
 
-/*!
- * @brief Dump debug registers for FSP
- *
- * @param[in] pGpu       OBJGPU pointer
- * @param[in] pKernelFsp KernelFsp pointer
- *
- * @return NV_OK, or error if failed
- */
-void
-kfspDumpDebugState_GB202
-(
-    OBJGPU    *pGpu,
-    KernelFsp *pKernelFsp
-)
-{
-    //
-    // Older microcodes did not have the version populated in scratch.
-    // They will report a version of 0.
-    //
-    const NvU32 fspUcodeVersion = GPU_REG_RD_DRF(pGpu, _GFW, _FSP_UCODE_VERSION, _FULL);
-    if (fspUcodeVersion > 0)
-    {
-        NV_PRINTF(LEVEL_ERROR, "FSP microcode v%u.%u\n",
-                  DRF_VAL(_GFW, _FSP_UCODE_VERSION, _MAJOR, fspUcodeVersion),
-                  DRF_VAL(_GFW, _FSP_UCODE_VERSION, _MINOR, fspUcodeVersion));
-    }
-
-    NV_PRINTF(LEVEL_ERROR, "GPU %04x:%02x:%02x\n",
-              gpuGetDomain(pGpu), gpuGetBus(pGpu), gpuGetDevice(pGpu));
-    NV_PRINTF(LEVEL_ERROR, "NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0) = 0x%x\n",
-              GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0)));
-    NV_PRINTF(LEVEL_ERROR, "NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1) = 0x%x\n",
-              GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1)));
-    NV_PRINTF(LEVEL_ERROR, "NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(2) = 0x%x\n",
-              GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(2)));
-    NV_PRINTF(LEVEL_ERROR, "NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(3) = 0x%x\n",
-              GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(3)));
-}

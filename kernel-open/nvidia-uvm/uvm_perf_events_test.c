@@ -28,12 +28,12 @@
 // Global variable used to check that callbacks are correctly executed
 static int test_data;
 
-static void callback_inc_1(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
+static void callback_inc_1(uvm_va_space_t *va_space, uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
 {
     ++test_data;
 }
 
-static void callback_inc_2(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
+static void callback_inc_2(uvm_va_space_t *va_space, uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
 {
     test_data += 2;
 }

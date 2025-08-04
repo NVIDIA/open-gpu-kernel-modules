@@ -363,7 +363,7 @@ _ctxdmaDestruct
 
         if (pContextDma->KernelVAddr[gpuDevInst])
         {
-            memdescUnmapOld(pContextDma->pMemory->pMemDesc, NV_TRUE, 0,
+            memdescUnmapOld(pContextDma->pMemory->pMemDesc, NV_TRUE,
                     pContextDma->KernelVAddr[gpuDevInst],
                     pContextDma->KernelPriv);
             pContextDma->KernelVAddr[gpuDevInst] = NULL;

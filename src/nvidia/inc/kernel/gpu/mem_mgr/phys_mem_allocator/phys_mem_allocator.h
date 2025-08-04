@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,7 +41,7 @@
 #define PHYS_MEM_ALLOCATOR_H
 
 #include "nvport/nvport.h"
-#include "regmap.h"
+#include "map_defines.h"
 #include "nvmisc.h"
 
 #if defined(SRT_BUILD)
@@ -57,10 +57,6 @@ extern "C" {
 
 typedef struct OBJMEMSCRUB OBJMEMSCRUB;
 typedef struct SCRUB_NODE SCRUB_NODE;
-
-#define PMA_REGION_SIZE 32
-#define PMA_ADDR2FRAME(addr, base)  (((addr) - (base)) >> PMA_PAGE_SHIFT)
-#define PMA_FRAME2ADDR(frame, base) ((base) + ((frame) << PMA_PAGE_SHIFT))
 
 //
 // These flags are used for initialization in order to set global PMA states,
@@ -108,19 +104,6 @@ typedef struct SCRUB_NODE SCRUB_NODE;
 
 // These are flags input to the pmaFreePages call
 #define PMA_FREE_SKIP_SCRUB           NVBIT(0)
-
-// State bits for debugging utilities like nvwatch
-#define PMA_SCRUB_INITIALIZE   0
-#define PMA_SCRUB_IN_PROGRESS  1
-#define PMA_SCRUB_DONE         2
-
-#define PMA_SCRUBBER_VALID     1
-#define PMA_SCRUBBER_INVALID   0
-
-#define PMA_NUMA_NO_NODE      -1
-
-// Maximum blacklist entries possible
-#define PMA_MAX_BLACKLIST_ENTRIES 512
 
 typedef struct
 {
@@ -181,97 +164,6 @@ typedef NV_STATUS (*pmaEvictRangeCb_t)(void *ctxPtr, NvU64 physBegin, NvU64 phys
                                        MEMORY_PROTECTION prot);
 
 /*!
- * @brief Pluggable data structure management. Currently we have regmap.
- */
-typedef void *(*pmaMapInit_t)(NvU64 numFrames, NvU64 addrBase, PMA_STATS *pPmaStats, NvBool bProtected);
-typedef void  (*pmaMapDestroy_t)(void *pMap);
-typedef void  (*pmaMapChangeStateAttrib_t)(void *pMap, NvU64 frameNum, PMA_PAGESTATUS newState, PMA_PAGESTATUS newStateMask);
-typedef void  (*pmaMapChangePageStateAttrib_t)(void *pMap, NvU64 startFrame, NvU64 pageSize, PMA_PAGESTATUS newState, PMA_PAGESTATUS newStateMask);
-typedef void  (*pmaMapChangeBlockStateAttrib_t)(void *pMap, NvU64 frameNum, NvU64 numFrames, PMA_PAGESTATUS newState, PMA_PAGESTATUS newStateMask);
-typedef PMA_PAGESTATUS (*pmaMapRead_t)(void *pMap, NvU64 frameNum, NvBool readAttrib);
-typedef NV_STATUS (*pmaMapScanContiguous_t)(void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
-                                            NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment,
-                                            NvU64 stride, NvU32 strideStart,
-                                            NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
-typedef NV_STATUS (*pmaMapScanDiscontiguous_t)(void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
-                                               NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment,
-                                               NvU64 stride, NvU32 strideStart,
-                                               NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
-typedef void (*pmaMapGetSize_t)(void *pMap, NvU64 *pBytesTotal);
-typedef void (*pmaMapGetLargestFree_t)(void *pMap, NvU64 *pLargestFree);
-typedef NV_STATUS (*pmaMapScanContiguousNumaEviction_t)(void *pMap, NvU64 addrBase, NvLength actualSize,
-                                                        NvU64 pageSize, NvU64 *evictStart, NvU64 *evictEnd);
-typedef NvU64 (*pmaMapGetEvictingFrames_t)(void *pMap);
-typedef void (*pmaMapSetEvictingFrames_t)(void *pMap, NvU64 frameEvictionsInProcess);
-
-struct _PMA_MAP_INFO
-{
-    NvU32                       mode;
-    pmaMapInit_t                pmaMapInit;
-    pmaMapDestroy_t             pmaMapDestroy;
-    pmaMapChangeStateAttrib_t      pmaMapChangeStateAttrib;
-    pmaMapChangePageStateAttrib_t  pmaMapChangePageStateAttrib;
-    pmaMapChangeBlockStateAttrib_t pmaMapChangeBlockStateAttrib;
-    pmaMapRead_t                pmaMapRead;
-    pmaMapScanContiguous_t      pmaMapScanContiguous;
-    pmaMapScanDiscontiguous_t   pmaMapScanDiscontiguous;
-    pmaMapGetSize_t             pmaMapGetSize;
-    pmaMapGetLargestFree_t      pmaMapGetLargestFree;
-    pmaMapScanContiguousNumaEviction_t pmaMapScanContiguousNumaEviction;
-    pmaMapGetEvictingFrames_t  pmaMapGetEvictingFrames;
-    pmaMapSetEvictingFrames_t  pmaMapSetEvictingFrames;
-};
-
-struct _PMA
-{
-    PORT_SPINLOCK           *pPmaLock;                          // PMA-wide lock
-    PORT_MUTEX              *pEvictionCallbacksLock;            // Eviction callback registration lock
-
-    // Only used when free scrub-on-free feature is turned on
-    PORT_RWLOCK             *pScrubberValidLock;                // A reader-writer lock to protect the scrubber valid bit
-    PORT_MUTEX              *pAllocLock;                        // Used to protect page stealing in the allocation path
-
-    // Region related states
-    NvU32                   regSize;                            // Actual size of regions array
-    void *                  pRegions[PMA_REGION_SIZE];          // All the region maps stored as opaque pointers
-    NvU32                   *pSortedFastFirst;                  // Pre-sorted array of region IDs
-    PMA_REGION_DESCRIPTOR   *pRegDescriptors [PMA_REGION_SIZE]; // Stores the descriptions of each region
-    PMA_MAP_INFO            *pMapInfo;                          // The pluggable layer for managing scanning
-
-    // Allocation related states
-    void *                  evictCtxPtr;                        // Opaque context pointer for eviction callback
-    pmaEvictPagesCb_t       evictPagesCb;                       // Discontiguous eviction callback
-    pmaEvictRangeCb_t       evictRangeCb;                       // Contiguous eviction callback
-    NvU64                   frameAllocDemand;                   // Frame count of allocations in-process
-    NvBool                  bForcePersistence;                  // Force all allocations to persist across suspend/resume
-    PMA_STATS               pmaStats;                           // PMA statistics used for client heuristics
-
-    // Scrubber related states
-    NvSPtr                  initScrubbing;                      // If the init scrubber has finished in this PMA
-    NvBool                  bScrubOnFree;                       // If "scrub on free" is enabled for this PMA object
-    NvSPtr                  scrubberValid;                      // If scrubber object is valid, using atomic variable to prevent races
-    OBJMEMSCRUB            *pScrubObj;                          // Object to store the FreeScrub header
-
-    // NUMA states
-    NvBool                  bNuma;                              // If we are allocating for a NUMA system
-    NvBool                  nodeOnlined;                        // If node is onlined
-    NvS32                   numaNodeId;                         // Current Node ID, set at initialization. -1 means invalid
-    NvU64                   coherentCpuFbBase;                  // Used to calculate FB offset from bus address
-    NvU64                   coherentCpuFbSize;                  // Used for error checking only
-    NvU32                   numaReclaimSkipThreshold;           // percent value below which __GFP_RECLAIM will not be used.
-    NvBool                  bNumaAutoOnline;                    // If NUMA memory is auto-onlined
-
-    // Blacklist related states
-    PMA_BLACKLIST_CHUNK    *pBlacklistChunks;                   // Tracking for blacklist pages
-    NvU32                   blacklistCount;                     // Number of blacklist pages
-    NvBool                  bClientManagedBlacklist;            // Blacklisted pages in PMA that will be taken over by Client
-
-    // RUSD Callback
-    pmaUpdateStatsCb_t      pStatsUpdateCb;                     // RUSD update free pages
-    void                   *pStatsUpdateCtx;                    // Context for RUSD update
-};
-
-/*!
  * @brief This must be called before any other PMA functions. Returns a PMA
  * object for later use
  *
@@ -289,7 +181,7 @@ struct _PMA
  *          code, because it is not very informative.
  *
  */
-NV_STATUS pmaInitialize(PMA *pPma, NvU32 initFlags);
+NV_STATUS pmaInitialize(PMA **ppPma, NvU32 initFlags);
 
 
 /*!
@@ -398,9 +290,6 @@ NV_STATUS pmaRegisterRegion(PMA *pPma, NvU32 id, NvBool bAsyncEccScrub,
  * allocation option. For non-contiguous allocations, it's an error to specify
  * an alignment larger than the page size.
  *
- * For broadcast methods, PMA will guarantee the same physical frames are
- * allocated on multiple GPUs, specified by the PMA objects passed in.
- *
  * Implementors note:
  *      If region registered with asyncEccScrub and pmaScrubComplete
  *      has not yet been issued then we cannot return NV_ERR_NO_MEMORY.
@@ -460,11 +349,6 @@ NV_STATUS pmaRegisterRegion(PMA *pPma, NvU32 id, NvBool bAsyncEccScrub,
  */
 NV_STATUS pmaAllocatePages(PMA *pPma, NvLength pageCount, NvU64 pageSize,
     PMA_ALLOCATION_OPTIONS *pAllocationOptions, NvU64 *pPages);
-
-// allocate on multiple GPU, thus pmaCount
-NV_STATUS pmaAllocatePagesBroadcast(PMA **pPma, NvU32 pmaCount, NvLength allocationCount,
-    NvU64 pageSize, PMA_ALLOCATION_OPTIONS *pAllocationOptions, NvU64 *pPages);
-
 
 /*!
  * @brief Marks previously unpinned pages as pinned.
@@ -658,6 +542,16 @@ void pmaGetTotalMemory(PMA *pPma, NvU64 *pBytesTotal);
 NV_STATUS pmaGetRegionInfo(PMA *pPma, NvU32 *pRegSize, PMA_REGION_DESCRIPTOR **ppRegionDesc);
 
 /*!
+ * @brief Get the PMA stats object to give to UVM
+ *
+ * @param[in]  pPma           PMA pointer
+ *
+ * @return
+ *      PMA_STATS *
+ */
+PMA_STATS *pmaGetStats(PMA *pPma);
+
+/*!
  * @brief Returns information about the total free FB memory.
  *
  * @param[in]  pPma           PMA pointer
@@ -766,6 +660,16 @@ void pmaFreeAllocatedBlocksList(PMA *pPma, PRANGELISTTYPE *ppList);
  */
 NV_STATUS pmaRegMemScrub(PMA *pPma, OBJMEMSCRUB *pScrubObj);
 
+/*!
+ * @brief Get memory scrubber that PMA currently has (can be NULL)
+ *
+ * @param[in]  pPma           PMA pointer
+ *
+ * @return
+ *      OBJMEMSCRUB * pointer to the memory scrubber PMA currently has
+ */
+OBJMEMSCRUB *pmaGetMemScrub(PMA *pPma);
+
 
 /*!
  * @brief Unregisters the memory scrubber, when the scrubber is torn
@@ -871,11 +775,6 @@ void pmaGetBlacklistSize(PMA *pPma, NvU32 *pDynamicBlacklistSize, NvU32 *pStatic
  *     void
  */
 void pmaClearScrubbedPages(PMA *pPma, SCRUB_NODE *pPmaScrubList, NvU64 count);
-
-/*!
- * @brief Print states of all regions
- */
-void pmaPrintMapState(PMA *pPma);
 
 /*!
  * @brief Track the given physical address as blacklisted page in PMA. This call will blacklist

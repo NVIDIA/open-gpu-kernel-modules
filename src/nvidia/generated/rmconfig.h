@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, T234D, T26XD
 //
 
 #ifndef _RMCFG_H_
@@ -39,7 +39,8 @@
 #define RMCFG_CHIP_T18X      0
 #define RMCFG_CHIP_T19X      0
 #define RMCFG_CHIP_T23XG     0
-#define RMCFG_CHIP_T23XD     0
+#define RMCFG_CHIP_T23XD     1
+#define RMCFG_CHIP_T26XD     1
 #define RMCFG_CHIP_SIMS      0
 
 
@@ -100,12 +101,15 @@
 #define RMCFG_CHIP_GB206     1
 #define RMCFG_CHIP_GB207     1
 #define RMCFG_CHIP_GB20B     1
+#define RMCFG_CHIP_GB20C     1
 
 #define RMCFG_CHIP_T194      0
 
 #define RMCFG_CHIP_T234      0
 
-#define RMCFG_CHIP_T234D     0
+#define RMCFG_CHIP_T234D     1
+
+#define RMCFG_CHIP_T264D     1
 
 #define RMCFG_CHIP_AMODEL    0
 
@@ -207,7 +211,7 @@
 #define RMCFG_CHIP_GB20Y     1
 #define RMCFG_CHIP_TEGRA_BIG_GPUS 0
 #define RMCFG_CHIP_FERMI_TEGRA_BIG_GPUS 0
-#define RMCFG_CHIP_TEGRA     0
+#define RMCFG_CHIP_TEGRA     1
 #define RMCFG_CHIP_TEGRA_TEGRA_BIG_GPUS 0
 #define RMCFG_CHIP_ALL_TEGRA_BIG_GPUS 0
 #define RMCFG_CHIP_ALL_CHIPS_TEGRA_BIG_GPUS 0
@@ -225,19 +229,20 @@
 #define RMCFG_CHIP_TVOLTA    0
 #define RMCFG_CHIP_VOLTA_TEGRA_BIG_GPUS 0
 #define RMCFG_CHIP_TURING_TEGRA_BIG_GPUS 0
-#define RMCFG_CHIP_T23X      0
+#define RMCFG_CHIP_T23X      1
 #define RMCFG_CHIP_T23X_TEGRA_BIG_GPUS 0
 #define RMCFG_CHIP_tAMPERE   0
 #define RMCFG_CHIP_TAMPERE   0
 #define RMCFG_CHIP_AMPERE_TEGRA_BIG_GPUS 0
 #define RMCFG_CHIP_ADA_TEGRA_BIG_GPUS 0
 #define RMCFG_CHIP_HOPPER_TEGRA_BIG_GPUS 0
-#define RMCFG_CHIP_TEGRA_NVDISP_GPUS 0
-#define RMCFG_CHIP_T23X_TEGRA_NVDISP_GPUS 0
-#define RMCFG_CHIP_TEGRA_TEGRA_NVDISP_GPUS 0
-#define RMCFG_CHIP_TEGRA_DISP_TEGRA_NVDISP_GPUS 0
-#define RMCFG_CHIP_ALL_TEGRA_NVDISP_GPUS 0
-#define RMCFG_CHIP_ALL_CHIPS_TEGRA_NVDISP_GPUS 0
+#define RMCFG_CHIP_TEGRA_NVDISP_GPUS 1
+#define RMCFG_CHIP_T23X_TEGRA_NVDISP_GPUS 1
+#define RMCFG_CHIP_TEGRA_TEGRA_NVDISP_GPUS 1
+#define RMCFG_CHIP_TEGRA_DISP_TEGRA_NVDISP_GPUS 1
+#define RMCFG_CHIP_ALL_TEGRA_NVDISP_GPUS 1
+#define RMCFG_CHIP_ALL_CHIPS_TEGRA_NVDISP_GPUS 1
+#define RMCFG_CHIP_T26X      1
 #define RMCFG_CHIP_SIMULATION_GPUS 0
 #define RMCFG_CHIP_ALL_SIMULATION_GPUS 0
 #define RMCFG_CHIP_ALL_CHIPS_SIMULATION_GPUS 0
@@ -289,7 +294,7 @@
 #define RMCFG_FEATURE_VIRTUALIZATION_LEGACY       0  // Virtualization legacy feature (pre-vGPU-GSP)
 #define RMCFG_FEATURE_PRESILICON                  0  // For builds that can run on simulated or emulated GPU
 #define RMCFG_FEATURE_GSP_CLIENT_RM               1  // GSP client RM
-#define RMCFG_FEATURE_DCE_CLIENT_RM               0  // DCE client RM
+#define RMCFG_FEATURE_DCE_CLIENT_RM               1  // DCE client RM
 #define RMCFG_FEATURE_PROTOBUF                    1  // Protobuf data encoding for OCA data dumps
 #define RMCFG_FEATURE_RELEASE_BUILD               1  // Release Build
 #define RMCFG_FEATURE_RM_NEW_TRACER_ETW           0  // New Event Tracing for Windows (ETW) in RM
@@ -304,6 +309,7 @@
 #define RMCFG_FEATURE_CLK2                        1  // Tracks Clocks 2.0 project
 #define RMCFG_FEATURE_GPU_LOW_POWER               1  // GPU low power Feature on Kepler and later
 #define RMCFG_FEATURE_PC_VENDOR_SPECIFIC          1  // Vendor-specific code and features for PC
+#define RMCFG_FEATURE_CAMERA                      1  // Platform and chip specific feature
 #define RMCFG_FEATURE_PEX_RESET_RECOVERY          1  // Enables the PEX Reset Recovery feature, which uses root/bridge port SBR to reset GPU when lost
 #define RMCFG_FEATURE_HWBC                        1  // Enables support bridge chip devices
 #define RMCFG_FEATURE_SPARSE_TEXTURE              1  // Enables optimization and defaults for sparse texture
@@ -315,15 +321,16 @@
 #define RMCFG_FEATURE_MANUAL_TRIGGER_BA_DMA_MODE  0  // Support for manually actuated BA DMA mode data collection.
 #define RMCFG_FEATURE_RM_DRIVEN_BA_DMA_MODE       0  // Support for RM-driven BA DMA mode data collection.
 #define RMCFG_FEATURE_VBLANK_CALLBACK             1  // Vblank callback functionality within RM
-#define RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY         0  // Tegra SOC NvDisplay Driver
+#define RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY         1  // Tegra SOC NvDisplay Driver
 #define RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY_MINIMAL  0  // Enable only those parts of display code which are needed for Tegra SOC NvDisplay Driver
-#define RMCFG_FEATURE_HEAD_REGIONAL_CRC           0  // Display Head Regional CRC support
+#define RMCFG_FEATURE_HEAD_REGIONAL_CRC           1  // Display Head Regional CRC support
 #define RMCFG_FEATURE_FEATURE_GH180               1  // RMconfig to encapsulate GH180 features
 #define RMCFG_FEATURE_MIG_GFX                     1  // RMconfig to encapsulate MIG With GFX support (SMG)
 #define RMCFG_FEATURE_MULTICAST_FABRIC            1  // Support for MULTICAST_FABRIC
 #define RMCFG_FEATURE_NVLINK_ERROR_THRESHOLD      1  // Support for NVLINK_ERROR_THRESHOLD
 #define RMCFG_FEATURE_LOCALIZED_MEMORY            1  // Support for Localized memory feature
 #define RMCFG_FEATURE_LTS_REPAIR                  1  // Support for LTS swapping in-field
+#define RMCFG_FEATURE_TPC_REPAIR                  1  // Support for TPC swapping in-field
 #define RMCFG_FEATURE_GSP_SEC2_ENC_CHNLMGMT_RC_WAR  1  // WAR required for RC handling. See comment #36 of bug 4406277
 #define RMCFG_FEATURE_FABRIC_LINEAR_ADDRESSING    1  // Unicast fabric memory management
 #define RMCFG_FEATURE_GSP_RM_TRACE_RATS           1
@@ -332,6 +339,7 @@
 #define RMCFG_FEATURE_BINDATA_IMAGE               0  // Extract bindata from RM binary during compilation and save it in bindata_image.bin
 #define RMCFG_FEATURE_BINDATA_EXTRACTION          0  // Load bindata from disk.(Needs BINDATA_IMAGE to be enabled)
 #define RMCFG_FEATURE_SOC_PACKAGE_POWER_STATE     1  // RM support for SOC Package Power States
+#define RMCFG_FEATURE_DISP_POWER_GATING           1  // RM support for Display Power Gating
 
 
 
@@ -445,6 +453,7 @@
 #define RMCFG_CLASS_NVC973_DISP_CAPABILITIES      1
 #define RMCFG_CLASS_NVCA73_DISP_CAPABILITIES      1
 #define RMCFG_CLASS_NVCB73_DISP_CAPABILITIES      1
+#define RMCFG_CLASS_NVCC73_DISP_CAPABILITIES      1
 #define RMCFG_CLASS_NV04_DISPLAY_COMMON           1
 #define RMCFG_CLASS_NV50_DEFERRED_API_CLASS       1
 #define RMCFG_CLASS_MPS_COMPUTE                   1
@@ -493,6 +502,12 @@
 #define RMCFG_CLASS_NVCB7B_WINDOW_IMM_CHANNEL_DMA  1
 #define RMCFG_CLASS_NVCB7D_CORE_CHANNEL_DMA       1
 #define RMCFG_CLASS_NVCB7E_WINDOW_CHANNEL_DMA     1
+#define RMCFG_CLASS_NVCC70_DISPLAY                1
+#define RMCFG_CLASS_NVCC71_DISP_SF_USER           1
+#define RMCFG_CLASS_NVCC7A_CURSOR_IMM_CHANNEL_PIO  1
+#define RMCFG_CLASS_NVCC7B_WINDOW_IMM_CHANNEL_DMA  1
+#define RMCFG_CLASS_NVCC7D_CORE_CHANNEL_DMA       1
+#define RMCFG_CLASS_NVCC7E_WINDOW_CHANNEL_DMA     1
 #define RMCFG_CLASS_NV9010_VBLANK_CALLBACK        1
 #define RMCFG_CLASS_GF100_PROFILER                1  // Profiler Client Support
 #define RMCFG_CLASS_MAXWELL_PROFILER              1  // Base Profiler Class
@@ -524,7 +539,9 @@
 #define RMCFG_CLASS_NVC7B0_VIDEO_DECODER          1  // Decoder Class for Ampere
 #define RMCFG_CLASS_NVC9B0_VIDEO_DECODER          1  // Decoder Class for Ada
 #define RMCFG_CLASS_NVCDB0_VIDEO_DECODER          1  // Decoder Class for Blackwell
+#define RMCFG_CLASS_NVCEB0_VIDEO_DECODER          1  // Decoder Class for Blackwell iGPU
 #define RMCFG_CLASS_NVCFB0_VIDEO_DECODER          1  // Decoder Class for GB20X
+#define RMCFG_CLASS_NVD1B0_VIDEO_DECODER          1  // Decoder Class for GB20Y
 #define RMCFG_CLASS_NVC0B7_VIDEO_ENCODER          0
 #define RMCFG_CLASS_NVD0B7_VIDEO_ENCODER          0
 #define RMCFG_CLASS_NVC1B7_VIDEO_ENCODER          0
@@ -534,10 +551,13 @@
 #define RMCFG_CLASS_NVB4B7_VIDEO_ENCODER          1
 #define RMCFG_CLASS_NVC7B7_VIDEO_ENCODER          1
 #define RMCFG_CLASS_NVC9B7_VIDEO_ENCODER          1
+#define RMCFG_CLASS_NVCEB7_VIDEO_ENCODER          1
 #define RMCFG_CLASS_NVCFB7_VIDEO_ENCODER          1
+#define RMCFG_CLASS_NVD1B7_VIDEO_ENCODER          1
 #define RMCFG_CLASS_NVB8D1_VIDEO_NVJPG            1
 #define RMCFG_CLASS_NVC4D1_VIDEO_NVJPG            1
 #define RMCFG_CLASS_NVC9D1_VIDEO_NVJPG            1
+#define RMCFG_CLASS_NVCED0_VIDEO_NVJPG            1
 #define RMCFG_CLASS_NVCDD1_VIDEO_NVJPG            1
 #define RMCFG_CLASS_NVCFD1_VIDEO_NVJPG            1
 #define RMCFG_CLASS_NVB8FA_VIDEO_OFA              1
@@ -545,7 +565,9 @@
 #define RMCFG_CLASS_NVC7FA_VIDEO_OFA              1
 #define RMCFG_CLASS_NVC9FA_VIDEO_OFA              1
 #define RMCFG_CLASS_NVCDFA_VIDEO_OFA              1
+#define RMCFG_CLASS_NVCEFA_VIDEO_OFA              1
 #define RMCFG_CLASS_NVCFFA_VIDEO_OFA              1
+#define RMCFG_CLASS_NVD1FA_VIDEO_OFA              1
 #define RMCFG_CLASS_KEPLER_INLINE_TO_MEMORY_B     1  // Kepler inline to memory
 #define RMCFG_CLASS_FERMI_CONTEXT_SHARE_A         1  // Context Share class
 #define RMCFG_CLASS_KEPLER_CHANNEL_GROUP_A        1  // Channel Group Class
@@ -569,6 +591,7 @@
 #define RMCFG_CLASS_ACCESS_COUNTER_NOTIFY_BUFFER  1  // Access Cntr Buffer for Gr
 #define RMCFG_CLASS_MMU_FAULT_BUFFER              1  // Volta Fault Buffer for Gr
 #define RMCFG_CLASS_MMU_VIDMEM_ACCESS_BIT_BUFFER  1  // Ampere Vidmem Access Bit Buffer
+#define RMCFG_CLASS_HOPPER_MMU_VIDMEM_ACCESS_BIT_BUFFER  1  // Hopper Vidmem Access Bit Buffer
 #define RMCFG_CLASS_PASCAL_B                      0  // Pascal Graphics 2nd Gen
 #define RMCFG_CLASS_PASCAL_COMPUTE_B              0  // Pascal Graphics Compute 2nd Gen
 #define RMCFG_CLASS_VOLTA_A                       0  // Volta Graphics
@@ -680,6 +703,7 @@
 #define RMCFG_MODULE_SWENG                        1  // Software Engine for all SW classes
 #define RMCFG_MODULE_GPU                          1  // GPU Control Object
 #define RMCFG_MODULE_FSP_I2C                      1  // FSP i2c Serial Interface
+#define RMCFG_MODULE_KERNEL_HFRP                  1  // Kernel controls for HFRP
 #define RMCFG_MODULE_I2C                          0  // i2c Serial Interface
 #define RMCFG_MODULE_KERNEL_I2C                   1  // Kernel controls for I2C
 #define RMCFG_MODULE_SPI                          0  // SPI Interface
@@ -802,7 +826,7 @@
 #define RMCFG_MODULE_FABRIC                       1  // NVLink Fabric
 #define RMCFG_MODULE_GPUDB                        1  // GPU DATABASE
 #define RMCFG_MODULE_NNE                          0  // Neural Net Engine (NNE)
-#define RMCFG_MODULE_DCECLIENTRM                  0  // DCE Client RM
+#define RMCFG_MODULE_DCECLIENTRM                  1  // DCE Client RM
 #define RMCFG_MODULE_DCB                          0  // Display Control Block for all display related data in VBIOS/DCB Image
 #define RMCFG_MODULE_DISPMACRO                    0  // DispMacro RM infrastructure for IED removal from VBIOS
 #define RMCFG_MODULE_CONF_COMPUTE                 1  // Confidential Compute

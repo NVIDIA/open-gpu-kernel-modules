@@ -57,7 +57,8 @@ gpuBuildClassDB_IMPL(OBJGPU *pGpu)
     for (i = 0; i < pEngineOrder->numClassDescriptors; i++)
     {
         // RMCONFIG: throw out any that are not supported
-        if (pClassStatic[i].externalClassId == (NvU32)~0)
+        if (pClassStatic[i].externalClassId == (NvU32)~0 ||
+            pClassStatic[i].engDesc == ENG_INVALID)
             continue;
 
         numClasses++;
@@ -86,7 +87,8 @@ gpuBuildClassDB_IMPL(OBJGPU *pGpu)
     for (j = 0; j < pEngineOrder->numClassDescriptors; j++)
     {
         // RMCONFIG: skip over any that are not supported
-        if (pClassStatic[j].externalClassId == (NvU32)~0)
+        if (pClassStatic[j].externalClassId == (NvU32)~0 ||
+            pClassStatic[j].engDesc == ENG_INVALID)
             continue;
 
         // store info for class in class DB entry
@@ -380,7 +382,8 @@ _gpuAddClassToClassDBByEngTagClassId(OBJGPU *pGpu, ENGDESCRIPTOR *pEngDesc, NvU3
     for (i = 0; i < pEngineOrder->numClassDescriptors; i++)
     {
         // RMCONFIG: skip over any that are not supported
-        if (pClassDesc[i].externalClassId == (NvU32)~0)
+        if (pClassDesc[i].externalClassId == (NvU32)~0 ||
+            pClassDesc[i].engDesc == ENG_INVALID)
             continue;
 
         if (((NULL == pEngDesc) || (pClassDesc[i].engDesc == *pEngDesc)) &&

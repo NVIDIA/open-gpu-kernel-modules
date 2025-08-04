@@ -214,6 +214,18 @@ gpuConstructUserRegisterAccessMap_IMPL(OBJGPU *pGpu)
     const NvU8  *compressedData      = NULL;
     const NvU32 *profilingRangesArr  = NULL;
 
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
+    {
+        //
+        // This function constructs the User Register Access Map for entire
+        // GPU BAR 0 space, SOC Display register range is different and
+        // UDISP space needs to be accessed by Usermode MODS and Kernel mode nvkms clients.
+        // TODO vijkumar construction of user access map for Display needs to be revisited.
+        // for now skip this function for SOC NVDISPLAY.
+        //
+        return NV_OK;
+    }
+
     if (IS_VIRTUAL(pGpu))
     {
         // Usermode access maps unused in Guest RM. Initialize this boolean and leave.

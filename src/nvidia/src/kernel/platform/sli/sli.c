@@ -195,7 +195,8 @@ static NvU32 RmRunSLISupportCheck
     OBJSYS    *pSys                 = SYS_GET_INSTANCE();
 
 
-    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
+    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu) ||
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
     {
         gpuSliStatus |= NV0000_CTRL_SLI_STATUS_GPU_NOT_SUPPORTED;
 

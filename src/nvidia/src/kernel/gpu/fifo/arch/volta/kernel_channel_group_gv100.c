@@ -92,7 +92,6 @@ kchangrpAllocFaultMethodBuffers_GV100
     {
         // Get the right aperture/attribute
         faultBufApert = ADDR_SYSMEM;
-
         faultBufAttr  = NV_MEMORY_CACHED;
         memdescOverrideInstLoc(DRF_VAL(_REG_STR_RM, _INST_LOC_3, _FAULT_METHOD_BUFFER, pGpu->instLocOverrides3),
                                "fault method buffer", &faultBufApert, &faultBufAttr);

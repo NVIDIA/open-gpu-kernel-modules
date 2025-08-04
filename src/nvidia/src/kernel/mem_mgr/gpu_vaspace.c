@@ -1060,6 +1060,8 @@ _gvaspaceGpuStateConstruct
     // Must be in UC.
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
 
+    NV_CHECK_OR_RETURN(LEVEL_INFO, pKernelGmmu != NULL, NV_ERR_NOT_SUPPORTED);
+
     if (RMCFG_FEATURE_PMA &&
        (flags & VASPACE_FLAGS_PTETABLE_PMA_MANAGED))
     {
@@ -1378,7 +1380,7 @@ _gvaspaceAllocateFlaDummyPagesForFlaRange
                             pGpuState->flaDummyPage.pte.v8);
 
     addr = kgmmuEncodePhysAddr(pKernelGmmu, pgAperture,
-                       memdescGetPhysAddr(pMemory->pMemDesc, AT_GPU, 0),
+                       memdescGetPtePhysAddr(pMemory->pMemDesc, AT_GPU, 0),
                        NVLINK_INVALID_FABRIC_ADDR);
 
     gmmuFieldSetAddress(gmmuFmtPtePhysAddrFld(&pFam->pte, pgAperture), addr, pGpuState->flaDummyPage.pte.v8);
@@ -1896,6 +1898,7 @@ gvaspaceApplyDefaultAlignment_IMPL
                 pageSizeMask |= RM_PAGE_SIZE_512M;
                 maxPageSize   = RM_PAGE_SIZE_512M;
                 break;
+
             case RM_ATTR_PAGE_SIZE_256GB:
                 NV_ASSERT_OR_RETURN(kgmmuIsPageSize256gbSupported(pKernelGmmu),
                                   NV_ERR_NOT_SUPPORTED);
@@ -2496,7 +2499,11 @@ gvaspaceGetPageTableInfo_IMPL
         // Page size supported by this page table
         pPteBlock->pageSize       = pageSize;
 
+        //
         // Phys addr of the Page Table
+        // The phys addr of the page table itself, not the address written into the page tables
+        // Not localized
+        //
         pPteBlock->ptePhysAddr    = memdescGetPhysAddr(pMemDesc, VAS_ADDRESS_TRANSLATION(pVAS), 0);
 
         // Number of bytes occupied by one PTE
@@ -3540,7 +3547,7 @@ _gmmuWalkCBMapSingleEntry
 
     NV_PRINTF(LEVEL_INFO, "[GPU%u]: PA 0x%llX, Entries 0x%X-0x%X\n",
               pUserCtx->pGpu->gpuInstance,
-              memdescGetPhysAddr(pMemDesc, AT_GPU, 0), entryIndexLo,
+              memdescGetPtePhysAddr(pMemDesc, AT_GPU, 0), entryIndexLo,
               entryIndexHi);
 
     NV_ASSERT_OR_RETURN_VOID(entryIndexLo == entryIndexHi);

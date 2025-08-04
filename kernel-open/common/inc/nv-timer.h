@@ -42,25 +42,12 @@ static inline void nv_timer_callback_typed_data(struct timer_list *timer)
     nv_timer->nv_timer_callback(nv_timer);
 }
 
-static inline void nv_timer_callback_anon_data(unsigned long arg)
-{
-    struct nv_timer *nv_timer = (struct nv_timer *)arg;
-
-    nv_timer->nv_timer_callback(nv_timer);
-}
-
 static inline void nv_timer_setup(struct nv_timer *nv_timer,
                                   void (*callback)(struct nv_timer *nv_timer))
 {
     nv_timer->nv_timer_callback = callback;
 
-#if defined(NV_TIMER_SETUP_PRESENT)
     timer_setup(&nv_timer->kernel_timer, nv_timer_callback_typed_data, 0);
-#else
-    init_timer(&nv_timer->kernel_timer);
-    nv_timer->kernel_timer.function = nv_timer_callback_anon_data;
-    nv_timer->kernel_timer.data = (unsigned long)nv_timer;
-#endif
 }
 
 static inline void nv_timer_delete_sync(struct timer_list *timer)

@@ -80,6 +80,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__GpuDb =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_gpudbDestruct(GpuDb*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_GpuDb(GpuDb *pThis) {
     __nvoc_gpudbDestruct(pThis);

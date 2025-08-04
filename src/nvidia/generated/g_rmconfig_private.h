@@ -8,7 +8,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig_private.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, T234D, T26XD
 //
 
 #ifndef _G_RMCFG_PRIVATE_H_
@@ -20,184 +20,184 @@
 
 // GF10X
 #define IsGF100(pGpu)                  ((0) && (pGpu))
-#define IsGF100orBetter(pGpu)          ((1) && (pGpu))
+#define IsGF100orBetter(pGpu)          rmcfg_IsGF100orBetter(pGpu)
 
 #define IsGF100B(pGpu)                 ((0) && (pGpu))
-#define IsGF100BorBetter(pGpu)         ((1) && (pGpu))
+#define IsGF100BorBetter(pGpu)         rmcfg_IsGF100BorBetter(pGpu)
 
 #define IsGF104(pGpu)                  ((0) && (pGpu))
-#define IsGF104orBetter(pGpu)          ((1) && (pGpu))
+#define IsGF104orBetter(pGpu)          rmcfg_IsGF104orBetter(pGpu)
 
 #define IsGF104B(pGpu)                 ((0) && (pGpu))
-#define IsGF104BorBetter(pGpu)         ((1) && (pGpu))
+#define IsGF104BorBetter(pGpu)         rmcfg_IsGF104BorBetter(pGpu)
 
 #define IsGF106(pGpu)                  ((0) && (pGpu))
-#define IsGF106orBetter(pGpu)          ((1) && (pGpu))
+#define IsGF106orBetter(pGpu)          rmcfg_IsGF106orBetter(pGpu)
 
 #define IsGF106B(pGpu)                 ((0) && (pGpu))
-#define IsGF106BorBetter(pGpu)         ((1) && (pGpu))
+#define IsGF106BorBetter(pGpu)         rmcfg_IsGF106BorBetter(pGpu)
 
 #define IsGF108(pGpu)                  ((0) && (pGpu))
-#define IsGF108orBetter(pGpu)          ((1) && (pGpu))
+#define IsGF108orBetter(pGpu)          rmcfg_IsGF108orBetter(pGpu)
 
 // Any GF10X chip?
 #define IsGF10X(pGpu)                  (0 && (pGpu))
-#define IsGF10XorBetter(pGpu)          (1 || (pGpu))
+#define IsGF10XorBetter(pGpu)          rmcfg_IsGF10XorBetter(pGpu)
 
 
 // GF11X
 #define IsGF110D(pGpu)                 ((0) && (pGpu))
-#define IsGF110DorBetter(pGpu)         ((1) && (pGpu))
+#define IsGF110DorBetter(pGpu)         rmcfg_IsGF110DorBetter(pGpu)
 
 #define IsGF110(pGpu)                  ((0) && (pGpu))
-#define IsGF110orBetter(pGpu)          ((1) && (pGpu))
+#define IsGF110orBetter(pGpu)          rmcfg_IsGF110orBetter(pGpu)
 
 #define IsGF117(pGpu)                  ((0) && (pGpu))
-#define IsGF117orBetter(pGpu)          ((1) && (pGpu))
+#define IsGF117orBetter(pGpu)          rmcfg_IsGF117orBetter(pGpu)
 
 #define IsGF118(pGpu)                  ((0) && (pGpu))
-#define IsGF118orBetter(pGpu)          ((1) && (pGpu))
+#define IsGF118orBetter(pGpu)          rmcfg_IsGF118orBetter(pGpu)
 
 #define IsGF119(pGpu)                  ((0) && (pGpu))
-#define IsGF119orBetter(pGpu)          ((1) && (pGpu))
+#define IsGF119orBetter(pGpu)          rmcfg_IsGF119orBetter(pGpu)
 
 // Any GF11X chip?
 #define IsGF11X(pGpu)                  (0 && (pGpu))
-#define IsGF11XorBetter(pGpu)          (1 || (pGpu))
+#define IsGF11XorBetter(pGpu)          rmcfg_IsGF11XorBetter(pGpu)
 
 
 // GF10XF
 #define IsGF110F(pGpu)                 ((0) && (pGpu))
-#define IsGF110ForBetter(pGpu)         ((1) && (pGpu))
+#define IsGF110ForBetter(pGpu)         rmcfg_IsGF110ForBetter(pGpu)
 
 #define IsGF110F2(pGpu)                ((0) && (pGpu))
-#define IsGF110F2orBetter(pGpu)        ((1) && (pGpu))
+#define IsGF110F2orBetter(pGpu)        rmcfg_IsGF110F2orBetter(pGpu)
 
 #define IsGF110F3(pGpu)                ((0) && (pGpu))
-#define IsGF110F3orBetter(pGpu)        ((1) && (pGpu))
+#define IsGF110F3orBetter(pGpu)        rmcfg_IsGF110F3orBetter(pGpu)
 
 // Any GF10XF chip?
 #define IsGF10XF(pGpu)                 (0 && (pGpu))
-#define IsGF10XForBetter(pGpu)         (1 || (pGpu))
+#define IsGF10XForBetter(pGpu)         rmcfg_IsGF10XForBetter(pGpu)
 
 
 // GK10X
 #define IsGK104(pGpu)                  ((0) && (pGpu))
-#define IsGK104orBetter(pGpu)          ((1) && (pGpu))
+#define IsGK104orBetter(pGpu)          rmcfg_IsGK104orBetter(pGpu)
 
 #define IsGK106(pGpu)                  ((0) && (pGpu))
-#define IsGK106orBetter(pGpu)          ((1) && (pGpu))
+#define IsGK106orBetter(pGpu)          rmcfg_IsGK106orBetter(pGpu)
 
 #define IsGK107(pGpu)                  ((0) && (pGpu))
-#define IsGK107orBetter(pGpu)          ((1) && (pGpu))
+#define IsGK107orBetter(pGpu)          rmcfg_IsGK107orBetter(pGpu)
 
 #define IsGK20A(pGpu)                  ((0) && (pGpu))
-#define IsGK20AorBetter(pGpu)          ((1) && (pGpu))
+#define IsGK20AorBetter(pGpu)          rmcfg_IsGK20AorBetter(pGpu)
 
 // Any GK10X chip?
 #define IsGK10X(pGpu)                  (0 && (pGpu))
-#define IsGK10XorBetter(pGpu)          (1 || (pGpu))
+#define IsGK10XorBetter(pGpu)          rmcfg_IsGK10XorBetter(pGpu)
 
 
 // GK11X
 #define IsGK110(pGpu)                  ((0) && (pGpu))
-#define IsGK110orBetter(pGpu)          ((1) && (pGpu))
+#define IsGK110orBetter(pGpu)          rmcfg_IsGK110orBetter(pGpu)
 
 #define IsGK110B(pGpu)                 ((0) && (pGpu))
-#define IsGK110BorBetter(pGpu)         ((1) && (pGpu))
+#define IsGK110BorBetter(pGpu)         rmcfg_IsGK110BorBetter(pGpu)
 
 #define IsGK110C(pGpu)                 ((0) && (pGpu))
-#define IsGK110CorBetter(pGpu)         ((1) && (pGpu))
+#define IsGK110CorBetter(pGpu)         rmcfg_IsGK110CorBetter(pGpu)
 
 // Any GK11X chip?
 #define IsGK11X(pGpu)                  (0 && (pGpu))
-#define IsGK11XorBetter(pGpu)          (1 || (pGpu))
+#define IsGK11XorBetter(pGpu)          rmcfg_IsGK11XorBetter(pGpu)
 
 
 // GK20X
 #define IsGK208(pGpu)                  ((0) && (pGpu))
-#define IsGK208orBetter(pGpu)          ((1) && (pGpu))
+#define IsGK208orBetter(pGpu)          rmcfg_IsGK208orBetter(pGpu)
 
 #define IsGK208S(pGpu)                 ((0) && (pGpu))
-#define IsGK208SorBetter(pGpu)         ((1) && (pGpu))
+#define IsGK208SorBetter(pGpu)         rmcfg_IsGK208SorBetter(pGpu)
 
 // Any GK20X chip?
 #define IsGK20X(pGpu)                  (0 && (pGpu))
-#define IsGK20XorBetter(pGpu)          (1 || (pGpu))
+#define IsGK20XorBetter(pGpu)          rmcfg_IsGK20XorBetter(pGpu)
 
 
 // GM10X
 #define IsGM107(pGpu)                  ((0) && (pGpu))
-#define IsGM107orBetter(pGpu)          ((1) && (pGpu))
+#define IsGM107orBetter(pGpu)          rmcfg_IsGM107orBetter(pGpu)
 
 #define IsGM108(pGpu)                  ((0) && (pGpu))
-#define IsGM108orBetter(pGpu)          ((1) && (pGpu))
+#define IsGM108orBetter(pGpu)          rmcfg_IsGM108orBetter(pGpu)
 
 // Any GM10X chip?
 #define IsGM10X(pGpu)                  (0 && (pGpu))
-#define IsGM10XorBetter(pGpu)          (1 || (pGpu))
+#define IsGM10XorBetter(pGpu)          rmcfg_IsGM10XorBetter(pGpu)
 
 
 // GM20X
 #define IsGM200(pGpu)                  ((0) && (pGpu))
-#define IsGM200orBetter(pGpu)          ((1) && (pGpu))
+#define IsGM200orBetter(pGpu)          rmcfg_IsGM200orBetter(pGpu)
 
 #define IsGM204(pGpu)                  ((0) && (pGpu))
-#define IsGM204orBetter(pGpu)          ((1) && (pGpu))
+#define IsGM204orBetter(pGpu)          rmcfg_IsGM204orBetter(pGpu)
 
 #define IsGM206(pGpu)                  ((0) && (pGpu))
-#define IsGM206orBetter(pGpu)          ((1) && (pGpu))
+#define IsGM206orBetter(pGpu)          rmcfg_IsGM206orBetter(pGpu)
 
 // Any GM20X chip?
 #define IsGM20X(pGpu)                  (0 && (pGpu))
-#define IsGM20XorBetter(pGpu)          (1 || (pGpu))
+#define IsGM20XorBetter(pGpu)          rmcfg_IsGM20XorBetter(pGpu)
 
 
 // GP10X
 #define IsGP100(pGpu)                  ((0) && (pGpu))
-#define IsGP100orBetter(pGpu)          ((1) && (pGpu))
+#define IsGP100orBetter(pGpu)          rmcfg_IsGP100orBetter(pGpu)
 
 #define IsGP102(pGpu)                  ((0) && (pGpu))
-#define IsGP102orBetter(pGpu)          ((1) && (pGpu))
+#define IsGP102orBetter(pGpu)          rmcfg_IsGP102orBetter(pGpu)
 
 #define IsGP104(pGpu)                  ((0) && (pGpu))
-#define IsGP104orBetter(pGpu)          ((1) && (pGpu))
+#define IsGP104orBetter(pGpu)          rmcfg_IsGP104orBetter(pGpu)
 
 #define IsGP106(pGpu)                  ((0) && (pGpu))
-#define IsGP106orBetter(pGpu)          ((1) && (pGpu))
+#define IsGP106orBetter(pGpu)          rmcfg_IsGP106orBetter(pGpu)
 
 #define IsGP107(pGpu)                  ((0) && (pGpu))
-#define IsGP107orBetter(pGpu)          ((1) && (pGpu))
+#define IsGP107orBetter(pGpu)          rmcfg_IsGP107orBetter(pGpu)
 
 #define IsGP108(pGpu)                  ((0) && (pGpu))
-#define IsGP108orBetter(pGpu)          ((1) && (pGpu))
+#define IsGP108orBetter(pGpu)          rmcfg_IsGP108orBetter(pGpu)
 
 // Any GP10X chip?
 #define IsGP10X(pGpu)                  (0 && (pGpu))
-#define IsGP10XorBetter(pGpu)          (1 || (pGpu))
+#define IsGP10XorBetter(pGpu)          rmcfg_IsGP10XorBetter(pGpu)
 
 
 // GV10X
 #define IsGV100(pGpu)                  ((0) && (pGpu))
-#define IsGV100orBetter(pGpu)          ((1) && (pGpu))
+#define IsGV100orBetter(pGpu)          rmcfg_IsGV100orBetter(pGpu)
 
 // Any GV10X chip?
 #define IsGV10X(pGpu)                  (0 && (pGpu))
-#define IsGV10XorBetter(pGpu)          (1 || (pGpu))
+#define IsGV10XorBetter(pGpu)          rmcfg_IsGV10XorBetter(pGpu)
 
 
 // GV11X
 #define IsGV11B(pGpu)                  ((0) && (pGpu))
-#define IsGV11BorBetter(pGpu)          ((1) && (pGpu))
+#define IsGV11BorBetter(pGpu)          rmcfg_IsGV11BorBetter(pGpu)
 
 // Any GV11X chip?
 #define IsGV11X(pGpu)                  (0 && (pGpu))
-#define IsGV11XorBetter(pGpu)          (1 || (pGpu))
+#define IsGV11XorBetter(pGpu)          rmcfg_IsGV11XorBetter(pGpu)
 
 
 // TU10X
 #define IsTU102(pGpu)                  rmcfg_IsTU102(pGpu)
-#define IsTU102orBetter(pGpu)          ((1) && (pGpu))
+#define IsTU102orBetter(pGpu)          rmcfg_IsTU102orBetter(pGpu)
 
 #define IsTU104(pGpu)                  rmcfg_IsTU104(pGpu)
 #define IsTU104orBetter(pGpu)          rmcfg_IsTU104orBetter(pGpu)
@@ -213,7 +213,7 @@
 
 // Any TU10X chip?
 #define IsTU10X(pGpu)                  rmcfg_IsTU10X(pGpu)
-#define IsTU10XorBetter(pGpu)          (1 || (pGpu))
+#define IsTU10XorBetter(pGpu)          rmcfg_IsTU10XorBetter(pGpu)
 
 
 // GA10X
@@ -322,6 +322,9 @@
 #define IsGB20B(pGpu)                  rmcfg_IsGB20B(pGpu)
 #define IsGB20BorBetter(pGpu)          rmcfg_IsGB20BorBetter(pGpu)
 
+#define IsGB20C(pGpu)                  rmcfg_IsGB20C(pGpu)
+#define IsGB20CorBetter(pGpu)          rmcfg_IsGB20CorBetter(pGpu)
+
 // Any GB20X chip?
 #define IsGB20X(pGpu)                  rmcfg_IsGB20X(pGpu)
 #define IsGB20XorBetter(pGpu)          rmcfg_IsGB20XorBetter(pGpu)
@@ -394,12 +397,21 @@
 
 
 // T23XD
-#define IsT234D(pGpu)                  ((0) && (pGpu))
-#define IsT234DorBetter(pGpu)          ((0) && (pGpu))
+#define IsT234D(pGpu)                  rmcfg_IsT234D(pGpu)
+#define IsT234DorBetter(pGpu)          rmcfg_IsT234DorBetter(pGpu)
 
 // Any T23XD chip?
-#define IsT23XD(pGpu)                  (0 && (pGpu))
-#define IsT23XDorBetter(pGpu)          (0 && (pGpu))
+#define IsT23XD(pGpu)                  rmcfg_IsT23XD(pGpu)
+#define IsT23XDorBetter(pGpu)          rmcfg_IsT23XDorBetter(pGpu)
+
+
+// T26XD
+#define IsT264D(pGpu)                  rmcfg_IsT264D(pGpu)
+#define IsT264DorBetter(pGpu)          rmcfg_IsT264DorBetter(pGpu)
+
+// Any T26XD chip?
+#define IsT26XD(pGpu)                  rmcfg_IsT26XD(pGpu)
+#define IsT26XDorBetter(pGpu)          rmcfg_IsT26XDorBetter(pGpu)
 
 
 // SIMS
@@ -412,13 +424,13 @@
 
 
 // Any CLASSIC_GPUS chip?
-#define IsCLASSIC_GPUS(pGpu)           (1 || (pGpu))
-#define IsCLASSIC_GPUSorBetter(pGpu)   (1 || (pGpu))
+#define IsCLASSIC_GPUS(pGpu)           rmcfg_IsCLASSIC_GPUS(pGpu)
+#define IsCLASSIC_GPUSorBetter(pGpu)   rmcfg_IsCLASSIC_GPUSorBetter(pGpu)
 
 
 // Any dFERMI chip?
 #define IsdFERMI(pGpu)                 (0 && (pGpu))
-#define IsdFERMIorBetter(pGpu)         (1 || (pGpu))
+#define IsdFERMIorBetter(pGpu)         rmcfg_IsdFERMIorBetter(pGpu)
 
 
 // Any FERMI chip?
@@ -428,7 +440,7 @@
 
 // Any FERMI_CLASSIC_GPUS chip?
 #define IsFERMI_CLASSIC_GPUS(pGpu)     (0 && (pGpu))
-#define IsFERMI_CLASSIC_GPUSorBetter(pGpu) (1 || (pGpu))
+#define IsFERMI_CLASSIC_GPUSorBetter(pGpu) rmcfg_IsFERMI_CLASSIC_GPUSorBetter(pGpu)
 
 
 // Any DISPLAYLESS chip?
@@ -442,7 +454,7 @@
 
 // Any dKEPLER chip?
 #define IsdKEPLER(pGpu)                (0 && (pGpu))
-#define IsdKEPLERorBetter(pGpu)        (1 || (pGpu))
+#define IsdKEPLERorBetter(pGpu)        rmcfg_IsdKEPLERorBetter(pGpu)
 
 
 // Any KEPLER chip?
@@ -452,12 +464,12 @@
 
 // Any KEPLER_CLASSIC_GPUS chip?
 #define IsKEPLER_CLASSIC_GPUS(pGpu)    (0 && (pGpu))
-#define IsKEPLER_CLASSIC_GPUSorBetter(pGpu) (1 || (pGpu))
+#define IsKEPLER_CLASSIC_GPUSorBetter(pGpu) rmcfg_IsKEPLER_CLASSIC_GPUSorBetter(pGpu)
 
 
 // Any dMAXWELL chip?
 #define IsdMAXWELL(pGpu)               (0 && (pGpu))
-#define IsdMAXWELLorBetter(pGpu)       (1 || (pGpu))
+#define IsdMAXWELLorBetter(pGpu)       rmcfg_IsdMAXWELLorBetter(pGpu)
 
 
 // Any MAXWELL chip?
@@ -467,12 +479,12 @@
 
 // Any MAXWELL_CLASSIC_GPUS chip?
 #define IsMAXWELL_CLASSIC_GPUS(pGpu)   (0 && (pGpu))
-#define IsMAXWELL_CLASSIC_GPUSorBetter(pGpu) (1 || (pGpu))
+#define IsMAXWELL_CLASSIC_GPUSorBetter(pGpu) rmcfg_IsMAXWELL_CLASSIC_GPUSorBetter(pGpu)
 
 
 // Any dPASCAL chip?
 #define IsdPASCAL(pGpu)                (0 && (pGpu))
-#define IsdPASCALorBetter(pGpu)        (1 || (pGpu))
+#define IsdPASCALorBetter(pGpu)        rmcfg_IsdPASCALorBetter(pGpu)
 
 
 // Any COMPUTE chip?
@@ -486,12 +498,12 @@
 
 // Any PASCAL_CLASSIC_GPUS chip?
 #define IsPASCAL_CLASSIC_GPUS(pGpu)    (0 && (pGpu))
-#define IsPASCAL_CLASSIC_GPUSorBetter(pGpu) (1 || (pGpu))
+#define IsPASCAL_CLASSIC_GPUSorBetter(pGpu) rmcfg_IsPASCAL_CLASSIC_GPUSorBetter(pGpu)
 
 
 // Any dVOLTA chip?
 #define IsdVOLTA(pGpu)                 (0 && (pGpu))
-#define IsdVOLTAorBetter(pGpu)         (1 || (pGpu))
+#define IsdVOLTAorBetter(pGpu)         rmcfg_IsdVOLTAorBetter(pGpu)
 
 
 // Any VOLTA chip?
@@ -501,12 +513,12 @@
 
 // Any VOLTA_CLASSIC_GPUS chip?
 #define IsVOLTA_CLASSIC_GPUS(pGpu)     (0 && (pGpu))
-#define IsVOLTA_CLASSIC_GPUSorBetter(pGpu) (1 || (pGpu))
+#define IsVOLTA_CLASSIC_GPUSorBetter(pGpu) rmcfg_IsVOLTA_CLASSIC_GPUSorBetter(pGpu)
 
 
 // Any dTURING chip?
 #define IsdTURING(pGpu)                rmcfg_IsdTURING(pGpu)
-#define IsdTURINGorBetter(pGpu)        (1 || (pGpu))
+#define IsdTURINGorBetter(pGpu)        rmcfg_IsdTURINGorBetter(pGpu)
 
 
 // Any TURING chip?
@@ -516,7 +528,7 @@
 
 // Any TURING_CLASSIC_GPUS chip?
 #define IsTURING_CLASSIC_GPUS(pGpu)    rmcfg_IsTURING_CLASSIC_GPUS(pGpu)
-#define IsTURING_CLASSIC_GPUSorBetter(pGpu) (1 || (pGpu))
+#define IsTURING_CLASSIC_GPUSorBetter(pGpu) rmcfg_IsTURING_CLASSIC_GPUSorBetter(pGpu)
 
 
 // Any dAMPERE chip?
@@ -714,23 +726,28 @@
 
 
 // Any TEGRA_NVDISP_GPUS chip?
-#define IsTEGRA_NVDISP_GPUS(pGpu)      (0 && (pGpu))
-#define IsTEGRA_NVDISP_GPUSorBetter(pGpu) (0 && (pGpu))
+#define IsTEGRA_NVDISP_GPUS(pGpu)      rmcfg_IsTEGRA_NVDISP_GPUS(pGpu)
+#define IsTEGRA_NVDISP_GPUSorBetter(pGpu) rmcfg_IsTEGRA_NVDISP_GPUSorBetter(pGpu)
 
 
 // Any T23X_TEGRA_NVDISP_GPUS chip?
-#define IsT23X_TEGRA_NVDISP_GPUS(pGpu) (0 && (pGpu))
-#define IsT23X_TEGRA_NVDISP_GPUSorBetter(pGpu) (0 && (pGpu))
+#define IsT23X_TEGRA_NVDISP_GPUS(pGpu) rmcfg_IsT23X_TEGRA_NVDISP_GPUS(pGpu)
+#define IsT23X_TEGRA_NVDISP_GPUSorBetter(pGpu) rmcfg_IsT23X_TEGRA_NVDISP_GPUSorBetter(pGpu)
 
 
 // Any TEGRA_TEGRA_NVDISP_GPUS chip?
-#define IsTEGRA_TEGRA_NVDISP_GPUS(pGpu) (0 && (pGpu))
-#define IsTEGRA_TEGRA_NVDISP_GPUSorBetter(pGpu) (0 && (pGpu))
+#define IsTEGRA_TEGRA_NVDISP_GPUS(pGpu) rmcfg_IsTEGRA_TEGRA_NVDISP_GPUS(pGpu)
+#define IsTEGRA_TEGRA_NVDISP_GPUSorBetter(pGpu) rmcfg_IsTEGRA_TEGRA_NVDISP_GPUSorBetter(pGpu)
 
 
 // Any TEGRA_DISP_TEGRA_NVDISP_GPUS chip?
-#define IsTEGRA_DISP_TEGRA_NVDISP_GPUS(pGpu) (0 && (pGpu))
-#define IsTEGRA_DISP_TEGRA_NVDISP_GPUSorBetter(pGpu) (0 && (pGpu))
+#define IsTEGRA_DISP_TEGRA_NVDISP_GPUS(pGpu) rmcfg_IsTEGRA_DISP_TEGRA_NVDISP_GPUS(pGpu)
+#define IsTEGRA_DISP_TEGRA_NVDISP_GPUSorBetter(pGpu) rmcfg_IsTEGRA_DISP_TEGRA_NVDISP_GPUSorBetter(pGpu)
+
+
+// Any T26X chip?
+#define IsT26X(pGpu)                   rmcfg_IsT26X(pGpu)
+#define IsT26XorBetter(pGpu)           rmcfg_IsT26XorBetter(pGpu)
 
 
 // Any SIMULATION_GPUS chip?

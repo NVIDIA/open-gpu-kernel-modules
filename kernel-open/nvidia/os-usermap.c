@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2011 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,7 +39,7 @@ NV_STATUS NV_API_CALL os_match_mmap_offset(
     {
         if (at->flags.contig)
         {
-            if (offset == (at->page_table[0]->phys_addr + (i * PAGE_SIZE)))
+            if (offset == (at->page_table[0].phys_addr + (i * PAGE_SIZE)))
             {
                 *pPageIndex = i;
                 return NV_OK;
@@ -47,7 +47,7 @@ NV_STATUS NV_API_CALL os_match_mmap_offset(
         }
         else
         {
-            if (offset == at->page_table[i]->phys_addr)
+            if (offset == at->page_table[i].phys_addr)
             {
                 *pPageIndex = i;
                 return NV_OK;

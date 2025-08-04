@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -67,13 +67,7 @@ extern "C" {
 // Direct dmesg printing through NV_PRINTF_STRING is a no-op on GSP-RM
 #define NV_PRINTF_STRING(module, level, format, ...)
 
-#if defined(GSP_PLUGIN_BUILD)
-void log_vgpu_log_entry(const NvU64 n_args, const NvU64 * args);
-#define LIBOS_LOG_ENTRY log_vgpu_log_entry
-#else
-void log_rm_log_entry(const NvU64 n_args, const NvU64 * args);
-#define LIBOS_LOG_ENTRY log_rm_log_entry
-#endif
+#define LIBOS_LOG_ENTRY LibosLogEntry
 
 #define NV_PRINTF(level, format, ...) do {                                     \
     if (NV_PRINTF_LEVEL_ENABLED(level))                                        \

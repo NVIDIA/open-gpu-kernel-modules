@@ -134,19 +134,21 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_VidmemAccessBitBuffer =
     /*pExportInfo=*/        &__nvoc_export_info__VidmemAccessBitBuffer
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_VidmemAccessBitBuffer[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10048u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) vidmemAccessBitBufCtrlCmdVidmemAccessBitDump_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-        /*flags=*/      0x48u,
+        /*pFunc=*/      (void (*)(void)) &vidmemAccessBitBufCtrlCmdVidmemAccessBitDump_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10048u)
+        /*flags=*/      0x10048u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xc7630103u,
         /*paramSize=*/  sizeof(NVC763_CTRL_VIDMEM_ACCESS_BIT_BUFFER_DUMP_PARAMS),
@@ -155,7 +157,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_VidmemAc
         /*func=*/       "vidmemAccessBitBufCtrlCmdVidmemAccessBitDump"
 #endif
     },
-
 };
 
 
@@ -467,6 +468,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__VidmemAccessBitBuffer =
     /*pExportEntries=*/ __nvoc_exported_method_def_VidmemAccessBitBuffer
 };
 
+void __nvoc_vidmemAccessBitBufDestruct(VidmemAccessBitBuffer*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_Notifier(Notifier*);
 void __nvoc_dtor_VidmemAccessBitBuffer(VidmemAccessBitBuffer *pThis) {
@@ -517,18 +519,11 @@ static void __nvoc_init_funcTable_VidmemAccessBitBuffer_1(VidmemAccessBitBuffer 
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
-
-    // vidmemAccessBitBufCtrlCmdVidmemAccessBitDump -- exported (id=0xc7630103)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__vidmemAccessBitBufCtrlCmdVidmemAccessBitDump__ = &vidmemAccessBitBufCtrlCmdVidmemAccessBitDump_IMPL;
-#endif
-} // End __nvoc_init_funcTable_VidmemAccessBitBuffer_1 with approximately 1 basic block(s).
+} // End __nvoc_init_funcTable_VidmemAccessBitBuffer_1
 
 
-// Initialize vtable(s) for 31 virtual method(s).
+// Initialize vtable(s) for 30 virtual method(s).
 void __nvoc_init_funcTable_VidmemAccessBitBuffer(VidmemAccessBitBuffer *pThis, RmHalspecOwner *pRmhalspecowner) {
-
-    // Initialize vtable(s) with 1 per-object function pointer(s).
     __nvoc_init_funcTable_VidmemAccessBitBuffer_1(pThis, pRmhalspecowner);
 }
 

@@ -126,3 +126,68 @@ dispobjCtrlCmdGetRgConnectedLockpinStateless_IMPL
     return getRgConnectedLockpin(pGpu, pKernelDisplay, pParams->head, pPeerGpu, pParams->peer.head,
         &pParams->masterScanLock, &pParams->slaveScanLock);
 }
+
+NV_STATUS
+nvdispapiCtrlCmdChannelCancelFlip_IMPL
+(
+    NvDispApi *pNvDispApi,
+    NVC370_CTRL_CHANNEL_CANCEL_FLIP_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = DISPAPI_GET_GPU(pNvDispApi);
+    KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    NvHandle hClient = RES_GET_CLIENT_HANDLE(pNvDispApi);
+    DISPCHNCLASS internalChnClass = dispChnClass_Supported;
+    NvU32 dispChannelNum = 0;
+    NV_STATUS status = NV_OK;
+
+    NV_ASSERT_OR_RETURN(pParams != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    status = kdispGetIntChnClsForHwCls(pKernelDisplay, pParams->channelClass, &internalChnClass);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    if (kdispGetChannelNum_HAL(pKernelDisplay, internalChnClass, pParams->channelInstance, &dispChannelNum) != NV_OK)
+    {
+        return NV_ERR_INVALID_CHANNEL;
+    }
+
+    if (pKernelDisplay->pClientChannelTable[dispChannelNum].bInUse != NV_TRUE)
+    {
+        NV_PRINTF(LEVEL_WARNING, "disp Channel not allocated by RM yet!\n");
+        return NV_ERR_INVALID_CHANNEL;
+    }
+    else
+    {
+        // Does HW also think the same
+        if (!kdispIsChannelAllocatedHw_HAL(pGpu, pKernelDisplay, internalChnClass, pParams->channelInstance))
+        {
+            NV_PRINTF(LEVEL_WARNING, "disp Channel not allocated by HW yet!\n");
+            return NV_ERR_INVALID_CHANNEL;
+        }
+    }
+
+    if (internalChnClass == dispChnClass_Core)
+    {
+        // Ensure that only core channel owner can touch it.
+        if (pKernelDisplay->pClientChannelTable[dispChannelNum].pClient->hClient != hClient)
+        {
+            NV_ASSERT(0);
+            return NV_ERR_INVALID_OWNER;
+        }
+    }
+
+    kdispSetChannelTrashAndAbortAccel_HAL(pGpu, pKernelDisplay, internalChnClass, pParams->channelInstance, NV_TRUE);
+
+    if (!kdispIsChannelIdle_HAL(pGpu, pKernelDisplay, internalChnClass, pParams->channelInstance))
+    {
+        NV_PRINTF(LEVEL_WARNING, "disp channel not in idle state! %u %u\n", internalChnClass, pParams->channelInstance);
+        NV_ASSERT(0);
+    }
+
+    kdispSetChannelTrashAndAbortAccel_HAL(pGpu, pKernelDisplay, internalChnClass, pParams->channelInstance, NV_FALSE);
+   
+    return status;
+}

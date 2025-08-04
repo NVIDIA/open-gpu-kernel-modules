@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -454,6 +454,9 @@ typedef struct NV208F_CTRL_FB_ECC_INJECTION_SUPPORTED_PARAMS {
  *
  *   address
  *      The physical DRAM address to be targeted by the write kill
+ *
+ *   bProdInjection
+ *      Whether the write kill is set through the production injection flow or not
  */
 #define NV208F_CTRL_CMD_FB_ECC_SET_WRITE_KILL            (0x208f0511) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_FB_INTERFACE_ID << 8) | NV208F_CTRL_FB_ECC_SET_WRITE_KILL_PARAMS_MESSAGE_ID" */
 
@@ -461,6 +464,7 @@ typedef struct NV208F_CTRL_FB_ECC_INJECTION_SUPPORTED_PARAMS {
 
 typedef struct NV208F_CTRL_FB_ECC_SET_WRITE_KILL_PARAMS {
     NvBool setWriteKill;
+    NvBool bProdInjection;
     NV_DECLARE_ALIGNED(NvU64 address, 8);
 } NV208F_CTRL_FB_ECC_SET_WRITE_KILL_PARAMS;
 
@@ -698,30 +702,30 @@ typedef struct NV208F_CTRL_FB_GET_FBPA_PAC_MASKS_PARAMS {
 } NV208F_CTRL_FB_GET_FBPA_PAC_MASKS_PARAMS;
 
 /*
- * NV208F_CTRL_CMD_FB_CONVERT_CHANNEL
+ * NV208F_CTRL_CMD_FB_CONVERT_SUBLOCATION
  *
- * This API converts either a channel from physical to logical or vice-versa
+ * This API converts either the given sublocation from physical to logical or vice-versa
  *
  *   conversionType:
- *      See NV208F_CTRL_FB_CHANNEL_CONVERSION_TYPE
+ *      See NV208F_CTRL_FB_SUBLOCATION_CONVERSION_TYPE
  *   fbpa:
- *      The physical fbpa the channel resides
+ *      The physical fbpa the sublocation resides
  *   input:
- *      Input channel
+ *      Input sublocation
  *   output:
- *      Output channel
+ *      Output sublocation
  */
-#define NV208F_CTRL_CMD_FB_CONVERT_CHANNEL (0x208f0519) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_FB_INTERFACE_ID << 8) | NV208F_CTRL_FB_CONVERT_CHANNEL_PARAMS_MESSAGE_ID" */
+#define NV208F_CTRL_CMD_FB_CONVERT_SUBLOCATION (0x208f0519) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_FB_INTERFACE_ID << 8) | NV208F_CTRL_FB_CONVERT_SUBLOCATION_PARAMS_MESSAGE_ID" */
 
-#define NV208F_CTRL_FB_CONVERT_CHANNEL_PARAMS_MESSAGE_ID (0x19U)
+#define NV208F_CTRL_FB_CONVERT_SUBLOCATION_PARAMS_MESSAGE_ID (0x19U)
 
-typedef struct NV208F_CTRL_FB_CONVERT_CHANNEL_PARAMS {
+typedef struct NV208F_CTRL_FB_CONVERT_SUBLOCATION_PARAMS {
     NvU32 conversionType;
     NvU32 fbpa;
     NvU32 input;
     NvU32 output;
-} NV208F_CTRL_FB_CONVERT_CHANNEL_PARAMS;
+} NV208F_CTRL_FB_CONVERT_SUBLOCATION_PARAMS;
 
-#define NV208F_CTRL_FB_CHANNEL_CONVERSION_TYPE_LOGICAL_TO_PHYSICAL (0x00000000U)
-#define NV208F_CTRL_FB_CHANNEL_CONVERSION_TYPE_PHYSICAL_TO_LOGICAL (0x00000001U)
+#define NV208F_CTRL_FB_SUBLOCATION_CONVERSION_TYPE_LOGICAL_TO_PHYSICAL (0x00000000U)
+#define NV208F_CTRL_FB_SUBLOCATION_CONVERSION_TYPE_PHYSICAL_TO_LOGICAL (0x00000001U)
 /* _ctrl208ffb_h_ */

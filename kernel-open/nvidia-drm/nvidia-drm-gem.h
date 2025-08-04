@@ -33,17 +33,12 @@
 #include <drm/drmP.h>
 #endif
 
-#if defined(NV_DRM_DRM_GEM_H_PRESENT)
 #include <drm/drm_gem.h>
-#endif
 
 #include "nvkms-kapi.h"
 #include "nv-mm.h"
 
-#if defined(NV_DRM_FENCE_AVAILABLE)
-#include "nvidia-dma-fence-helper.h"
 #include "nvidia-dma-resv-helper.h"
-#endif
 
 #include "linux/dma-buf.h"
 
@@ -73,9 +68,7 @@ struct nv_drm_gem_object {
 
     struct NvKmsKapiMemory *pMemory;
 
-    bool is_drm_dumb;
-
-#if defined(NV_DRM_FENCE_AVAILABLE) && !defined(NV_DRM_GEM_OBJECT_HAS_RESV)
+#if !defined(NV_DRM_GEM_OBJECT_HAS_RESV)
     nv_dma_resv_t  resv;
 #endif
 };
@@ -90,46 +83,13 @@ static inline struct nv_drm_gem_object *to_nv_gem_object(
     return NULL;
 }
 
-/*
- * drm_gem_object_{get/put}() added by commit
- * e6b62714e87c8811d5564b6a0738dcde63a51774 (2017-02-28) and
- * drm_gem_object_{reference/unreference}() removed by commit
- * 3e70fd160cf0b1945225eaa08dd2cb8544f21cb8 (2018-11-15).
- */
-
-static inline void
-nv_drm_gem_object_reference(struct nv_drm_gem_object *nv_gem)
-{
-#if defined(NV_DRM_GEM_OBJECT_GET_PRESENT)
-    drm_gem_object_get(&nv_gem->base);
-#else
-    drm_gem_object_reference(&nv_gem->base);
-#endif
-}
-
 static inline void
 nv_drm_gem_object_unreference_unlocked(struct nv_drm_gem_object *nv_gem)
 {
-#if defined(NV_DRM_GEM_OBJECT_GET_PRESENT)
-
 #if defined(NV_DRM_GEM_OBJECT_PUT_UNLOCK_PRESENT)
     drm_gem_object_put_unlocked(&nv_gem->base);
 #else
     drm_gem_object_put(&nv_gem->base);
-#endif
-
-#else
-    drm_gem_object_unreference_unlocked(&nv_gem->base);
-#endif
-}
-
-static inline void
-nv_drm_gem_object_unreference(struct nv_drm_gem_object *nv_gem)
-{
-#if defined(NV_DRM_GEM_OBJECT_GET_PRESENT)
-    drm_gem_object_put(&nv_gem->base);
-#else
-    drm_gem_object_unreference(&nv_gem->base);
 #endif
 }
 
@@ -171,17 +131,10 @@ done:
 void nv_drm_gem_free(struct drm_gem_object *gem);
 
 static inline struct nv_drm_gem_object *nv_drm_gem_object_lookup(
-    struct drm_device *dev,
     struct drm_file *filp,
     u32 handle)
 {
-#if (NV_DRM_GEM_OBJECT_LOOKUP_ARGUMENT_COUNT == 3)
-    return to_nv_gem_object(drm_gem_object_lookup(dev, filp, handle));
-#elif (NV_DRM_GEM_OBJECT_LOOKUP_ARGUMENT_COUNT == 2)
     return to_nv_gem_object(drm_gem_object_lookup(filp, handle));
-#else
-    #error "Unknown argument count of drm_gem_object_lookup()"
-#endif
 }
 
 static inline int nv_drm_gem_handle_create(struct drm_file *filp,
@@ -191,7 +144,6 @@ static inline int nv_drm_gem_handle_create(struct drm_file *filp,
     return drm_gem_handle_create(filp, &nv_gem->base, handle);
 }
 
-#if defined(NV_DRM_FENCE_AVAILABLE)
 static inline nv_dma_resv_t *nv_drm_gem_res_obj(struct nv_drm_gem_object *nv_gem)
 {
 #if defined(NV_DRM_GEM_OBJECT_HAS_RESV)
@@ -200,7 +152,6 @@ static inline nv_dma_resv_t *nv_drm_gem_res_obj(struct nv_drm_gem_object *nv_gem
     return nv_gem->base.dma_buf ? nv_gem->base.dma_buf->resv : &nv_gem->resv;
 #endif
 }
-#endif
 
 void nv_drm_gem_object_init(struct nv_drm_device *nv_dev,
                             struct nv_drm_gem_object *nv_gem,

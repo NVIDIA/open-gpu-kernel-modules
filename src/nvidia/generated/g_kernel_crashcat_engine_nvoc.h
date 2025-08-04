@@ -94,6 +94,11 @@ struct KernelCrashCatEngine {
     struct CrashCatEngine *__nvoc_pbase_CrashCatEngine;    // crashcatEngine super
     struct KernelCrashCatEngine *__nvoc_pbase_KernelCrashCatEngine;    // kcrashcatEngine
 
+    // Vtable with 3 per-object function pointers
+    void (*__kcrashcatEngineReadDmem__)(struct KernelCrashCatEngine * /*this*/, NvU32, NvU32, void *);  // virtual halified (2 hals)
+    const NvU32 * (*__kcrashcatEngineGetScratchOffsets__)(struct KernelCrashCatEngine * /*this*/, NV_CRASHCAT_SCRATCH_GROUP_ID);  // virtual halified (2 hals) override (crashcatEngine) base (crashcatEngine)
+    NvU32 (*__kcrashcatEngineGetWFL0Offset__)(struct KernelCrashCatEngine * /*this*/);  // virtual halified (2 hals) override (crashcatEngine) base (crashcatEngine)
+
     // Data members
     NvBool PRIVATE_FIELD(bConfigured);
     MEMORY_DESCRIPTOR *PRIVATE_FIELD(pQueueMemDesc);
@@ -106,7 +111,7 @@ struct KernelCrashCatEngine {
 };
 
 
-// Vtable with 15 per-class function pointers
+// Vtable with 12 per-class function pointers
 struct NVOC_VTABLE__KernelCrashCatEngine {
     NvBool (*__kcrashcatEngineConfigured__)(struct KernelCrashCatEngine * /*this*/);  // virtual override (crashcatEngine) base (crashcatEngine)
     void (*__kcrashcatEngineUnload__)(struct KernelCrashCatEngine * /*this*/);  // virtual override (crashcatEngine) base (crashcatEngine)
@@ -119,10 +124,7 @@ struct NVOC_VTABLE__KernelCrashCatEngine {
     void * (*__kcrashcatEngineMapBufferDescriptor__)(struct KernelCrashCatEngine * /*this*/, CrashCatBufferDescriptor *);  // virtual override (crashcatEngine) base (crashcatEngine)
     void (*__kcrashcatEngineUnmapBufferDescriptor__)(struct KernelCrashCatEngine * /*this*/, CrashCatBufferDescriptor *);  // virtual override (crashcatEngine) base (crashcatEngine)
     void (*__kcrashcatEngineSyncBufferDescriptor__)(struct KernelCrashCatEngine * /*this*/, CrashCatBufferDescriptor *, NvU32, NvU32);  // virtual override (crashcatEngine) base (crashcatEngine)
-    void (*__kcrashcatEngineReadDmem__)(struct KernelCrashCatEngine * /*this*/, NvU32, NvU32, void *);  // virtual halified (singleton optimized)
     void (*__kcrashcatEngineReadEmem__)(struct KernelCrashCatEngine * /*this*/, NvU64, NvU64, void *);  // virtual halified (singleton optimized)
-    const NvU32 * (*__kcrashcatEngineGetScratchOffsets__)(struct KernelCrashCatEngine * /*this*/, NV_CRASHCAT_SCRATCH_GROUP_ID);  // virtual halified (singleton optimized) override (crashcatEngine) base (crashcatEngine)
-    NvU32 (*__kcrashcatEngineGetWFL0Offset__)(struct KernelCrashCatEngine * /*this*/);  // virtual halified (singleton optimized) override (crashcatEngine) base (crashcatEngine)
 };
 
 // Metadata with per-class RTTI and vtable with ancestor(s)
@@ -161,7 +163,48 @@ NV_STATUS __nvoc_objCreate_KernelCrashCatEngine(KernelCrashCatEngine**, Dynamic*
     __nvoc_objCreate_KernelCrashCatEngine((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS kcrashcatEngineConfigure_IMPL(struct KernelCrashCatEngine *arg_this, KernelCrashCatEngineConfig *pEngConfig);
+#ifdef __nvoc_kernel_crashcat_engine_h_disabled
+static inline NV_STATUS kcrashcatEngineConfigure(struct KernelCrashCatEngine *arg_this, KernelCrashCatEngineConfig *pEngConfig) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCrashCatEngine was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_crashcat_engine_h_disabled
+#define kcrashcatEngineConfigure(arg_this, pEngConfig) kcrashcatEngineConfigure_IMPL(arg_this, pEngConfig)
+#endif // __nvoc_kernel_crashcat_engine_h_disabled
+
+MEMORY_DESCRIPTOR * kcrashcatEngineGetQueueMemDesc_IMPL(struct KernelCrashCatEngine *arg_this);
+#ifdef __nvoc_kernel_crashcat_engine_h_disabled
+static inline MEMORY_DESCRIPTOR * kcrashcatEngineGetQueueMemDesc(struct KernelCrashCatEngine *arg_this) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCrashCatEngine was disabled!");
+    return NULL;
+}
+#else // __nvoc_kernel_crashcat_engine_h_disabled
+#define kcrashcatEngineGetQueueMemDesc(arg_this) kcrashcatEngineGetQueueMemDesc_IMPL(arg_this)
+#endif // __nvoc_kernel_crashcat_engine_h_disabled
+
+NV_STATUS kcrashcatEngineRegisterCrashBuffer_IMPL(struct KernelCrashCatEngine *arg_this, MEMORY_DESCRIPTOR *arg2);
+#ifdef __nvoc_kernel_crashcat_engine_h_disabled
+static inline NV_STATUS kcrashcatEngineRegisterCrashBuffer(struct KernelCrashCatEngine *arg_this, MEMORY_DESCRIPTOR *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCrashCatEngine was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_crashcat_engine_h_disabled
+#define kcrashcatEngineRegisterCrashBuffer(arg_this, arg2) kcrashcatEngineRegisterCrashBuffer_IMPL(arg_this, arg2)
+#endif // __nvoc_kernel_crashcat_engine_h_disabled
+
+void kcrashcatEngineUnregisterCrashBuffer_IMPL(struct KernelCrashCatEngine *arg_this, MEMORY_DESCRIPTOR *arg2);
+#ifdef __nvoc_kernel_crashcat_engine_h_disabled
+static inline void kcrashcatEngineUnregisterCrashBuffer(struct KernelCrashCatEngine *arg_this, MEMORY_DESCRIPTOR *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCrashCatEngine was disabled!");
+}
+#else // __nvoc_kernel_crashcat_engine_h_disabled
+#define kcrashcatEngineUnregisterCrashBuffer(arg_this, arg2) kcrashcatEngineUnregisterCrashBuffer_IMPL(arg_this, arg2)
+#endif // __nvoc_kernel_crashcat_engine_h_disabled
+
+
+// Wrapper macros for halified functions
 #define kcrashcatEngineConfigured_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineConfigured__
 #define kcrashcatEngineConfigured(arg_this) kcrashcatEngineConfigured_DISPATCH(arg_this)
 #define kcrashcatEngineUnload_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineUnload__
@@ -184,16 +227,16 @@ NV_STATUS __nvoc_objCreate_KernelCrashCatEngine(KernelCrashCatEngine**, Dynamic*
 #define kcrashcatEngineUnmapBufferDescriptor(arg_this, pBufDesc) kcrashcatEngineUnmapBufferDescriptor_DISPATCH(arg_this, pBufDesc)
 #define kcrashcatEngineSyncBufferDescriptor_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineSyncBufferDescriptor__
 #define kcrashcatEngineSyncBufferDescriptor(arg_this, pBufDesc, offset, size) kcrashcatEngineSyncBufferDescriptor_DISPATCH(arg_this, pBufDesc, offset, size)
-#define kcrashcatEngineReadDmem_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineReadDmem__
+#define kcrashcatEngineReadDmem_FNPTR(arg_this) arg_this->__kcrashcatEngineReadDmem__
 #define kcrashcatEngineReadDmem(arg_this, offset, size, pBuf) kcrashcatEngineReadDmem_DISPATCH(arg_this, offset, size, pBuf)
 #define kcrashcatEngineReadDmem_HAL(arg_this, offset, size, pBuf) kcrashcatEngineReadDmem_DISPATCH(arg_this, offset, size, pBuf)
 #define kcrashcatEngineReadEmem_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineReadEmem__
 #define kcrashcatEngineReadEmem(arg_this, offset, size, pBuf) kcrashcatEngineReadEmem_DISPATCH(arg_this, offset, size, pBuf)
 #define kcrashcatEngineReadEmem_HAL(arg_this, offset, size, pBuf) kcrashcatEngineReadEmem_DISPATCH(arg_this, offset, size, pBuf)
-#define kcrashcatEngineGetScratchOffsets_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineGetScratchOffsets__
+#define kcrashcatEngineGetScratchOffsets_FNPTR(arg_this) arg_this->__kcrashcatEngineGetScratchOffsets__
 #define kcrashcatEngineGetScratchOffsets(arg_this, scratchGroupId) kcrashcatEngineGetScratchOffsets_DISPATCH(arg_this, scratchGroupId)
 #define kcrashcatEngineGetScratchOffsets_HAL(arg_this, scratchGroupId) kcrashcatEngineGetScratchOffsets_DISPATCH(arg_this, scratchGroupId)
-#define kcrashcatEngineGetWFL0Offset_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineGetWFL0Offset__
+#define kcrashcatEngineGetWFL0Offset_FNPTR(arg_this) arg_this->__kcrashcatEngineGetWFL0Offset__
 #define kcrashcatEngineGetWFL0Offset(arg_this) kcrashcatEngineGetWFL0Offset_DISPATCH(arg_this)
 #define kcrashcatEngineGetWFL0Offset_HAL(arg_this) kcrashcatEngineGetWFL0Offset_DISPATCH(arg_this)
 
@@ -243,7 +286,7 @@ static inline void kcrashcatEngineSyncBufferDescriptor_DISPATCH(struct KernelCra
 }
 
 static inline void kcrashcatEngineReadDmem_DISPATCH(struct KernelCrashCatEngine *arg_this, NvU32 offset, NvU32 size, void *pBuf) {
-    arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineReadDmem__(arg_this, offset, size, pBuf);
+    arg_this->__kcrashcatEngineReadDmem__(arg_this, offset, size, pBuf);
 }
 
 static inline void kcrashcatEngineReadEmem_DISPATCH(struct KernelCrashCatEngine *arg_this, NvU64 offset, NvU64 size, void *pBuf) {
@@ -251,11 +294,11 @@ static inline void kcrashcatEngineReadEmem_DISPATCH(struct KernelCrashCatEngine 
 }
 
 static inline const NvU32 * kcrashcatEngineGetScratchOffsets_DISPATCH(struct KernelCrashCatEngine *arg_this, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId) {
-    return arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineGetScratchOffsets__(arg_this, scratchGroupId);
+    return arg_this->__kcrashcatEngineGetScratchOffsets__(arg_this, scratchGroupId);
 }
 
 static inline NvU32 kcrashcatEngineGetWFL0Offset_DISPATCH(struct KernelCrashCatEngine *arg_this) {
-    return arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineGetWFL0Offset__(arg_this);
+    return arg_this->__kcrashcatEngineGetWFL0Offset__(arg_this);
 }
 
 NvBool kcrashcatEngineConfigured_IMPL(struct KernelCrashCatEngine *arg1);
@@ -276,56 +319,25 @@ void kcrashcatEngineSyncBufferDescriptor_IMPL(struct KernelCrashCatEngine *arg1,
 
 void kcrashcatEngineReadDmem_TU102(struct KernelCrashCatEngine *arg1, NvU32 offset, NvU32 size, void *pBuf);
 
+static inline void kcrashcatEngineReadDmem_2fced3(struct KernelCrashCatEngine *arg1, NvU32 offset, NvU32 size, void *pBuf) {
+    NV_ASSERT_PRECOMP(0);
+}
+
 static inline void kcrashcatEngineReadEmem_2fced3(struct KernelCrashCatEngine *arg1, NvU64 offset, NvU64 size, void *pBuf) {
     NV_ASSERT_PRECOMP(0);
 }
 
 const NvU32 *kcrashcatEngineGetScratchOffsets_TU102(struct KernelCrashCatEngine *arg1, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId);
 
+static inline const NvU32 *kcrashcatEngineGetScratchOffsets_11d6dc(struct KernelCrashCatEngine *arg1, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, ((void *)0));
+}
+
 NvU32 kcrashcatEngineGetWFL0Offset_TU102(struct KernelCrashCatEngine *arg1);
 
-NV_STATUS kcrashcatEngineConfigure_IMPL(struct KernelCrashCatEngine *arg1, KernelCrashCatEngineConfig *pEngConfig);
-
-#ifdef __nvoc_kernel_crashcat_engine_h_disabled
-static inline NV_STATUS kcrashcatEngineConfigure(struct KernelCrashCatEngine *arg1, KernelCrashCatEngineConfig *pEngConfig) {
-    NV_ASSERT_FAILED_PRECOMP("KernelCrashCatEngine was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
+static inline NvU32 kcrashcatEngineGetWFL0Offset_c067f9(struct KernelCrashCatEngine *arg1) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
 }
-#else //__nvoc_kernel_crashcat_engine_h_disabled
-#define kcrashcatEngineConfigure(arg1, pEngConfig) kcrashcatEngineConfigure_IMPL(arg1, pEngConfig)
-#endif //__nvoc_kernel_crashcat_engine_h_disabled
-
-MEMORY_DESCRIPTOR *kcrashcatEngineGetQueueMemDesc_IMPL(struct KernelCrashCatEngine *arg1);
-
-#ifdef __nvoc_kernel_crashcat_engine_h_disabled
-static inline MEMORY_DESCRIPTOR *kcrashcatEngineGetQueueMemDesc(struct KernelCrashCatEngine *arg1) {
-    NV_ASSERT_FAILED_PRECOMP("KernelCrashCatEngine was disabled!");
-    return NULL;
-}
-#else //__nvoc_kernel_crashcat_engine_h_disabled
-#define kcrashcatEngineGetQueueMemDesc(arg1) kcrashcatEngineGetQueueMemDesc_IMPL(arg1)
-#endif //__nvoc_kernel_crashcat_engine_h_disabled
-
-NV_STATUS kcrashcatEngineRegisterCrashBuffer_IMPL(struct KernelCrashCatEngine *arg1, MEMORY_DESCRIPTOR *arg2);
-
-#ifdef __nvoc_kernel_crashcat_engine_h_disabled
-static inline NV_STATUS kcrashcatEngineRegisterCrashBuffer(struct KernelCrashCatEngine *arg1, MEMORY_DESCRIPTOR *arg2) {
-    NV_ASSERT_FAILED_PRECOMP("KernelCrashCatEngine was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_crashcat_engine_h_disabled
-#define kcrashcatEngineRegisterCrashBuffer(arg1, arg2) kcrashcatEngineRegisterCrashBuffer_IMPL(arg1, arg2)
-#endif //__nvoc_kernel_crashcat_engine_h_disabled
-
-void kcrashcatEngineUnregisterCrashBuffer_IMPL(struct KernelCrashCatEngine *arg1, MEMORY_DESCRIPTOR *arg2);
-
-#ifdef __nvoc_kernel_crashcat_engine_h_disabled
-static inline void kcrashcatEngineUnregisterCrashBuffer(struct KernelCrashCatEngine *arg1, MEMORY_DESCRIPTOR *arg2) {
-    NV_ASSERT_FAILED_PRECOMP("KernelCrashCatEngine was disabled!");
-}
-#else //__nvoc_kernel_crashcat_engine_h_disabled
-#define kcrashcatEngineUnregisterCrashBuffer(arg1, arg2) kcrashcatEngineUnregisterCrashBuffer_IMPL(arg1, arg2)
-#endif //__nvoc_kernel_crashcat_engine_h_disabled
 
 #undef PRIVATE_FIELD
 

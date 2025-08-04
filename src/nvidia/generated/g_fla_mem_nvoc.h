@@ -159,7 +159,15 @@ NV_STATUS __nvoc_objCreate_FlaMemory(FlaMemory**, Dynamic*, NvU32, CALL_CONTEXT 
     __nvoc_objCreate_FlaMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS flamemConstruct_IMPL(struct FlaMemory *arg_pFlaMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_flamemConstruct(arg_pFlaMemory, arg_pCallContext, arg_pParams) flamemConstruct_IMPL(arg_pFlaMemory, arg_pCallContext, arg_pParams)
+
+void flamemDestruct_IMPL(struct FlaMemory *pFlaMemory);
+#define __nvoc_flamemDestruct(pFlaMemory) flamemDestruct_IMPL(pFlaMemory)
+
+
+// Wrapper macros for halified functions
 #define flamemCanCopy_FNPTR(pFlaMemory) pFlaMemory->__nvoc_metadata_ptr->vtable.__flamemCanCopy__
 #define flamemCanCopy(pFlaMemory) flamemCanCopy_DISPATCH(pFlaMemory)
 #define flamemCopyConstruct_FNPTR(pFlaMemory) pFlaMemory->__nvoc_metadata_ptr->vtable.__flamemCopyConstruct__
@@ -328,12 +336,6 @@ NvBool flamemCanCopy_IMPL(struct FlaMemory *pFlaMemory);
 
 NV_STATUS flamemCopyConstruct_IMPL(struct FlaMemory *pFlaMemory, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 
-NV_STATUS flamemConstruct_IMPL(struct FlaMemory *arg_pFlaMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_flamemConstruct(arg_pFlaMemory, arg_pCallContext, arg_pParams) flamemConstruct_IMPL(arg_pFlaMemory, arg_pCallContext, arg_pParams)
-void flamemDestruct_IMPL(struct FlaMemory *pFlaMemory);
-
-#define __nvoc_flamemDestruct(pFlaMemory) flamemDestruct_IMPL(pFlaMemory)
 #undef PRIVATE_FIELD
 
 

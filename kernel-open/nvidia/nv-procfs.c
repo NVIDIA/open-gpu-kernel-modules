@@ -54,6 +54,7 @@ static struct proc_dir_entry *proc_nvidia_warnings;
 static struct proc_dir_entry *proc_nvidia_patches;
 static struct proc_dir_entry *proc_nvidia_gpus;
 
+extern char *NVreg_CoherentGPUMemoryMode;
 extern char *NVreg_RegistryDwords;
 extern char *NVreg_RegistryDwordsPerDevice;
 extern char *NVreg_RmMsg;
@@ -429,6 +430,8 @@ nv_procfs_read_params(
     for (i = 0; (entry = &nv_parms[i])->name != NULL; i++)
         seq_printf(s, "%s: %u\n", entry->name, *entry->data);
 
+    seq_printf(s, "CoherentGPUMemoryMode: \"%s\"\n",
+               (NVreg_CoherentGPUMemoryMode != NULL) ? NVreg_CoherentGPUMemoryMode : "");
     seq_printf(s, "RegistryDwords: \"%s\"\n",
                (NVreg_RegistryDwords != NULL) ? NVreg_RegistryDwords : "");
     seq_printf(s, "RegistryDwordsPerDevice: \"%s\"\n",

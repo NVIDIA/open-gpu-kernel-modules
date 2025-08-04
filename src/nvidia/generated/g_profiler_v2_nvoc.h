@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -103,43 +103,16 @@ struct ProfilerBase {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct ProfilerBase *__nvoc_pbase_ProfilerBase;    // profilerBase
 
-    // Vtable with 36 per-object function pointers
+    // Vtable with 9 per-object function pointers
     NV_STATUS (*__profilerBaseConstructState__)(struct ProfilerBase * /*this*/, CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);  // halified (2 hals) body
     void (*__profilerBaseDestructState__)(struct ProfilerBase * /*this*/);  // halified (2 hals) body
-    NV_STATUS (*__profilerBaseCtrlCmdReserveHwpmLegacy__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_RESERVE_HWPM_LEGACY_PARAMS *);  // exported (id=0xb0cc0101)
-    NV_STATUS (*__profilerBaseCtrlCmdInternalReserveHwpmLegacy__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_INTERNAL_RESERVE_HWPM_LEGACY_PARAMS *);  // exported (id=0xb0cc020a)
-    NV_STATUS (*__profilerBaseCtrlCmdReleaseHwpmLegacy__)(struct ProfilerBase * /*this*/);  // exported (id=0xb0cc0102)
-    NV_STATUS (*__profilerBaseCtrlCmdReservePmAreaSmpc__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_RESERVE_PM_AREA_SMPC_PARAMS *);  // exported (id=0xb0cc0103)
-    NV_STATUS (*__profilerBaseCtrlCmdReleasePmAreaSmpc__)(struct ProfilerBase * /*this*/);  // exported (id=0xb0cc0104)
-    NV_STATUS (*__profilerBaseCtrlCmdAllocPmaStream__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_ALLOC_PMA_STREAM_PARAMS *);  // exported (id=0xb0cc0105)
-    NV_STATUS (*__profilerBaseCtrlCmdFreePmaStream__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_FREE_PMA_STREAM_PARAMS *);  // exported (id=0xb0cc0106)
     NV_STATUS (*__profilerBaseCtrlCmdInternalFreePmaStream__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_INTERNAL_FREE_PMA_STREAM_PARAMS *);  // halified (2 hals) exported (id=0xb0cc0206) body
-    NV_STATUS (*__profilerBaseCtrlCmdInternalGetMaxPmas__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_INTERNAL_GET_MAX_PMAS_PARAMS *);  // exported (id=0xb0cc0207)
-    NV_STATUS (*__profilerBaseCtrlCmdBindPmResources__)(struct ProfilerBase * /*this*/);  // exported (id=0xb0cc0107)
     NV_STATUS (*__profilerBaseCtrlCmdUnbindPmResources__)(struct ProfilerBase * /*this*/);  // halified (2 hals) exported (id=0xb0cc0108) body
-    NV_STATUS (*__profilerBaseCtrlCmdInternalBindPmResources__)(struct ProfilerBase * /*this*/);  // exported (id=0xb0cc0208)
-    NV_STATUS (*__profilerBaseCtrlCmdInternalUnbindPmResources__)(struct ProfilerBase * /*this*/);  // exported (id=0xb0cc0209)
     NV_STATUS (*__profilerBaseCtrlCmdPmaStreamUpdateGetPut__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS *);  // halified (2 hals) exported (id=0xb0cc0109) body
-    NV_STATUS (*__profilerBaseCtrlCmdExecRegops__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_EXEC_REG_OPS_PARAMS *);  // exported (id=0xb0cc010a)
     NV_STATUS (*__profilerBaseCtrlCmdInternalAllocPmaStream__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_INTERNAL_ALLOC_PMA_STREAM_PARAMS *);  // halified (2 hals) exported (id=0xb0cc0204) body
-    NV_STATUS (*__profilerBaseCtrlCmdInternalQuiescePmaChannel__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_INTERNAL_QUIESCE_PMA_CHANNEL_PARAMS *);  // exported (id=0xb0cc0201)
     NV_STATUS (*__profilerBaseCtrlCmdInternalSriovPromotePmaStream__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_INTERNAL_SRIOV_PROMOTE_PMA_STREAM_PARAMS *);  // halified (2 hals) exported (id=0xb0cc0202) body
-    NV_STATUS (*__profilerBaseCtrlCmdInternalPermissionsInit__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_INTERNAL_PERMISSIONS_INIT_PARAMS *);  // exported (id=0xb0cc0203)
-    NV_STATUS (*__profilerBaseCtrlCmdReservePmAreaPcSampler__)(struct ProfilerBase * /*this*/);  // exported (id=0xb0cc010b)
-    NV_STATUS (*__profilerBaseCtrlCmdReleasePmAreaPcSampler__)(struct ProfilerBase * /*this*/);  // exported (id=0xb0cc010c)
-    NV_STATUS (*__profilerBaseCtrlCmdGetTotalHsCredits__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_GET_TOTAL_HS_CREDITS_PARAMS *);  // exported (id=0xb0cc010d)
-    NV_STATUS (*__profilerBaseCtrlCmdGetChipletHsCredits__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL *);  // exported (id=0xb0cc0115)
-    NV_STATUS (*__profilerBaseCtrlCmdGetHsCreditsMapping__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS *);  // exported (id=0xb0cc0116)
-    NV_STATUS (*__profilerBaseCtrlCmdGetHsCredits__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_GET_HS_CREDITS_PARAMS *);  // exported (id=0xb0cc010f)
-    NV_STATUS (*__profilerBaseCtrlCmdSetHsCredits__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_SET_HS_CREDITS_PARAMS *);  // exported (id=0xb0cc010e)
-    NV_STATUS (*__profilerBaseCtrlCmdReserveHes__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_RESERVE_HES_PARAMS *);  // exported (id=0xb0cc0113)
-    NV_STATUS (*__profilerBaseCtrlCmdReleaseHes__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_RELEASE_HES_PARAMS *);  // exported (id=0xb0cc0114)
-    NV_STATUS (*__profilerBaseCtrlCmdReserveCcuProf__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS *);  // exported (id=0xb0cc0119)
-    NV_STATUS (*__profilerBaseCtrlCmdReleaseCcuProf__)(struct ProfilerBase * /*this*/);  // exported (id=0xb0cc011a)
     NV_STATUS (*__profilerBaseCtrlCmdRequestCgControls__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_POWER_REQUEST_FEATURES_PARAMS *);  // halified (2 hals) exported (id=0xb0cc0301) body
     NV_STATUS (*__profilerBaseCtrlCmdReleaseCgControls__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_POWER_RELEASE_FEATURES_PARAMS *);  // halified (2 hals) exported (id=0xb0cc0302) body
-    NV_STATUS (*__profilerBaseCtrlCmdDisableDynamicMMABoost__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_DISABLE_DYNAMIC_MMA_BOOST_PARAMS *);  // exported (id=0xb0cc0117)
-    NV_STATUS (*__profilerBaseCtrlCmdGetDynamicMMABoostStatus__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS *);  // exported (id=0xb0cc0118)
 
     // Data members
     NvU32 maxPmaChannels;
@@ -153,7 +126,6 @@ struct ProfilerBase {
     HWPM_PMA_STREAM *pPmaStreamList;
     NvBool *pBindPointAllocated;
     NvBool bMmaBoostDisabled;
-    NvHandle hSubDevice;
 };
 
 
@@ -222,88 +194,332 @@ NV_STATUS __nvoc_objCreate_ProfilerBase(ProfilerBase**, Dynamic*, NvU32, CALL_CO
     __nvoc_objCreate_ProfilerBase((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS profilerBaseConstruct_IMPL(struct ProfilerBase *arg_pProf, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_profilerBaseConstruct(arg_pProf, arg_pCallContext, arg_pParams) profilerBaseConstruct_IMPL(arg_pProf, arg_pCallContext, arg_pParams)
+
+void profilerBaseDestruct_IMPL(struct ProfilerBase *pProf);
+#define __nvoc_profilerBaseDestruct(pProf) profilerBaseDestruct_IMPL(pProf)
+
+NV_STATUS profilerBaseQuiesceStreamout_IMPL(struct ProfilerBase *pProf, OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 pmaChIdx);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseQuiesceStreamout(struct ProfilerBase *pProf, OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 pmaChIdx) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseQuiesceStreamout(pProf, pGpu, pKernelHwpm, pmaChIdx) profilerBaseQuiesceStreamout_IMPL(pProf, pGpu, pKernelHwpm, pmaChIdx)
+#endif // __nvoc_profiler_v2_h_disabled
+
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NvBool profilerBaseQueryCapabilities(struct ProfilerBase *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS *pClientPermissions) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_FALSE;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseQueryCapabilities(pResource, pCallContext, pParams, pClientPermissions) profilerBaseQueryCapabilities_IMPL(pResource, pCallContext, pParams, pClientPermissions)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdReserveHwpmLegacy_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RESERVE_HWPM_LEGACY_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdReserveHwpmLegacy(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RESERVE_HWPM_LEGACY_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdReserveHwpmLegacy(pProfiler, pParams) profilerBaseCtrlCmdReserveHwpmLegacy_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdInternalReserveHwpmLegacy_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_RESERVE_HWPM_LEGACY_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdInternalReserveHwpmLegacy(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_RESERVE_HWPM_LEGACY_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdInternalReserveHwpmLegacy(pProfiler, pParams) profilerBaseCtrlCmdInternalReserveHwpmLegacy_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdReleaseHwpmLegacy_IMPL(struct ProfilerBase *pProfiler);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdReleaseHwpmLegacy(struct ProfilerBase *pProfiler) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdReleaseHwpmLegacy(pProfiler) profilerBaseCtrlCmdReleaseHwpmLegacy_IMPL(pProfiler)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdReservePmAreaSmpc_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RESERVE_PM_AREA_SMPC_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdReservePmAreaSmpc(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RESERVE_PM_AREA_SMPC_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdReservePmAreaSmpc(pProfiler, pParams) profilerBaseCtrlCmdReservePmAreaSmpc_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdReleasePmAreaSmpc_IMPL(struct ProfilerBase *pProfiler);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdReleasePmAreaSmpc(struct ProfilerBase *pProfiler) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdReleasePmAreaSmpc(pProfiler) profilerBaseCtrlCmdReleasePmAreaSmpc_IMPL(pProfiler)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdAllocPmaStream_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_ALLOC_PMA_STREAM_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdAllocPmaStream(struct ProfilerBase *pProfiler, NVB0CC_CTRL_ALLOC_PMA_STREAM_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdAllocPmaStream(pProfiler, pParams) profilerBaseCtrlCmdAllocPmaStream_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdFreePmaStream_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_FREE_PMA_STREAM_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdFreePmaStream(struct ProfilerBase *pProfiler, NVB0CC_CTRL_FREE_PMA_STREAM_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdFreePmaStream(pProfiler, pParams) profilerBaseCtrlCmdFreePmaStream_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdInternalGetMaxPmas_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_GET_MAX_PMAS_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdInternalGetMaxPmas(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_GET_MAX_PMAS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdInternalGetMaxPmas(pProfiler, pParams) profilerBaseCtrlCmdInternalGetMaxPmas_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdBindPmResources_IMPL(struct ProfilerBase *pProfiler);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdBindPmResources(struct ProfilerBase *pProfiler) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdBindPmResources(pProfiler) profilerBaseCtrlCmdBindPmResources_IMPL(pProfiler)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdInternalBindPmResources_IMPL(struct ProfilerBase *pProfiler);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdInternalBindPmResources(struct ProfilerBase *pProfiler) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdInternalBindPmResources(pProfiler) profilerBaseCtrlCmdInternalBindPmResources_IMPL(pProfiler)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdInternalUnbindPmResources_IMPL(struct ProfilerBase *pProfiler);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdInternalUnbindPmResources(struct ProfilerBase *pProfiler) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdInternalUnbindPmResources(pProfiler) profilerBaseCtrlCmdInternalUnbindPmResources_IMPL(pProfiler)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdExecRegops_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_EXEC_REG_OPS_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdExecRegops(struct ProfilerBase *pProfiler, NVB0CC_CTRL_EXEC_REG_OPS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdExecRegops(pProfiler, pParams) profilerBaseCtrlCmdExecRegops_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdInternalQuiescePmaChannel_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_QUIESCE_PMA_CHANNEL_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdInternalQuiescePmaChannel(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_QUIESCE_PMA_CHANNEL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdInternalQuiescePmaChannel(pProfiler, pParams) profilerBaseCtrlCmdInternalQuiescePmaChannel_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdInternalPermissionsInit_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_PERMISSIONS_INIT_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdInternalPermissionsInit(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_PERMISSIONS_INIT_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdInternalPermissionsInit(pProfiler, pParams) profilerBaseCtrlCmdInternalPermissionsInit_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdReservePmAreaPcSampler_IMPL(struct ProfilerBase *pProfiler);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdReservePmAreaPcSampler(struct ProfilerBase *pProfiler) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdReservePmAreaPcSampler(pProfiler) profilerBaseCtrlCmdReservePmAreaPcSampler_IMPL(pProfiler)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdReleasePmAreaPcSampler_IMPL(struct ProfilerBase *pProfiler);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdReleasePmAreaPcSampler(struct ProfilerBase *pProfiler) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdReleasePmAreaPcSampler(pProfiler) profilerBaseCtrlCmdReleasePmAreaPcSampler_IMPL(pProfiler)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdGetTotalHsCredits_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_TOTAL_HS_CREDITS_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdGetTotalHsCredits(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_TOTAL_HS_CREDITS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdGetTotalHsCredits(pProfiler, pParams) profilerBaseCtrlCmdGetTotalHsCredits_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdGetChipletHsCredits_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdGetChipletHsCredits(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdGetChipletHsCredits(pProfiler, pParams) profilerBaseCtrlCmdGetChipletHsCredits_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdGetHsCreditsMapping_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdGetHsCreditsMapping(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdGetHsCreditsMapping(pProfiler, pParams) profilerBaseCtrlCmdGetHsCreditsMapping_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdGetHsCredits_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_HS_CREDITS_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdGetHsCredits(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_HS_CREDITS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdGetHsCredits(pProfiler, pParams) profilerBaseCtrlCmdGetHsCredits_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdSetHsCredits_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_SET_HS_CREDITS_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdSetHsCredits(struct ProfilerBase *pProfiler, NVB0CC_CTRL_SET_HS_CREDITS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdSetHsCredits(pProfiler, pParams) profilerBaseCtrlCmdSetHsCredits_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdReserveHes_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RESERVE_HES_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdReserveHes(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RESERVE_HES_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdReserveHes(pProfiler, pParams) profilerBaseCtrlCmdReserveHes_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdReleaseHes_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RELEASE_HES_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdReleaseHes(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RELEASE_HES_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdReleaseHes(pProfiler, pParams) profilerBaseCtrlCmdReleaseHes_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdReserveCcuProf_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdReserveCcuProf(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdReserveCcuProf(pProfiler, pParams) profilerBaseCtrlCmdReserveCcuProf_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdReleaseCcuProf_IMPL(struct ProfilerBase *pProfiler);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdReleaseCcuProf(struct ProfilerBase *pProfiler) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdReleaseCcuProf(pProfiler) profilerBaseCtrlCmdReleaseCcuProf_IMPL(pProfiler)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdDisableDynamicMMABoost_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_DISABLE_DYNAMIC_MMA_BOOST_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdDisableDynamicMMABoost(struct ProfilerBase *pProfiler, NVB0CC_CTRL_DISABLE_DYNAMIC_MMA_BOOST_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdDisableDynamicMMABoost(pProfiler, pParams) profilerBaseCtrlCmdDisableDynamicMMABoost_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+NV_STATUS profilerBaseCtrlCmdGetDynamicMMABoostStatus_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS *pParams);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerBaseCtrlCmdGetDynamicMMABoostStatus(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerBaseCtrlCmdGetDynamicMMABoostStatus(pProfiler, pParams) profilerBaseCtrlCmdGetDynamicMMABoostStatus_IMPL(pProfiler, pParams)
+#endif // __nvoc_profiler_v2_h_disabled
+
+
+// Wrapper macros for halified functions
 #define profilerBaseConstructState_FNPTR(pProf) pProf->__profilerBaseConstructState__
 #define profilerBaseConstructState(pProf, pCallContext, pParams) profilerBaseConstructState_DISPATCH(pProf, pCallContext, pParams)
 #define profilerBaseConstructState_HAL(pProf, pCallContext, pParams) profilerBaseConstructState_DISPATCH(pProf, pCallContext, pParams)
 #define profilerBaseDestructState_FNPTR(pProf) pProf->__profilerBaseDestructState__
 #define profilerBaseDestructState(pProf) profilerBaseDestructState_DISPATCH(pProf)
 #define profilerBaseDestructState_HAL(pProf) profilerBaseDestructState_DISPATCH(pProf)
-#define profilerBaseCtrlCmdReserveHwpmLegacy_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdReserveHwpmLegacy__
-#define profilerBaseCtrlCmdReserveHwpmLegacy(pProfiler, pParams) profilerBaseCtrlCmdReserveHwpmLegacy_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdInternalReserveHwpmLegacy_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdInternalReserveHwpmLegacy__
-#define profilerBaseCtrlCmdInternalReserveHwpmLegacy(pProfiler, pParams) profilerBaseCtrlCmdInternalReserveHwpmLegacy_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdReleaseHwpmLegacy_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdReleaseHwpmLegacy__
-#define profilerBaseCtrlCmdReleaseHwpmLegacy(pProfiler) profilerBaseCtrlCmdReleaseHwpmLegacy_DISPATCH(pProfiler)
-#define profilerBaseCtrlCmdReservePmAreaSmpc_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdReservePmAreaSmpc__
-#define profilerBaseCtrlCmdReservePmAreaSmpc(pProfiler, pParams) profilerBaseCtrlCmdReservePmAreaSmpc_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdReleasePmAreaSmpc_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdReleasePmAreaSmpc__
-#define profilerBaseCtrlCmdReleasePmAreaSmpc(pProfiler) profilerBaseCtrlCmdReleasePmAreaSmpc_DISPATCH(pProfiler)
-#define profilerBaseCtrlCmdAllocPmaStream_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdAllocPmaStream__
-#define profilerBaseCtrlCmdAllocPmaStream(pProfiler, pParams) profilerBaseCtrlCmdAllocPmaStream_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdFreePmaStream_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdFreePmaStream__
-#define profilerBaseCtrlCmdFreePmaStream(pProfiler, pParams) profilerBaseCtrlCmdFreePmaStream_DISPATCH(pProfiler, pParams)
+#define profilerBaseQueryCapabilities_HAL(pResource, pCallContext, pParams, pClientPermissions) profilerBaseQueryCapabilities(pResource, pCallContext, pParams, pClientPermissions)
 #define profilerBaseCtrlCmdInternalFreePmaStream_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdInternalFreePmaStream__
 #define profilerBaseCtrlCmdInternalFreePmaStream(pProfiler, pParams) profilerBaseCtrlCmdInternalFreePmaStream_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdInternalFreePmaStream_HAL(pProfiler, pParams) profilerBaseCtrlCmdInternalFreePmaStream_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdInternalGetMaxPmas_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdInternalGetMaxPmas__
-#define profilerBaseCtrlCmdInternalGetMaxPmas(pProfiler, pParams) profilerBaseCtrlCmdInternalGetMaxPmas_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdBindPmResources_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdBindPmResources__
-#define profilerBaseCtrlCmdBindPmResources(pProfiler) profilerBaseCtrlCmdBindPmResources_DISPATCH(pProfiler)
 #define profilerBaseCtrlCmdUnbindPmResources_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdUnbindPmResources__
 #define profilerBaseCtrlCmdUnbindPmResources(pProfiler) profilerBaseCtrlCmdUnbindPmResources_DISPATCH(pProfiler)
 #define profilerBaseCtrlCmdUnbindPmResources_HAL(pProfiler) profilerBaseCtrlCmdUnbindPmResources_DISPATCH(pProfiler)
-#define profilerBaseCtrlCmdInternalBindPmResources_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdInternalBindPmResources__
-#define profilerBaseCtrlCmdInternalBindPmResources(pProfiler) profilerBaseCtrlCmdInternalBindPmResources_DISPATCH(pProfiler)
-#define profilerBaseCtrlCmdInternalUnbindPmResources_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdInternalUnbindPmResources__
-#define profilerBaseCtrlCmdInternalUnbindPmResources(pProfiler) profilerBaseCtrlCmdInternalUnbindPmResources_DISPATCH(pProfiler)
 #define profilerBaseCtrlCmdPmaStreamUpdateGetPut_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdPmaStreamUpdateGetPut__
 #define profilerBaseCtrlCmdPmaStreamUpdateGetPut(pProfiler, pParams) profilerBaseCtrlCmdPmaStreamUpdateGetPut_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdPmaStreamUpdateGetPut_HAL(pProfiler, pParams) profilerBaseCtrlCmdPmaStreamUpdateGetPut_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdExecRegops_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdExecRegops__
-#define profilerBaseCtrlCmdExecRegops(pProfiler, pParams) profilerBaseCtrlCmdExecRegops_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdInternalAllocPmaStream_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdInternalAllocPmaStream__
 #define profilerBaseCtrlCmdInternalAllocPmaStream(pProfiler, pParams) profilerBaseCtrlCmdInternalAllocPmaStream_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdInternalAllocPmaStream_HAL(pProfiler, pParams) profilerBaseCtrlCmdInternalAllocPmaStream_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdInternalQuiescePmaChannel_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdInternalQuiescePmaChannel__
-#define profilerBaseCtrlCmdInternalQuiescePmaChannel(pProfiler, pParams) profilerBaseCtrlCmdInternalQuiescePmaChannel_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdInternalSriovPromotePmaStream_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdInternalSriovPromotePmaStream__
 #define profilerBaseCtrlCmdInternalSriovPromotePmaStream(pProfiler, pParams) profilerBaseCtrlCmdInternalSriovPromotePmaStream_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdInternalSriovPromotePmaStream_HAL(pProfiler, pParams) profilerBaseCtrlCmdInternalSriovPromotePmaStream_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdInternalPermissionsInit_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdInternalPermissionsInit__
-#define profilerBaseCtrlCmdInternalPermissionsInit(pProfiler, pParams) profilerBaseCtrlCmdInternalPermissionsInit_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdReservePmAreaPcSampler_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdReservePmAreaPcSampler__
-#define profilerBaseCtrlCmdReservePmAreaPcSampler(pProfiler) profilerBaseCtrlCmdReservePmAreaPcSampler_DISPATCH(pProfiler)
-#define profilerBaseCtrlCmdReleasePmAreaPcSampler_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdReleasePmAreaPcSampler__
-#define profilerBaseCtrlCmdReleasePmAreaPcSampler(pProfiler) profilerBaseCtrlCmdReleasePmAreaPcSampler_DISPATCH(pProfiler)
-#define profilerBaseCtrlCmdGetTotalHsCredits_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdGetTotalHsCredits__
-#define profilerBaseCtrlCmdGetTotalHsCredits(pProfiler, pParams) profilerBaseCtrlCmdGetTotalHsCredits_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdGetChipletHsCredits_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdGetChipletHsCredits__
-#define profilerBaseCtrlCmdGetChipletHsCredits(pProfiler, pParams) profilerBaseCtrlCmdGetChipletHsCredits_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdGetHsCreditsMapping_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdGetHsCreditsMapping__
-#define profilerBaseCtrlCmdGetHsCreditsMapping(pProfiler, pParams) profilerBaseCtrlCmdGetHsCreditsMapping_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdGetHsCredits_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdGetHsCredits__
-#define profilerBaseCtrlCmdGetHsCredits(pProfiler, pParams) profilerBaseCtrlCmdGetHsCredits_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdSetHsCredits_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdSetHsCredits__
-#define profilerBaseCtrlCmdSetHsCredits(pProfiler, pParams) profilerBaseCtrlCmdSetHsCredits_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdReserveHes_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdReserveHes__
-#define profilerBaseCtrlCmdReserveHes(pProfiler, pParams) profilerBaseCtrlCmdReserveHes_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdReleaseHes_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdReleaseHes__
-#define profilerBaseCtrlCmdReleaseHes(pProfiler, pParams) profilerBaseCtrlCmdReleaseHes_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdReserveCcuProf_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdReserveCcuProf__
-#define profilerBaseCtrlCmdReserveCcuProf(pProfiler, pParams) profilerBaseCtrlCmdReserveCcuProf_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdReleaseCcuProf_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdReleaseCcuProf__
-#define profilerBaseCtrlCmdReleaseCcuProf(pProfiler) profilerBaseCtrlCmdReleaseCcuProf_DISPATCH(pProfiler)
 #define profilerBaseCtrlCmdRequestCgControls_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdRequestCgControls__
 #define profilerBaseCtrlCmdRequestCgControls(pProfiler, pParams) profilerBaseCtrlCmdRequestCgControls_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdRequestCgControls_HAL(pProfiler, pParams) profilerBaseCtrlCmdRequestCgControls_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdReleaseCgControls_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdReleaseCgControls__
 #define profilerBaseCtrlCmdReleaseCgControls(pProfiler, pParams) profilerBaseCtrlCmdReleaseCgControls_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdReleaseCgControls_HAL(pProfiler, pParams) profilerBaseCtrlCmdReleaseCgControls_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdDisableDynamicMMABoost_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdDisableDynamicMMABoost__
-#define profilerBaseCtrlCmdDisableDynamicMMABoost(pProfiler, pParams) profilerBaseCtrlCmdDisableDynamicMMABoost_DISPATCH(pProfiler, pParams)
-#define profilerBaseCtrlCmdGetDynamicMMABoostStatus_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdGetDynamicMMABoostStatus__
-#define profilerBaseCtrlCmdGetDynamicMMABoostStatus(pProfiler, pParams) profilerBaseCtrlCmdGetDynamicMMABoostStatus_DISPATCH(pProfiler, pParams)
 #define profilerBaseControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define profilerBaseControl(pGpuResource, pCallContext, pParams) profilerBaseControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define profilerBaseMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
@@ -364,124 +580,24 @@ static inline void profilerBaseDestructState_DISPATCH(struct ProfilerBase *pProf
     pProf->__profilerBaseDestructState__(pProf);
 }
 
-static inline NV_STATUS profilerBaseCtrlCmdReserveHwpmLegacy_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RESERVE_HWPM_LEGACY_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdReserveHwpmLegacy__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdInternalReserveHwpmLegacy_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_RESERVE_HWPM_LEGACY_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdInternalReserveHwpmLegacy__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdReleaseHwpmLegacy_DISPATCH(struct ProfilerBase *pProfiler) {
-    return pProfiler->__profilerBaseCtrlCmdReleaseHwpmLegacy__(pProfiler);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdReservePmAreaSmpc_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RESERVE_PM_AREA_SMPC_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdReservePmAreaSmpc__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdReleasePmAreaSmpc_DISPATCH(struct ProfilerBase *pProfiler) {
-    return pProfiler->__profilerBaseCtrlCmdReleasePmAreaSmpc__(pProfiler);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdAllocPmaStream_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_ALLOC_PMA_STREAM_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdAllocPmaStream__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdFreePmaStream_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_FREE_PMA_STREAM_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdFreePmaStream__(pProfiler, pParams);
-}
-
 static inline NV_STATUS profilerBaseCtrlCmdInternalFreePmaStream_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_FREE_PMA_STREAM_PARAMS *pParams) {
     return pProfiler->__profilerBaseCtrlCmdInternalFreePmaStream__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdInternalGetMaxPmas_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_GET_MAX_PMAS_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdInternalGetMaxPmas__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdBindPmResources_DISPATCH(struct ProfilerBase *pProfiler) {
-    return pProfiler->__profilerBaseCtrlCmdBindPmResources__(pProfiler);
 }
 
 static inline NV_STATUS profilerBaseCtrlCmdUnbindPmResources_DISPATCH(struct ProfilerBase *pProfiler) {
     return pProfiler->__profilerBaseCtrlCmdUnbindPmResources__(pProfiler);
 }
 
-static inline NV_STATUS profilerBaseCtrlCmdInternalBindPmResources_DISPATCH(struct ProfilerBase *pProfiler) {
-    return pProfiler->__profilerBaseCtrlCmdInternalBindPmResources__(pProfiler);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdInternalUnbindPmResources_DISPATCH(struct ProfilerBase *pProfiler) {
-    return pProfiler->__profilerBaseCtrlCmdInternalUnbindPmResources__(pProfiler);
-}
-
 static inline NV_STATUS profilerBaseCtrlCmdPmaStreamUpdateGetPut_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS *pParams) {
     return pProfiler->__profilerBaseCtrlCmdPmaStreamUpdateGetPut__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdExecRegops_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_EXEC_REG_OPS_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdExecRegops__(pProfiler, pParams);
 }
 
 static inline NV_STATUS profilerBaseCtrlCmdInternalAllocPmaStream_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_ALLOC_PMA_STREAM_PARAMS *pParams) {
     return pProfiler->__profilerBaseCtrlCmdInternalAllocPmaStream__(pProfiler, pParams);
 }
 
-static inline NV_STATUS profilerBaseCtrlCmdInternalQuiescePmaChannel_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_QUIESCE_PMA_CHANNEL_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdInternalQuiescePmaChannel__(pProfiler, pParams);
-}
-
 static inline NV_STATUS profilerBaseCtrlCmdInternalSriovPromotePmaStream_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_SRIOV_PROMOTE_PMA_STREAM_PARAMS *pParams) {
     return pProfiler->__profilerBaseCtrlCmdInternalSriovPromotePmaStream__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdInternalPermissionsInit_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_PERMISSIONS_INIT_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdInternalPermissionsInit__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdReservePmAreaPcSampler_DISPATCH(struct ProfilerBase *pProfiler) {
-    return pProfiler->__profilerBaseCtrlCmdReservePmAreaPcSampler__(pProfiler);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdReleasePmAreaPcSampler_DISPATCH(struct ProfilerBase *pProfiler) {
-    return pProfiler->__profilerBaseCtrlCmdReleasePmAreaPcSampler__(pProfiler);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdGetTotalHsCredits_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_TOTAL_HS_CREDITS_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdGetTotalHsCredits__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdGetChipletHsCredits_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdGetChipletHsCredits__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdGetHsCreditsMapping_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdGetHsCreditsMapping__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdGetHsCredits_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_HS_CREDITS_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdGetHsCredits__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdSetHsCredits_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_SET_HS_CREDITS_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdSetHsCredits__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdReserveHes_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RESERVE_HES_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdReserveHes__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdReleaseHes_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RELEASE_HES_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdReleaseHes__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdReserveCcuProf_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdReserveCcuProf__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdReleaseCcuProf_DISPATCH(struct ProfilerBase *pProfiler) {
-    return pProfiler->__profilerBaseCtrlCmdReleaseCcuProf__(pProfiler);
 }
 
 static inline NV_STATUS profilerBaseCtrlCmdRequestCgControls_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_POWER_REQUEST_FEATURES_PARAMS *pParams) {
@@ -490,14 +606,6 @@ static inline NV_STATUS profilerBaseCtrlCmdRequestCgControls_DISPATCH(struct Pro
 
 static inline NV_STATUS profilerBaseCtrlCmdReleaseCgControls_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_POWER_RELEASE_FEATURES_PARAMS *pParams) {
     return pProfiler->__profilerBaseCtrlCmdReleaseCgControls__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdDisableDynamicMMABoost_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_DISABLE_DYNAMIC_MMA_BOOST_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdDisableDynamicMMABoost__(pProfiler, pParams);
-}
-
-static inline NV_STATUS profilerBaseCtrlCmdGetDynamicMMABoostStatus_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS *pParams) {
-    return pProfiler->__profilerBaseCtrlCmdGetDynamicMMABoostStatus__(pProfiler, pParams);
 }
 
 static inline NV_STATUS profilerBaseControl_DISPATCH(struct ProfilerBase *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -602,17 +710,6 @@ static inline void profilerBaseAddAdditionalDependants_DISPATCH(struct RsClient 
 
 NvBool profilerBaseQueryCapabilities_IMPL(struct ProfilerBase *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS *pClientPermissions);
 
-
-#ifdef __nvoc_profiler_v2_h_disabled
-static inline NvBool profilerBaseQueryCapabilities(struct ProfilerBase *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS *pClientPermissions) {
-    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_profiler_v2_h_disabled
-#define profilerBaseQueryCapabilities(pResource, pCallContext, pParams, pClientPermissions) profilerBaseQueryCapabilities_IMPL(pResource, pCallContext, pParams, pClientPermissions)
-#endif //__nvoc_profiler_v2_h_disabled
-
-#define profilerBaseQueryCapabilities_HAL(pResource, pCallContext, pParams, pClientPermissions) profilerBaseQueryCapabilities(pResource, pCallContext, pParams, pClientPermissions)
 
 static inline NV_STATUS profilerBaseConstructState_56cd7a(struct ProfilerBase *pProf, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
     return NV_OK;
@@ -726,23 +823,6 @@ NV_STATUS profilerBaseCtrlCmdDisableDynamicMMABoost_IMPL(struct ProfilerBase *pP
 
 NV_STATUS profilerBaseCtrlCmdGetDynamicMMABoostStatus_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS *pParams);
 
-NV_STATUS profilerBaseConstruct_IMPL(struct ProfilerBase *arg_pProf, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_profilerBaseConstruct(arg_pProf, arg_pCallContext, arg_pParams) profilerBaseConstruct_IMPL(arg_pProf, arg_pCallContext, arg_pParams)
-void profilerBaseDestruct_IMPL(struct ProfilerBase *pProf);
-
-#define __nvoc_profilerBaseDestruct(pProf) profilerBaseDestruct_IMPL(pProf)
-NV_STATUS profilerBaseQuiesceStreamout_IMPL(struct ProfilerBase *pProf, OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 pmaChIdx);
-
-#ifdef __nvoc_profiler_v2_h_disabled
-static inline NV_STATUS profilerBaseQuiesceStreamout(struct ProfilerBase *pProf, OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 pmaChIdx) {
-    NV_ASSERT_FAILED_PRECOMP("ProfilerBase was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_profiler_v2_h_disabled
-#define profilerBaseQuiesceStreamout(pProf, pGpu, pKernelHwpm, pmaChIdx) profilerBaseQuiesceStreamout_IMPL(pProf, pGpu, pKernelHwpm, pmaChIdx)
-#endif //__nvoc_profiler_v2_h_disabled
-
 #undef PRIVATE_FIELD
 
 
@@ -855,7 +935,22 @@ NV_STATUS __nvoc_objCreate_ProfilerCtx(ProfilerCtx**, Dynamic*, NvU32, CALL_CONT
     __nvoc_objCreate_ProfilerCtx((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS profilerCtxConstruct_IMPL(struct ProfilerCtx *arg_pResource, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_profilerCtxConstruct(arg_pResource, arg_pCallContext, arg_pParams) profilerCtxConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+
+NV_STATUS profilerCtxConstructState_IMPL(struct ProfilerCtx *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS clientPermissions);
+#ifdef __nvoc_profiler_v2_h_disabled
+static inline NV_STATUS profilerCtxConstructState(struct ProfilerCtx *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS clientPermissions) {
+    NV_ASSERT_FAILED_PRECOMP("ProfilerCtx was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_profiler_v2_h_disabled
+#define profilerCtxConstructState(pResource, pCallContext, pParams, clientPermissions) profilerCtxConstructState_IMPL(pResource, pCallContext, pParams, clientPermissions)
+#endif // __nvoc_profiler_v2_h_disabled
+
+
+// Wrapper macros for halified functions
 #define profilerCtxConstructStatePrologue_FNPTR(pResource) pResource->__profilerCtxConstructStatePrologue__
 #define profilerCtxConstructStatePrologue(pResource, pCallContext, pParams) profilerCtxConstructStatePrologue_DISPATCH(pResource, pCallContext, pParams)
 #define profilerCtxConstructStatePrologue_HAL(pResource, pCallContext, pParams) profilerCtxConstructStatePrologue_DISPATCH(pResource, pCallContext, pParams)
@@ -1064,20 +1159,6 @@ static inline void profilerCtxDestruct_b3696a(struct ProfilerCtx *pResource) {
     return;
 }
 
-NV_STATUS profilerCtxConstruct_IMPL(struct ProfilerCtx *arg_pResource, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_profilerCtxConstruct(arg_pResource, arg_pCallContext, arg_pParams) profilerCtxConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
-NV_STATUS profilerCtxConstructState_IMPL(struct ProfilerCtx *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS clientPermissions);
-
-#ifdef __nvoc_profiler_v2_h_disabled
-static inline NV_STATUS profilerCtxConstructState(struct ProfilerCtx *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS clientPermissions) {
-    NV_ASSERT_FAILED_PRECOMP("ProfilerCtx was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_profiler_v2_h_disabled
-#define profilerCtxConstructState(pResource, pCallContext, pParams, clientPermissions) profilerCtxConstructState_IMPL(pResource, pCallContext, pParams, clientPermissions)
-#endif //__nvoc_profiler_v2_h_disabled
-
 #undef PRIVATE_FIELD
 
 
@@ -1191,7 +1272,15 @@ NV_STATUS __nvoc_objCreate_ProfilerDev(ProfilerDev**, Dynamic*, NvU32, CALL_CONT
     __nvoc_objCreate_ProfilerDev((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS profilerDevConstruct_IMPL(struct ProfilerDev *arg_pResource, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_profilerDevConstruct(arg_pResource, arg_pCallContext, arg_pParams) profilerDevConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+
+void profilerDevDestruct_IMPL(struct ProfilerDev *pResource);
+#define __nvoc_profilerDevDestruct(pResource) profilerDevDestruct_IMPL(pResource)
+
+
+// Wrapper macros for halified functions
 #define profilerDevConstructState_FNPTR(pResource) pResource->__profilerDevConstructState__
 #define profilerDevConstructState(pResource, pCallContext, pParams, clientPermissions) profilerDevConstructState_DISPATCH(pResource, pCallContext, pParams, clientPermissions)
 #define profilerDevConstructState_HAL(pResource, pCallContext, pParams, clientPermissions) profilerDevConstructState_DISPATCH(pResource, pCallContext, pParams, clientPermissions)
@@ -1410,12 +1499,6 @@ static inline void profilerDevDestructState_b3696a(struct ProfilerDev *pResource
     return;
 }
 
-NV_STATUS profilerDevConstruct_IMPL(struct ProfilerDev *arg_pResource, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_profilerDevConstruct(arg_pResource, arg_pCallContext, arg_pParams) profilerDevConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
-void profilerDevDestruct_IMPL(struct ProfilerDev *pResource);
-
-#define __nvoc_profilerDevDestruct(pResource) profilerDevDestruct_IMPL(pResource)
 #undef PRIVATE_FIELD
 
 #endif // PROFILER_V2_H

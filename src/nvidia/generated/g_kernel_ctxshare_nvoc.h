@@ -167,7 +167,55 @@ NV_STATUS __nvoc_objCreate_KernelCtxShare(KernelCtxShare**, Dynamic*, NvU32);
     __nvoc_objCreate_KernelCtxShare((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS kctxshareConstruct_IMPL(struct KernelCtxShare *arg_pKernelCtxShare);
+#define __nvoc_kctxshareConstruct(arg_pKernelCtxShare) kctxshareConstruct_IMPL(arg_pKernelCtxShare)
+
+NV_STATUS kctxshareInitCommon_IMPL(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, NvU32 Flags, NvU32 *pSubctxId, struct KernelChannelGroupApi *pKernelChannelGroupApi);
+#ifdef __nvoc_kernel_ctxshare_h_disabled
+static inline NV_STATUS kctxshareInitCommon(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, NvU32 Flags, NvU32 *pSubctxId, struct KernelChannelGroupApi *pKernelChannelGroupApi) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCtxShare was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_ctxshare_h_disabled
+#define kctxshareInitCommon(pKernelCtxShare, pKernelCtxShareApi, pGpu, pVAS, Flags, pSubctxId, pKernelChannelGroupApi) kctxshareInitCommon_IMPL(pKernelCtxShare, pKernelCtxShareApi, pGpu, pVAS, Flags, pSubctxId, pKernelChannelGroupApi)
+#endif // __nvoc_kernel_ctxshare_h_disabled
+
+NV_STATUS kctxshareDestroyCommon_IMPL(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct KernelChannelGroupApi *pKernelChannelGroupApi);
+#ifdef __nvoc_kernel_ctxshare_h_disabled
+static inline NV_STATUS kctxshareDestroyCommon(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct KernelChannelGroupApi *pKernelChannelGroupApi) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCtxShare was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_ctxshare_h_disabled
+#define kctxshareDestroyCommon(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi) kctxshareDestroyCommon_IMPL(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi)
+#endif // __nvoc_kernel_ctxshare_h_disabled
+
+void kctxshareDestruct_IMPL(struct KernelCtxShare *pKernelCtxShare);
+#define __nvoc_kctxshareDestruct(pKernelCtxShare) kctxshareDestruct_IMPL(pKernelCtxShare)
+
+#ifdef __nvoc_kernel_ctxshare_h_disabled
+static inline NV_STATUS kctxshareInit(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvU64 offset, EMEMBLOCK *pBlock) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCtxShare was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_ctxshare_h_disabled
+#define kctxshareInit(pKernelCtxShare, pKernelCtxShareApi, pGpu, pVAS, pKernelChannelGroupApi, offset, pBlock) kctxshareInit_56cd7a(pKernelCtxShare, pKernelCtxShareApi, pGpu, pVAS, pKernelChannelGroupApi, offset, pBlock)
+#endif // __nvoc_kernel_ctxshare_h_disabled
+
+#ifdef __nvoc_kernel_ctxshare_h_disabled
+static inline NV_STATUS kctxshareDestroy(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvBool bRelease) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCtxShare was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_ctxshare_h_disabled
+#define kctxshareDestroy(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi, bRelease) kctxshareDestroy_56cd7a(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi, bRelease)
+#endif // __nvoc_kernel_ctxshare_h_disabled
+
+
+// Wrapper macros for halified functions
+#define kctxshareInit_HAL(pKernelCtxShare, pKernelCtxShareApi, pGpu, pVAS, pKernelChannelGroupApi, offset, pBlock) kctxshareInit(pKernelCtxShare, pKernelCtxShareApi, pGpu, pVAS, pKernelChannelGroupApi, offset, pBlock)
+#define kctxshareDestroy_HAL(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi, bRelease) kctxshareDestroy(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi, bRelease)
 
 // Dispatch functions
 static inline NV_STATUS kctxshareInit_56cd7a(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvU64 offset, EMEMBLOCK *pBlock) {
@@ -175,61 +223,11 @@ static inline NV_STATUS kctxshareInit_56cd7a(struct KernelCtxShare *pKernelCtxSh
 }
 
 
-#ifdef __nvoc_kernel_ctxshare_h_disabled
-static inline NV_STATUS kctxshareInit(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvU64 offset, EMEMBLOCK *pBlock) {
-    NV_ASSERT_FAILED_PRECOMP("KernelCtxShare was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_ctxshare_h_disabled
-#define kctxshareInit(pKernelCtxShare, pKernelCtxShareApi, pGpu, pVAS, pKernelChannelGroupApi, offset, pBlock) kctxshareInit_56cd7a(pKernelCtxShare, pKernelCtxShareApi, pGpu, pVAS, pKernelChannelGroupApi, offset, pBlock)
-#endif //__nvoc_kernel_ctxshare_h_disabled
-
-#define kctxshareInit_HAL(pKernelCtxShare, pKernelCtxShareApi, pGpu, pVAS, pKernelChannelGroupApi, offset, pBlock) kctxshareInit(pKernelCtxShare, pKernelCtxShareApi, pGpu, pVAS, pKernelChannelGroupApi, offset, pBlock)
-
 static inline NV_STATUS kctxshareDestroy_56cd7a(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvBool bRelease) {
     return NV_OK;
 }
 
 
-#ifdef __nvoc_kernel_ctxshare_h_disabled
-static inline NV_STATUS kctxshareDestroy(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvBool bRelease) {
-    NV_ASSERT_FAILED_PRECOMP("KernelCtxShare was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_ctxshare_h_disabled
-#define kctxshareDestroy(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi, bRelease) kctxshareDestroy_56cd7a(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi, bRelease)
-#endif //__nvoc_kernel_ctxshare_h_disabled
-
-#define kctxshareDestroy_HAL(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi, bRelease) kctxshareDestroy(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi, bRelease)
-
-NV_STATUS kctxshareConstruct_IMPL(struct KernelCtxShare *arg_pKernelCtxShare);
-
-#define __nvoc_kctxshareConstruct(arg_pKernelCtxShare) kctxshareConstruct_IMPL(arg_pKernelCtxShare)
-NV_STATUS kctxshareInitCommon_IMPL(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, NvU32 Flags, NvU32 *pSubctxId, struct KernelChannelGroupApi *pKernelChannelGroupApi);
-
-#ifdef __nvoc_kernel_ctxshare_h_disabled
-static inline NV_STATUS kctxshareInitCommon(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, NvU32 Flags, NvU32 *pSubctxId, struct KernelChannelGroupApi *pKernelChannelGroupApi) {
-    NV_ASSERT_FAILED_PRECOMP("KernelCtxShare was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_ctxshare_h_disabled
-#define kctxshareInitCommon(pKernelCtxShare, pKernelCtxShareApi, pGpu, pVAS, Flags, pSubctxId, pKernelChannelGroupApi) kctxshareInitCommon_IMPL(pKernelCtxShare, pKernelCtxShareApi, pGpu, pVAS, Flags, pSubctxId, pKernelChannelGroupApi)
-#endif //__nvoc_kernel_ctxshare_h_disabled
-
-NV_STATUS kctxshareDestroyCommon_IMPL(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct KernelChannelGroupApi *pKernelChannelGroupApi);
-
-#ifdef __nvoc_kernel_ctxshare_h_disabled
-static inline NV_STATUS kctxshareDestroyCommon(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct KernelChannelGroupApi *pKernelChannelGroupApi) {
-    NV_ASSERT_FAILED_PRECOMP("KernelCtxShare was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_ctxshare_h_disabled
-#define kctxshareDestroyCommon(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi) kctxshareDestroyCommon_IMPL(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi)
-#endif //__nvoc_kernel_ctxshare_h_disabled
-
-void kctxshareDestruct_IMPL(struct KernelCtxShare *pKernelCtxShare);
-
-#define __nvoc_kctxshareDestruct(pKernelCtxShare) kctxshareDestruct_IMPL(pKernelCtxShare)
 #undef PRIVATE_FIELD
 
 
@@ -268,11 +266,6 @@ struct KernelCtxShareApi {
     struct RmResource *__nvoc_pbase_RmResource;    // rmres super^2
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct KernelCtxShareApi *__nvoc_pbase_KernelCtxShareApi;    // kctxshareapi
-
-    // Vtable with 3 per-object function pointers
-    NV_STATUS (*__kctxshareapiCtrlCmdSetTpcPartitionTable__)(struct KernelCtxShareApi * /*this*/, NV9067_CTRL_TPC_PARTITION_TABLE_PARAMS *);  // exported (id=0x90670102)
-    NV_STATUS (*__kctxshareapiCtrlCmdGetCwdWatermark__)(struct KernelCtxShareApi * /*this*/, NV9067_CTRL_CWD_WATERMARK_PARAMS *);  // exported (id=0x90670201)
-    NV_STATUS (*__kctxshareapiCtrlCmdSetCwdWatermark__)(struct KernelCtxShareApi * /*this*/, NV9067_CTRL_CWD_WATERMARK_PARAMS *);  // exported (id=0x90670202)
 
     // Data members
     struct KernelCtxShare *pShareData;
@@ -345,15 +338,57 @@ NV_STATUS __nvoc_objCreate_KernelCtxShareApi(KernelCtxShareApi**, Dynamic*, NvU3
     __nvoc_objCreate_KernelCtxShareApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS kctxshareapiConstruct_IMPL(struct KernelCtxShareApi *arg_pKernelCtxShareApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_kctxshareapiConstruct(arg_pKernelCtxShareApi, arg_pCallContext, arg_pParams) kctxshareapiConstruct_IMPL(arg_pKernelCtxShareApi, arg_pCallContext, arg_pParams)
+
+NV_STATUS kctxshareapiCopyConstruct_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#ifdef __nvoc_kernel_ctxshare_h_disabled
+static inline NV_STATUS kctxshareapiCopyConstruct(struct KernelCtxShareApi *pKernelCtxShareApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCtxShareApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_ctxshare_h_disabled
+#define kctxshareapiCopyConstruct(pKernelCtxShareApi, pCallContext, pParams) kctxshareapiCopyConstruct_IMPL(pKernelCtxShareApi, pCallContext, pParams)
+#endif // __nvoc_kernel_ctxshare_h_disabled
+
+void kctxshareapiDestruct_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi);
+#define __nvoc_kctxshareapiDestruct(pKernelCtxShareApi) kctxshareapiDestruct_IMPL(pKernelCtxShareApi)
+
+NV_STATUS kctxshareapiCtrlCmdSetTpcPartitionTable_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi, NV9067_CTRL_TPC_PARTITION_TABLE_PARAMS *pParams);
+#ifdef __nvoc_kernel_ctxshare_h_disabled
+static inline NV_STATUS kctxshareapiCtrlCmdSetTpcPartitionTable(struct KernelCtxShareApi *pKernelCtxShareApi, NV9067_CTRL_TPC_PARTITION_TABLE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCtxShareApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_ctxshare_h_disabled
+#define kctxshareapiCtrlCmdSetTpcPartitionTable(pKernelCtxShareApi, pParams) kctxshareapiCtrlCmdSetTpcPartitionTable_IMPL(pKernelCtxShareApi, pParams)
+#endif // __nvoc_kernel_ctxshare_h_disabled
+
+NV_STATUS kctxshareapiCtrlCmdGetCwdWatermark_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi, NV9067_CTRL_CWD_WATERMARK_PARAMS *pParams);
+#ifdef __nvoc_kernel_ctxshare_h_disabled
+static inline NV_STATUS kctxshareapiCtrlCmdGetCwdWatermark(struct KernelCtxShareApi *pKernelCtxShareApi, NV9067_CTRL_CWD_WATERMARK_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCtxShareApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_ctxshare_h_disabled
+#define kctxshareapiCtrlCmdGetCwdWatermark(pKernelCtxShareApi, pParams) kctxshareapiCtrlCmdGetCwdWatermark_IMPL(pKernelCtxShareApi, pParams)
+#endif // __nvoc_kernel_ctxshare_h_disabled
+
+NV_STATUS kctxshareapiCtrlCmdSetCwdWatermark_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi, NV9067_CTRL_CWD_WATERMARK_PARAMS *pParams);
+#ifdef __nvoc_kernel_ctxshare_h_disabled
+static inline NV_STATUS kctxshareapiCtrlCmdSetCwdWatermark(struct KernelCtxShareApi *pKernelCtxShareApi, NV9067_CTRL_CWD_WATERMARK_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCtxShareApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_ctxshare_h_disabled
+#define kctxshareapiCtrlCmdSetCwdWatermark(pKernelCtxShareApi, pParams) kctxshareapiCtrlCmdSetCwdWatermark_IMPL(pKernelCtxShareApi, pParams)
+#endif // __nvoc_kernel_ctxshare_h_disabled
+
+
+// Wrapper macros for halified functions
 #define kctxshareapiCanCopy_FNPTR(pKernelCtxShareApi) pKernelCtxShareApi->__nvoc_metadata_ptr->vtable.__kctxshareapiCanCopy__
 #define kctxshareapiCanCopy(pKernelCtxShareApi) kctxshareapiCanCopy_DISPATCH(pKernelCtxShareApi)
-#define kctxshareapiCtrlCmdSetTpcPartitionTable_FNPTR(pKernelCtxShareApi) pKernelCtxShareApi->__kctxshareapiCtrlCmdSetTpcPartitionTable__
-#define kctxshareapiCtrlCmdSetTpcPartitionTable(pKernelCtxShareApi, pParams) kctxshareapiCtrlCmdSetTpcPartitionTable_DISPATCH(pKernelCtxShareApi, pParams)
-#define kctxshareapiCtrlCmdGetCwdWatermark_FNPTR(pKernelCtxShareApi) pKernelCtxShareApi->__kctxshareapiCtrlCmdGetCwdWatermark__
-#define kctxshareapiCtrlCmdGetCwdWatermark(pKernelCtxShareApi, pParams) kctxshareapiCtrlCmdGetCwdWatermark_DISPATCH(pKernelCtxShareApi, pParams)
-#define kctxshareapiCtrlCmdSetCwdWatermark_FNPTR(pKernelCtxShareApi) pKernelCtxShareApi->__kctxshareapiCtrlCmdSetCwdWatermark__
-#define kctxshareapiCtrlCmdSetCwdWatermark(pKernelCtxShareApi, pParams) kctxshareapiCtrlCmdSetCwdWatermark_DISPATCH(pKernelCtxShareApi, pParams)
 #define kctxshareapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define kctxshareapiControl(pGpuResource, pCallContext, pParams) kctxshareapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define kctxshareapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
@@ -406,18 +441,6 @@ NV_STATUS __nvoc_objCreate_KernelCtxShareApi(KernelCtxShareApi**, Dynamic*, NvU3
 // Dispatch functions
 static inline NvBool kctxshareapiCanCopy_DISPATCH(struct KernelCtxShareApi *pKernelCtxShareApi) {
     return pKernelCtxShareApi->__nvoc_metadata_ptr->vtable.__kctxshareapiCanCopy__(pKernelCtxShareApi);
-}
-
-static inline NV_STATUS kctxshareapiCtrlCmdSetTpcPartitionTable_DISPATCH(struct KernelCtxShareApi *pKernelCtxShareApi, NV9067_CTRL_TPC_PARTITION_TABLE_PARAMS *pParams) {
-    return pKernelCtxShareApi->__kctxshareapiCtrlCmdSetTpcPartitionTable__(pKernelCtxShareApi, pParams);
-}
-
-static inline NV_STATUS kctxshareapiCtrlCmdGetCwdWatermark_DISPATCH(struct KernelCtxShareApi *pKernelCtxShareApi, NV9067_CTRL_CWD_WATERMARK_PARAMS *pParams) {
-    return pKernelCtxShareApi->__kctxshareapiCtrlCmdGetCwdWatermark__(pKernelCtxShareApi, pParams);
-}
-
-static inline NV_STATUS kctxshareapiCtrlCmdSetCwdWatermark_DISPATCH(struct KernelCtxShareApi *pKernelCtxShareApi, NV9067_CTRL_CWD_WATERMARK_PARAMS *pParams) {
-    return pKernelCtxShareApi->__kctxshareapiCtrlCmdSetCwdWatermark__(pKernelCtxShareApi, pParams);
 }
 
 static inline NV_STATUS kctxshareapiControl_DISPATCH(struct KernelCtxShareApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -524,23 +547,6 @@ NV_STATUS kctxshareapiCtrlCmdGetCwdWatermark_IMPL(struct KernelCtxShareApi *pKer
 
 NV_STATUS kctxshareapiCtrlCmdSetCwdWatermark_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi, NV9067_CTRL_CWD_WATERMARK_PARAMS *pParams);
 
-NV_STATUS kctxshareapiConstruct_IMPL(struct KernelCtxShareApi *arg_pKernelCtxShareApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_kctxshareapiConstruct(arg_pKernelCtxShareApi, arg_pCallContext, arg_pParams) kctxshareapiConstruct_IMPL(arg_pKernelCtxShareApi, arg_pCallContext, arg_pParams)
-NV_STATUS kctxshareapiCopyConstruct_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
-
-#ifdef __nvoc_kernel_ctxshare_h_disabled
-static inline NV_STATUS kctxshareapiCopyConstruct(struct KernelCtxShareApi *pKernelCtxShareApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("KernelCtxShareApi was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_ctxshare_h_disabled
-#define kctxshareapiCopyConstruct(pKernelCtxShareApi, pCallContext, pParams) kctxshareapiCopyConstruct_IMPL(pKernelCtxShareApi, pCallContext, pParams)
-#endif //__nvoc_kernel_ctxshare_h_disabled
-
-void kctxshareapiDestruct_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi);
-
-#define __nvoc_kctxshareapiDestruct(pKernelCtxShareApi) kctxshareapiDestruct_IMPL(pKernelCtxShareApi)
 #undef PRIVATE_FIELD
 
 

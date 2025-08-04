@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -157,6 +157,12 @@ char *portStringTok(char *str, const char *delim, char **saveptr);
  *
  */
 char *portStringStrStr(char *str, char *substr);
+
+/**
+ * @brief Returns pointer to the first occurrence of character in the str
+ *
+ */
+const char *portStringStrChar(const char *str, int c);
 
 /// @} End core functions
 

@@ -57,16 +57,48 @@
 #define NV_REG_STR_GLOBAL_SURFACE_OVERRIDE_RM_ENABLE     3:3
 
 
-#define NV_REG_STR_RM_OVERRIDE_DEFAULT_TIMEOUT         "RmDefaultTimeout"
+//
+// This regkey is experimental and may behave differently on specific platforms.
+// DO NOT rely on it being a stable regkey to change all timeouts at once.
+//
+// Type Dword
+// Change all RM internal timeouts to experiment with Bug 5203024.
+//
+// Some timeouts may still silently clamp to differnt min/max values and this
+// regkey does NOT validate their range.
+//
+#define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT        "RmOverrideInternalTimeoutsMs"
+// Timeout value to set in milliseconds
+#define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT_VALUE_MS                        23:0
+// Same effect as setting "RmDefaultTimeout" to VALUE_MS
+#define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT_FLAGS_SET_RM_DEFAULT_TIMEOUT    31:31
+// Same effect as setting "RmWatchDogTimeOut" to VALUE_MS (converted to seconds)
+#define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT_FLAGS_SET_RC_WATCHDOG_TIMEOUT   30:30
+// Same effect as setting "RmEngineContextSwitchTimeout" to VALUE_MS (converted to usec)
+#define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT_FLAGS_SET_CTXSW_TIMEOUT         29:29
+// Currently has no effect
+#define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT_FLAGS_SET_VIDENG_TIMEOUT        28:28
+// Currently has no effect
+#define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT_FLAGS_SET_PMU_INTERNAL_TIMEOUT  27:27
+// Currently has no effect
+#define NV_REG_STR_RM_BUG5203024_OVERRIDE_TIMEOUT_FLAGS_SET_FECS_WATCHDOG_TIMEOUT 26:26
+
+
+//
 // Type Dword
 // Override default RM timeout.  Measured in milliseconds.
 // Not scaled for emulation
+//
+#define NV_REG_STR_RM_DEFAULT_TIMEOUT_MS                "RmDefaultTimeout"
 
+
+//
+// Type Dword
+// Override default RM timeout flags to either OSDELAY or OSTIMER.
+//
 #define NV_REG_STR_RM_OVERRIDE_DEFAULT_TIMEOUT_FLAGS    "RmDefaultTimeoutFlags"
 #define NV_REG_STR_RM_OVERRIDE_DEFAULT_TIMEOUT_FLAGS_OSTIMER    4
 #define NV_REG_STR_RM_OVERRIDE_DEFAULT_TIMEOUT_FLAGS_OSDELAY    8
-// Type Dword
-// Override default RM timeout flags to either OSDELAY or OSTIMER.
 
 
 #define NV_REG_STR_SUPPRESS_CLASS_LIST "SuppressClassList"
@@ -228,11 +260,7 @@
 #define NV_REG_STR_RM_INST_LOC_2_BAR_CTX_COH                     NV_REG_STR_RM_INST_LOC_COH
 #define NV_REG_STR_RM_INST_LOC_2_BAR_CTX_NCOH                    NV_REG_STR_RM_INST_LOC_NCOH
 #define NV_REG_STR_RM_INST_LOC_2_BAR_CTX_VID                     NV_REG_STR_RM_INST_LOC_VID
-#define NV_REG_STR_RM_INST_LOC_2_PMU_PWR_RAIL_VIDEO_PRED_BUFFER_SURFACE            13:12 // Power Rail Video Prediction
-#define NV_REG_STR_RM_INST_LOC_2_PMU_PWR_RAIL_VIDEO_PRED_BUFFER_SURFACE_DEFAULT    NV_REG_STR_RM_INST_LOC_DEFAULT
-#define NV_REG_STR_RM_INST_LOC_2_PMU_PWR_RAIL_VIDEO_PRED_BUFFER_SURFACE_COH        NV_REG_STR_RM_INST_LOC_COH
-#define NV_REG_STR_RM_INST_LOC_2_PMU_PWR_RAIL_VIDEO_PRED_BUFFER_SURFACE_NCOH       NV_REG_STR_RM_INST_LOC_NCOH
-#define NV_REG_STR_RM_INST_LOC_2_PMU_PWR_RAIL_VIDEO_PRED_BUFFER_SURFACE_VID        NV_REG_STR_RM_INST_LOC_VID
+#define NV_REG_STR_RM_INST_LOC_2_UNUSED                          13:12         // Unused
 #define NV_REG_STR_RM_INST_LOC_2_CTX_PATCH                       15:14         // context patch
 #define NV_REG_STR_RM_INST_LOC_2_CTX_PATCH_DEFAULT               NV_REG_STR_RM_INST_LOC_DEFAULT
 #define NV_REG_STR_RM_INST_LOC_2_CTX_PATCH_COH                   NV_REG_STR_RM_INST_LOC_COH
@@ -248,7 +276,7 @@
 #define NV_REG_STR_RM_INST_LOC_2_MMU_WRITE_COH                   NV_REG_STR_RM_INST_LOC_COH
 #define NV_REG_STR_RM_INST_LOC_2_MMU_WRITE_NCOH                  NV_REG_STR_RM_INST_LOC_NCOH
 #define NV_REG_STR_RM_INST_LOC_2_MMU_WRITE_VID                   NV_REG_STR_RM_INST_LOC_VID
-#define NV_REG_STR_RM_INST_LOC_2_UNUSED                          21:20         // Unused
+#define NV_REG_STR_RM_INST_LOC_2_UNUSED2                         21:20         // Unused
 #define NV_REG_STR_RM_INST_LOC_2_ZCULLCTX                        23:22         // zcull context buffer
 #define NV_REG_STR_RM_INST_LOC_2_ZCULLCTX_DEFAULT                NV_REG_STR_RM_INST_LOC_DEFAULT
 #define NV_REG_STR_RM_INST_LOC_2_ZCULLCTX_COH                    NV_REG_STR_RM_INST_LOC_COH
@@ -1117,7 +1145,6 @@
 #define NV_REG_STR_RM_FORCE_STATIC_BAR1_ENABLE                    0x00000001
 #define NV_REG_STR_RM_FORCE_STATIC_BAR1_AUTO                      0x00000002
 #define NV_REG_STR_RM_FORCE_STATIC_BAR1_MAX                       0x00000003
-#define NV_REG_STR_RM_FORCE_STATIC_BAR1_DEFAULT                   NV_REG_STR_RM_FORCE_STATIC_BAR1_DISABLE
 
 #define NV_REG_STR_RM_BAR2_APERTURE_SIZE_MB                  "RMBar2ApertureSizeMB"
 // Type DWORD
@@ -1349,6 +1376,16 @@
 #define NV_REG_INTERNAL_PANEL_DISCONNECTED_DISABLE  0x00000000
 #define NV_REG_INTERNAL_PANEL_DISCONNECTED_ENABLE   0x00000001
 #define NV_REG_INTERNAL_PANEL_DISCONNECTED_DEFAULT  RM_REG_INTERNAL_PANEL_DISCONNECTED_DISABLE
+
+#define NV_REG_STR_RM_ENABLE_AGGRESSIVE_VBLANK          "RmEnableAggressiveVblank"
+// Type DWORD
+// Encoding Boolean
+// Enable/Disable Aggressive Vblank Handling
+// 0 -- Don't enable
+// 1 -- Do enable
+#define NV_REG_STR_RM_ENABLE_AGGRESSIVE_VBLANK_DISABLE (0)
+#define NV_REG_STR_RM_ENABLE_AGGRESSIVE_VBLANK_ENABLE (1)
+#define NV_REG_STR_RM_ENABLE_AGGRESSIVE_VBLANK_DEFAULT (NV_REG_STR_RM_ENABLE_AGGRESSIVE_VBLANK_DISABLE)
 
 #define NV_REG_STR_RM_PER_INTR_DPC_QUEUING        "RMDisablePerIntrDPCQueueing"
 // Type DWORD
@@ -1818,6 +1855,11 @@
 #define NV_REG_STR_RM_DISABLE_FSP                           "RmDisableFsp"
 #define NV_REG_STR_RM_DISABLE_FSP_NO                        (0x00000000)
 #define NV_REG_STR_RM_DISABLE_FSP_YES                       (0x00000001)
+
+#define NV_REG_STR_RM_DISABLE_SEC2                           "RmDisableSec2"
+#define NV_REG_STR_RM_DISABLE_SEC2_NO                        (0x00000000)
+#define NV_REG_STR_RM_DISABLE_SEC2_YES                       (0x00000001)
+
 // Type DWORD (Boolean)
 // Override any other settings and disable FSP
 
@@ -2023,6 +2065,13 @@
 #define NV_REG_STR_RM_INFOROM_DISABLE_BBX_PERIODIC_FLUSH                     3:3
 #define NV_REG_STR_RM_INFOROM_DISABLE_BBX_PERIODIC_FLUSH_YES        (0x00000000)
 #define NV_REG_STR_RM_INFOROM_DISABLE_BBX_PERIODIC_FLUSH_NO         (0x00000001)
+
+// Type DWORD
+// The period of logging masked ECC corrected errors in minutes.
+//
+#define NV_REG_STR_RM_INFOROM_ECC_SBE_LOGGING_PERIOD_MIN            "RmEccSbeLoggingPeriodMin"
+#define NV_REG_STR_RM_INFOROM_ECC_SBE_LOGGING_PERIOD_MIN_DEFAULT    10
+#define NV_REG_STR_RM_INFOROM_ECC_SBE_LOGGING_PERIOD_MIN_MIN        1
 
 //
 // Type DWORD (Boolean)
@@ -2745,6 +2794,22 @@
 
 
 //
+// TYPE DWORD
+// Regkey to override coherent CPU FB memory base address.
+// Address provided should be 4GiB aligned/upper 32 bit.
+//
+#define NV_REG_STR_RM_OVERRIDE_COHERENT_CPU_FB_BASE               "RmOverrideCoherentCpuFbBase"
+
+//
+// TYPE DWORD
+// Regkey to override FLA+sysmem support
+//
+#define NV_REG_STR_RM_FORCE_ENABLE_FLA_SYSMEM                     "RmForceEnableFlaSysmem"
+#define NV_REG_STR_RM_FORCE_ENABLE_FLA_SYSMEM_TRUE                (0x00000001)
+#define NV_REG_STR_RM_FORCE_ENABLE_FLA_SYSMEM_FALSE               (0x00000000)
+#define NV_REG_STR_RM_FORCE_ENABLE_FLA_SYSMEM_DEFAULT             NV_REG_STR_RM_FORCE_ENABLE_FLA_SYSMEM_FALSE
+
+//
 // Type DWORD:
 // Secure bootflow is needed to bootstrap DEVINIT in LS mode where IFR is suppressed
 // This is achieved by executing DEVINIT by SECURE_BOOT command of FWSECLIC
@@ -2755,20 +2820,46 @@
 #define NV_REG_STR_RM_DEVINIT_BY_SECURE_BOOT_ENABLE              1
 #define NV_REG_STR_RM_DEVINIT_BY_SECURE_BOOT_DISABLE             0
 
-//
-// Type: DWORD
-// Regkey to enable/disable FB sanity check after FSP secure boot complete
-// _ENABLE: Enable FB sanity check
-// _DISABLE: Disable FB sanity check
-// default is _DISABLE
-//
-#define NV_REG_STR_RM_FB_SANITY_CHECK                             "RmFbSanityCheck"
-#define NV_REG_STR_RM_FB_SANITY_CHECK_ENABLE                      (0x00000001)
-#define NV_REG_STR_RM_FB_SANITY_CHECK_DISABLE                     (0x00000000)
-#define NV_REG_STR_RM_FB_SANITY_CHECK_DEFAULT                     NV_REG_STR_RM_FB_SANITY_CHECK_DISABLE
-
 // Type DWORD
 // If set, RM will Align the circular buffer size up to 64k
 #define NV_REG_STR_RM_64K_BUG_5123775_WAR                         "RM64kBug5123775War"
+
+// Type DWORD (Boolean)
+// Enable the extended buffer for HWPM PMA channel.
+#define NV_REG_STR_RM_ENABLE_DSTATE_HFRP                          "RmEnableDStateHfrp"
+#define NV_REG_STR_RM_ENABLE_DSTATE_HFRP_TRUE                     (0x00000001)
+#define NV_REG_STR_RM_ENABLE_DSTATE_HFRP_FALSE                    (0x00000000)
+
+//
+// TYPE DWORD
+// Regkey to override Non-PASID ATS support
+//
+#define NV_REG_STR_RM_OVERRIDE_NON_PASID_ATS_SUPPORT              "RmOverrideNonPasidAtsSupport"
+#define NV_REG_STR_RM_OVERRIDE_NON_PASID_ATS_SUPPORT_TRUE         (0x00000001)
+#define NV_REG_STR_RM_OVERRIDE_NON_PASID_ATS_SUPPORT_FALSE        (0x00000000)
+#define NV_REG_STR_RM_OVERRIDE_NON_PASID_ATS_SUPPORT_DEFAULT      NV_REG_STR_RM_OVERRIDE_NON_PASID_ATS_SUPPORT_TRUE
+
+//
+// Type: DWORD
+// Regkey to validate BasicVRR and Pulsar cookies SSID and SVID against hardcoded values.
+// These cookies are used on platforms with unknown 4-part IDs and need to be validated.
+// To be removed for bug#5196490 validation.
+// Encoding -- 1 - Pass through BasicVRR and Pulsar cookie validation against 4-part IDs.
+//          -- 0 - Existing behavior: validate BasicVRR and Pulsar cookies based on 4-part IDs.
+//
+#define NV_REG_STR_RM_ALLOW_UNKNOWN_4PART_IDS                   "RmAllowUnknown4PartIds"
+#define NV_REG_STR_RM_ALLOW_UNKNOWN_4PART_IDS_ENABLE            0x00000001
+#define NV_REG_STR_RM_ALLOW_UNKNOWN_4PART_IDS_DISABLE           0x00000000
+#define NV_REG_STR_RM_ALLOW_UNKNOWN_4PART_IDS_DEFAULT           NV_REG_STR_RM_ALLOW_UNKNOWN_4PART_IDS_DISABLE
+
+//
+// Type DWORD
+// Enable GR debug dump for CTXSW timeouts.
+//
+#define NV_REG_STR_RM_CTXSW_TIMEOUT_DEBUG_DUMP                  "RmCtxswTimeoutDebugDump"
+#define NV_REG_STR_RM_CTXSW_TIMEOUT_DEBUG_DUMP_VAL              0:0
+#define NV_REG_STR_RM_CTXSW_TIMEOUT_DEBUG_DUMP_VAL_ENABLE       0x1
+#define NV_REG_STR_RM_CTXSW_TIMEOUT_DEBUG_DUMP_VAL_DISABLE      0x0
+#define NV_REG_STR_RM_CTXSW_TIMEOUT_DEBUG_DUMP_VAL_DEFAULT      NV_REG_STR_RM_CTXSW_TIMEOUT_DEBUG_DUMP_VAL_DISABLE
 
 #endif // NVRM_REGISTRY_H

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2024 NVIDIA Corporation
+    Copyright (c) 2018-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -44,7 +44,7 @@ void uvm_ats_init(const UvmPlatformInfo *platform_info)
 
 NV_STATUS uvm_ats_add_gpu(uvm_parent_gpu_t *parent_gpu)
 {
-    if (g_uvm_global.ats.enabled) {
+    if (g_uvm_global.ats.enabled && uvm_parent_gpu_supports_ats(parent_gpu)) {
         UVM_ASSERT(UVM_ATS_SVA_SUPPORTED());
         return uvm_ats_sva_add_gpu(parent_gpu);
     }
@@ -54,7 +54,7 @@ NV_STATUS uvm_ats_add_gpu(uvm_parent_gpu_t *parent_gpu)
 
 void uvm_ats_remove_gpu(uvm_parent_gpu_t *parent_gpu)
 {
-    if (g_uvm_global.ats.enabled) {
+    if (g_uvm_global.ats.enabled && uvm_parent_gpu_supports_ats(parent_gpu)) {
         UVM_ASSERT(UVM_ATS_SVA_SUPPORTED());
         uvm_ats_sva_remove_gpu(parent_gpu);
     }

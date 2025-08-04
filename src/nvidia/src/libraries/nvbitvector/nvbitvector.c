@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -72,8 +72,8 @@ NV_STATUS
 bitVectorClr_IMPL
 (
     NV_BITVECTOR *pBitVector,
-    NvU16 bitVectorLast,
-    NvU16 idx
+    NvU32 bitVectorLast,
+    NvU32 idx
 )
 {
     NvU64 *qword;
@@ -159,8 +159,8 @@ NV_STATUS
 bitVectorSet_IMPL
 (
     NV_BITVECTOR *pBitVector,
-    NvU16 bitVectorLast,
-    NvU16 idx
+    NvU32 bitVectorLast,
+    NvU32 idx
 )
 {
     NvU64 *qword;
@@ -168,6 +168,7 @@ bitVectorSet_IMPL
     NvU32 qwordOffset = NV_BITVECTOR_OFFSET(idx);
 
     NV_ASSERT_OR_RETURN(NULL != pBitVector, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(idx < bitVectorLast, NV_ERR_INVALID_ARGUMENT);
 
     qword = (NvU64 *)&pBitVector->qword;
     qword[qwordIdx] |= NVBIT64(qwordOffset);
@@ -222,8 +223,8 @@ NV_STATUS
 bitVectorInv_IMPL
 (
     NV_BITVECTOR *pBitVector,
-    NvU16 bitVectorLast,
-    NvU16 idx
+    NvU32 bitVectorLast,
+    NvU32 idx
 )
 {
     NvU64 *qword;
@@ -231,6 +232,7 @@ bitVectorInv_IMPL
     NvU32 qwordOffset = NV_BITVECTOR_OFFSET(idx);
 
     NV_ASSERT_OR_RETURN(NULL != pBitVector, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(idx < bitVectorLast, NV_ERR_INVALID_ARGUMENT);
 
     qword = (NvU64 *)&pBitVector->qword;
     qword[qwordIdx] ^= NVBIT64(qwordOffset);
@@ -468,8 +470,8 @@ NvBool
 bitVectorTest_IMPL
 (
     const NV_BITVECTOR *pBitVector,
-    NvU16 bitVectorLast,
-    NvU16 idx
+    NvU32 bitVectorLast,
+    NvU32 idx
 )
 {
     const NvU64 *qword;

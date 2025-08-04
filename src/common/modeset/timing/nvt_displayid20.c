@@ -1349,17 +1349,17 @@ parseDisplayId20VendorSpecific(
         if (pDataBlock->data_bytes == NVT_VESA_VENDOR_SPECIFIC_LENGTH)
         {
             pVendorSpecific->vesaVsdb.data_struct_type.type =
-                block->vendor_specific_data[3] & NVT_VESA_ORG_VSDB_DATA_TYPE_MASK;
+                block->vendor_specific_data[0] & NVT_VESA_ORG_VSDB_DATA_TYPE_MASK;
             pVendorSpecific->vesaVsdb.data_struct_type.color_space_and_eotf =
-                (block->vendor_specific_data[3] & NVT_VESA_ORG_VSDB_COLOR_SPACE_AND_EOTF_MASK) >> NVT_VESA_ORG_VSDB_COLOR_SPACE_AND_EOTF_SHIFT;
+                (block->vendor_specific_data[0] & NVT_VESA_ORG_VSDB_COLOR_SPACE_AND_EOTF_MASK) >> NVT_VESA_ORG_VSDB_COLOR_SPACE_AND_EOTF_SHIFT;
             pVendorSpecific->vesaVsdb.overlapping.pixels_overlapping_count =
-                block->vendor_specific_data[4] & NVT_VESA_ORG_VSDB_PIXELS_OVERLAPPING_MASK;
+                block->vendor_specific_data[1] & NVT_VESA_ORG_VSDB_PIXELS_OVERLAPPING_MASK;
             pVendorSpecific->vesaVsdb.overlapping.multi_sst =
-                (block->vendor_specific_data[4] & NVT_VESA_ORG_VSDB_MULTI_SST_MODE_MASK) >> NVT_VESA_ORG_VSDB_MULTI_SST_MODE_SHIFT;
+                (block->vendor_specific_data[1] & NVT_VESA_ORG_VSDB_MULTI_SST_MODE_MASK) >> NVT_VESA_ORG_VSDB_MULTI_SST_MODE_SHIFT;
             pVendorSpecific->vesaVsdb.pass_through_integer.pass_through_integer_dsc =
-                block->vendor_specific_data[5] & NVT_VESA_ORG_VSDB_PASS_THROUGH_INTEGER_MASK;
+                block->vendor_specific_data[2] & NVT_VESA_ORG_VSDB_PASS_THROUGH_INTEGER_MASK;
             pVendorSpecific->vesaVsdb.pass_through_fractional.pass_through_fraction_dsc =
-                block->vendor_specific_data[6] & NVT_VESA_ORG_VSDB_PASS_THROUGH_FRACTIOINAL_MASK;
+                block->vendor_specific_data[3] & NVT_VESA_ORG_VSDB_PASS_THROUGH_FRACTIOINAL_MASK;
         }
         else
         {
@@ -1640,14 +1640,14 @@ parseDisplayId20Timing7Descriptor(
     pTiming->etc.rr = NvTiming_CalcRR(pTiming->pclk1khz,
         pTiming->interlaced,
         pTiming->HTotal,
-        pTiming->VTotal) / 10;
+        pTiming->VTotal);
     pTiming->etc.rrx1k = NvTiming_CalcRRx1k(pTiming->pclk1khz,
         pTiming->interlaced,
         pTiming->HTotal,
-        pTiming->VTotal) / 10;
+        pTiming->VTotal);
 
     // pclk change to 10kHz
-    pTiming->pclk = pTiming->pclk1khz / 10;
+    pTiming->pclk = (pTiming->pclk1khz + 5) / 10;
 
     pTiming->etc.status = NVT_STATUS_DISPLAYID_7N(++count);
 

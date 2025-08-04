@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -131,8 +131,8 @@ static NvU64 createTimestampFromTimer(NvU64 timerVal)
     NvU64 timestampMs;
 
     // get all the current time info.
-    timeSinceBootNsec = osGetCurrentTick();           // get the time since boot in ns
-    osGetCurrentTime(&currTimeSec, &currTimeUsec);  // get the current time
+    timeSinceBootNsec = osGetMonotonicTimeNs();           // get the time since boot in ns
+    osGetSystemTime(&currTimeSec, &currTimeUsec);  // get the current time
     timerFreq = osGetTimestampFreq();               // get the ticks/second.
 
     // convert everything to the same base (ms)

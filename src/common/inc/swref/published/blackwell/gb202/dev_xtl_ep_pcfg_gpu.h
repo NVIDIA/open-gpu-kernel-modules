@@ -48,6 +48,10 @@
 #define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_2                                                                 0x00000088           /* RW-4R */
 #define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_2_LTR_ENABLE                                                      10:10                /* RWIVF */
 #define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_2_LTR_ENABLE_DEFAULT                                              0x00000000           /* RWI-V */
+#define NV_EP_PCFG_GPU_CTRL_CMD_AND_STATUS                                                                     0x00000004           /* RW-4R */
+#define NV_EP_PCFG_GPU_CTRL_CMD_AND_STATUS_CMD_IO_SPACE                                                        0:0                  /* RWIVF */
+#define NV_EP_PCFG_GPU_CTRL_CMD_AND_STATUS_CMD_IO_SPACE_DISABLE                                                0x00000000           /* RWI-V */
+#define NV_EP_PCFG_GPU_CTRL_CMD_AND_STATUS_CMD_IO_SPACE_ENABLE                                                 0x00000001           /* RW--V */
 
 
 #endif // __gb202_dev_xtl_ep_pcfg_gpu_h__

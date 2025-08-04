@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -123,10 +123,6 @@ struct NvencSession {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct NvencSession *__nvoc_pbase_NvencSession;    // nvencsession
 
-    // Vtable with 2 per-object function pointers
-    NV_STATUS (*__nvencsessionCtrlCmdNvencSwSessionUpdateInfo__)(struct NvencSession * /*this*/, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS *);  // exported (id=0xa0bc0101)
-    NV_STATUS (*__nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2__)(struct NvencSession * /*this*/, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_V2_PARAMS *);  // exported (id=0xa0bc0102)
-
     // Data members
     NvHandle handle;
     NVENC_SESSION_ENTRY nvencSessionEntry;
@@ -205,11 +201,35 @@ NV_STATUS __nvoc_objCreate_NvencSession(NvencSession**, Dynamic*, NvU32, struct 
     __nvoc_objCreate_NvencSession((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
-#define nvencsessionCtrlCmdNvencSwSessionUpdateInfo_FNPTR(pNvencSession) pNvencSession->__nvencsessionCtrlCmdNvencSwSessionUpdateInfo__
-#define nvencsessionCtrlCmdNvencSwSessionUpdateInfo(pNvencSession, pParams) nvencsessionCtrlCmdNvencSwSessionUpdateInfo_DISPATCH(pNvencSession, pParams)
-#define nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_FNPTR(pNvencSession) pNvencSession->__nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2__
-#define nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2(pNvencSession, pParams) nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_DISPATCH(pNvencSession, pParams)
+// Wrapper macros for implementation functions
+NV_STATUS nvencsessionConstruct_IMPL(struct NvencSession *arg_pNvencSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_nvencsessionConstruct(arg_pNvencSession, arg_pCallContext, arg_pParams) nvencsessionConstruct_IMPL(arg_pNvencSession, arg_pCallContext, arg_pParams)
+
+void nvencsessionDestruct_IMPL(struct NvencSession *pNvencSession);
+#define __nvoc_nvencsessionDestruct(pNvencSession) nvencsessionDestruct_IMPL(pNvencSession)
+
+NV_STATUS nvencsessionCtrlCmdNvencSwSessionUpdateInfo_IMPL(struct NvencSession *pNvencSession, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS *pParams);
+#ifdef __nvoc_nvencsession_h_disabled
+static inline NV_STATUS nvencsessionCtrlCmdNvencSwSessionUpdateInfo(struct NvencSession *pNvencSession, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("NvencSession was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_nvencsession_h_disabled
+#define nvencsessionCtrlCmdNvencSwSessionUpdateInfo(pNvencSession, pParams) nvencsessionCtrlCmdNvencSwSessionUpdateInfo_IMPL(pNvencSession, pParams)
+#endif // __nvoc_nvencsession_h_disabled
+
+NV_STATUS nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_IMPL(struct NvencSession *pNvencSession, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_V2_PARAMS *pParams);
+#ifdef __nvoc_nvencsession_h_disabled
+static inline NV_STATUS nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2(struct NvencSession *pNvencSession, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_V2_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("NvencSession was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_nvencsession_h_disabled
+#define nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2(pNvencSession, pParams) nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_IMPL(pNvencSession, pParams)
+#endif // __nvoc_nvencsession_h_disabled
+
+
+// Wrapper macros for halified functions
 #define nvencsessionControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define nvencsessionControl(pGpuResource, pCallContext, pParams) nvencsessionControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define nvencsessionMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
@@ -262,14 +282,6 @@ NV_STATUS __nvoc_objCreate_NvencSession(NvencSession**, Dynamic*, NvU32, struct 
 #define nvencsessionAddAdditionalDependants(pClient, pResource, pReference) nvencsessionAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
-static inline NV_STATUS nvencsessionCtrlCmdNvencSwSessionUpdateInfo_DISPATCH(struct NvencSession *pNvencSession, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS *pParams) {
-    return pNvencSession->__nvencsessionCtrlCmdNvencSwSessionUpdateInfo__(pNvencSession, pParams);
-}
-
-static inline NV_STATUS nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_DISPATCH(struct NvencSession *pNvencSession, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_V2_PARAMS *pParams) {
-    return pNvencSession->__nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2__(pNvencSession, pParams);
-}
-
 static inline NV_STATUS nvencsessionControl_DISPATCH(struct NvencSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pGpuResource->__nvoc_metadata_ptr->vtable.__nvencsessionControl__(pGpuResource, pCallContext, pParams);
 }
@@ -374,12 +386,6 @@ NV_STATUS nvencsessionCtrlCmdNvencSwSessionUpdateInfo_IMPL(struct NvencSession *
 
 NV_STATUS nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_IMPL(struct NvencSession *pNvencSession, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_V2_PARAMS *pParams);
 
-NV_STATUS nvencsessionConstruct_IMPL(struct NvencSession *arg_pNvencSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_nvencsessionConstruct(arg_pNvencSession, arg_pCallContext, arg_pParams) nvencsessionConstruct_IMPL(arg_pNvencSession, arg_pCallContext, arg_pParams)
-void nvencsessionDestruct_IMPL(struct NvencSession *pNvencSession);
-
-#define __nvoc_nvencsessionDestruct(pNvencSession) nvencsessionDestruct_IMPL(pNvencSession)
 #undef PRIVATE_FIELD
 
 

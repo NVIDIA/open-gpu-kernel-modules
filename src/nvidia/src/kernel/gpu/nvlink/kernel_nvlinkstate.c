@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1116,34 +1116,14 @@ knvlinkShutdownLinks_WORKITEM
 {
     OBJGPU *pGpu                = gpumgrGetGpu(gpuInstance);
     KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-    NV_STATUS status;
 
     // Sanity Checks
     NV_CHECK_OR_RETURN_VOID(LEVEL_INFO,
             (pGpu != NULL &&
              pKernelNvlink != NULL));
 
-    if (pKernelNvlink->ipVerNvlink >= NVLINK_VERSION_50)
-    {
-        // Unilaterally shut down all enabled links
-        NV2080_CTRL_NVLINK_PROCESS_INIT_DISABLED_LINKS_PARAMS disableLinksParams = { 0 };
-        disableLinksParams.initDisabledLinksMask = pKernelNvlink->enabledLinks;
-        status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                        NV2080_CTRL_CMD_NVLINK_PROCESS_INIT_DISABLED_LINKS,
-                        (void *)&disableLinksParams,
-                        sizeof(NV2080_CTRL_NVLINK_PROCESS_INIT_DISABLED_LINKS_PARAMS));
-
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Failed to send disable link RPC on degraded GPU%d\n",
-                pGpu->gpuInstance);
-        }
-    }
-    else
-    {
-        NV_ASSERT_OR_RETURN_VOID(
-            knvlinkCoreShutdownDeviceLinks(pGpu, pKernelNvlink, NV_TRUE) == NV_OK);
-    }
+    NV_ASSERT_OR_RETURN_VOID(
+        knvlinkCoreShutdownDeviceLinks(pGpu, pKernelNvlink, NV_TRUE) == NV_OK);
 }
 
 /*!
@@ -1190,13 +1170,14 @@ knvlinkSetDegradedMode_IMPL
 
     // Queue a workitem to handle rest of the degraded mode handling
 
-    NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR,
-        osQueueWorkItemWithFlags(pGpu, knvlinkShutdownLinks_WORKITEM,
-                                    NULL,
-                                    (OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RO |
-                                    OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE)),
+    NV_CHECK_OK_OR_ELSE(status,
+        LEVEL_ERROR,
+        osQueueWorkItem(pGpu,
+                        knvlinkShutdownLinks_WORKITEM,
+                        NULL,
+                        (OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RO |
+                         OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE)),
         return;);
-
 }
 
 /*!

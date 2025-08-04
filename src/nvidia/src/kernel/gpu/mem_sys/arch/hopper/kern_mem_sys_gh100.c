@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -411,17 +411,24 @@ kmemsysProgramSysmemFlushBuffer_GH100
  * @param[in] pGpu                OBJGPU pointer
  * @param[in[ pKernelMemorySystem KernelMemorySystem pointer
  *
- * @returns void
+ * @returns NV_STATUS - NV_OK if sysmemFlushBuffer is valid otherwise NV_ERR_INVALID_STATE
  */
-void
+NV_STATUS
 kmemsysAssertSysmemFlushBufferValid_GH100
 (
     OBJGPU *pGpu,
     KernelMemorySystem *pKernelMemorySystem
 )
 {
-    NV_ASSERT((GPU_REG_RD_DRF(pGpu, _PFB, _FBHUB_PCIE_FLUSH_SYSMEM_ADDR_LO, _ADR) != 0) ||
-              (GPU_REG_RD_DRF(pGpu, _PFB, _FBHUB_PCIE_FLUSH_SYSMEM_ADDR_HI, _ADR) != 0));
+    NvU32 regPfbFbhubPcieFlushSysmemAddrValLo = GPU_REG_RD_DRF(pGpu, _PFB, _FBHUB_PCIE_FLUSH_SYSMEM_ADDR_LO, _ADR);
+    NvU32 regPfbFbhubPcieFlushSysmemAddrValHi = GPU_REG_RD_DRF(pGpu, _PFB, _FBHUB_PCIE_FLUSH_SYSMEM_ADDR_HI, _ADR);
+
+    if (regPfbFbhubPcieFlushSysmemAddrValLo == 0 && regPfbFbhubPcieFlushSysmemAddrValHi == 0)
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
+    return NV_OK;
 }
 
 /*!
@@ -549,6 +556,38 @@ kmemsysNumaRemoveAllMemory_GH100
     return;
 }
 
+/*!
+ * @brief Return if a given swizzId is rejected by HW
+ */
+NvBool
+kmemsysIsSwizzIdRejectedByHW_GH100
+(
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem,
+    NvU32 swizzId
+)
+{
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    const KERNEL_MIG_MANAGER_STATIC_INFO *pStaticInfo = kmigmgrGetStaticInfo(pGpu, pKernelMIGManager);
+
+    NV_ASSERT_OR_RETURN(swizzId < KMIGMGR_MAX_GPU_SWIZZID, NV_TRUE);
+    NV_ASSERT_OR_RETURN(pStaticInfo != NULL, NV_TRUE);
+    NV_ASSERT_OR_RETURN(pStaticInfo->pSwizzIdFbMemPageRanges != NULL, NV_TRUE);
+
+    // empty range returned by AMAP means swizzID is rejected by HW
+    if (rangeIsEmpty(rangeMake(pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].lo,
+                               pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].hi)))
+    {
+        NV_PRINTF(LEVEL_INFO,
+            "GPU Instance Mem Config for swizzId = 0x%x is rejected by HW\n",
+            swizzId);
+
+        return NV_TRUE;
+    }
+
+    return NV_FALSE;
+}
+
 /*
  * @brief   Function to map swizzId to VMMU Segments
  */
@@ -571,9 +610,17 @@ kmemsysSwizzIdToVmmuSegmentsRange_GH100
     NV_ASSERT_OR_RETURN(pStaticInfo != NULL, NV_ERR_INVALID_STATE);
     NV_ASSERT_OR_RETURN(pStaticInfo->pSwizzIdFbMemPageRanges != NULL, NV_ERR_INVALID_STATE);
 
-    startingVmmuSegment = pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].lo;
-    memSizeInVmmuSegment = (pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].hi -
-                            pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].lo + 1);
+    if (kmemsysIsSwizzIdRejectedByHW_HAL(pGpu, pKernelMemorySystem, swizzId))
+    {
+        startingVmmuSegment = 0;
+        memSizeInVmmuSegment = 0;
+    }
+    else
+    {
+        startingVmmuSegment = pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].lo;
+        memSizeInVmmuSegment = (pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].hi -
+                                pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].lo + 1);
+    }
 
     if (memSizeInVmmuSegment > totalVmmuSegments)
     {
@@ -631,3 +678,35 @@ kmemsysGetEccDedCountRegAddr_GH100
 {
     return NV_PFB_FBPA_0_ECC_DED_COUNT(subp) + (fbpa * NV_FBPA_PRI_STRIDE);
 }
+
+/*
+ * @brief Check that the mapping parameters are valid
+ *
+ * @param[in] pGpu                OBJGPU pointer
+ * @param[in] pKernelMemorySystem KernelMemorySystem pointer
+ * @param[in/out] pParams         Parameters for the FLA attachment
+ * @param[in] pFabricMemDesc      FLA memory descriptor for checking the 2MB guard page
+ * @param[out] pOffsetTableIndex  Index in the table for the new entry
+ *
+ * @returns NV_STATUS - NV_OK if parameters are valid otherwise NV_ERR_INVALID_ARGUMENT
+ *                      was necessary
+ */
+NV_STATUS
+kmemsysMcFlaOffsetTableAlloc_GH100
+(
+    OBJGPU                        *pGpu,
+    KernelMemorySystem            *pKernelMemorySystem,
+    NV00FD_CTRL_ATTACH_MEM_PARAMS *pParams,
+    MEMORY_DESCRIPTOR             *pFabricMemDesc,
+    NvU8                          *pOffsetTableIndex
+)
+{
+    if (pParams->subPageOffset != 0)
+    {
+        NV_PRINTF(LEVEL_ERROR, "MC FLA mapping subPageOffset must be 0\n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    return NV_OK;
+}
+

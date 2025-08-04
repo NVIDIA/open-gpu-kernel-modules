@@ -25,15 +25,13 @@
 
 #include "nvidia-drm-conftest.h"
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #if defined(NV_DRM_DRMP_H_PRESENT)
 #include <drm/drmP.h>
 #endif
 
-#if defined(NV_DRM_DRM_CONNECTOR_H_PRESENT)
 #include <drm/drm_connector.h>
-#endif
 
 #include "nvtypes.h"
 #include "nvkms-api-types.h"
@@ -101,6 +99,6 @@ nv_drm_get_connector(struct drm_device *dev,
 bool nv_drm_connector_revoke_permissions(struct drm_device *dev,
                                          struct nv_drm_connector *nv_connector);
 
-#endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+#endif /* NV_DRM_AVAILABLE */
 
 #endif /* __NVIDIA_DRM_CONNECTOR_H__ */

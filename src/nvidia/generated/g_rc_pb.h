@@ -52,7 +52,7 @@ extern const PRB_MSG_DESC prb_messages_rc[];
 #define RC_GENERICDATA_LEN 67
 #define RC_RCCOUNTER_LEN 61
 #define RC_RCDIAGRECORD_LEN 39
-#define RC_GREXCEPTION_LEN 120
+#define RC_GREXCEPTION_LEN 126
 
 extern const PRB_FIELD_DESC prb_fields_rc_genericdata[];
 
@@ -135,7 +135,7 @@ extern const PRB_FIELD_DESC prb_fields_rc_grexception[];
 // 'GrException' field lengths
 #define RC_GREXCEPTION_FIRST_FRAGMENT_LEN 1
 #define RC_GREXCEPTION_FRAGMENT_COUNT_LEN 5
-#define RC_GREXCEPTION_MC_LEN 69
+#define RC_GREXCEPTION_MC_LEN 75
 #define RC_GREXCEPTION_PMC_BOOT1_LEN 5
 #define RC_GREXCEPTION_FRAGMENT_TAG_LEN 5
 #define RC_GREXCEPTION_GR_REGS_LEN 29

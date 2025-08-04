@@ -41,7 +41,7 @@
 // NVC370_CTRL_CMD_SET_SOR_FLUSH_MODE
 //
 // This command is used enable/disable flush mode on all the heads attached to the SOR
-
+// Applies to NV Display 5.0+ (GB20X+ and T264+)
 //  [in] subDeviceInstance
 //     This parameter specifies the subdevice instance within the
 //     NV04_DISPLAY_COMMON parent device to which the operation should be

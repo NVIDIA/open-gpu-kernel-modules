@@ -23,6 +23,7 @@
 
 #include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator_util.h"
 #include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h"
+#include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator_private.h"
 #include "gpu/mem_mgr/mem_scrub.h"
 #include "utils/nvprintf.h"
 #include "utils/nvassert.h"
@@ -35,24 +36,24 @@
 
 NV_STATUS scrubCheck(OBJMEMSCRUB *pScrubber, PSCRUB_NODE *ppList, NvU64 *size)
 {
-    return NV_ERR_GENERIC;
+    return NV_OK;
 }
 
 NV_STATUS scrubSubmitPages(OBJMEMSCRUB *pScrubber, NvU64 chunkSize, NvU64* pages,
                            NvU64 pageCount, PSCRUB_NODE *ppList, NvU64 *size, NvU32 flags)
 {
-    return NV_ERR_GENERIC;
+    return NV_OK;
 }
 
 NV_STATUS scrubWaitPages(OBJMEMSCRUB *pScrubber, NvU64 chunkSize, NvU64* pages, NvU32 pageCount)
 {
-    return NV_ERR_GENERIC;
+    return NV_OK;
 }
 
 NV_STATUS scrubCheckAndWaitForSize (OBJMEMSCRUB *pScrubber, NvU64 numPages,
                                     NvU64 pageSize, PSCRUB_NODE *ppList, NvU64 *pSize)
 {
-    return NV_ERR_GENERIC;
+    return NV_OK;
 }
 #endif
 
@@ -1124,6 +1125,11 @@ pmaBuildList
     PRANGELISTTYPE pRangeCurr, pRangeList = NULL;
     NV_STATUS status = NV_OK;
     void *pMap = NULL;
+    
+    if (ppList == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
 
     for (regionIdx = 0; regionIdx < pPma->regSize; regionIdx++)
     {
@@ -1243,8 +1249,7 @@ pmaRegisterBlacklistInfo
     PMA                    *pPma,
     NvU64                   physAddrBase,
     PMA_BLACKLIST_ADDRESS  *pBlacklistPageBase,
-    NvU32                   blacklistCount,
-    NvBool                  bBlacklistFromInforom
+    NvU32                   blacklistCount
 )
 {
     NvU32 i;
@@ -1292,34 +1297,24 @@ pmaRegisterBlacklistInfo
         // This is only needed for NUMA systems that auto online NUMA memory.
         // Other systems (e.g., P9) already do blacklisting in nvidia-persistenced.
         //
+        // Page blacklisting is done regardless of whether it will also be done by
+        // CPU RAS_FW via CPER handling (which is done in non-vGPU cases). 
+        // This is fine, because multiple simultaneous calls to page blacklisting
+        // API memory_failure() do not cause any issues.
+        //
         if (pPma->bNuma && pPma->bNumaAutoOnline && pPma->nodeOnlined)
         {
-            //
-            // Only blacklist pages from inforom (i.e., during heap/PMA init) need 
-            // to be blacklisted with kernel here. The blacklist pages stored in 
-            // inforom need to remain blacklisted persistently across GPU resets -
-            // kernel won't automatically blacklist these so RM must do it
-            // explicitly here.
-            //
-            // Blacklist pages not from inforom (i.e., from ECC interrupt handling)
-            // do not need to be blacklisted with kernel. This is because the ECC
-            // interrupt will automatically trigger kernel itself to blacklist the page.
-            //
-            if (bBlacklistFromInforom)
+            NV_STATUS status;
+
+            NV_PRINTF(LEVEL_INFO,
+                      "NUMA enabled - blacklisting page through kernel at address 0x%llx (GPA) 0x%llx (SPA)\n",
+                      pBlacklistPageBase[blacklistEntryIn].physOffset,
+                      pBlacklistPageBase[blacklistEntryIn].physOffset + pPma->coherentCpuFbBase);
+
+            status = osOfflinePageAtAddress(pBlacklistPageBase[blacklistEntryIn].physOffset + pPma->coherentCpuFbBase);
+            if (status != NV_OK)
             {
-                NV_STATUS status;
-
-                // Use physOffset without 64K alignment, because kernel may use a different page size.
-                NV_PRINTF(LEVEL_INFO,
-                          "NUMA enabled - blacklisting page through kernel at address 0x%llx (GPA) 0x%llx (SPA)\n",
-                          pBlacklistPageBase[blacklistEntryIn].physOffset,
-                          pBlacklistPageBase[blacklistEntryIn].physOffset + pPma->coherentCpuFbBase);
-
-                status = osOfflinePageAtAddress(pBlacklistPageBase[blacklistEntryIn].physOffset + pPma->coherentCpuFbBase);
-                if (status != NV_OK)
-                {
-                    NV_PRINTF(LEVEL_ERROR, "osOfflinePageAtAddress() failed with status: %d\n", status);
-                }
+                NV_PRINTF(LEVEL_ERROR, "osOfflinePageAtAddress() failed with status: %d\n", status);
             }
         }
 

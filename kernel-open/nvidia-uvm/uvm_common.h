@@ -328,7 +328,7 @@ typedef struct
 } uvm_rm_user_object_t;
 
 // Macro used to compare two values for types that support less than operator.
-// It returns -1 if a < b, 1 if a > b and 0 if a == 0
+// It returns -1 if a < b, 1 if a > b and 0 if a == b
 #define UVM_CMP_DEFAULT(a,b)              \
 ({                                        \
     typeof(a) _a = a;                     \

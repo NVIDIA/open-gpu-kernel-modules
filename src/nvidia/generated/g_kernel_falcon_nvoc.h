@@ -119,30 +119,33 @@ struct KernelFalcon {
     struct KernelCrashCatEngine *__nvoc_pbase_KernelCrashCatEngine;    // kcrashcatEngine super
     struct KernelFalcon *__nvoc_pbase_KernelFalcon;    // kflcn
 
-    // Vtable with 23 per-object function pointers
-    NvU32 (*__kflcnRegRead__)(struct OBJGPU *, struct KernelFalcon * /*this*/, NvU32);  // virtual halified (2 hals) override (kcrashcatEngine) base (kcrashcatEngine) body
-    void (*__kflcnRegWrite__)(struct OBJGPU *, struct KernelFalcon * /*this*/, NvU32, NvU32);  // virtual halified (2 hals) override (kcrashcatEngine) base (kcrashcatEngine) body
-    NvU32 (*__kflcnRiscvRegRead__)(struct OBJGPU *, struct KernelFalcon * /*this*/, NvU32);  // halified (2 hals) body
-    void (*__kflcnRiscvRegWrite__)(struct OBJGPU *, struct KernelFalcon * /*this*/, NvU32, NvU32);  // halified (2 hals) body
-    NvBool (*__kflcnIsRiscvCpuEnabled__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (2 hals) body
-    NvBool (*__kflcnIsRiscvActive__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (3 hals) body
-    NvBool (*__kflcnIsRiscvSelected__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (4 hals) body
+    // Vtable with 26 per-object function pointers
+    NvU32 (*__kflcnRegRead__)(struct OBJGPU *, struct KernelFalcon * /*this*/, NvU32);  // virtual halified (3 hals) override (kcrashcatEngine) base (kcrashcatEngine) body
+    void (*__kflcnRegWrite__)(struct OBJGPU *, struct KernelFalcon * /*this*/, NvU32, NvU32);  // virtual halified (3 hals) override (kcrashcatEngine) base (kcrashcatEngine) body
+    NvU32 (*__kflcnRiscvRegRead__)(struct OBJGPU *, struct KernelFalcon * /*this*/, NvU32);  // halified (3 hals) body
+    void (*__kflcnRiscvRegWrite__)(struct OBJGPU *, struct KernelFalcon * /*this*/, NvU32, NvU32);  // halified (3 hals) body
+    NvBool (*__kflcnIsRiscvCpuEnabled__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (3 hals) body
+    NvBool (*__kflcnIsRiscvActive__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (4 hals) body
+    NvBool (*__kflcnIsRiscvSelected__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (5 hals) body
     void (*__kflcnRiscvProgramBcr__)(struct OBJGPU *, struct KernelFalcon * /*this*/, NvBool);  // halified (3 hals) body
-    void (*__kflcnSwitchToFalcon__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (4 hals) body
-    NV_STATUS (*__kflcnReset__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (2 hals) body
-    NV_STATUS (*__kflcnResetIntoRiscv__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (3 hals) body
-    void (*__kflcnStartCpu__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (2 hals) body
-    void (*__kflcnDisableCtxReq__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (2 hals) body
+    void (*__kflcnSwitchToFalcon__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (5 hals) body
+    NV_STATUS (*__kflcnReset__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (3 hals) body
+    NV_STATUS (*__kflcnResetIntoRiscv__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (4 hals) body
+    void (*__kflcnStartCpu__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (3 hals) body
+    void (*__kflcnDisableCtxReq__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (3 hals) body
     NV_STATUS (*__kflcnPreResetWait__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (3 hals) body
-    NV_STATUS (*__kflcnWaitForResetToFinish__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (3 hals) body
-    NV_STATUS (*__kflcnWaitForHalt__)(struct OBJGPU *, struct KernelFalcon * /*this*/, NvU32, NvU32);  // halified (2 hals) body
+    NV_STATUS (*__kflcnWaitForResetToFinish__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (4 hals) body
+    NV_STATUS (*__kflcnWaitForHalt__)(struct OBJGPU *, struct KernelFalcon * /*this*/, NvU32, NvU32);  // halified (3 hals) body
     NV_STATUS (*__kflcnWaitForHaltRiscv__)(struct OBJGPU *, struct KernelFalcon * /*this*/, NvU32, NvU32);  // halified (3 hals) body
-    NvU32 (*__kflcnReadIntrStatus__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (2 hals) body
-    NvU32 (*__kflcnRiscvReadIntrStatus__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (3 hals) body
+    NvU32 (*__kflcnReadIntrStatus__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (3 hals) body
+    NvU32 (*__kflcnRiscvReadIntrStatus__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (4 hals) body
     void (*__kflcnIntrRetrigger__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (3 hals) body
-    NvU32 (*__kflcnMaskImemAddr__)(struct OBJGPU *, struct KernelFalcon * /*this*/, NvU32);  // halified (3 hals) body
-    NvU32 (*__kflcnMaskDmemAddr__)(struct OBJGPU *, struct KernelFalcon * /*this*/, NvU32);  // virtual halified (3 hals) override (kcrashcatEngine) base (kcrashcatEngine) body
+    NvU32 (*__kflcnMaskImemAddr__)(struct OBJGPU *, struct KernelFalcon * /*this*/, NvU32);  // halified (4 hals) body
+    NvU32 (*__kflcnMaskDmemAddr__)(struct OBJGPU *, struct KernelFalcon * /*this*/, NvU32);  // virtual halified (4 hals) override (kcrashcatEngine) base (kcrashcatEngine) body
     NvU32 (*__kflcnGetEccInterruptMask__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // halified (2 hals) body
+    void (*__kflcnReadDmem__)(struct KernelFalcon * /*this*/, NvU32, NvU32, void *);  // virtual halified (2 hals) inherited (kcrashcatEngine) base (kcrashcatEngine)
+    const NvU32 * (*__kflcnGetScratchOffsets__)(struct KernelFalcon * /*this*/, NV_CRASHCAT_SCRATCH_GROUP_ID);  // virtual halified (2 hals) inherited (kcrashcatEngine) base (kcrashcatEngine)
+    NvU32 (*__kflcnGetWFL0Offset__)(struct KernelFalcon * /*this*/);  // virtual halified (2 hals) inherited (kcrashcatEngine) base (kcrashcatEngine)
 
     // Data members
     NvTristate riscvMode;
@@ -159,7 +162,7 @@ struct KernelFalcon {
 };
 
 
-// Vtable with 13 per-class function pointers
+// Vtable with 10 per-class function pointers
 struct NVOC_VTABLE__KernelFalcon {
     NV_STATUS (*__kflcnResetHw__)(struct OBJGPU *, struct KernelFalcon * /*this*/);  // pure virtual
     NvBool (*__kflcnConfigured__)(struct KernelFalcon * /*this*/);  // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
@@ -170,10 +173,7 @@ struct NVOC_VTABLE__KernelFalcon {
     void * (*__kflcnMapBufferDescriptor__)(struct KernelFalcon * /*this*/, CrashCatBufferDescriptor *);  // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
     void (*__kflcnUnmapBufferDescriptor__)(struct KernelFalcon * /*this*/, CrashCatBufferDescriptor *);  // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
     void (*__kflcnSyncBufferDescriptor__)(struct KernelFalcon * /*this*/, CrashCatBufferDescriptor *, NvU32, NvU32);  // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
-    void (*__kflcnReadDmem__)(struct KernelFalcon * /*this*/, NvU32, NvU32, void *);  // virtual halified (singleton optimized) inherited (kcrashcatEngine) base (kcrashcatEngine)
-    void (*__kflcnReadEmem__)(struct KernelFalcon * /*this*/, NvU64, NvU64, void *);  // virtual halified (singleton optimized) inherited (kcrashcatEngine) base (kcrashcatEngine)
-    const NvU32 * (*__kflcnGetScratchOffsets__)(struct KernelFalcon * /*this*/, NV_CRASHCAT_SCRATCH_GROUP_ID);  // virtual halified (singleton optimized) inherited (kcrashcatEngine) base (kcrashcatEngine)
-    NvU32 (*__kflcnGetWFL0Offset__)(struct KernelFalcon * /*this*/);  // virtual halified (singleton optimized) inherited (kcrashcatEngine) base (kcrashcatEngine)
+    void (*__kflcnReadEmem__)(struct KernelFalcon * /*this*/, NvU64, NvU64, void *);  // virtual halified (singleton) inherited (kcrashcatEngine) base (kcrashcatEngine)
 };
 
 // Metadata with per-class RTTI and vtable with ancestor(s)
@@ -212,7 +212,51 @@ NV_STATUS __nvoc_objCreate_KernelFalcon(KernelFalcon**, Dynamic*, NvU32);
     __nvoc_objCreate_KernelFalcon((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+void kflcnConfigureEngine_IMPL(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFalcon, KernelFalconEngineConfig *pFalconConfig);
+#ifdef __nvoc_kernel_falcon_h_disabled
+static inline void kflcnConfigureEngine(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFalcon, KernelFalconEngineConfig *pFalconConfig) {
+    NV_ASSERT_FAILED_PRECOMP("KernelFalcon was disabled!");
+}
+#else // __nvoc_kernel_falcon_h_disabled
+#define kflcnConfigureEngine(pGpu, pKernelFalcon, pFalconConfig) kflcnConfigureEngine_IMPL(pGpu, pKernelFalcon, pFalconConfig)
+#endif // __nvoc_kernel_falcon_h_disabled
+
+NvU32 kflcnGetPendingHostInterrupts_IMPL(struct OBJGPU *arg1, struct KernelFalcon *arg_this);
+#ifdef __nvoc_kernel_falcon_h_disabled
+static inline NvU32 kflcnGetPendingHostInterrupts(struct OBJGPU *arg1, struct KernelFalcon *arg_this) {
+    NV_ASSERT_FAILED_PRECOMP("KernelFalcon was disabled!");
+    return 0;
+}
+#else // __nvoc_kernel_falcon_h_disabled
+#define kflcnGetPendingHostInterrupts(arg1, arg_this) kflcnGetPendingHostInterrupts_IMPL(arg1, arg_this)
+#endif // __nvoc_kernel_falcon_h_disabled
+
+NV_STATUS kflcnAllocContext_IMPL(struct OBJGPU *arg1, struct KernelFalcon *arg_this, struct KernelChannel *arg3, NvU32 arg4);
+#ifdef __nvoc_kernel_falcon_h_disabled
+static inline NV_STATUS kflcnAllocContext(struct OBJGPU *arg1, struct KernelFalcon *arg_this, struct KernelChannel *arg3, NvU32 arg4) {
+    NV_ASSERT_FAILED_PRECOMP("KernelFalcon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_falcon_h_disabled
+#define kflcnAllocContext(arg1, arg_this, arg3, arg4) kflcnAllocContext_IMPL(arg1, arg_this, arg3, arg4)
+#endif // __nvoc_kernel_falcon_h_disabled
+
+NV_STATUS kflcnFreeContext_IMPL(struct OBJGPU *arg1, struct KernelFalcon *arg_this, struct KernelChannel *arg3, NvU32 arg4);
+#ifdef __nvoc_kernel_falcon_h_disabled
+static inline NV_STATUS kflcnFreeContext(struct OBJGPU *arg1, struct KernelFalcon *arg_this, struct KernelChannel *arg3, NvU32 arg4) {
+    NV_ASSERT_FAILED_PRECOMP("KernelFalcon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_falcon_h_disabled
+#define kflcnFreeContext(arg1, arg_this, arg3, arg4) kflcnFreeContext_IMPL(arg1, arg_this, arg3, arg4)
+#endif // __nvoc_kernel_falcon_h_disabled
+
+struct KernelFalcon * kflcnGetKernelFalconForEngine_IMPL(struct OBJGPU *pGpu, ENGDESCRIPTOR physEngDesc);
+#define kflcnGetKernelFalconForEngine(pGpu, physEngDesc) kflcnGetKernelFalconForEngine_IMPL(pGpu, physEngDesc)
+
+
+// Wrapper macros for halified functions
 #define kflcnRegRead_FNPTR(pKernelFlcn) pKernelFlcn->__kflcnRegRead__
 #define kflcnRegRead(pGpu, pKernelFlcn, offset) kflcnRegRead_DISPATCH(pGpu, pKernelFlcn, offset)
 #define kflcnRegRead_HAL(pGpu, pKernelFlcn, offset) kflcnRegRead_DISPATCH(pGpu, pKernelFlcn, offset)
@@ -300,16 +344,16 @@ NV_STATUS __nvoc_objCreate_KernelFalcon(KernelFalcon**, Dynamic*, NvU32);
 #define kflcnUnmapBufferDescriptor(arg_this, pBufDesc) kflcnUnmapBufferDescriptor_DISPATCH(arg_this, pBufDesc)
 #define kflcnSyncBufferDescriptor_FNPTR(arg_this) arg_this->__nvoc_base_KernelCrashCatEngine.__nvoc_metadata_ptr->vtable.__kcrashcatEngineSyncBufferDescriptor__
 #define kflcnSyncBufferDescriptor(arg_this, pBufDesc, offset, size) kflcnSyncBufferDescriptor_DISPATCH(arg_this, pBufDesc, offset, size)
-#define kflcnReadDmem_FNPTR(arg_this) arg_this->__nvoc_base_KernelCrashCatEngine.__nvoc_metadata_ptr->vtable.__kcrashcatEngineReadDmem__
+#define kflcnReadDmem_FNPTR(arg_this) arg_this->__nvoc_base_KernelCrashCatEngine.__kcrashcatEngineReadDmem__
 #define kflcnReadDmem(arg_this, offset, size, pBuf) kflcnReadDmem_DISPATCH(arg_this, offset, size, pBuf)
 #define kflcnReadDmem_HAL(arg_this, offset, size, pBuf) kflcnReadDmem_DISPATCH(arg_this, offset, size, pBuf)
 #define kflcnReadEmem_FNPTR(arg_this) arg_this->__nvoc_base_KernelCrashCatEngine.__nvoc_metadata_ptr->vtable.__kcrashcatEngineReadEmem__
 #define kflcnReadEmem(arg_this, offset, size, pBuf) kflcnReadEmem_DISPATCH(arg_this, offset, size, pBuf)
 #define kflcnReadEmem_HAL(arg_this, offset, size, pBuf) kflcnReadEmem_DISPATCH(arg_this, offset, size, pBuf)
-#define kflcnGetScratchOffsets_FNPTR(arg_this) arg_this->__nvoc_base_KernelCrashCatEngine.__nvoc_metadata_ptr->vtable.__kcrashcatEngineGetScratchOffsets__
+#define kflcnGetScratchOffsets_FNPTR(arg_this) arg_this->__nvoc_base_KernelCrashCatEngine.__kcrashcatEngineGetScratchOffsets__
 #define kflcnGetScratchOffsets(arg_this, scratchGroupId) kflcnGetScratchOffsets_DISPATCH(arg_this, scratchGroupId)
 #define kflcnGetScratchOffsets_HAL(arg_this, scratchGroupId) kflcnGetScratchOffsets_DISPATCH(arg_this, scratchGroupId)
-#define kflcnGetWFL0Offset_FNPTR(arg_this) arg_this->__nvoc_base_KernelCrashCatEngine.__nvoc_metadata_ptr->vtable.__kcrashcatEngineGetWFL0Offset__
+#define kflcnGetWFL0Offset_FNPTR(arg_this) arg_this->__nvoc_base_KernelCrashCatEngine.__kcrashcatEngineGetWFL0Offset__
 #define kflcnGetWFL0Offset(arg_this) kflcnGetWFL0Offset_DISPATCH(arg_this)
 #define kflcnGetWFL0Offset_HAL(arg_this) kflcnGetWFL0Offset_DISPATCH(arg_this)
 
@@ -443,7 +487,7 @@ static inline void kflcnSyncBufferDescriptor_DISPATCH(struct KernelFalcon *arg_t
 }
 
 static inline void kflcnReadDmem_DISPATCH(struct KernelFalcon *arg_this, NvU32 offset, NvU32 size, void *pBuf) {
-    arg_this->__nvoc_metadata_ptr->vtable.__kflcnReadDmem__(arg_this, offset, size, pBuf);
+    arg_this->__kflcnReadDmem__(arg_this, offset, size, pBuf);
 }
 
 static inline void kflcnReadEmem_DISPATCH(struct KernelFalcon *arg_this, NvU64 offset, NvU64 size, void *pBuf) {
@@ -451,11 +495,11 @@ static inline void kflcnReadEmem_DISPATCH(struct KernelFalcon *arg_this, NvU64 o
 }
 
 static inline const NvU32 * kflcnGetScratchOffsets_DISPATCH(struct KernelFalcon *arg_this, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId) {
-    return arg_this->__nvoc_metadata_ptr->vtable.__kflcnGetScratchOffsets__(arg_this, scratchGroupId);
+    return arg_this->__kflcnGetScratchOffsets__(arg_this, scratchGroupId);
 }
 
 static inline NvU32 kflcnGetWFL0Offset_DISPATCH(struct KernelFalcon *arg_this) {
-    return arg_this->__nvoc_metadata_ptr->vtable.__kflcnGetWFL0Offset__(arg_this);
+    return arg_this->__kflcnGetWFL0Offset__(arg_this);
 }
 
 NvU32 kflcnRegRead_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 offset);
@@ -522,6 +566,10 @@ static inline void kflcnSwitchToFalcon_f2d351(struct OBJGPU *pGpu, struct Kernel
     NV_ASSERT_PRECOMP(0);
 }
 
+static inline void kflcnSwitchToFalcon_b3696a(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
+    return;
+}
+
 NV_STATUS kflcnReset_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
 
 static inline NV_STATUS kflcnReset_5baef9(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
@@ -561,6 +609,10 @@ static inline NV_STATUS kflcnPreResetWait_5baef9(struct OBJGPU *pGpu, struct Ker
 NV_STATUS kflcnWaitForResetToFinish_GA102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
 
 NV_STATUS kflcnWaitForResetToFinish_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
+
+static inline NV_STATUS kflcnWaitForResetToFinish_56cd7a(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
+    return NV_OK;
+}
 
 static inline NV_STATUS kflcnWaitForResetToFinish_5baef9(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
@@ -624,52 +676,6 @@ static inline NvU32 kflcnGetEccInterruptMask_4a4dee(struct OBJGPU *pGpu, struct 
     return 0;
 }
 
-void kflcnConfigureEngine_IMPL(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFalcon, KernelFalconEngineConfig *pFalconConfig);
-
-#ifdef __nvoc_kernel_falcon_h_disabled
-static inline void kflcnConfigureEngine(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFalcon, KernelFalconEngineConfig *pFalconConfig) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFalcon was disabled!");
-}
-#else //__nvoc_kernel_falcon_h_disabled
-#define kflcnConfigureEngine(pGpu, pKernelFalcon, pFalconConfig) kflcnConfigureEngine_IMPL(pGpu, pKernelFalcon, pFalconConfig)
-#endif //__nvoc_kernel_falcon_h_disabled
-
-NvU32 kflcnGetPendingHostInterrupts_IMPL(struct OBJGPU *arg1, struct KernelFalcon *arg2);
-
-#ifdef __nvoc_kernel_falcon_h_disabled
-static inline NvU32 kflcnGetPendingHostInterrupts(struct OBJGPU *arg1, struct KernelFalcon *arg2) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFalcon was disabled!");
-    return 0;
-}
-#else //__nvoc_kernel_falcon_h_disabled
-#define kflcnGetPendingHostInterrupts(arg1, arg2) kflcnGetPendingHostInterrupts_IMPL(arg1, arg2)
-#endif //__nvoc_kernel_falcon_h_disabled
-
-NV_STATUS kflcnAllocContext_IMPL(struct OBJGPU *arg1, struct KernelFalcon *arg2, struct KernelChannel *arg3, NvU32 arg4);
-
-#ifdef __nvoc_kernel_falcon_h_disabled
-static inline NV_STATUS kflcnAllocContext(struct OBJGPU *arg1, struct KernelFalcon *arg2, struct KernelChannel *arg3, NvU32 arg4) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFalcon was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_falcon_h_disabled
-#define kflcnAllocContext(arg1, arg2, arg3, arg4) kflcnAllocContext_IMPL(arg1, arg2, arg3, arg4)
-#endif //__nvoc_kernel_falcon_h_disabled
-
-NV_STATUS kflcnFreeContext_IMPL(struct OBJGPU *arg1, struct KernelFalcon *arg2, struct KernelChannel *arg3, NvU32 arg4);
-
-#ifdef __nvoc_kernel_falcon_h_disabled
-static inline NV_STATUS kflcnFreeContext(struct OBJGPU *arg1, struct KernelFalcon *arg2, struct KernelChannel *arg3, NvU32 arg4) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFalcon was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_falcon_h_disabled
-#define kflcnFreeContext(arg1, arg2, arg3, arg4) kflcnFreeContext_IMPL(arg1, arg2, arg3, arg4)
-#endif //__nvoc_kernel_falcon_h_disabled
-
-struct KernelFalcon *kflcnGetKernelFalconForEngine_IMPL(struct OBJGPU *pGpu, ENGDESCRIPTOR physEngDesc);
-
-#define kflcnGetKernelFalconForEngine(pGpu, physEngDesc) kflcnGetKernelFalconForEngine_IMPL(pGpu, physEngDesc)
 #undef PRIVATE_FIELD
 
 
@@ -728,14 +734,17 @@ struct GenericKernelFalcon {
     struct Object *__nvoc_pbase_Object;    // obj super
     struct GenericKernelFalcon *__nvoc_pbase_GenericKernelFalcon;    // gkflcn
 
-    // Vtable with 3 per-object function pointers
-    NvU32 (*__gkflcnRegRead__)(struct OBJGPU *, struct GenericKernelFalcon * /*this*/, NvU32);  // virtual halified (2 hals) inherited (kflcn) base (kflcn) body
-    void (*__gkflcnRegWrite__)(struct OBJGPU *, struct GenericKernelFalcon * /*this*/, NvU32, NvU32);  // virtual halified (2 hals) inherited (kflcn) base (kflcn) body
-    NvU32 (*__gkflcnMaskDmemAddr__)(struct OBJGPU *, struct GenericKernelFalcon * /*this*/, NvU32);  // virtual halified (3 hals) inherited (kflcn) base (kflcn) body
+    // Vtable with 6 per-object function pointers
+    NvU32 (*__gkflcnRegRead__)(struct OBJGPU *, struct GenericKernelFalcon * /*this*/, NvU32);  // virtual halified (3 hals) inherited (kflcn) base (kflcn) body
+    void (*__gkflcnRegWrite__)(struct OBJGPU *, struct GenericKernelFalcon * /*this*/, NvU32, NvU32);  // virtual halified (3 hals) inherited (kflcn) base (kflcn) body
+    NvU32 (*__gkflcnMaskDmemAddr__)(struct OBJGPU *, struct GenericKernelFalcon * /*this*/, NvU32);  // virtual halified (4 hals) inherited (kflcn) base (kflcn) body
+    void (*__gkflcnReadDmem__)(struct GenericKernelFalcon * /*this*/, NvU32, NvU32, void *);  // virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn)
+    const NvU32 * (*__gkflcnGetScratchOffsets__)(struct GenericKernelFalcon * /*this*/, NV_CRASHCAT_SCRATCH_GROUP_ID);  // virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn)
+    NvU32 (*__gkflcnGetWFL0Offset__)(struct GenericKernelFalcon * /*this*/);  // virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn)
 };
 
 
-// Vtable with 17 per-class function pointers
+// Vtable with 14 per-class function pointers
 struct NVOC_VTABLE__GenericKernelFalcon {
     NV_STATUS (*__gkflcnResetHw__)(struct OBJGPU *, struct GenericKernelFalcon * /*this*/);  // virtual override (kflcn) base (kflcn)
     void (*__gkflcnRegisterIntrService__)(struct OBJGPU *, struct GenericKernelFalcon * /*this*/, IntrServiceRecord *);  // virtual override (intrserv) base (intrserv)
@@ -748,10 +757,7 @@ struct NVOC_VTABLE__GenericKernelFalcon {
     void * (*__gkflcnMapBufferDescriptor__)(struct GenericKernelFalcon * /*this*/, CrashCatBufferDescriptor *);  // virtual inherited (kcrashcatEngine) base (kflcn)
     void (*__gkflcnUnmapBufferDescriptor__)(struct GenericKernelFalcon * /*this*/, CrashCatBufferDescriptor *);  // virtual inherited (kcrashcatEngine) base (kflcn)
     void (*__gkflcnSyncBufferDescriptor__)(struct GenericKernelFalcon * /*this*/, CrashCatBufferDescriptor *, NvU32, NvU32);  // virtual inherited (kcrashcatEngine) base (kflcn)
-    void (*__gkflcnReadDmem__)(struct GenericKernelFalcon * /*this*/, NvU32, NvU32, void *);  // virtual halified (singleton optimized) inherited (kcrashcatEngine) base (kflcn)
-    void (*__gkflcnReadEmem__)(struct GenericKernelFalcon * /*this*/, NvU64, NvU64, void *);  // virtual halified (singleton optimized) inherited (kcrashcatEngine) base (kflcn)
-    const NvU32 * (*__gkflcnGetScratchOffsets__)(struct GenericKernelFalcon * /*this*/, NV_CRASHCAT_SCRATCH_GROUP_ID);  // virtual halified (singleton optimized) inherited (kcrashcatEngine) base (kflcn)
-    NvU32 (*__gkflcnGetWFL0Offset__)(struct GenericKernelFalcon * /*this*/);  // virtual halified (singleton optimized) inherited (kcrashcatEngine) base (kflcn)
+    void (*__gkflcnReadEmem__)(struct GenericKernelFalcon * /*this*/, NvU64, NvU64, void *);  // virtual halified (singleton) inherited (kcrashcatEngine) base (kflcn)
     NvBool (*__gkflcnClearInterrupt__)(struct OBJGPU *, struct GenericKernelFalcon * /*this*/, IntrServiceClearInterruptArguments *);  // virtual inherited (intrserv) base (intrserv)
     NvU32 (*__gkflcnServiceInterrupt__)(struct OBJGPU *, struct GenericKernelFalcon * /*this*/, IntrServiceServiceInterruptArguments *);  // virtual inherited (intrserv) base (intrserv)
 };
@@ -794,7 +800,12 @@ NV_STATUS __nvoc_objCreate_GenericKernelFalcon(GenericKernelFalcon**, Dynamic*, 
     __nvoc_objCreate_GenericKernelFalcon((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pGpu, arg_pFalconConfig)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS gkflcnConstruct_IMPL(struct GenericKernelFalcon *arg_pGenKernFlcn, struct OBJGPU *arg_pGpu, KernelFalconEngineConfig *arg_pFalconConfig);
+#define __nvoc_gkflcnConstruct(arg_pGenKernFlcn, arg_pGpu, arg_pFalconConfig) gkflcnConstruct_IMPL(arg_pGenKernFlcn, arg_pGpu, arg_pFalconConfig)
+
+
+// Wrapper macros for halified functions
 #define gkflcnResetHw_FNPTR(pGenKernFlcn) pGenKernFlcn->__nvoc_metadata_ptr->vtable.__gkflcnResetHw__
 #define gkflcnResetHw(pGpu, pGenKernFlcn) gkflcnResetHw_DISPATCH(pGpu, pGenKernFlcn)
 #define gkflcnRegisterIntrService_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__gkflcnRegisterIntrService__
@@ -826,16 +837,16 @@ NV_STATUS __nvoc_objCreate_GenericKernelFalcon(GenericKernelFalcon**, Dynamic*, 
 #define gkflcnUnmapBufferDescriptor(arg_this, pBufDesc) gkflcnUnmapBufferDescriptor_DISPATCH(arg_this, pBufDesc)
 #define gkflcnSyncBufferDescriptor_FNPTR(arg_this) arg_this->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__nvoc_metadata_ptr->vtable.__kcrashcatEngineSyncBufferDescriptor__
 #define gkflcnSyncBufferDescriptor(arg_this, pBufDesc, offset, size) gkflcnSyncBufferDescriptor_DISPATCH(arg_this, pBufDesc, offset, size)
-#define gkflcnReadDmem_FNPTR(arg_this) arg_this->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__nvoc_metadata_ptr->vtable.__kcrashcatEngineReadDmem__
+#define gkflcnReadDmem_FNPTR(arg_this) arg_this->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__kcrashcatEngineReadDmem__
 #define gkflcnReadDmem(arg_this, offset, size, pBuf) gkflcnReadDmem_DISPATCH(arg_this, offset, size, pBuf)
 #define gkflcnReadDmem_HAL(arg_this, offset, size, pBuf) gkflcnReadDmem_DISPATCH(arg_this, offset, size, pBuf)
 #define gkflcnReadEmem_FNPTR(arg_this) arg_this->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__nvoc_metadata_ptr->vtable.__kcrashcatEngineReadEmem__
 #define gkflcnReadEmem(arg_this, offset, size, pBuf) gkflcnReadEmem_DISPATCH(arg_this, offset, size, pBuf)
 #define gkflcnReadEmem_HAL(arg_this, offset, size, pBuf) gkflcnReadEmem_DISPATCH(arg_this, offset, size, pBuf)
-#define gkflcnGetScratchOffsets_FNPTR(arg_this) arg_this->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__nvoc_metadata_ptr->vtable.__kcrashcatEngineGetScratchOffsets__
+#define gkflcnGetScratchOffsets_FNPTR(arg_this) arg_this->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__kcrashcatEngineGetScratchOffsets__
 #define gkflcnGetScratchOffsets(arg_this, scratchGroupId) gkflcnGetScratchOffsets_DISPATCH(arg_this, scratchGroupId)
 #define gkflcnGetScratchOffsets_HAL(arg_this, scratchGroupId) gkflcnGetScratchOffsets_DISPATCH(arg_this, scratchGroupId)
-#define gkflcnGetWFL0Offset_FNPTR(arg_this) arg_this->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__nvoc_metadata_ptr->vtable.__kcrashcatEngineGetWFL0Offset__
+#define gkflcnGetWFL0Offset_FNPTR(arg_this) arg_this->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__kcrashcatEngineGetWFL0Offset__
 #define gkflcnGetWFL0Offset(arg_this) gkflcnGetWFL0Offset_DISPATCH(arg_this)
 #define gkflcnGetWFL0Offset_HAL(arg_this) gkflcnGetWFL0Offset_DISPATCH(arg_this)
 #define gkflcnClearInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_base_IntrService.__nvoc_metadata_ptr->vtable.__intrservClearInterrupt__
@@ -901,7 +912,7 @@ static inline void gkflcnSyncBufferDescriptor_DISPATCH(struct GenericKernelFalco
 }
 
 static inline void gkflcnReadDmem_DISPATCH(struct GenericKernelFalcon *arg_this, NvU32 offset, NvU32 size, void *pBuf) {
-    arg_this->__nvoc_metadata_ptr->vtable.__gkflcnReadDmem__(arg_this, offset, size, pBuf);
+    arg_this->__gkflcnReadDmem__(arg_this, offset, size, pBuf);
 }
 
 static inline void gkflcnReadEmem_DISPATCH(struct GenericKernelFalcon *arg_this, NvU64 offset, NvU64 size, void *pBuf) {
@@ -909,11 +920,11 @@ static inline void gkflcnReadEmem_DISPATCH(struct GenericKernelFalcon *arg_this,
 }
 
 static inline const NvU32 * gkflcnGetScratchOffsets_DISPATCH(struct GenericKernelFalcon *arg_this, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId) {
-    return arg_this->__nvoc_metadata_ptr->vtable.__gkflcnGetScratchOffsets__(arg_this, scratchGroupId);
+    return arg_this->__gkflcnGetScratchOffsets__(arg_this, scratchGroupId);
 }
 
 static inline NvU32 gkflcnGetWFL0Offset_DISPATCH(struct GenericKernelFalcon *arg_this) {
-    return arg_this->__nvoc_metadata_ptr->vtable.__gkflcnGetWFL0Offset__(arg_this);
+    return arg_this->__gkflcnGetWFL0Offset__(arg_this);
 }
 
 static inline NvBool gkflcnClearInterrupt_DISPATCH(struct OBJGPU *pGpu, struct GenericKernelFalcon *pIntrService, IntrServiceClearInterruptArguments *pParams) {
@@ -930,9 +941,6 @@ void gkflcnRegisterIntrService_IMPL(struct OBJGPU *arg1, struct GenericKernelFal
 
 NV_STATUS gkflcnServiceNotificationInterrupt_IMPL(struct OBJGPU *arg1, struct GenericKernelFalcon *arg2, IntrServiceServiceNotificationInterruptArguments *arg3);
 
-NV_STATUS gkflcnConstruct_IMPL(struct GenericKernelFalcon *arg_pGenKernFlcn, struct OBJGPU *arg_pGpu, KernelFalconEngineConfig *arg_pFalconConfig);
-
-#define __nvoc_gkflcnConstruct(arg_pGenKernFlcn, arg_pGpu, arg_pFalconConfig) gkflcnConstruct_IMPL(arg_pGenKernFlcn, arg_pGpu, arg_pFalconConfig)
 #undef PRIVATE_FIELD
 
 

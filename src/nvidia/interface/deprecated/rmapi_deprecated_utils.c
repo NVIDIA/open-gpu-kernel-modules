@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -311,6 +311,12 @@ RmDeprecatedConvertOs32ToOs02Flags
         os02Flags = FLD_SET_DRF(OS02, _FLAGS, _KERNEL_MAPPING, _MAP, os02Flags);
     else
         os02Flags = FLD_SET_DRF(OS02, _FLAGS, _KERNEL_MAPPING, _NO_MAP, os02Flags);
+
+    if (os32Flags & NVOS32_ALLOC_FLAGS_USER_READ_ONLY)
+        os02Flags = FLD_SET_DRF(OS02, _FLAGS, _ALLOC_USER_READ_ONLY, _YES, os02Flags);
+
+    if (os32Flags & NVOS32_ALLOC_FLAGS_DEVICE_READ_ONLY)
+        os02Flags = FLD_SET_DRF(OS02, _FLAGS, _ALLOC_DEVICE_READ_ONLY, _YES, os02Flags);
 
     if (FLD_TEST_DRF(OS32, _ATTR2, _PROTECTION_USER, _READ_ONLY, attr2))
         os02Flags = FLD_SET_DRF(OS02, _FLAGS, _ALLOC_USER_READ_ONLY, _YES, os02Flags);

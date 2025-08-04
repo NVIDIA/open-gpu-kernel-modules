@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,11 +28,13 @@
 #include "os/os.h"
 #include "kernel/gpu/mmu/kern_gmmu.h"
 #include "kernel/gpu/nvlink/kernel_ioctrl.h"
+#include "kernel/gpu/nvlink/common_nvlink.h"
 #include "core/thread_state.h"
 #include "platform/sli/sli.h"
 
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "swref/common_def_nvlink.h"
 
 #if defined(INCLUDE_NVLINK_LIB)
 static NV_STATUS _knvlinkAreLinksDisconnected(OBJGPU *, KernelNvlink *, NvBool *);
@@ -336,6 +338,8 @@ _knvlinkAreLinksDisconnected
 )
 {
     NV_STATUS status = NV_OK;
+    NvU64     links  = 0;
+    NV2080_NVLINK_BIT_VECTOR localLinkMask;
     NvU32     linkId;
 
     NV_ASSERT_OR_RETURN(bLinkDisconnected != NULL, NV_ERR_INVALID_ARGUMENT);
@@ -348,7 +352,25 @@ _knvlinkAreLinksDisconnected
     }
 
     portMemSet(pParams, 0, sizeof(*pParams));
-    pParams->linkMask = KNVLINK_GET_MASK(pKernelNvlink, enabledLinks, 32);
+
+    links = KNVLINK_GET_MASK(pKernelNvlink, enabledLinks, 32);
+    status = convertMaskToBitVector(links, &localLinkMask);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to convert linkmask into bit vector! 0x%x\n", status);
+        goto cleanup;
+    }
+
+    status = convertBitVectorToLinkMasks(&localLinkMask,
+                                         &pParams->linkMask,
+                                         sizeof(pParams->linkMask),
+                                         &pParams->links);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to convert bit vector to link masks! 0x%x\n", status);
+        goto cleanup;
+    }
+
     pParams->bSublinkStateInst = NV_TRUE;
 
     status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
@@ -357,8 +379,14 @@ _knvlinkAreLinksDisconnected
     if (status != NV_OK)
         goto cleanup;
 
-    FOR_EACH_INDEX_IN_MASK(32, linkId, KNVLINK_GET_MASK(pKernelNvlink, enabledLinks, 32))
+    FOR_EACH_IN_BITVECTOR(&localLinkMask, linkId)
     {
+        if (linkId >= NV2080_CTRL_INTERNAL_NVLINK_MAX_ARR_SIZE)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Trying to access incorrect link from link mask! %d\n", linkId);
+            goto cleanup;
+        }
+
         if ((pParams->linkInfo[linkId].linkState == NVLINK_LINKSTATE_SAFE) &&
             (pParams->linkInfo[linkId].txSublinkState == NVLINK_SUBLINK_STATE_TX_OFF) &&
             (pParams->linkInfo[linkId].rxSublinkState == NVLINK_SUBLINK_STATE_RX_OFF))
@@ -377,7 +405,7 @@ _knvlinkAreLinksDisconnected
             bLinkDisconnected[linkId] = NV_FALSE;
         }
     }
-    FOR_EACH_INDEX_IN_MASK_END;
+    FOR_EACH_IN_BITVECTOR_END();
 
 cleanup:
     portMemFree(pParams);

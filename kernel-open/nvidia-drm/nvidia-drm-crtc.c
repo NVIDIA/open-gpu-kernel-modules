@@ -20,9 +20,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "nvidia-drm-conftest.h" /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+#include "nvidia-drm-conftest.h" /* NV_DRM_AVAILABLE */
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #include "nvidia-drm-helper.h"
 #include "nvidia-drm-priv.h"
@@ -42,10 +42,7 @@
 
 #include <drm/drm_atomic.h>
 #include <drm/drm_atomic_helper.h>
-
-#if defined(NV_DRM_DRM_COLOR_MGMT_H_PRESENT)
 #include <drm/drm_color_mgmt.h>
-#endif
 
 /*
  * The two arrays below specify the PQ EOTF transfer function that's used to
@@ -150,15 +147,15 @@ nv_drm_atomic_replace_property_blob_from_id(struct drm_device *dev,
 
         if ((expected_size > 0) &&
             (new_blob->length != expected_size)) {
-            nv_drm_property_blob_put(new_blob);
+            drm_property_blob_put(new_blob);
             return -EINVAL;
         }
     }
 
     if (old_blob != new_blob) {
-        nv_drm_property_blob_put(old_blob);
+        drm_property_blob_put(old_blob);
         if (new_blob) {
-            nv_drm_property_blob_get(new_blob);
+            drm_property_blob_get(new_blob);
         }
         *blob = new_blob;
         *replaced = true;
@@ -166,7 +163,7 @@ nv_drm_atomic_replace_property_blob_from_id(struct drm_device *dev,
         *replaced = false;
     }
 
-    nv_drm_property_blob_put(new_blob);
+    drm_property_blob_put(new_blob);
 
     return 0;
 }
@@ -204,6 +201,15 @@ plane_req_config_disable(struct NvKmsKapiLayerRequestedConfig *req_config)
     req_config->flags.srcWHChanged = NV_TRUE;
     req_config->flags.dstXYChanged = NV_TRUE;
     req_config->flags.dstWHChanged = NV_TRUE;
+    req_config->flags.cscChanged = NV_TRUE;
+    req_config->flags.inputTfChanged = NV_TRUE;
+    req_config->flags.outputTfChanged = NV_TRUE;
+    req_config->flags.inputColorSpaceChanged = NV_TRUE;
+    req_config->flags.inputColorRangeChanged = NV_TRUE;
+    req_config->flags.hdrMetadataChanged = NV_TRUE;
+    req_config->flags.matrixOverridesChanged = NV_TRUE;
+    req_config->flags.ilutChanged = NV_TRUE;
+    req_config->flags.tmoChanged = NV_TRUE;
 }
 
 static inline void
@@ -244,7 +250,6 @@ static NvU64 ctm_val_to_csc_val(NvU64 ctm_val)
     return csc_val;
 }
 
-#if defined(NV_DRM_COLOR_MGMT_AVAILABLE)
 static void ctm_to_csc(struct NvKmsCscMatrix *nvkms_csc,
                        struct drm_color_ctm  *drm_ctm)
 {
@@ -261,7 +266,6 @@ static void ctm_to_csc(struct NvKmsCscMatrix *nvkms_csc,
         }
     }
 }
-#endif /* NV_DRM_COLOR_MGMT_AVAILABLE */
 
 static void ctm_3x4_to_csc(struct NvKmsCscMatrix    *nvkms_csc,
                            struct drm_color_ctm_3x4 *drm_ctm_3x4)
@@ -394,6 +398,14 @@ static int init_drm_nvkms_surface(struct nv_drm_device *nv_dev,
     struct NvKmsKapiDevice *pDevice = nv_dev->pDevice;
     NvU8 compressible = 0; // No compression
 
+    struct NvKmsKapiAllocateMemoryParams allocParams = {
+        .layout         = NvKmsSurfaceMemoryLayoutPitch,
+        .type           = NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT,
+        .size           = surface_params->surface_size,
+        .useVideoMemory = nv_dev->hasVideoMemory,
+        .compressible   = &compressible,
+    };
+
     struct NvKmsKapiCreateSurfaceParams params = {};
     struct NvKmsKapiMemory *surface_mem;
     struct NvKmsKapiSurface *surface;
@@ -404,21 +416,7 @@ static int init_drm_nvkms_surface(struct nv_drm_device *nv_dev,
     params.height = surface_params->height;
 
     /* Allocate displayable memory. */
-    if (nv_dev->hasVideoMemory) {
-        surface_mem =
-            nvKms->allocateVideoMemory(pDevice,
-                                       NvKmsSurfaceMemoryLayoutPitch,
-                                       NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT,
-                                       surface_params->surface_size,
-                                       &compressible);
-    } else {
-        surface_mem =
-            nvKms->allocateSystemMemory(pDevice,
-                                        NvKmsSurfaceMemoryLayoutPitch,
-                                        NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT,
-                                        surface_params->surface_size,
-                                        &compressible);
-    }
+    surface_mem = nvKms->allocateMemory(nv_dev->pDevice, &allocParams);
     if (surface_mem == NULL) {
         return -ENOMEM;
     }
@@ -1187,7 +1185,6 @@ plane_req_config_update(struct drm_plane *plane,
 
     req_config->config.csc = old_config.csc;
 
-#if defined(NV_DRM_ROTATION_AVAILABLE)
     /*
      * plane_state->rotation is only valid when plane->rotation_property
      * is non-NULL.
@@ -1225,7 +1222,6 @@ plane_req_config_update(struct drm_plane *plane,
                 break;
         }
     }
-#endif
 
 #if defined(NV_DRM_ALPHA_BLENDING_AVAILABLE)
     if (plane->blend_mode_property != NULL && plane->alpha_property != NULL) {
@@ -1630,7 +1626,6 @@ static int nv_drm_plane_atomic_check(struct drm_plane *plane,
                 return ret;
             }
 
-#if defined(NV_DRM_COLOR_MGMT_AVAILABLE)
             if (crtc_state->color_mgmt_changed) {
                 /*
                  * According to the comment in the Linux kernel's
@@ -1646,7 +1641,6 @@ static int nv_drm_plane_atomic_check(struct drm_plane *plane,
                 plane_requested_config->config.cscUseMain = NV_FALSE;
                 plane_requested_config->flags.cscChanged = NV_TRUE;
             }
-#endif /* NV_DRM_COLOR_MGMT_AVAILABLE */
 
             if (__is_async_flip_requested(plane, crtc_state)) {
                 /*
@@ -1666,7 +1660,6 @@ static int nv_drm_plane_atomic_check(struct drm_plane *plane,
     return 0;
 }
 
-#if defined(NV_DRM_UNIVERSAL_PLANE_INIT_HAS_FORMAT_MODIFIERS_ARG)
 static bool nv_drm_plane_format_mod_supported(struct drm_plane *plane,
                                               uint32_t format,
                                               uint64_t modifier)
@@ -1674,7 +1667,6 @@ static bool nv_drm_plane_format_mod_supported(struct drm_plane *plane,
     /* All supported modifiers are compatible with all supported formats */
     return true;
 }
-#endif
 
 static int nv_drm_atomic_crtc_get_property(
     struct drm_crtc *crtc,
@@ -1961,34 +1953,34 @@ nv_drm_plane_atomic_duplicate_state(struct drm_plane *plane)
 #if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
     nv_plane_state->hdr_output_metadata = nv_old_plane_state->hdr_output_metadata;
     if (nv_plane_state->hdr_output_metadata) {
-        nv_drm_property_blob_get(nv_plane_state->hdr_output_metadata);
+        drm_property_blob_get(nv_plane_state->hdr_output_metadata);
     }
 #endif
 
     nv_plane_state->lms_ctm = nv_old_plane_state->lms_ctm;
     if (nv_plane_state->lms_ctm) {
-        nv_drm_property_blob_get(nv_plane_state->lms_ctm);
+        drm_property_blob_get(nv_plane_state->lms_ctm);
     }
 
     nv_plane_state->lms_to_itp_ctm = nv_old_plane_state->lms_to_itp_ctm;
     if (nv_plane_state->lms_to_itp_ctm) {
-        nv_drm_property_blob_get(nv_plane_state->lms_to_itp_ctm);
+        drm_property_blob_get(nv_plane_state->lms_to_itp_ctm);
     }
 
     nv_plane_state->itp_to_lms_ctm = nv_old_plane_state->itp_to_lms_ctm;
     if (nv_plane_state->itp_to_lms_ctm) {
-        nv_drm_property_blob_get(nv_plane_state->itp_to_lms_ctm);
+        drm_property_blob_get(nv_plane_state->itp_to_lms_ctm);
     }
 
     nv_plane_state->blend_ctm = nv_old_plane_state->blend_ctm;
     if (nv_plane_state->blend_ctm) {
-        nv_drm_property_blob_get(nv_plane_state->blend_ctm);
+        drm_property_blob_get(nv_plane_state->blend_ctm);
     }
 
     nv_plane_state->degamma_tf = nv_old_plane_state->degamma_tf;
     nv_plane_state->degamma_lut = nv_old_plane_state->degamma_lut;
     if (nv_plane_state->degamma_lut) {
-        nv_drm_property_blob_get(nv_plane_state->degamma_lut);
+        drm_property_blob_get(nv_plane_state->degamma_lut);
     }
     nv_plane_state->degamma_multiplier = nv_old_plane_state->degamma_multiplier;
     nv_plane_state->degamma_changed = false;
@@ -2000,7 +1992,7 @@ nv_drm_plane_atomic_duplicate_state(struct drm_plane *plane)
 
     nv_plane_state->tmo_lut = nv_old_plane_state->tmo_lut;
     if (nv_plane_state->tmo_lut) {
-        nv_drm_property_blob_get(nv_plane_state->tmo_lut);
+        drm_property_blob_get(nv_plane_state->tmo_lut);
     }
     nv_plane_state->tmo_changed = false;
     nv_plane_state->tmo_drm_lut_surface =
@@ -2013,32 +2005,27 @@ nv_drm_plane_atomic_duplicate_state(struct drm_plane *plane)
 }
 
 static inline void __nv_drm_plane_atomic_destroy_state(
-    struct drm_plane *plane,
     struct drm_plane_state *state)
 {
     struct nv_drm_plane_state *nv_drm_plane_state =
         to_nv_drm_plane_state(state);
-#if defined(NV_DRM_ATOMIC_HELPER_PLANE_DESTROY_STATE_HAS_PLANE_ARG)
-    __drm_atomic_helper_plane_destroy_state(plane, state);
-#else
     __drm_atomic_helper_plane_destroy_state(state);
-#endif
 
 #if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
-    nv_drm_property_blob_put(nv_drm_plane_state->hdr_output_metadata);
+    drm_property_blob_put(nv_drm_plane_state->hdr_output_metadata);
 #endif
-    nv_drm_property_blob_put(nv_drm_plane_state->lms_ctm);
-    nv_drm_property_blob_put(nv_drm_plane_state->lms_to_itp_ctm);
-    nv_drm_property_blob_put(nv_drm_plane_state->itp_to_lms_ctm);
-    nv_drm_property_blob_put(nv_drm_plane_state->blend_ctm);
+    drm_property_blob_put(nv_drm_plane_state->lms_ctm);
+    drm_property_blob_put(nv_drm_plane_state->lms_to_itp_ctm);
+    drm_property_blob_put(nv_drm_plane_state->itp_to_lms_ctm);
+    drm_property_blob_put(nv_drm_plane_state->blend_ctm);
 
-    nv_drm_property_blob_put(nv_drm_plane_state->degamma_lut);
+    drm_property_blob_put(nv_drm_plane_state->degamma_lut);
     if (nv_drm_plane_state->degamma_drm_lut_surface != NULL) {
         kref_put(&nv_drm_plane_state->degamma_drm_lut_surface->base.refcount,
                  free_drm_lut_surface);
     }
 
-    nv_drm_property_blob_put(nv_drm_plane_state->tmo_lut);
+    drm_property_blob_put(nv_drm_plane_state->tmo_lut);
     if (nv_drm_plane_state->tmo_drm_lut_surface != NULL) {
         kref_put(&nv_drm_plane_state->tmo_drm_lut_surface->base.refcount,
                  free_drm_lut_surface);
@@ -2049,7 +2036,7 @@ static void nv_drm_plane_atomic_destroy_state(
     struct drm_plane *plane,
     struct drm_plane_state *state)
 {
-    __nv_drm_plane_atomic_destroy_state(plane, state);
+    __nv_drm_plane_atomic_destroy_state(state);
 
     nv_drm_free(to_nv_drm_plane_state(state));
 }
@@ -2063,9 +2050,7 @@ static const struct drm_plane_funcs nv_plane_funcs = {
     .atomic_set_property    = nv_drm_plane_atomic_set_property,
     .atomic_duplicate_state = nv_drm_plane_atomic_duplicate_state,
     .atomic_destroy_state   = nv_drm_plane_atomic_destroy_state,
-#if defined(NV_DRM_UNIVERSAL_PLANE_INIT_HAS_FORMAT_MODIFIERS_ARG)
     .format_mod_supported   = nv_drm_plane_format_mod_supported,
-#endif
 };
 
 static const struct drm_plane_helper_funcs nv_plane_helper_funcs = {
@@ -2079,17 +2064,6 @@ static void nv_drm_crtc_destroy(struct drm_crtc *crtc)
     drm_crtc_cleanup(crtc);
 
     nv_drm_free(nv_crtc);
-}
-
-static inline void
-__nv_drm_atomic_helper_crtc_destroy_state(struct drm_crtc *crtc,
-                                          struct drm_crtc_state *crtc_state)
-{
-#if defined(NV_DRM_ATOMIC_HELPER_CRTC_DESTROY_STATE_HAS_CRTC_ARG)
-    __drm_atomic_helper_crtc_destroy_state(crtc, crtc_state);
-#else
-    __drm_atomic_helper_crtc_destroy_state(crtc_state);
-#endif
 }
 
 static inline bool nv_drm_crtc_duplicate_req_head_modeset_config(
@@ -2234,7 +2208,7 @@ nv_drm_atomic_crtc_duplicate_state(struct drm_crtc *crtc)
     nv_state->regamma_tf = nv_old_state->regamma_tf;
     nv_state->regamma_lut = nv_old_state->regamma_lut;
     if (nv_state->regamma_lut) {
-        nv_drm_property_blob_get(nv_state->regamma_lut);
+        drm_property_blob_get(nv_state->regamma_lut);
     }
     nv_state->regamma_divisor = nv_old_state->regamma_divisor;
     if (nv_state->regamma_drm_lut_surface) {
@@ -2263,9 +2237,9 @@ static void nv_drm_atomic_crtc_destroy_state(struct drm_crtc *crtc,
         nv_state->nv_flip = NULL;
     }
 
-    __nv_drm_atomic_helper_crtc_destroy_state(crtc, &nv_state->base);
+    __drm_atomic_helper_crtc_destroy_state(&nv_state->base);
 
-    nv_drm_property_blob_put(nv_state->regamma_lut);
+    drm_property_blob_put(nv_state->regamma_lut);
     if (nv_state->regamma_drm_lut_surface != NULL) {
         kref_put(&nv_state->regamma_drm_lut_surface->base.refcount,
                  free_drm_lut_surface);
@@ -2291,21 +2265,6 @@ static struct drm_crtc_funcs nv_crtc_funcs = {
 #endif
 };
 
-/*
- * In kernel versions before the addition of
- * drm_crtc_state::connectors_changed, connector changes were
- * reflected in drm_crtc_state::mode_changed.
- */
-static inline bool
-nv_drm_crtc_state_connectors_changed(struct drm_crtc_state *crtc_state)
-{
-#if defined(NV_DRM_CRTC_STATE_HAS_CONNECTORS_CHANGED)
-    return crtc_state->connectors_changed;
-#else
-    return crtc_state->mode_changed;
-#endif
-}
-
 static int head_modeset_config_attach_connector(
     struct nv_drm_connector *nv_connector,
     struct NvKmsKapiHeadModeSetConfig *head_modeset_config)
@@ -2322,7 +2281,6 @@ static int head_modeset_config_attach_connector(
     return 0;
 }
 
-#if defined(NV_DRM_COLOR_MGMT_AVAILABLE)
 static int color_mgmt_config_copy_lut(struct NvKmsLutRamps *nvkms_lut,
                                       struct drm_color_lut *drm_lut,
                                       uint64_t lut_len)
@@ -2434,7 +2392,6 @@ static int color_mgmt_config_set_luts(struct nv_drm_crtc_state *nv_crtc_state,
 
     return 0;
 }
-#endif /* NV_DRM_COLOR_MGMT_AVAILABLE */
 
 /**
  * nv_drm_crtc_atomic_check() can fail after it has modified
@@ -2466,7 +2423,7 @@ static int nv_drm_crtc_atomic_check(struct drm_crtc *crtc,
         req_config->flags.modeChanged = NV_TRUE;
     }
 
-    if (nv_drm_crtc_state_connectors_changed(crtc_state)) {
+    if (crtc_state->connectors_changed) {
         struct NvKmsKapiHeadModeSetConfig *config = &req_config->modeSetConfig;
         struct drm_connector *connector;
         struct drm_connector_state *connector_state;
@@ -2501,13 +2458,11 @@ static int nv_drm_crtc_atomic_check(struct drm_crtc *crtc,
     req_config->modeSetConfig.vrrEnabled = crtc_state->vrr_enabled;
 #endif
 
-#if defined(NV_DRM_COLOR_MGMT_AVAILABLE)
     if (crtc_state->color_mgmt_changed) {
         if ((ret = color_mgmt_config_set_luts(nv_crtc_state, req_config)) != 0) {
             return ret;
         }
     }
-#endif
 
     if (nv_crtc_state->regamma_changed) {
         if (nv_crtc_state->regamma_drm_lut_surface != NULL) {
@@ -2754,7 +2709,6 @@ static void
 __nv_drm_plane_create_rotation_property(struct drm_plane *plane,
                                         NvU16 validLayerRRTransforms)
 {
-#if defined(NV_DRM_ROTATION_AVAILABLE)
     enum NvKmsRotation curRotation;
     NvU32 supported_rotations = 0;
     struct NvKmsRRParams rrParams = {
@@ -2803,7 +2757,6 @@ __nv_drm_plane_create_rotation_property(struct drm_plane *plane,
         drm_plane_create_rotation_property(plane, DRM_MODE_ROTATE_0,
                                            supported_rotations);
     }
-#endif
 }
 
 static struct drm_plane*
@@ -2813,13 +2766,11 @@ nv_drm_plane_create(struct drm_device *dev,
                     NvU32 head,
                     const struct NvKmsKapiDeviceResourcesInfo *pResInfo)
 {
-#if defined(NV_DRM_UNIVERSAL_PLANE_INIT_HAS_FORMAT_MODIFIERS_ARG)
     struct nv_drm_device *nv_dev = to_nv_device(dev);
     const NvU64 linear_modifiers[] = {
         DRM_FORMAT_MOD_LINEAR,
         DRM_FORMAT_MOD_INVALID,
     };
-#endif
     enum NvKmsCompositionBlendingMode defaultCompositionMode;
     struct nv_drm_plane *nv_plane = NULL;
     struct nv_drm_plane_state *nv_plane_state = NULL;
@@ -2884,16 +2835,10 @@ nv_drm_plane_create(struct drm_device *dev,
         (1 << head) : 0,
         &nv_plane_funcs,
         formats, formats_count,
-#if defined(NV_DRM_UNIVERSAL_PLANE_INIT_HAS_FORMAT_MODIFIERS_ARG)
         (plane_type == DRM_PLANE_TYPE_CURSOR) ?
-        linear_modifiers : nv_dev->modifiers,
-#endif
-        plane_type
-#if defined(NV_DRM_UNIVERSAL_PLANE_INIT_HAS_NAME_ARG)
-        , NULL
-#endif
-        );
-
+            linear_modifiers : nv_dev->modifiers,
+        plane_type,
+        NULL);
     if (ret != 0) {
         goto failed_plane_init;
     }
@@ -2990,12 +2935,8 @@ static struct drm_crtc *__nv_drm_crtc_create(struct nv_drm_device *nv_dev,
     ret = drm_crtc_init_with_planes(nv_dev->dev,
                                     &nv_crtc->base,
                                     primary_plane, cursor_plane,
-                                    &nv_crtc_funcs
-#if defined(NV_DRM_CRTC_INIT_WITH_PLANES_HAS_NAME_ARG)
-                                    , NULL
-#endif
-                                    );
-
+                                    &nv_crtc_funcs,
+                                    NULL);
     if (ret != 0) {
         NV_DRM_DEV_LOG_ERR(
             nv_dev,
@@ -3011,21 +2952,14 @@ static struct drm_crtc *__nv_drm_crtc_create(struct nv_drm_device *nv_dev,
 
     nv_drm_crtc_install_properties(&nv_crtc->base);
 
-#if defined(NV_DRM_COLOR_MGMT_AVAILABLE)
-#if defined(NV_DRM_CRTC_ENABLE_COLOR_MGMT_PRESENT)
     drm_crtc_enable_color_mgmt(&nv_crtc->base, NVKMS_LUT_ARRAY_SIZE, true,
                                NVKMS_LUT_ARRAY_SIZE);
-#else
-    drm_helper_crtc_enable_color_mgmt(&nv_crtc->base, NVKMS_LUT_ARRAY_SIZE,
-                                      NVKMS_LUT_ARRAY_SIZE);
-#endif
     ret = drm_mode_crtc_set_gamma_size(&nv_crtc->base, NVKMS_LUT_ARRAY_SIZE);
     if (ret != 0) {
         NV_DRM_DEV_LOG_WARN(
             nv_dev,
             "Failed to initialize legacy gamma support for head %u", head);
     }
-#endif
 
     return &nv_crtc->base;
 
@@ -3160,7 +3094,7 @@ int nv_drm_get_crtc_crc32_v2_ioctl(struct drm_device *dev,
         return -EOPNOTSUPP;
     }
 
-    crtc = nv_drm_crtc_find(dev, filep, params->crtc_id);
+    crtc = drm_crtc_find(dev, filep, params->crtc_id);
     if (!crtc) {
         return -ENOENT;
     }
@@ -3188,7 +3122,7 @@ int nv_drm_get_crtc_crc32_ioctl(struct drm_device *dev,
         return -EOPNOTSUPP;
     }
 
-    crtc = nv_drm_crtc_find(dev, filep, params->crtc_id);
+    crtc = drm_crtc_find(dev, filep, params->crtc_id);
     if (!crtc) {
         return -ENOENT;
     }

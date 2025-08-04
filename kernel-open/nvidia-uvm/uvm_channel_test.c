@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -393,6 +393,100 @@ done:
     return status;
 }
 
+// Transition TLB-cached invalid IOVAs to valid and make sure the GPU sees the
+// fresh mapping.
+static NV_STATUS test_iommu_stale_invalid(uvm_gpu_t *gpu)
+{
+    // Semi-arbitrary number. We want enough pages that the odds of two mappings
+    // landing on the same GPU TLB cache line are high.
+    size_t num_pages = 4 * 16;
+    uvm_mem_t **mem;
+    uvm_push_t push;
+    size_t i;
+    NV_STATUS status = NV_OK;
+    NvU64 pattern = jhash_2words(current->pid, uvm_id_value(gpu->id), 0xaa);
+
+    // This tests allocates sysmem outside of the DMA API. Sysmem allocation
+    // without dma owner uses protected sysmem if Confidential Computing is
+    // enabled and cannot be accessed by GPU.
+    if (g_uvm_global.conf_computing_enabled)
+        return NV_OK;
+
+    mem = uvm_kvmalloc_zero(num_pages * sizeof(mem[0]));
+    TEST_CHECK_RET(mem != NULL);
+
+    // Allocate and map each page. Our assumption is that pages mapped near each
+    // other in time will tend to use similar IOVAs. Getting IOVAs which share a
+    // GPU TLB cache line is ideal, but even nearby cache lines are useful since
+    // they can engage the TLB prefetcher.
+    for (i = 0; i < num_pages; i++) {
+        TEST_NV_CHECK_GOTO(uvm_mem_alloc_sysmem_and_map_cpu_kernel(PAGE_SIZE, NULL, &mem[i]), out);
+        TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_phys(mem[i], gpu), out);
+        memset(uvm_mem_get_cpu_addr_kernel(mem[i]), 0, PAGE_SIZE);
+    }
+
+    // Now that all pages are mapped in what is hopefully a near-contiguous
+    // pattern, unmap every odd page to create invalid gaps.
+    for (i = 1; i < num_pages; i += 2)
+        uvm_mem_unmap_gpu_phys(mem[i], gpu);
+
+    // Access the even pages with physical ATS access where possible. This
+    // should pull in the invalid adjacent mappings too.
+    TEST_NV_CHECK_GOTO(uvm_push_begin(gpu->channel_manager,
+                                      UVM_CHANNEL_TYPE_GPU_TO_CPU,
+                                      &push,
+                                      "Write base 0x%llx to even pages",
+                                      pattern),
+                       out);
+
+    for (i = 0; i < num_pages; i += 2) {
+        uvm_gpu_address_t addr = uvm_mem_gpu_address_physical(mem[i], gpu, 0, sizeof(pattern));
+        gpu->parent->ce_hal->memset_8(&push, addr, pattern + i, sizeof(pattern));
+    }
+
+    TEST_NV_CHECK_GOTO(uvm_push_end_and_wait(&push), out);
+
+    // Verify writes
+    for (i = 0; i < num_pages; i++) {
+        NvU64 expected = (i & 1) ? 0 : pattern + i;
+        NvU64 *cpu_ptr = uvm_mem_get_cpu_addr_kernel(mem[i]);
+        TEST_CHECK_GOTO(*cpu_ptr == expected, out);
+    }
+
+    // Re-map the odd pages. Hopefully they'll fall into their old addresses, or
+    // at least will overlap with GPU-prefetched translations from above.
+    for (i = 1; i < num_pages; i += 2)
+        TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_phys(mem[i], gpu), out);
+
+    // Access the odd pages
+    TEST_NV_CHECK_GOTO(uvm_push_begin(gpu->channel_manager,
+                                      UVM_CHANNEL_TYPE_GPU_TO_CPU,
+                                      &push,
+                                      "Write base 0x%llx to odd pages",
+                                      pattern),
+                       out);
+
+    for (i = 1; i < num_pages; i += 2) {
+        uvm_gpu_address_t addr = uvm_mem_gpu_address_physical(mem[i], gpu, 0, sizeof(NvU64));
+        gpu->parent->ce_hal->memset_8(&push, addr, pattern + i, sizeof(NvU64));
+    }
+
+    TEST_NV_CHECK_GOTO(uvm_push_end_and_wait(&push), out);
+
+    // Verify writes
+    for (i = 0; i < num_pages; i++) {
+        NvU64 *cpu_ptr = uvm_mem_get_cpu_addr_kernel(mem[i]);
+        TEST_CHECK_GOTO(*cpu_ptr == pattern + i, out);
+    }
+
+out:
+    for (i = 0; i < num_pages; i++)
+        uvm_mem_free(mem[i]);
+
+    uvm_kvfree(mem);
+    return status;
+}
+
 static NV_STATUS test_iommu(uvm_va_space_t *va_space)
 {
     uvm_gpu_t *gpu;
@@ -415,6 +509,8 @@ static NV_STATUS test_iommu(uvm_va_space_t *va_space)
 
         TEST_NV_CHECK_RET(test_status);
         TEST_NV_CHECK_RET(create_status);
+
+        TEST_NV_CHECK_RET(test_iommu_stale_invalid(gpu));
     }
 
     return NV_OK;
@@ -965,7 +1061,7 @@ release:
 static NV_STATUS force_key_rotations(uvm_channel_pool_t *pool, unsigned num_rotations)
 {
     unsigned num_tries;
-    unsigned max_num_tries = 20;
+    unsigned max_num_tries = 0x100;
     unsigned num_rotations_completed = 0;
 
     if (num_rotations == 0)

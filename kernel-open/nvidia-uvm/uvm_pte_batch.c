@@ -135,6 +135,8 @@ void uvm_pte_batch_write_ptes(uvm_pte_batch_t *batch, uvm_gpu_phys_address_t fir
 
     // Updating PTEs in sysmem requires a sysmembar after writing them and
     // before any TLB invalidates.
+    // PTEs should never be in a location using UVM_APERTURE_SYS_NON_COHERENT.
+    UVM_ASSERT(first_pte.aperture != UVM_APERTURE_SYS_NON_COHERENT);
     if (first_pte.aperture == UVM_APERTURE_SYS)
         batch->membar = UVM_MEMBAR_SYS;
 
@@ -165,6 +167,8 @@ void uvm_pte_batch_write_pte(uvm_pte_batch_t *batch, uvm_gpu_phys_address_t pte,
 
     // Updating PTEs in sysmem requires a sysmembar after writing them and
     // before any TLB invalidates.
+    // PTEs should never be in a location using UVM_APERTURE_SYS_NON_COHERENT.
+    UVM_ASSERT(pte.aperture != UVM_APERTURE_SYS_NON_COHERENT);
     if (pte.aperture == UVM_APERTURE_SYS)
         batch->membar = UVM_MEMBAR_SYS;
 
@@ -205,6 +209,8 @@ void uvm_pte_batch_clear_ptes(uvm_pte_batch_t *batch, uvm_gpu_phys_address_t fir
                                   empty_pte_bits,
                                   entry_size * entry_count);
 
+    // PTEs should never be in a location using UVM_APERTURE_SYS_NON_COHERENT.
+    UVM_ASSERT(first_pte.aperture != UVM_APERTURE_SYS_NON_COHERENT);
     if (first_pte.aperture == UVM_APERTURE_SYS)
         batch->membar = UVM_MEMBAR_SYS;
 }

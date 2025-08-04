@@ -64,9 +64,9 @@ _uvmSetupAccessCntrBuffer
         return NV_ERR_BUFFER_TOO_SMALL;
     }
 
-    memdescGetPhysAddrs(pAccessCounterBuffer->pUvmAccessCntrAllocMemDesc,
-                        AT_GPU, 0, RM_PAGE_SIZE,
-                        numBufferPages, params.bufferPteArray);
+    memdescGetPtePhysAddrs(pAccessCounterBuffer->pUvmAccessCntrAllocMemDesc,
+                           AT_GPU, 0, RM_PAGE_SIZE,
+                           numBufferPages, params.bufferPteArray);
 
     params.bufferSize = bufferSize;
     params.accessCounterIndex = pAccessCounterBuffer->accessCounterIndex;

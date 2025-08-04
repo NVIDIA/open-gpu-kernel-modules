@@ -120,7 +120,8 @@ typedef struct VGPU_DEVICE_GUEST_FB_INFO
 typedef enum VGPU_SYSFS_OP
 {
     SET_GPU_INSTANCE_ID   = 0,
-    SET_PLACEMENT_ID      = 1
+    SET_PLACEMENT_ID      = 1,
+    GET_PLACEMENT_ID      = 2
 } VGPU_SYSFS_OP;
 
 typedef struct
@@ -139,6 +140,7 @@ typedef struct KERNEL_HOST_VGPU_DEVICE
     struct KERNEL_VGPU_GUEST        *vgpuGuest;
     NvU32                            gfid;
     NvU32                            swizzId;
+    NvU32                            accountingPid;
     NvU16                            placementId;
     NvU32                            numPluginChannels;
     NvU32                            chidOffset[RM_ENGINE_TYPE_LAST];
@@ -350,15 +352,17 @@ NV_STATUS __nvoc_objCreate_KernelVgpuMgr(KernelVgpuMgr**, Dynamic*, NvU32);
     __nvoc_objCreate_KernelVgpuMgr((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS kvgpumgrConstruct_IMPL(struct KernelVgpuMgr *arg_pKernelVgpuMgr);
+#define __nvoc_kvgpumgrConstruct(arg_pKernelVgpuMgr) kvgpumgrConstruct_IMPL(arg_pKernelVgpuMgr)
+
+void kvgpumgrDestruct_IMPL(struct KernelVgpuMgr *pKernelVgpuMgr);
+#define __nvoc_kvgpumgrDestruct(pKernelVgpuMgr) kvgpumgrDestruct_IMPL(pKernelVgpuMgr)
+
+
+// Wrapper macros for halified functions
 
 // Dispatch functions
-NV_STATUS kvgpumgrConstruct_IMPL(struct KernelVgpuMgr *arg_pKernelVgpuMgr);
-
-#define __nvoc_kvgpumgrConstruct(arg_pKernelVgpuMgr) kvgpumgrConstruct_IMPL(arg_pKernelVgpuMgr)
-void kvgpumgrDestruct_IMPL(struct KernelVgpuMgr *pKernelVgpuMgr);
-
-#define __nvoc_kvgpumgrDestruct(pKernelVgpuMgr) kvgpumgrDestruct_IMPL(pKernelVgpuMgr)
 #undef PRIVATE_FIELD
 
 
@@ -416,6 +420,7 @@ kvgpumgrGuestRegister(OBJGPU *pGpu,
                       NvBool bDisableDefaultSmcExecPartRestore,
                       NvU16 placementId,
                       NvU8 *pVgpuDevName,
+                      NvU32 accountingPid,
                       KERNEL_HOST_VGPU_DEVICE **ppKernelHostVgpuDevice);
 
 NV_STATUS
@@ -439,6 +444,10 @@ kvgpumgrGetSwizzId(OBJGPU *pGpu,
                    NvU32 partitionFlag,
                    VGPU_TYPE *vgpuTypeInfo, 
                    NvU32 *swizzId);
+
+NV_STATUS
+_kvgpumgrClearAssignedSwizzIdMask(OBJGPU *pGpu,
+                                  NvU32 swizzId);
 
 NV_STATUS
 kvgpumgrHeterogeneousGetChidOffset(NvU32 vgpuTypeId, NvU16 placementId,

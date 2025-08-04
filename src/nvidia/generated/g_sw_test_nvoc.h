@@ -163,7 +163,15 @@ NV_STATUS __nvoc_objCreate_SoftwareMethodTest(SoftwareMethodTest**, Dynamic*, Nv
     __nvoc_objCreate_SoftwareMethodTest((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS swtestConstruct_IMPL(struct SoftwareMethodTest *arg_pSwTest, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_swtestConstruct(arg_pSwTest, arg_pCallContext, arg_pParams) swtestConstruct_IMPL(arg_pSwTest, arg_pCallContext, arg_pParams)
+
+void swtestDestruct_IMPL(struct SoftwareMethodTest *pSwTest);
+#define __nvoc_swtestDestruct(pSwTest) swtestDestruct_IMPL(pSwTest)
+
+
+// Wrapper macros for halified functions
 #define swtestGetSwMethods_FNPTR(pSwTest) pSwTest->__nvoc_metadata_ptr->vtable.__swtestGetSwMethods__
 #define swtestGetSwMethods(pSwTest, ppMethods, pNumMethods) swtestGetSwMethods_DISPATCH(pSwTest, ppMethods, pNumMethods)
 #define swtestIsSwMethodStalling_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesIsSwMethodStalling__
@@ -360,12 +368,6 @@ static inline NV_STATUS swtestGetOrAllocNotifShare_DISPATCH(struct SoftwareMetho
 
 NV_STATUS swtestGetSwMethods_IMPL(struct SoftwareMethodTest *pSwTest, const METHOD **ppMethods, NvU32 *pNumMethods);
 
-NV_STATUS swtestConstruct_IMPL(struct SoftwareMethodTest *arg_pSwTest, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_swtestConstruct(arg_pSwTest, arg_pCallContext, arg_pParams) swtestConstruct_IMPL(arg_pSwTest, arg_pCallContext, arg_pParams)
-void swtestDestruct_IMPL(struct SoftwareMethodTest *pSwTest);
-
-#define __nvoc_swtestDestruct(pSwTest) swtestDestruct_IMPL(pSwTest)
 #undef PRIVATE_FIELD
 
 

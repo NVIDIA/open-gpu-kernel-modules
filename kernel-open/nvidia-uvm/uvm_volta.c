@@ -104,7 +104,7 @@ void uvm_hal_volta_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->plc_supported = false;
 
-    parent_gpu->no_ats_range_required = false;
+    parent_gpu->ats.no_ats_range_required = false;
 
     parent_gpu->conf_computing.per_channel_key_rotation = false;
 }

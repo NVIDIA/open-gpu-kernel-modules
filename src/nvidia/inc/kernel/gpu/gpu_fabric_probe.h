@@ -42,6 +42,8 @@ NV_STATUS gpuFabricProbeStart(OBJGPU *pGpu,
 void gpuFabricProbeStop(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel);
 void gpuFabricProbeStopPhysical(GPU_FABRIC_PROBE_INFO_PHYSICAL *pGpuFabricProbeInfoPhysical,
                                 NvU32 gfId);
+NV_STATUS gpuFabricProbeSuspendPhysical(GPU_FABRIC_PROBE_INFO_PHYSICAL *pGpuFabricProbeInfoPhysical, NvU32 *pPrevBwMode);
+NV_STATUS gpuFabricProbeResumePhysical(GPU_FABRIC_PROBE_INFO_PHYSICAL *pGpuFabricProbeInfoPhysical, NvU32 newBwMode);
 
 void gpuFabricProbeSuspend(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel);
 void gpuFabricProbeInvalidate(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel);

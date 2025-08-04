@@ -163,7 +163,7 @@ typedef struct NV0073_CTRL_DFP_GET_INFO_PARAMS {
 #define NV0073_CTRL_DFP_FLAGS_FORMAT_YCBCR444_CAPABLE                    12:12
 #define NV0073_CTRL_DFP_FLAGS_FORMAT_YCBCR444_CAPABLE_FALSE     (0x00000000U)
 #define NV0073_CTRL_DFP_FLAGS_FORMAT_YCBCR444_CAPABLE_TRUE      (0x00000001U)
-#define NV0073_CTRL_DFP_FLAGS_TYPE_C_TO_DP_CONNECTOR                     13:13
+#define NV0073_CTRL_DFP_FLAGS_TYPE_C_TO_DP_CONNECTOR                    13:13
 #define NV0073_CTRL_DFP_FLAGS_TYPE_C_TO_DP_CONNECTOR_FALSE      (0x00000000U)
 #define NV0073_CTRL_DFP_FLAGS_TYPE_C_TO_DP_CONNECTOR_TRUE       (0x00000001U)
 #define NV0073_CTRL_DFP_FLAGS_HDMI_ALLOWED                               14:14
@@ -285,8 +285,6 @@ typedef struct NV0073_CTRL_DFP_GET_DISPLAYPORT_DONGLE_INFO_PARAMS {
 #define NV0073_CTRL_DFP_GET_DISPLAYPORT_DONGLE_INFO_FLAGS_DP2TMDS_DONGLE_TYPE_1 (0x00000000U)
 #define NV0073_CTRL_DFP_GET_DISPLAYPORT_DONGLE_INFO_FLAGS_DP2TMDS_DONGLE_TYPE_2 (0x00000001U)
 
-
-
 /*
  * NV0073_CTRL_CMD_DFP_SET_ELD_AUDIO_CAPS
  *
@@ -349,9 +347,9 @@ typedef struct NV0073_CTRL_DFP_GET_DISPLAYPORT_DONGLE_INFO_PARAMS {
  *   NV_ERR_INVALID_PARAM_STRUCT
  *   NV_ERR_INVALID_ARGUMENT
  */
-#define NV0073_CTRL_CMD_DFP_SET_ELD_AUDIO_CAPS                         (0x731144U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DFP_INTERFACE_ID << 8) | NV0073_CTRL_DFP_SET_ELD_AUDIO_CAP_PARAMS_MESSAGE_ID" */
+#define NV0073_CTRL_CMD_DFP_SET_ELD_AUDIO_CAPS                                  (0x731144U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DFP_INTERFACE_ID << 8) | NV0073_CTRL_DFP_SET_ELD_AUDIO_CAP_PARAMS_MESSAGE_ID" */
 
-#define NV0073_CTRL_DFP_ELD_AUDIO_CAPS_ELD_BUFFER                      96U
+#define NV0073_CTRL_DFP_ELD_AUDIO_CAPS_ELD_BUFFER                               96U
 
 #define NV0073_CTRL_DFP_SET_ELD_AUDIO_CAP_PARAMS_MESSAGE_ID (0x44U)
 
@@ -1464,7 +1462,184 @@ typedef struct NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS {
     NvU32 displayId;
 } NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS;
 
+/*
+ * NV0073_CTRL_CMD_SYSTEM_SET_REGION_RAM_RECTANGLES
+ *
+ * @brief
+ * This command can be used to program the Rectangle regions info into
+ * Region RAM. These Rectangle regions are then used as regions of interest
+ * for Tell Tale and Frozen Frame detection.
+ *
+ * Some NVDisplay hardware has an internal RAM to support TellTale(TT)
+ * and Frozen Frame(FF) features. Each entry in this RAM is simply defined
+ * as a rectangle (x/y position, width and height). RM will load the region
+ * RAM with rectangle entries using PDISP registers.
+ *
+ * Several new Core/Window methods have been added. These methods can be
+ * programmed to specify which rectangle resources would be enabled and inform
+ * hw to start using for TT/FF checking. There are also methods that can be used
+ * to configure the manner of checking (e.g., for frozen frame detection, how
+ * many regions need to be frozen for how many frames before it's considered as
+ * a fault). As part of these methods, need to specify the index of the region
+ * RAM entry (rectangle) that needs to be checked. This ID is already specified
+ * for each rectangle as part of the info that was programmed by RM to Region RAM.
+ *
+ * The rectangles loaded onto Region RAM are not specifically tied to the current
+ * mode, and do not have to be coupled with only one single mode. Based on the
+ * current raster size, it is expected that the RM clients would choose the
+ * Rectangles that are within the raster size. Once TT/FF checking is enabled,
+ * Display HW continuously checks and will raise an interrupt event if detects an
+ * error case. If a rectangle resource is chosen that "doesn't fit" the current
+ * raster size, overlaps with another rectangle resource, etc, then HW will
+ * generate an exception for these invalid states.
+ *
+ * @params
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device. This parameter
+ *     should be set to zero for default behavior.
+ *   numRectangles
+ *     This parameter specifies the number of rectangles whose region info
+ *     has been passed as part of this control call
+ *   rectanglesInfo::rectangleID
+ *     This parameter provides the ID of the rectangle which will be used
+ *     to identify the rectangle during methods programming for TellTale
+ *     or Frozen Frame detection.
+ *   rectanglesInfo::xCoordinate
+ *     This parameter specifies the x-coordinate of the top left corner of
+ *     the rectangle in the viewport.
+ *   rectanglesInfo::yCoordinate
+ *     This parameter specifies the y-coordinate of the top left corner of
+ *     the rectangle in the viewport.
+ *   rectanglesInfo::width
+ *     This parameter specifies the width of the rectangle.
+ *   rectanglesInfo::height
+ *     This parameter specifies the height of the rectangle.
+ *
+ * Possible status values returned are:
+ *   NV_OK - Upon successfully programming Rectangles info to Region RAM
+ *   NV_ERR_INVALID_ARGUMENT - When incorrect values are passed in arguments
+ */
+#define NV0073_CTRL_CMD_SYSTEM_SET_REGION_RAM_RECTANGLES (0x731177U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DFP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_SYSTEM_SET_REGION_RAM_RECTANGLES_PARAMS_MESSAGE_ID" */
 
+#define NV0073_CTRL_CMD_SYSTEM_MAX_REGION_RAM_RECTANGLES 16U
+
+#define NV0073_CTRL_CMD_SYSTEM_SET_REGION_RAM_RECTANGLES_PARAMS_MESSAGE_ID (0x77U)
+
+typedef struct NV0073_CTRL_CMD_SYSTEM_SET_REGION_RAM_RECTANGLES_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU8  numRectangles;
+
+    struct {
+        NvU8  rectangleID;
+        NvU16 xCoordinate;
+        NvU16 yCoordinate;
+        NvU16 width;
+        NvU16 height;
+    } rectanglesInfo[NV0073_CTRL_CMD_SYSTEM_MAX_REGION_RAM_RECTANGLES];
+} NV0073_CTRL_CMD_SYSTEM_SET_REGION_RAM_RECTANGLES_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_SYSTEM_CONFIGURE_SAFETY_INTERRUPTS
+ *
+ * This command can be used to set the interrupt handling mechanism (One-time
+ * or Continuous) of TellTale and FrozenFrame/Overlap events. Also, this command
+ * can be used to Enable/Disable the safety interrupts.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device. This parameter
+ *     should be set to zero for default behavior.
+ *   tellTaleEvents
+ *     The 'mode' variable holds the interrupt configuration values for
+ *     TellTale events. Clients can specify whether the interrupt needs to
+ *     be Disabled or Enabled Continuously or Enabled Only Once using the
+ *     NV0073_CTRL_CMD_SYSTEM_SAFETY_INTERRUPT_MODE_* macros. ENABLE_ONLY_ONCE
+ *     helps avoid interrupt storm by disabling the interrupt after the first
+ *     event since Safety Interrupts are generated per frame.
+ *     The 'specified' field should be used to specify if the 'mode' value at
+ *     that index should be programmed as part of the control call handling
+ *     function. This helps if Clients don't want to update the TellTale
+ *     interrupt configuration of a particular tile in this instance of the
+ *     control call invocation. If it is set to NV_TRUE, the 'mode' value
+ *     will be programmed. If NV_FALSE, 'mode' value will not be programmed.
+ *   frozenFrameEvents
+ *     The 'mode' variable holds the interrupt configuration values for
+ *     FrozenFrame events. Clients can specify whether the interrupt needs to
+ *     be Disabled or Enabled Continuously or Enabled Only Once using the
+ *     NV0073_CTRL_CMD_SYSTEM_SAFETY_INTERRUPT_MODE_* macros. ENABLE_ONLY_ONCE
+ *     helps avoid interrupt storm by disabling the interrupt after the first
+ *     event since Safety Interrupts are generated per frame.
+ *     The 'specified' field should be used to specify if the 'mode' value at
+ *     that index should be programmed as part of the control call handling
+ *     function. This helps if Clients don't want to update the Frozen Frame
+ *     interrupt configuration of a particular head in this instance of the
+ *     control call invocation. If it is set to NV_TRUE, the 'mode' value
+ *     will be programmed. If NV_FALSE, 'mode' value will not be programmed.
+ *   overlapEvents
+ *     The 'mode' variable holds the interrupt configuration values for
+ *     Overlap events. Clients can specify whether the interrupt needs to
+ *     be Disabled or Enabled Continuously or Enabled Only Once using the
+ *     NV0073_CTRL_CMD_SYSTEM_SAFETY_INTERRUPT_MODE_* macros. ENABLE_ONLY_ONCE
+ *     helps avoid interrupt storm by disabling the interrupt after the first
+ *     event since Safety Interrupts are generated per frame.
+ *     The 'specified' field should be used to specify if the 'mode' value at
+ *     that index should be programmed as part of the control call handling
+ *     function. This helps if Clients don't want to update the Overlap
+ *     interrupt configuration of a particular tile in this instance of the
+ *     control call invocation. If it is set to NV_TRUE, the 'mode' value
+ *     will be programmed. If NV_FALSE, 'mode' value will not be programmed.
+ */
+/*
+ * NOTE: Though we have created tellTaleEvents, frozenFrameEvents and overlapEvents structs as
+ *       arrays holding interrupt 'mode' for each Head/Tile, RM currently does not support
+ *       configuring these interrupts per Head/Tile. This support is planned to be added in RM
+ *       sometime later, but having the structures per Head/Tile helps in future-proofing the
+ *       control call interface.
+ *       Expectation from the clients is to set the same 'mode' value at all the indexes (for
+ *       all Heads/Tiles). This specified 'mode' value will be globally applied for all
+         Heads/Tiles for now.
+ */
+#define NV0073_CTRL_CMD_SYSTEM_CONFIGURE_SAFETY_INTERRUPTS             (0x731178U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DFP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_SYSTEM_CONFIGURE_SAFETY_INTERRUPTS_PARAMS_MESSAGE_ID" */
+
+/*
+ * Interrupt configuration values for Safety events
+ */
+#define NV0073_CTRL_CMD_SYSTEM_SAFETY_INTERRUPT_MODE_DISABLE           0U
+#define NV0073_CTRL_CMD_SYSTEM_SAFETY_INTERRUPT_MODE_ENABLE_CONTINUOUS 1U
+#define NV0073_CTRL_CMD_SYSTEM_SAFETY_INTERRUPT_MODE_ENABLE_ONLY_ONCE  2U
+#define NV0073_CTRL_CMD_SYSTEM_SAFETY_INTERRUPT_MODE_RESERVED          3U
+
+/*
+ * Head and Tile count used to specify Safety interrupt configuration for each head/tile.
+ */
+#define NV0073_CTRL_CMD_SYSTEM_MAX_SAFETY_HEAD_COUNT                   8U
+#define NV0073_CTRL_CMD_SYSTEM_MAX_SAFETY_TILE_COUNT                   8U
+
+#define NV0073_CTRL_CMD_SYSTEM_CONFIGURE_SAFETY_INTERRUPTS_PARAMS_MESSAGE_ID (0x78U)
+
+typedef struct NV0073_CTRL_CMD_SYSTEM_CONFIGURE_SAFETY_INTERRUPTS_PARAMS {
+    NvU32 subDeviceInstance;
+
+    struct {
+        NvU8   mode;
+        NvBool specified;
+    } tellTaleEvents[NV0073_CTRL_CMD_SYSTEM_MAX_SAFETY_TILE_COUNT];
+
+    struct {
+        NvU8   mode;
+        NvBool specified;
+    } frozenFrameEvents[NV0073_CTRL_CMD_SYSTEM_MAX_SAFETY_HEAD_COUNT];
+
+    struct {
+        NvU8   mode;
+        NvBool specified;
+    } overlapEvents[NV0073_CTRL_CMD_SYSTEM_MAX_SAFETY_TILE_COUNT];
+} NV0073_CTRL_CMD_SYSTEM_CONFIGURE_SAFETY_INTERRUPTS_PARAMS;
 
 /*
  * NV0073_CTRL_CMD_DFP_SET_FORCE_BLACK_PIXELS
@@ -1477,9 +1652,6 @@ typedef struct NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS {
  *     directed. This parameter must specify a value between zero and the
  *     total number of subdevices within the parent device.  This parameter
  *     should be set to zero for default behavior.
- *
- *   displayId
- *     DisplayId of the connected display.
  *
  *   bForceBlackPixels
  *     To enable or disable black pixel generation.
@@ -1496,7 +1668,6 @@ typedef struct NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS {
 
 typedef struct NV0073_CTRL_DFP_SET_FORCE_BLACK_PIXELS_PARAMS {
     NvU32  subDeviceInstance;
-    NvU32  displayId;
     NvU32  head;
     NvBool bForceBlack;
 } NV0073_CTRL_DFP_SET_FORCE_BLACK_PIXELS_PARAMS;

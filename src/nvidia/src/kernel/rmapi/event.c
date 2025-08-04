@@ -138,7 +138,7 @@ eventConstruct_IMPL
         {
             RsResourceRef *pSourceRef = NULL;
 
-            if (IS_GSP_CLIENT(pGpu))
+            if (IS_FW_CLIENT(pGpu))
             {
                 NV_ASSERT_OK_OR_RETURN(
                     serverutilGetResourceRef(hParentClient,
@@ -147,9 +147,9 @@ eventConstruct_IMPL
             }
 
             if (
-                !(IS_GSP_CLIENT(pGpu) && (pSourceRef->internalClassId == classId(KernelHostVgpuDeviceApi))) &&
+                !(IS_FW_CLIENT(pGpu) && (pSourceRef->internalClassId == classId(KernelHostVgpuDeviceApi))) &&
                 (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
-                (IS_GSP_CLIENT(pGpu) && pSourceRef->internalClassId != classId(ContextDma)) ||
+                (IS_FW_CLIENT(pGpu) && pSourceRef->internalClassId != classId(ContextDma)) ||
                 (IS_VIRTUAL_WITH_SRIOV(pGpu) && !(pNv0050AllocParams->notifyIndex & NV01_EVENT_NONSTALL_INTR))))
             {
                 //
@@ -269,7 +269,7 @@ NV_STATUS notifyUnregisterEvent_IMPL
             {
                 RsResourceRef *pNotifierRef = NULL;
 
-                if (IS_GSP_CLIENT(pGpu))
+                if (IS_FW_CLIENT(pGpu))
                 {
                     NV_ASSERT_OK_OR_RETURN(serverutilGetResourceRef(hNotifierClient, hNotifierResource, &pNotifierRef));
                 }
@@ -282,9 +282,9 @@ NV_STATUS notifyUnregisterEvent_IMPL
                 // do an RPC to the host to do the hardware update.
                 //
                 if (
-                    !(IS_GSP_CLIENT(pGpu) && (pNotifierRef->internalClassId == classId(KernelHostVgpuDeviceApi))) &&
+                    !(IS_FW_CLIENT(pGpu) && (pNotifierRef->internalClassId == classId(KernelHostVgpuDeviceApi))) &&
                     (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
-                    (IS_GSP_CLIENT(pGpu) && pNotifierRef->internalClassId != classId(ContextDma)) ||
+                    (IS_FW_CLIENT(pGpu) && pNotifierRef->internalClassId != classId(ContextDma)) ||
                     (IS_VIRTUAL_WITH_SRIOV(pGpu) && !((*ppEventNotification)->bNonStallIntrEvent))))
                 {
                     //

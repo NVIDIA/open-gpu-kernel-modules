@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -137,25 +137,14 @@ NV_STATUS NV_API_CALL os_pci_write_dword(
 
 NvBool NV_API_CALL os_pci_remove_supported(void)
 {
-#if defined NV_PCI_STOP_AND_REMOVE_BUS_DEVICE
     return NV_TRUE;
-#else
-    return NV_FALSE;
-#endif
 }
 
 void NV_API_CALL os_pci_remove(
     void *handle
 )
 {
-#if defined(NV_PCI_STOP_AND_REMOVE_BUS_DEVICE)
-    NV_PCI_STOP_AND_REMOVE_BUS_DEVICE(handle);
-#elif defined(DEBUG)
-    nv_printf(NV_DBG_ERRORS,
-            "NVRM: %s() is called even though NV_PCI_STOP_AND_REMOVE_BUS_DEVICE is not defined\n",
-            __FUNCTION__);
-    os_dbg_breakpoint();
-#endif
+    pci_stop_and_remove_bus_device(handle);
 }
 
 NV_STATUS NV_API_CALL

@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -104,12 +104,6 @@ struct DeferredApiObject {
     struct ChannelDescendant *__nvoc_pbase_ChannelDescendant;    // chandes super
     struct DeferredApiObject *__nvoc_pbase_DeferredApiObject;    // defapi
 
-    // Vtable with 4 per-object function pointers
-    NV_STATUS (*__defapiCtrlCmdDeferredApi__)(struct DeferredApiObject * /*this*/, NV5080_CTRL_DEFERRED_API_PARAMS *);  // exported (id=0x50800101)
-    NV_STATUS (*__defapiCtrlCmdDeferredApiV2__)(struct DeferredApiObject * /*this*/, NV5080_CTRL_DEFERRED_API_V2_PARAMS *);  // exported (id=0x50800103)
-    NV_STATUS (*__defapiCtrlCmdDeferredApiInternal__)(struct DeferredApiObject * /*this*/, NV5080_CTRL_DEFERRED_API_INTERNAL_PARAMS *);  // exported (id=0x50800104)
-    NV_STATUS (*__defapiCtrlCmdRemoveApi__)(struct DeferredApiObject * /*this*/, NV5080_CTRL_REMOVE_API_PARAMS *);  // exported (id=0x50800102)
-
     // Data members
     PNODE DeferredApiList;
     NvU32 NumWaitingOnTLBFlush;
@@ -188,19 +182,59 @@ NV_STATUS __nvoc_objCreate_DeferredApiObject(DeferredApiObject**, Dynamic*, NvU3
     __nvoc_objCreate_DeferredApiObject((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS defapiConstruct_IMPL(struct DeferredApiObject *arg_pDeferredApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_defapiConstruct(arg_pDeferredApi, arg_pCallContext, arg_pParams) defapiConstruct_IMPL(arg_pDeferredApi, arg_pCallContext, arg_pParams)
+
+void defapiDestruct_IMPL(struct DeferredApiObject *pDeferredApi);
+#define __nvoc_defapiDestruct(pDeferredApi) defapiDestruct_IMPL(pDeferredApi)
+
+NV_STATUS defapiCtrlCmdDeferredApi_IMPL(struct DeferredApiObject *pDeferredApiObj, NV5080_CTRL_DEFERRED_API_PARAMS *pDeferredApi);
+#ifdef __nvoc_deferred_api_h_disabled
+static inline NV_STATUS defapiCtrlCmdDeferredApi(struct DeferredApiObject *pDeferredApiObj, NV5080_CTRL_DEFERRED_API_PARAMS *pDeferredApi) {
+    NV_ASSERT_FAILED_PRECOMP("DeferredApiObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_deferred_api_h_disabled
+#define defapiCtrlCmdDeferredApi(pDeferredApiObj, pDeferredApi) defapiCtrlCmdDeferredApi_IMPL(pDeferredApiObj, pDeferredApi)
+#endif // __nvoc_deferred_api_h_disabled
+
+NV_STATUS defapiCtrlCmdDeferredApiV2_IMPL(struct DeferredApiObject *pDeferredApiObj, NV5080_CTRL_DEFERRED_API_V2_PARAMS *pDeferredApi);
+#ifdef __nvoc_deferred_api_h_disabled
+static inline NV_STATUS defapiCtrlCmdDeferredApiV2(struct DeferredApiObject *pDeferredApiObj, NV5080_CTRL_DEFERRED_API_V2_PARAMS *pDeferredApi) {
+    NV_ASSERT_FAILED_PRECOMP("DeferredApiObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_deferred_api_h_disabled
+#define defapiCtrlCmdDeferredApiV2(pDeferredApiObj, pDeferredApi) defapiCtrlCmdDeferredApiV2_IMPL(pDeferredApiObj, pDeferredApi)
+#endif // __nvoc_deferred_api_h_disabled
+
+NV_STATUS defapiCtrlCmdDeferredApiInternal_IMPL(struct DeferredApiObject *pDeferredApiObj, NV5080_CTRL_DEFERRED_API_INTERNAL_PARAMS *pDeferredApi);
+#ifdef __nvoc_deferred_api_h_disabled
+static inline NV_STATUS defapiCtrlCmdDeferredApiInternal(struct DeferredApiObject *pDeferredApiObj, NV5080_CTRL_DEFERRED_API_INTERNAL_PARAMS *pDeferredApi) {
+    NV_ASSERT_FAILED_PRECOMP("DeferredApiObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_deferred_api_h_disabled
+#define defapiCtrlCmdDeferredApiInternal(pDeferredApiObj, pDeferredApi) defapiCtrlCmdDeferredApiInternal_IMPL(pDeferredApiObj, pDeferredApi)
+#endif // __nvoc_deferred_api_h_disabled
+
+NV_STATUS defapiCtrlCmdRemoveApi_IMPL(struct DeferredApiObject *pDeferredApiObj, NV5080_CTRL_REMOVE_API_PARAMS *pRemoveApi);
+#ifdef __nvoc_deferred_api_h_disabled
+static inline NV_STATUS defapiCtrlCmdRemoveApi(struct DeferredApiObject *pDeferredApiObj, NV5080_CTRL_REMOVE_API_PARAMS *pRemoveApi) {
+    NV_ASSERT_FAILED_PRECOMP("DeferredApiObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_deferred_api_h_disabled
+#define defapiCtrlCmdRemoveApi(pDeferredApiObj, pRemoveApi) defapiCtrlCmdRemoveApi_IMPL(pDeferredApiObj, pRemoveApi)
+#endif // __nvoc_deferred_api_h_disabled
+
+
+// Wrapper macros for halified functions
 #define defapiGetSwMethods_FNPTR(pDeferredApi) pDeferredApi->__nvoc_metadata_ptr->vtable.__defapiGetSwMethods__
 #define defapiGetSwMethods(pDeferredApi, ppMethods, pNumMethods) defapiGetSwMethods_DISPATCH(pDeferredApi, ppMethods, pNumMethods)
 #define defapiIsSwMethodStalling_FNPTR(pDeferredApi) pDeferredApi->__nvoc_metadata_ptr->vtable.__defapiIsSwMethodStalling__
 #define defapiIsSwMethodStalling(pDeferredApi, hDeferredApi) defapiIsSwMethodStalling_DISPATCH(pDeferredApi, hDeferredApi)
-#define defapiCtrlCmdDeferredApi_FNPTR(pDeferredApiObj) pDeferredApiObj->__defapiCtrlCmdDeferredApi__
-#define defapiCtrlCmdDeferredApi(pDeferredApiObj, pDeferredApi) defapiCtrlCmdDeferredApi_DISPATCH(pDeferredApiObj, pDeferredApi)
-#define defapiCtrlCmdDeferredApiV2_FNPTR(pDeferredApiObj) pDeferredApiObj->__defapiCtrlCmdDeferredApiV2__
-#define defapiCtrlCmdDeferredApiV2(pDeferredApiObj, pDeferredApi) defapiCtrlCmdDeferredApiV2_DISPATCH(pDeferredApiObj, pDeferredApi)
-#define defapiCtrlCmdDeferredApiInternal_FNPTR(pDeferredApiObj) pDeferredApiObj->__defapiCtrlCmdDeferredApiInternal__
-#define defapiCtrlCmdDeferredApiInternal(pDeferredApiObj, pDeferredApi) defapiCtrlCmdDeferredApiInternal_DISPATCH(pDeferredApiObj, pDeferredApi)
-#define defapiCtrlCmdRemoveApi_FNPTR(pDeferredApiObj) pDeferredApiObj->__defapiCtrlCmdRemoveApi__
-#define defapiCtrlCmdRemoveApi(pDeferredApiObj, pRemoveApi) defapiCtrlCmdRemoveApi_DISPATCH(pDeferredApiObj, pRemoveApi)
 #define defapiCheckMemInterUnmap_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesCheckMemInterUnmap__
 #define defapiCheckMemInterUnmap(pChannelDescendant, bSubdeviceHandleProvided) defapiCheckMemInterUnmap_DISPATCH(pChannelDescendant, bSubdeviceHandleProvided)
 #define defapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
@@ -269,22 +303,6 @@ static inline NV_STATUS defapiGetSwMethods_DISPATCH(struct DeferredApiObject *pD
 
 static inline NvBool defapiIsSwMethodStalling_DISPATCH(struct DeferredApiObject *pDeferredApi, NvU32 hDeferredApi) {
     return pDeferredApi->__nvoc_metadata_ptr->vtable.__defapiIsSwMethodStalling__(pDeferredApi, hDeferredApi);
-}
-
-static inline NV_STATUS defapiCtrlCmdDeferredApi_DISPATCH(struct DeferredApiObject *pDeferredApiObj, NV5080_CTRL_DEFERRED_API_PARAMS *pDeferredApi) {
-    return pDeferredApiObj->__defapiCtrlCmdDeferredApi__(pDeferredApiObj, pDeferredApi);
-}
-
-static inline NV_STATUS defapiCtrlCmdDeferredApiV2_DISPATCH(struct DeferredApiObject *pDeferredApiObj, NV5080_CTRL_DEFERRED_API_V2_PARAMS *pDeferredApi) {
-    return pDeferredApiObj->__defapiCtrlCmdDeferredApiV2__(pDeferredApiObj, pDeferredApi);
-}
-
-static inline NV_STATUS defapiCtrlCmdDeferredApiInternal_DISPATCH(struct DeferredApiObject *pDeferredApiObj, NV5080_CTRL_DEFERRED_API_INTERNAL_PARAMS *pDeferredApi) {
-    return pDeferredApiObj->__defapiCtrlCmdDeferredApiInternal__(pDeferredApiObj, pDeferredApi);
-}
-
-static inline NV_STATUS defapiCtrlCmdRemoveApi_DISPATCH(struct DeferredApiObject *pDeferredApiObj, NV5080_CTRL_REMOVE_API_PARAMS *pRemoveApi) {
-    return pDeferredApiObj->__defapiCtrlCmdRemoveApi__(pDeferredApiObj, pRemoveApi);
 }
 
 static inline NV_STATUS defapiCheckMemInterUnmap_DISPATCH(struct DeferredApiObject *pChannelDescendant, NvBool bSubdeviceHandleProvided) {
@@ -419,12 +437,6 @@ NV_STATUS defapiCtrlCmdDeferredApiInternal_IMPL(struct DeferredApiObject *pDefer
 
 NV_STATUS defapiCtrlCmdRemoveApi_IMPL(struct DeferredApiObject *pDeferredApiObj, NV5080_CTRL_REMOVE_API_PARAMS *pRemoveApi);
 
-NV_STATUS defapiConstruct_IMPL(struct DeferredApiObject *arg_pDeferredApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_defapiConstruct(arg_pDeferredApi, arg_pCallContext, arg_pParams) defapiConstruct_IMPL(arg_pDeferredApi, arg_pCallContext, arg_pParams)
-void defapiDestruct_IMPL(struct DeferredApiObject *pDeferredApi);
-
-#define __nvoc_defapiDestruct(pDeferredApi) defapiDestruct_IMPL(pDeferredApi)
 #undef PRIVATE_FIELD
 
 

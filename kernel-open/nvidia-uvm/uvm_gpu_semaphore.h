@@ -28,6 +28,7 @@
 #include "uvm_lock.h"
 #include "uvm_rm_mem.h"
 #include "uvm_linux.h"
+#include "nv_uvm_types.h"
 
 typedef NvU32 uvm_gpu_semaphore_notifier_t;
 

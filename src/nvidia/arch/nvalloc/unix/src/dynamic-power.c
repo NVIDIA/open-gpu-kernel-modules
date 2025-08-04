@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -93,6 +93,9 @@
 #include <ctrl/ctrl2080/ctrl2080unix.h>
 #include <gpu/timer/objtmr.h>
 
+
+// mask holding dynamic power supported GPUs
+static NvU32 dynamicPowerSupportGpuMask = 0;
 
 //
 // Schedule timer based callback, to check for the complete GPU Idleness.
@@ -439,7 +442,10 @@ NV_STATUS NV_API_CALL rm_schedule_gpu_wakeup(
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
-    ret = osQueueWorkItem(pGpu, RmForceGpuNotIdle, NULL);
+    ret = osQueueWorkItem(pGpu,
+                          RmForceGpuNotIdle,
+                          NULL,
+                          OS_QUEUE_WORKITEM_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
 
@@ -759,10 +765,46 @@ rmReadAndParseDynamicPowerRegkey
         return NV_OK;
     }
 
+    // For Tegra PCI iGPU, support GPU Rail-Gating feature
+    if (pNv->supports_tegra_igpu_rg)
+    {
+        *pOption = NV_REG_DYNAMIC_POWER_MANAGEMENT_FINE;
+        return NV_OK;
+    }
+
     *pOption = NV_REG_DYNAMIC_POWER_MANAGEMENT_NEVER;
     return NV_OK;
 }
 #undef NV_PMC_BOOT_42_CHIP_ID_GA102
+
+/*!
+ * @brief Initialize state related to Tegra iGPU dynamic power management.
+ * Called once per GPU during driver initialization.
+ *
+ * @param[in]   sp  nvidia_stack_t pointer.
+ * @param[in]   nv  nv_state_t pointer.
+ */
+void NV_API_CALL rm_init_tegra_dynamic_power_management(
+    nvidia_stack_t *sp,
+    nv_state_t *nv
+)
+{
+    nv_priv_t *nvp = NV_GET_NV_PRIV(nv);
+    void *fp;
+
+    if (!nv->is_tegra_pci_igpu || !nv->supports_tegra_igpu_rg)
+        return;
+
+    NV_ENTER_RM_RUNTIME(sp,fp);
+
+    portMemSet(&nvp->dynamic_power, 0, sizeof(nvp->dynamic_power));
+
+    nv->is_tegra_pci_igpu_rg_enabled = NV_FALSE;
+
+    NV_PRINTF(LEVEL_INFO,
+                "NVRM: Tegra PCI iGPU Rail-Gating is supported.\n");
+    NV_EXIT_RM_RUNTIME(sp,fp);
+}
 
 /*!
  * @brief Initialize state related to dynamic power management.
@@ -787,8 +829,6 @@ void NV_API_CALL rm_init_dynamic_power_management(
 
     NV_ENTER_RM_RUNTIME(sp,fp);
 
-    portMemSet(&nvp->dynamic_power, 0, sizeof(nvp->dynamic_power));
-
     /*
      * Program an impossible value so that we show correct status
      * during procfs read of runtime D3 status.
@@ -812,8 +852,8 @@ void NV_API_CALL rm_init_dynamic_power_management(
     }
 
     nvp->pr3_acpi_method_present = bPr3AcpiMethodPresent;
-    if (!nv_dynamic_power_available(nv) || !bPr3AcpiMethodPresent ||
-        (status != NV_OK))
+    if (!nv_dynamic_power_available(nv) || (status != NV_OK) ||
+        (!bPr3AcpiMethodPresent && !nv->supports_tegra_igpu_rg))
     {
         NV_PRINTF(LEVEL_NOTICE,
                   "%s: Disabling dynamic power management either due to lack"
@@ -865,6 +905,7 @@ void NV_API_CALL rm_init_dynamic_power_management(
         // fallthrough
     case NV_REG_DYNAMIC_POWER_MANAGEMENT_NEVER:
         nvp->dynamic_power.mode = NV_DYNAMIC_PM_NEVER;
+        nv->supports_tegra_igpu_rg = NV_FALSE;
         break;
     }
 
@@ -872,7 +913,23 @@ void NV_API_CALL rm_init_dynamic_power_management(
     if ((nvp->dynamic_power.mode == NV_DYNAMIC_PM_FINE) &&
         (nvp->dynamic_power.dynamic_power_regkey == NV_REG_DYNAMIC_POWER_MANAGEMENT_DEFAULT))
     {
-        nv_allow_runtime_suspend(nv);
+        // Enable Dynamic Rail-Gating for Tegra PCI iGPU
+        if (nv->supports_tegra_igpu_rg)
+        {
+            if (nv_pci_tegra_pm_init(nv) == NV_TRUE)
+            {
+                nv_printf(NV_DBG_INFO, "NVRM: Tegra PCI iGPU railgating is enabled\n");
+                nv->is_tegra_pci_igpu_rg_enabled = NV_TRUE;
+
+                // Allow runtime suspend for Tegra PCI iGPU device with RG successfully enabled.
+                nv_allow_runtime_suspend(nv);
+            }
+        }
+        else
+        {
+            // Allow runtime suspend for the GPU which is not Tegra PCI iGPU device.
+            nv_allow_runtime_suspend(nv);
+        }
     }
 
     // Legacy case: check if device is primary and driven by VBIOS or fb driver.
@@ -920,10 +977,19 @@ void NV_API_CALL rm_cleanup_dynamic_power_management(
     NV_ENTER_RM_RUNTIME(sp,fp);
 
     // Disable RTD3 infrastructure from OS side.
-    if ((nvp->dynamic_power.mode == NV_DYNAMIC_PM_FINE) &&
-        (nvp->dynamic_power.dynamic_power_regkey == NV_REG_DYNAMIC_POWER_MANAGEMENT_DEFAULT))
+    if (((nvp->dynamic_power.mode == NV_DYNAMIC_PM_FINE) &&
+        (nvp->dynamic_power.dynamic_power_regkey == NV_REG_DYNAMIC_POWER_MANAGEMENT_DEFAULT)) ||
+        nv->is_tegra_pci_igpu_rg_enabled == NV_TRUE)
     {
         nv_disallow_runtime_suspend(nv);
+
+        // Disable Dynamic Rail-Gating for Tegra PCI iGPU
+        if (nv->supports_tegra_igpu_rg)
+        {
+            nv_pci_tegra_pm_deinit(nv);
+            nv->is_tegra_pci_igpu_rg_enabled = NV_FALSE;
+            nv_printf(NV_DBG_INFO, "NVRM: Tegra PCI iGPU railgating is disabled\n");
+        }
     }
 
     nv_dynamic_power_state_t old_state = nvp->dynamic_power.state;
@@ -1375,10 +1441,10 @@ static void timerCallbackToRemoveIdleHoldoff(
     NV_STATUS  status = NV_OK;
     OBJGPU    *pGpu   = reinterpretCast(pCallbackData, OBJGPU *);
 
-    status = osQueueWorkItemWithFlags(pGpu,
-                                      RmRemoveIdleHoldoff,
-                                      NULL,
-                                      OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE);
+    status = osQueueWorkItem(pGpu,
+                             RmRemoveIdleHoldoff,
+                             NULL,
+                             OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE);
 
     if (status != NV_OK)
     {
@@ -1408,7 +1474,10 @@ static void timerCallbackToIndicateIdle(
         nvp->dynamic_power.state == NV_DYNAMIC_POWER_STATE_IDLE_SUSTAINED &&
         RmCanEnterGcxUnderGpuLock(pGpu))
     {
-        osQueueWorkItem(pGpu, RmIndicateIdle, NULL);
+        osQueueWorkItem(pGpu,
+                        RmIndicateIdle,
+                        NULL,
+                        OS_QUEUE_WORKITEM_FLAGS_NONE);
     }
     else
     {
@@ -1616,39 +1685,33 @@ static void RmDestroyDynamicPowerCallbacks(
 }
 
 /*
- * @brief Adds a GPU to OBJOS::dynamicPowerSupportGpuMask
+ * @brief Adds a GPU to dynamicPowerSupportGpuMask
  *
  * @param[in]                  instance
  */
-void osAddGpuDynPwrSupported
+static void AddGpuDynamicPowerSupported
 (
     NvU32 instance
 )
 {
-    OBJSYS *pSys = SYS_GET_INSTANCE();
-    OBJOS *pOS = SYS_GET_OS(pSys);
-
-    pOS->dynamicPowerSupportGpuMask |= (1 << instance);
+    dynamicPowerSupportGpuMask |= NVBIT(instance);
 }
 
 /*
- * @brief Removes a GPU from OBJOS::dynamicPowerSupportGpuMask
+ * @brief Removes a GPU from dynamicPowerSupportGpuMask
  *
  * @param[in]                  instance
  */
-void osRemoveGpuDynPwrSupported
+static void RemoveGpuDynamicPowerSupported
 (
     NvU32 instance
 )
 {
-    OBJSYS *pSys = SYS_GET_INSTANCE();
-    OBJOS *pOS = SYS_GET_OS(pSys);
-
-    pOS->dynamicPowerSupportGpuMask &= ~(1 << instance);
+    dynamicPowerSupportGpuMask &= ~NVBIT(instance);
 }
 
 /*
- * @brief queries  OBJOS::dynamicPowerSupportGpuMask
+ * @brief queries  dynamicPowerSupportGpuMask
  *
  * @param[in]                  void
  */
@@ -1657,10 +1720,7 @@ NvU32 osGetDynamicPowerSupportMask
     void
 )
 {
-    OBJSYS *pSys = SYS_GET_INSTANCE();
-    OBJOS *pOS = SYS_GET_OS(pSys);
-
-    return  pOS->dynamicPowerSupportGpuMask;
+    return dynamicPowerSupportGpuMask;
 }
 
 /*!
@@ -1698,7 +1758,7 @@ void RmDestroyDeferredDynamicPowerManagement(
 
     RmCancelDynamicPowerCallbacks(pGpu);
     RmDestroyDynamicPowerCallbacks(pGpu);
-    osRemoveGpuDynPwrSupported(gpuGetInstance(pGpu));
+    RemoveGpuDynamicPowerSupported(gpuGetInstance(pGpu));
 }
 
 /*!
@@ -2016,7 +2076,7 @@ static void RmInitDeferredDynamicPowerManagement(
              NV_PRINTF(LEVEL_NOTICE, "RTD3 is not supported.\n");
              return;
         }
-        osAddGpuDynPwrSupported(gpuGetInstance(pGpu));
+        AddGpuDynamicPowerSupported(gpuGetInstance(pGpu));
         nvp->dynamic_power.b_fine_not_supported = NV_FALSE;
         status = CreateDynamicPowerCallbacks(pGpu);
 
@@ -2126,8 +2186,8 @@ RmPowerManagement(
         nv_priv_t  *nvp = NV_GET_NV_PRIV(nv);
         NvBool bcState = gpumgrGetBcEnabledStatus(pGpu);
         Intr *pIntr = GPU_GET_INTR(pGpu);
-
         MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+
         if ((pmAction == NV_PM_ACTION_HIBERNATE) || (pmAction == NV_PM_ACTION_STANDBY))
         {
             //
@@ -2194,6 +2254,7 @@ RmPowerManagement(
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 break;
         }
+
         pMemoryManager->fixedFbsrModesMask = 0;
     }
 
@@ -2417,53 +2478,78 @@ NV_STATUS NV_API_CALL rm_power_management(
                 // LOCK: acquire GPUs lock
                 if ((rmStatus = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DYN_POWER)) == NV_OK)
                 {
-                    //
-                    // For GPU driving console, disable console access here, to ensure no console
-                    // writes through BAR1 can interfere with physical RM's setup of BAR1
-                    //
-                    if (pNv->client_managed_console)
+                    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
                     {
-                        os_disable_console_access();
-                        bConsoleDisabled = NV_TRUE;
-                    }
+                        rmStatus = RmPowerManagementTegra(pGpu, pmAction);
 
-                    nv_priv_t *nvp = NV_GET_NV_PRIV(pNv);
-
-                    //
-                    // Before going to S3 or S4, remove idle holdoff which was
-                    // applied during gc6 exit.
-                    //
-                    if ((pmAction != NV_PM_ACTION_RESUME) &&
-                        (nvp->dynamic_power.b_idle_holdoff == NV_TRUE))
-                    {
-                        nv_indicate_idle(pNv);
-                        RmCancelCallbackToRemoveIdleHoldoff(pGpu);
-                        nvp->dynamic_power.b_idle_holdoff = NV_FALSE;
-                    }
-
-                    //
-                    // Use GCx (GCOFF/GC6) power management if S0ix-based PM is
-                    // enabled and the request is for system suspend/resume.
-                    // Otherwise, use the existing mechanism.
-                    //
-                    if (nvp->s0ix_pm_enabled &&
-                        (pmAction == NV_PM_ACTION_STANDBY ||
-                        (pmAction == NV_PM_ACTION_RESUME &&
-                         !nvp->pm_state.InHibernate)))
-                    {
-                        rmStatus = RmGcxPowerManagement(pGpu,
-                                        pmAction == NV_PM_ACTION_STANDBY,
-                                        NV_FALSE, &bTryAgain);
-
+                        //
+                        // RmPowerManagementTegra() is most likely to fail due to
+                        // gpuStateUnload() failures deep in the RM's GPU power
+                        // management paths.  However, those paths make no
+                        // attempt to unwind in case of errors.  Rather, they
+                        // soldier on and simply report an error at the very end.
+                        // GPU software state meanwhile will indicate the GPU
+                        // has been suspended.
+                        //
+                        // Sadly, in case of an error during suspend/hibernate,
+                        // the only path forward here is to attempt to resume the
+                        // GPU, accepting that the odds of success will vary.
+                        //
+                        if (rmStatus != NV_OK && pmAction != NV_PM_ACTION_RESUME)
+                        {
+                            RmPowerManagementTegra(pGpu, NV_PM_ACTION_RESUME);
+                        }
                     }
                     else
                     {
-                        rmStatus = RmPowerManagement(pGpu, pmAction);
-                    }
+                        //
+                        // For GPU driving console, disable console access here, to ensure no console
+                        // writes through BAR1 can interfere with physical RM's setup of BAR1
+                        //
+                        if (pNv->client_managed_console)
+                        {
+                            os_disable_console_access();
+                            bConsoleDisabled = NV_TRUE;
+                        }
 
-                    if (bConsoleDisabled)
-                    {
-                        os_enable_console_access();
+                        nv_priv_t *nvp = NV_GET_NV_PRIV(pNv);
+
+                        //
+                        // Before going to S3 or S4, remove idle holdoff which was
+                        // applied during gc6 exit.
+                        //
+                        if ((pmAction != NV_PM_ACTION_RESUME) &&
+                            (nvp->dynamic_power.b_idle_holdoff == NV_TRUE))
+                        {
+                            nv_indicate_idle(pNv);
+                            RmCancelCallbackToRemoveIdleHoldoff(pGpu);
+                            nvp->dynamic_power.b_idle_holdoff = NV_FALSE;
+                        }
+
+                        //
+                        // Use GCx (GCOFF/GC6) power management if S0ix-based PM is
+                        // enabled and the request is for system suspend/resume.
+                        // Otherwise, use the existing mechanism.
+                        //
+                        if (nvp->s0ix_pm_enabled &&
+                            (pmAction == NV_PM_ACTION_STANDBY ||
+                            (pmAction == NV_PM_ACTION_RESUME &&
+                             !nvp->pm_state.InHibernate)))
+                        {
+                            rmStatus = RmGcxPowerManagement(pGpu,
+                                            pmAction == NV_PM_ACTION_STANDBY,
+                                            NV_FALSE, &bTryAgain);
+
+                        }
+                        else
+                        {
+                            rmStatus = RmPowerManagement(pGpu, pmAction);
+                        }
+
+                        if (bConsoleDisabled)
+                        {
+                            os_enable_console_access();
+                        }
                     }
 
                     // UNLOCK: release GPUs lock
@@ -2539,6 +2625,11 @@ NV_STATUS NV_API_CALL rm_transition_dynamic_power(
     NV_STATUS           status = NV_OK;
     THREAD_STATE_NODE   threadState;
     void               *fp;
+
+    if (NV_IS_SOC_DISPLAY_DEVICE(nv))
+    {
+        return NV_OK;
+    }
 
     NV_ENTER_RM_RUNTIME(sp,fp);
 
@@ -2724,10 +2815,10 @@ static void RmQueueIdleSustainedWorkitem(
 
     if (!nvp->dynamic_power.b_idle_sustained_workitem_queued)
     {
-        status = osQueueWorkItemWithFlags(pGpu,
-                                          RmHandleIdleSustained,
-                                          NULL,
-                                          OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE);
+        status = osQueueWorkItem(pGpu,
+            RmHandleIdleSustained,
+            NULL,
+            OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_WARNING,
@@ -2896,6 +2987,7 @@ void RmInitPowerManagement(
         NvBool bGCOFFSupport = NV_FALSE;
         NvBool bRtd3Support  = RmCheckRtd3GcxSupport(nv, &bGC6Support, &bGCOFFSupport);
         nv_priv_t *nvp       = NV_GET_NV_PRIV(nv);
+        OBJGPU *pGpu         = NV_GET_NV_PRIV_PGPU(nv);
 
         RmInitDeferredDynamicPowerManagement(nv, bRtd3Support);
         RmInitS0ixPowerManagement(nv, bRtd3Support, bGC6Support);
@@ -2905,6 +2997,8 @@ void RmInitPowerManagement(
         {
             nvp->gc6_upstream_port_configured = RmConfigureUpstreamPortForRTD3(nv, NV_TRUE);
         }
+
+        nv->is_pm_supported = pGpu->getProperty(pGpu, PDB_PROP_GPU_POWER_MANAGEMENT_SUPPORTED);
 
         // UNLOCK: release GPUs lock
         rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);

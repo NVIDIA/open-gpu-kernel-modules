@@ -226,7 +226,7 @@ NVT_STATUS NvTiming_ComposeCustTimingString(NVT_TIMING *pT)
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-NvU16 NvTiming_CalcRR(NvU32 pclk, NvU16 interlaced, NvU16 HTotal, NvU16 VTotal)
+NvU16 NvTiming_CalcRR(NvU32 pclk1khz, NvU16 interlaced, NvU16 HTotal, NvU16 VTotal)
 {
     NvU16 rr = 0;
 
@@ -236,7 +236,7 @@ NvU16 NvTiming_CalcRR(NvU32 pclk, NvU16 interlaced, NvU16 HTotal, NvU16 VTotal)
 
         if (totalPixelsIn2Fields != 0)
         {
-            rr = (NvU16)axb_div_c_64((NvU64)pclk * 2, (NvU64)10000, (NvU64)totalPixelsIn2Fields);
+            rr = (NvU16)axb_div_c_64((NvU64)pclk1khz * 2, (NvU64)1000, (NvU64)totalPixelsIn2Fields);
         }
     }
     else
@@ -245,14 +245,14 @@ NvU16 NvTiming_CalcRR(NvU32 pclk, NvU16 interlaced, NvU16 HTotal, NvU16 VTotal)
 
         if (totalPixels != 0)
         {
-            rr = (NvU16)axb_div_c_64((NvU64)pclk, (NvU64)10000, (NvU64)totalPixels);
+            rr = (NvU16)axb_div_c_64((NvU64)pclk1khz, (NvU64)1000, (NvU64)totalPixels);
         }
     }
     return rr;
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-NvU32 NvTiming_CalcRRx1k(NvU32 pclk, NvU16 interlaced, NvU16 HTotal, NvU16 VTotal)
+NvU32 NvTiming_CalcRRx1k(NvU32 pclk1khz, NvU16 interlaced, NvU16 HTotal, NvU16 VTotal)
 {
     NvU32 rrx1k = 0;
 
@@ -262,7 +262,7 @@ NvU32 NvTiming_CalcRRx1k(NvU32 pclk, NvU16 interlaced, NvU16 HTotal, NvU16 VTota
 
         if (totalPixelsIn2Fields != 0)
         {
-            rrx1k = (NvU32)axb_div_c_64((NvU64)pclk * 2, (NvU64)10000000, (NvU64)totalPixelsIn2Fields);
+            rrx1k = (NvU32)axb_div_c_64((NvU64)pclk1khz * 2, (NvU64)1000000, (NvU64)totalPixelsIn2Fields);
         }
     }
     else
@@ -271,7 +271,7 @@ NvU32 NvTiming_CalcRRx1k(NvU32 pclk, NvU16 interlaced, NvU16 HTotal, NvU16 VTota
 
         if (totalPixels != 0)
         {
-            rrx1k = (NvU32)axb_div_c_64((NvU64)pclk, (NvU64)10000000, (NvU64)totalPixels);
+            rrx1k = (NvU32)axb_div_c_64((NvU64)pclk1khz, (NvU64)1000000, (NvU64)totalPixels);
         }
     }
  
@@ -346,6 +346,14 @@ NvU32 RRx1kToPclk (NVT_TIMING *pT)
     return (NvU32)axb_div_c_64(pT->HTotal * (pT->VTotal + ((pT->interlaced != 0) ? (pT->VTotal + 1) : 0)),
                                pT->etc.rrx1k,
                                1000 * ((pT->interlaced != 0) ? 20000 : 10000));
+}
+
+CODE_SEGMENT(NONPAGE_DD_CODE)
+NvU32 RRx1kToPclk1khz (NVT_TIMING *pT)
+{
+    return (NvU32)axb_div_c_64((NvU32)pT->HTotal * (NvU32)(pT->VTotal + ((pT->interlaced != 0) ? (pT->VTotal + 1) : 0)),
+                               pT->etc.rrx1k,
+                               1000 * ((pT->interlaced != 0) ? 2000 : 1000));
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)

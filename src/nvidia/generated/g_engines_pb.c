@@ -272,6 +272,18 @@ const PRB_FIELD_DESC prb_fields_nvdebug_eng_mc_rmdata[] = {
         PRB_MAYBE_FIELD_NAME("pmcBoot0")
         PRB_MAYBE_FIELD_DEFAULT(0)
     },
+    {
+        2,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("pmcBoot42")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
 };
 
 // 'PciBarInfo' field defaults
@@ -393,7 +405,7 @@ const PRB_MSG_DESC prb_messages_nvdebug_eng[] = {
         PRB_MAYBE_MESSAGE_NAME("NvDebug.Eng.KGsp")
     },
     {
-        1,
+        2,
         prb_fields_nvdebug_eng_mc_rmdata,
         PRB_MAYBE_MESSAGE_NAME("NvDebug.Eng.Mc.RmData")
     },

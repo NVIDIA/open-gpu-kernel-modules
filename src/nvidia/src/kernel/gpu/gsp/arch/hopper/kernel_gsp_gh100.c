@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,6 +31,7 @@
 #include "gpu/fsp/kern_fsp.h"
 #include "gpu/gsp/kernel_gsp.h"
 #include "gpu/pmu/kern_pmu.h"
+#include "gpu/sec2/kernel_sec2.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "gsp/gspifpub.h"
 #include "vgpu/rpc.h"
@@ -201,7 +202,7 @@ kgspFreeBootArgs_GH100
     if (pKernelGsp->pGspFmcArgumentsCached != NULL)
     {
         memdescUnmap(pKernelGsp->pGspFmcArgumentsDescriptor,
-                     NV_TRUE, osGetCurrentProcess(),
+                     NV_TRUE,
                      (void *)pKernelGsp->pGspFmcArgumentsCached,
                      pKernelGsp->pGspFmcArgumentsMappingPriv);
         pKernelGsp->pGspFmcArgumentsCached = NULL;
@@ -358,7 +359,7 @@ kgspPopulateWprMeta_GH100
 
     // Number of VF partitions allocating sub-heaps from the WPR heap
     pWprMeta->gspFwHeapVfPartitionCount =
-        pGpu->bVgpuGspPluginOffloadEnabled ? MAX_PARTITIONS_WITH_GFID : 0;
+        pGpu->bVgpuGspPluginOffloadEnabled ? kgspVgpuNumVgpuPartitions_HAL(pGpu, pKernelGsp) : 0;
 
     // CrashCat queue (if allocated in sysmem)
     KernelCrashCatEngine *pKernelCrashCatEng = staticCast(pKernelGsp, KernelCrashCatEngine);
@@ -438,7 +439,7 @@ kgspSetupGspFmcArgs_GH100
     KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
     if (pKernelNvlink != NULL)
     {
-        pGspFmcBootParams->initParams.regkeys |= pKernelNvlink->gspProxyRegkeys;
+        pGspFmcBootParams->initParams.regkeys |= knvlinkGetGSPProxyRegkeys(pGpu, pKernelNvlink);
     }
 
     if (bootMode == KGSP_BOOT_MODE_SR_RESUME)
@@ -761,7 +762,7 @@ _kgspBootstrapGspFmc_GH100
  * This routine handles the prequesites to booting GSP-RM that requires the API LOCK:
  *   - Clear ECC errors
  *   - Prepare GSP-FMC arguments
- *   - Prepare FSP boot commands
+ *   - Prepare FSP or SEC2 boot commands, depending on what is applicable
  *
  * @param[in]   pGpu            GPU object pointer
  * @param[in]   pKernelGsp      GSP object pointer
@@ -779,6 +780,7 @@ kgspPrepareForBootstrap_GH100
 )
 {
     KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
+    KernelSec2 *pKernelSec2 = GPU_GET_KERNEL_SEC2(pGpu);
 
     // Only for GSP client builds
     if (!IS_GSP_CLIENT(pGpu))
@@ -797,6 +799,13 @@ kgspPrepareForBootstrap_GH100
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             kfspPrepareBootCommands_HAL(pGpu, pKernelFsp));
     }
+    else if (pKernelSec2 != NULL && pKernelSec2->getProperty(pKernelSec2, PDB_PROP_KSEC2_BOOT_GSPFMC))
+    {
+        NV_PRINTF(LEVEL_INFO, "Sec2 preparing for GSPRM boot\n");
+        pKernelSec2->setProperty(pKernelSec2, PDB_PROP_KSEC2_GSP_MODE_GSPRM, NV_TRUE);
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            ksec2PrepareBootCommands_HAL(pGpu, pKernelSec2));
+    }
 
     return NV_OK;
 }
@@ -805,7 +814,7 @@ kgspPrepareForBootstrap_GH100
  * Boot GSP-RM.
  *
  * This routine handles the following:
- *   - sends FSP boot commands
+ *   - sends FSP or SEC2 boot commands
  *   - waits for GSP-RM to complete initialization
  *
  * Note that this routine is based on flcnBootstrapRiscvOS_GA102().
@@ -830,6 +839,7 @@ kgspBootstrap_GH100
 {
     KernelFalcon *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
     KernelFsp    *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
+    KernelSec2   *pKernelSec2 = GPU_GET_KERNEL_SEC2(pGpu);
     NV_STATUS     status = NV_OK;
     NvU32         mailbox0;
 
@@ -855,6 +865,11 @@ kgspBootstrap_GH100
         NV_PRINTF(LEVEL_NOTICE, "Starting to boot GSP via FSP.\n");
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kfspSendBootCommands_HAL(pGpu, pKernelFsp));
     }
+    else if (pKernelSec2 != NULL && pKernelSec2->getProperty(pKernelSec2, PDB_PROP_KSEC2_BOOT_GSPFMC))
+    {
+        NV_PRINTF(LEVEL_INFO, "Starting to boot GSP via SEC2.\n");
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, ksec2SendBootCommands_HAL(pGpu, pKernelSec2));
+    }
     else
     {
         NV_ASSERT_OK_OR_RETURN(_kgspBootstrapGspFmc_GH100(pGpu, pKernelGsp));
@@ -879,7 +894,20 @@ kgspBootstrap_GH100
             return status;
         }
     }
-
+    else if (pKernelSec2 != NULL &&
+             pKernelSec2->getProperty(pKernelSec2, PDB_PROP_KSEC2_BOOT_GSPFMC) &&
+             pKernelSec2->getProperty(pKernelSec2, PDB_PROP_KSEC2_GSP_MODE_GSPRM))
+    {
+        status = ksec2WaitForGspTargetMaskReleased_HAL(pGpu, pKernelSec2);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "SEC2 GSP Boot:Timeout waiting for GSP target mask release. "
+                      "This error may be caused by several reasons: Bootrom may have failed, "
+                      "GSP init code may have failed or ACR failed to release target mask. "
+                      "RM does not have access to information on which of those conditions happened.\n");
+            return status;
+        }
+    }
     //
     // When enabled, SPDM session will be established before GSP-RM boots.
     // Wait until after target mask is released by ACR to minimize busy wait time.

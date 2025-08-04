@@ -119,9 +119,12 @@ struct OBJFBSR {
     struct Object *__nvoc_pbase_Object;    // obj super
     struct OBJFBSR *__nvoc_pbase_OBJFBSR;    // fbsr
 
-    // Vtable with 3 per-object function pointers
-    NV_STATUS (*__fbsrBegin__)(struct OBJGPU *, struct OBJFBSR * /*this*/, FBSR_OP_TYPE);  // halified (2 hals) body
-    NV_STATUS (*__fbsrEnd__)(struct OBJGPU *, struct OBJFBSR * /*this*/);  // halified (2 hals) body
+    // Vtable with 6 per-object function pointers
+    NV_STATUS (*__fbsrInit__)(struct OBJGPU *, struct OBJFBSR * /*this*/);  // halified (2 hals) body
+    void (*__fbsrDestroy__)(struct OBJGPU *, struct OBJFBSR * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__fbsrBegin__)(struct OBJGPU *, struct OBJFBSR * /*this*/, FBSR_OP_TYPE);  // halified (3 hals) body
+    NV_STATUS (*__fbsrEnd__)(struct OBJGPU *, struct OBJFBSR * /*this*/);  // halified (3 hals) body
+    void (*__fbsrCopyMemoryMemDesc__)(struct OBJGPU *, struct OBJFBSR * /*this*/, MEMORY_DESCRIPTOR *);  // halified (2 hals) body
     NV_STATUS (*__fbsrSendMemsysProgramRawCompressionMode__)(struct OBJGPU *, struct OBJFBSR * /*this*/, NvBool);  // halified (2 hals) body
 
     // Data members
@@ -182,18 +185,86 @@ NV_STATUS __nvoc_objCreate_OBJFBSR(OBJFBSR**, Dynamic*, NvU32);
     __nvoc_objCreate_OBJFBSR((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS fbsrObjectInit_IMPL(struct OBJFBSR *pFbsr, NvU32 arg2);
+#ifdef __nvoc_fbsr_h_disabled
+static inline NV_STATUS fbsrObjectInit(struct OBJFBSR *pFbsr, NvU32 arg2) {
+    NV_ASSERT_FAILED_PRECOMP("OBJFBSR was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_fbsr_h_disabled
+#define fbsrObjectInit(pFbsr, arg2) fbsrObjectInit_IMPL(pFbsr, arg2)
+#endif // __nvoc_fbsr_h_disabled
+
+NV_STATUS fbsrReserveSysMemoryForPowerMgmt_IMPL(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, NvU64 arg3);
+#ifdef __nvoc_fbsr_h_disabled
+static inline NV_STATUS fbsrReserveSysMemoryForPowerMgmt(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, NvU64 arg3) {
+    NV_ASSERT_FAILED_PRECOMP("OBJFBSR was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_fbsr_h_disabled
+#define fbsrReserveSysMemoryForPowerMgmt(pGpu, pFbsr, arg3) fbsrReserveSysMemoryForPowerMgmt_IMPL(pGpu, pFbsr, arg3)
+#endif // __nvoc_fbsr_h_disabled
+
+void fbsrFreeReservedSysMemoryForPowerMgmt_IMPL(struct OBJFBSR *pFbsr);
+#ifdef __nvoc_fbsr_h_disabled
+static inline void fbsrFreeReservedSysMemoryForPowerMgmt(struct OBJFBSR *pFbsr) {
+    NV_ASSERT_FAILED_PRECOMP("OBJFBSR was disabled!");
+}
+#else // __nvoc_fbsr_h_disabled
+#define fbsrFreeReservedSysMemoryForPowerMgmt(pFbsr) fbsrFreeReservedSysMemoryForPowerMgmt_IMPL(pFbsr)
+#endif // __nvoc_fbsr_h_disabled
+
+#ifdef __nvoc_fbsr_h_disabled
+static inline NV_STATUS fbsrExecuteSaveRestore(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
+    NV_ASSERT_FAILED_PRECOMP("OBJFBSR was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_fbsr_h_disabled
+#define fbsrExecuteSaveRestore(pGpu, pFbsr) fbsrExecuteSaveRestore_46f6a7(pGpu, pFbsr)
+#endif // __nvoc_fbsr_h_disabled
+
+#ifdef __nvoc_fbsr_h_disabled
+static inline NV_STATUS fbsrRestoreNonWprRegion(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
+    NV_ASSERT_FAILED_PRECOMP("OBJFBSR was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_fbsr_h_disabled
+#define fbsrRestoreNonWprRegion(pGpu, pFbsr) fbsrRestoreNonWprRegion_46f6a7(pGpu, pFbsr)
+#endif // __nvoc_fbsr_h_disabled
+
+
+// Wrapper macros for halified functions
+#define fbsrInit_FNPTR(pFbsr) pFbsr->__fbsrInit__
+#define fbsrInit(pGpu, pFbsr) fbsrInit_DISPATCH(pGpu, pFbsr)
+#define fbsrInit_HAL(pGpu, pFbsr) fbsrInit_DISPATCH(pGpu, pFbsr)
+#define fbsrDestroy_FNPTR(pFbsr) pFbsr->__fbsrDestroy__
+#define fbsrDestroy(pGpu, pFbsr) fbsrDestroy_DISPATCH(pGpu, pFbsr)
+#define fbsrDestroy_HAL(pGpu, pFbsr) fbsrDestroy_DISPATCH(pGpu, pFbsr)
 #define fbsrBegin_FNPTR(pFbsr) pFbsr->__fbsrBegin__
 #define fbsrBegin(pGpu, pFbsr, op) fbsrBegin_DISPATCH(pGpu, pFbsr, op)
 #define fbsrBegin_HAL(pGpu, pFbsr, op) fbsrBegin_DISPATCH(pGpu, pFbsr, op)
 #define fbsrEnd_FNPTR(pFbsr) pFbsr->__fbsrEnd__
 #define fbsrEnd(pGpu, pFbsr) fbsrEnd_DISPATCH(pGpu, pFbsr)
 #define fbsrEnd_HAL(pGpu, pFbsr) fbsrEnd_DISPATCH(pGpu, pFbsr)
+#define fbsrCopyMemoryMemDesc_FNPTR(pFbsr) pFbsr->__fbsrCopyMemoryMemDesc__
+#define fbsrCopyMemoryMemDesc(pGpu, pFbsr, pVidMemDesc) fbsrCopyMemoryMemDesc_DISPATCH(pGpu, pFbsr, pVidMemDesc)
+#define fbsrCopyMemoryMemDesc_HAL(pGpu, pFbsr, pVidMemDesc) fbsrCopyMemoryMemDesc_DISPATCH(pGpu, pFbsr, pVidMemDesc)
+#define fbsrExecuteSaveRestore_HAL(pGpu, pFbsr) fbsrExecuteSaveRestore(pGpu, pFbsr)
+#define fbsrRestoreNonWprRegion_HAL(pGpu, pFbsr) fbsrRestoreNonWprRegion(pGpu, pFbsr)
 #define fbsrSendMemsysProgramRawCompressionMode_FNPTR(pFbsr) pFbsr->__fbsrSendMemsysProgramRawCompressionMode__
 #define fbsrSendMemsysProgramRawCompressionMode(pGpu, pFbsr, bRawMode) fbsrSendMemsysProgramRawCompressionMode_DISPATCH(pGpu, pFbsr, bRawMode)
 #define fbsrSendMemsysProgramRawCompressionMode_HAL(pGpu, pFbsr, bRawMode) fbsrSendMemsysProgramRawCompressionMode_DISPATCH(pGpu, pFbsr, bRawMode)
 
 // Dispatch functions
+static inline NV_STATUS fbsrInit_DISPATCH(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
+    return pFbsr->__fbsrInit__(pGpu, pFbsr);
+}
+
+static inline void fbsrDestroy_DISPATCH(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
+    pFbsr->__fbsrDestroy__(pGpu, pFbsr);
+}
+
 static inline NV_STATUS fbsrBegin_DISPATCH(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, FBSR_OP_TYPE op) {
     return pFbsr->__fbsrBegin__(pGpu, pFbsr, op);
 }
@@ -202,127 +273,63 @@ static inline NV_STATUS fbsrEnd_DISPATCH(struct OBJGPU *pGpu, struct OBJFBSR *pF
     return pFbsr->__fbsrEnd__(pGpu, pFbsr);
 }
 
+static inline void fbsrCopyMemoryMemDesc_DISPATCH(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVidMemDesc) {
+    pFbsr->__fbsrCopyMemoryMemDesc__(pGpu, pFbsr, pVidMemDesc);
+}
+
 static inline NV_STATUS fbsrSendMemsysProgramRawCompressionMode_DISPATCH(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, NvBool bRawMode) {
     return pFbsr->__fbsrSendMemsysProgramRawCompressionMode__(pGpu, pFbsr, bRawMode);
 }
-
-NV_STATUS fbsrInit_GM107(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr);
-
-
-#ifdef __nvoc_fbsr_h_disabled
-static inline NV_STATUS fbsrInit(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
-    NV_ASSERT_FAILED_PRECOMP("OBJFBSR was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_fbsr_h_disabled
-#define fbsrInit(pGpu, pFbsr) fbsrInit_GM107(pGpu, pFbsr)
-#endif //__nvoc_fbsr_h_disabled
-
-#define fbsrInit_HAL(pGpu, pFbsr) fbsrInit(pGpu, pFbsr)
-
-void fbsrDestroy_GM107(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr);
-
-
-#ifdef __nvoc_fbsr_h_disabled
-static inline void fbsrDestroy(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
-    NV_ASSERT_FAILED_PRECOMP("OBJFBSR was disabled!");
-}
-#else //__nvoc_fbsr_h_disabled
-#define fbsrDestroy(pGpu, pFbsr) fbsrDestroy_GM107(pGpu, pFbsr)
-#endif //__nvoc_fbsr_h_disabled
-
-#define fbsrDestroy_HAL(pGpu, pFbsr) fbsrDestroy(pGpu, pFbsr)
-
-void fbsrCopyMemoryMemDesc_GM107(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVidMemDesc);
-
-
-#ifdef __nvoc_fbsr_h_disabled
-static inline void fbsrCopyMemoryMemDesc(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVidMemDesc) {
-    NV_ASSERT_FAILED_PRECOMP("OBJFBSR was disabled!");
-}
-#else //__nvoc_fbsr_h_disabled
-#define fbsrCopyMemoryMemDesc(pGpu, pFbsr, pVidMemDesc) fbsrCopyMemoryMemDesc_GM107(pGpu, pFbsr, pVidMemDesc)
-#endif //__nvoc_fbsr_h_disabled
-
-#define fbsrCopyMemoryMemDesc_HAL(pGpu, pFbsr, pVidMemDesc) fbsrCopyMemoryMemDesc(pGpu, pFbsr, pVidMemDesc)
 
 static inline NV_STATUS fbsrExecuteSaveRestore_46f6a7(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
     return NV_ERR_NOT_SUPPORTED;
 }
 
 
-#ifdef __nvoc_fbsr_h_disabled
-static inline NV_STATUS fbsrExecuteSaveRestore(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
-    NV_ASSERT_FAILED_PRECOMP("OBJFBSR was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_fbsr_h_disabled
-#define fbsrExecuteSaveRestore(pGpu, pFbsr) fbsrExecuteSaveRestore_46f6a7(pGpu, pFbsr)
-#endif //__nvoc_fbsr_h_disabled
-
-#define fbsrExecuteSaveRestore_HAL(pGpu, pFbsr) fbsrExecuteSaveRestore(pGpu, pFbsr)
-
 static inline NV_STATUS fbsrRestoreNonWprRegion_46f6a7(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
     return NV_ERR_NOT_SUPPORTED;
 }
 
 
-#ifdef __nvoc_fbsr_h_disabled
-static inline NV_STATUS fbsrRestoreNonWprRegion(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
-    NV_ASSERT_FAILED_PRECOMP("OBJFBSR was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_fbsr_h_disabled
-#define fbsrRestoreNonWprRegion(pGpu, pFbsr) fbsrRestoreNonWprRegion_46f6a7(pGpu, pFbsr)
-#endif //__nvoc_fbsr_h_disabled
+NV_STATUS fbsrInit_GM107(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr);
 
-#define fbsrRestoreNonWprRegion_HAL(pGpu, pFbsr) fbsrRestoreNonWprRegion(pGpu, pFbsr)
+static inline NV_STATUS fbsrInit_56cd7a(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
+    return NV_OK;
+}
+
+void fbsrDestroy_GM107(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr);
+
+static inline void fbsrDestroy_b3696a(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
+    return;
+}
 
 NV_STATUS fbsrBegin_GA100(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, FBSR_OP_TYPE op);
 
 NV_STATUS fbsrBegin_GM107(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, FBSR_OP_TYPE op);
 
+static inline NV_STATUS fbsrBegin_46f6a7(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, FBSR_OP_TYPE op) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
 NV_STATUS fbsrEnd_GA100(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr);
 
 NV_STATUS fbsrEnd_GM107(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr);
+
+static inline NV_STATUS fbsrEnd_46f6a7(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+void fbsrCopyMemoryMemDesc_GM107(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVidMemDesc);
+
+static inline void fbsrCopyMemoryMemDesc_f2d351(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVidMemDesc) {
+    NV_ASSERT_PRECOMP(0);
+}
 
 NV_STATUS fbsrSendMemsysProgramRawCompressionMode_GA100(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, NvBool bRawMode);
 
 static inline NV_STATUS fbsrSendMemsysProgramRawCompressionMode_56cd7a(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, NvBool bRawMode) {
     return NV_OK;
 }
-
-NV_STATUS fbsrObjectInit_IMPL(struct OBJFBSR *pFbsr, NvU32 arg2);
-
-#ifdef __nvoc_fbsr_h_disabled
-static inline NV_STATUS fbsrObjectInit(struct OBJFBSR *pFbsr, NvU32 arg2) {
-    NV_ASSERT_FAILED_PRECOMP("OBJFBSR was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_fbsr_h_disabled
-#define fbsrObjectInit(pFbsr, arg2) fbsrObjectInit_IMPL(pFbsr, arg2)
-#endif //__nvoc_fbsr_h_disabled
-
-NV_STATUS fbsrReserveSysMemoryForPowerMgmt_IMPL(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, NvU64 arg3);
-
-#ifdef __nvoc_fbsr_h_disabled
-static inline NV_STATUS fbsrReserveSysMemoryForPowerMgmt(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, NvU64 arg3) {
-    NV_ASSERT_FAILED_PRECOMP("OBJFBSR was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_fbsr_h_disabled
-#define fbsrReserveSysMemoryForPowerMgmt(pGpu, pFbsr, arg3) fbsrReserveSysMemoryForPowerMgmt_IMPL(pGpu, pFbsr, arg3)
-#endif //__nvoc_fbsr_h_disabled
-
-void fbsrFreeReservedSysMemoryForPowerMgmt_IMPL(struct OBJFBSR *pFbsr);
-
-#ifdef __nvoc_fbsr_h_disabled
-static inline void fbsrFreeReservedSysMemoryForPowerMgmt(struct OBJFBSR *pFbsr) {
-    NV_ASSERT_FAILED_PRECOMP("OBJFBSR was disabled!");
-}
-#else //__nvoc_fbsr_h_disabled
-#define fbsrFreeReservedSysMemoryForPowerMgmt(pFbsr) fbsrFreeReservedSysMemoryForPowerMgmt_IMPL(pFbsr)
-#endif //__nvoc_fbsr_h_disabled
 
 #undef PRIVATE_FIELD
 

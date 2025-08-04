@@ -171,6 +171,7 @@ rmapiRmControlCanBeRaisedIrql(NvU32 cmd)
         // We use TRASH/ABORT mode to discard queued hw commands in the push buffer (bug 200644346)
         case NVC370_CTRL_CMD_SET_ACCL:
         case NVC370_CTRL_CMD_GET_CHANNEL_INFO:
+        case NVC370_CTRL_CMD_CHANNEL_CANCEL_FLIP:            
         case NV9010_CTRL_CMD_SET_VBLANK_NOTIFICATION:
             return NV_TRUE;
         default:
@@ -190,6 +191,7 @@ rmapiRmControlCanBeBypassLock(NvU32 cmd)
         // We use TRASH/ABORT mode to discard queued hw commands in the push buffer (bug 200644346)
         case NVC370_CTRL_CMD_SET_ACCL:
         case NVC370_CTRL_CMD_GET_CHANNEL_INFO:
+        case NVC370_CTRL_CMD_CHANNEL_CANCEL_FLIP:            
         case NV2080_CTRL_CMD_BUS_SYSMEM_ACCESS:
         case NV9010_CTRL_CMD_SET_VBLANK_NOTIFICATION:
         case NV2080_CTRL_CMD_NVD_SET_NOCAT_JOURNAL_DATA:

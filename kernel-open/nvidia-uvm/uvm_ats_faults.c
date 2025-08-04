@@ -22,6 +22,7 @@
 
 #include "uvm_api.h"
 #include "uvm_tools.h"
+#include "uvm_va_block_types.h"
 #include "uvm_va_range.h"
 #include "uvm_ats.h"
 #include "uvm_ats_faults.h"
@@ -89,6 +90,15 @@ static NV_STATUS service_ats_requests(uvm_gpu_va_space_t *gpu_va_space,
 
         // If we're faulting, let the GPU access special vmas
         uvm_migrate_args.populate_flags |= UVM_POPULATE_PAGEABLE_FLAG_ALLOW_SPECIAL;
+
+        if (ats_context->client_type == UVM_FAULT_CLIENT_TYPE_GPC)
+            uvm_migrate_args.cause = UVM_MAKE_RESIDENT_CAUSE_REPLAYABLE_FAULT;
+        else
+            uvm_migrate_args.cause = UVM_MAKE_RESIDENT_CAUSE_NON_REPLAYABLE_FAULT;
+    }
+    else {
+        uvm_migrate_args.cause = UVM_MAKE_RESIDENT_CAUSE_ACCESS_COUNTER;
+        uvm_migrate_args.access_counters_buffer_index = ats_context->access_counters.buffer_index;
     }
 
     UVM_ASSERT(uvm_ats_can_service_faults(gpu_va_space, mm));
@@ -133,67 +143,73 @@ static void ats_batch_select_residency(uvm_gpu_va_space_t *gpu_va_space,
 {
     uvm_gpu_t *gpu = gpu_va_space->gpu;
     int residency;
+    bool cdmm_enabled = gpu->mem_info.cdmm_enabled;
 
-    UVM_ASSERT(gpu->mem_info.numa.enabled);
-    residency = uvm_gpu_numa_node(gpu);
-
-#if defined(NV_MEMPOLICY_HAS_UNIFIED_NODES)
-    struct mempolicy *vma_policy = vma_policy(vma);
-    unsigned short mode;
-
-    ats_context->prefetch_state.has_preferred_location = false;
-
-    // It's safe to read vma_policy since the mmap_lock is held in at least read
-    // mode in this path.
-    uvm_assert_mmap_lock_locked(vma->vm_mm);
-
-    if (!vma_policy)
-        goto done;
-
-    mode = vma_policy->mode;
-
-    if ((mode == MPOL_BIND)
-#if defined(NV_MPOL_PREFERRED_MANY_PRESENT)
-         || (mode == MPOL_PREFERRED_MANY)
-#endif
-         || (mode == MPOL_PREFERRED)) {
-        int home_node = NUMA_NO_NODE;
-
-#if defined(NV_MEMPOLICY_HAS_HOME_NODE)
-        if ((mode != MPOL_PREFERRED) && (vma_policy->home_node != NUMA_NO_NODE))
-            home_node = vma_policy->home_node;
-#endif
-
-        // Prefer home_node if set. Otherwise, prefer the faulting GPU if it's
-        // in the list of preferred nodes, else prefer the closest_cpu_numa_node
-        // to the GPU if closest_cpu_numa_node is in the list of preferred
-        // nodes. Fallback to the faulting GPU if all else fails.
-        if (home_node != NUMA_NO_NODE) {
-            residency = home_node;
-        }
-        else if (!node_isset(residency, vma_policy->nodes)) {
-            int closest_cpu_numa_node = gpu->parent->closest_cpu_numa_node;
-
-            if ((closest_cpu_numa_node != NUMA_NO_NODE) && node_isset(closest_cpu_numa_node, vma_policy->nodes))
-                residency = gpu->parent->closest_cpu_numa_node;
-            else
-                residency = first_node(vma_policy->nodes);
-        }
-
-        if (!nodes_empty(vma_policy->nodes))
-            ats_context->prefetch_state.has_preferred_location = true;
+    if (gpu->parent->is_integrated_gpu || cdmm_enabled) {
+        residency = gpu->parent->closest_cpu_numa_node;
+    }
+    else {
+        UVM_ASSERT(gpu->mem_info.numa.enabled);
+        residency = uvm_gpu_numa_node(gpu);
     }
 
-    // Update gpu if residency is not the faulting gpu.
-    if (residency != uvm_gpu_numa_node(gpu))
-        gpu = uvm_va_space_find_gpu_with_memory_node_id(gpu_va_space->va_space, residency);
-
-done:
-#else
     ats_context->prefetch_state.has_preferred_location = false;
+
+#if defined(NV_MEMPOLICY_HAS_UNIFIED_NODES)
+    {
+        struct mempolicy *vma_policy = vma_policy(vma);
+        unsigned short mode;
+
+        // It's safe to read vma_policy since the mmap_lock is held in at least
+        // read mode in this path.
+        uvm_assert_mmap_lock_locked(vma->vm_mm);
+
+        if (vma_policy) {
+            mode = vma_policy->mode;
+
+            if ((mode == MPOL_BIND)
+#if defined(NV_MPOL_PREFERRED_MANY_PRESENT)
+                 || (mode == MPOL_PREFERRED_MANY)
+#endif
+                 || (mode == MPOL_PREFERRED)) {
+                int home_node = NUMA_NO_NODE;
+
+#if defined(NV_MEMPOLICY_HAS_HOME_NODE)
+                if ((mode != MPOL_PREFERRED) && (vma_policy->home_node != NUMA_NO_NODE))
+                    home_node = vma_policy->home_node;
 #endif
 
-    ats_context->residency_id = gpu ? gpu->id : UVM_ID_CPU;
+                // Prefer home_node if set. Otherwise, prefer the faulting GPU
+                // if it's in the list of preferred nodes, else prefer the
+                // closest_cpu_numa_node to the GPU if closest_cpu_numa_node is
+                // in the list of preferred nodes. Fallback to the faulting GPU
+                // if all else fails.
+                if (home_node != NUMA_NO_NODE) {
+                    residency = home_node;
+                }
+                else if (!node_isset(residency, vma_policy->nodes)) {
+                    int closest_cpu_numa_node = gpu->parent->closest_cpu_numa_node;
+
+                    if ((closest_cpu_numa_node != NUMA_NO_NODE) &&
+                        node_isset(closest_cpu_numa_node, vma_policy->nodes))
+                        residency = gpu->parent->closest_cpu_numa_node;
+                    else
+                        residency = first_node(vma_policy->nodes);
+                }
+
+                if (!nodes_empty(vma_policy->nodes))
+                    ats_context->prefetch_state.has_preferred_location = true;
+            }
+
+            // Update gpu if residency is not the faulting gpu.
+            if (residency != uvm_gpu_numa_node(gpu))
+                gpu = uvm_va_space_find_gpu_with_memory_node_id(gpu_va_space->va_space, residency);
+
+        }
+    }
+#endif
+
+    ats_context->residency_id = gpu && !gpu->parent->is_integrated_gpu && !cdmm_enabled ? gpu->id : UVM_ID_CPU;
     ats_context->residency_node = residency;
 }
 

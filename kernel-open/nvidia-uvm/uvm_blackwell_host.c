@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2024 NVIDIA Corporation
+    Copyright (c) 2024-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -176,6 +176,26 @@ void uvm_hal_blackwell_host_tlb_invalidate_va(uvm_push_t *push,
                                HWVALUE(C96F, MEM_OP_D, TLB_INVALIDATE_PDB_ADDR_HI, pdb_hi));
 }
 
+void uvm_hal_blackwell_host_tlb_invalidate_phys(uvm_push_t *push)
+{
+    // There is no specific mechanism to invalidate only physical translations,
+    // nor per-address physical translations. The only mechanism is to
+    // invalidate all PDBs and all VAs, which will also wipe out all physical
+    // entries for the GFID.
+    //
+    // NVLINK and GPC clients do not make physical requests, so their TLBs
+    // cannot cache GPAs and we can skip them in the invalidate.
+    NV_PUSH_4U(C96F, MEM_OP_A, HWCONST(C96F, MEM_OP_A, TLB_INVALIDATE_SYSMEMBAR, DIS) |
+                               HWCONST(C96F, MEM_OP_A, TLB_INVALIDATE_INVAL_SCOPE, NON_LINK_TLBS),
+                     MEM_OP_B, 0,
+                     MEM_OP_C, HWCONST(C96F, MEM_OP_C, TLB_INVALIDATE_PDB, ALL) |
+                               HWCONST(C96F, MEM_OP_C, TLB_INVALIDATE_GPC, DISABLE) |
+                               HWCONST(C96F, MEM_OP_C, TLB_INVALIDATE_REPLAY, NONE) |
+                               HWCONST(C96F, MEM_OP_C, TLB_INVALIDATE_ACK_TYPE, NONE) |
+                               HWCONST(C96F, MEM_OP_C, TLB_INVALIDATE_PAGE_TABLE_LEVEL, ALL),
+                     MEM_OP_D, HWCONST(C96F, MEM_OP_D, OPERATION, MMU_TLB_INVALIDATE));
+}
+
 void uvm_hal_blackwell_host_tlb_invalidate_test(uvm_push_t *push,
                                                 uvm_gpu_phys_address_t pdb,
                                                 UVM_TEST_INVALIDATE_TLB_PARAMS *params)
@@ -255,6 +275,50 @@ void uvm_hal_blackwell_host_tlb_invalidate_test(uvm_push_t *push,
     }
 }
 
+void uvm_hal_blackwell_host_tlb_flush_prefetch(uvm_push_t *push)
+{
+    // We don't need to invalidate lines, but we need the invalidate to not be
+    // ignored in order to flush out pending prefetch fills from SYS clients.
+    // That means invalidating a bound PDB with a dummy VA.
+    NvU32 aperture_value;
+    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+    uvm_gpu_phys_address_t pdb;
+    NvU32 va_lo = 0;
+    NvU32 va_hi = 0;
+    NvU32 pdb_lo;
+    NvU32 pdb_hi;
+
+    // There is no PDB at this point so we must invalidate the entire tlb.
+    if (!gpu->address_space_tree.root)
+        return uvm_hal_blackwell_host_tlb_invalidate_phys(push);
+
+    pdb = uvm_page_tree_pdb_address(&gpu->address_space_tree);
+
+    if (pdb.aperture == UVM_APERTURE_VID)
+        aperture_value = HWCONST(C96F, MEM_OP_C, TLB_INVALIDATE_PDB_APERTURE, VID_MEM);
+    else
+        aperture_value = HWCONST(C96F, MEM_OP_C, TLB_INVALIDATE_PDB_APERTURE, SYS_MEM_COHERENT);
+
+    UVM_ASSERT_MSG(IS_ALIGNED(pdb.address, 1 << 12), "pdb 0x%llx\n", pdb.address);
+    pdb.address >>= 12;
+
+    pdb_lo = pdb.address & HWMASK(C96F, MEM_OP_C, TLB_INVALIDATE_PDB_ADDR_LO);
+    pdb_hi = pdb.address >> HWSIZE(C96F, MEM_OP_C, TLB_INVALIDATE_PDB_ADDR_LO);
+
+    NV_PUSH_4U(C96F, MEM_OP_A, HWCONST(C96F, MEM_OP_A, TLB_INVALIDATE_SYSMEMBAR, DIS) |
+                               HWVALUE(C96F, MEM_OP_A, TLB_INVALIDATE_TARGET_ADDR_LO, va_lo),
+                     MEM_OP_B, HWVALUE(C96F, MEM_OP_B, TLB_INVALIDATE_TARGET_ADDR_HI, va_hi),
+                     MEM_OP_C, HWCONST(C96F, MEM_OP_C, TLB_INVALIDATE_PDB, ONE) |
+                               HWCONST(C96F, MEM_OP_C, TLB_INVALIDATE_GPC, DISABLE) |
+                               HWCONST(C96F, MEM_OP_C, TLB_INVALIDATE_REPLAY, NONE) |
+                               HWCONST(C96F, MEM_OP_C, TLB_INVALIDATE_ACK_TYPE, NONE) |
+                               HWCONST(C96F, MEM_OP_C, TLB_INVALIDATE_PAGE_TABLE_LEVEL, PTE_ONLY) |
+                               aperture_value |
+                               HWVALUE(C96F, MEM_OP_C, TLB_INVALIDATE_PDB_ADDR_LO, pdb_lo),
+                     MEM_OP_D, HWCONST(C96F, MEM_OP_D, OPERATION, MMU_TLB_INVALIDATE_TARGETED) |
+                               HWVALUE(C96F, MEM_OP_D, TLB_INVALIDATE_PDB_ADDR_HI, pdb_hi));
+}
+
 uvm_access_counter_clear_op_t
 uvm_hal_blackwell_access_counter_query_clear_op_gb100(uvm_parent_gpu_t *parent_gpu,
                                                       uvm_access_counter_buffer_entry_t **buffer_entries,
@@ -281,4 +345,25 @@ uvm_hal_blackwell_access_counter_query_clear_op_gb20x(uvm_parent_gpu_t *parent_g
                                                       NvU32 num_entries)
 {
     return UVM_ACCESS_COUNTER_CLEAR_OP_TARGETED;
+}
+
+// Host-specific L2 cache invalidate for non-coherent sysmem
+void uvm_hal_blackwell_host_l2_invalidate_noncoh_sysmem(uvm_push_t *push)
+{
+    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+
+    // First sysmembar
+    uvm_hal_membar(gpu, push, UVM_MEMBAR_SYS);
+    // Flush dirty
+    NV_PUSH_4U(C96F, MEM_OP_A, 0,
+               MEM_OP_B, 0,
+               MEM_OP_C, 0,
+               MEM_OP_D, HWCONST(C96F, MEM_OP_D, OPERATION, L2_FLUSH_DIRTY));
+    // Invalidate
+    NV_PUSH_4U(C96F, MEM_OP_A, 0,
+               MEM_OP_B, 0,
+               MEM_OP_C, 0,
+               MEM_OP_D, HWCONST(C96F, MEM_OP_D, OPERATION, L2_SYSMEM_NCOH_INVALIDATE));
+    // Final sysmembar
+    uvm_hal_membar(gpu, push, UVM_MEMBAR_SYS);
 }

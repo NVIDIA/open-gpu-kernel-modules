@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -58,6 +58,7 @@ extern "C" {
 #include "kernel/mem_mgr/virtual_mem.h"
 
 #include "ctrl/ctrl0080/ctrl0080dma.h" // NV0080_CTRL_DMA_*_PARAMS
+#include "mmu/gmmu_fmt.h" // GMMU_APERTURE
 
 typedef struct DMA_PAGE_ARRAY DMA_PAGE_ARRAY;
 
@@ -157,9 +158,20 @@ struct VirtMemAllocator {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct VirtMemAllocator *__nvoc_pbase_VirtMemAllocator;    // dma
 
-    // Vtable with 2 per-object function pointers
+    // Vtable with 10 per-object function pointers
+    NV_STATUS (*__dmaAllocMapping__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, struct OBJVASPACE *, MEMORY_DESCRIPTOR *, NvU64 *, NvU32, NvU32, CLI_DMA_ALLOC_MAP_INFO *, NvU32);  // halified (2 hals) body
+    NV_STATUS (*__dmaFreeMapping__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, struct OBJVASPACE *, NvU64, MEMORY_DESCRIPTOR *, NvU32, CLI_DMA_ALLOC_MAP_INFO *);  // halified (2 hals) body
     NV_STATUS (*__dmaAllocBar1P2PMapping__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, DMA_BAR1P2P_MAPPING_PRARAMS *);  // halified (2 hals) body
     void (*__dmaFreeBar1P2PMapping__)(struct VirtMemAllocator * /*this*/, CLI_DMA_MAPPING_INFO *);  // halified (2 hals) body
+    NvBool (*__dmaIsDefaultGpuUncached__)(struct VirtMemAllocator * /*this*/, MEMORY_DESCRIPTOR *, GMMU_APERTURE, NvBool);  // halified (2 hals) body
+    NV_STATUS (*__dmaUpdateVASpace__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, struct OBJVASPACE *, MEMORY_DESCRIPTOR *, NvU8 *, NvU64, NvU64, NvU32, DMA_PAGE_ARRAY *, NvU32, COMPR_INFO *, NvU64, NvU32, GMMU_APERTURE, NvBool, NvU32, NvU64, NvU32, NvBool, NvU64);  // halified (2 hals) body
+    NV_STATUS (*__dmaXlateVAtoPAforChannel__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, struct KernelChannel *, NvU64, NvU64 *, NvU32 *);  // halified (2 hals) body
+    NvU32 (*__dmaGetPTESize__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__dmaMapBuffer__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, struct OBJVASPACE *, PMEMORY_DESCRIPTOR, NvU64 *, NvU32, NvU32);  // halified (2 hals) body
+    void (*__dmaUnmapBuffer__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, struct OBJVASPACE *, NvU64);  // halified (2 hals) body
+
+    // 1 PDB property
+//  NvBool PDB_PROP_DMA_IS_MISSING inherited from OBJENGSTATE
 
     // Data members
     NvU32 gpuGartCaps;
@@ -227,6 +239,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_VirtMemAllocator;
 #define PDB_PROP_DMA_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_DMA_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 
+
 NV_STATUS __nvoc_objCreateDynamic_VirtMemAllocator(VirtMemAllocator**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_VirtMemAllocator(VirtMemAllocator**, Dynamic*, NvU32);
@@ -234,20 +247,108 @@ NV_STATUS __nvoc_objCreate_VirtMemAllocator(VirtMemAllocator**, Dynamic*, NvU32)
     __nvoc_objCreate_VirtMemAllocator((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS dmaAllocMap_IMPL(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, struct VirtualMemory *arg4, struct Memory *arg5, CLI_DMA_MAPPING_INFO *arg6);
+#ifdef __nvoc_virt_mem_allocator_h_disabled
+static inline NV_STATUS dmaAllocMap(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, struct VirtualMemory *arg4, struct Memory *arg5, CLI_DMA_MAPPING_INFO *arg6) {
+    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_virt_mem_allocator_h_disabled
+#define dmaAllocMap(pGpu, pDma, arg3, arg4, arg5, arg6) dmaAllocMap_IMPL(pGpu, pDma, arg3, arg4, arg5, arg6)
+#endif // __nvoc_virt_mem_allocator_h_disabled
+
+NV_STATUS dmaFreeMap_IMPL(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, struct VirtualMemory *arg4, CLI_DMA_MAPPING_INFO *arg5, NvU32 flags);
+#ifdef __nvoc_virt_mem_allocator_h_disabled
+static inline NV_STATUS dmaFreeMap(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, struct VirtualMemory *arg4, CLI_DMA_MAPPING_INFO *arg5, NvU32 flags) {
+    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_virt_mem_allocator_h_disabled
+#define dmaFreeMap(pGpu, pDma, arg3, arg4, arg5, flags) dmaFreeMap_IMPL(pGpu, pDma, arg3, arg4, arg5, flags)
+#endif // __nvoc_virt_mem_allocator_h_disabled
+
+#ifdef __nvoc_virt_mem_allocator_h_disabled
+static inline NV_STATUS dmaInit(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma) {
+    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_virt_mem_allocator_h_disabled
+#define dmaInit(pGpu, pDma) dmaInit_GM107(pGpu, pDma)
+#endif // __nvoc_virt_mem_allocator_h_disabled
+
+#ifdef __nvoc_virt_mem_allocator_h_disabled
+static inline NV_STATUS dmaConstructHal(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma) {
+    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_virt_mem_allocator_h_disabled
+#define dmaConstructHal(pGpu, pDma) dmaConstructHal_VF(pGpu, pDma)
+#endif // __nvoc_virt_mem_allocator_h_disabled
+
+#define __nvoc_dmaDestruct(pDma) dmaDestruct_GM107(pDma)
+
+#ifdef __nvoc_virt_mem_allocator_h_disabled
+static inline NV_STATUS dmaInitGart(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma) {
+    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_virt_mem_allocator_h_disabled
+#define dmaInitGart(pGpu, pDma) dmaInitGart_GM107(pGpu, pDma)
+#endif // __nvoc_virt_mem_allocator_h_disabled
+
+#ifdef __nvoc_virt_mem_allocator_h_disabled
+static inline struct OBJVASPACE * dmaGetPrivateVAS(struct VirtMemAllocator *pDma) {
+    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
+    return NULL;
+}
+#else // __nvoc_virt_mem_allocator_h_disabled
+#define dmaGetPrivateVAS(pDma) dmaGetPrivateVAS_fa6e19(pDma)
+#endif // __nvoc_virt_mem_allocator_h_disabled
+
+
+// Wrapper macros for halified functions
 #define dmaConstructEngine_FNPTR(pDma) pDma->__nvoc_metadata_ptr->vtable.__dmaConstructEngine__
 #define dmaConstructEngine(pGpu, pDma, arg3) dmaConstructEngine_DISPATCH(pGpu, pDma, arg3)
 #define dmaStateInitLocked_FNPTR(pDma) pDma->__nvoc_metadata_ptr->vtable.__dmaStateInitLocked__
 #define dmaStateInitLocked(pGpu, pDma) dmaStateInitLocked_DISPATCH(pGpu, pDma)
+#define dmaInit_HAL(pGpu, pDma) dmaInit(pGpu, pDma)
+#define dmaConstructHal_HAL(pGpu, pDma) dmaConstructHal(pGpu, pDma)
+#define dmaInitGart_HAL(pGpu, pDma) dmaInitGart(pGpu, pDma)
+#define dmaAllocMapping_FNPTR(pDma) pDma->__dmaAllocMapping__
+#define dmaAllocMapping(pGpu, pDma, arg3, arg4, arg5, arg6, arg7, arg8, arg9) dmaAllocMapping_DISPATCH(pGpu, pDma, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
+#define dmaAllocMapping_HAL(pGpu, pDma, arg3, arg4, arg5, arg6, arg7, arg8, arg9) dmaAllocMapping_DISPATCH(pGpu, pDma, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
+#define dmaFreeMapping_FNPTR(pDma) pDma->__dmaFreeMapping__
+#define dmaFreeMapping(pGpu, pDma, arg3, arg4, arg5, arg6, arg7) dmaFreeMapping_DISPATCH(pGpu, pDma, arg3, arg4, arg5, arg6, arg7)
+#define dmaFreeMapping_HAL(pGpu, pDma, arg3, arg4, arg5, arg6, arg7) dmaFreeMapping_DISPATCH(pGpu, pDma, arg3, arg4, arg5, arg6, arg7)
 #define dmaAllocBar1P2PMapping_FNPTR(pDma) pDma->__dmaAllocBar1P2PMapping__
 #define dmaAllocBar1P2PMapping(pGpu, pDma, params) dmaAllocBar1P2PMapping_DISPATCH(pGpu, pDma, params)
 #define dmaAllocBar1P2PMapping_HAL(pGpu, pDma, params) dmaAllocBar1P2PMapping_DISPATCH(pGpu, pDma, params)
 #define dmaFreeBar1P2PMapping_FNPTR(pDma) pDma->__dmaFreeBar1P2PMapping__
 #define dmaFreeBar1P2PMapping(pDma, arg2) dmaFreeBar1P2PMapping_DISPATCH(pDma, arg2)
 #define dmaFreeBar1P2PMapping_HAL(pDma, arg2) dmaFreeBar1P2PMapping_DISPATCH(pDma, arg2)
+#define dmaIsDefaultGpuUncached_FNPTR(pDma) pDma->__dmaIsDefaultGpuUncached__
+#define dmaIsDefaultGpuUncached(pDma, pMemDesc, aperture, bIndirectPeer) dmaIsDefaultGpuUncached_DISPATCH(pDma, pMemDesc, aperture, bIndirectPeer)
+#define dmaIsDefaultGpuUncached_HAL(pDma, pMemDesc, aperture, bIndirectPeer) dmaIsDefaultGpuUncached_DISPATCH(pDma, pMemDesc, aperture, bIndirectPeer)
+#define dmaUpdateVASpace_FNPTR(pDma) pDma->__dmaUpdateVASpace__
+#define dmaUpdateVASpace(pGpu, pDma, pVAS, pMemDesc, tgtPteMem, vAddr, vAddrLimit, flags, pPageArray, overmapPteMod, pComprInfo, surfaceOffset, valid, aperture, isVolatile, peer, fabricAddr, deferInvalidate, bSparse, pageSize) dmaUpdateVASpace_DISPATCH(pGpu, pDma, pVAS, pMemDesc, tgtPteMem, vAddr, vAddrLimit, flags, pPageArray, overmapPteMod, pComprInfo, surfaceOffset, valid, aperture, isVolatile, peer, fabricAddr, deferInvalidate, bSparse, pageSize)
+#define dmaUpdateVASpace_HAL(pGpu, pDma, pVAS, pMemDesc, tgtPteMem, vAddr, vAddrLimit, flags, pPageArray, overmapPteMod, pComprInfo, surfaceOffset, valid, aperture, isVolatile, peer, fabricAddr, deferInvalidate, bSparse, pageSize) dmaUpdateVASpace_DISPATCH(pGpu, pDma, pVAS, pMemDesc, tgtPteMem, vAddr, vAddrLimit, flags, pPageArray, overmapPteMod, pComprInfo, surfaceOffset, valid, aperture, isVolatile, peer, fabricAddr, deferInvalidate, bSparse, pageSize)
+#define dmaXlateVAtoPAforChannel_FNPTR(pDma) pDma->__dmaXlateVAtoPAforChannel__
+#define dmaXlateVAtoPAforChannel(pGpu, pDma, pKernelChannel, vAddr, pAddr, memType) dmaXlateVAtoPAforChannel_DISPATCH(pGpu, pDma, pKernelChannel, vAddr, pAddr, memType)
+#define dmaXlateVAtoPAforChannel_HAL(pGpu, pDma, pKernelChannel, vAddr, pAddr, memType) dmaXlateVAtoPAforChannel_DISPATCH(pGpu, pDma, pKernelChannel, vAddr, pAddr, memType)
+#define dmaGetPTESize_FNPTR(pDma) pDma->__dmaGetPTESize__
+#define dmaGetPTESize(pGpu, pDma) dmaGetPTESize_DISPATCH(pGpu, pDma)
+#define dmaGetPTESize_HAL(pGpu, pDma) dmaGetPTESize_DISPATCH(pGpu, pDma)
+#define dmaMapBuffer_FNPTR(pDma) pDma->__dmaMapBuffer__
+#define dmaMapBuffer(pGpu, pDma, pVAS, pMemDesc, pVaddr, allocFlags, mapFlags) dmaMapBuffer_DISPATCH(pGpu, pDma, pVAS, pMemDesc, pVaddr, allocFlags, mapFlags)
+#define dmaMapBuffer_HAL(pGpu, pDma, pVAS, pMemDesc, pVaddr, allocFlags, mapFlags) dmaMapBuffer_DISPATCH(pGpu, pDma, pVAS, pMemDesc, pVaddr, allocFlags, mapFlags)
+#define dmaUnmapBuffer_FNPTR(pDma) pDma->__dmaUnmapBuffer__
+#define dmaUnmapBuffer(pGpu, pDma, pVAS, vaddr) dmaUnmapBuffer_DISPATCH(pGpu, pDma, pVAS, vaddr)
+#define dmaUnmapBuffer_HAL(pGpu, pDma, pVAS, vaddr) dmaUnmapBuffer_DISPATCH(pGpu, pDma, pVAS, vaddr)
 #define dmaStatePostLoad_FNPTR(pDma) pDma->__nvoc_metadata_ptr->vtable.__dmaStatePostLoad__
 #define dmaStatePostLoad(pGpu, pDma, arg3) dmaStatePostLoad_DISPATCH(pGpu, pDma, arg3)
 #define dmaStatePostLoad_HAL(pGpu, pDma, arg3) dmaStatePostLoad_DISPATCH(pGpu, pDma, arg3)
+#define dmaGetPrivateVAS_HAL(pDma) dmaGetPrivateVAS(pDma)
 #define dmaInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define dmaInitMissing(pGpu, pEngstate) dmaInitMissing_DISPATCH(pGpu, pEngstate)
 #define dmaStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
@@ -280,12 +381,44 @@ static inline NV_STATUS dmaStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct 
     return pDma->__nvoc_metadata_ptr->vtable.__dmaStateInitLocked__(pGpu, pDma);
 }
 
+static inline NV_STATUS dmaAllocMapping_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, MEMORY_DESCRIPTOR *arg4, NvU64 *arg5, NvU32 arg6, NvU32 arg7, CLI_DMA_ALLOC_MAP_INFO *arg8, NvU32 arg9) {
+    return pDma->__dmaAllocMapping__(pGpu, pDma, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+}
+
+static inline NV_STATUS dmaFreeMapping_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, NvU64 arg4, MEMORY_DESCRIPTOR *arg5, NvU32 arg6, CLI_DMA_ALLOC_MAP_INFO *arg7) {
+    return pDma->__dmaFreeMapping__(pGpu, pDma, arg3, arg4, arg5, arg6, arg7);
+}
+
 static inline NV_STATUS dmaAllocBar1P2PMapping_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, DMA_BAR1P2P_MAPPING_PRARAMS *params) {
     return pDma->__dmaAllocBar1P2PMapping__(pGpu, pDma, params);
 }
 
 static inline void dmaFreeBar1P2PMapping_DISPATCH(struct VirtMemAllocator *pDma, CLI_DMA_MAPPING_INFO *arg2) {
     pDma->__dmaFreeBar1P2PMapping__(pDma, arg2);
+}
+
+static inline NvBool dmaIsDefaultGpuUncached_DISPATCH(struct VirtMemAllocator *pDma, MEMORY_DESCRIPTOR *pMemDesc, GMMU_APERTURE aperture, NvBool bIndirectPeer) {
+    return pDma->__dmaIsDefaultGpuUncached__(pDma, pMemDesc, aperture, bIndirectPeer);
+}
+
+static inline NV_STATUS dmaUpdateVASpace_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, MEMORY_DESCRIPTOR *pMemDesc, NvU8 *tgtPteMem, NvU64 vAddr, NvU64 vAddrLimit, NvU32 flags, DMA_PAGE_ARRAY *pPageArray, NvU32 overmapPteMod, COMPR_INFO *pComprInfo, NvU64 surfaceOffset, NvU32 valid, GMMU_APERTURE aperture, NvBool isVolatile, NvU32 peer, NvU64 fabricAddr, NvU32 deferInvalidate, NvBool bSparse, NvU64 pageSize) {
+    return pDma->__dmaUpdateVASpace__(pGpu, pDma, pVAS, pMemDesc, tgtPteMem, vAddr, vAddrLimit, flags, pPageArray, overmapPteMod, pComprInfo, surfaceOffset, valid, aperture, isVolatile, peer, fabricAddr, deferInvalidate, bSparse, pageSize);
+}
+
+static inline NV_STATUS dmaXlateVAtoPAforChannel_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct KernelChannel *pKernelChannel, NvU64 vAddr, NvU64 *pAddr, NvU32 *memType) {
+    return pDma->__dmaXlateVAtoPAforChannel__(pGpu, pDma, pKernelChannel, vAddr, pAddr, memType);
+}
+
+static inline NvU32 dmaGetPTESize_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma) {
+    return pDma->__dmaGetPTESize__(pGpu, pDma);
+}
+
+static inline NV_STATUS dmaMapBuffer_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, PMEMORY_DESCRIPTOR pMemDesc, NvU64 *pVaddr, NvU32 allocFlags, NvU32 mapFlags) {
+    return pDma->__dmaMapBuffer__(pGpu, pDma, pVAS, pMemDesc, pVaddr, allocFlags, mapFlags);
+}
+
+static inline void dmaUnmapBuffer_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, NvU64 vaddr) {
+    pDma->__dmaUnmapBuffer__(pGpu, pDma, pVAS, vaddr);
 }
 
 static inline NV_STATUS dmaStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, NvU32 arg3) {
@@ -339,17 +472,6 @@ static inline NvBool dmaIsPresent_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAl
 NV_STATUS dmaInit_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma);
 
 
-#ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline NV_STATUS dmaInit(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma) {
-    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_virt_mem_allocator_h_disabled
-#define dmaInit(pGpu, pDma) dmaInit_GM107(pGpu, pDma)
-#endif //__nvoc_virt_mem_allocator_h_disabled
-
-#define dmaInit_HAL(pGpu, pDma) dmaInit(pGpu, pDma)
-
 NV_STATUS dmaConstructHal_VF(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma);
 
 static inline NV_STATUS dmaConstructHal_56cd7a(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma) {
@@ -357,151 +479,32 @@ static inline NV_STATUS dmaConstructHal_56cd7a(struct OBJGPU *pGpu, struct VirtM
 }
 
 
-#ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline NV_STATUS dmaConstructHal(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma) {
-    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_virt_mem_allocator_h_disabled
-#define dmaConstructHal(pGpu, pDma) dmaConstructHal_VF(pGpu, pDma)
-#endif //__nvoc_virt_mem_allocator_h_disabled
-
-#define dmaConstructHal_HAL(pGpu, pDma) dmaConstructHal(pGpu, pDma)
-
 void dmaDestruct_GM107(struct VirtMemAllocator *pDma);
 
 
-#define __nvoc_dmaDestruct(pDma) dmaDestruct_GM107(pDma)
 NV_STATUS dmaInitGart_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma);
 
-
-#ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline NV_STATUS dmaInitGart(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma) {
-    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_virt_mem_allocator_h_disabled
-#define dmaInitGart(pGpu, pDma) dmaInitGart_GM107(pGpu, pDma)
-#endif //__nvoc_virt_mem_allocator_h_disabled
-
-#define dmaInitGart_HAL(pGpu, pDma) dmaInitGart(pGpu, pDma)
-
-NV_STATUS dmaAllocMapping_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, MEMORY_DESCRIPTOR *arg4, NvU64 *arg5, NvU32 arg6, CLI_DMA_ALLOC_MAP_INFO *arg7, NvU32 arg8);
-
-
-#ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline NV_STATUS dmaAllocMapping(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, MEMORY_DESCRIPTOR *arg4, NvU64 *arg5, NvU32 arg6, CLI_DMA_ALLOC_MAP_INFO *arg7, NvU32 arg8) {
-    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_virt_mem_allocator_h_disabled
-#define dmaAllocMapping(pGpu, pDma, arg3, arg4, arg5, arg6, arg7, arg8) dmaAllocMapping_GM107(pGpu, pDma, arg3, arg4, arg5, arg6, arg7, arg8)
-#endif //__nvoc_virt_mem_allocator_h_disabled
-
-#define dmaAllocMapping_HAL(pGpu, pDma, arg3, arg4, arg5, arg6, arg7, arg8) dmaAllocMapping(pGpu, pDma, arg3, arg4, arg5, arg6, arg7, arg8)
-
-NV_STATUS dmaFreeMapping_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, NvU64 arg4, MEMORY_DESCRIPTOR *arg5, NvU32 arg6, CLI_DMA_ALLOC_MAP_INFO *arg7);
-
-
-#ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline NV_STATUS dmaFreeMapping(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, NvU64 arg4, MEMORY_DESCRIPTOR *arg5, NvU32 arg6, CLI_DMA_ALLOC_MAP_INFO *arg7) {
-    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_virt_mem_allocator_h_disabled
-#define dmaFreeMapping(pGpu, pDma, arg3, arg4, arg5, arg6, arg7) dmaFreeMapping_GM107(pGpu, pDma, arg3, arg4, arg5, arg6, arg7)
-#endif //__nvoc_virt_mem_allocator_h_disabled
-
-#define dmaFreeMapping_HAL(pGpu, pDma, arg3, arg4, arg5, arg6, arg7) dmaFreeMapping(pGpu, pDma, arg3, arg4, arg5, arg6, arg7)
-
-NV_STATUS dmaUpdateVASpace_GF100(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, MEMORY_DESCRIPTOR *pMemDesc, NvU8 *tgtPteMem, NvU64 vAddr, NvU64 vAddrLimit, NvU32 flags, DMA_PAGE_ARRAY *pPageArray, NvU32 overmapPteMod, COMPR_INFO *pComprInfo, NvU64 surfaceOffset, NvU32 valid, NvU32 aperture, NvU32 peer, NvU64 fabricAddr, NvU32 deferInvalidate, NvBool bSparse, NvU64 pageSize);
-
-
-#ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline NV_STATUS dmaUpdateVASpace(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, MEMORY_DESCRIPTOR *pMemDesc, NvU8 *tgtPteMem, NvU64 vAddr, NvU64 vAddrLimit, NvU32 flags, DMA_PAGE_ARRAY *pPageArray, NvU32 overmapPteMod, COMPR_INFO *pComprInfo, NvU64 surfaceOffset, NvU32 valid, NvU32 aperture, NvU32 peer, NvU64 fabricAddr, NvU32 deferInvalidate, NvBool bSparse, NvU64 pageSize) {
-    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_virt_mem_allocator_h_disabled
-#define dmaUpdateVASpace(pGpu, pDma, pVAS, pMemDesc, tgtPteMem, vAddr, vAddrLimit, flags, pPageArray, overmapPteMod, pComprInfo, surfaceOffset, valid, aperture, peer, fabricAddr, deferInvalidate, bSparse, pageSize) dmaUpdateVASpace_GF100(pGpu, pDma, pVAS, pMemDesc, tgtPteMem, vAddr, vAddrLimit, flags, pPageArray, overmapPteMod, pComprInfo, surfaceOffset, valid, aperture, peer, fabricAddr, deferInvalidate, bSparse, pageSize)
-#endif //__nvoc_virt_mem_allocator_h_disabled
-
-#define dmaUpdateVASpace_HAL(pGpu, pDma, pVAS, pMemDesc, tgtPteMem, vAddr, vAddrLimit, flags, pPageArray, overmapPteMod, pComprInfo, surfaceOffset, valid, aperture, peer, fabricAddr, deferInvalidate, bSparse, pageSize) dmaUpdateVASpace(pGpu, pDma, pVAS, pMemDesc, tgtPteMem, vAddr, vAddrLimit, flags, pPageArray, overmapPteMod, pComprInfo, surfaceOffset, valid, aperture, peer, fabricAddr, deferInvalidate, bSparse, pageSize)
-
-NV_STATUS dmaXlateVAtoPAforChannel_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct KernelChannel *pKernelChannel, NvU64 vAddr, NvU64 *pAddr, NvU32 *memType);
-
-
-#ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline NV_STATUS dmaXlateVAtoPAforChannel(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct KernelChannel *pKernelChannel, NvU64 vAddr, NvU64 *pAddr, NvU32 *memType) {
-    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_virt_mem_allocator_h_disabled
-#define dmaXlateVAtoPAforChannel(pGpu, pDma, pKernelChannel, vAddr, pAddr, memType) dmaXlateVAtoPAforChannel_GM107(pGpu, pDma, pKernelChannel, vAddr, pAddr, memType)
-#endif //__nvoc_virt_mem_allocator_h_disabled
-
-#define dmaXlateVAtoPAforChannel_HAL(pGpu, pDma, pKernelChannel, vAddr, pAddr, memType) dmaXlateVAtoPAforChannel(pGpu, pDma, pKernelChannel, vAddr, pAddr, memType)
-
-NvU32 dmaGetPTESize_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma);
-
-
-#ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline NvU32 dmaGetPTESize(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma) {
-    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
-    return 0;
-}
-#else //__nvoc_virt_mem_allocator_h_disabled
-#define dmaGetPTESize(pGpu, pDma) dmaGetPTESize_GM107(pGpu, pDma)
-#endif //__nvoc_virt_mem_allocator_h_disabled
-
-#define dmaGetPTESize_HAL(pGpu, pDma) dmaGetPTESize(pGpu, pDma)
-
-NV_STATUS dmaMapBuffer_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, PMEMORY_DESCRIPTOR pMemDesc, NvU64 *pVaddr, NvU32 allocFlags, NvU32 mapFlags);
-
-
-#ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline NV_STATUS dmaMapBuffer(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, PMEMORY_DESCRIPTOR pMemDesc, NvU64 *pVaddr, NvU32 allocFlags, NvU32 mapFlags) {
-    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_virt_mem_allocator_h_disabled
-#define dmaMapBuffer(pGpu, pDma, pVAS, pMemDesc, pVaddr, allocFlags, mapFlags) dmaMapBuffer_GM107(pGpu, pDma, pVAS, pMemDesc, pVaddr, allocFlags, mapFlags)
-#endif //__nvoc_virt_mem_allocator_h_disabled
-
-#define dmaMapBuffer_HAL(pGpu, pDma, pVAS, pMemDesc, pVaddr, allocFlags, mapFlags) dmaMapBuffer(pGpu, pDma, pVAS, pMemDesc, pVaddr, allocFlags, mapFlags)
-
-void dmaUnmapBuffer_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, NvU64 vaddr);
-
-
-#ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline void dmaUnmapBuffer(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, NvU64 vaddr) {
-    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
-}
-#else //__nvoc_virt_mem_allocator_h_disabled
-#define dmaUnmapBuffer(pGpu, pDma, pVAS, vaddr) dmaUnmapBuffer_GM107(pGpu, pDma, pVAS, vaddr)
-#endif //__nvoc_virt_mem_allocator_h_disabled
-
-#define dmaUnmapBuffer_HAL(pGpu, pDma, pVAS, vaddr) dmaUnmapBuffer(pGpu, pDma, pVAS, vaddr)
 
 static inline struct OBJVASPACE *dmaGetPrivateVAS_fa6e19(struct VirtMemAllocator *pDma) {
     return ((void *)0);
 }
 
 
-#ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline struct OBJVASPACE *dmaGetPrivateVAS(struct VirtMemAllocator *pDma) {
-    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
-    return NULL;
-}
-#else //__nvoc_virt_mem_allocator_h_disabled
-#define dmaGetPrivateVAS(pDma) dmaGetPrivateVAS_fa6e19(pDma)
-#endif //__nvoc_virt_mem_allocator_h_disabled
-
-#define dmaGetPrivateVAS_HAL(pDma) dmaGetPrivateVAS(pDma)
-
 NV_STATUS dmaConstructEngine_IMPL(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, ENGDESCRIPTOR arg3);
 
 NV_STATUS dmaStateInitLocked_IMPL(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma);
+
+NV_STATUS dmaAllocMapping_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, MEMORY_DESCRIPTOR *arg4, NvU64 *arg5, NvU32 arg6, NvU32 arg7, CLI_DMA_ALLOC_MAP_INFO *arg8, NvU32 arg9);
+
+static inline NV_STATUS dmaAllocMapping_46f6a7(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, MEMORY_DESCRIPTOR *arg4, NvU64 *arg5, NvU32 arg6, NvU32 arg7, CLI_DMA_ALLOC_MAP_INFO *arg8, NvU32 arg9) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS dmaFreeMapping_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, NvU64 arg4, MEMORY_DESCRIPTOR *arg5, NvU32 arg6, CLI_DMA_ALLOC_MAP_INFO *arg7);
+
+static inline NV_STATUS dmaFreeMapping_46f6a7(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, NvU64 arg4, MEMORY_DESCRIPTOR *arg5, NvU32 arg6, CLI_DMA_ALLOC_MAP_INFO *arg7) {
+    return NV_ERR_NOT_SUPPORTED;
+}
 
 NV_STATUS dmaAllocBar1P2PMapping_GH100(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, DMA_BAR1P2P_MAPPING_PRARAMS *params);
 
@@ -515,29 +518,43 @@ static inline void dmaFreeBar1P2PMapping_b3696a(struct VirtMemAllocator *pDma, C
     return;
 }
 
+NvBool dmaIsDefaultGpuUncached_GM107(struct VirtMemAllocator *pDma, MEMORY_DESCRIPTOR *pMemDesc, GMMU_APERTURE aperture, NvBool bIndirectPeer);
+
+static inline NvBool dmaIsDefaultGpuUncached_3dd2c9(struct VirtMemAllocator *pDma, MEMORY_DESCRIPTOR *pMemDesc, GMMU_APERTURE aperture, NvBool bIndirectPeer) {
+    return NV_FALSE;
+}
+
+NV_STATUS dmaUpdateVASpace_GF100(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, MEMORY_DESCRIPTOR *pMemDesc, NvU8 *tgtPteMem, NvU64 vAddr, NvU64 vAddrLimit, NvU32 flags, DMA_PAGE_ARRAY *pPageArray, NvU32 overmapPteMod, COMPR_INFO *pComprInfo, NvU64 surfaceOffset, NvU32 valid, GMMU_APERTURE aperture, NvBool isVolatile, NvU32 peer, NvU64 fabricAddr, NvU32 deferInvalidate, NvBool bSparse, NvU64 pageSize);
+
+static inline NV_STATUS dmaUpdateVASpace_46f6a7(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, MEMORY_DESCRIPTOR *pMemDesc, NvU8 *tgtPteMem, NvU64 vAddr, NvU64 vAddrLimit, NvU32 flags, DMA_PAGE_ARRAY *pPageArray, NvU32 overmapPteMod, COMPR_INFO *pComprInfo, NvU64 surfaceOffset, NvU32 valid, GMMU_APERTURE aperture, NvBool isVolatile, NvU32 peer, NvU64 fabricAddr, NvU32 deferInvalidate, NvBool bSparse, NvU64 pageSize) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS dmaXlateVAtoPAforChannel_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct KernelChannel *pKernelChannel, NvU64 vAddr, NvU64 *pAddr, NvU32 *memType);
+
+static inline NV_STATUS dmaXlateVAtoPAforChannel_46f6a7(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct KernelChannel *pKernelChannel, NvU64 vAddr, NvU64 *pAddr, NvU32 *memType) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NvU32 dmaGetPTESize_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma);
+
+static inline NvU32 dmaGetPTESize_474d46(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+NV_STATUS dmaMapBuffer_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, PMEMORY_DESCRIPTOR pMemDesc, NvU64 *pVaddr, NvU32 allocFlags, NvU32 mapFlags);
+
+static inline NV_STATUS dmaMapBuffer_5baef9(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, PMEMORY_DESCRIPTOR pMemDesc, NvU64 *pVaddr, NvU32 allocFlags, NvU32 mapFlags) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+void dmaUnmapBuffer_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, NvU64 vaddr);
+
+static inline void dmaUnmapBuffer_f2d351(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, NvU64 vaddr) {
+    NV_ASSERT_PRECOMP(0);
+}
+
 NV_STATUS dmaStatePostLoad_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, NvU32 arg3);
-
-NV_STATUS dmaAllocMap_IMPL(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, struct VirtualMemory *arg4, struct Memory *arg5, CLI_DMA_MAPPING_INFO *arg6);
-
-#ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline NV_STATUS dmaAllocMap(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, struct VirtualMemory *arg4, struct Memory *arg5, CLI_DMA_MAPPING_INFO *arg6) {
-    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_virt_mem_allocator_h_disabled
-#define dmaAllocMap(pGpu, pDma, arg3, arg4, arg5, arg6) dmaAllocMap_IMPL(pGpu, pDma, arg3, arg4, arg5, arg6)
-#endif //__nvoc_virt_mem_allocator_h_disabled
-
-NV_STATUS dmaFreeMap_IMPL(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, struct VirtualMemory *arg4, CLI_DMA_MAPPING_INFO *arg5, NvU32 flags);
-
-#ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline NV_STATUS dmaFreeMap(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, struct VirtualMemory *arg4, CLI_DMA_MAPPING_INFO *arg5, NvU32 flags) {
-    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_virt_mem_allocator_h_disabled
-#define dmaFreeMap(pGpu, pDma, arg3, arg4, arg5, flags) dmaFreeMap_IMPL(pGpu, pDma, arg3, arg4, arg5, flags)
-#endif //__nvoc_virt_mem_allocator_h_disabled
 
 #undef PRIVATE_FIELD
 
@@ -568,6 +585,11 @@ struct DMA_PAGE_ARRAY
     NvBool       bOsFormat;   //!< Indicates if pData is an opaque OS-specific data.
     NvBool       bDuplicate;  //!< Indicates to duplicate the address of the first page.
     NvBool       bLocalized;  //!< Indicates if its localized memory or not.
+    //
+    // If DMA_PAGE_ARRARY_FLAGS_LOCALIZED, OR the physical address against this to
+    // get the address to be programmed into HW.
+    //
+    NvU64        localizedMask;
     OS_GPU_INFO *pOsGpuInfo;  //!< OS-specific GPU info needed for IOMMU on Windows.
 };
 
@@ -578,10 +600,8 @@ void dmaPageArrayInit(DMA_PAGE_ARRAY *pPageArray, void *pPageData, NvU32 pageCou
 
 #define DMA_PAGE_ARRARY_FLAGS_LOCALIZED  NVBIT64(0)
 
-#define DMA_PAGE_ARRAY_LOCALIZED_OFFSET  NVBIT64(39)
-
 void dmaPageArrayInitWithFlags(DMA_PAGE_ARRAY *pPageArray, void *pPageData, NvU32 pageCount,
-                               NvU64 flags);
+                               NvU64 flags, NvU64 localizedMask);
 
 void dmaPageArrayInitFromMemDesc(DMA_PAGE_ARRAY *pPageArray,
                                  MEMORY_DESCRIPTOR *pMemDesc,
@@ -607,9 +627,7 @@ RmPhysAddr dmaPageArrayGetPhysAddr(DMA_PAGE_ARRAY *pPageArray, NvU32 pageIndex);
 #define DMA_UPDATE_VASPACE_FLAGS_UPDATE_ALL         MASK_BITS(11)
 
 #define DMA_UPDATE_VASPACE_FLAGS_SKIP_4K_PTE_CHECK  NVBIT(12)
-#define DMA_UPDATE_VASPACE_FLAGS_VOLATILE           NVBIT(13)
-#define DMA_UPDATE_VASPACE_FLAGS_NONVOLATILE        NVBIT(14)
-#define DMA_UPDATE_VASPACE_FLAGS_INDIRECT_PEER      NVBIT(22)
+#define DMA_UPDATE_VASPACE_FLAGS_FORCE_ACD          NVBIT(15)
 #define DMA_UPDATE_VASPACE_FLAGS_ALLOW_REMAP        NVBIT(23)
 #define DMA_UPDATE_VASPACE_FLAGS_UNALIGNED_COMP     NVBIT(24)
 #define DMA_UPDATE_VASPACE_FLAGS_FILL_PTE_MEM       NVBIT(25)

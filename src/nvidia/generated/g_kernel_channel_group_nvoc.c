@@ -25,10 +25,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsShared;
 
 // Forward declarations for KernelChannelGroup
 void __nvoc_init__RsShared(RsShared*);
-void __nvoc_init__KernelChannelGroup(KernelChannelGroup*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_funcTable_KernelChannelGroup(KernelChannelGroup*, RmHalspecOwner *pRmhalspecowner);
-NV_STATUS __nvoc_ctor_KernelChannelGroup(KernelChannelGroup*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_dataField_KernelChannelGroup(KernelChannelGroup*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init__KernelChannelGroup(KernelChannelGroup*, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner);
+void __nvoc_init_funcTable_KernelChannelGroup(KernelChannelGroup*, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner);
+NV_STATUS __nvoc_ctor_KernelChannelGroup(KernelChannelGroup*, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner);
+void __nvoc_init_dataField_KernelChannelGroup(KernelChannelGroup*, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner);
 void __nvoc_dtor_KernelChannelGroup(KernelChannelGroup*);
 
 // Structures used within RTTI (run-time type information)
@@ -85,6 +85,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelChannelGroup =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_kchangrpDestruct(KernelChannelGroup*);
 void __nvoc_dtor_RsShared(RsShared*);
 void __nvoc_dtor_KernelChannelGroup(KernelChannelGroup *pThis) {
     __nvoc_kchangrpDestruct(pThis);
@@ -92,13 +93,14 @@ void __nvoc_dtor_KernelChannelGroup(KernelChannelGroup *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_KernelChannelGroup(KernelChannelGroup *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init_dataField_KernelChannelGroup(KernelChannelGroup *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(chipHal);
@@ -106,11 +108,11 @@ void __nvoc_init_dataField_KernelChannelGroup(KernelChannelGroup *pThis, RmHalsp
 }
 
 NV_STATUS __nvoc_ctor_RsShared(RsShared* );
-NV_STATUS __nvoc_ctor_KernelChannelGroup(KernelChannelGroup *pThis, RmHalspecOwner *pRmhalspecowner) {
+NV_STATUS __nvoc_ctor_KernelChannelGroup(KernelChannelGroup *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_RsShared(&pThis->__nvoc_base_RsShared);
     if (status != NV_OK) goto __nvoc_ctor_KernelChannelGroup_fail_RsShared;
-    __nvoc_init_dataField_KernelChannelGroup(pThis, pRmhalspecowner);
+    __nvoc_init_dataField_KernelChannelGroup(pThis, pRmhalspecowner, pGpuhalspecowner);
 
     status = __nvoc_kchangrpConstruct(pThis);
     if (status != NV_OK) goto __nvoc_ctor_KernelChannelGroup_fail__init;
@@ -125,27 +127,70 @@ __nvoc_ctor_KernelChannelGroup_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_KernelChannelGroup_1(KernelChannelGroup *pThis, RmHalspecOwner *pRmhalspecowner) {
+static void __nvoc_init_funcTable_KernelChannelGroup_1(KernelChannelGroup *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
-} // End __nvoc_init_funcTable_KernelChannelGroup_1
+
+    // kchangrpAllocFaultMethodBuffers -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__kchangrpAllocFaultMethodBuffers__ = &kchangrpAllocFaultMethodBuffers_ac1694;
+    }
+    else
+    {
+        pThis->__kchangrpAllocFaultMethodBuffers__ = &kchangrpAllocFaultMethodBuffers_GV100;
+    }
+
+    // kchangrpFreeFaultMethodBuffers -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__kchangrpFreeFaultMethodBuffers__ = &kchangrpFreeFaultMethodBuffers_ac1694;
+    }
+    else
+    {
+        pThis->__kchangrpFreeFaultMethodBuffers__ = &kchangrpFreeFaultMethodBuffers_GV100;
+    }
+
+    // kchangrpMapFaultMethodBuffers -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__kchangrpMapFaultMethodBuffers__ = &kchangrpMapFaultMethodBuffers_ac1694;
+    }
+    else
+    {
+        pThis->__kchangrpMapFaultMethodBuffers__ = &kchangrpMapFaultMethodBuffers_GV100;
+    }
+
+    // kchangrpUnmapFaultMethodBuffers -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__kchangrpUnmapFaultMethodBuffers__ = &kchangrpUnmapFaultMethodBuffers_ac1694;
+    }
+    else
+    {
+        pThis->__kchangrpUnmapFaultMethodBuffers__ = &kchangrpUnmapFaultMethodBuffers_GV100;
+    }
+} // End __nvoc_init_funcTable_KernelChannelGroup_1 with approximately 8 basic block(s).
 
 
-// Initialize vtable(s): Nothing to do for empty vtables
-void __nvoc_init_funcTable_KernelChannelGroup(KernelChannelGroup *pThis, RmHalspecOwner *pRmhalspecowner) {
-    __nvoc_init_funcTable_KernelChannelGroup_1(pThis, pRmhalspecowner);
+// Initialize vtable(s) for 4 virtual method(s).
+void __nvoc_init_funcTable_KernelChannelGroup(KernelChannelGroup *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
+
+    // Initialize vtable(s) with 4 per-object function pointer(s).
+    __nvoc_init_funcTable_KernelChannelGroup_1(pThis, pRmhalspecowner, pGpuhalspecowner);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__KernelChannelGroup(KernelChannelGroup *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init__KernelChannelGroup(KernelChannelGroup *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
 
     // Initialize pointers to inherited data.
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_RsShared.__nvoc_base_Object;    // (obj) super^2
@@ -161,7 +206,7 @@ void __nvoc_init__KernelChannelGroup(KernelChannelGroup *pThis, RmHalspecOwner *
     pThis->__nvoc_metadata_ptr = &__nvoc_metadata__KernelChannelGroup;    // (kchangrp) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_KernelChannelGroup(pThis, pRmhalspecowner);
+    __nvoc_init_funcTable_KernelChannelGroup(pThis, pRmhalspecowner, pGpuhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_KernelChannelGroup(KernelChannelGroup **ppThis, Dynamic *pParent, NvU32 createFlags)
@@ -170,6 +215,7 @@ NV_STATUS __nvoc_objCreate_KernelChannelGroup(KernelChannelGroup **ppThis, Dynam
     Object *pParentObj = NULL;
     KernelChannelGroup *pThis;
     RmHalspecOwner *pRmhalspecowner;
+    GpuHalspecOwner *pGpuhalspecowner;
 
     // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelChannelGroup), (void**)&pThis, (void**)ppThis);
@@ -198,9 +244,12 @@ NV_STATUS __nvoc_objCreate_KernelChannelGroup(KernelChannelGroup **ppThis, Dynam
     if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
         pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
     NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
+    if ((pGpuhalspecowner = dynamicCast(pParent, GpuHalspecOwner)) == NULL)
+        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, pParent);
+    NV_ASSERT_OR_RETURN(pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init__KernelChannelGroup(pThis, pRmhalspecowner);
-    status = __nvoc_ctor_KernelChannelGroup(pThis, pRmhalspecowner);
+    __nvoc_init__KernelChannelGroup(pThis, pRmhalspecowner, pGpuhalspecowner);
+    status = __nvoc_ctor_KernelChannelGroup(pThis, pRmhalspecowner, pGpuhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_KernelChannelGroup_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

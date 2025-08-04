@@ -27,10 +27,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_IntrService;
 // Forward declarations for KernelDisplay
 void __nvoc_init__OBJENGSTATE(OBJENGSTATE*);
 void __nvoc_init__IntrService(IntrService*);
-void __nvoc_init__KernelDisplay(KernelDisplay*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_funcTable_KernelDisplay(KernelDisplay*, RmHalspecOwner *pRmhalspecowner);
-NV_STATUS __nvoc_ctor_KernelDisplay(KernelDisplay*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_dataField_KernelDisplay(KernelDisplay*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init__KernelDisplay(KernelDisplay*, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner);
+void __nvoc_init_funcTable_KernelDisplay(KernelDisplay*, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner);
+NV_STATUS __nvoc_ctor_KernelDisplay(KernelDisplay*, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner);
+void __nvoc_init_dataField_KernelDisplay(KernelDisplay*, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner);
 void __nvoc_dtor_KernelDisplay(KernelDisplay*);
 
 // Structures used within RTTI (run-time type information)
@@ -242,6 +242,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelDisplay =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_kdispDestruct(KernelDisplay*);
 void __nvoc_dtor_OBJENGSTATE(OBJENGSTATE*);
 void __nvoc_dtor_IntrService(IntrService*);
 void __nvoc_dtor_KernelDisplay(KernelDisplay *pThis) {
@@ -251,15 +252,16 @@ void __nvoc_dtor_KernelDisplay(KernelDisplay *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_KernelDisplay(KernelDisplay *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init_dataField_KernelDisplay(KernelDisplay *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     DispIpHal *dispIpHal = &pRmhalspecowner->dispIpHal;
     const unsigned long dispIpHal_HalVarIdx = (unsigned long)dispIpHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(chipHal);
@@ -278,14 +280,19 @@ void __nvoc_init_dataField_KernelDisplay(KernelDisplay *pThis, RmHalspecOwner *p
     }
 
     // NVOC Property Hal field -- PDB_PROP_KDISP_IMP_ALLOC_BW_IN_KERNEL_RM_DEF
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->setProperty(pThis, PDB_PROP_KDISP_IMP_ALLOC_BW_IN_KERNEL_RM_DEF, NV_TRUE);
+    }
     // default
+    else
     {
         pThis->setProperty(pThis, PDB_PROP_KDISP_IMP_ALLOC_BW_IN_KERNEL_RM_DEF, NV_FALSE);
     }
     pThis->setProperty(pThis, PDB_PROP_KDISP_FEATURE_STRETCH_VBLANK_CAPABLE, (0));
 
     // NVOC Property Hal field -- PDB_PROP_KDISP_HAS_SEPARATE_LOW_LATENCY_LINE
-    if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: GB202 | GB203 | GB205 | GB206 | GB207 | GB20B */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe0UL) )) /* ChipHal: GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->setProperty(pThis, PDB_PROP_KDISP_HAS_SEPARATE_LOW_LATENCY_LINE, NV_TRUE);
     }
@@ -294,6 +301,7 @@ void __nvoc_init_dataField_KernelDisplay(KernelDisplay *pThis, RmHalspecOwner *p
     {
         pThis->setProperty(pThis, PDB_PROP_KDISP_HAS_SEPARATE_LOW_LATENCY_LINE, NV_FALSE);
     }
+    pThis->setProperty(pThis, PDB_PROP_KDISP_ENABLE_INLINE_INTR_SERVICE, NV_TRUE);
 
     pThis->pStaticInfo = ((void *)0);
 
@@ -306,13 +314,13 @@ void __nvoc_init_dataField_KernelDisplay(KernelDisplay *pThis, RmHalspecOwner *p
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
 NV_STATUS __nvoc_ctor_IntrService(IntrService* );
-NV_STATUS __nvoc_ctor_KernelDisplay(KernelDisplay *pThis, RmHalspecOwner *pRmhalspecowner) {
+NV_STATUS __nvoc_ctor_KernelDisplay(KernelDisplay *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
     if (status != NV_OK) goto __nvoc_ctor_KernelDisplay_fail_OBJENGSTATE;
     status = __nvoc_ctor_IntrService(&pThis->__nvoc_base_IntrService);
     if (status != NV_OK) goto __nvoc_ctor_KernelDisplay_fail_IntrService;
-    __nvoc_init_dataField_KernelDisplay(pThis, pRmhalspecowner);
+    __nvoc_init_dataField_KernelDisplay(pThis, pRmhalspecowner, pGpuhalspecowner);
     goto __nvoc_ctor_KernelDisplay_exit; // Success
 
 __nvoc_ctor_KernelDisplay_fail_IntrService:
@@ -324,15 +332,16 @@ __nvoc_ctor_KernelDisplay_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspecOwner *pRmhalspecowner) {
+static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     DispIpHal *dispIpHal = &pRmhalspecowner->dispIpHal;
     const unsigned long dispIpHal_HalVarIdx = (unsigned long)dispIpHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(chipHal);
@@ -341,7 +350,7 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     PORT_UNREFERENCED_VARIABLE(dispIpHal_HalVarIdx);
 
     // kdispSelectClass -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ 
     {
         pThis->__kdispSelectClass__ = &kdispSelectClass_46f6a7;
     }
@@ -350,8 +359,18 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
         pThis->__kdispSelectClass__ = &kdispSelectClass_v03_00_KERNEL;
     }
 
+    // kdispGetBaseOffset -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__kdispGetBaseOffset__ = &kdispGetBaseOffset_v04_02;
+    }
+    else
+    {
+        pThis->__kdispGetBaseOffset__ = &kdispGetBaseOffset_4a4dee;
+    }
+
     // kdispGetChannelNum -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ 
     {
         pThis->__kdispGetChannelNum__ = &kdispGetChannelNum_46f6a7;
     }
@@ -362,7 +381,7 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
 
     // kdispGetDisplayCapsBaseAndSize -- halified (2 hals) body
     if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x70000400UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 | GB110 | GB112 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ ))
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 | GB110 | GB112 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ ))
     {
         pThis->__kdispGetDisplayCapsBaseAndSize__ = &kdispGetDisplayCapsBaseAndSize_b3696a;
     }
@@ -372,7 +391,7 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     }
 
     // kdispGetDisplaySfUserBaseAndSize -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ 
     {
         pThis->__kdispGetDisplaySfUserBaseAndSize__ = &kdispGetDisplaySfUserBaseAndSize_b3696a;
     }
@@ -382,7 +401,7 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     }
 
     // kdispGetDisplayChannelUserBaseAndSize -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ 
     {
         pThis->__kdispGetDisplayChannelUserBaseAndSize__ = &kdispGetDisplayChannelUserBaseAndSize_46f6a7;
     }
@@ -392,8 +411,11 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     }
 
     // kdispImportImpData -- halified (2 hals) body
-    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) )) /* ChipHal: GB10B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0501 */ ) ||
-        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB20B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00020000UL) )) /* DispIpHal: DISPv0503 */ ))
+    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00004000UL) )) /* ChipHal: GB10B | T264D */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0501 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB20B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00020000UL) )) /* DispIpHal: DISPv0503 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000800UL) )) /* ChipHal: GB20C */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0504 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00001000UL) )) /* ChipHal: T234D */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00001000UL) )) /* DispIpHal: DISPv0402 */ ))
     {
         pThis->__kdispImportImpData__ = &kdispImportImpData_IMPL;
     }
@@ -401,6 +423,16 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     else
     {
         pThis->__kdispImportImpData__ = &kdispImportImpData_56cd7a;
+    }
+
+    // kdispArbAndAllocDisplayBandwidth -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__kdispArbAndAllocDisplayBandwidth__ = &kdispArbAndAllocDisplayBandwidth_v04_02;
+    }
+    else
+    {
+        pThis->__kdispArbAndAllocDisplayBandwidth__ = &kdispArbAndAllocDisplayBandwidth_46f6a7;
     }
 
     // kdispGetVgaWorkspaceBase -- halified (3 hals) body
@@ -420,8 +452,18 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
         pThis->__kdispGetVgaWorkspaceBase__ = &kdispGetVgaWorkspaceBase_72a2e1;
     }
 
+    // kdispInvokeDisplayModesetCallback -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__kdispInvokeDisplayModesetCallback__ = &kdispInvokeDisplayModesetCallback_KERNEL;
+    }
+    else
+    {
+        pThis->__kdispInvokeDisplayModesetCallback__ = &kdispInvokeDisplayModesetCallback_b3696a;
+    }
+
     // kdispReadRgLineCountAndFrameCount -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x0003cc00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 | DISPv0501 | DISPv0502 | DISPv0503 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x0007dc00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0402 | DISPv0404 | DISPv0501 | DISPv0502 | DISPv0503 | DISPv0504 */ 
     {
         pThis->__kdispReadRgLineCountAndFrameCount__ = &kdispReadRgLineCountAndFrameCount_v03_00_KERNEL;
     }
@@ -431,9 +473,31 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
         pThis->__kdispReadRgLineCountAndFrameCount__ = &kdispReadRgLineCountAndFrameCount_46f6a7;
     }
 
+    // kdispInitBrightcStateLoad -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__kdispInitBrightcStateLoad__ = &kdispInitBrightcStateLoad_56cd7a;
+    }
+    else
+    {
+        pThis->__kdispInitBrightcStateLoad__ = &kdispInitBrightcStateLoad_IMPL;
+    }
+
+    // kdispSetupAcpiEdid -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__kdispSetupAcpiEdid__ = &kdispSetupAcpiEdid_56cd7a;
+    }
+    else
+    {
+        pThis->__kdispSetupAcpiEdid__ = &kdispSetupAcpiEdid_IMPL;
+    }
+
     // kdispRestoreOriginalLsrMinTime -- halified (2 hals) body
     if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x70000400UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 | GB110 | GB112 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ ))
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 | GB110 | GB112 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00001000UL) )) /* ChipHal: T234D */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00001000UL) )) /* DispIpHal: DISPv0402 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00004000UL) )) /* ChipHal: T264D */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0501 */ ))
     {
         pThis->__kdispRestoreOriginalLsrMinTime__ = &kdispRestoreOriginalLsrMinTime_b3696a;
     }
@@ -443,7 +507,7 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     }
 
     // kdispComputeLsrMinTimeValue -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ 
     {
         pThis->__kdispComputeLsrMinTimeValue__ = &kdispComputeLsrMinTimeValue_56cd7a;
     }
@@ -454,7 +518,9 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
 
     // kdispSetSwapBarrierLsrMinTime -- halified (2 hals) body
     if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x70000400UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 | GB110 | GB112 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ ))
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 | GB110 | GB112 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00001000UL) )) /* ChipHal: T234D */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00001000UL) )) /* DispIpHal: DISPv0402 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00004000UL) )) /* ChipHal: T264D */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0501 */ ))
     {
         pThis->__kdispSetSwapBarrierLsrMinTime__ = &kdispSetSwapBarrierLsrMinTime_b3696a;
     }
@@ -464,7 +530,7 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     }
 
     // kdispGetRgScanLock -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x0003cc00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 | DISPv0501 | DISPv0502 | DISPv0503 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x0007dc00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0402 | DISPv0404 | DISPv0501 | DISPv0502 | DISPv0503 | DISPv0504 */ 
     {
         pThis->__kdispGetRgScanLock__ = &kdispGetRgScanLock_v02_01;
     }
@@ -475,7 +541,7 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     }
 
     // kdispDetectSliLink -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x0003cc00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 | DISPv0501 | DISPv0502 | DISPv0503 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x0007dc00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0402 | DISPv0404 | DISPv0501 | DISPv0502 | DISPv0503 | DISPv0504 */ 
     {
         pThis->__kdispDetectSliLink__ = &kdispDetectSliLink_v04_00;
     }
@@ -486,7 +552,7 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     }
 
     // kdispReadAwakenChannelNumMask -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x0003cc00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 | DISPv0501 | DISPv0502 | DISPv0503 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x0007dc00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0402 | DISPv0404 | DISPv0501 | DISPv0502 | DISPv0503 | DISPv0504 */ 
     {
         pThis->__kdispReadAwakenChannelNumMask__ = &kdispReadAwakenChannelNumMask_v03_00;
     }
@@ -497,15 +563,18 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     }
 
     // kdispGetPBTargetAperture -- halified (3 hals) body
-    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) )) /* ChipHal: GB10B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0501 */ ) ||
-        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB20B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00020000UL) )) /* DispIpHal: DISPv0503 */ ))
+    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00004000UL) )) /* ChipHal: GB10B | T264D */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0501 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB20B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00020000UL) )) /* DispIpHal: DISPv0503 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000800UL) )) /* ChipHal: GB20C */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0504 */ ))
     {
         pThis->__kdispGetPBTargetAperture__ = &kdispGetPBTargetAperture_v05_01;
     }
     else if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* DispIpHal: DISPv0400 */ ) ||
              ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000800UL) )) /* DispIpHal: DISPv0401 */ ) ||
              ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004000UL) )) /* DispIpHal: DISPv0404 */ ) ||
-             ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: GB202 | GB203 | GB205 | GB206 | GB207 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00010000UL) )) /* DispIpHal: DISPv0502 */ ))
+             ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: GB202 | GB203 | GB205 | GB206 | GB207 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00010000UL) )) /* DispIpHal: DISPv0502 */ ) ||
+             ((( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00001000UL) )) /* ChipHal: T234D */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00001000UL) )) /* DispIpHal: DISPv0402 */ ))
     {
         pThis->__kdispGetPBTargetAperture__ = &kdispGetPBTargetAperture_v03_00;
     }
@@ -515,10 +584,21 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
         pThis->__kdispGetPBTargetAperture__ = &kdispGetPBTargetAperture_15a734;
     }
 
+    // kdispAllocateSharedMem -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__kdispAllocateSharedMem__ = &kdispAllocateSharedMem_46f6a7;
+    }
+    // default
+    else
+    {
+        pThis->__kdispAllocateSharedMem__ = &kdispAllocateSharedMem_IMPL;
+    }
+
     // kdispReadPendingWinSemIntr -- halified (2 hals) body
     if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* DispIpHal: DISPv0400 */ ) ||
         ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x70000400UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 | GB110 | GB112 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ ))
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 | GB110 | GB112 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ ))
     {
         pThis->__kdispReadPendingWinSemIntr__ = &kdispReadPendingWinSemIntr_3dd2c9;
     }
@@ -530,7 +610,7 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     // kdispHandleWinSemEvt -- halified (2 hals) body
     if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* DispIpHal: DISPv0400 */ ) ||
         ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x70000400UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 | GB110 | GB112 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ ))
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 | GB110 | GB112 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ ))
     {
         pThis->__kdispHandleWinSemEvt__ = &kdispHandleWinSemEvt_b3696a;
     }
@@ -542,7 +622,8 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     // kdispIntrRetrigger -- halified (2 hals) body
     if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) )) /* ChipHal: GB10B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0501 */ ) ||
         ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: GB202 | GB203 | GB205 | GB206 | GB207 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00010000UL) )) /* DispIpHal: DISPv0502 */ ) ||
-        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB20B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00020000UL) )) /* DispIpHal: DISPv0503 */ ))
+        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB20B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00020000UL) )) /* DispIpHal: DISPv0503 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000800UL) )) /* ChipHal: GB20C */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0504 */ ))
     {
         pThis->__kdispIntrRetrigger__ = &kdispIntrRetrigger_v05_01;
     }
@@ -554,23 +635,24 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
 
     // kdispComputeDpModeSettings -- halified (3 hals) body
     if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x70000400UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 | GB110 | GB112 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ ))
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 | GB110 | GB112 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ ))
     {
         pThis->__kdispComputeDpModeSettings__ = &kdispComputeDpModeSettings_56cd7a;
     }
-    else if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) )) /* ChipHal: GB10B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0501 */ ) ||
-             ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: GB202 | GB203 | GB205 | GB206 | GB207 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00010000UL) )) /* DispIpHal: DISPv0502 */ ) ||
-             ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB20B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00020000UL) )) /* DispIpHal: DISPv0503 */ ))
-    {
-        pThis->__kdispComputeDpModeSettings__ = &kdispComputeDpModeSettings_v05_01;
-    }
-    else
+    else if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* DispIpHal: DISPv0400 */ ) ||
+             ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000800UL) )) /* DispIpHal: DISPv0401 */ ) ||
+             ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004000UL) )) /* DispIpHal: DISPv0404 */ ) ||
+             ((( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00001000UL) )) /* ChipHal: T234D */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00001000UL) )) /* DispIpHal: DISPv0402 */ ))
     {
         pThis->__kdispComputeDpModeSettings__ = &kdispComputeDpModeSettings_v02_04;
     }
+    else
+    {
+        pThis->__kdispComputeDpModeSettings__ = &kdispComputeDpModeSettings_v05_01;
+    }
 
     // kdispServiceAwakenIntr -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x0003cc00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 | DISPv0501 | DISPv0502 | DISPv0503 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x0007dc00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0402 | DISPv0404 | DISPv0501 | DISPv0502 | DISPv0503 | DISPv0504 */ 
     {
         pThis->__kdispServiceAwakenIntr__ = &kdispServiceAwakenIntr_v03_00;
     }
@@ -580,135 +662,81 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
         pThis->__kdispServiceAwakenIntr__ = &kdispServiceAwakenIntr_4a4dee;
     }
 
-    // kdispSetAccel -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ 
-    {
-        pThis->__kdispSetAccel__ = &kdispSetAccel_46f6a7;
-    }
-    else
-    {
-        pThis->__kdispSetAccel__ = &kdispSetAccel_v02_04;
-    }
-
-    // kdispGetAccel -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ 
-    {
-        pThis->__kdispGetAccel__ = &kdispGetAccel_46f6a7;
-    }
-    else
-    {
-        pThis->__kdispGetAccel__ = &kdispGetAccel_v02_04;
-    }
-
-    // kdispIsChannelAllocatedSw -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ 
-    {
-        pThis->__kdispIsChannelAllocatedSw__ = &kdispIsChannelAllocatedSw_3dd2c9;
-    }
-    else
-    {
-        pThis->__kdispIsChannelAllocatedSw__ = &kdispIsChannelAllocatedSw_KERNEL_v02_04;
-    }
-
-    // kdispIsChannelAllocatedHw -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ 
-    {
-        pThis->__kdispIsChannelAllocatedHw__ = &kdispIsChannelAllocatedHw_3dd2c9;
-    }
-    else
-    {
-        pThis->__kdispIsChannelAllocatedHw__ = &kdispIsChannelAllocatedHw_v03_00;
-    }
-
-    // kdispGetChnCtlRegs -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ 
-    {
-        pThis->__kdispGetChnCtlRegs__ = &kdispGetChnCtlRegs_46f6a7;
-    }
-    else
-    {
-        pThis->__kdispGetChnCtlRegs__ = &kdispGetChnCtlRegs_v03_00;
-    }
-
-    // kdispGetAccelerators -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ 
-    {
-        pThis->__kdispGetAccelerators__ = &kdispGetAccelerators_d69453;
-    }
-    else
-    {
-        pThis->__kdispGetAccelerators__ = &kdispGetAccelerators_v03_00;
-    }
-
-    // kdispApplyAccelerators -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ 
-    {
-        pThis->__kdispApplyAccelerators__ = &kdispApplyAccelerators_d44104;
-    }
-    else
-    {
-        pThis->__kdispApplyAccelerators__ = &kdispApplyAccelerators_v03_00;
-    }
-
-    // kdispReadChannelState -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ 
-    {
-        pThis->__kdispReadChannelState__ = &kdispReadChannelState_46f6a7;
-    }
-    else
-    {
-        pThis->__kdispReadChannelState__ = &kdispReadChannelState_v03_00;
-    }
-
-    // kdispReadDebugStatus -- halified (2 hals) body
+    // kdispSetChannelTrashAndAbortAccel -- halified (2 hals)
     if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* DispIpHal: DISPv0400 */ ) ||
         ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000800UL) )) /* DispIpHal: DISPv0401 */ ) ||
         ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004000UL) )) /* DispIpHal: DISPv0404 */ ) ||
         ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) )) /* ChipHal: GB10B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0501 */ ) ||
         ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: GB202 | GB203 | GB205 | GB206 | GB207 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00010000UL) )) /* DispIpHal: DISPv0502 */ ) ||
-        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB20B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00020000UL) )) /* DispIpHal: DISPv0503 */ ))
+        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB20B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00020000UL) )) /* DispIpHal: DISPv0503 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000800UL) )) /* ChipHal: GB20C */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0504 */ ))
     {
-        pThis->__kdispReadDebugStatus__ = &kdispReadDebugStatus_v03_00;
+        pThis->__kdispSetChannelTrashAndAbortAccel__ = &kdispSetChannelTrashAndAbortAccel_v03_00;
     }
     // default
     else
     {
-        pThis->__kdispReadDebugStatus__ = &kdispReadDebugStatus_56cd7a;
+        pThis->__kdispSetChannelTrashAndAbortAccel__ = &kdispSetChannelTrashAndAbortAccel_b3696a;
     }
 
-    // kdispGetChnStatusRegs -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x0003cc00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 | DISPv0501 | DISPv0502 | DISPv0503 */ 
+    // kdispIsChannelIdle -- halified (2 hals)
+    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* DispIpHal: DISPv0400 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000800UL) )) /* DispIpHal: DISPv0401 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004000UL) )) /* DispIpHal: DISPv0404 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) )) /* ChipHal: GB10B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0501 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: GB202 | GB203 | GB205 | GB206 | GB207 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00010000UL) )) /* DispIpHal: DISPv0502 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB20B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00020000UL) )) /* DispIpHal: DISPv0503 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000800UL) )) /* ChipHal: GB20C */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0504 */ ))
     {
-        pThis->__kdispGetChnStatusRegs__ = &kdispGetChnStatusRegs_v03_00;
+        pThis->__kdispIsChannelIdle__ = &kdispIsChannelIdle_v03_00;
     }
     // default
     else
     {
-        pThis->__kdispGetChnStatusRegs__ = &kdispGetChnStatusRegs_46f6a7;
+        pThis->__kdispIsChannelIdle__ = &kdispIsChannelIdle_3dd2c9;
     }
 
-    // kdispApplyWarForBug3385499 -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 */ 
+    // kdispApplyChannelConnectDisconnect -- halified (2 hals)
+    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* DispIpHal: DISPv0400 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000800UL) )) /* DispIpHal: DISPv0401 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004000UL) )) /* DispIpHal: DISPv0404 */ ))
     {
-        pThis->__kdispApplyWarForBug3385499__ = &kdispApplyWarForBug3385499_v03_00;
+        pThis->__kdispApplyChannelConnectDisconnect__ = &kdispApplyChannelConnectDisconnect_v03_00;
     }
     // default
     else
     {
-        pThis->__kdispApplyWarForBug3385499__ = &kdispApplyWarForBug3385499_b3696a;
+        pThis->__kdispApplyChannelConnectDisconnect__ = &kdispApplyChannelConnectDisconnect_b3696a;
     }
-} // End __nvoc_init_funcTable_KernelDisplay_1 with approximately 65 basic block(s).
+
+    // kdispIsChannelAllocatedHw -- halified (2 hals)
+    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* DispIpHal: DISPv0400 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000800UL) )) /* DispIpHal: DISPv0401 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004000UL) )) /* DispIpHal: DISPv0404 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) )) /* ChipHal: GB10B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0501 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: GB202 | GB203 | GB205 | GB206 | GB207 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00010000UL) )) /* DispIpHal: DISPv0502 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB20B */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00020000UL) )) /* DispIpHal: DISPv0503 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000800UL) )) /* ChipHal: GB20C */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0504 */ ))
+    {
+        pThis->__kdispIsChannelAllocatedHw__ = &kdispIsChannelAllocatedHw_v03_00;
+    }
+    // default
+    else
+    {
+        pThis->__kdispIsChannelAllocatedHw__ = &kdispIsChannelAllocatedHw_3dd2c9;
+    }
+} // End __nvoc_init_funcTable_KernelDisplay_1 with approximately 63 basic block(s).
 
 
-// Initialize vtable(s) for 49 virtual method(s).
-void __nvoc_init_funcTable_KernelDisplay(KernelDisplay *pThis, RmHalspecOwner *pRmhalspecowner) {
+// Initialize vtable(s) for 48 virtual method(s).
+void __nvoc_init_funcTable_KernelDisplay(KernelDisplay *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
 
-    // Initialize vtable(s) with 31 per-object function pointer(s).
-    __nvoc_init_funcTable_KernelDisplay_1(pThis, pRmhalspecowner);
+    // Initialize vtable(s) with 30 per-object function pointer(s).
+    __nvoc_init_funcTable_KernelDisplay_1(pThis, pRmhalspecowner, pGpuhalspecowner);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__KernelDisplay(KernelDisplay *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init__KernelDisplay(KernelDisplay *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
 
     // Initialize pointers to inherited data.
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object;    // (obj) super^2
@@ -727,7 +755,7 @@ void __nvoc_init__KernelDisplay(KernelDisplay *pThis, RmHalspecOwner *pRmhalspec
     pThis->__nvoc_metadata_ptr = &__nvoc_metadata__KernelDisplay;    // (kdisp) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_KernelDisplay(pThis, pRmhalspecowner);
+    __nvoc_init_funcTable_KernelDisplay(pThis, pRmhalspecowner, pGpuhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_KernelDisplay(KernelDisplay **ppThis, Dynamic *pParent, NvU32 createFlags)
@@ -736,6 +764,7 @@ NV_STATUS __nvoc_objCreate_KernelDisplay(KernelDisplay **ppThis, Dynamic *pParen
     Object *pParentObj = NULL;
     KernelDisplay *pThis;
     RmHalspecOwner *pRmhalspecowner;
+    GpuHalspecOwner *pGpuhalspecowner;
 
     // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelDisplay), (void**)&pThis, (void**)ppThis);
@@ -764,9 +793,12 @@ NV_STATUS __nvoc_objCreate_KernelDisplay(KernelDisplay **ppThis, Dynamic *pParen
     if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
         pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
     NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
+    if ((pGpuhalspecowner = dynamicCast(pParent, GpuHalspecOwner)) == NULL)
+        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, pParent);
+    NV_ASSERT_OR_RETURN(pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init__KernelDisplay(pThis, pRmhalspecowner);
-    status = __nvoc_ctor_KernelDisplay(pThis, pRmhalspecowner);
+    __nvoc_init__KernelDisplay(pThis, pRmhalspecowner, pGpuhalspecowner);
+    status = __nvoc_ctor_KernelDisplay(pThis, pRmhalspecowner, pGpuhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_KernelDisplay_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

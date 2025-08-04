@@ -158,29 +158,30 @@ NV_STATUS __nvoc_objCreate_CrashCatQueue(CrashCatQueue**, Dynamic*, NvU32, Crash
     __nvoc_objCreate_CrashCatQueue((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pQueueConfig)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS crashcatQueueConstruct_IMPL(struct CrashCatQueue *arg_, CrashCatQueueConfig *arg_pQueueConfig);
+#define __nvoc_crashcatQueueConstruct(arg_, arg_pQueueConfig) crashcatQueueConstruct_IMPL(arg_, arg_pQueueConfig)
+
+void crashcatQueueDestruct_IMPL(struct CrashCatQueue *arg_this);
+#define __nvoc_crashcatQueueDestruct(arg_this) crashcatQueueDestruct_IMPL(arg_this)
+
+#ifdef __nvoc_crashcat_queue_h_disabled
+static inline struct CrashCatReport * crashcatQueueConsumeNextReport(struct CrashCatQueue *arg_this) {
+    NV_ASSERT_FAILED_PRECOMP("CrashCatQueue was disabled!");
+    return NULL;
+}
+#else // __nvoc_crashcat_queue_h_disabled
+#define crashcatQueueConsumeNextReport(arg_this) crashcatQueueConsumeNextReport_V1(arg_this)
+#endif // __nvoc_crashcat_queue_h_disabled
+
+
+// Wrapper macros for halified functions
+#define crashcatQueueConsumeNextReport_HAL(arg_this) crashcatQueueConsumeNextReport(arg_this)
 
 // Dispatch functions
 struct CrashCatReport *crashcatQueueConsumeNextReport_V1(struct CrashCatQueue *arg1);
 
 
-#ifdef __nvoc_crashcat_queue_h_disabled
-static inline struct CrashCatReport *crashcatQueueConsumeNextReport(struct CrashCatQueue *arg1) {
-    NV_ASSERT_FAILED_PRECOMP("CrashCatQueue was disabled!");
-    return NULL;
-}
-#else //__nvoc_crashcat_queue_h_disabled
-#define crashcatQueueConsumeNextReport(arg1) crashcatQueueConsumeNextReport_V1(arg1)
-#endif //__nvoc_crashcat_queue_h_disabled
-
-#define crashcatQueueConsumeNextReport_HAL(arg1) crashcatQueueConsumeNextReport(arg1)
-
-NV_STATUS crashcatQueueConstruct_IMPL(struct CrashCatQueue *arg_, CrashCatQueueConfig *arg_pQueueConfig);
-
-#define __nvoc_crashcatQueueConstruct(arg_, arg_pQueueConfig) crashcatQueueConstruct_IMPL(arg_, arg_pQueueConfig)
-void crashcatQueueDestruct_IMPL(struct CrashCatQueue *arg1);
-
-#define __nvoc_crashcatQueueDestruct(arg1) crashcatQueueDestruct_IMPL(arg1)
 #undef PRIVATE_FIELD
 
 

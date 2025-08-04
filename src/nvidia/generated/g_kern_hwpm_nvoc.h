@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -98,11 +98,13 @@ struct KernelHwpm {
     // Vtable with 1 per-object function pointer
     void (*__khwpmGetCblockInfo__)(OBJGPU *, struct KernelHwpm * /*this*/, NvU32 *, NvU32 *);  // halified (5 hals) body
 
-    // 4 PDB properties
+    // 6 PDB properties
     NvBool PDB_PROP_KHWPM_MULTIPLE_PMA_SUPPORTED;
     NvBool PDB_PROP_KHWPM_HES_CWD_SUPPORTED;
     NvBool PDB_PROP_KHWPM_EXTENDED_BUFFER_ENABLED;
     NvBool PDB_PROP_KHWPM_EXTENDED_BUFFER_SUPPORTED;
+    NvBool PDB_PROP_KHWPM_PROFILING_B1CC_SUPPORTED;
+//  NvBool PDB_PROP_KHWPM_IS_MISSING inherited from OBJENGSTATE
 
     // Data members
     NvU32 numPma;
@@ -165,16 +167,19 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelHwpm;
 #endif //__nvoc_kern_hwpm_h_disabled
 
 // Property macros
+#define PDB_PROP_KHWPM_MULTIPLE_PMA_SUPPORTED_BASE_CAST
+#define PDB_PROP_KHWPM_MULTIPLE_PMA_SUPPORTED_BASE_NAME PDB_PROP_KHWPM_MULTIPLE_PMA_SUPPORTED
 #define PDB_PROP_KHWPM_HES_CWD_SUPPORTED_BASE_CAST
 #define PDB_PROP_KHWPM_HES_CWD_SUPPORTED_BASE_NAME PDB_PROP_KHWPM_HES_CWD_SUPPORTED
 #define PDB_PROP_KHWPM_EXTENDED_BUFFER_ENABLED_BASE_CAST
 #define PDB_PROP_KHWPM_EXTENDED_BUFFER_ENABLED_BASE_NAME PDB_PROP_KHWPM_EXTENDED_BUFFER_ENABLED
-#define PDB_PROP_KHWPM_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
-#define PDB_PROP_KHWPM_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
-#define PDB_PROP_KHWPM_MULTIPLE_PMA_SUPPORTED_BASE_CAST
-#define PDB_PROP_KHWPM_MULTIPLE_PMA_SUPPORTED_BASE_NAME PDB_PROP_KHWPM_MULTIPLE_PMA_SUPPORTED
 #define PDB_PROP_KHWPM_EXTENDED_BUFFER_SUPPORTED_BASE_CAST
 #define PDB_PROP_KHWPM_EXTENDED_BUFFER_SUPPORTED_BASE_NAME PDB_PROP_KHWPM_EXTENDED_BUFFER_SUPPORTED
+#define PDB_PROP_KHWPM_PROFILING_B1CC_SUPPORTED_BASE_CAST
+#define PDB_PROP_KHWPM_PROFILING_B1CC_SUPPORTED_BASE_NAME PDB_PROP_KHWPM_PROFILING_B1CC_SUPPORTED
+#define PDB_PROP_KHWPM_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
+#define PDB_PROP_KHWPM_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
+
 
 NV_STATUS __nvoc_objCreateDynamic_KernelHwpm(KernelHwpm**, Dynamic*, NvU32, va_list);
 
@@ -183,7 +188,58 @@ NV_STATUS __nvoc_objCreate_KernelHwpm(KernelHwpm**, Dynamic*, NvU32);
     __nvoc_objCreate_KernelHwpm((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS khwpmStreamoutAllocPmaStream_IMPL(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU64 arg3, MEMORY_DESCRIPTOR *arg4, MEMORY_DESCRIPTOR *arg5, NvU32 arg6, HWPM_PMA_STREAM *arg7);
+#ifdef __nvoc_kern_hwpm_h_disabled
+static inline NV_STATUS khwpmStreamoutAllocPmaStream(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU64 arg3, MEMORY_DESCRIPTOR *arg4, MEMORY_DESCRIPTOR *arg5, NvU32 arg6, HWPM_PMA_STREAM *arg7) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHwpm was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kern_hwpm_h_disabled
+#define khwpmStreamoutAllocPmaStream(pGpu, pKernelHwpm, arg3, arg4, arg5, arg6, arg7) khwpmStreamoutAllocPmaStream_IMPL(pGpu, pKernelHwpm, arg3, arg4, arg5, arg6, arg7)
+#endif // __nvoc_kern_hwpm_h_disabled
+
+NV_STATUS khwpmStreamoutFreePmaStream_IMPL(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU64 arg3, HWPM_PMA_STREAM *arg4, NvU32 arg5);
+#ifdef __nvoc_kern_hwpm_h_disabled
+static inline NV_STATUS khwpmStreamoutFreePmaStream(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU64 arg3, HWPM_PMA_STREAM *arg4, NvU32 arg5) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHwpm was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kern_hwpm_h_disabled
+#define khwpmStreamoutFreePmaStream(pGpu, pKernelHwpm, arg3, arg4, arg5) khwpmStreamoutFreePmaStream_IMPL(pGpu, pKernelHwpm, arg3, arg4, arg5)
+#endif // __nvoc_kern_hwpm_h_disabled
+
+NV_STATUS khwpmStreamoutCreatePmaVaSpace_IMPL(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3);
+#ifdef __nvoc_kern_hwpm_h_disabled
+static inline NV_STATUS khwpmStreamoutCreatePmaVaSpace(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHwpm was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kern_hwpm_h_disabled
+#define khwpmStreamoutCreatePmaVaSpace(pGpu, pKernelHwpm, arg3) khwpmStreamoutCreatePmaVaSpace_IMPL(pGpu, pKernelHwpm, arg3)
+#endif // __nvoc_kern_hwpm_h_disabled
+
+NV_STATUS khwpmStreamoutFreePmaVaSpace_IMPL(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3);
+#ifdef __nvoc_kern_hwpm_h_disabled
+static inline NV_STATUS khwpmStreamoutFreePmaVaSpace(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHwpm was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kern_hwpm_h_disabled
+#define khwpmStreamoutFreePmaVaSpace(pGpu, pKernelHwpm, arg3) khwpmStreamoutFreePmaVaSpace_IMPL(pGpu, pKernelHwpm, arg3)
+#endif // __nvoc_kern_hwpm_h_disabled
+
+#ifdef __nvoc_kern_hwpm_h_disabled
+static inline NV_STATUS khwpmPmaStreamSriovSetGfid(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3, NvU32 arg4) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHwpm was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kern_hwpm_h_disabled
+#define khwpmPmaStreamSriovSetGfid(pGpu, pKernelHwpm, arg3, arg4) khwpmPmaStreamSriovSetGfid_56cd7a(pGpu, pKernelHwpm, arg3, arg4)
+#endif // __nvoc_kern_hwpm_h_disabled
+
+
+// Wrapper macros for halified functions
 #define khwpmStateInitUnlocked_FNPTR(pKernelHwpm) pKernelHwpm->__nvoc_metadata_ptr->vtable.__khwpmStateInitUnlocked__
 #define khwpmStateInitUnlocked(pGpu, pKernelHwpm) khwpmStateInitUnlocked_DISPATCH(pGpu, pKernelHwpm)
 #define khwpmStateDestroy_FNPTR(pKernelHwpm) pKernelHwpm->__nvoc_metadata_ptr->vtable.__khwpmStateDestroy__
@@ -191,6 +247,7 @@ NV_STATUS __nvoc_objCreate_KernelHwpm(KernelHwpm**, Dynamic*, NvU32);
 #define khwpmGetCblockInfo_FNPTR(pKernelHwpm) pKernelHwpm->__khwpmGetCblockInfo__
 #define khwpmGetCblockInfo(pGpu, pKernelHwpm, arg3, arg4) khwpmGetCblockInfo_DISPATCH(pGpu, pKernelHwpm, arg3, arg4)
 #define khwpmGetCblockInfo_HAL(pGpu, pKernelHwpm, arg3, arg4) khwpmGetCblockInfo_DISPATCH(pGpu, pKernelHwpm, arg3, arg4)
+#define khwpmPmaStreamSriovSetGfid_HAL(pGpu, pKernelHwpm, arg3, arg4) khwpmPmaStreamSriovSetGfid(pGpu, pKernelHwpm, arg3, arg4)
 #define khwpmConstructEngine_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define khwpmConstructEngine(pGpu, pEngstate, arg3) khwpmConstructEngine_DISPATCH(pGpu, pEngstate, arg3)
 #define khwpmInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
@@ -293,17 +350,6 @@ static inline NV_STATUS khwpmPmaStreamSriovSetGfid_92bfc3(OBJGPU *pGpu, struct K
 }
 
 
-#ifdef __nvoc_kern_hwpm_h_disabled
-static inline NV_STATUS khwpmPmaStreamSriovSetGfid(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3, NvU32 arg4) {
-    NV_ASSERT_FAILED_PRECOMP("KernelHwpm was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_hwpm_h_disabled
-#define khwpmPmaStreamSriovSetGfid(pGpu, pKernelHwpm, arg3, arg4) khwpmPmaStreamSriovSetGfid_56cd7a(pGpu, pKernelHwpm, arg3, arg4)
-#endif //__nvoc_kern_hwpm_h_disabled
-
-#define khwpmPmaStreamSriovSetGfid_HAL(pGpu, pKernelHwpm, arg3, arg4) khwpmPmaStreamSriovSetGfid(pGpu, pKernelHwpm, arg3, arg4)
-
 NV_STATUS khwpmStateInitUnlocked_IMPL(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm);
 
 void khwpmStateDestroy_IMPL(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm);
@@ -317,50 +363,6 @@ void khwpmGetCblockInfo_GB100(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU3
 void khwpmGetCblockInfo_GB10B(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 *arg3, NvU32 *arg4);
 
 void khwpmGetCblockInfo_GB20B(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 *arg3, NvU32 *arg4);
-
-NV_STATUS khwpmStreamoutAllocPmaStream_IMPL(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU64 arg3, MEMORY_DESCRIPTOR *arg4, MEMORY_DESCRIPTOR *arg5, NvU32 arg6, HWPM_PMA_STREAM *arg7);
-
-#ifdef __nvoc_kern_hwpm_h_disabled
-static inline NV_STATUS khwpmStreamoutAllocPmaStream(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU64 arg3, MEMORY_DESCRIPTOR *arg4, MEMORY_DESCRIPTOR *arg5, NvU32 arg6, HWPM_PMA_STREAM *arg7) {
-    NV_ASSERT_FAILED_PRECOMP("KernelHwpm was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_hwpm_h_disabled
-#define khwpmStreamoutAllocPmaStream(pGpu, pKernelHwpm, arg3, arg4, arg5, arg6, arg7) khwpmStreamoutAllocPmaStream_IMPL(pGpu, pKernelHwpm, arg3, arg4, arg5, arg6, arg7)
-#endif //__nvoc_kern_hwpm_h_disabled
-
-NV_STATUS khwpmStreamoutFreePmaStream_IMPL(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU64 arg3, HWPM_PMA_STREAM *arg4, NvU32 arg5);
-
-#ifdef __nvoc_kern_hwpm_h_disabled
-static inline NV_STATUS khwpmStreamoutFreePmaStream(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU64 arg3, HWPM_PMA_STREAM *arg4, NvU32 arg5) {
-    NV_ASSERT_FAILED_PRECOMP("KernelHwpm was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_hwpm_h_disabled
-#define khwpmStreamoutFreePmaStream(pGpu, pKernelHwpm, arg3, arg4, arg5) khwpmStreamoutFreePmaStream_IMPL(pGpu, pKernelHwpm, arg3, arg4, arg5)
-#endif //__nvoc_kern_hwpm_h_disabled
-
-NV_STATUS khwpmStreamoutCreatePmaVaSpace_IMPL(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3);
-
-#ifdef __nvoc_kern_hwpm_h_disabled
-static inline NV_STATUS khwpmStreamoutCreatePmaVaSpace(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3) {
-    NV_ASSERT_FAILED_PRECOMP("KernelHwpm was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_hwpm_h_disabled
-#define khwpmStreamoutCreatePmaVaSpace(pGpu, pKernelHwpm, arg3) khwpmStreamoutCreatePmaVaSpace_IMPL(pGpu, pKernelHwpm, arg3)
-#endif //__nvoc_kern_hwpm_h_disabled
-
-NV_STATUS khwpmStreamoutFreePmaVaSpace_IMPL(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3);
-
-#ifdef __nvoc_kern_hwpm_h_disabled
-static inline NV_STATUS khwpmStreamoutFreePmaVaSpace(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3) {
-    NV_ASSERT_FAILED_PRECOMP("KernelHwpm was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_hwpm_h_disabled
-#define khwpmStreamoutFreePmaVaSpace(pGpu, pKernelHwpm, arg3) khwpmStreamoutFreePmaVaSpace_IMPL(pGpu, pKernelHwpm, arg3)
-#endif //__nvoc_kern_hwpm_h_disabled
 
 #undef PRIVATE_FIELD
 

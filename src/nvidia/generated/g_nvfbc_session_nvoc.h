@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -119,9 +119,6 @@ struct NvfbcSession {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct NvfbcSession *__nvoc_pbase_NvfbcSession;    // nvfbcsession
 
-    // Vtable with 1 per-object function pointer
-    NV_STATUS (*__nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo__)(struct NvfbcSession * /*this*/, NVA0BD_CTRL_NVFBC_SW_SESSION_UPDATE_INFO_PARAMS *);  // exported (id=0xa0bd0101)
-
     // Data members
     NVFBC_SESSION_ENTRY nvfbcSessionEntry;
 };
@@ -192,9 +189,25 @@ NV_STATUS __nvoc_objCreate_NvfbcSession(NvfbcSession**, Dynamic*, NvU32, struct 
     __nvoc_objCreate_NvfbcSession((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
-#define nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo_FNPTR(pNvfbcSession) pNvfbcSession->__nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo__
-#define nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo(pNvfbcSession, pParams) nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo_DISPATCH(pNvfbcSession, pParams)
+// Wrapper macros for implementation functions
+NV_STATUS nvfbcsessionConstruct_IMPL(struct NvfbcSession *arg_pNvfbcSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_nvfbcsessionConstruct(arg_pNvfbcSession, arg_pCallContext, arg_pParams) nvfbcsessionConstruct_IMPL(arg_pNvfbcSession, arg_pCallContext, arg_pParams)
+
+void nvfbcsessionDestruct_IMPL(struct NvfbcSession *pNvfbcSession);
+#define __nvoc_nvfbcsessionDestruct(pNvfbcSession) nvfbcsessionDestruct_IMPL(pNvfbcSession)
+
+NV_STATUS nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo_IMPL(struct NvfbcSession *pNvfbcSession, NVA0BD_CTRL_NVFBC_SW_SESSION_UPDATE_INFO_PARAMS *pParams);
+#ifdef __nvoc_nvfbc_session_h_disabled
+static inline NV_STATUS nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo(struct NvfbcSession *pNvfbcSession, NVA0BD_CTRL_NVFBC_SW_SESSION_UPDATE_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("NvfbcSession was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_nvfbc_session_h_disabled
+#define nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo(pNvfbcSession, pParams) nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo_IMPL(pNvfbcSession, pParams)
+#endif // __nvoc_nvfbc_session_h_disabled
+
+
+// Wrapper macros for halified functions
 #define nvfbcsessionControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define nvfbcsessionControl(pGpuResource, pCallContext, pParams) nvfbcsessionControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define nvfbcsessionMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
@@ -247,10 +260,6 @@ NV_STATUS __nvoc_objCreate_NvfbcSession(NvfbcSession**, Dynamic*, NvU32, struct 
 #define nvfbcsessionAddAdditionalDependants(pClient, pResource, pReference) nvfbcsessionAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
-static inline NV_STATUS nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo_DISPATCH(struct NvfbcSession *pNvfbcSession, NVA0BD_CTRL_NVFBC_SW_SESSION_UPDATE_INFO_PARAMS *pParams) {
-    return pNvfbcSession->__nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo__(pNvfbcSession, pParams);
-}
-
 static inline NV_STATUS nvfbcsessionControl_DISPATCH(struct NvfbcSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pGpuResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionControl__(pGpuResource, pCallContext, pParams);
 }
@@ -353,12 +362,6 @@ static inline void nvfbcsessionAddAdditionalDependants_DISPATCH(struct RsClient 
 
 NV_STATUS nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo_IMPL(struct NvfbcSession *pNvfbcSession, NVA0BD_CTRL_NVFBC_SW_SESSION_UPDATE_INFO_PARAMS *pParams);
 
-NV_STATUS nvfbcsessionConstruct_IMPL(struct NvfbcSession *arg_pNvfbcSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_nvfbcsessionConstruct(arg_pNvfbcSession, arg_pCallContext, arg_pParams) nvfbcsessionConstruct_IMPL(arg_pNvfbcSession, arg_pCallContext, arg_pParams)
-void nvfbcsessionDestruct_IMPL(struct NvfbcSession *pNvfbcSession);
-
-#define __nvoc_nvfbcsessionDestruct(pNvfbcSession) nvfbcsessionDestruct_IMPL(pNvfbcSession)
 #undef PRIVATE_FIELD
 
 

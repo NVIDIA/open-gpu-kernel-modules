@@ -80,6 +80,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__GpuAccounting =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_gpuacctDestruct(GpuAccounting*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_GpuAccounting(GpuAccounting *pThis) {
     __nvoc_gpuacctDestruct(pThis);

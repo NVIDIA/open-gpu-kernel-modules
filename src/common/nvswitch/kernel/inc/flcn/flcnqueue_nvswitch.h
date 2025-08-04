@@ -227,10 +227,6 @@ typedef struct FLCN_QMGR_SEQ_INFO
      * Client-specified params that must be provided to the callback function.
      */
     void                   *pCallbackParams;
-    /*!
-     * The client message buffer that will be filled when the sequence completes.
-     */
-    RM_FLCN_MSG_GEN        *pMsgResp; 
 
     /*!
      * CMD Queue associated with this Seq.

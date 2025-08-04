@@ -2271,6 +2271,7 @@ serverInterMap
         goto done;
 
     pMapping->flags = pParams->flags;
+    pMapping->flags2 = pParams->flags2;
     pMapping->dmaOffset = pParams->dmaOffset;
     pMapping->size = pParams->length;
     pMapping->pMemDesc = pParams->pMemDesc;
@@ -2316,6 +2317,7 @@ serverInterUnmapMapping
         NV_ASSERT_OK_OR_GOTO(status, refAddInterMapping(pMapperRef, pMapping->pMappableRef, pMapping->pContextRef, &pNewMappingLeft), done);
 
         pNewMappingLeft->flags = pMapping->flags;
+        pNewMappingLeft->flags2 = pMapping->flags2;
         pNewMappingLeft->dmaOffset = pMapping->dmaOffset;
         pNewMappingLeft->size = pParams->dmaOffset - pMapping->dmaOffset;
     }
@@ -2325,6 +2327,7 @@ serverInterUnmapMapping
         NV_ASSERT_OK_OR_GOTO(status, refAddInterMapping(pMapperRef, pMapping->pMappableRef, pMapping->pContextRef, &pNewMappingRight), done);
 
         pNewMappingRight->flags = pMapping->flags;
+        pNewMappingRight->flags2 = pMapping->flags2;
         pNewMappingRight->dmaOffset = pParams->dmaOffset + pParams->size;
         pNewMappingRight->size = pMapping->dmaOffset + pMapping->size - pNewMappingRight->dmaOffset;
     }

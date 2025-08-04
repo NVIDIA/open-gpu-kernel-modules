@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2022-2024 NVIDIA Corporation
+    Copyright (c) 2022-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -97,7 +97,45 @@ void uvm_hal_blackwell_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->plc_supported = true;
 
-    parent_gpu->no_ats_range_required = true;
+    parent_gpu->ats.no_ats_range_required = true;
+
+    // Blackwell has a physical translation prefetcher, meaning SW must assume
+    // that any physical ATS translation can be fetched at any time. The
+    // specific behavior and impact differs with non-PASID ATS support, but
+    // generally this can result in the GPU accessing a stale invalid physical
+    // ATS translation after transitioning an IOMMU mapping from invalid to
+    // valid, or in other words at dma_map_page() time.
+    //
+    // These cases could result in faults. That can happen with virtual accesses
+    // too, but that's fine since we'll just handle and replay them. But
+    // physical access IOMMU faults are considered globally fatal, so we must
+    // avoid them.
+    if (parent_gpu->ats.non_pasid_ats_enabled) {
+        // On Blackwell GPUs that have non-PASID ATS, physical translations that
+        // come back as 4K will not be cached. Therefore we don't have to worry
+        // about invalidating them, and we don't have to worry the cross-
+        // contamination issue within a 64K region described in the below case.
+        // However, we do need to ensure that all pending prefetch requests to
+        // the old invalid translation are complete before we access the new
+        // valid translation, so we need to flush pending translations.
+        parent_gpu->ats.dma_map_invalidation = UVM_DMA_MAP_INVALIDATION_FLUSH;
+    }
+    else if (g_uvm_global.ats.enabled && PAGE_SIZE == UVM_PAGE_SIZE_64K) {
+        // If the page size is 64K here in the guest it's possible for the host
+        // page size to be 4K, which we can't know here, and that could cause
+        // new mappings to hit old stale invalid entries that aren't
+        // automatically refetched by HW (see the comments on 4K support in
+        // uvm_ats_service_faults_region()).
+        //
+        // Even with 64K only it's possible for the prefetcher to race with a
+        // legitimate access in the same 64KB region and cause the legitimate
+        // access to see an invalid translation, so we need an invalidate to
+        // flush those out too.
+        //
+        // If the guest page size is 4K we don't enable physical ATS so we don't
+        // have an issue.
+        parent_gpu->ats.dma_map_invalidation = UVM_DMA_MAP_INVALIDATION_FULL;
+    }
 
     parent_gpu->conf_computing.per_channel_key_rotation = true;
 

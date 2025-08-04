@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -56,11 +56,12 @@ extern "C" {
 #include "gpu/mem_mgr/heap_base.h"
 #include "core/core.h"
 #include "gpu/mem_mgr/mem_desc.h"
-#include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h"
 #include "ctrl/ctrl2080/ctrl2080fb.h" // NV2080_CTRL_FB_OFFLINED_ADDRESS_INFO
 #include "resserv/resserv.h"
 #include "resserv/rs_resource.h"
 #include "containers/btree.h"
+
+typedef struct _PMA PMA;
 
 
 struct Memory;
@@ -325,7 +326,7 @@ struct Heap {
     NvU32 placementStrategy[4];
     NvU32 shuffleStrides[5];
     NvU32 shuffleStrideIndex;
-    PMA pmaObject;
+    PMA *pPmaObject;
 };
 
 
@@ -363,6 +364,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Heap;
 #define PDB_PROP_HEAP_PAGE_SHUFFLE_BASE_CAST
 #define PDB_PROP_HEAP_PAGE_SHUFFLE_BASE_NAME PDB_PROP_HEAP_PAGE_SHUFFLE
 
+
 NV_STATUS __nvoc_objCreateDynamic_Heap(Heap**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_Heap(Heap**, Dynamic*, NvU32);
@@ -370,295 +372,252 @@ NV_STATUS __nvoc_objCreate_Heap(Heap**, Dynamic*, NvU32);
     __nvoc_objCreate_Heap((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
-
-// Dispatch functions
-NV_STATUS heapInit_IMPL(struct OBJGPU *arg1, struct Heap *arg2, NvU64 arg3, NvU64 arg4, HEAP_TYPE_INTERNAL arg5, NvU32 arg6, void *arg7);
-
+// Wrapper macros for implementation functions
+NV_STATUS heapInit_IMPL(struct OBJGPU *arg1, struct Heap *arg_this, NvU64 arg3, NvU64 arg4, HEAP_TYPE_INTERNAL arg5, NvU32 arg6, void *arg7);
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapInit(struct OBJGPU *arg1, struct Heap *arg2, NvU64 arg3, NvU64 arg4, HEAP_TYPE_INTERNAL arg5, NvU32 arg6, void *arg7) {
+static inline NV_STATUS heapInit(struct OBJGPU *arg1, struct Heap *arg_this, NvU64 arg3, NvU64 arg4, HEAP_TYPE_INTERNAL arg5, NvU32 arg6, void *arg7) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapInit(arg1, arg2, arg3, arg4, arg5, arg6, arg7) heapInit_IMPL(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapInit(arg1, arg_this, arg3, arg4, arg5, arg6, arg7) heapInit_IMPL(arg1, arg_this, arg3, arg4, arg5, arg6, arg7)
+#endif // __nvoc_heap_h_disabled
 
-NV_STATUS heapInitInternal_IMPL(struct OBJGPU *arg1, struct Heap *arg2, NvU64 arg3, NvU64 arg4, HEAP_TYPE_INTERNAL arg5, void *arg6);
-
+NV_STATUS heapInitInternal_IMPL(struct OBJGPU *arg1, struct Heap *arg_this, NvU64 arg3, NvU64 arg4, HEAP_TYPE_INTERNAL arg5, void *arg6);
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapInitInternal(struct OBJGPU *arg1, struct Heap *arg2, NvU64 arg3, NvU64 arg4, HEAP_TYPE_INTERNAL arg5, void *arg6) {
+static inline NV_STATUS heapInitInternal(struct OBJGPU *arg1, struct Heap *arg_this, NvU64 arg3, NvU64 arg4, HEAP_TYPE_INTERNAL arg5, void *arg6) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapInitInternal(arg1, arg2, arg3, arg4, arg5, arg6) heapInitInternal_IMPL(arg1, arg2, arg3, arg4, arg5, arg6)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapInitInternal(arg1, arg_this, arg3, arg4, arg5, arg6) heapInitInternal_IMPL(arg1, arg_this, arg3, arg4, arg5, arg6)
+#endif // __nvoc_heap_h_disabled
 
-void heapDestruct_IMPL(struct Heap *arg1);
+void heapDestruct_IMPL(struct Heap *arg_this);
+#define __nvoc_heapDestruct(arg_this) heapDestruct_IMPL(arg_this)
 
-#define __nvoc_heapDestruct(arg1) heapDestruct_IMPL(arg1)
-NV_STATUS heapAlloc_IMPL(struct OBJGPU *arg1, NvHandle arg2, struct Heap *arg3, MEMORY_ALLOCATION_REQUEST *arg4, NvHandle arg5, OBJHEAP_ALLOC_DATA *arg6, FB_ALLOC_INFO *arg7, HWRESOURCE_INFO **arg8, NvBool *arg9, NvBool arg10, NvBool arg11);
-
+NV_STATUS heapAlloc_IMPL(struct OBJGPU *arg1, NvHandle arg2, struct Heap *arg_this, MEMORY_ALLOCATION_REQUEST *arg4, NvHandle arg5, OBJHEAP_ALLOC_DATA *arg6, FB_ALLOC_INFO *arg7, HWRESOURCE_INFO **arg8, NvBool *arg9, NvBool arg10, NvBool arg11);
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapAlloc(struct OBJGPU *arg1, NvHandle arg2, struct Heap *arg3, MEMORY_ALLOCATION_REQUEST *arg4, NvHandle arg5, OBJHEAP_ALLOC_DATA *arg6, FB_ALLOC_INFO *arg7, HWRESOURCE_INFO **arg8, NvBool *arg9, NvBool arg10, NvBool arg11) {
+static inline NV_STATUS heapAlloc(struct OBJGPU *arg1, NvHandle arg2, struct Heap *arg_this, MEMORY_ALLOCATION_REQUEST *arg4, NvHandle arg5, OBJHEAP_ALLOC_DATA *arg6, FB_ALLOC_INFO *arg7, HWRESOURCE_INFO **arg8, NvBool *arg9, NvBool arg10, NvBool arg11) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapAlloc(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11) heapAlloc_IMPL(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapAlloc(arg1, arg2, arg_this, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11) heapAlloc_IMPL(arg1, arg2, arg_this, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11)
+#endif // __nvoc_heap_h_disabled
 
-NV_STATUS heapFree_IMPL(struct OBJGPU *arg1, struct Heap *arg2, NvHandle hClient, NvHandle hDevice, NvU32 owner, MEMORY_DESCRIPTOR *pMemDesc);
-
+NV_STATUS heapFree_IMPL(struct OBJGPU *arg1, struct Heap *arg_this, NvHandle hClient, NvHandle hDevice, NvU32 owner, MEMORY_DESCRIPTOR *pMemDesc);
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapFree(struct OBJGPU *arg1, struct Heap *arg2, NvHandle hClient, NvHandle hDevice, NvU32 owner, MEMORY_DESCRIPTOR *pMemDesc) {
+static inline NV_STATUS heapFree(struct OBJGPU *arg1, struct Heap *arg_this, NvHandle hClient, NvHandle hDevice, NvU32 owner, MEMORY_DESCRIPTOR *pMemDesc) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapFree(arg1, arg2, hClient, hDevice, owner, pMemDesc) heapFree_IMPL(arg1, arg2, hClient, hDevice, owner, pMemDesc)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapFree(arg1, arg_this, hClient, hDevice, owner, pMemDesc) heapFree_IMPL(arg1, arg_this, hClient, hDevice, owner, pMemDesc)
+#endif // __nvoc_heap_h_disabled
 
-NV_STATUS heapReference_IMPL(struct OBJGPU *arg1, struct Heap *arg2, NvU32 arg3, MEMORY_DESCRIPTOR *arg4);
-
+NV_STATUS heapReference_IMPL(struct OBJGPU *arg1, struct Heap *arg_this, NvU32 arg3, MEMORY_DESCRIPTOR *arg4);
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapReference(struct OBJGPU *arg1, struct Heap *arg2, NvU32 arg3, MEMORY_DESCRIPTOR *arg4) {
+static inline NV_STATUS heapReference(struct OBJGPU *arg1, struct Heap *arg_this, NvU32 arg3, MEMORY_DESCRIPTOR *arg4) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapReference(arg1, arg2, arg3, arg4) heapReference_IMPL(arg1, arg2, arg3, arg4)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapReference(arg1, arg_this, arg3, arg4) heapReference_IMPL(arg1, arg_this, arg3, arg4)
+#endif // __nvoc_heap_h_disabled
 
-NV_STATUS heapInfo_IMPL(struct Heap *arg1, NvU64 *arg2, NvU64 *arg3, NvU64 *arg4, NvU64 *arg5, NvU64 *arg6);
-
+NV_STATUS heapInfo_IMPL(struct Heap *arg_this, NvU64 *arg2, NvU64 *arg3, NvU64 *arg4, NvU64 *arg5, NvU64 *arg6);
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapInfo(struct Heap *arg1, NvU64 *arg2, NvU64 *arg3, NvU64 *arg4, NvU64 *arg5, NvU64 *arg6) {
+static inline NV_STATUS heapInfo(struct Heap *arg_this, NvU64 *arg2, NvU64 *arg3, NvU64 *arg4, NvU64 *arg5, NvU64 *arg6) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapInfo(arg1, arg2, arg3, arg4, arg5, arg6) heapInfo_IMPL(arg1, arg2, arg3, arg4, arg5, arg6)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapInfo(arg_this, arg2, arg3, arg4, arg5, arg6) heapInfo_IMPL(arg_this, arg2, arg3, arg4, arg5, arg6)
+#endif // __nvoc_heap_h_disabled
 
-void heapGetClientAddrSpaceSize_IMPL(struct OBJGPU *arg1, struct Heap *arg2, NvU64 *arg3);
-
+void heapGetClientAddrSpaceSize_IMPL(struct OBJGPU *arg1, struct Heap *arg_this, NvU64 *arg3);
 #ifdef __nvoc_heap_h_disabled
-static inline void heapGetClientAddrSpaceSize(struct OBJGPU *arg1, struct Heap *arg2, NvU64 *arg3) {
+static inline void heapGetClientAddrSpaceSize(struct OBJGPU *arg1, struct Heap *arg_this, NvU64 *arg3) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
 }
-#else //__nvoc_heap_h_disabled
-#define heapGetClientAddrSpaceSize(arg1, arg2, arg3) heapGetClientAddrSpaceSize_IMPL(arg1, arg2, arg3)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapGetClientAddrSpaceSize(arg1, arg_this, arg3) heapGetClientAddrSpaceSize_IMPL(arg1, arg_this, arg3)
+#endif // __nvoc_heap_h_disabled
 
-NV_STATUS heapGetSize_IMPL(struct Heap *arg1, NvU64 *arg2);
-
+NV_STATUS heapGetSize_IMPL(struct Heap *arg_this, NvU64 *arg2);
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapGetSize(struct Heap *arg1, NvU64 *arg2) {
+static inline NV_STATUS heapGetSize(struct Heap *arg_this, NvU64 *arg2) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapGetSize(arg1, arg2) heapGetSize_IMPL(arg1, arg2)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapGetSize(arg_this, arg2) heapGetSize_IMPL(arg_this, arg2)
+#endif // __nvoc_heap_h_disabled
 
-NV_STATUS heapGetFree_IMPL(struct Heap *arg1, NvU64 *arg2);
-
+NV_STATUS heapGetFree_IMPL(struct Heap *arg_this, NvU64 *arg2);
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapGetFree(struct Heap *arg1, NvU64 *arg2) {
+static inline NV_STATUS heapGetFree(struct Heap *arg_this, NvU64 *arg2) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapGetFree(arg1, arg2) heapGetFree_IMPL(arg1, arg2)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapGetFree(arg_this, arg2) heapGetFree_IMPL(arg_this, arg2)
+#endif // __nvoc_heap_h_disabled
 
-NV_STATUS heapGetUsableSize_IMPL(struct Heap *arg1, NvU64 *arg2);
-
+NV_STATUS heapGetUsableSize_IMPL(struct Heap *arg_this, NvU64 *arg2);
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapGetUsableSize(struct Heap *arg1, NvU64 *arg2) {
+static inline NV_STATUS heapGetUsableSize(struct Heap *arg_this, NvU64 *arg2) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapGetUsableSize(arg1, arg2) heapGetUsableSize_IMPL(arg1, arg2)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapGetUsableSize(arg_this, arg2) heapGetUsableSize_IMPL(arg_this, arg2)
+#endif // __nvoc_heap_h_disabled
 
-NV_STATUS heapGetBase_IMPL(struct Heap *arg1, NvU64 *arg2);
-
+NV_STATUS heapGetBase_IMPL(struct Heap *arg_this, NvU64 *arg2);
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapGetBase(struct Heap *arg1, NvU64 *arg2) {
+static inline NV_STATUS heapGetBase(struct Heap *arg_this, NvU64 *arg2) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapGetBase(arg1, arg2) heapGetBase_IMPL(arg1, arg2)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapGetBase(arg_this, arg2) heapGetBase_IMPL(arg_this, arg2)
+#endif // __nvoc_heap_h_disabled
 
-NV_STATUS heapGetBlock_IMPL(struct Heap *arg1, NvU64 arg2, struct MEM_BLOCK **arg3);
-
+NV_STATUS heapGetBlock_IMPL(struct Heap *arg_this, NvU64 arg2, struct MEM_BLOCK **arg3);
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapGetBlock(struct Heap *arg1, NvU64 arg2, struct MEM_BLOCK **arg3) {
+static inline NV_STATUS heapGetBlock(struct Heap *arg_this, NvU64 arg2, struct MEM_BLOCK **arg3) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapGetBlock(arg1, arg2, arg3) heapGetBlock_IMPL(arg1, arg2, arg3)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapGetBlock(arg_this, arg2, arg3) heapGetBlock_IMPL(arg_this, arg2, arg3)
+#endif // __nvoc_heap_h_disabled
 
-NV_STATUS heapAllocHint_IMPL(struct OBJGPU *arg1, struct Heap *arg2, NvHandle arg3, NvHandle arg4, HEAP_ALLOC_HINT_PARAMS *arg5);
-
+NV_STATUS heapAllocHint_IMPL(struct OBJGPU *arg1, struct Heap *arg_this, NvHandle arg3, NvHandle arg4, HEAP_ALLOC_HINT_PARAMS *arg5);
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapAllocHint(struct OBJGPU *arg1, struct Heap *arg2, NvHandle arg3, NvHandle arg4, HEAP_ALLOC_HINT_PARAMS *arg5) {
+static inline NV_STATUS heapAllocHint(struct OBJGPU *arg1, struct Heap *arg_this, NvHandle arg3, NvHandle arg4, HEAP_ALLOC_HINT_PARAMS *arg5) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapAllocHint(arg1, arg2, arg3, arg4, arg5) heapAllocHint_IMPL(arg1, arg2, arg3, arg4, arg5)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapAllocHint(arg1, arg_this, arg3, arg4, arg5) heapAllocHint_IMPL(arg1, arg_this, arg3, arg4, arg5)
+#endif // __nvoc_heap_h_disabled
 
-NV_STATUS heapHwAlloc_IMPL(struct OBJGPU *arg1, struct Heap *arg2, NvHandle arg3, NvHandle arg4, NvHandle arg5, MEMORY_HW_RESOURCES_ALLOCATION_REQUEST *arg6, NvU32 *arg7, NvU32 *arg8);
-
+NV_STATUS heapInitRegistryOverrides_IMPL(struct OBJGPU *arg1, struct Heap *arg_this);
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapHwAlloc(struct OBJGPU *arg1, struct Heap *arg2, NvHandle arg3, NvHandle arg4, NvHandle arg5, MEMORY_HW_RESOURCES_ALLOCATION_REQUEST *arg6, NvU32 *arg7, NvU32 *arg8) {
+static inline NV_STATUS heapInitRegistryOverrides(struct OBJGPU *arg1, struct Heap *arg_this) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapHwAlloc(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) heapHwAlloc_IMPL(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapInitRegistryOverrides(arg1, arg_this) heapInitRegistryOverrides_IMPL(arg1, arg_this)
+#endif // __nvoc_heap_h_disabled
 
-void heapHwFree_IMPL(struct OBJGPU *arg1, struct Heap *arg2, struct Memory *arg3, NvU32 arg4);
-
+NV_STATUS heapBlackListPages_IMPL(struct OBJGPU *arg1, struct Heap *arg_this);
 #ifdef __nvoc_heap_h_disabled
-static inline void heapHwFree(struct OBJGPU *arg1, struct Heap *arg2, struct Memory *arg3, NvU32 arg4) {
-    NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
-}
-#else //__nvoc_heap_h_disabled
-#define heapHwFree(arg1, arg2, arg3, arg4) heapHwFree_IMPL(arg1, arg2, arg3, arg4)
-#endif //__nvoc_heap_h_disabled
-
-NV_STATUS heapInitRegistryOverrides_IMPL(struct OBJGPU *arg1, struct Heap *arg2);
-
-#ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapInitRegistryOverrides(struct OBJGPU *arg1, struct Heap *arg2) {
+static inline NV_STATUS heapBlackListPages(struct OBJGPU *arg1, struct Heap *arg_this) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapInitRegistryOverrides(arg1, arg2) heapInitRegistryOverrides_IMPL(arg1, arg2)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapBlackListPages(arg1, arg_this) heapBlackListPages_IMPL(arg1, arg_this)
+#endif // __nvoc_heap_h_disabled
 
-NV_STATUS heapBlackListPages_IMPL(struct OBJGPU *arg1, struct Heap *arg2);
-
+NV_STATUS heapFreeBlackListedPages_IMPL(struct OBJGPU *arg1, struct Heap *arg_this);
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapBlackListPages(struct OBJGPU *arg1, struct Heap *arg2) {
+static inline NV_STATUS heapFreeBlackListedPages(struct OBJGPU *arg1, struct Heap *arg_this) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapBlackListPages(arg1, arg2) heapBlackListPages_IMPL(arg1, arg2)
-#endif //__nvoc_heap_h_disabled
-
-NV_STATUS heapFreeBlackListedPages_IMPL(struct OBJGPU *arg1, struct Heap *arg2);
-
-#ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapFreeBlackListedPages(struct OBJGPU *arg1, struct Heap *arg2) {
-    NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_heap_h_disabled
-#define heapFreeBlackListedPages(arg1, arg2) heapFreeBlackListedPages_IMPL(arg1, arg2)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapFreeBlackListedPages(arg1, arg_this) heapFreeBlackListedPages_IMPL(arg1, arg_this)
+#endif // __nvoc_heap_h_disabled
 
 NV_STATUS heapAddPageToBlackList_IMPL(struct OBJGPU *pGpu, struct Heap *pHeap, NvU64 pageNumber, NvU32 type);
-
 #ifdef __nvoc_heap_h_disabled
 static inline NV_STATUS heapAddPageToBlackList(struct OBJGPU *pGpu, struct Heap *pHeap, NvU64 pageNumber, NvU32 type) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
 #define heapAddPageToBlackList(pGpu, pHeap, pageNumber, type) heapAddPageToBlackList_IMPL(pGpu, pHeap, pageNumber, type)
-#endif //__nvoc_heap_h_disabled
+#endif // __nvoc_heap_h_disabled
 
-NV_STATUS heapStoreBlackList_IMPL(struct OBJGPU *arg1, struct Heap *arg2, NvU64 *arg3, NvU64 *arg4, NvU32 arg5);
-
+NV_STATUS heapStoreBlackList_IMPL(struct OBJGPU *arg1, struct Heap *arg_this, NvU64 *arg3, NvU64 *arg4, NvU32 arg5);
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapStoreBlackList(struct OBJGPU *arg1, struct Heap *arg2, NvU64 *arg3, NvU64 *arg4, NvU32 arg5) {
+static inline NV_STATUS heapStoreBlackList(struct OBJGPU *arg1, struct Heap *arg_this, NvU64 *arg3, NvU64 *arg4, NvU32 arg5) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapStoreBlackList(arg1, arg2, arg3, arg4, arg5) heapStoreBlackList_IMPL(arg1, arg2, arg3, arg4, arg5)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapStoreBlackList(arg1, arg_this, arg3, arg4, arg5) heapStoreBlackList_IMPL(arg1, arg_this, arg3, arg4, arg5)
+#endif // __nvoc_heap_h_disabled
 
-NvBool heapIsPmaManaged_IMPL(struct OBJGPU *arg1, struct Heap *arg2, NvU64 arg3, NvU64 arg4);
-
+NvBool heapIsPmaManaged_IMPL(struct OBJGPU *arg1, struct Heap *arg_this, NvU64 arg3, NvU64 arg4);
 #ifdef __nvoc_heap_h_disabled
-static inline NvBool heapIsPmaManaged(struct OBJGPU *arg1, struct Heap *arg2, NvU64 arg3, NvU64 arg4) {
+static inline NvBool heapIsPmaManaged(struct OBJGPU *arg1, struct Heap *arg_this, NvU64 arg3, NvU64 arg4) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_FALSE;
 }
-#else //__nvoc_heap_h_disabled
-#define heapIsPmaManaged(arg1, arg2, arg3, arg4) heapIsPmaManaged_IMPL(arg1, arg2, arg3, arg4)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapIsPmaManaged(arg1, arg_this, arg3, arg4) heapIsPmaManaged_IMPL(arg1, arg_this, arg3, arg4)
+#endif // __nvoc_heap_h_disabled
 
-NvU32 heapAddRef_IMPL(struct Heap *arg1);
-
+NvU32 heapAddRef_IMPL(struct Heap *arg_this);
 #ifdef __nvoc_heap_h_disabled
-static inline NvU32 heapAddRef(struct Heap *arg1) {
+static inline NvU32 heapAddRef(struct Heap *arg_this) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return 0;
 }
-#else //__nvoc_heap_h_disabled
-#define heapAddRef(arg1) heapAddRef_IMPL(arg1)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapAddRef(arg_this) heapAddRef_IMPL(arg_this)
+#endif // __nvoc_heap_h_disabled
 
-NvU32 heapRemoveRef_IMPL(struct Heap *arg1);
-
+NvU32 heapRemoveRef_IMPL(struct Heap *arg_this);
 #ifdef __nvoc_heap_h_disabled
-static inline NvU32 heapRemoveRef(struct Heap *arg1) {
+static inline NvU32 heapRemoveRef(struct Heap *arg_this) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return 0;
 }
-#else //__nvoc_heap_h_disabled
-#define heapRemoveRef(arg1) heapRemoveRef_IMPL(arg1)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapRemoveRef(arg_this) heapRemoveRef_IMPL(arg_this)
+#endif // __nvoc_heap_h_disabled
 
-NV_STATUS heapResize_IMPL(struct Heap *arg1, NvS64 arg2);
-
+NV_STATUS heapResize_IMPL(struct Heap *arg_this, NvS64 arg2);
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapResize(struct Heap *arg1, NvS64 arg2) {
+static inline NV_STATUS heapResize(struct Heap *arg_this, NvS64 arg2) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapResize(arg1, arg2) heapResize_IMPL(arg1, arg2)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapResize(arg_this, arg2) heapResize_IMPL(arg_this, arg2)
+#endif // __nvoc_heap_h_disabled
 
-void heapFilterBlackListPages_IMPL(struct Heap *arg1, NvU64 arg2, NvU64 arg3);
-
+void heapFilterBlackListPages_IMPL(struct Heap *arg_this, NvU64 arg2, NvU64 arg3);
 #ifdef __nvoc_heap_h_disabled
-static inline void heapFilterBlackListPages(struct Heap *arg1, NvU64 arg2, NvU64 arg3) {
+static inline void heapFilterBlackListPages(struct Heap *arg_this, NvU64 arg2, NvU64 arg3) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
 }
-#else //__nvoc_heap_h_disabled
-#define heapFilterBlackListPages(arg1, arg2, arg3) heapFilterBlackListPages_IMPL(arg1, arg2, arg3)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapFilterBlackListPages(arg_this, arg2, arg3) heapFilterBlackListPages_IMPL(arg_this, arg2, arg3)
+#endif // __nvoc_heap_h_disabled
 
-NV_STATUS heapStorePendingBlackList_IMPL(struct OBJGPU *arg1, struct Heap *arg2, NvU64 arg3, NvU64 arg4);
-
+NV_STATUS heapStorePendingBlackList_IMPL(struct OBJGPU *arg1, struct Heap *arg_this, NvU64 arg3, NvU64 arg4);
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapStorePendingBlackList(struct OBJGPU *arg1, struct Heap *arg2, NvU64 arg3, NvU64 arg4) {
+static inline NV_STATUS heapStorePendingBlackList(struct OBJGPU *arg1, struct Heap *arg_this, NvU64 arg3, NvU64 arg4) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_heap_h_disabled
-#define heapStorePendingBlackList(arg1, arg2, arg3, arg4) heapStorePendingBlackList_IMPL(arg1, arg2, arg3, arg4)
-#endif //__nvoc_heap_h_disabled
+#else // __nvoc_heap_h_disabled
+#define heapStorePendingBlackList(arg1, arg_this, arg3, arg4) heapStorePendingBlackList_IMPL(arg1, arg_this, arg3, arg4)
+#endif // __nvoc_heap_h_disabled
 
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
 #undef PRIVATE_FIELD
 
 

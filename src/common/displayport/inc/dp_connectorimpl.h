@@ -197,7 +197,6 @@ namespace DisplayPort
         unsigned compoundQueryLocalLinkPBN;
         NvU64 compoundQueryUsedTunnelingBw;
         bool compoundQueryForceEnableFEC;
-        // WAR
         bool bDP2XPreferNonDSCForLowPClk;
 
         unsigned freeSlots;
@@ -259,6 +258,8 @@ namespace DisplayPort
 
         // Flag to check if the system is UEFI.
         bool        bIsUefiSystem;
+
+        bool        bSkipResetLinkStateDuringPlug;
 
         // Flag to check if LT should be skipped.
         bool        bSkipLt;
@@ -348,8 +349,6 @@ namespace DisplayPort
 
         bool        bForceHeadShutdownPerMonitor;
 
-        bool        bEnableLowerBppCheckForDsc;
-
         //
         // Dual SST Partner connector object pointer
         ConnectorImpl *pCoupledConnector;
@@ -427,7 +426,7 @@ namespace DisplayPort
         virtual void hardwareWasReset();
         virtual LinkConfiguration getMaxLinkConfig();
         virtual LinkConfiguration getActiveLinkConfig();
-        virtual void powerdownLink(bool bPowerdownPanel = false);
+        void powerdownLink(bool bPowerdownPanel = false);
         LinkConfiguration initMaxLinkConfig();
 
         GroupImpl * getActiveGroupForSST();
@@ -527,8 +526,8 @@ namespace DisplayPort
 
         virtual bool compoundQueryAttachSSTDsc(const DpModesetParams &modesetParams,
                                                LinkConfiguration lc,
-                                               DscParams *pDscParams = NULL,       
-                                               DP_IMP_ERROR *pErrorCode = NULL);  
+                                               DscParams *pDscParams = NULL,
+                                               DP_IMP_ERROR *pErrorCode = NULL);
 
 
         //

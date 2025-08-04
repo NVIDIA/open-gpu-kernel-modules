@@ -43,6 +43,7 @@
 #    include <stdlib.h>
 #    include <ctype.h>
 #    include <string.h>
+#    include <assert.h>
 
 #    define portStringCopy(d, ld, s, ls) strncpy(d, s, ld)
 #    define portStringLength(s)          strlen(s)
@@ -54,6 +55,7 @@
 #    define portMemCmp(d, s, l)       memcmp(d, s, l)
 #    define portMemAllocNonPaged(l)   malloc(l)
 #    define portMemFree(p)            free(p)
+#    define NV_ASSERT                 assert
 
 #    if defined(NVWATCH)
 #        pragma warning(push)
@@ -79,6 +81,7 @@
 #include "nvstatus.h"
 #include "liblogdecode.h"
 #include "utils/nvprintf_level.h"
+#include "nv-firmware-chip-family-select.h"
 
 #if LIBOS_LOG_DECODE_ENABLE
 
@@ -296,6 +299,15 @@ static LIBOS_LOG_DECODE_LOG *_findLogBufferFromSectionName(LIBOS_LOG_DECODE *log
         if (portStringCompare(pLog->elfSectionName, elfSectionName, sizeof(pLog->elfSectionName)) == 0)
             return pLog;
     }
+#if defined(LIBOS_LOG_OFFLINE_DECODER)
+    for (i = 0; i < LIBOS_LOG_TASK_MAX_ID; i++)
+    {
+        LIBOS_LOG_DECODE_LOG *pLog = &logDecode->mergedLogResolver[i];
+        if ((pLog->elfSectionName) &&
+            (portStringCompare(pLog->elfSectionName, elfSectionName, sizeof(pLog->elfSectionName)) == 0))
+            return pLog;
+    }
+#endif
     return NULL;
 }
 
@@ -546,10 +558,22 @@ static int libos_printf_a(
 
 #    if defined(NVRM)
             // Prefix every line with NVRM: GPUn Ucode-task: filename(lineNumber):
+            char *taskPrefix = pRec->log->taskPrefix;
+#if defined(LIBOS_LOG_OFFLINE_DECODER)
+            char taskPrefixString[8];
+
+            if ((pRec->log->libosLogFlags & LIBOS_LOG_NVLOG_BUFFER_FLAG_MERGED_NVLOG_BUFFER)
+                && (pRec->taskId != LIBOS_LOG_TASK_UNKNOWN))
+            {
+                sprintf(&taskPrefixString[0], "%s%c", logDecode->mergedLogResolver[pRec->taskId].taskPrefix, pRec->log->taskPrefix[4]);
+                taskPrefix = &taskPrefixString[0];
+            }
+#endif
             len = snprintf(
                 logDecode->curLineBufPtr, remain,
                 NV_PRINTF_ADD_PREFIX("GPU%u %s-%s: %s(%u): "), pRec->log->gpuInstance,
-                logDecode->sourceName, pRec->log->taskPrefix, filename, pRec->meta->lineNumber);
+                logDecode->sourceName, taskPrefix, filename, pRec->meta->lineNumber);
+
             if (len < 0)
             {
                 return -1;
@@ -626,12 +650,22 @@ static int libos_printf_a(
                 }
         }
 #endif
+            char *taskPrefix = pRec->log->taskPrefix;
+#if defined(LIBOS_LOG_OFFLINE_DECODER)
+            char taskPrefixString[8];
 
+            if ((pRec->log->libosLogFlags & LIBOS_LOG_NVLOG_BUFFER_FLAG_MERGED_NVLOG_BUFFER)
+                && (pRec->taskId != LIBOS_LOG_TASK_UNKNOWN))
+            {
+                sprintf(&taskPrefixString[0], "%s%c", logDecode->mergedLogResolver[pRec->taskId].taskPrefix, pRec->log->taskPrefix[4]);
+                taskPrefix = &taskPrefixString[0];
+            }
+#endif
             len = snprintf(
                 logDecode->curLineBufPtr, remain,
                 "GPU%u%s%s-%s: %s(%u): ",
                 pRec->log->gpuInstance, printfLevelToString(pRec->meta->printLevel),
-                 logDecode->sourceName, pRec->log->taskPrefix,
+                 logDecode->sourceName, taskPrefix,
                 filename, pRec->meta->lineNumber);
             if (len < 0)
             {
@@ -957,7 +991,19 @@ static int libos_printf_a(
             }
             goto print_string;
         case 's':
-            a = (char *)LibosElfMapVirtualString(&pRec->log->elfImage, (NvUPtr)arg.p, logDecode->bDecodeStrShdr);
+#if defined(LIBOS_LOG_OFFLINE_DECODER)
+            if ((pRec->log->libosLogFlags & LIBOS_LOG_NVLOG_BUFFER_FLAG_MERGED_NVLOG_BUFFER)
+                && (pRec->taskId != LIBOS_LOG_TASK_UNKNOWN))
+            {
+                a = (char *)LibosElfMapVirtualString(&logDecode->mergedLogResolver[pRec->taskId].elfImage,
+                                                        (NvUPtr)arg.p, logDecode->bDecodeStrShdr);
+            }
+            else
+#endif
+            {
+                a = (char *)LibosElfMapVirtualString(&pRec->log->elfImage, (NvUPtr)arg.p, logDecode->bDecodeStrShdr);
+            }
+
             if (!a)
                 a = (char *)"(bad-pointer)";
         print_string:
@@ -1001,7 +1047,18 @@ static int libos_printf_a(
             symDecodedLine[prefixLen++] = '<';
 #endif // NVWATCH
 
-            s_getSymbolDataStr(&pRec->log->resolver, symDecodedLine + prefixLen, sizeof(symDecodedLine) - prefixLen, (NvUPtr)arg.i, NV_FALSE);
+#if defined(LIBOS_LOG_OFFLINE_DECODER)
+            if ((pRec->log->libosLogFlags & LIBOS_LOG_NVLOG_BUFFER_FLAG_MERGED_NVLOG_BUFFER)
+                && (pRec->taskId != LIBOS_LOG_TASK_UNKNOWN))
+            {
+                s_getSymbolDataStr(&logDecode->mergedLogResolver[pRec->taskId].resolver, symDecodedLine + prefixLen, sizeof(symDecodedLine) - prefixLen, (NvUPtr)arg.i, NV_FALSE);
+            }
+            else
+#endif
+            {
+                s_getSymbolDataStr(&pRec->log->resolver, symDecodedLine + prefixLen, sizeof(symDecodedLine) - prefixLen, (NvUPtr)arg.i, NV_FALSE);
+            }
+
 
             symDecodedLineLen = portStringLength(symDecodedLine);
             symDecodedLineLen = MIN(symDecodedLineLen, sizeof(symDecodedLine) - 1); // just in case
@@ -1065,13 +1122,38 @@ static void libosPrintLogRecords(LIBOS_LOG_DECODE *logDecode, NvU64 *scratchBuff
 
         logDecode->lineLogLevel = pRec->meta->printLevel;
 
-        // Locate format string
-        format = LibosElfMapVirtualString(&pRec->log->elfImage, (NvU64)(NvUPtr)pRec->meta->format, NV_TRUE);
+
+#if defined(LIBOS_LOG_OFFLINE_DECODER)
+        if ((pRec->log->libosLogFlags & LIBOS_LOG_NVLOG_BUFFER_FLAG_MERGED_NVLOG_BUFFER)
+            && (pRec->taskId != LIBOS_LOG_TASK_UNKNOWN))
+        {
+            format = LibosElfMapVirtualString(&logDecode->mergedLogResolver[pRec->taskId].elfImage,
+                                                (NvU64)(NvUPtr)pRec->meta->format, NV_TRUE);
+        }
+        else
+#endif
+        {
+            // Locate format string
+            format = LibosElfMapVirtualString(&pRec->log->elfImage, (NvU64)(NvUPtr)pRec->meta->format, NV_TRUE);
+        }
+
         if (!format)
             break;
 
-        // Locate filename
-        filename = LibosElfMapVirtualString(&pRec->log->elfImage, (NvU64)(NvUPtr)pRec->meta->filename, NV_TRUE);
+#if defined(LIBOS_LOG_OFFLINE_DECODER)
+        if ((pRec->log->libosLogFlags & LIBOS_LOG_NVLOG_BUFFER_FLAG_MERGED_NVLOG_BUFFER)
+            && (pRec->taskId != LIBOS_LOG_TASK_UNKNOWN))
+        {
+            filename = LibosElfMapVirtualString(&logDecode->mergedLogResolver[pRec->taskId].elfImage,
+                                                (NvU64)(NvUPtr)pRec->meta->filename, NV_TRUE);
+        }
+        else
+#endif
+        {
+            // Locate filename
+            filename = LibosElfMapVirtualString(&pRec->log->elfImage, (NvU64)(NvUPtr)pRec->meta->filename, NV_TRUE);
+        }
+
         if (!filename || !filename[0])
             filename = "unknown";
 
@@ -1098,35 +1180,59 @@ static void libosPrintLogRecords(LIBOS_LOG_DECODE *logDecode, NvU64 *scratchBuff
  * @brief Fetch the correct metadata from the given index in the physical buffer.
  *        Initialize elfSectionName appropriately in case extended version of metadata is found.
  */
-static libosLogMetadata *_getLoggingMetadata(LIBOS_LOG_DECODE_LOG *pLog, NvU64 idx, const char **elfSectionName)
+static libosLogMetadata *_getLoggingMetadata(LIBOS_LOG_DECODE *logDecode, LIBOS_LOG_DECODE_LOG *pLog, NvU64 idx, const char **elfSectionName, NvU32 *logEntrySize, NvU32 *taskId)
 {
-    libosLogMetadata *meta = NULL;
-    libosLogMetadata_extended *metaEx = NULL;
+    libosLogMetadata *pMetadata = NULL;
+    libosLogMetadata_extended *pMetadataEx = NULL;
     const char *filename = NULL;
     *elfSectionName = NULL;
+    NvU64 metadataVA; 
+    NvU64 meta = pLog->physicLogBuffer[idx];
+    LIBOS_LOG_DECODE_LOG *pLogLocal = pLog;
 
-    meta = (libosLogMetadata *) LibosElfMapVirtual(&pLog->elfImage, pLog->physicLogBuffer[idx], sizeof(libosLogMetadata));
-    if (meta == NULL)
+    if ((pLog->libosLogNvlogBufferVersion >= LIBOS_LOG_NVLOG_BUFFER_VERSION_2) &&
+        ((pLog->libosLogFlags & LIBOS_LOG_NVLOG_BUFFER_FLAG_PACKED_METADATA) != 0) &&
+        (REF_VAL64(LIBOS_LOG_METADATA_TOTAL_ARGS, meta) >= LIBOS_LOG_ENTRY_MIN_SIZE) &&
+        (REF_VAL64(LIBOS_LOG_METADATA_TOTAL_ARGS, meta) <= LIBOS_LOG_ENTRY_MAX_SIZE))
+    {
+        *logEntrySize = REF_VAL64(LIBOS_LOG_METADATA_TOTAL_ARGS, meta);
+        *taskId = REF_VAL64(LIBOS_LOG_METADATA_TASK_ID, meta);
+
+#if defined(LIBOS_LOG_OFFLINE_DECODER)
+        if (pLog->libosLogFlags & LIBOS_LOG_NVLOG_BUFFER_FLAG_MERGED_NVLOG_BUFFER)
+            pLogLocal = &logDecode->mergedLogResolver[*taskId];
+#endif
+
+        metadataVA = REF_VAL64(LIBOS_LOG_METADATA_VA, meta) + pLogLocal->loggingBaseAddress;
+    }
+    else
+    {
+        metadataVA = pLogLocal->physicLogBuffer[idx];
+        *taskId = LIBOS_LOG_TASK_UNKNOWN;
+    }
+
+    pMetadata = (libosLogMetadata *) LibosElfMapVirtual(&pLogLocal->elfImage, metadataVA, sizeof(libosLogMetadata));
+    if (pMetadata == NULL)
         return NULL;
 
     // Try to fetch filename to check if we received an extended metadata
-    filename = LibosElfMapVirtualString(&pLog->elfImage, (NvU64)(NvUPtr)meta->filename, NV_TRUE);
-    if ((filename == NULL) && ((NvU64) meta->filename == 0x8000000000000000ULL))
+    filename = LibosElfMapVirtualString(&pLogLocal->elfImage, (NvU64)(NvUPtr)pMetadata->filename, NV_TRUE);
+    if ((filename == NULL) && ((NvU64) pMetadata->filename == 0x8000000000000000ULL))
     {
         // Filename wasn't mapped correctly. That means this is an extended metadata.
-        metaEx = (libosLogMetadata_extended *) LibosElfMapVirtual(&pLog->elfImage, pLog->physicLogBuffer[idx], sizeof(libosLogMetadata_extended));
-        if (metaEx == NULL)
+        pMetadataEx = (libosLogMetadata_extended *) LibosElfMapVirtual(&pLogLocal->elfImage, metadataVA, sizeof(libosLogMetadata_extended));
+        if (pMetadataEx == NULL)
             return NULL;
-        meta = &metaEx->meta;
+        pMetadata = &pMetadataEx->meta;
 
         // Fetch the remote task's elf section name string.
-        if (metaEx->elfSectionName != NULL)
+        if (pMetadataEx->elfSectionName != NULL)
         {
-            *elfSectionName = LibosElfMapVirtualString(&pLog->elfImage, (NvU64)(NvUPtr)metaEx->elfSectionName, NV_TRUE);
+            *elfSectionName = LibosElfMapVirtualString(&pLogLocal->elfImage, (NvU64)(NvUPtr)pMetadataEx->elfSectionName, NV_TRUE);
         }
     }
 
-    return meta;
+    return pMetadata;
 }
 
 #    define LIBOS_LOG_TIMESTAMP_END  0
@@ -1155,55 +1261,83 @@ static void libosExtractLog_ReadRecord(LIBOS_LOG_DECODE *logDecode, LIBOS_LOG_DE
 {
     NvU64 log_entries = pLog->logBufferSize / sizeof(NvU64) - 1 /* -1 for PUT pointer */;
     NvU64 previousPut = pLog->previousPut;
-    NvU64 i           = pLog->putIter;
+    NvU64 i;
     NvU64 argCount;
     NvU64 j;
     const char *elfSectionName;
 
-    if (pLog->putIter == pLog->previousPut)
+    while (1)
     {
-        pLog->record.timeStamp = LIBOS_LOG_TIMESTAMP_END;
-        return;
-    }
-    if (pLog->elf == NULL) // Can't decode if task ELF isn't initialized
-    {
-        pLog->record.timeStamp = LIBOS_LOG_TIMESTAMP_END;
-        return;
-    }
+        // Number of NvU64 entries for this record
+        NvU32 logEntrySize = 0;
+        NvU32 taskId = 0;
 
-    // If we wrapped, adjust local copy of previousPut.
-    if (previousPut + log_entries < pLog->putCopy)
-        previousPut = pLog->putCopy - log_entries;
+        i = pLog->putIter;
 
-    pLog->record.log = pLog;
+        if (pLog->putIter == pLog->previousPut)
+        {
+            pLog->record.timeStamp = LIBOS_LOG_TIMESTAMP_END;
+            return;
+        }
+        if (pLog->elf == NULL) // Can't decode if task ELF isn't initialized
+        {
+#if defined(LIBOS_LOG_OFFLINE_DECODER)
+            if ((pLog->libosLogFlags & LIBOS_LOG_NVLOG_BUFFER_FLAG_MERGED_NVLOG_BUFFER) == 0)
+#endif
+            {
+                pLog->record.timeStamp = LIBOS_LOG_TIMESTAMP_END;
+                return;
+            }
+        }
 
-    if (logDecode->bSynchronousBuffer)
-    {
-        // Fake timestamp for sync buffer, marked as different from the "end" timestamp
-        pLog->record.timeStamp = LIBOS_LOG_TIMESTAMP_MAX;
-    }
-    else
-    {
+        // If we wrapped, adjust local copy of previousPut.
+        if (previousPut + log_entries < pLog->putCopy)
+            previousPut = pLog->putCopy - log_entries;
+
+        if (logDecode->bSynchronousBuffer)
+        {
+            // Fake timestamp for sync buffer, marked as different from the "end" timestamp
+            pLog->record.timeStamp = LIBOS_LOG_TIMESTAMP_MAX;
+        }
+        else
+        {
+            // Check whether record goes past previous put (buffer wrapped).
+            if (i < previousPut + 1)
+                goto buffer_wrapped;
+
+            pLog->record.timeStamp = pLog->physicLogBuffer[1 + (--i % log_entries)];
+        }
+
         // Check whether record goes past previous put (buffer wrapped).
         if (i < previousPut + 1)
             goto buffer_wrapped;
 
-        pLog->record.timeStamp = pLog->physicLogBuffer[1 + (--i % log_entries)];
-    }
+        pLog->record.meta = _getLoggingMetadata(logDecode, pLog, 1 + (--i % log_entries), &elfSectionName, &logEntrySize, &taskId);
 
-    // Check whether record goes past previous put (buffer wrapped).
-    if (i < previousPut + 1)
-        goto buffer_wrapped;
+        pLog->record.log = pLog;
+        pLog->record.taskId = taskId;
 
-    pLog->record.meta = _getLoggingMetadata(pLog, 1 + (--i % log_entries), &elfSectionName);
+        // Sanity check meta data.
+        if (pLog->record.meta != NULL && 
+            pLog->record.meta->argumentCount <= LIBOS_LOG_MAX_ARGS &&
+            ((taskId == LIBOS_LOG_TASK_UNKNOWN) || (pLog->record.meta->argumentCount == logEntrySize - 2)))
+        {
+            // Found valid record
+            break;
+        }
 
-    // Sanity check meta data.
-    if (pLog->record.meta == NULL || pLog->record.meta->argumentCount > LIBOS_LOG_MAX_ARGS)
-    {
+        if (logDecode->bSynchronousBuffer || (taskId == LIBOS_LOG_TASK_UNKNOWN))
+        {
+            LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING,
+                "**** Bad metadata.  Lost %lld entries from %s-%s ****\n", pLog->putIter - previousPut,
+                logDecode->sourceName, pLog->taskPrefix);
+            goto error_ret;
+        }
+
         LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING,
-            "**** Bad metadata.  Lost %lld entries from %s-%s ****\n", pLog->putIter - previousPut,
+            "**** Bad metadata.  Lost %lld entries from %s-%s ****\n", logEntrySize,
             logDecode->sourceName, pLog->taskPrefix);
-        goto error_ret;
+        pLog->putIter -= logEntrySize;
     }
 
     pLog->record.logSymbolResolver = pLog;
@@ -1275,7 +1409,6 @@ static void libosExtractLogs_decode(LIBOS_LOG_DECODE *logDecode)
             return;
         }
 
-        pLog->putCopy = pLog->physicLogBuffer[0];
         pLog->putIter = pLog->putCopy;
         libosExtractLog_ReadRecord(logDecode, pLog);
     }
@@ -1330,10 +1463,6 @@ static void libosExtractLogs_decode(LIBOS_LOG_DECODE *logDecode)
         libosExtractLog_ReadRecord(logDecode, pLog);
     }
 
-    // Update the previous put pointers.
-    for (i = 0; i < logDecode->numLogBuffers; i++)
-        logDecode->log[i].previousPut = logDecode->log[i].putCopy;
-
     // Print out the copied records.
     if (dst != scratchSize)
         libosPrintLogRecords(logDecode, &logDecode->scratchBuffer[dst], scratchSize - dst);
@@ -1343,7 +1472,7 @@ static void libosExtractLogs_decode(LIBOS_LOG_DECODE *logDecode)
 
 #if LIBOS_LOG_TO_NVLOG
 
-#    define LIBOS_LOG_NVLOG_BUFFER_TAG(_name, _i) NvU32_BUILD((_name)[2], (_name)[1], (_name)[0], (NvU8)('1' + _i))
+#    define LIBOS_LOG_NVLOG_BUFFER_TAG(_name, _i) NvU32_BUILD((_name)[2], (_name)[1], (_name)[0], (_i < 9) ? (NvU8)('1' + _i) : (NvU8)('a' + _i - 9))
 
 static NvBool libosCopyLogToNvlog_nowrap(LIBOS_LOG_DECODE_LOG *pLog)
 {
@@ -1351,8 +1480,7 @@ static NvBool libosCopyLogToNvlog_nowrap(LIBOS_LOG_DECODE_LOG *pLog)
     NV_ASSERT_OR_RETURN((pLog->hNvLogNoWrap != 0) && (pNvLogBuffer != NULL), NV_FALSE);
 
     LIBOS_LOG_NVLOG_BUFFER *pNoWrapBuf = (LIBOS_LOG_NVLOG_BUFFER *)pNvLogBuffer->data;
-    NvU64 putCopy                      = pLog->physicLogBuffer[0];
-    NvU64 putOffset                    = putCopy * sizeof(NvU64) + sizeof(NvU64);
+    NvU64 putOffset                    = pLog->putCopy * sizeof(NvU64) + sizeof(NvU64);
 
     //
     // If RM was not unloaded, we will reuse a preserved nowrap nvlog buffer with the fresh
@@ -1383,7 +1511,6 @@ static NvBool libosCopyLogToNvlog_nowrap(LIBOS_LOG_DECODE_LOG *pLog)
         return NV_FALSE;
     }
 
-
     NvU8 *pSrc = ((NvU8 *)pLog->physicLogBuffer) + nvlogPos;
     NvU8 *pDst = pNoWrapBuf->data + pNvLogBuffer->pos - NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data);
 
@@ -1393,7 +1520,7 @@ static NvBool libosCopyLogToNvlog_nowrap(LIBOS_LOG_DECODE_LOG *pLog)
 
     // preservedNoWrapPos already accounted for both LIBOS buffer header and put pointer
     pNvLogBuffer->pos            = putOffset + pLog->preservedNoWrapPos - sizeof(NvU64);
-    *(NvU64 *)(pNoWrapBuf->data) = putCopy + (pLog->preservedNoWrapPos-NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data)-sizeof(NvU64)) / sizeof(NvU64);
+    *(NvU64 *)(pNoWrapBuf->data) = pLog->putCopy + (pLog->preservedNoWrapPos-NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data)-sizeof(NvU64)) / sizeof(NvU64);
 
     return NV_TRUE;
 }
@@ -1405,12 +1532,11 @@ static NvBool libosCopyLogToNvlog_wrap(LIBOS_LOG_DECODE_LOG *pLog)
 
     LIBOS_LOG_NVLOG_BUFFER *pWrapBuf = (LIBOS_LOG_NVLOG_BUFFER *)pNvLogBuffer->data;
     NvU64 logEntries                 = pLog->logBufferSize / sizeof(NvU64) - 1 /* -1 for PUT pointer */;
-    NvU64 putCopy                    = pLog->physicLogBuffer[0];
-    NvU64 putOffset                  = putCopy * sizeof(NvU64) + sizeof(NvU64);
+    NvU64 putOffset                  = pLog->putCopy * sizeof(NvU64) + sizeof(NvU64);
 
     NvU64 prevPutOffset              = pNvLogBuffer->pos - NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data);
     NvU64 nvlogPos                   = (prevPutOffset - sizeof(NvU64)) % (logEntries * sizeof(NvU64)) + sizeof(NvU64);
-    NvU64 putOffsetWrapped           = (putCopy % logEntries) * sizeof(NvU64) + sizeof(NvU64);
+    NvU64 putOffsetWrapped           = (pLog->putCopy % logEntries) * sizeof(NvU64) + sizeof(NvU64);
 
     if (putOffsetWrapped == nvlogPos)
     {
@@ -1438,7 +1564,7 @@ static NvBool libosCopyLogToNvlog_wrap(LIBOS_LOG_DECODE_LOG *pLog)
     }
 
     pNvLogBuffer->pos = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) + putOffset;
-    *(NvU64 *)(pWrapBuf->data) = putCopy;
+    *(NvU64 *)(pWrapBuf->data) = pLog->putCopy;
 
     return NV_TRUE;
 }
@@ -1449,23 +1575,254 @@ static NvBool libosSyncNvlog(LIBOS_LOG_DECODE_LOG *pLog)
     NV_ASSERT_OR_RETURN((pLog->hNvLogWrap != 0) && (pNvLogBuffer != NULL), NV_FALSE);
 
     LIBOS_LOG_NVLOG_BUFFER *pWrapBuf = (LIBOS_LOG_NVLOG_BUFFER *)pNvLogBuffer->data;
-    NvU64 putCopy                    = pLog->physicLogBuffer[0];
-    NvU64 putOffset                  = putCopy * sizeof(NvU64) + sizeof(NvU64);
+    NvU64 putOffset                  = pLog->putCopy * sizeof(NvU64) + sizeof(NvU64);
 
     portMemCopy(pWrapBuf->data, pLog->logBufferSize, (void *)pLog->physicLogBuffer, pLog->logBufferSize);
     pNvLogBuffer->pos = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) + putOffset;
     return NV_TRUE;
 }
 
+/**
+ *
+ * @brief Functions for merge log entries from multiple libos log buffers
+ *
+ */
+static void libosMergeNvlog(LIBOS_LOG_DECODE *logDecode, NvU64 *totalNumNewEntries)
+{
+    NvU64 mergedBufferSize = logDecode->mergedBufferSize / sizeof(NvU64);
+    NvU64 dst         = mergedBufferSize;
+    NvU64 numNewEntries = 0;
+
+    if (logDecode->mergedBuffer == NULL)
+        return;
+
+    // Copy records in order of highest time stamp.
+    for (;;)
+    {
+        LIBOS_LOG_DECODE_LOG *pLog      = NULL; // for debugging.
+        NvU64 timeStamp = LIBOS_LOG_TIMESTAMP_END;
+        NvU64 previousPut;
+        NvU64 numLogEntries;
+
+        // Find log with the highest timestamp.
+        for (NvU64 i = 0; i < logDecode->numLogBuffers; i++)
+        {
+            LIBOS_LOG_DECODE_LOG *pLogLocal = &logDecode->log[i];
+            NvU64 previousPutLocal = pLogLocal->previousPut;
+            NvU64 numLogEntriesLocal = pLogLocal->logBufferSize / sizeof(NvU64) - 1;
+
+            if (pLogLocal->libosLogDecodeFlags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
+                continue;
+            if ((pLogLocal->libosLogFlags & LIBOS_LOG_NVLOG_BUFFER_FLAG_MERGED_NVLOG_BUFFER) == 0)
+                continue;
+
+            // If we wrapped, adjust local copy of previousPut.
+            if (previousPutLocal + numLogEntriesLocal < pLogLocal->putCopy)
+                previousPutLocal = pLogLocal->putCopy - numLogEntriesLocal;
+
+            if (pLogLocal->putIter <= previousPutLocal)
+                continue;
+
+            NvU64 lastEntryTimestampIndex = (pLogLocal->putIter - 1) % numLogEntriesLocal + 1;
+
+            NvU64 localTimeStamp = logDecode->log[i].physicLogBuffer[lastEntryTimestampIndex];
+            if (timeStamp < localTimeStamp)
+            {
+                timeStamp = localTimeStamp;
+                pLog      = &logDecode->log[i];
+                previousPut = previousPutLocal;
+                numLogEntries = numLogEntriesLocal;
+            }
+        }
+
+        if (timeStamp == LIBOS_LOG_TIMESTAMP_END)
+            break;
+
+        NvU64 lastEntryMetaIndex = (pLog->putIter - 2) % numLogEntries + 1;
+        NvU32 logEntrySize = REF_VAL64(LIBOS_LOG_METADATA_TOTAL_ARGS, pLog->physicLogBuffer[lastEntryMetaIndex]);
+
+        if ((logEntrySize < LIBOS_LOG_ENTRY_MIN_SIZE) ||
+            (logEntrySize > LIBOS_LOG_ENTRY_MAX_SIZE))
+        {
+            LIBOS_LOG_DECODE_PRINTF(LEVEL_ERROR, "libosMergeNvlog: Invalid logEntrySize: %d, merged buffer configured incorrectly!\n", logEntrySize);
+            break;
+        }
+
+        if (dst <= logEntrySize)
+        {
+            break;
+        }
+
+        pLog->putIter -= logEntrySize;
+
+        if (pLog->putIter <= previousPut)
+            continue;
+
+        dst -= logEntrySize;
+        pLog->bDidPush = NV_TRUE;
+        NvU64 lastEntryStartOffset = (pLog->putIter % numLogEntries + 1) * sizeof(NvU64);
+
+        NvU8 *pSrc = ((NvU8 *)pLog->physicLogBuffer) + lastEntryStartOffset;
+        NvU8 *pDst = (NvU8 *)&logDecode->mergedBuffer[dst];
+        NvU64 len = logEntrySize * sizeof(NvU64);
+
+        if (lastEntryStartOffset + logEntrySize * sizeof(NvU64) >= pLog->logBufferSize)
+        {
+            portMemCopy(pDst, pLog->logBufferSize - lastEntryStartOffset, pSrc, pLog->logBufferSize - lastEntryStartOffset);
+            len -= pLog->logBufferSize - lastEntryStartOffset;
+            pSrc = ((NvU8 *)pLog->physicLogBuffer) + sizeof(NvU64);
+            pDst = ((NvU8 *)&logDecode->mergedBuffer[dst]) + pLog->logBufferSize - lastEntryStartOffset;
+        }
+
+        portMemCopy(pDst, len, pSrc, len);
+
+        numNewEntries += logEntrySize;
+    }
+
+    *totalNumNewEntries = numNewEntries;
+}
+
+/**
+ *
+ * @brief Functions for copying log entries to merged nvlog buffers
+ *
+ * Similar to libosCopyLogToNvlog_nowrap and libosCopyLogToNvlog_wrap
+ * But this function handles merged log instead of coping from single libos log buffer
+ */
+
+static NvBool libosCopyLogToMergeNvlog_Nowrap(LIBOS_LOG_DECODE *logDecode, NVLOG_BUFFER *pNvLogBuffer, NvU64 totalNumNewEntries)
+{
+    LIBOS_LOG_NVLOG_BUFFER *pNoWrapBuf = (LIBOS_LOG_NVLOG_BUFFER *)pNvLogBuffer->data;
+    NvU64 newEntriesSize  = totalNumNewEntries * sizeof(NvU64);
+
+    if (totalNumNewEntries == 0)
+        return NV_TRUE;
+
+    if (pNvLogBuffer->pos + newEntriesSize > pNvLogBuffer->size)
+    {
+        // we are done filling nowrap
+        return NV_FALSE;
+    }
+
+    NvU64 mergedBufferTotalEntries = logDecode->mergedBufferSize / sizeof(NvU64);
+
+    NvU8 *pSrc = (NvU8 *)&logDecode->mergedBuffer[mergedBufferTotalEntries - totalNumNewEntries];
+    NvU8 *pDst = pNvLogBuffer->data + pNvLogBuffer->pos;
+
+
+    portMemCopy(pDst, newEntriesSize, pSrc, newEntriesSize);
+
+    // preservedNoWrapPos already accounted for both LIBOS buffer header and put pointer
+    pNvLogBuffer->pos += newEntriesSize;
+    *(NvU64 *)(pNoWrapBuf->data) += totalNumNewEntries;
+
+    return NV_TRUE;
+}
+static void libosCopyLogToMergeNvlog_Wrap(LIBOS_LOG_DECODE *logDecode, NVLOG_BUFFER *pNvLogBuffer, NvU64 totalNumNewEntries)
+{
+    LIBOS_LOG_NVLOG_BUFFER *pWrapBuf = (LIBOS_LOG_NVLOG_BUFFER *)pNvLogBuffer->data;
+    NvU64 numNewEntries = totalNumNewEntries;
+    NvU64 newEntriesSize  = totalNumNewEntries * sizeof(NvU64);
+    NvU64 mergedBufferTotalEntries = logDecode->mergedBufferSize / sizeof(NvU64);
+
+    if (numNewEntries == 0)
+        return;
+
+    while (pNvLogBuffer->pos + newEntriesSize >= pNvLogBuffer->size)
+    {
+        NvU8 *pSrc = (NvU8 *)&logDecode->mergedBuffer[mergedBufferTotalEntries - numNewEntries];
+        NvU8 *pDst = pNvLogBuffer->data + pNvLogBuffer->pos;
+        NvU64 len  = pNvLogBuffer->size - pNvLogBuffer->pos;
+
+        portMemCopy(pDst, len, pSrc, len);
+
+        newEntriesSize -= len;
+        numNewEntries -= len / sizeof(NvU64);
+        pNvLogBuffer->pos = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) + sizeof(NvU64);
+
+    }
+
+    if (numNewEntries > 0)
+    {
+        NvU8 *pSrc = (NvU8 *)&logDecode->mergedBuffer[mergedBufferTotalEntries - numNewEntries];
+        NvU8 *pDst = pNvLogBuffer->data + pNvLogBuffer->pos;
+        NvU64 len  = newEntriesSize;
+
+        portMemCopy(pDst, len, pSrc, len);
+        pNvLogBuffer->pos += newEntriesSize;
+
+    }
+
+    *(NvU64 *)(pWrapBuf->data) += totalNumNewEntries;
+}
+
+static void libosExtractLogs_mergeNvlog(LIBOS_LOG_DECODE *logDecode)
+{
+    NvU64 totalNumNewEntries = 0;
+    NvBool bNvLogNoWrap = NV_FALSE;
+    NvU64 hNvLogNoWrap = 0;
+    NvU64 hNvLogWrap = 0;
+
+    for (NvU64 i = 0; i < logDecode->numLogBuffers; i++)
+    {
+        LIBOS_LOG_DECODE_LOG *pLog = &logDecode->log[i];
+        if (pLog->libosLogDecodeFlags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
+            continue;
+        if ((pLog->libosLogFlags & LIBOS_LOG_NVLOG_BUFFER_FLAG_MERGED_NVLOG_BUFFER) == 0)
+            continue;
+
+        pLog->putIter = pLog->putCopy;
+
+        if (hNvLogNoWrap == 0)
+        {
+            hNvLogNoWrap = pLog->hNvLogNoWrap;
+            hNvLogWrap = pLog->hNvLogWrap;
+            bNvLogNoWrap = pLog->bNvLogNoWrap;
+        }
+    }
+
+    libosMergeNvlog(logDecode, &totalNumNewEntries);
+
+    if (bNvLogNoWrap)
+    {
+        bNvLogNoWrap = libosCopyLogToMergeNvlog_Nowrap(logDecode, NvLogLogger.pBuffers[hNvLogNoWrap], totalNumNewEntries);
+        if (!bNvLogNoWrap)
+        {
+            for (NvU64 i = 0; i < logDecode->numLogBuffers; i++)
+            {
+                LIBOS_LOG_DECODE_LOG *pLog = &logDecode->log[i];
+
+                if ((pLog->libosLogDecodeFlags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED) ||
+                    (pLog->libosLogFlags & LIBOS_LOG_NVLOG_BUFFER_FLAG_MERGED_NVLOG_BUFFER) == 0)
+                    continue;
+
+                pLog->bNvLogNoWrap = NV_FALSE;
+            }
+        }
+    }
+
+    if (!bNvLogNoWrap)
+    {
+        libosCopyLogToMergeNvlog_Wrap(logDecode, NvLogLogger.pBuffers[hNvLogWrap], totalNumNewEntries);
+    }
+}
+
 static void libosExtractLogs_nvlog(LIBOS_LOG_DECODE *logDecode, NvBool bSyncNvLog)
 {
     NvU64 i;
+    NvBool hasMergedNvlogBuffers = NV_FALSE;
     for (i = 0; i < logDecode->numLogBuffers; i++)
     {
         LIBOS_LOG_DECODE_LOG *pLog = &logDecode->log[i];
 
-        if (pLog->flags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
+        if (pLog->libosLogDecodeFlags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
             continue;
+
+        if (pLog->libosLogFlags & LIBOS_LOG_NVLOG_BUFFER_FLAG_MERGED_NVLOG_BUFFER)
+        {
+            hasMergedNvlogBuffers = NV_TRUE;
+            continue;
+        }
 
         if (pLog->bNvLogNoWrap)
         {
@@ -1482,6 +1839,9 @@ static void libosExtractLogs_nvlog(LIBOS_LOG_DECODE *logDecode, NvBool bSyncNvLo
             libosSyncNvlog(pLog);
         }
     }
+
+    if (hasMergedNvlogBuffers)
+        libosExtractLogs_mergeNvlog(logDecode);
 }
 
 void libosPreserveLogs(LIBOS_LOG_DECODE *pLogDecode)
@@ -1491,7 +1851,7 @@ void libosPreserveLogs(LIBOS_LOG_DECODE *pLogDecode)
     {
         LIBOS_LOG_DECODE_LOG *pLog = &pLogDecode->log[i];
 
-        if (pLog->flags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
+        if (pLog->libosLogDecodeFlags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
             continue;
 
         if (pLog->bDidPush)
@@ -1614,7 +1974,163 @@ void libosLogCreateEx(LIBOS_LOG_DECODE *logDecode, const char *pSourceName)
 }
 #endif
 
-void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSize, NvU32 gpuInstance, NvU32 gpuArch, NvU32 gpuImpl, const char *name, const char *elfSectionName, NvU32 libosLogFlags, void *buildId)
+static void libosLogInitHeader(
+    LIBOS_LOG_NVLOG_BUFFER *pBuf,
+    const char *taskPrefix,
+    NvU32 gpuArch,
+    NvU32 gpuImpl,
+    NvU32 libosLogFlags,
+    LibosElfNoteHeader *buildIdSection
+)
+{
+    if (taskPrefix)
+    {
+        portStringCopy(pBuf->taskPrefix, sizeof(pBuf->taskPrefix), taskPrefix, sizeof(pBuf->taskPrefix));
+    }
+
+    pBuf->gpuArch = gpuArch;
+    pBuf->gpuImpl = gpuImpl;
+    pBuf->version = LIBOS_LOG_NVLOG_BUFFER_VERSION;
+    pBuf->flags   = libosLogFlags;
+
+    if (buildIdSection != NULL)
+    {
+        pBuf->buildIdLength = buildIdSection->descsz;
+        portMemCopy(&pBuf->buildId[0], sizeof(pBuf->buildId), 
+                    buildIdSection->data + buildIdSection->namesz, buildIdSection->descsz);
+    }
+}
+
+/**
+ *
+ * @brief Functions for allocating merged nvlog buffers
+ *
+ * When nvlog buffer are not merged for different GSP task, libosLogAddLog would initialize the
+ * libos log buffer and allocate 2 nvlog buffers for wrap and no wrap
+ *
+ * When merge nvlog flag is set, libosLogAddLog will skip nvlog allocation. Instead this function
+ * will allocate the merged nvlog buffer after every libos log has been initilized
+ */
+void libosLogSetupMergedNvlog(
+    LIBOS_LOG_DECODE *logDecode,
+    NvU32 gpuInstance,
+    NvU64 mergedBufferSize,
+    const char *name,
+    NvU32 gpuArch,
+    NvU32 gpuImpl,
+    void *buildId)
+{
+#if LIBOS_LOG_TO_NVLOG
+    NV_STATUS status;
+
+    const NvU32 libosNoWrapBufferFlags =
+        DRF_DEF(LOG, _BUFFER_FLAGS, _DISABLED, _NO)      | DRF_DEF(LOG, _BUFFER_FLAGS, _TYPE, _NOWRAP)  |
+        DRF_DEF(LOG, _BUFFER_FLAGS, _EXPANDABLE, _NO)    | DRF_DEF(LOG, _BUFFER_FLAGS, _NONPAGED, _YES) |
+        DRF_DEF(LOG, _BUFFER_FLAGS, _LOCKING, _NONE)     | DRF_DEF(LOG, _BUFFER_FLAGS, _OCA, _YES)      |
+        DRF_DEF(LOG, _BUFFER_FLAGS, _FORMAT, _LIBOS_LOG) |
+        DRF_NUM(LOG, _BUFFER_FLAGS, _GPU_INSTANCE, gpuInstance);
+
+    const NvU32 libosWrapBufferFlags =
+        DRF_DEF(LOG, _BUFFER_FLAGS, _DISABLED, _NO)      | DRF_DEF(LOG, _BUFFER_FLAGS, _TYPE, _RING)    |
+        DRF_DEF(LOG, _BUFFER_FLAGS, _EXPANDABLE, _NO)    | DRF_DEF(LOG, _BUFFER_FLAGS, _NONPAGED, _YES) |
+        DRF_DEF(LOG, _BUFFER_FLAGS, _LOCKING, _NONE)     | DRF_DEF(LOG, _BUFFER_FLAGS, _OCA, _YES)      |
+        DRF_DEF(LOG, _BUFFER_FLAGS, _FORMAT, _LIBOS_LOG) |
+        DRF_NUM(LOG, _BUFFER_FLAGS, _GPU_INSTANCE, gpuInstance);
+
+    if (mergedBufferSize == 0)
+        return;
+
+    if (logDecode->mergedBuffer == NULL)
+    {
+        logDecode->mergedBuffer     = portMemAllocNonPaged(mergedBufferSize);
+        logDecode->mergedBufferSize = mergedBufferSize;
+    }
+
+    NvU32 hNvLogNoWrap = 0;
+    NvU32 hNvLogWrap   = 0;
+    NvU64 preservedNoWrapPos = 0;
+
+    NvU32 tag = LIBOS_LOG_NVLOG_BUFFER_TAG(logDecode->sourceName, logDecode->numLogBuffers*2);
+    NvBool bFoundPreserved = findPreservedNvlogBuffer(tag, gpuInstance, &hNvLogNoWrap);
+    NvU32 libosLogFlags = 0;
+
+    libosLogFlags |= LIBOS_LOG_NVLOG_BUFFER_FLAG_PACKED_METADATA;
+    libosLogFlags |= LIBOS_LOG_NVLOG_BUFFER_FLAG_MERGED_NVLOG_BUFFER;
+
+    if (!bFoundPreserved)
+    {
+        status = nvlogAllocBuffer(
+            LIBOS_LOG_NVLOG_BUFFER_SIZE(mergedBufferSize), libosNoWrapBufferFlags,
+            tag,
+            &hNvLogNoWrap);
+
+        if (status == NV_OK)
+        {
+            libosLogInitHeader(
+                (LIBOS_LOG_NVLOG_BUFFER *) NvLogLogger.pBuffers[hNvLogNoWrap]->data,
+                name,
+                gpuArch,
+                gpuImpl,
+                libosLogFlags,
+                buildId
+            );
+
+            NvLogLogger.pBuffers[hNvLogNoWrap]->pos = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) + sizeof(NvU64); // offset to account for LIBOS buffer header and put pointer
+
+        }
+        else
+        {
+            LIBOS_LOG_DECODE_PRINTF(LEVEL_ERROR, "nvlogAllocBuffer nowrap failed\n");
+        }
+    }
+    else
+    {
+        preservedNoWrapPos = NvLogLogger.pBuffers[hNvLogNoWrap]->pos;
+    }
+
+    tag = LIBOS_LOG_NVLOG_BUFFER_TAG(logDecode->sourceName, logDecode->numLogBuffers*2 + 1);
+
+    status = nvlogAllocBuffer(
+        LIBOS_LOG_NVLOG_BUFFER_SIZE(mergedBufferSize), libosWrapBufferFlags,
+        tag, &hNvLogWrap);
+
+    if (status == NV_OK)
+    {
+        libosLogInitHeader(
+            (LIBOS_LOG_NVLOG_BUFFER *) NvLogLogger.pBuffers[hNvLogWrap]->data,
+            name,
+            gpuArch,
+            gpuImpl,
+            libosLogFlags,
+            buildId
+        );
+
+        NvLogLogger.pBuffers[hNvLogWrap]->pos = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) + sizeof(NvU64); // offset to account for LIBOS buffer header and put pointer
+
+    }
+    else
+    {
+        LIBOS_LOG_DECODE_PRINTF(LEVEL_ERROR, "nvlogAllocBuffer wrap failed\n");
+    }
+
+    for (NvU32 i = 0; i < logDecode->numLogBuffers; i++)
+    {
+        if (logDecode->log[i].libosLogFlags & LIBOS_LOG_NVLOG_BUFFER_FLAG_MERGED_NVLOG_BUFFER)
+        {
+            logDecode->log[i].hNvLogNoWrap = hNvLogNoWrap;
+            logDecode->log[i].hNvLogWrap   = hNvLogWrap;
+            logDecode->log[i].bNvLogNoWrap = NV_TRUE;
+            if (preservedNoWrapPos != 0)
+                logDecode->log[i].preservedNoWrapPos = preservedNoWrapPos;
+            else
+                logDecode->log[i].preservedNoWrapPos = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) + sizeof(NvU64);;
+        }
+    }
+        
+#endif // LIBOS_LOG_TO_NVLOG
+}
+
+void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSize, NvU32 gpuInstance, NvU32 gpuArch, NvU32 gpuImpl, const char *name, const char *elfSectionName, NvU32 libosLogDecodeFlags, void *buildId, NvU32 libosLogNvlogBufferVersion, NvU32 libosLogFlags)
 {
     NvU32 i;
     LIBOS_LOG_DECODE_LOG *pLog;
@@ -1625,6 +2141,8 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
         return;
     }
 
+    NV_ASSERT(libosLogNvlogBufferVersion >= LIBOS_LOG_NVLOG_BUFFER_VERSION_2 || libosLogFlags == 0);
+
     i                          = (NvU32)(logDecode->numLogBuffers++);
     pLog                       = &logDecode->log[i];
     pLog->physicLogBuffer      = (volatile NvU64 *)buffer;
@@ -1632,8 +2150,9 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
     pLog->previousPut          = 0;
     pLog->putCopy              = 0;
     pLog->putIter              = 0;
-    pLog->flags                = libosLogFlags;
-
+    pLog->libosLogDecodeFlags  = libosLogDecodeFlags;
+    pLog->libosLogFlags        = libosLogFlags;
+    pLog->libosLogNvlogBufferVersion = libosLogNvlogBufferVersion;
     pLog->gpuInstance  = gpuInstance;
 
     if (name)
@@ -1645,7 +2164,10 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
         portStringCopy(pLog->elfSectionName, sizeof(pLog->elfSectionName), "default", sizeof(pLog->elfSectionName));
 
 #if LIBOS_LOG_TO_NVLOG
-    if (pLog->flags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
+    if (pLog->libosLogDecodeFlags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
+        return;
+
+    if (pLog->libosLogFlags & LIBOS_LOG_NVLOG_BUFFER_FLAG_MERGED_NVLOG_BUFFER)
         return;
 
     NV_STATUS status;
@@ -1671,7 +2193,6 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
     pLog->bDidPush             = NV_FALSE;
     pLog->preservedNoWrapPos   = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) + sizeof(NvU64); // offset to account for LIBOS buffer header and put pointer
 
-    LIBOS_LOG_NVLOG_BUFFER *pNoWrapBuf;
     NvU32 tag = LIBOS_LOG_NVLOG_BUFFER_TAG(logDecode->sourceName, i * 2);
     NvBool bFoundPreserved = findPreservedNvlogBuffer(tag, gpuInstance, &pLog->hNvLogNoWrap);
 
@@ -1684,25 +2205,14 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
 
         if (status == NV_OK)
         {
-            pNoWrapBuf = (LIBOS_LOG_NVLOG_BUFFER *)NvLogLogger.pBuffers[pLog->hNvLogNoWrap]->data;
-            if (name)
-            {
-                portStringCopy(
-                    pNoWrapBuf->taskPrefix, sizeof pNoWrapBuf->taskPrefix, name, sizeof pNoWrapBuf->taskPrefix);
-            }
-
-            pNoWrapBuf->gpuArch = gpuArch;
-            pNoWrapBuf->gpuImpl = gpuImpl;
-            pNoWrapBuf->version = LIBOS_LOG_NVLOG_BUFFER_VERSION;
-
-            LibosElfNoteHeader *buildIdSection = buildId;
-
-            if (buildIdSection != NULL)
-            {
-                pNoWrapBuf->buildIdLength = buildIdSection->descsz;
-                portMemCopy(&pNoWrapBuf->buildId[0], sizeof(pNoWrapBuf->buildId), 
-                            buildIdSection->data + buildIdSection->namesz, buildIdSection->descsz);
-            }
+            libosLogInitHeader(
+                (LIBOS_LOG_NVLOG_BUFFER *) NvLogLogger.pBuffers[pLog->hNvLogNoWrap]->data,
+                name,
+                gpuArch,
+                gpuImpl,
+                libosLogFlags,
+                buildId
+            );
 
             NvLogLogger.pBuffers[pLog->hNvLogNoWrap]->pos = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) + sizeof(NvU64); // offset to account for LIBOS buffer header and put pointer
             pLog->bNvLogNoWrap                            = NV_TRUE;
@@ -1719,7 +2229,6 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
         pLog->preservedNoWrapPos = NvLogLogger.pBuffers[pLog->hNvLogNoWrap]->pos;
     }
 
-    LIBOS_LOG_NVLOG_BUFFER *pWrapBuf;
     tag = LIBOS_LOG_NVLOG_BUFFER_TAG(logDecode->sourceName, i * 2 + 1);
 
     status = nvlogAllocBuffer(
@@ -1728,25 +2237,14 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
 
     if (status == NV_OK)
     {
-        pWrapBuf = (LIBOS_LOG_NVLOG_BUFFER *)NvLogLogger.pBuffers[pLog->hNvLogWrap]->data;
-        if (name)
-        {
-            portStringCopy(
-                pWrapBuf->taskPrefix, sizeof pWrapBuf->taskPrefix, name, sizeof pWrapBuf->taskPrefix);
-        }
-
-        pWrapBuf->gpuArch = gpuArch;
-        pWrapBuf->gpuImpl = gpuImpl;
-        pWrapBuf->version = LIBOS_LOG_NVLOG_BUFFER_VERSION;
-
-        LibosElfNoteHeader *buildIdSection = buildId;
-
-        if (buildIdSection != NULL)
-        {
-            pWrapBuf->buildIdLength = buildIdSection->descsz;
-            portMemCopy(&pWrapBuf->buildId[0], sizeof(pWrapBuf->buildId), 
-                        buildIdSection->data + buildIdSection->namesz, buildIdSection->descsz);
-        }
+        libosLogInitHeader(
+            (LIBOS_LOG_NVLOG_BUFFER *) NvLogLogger.pBuffers[pLog->hNvLogWrap]->data,
+            name,
+            gpuArch,
+            gpuImpl,
+            libosLogFlags,
+            buildId
+        );
 
         NvLogLogger.pBuffers[pLog->hNvLogWrap]->pos = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) + sizeof(NvU64); // offset to account for LIBOS buffer header and put pointer
     }
@@ -1757,10 +2255,10 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
 #endif // LIBOS_LOG_TO_NVLOG
 }
 
-void libosLogAddLog(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSize, NvU32 gpuInstance, const char *name, const char *elfSectionName, NvU32 libosLogFlags)
+void libosLogAddLog(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSize, NvU32 gpuInstance, const char *name, const char *elfSectionName, NvU32 libosLogDecodeFlags, NvU32 libosLogNvlogBufferVersion, NvU32 libosLogFlags)
 {
     // Use defaults for gpuArch and gpuImpl
-    libosLogAddLogEx(logDecode, buffer, bufferSize, gpuInstance, 0, 0, name, elfSectionName, libosLogFlags, NULL);
+    libosLogAddLogEx(logDecode, buffer, bufferSize, gpuInstance, 0, 0, name, elfSectionName, libosLogDecodeFlags, NULL, libosLogNvlogBufferVersion, libosLogFlags);
 }
 
 #if LIBOS_LOG_DECODE_ENABLE
@@ -1774,7 +2272,7 @@ static NvBool _checkIsElfContainer(LibosElfImage *image)
     return NV_TRUE;
 }
 
-void _libosLogInitLogBuffer(LIBOS_LOG_DECODE_LOG *pLog, LibosElf64Header *elf, NvU64 elfSize)
+static void _libosLogInitLogBuffer(LIBOS_LOG_DECODE_LOG *pLog, LibosElf64Header *elf, NvU64 elfSize)
 {
     pLog->elf = elf;
 
@@ -1782,6 +2280,69 @@ void _libosLogInitLogBuffer(LIBOS_LOG_DECODE_LOG *pLog, LibosElf64Header *elf, N
     {
         LibosElfImageConstruct(&pLog->elfImage, elf, elfSize);
         LibosDebugResolverConstruct(&pLog->resolver, &pLog->elfImage);
+        LibosElf64SectionHeader *shdr = LibosElfFindSectionByName(&pLog->elfImage, ".logging");
+        if (shdr != NULL)
+            pLog->loggingBaseAddress = shdr->addr;
+    }
+}
+
+static void libosLogInitLogBuffer(LIBOS_LOG_DECODE_LOG *pLog, LibosElfImage *pImage, const char *taskPrefix, const char *pElfSectionName)
+{
+    if (taskPrefix)
+        portStringCopy(pLog->taskPrefix, sizeof(pLog->taskPrefix), taskPrefix, sizeof(pLog->taskPrefix));
+
+    if (pElfSectionName)
+        portStringCopy(pLog->elfSectionName, sizeof(pLog->elfSectionName), pElfSectionName, sizeof(pLog->elfSectionName));
+
+    LibosElf64SectionHeader *sectionHdr;
+    NvU8 *sectionData = NULL, *sectionDataEnd;
+    NvU64 sectionSize = 0;
+
+    // Initialize each log buffer with its own task's logging ELF
+    sectionHdr = LibosElfFindSectionByName(pImage, (const char *) pLog->elfSectionName);
+    if (sectionHdr != NULL)
+    {
+        LibosElfMapSection(pImage, sectionHdr, &sectionData, &sectionDataEnd);
+        sectionSize = sectionHdr->size;
+    }
+    _libosLogInitLogBuffer(pLog, (LibosElf64Header *) sectionData, sectionSize);
+}
+
+/**
+ *
+ * @brief Initialize log resolver to handle merged log decoding
+ *
+ * During offline decoding, if log buffers are not merged, we use pLog themselves as the resolver since
+ * the buffer tag/task prefix tells us the corresponding elf sefction.
+ *
+ * In merged log case, the libos log header extracted from the nvlog dump file would be from a merged log
+ * buffer without proper task prefix. So we need resolvers initialized by this function
+ *
+ */
+void libosLogInitGspMergedLogResolver(LIBOS_LOG_DECODE *logDecode, LibosElf64Header *elf, NvU64 elfSize, NvU32 gpuArch, NvU32 gpuImpl)
+{
+    NvU32 numTaskLogInfos = 0;
+    const nv_firmware_task_log_info_t *pTaskLogInfos = nv_firmware_get_task_log_infos(&numTaskLogInfos);
+    const nv_firmware_kernel_log_info_t *pkernelLogInfo = nv_firmware_kernel_log_info_for_gpu(gpuArch << NV_FIRMWARE_GPU_ARCH_SHIFT, gpuImpl);
+    LibosElfImage image;
+
+    if (!elf)
+        return;
+
+    // Set up log decoder
+    if (LibosElfImageConstruct(&image, elf, elfSize) != LibosOk)
+        return;
+
+    if (pkernelLogInfo)
+    {
+        libosLogInitLogBuffer(&logDecode->mergedLogResolver[LIBOS_LOG_TASK_GSP_KERNEL],
+                                &image, NV_FIRMWARE_KERNEL_LOG_PREFIX,
+                                pkernelLogInfo->elf_section_name);
+    }
+
+    for (NvU32 i = 0; i < numTaskLogInfos; i++)
+    {
+        libosLogInitLogBuffer(&logDecode->mergedLogResolver[i+2], &image, pTaskLogInfos[i].prefix, pTaskLogInfos[i].elf_section_name);
     }
 }
 
@@ -1845,20 +2406,9 @@ void libosLogInit(LIBOS_LOG_DECODE *logDecode, LibosElf64Header *elf, NvU64 elfS
     {
         if (bIsContainer)
         {
-            LibosElf64SectionHeader *sectionHdr;
-            NvU8 *sectionData = NULL, *sectionDataEnd;
-            NvU64 sectionSize = 0;
-
-            // Initialize each log buffer with its own task's logging ELF
-            sectionHdr = LibosElfFindSectionByName(&image, (const char *) logDecode->log[i].elfSectionName);
-            if (sectionHdr != NULL)
-            {
-                LibosElfMapSection(&image, sectionHdr, &sectionData, &sectionDataEnd);
-                sectionSize = sectionHdr->size;
-            }
-            _libosLogInitLogBuffer(&logDecode->log[i], (LibosElf64Header *) sectionData, sectionSize);
+            libosLogInitLogBuffer(&logDecode->log[i], &image, NULL, NULL);
 #if LIBOS_LOG_TO_NVLOG
-            if (logDecode->log[i].flags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
+            if (logDecode->log[i].libosLogDecodeFlags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
                 continue;
 #endif
         }
@@ -1888,7 +2438,7 @@ void libosLogUpdateTimerDelta(LIBOS_LOG_DECODE *logDecode, NvU64 localToGlobalTi
 
     for (NvU64 i = 0; i < logDecode->numLogBuffers; i++)
     {
-        if (logDecode->log[i].flags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
+        if (logDecode->log[i].libosLogDecodeFlags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
             continue;
 
 #if LIBOS_LOG_TO_NVLOG
@@ -1914,6 +2464,8 @@ void libosLogInitEx(
     // No extended config to set when decode is disabled
 }
 
+void libosLogInitGspMergedLogResolver(LIBOS_LOG_DECODE *logDecode, void *elf, NvU64 elfSize, NvU32 gpuArch, NvU32 gpuImpl) {}
+
 #endif // LIBOS_LOG_DECODE_ENABLE
 
 void libosLogDestroy(LIBOS_LOG_DECODE *logDecode)
@@ -1924,7 +2476,7 @@ void libosLogDestroy(LIBOS_LOG_DECODE *logDecode)
     {
         LIBOS_LOG_DECODE_LOG *pLog = &logDecode->log[i];
 
-        if (pLog->flags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
+        if (pLog->libosLogDecodeFlags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
             continue;
 
         if (pLog->hNvLogNoWrap != 0)
@@ -1938,6 +2490,13 @@ void libosLogDestroy(LIBOS_LOG_DECODE *logDecode)
             nvlogDeallocBuffer(pLog->hNvLogWrap, NV_FALSE);
             pLog->hNvLogWrap = 0;
         }
+    }
+
+    if (logDecode->mergedBuffer)
+    {
+        portMemFree(logDecode->mergedBuffer);
+        logDecode->mergedBuffer = NULL;
+        logDecode->mergedBufferSize = 0;
     }
 #endif // LIBOS_LOG_TO_NVLOG
 
@@ -1962,14 +2521,26 @@ void libosLogDestroy(LIBOS_LOG_DECODE *logDecode)
 
 void libosExtractLogs(LIBOS_LOG_DECODE *logDecode, NvBool bSyncNvLog)
 {
+    NvU64 i = 0;
+    for (i = 0; i < logDecode->numLogBuffers; i++)
+    {
+        if (logDecode->log[i].physicLogBuffer)
+        {
+            logDecode->log[i].putCopy = logDecode->log[i].physicLogBuffer[0];
+        }
+    }
 #if LIBOS_LOG_DECODE_ENABLE
     if (logDecode->bIsDecodable)
         libosExtractLogs_decode(logDecode);
 #endif
-
 #if LIBOS_LOG_TO_NVLOG
     libosExtractLogs_nvlog(logDecode, bSyncNvLog);
 #endif
+    // Update the previous put pointers.
+    for (i = 0; i < logDecode->numLogBuffers; i++)
+    {
+        logDecode->log[i].previousPut = logDecode->log[i].putCopy;
+    }
 }
 
 /**
@@ -2003,6 +2574,12 @@ void* libosLogGetDataPointer(LIBOS_LOG_NVLOG_BUFFER *pLibosBuf)
             dataPointer = pLibosBufV1->data;
             break;
         }
+        case LIBOS_LOG_NVLOG_BUFFER_VERSION_2:
+        {
+            LIBOS_LOG_NVLOG_BUFFER_V2 *pLibosBufV2 = (LIBOS_LOG_NVLOG_BUFFER_V2 *) pLibosBuf;
+            dataPointer = pLibosBufV2->data;
+            break;
+        }
         default:
             dataPointer = pLibosBuf->data;
             break;
@@ -2024,6 +2601,9 @@ NvU32 libosLogGetDataSize(LIBOS_LOG_NVLOG_BUFFER *pLibosBuf, NVLOG_BUFFER *pBuff
         case LIBOS_LOG_NVLOG_BUFFER_VERSION_1:
             libosLogDataOffset = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER_V1, data);
             break;
+        case LIBOS_LOG_NVLOG_BUFFER_VERSION_2:
+            libosLogDataOffset = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER_V2, data);
+            break;
         default:
             libosLogDataOffset = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data);
             break;
@@ -2043,6 +2623,8 @@ NvU32 libosLogGetDataOffset(LIBOS_LOG_NVLOG_BUFFER *pLibosBuf)
             return NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER_V0, data);
         case LIBOS_LOG_NVLOG_BUFFER_VERSION_1:
             return NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER_V1, data);
+        case LIBOS_LOG_NVLOG_BUFFER_VERSION_2:
+            return NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER_V2, data);
         default:
             return NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data);
     }

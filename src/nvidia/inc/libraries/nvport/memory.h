@@ -1,5 +1,5 @@
-/*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+    /*
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -205,6 +205,32 @@ void portMemFree(void *pData);
  *
  */
 void *portMemCopy(void *pDestination, NvLength destSize, const void *pSource, NvLength srcSize);
+
+/**
+ * @brief Copies data from one address to another.
+ *
+ * Copies srcSize bytes from pSource to pDestination, returning pDestination.
+ * pDestination should be at least destSize bytes, pSource at least srcSize.
+ * destSize should be equal or greater to srcSize.
+ *
+ * This function will also ensure that alignment faults will not be generated
+ * when the device memory is accessed.
+ *
+ * If destSize is 0, it is guaranteed to not access either buffer.
+ *
+ * @par Undefined:
+ * Behavior is undefined if memory regions referred to by pSource and
+ * pDestination overlap.
+ *
+ * @par Checked builds only:
+ * Will assert/breakpoint if the regions overlap. <br>
+ * Will assert/breakpoint if destSize < srcSize <br>
+ * Will assert/breakpoint if either pointer is NULL
+ *
+ * @return pDestination on success, NULL if the operation failed.
+ *
+ */
+void *portMemCopyAligned(void *pDestination, NvLength destSize, const void *pSource, NvLength srcSize);
 
 /**
  * @brief Moves data from one address to another.

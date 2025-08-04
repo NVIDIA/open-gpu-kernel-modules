@@ -168,7 +168,15 @@ NV_STATUS __nvoc_objCreate_KernelCeContext(KernelCeContext**, Dynamic*, NvU32, C
     __nvoc_objCreate_KernelCeContext((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS kcectxConstruct_IMPL(struct KernelCeContext *arg_pKCeContext, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_kcectxConstruct(arg_pKCeContext, arg_pCallContext, arg_pParams) kcectxConstruct_IMPL(arg_pKCeContext, arg_pCallContext, arg_pParams)
+
+void kcectxDestruct_IMPL(struct KernelCeContext *pKCeContext);
+#define __nvoc_kcectxDestruct(pKCeContext) kcectxDestruct_IMPL(pKCeContext)
+
+
+// Wrapper macros for halified functions
 #define kcectxGetSwMethods_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesGetSwMethods__
 #define kcectxGetSwMethods(pChannelDescendant, ppMethods, pNumMethods) kcectxGetSwMethods_DISPATCH(pChannelDescendant, ppMethods, pNumMethods)
 #define kcectxIsSwMethodStalling_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesIsSwMethodStalling__
@@ -363,12 +371,6 @@ static inline NV_STATUS kcectxGetOrAllocNotifShare_DISPATCH(struct KernelCeConte
     return pNotifier->__nvoc_metadata_ptr->vtable.__kcectxGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-NV_STATUS kcectxConstruct_IMPL(struct KernelCeContext *arg_pKCeContext, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_kcectxConstruct(arg_pKCeContext, arg_pCallContext, arg_pParams) kcectxConstruct_IMPL(arg_pKCeContext, arg_pCallContext, arg_pParams)
-void kcectxDestruct_IMPL(struct KernelCeContext *pKCeContext);
-
-#define __nvoc_kcectxDestruct(pKCeContext) kcectxDestruct_IMPL(pKCeContext)
 #undef PRIVATE_FIELD
 
 

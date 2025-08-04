@@ -46,6 +46,7 @@ struct UvmOpsUvmEvents;
 #include "nvgputypes.h"
 #include "nvstatus.h"
 #include "nv_uvm_types.h"
+#include "nv_uvm_user_types.h"
 
 
 // Define the type here as it's Linux specific, used only by the Linux specific

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -171,8 +171,11 @@ void kgmmuFmtInitPte_GH10X(KernelGmmu *pKernelGmmu,
     INIT_FIELD_DESC32(&pPte->fldPeerIndex, NV_MMU_VER3_PTE_PEER_ID);
     INIT_FIELD_DESC32(&pPte->fldKind, NV_MMU_VER3_PTE_KIND);
     INIT_FIELD_DESC32(&pPte->fldPtePcf, NV_MMU_VER3_PTE_PCF);
-
-    INIT_FIELD_ADDRESS(&pPte->fldAddrVidmem, NV_MMU_VER3_PTE_ADDRESS_VID, NV_MMU_VER3_PTE_ADDRESS_SHIFT);
-    INIT_FIELD_ADDRESS(&pPte->fldAddrPeer, NV_MMU_VER3_PTE_ADDRESS_PEER, NV_MMU_VER3_PTE_ADDRESS_SHIFT);
-    INIT_FIELD_ADDRESS(&pPte->fldAddrSysmem, NV_MMU_VER3_PTE_ADDRESS_SYS, NV_MMU_VER3_PTE_ADDRESS_SHIFT);
+    //
+    // MMU v3 deprecated old definitions and used the new static PTE Addr
+    // range NV_MMU_VER3_PTE_ADDRESS because v3 doesn't have comptagline in the PTE.
+    //
+    INIT_FIELD_ADDRESS(&pPte->fldAddrVidmem, NV_MMU_VER3_PTE_ADDRESS, NV_MMU_VER3_PTE_ADDRESS_SHIFT);
+    INIT_FIELD_ADDRESS(&pPte->fldAddrPeer, NV_MMU_VER3_PTE_ADDRESS, NV_MMU_VER3_PTE_ADDRESS_SHIFT);
+    INIT_FIELD_ADDRESS(&pPte->fldAddrSysmem, NV_MMU_VER3_PTE_ADDRESS, NV_MMU_VER3_PTE_ADDRESS_SHIFT);
 }

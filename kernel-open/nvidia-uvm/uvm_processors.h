@@ -700,6 +700,13 @@ int uvm_find_closest_node_mask(int src, const nodemask_t *mask);
 
 #define for_each_possible_uvm_node(nid) for_each_node_mask((nid), node_possible_map)
 
+static size_t node_to_index(int nid)
+{
+    UVM_ASSERT(nid != NUMA_NO_NODE);
+    UVM_ASSERT(nid < MAX_NUMNODES);
+    return __nodes_weight(&node_possible_map, nid);
+}
+
 // Compare two NUMA node IDs for equality.
 // The main purpose of this helper is to correctly compare
 // in situations when the system has only a single NUMA node

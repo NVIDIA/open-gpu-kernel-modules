@@ -432,6 +432,16 @@ typedef struct ADDRESS_TRANSLATION_ *ADDRESS_TRANSLATION;
 #define MEMDESC_FLAGS_MAP_FORCE_COMPRESSED_MAP     NVBIT64(52)
 
 //
+// RM will allow to map the ext sysmem memory into user space (cpu mapping).
+// ClassId == NV01_MEMORY_SYSTEM_OS_DESCRIPTOR is treated as
+// ext sysmem memory.
+//
+#define MEMDESC_FLAGS_ALLOW_EXT_SYSMEM_USER_CPU_MAPPING NVBIT64(53)
+
+// Indicate if memdesc is allocated for non IO-coherent memory.
+#define MEMDESC_FLAGS_NON_IO_COHERENT              NVBIT64(54)
+
+//
 // RM internal allocations owner tags
 // Total 200 tags are introduced, out of which some are already
 // replaced with known verbose strings
@@ -613,13 +623,13 @@ typedef enum
     NV_FB_ALLOC_RM_INTERNAL_OWNER_PMU_ACR_SHADOW_COPY   = 182U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_FLCN_BACKING_STORE    = 183U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_151       = 184U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_152       = 185U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_153       = 186U,
 
     //
     // Unused tags from here, for any new use-case it's required 
     // to replace the below tags with known verbose strings
     //
-    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_152       = 185U,
-    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_153       = 186U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_154       = 187U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_155       = 188U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_156       = 189U,
@@ -646,6 +656,13 @@ typedef enum
     NV_FB_ALLOC_RM_INTERNAL_OWNER_COV_TASK_DESCRIPTOR   = 210U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER__MAX                  = 211U,
 } NV_FB_ALLOC_RM_INTERNAL_OWNER;
+
+// Enums defining CPU/GPU snooping behavior
+typedef enum {
+    MEMDESC_CACHE_SNOOP_DEFER_TO_MAP = 0,    // Choice was made at allocation time
+    MEMDESC_CACHE_SNOOP_DISABLE = 1,         // No GPU cache snooping takes place (SYS_NCOH)
+    MEMDESC_CACHE_SNOOP_ENABLE = 2           // GPU cache is snooped (SYS_COH)
+} MEMDESC_CACHE_SNOOP;
 
 //
 // Overrides address translation in SR-IOV enabled usecases
@@ -759,6 +776,28 @@ typedef struct MEMORY_DESCRIPTOR
     // One of NV_MEMORY_CACHED, NV_MEMORY_UNCACHED, NV_MEMORY_WRITECOMBINED
     NvU32 _cpuCacheAttrib;
 
+    //
+    // This field is used on fully coherent platforms (like Blackwell+ Tegra) to decide
+    // whether memory should be mapped as COH/NCOH.
+    //
+    // For fully coherent platforms, the aperture fields have been repurposed
+    // to specify whether the GPU cache will be snooped by the CPU or other IO devices.
+    //
+    // Setting MEMDESC_CACHE_SNOOP_DEFER_TO_MAP defers making the choice to map time.
+    //
+    MEMDESC_CACHE_SNOOP gpuCacheSnoop;
+
+    //
+    // This field is used on non-fully coherent platforms (like dGPU and preBlackwell Tegra) to decide
+    // whether memory should be mapped as COH/NCOH.
+    //
+    // For non-fully coherent platforms, these settings specify whether the CPU cache will be
+    // snooped by the GPU.
+    //
+    // Setting MEMDESC_CACHE_SNOOP_DEFER_TO_MAP defers making the choice to map time.
+    //
+    MEMDESC_CACHE_SNOOP cpuCacheSnoop;
+
     // The page kind of this memory
     NvU32 _pteKind;
     NvU32 _pteKindCompressed;
@@ -868,6 +907,12 @@ typedef struct MEMORY_DESCRIPTOR
     // We verified that memdesc is safe to be mapped as large pages
     NvBool bForceHugePages;
 
+    //
+    // If MEMDESC_FLAGS_ALLOC_AS_LOCALIZED, OR the physical address against this to
+    // get the address to be programmed into HW.
+    //
+    NvU64 localizedMask;
+
     // Indicates granularity of mapping. Will be used to implement dynamic page sizes.
     NvU32 pageArrayGranularity;
 
@@ -966,7 +1011,7 @@ NV_STATUS memdescMap(MEMORY_DESCRIPTOR *pMemDesc, NvU64 Offset, NvU64 Size,
                      NvBool Kernel, NvU32 Protect, NvP64 *pAddress, NvP64 *pPriv);
 
 // Free a CPU mapping of an arbitrary subrange of the memory.
-void memdescUnmap(MEMORY_DESCRIPTOR *pMemDesc, NvBool Kernel, NvU32 ProcessId,
+void memdescUnmap(MEMORY_DESCRIPTOR *pMemDesc, NvBool Kernel,
                   NvP64 Address, NvP64 Priv);
 
 // Allocate a CPU mapping of an arbitrary subrange of the memory.
@@ -975,7 +1020,7 @@ NV_STATUS memdescMapOld(MEMORY_DESCRIPTOR *pMemDesc, NvU64 Offset, NvU64 Size,
                         NvBool Kernel, NvU32 Protect, void **pAddress, void **pPriv);
 
 // Free a CPU mapping of an arbitrary subrange of the memory.
-void memdescUnmapOld(MEMORY_DESCRIPTOR *pMemDesc, NvBool Kernel, NvU32 ProcessId,
+void memdescUnmapOld(MEMORY_DESCRIPTOR *pMemDesc, NvBool Kernel,
                      void *Address, void *Priv);
 
 // Fill in a MEMORY_DESCRIPTOR with a description of a preexisting contiguous
@@ -1010,6 +1055,15 @@ void memdescGetPhysAddrs(MEMORY_DESCRIPTOR *pMemDesc,
                          NvU64 stride,
                          NvU64 count,
                          RmPhysAddr *pAddresses);
+
+// Compute count physical addresses for a PTE or HW within a MEMORY_DESCRIPTOR. Starting at the
+// given offset and advancing it by stride for each consecutive address.
+void memdescGetPtePhysAddrs(MEMORY_DESCRIPTOR *pMemDesc,
+                            ADDRESS_TRANSLATION addressTranslation,
+                            NvU64 offset,
+                            NvU64 stride,
+                            NvU64 count,
+                            RmPhysAddr *pAddresses);
 
 // Compute count physical addresses within a MEMORY_DESCRIPTOR for a specific
 // GPU. Starting at the given offset and advancing it by stride for each
@@ -1157,7 +1211,7 @@ MEMDESC_CUSTOM_HEAP memdescGetCustomHeap(PMEMORY_DESCRIPTOR);
 NV_STATUS memdescSetPageArrayGranularity(MEMORY_DESCRIPTOR *pMemDesc, NvU64 pageArrayGranularity);
 NvBool memdescAcquireRmExclusiveUse(MEMORY_DESCRIPTOR *pMemDesc);
 NV_STATUS memdescFillMemdescForPhysAttr(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation,
-                                        NvU64 *pOffset,NvU32 *pMemAperture, NvU32 *pMemKind, NvU32 *pZCullId,
+                                        NvU64 *pOffset,NvU32 *pMemAperture, NvU32 *pMemKind,
                                         NvU32 *pGpuCacheAttr, NvU32 *pGpuP2PCacheAttr, NvU64 *contigSegmentSize);
 NvBool memdescIsEgm(MEMORY_DESCRIPTOR *pMemDesc);
 NvU64 memdescGetAdjustedPageSize(MEMORY_DESCRIPTOR *pMemDesc);
@@ -1485,6 +1539,60 @@ memdescSetAllocSizeFields(MEMORY_DESCRIPTOR *pMemDesc, NvU64 actualSize, NvU32 g
     pMemDesc->pageArrayGranularity = granularity;
 
     return NV_OK;
+}
+
+/*!
+ *  @brief Get GPU cache snoop setting
+ *
+ *  @param[in]  pMemDesc    Memory descriptor pointer
+ *
+ *  @returns Current GPU cache snoop setting
+ */
+static NV_INLINE MEMDESC_CACHE_SNOOP
+memdescGetGpuCacheSnoop(MEMORY_DESCRIPTOR *pMemDesc)
+{
+    return pMemDesc->gpuCacheSnoop;
+}
+
+/*!
+ *  @brief Set GPU cache snoop setting
+ *
+ *  @param[in]  pMemDesc           Memory descriptor pointer
+ *  @param[in]  gpuCacheSnoop      New GPU cache snoop setting
+ *
+ *  @returns nothing
+ */
+static NV_INLINE void
+memdescSetGpuCacheSnoop(MEMORY_DESCRIPTOR *pMemDesc, MEMDESC_CACHE_SNOOP gpuCacheSnoop)
+{
+    pMemDesc->gpuCacheSnoop = gpuCacheSnoop;
+}
+
+/*!
+ *  @brief Get CPU cache snoop setting
+ *
+ *  @param[in]  pMemDesc    Memory descriptor pointer
+ *
+ *  @returns Current CPU cache snoop setting
+ */
+static NV_INLINE MEMDESC_CACHE_SNOOP
+memdescGetCpuCacheSnoop(MEMORY_DESCRIPTOR *pMemDesc)
+{
+    return pMemDesc->cpuCacheSnoop;
+}
+
+/*!
+ *  @brief Set CPU cache snoop setting
+ *
+ *  @param[in]  pMemDesc           Memory descriptor pointer
+ *  @param[in]  cpuCacheSnoop      New CPU cache snoop setting
+ *
+ *  @returns nothing
+ */
+static NV_INLINE void
+memdescSetCpuCacheSnoop(MEMORY_DESCRIPTOR *pMemDesc, MEMDESC_CACHE_SNOOP cpuCacheSnoop)
+{
+    pMemDesc->cpuCacheSnoop = cpuCacheSnoop;
 }
 
 #endif // _MEMDESC_H_

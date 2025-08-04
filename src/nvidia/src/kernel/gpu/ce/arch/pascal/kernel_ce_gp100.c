@@ -129,7 +129,6 @@ kceIsCeSysmemRead_GP100
 {
     NvU32 sysmemReadCE;
     NvU32 sysmemWriteCE;
-    NvU32 nvlinkP2PCeMask;
     NvU32 gpuMask = NVBIT(pGpu->gpuInstance);
 
     // Initialize to maximum CEs available
@@ -139,7 +138,7 @@ kceIsCeSysmemRead_GP100
                                 gpuMask,
                                 &sysmemReadCE,
                                 &sysmemWriteCE,
-                                &nvlinkP2PCeMask));
+                                NULL));
 
     return (sysmemReadCE == pKCe->publicID);
 }
@@ -159,7 +158,6 @@ kceIsCeSysmemWrite_GP100
 {
     NvU32 sysmemReadCE;
     NvU32 sysmemWriteCE;
-    NvU32 nvlinkP2PCeMask;
     NvU32 gpuMask = NVBIT(pGpu->gpuInstance);
 
     // Initialize to maximum CEs available
@@ -169,7 +167,7 @@ kceIsCeSysmemWrite_GP100
                                 gpuMask,
                                 &sysmemReadCE,
                                 &sysmemWriteCE,
-                                &nvlinkP2PCeMask);
+                                NULL);
 
     return (sysmemWriteCE == pKCe->publicID);
 }

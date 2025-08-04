@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -235,10 +235,12 @@ _spdmTriggerHeartbeat
     }
 
     // Some RM APIs call SPDM, ensure we do not conflict with them
-    status = osQueueWorkItemWithFlags(pGpu, _spdmSendHeartbeat, pTmrEvent->pUserData,
-                                        OS_QUEUE_WORKITEM_FLAGS_DONT_FREE_PARAMS |
-                                        OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW      |
-                                        OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS);
+    status = osQueueWorkItem(pGpu,
+                             _spdmSendHeartbeat,
+                             pTmrEvent->pUserData,
+                             OS_QUEUE_WORKITEM_FLAGS_DONT_FREE_PARAMS |
+                                 OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW |
+                                 OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS);
 
     ErrorExit:
     if (status != NV_OK && pGpu != NULL)
@@ -394,7 +396,7 @@ _spdmEncodeMessageGsp
     else
     {
         // The normal message is not encrypted, it will be sent as NV_SPDM_DESC_HEADER + Message.
-        payloadSize = sizeof(NV_SPDM_DESC_HEADER) + message_size;
+        payloadSize = sizeof(NV_SPDM_DESC_HEADER) + (NvU32)message_size;
 
         //
         // Check for large enough buffer for payload, as well as for overflow in
@@ -646,7 +648,7 @@ _spdmSendMessageGsp
     portMemCopy(pSpdm->pTransportBuffer, pSpdm->transportBufferSize, message, message_size);
 
     nvStatus = spdmMessageProcess_HAL(pGpu, pSpdm,
-                                      pSpdm->pTransportBuffer, message_size,
+                                      pSpdm->pTransportBuffer, (NvU32)message_size,
                                       pSpdm->pTransportBuffer, &pSpdm->pendingResponseSize);
     if (nvStatus != NV_OK)
     {
@@ -1147,7 +1149,7 @@ spdmGetAttestationReport_GH100
 
         portMemCopy(pAttestationReport, *pAttestationReportSize,
                     pSpdm->pMsgLog, libspdm_get_msg_log_size(pSpdm->pLibspdmContext));
-        *pAttestationReportSize = libspdm_get_msg_log_size(pSpdm->pLibspdmContext);
+        *pAttestationReportSize = (NvU32)libspdm_get_msg_log_size(pSpdm->pLibspdmContext);
     }
 
     // Retrieve CEC Attestation Report, if requested.

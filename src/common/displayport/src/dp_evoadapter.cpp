@@ -76,37 +76,37 @@ const struct
     DP_REG_VAL_TYPE valueType;
 } DP_REGKEY_TABLE [] =
 {
-    {NV_DP_REGKEY_OVERRIDE_DPCD_REV,                &dpRegkeyDatabase.dpcdRevOveride,                  DP_REG_VAL_U32},
-    {NV_DP_REGKEY_DISABLE_SSC,                      &dpRegkeyDatabase.bSscDisabled,                    DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_FAST_LINK_TRAINING,        &dpRegkeyDatabase.bFastLinkTrainingEnabled,        DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_DISABLE_MST,                      &dpRegkeyDatabase.bMstDisabled,                    DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_INBAND_STEREO_SIGNALING,   &dpRegkeyDatabase.bInbandStereoSignalingEnabled,   DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_SKIP_POWEROFF_EDP_IN_HEAD_DETACH, &dpRegkeyDatabase.bPoweroffEdpInHeadDetachSkipped, DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_OCA_LOGGING,               &dpRegkeyDatabase.bOcaLoggingEnabled,              DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_REPORT_DEVICE_LOST_BEFORE_NEW,    &dpRegkeyDatabase.bReportDeviceLostBeforeNew,      DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_APPLY_LINK_BW_OVERRIDE_WAR,       &dpRegkeyDatabase.bLinkBwOverrideWarApplied,       DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_APPLY_MAX_LINK_RATE_OVERRIDES,    &dpRegkeyDatabase.applyMaxLinkRateOverrides,       DP_REG_VAL_U32},
-    {NV_DP_REGKEY_DISABLE_DSC,                      &dpRegkeyDatabase.bDscDisabled,                    DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_SKIP_ASSESSLINK_FOR_EDP,          &dpRegkeyDatabase.bAssesslinkForEdpSkipped,        DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_HDCP_AUTH_ONLY_ON_DEMAND,         &dpRegkeyDatabase.bHdcpAuthOnlyOnDemand,           DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_MSA_OVER_MST,              &dpRegkeyDatabase.bMsaOverMstEnabled,              DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE,              &dpRegkeyDatabase.bOptLinkKeptAlive,               DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE_MST,          &dpRegkeyDatabase.bOptLinkKeptAliveMst,            DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE_SST,          &dpRegkeyDatabase.bOptLinkKeptAliveSst,            DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_FORCE_EDP_ILR,                    &dpRegkeyDatabase.bBypassEDPRevCheck,              DP_REG_VAL_BOOL},
-    {NV_DP_DSC_MST_CAP_BUG_3143315,                 &dpRegkeyDatabase.bDscMstCapBug3143315,            DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_POWER_DOWN_PHY,                   &dpRegkeyDatabase.bPowerDownPhyBeforeD3,           DP_REG_VAL_BOOL},
-    {NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT,              &dpRegkeyDatabase.supportInternalUhbrOnFpga,       DP_REG_VAL_U32},
-    {NV_DP2X_IGNORE_CABLE_ID_CAPS,                  &dpRegkeyDatabase.bIgnoreCableIdCaps,              DP_REG_VAL_BOOL},
-    {NV_DP2X_REGKEY_DISABLE_EFF_BPP_SST_8b10b,      &dpRegkeyDatabase.bDisableEffBppSST8b10b,          DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED,      &dpRegkeyDatabase.bMSTPCONCapsReadDisabled,        DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION,     &dpRegkeyDatabase.bForceDisableTunnelBwAllocation, DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_DISABLE_DOWNSPREAD,               &dpRegkeyDatabase.bDownspreadDisabled,             DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_DISABLE_AVOID_HBR3_WAR,           &dpRegkeyDatabase.bDisableAvoidHBR3War,            DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE,              &dpRegkeyDatabase.bSkipZeroOuiCache,               DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_FIX_FOR_5147205,           &dpRegkeyDatabase.bEnable5147205Fix,               DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN,              &dpRegkeyDatabase.bForceHeadShutdown,              DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_LOWER_BPP_CHECK_FOR_DSC,   &dpRegkeyDatabase.bEnableLowerBppCheckForDsc,      DP_REG_VAL_BOOL}
+    {NV_DP_REGKEY_OVERRIDE_DPCD_REV,                     &dpRegkeyDatabase.dpcdRevOveride,                    DP_REG_VAL_U32},
+    {NV_DP_REGKEY_DISABLE_SSC,                           &dpRegkeyDatabase.bSscDisabled,                      DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_FAST_LINK_TRAINING,             &dpRegkeyDatabase.bFastLinkTrainingEnabled,          DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_MST,                           &dpRegkeyDatabase.bMstDisabled,                      DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_INBAND_STEREO_SIGNALING,        &dpRegkeyDatabase.bInbandStereoSignalingEnabled,     DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_SKIP_POWEROFF_EDP_IN_HEAD_DETACH,      &dpRegkeyDatabase.bPoweroffEdpInHeadDetachSkipped,   DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_OCA_LOGGING,                    &dpRegkeyDatabase.bOcaLoggingEnabled,                DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_REPORT_DEVICE_LOST_BEFORE_NEW,         &dpRegkeyDatabase.bReportDeviceLostBeforeNew,        DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_APPLY_LINK_BW_OVERRIDE_WAR,            &dpRegkeyDatabase.bLinkBwOverrideWarApplied,         DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_APPLY_MAX_LINK_RATE_OVERRIDES,         &dpRegkeyDatabase.applyMaxLinkRateOverrides,         DP_REG_VAL_U32},
+    {NV_DP_REGKEY_DISABLE_DSC,                           &dpRegkeyDatabase.bDscDisabled,                      DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_SKIP_ASSESSLINK_FOR_EDP,               &dpRegkeyDatabase.bAssesslinkForEdpSkipped,          DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_HDCP_AUTH_ONLY_ON_DEMAND,              &dpRegkeyDatabase.bHdcpAuthOnlyOnDemand,             DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_MSA_OVER_MST,                   &dpRegkeyDatabase.bMsaOverMstEnabled,                DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE,                   &dpRegkeyDatabase.bOptLinkKeptAlive,                 DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE_MST,               &dpRegkeyDatabase.bOptLinkKeptAliveMst,              DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE_SST,               &dpRegkeyDatabase.bOptLinkKeptAliveSst,              DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_FORCE_EDP_ILR,                         &dpRegkeyDatabase.bBypassEDPRevCheck,                DP_REG_VAL_BOOL},
+    {NV_DP_DSC_MST_CAP_BUG_3143315,                      &dpRegkeyDatabase.bDscMstCapBug3143315,              DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_POWER_DOWN_PHY,                        &dpRegkeyDatabase.bPowerDownPhyBeforeD3,             DP_REG_VAL_BOOL},
+    {NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT,                   &dpRegkeyDatabase.supportInternalUhbrOnFpga,         DP_REG_VAL_U32},
+    {NV_DP2X_IGNORE_CABLE_ID_CAPS,                       &dpRegkeyDatabase.bIgnoreCableIdCaps,                DP_REG_VAL_BOOL},
+    {NV_DP2X_REGKEY_VCONN_SOURCE_UNKNOWN_WAR,            &dpRegkeyDatabase.bCableVconnSourceUnknownWar,       DP_REG_VAL_BOOL},
+    {NV_DP2X_REGKEY_DISABLE_EFF_BPP_SST_8b10b,           &dpRegkeyDatabase.bDisableEffBppSST8b10b,            DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED,           &dpRegkeyDatabase.bMSTPCONCapsReadDisabled,          DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION,          &dpRegkeyDatabase.bForceDisableTunnelBwAllocation,   DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_DOWNSPREAD,                    &dpRegkeyDatabase.bDownspreadDisabled,               DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_AVOID_HBR3_WAR,                &dpRegkeyDatabase.bDisableAvoidHBR3War,              DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE,                   &dpRegkeyDatabase.bSkipZeroOuiCache,                 DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_FIX_FOR_5147205,                &dpRegkeyDatabase.bEnable5147205Fix,                 DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN,                   &dpRegkeyDatabase.bForceHeadShutdown,                DP_REG_VAL_BOOL}
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :
@@ -284,6 +284,7 @@ bool EvoMainLink::queryGPUCapability()
     _isLTPhyRepeaterSupported       = (dpParams.bIsTrainPhyRepeater == NV_TRUE) ? true : false;
     _isDownspreadSupported          = (dpParams.bSupportDPDownSpread == NV_TRUE) ? true : false;
     _bAvoidHBR3                     = (dpParams.bAvoidHBR3 == NV_TRUE) ? true : false;
+    _bIsDpTunnelingHwBugWarEnabled  = (dpParams.bIsDpTunnelingHwBugWarEnabled == NV_TRUE) ? true : false;
 
     _gpuSupportedDpVersions         = dpParams.dpVersionsSupported;
 
@@ -1935,4 +1936,17 @@ bool EvoMainLink::configureFec
     }
 
     return false;
+}
+
+void EvoMainLink::applyStuffDummySymbolWAR(NvU32 head, bool enable)
+{
+    NV0073_CTRL_STUFF_DUMMY_SYMBOL_WAR_PARAMS params = {0};
+    params.subDeviceInstance = provider->getSubdeviceIndex();
+    params.head = head;
+    params.bEnable = enable ? NV_TRUE : NV_FALSE;
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_STUFF_DUMMY_SYMBOL_WAR, &params, sizeof(params));
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "Failed to program the dummy symbol WAR!: %d", enable);
+    }
 }

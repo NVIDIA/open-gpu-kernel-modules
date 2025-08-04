@@ -393,6 +393,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__NoDeviceMemory =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_nodevicememDestruct(NoDeviceMemory*);
 void __nvoc_dtor_Memory(Memory*);
 void __nvoc_dtor_NoDeviceMemory(NoDeviceMemory *pThis) {
     __nvoc_nodevicememDestruct(pThis);

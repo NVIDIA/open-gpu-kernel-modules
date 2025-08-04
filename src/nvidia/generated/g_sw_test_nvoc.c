@@ -526,6 +526,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__SoftwareMethodTest =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_swtestDestruct(SoftwareMethodTest*);
 void __nvoc_dtor_ChannelDescendant(ChannelDescendant*);
 void __nvoc_dtor_SoftwareMethodTest(SoftwareMethodTest *pThis) {
     __nvoc_swtestDestruct(pThis);

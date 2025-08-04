@@ -180,15 +180,17 @@ NV_STATUS __nvoc_objCreate_NotifShare(NotifShare**, Dynamic*, NvU32);
     __nvoc_objCreate_NotifShare((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS shrnotifConstruct_IMPL(struct NotifShare *arg_pNotifShare);
+#define __nvoc_shrnotifConstruct(arg_pNotifShare) shrnotifConstruct_IMPL(arg_pNotifShare)
+
+void shrnotifDestruct_IMPL(struct NotifShare *pNotifShare);
+#define __nvoc_shrnotifDestruct(pNotifShare) shrnotifDestruct_IMPL(pNotifShare)
+
+
+// Wrapper macros for halified functions
 
 // Dispatch functions
-NV_STATUS shrnotifConstruct_IMPL(struct NotifShare *arg_pNotifShare);
-
-#define __nvoc_shrnotifConstruct(arg_pNotifShare) shrnotifConstruct_IMPL(arg_pNotifShare)
-void shrnotifDestruct_IMPL(struct NotifShare *pNotifShare);
-
-#define __nvoc_shrnotifDestruct(pNotifShare) shrnotifDestruct_IMPL(pNotifShare)
 #undef PRIVATE_FIELD
 
 
@@ -299,7 +301,28 @@ NV_STATUS __nvoc_objCreate_Event(Event**, Dynamic*, NvU32, struct CALL_CONTEXT *
     __nvoc_objCreate_Event((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS eventConstruct_IMPL(struct Event *arg_pEvent, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_eventConstruct(arg_pEvent, arg_pCallContext, arg_pParams) eventConstruct_IMPL(arg_pEvent, arg_pCallContext, arg_pParams)
+
+void eventDestruct_IMPL(struct Event *pEvent);
+#define __nvoc_eventDestruct(pEvent) eventDestruct_IMPL(pEvent)
+
+NV_STATUS eventInit_IMPL(struct Event *pEvent, struct CALL_CONTEXT *pCallContext, NvHandle hNotifierClient, NvHandle hNotifierResource, PEVENTNOTIFICATION **pppEventNotification);
+#ifdef __nvoc_event_h_disabled
+static inline NV_STATUS eventInit(struct Event *pEvent, struct CALL_CONTEXT *pCallContext, NvHandle hNotifierClient, NvHandle hNotifierResource, PEVENTNOTIFICATION **pppEventNotification) {
+    NV_ASSERT_FAILED_PRECOMP("Event was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_event_h_disabled
+#define eventInit(pEvent, pCallContext, hNotifierClient, hNotifierResource, pppEventNotification) eventInit_IMPL(pEvent, pCallContext, hNotifierClient, hNotifierResource, pppEventNotification)
+#endif // __nvoc_event_h_disabled
+
+NV_STATUS eventGetByHandle_IMPL(struct RsClient *pClient, NvHandle hEvent, NvU32 *pNotifyIndex);
+#define eventGetByHandle(pClient, hEvent, pNotifyIndex) eventGetByHandle_IMPL(pClient, hEvent, pNotifyIndex)
+
+
+// Wrapper macros for halified functions
 #define eventAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define eventAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) eventAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define eventShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
@@ -428,26 +451,6 @@ static inline void eventAddAdditionalDependants_DISPATCH(struct RsClient *pClien
     pResource->__nvoc_metadata_ptr->vtable.__eventAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-NV_STATUS eventConstruct_IMPL(struct Event *arg_pEvent, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_eventConstruct(arg_pEvent, arg_pCallContext, arg_pParams) eventConstruct_IMPL(arg_pEvent, arg_pCallContext, arg_pParams)
-void eventDestruct_IMPL(struct Event *pEvent);
-
-#define __nvoc_eventDestruct(pEvent) eventDestruct_IMPL(pEvent)
-NV_STATUS eventInit_IMPL(struct Event *pEvent, struct CALL_CONTEXT *pCallContext, NvHandle hNotifierClient, NvHandle hNotifierResource, PEVENTNOTIFICATION **pppEventNotification);
-
-#ifdef __nvoc_event_h_disabled
-static inline NV_STATUS eventInit(struct Event *pEvent, struct CALL_CONTEXT *pCallContext, NvHandle hNotifierClient, NvHandle hNotifierResource, PEVENTNOTIFICATION **pppEventNotification) {
-    NV_ASSERT_FAILED_PRECOMP("Event was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_event_h_disabled
-#define eventInit(pEvent, pCallContext, hNotifierClient, hNotifierResource, pppEventNotification) eventInit_IMPL(pEvent, pCallContext, hNotifierClient, hNotifierResource, pppEventNotification)
-#endif //__nvoc_event_h_disabled
-
-NV_STATUS eventGetByHandle_IMPL(struct RsClient *pClient, NvHandle hEvent, NvU32 *pNotifyIndex);
-
-#define eventGetByHandle(pClient, hEvent, pNotifyIndex) eventGetByHandle_IMPL(pClient, hEvent, pNotifyIndex)
 #undef PRIVATE_FIELD
 
 
@@ -527,7 +530,25 @@ NV_STATUS __nvoc_objCreate_INotifier(INotifier**, Dynamic*, NvU32, struct CALL_C
     __nvoc_objCreate_INotifier((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS inotifyConstruct_IMPL(struct INotifier *arg_pNotifier, struct CALL_CONTEXT *arg_pCallContext);
+#define __nvoc_inotifyConstruct(arg_pNotifier, arg_pCallContext) inotifyConstruct_IMPL(arg_pNotifier, arg_pCallContext)
+
+void inotifyDestruct_IMPL(struct INotifier *pNotifier);
+#define __nvoc_inotifyDestruct(pNotifier) inotifyDestruct_IMPL(pNotifier)
+
+PEVENTNOTIFICATION inotifyGetNotificationList_IMPL(struct INotifier *pNotifier);
+#ifdef __nvoc_event_h_disabled
+static inline PEVENTNOTIFICATION inotifyGetNotificationList(struct INotifier *pNotifier) {
+    NV_ASSERT_FAILED_PRECOMP("INotifier was disabled!");
+    return NULL;
+}
+#else // __nvoc_event_h_disabled
+#define inotifyGetNotificationList(pNotifier) inotifyGetNotificationList_IMPL(pNotifier)
+#endif // __nvoc_event_h_disabled
+
+
+// Wrapper macros for halified functions
 #define inotifyGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_metadata_ptr->vtable.__inotifyGetNotificationListPtr__
 #define inotifyGetNotificationListPtr(pNotifier) inotifyGetNotificationListPtr_DISPATCH(pNotifier)
 #define inotifySetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_metadata_ptr->vtable.__inotifySetNotificationShare__
@@ -559,23 +580,6 @@ static inline NV_STATUS inotifyUnregisterEvent_DISPATCH(struct INotifier *pNotif
 static inline NV_STATUS inotifyGetOrAllocNotifShare_DISPATCH(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return pNotifier->__nvoc_metadata_ptr->vtable.__inotifyGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
-
-NV_STATUS inotifyConstruct_IMPL(struct INotifier *arg_pNotifier, struct CALL_CONTEXT *arg_pCallContext);
-
-#define __nvoc_inotifyConstruct(arg_pNotifier, arg_pCallContext) inotifyConstruct_IMPL(arg_pNotifier, arg_pCallContext)
-void inotifyDestruct_IMPL(struct INotifier *pNotifier);
-
-#define __nvoc_inotifyDestruct(pNotifier) inotifyDestruct_IMPL(pNotifier)
-PEVENTNOTIFICATION inotifyGetNotificationList_IMPL(struct INotifier *pNotifier);
-
-#ifdef __nvoc_event_h_disabled
-static inline PEVENTNOTIFICATION inotifyGetNotificationList(struct INotifier *pNotifier) {
-    NV_ASSERT_FAILED_PRECOMP("INotifier was disabled!");
-    return NULL;
-}
-#else //__nvoc_event_h_disabled
-#define inotifyGetNotificationList(pNotifier) inotifyGetNotificationList_IMPL(pNotifier)
-#endif //__nvoc_event_h_disabled
 
 #undef PRIVATE_FIELD
 
@@ -665,7 +669,15 @@ NV_STATUS __nvoc_objCreate_Notifier(Notifier**, Dynamic*, NvU32, struct CALL_CON
     __nvoc_objCreate_Notifier((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS notifyConstruct_IMPL(struct Notifier *arg_pNotifier, struct CALL_CONTEXT *arg_pCallContext);
+#define __nvoc_notifyConstruct(arg_pNotifier, arg_pCallContext) notifyConstruct_IMPL(arg_pNotifier, arg_pCallContext)
+
+void notifyDestruct_IMPL(struct Notifier *pNotifier);
+#define __nvoc_notifyDestruct(pNotifier) notifyDestruct_IMPL(pNotifier)
+
+
+// Wrapper macros for halified functions
 #define notifyGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_metadata_ptr->vtable.__notifyGetNotificationListPtr__
 #define notifyGetNotificationListPtr(pNotifier) notifyGetNotificationListPtr_DISPATCH(pNotifier)
 #define notifyGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_metadata_ptr->vtable.__notifyGetNotificationShare__
@@ -708,12 +720,6 @@ NV_STATUS notifyUnregisterEvent_IMPL(struct Notifier *pNotifier, NvHandle hNotif
 
 NV_STATUS notifyGetOrAllocNotifShare_IMPL(struct Notifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);
 
-NV_STATUS notifyConstruct_IMPL(struct Notifier *arg_pNotifier, struct CALL_CONTEXT *arg_pCallContext);
-
-#define __nvoc_notifyConstruct(arg_pNotifier, arg_pCallContext) notifyConstruct_IMPL(arg_pNotifier, arg_pCallContext)
-void notifyDestruct_IMPL(struct Notifier *pNotifier);
-
-#define __nvoc_notifyDestruct(pNotifier) notifyDestruct_IMPL(pNotifier)
 #undef PRIVATE_FIELD
 
 

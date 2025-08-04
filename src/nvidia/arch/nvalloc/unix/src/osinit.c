@@ -58,7 +58,6 @@
 #include <nv-firmware-chip-family-select.h>
 #include <gpu/gsp/kernel_gsp.h>
 #include "liblogdecode.h"
-#include <gpu/fsp/kern_fsp.h>
 #include  <gpu/gsp/kernel_gsp.h>
 
 #include <mem_mgr/virt_mem_mgr.h>
@@ -142,20 +141,6 @@ typedef struct {
                                      (status).line = __LINE__; }
 
 
-//
-// GPU architectures support DMA addressing up to a certain address width,
-// above which all other bits in any given DMA address must not vary
-// (e.g., all 0). This value is the minimum of the DMA addressing
-// capabilities, in number of physical address bits, for all supported
-// GPU architectures.
-//
-#define NV_GPU_MIN_SUPPORTED_DMA_ADDR_WIDTH                36
-
-//
-// All GPU architectures with GSP support at least 47 physical address bits.
-//
-#define NV_GSP_GPU_MIN_SUPPORTED_DMA_ADDR_WIDTH            47
-
 static inline NvU64 nv_encode_pci_info(nv_pci_info_t *pci_info)
 {
     return gpuEncodeDomainBusDevice(pci_info->domain, pci_info->bus, pci_info->slot);
@@ -164,6 +149,18 @@ static inline NvU64 nv_encode_pci_info(nv_pci_info_t *pci_info)
 static inline NvU32 nv_generate_id_from_pci_info(nv_pci_info_t *pci_info)
 {
     return gpuGenerate32BitId(pci_info->domain, pci_info->bus, pci_info->slot);
+}
+
+static void nv_set_probed_gpu_flags(nv_state_t *nv)
+{
+    NvU32 flags = 0;
+
+    if (NV_IS_SOC_DISPLAY_DEVICE(nv))
+    {
+        flags |= DRF_DEF(0000, _CTRL_GPU_PROBED_ID_FLAGS, _SOC_DISPLAY, _TRUE);
+    }
+
+    gpumgrSetProbedFlags(nv->gpu_id, flags);
 }
 
 static inline void nv_os_map_kernel_space(nv_state_t *nv, nv_aperture_t *aperture)
@@ -556,10 +553,11 @@ RmInitGpuInfoWithRmApi
 
     portMemSet(pGpuInfoParams, 0, sizeof(*pGpuInfoParams));
 
-    pGpuInfoParams->gpuInfoListSize = 3;
+    pGpuInfoParams->gpuInfoListSize = 4;
     pGpuInfoParams->gpuInfoList[0].index = NV2080_CTRL_GPU_INFO_INDEX_4K_PAGE_ISOLATION_REQUIRED;
     pGpuInfoParams->gpuInfoList[1].index = NV2080_CTRL_GPU_INFO_INDEX_MOBILE_CONFIG_ENABLED;
     pGpuInfoParams->gpuInfoList[2].index = NV2080_CTRL_GPU_INFO_INDEX_DMABUF_CAPABILITY;
+    pGpuInfoParams->gpuInfoList[3].index = NV2080_CTRL_GPU_INFO_INDEX_COHERENT_GPU_MEMORY_MODE;
 
     status = pRmApi->Control(pRmApi, nv->rmapi.hClient,
                              nv->rmapi.hSubDevice,
@@ -582,6 +580,27 @@ RmInitGpuInfoWithRmApi
     nv->coherent =
         (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) ||
          pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB));
+
+    //
+    // If coherent GPU memory mode is NONE, then GPU memory has struct page
+    // on coherent platforms and no struct page on non-coherent ones.
+    // If the mode is enabled and _NUMA, then GPU memory has struct page.
+    // If the mode is enabled and _DRIVER, then GPU memory doesn't have struct page.
+    // Tegra iGPU also falls under struct page category, although
+    // COHERENT_GPU_MEMORY_MODE doesn't apply there.
+    //
+    if (pGpuInfoParams->gpuInfoList[3].data ==
+        NV2080_CTRL_GPU_INFO_INDEX_COHERENT_GPU_MEMORY_MODE_NONE)
+    {
+        nv->mem_has_struct_page = nv->coherent;
+    }
+    else
+    {
+        // If mode is not _NONE, we're already on a PDB_PROP_GPU_COHERENT_CPU_MAPPING platform.
+        nv->mem_has_struct_page = pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB) ||
+                                  (pGpuInfoParams->gpuInfoList[3].data ==
+                                   NV2080_CTRL_GPU_INFO_INDEX_COHERENT_GPU_MEMORY_MODE_NUMA);
+    }
 
     portMemFree(pGpuInfoParams);
 
@@ -754,14 +773,6 @@ osInitNvMapping(
     sysApplyLockingPolicy(pSys);
 
     pGpu->busInfo.IntLine = nv->interrupt_line;
-
-    //
-    // Set the DMA address size as soon as we have the HAL to call to
-    // determine the precise number of physical address bits supported
-    // by the architecture. DMA allocations should not be made before
-    // this point.
-    //
-    nv_set_dma_address_size(nv, gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM));
 
     if (nv->fb != NULL)
     {
@@ -1355,13 +1366,11 @@ RmSetupRegisters(
 
     if (nv->fb != NULL)
     {
-        NV_DEV_PRINTF(NV_DBG_SETUP, nv, "   fb        looks like: 0x%" NvU64_fmtx " 0x%" NvU64_fmtx,
+        NV_DEV_PRINTF(NV_DBG_SETUP, nv, "   fb        looks like: 0x%" NvU64_fmtx " 0x%" NvU64_fmtx "\n",
                 nv->fb->cpu_address, nv->fb->size);
     }
 
-    {
-        nv_os_map_kernel_space(nv, nv->regs);
-    }
+    nv_os_map_kernel_space(nv, nv->regs);
 
     if (nv->regs->map == NULL)
     {
@@ -1412,13 +1421,17 @@ NvBool RmInitPrivateState(
 {
     nv_priv_t *nvp;
     NvU32 gpuId;
+    NvU32 socChipId0 = 0;
     NvU32 pmc_boot_0 = 0;
     NvU32 pmc_boot_1 = 0;
     NvU32 pmc_boot_42 = 0;
+    NvU32 dmaAddrWidth = 0;
 
     NV_SET_NV_PRIV(pNv, NULL);
 
-    if (!NV_IS_SOC_DISPLAY_DEVICE(pNv) && !NV_IS_SOC_IGPU_DEVICE(pNv))
+    if (NV_IS_SOC_DISPLAY_DEVICE(pNv))
+        socChipId0 = pNv->disp_sw_soc_chip_id;
+    else
     {
         pNv->regs->map_u = os_map_kernel_space(pNv->regs->cpu_address,
                                                os_page_size,
@@ -1457,17 +1470,34 @@ NvBool RmInitPrivateState(
 
     pNv->gpu_id = gpuId;
 
+    nv_set_probed_gpu_flags(pNv);
+
     pNv->iovaspace_id = nv_requires_dma_remap(pNv) ? gpuId :
                                                      NV_IOVA_DOMAIN_NONE;
     pNv->cpu_numa_node_id = NV0000_CTRL_NO_NUMA_NODE;
 
-    kvgpumgrAttachGpu(pNv->gpu_id);
+    // Get the GpuArch instance for this architecture to determine the DMA address width.
+    GpuArch *pGpuArch = gpumgrGetGpuArch(pmc_boot_42, socChipId0, TEGRA_CHIP_TYPE_DEFAULT);
+    if (pGpuArch == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "failed to get GpuArch for 0x%x/0x%x.\n",
+                  pmc_boot_42, socChipId0);
+        gpumgrUnregisterGpuId(gpuId);
+        os_free_mem(nvp);
+        return NV_FALSE;
+    }
 
-    //
-    // Set up a reasonable default DMA address size, based on the minimum
-    // possible on currently supported GPUs.
-    //
-    nv_set_dma_address_size(pNv, NV_GPU_MIN_SUPPORTED_DMA_ADDR_WIDTH);
+    dmaAddrWidth = gpuarchGetDmaAddrWidth(pGpuArch);
+    if (dmaAddrWidth == 0)
+    {
+        dmaAddrWidth = gpuarchGetSystemPhysAddrWidth(pGpuArch);
+    }
+    nv_set_dma_address_size(pNv, dmaAddrWidth);
+
+    pNv->is_tegra_pci_igpu = !NV_IS_SOC_DISPLAY_DEVICE(pNv) && gpuarchIsZeroFb(pGpuArch);
+    pNv->supports_tegra_igpu_rg = pNv->is_tegra_pci_igpu && gpuarchSupportsIgpuRg(pGpuArch);
+
+    kvgpumgrAttachGpu(pNv->gpu_id);
 
     os_mem_set(nvp, 0, sizeof(*nvp));
     nvp->status = NV_ERR_INVALID_STATE;
@@ -1789,6 +1819,22 @@ static NV_STATUS RmFetchGspRmImages
     return NV_OK;
 }
 
+static void _checkP2pChipsetSupport(
+    nv_state_t *nv
+)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJCL  *pCl  = SYS_GET_CL(pSys);
+
+    // Grace and Ampere Computing chipsets are incapable of PCIe P2P
+    if ((pCl->Chipset == CS_NVIDIA_TH500) ||
+        (pCl->Chipset == CS_AMPERE_ALTRA) ||
+        (pCl->Chipset == CS_AMPERE_AMPEREONE160))
+    {
+        nv->flags |= NV_FLAG_PCI_P2P_UNSUPPORTED_CHIPSET;
+    }
+}
+
 NvBool RmInitAdapter(
     nv_state_t *nv
 )
@@ -1811,6 +1857,7 @@ NvBool RmInitAdapter(
     NV_DEV_PRINTF(NV_DBG_SETUP, nv, "RmInitAdapter\n");
 
     nv->flags &= ~NV_FLAG_PASSTHRU;
+    nv->flags &= ~NV_FLAG_PCI_P2P_UNSUPPORTED_CHIPSET;
 
     RmSetupRegisters(nv, &status);
     if (! RM_INIT_SUCCESS(status.initStatus) )
@@ -1837,13 +1884,18 @@ NvBool RmInitAdapter(
     //
     if (nv->request_firmware)
     {
-        nv_set_dma_address_size(nv, NV_GSP_GPU_MIN_SUPPORTED_DMA_ADDR_WIDTH);
-
-        status.rmStatus = RmFetchGspRmImages(nv, &gspFw, &gspFwHandle, &gspFwLogHandle);
-        if (status.rmStatus != NV_OK)
+        if (!NV_IS_SOC_DISPLAY_DEVICE(nv))
         {
-            RM_SET_ERROR(status, RM_INIT_FIRMWARE_FETCH_FAILED);
-            goto shutdown;
+            status.rmStatus = RmFetchGspRmImages(nv, &gspFw, &gspFwHandle, &gspFwLogHandle);
+            if (status.rmStatus != NV_OK)
+            {
+                RM_SET_ERROR(status, RM_INIT_FIRMWARE_FETCH_FAILED);
+                goto shutdown;
+            }
+        }
+        else
+        {
+            nv->request_fw_client_rm = NV_TRUE;
         }
     }
 
@@ -1891,13 +1943,13 @@ NvBool RmInitAdapter(
         goto shutdown;
     }
 
-    KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
-    if ((pKernelFsp != NULL) && !IS_GSP_CLIENT(pGpu) && !IS_VIRTUAL(pGpu) && !pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_RM_BOOT_GSP))
+    // Boot GSP-RM proxy through COT command either via FSP or SEC2
+    if (!IS_GSP_CLIENT(pGpu) && !IS_VIRTUAL(pGpu))
     {
-        status.rmStatus = kfspPrepareAndSendBootCommands_HAL(pGpu, pKernelFsp);
+        status.rmStatus = gpuBootGspRmProxy(pGpu);
         if (status.rmStatus != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR, "FSP boot command failed.\n");
+            NV_PRINTF(LEVEL_ERROR, "GSP-RM proxy boot command failed.\n");
             RM_SET_ERROR(status, RM_INIT_FIRMWARE_INIT_FAILED);
             goto shutdown;
         }
@@ -1938,6 +1990,16 @@ NvBool RmInitAdapter(
         if (status.rmStatus != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "Cannot initialize GSP firmware RM\n");
+            RM_SET_ERROR(status, RM_INIT_FIRMWARE_INIT_FAILED);
+            goto shutdown;
+        }
+    }
+    else if (IS_DCE_CLIENT(pGpu))
+    {
+        status.rmStatus = dceclientDceRmInit(pGpu, GPU_GET_DCECLIENTRM(pGpu), NV_TRUE);
+        if (status.rmStatus != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Cannot initialize DCE firmware RM\n");
             RM_SET_ERROR(status, RM_INIT_FIRMWARE_INIT_FAILED);
             goto shutdown;
         }
@@ -2018,7 +2080,6 @@ NvBool RmInitAdapter(
     // GPU is initialized.
     //
     gpumgrThreadDisableExpandedGpuVisibility();
-
 
     // LOCK: acquire GPUs lock
     status.rmStatus = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE,
@@ -2135,7 +2196,7 @@ NvBool RmInitAdapter(
 
     RmInitPowerManagement(nv);
 
-    if (!NV_IS_SOC_DISPLAY_DEVICE(nv) && !NV_IS_SOC_IGPU_DEVICE(nv))
+    if (!NV_IS_SOC_DISPLAY_DEVICE(nv))
     {
         status.rmStatus = RmRegisterGpudb(pGpu);
         if (status.rmStatus != NV_OK)
@@ -2164,6 +2225,8 @@ NvBool RmInitAdapter(
             }
         }
     }
+
+    _checkP2pChipsetSupport(nv);
 
     NV_DEV_PRINTF(NV_DBG_SETUP, nv, "RmInitAdapter succeeded!\n");
 
@@ -2263,6 +2326,15 @@ void RmShutdownAdapter(
                 {
                     rmStatus = gpuStateDestroy(pGpu);
                     NV_ASSERT(rmStatus == NV_OK);
+                }
+
+                if (IS_DCE_CLIENT(pGpu))
+                {
+                    rmStatus = dceclientDceRmInit(pGpu, GPU_GET_DCECLIENTRM(pGpu), NV_FALSE);
+                    if (rmStatus != NV_OK)
+                    {
+                        NV_PRINTF(LEVEL_ERROR, "DCE firmware RM Shutdown failure\n");
+                    }
                 }
 
                 os_enable_console_access();

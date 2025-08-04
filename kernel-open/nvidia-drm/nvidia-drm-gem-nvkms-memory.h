@@ -25,7 +25,7 @@
 
 #include "nvidia-drm-conftest.h"
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #include "nvidia-drm-gem.h"
 
@@ -72,12 +72,11 @@ static inline struct nv_drm_gem_nvkms_memory *to_nv_nvkms_memory_const(
 
 static inline
 struct nv_drm_gem_nvkms_memory *nv_drm_gem_object_nvkms_memory_lookup(
-    struct drm_device *dev,
     struct drm_file *filp,
     u32 handle)
 {
     struct nv_drm_gem_object *nv_gem =
-            nv_drm_gem_object_lookup(dev, filp, handle);
+            nv_drm_gem_object_lookup(filp, handle);
 
     if (nv_gem != NULL && nv_gem->ops != &nv_gem_nvkms_memory_ops) {
         nv_drm_gem_object_unreference_unlocked(nv_gem);

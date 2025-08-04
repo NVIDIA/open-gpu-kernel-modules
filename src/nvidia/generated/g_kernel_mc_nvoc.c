@@ -25,10 +25,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE;
 
 // Forward declarations for KernelMc
 void __nvoc_init__OBJENGSTATE(OBJENGSTATE*);
-void __nvoc_init__KernelMc(KernelMc*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_funcTable_KernelMc(KernelMc*, RmHalspecOwner *pRmhalspecowner);
-NV_STATUS __nvoc_ctor_KernelMc(KernelMc*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_dataField_KernelMc(KernelMc*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init__KernelMc(KernelMc*, GpuHalspecOwner *pGpuhalspecowner);
+void __nvoc_init_funcTable_KernelMc(KernelMc*, GpuHalspecOwner *pGpuhalspecowner);
+NV_STATUS __nvoc_ctor_KernelMc(KernelMc*, GpuHalspecOwner *pGpuhalspecowner);
+void __nvoc_init_dataField_KernelMc(KernelMc*, GpuHalspecOwner *pGpuhalspecowner);
 void __nvoc_dtor_KernelMc(KernelMc*);
 
 // Structures used within RTTI (run-time type information)
@@ -210,21 +210,21 @@ void __nvoc_dtor_KernelMc(KernelMc *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_KernelMc(KernelMc *pThis, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+void __nvoc_init_dataField_KernelMc(KernelMc *pThis, GpuHalspecOwner *pGpuhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
-    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 }
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
-NV_STATUS __nvoc_ctor_KernelMc(KernelMc *pThis, RmHalspecOwner *pRmhalspecowner) {
+NV_STATUS __nvoc_ctor_KernelMc(KernelMc *pThis, GpuHalspecOwner *pGpuhalspecowner) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
     if (status != NV_OK) goto __nvoc_ctor_KernelMc_fail_OBJENGSTATE;
-    __nvoc_init_dataField_KernelMc(pThis, pRmhalspecowner);
+    __nvoc_init_dataField_KernelMc(pThis, pGpuhalspecowner);
     goto __nvoc_ctor_KernelMc_exit; // Success
 
 __nvoc_ctor_KernelMc_fail_OBJENGSTATE:
@@ -234,11 +234,11 @@ __nvoc_ctor_KernelMc_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_KernelMc_1(KernelMc *pThis, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+static void __nvoc_init_funcTable_KernelMc_1(KernelMc *pThis, GpuHalspecOwner *pGpuhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
-    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 
@@ -255,18 +255,38 @@ static void __nvoc_init_funcTable_KernelMc_1(KernelMc *pThis, RmHalspecOwner *pR
     {
         pThis->__kmcWritePmcEnableReg__ = &kmcWritePmcEnableReg_5baef9;
     }
-} // End __nvoc_init_funcTable_KernelMc_1 with approximately 3 basic block(s).
+
+    // kmcPrepareForXVEReset -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__kmcPrepareForXVEReset__ = &kmcPrepareForXVEReset_56cd7a;
+    }
+    else
+    {
+        pThis->__kmcPrepareForXVEReset__ = &kmcPrepareForXVEReset_GM107;
+    }
+
+    // kmcGetMcBar0MapInfo -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__kmcGetMcBar0MapInfo__ = &kmcGetMcBar0MapInfo_46f6a7;
+    }
+    else
+    {
+        pThis->__kmcGetMcBar0MapInfo__ = &kmcGetMcBar0MapInfo_GM107;
+    }
+} // End __nvoc_init_funcTable_KernelMc_1 with approximately 7 basic block(s).
 
 
-// Initialize vtable(s) for 15 virtual method(s).
-void __nvoc_init_funcTable_KernelMc(KernelMc *pThis, RmHalspecOwner *pRmhalspecowner) {
+// Initialize vtable(s) for 17 virtual method(s).
+void __nvoc_init_funcTable_KernelMc(KernelMc *pThis, GpuHalspecOwner *pGpuhalspecowner) {
 
-    // Initialize vtable(s) with 1 per-object function pointer(s).
-    __nvoc_init_funcTable_KernelMc_1(pThis, pRmhalspecowner);
+    // Initialize vtable(s) with 3 per-object function pointer(s).
+    __nvoc_init_funcTable_KernelMc_1(pThis, pGpuhalspecowner);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__KernelMc(KernelMc *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init__KernelMc(KernelMc *pThis, GpuHalspecOwner *pGpuhalspecowner) {
 
     // Initialize pointers to inherited data.
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object;    // (obj) super^2
@@ -282,7 +302,7 @@ void __nvoc_init__KernelMc(KernelMc *pThis, RmHalspecOwner *pRmhalspecowner) {
     pThis->__nvoc_metadata_ptr = &__nvoc_metadata__KernelMc;    // (kmc) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_KernelMc(pThis, pRmhalspecowner);
+    __nvoc_init_funcTable_KernelMc(pThis, pGpuhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_KernelMc(KernelMc **ppThis, Dynamic *pParent, NvU32 createFlags)
@@ -290,7 +310,7 @@ NV_STATUS __nvoc_objCreate_KernelMc(KernelMc **ppThis, Dynamic *pParent, NvU32 c
     NV_STATUS status;
     Object *pParentObj = NULL;
     KernelMc *pThis;
-    RmHalspecOwner *pRmhalspecowner;
+    GpuHalspecOwner *pGpuhalspecowner;
 
     // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelMc), (void**)&pThis, (void**)ppThis);
@@ -316,12 +336,12 @@ NV_STATUS __nvoc_objCreate_KernelMc(KernelMc **ppThis, Dynamic *pParent, NvU32 c
         pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.pParent = NULL;
     }
 
-    if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
-        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
-    NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
+    if ((pGpuhalspecowner = dynamicCast(pParent, GpuHalspecOwner)) == NULL)
+        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, pParent);
+    NV_ASSERT_OR_RETURN(pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init__KernelMc(pThis, pRmhalspecowner);
-    status = __nvoc_ctor_KernelMc(pThis, pRmhalspecowner);
+    __nvoc_init__KernelMc(pThis, pGpuhalspecowner);
+    status = __nvoc_ctor_KernelMc(pThis, pGpuhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_KernelMc_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

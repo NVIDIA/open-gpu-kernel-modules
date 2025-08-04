@@ -303,6 +303,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__MIGConfigSession =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_migconfigsessionDestruct(MIGConfigSession*);
 void __nvoc_dtor_RmResource(RmResource*);
 void __nvoc_dtor_MIGConfigSession(MIGConfigSession *pThis) {
     __nvoc_migconfigsessionDestruct(pThis);

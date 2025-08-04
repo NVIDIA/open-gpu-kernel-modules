@@ -69,6 +69,8 @@ typedef volatile struct Nvc96fControl_struct {
 #define NVC96F_MEM_OP_D_OPERATION                                        31:27
 #define NVC96F_MEM_OP_D_OPERATION_MMU_TLB_INVALIDATE                0x00000009
 #define NVC96F_MEM_OP_D_OPERATION_MMU_TLB_INVALIDATE_TARGETED       0x0000000a
+#define NVC96F_MEM_OP_D_OPERATION_L2_FLUSH_DIRTY                    0x00000010
+#define NVC96F_MEM_OP_D_OPERATION_L2_SYSMEM_NCOH_INVALIDATE         0x00000011
 
 #define NVC96F_SEM_ADDR_LO                                         (0x0000005c)
 #define NVC96F_SEM_ADDR_LO_OFFSET                                         31:2

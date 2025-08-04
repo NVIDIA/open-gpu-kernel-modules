@@ -8,7 +8,7 @@
 # NV_KERNEL_SOURCES : The root of the kernel source tree.
 # NV_KERNEL_OUTPUT : The kernel's output tree.
 # NV_KERNEL_MODULES : A whitespace-separated list of modules to build.
-# ARCH : The target CPU architecture: x86_64|arm64|powerpc
+# ARCH : The target CPU architecture: x86_64|arm64
 #
 # Kbuild provides the variables:
 #
@@ -79,10 +79,20 @@ ccflags-y += -I$(src)/common/inc
 ccflags-y += -I$(src)
 ccflags-y += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-format-extra-args
 ccflags-y += -D__KERNEL__ -DMODULE -DNVRM
-ccflags-y += -DNV_VERSION_STRING=\"575.64.05\"
+ccflags-y += -DNV_VERSION_STRING=\"580.65.06\"
+
+# Include and link Tegra out-of-tree modules.
+ifneq ($(wildcard /usr/src/nvidia/nvidia-oot),)
+ SYSSRCNVOOT ?= /usr/src/nvidia/nvidia-oot
+endif
 
 ifneq ($(SYSSRCHOST1X),)
  ccflags-y += -I$(SYSSRCHOST1X)
+endif
+
+ifneq ($(SYSSRCNVOOT),)
+ ccflags-y += -I$(SYSSRCNVOOT)/include
+ KBUILD_EXTRA_SYMBOLS = $(SYSSRCNVOOT)/Module.symvers
 endif
 
 # Some Android kernels prohibit driver use of filesystem functions like
@@ -122,10 +132,6 @@ endif
 
 ifeq ($(ARCH),x86_64)
  ccflags-y += -mno-red-zone -mcmodel=kernel
-endif
-
-ifeq ($(ARCH),powerpc)
- ccflags-y += -mlittle-endian -mno-strict-align
 endif
 
 ccflags-y += -DNV_UVM_ENABLE

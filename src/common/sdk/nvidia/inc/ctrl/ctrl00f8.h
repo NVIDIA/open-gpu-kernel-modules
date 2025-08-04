@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -142,12 +142,20 @@ typedef struct NV00F8_CTRL_GET_INFO_PARAMS {
  *
  *  cliqueId
  *    Clique ID of the owner GPU
+ *
+ *  bwModeEpoch
+ *    Currently active bwModeEpoch of of the owner GPU
+ *
+ *  bwMode
+ *    Currently active bwMode of the owner GPU
  */
 typedef struct NV_FABRIC_MEMORY_ATTRS {
     NvU32 kind;
     NV_DECLARE_ALIGNED(NvU64 pageSize, 8);
     NV_DECLARE_ALIGNED(NvU64 size, 8);
     NvU32 cliqueId;
+    NV_DECLARE_ALIGNED(NvU64 bwModeEpoch, 8);
+    NvU8  bwMode;
 } NV_FABRIC_MEMORY_ATTRS;
 
 #define NV00F8_CTRL_DESCRIBE_PARAMS_MESSAGE_ID (0x2U)

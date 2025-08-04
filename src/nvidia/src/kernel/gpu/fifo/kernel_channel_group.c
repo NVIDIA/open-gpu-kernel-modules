@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -557,8 +557,10 @@ kchangrpAddChannel_IMPL
     pKernelChannel->vaSpaceId = pKernelCtxShare->vaSpaceId;
 
     NV_PRINTF(LEVEL_INFO,
-              "Channel 0x%x within TSG 0x%x is using subcontext 0x%x\n",
-              kchannelGetDebugTag(pKernelChannel), pKernelChannelGroup->grpID, pKernelChannel->subctxId);
+        FMT_CHANNEL_DEBUG_TAG " within TSG 0x%x is using subcontext 0x%x\n",
+        kchannelGetDebugTag(pKernelChannel),
+        pKernelChannelGroup->grpID,
+        pKernelChannel->subctxId);
 
     status = kfifoChannelListAppend(pGpu, GPU_GET_KERNEL_FIFO(pGpu),
                                    pKernelChannel,

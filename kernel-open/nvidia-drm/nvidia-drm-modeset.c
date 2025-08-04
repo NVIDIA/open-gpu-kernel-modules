@@ -20,9 +20,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "nvidia-drm-conftest.h" /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+#include "nvidia-drm-conftest.h" /* NV_DRM_AVAILABLE */
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #include "nvidia-drm-priv.h"
 #include "nvidia-drm-modeset.h"
@@ -34,10 +34,7 @@
 #include <drm/drmP.h>
 #endif
 
-#if defined(NV_DRM_DRM_VBLANK_H_PRESENT)
 #include <drm/drm_vblank.h>
-#endif
-
 #include <drm/drm_atomic.h>
 #include <drm/drm_atomic_helper.h>
 #include <drm/drm_crtc.h>
@@ -48,9 +45,7 @@
 #include <linux/host1x-next.h>
 #endif
 
-#if defined(NV_DRM_FENCE_AVAILABLE)
-#include "nvidia-dma-fence-helper.h"
-#endif
+#include <linux/dma-fence.h>
 
 struct nv_drm_atomic_state {
     struct NvKmsKapiRequestedModeSetConfig config;
@@ -156,24 +151,23 @@ static int __nv_drm_put_back_post_fence_fd(
     return ret;
 }
 
-#if defined(NV_DRM_FENCE_AVAILABLE)
 struct nv_drm_plane_fence_cb_data {
-    nv_dma_fence_cb_t dma_fence_cb;
+    struct dma_fence_cb dma_fence_cb;
     struct nv_drm_device *nv_dev;
     NvU32 semaphore_index;
 };
 
 static void
 __nv_drm_plane_fence_cb(
-    nv_dma_fence_t *fence,
-    nv_dma_fence_cb_t *cb_data
+    struct dma_fence *fence,
+    struct dma_fence_cb *cb_data
 )
 {
     struct nv_drm_plane_fence_cb_data *fence_data =
         container_of(cb_data, typeof(*fence_data), dma_fence_cb);
     struct nv_drm_device *nv_dev = fence_data->nv_dev;
 
-    nv_dma_fence_put(fence);
+    dma_fence_put(fence);
     nvKms->signalDisplaySemaphore(nv_dev->pDevice, fence_data->semaphore_index);
     nv_drm_free(fence_data);
 }
@@ -279,9 +273,9 @@ static int __nv_drm_convert_in_fences(
         fence_data->nv_dev = nv_dev;
         fence_data->semaphore_index = semaphore_index;
 
-        ret = nv_dma_fence_add_callback(plane_state->fence,
-                                        &fence_data->dma_fence_cb,
-                                        __nv_drm_plane_fence_cb);
+        ret = dma_fence_add_callback(plane_state->fence,
+                                     &fence_data->dma_fence_cb,
+                                     __nv_drm_plane_fence_cb);
 
         switch (ret) {
         case -ENOENT:
@@ -313,7 +307,6 @@ static int __nv_drm_convert_in_fences(
 
     return 0;
 }
-#endif /* defined(NV_DRM_FENCE_AVAILABLE) */
 
 static int __nv_drm_get_syncpt_data(
     struct nv_drm_device *nv_dev,
@@ -414,7 +407,6 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
         return -EINVAL;
     }
 
-#if defined(NV_DRM_FRAMEBUFFER_OBJ_PRESENT)
     if (commit) {
         /*
          * This function does what is necessary to prepare the framebuffers
@@ -426,10 +418,6 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
          * in the new state, prefering explicit sync fences when appropriate.
          * This must be done prior to converting the per-plane fences to
          * semaphore waits below.
-         *
-         * Note this only works when the drm_framebuffer:obj[] field is present
-         * and populated, so skip calling this function on kernels where that
-         * field is not present.
          */
         ret = drm_atomic_helper_prepare_planes(dev, state);
 
@@ -437,7 +425,6 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
             return ret;
         }
     }
-#endif /* defined(NV_DRM_FRAMEBUFFER_OBJ_PRESENT) */
 
     memset(requested_config, 0, sizeof(*requested_config));
 
@@ -472,7 +459,6 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
                 nv_new_crtc_state->nv_flip = NULL;
             }
 
-#if defined(NV_DRM_FENCE_AVAILABLE)
             ret = __nv_drm_convert_in_fences(nv_dev,
                                              state,
                                              crtc,
@@ -481,7 +467,6 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
             if (ret != 0) {
                 return ret;
             }
-#endif /* defined(NV_DRM_FENCE_AVAILABLE) */
         }
 
         /*
@@ -534,7 +519,6 @@ int nv_drm_atomic_check(struct drm_device *dev,
 {
     int ret = 0;
 
-#if defined(NV_DRM_COLOR_MGMT_AVAILABLE)
     struct drm_crtc *crtc;
     struct drm_crtc_state *crtc_state;
     int i;
@@ -550,7 +534,6 @@ int nv_drm_atomic_check(struct drm_device *dev,
             }
         }
     }
-#endif /* NV_DRM_COLOR_MGMT_AVAILABLE */
 
     if ((ret = drm_atomic_helper_check(dev, state)) != 0) {
         goto done;
@@ -678,7 +661,6 @@ int nv_drm_atomic_commit(struct drm_device *dev,
             }
         }
 
-#if defined(NV_DRM_COLOR_MGMT_AVAILABLE)
         /*
          * If the legacy LUT needs to be updated, ensure that the previous LUT
          * update is complete first.
@@ -703,10 +685,7 @@ int nv_drm_atomic_commit(struct drm_device *dev,
                 }
             }
         }
-#endif
     }
-
-#if defined(NV_DRM_ATOMIC_HELPER_SWAP_STATE_HAS_STALL_ARG)
 
     /*
      * nv_drm_atomic_commit_internal()
@@ -718,18 +697,10 @@ int nv_drm_atomic_commit(struct drm_device *dev,
      * expected.
      */
 
-#if defined(NV_DRM_ATOMIC_HELPER_SWAP_STATE_RETURN_INT)
     ret = drm_atomic_helper_swap_state(state, false /* stall */);
     if (WARN_ON(ret != 0)) {
         return ret;
     }
-#else
-    drm_atomic_helper_swap_state(state, false /* stall */);
-#endif
-
-#else
-    drm_atomic_helper_swap_state(dev, state);
-#endif
 
     /*
      * nv_drm_atomic_commit_internal() must not return failure after
@@ -831,7 +802,6 @@ int nv_drm_atomic_commit(struct drm_device *dev,
                 }
             }
 
-#if defined(NV_DRM_COLOR_MGMT_AVAILABLE)
             if (crtc_state->color_mgmt_changed) {
                 NvBool complete = nvKms->checkLutNotifier(nv_dev->pDevice,
                                                           nv_crtc->head,
@@ -842,20 +812,14 @@ int nv_drm_atomic_commit(struct drm_device *dev,
                         "LUT notifier timeout on head %u", nv_crtc->head);
                 }
             }
-#endif
         }
     }
 
 done:
 
-#if defined(NV_DRM_ATOMIC_STATE_REF_COUNTING_PRESENT)
     /*
-     * If ref counting is present, state will be freed when the caller
-     * drops its reference after we return.
+     * State will be freed when the caller drops its reference after we return.
      */
-#else
-    drm_atomic_state_free(state);
-#endif
 
     return 0;
 }

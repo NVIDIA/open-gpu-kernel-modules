@@ -34,6 +34,7 @@
 #include "core/locks.h"
 #include "vgpu/rpc.h"
 #include "rmapi/rmapi_utils.h"
+#include "kernel/gpu_mgr/gpu_mgr.h"
 
 NV_STATUS
 binapiConstruct_IMPL
@@ -100,7 +101,7 @@ binapiControl_IMPL
             }
         }
     }
-    else if (IS_GSP_CLIENT(pGpu))
+    else if (IS_FW_CLIENT(pGpu))
     {
         NV_ASSERT_OK_OR_RETURN(rmGpuGroupLockAcquire(pGpu->gpuInstance,
                                                      GPU_LOCK_GRP_SUBDEVICE,

@@ -121,17 +121,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_I2cApi =
     /*pExportInfo=*/        &__nvoc_export_info__I2cApi
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_I2cApi[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) i2capiCtrlCmdI2cGetPortInfo_IMPL,
+        /*pFunc=*/      (void (*)(void)) &i2capiCtrlCmdI2cGetPortInfo_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -146,7 +148,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_I2cApi[]
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) i2capiCtrlCmdI2cIndexed_IMPL,
+        /*pFunc=*/      (void (*)(void)) &i2capiCtrlCmdI2cIndexed_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -161,7 +163,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_I2cApi[]
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) i2capiCtrlCmdI2cGetPortSpeed_IMPL,
+        /*pFunc=*/      (void (*)(void)) &i2capiCtrlCmdI2cGetPortSpeed_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -176,7 +178,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_I2cApi[]
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) i2capiCtrlCmdI2cTableGetDevInfo_IMPL,
+        /*pFunc=*/      (void (*)(void)) &i2capiCtrlCmdI2cTableGetDevInfo_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -191,7 +193,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_I2cApi[]
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) i2capiCtrlCmdI2cTransaction_IMPL,
+        /*pFunc=*/      (void (*)(void)) &i2capiCtrlCmdI2cTransaction_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -202,7 +204,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_I2cApi[]
         /*func=*/       "i2capiCtrlCmdI2cTransaction"
 #endif
     },
-
 };
 
 
@@ -466,6 +467,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__I2cApi =
     /*pExportEntries=*/ __nvoc_exported_method_def_I2cApi
 };
 
+void __nvoc_i2capiDestruct(I2cApi*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_I2cApi(I2cApi *pThis) {
     __nvoc_i2capiDestruct(pThis);
@@ -499,38 +501,11 @@ __nvoc_ctor_I2cApi_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_I2cApi_1(I2cApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // i2capiCtrlCmdI2cGetPortInfo -- exported (id=0x402c0101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__i2capiCtrlCmdI2cGetPortInfo__ = &i2capiCtrlCmdI2cGetPortInfo_IMPL;
-#endif
-
-    // i2capiCtrlCmdI2cIndexed -- exported (id=0x402c0102)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__i2capiCtrlCmdI2cIndexed__ = &i2capiCtrlCmdI2cIndexed_IMPL;
-#endif
-
-    // i2capiCtrlCmdI2cGetPortSpeed -- exported (id=0x402c0103)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__i2capiCtrlCmdI2cGetPortSpeed__ = &i2capiCtrlCmdI2cGetPortSpeed_IMPL;
-#endif
-
-    // i2capiCtrlCmdI2cTableGetDevInfo -- exported (id=0x402c0104)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__i2capiCtrlCmdI2cTableGetDevInfo__ = &i2capiCtrlCmdI2cTableGetDevInfo_IMPL;
-#endif
-
-    // i2capiCtrlCmdI2cTransaction -- exported (id=0x402c0105)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__i2capiCtrlCmdI2cTransaction__ = &i2capiCtrlCmdI2cTransaction_IMPL;
-#endif
-} // End __nvoc_init_funcTable_I2cApi_1 with approximately 5 basic block(s).
+} // End __nvoc_init_funcTable_I2cApi_1
 
 
-// Initialize vtable(s) for 30 virtual method(s).
+// Initialize vtable(s) for 25 virtual method(s).
 void __nvoc_init_funcTable_I2cApi(I2cApi *pThis) {
-
-    // Initialize vtable(s) with 5 per-object function pointer(s).
     __nvoc_init_funcTable_I2cApi_1(pThis);
 }
 

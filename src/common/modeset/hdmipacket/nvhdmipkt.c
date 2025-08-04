@@ -56,6 +56,8 @@
 #include "class/clca7d.h"
 #include "class/clcb70.h"
 #include "class/clcb7d.h"
+#include "class/clcc70.h"
+#include "class/clcc7d.h"
 
 #include "hdmi_spec.h"
 
@@ -223,11 +225,21 @@ static const NVHDMIPKT_CLASS_HIERARCHY hierarchy[] =
         NVHDMIPKT_CB71_CLASS,             // classId
         NVHDMIPKT_C971_CLASS,             // parentClassId
         NV_FALSE,                         // isRootClass
-        initializeHdmiPktInterfaceC971,   // initInterface
+        initializeHdmiPktInterfaceCB71,   // initInterface
         hdmiConstructorC971,              // constructor
         hdmiDestructorC971,               // destructor
         NVCB70_DISPLAY,                   // displayClass
         NVCB7D_CORE_CHANNEL_DMA           // coreDmaClass
+    },
+    [NVHDMIPKT_CC71_CLASS] = {// Index 13==NVHDMIPKT_CC71_CLASS
+        NVHDMIPKT_CC71_CLASS,             // classId
+        NVHDMIPKT_C971_CLASS,             // parentClassId
+        NV_FALSE,                         // isRootClass
+        initializeHdmiPktInterfaceCC71,   // initInterface
+        hdmiConstructorC971,              // constructor
+        hdmiDestructorC971,               // destructor
+        NVCC70_DISPLAY,                   // displayClass
+        NVCC7D_CORE_CHANNEL_DMA           // coreDmaClass
     },
 };
 

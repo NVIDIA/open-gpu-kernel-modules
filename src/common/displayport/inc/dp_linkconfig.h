@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -587,7 +587,12 @@ namespace DisplayPort
 
         unsigned pbnTotal()
         {
-            return PBNForSlots(totalUsableTimeslots);
+            NvU32 slots = totalUsableTimeslots;
+            if (bIs128b132bChannelCoding)
+            {
+                slots = totalTimeslots;
+            }
+            return PBNForSlots(slots);
         }
 
         NvU64 getBytesPerTimeslot();

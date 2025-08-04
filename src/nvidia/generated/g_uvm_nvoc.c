@@ -27,10 +27,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_IntrService;
 // Forward declarations for OBJUVM
 void __nvoc_init__OBJENGSTATE(OBJENGSTATE*);
 void __nvoc_init__IntrService(IntrService*);
-void __nvoc_init__OBJUVM(OBJUVM*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_funcTable_OBJUVM(OBJUVM*, RmHalspecOwner *pRmhalspecowner);
-NV_STATUS __nvoc_ctor_OBJUVM(OBJUVM*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_dataField_OBJUVM(OBJUVM*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init__OBJUVM(OBJUVM*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_funcTable_OBJUVM(OBJUVM*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+NV_STATUS __nvoc_ctor_OBJUVM(OBJUVM*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_dataField_OBJUVM(OBJUVM*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_OBJUVM(OBJUVM*);
 
 // Structures used within RTTI (run-time type information)
@@ -250,12 +250,13 @@ void __nvoc_dtor_OBJUVM(OBJUVM *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_OBJUVM(OBJUVM *pThis, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+void __nvoc_init_dataField_OBJUVM(OBJUVM *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
@@ -274,7 +275,8 @@ void __nvoc_init_dataField_OBJUVM(OBJUVM *pThis, RmHalspecOwner *pRmhalspecowner
         pThis->accessCounterBufferCount = 1;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->accessCounterBufferCount = 0;
     }
@@ -282,13 +284,13 @@ void __nvoc_init_dataField_OBJUVM(OBJUVM *pThis, RmHalspecOwner *pRmhalspecowner
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
 NV_STATUS __nvoc_ctor_IntrService(IntrService* );
-NV_STATUS __nvoc_ctor_OBJUVM(OBJUVM *pThis, RmHalspecOwner *pRmhalspecowner) {
+NV_STATUS __nvoc_ctor_OBJUVM(OBJUVM *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
     if (status != NV_OK) goto __nvoc_ctor_OBJUVM_fail_OBJENGSTATE;
     status = __nvoc_ctor_IntrService(&pThis->__nvoc_base_IntrService);
     if (status != NV_OK) goto __nvoc_ctor_OBJUVM_fail_IntrService;
-    __nvoc_init_dataField_OBJUVM(pThis, pRmhalspecowner);
+    __nvoc_init_dataField_OBJUVM(pThis, pGpuhalspecowner, pRmhalspecowner);
     goto __nvoc_ctor_OBJUVM_exit; // Success
 
 __nvoc_ctor_OBJUVM_fail_IntrService:
@@ -300,12 +302,13 @@ __nvoc_ctor_OBJUVM_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
@@ -314,7 +317,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmInitAccessCntrBuffer -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmInitAccessCntrBuffer__ = &uvmInitAccessCntrBuffer_ac1694;
     }
@@ -325,7 +329,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmDestroyAccessCntrBuffer -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmDestroyAccessCntrBuffer__ = &uvmDestroyAccessCntrBuffer_ac1694;
     }
@@ -356,7 +361,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmUnloadAccessCntrBuffer -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmUnloadAccessCntrBuffer__ = &uvmUnloadAccessCntrBuffer_ac1694;
     }
@@ -367,7 +373,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmSetupAccessCntrBuffer -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmSetupAccessCntrBuffer__ = &uvmSetupAccessCntrBuffer_ac1694;
     }
@@ -378,7 +385,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmReadAccessCntrBufferPutPtr -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmReadAccessCntrBufferPutPtr__ = &uvmReadAccessCntrBufferPutPtr_395e98;
     }
@@ -389,7 +397,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmReadAccessCntrBufferGetPtr -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmReadAccessCntrBufferGetPtr__ = &uvmReadAccessCntrBufferGetPtr_395e98;
     }
@@ -400,7 +409,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmReadAccessCntrBufferFullPtr -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmReadAccessCntrBufferFullPtr__ = &uvmReadAccessCntrBufferFullPtr_395e98;
     }
@@ -411,7 +421,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmAccessCntrSetGranularity -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmAccessCntrSetGranularity__ = &uvmAccessCntrSetGranularity_395e98;
     }
@@ -422,7 +433,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmAccessCntrSetThreshold -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmAccessCntrSetThreshold__ = &uvmAccessCntrSetThreshold_395e98;
     }
@@ -443,7 +455,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmWriteAccessCntrBufferGetPtr -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmWriteAccessCntrBufferGetPtr__ = &uvmWriteAccessCntrBufferGetPtr_395e98;
     }
@@ -454,7 +467,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmEnableAccessCntr -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmEnableAccessCntr__ = &uvmEnableAccessCntr_395e98;
     }
@@ -465,7 +479,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmDisableAccessCntr -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmDisableAccessCntr__ = &uvmDisableAccessCntr_395e98;
     }
@@ -476,7 +491,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmEnableAccessCntrIntr -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmEnableAccessCntrIntr__ = &uvmEnableAccessCntrIntr_395e98;
     }
@@ -487,7 +503,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmDisableAccessCntrIntr -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmDisableAccessCntrIntr__ = &uvmDisableAccessCntrIntr_395e98;
     }
@@ -498,7 +515,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmGetAccessCntrRegisterMappings -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmGetAccessCntrRegisterMappings__ = &uvmGetAccessCntrRegisterMappings_395e98;
     }
@@ -509,7 +527,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmAccessCntrService -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmAccessCntrService__ = &uvmAccessCntrService_395e98;
     }
@@ -520,7 +539,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmGetAccessCounterBufferSize -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmGetAccessCounterBufferSize__ = &uvmGetAccessCounterBufferSize_b2b553;
     }
@@ -531,7 +551,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmProgramWriteAccessCntrBufferAddress -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmProgramWriteAccessCntrBufferAddress__ = &uvmProgramWriteAccessCntrBufferAddress_f2d351;
     }
@@ -542,7 +563,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmProgramAccessCntrBufferEnabled -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmProgramAccessCntrBufferEnabled__ = &uvmProgramAccessCntrBufferEnabled_f2d351;
     }
@@ -553,7 +575,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmIsAccessCntrBufferEnabled -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmIsAccessCntrBufferEnabled__ = &uvmIsAccessCntrBufferEnabled_72a2e1;
     }
@@ -564,7 +587,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmIsAccessCntrBufferPushed -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmIsAccessCntrBufferPushed__ = &uvmIsAccessCntrBufferPushed_72a2e1;
     }
@@ -580,7 +604,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
         pThis->__uvmGetRegOffsetAccessCntrBufferPut__ = &uvmGetRegOffsetAccessCntrBufferPut_GB100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmGetRegOffsetAccessCntrBufferPut__ = &uvmGetRegOffsetAccessCntrBufferPut_b2b553;
     }
@@ -596,7 +621,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
         pThis->__uvmGetRegOffsetAccessCntrBufferGet__ = &uvmGetRegOffsetAccessCntrBufferGet_GB100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmGetRegOffsetAccessCntrBufferGet__ = &uvmGetRegOffsetAccessCntrBufferGet_b2b553;
     }
@@ -612,7 +638,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
         pThis->__uvmGetRegOffsetAccessCntrBufferHi__ = &uvmGetRegOffsetAccessCntrBufferHi_GB100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmGetRegOffsetAccessCntrBufferHi__ = &uvmGetRegOffsetAccessCntrBufferHi_b2b553;
     }
@@ -628,7 +655,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
         pThis->__uvmGetRegOffsetAccessCntrBufferLo__ = &uvmGetRegOffsetAccessCntrBufferLo_GB100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmGetRegOffsetAccessCntrBufferLo__ = &uvmGetRegOffsetAccessCntrBufferLo_b2b553;
     }
@@ -644,7 +672,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
         pThis->__uvmGetRegOffsetAccessCntrBufferConfig__ = &uvmGetRegOffsetAccessCntrBufferConfig_GB100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmGetRegOffsetAccessCntrBufferConfig__ = &uvmGetRegOffsetAccessCntrBufferConfig_b2b553;
     }
@@ -660,7 +689,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
         pThis->__uvmGetRegOffsetAccessCntrBufferInfo__ = &uvmGetRegOffsetAccessCntrBufferInfo_GB100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmGetRegOffsetAccessCntrBufferInfo__ = &uvmGetRegOffsetAccessCntrBufferInfo_b2b553;
     }
@@ -676,7 +706,8 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
         pThis->__uvmGetRegOffsetAccessCntrBufferSize__ = &uvmGetRegOffsetAccessCntrBufferSize_GB100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB10B | GB20B */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: GB10B | GB20B | GB20C | T234D | T264D */ 
     {
         pThis->__uvmGetRegOffsetAccessCntrBufferSize__ = &uvmGetRegOffsetAccessCntrBufferSize_b2b553;
     }
@@ -688,14 +719,14 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
 
 // Initialize vtable(s) for 49 virtual method(s).
-void __nvoc_init_funcTable_OBJUVM(OBJUVM *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init_funcTable_OBJUVM(OBJUVM *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
     // Initialize vtable(s) with 31 per-object function pointer(s).
-    __nvoc_init_funcTable_OBJUVM_1(pThis, pRmhalspecowner);
+    __nvoc_init_funcTable_OBJUVM_1(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__OBJUVM(OBJUVM *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init__OBJUVM(OBJUVM *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
     // Initialize pointers to inherited data.
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object;    // (obj) super^2
@@ -714,7 +745,7 @@ void __nvoc_init__OBJUVM(OBJUVM *pThis, RmHalspecOwner *pRmhalspecowner) {
     pThis->__nvoc_metadata_ptr = &__nvoc_metadata__OBJUVM;    // (uvm) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_OBJUVM(pThis, pRmhalspecowner);
+    __nvoc_init_funcTable_OBJUVM(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_OBJUVM(OBJUVM **ppThis, Dynamic *pParent, NvU32 createFlags)
@@ -722,6 +753,7 @@ NV_STATUS __nvoc_objCreate_OBJUVM(OBJUVM **ppThis, Dynamic *pParent, NvU32 creat
     NV_STATUS status;
     Object *pParentObj = NULL;
     OBJUVM *pThis;
+    GpuHalspecOwner *pGpuhalspecowner;
     RmHalspecOwner *pRmhalspecowner;
 
     // Assign `pThis`, allocating memory unless suppressed by flag.
@@ -748,12 +780,15 @@ NV_STATUS __nvoc_objCreate_OBJUVM(OBJUVM **ppThis, Dynamic *pParent, NvU32 creat
         pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.pParent = NULL;
     }
 
+    if ((pGpuhalspecowner = dynamicCast(pParent, GpuHalspecOwner)) == NULL)
+        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, pParent);
+    NV_ASSERT_OR_RETURN(pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
     if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
         pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
     NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init__OBJUVM(pThis, pRmhalspecowner);
-    status = __nvoc_ctor_OBJUVM(pThis, pRmhalspecowner);
+    __nvoc_init__OBJUVM(pThis, pGpuhalspecowner, pRmhalspecowner);
+    status = __nvoc_ctor_OBJUVM(pThis, pGpuhalspecowner, pRmhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_OBJUVM_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

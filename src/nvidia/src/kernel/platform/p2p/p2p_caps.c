@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -261,6 +261,54 @@ _gpumgrGetP2PCapsStatusOverNvLink
         }
     }
 
+    *pP2PReadCapStatus  = NV0000_P2P_CAPS_STATUS_OK;
+    *pP2PWriteCapStatus = NV0000_P2P_CAPS_STATUS_OK;
+    return NV_OK;
+}
+
+static NV_STATUS
+_kgetP2PCapsStatusOverC2C
+(
+    NvU32 gpuMask,
+    NvU8 *pP2PWriteCapStatus,
+    NvU8 *pP2PReadCapStatus
+)
+{
+    OBJGPU     *pGpu        = NULL;
+    KernelBif  *pKernelBif  = NULL;
+    NvU32      gpuInstance  = 0;
+    OBJGPU     *pFirstGpu   = gpumgrGetNextGpu(gpuMask, &gpuInstance);
+
+    NV_ASSERT_OR_RETURN(pFirstGpu != NULL, NV_ERR_INVALID_ARGUMENT);
+    pKernelBif = GPU_GET_KERNEL_BIF(pFirstGpu);
+
+    if ((pKernelBif->forceP2PType != NV_REG_STR_RM_FORCE_P2P_TYPE_DEFAULT) &&
+        (pKernelBif->forceP2PType != NV_REG_STR_RM_FORCE_P2P_TYPE_C2C))
+    {
+        *pP2PReadCapStatus  = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
+        *pP2PWriteCapStatus = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
+        return NV_OK;
+    }
+
+    //
+    // Re-initialize to check loop back configuration if only single GPU in
+    // requested mask.
+    //
+    gpuInstance = (gpumgrGetSubDeviceCount(gpuMask) > 1) ? gpuInstance : 0;
+
+    // Check C2C P2P connectivity
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    {
+        // Ensure that we can create a C2C P2P object between the two object
+
+        if (!kbifIsC2CP2PSupported_HAL(pFirstGpu, pKernelBif, pGpu))
+        {
+
+            *pP2PReadCapStatus  = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
+            *pP2PWriteCapStatus = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
+            return NV_OK;
+        }
+    }
     *pP2PReadCapStatus  = NV0000_P2P_CAPS_STATUS_OK;
     *pP2PWriteCapStatus = NV0000_P2P_CAPS_STATUS_OK;
     return NV_OK;
@@ -776,6 +824,20 @@ p2pGetCapsStatus
     }
 
     gpuInstance = 0;
+
+    // Check C2C P2P connectivity
+    if (_kgetP2PCapsStatusOverC2C(gpuMask, pP2PWriteCapStatus,
+                                 pP2PReadCapStatus) == NV_OK)
+    {
+        if (*pP2PWriteCapStatus == NV0000_P2P_CAPS_STATUS_OK &&
+            *pP2PReadCapStatus == NV0000_P2P_CAPS_STATUS_OK)
+        {
+            *pConnectivity = P2P_CONNECTIVITY_C2C;
+            // todo: move this, and other instances to cap check functions.
+            *pP2PAtomicsCapStatus = NV0000_P2P_CAPS_STATUS_OK;
+            return NV_OK;
+        }
+    }
 
     // Check NvLink P2P connectivity.
     if (_gpumgrGetP2PCapsStatusOverNvLink(gpuMask, pP2PWriteCapStatus,

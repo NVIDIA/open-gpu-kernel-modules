@@ -80,6 +80,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__Fabric =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_fabricDestruct(Fabric*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_Fabric(Fabric *pThis) {
     __nvoc_fabricDestruct(pThis);

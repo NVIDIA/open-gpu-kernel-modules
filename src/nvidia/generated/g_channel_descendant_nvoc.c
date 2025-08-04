@@ -448,6 +448,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__ChannelDescendant =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_chandesDestruct(ChannelDescendant*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_Notifier(Notifier*);
 void __nvoc_dtor_ChannelDescendant(ChannelDescendant *pThis) {

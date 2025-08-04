@@ -88,6 +88,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJSYS =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_sysDestruct(OBJSYS*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_OBJTRACEABLE(OBJTRACEABLE*);
 void __nvoc_dtor_OBJSYS(OBJSYS *pThis) {

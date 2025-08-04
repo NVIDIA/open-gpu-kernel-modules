@@ -112,7 +112,8 @@ intermapCreateDmaMapping
     RsClient              *pClient,
     VirtualMemory         *pVirtualMemory,
     PCLI_DMA_MAPPING_INFO *ppDmaMapping,
-    NvU32                  flags
+    NvU32                  flags,
+    NvU32                  flags2
 )
 {
     Memory                *pMemory  = NULL;
@@ -148,7 +149,8 @@ intermapCreateDmaMapping
     portMemSet(pDmaMapping, 0, sizeof(CLI_DMA_MAPPING_INFO));
     pDmaMapping->DmaOffset          = 0;
     pDmaMapping->bP2P               = NV_FALSE;
-    pDmaMapping->Flags              = flags; // NV0S46_*
+    pDmaMapping->Flags              = flags; // NV0S46_FLAGS_*
+    pDmaMapping->Flags2             = flags2; // NV0S46_FLAGS2_*
     pDmaMapping->addressTranslation = VAS_ADDRESS_TRANSLATION(pVAS);
 
     *ppDmaMapping = pDmaMapping;

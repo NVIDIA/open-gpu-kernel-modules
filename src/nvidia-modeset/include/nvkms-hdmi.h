@@ -76,9 +76,9 @@ void nvHdmiDpConstructHeadAudioState(const NvU32 displayId,
                                      const NVDpyEvoRec *pDpyEvo,
                                      NVDispHeadAudioStateEvoRec *pAudioState);
 
-NvU32 nvHdmiGetEffectivePixelClockKHz(const NVDpyEvoRec *pDpyEvo,
-                                      const NVHwModeTimingsEvo *pHwTimings,
-                                      const NVDpyAttributeColor *pDpyColor);
+NvBool nvHdmiIsTmdsPossible(const NVDpyEvoRec *pDpyEvo,
+                            const NVHwModeTimingsEvo *pHwTimings,
+                            const NVDpyAttributeColor *pDpyColor);
 
 static inline NvBool nvHdmiDpySupportsDsc(const NVDpyEvoRec *pDpyEvo)
 {

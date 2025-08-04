@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2024 NVIDIA Corporation
+    Copyright (c) 2016-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -27,6 +27,7 @@
 #include "uvm_global.h"
 #include "uvm_gpu.h"
 #include "uvm_lock.h"
+#include "uvm_va_block_types.h"
 #include "uvm_va_space.h"
 #include "uvm_va_range.h"
 #include "uvm_va_block.h"
@@ -68,56 +69,6 @@ static bool is_migration_single_block(uvm_va_range_managed_t *first_managed_rang
         return false;
 
     return uvm_va_range_block_index(first_managed_range, base) == uvm_va_range_block_index(first_managed_range, end);
-}
-
-static NV_STATUS block_migrate_map_mapped_pages(uvm_va_block_t *va_block,
-                                                uvm_va_block_retry_t *va_block_retry,
-                                                uvm_va_block_context_t *va_block_context,
-                                                uvm_va_block_region_t region,
-                                                uvm_processor_id_t dest_id)
-{
-    uvm_prot_t prot;
-    uvm_page_index_t page_index;
-    NV_STATUS status = NV_OK;
-    const uvm_page_mask_t *pages_mapped_on_destination = uvm_va_block_map_mask_get(va_block, dest_id);
-
-    for (prot = UVM_PROT_READ_ONLY; prot <= UVM_PROT_READ_WRITE_ATOMIC; ++prot)
-        va_block_context->mask_by_prot[prot - 1].count = 0;
-
-    // Only map those pages that are not already mapped on destination
-    for_each_va_block_unset_page_in_region_mask(page_index, pages_mapped_on_destination, region) {
-        prot = uvm_va_block_page_compute_highest_permission(va_block, va_block_context, dest_id, page_index);
-        if (prot == UVM_PROT_NONE)
-            continue;
-
-        if (va_block_context->mask_by_prot[prot - 1].count++ == 0)
-            uvm_page_mask_zero(&va_block_context->mask_by_prot[prot - 1].page_mask);
-
-        uvm_page_mask_set(&va_block_context->mask_by_prot[prot - 1].page_mask, page_index);
-    }
-
-    for (prot = UVM_PROT_READ_ONLY; prot <= UVM_PROT_READ_WRITE_ATOMIC; ++prot) {
-        if (va_block_context->mask_by_prot[prot - 1].count == 0)
-            continue;
-
-        // We pass UvmEventMapRemoteCauseInvalid since the destination processor
-        // of a migration will never be mapped remotely
-        status = uvm_va_block_map(va_block,
-                                  va_block_context,
-                                  dest_id,
-                                  region,
-                                  &va_block_context->mask_by_prot[prot - 1].page_mask,
-                                  prot,
-                                  UvmEventMapRemoteCauseInvalid,
-                                  &va_block->tracker);
-        if (status != NV_OK)
-            break;
-
-        // Whoever added the other mapping(s) should have already added
-        // SetAccessedBy processors
-    }
-
-    return status;
 }
 
 static NV_STATUS block_migrate_map_unmapped_pages(uvm_va_block_t *va_block,
@@ -206,6 +157,8 @@ static NV_STATUS block_migrate_add_mappings(uvm_va_block_t *va_block,
 
 {
     NV_STATUS status;
+    uvm_gpu_id_t gpu_id;
+    uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
 
     status = block_migrate_map_unmapped_pages(va_block,
                                               va_block_retry,
@@ -215,11 +168,29 @@ static NV_STATUS block_migrate_add_mappings(uvm_va_block_t *va_block,
     if (status != NV_OK)
         return status;
 
-    return block_migrate_map_mapped_pages(va_block,
-                                          va_block_retry,
-                                          va_block_context,
-                                          region,
-                                          dest_id);
+    // When migrating to an integrated GPU the dest_id is the CPU. In cases
+    // where residency has not changed we need to ensure the iGPU mapping is
+    // also updated here.
+    // TODO: Bug 5003533: Multiple iGPU support.
+    if (uvm_va_space_has_integrated_gpu(va_space)) {
+        for_each_gpu_id_in_mask(gpu_id, &va_space->registered_gpu_va_spaces) {
+            status = uvm_va_block_migrate_map_mapped_pages(va_block,
+                                                           va_block_retry,
+                                                           va_block_context,
+                                                           region,
+                                                           gpu_id,
+                                                           UvmEventMapRemoteCausePolicy);
+            if (status != NV_OK)
+                return status;
+        }
+    }
+
+    return uvm_va_block_migrate_map_mapped_pages(va_block,
+                                                 va_block_retry,
+                                                 va_block_context,
+                                                 region,
+                                                 dest_id,
+                                                 UvmEventMapRemoteCauseInvalid);
 }
 
 NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
@@ -232,7 +203,8 @@ NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
 {
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
     uvm_va_block_context_t *va_block_context = service_context->block_context;
-    NV_STATUS status, tracker_status = NV_OK;
+    NV_STATUS status = NV_OK;
+    NV_STATUS tracker_status = NV_OK;
 
     uvm_assert_mutex_locked(&va_block->lock);
     UVM_ASSERT(uvm_hmm_check_context_vma_is_valid(va_block, va_block_context->hmm.vma, region));
@@ -249,16 +221,35 @@ NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
     }
     else {
         uvm_va_policy_t *policy = &va_block->managed_range->policy;
+        uvm_page_mask_t *make_resident_mask = &va_block_context->discard.make_resident_mask;
+        uvm_processor_id_t preferred_location = policy->preferred_location;
+
+        uvm_page_mask_init_from_region(make_resident_mask, region, NULL);
 
         if (uvm_va_policy_is_read_duplicate(policy, va_space)) {
-            status = uvm_va_block_make_resident_read_duplicate(va_block,
-                                                               va_block_retry,
-                                                               va_block_context,
-                                                               dest_id,
-                                                               region,
-                                                               NULL,
-                                                               NULL,
-                                                               UVM_MAKE_RESIDENT_CAUSE_API_MIGRATE);
+            if (uvm_page_mask_andnot(make_resident_mask, make_resident_mask, &va_block->discarded_pages)) {
+                status = uvm_va_block_make_resident_read_duplicate(va_block,
+                                                                   va_block_retry,
+                                                                   va_block_context,
+                                                                   dest_id,
+                                                                   region,
+                                                                   make_resident_mask,
+                                                                   NULL,
+                                                                   UVM_MAKE_RESIDENT_CAUSE_API_MIGRATE);
+            }
+
+            // We've read-duplicated all non-discarded pages.
+            // Now, collapse all discarded pages in the region.
+            if (uvm_page_mask_init_from_region(make_resident_mask, region, &va_block->discarded_pages)) {
+                status = uvm_va_block_make_resident(va_block,
+                                                    va_block_retry,
+                                                    va_block_context,
+                                                    UVM_ID_IS_VALID(preferred_location) ? preferred_location : dest_id,
+                                                    region,
+                                                    make_resident_mask,
+                                                    NULL,
+                                                    UVM_MAKE_RESIDENT_CAUSE_API_MIGRATE);
+            }
         }
         else {
             status = uvm_va_block_make_resident(va_block,
@@ -666,6 +657,11 @@ static NV_STATUS uvm_migrate(uvm_va_space_t *va_space,
     if (!service_context)
         return NV_ERR_NO_MEMORY;
 
+    // Some routines called in the migration path are shared with fault and
+    // notification service paths. They check for prefetch information which
+    // is not used in this code path.
+    service_context->prefetch_hint.residency = UVM_ID_INVALID;
+
     service_context->block_context->make_resident.dest_nid = dest_nid;
 
     uvm_processor_mask_zero(&service_context->gpus_to_check_for_nvlink_errors);
@@ -1014,6 +1010,7 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
                 .dst_node_id                        = cpu_numa_node,
                 .populate_permissions               = UVM_POPULATE_PERMISSIONS_INHERIT,
                 .populate_flags                     = UVM_POPULATE_PAGEABLE_FLAG_SKIP_PROT_CHECK,
+                .cause                              = UVM_MAKE_RESIDENT_CAUSE_API_MIGRATE,
                 .skip_mapped                        = false,
                 .populate_on_cpu_alloc_failures     = false,
                 .populate_on_migrate_vma_failures   = true,
@@ -1022,6 +1019,12 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
                 .gpus_to_check_for_nvlink_errors    = gpus_to_check_for_nvlink_errors,
                 .fail_on_unresolved_sto_errors      = false,
             };
+
+            if (dest_gpu && dest_gpu->mem_info.cdmm_enabled) {
+                uvm_migrate_args.dst_id = UVM_ID_CPU;
+                uvm_migrate_args.dst_node_id = dest_gpu->parent->closest_cpu_numa_node;
+                uvm_migrate_args.populate_on_cpu_alloc_failures = true;
+            }
 
             status = uvm_migrate_pageable(&uvm_migrate_args);
         }
@@ -1114,7 +1117,7 @@ NV_STATUS uvm_api_migrate_range_group(UVM_MIGRATE_RANGE_GROUP_PARAMS *params, st
     gpus_to_check_for_nvlink_errors = uvm_processor_mask_cache_alloc();
     if (!gpus_to_check_for_nvlink_errors)
         return NV_ERR_NO_MEMORY;
- 
+
     uvm_processor_mask_zero(gpus_to_check_for_nvlink_errors);
 
     // mmap_lock will be needed if we have to create CPU mappings

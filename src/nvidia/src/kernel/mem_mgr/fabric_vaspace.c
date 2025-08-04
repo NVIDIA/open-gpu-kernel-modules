@@ -706,11 +706,11 @@ fabricvaspaceGetGpaMemdesc_IMPL
 
     pRootMemDesc = memdescGetRootMemDesc(pFabricMemdesc, &rootOffset);
 
-    RmPhysAddr *pteArray = memdescGetPteArray(pRootMemDesc, AT_GPU);
+    RmPhysAddr physAddr = memdescGetPhysAddr(pRootMemDesc, AT_GPU, 0);
 
-    // Check if pteArray[0] is within the VAS range for the mapping GPU.
-    if ((pteArray[0] < fabricvaspaceGetUCFlaStart(pFabricVAS)) ||
-        (pteArray[0] > fabricvaspaceGetUCFlaLimit(pFabricVAS)))
+    // Check if physAddr is within the VAS range for the mapping GPU.
+    if ((physAddr < fabricvaspaceGetUCFlaStart(pFabricVAS)) ||
+        (physAddr > fabricvaspaceGetUCFlaLimit(pFabricVAS)))
     {
         *ppAdjustedMemdesc = pFabricMemdesc;
         return NV_OK;
@@ -724,7 +724,7 @@ fabricvaspaceGetGpaMemdesc_IMPL
     // in the pteArray should be fine to determine if FLA import is on the
     // mapping GPU.
     //
-    NV_ASSERT_OK_OR_RETURN(btreeSearch(pteArray[0], &pNode,
+    NV_ASSERT_OK_OR_RETURN(btreeSearch(physAddr, &pNode,
                                        pFabricVAS->pFabricVaToGpaMap));
 
     FABRIC_VA_TO_GPA_MAP_NODE *pFabricNode =
@@ -996,7 +996,6 @@ fabricvaspaceUnmapPhysMemdesc_IMPL
     NvU64 mapLength;
     FABRIC_VASPACE_MAPPING_REGIONS regions;
     NvU32 numRegions;
-    RmPhysAddr *pFabricPteArray;
 
     fabricPageSize = memdescGetPageSize(pFabricMemDesc, AT_GPU);
 
@@ -1006,8 +1005,6 @@ fabricvaspaceUnmapPhysMemdesc_IMPL
     _fabricvaspaceGetMappingRegions(fabricOffset, fabricPageSize, physMapLength,
                                     &regions, &numRegions);
     NV_ASSERT_OR_RETURN_VOID(numRegions != 0);
-
-    pFabricPteArray = memdescGetPteArray(pFabricMemDesc, AT_GPU);
 
     for (i = 0; i < numRegions; i++)
     {
@@ -1022,15 +1019,8 @@ fabricvaspaceUnmapPhysMemdesc_IMPL
 
         for (j = 0; j < fabricPageCount; j++)
         {
-            if (fabricPageCount == 1)
-            {
-                fabricAddr = pFabricPteArray[0] + fabricOffset;
-            }
-            else
-            {
-                fabricAddr = pFabricPteArray[fabricOffset /
-                    pFabricMemDesc->pageArrayGranularity];
-            }
+            // Virtual address, not localized
+            fabricAddr = memdescGetPhysAddr(pFabricMemDesc, AT_GPU, fabricOffset);
 
             vaspaceUnmap(pFabricVAS->pGVAS, pPhysMemDesc->pGpu, fabricAddr,
                          fabricAddr + mapLength - 1);
@@ -1074,10 +1064,8 @@ fabricvaspaceMapPhysMemdesc_IMPL
     FABRIC_VASPACE_MAPPING_REGIONS regions;
     NvU32 numRegions;
     MEMORY_DESCRIPTOR *pTempMemdesc;
-    NvU32 aperture;
+    GMMU_APERTURE aperture;
     NvU32 peerNumber = BUS_INVALID_PEER;
-    RmPhysAddr *pFabricPteArray;
-    RmPhysAddr *pPhysPteArray;
 
     NV_ASSERT_OR_RETURN(pFabricMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(pPhysMemDesc != NULL,   NV_ERR_INVALID_ARGUMENT);
@@ -1108,11 +1096,11 @@ fabricvaspaceMapPhysMemdesc_IMPL
 
     if (memdescGetAddressSpace(pPhysMemDesc) == ADDR_FBMEM)
     {
-        aperture = NV_MMU_PTE_APERTURE_VIDEO_MEMORY;
+        aperture = GMMU_APERTURE_VIDEO;
     }
     else if (memdescIsEgm(pPhysMemDesc))
     {
-        aperture = NV_MMU_PTE_APERTURE_PEER_MEMORY;
+        aperture = GMMU_APERTURE_PEER;
         //
         // Make sure that we receive a mapping request for EGM memory
         // only if local EGM is enabled.
@@ -1124,11 +1112,11 @@ fabricvaspaceMapPhysMemdesc_IMPL
     {
         if (memdescGetCpuCacheAttrib(pPhysMemDesc) == NV_MEMORY_CACHED)
         {
-            aperture = NV_MMU_PTE_APERTURE_SYSTEM_COHERENT_MEMORY;
+            aperture = GMMU_APERTURE_SYS_COH;
         }
         else
         {
-            aperture = NV_MMU_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY;
+            aperture = GMMU_APERTURE_SYS_NONCOH;
         }
     }
     else
@@ -1140,9 +1128,6 @@ fabricvaspaceMapPhysMemdesc_IMPL
     _fabricvaspaceGetMappingRegions(fabricOffset, fabricPageSize, physMapLength,
                                     &regions, &numRegions);
     NV_ASSERT_OR_RETURN(numRegions != 0, NV_ERR_INVALID_ARGUMENT);
-
-    pFabricPteArray = memdescGetPteArray(pFabricMemDesc, AT_GPU);
-    pPhysPteArray = memdescGetPteArray(pPhysMemDesc, AT_GPU);
 
     for (i = 0; i < numRegions; i++)
     {
@@ -1158,25 +1143,29 @@ fabricvaspaceMapPhysMemdesc_IMPL
 
         for (j = 0; j < fabricPageCount; j++)
         {
-            if (fabricPageCount == 1)
-            {
-                fabricAddr = pFabricPteArray[0] + fabricOffset;
-            }
-            else
-            {
-                fabricAddr = pFabricPteArray[fabricOffset /
-                    pFabricMemDesc->pageArrayGranularity];
-            }
+            // Virtual address, not localized
+            fabricAddr = memdescGetPhysAddr(pFabricMemDesc, AT_GPU, fabricOffset);
+
+            //
+            // Physical address, may be localized
+            // FLA code offsets into the page array
+            //
+            dmaPageArrayInitFromMemDesc(&pageArray, pPhysMemDesc, AT_GPU);
 
             if (pageArray.count == 1)
             {
-                physAddr = pPhysPteArray[0] + physOffset;
+                //
+                // Need to add on the offset to contiguous address directly
+                // We can't override the physAddr of the dmaPageArray
+                // because it points back to the original pPhysMemDesc's
+                // pteArray, and doing so would corrupt that.
+                //
+                physAddr = memdescGetPhysAddr(pPhysMemDesc, AT_GPU, physOffset);
                 pageArray.pData = &physAddr;
             }
             else
             {
-                pageArray.pData = &pPhysPteArray[physOffset /
-                    pPhysMemDesc->pageArrayGranularity];
+                pageArray.startIndex = physOffset / pPhysMemDesc->pageArrayGranularity;
             }
 
             //
@@ -1204,7 +1193,7 @@ fabricvaspaceMapPhysMemdesc_IMPL
                                       NULL, fabricAddr, fabricAddr + mapLength - 1,
                                       mapFlags, &pageArray, 0, &comprInfo, 0,
                                       NV_MMU_PTE_VALID_TRUE,
-                                      aperture,
+                                      aperture, dmaIsDefaultGpuUncached_HAL(pDma, pTempMemdesc, aperture, NV_FALSE),
                                       peerNumber, NVLINK_INVALID_FABRIC_ADDR,
                                       DMA_DEFER_TLB_INVALIDATE, NV_FALSE,
                                       memdescGetPageSize(pTempMemdesc, AT_GPU));

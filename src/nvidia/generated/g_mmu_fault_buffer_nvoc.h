@@ -92,14 +92,6 @@ struct MmuFaultBuffer {
     struct INotifier *__nvoc_pbase_INotifier;    // inotify super^2
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct MmuFaultBuffer *__nvoc_pbase_MmuFaultBuffer;    // faultbuf
-
-    // Vtable with 6 per-object function pointers
-    NV_STATUS (*__faultbufCtrlCmdFaultbufferGetSize__)(struct MmuFaultBuffer * /*this*/, NVB069_CTRL_FAULTBUFFER_GET_SIZE_PARAMS *);  // exported (id=0xb0690105)
-    NV_STATUS (*__faultbufCtrlCmdFaultbufferGetRegisterMappings__)(struct MmuFaultBuffer * /*this*/, NVB069_CTRL_CMD_FAULTBUFFER_GET_REGISTER_MAPPINGS_PARAMS *);  // exported (id=0xb0690106)
-    NV_STATUS (*__faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf__)(struct MmuFaultBuffer * /*this*/, NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_NON_REPLAY_BUF_PARAMS *);  // exported (id=0xc3690101)
-    NV_STATUS (*__faultbufCtrlCmdMmuFaultBufferUnregisterNonReplayBuf__)(struct MmuFaultBuffer * /*this*/, NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_NON_REPLAY_BUF_PARAMS *);  // exported (id=0xc3690102)
-    NV_STATUS (*__faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf__)(struct MmuFaultBuffer * /*this*/, NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_REPLAY_BUF_PARAMS *);  // exported (id=0xc3690103)
-    NV_STATUS (*__faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf__)(struct MmuFaultBuffer * /*this*/, NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_REPLAY_BUF_PARAMS *);  // exported (id=0xc3690104)
 };
 
 
@@ -174,25 +166,81 @@ NV_STATUS __nvoc_objCreate_MmuFaultBuffer(MmuFaultBuffer**, Dynamic*, NvU32, str
     __nvoc_objCreate_MmuFaultBuffer((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS faultbufConstruct_IMPL(struct MmuFaultBuffer *arg_pMmuFaultBuffer, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_faultbufConstruct(arg_pMmuFaultBuffer, arg_pCallContext, arg_pParams) faultbufConstruct_IMPL(arg_pMmuFaultBuffer, arg_pCallContext, arg_pParams)
+
+void faultbufDestruct_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer);
+#define __nvoc_faultbufDestruct(pMmuFaultBuffer) faultbufDestruct_IMPL(pMmuFaultBuffer)
+
+NV_STATUS faultbufCtrlCmdFaultbufferGetSize_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer, NVB069_CTRL_FAULTBUFFER_GET_SIZE_PARAMS *pGetParams);
+#ifdef __nvoc_mmu_fault_buffer_h_disabled
+static inline NV_STATUS faultbufCtrlCmdFaultbufferGetSize(struct MmuFaultBuffer *pMmuFaultBuffer, NVB069_CTRL_FAULTBUFFER_GET_SIZE_PARAMS *pGetParams) {
+    NV_ASSERT_FAILED_PRECOMP("MmuFaultBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_mmu_fault_buffer_h_disabled
+#define faultbufCtrlCmdFaultbufferGetSize(pMmuFaultBuffer, pGetParams) faultbufCtrlCmdFaultbufferGetSize_IMPL(pMmuFaultBuffer, pGetParams)
+#endif // __nvoc_mmu_fault_buffer_h_disabled
+
+NV_STATUS faultbufCtrlCmdFaultbufferGetRegisterMappings_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer, NVB069_CTRL_CMD_FAULTBUFFER_GET_REGISTER_MAPPINGS_PARAMS *pParams);
+#ifdef __nvoc_mmu_fault_buffer_h_disabled
+static inline NV_STATUS faultbufCtrlCmdFaultbufferGetRegisterMappings(struct MmuFaultBuffer *pMmuFaultBuffer, NVB069_CTRL_CMD_FAULTBUFFER_GET_REGISTER_MAPPINGS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("MmuFaultBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_mmu_fault_buffer_h_disabled
+#define faultbufCtrlCmdFaultbufferGetRegisterMappings(pMmuFaultBuffer, pParams) faultbufCtrlCmdFaultbufferGetRegisterMappings_IMPL(pMmuFaultBuffer, pParams)
+#endif // __nvoc_mmu_fault_buffer_h_disabled
+
+NV_STATUS faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer, NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_NON_REPLAY_BUF_PARAMS *pParams);
+#ifdef __nvoc_mmu_fault_buffer_h_disabled
+static inline NV_STATUS faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf(struct MmuFaultBuffer *pMmuFaultBuffer, NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_NON_REPLAY_BUF_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("MmuFaultBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_mmu_fault_buffer_h_disabled
+#define faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf(pMmuFaultBuffer, pParams) faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf_IMPL(pMmuFaultBuffer, pParams)
+#endif // __nvoc_mmu_fault_buffer_h_disabled
+
+NV_STATUS faultbufCtrlCmdMmuFaultBufferUnregisterNonReplayBuf_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer, NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_NON_REPLAY_BUF_PARAMS *pParams);
+#ifdef __nvoc_mmu_fault_buffer_h_disabled
+static inline NV_STATUS faultbufCtrlCmdMmuFaultBufferUnregisterNonReplayBuf(struct MmuFaultBuffer *pMmuFaultBuffer, NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_NON_REPLAY_BUF_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("MmuFaultBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_mmu_fault_buffer_h_disabled
+#define faultbufCtrlCmdMmuFaultBufferUnregisterNonReplayBuf(pMmuFaultBuffer, pParams) faultbufCtrlCmdMmuFaultBufferUnregisterNonReplayBuf_IMPL(pMmuFaultBuffer, pParams)
+#endif // __nvoc_mmu_fault_buffer_h_disabled
+
+NV_STATUS faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer, NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_REPLAY_BUF_PARAMS *pParams);
+#ifdef __nvoc_mmu_fault_buffer_h_disabled
+static inline NV_STATUS faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf(struct MmuFaultBuffer *pMmuFaultBuffer, NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_REPLAY_BUF_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("MmuFaultBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_mmu_fault_buffer_h_disabled
+#define faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf(pMmuFaultBuffer, pParams) faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf_IMPL(pMmuFaultBuffer, pParams)
+#endif // __nvoc_mmu_fault_buffer_h_disabled
+
+NV_STATUS faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer, NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_REPLAY_BUF_PARAMS *pParams);
+#ifdef __nvoc_mmu_fault_buffer_h_disabled
+static inline NV_STATUS faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf(struct MmuFaultBuffer *pMmuFaultBuffer, NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_REPLAY_BUF_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("MmuFaultBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_mmu_fault_buffer_h_disabled
+#define faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf(pMmuFaultBuffer, pParams) faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf_IMPL(pMmuFaultBuffer, pParams)
+#endif // __nvoc_mmu_fault_buffer_h_disabled
+
+
+// Wrapper macros for halified functions
 #define faultbufMap_FNPTR(pMmuFaultBuffer) pMmuFaultBuffer->__nvoc_metadata_ptr->vtable.__faultbufMap__
 #define faultbufMap(pMmuFaultBuffer, pCallContext, pParams, pCpuMapping) faultbufMap_DISPATCH(pMmuFaultBuffer, pCallContext, pParams, pCpuMapping)
 #define faultbufUnmap_FNPTR(pMmuFaultBuffer) pMmuFaultBuffer->__nvoc_metadata_ptr->vtable.__faultbufUnmap__
 #define faultbufUnmap(pMmuFaultBuffer, pCallContext, pCpuMapping) faultbufUnmap_DISPATCH(pMmuFaultBuffer, pCallContext, pCpuMapping)
 #define faultbufGetMapAddrSpace_FNPTR(pMmuFaultBuffer) pMmuFaultBuffer->__nvoc_metadata_ptr->vtable.__faultbufGetMapAddrSpace__
 #define faultbufGetMapAddrSpace(pMmuFaultBuffer, pCallContext, mapFlags, pAddrSpace) faultbufGetMapAddrSpace_DISPATCH(pMmuFaultBuffer, pCallContext, mapFlags, pAddrSpace)
-#define faultbufCtrlCmdFaultbufferGetSize_FNPTR(pMmuFaultBuffer) pMmuFaultBuffer->__faultbufCtrlCmdFaultbufferGetSize__
-#define faultbufCtrlCmdFaultbufferGetSize(pMmuFaultBuffer, pGetParams) faultbufCtrlCmdFaultbufferGetSize_DISPATCH(pMmuFaultBuffer, pGetParams)
-#define faultbufCtrlCmdFaultbufferGetRegisterMappings_FNPTR(pMmuFaultBuffer) pMmuFaultBuffer->__faultbufCtrlCmdFaultbufferGetRegisterMappings__
-#define faultbufCtrlCmdFaultbufferGetRegisterMappings(pMmuFaultBuffer, pParams) faultbufCtrlCmdFaultbufferGetRegisterMappings_DISPATCH(pMmuFaultBuffer, pParams)
-#define faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf_FNPTR(pMmuFaultBuffer) pMmuFaultBuffer->__faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf__
-#define faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf(pMmuFaultBuffer, pParams) faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf_DISPATCH(pMmuFaultBuffer, pParams)
-#define faultbufCtrlCmdMmuFaultBufferUnregisterNonReplayBuf_FNPTR(pMmuFaultBuffer) pMmuFaultBuffer->__faultbufCtrlCmdMmuFaultBufferUnregisterNonReplayBuf__
-#define faultbufCtrlCmdMmuFaultBufferUnregisterNonReplayBuf(pMmuFaultBuffer, pParams) faultbufCtrlCmdMmuFaultBufferUnregisterNonReplayBuf_DISPATCH(pMmuFaultBuffer, pParams)
-#define faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf_FNPTR(pMmuFaultBuffer) pMmuFaultBuffer->__faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf__
-#define faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf(pMmuFaultBuffer, pParams) faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf_DISPATCH(pMmuFaultBuffer, pParams)
-#define faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf_FNPTR(pMmuFaultBuffer) pMmuFaultBuffer->__faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf__
-#define faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf(pMmuFaultBuffer, pParams) faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf_DISPATCH(pMmuFaultBuffer, pParams)
 #define faultbufControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define faultbufControl(pGpuResource, pCallContext, pParams) faultbufControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define faultbufShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
@@ -259,30 +307,6 @@ static inline NV_STATUS faultbufUnmap_DISPATCH(struct MmuFaultBuffer *pMmuFaultB
 
 static inline NV_STATUS faultbufGetMapAddrSpace_DISPATCH(struct MmuFaultBuffer *pMmuFaultBuffer, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMmuFaultBuffer->__nvoc_metadata_ptr->vtable.__faultbufGetMapAddrSpace__(pMmuFaultBuffer, pCallContext, mapFlags, pAddrSpace);
-}
-
-static inline NV_STATUS faultbufCtrlCmdFaultbufferGetSize_DISPATCH(struct MmuFaultBuffer *pMmuFaultBuffer, NVB069_CTRL_FAULTBUFFER_GET_SIZE_PARAMS *pGetParams) {
-    return pMmuFaultBuffer->__faultbufCtrlCmdFaultbufferGetSize__(pMmuFaultBuffer, pGetParams);
-}
-
-static inline NV_STATUS faultbufCtrlCmdFaultbufferGetRegisterMappings_DISPATCH(struct MmuFaultBuffer *pMmuFaultBuffer, NVB069_CTRL_CMD_FAULTBUFFER_GET_REGISTER_MAPPINGS_PARAMS *pParams) {
-    return pMmuFaultBuffer->__faultbufCtrlCmdFaultbufferGetRegisterMappings__(pMmuFaultBuffer, pParams);
-}
-
-static inline NV_STATUS faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf_DISPATCH(struct MmuFaultBuffer *pMmuFaultBuffer, NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_NON_REPLAY_BUF_PARAMS *pParams) {
-    return pMmuFaultBuffer->__faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf__(pMmuFaultBuffer, pParams);
-}
-
-static inline NV_STATUS faultbufCtrlCmdMmuFaultBufferUnregisterNonReplayBuf_DISPATCH(struct MmuFaultBuffer *pMmuFaultBuffer, NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_NON_REPLAY_BUF_PARAMS *pParams) {
-    return pMmuFaultBuffer->__faultbufCtrlCmdMmuFaultBufferUnregisterNonReplayBuf__(pMmuFaultBuffer, pParams);
-}
-
-static inline NV_STATUS faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf_DISPATCH(struct MmuFaultBuffer *pMmuFaultBuffer, NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_REPLAY_BUF_PARAMS *pParams) {
-    return pMmuFaultBuffer->__faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf__(pMmuFaultBuffer, pParams);
-}
-
-static inline NV_STATUS faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf_DISPATCH(struct MmuFaultBuffer *pMmuFaultBuffer, NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_REPLAY_BUF_PARAMS *pParams) {
-    return pMmuFaultBuffer->__faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf__(pMmuFaultBuffer, pParams);
 }
 
 static inline NV_STATUS faultbufControl_DISPATCH(struct MmuFaultBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -411,12 +435,6 @@ NV_STATUS faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf_IMPL(struct MmuFaultBuf
 
 NV_STATUS faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer, NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_REPLAY_BUF_PARAMS *pParams);
 
-NV_STATUS faultbufConstruct_IMPL(struct MmuFaultBuffer *arg_pMmuFaultBuffer, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_faultbufConstruct(arg_pMmuFaultBuffer, arg_pCallContext, arg_pParams) faultbufConstruct_IMPL(arg_pMmuFaultBuffer, arg_pCallContext, arg_pParams)
-void faultbufDestruct_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer);
-
-#define __nvoc_faultbufDestruct(pMmuFaultBuffer) faultbufDestruct_IMPL(pMmuFaultBuffer)
 #undef PRIVATE_FIELD
 
 

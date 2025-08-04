@@ -121,22 +121,24 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_Profiler =
     /*pExportInfo=*/        &__nvoc_export_info__Profiler
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Profiler[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) profilerCtrlCmdProfilerReserveHwpm_IMPL,
+        /*pFunc=*/      (void (*)(void)) &profilerCtrlCmdProfilerReserveHwpm_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90cc0101u,
-        /*paramSize=*/  0,
+        /*paramSize=*/  0 /* Singleton parameter list */,
         /*pClassInfo=*/ &(__nvoc_class_def_Profiler.classInfo),
 #if NV_PRINTF_STRINGS_ALLOWED
         /*func=*/       "profilerCtrlCmdProfilerReserveHwpm"
@@ -146,12 +148,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Profiler
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) profilerCtrlCmdProfilerReleaseHwpm_IMPL,
+        /*pFunc=*/      (void (*)(void)) &profilerCtrlCmdProfilerReleaseHwpm_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90cc0102u,
-        /*paramSize=*/  0,
+        /*paramSize=*/  0 /* Singleton parameter list */,
         /*pClassInfo=*/ &(__nvoc_class_def_Profiler.classInfo),
 #if NV_PRINTF_STRINGS_ALLOWED
         /*func=*/       "profilerCtrlCmdProfilerReleaseHwpm"
@@ -161,7 +163,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Profiler
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) profilerCtrlCmdProfilerGetHwpmReservationInfo_IMPL,
+        /*pFunc=*/      (void (*)(void)) &profilerCtrlCmdProfilerGetHwpmReservationInfo_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -176,7 +178,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Profiler
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) profilerCtrlCmdProfilerRequestCgControls_IMPL,
+        /*pFunc=*/      (void (*)(void)) &profilerCtrlCmdProfilerRequestCgControls_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -191,7 +193,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Profiler
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) profilerCtrlCmdProfilerReleaseCgControls_IMPL,
+        /*pFunc=*/      (void (*)(void)) &profilerCtrlCmdProfilerReleaseCgControls_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -202,7 +204,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Profiler
         /*func=*/       "profilerCtrlCmdProfilerReleaseCgControls"
 #endif
     },
-
 };
 
 
@@ -469,6 +470,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__Profiler =
     /*pExportEntries=*/ __nvoc_exported_method_def_Profiler
 };
 
+void __nvoc_profilerDestruct(Profiler*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_Profiler(Profiler *pThis) {
     __nvoc_profilerDestruct(pThis);
@@ -512,38 +514,11 @@ static void __nvoc_init_funcTable_Profiler_1(Profiler *pThis, RmHalspecOwner *pR
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
-
-    // profilerCtrlCmdProfilerReserveHwpm -- exported (id=0x90cc0101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__profilerCtrlCmdProfilerReserveHwpm__ = &profilerCtrlCmdProfilerReserveHwpm_IMPL;
-#endif
-
-    // profilerCtrlCmdProfilerReleaseHwpm -- exported (id=0x90cc0102)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__profilerCtrlCmdProfilerReleaseHwpm__ = &profilerCtrlCmdProfilerReleaseHwpm_IMPL;
-#endif
-
-    // profilerCtrlCmdProfilerGetHwpmReservationInfo -- exported (id=0x90cc0103)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__profilerCtrlCmdProfilerGetHwpmReservationInfo__ = &profilerCtrlCmdProfilerGetHwpmReservationInfo_IMPL;
-#endif
-
-    // profilerCtrlCmdProfilerRequestCgControls -- exported (id=0x90cc0301)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__profilerCtrlCmdProfilerRequestCgControls__ = &profilerCtrlCmdProfilerRequestCgControls_IMPL;
-#endif
-
-    // profilerCtrlCmdProfilerReleaseCgControls -- exported (id=0x90cc0302)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__profilerCtrlCmdProfilerReleaseCgControls__ = &profilerCtrlCmdProfilerReleaseCgControls_IMPL;
-#endif
-} // End __nvoc_init_funcTable_Profiler_1 with approximately 5 basic block(s).
+} // End __nvoc_init_funcTable_Profiler_1
 
 
-// Initialize vtable(s) for 30 virtual method(s).
+// Initialize vtable(s) for 25 virtual method(s).
 void __nvoc_init_funcTable_Profiler(Profiler *pThis, RmHalspecOwner *pRmhalspecowner) {
-
-    // Initialize vtable(s) with 5 per-object function pointer(s).
     __nvoc_init_funcTable_Profiler_1(pThis, pRmhalspecowner);
 }
 

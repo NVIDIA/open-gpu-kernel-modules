@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,6 +45,7 @@ typedef struct NV00FE_CTRL_OPERATION_MAP {
     NV_DECLARE_ALIGNED(NvU64 physicalOffset, 8);
     NV_DECLARE_ALIGNED(NvU64 size, 8);
     NvU32    dmaFlags; // NVOS46_FLAGS
+    NvU32    kindOverride;
 } NV00FE_CTRL_OPERATION_MAP;
 
 typedef struct NV00FE_CTRL_OPERATION_UNMAP {

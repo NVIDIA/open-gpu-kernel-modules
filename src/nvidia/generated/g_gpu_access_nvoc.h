@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -231,17 +231,19 @@ void regCheckAndLogReadFailure(RegisterAccess *, NvU32 addr, NvU32 mask, NvU32 v
 // Get the address of a register given the Aperture and offset.
 #define REG_GET_ADDR(ap, offset) ioaprtGetRegAddr(ap, offset)
 
-//
-// These UNCHECKED macros are provided for extenuating circumstances to avoid the 0xbadf
-// sanity checking done by the usual register read utilities and must not be used generally
-//
-#define GPU_REG_RD08_UNCHECKED(g,a) osDevReadReg008(g, gpuGetDeviceMapping(g, DEVICE_INDEX_GPU, 0), a)
-#define GPU_REG_RD32_UNCHECKED(g,a) osDevReadReg032(g, gpuGetDeviceMapping(g, DEVICE_INDEX_GPU, 0), a) 
-
 // GPU macros defined in terms of DEV_ macros
 #define GPU_REG_RD08(g,a) REG_INST_RD08(g,GPU,0,a)
 #define GPU_REG_RD16(g,a) REG_INST_RD16(g,GPU,0,a)
 #define GPU_REG_RD32(g,a) REG_INST_RD32(g,GPU,0,a)
+
+//
+// These UNCHECKED macros are provided for extenuating circumstances to avoid the 0xbadf
+// sanity checking done by the usual register read utilities and must not be used generally
+//
+//
+#define GPU_REG_RD08_UNCHECKED(g,a) osDevReadReg008(g, gpuGetDeviceMapping(g, DEVICE_INDEX_GPU, 0), a)
+#define GPU_REG_RD32_UNCHECKED(g,a) osDevReadReg032(g, gpuGetDeviceMapping(g, DEVICE_INDEX_GPU, 0), a)
+
 #define GPU_CHECK_REG_RD32(g,a,m) regCheckRead032(GPU_GET_REGISTER_ACCESS(g),a,m,NULL)
 #define GPU_REG_RD32_AND_POLL(g,r,m,v) regRead032_AndPoll(GPU_GET_REGISTER_ACCESS(g), DEVICE_INDEX_GPU, r, m, v)
 
@@ -494,7 +496,12 @@ NV_STATUS __nvoc_objCreate_IoAperture(IoAperture**, Dynamic*, NvU32, struct IoAp
     __nvoc_objCreate_IoAperture((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pParentAperture, arg_pGpu, arg_deviceIndex, arg_deviceInstance, arg_pMapping, arg_mappingStartAddr, arg_offset, arg_length)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS ioaprtConstruct_IMPL(struct IoAperture *arg_pAperture, struct IoAperture *arg_pParentAperture, OBJGPU *arg_pGpu, NvU32 arg_deviceIndex, NvU32 arg_deviceInstance, DEVICE_MAPPING *arg_pMapping, NvU32 arg_mappingStartAddr, NvU32 arg_offset, NvU32 arg_length);
+#define __nvoc_ioaprtConstruct(arg_pAperture, arg_pParentAperture, arg_pGpu, arg_deviceIndex, arg_deviceInstance, arg_pMapping, arg_mappingStartAddr, arg_offset, arg_length) ioaprtConstruct_IMPL(arg_pAperture, arg_pParentAperture, arg_pGpu, arg_deviceIndex, arg_deviceInstance, arg_pMapping, arg_mappingStartAddr, arg_offset, arg_length)
+
+
+// Wrapper macros for halified functions
 #define ioaprtReadReg08_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__ioaprtReadReg08__
 #define ioaprtReadReg08(pAperture, addr) ioaprtReadReg08_DISPATCH(pAperture, addr)
 #define ioaprtReadReg16_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__ioaprtReadReg16__
@@ -573,9 +580,14 @@ static inline NvU32 ioaprtGetLength(struct IoAperture *pAperture) {
     return pAperture->length;
 }
 
-NV_STATUS ioaprtConstruct_IMPL(struct IoAperture *arg_pAperture, struct IoAperture *arg_pParentAperture, OBJGPU *arg_pGpu, NvU32 arg_deviceIndex, NvU32 arg_deviceInstance, DEVICE_MAPPING *arg_pMapping, NvU32 arg_mappingStartAddr, NvU32 arg_offset, NvU32 arg_length);
+static inline NvBool ioaprtIsInitialized(struct IoAperture *pAperture) {
+    return pAperture->length != 0;
+}
 
-#define __nvoc_ioaprtConstruct(arg_pAperture, arg_pParentAperture, arg_pGpu, arg_deviceIndex, arg_deviceInstance, arg_pMapping, arg_mappingStartAddr, arg_offset, arg_length) ioaprtConstruct_IMPL(arg_pAperture, arg_pParentAperture, arg_pGpu, arg_deviceIndex, arg_deviceInstance, arg_pMapping, arg_mappingStartAddr, arg_offset, arg_length)
+static inline NvBool ioaprtIsAddressInRange(struct IoAperture *pAperture, NvU32 addr) {
+    return (addr >= pAperture->baseAddress) && (addr < (pAperture->baseAddress + pAperture->length));
+}
+
 #undef PRIVATE_FIELD
 
 
@@ -672,7 +684,12 @@ NV_STATUS __nvoc_objCreate_SwBcAperture(SwBcAperture**, Dynamic*, NvU32, struct 
     __nvoc_objCreate_SwBcAperture((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pApertures, arg_numApertures)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS swbcaprtConstruct_IMPL(struct SwBcAperture *arg_pAperture, struct IoAperture *arg_pApertures, NvU32 arg_numApertures);
+#define __nvoc_swbcaprtConstruct(arg_pAperture, arg_pApertures, arg_numApertures) swbcaprtConstruct_IMPL(arg_pAperture, arg_pApertures, arg_numApertures)
+
+
+// Wrapper macros for halified functions
 #define swbcaprtReadReg08_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtReadReg08__
 #define swbcaprtReadReg08(pAperture, addr) swbcaprtReadReg08_DISPATCH(pAperture, addr)
 #define swbcaprtReadReg16_FNPTR(pAperture) pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtReadReg16__
@@ -739,9 +756,6 @@ void swbcaprtWriteReg32Uc_IMPL(struct SwBcAperture *pAperture, NvU32 addr, NvV32
 
 NvBool swbcaprtIsRegValid_IMPL(struct SwBcAperture *pAperture, NvU32 addr);
 
-NV_STATUS swbcaprtConstruct_IMPL(struct SwBcAperture *arg_pAperture, struct IoAperture *arg_pApertures, NvU32 arg_numApertures);
-
-#define __nvoc_swbcaprtConstruct(arg_pAperture, arg_pApertures, arg_numApertures) swbcaprtConstruct_IMPL(arg_pAperture, arg_pApertures, arg_numApertures)
 #undef PRIVATE_FIELD
 
 

@@ -32,6 +32,7 @@
 #include "nvos.h"
 #include "nvkms-stereo.h"
 #include "nvkms-hdmi.h"
+#include "dp/nvdp-connector.h"
 
 #include <ctrl/ctrl0073/ctrl0073dp.h> // NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_*
 
@@ -677,11 +678,9 @@ static void DpyPostColorSpaceOrRangeSetEvo(NVDpyEvoPtr pDpyEvo)
             const NvKmsDpyOutputColorFormatInfo colorFormatsInfo =
                 nvDpyGetOutputColorFormatInfo(pDpyEvo);
 
-            while (nvHdmiGetEffectivePixelClockKHz(pDpyEvo,
-                                                   &pApiHeadState->timings,
-                                                   &tmpDpyColor) >
-                       pDpyEvo->maxSingleLinkPixelClockKHz) {
-
+            while (!nvHdmiIsTmdsPossible(pDpyEvo,
+                                         &pApiHeadState->timings,
+                                         &tmpDpyColor)) {
                 if(!nvDowngradeColorSpaceAndBpc(pDpyEvo,
                                                 &colorFormatsInfo,
                                                 &tmpDpyColor)) {
@@ -1125,6 +1124,42 @@ static NvBool GetDisplayportSinkIsAudioCapableValidValues(
     return TRUE;
 }
 
+static NvBool SetDisplayportForceEnableFEC(NVDpyEvoRec *pDpyEvo, NvS64 value)
+{
+    NVConnectorEvoPtr pConnectorEvo = pDpyEvo->pConnectorEvo;
+
+    if (!nvConnectorUsesDPLib(pConnectorEvo)) {
+        return FALSE;
+    }
+
+    return nvDPForceEnableFEC(pConnectorEvo, !!value);
+}
+
+static NvBool GetDisplayportForceEnableFEC(const NVDpyEvoRec *pDpyEvo,
+                                           NvS64 *pValue)
+{
+    NVConnectorEvoPtr pConnectorEvo = pDpyEvo->pConnectorEvo;
+
+    if (!nvConnectorUsesDPLib(pConnectorEvo)) {
+        return FALSE;
+    }
+
+    *pValue = nvDPIsFECForceEnabled(pConnectorEvo);
+
+    return TRUE;
+}
+
+static NvBool GetDisplayportForceEnableFECValidValues(
+    const NVDpyEvoRec *pDpyEvo,
+    struct NvKmsAttributeValidValuesCommonReply *pValidValues)
+{
+    if (!nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo)) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 NvS64 nvRMLaneCountToNvKms(NvU32 rmLaneCount)
 {
     switch (rmLaneCount) {
@@ -1413,6 +1448,12 @@ static const struct {
         .set            = NULL,
         .get            = GetDisplayportSinkIsAudioCapable,
         .getValidValues = GetDisplayportSinkIsAudioCapableValidValues,
+        .type           = NV_KMS_ATTRIBUTE_TYPE_BOOLEAN,
+    },
+    [NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_FORCE_ENABLE_FEC] = {
+        .set            = SetDisplayportForceEnableFEC,
+        .get            = GetDisplayportForceEnableFEC,
+        .getValidValues = GetDisplayportForceEnableFECValidValues,
         .type           = NV_KMS_ATTRIBUTE_TYPE_BOOLEAN,
     },
     [NV_KMS_DPY_ATTRIBUTE_FRAMELOCK_DISPLAY_CONFIG] = {

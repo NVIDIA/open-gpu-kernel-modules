@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,11 +31,13 @@
 //
 
 #include "ctrl/ctrl0000/ctrl0000base.h"
-#include "ctrl/ctrl0000/ctrl0000system.h"
 #include "ctrl/ctrlxxxx.h"
+#include "ctrl/ctrl2080/ctrl2080nvlink_common.h"
 #include "nvlimits.h"
 
 /* NV01_ROOT (client) GPU control commands and parameters */
+
+typedef NV2080_CTRL_NVLINK_LINK_MASK NV0000_CTRL_NVLINK_LINK_MASK;
 
 /*
  * NV0000_CTRL_CMD_GPU_GET_ATTACHED_IDS
@@ -122,6 +124,18 @@ typedef struct NV0000_CTRL_GPU_GET_ID_INFO_PARAMS {
  *         System-on-Chip (SOC).
  *       NV0000_CTRL_GPU_ID_INFO_ATS_ENABLED
  *         When ATS is enabled on the system.
+ *       NV0000_CTRL_GPU_ID_INFO_SOC_TYPE
+ *         This field indicates the GPU type for SOC-based GPUs.  Legal values
+ *         for this field include:
+ *           NV0000_CTRL_GPU_ID_INFO_SOC_TYPE_NONE
+ *             This value indicates the GPU is not an SOC GPU.
+ *           NV0000_CTRL_GPU_ID_INFO_SOC_TYPE_DISPLAY
+ *             This value indicates the GPU is an SOC display GPU.
+ *           NV0000_CTRL_GPU_ID_INFO_SOC_TYPE_IGPU
+ *             This value indicates the GPU is an iGPU.
+ *           NV0000_CTRL_GPU_ID_INFO_SOC_TYPE_DISPLAY_AND_IGPU
+ *             This value indicates the GPU is both an iGPU and an SOC
+ *             display GPU.
  *   [out] deviceInstance
  *     This parameter returns the broadcast device instance number associated
  *     with the specified GPU.  This value can be used to instantiate
@@ -192,6 +206,11 @@ typedef struct NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS {
 #define NV0000_CTRL_GPU_ID_INFO_ATS_ENABLED                        6:6
 #define NV0000_CTRL_GPU_ID_INFO_ATS_ENABLED_FALSE            (0x00000000U)
 #define NV0000_CTRL_GPU_ID_INFO_ATS_ENABLED_TRUE             (0x00000001U)
+#define NV0000_CTRL_GPU_ID_INFO_SOC_TYPE                           8:7
+#define NV0000_CTRL_GPU_ID_INFO_SOC_TYPE_NONE                (0x00000000U)
+#define NV0000_CTRL_GPU_ID_INFO_SOC_TYPE_DISPLAY             (0x00000001U)
+#define NV0000_CTRL_GPU_ID_INFO_SOC_TYPE_IGPU                (0x00000002U)
+#define NV0000_CTRL_GPU_ID_INFO_SOC_TYPE_DISPLAY_AND_IGPU    (0x00000003U)
 
 /*
  * NV0000_CTRL_CMD_GPU_GET_INIT_STATUS
@@ -277,6 +296,13 @@ typedef struct NV0000_CTRL_GPU_GET_DEVICE_IDS_PARAMS {
  *     NV0000_CTRL_CMD_GPU_GET_UUID_INFO.
  *     The valid entries in excludedGpuIds[] are contiguous, with a value
  *     of NV0000_CTRL_GPU_INVALID_ID indicating the invalid entries.
+ *   gpuFlags[]
+ *     This parameter returns flags for each valid entry in the gpuIds[]
+ *     table.  Note that excluded GPUs do not have a gpuFlags[] entry.
+ *     Valid flag values include:
+ *       NV0000_CTRL_GPU_PROBED_ID_INFO_FLAGS_SOC_DISPLAY
+ *         When TRUE this flag indicates the GPU supports SOC Display
+ *         functionality.
  *
  * Possible status values returned are:
  *   NV_OK
@@ -290,7 +316,13 @@ typedef struct NV0000_CTRL_GPU_GET_DEVICE_IDS_PARAMS {
 typedef struct NV0000_CTRL_GPU_GET_PROBED_IDS_PARAMS {
     NvU32 gpuIds[NV0000_CTRL_GPU_MAX_PROBED_GPUS];
     NvU32 excludedGpuIds[NV0000_CTRL_GPU_MAX_PROBED_GPUS];
+    NvU32 gpuFlags[NV0000_CTRL_GPU_MAX_PROBED_GPUS];
 } NV0000_CTRL_GPU_GET_PROBED_IDS_PARAMS;
+
+/* valid flags values */
+#define NV0000_CTRL_GPU_PROBED_ID_FLAGS_SOC_DISPLAY               0:0
+#define NV0000_CTRL_GPU_PROBED_ID_FLAGS_SOC_DISPLAY_FALSE (0x00000000U)
+#define NV0000_CTRL_GPU_PROBED_ID_FLAGS_SOC_DISPLAY_TRUE  (0x00000001U)
 
 /*
  * NV0000_CTRL_CMD_GPU_GET_PCI_INFO
@@ -318,7 +350,7 @@ typedef struct NV0000_CTRL_GPU_GET_PROBED_IDS_PARAMS {
  *   NV_ERR_NOT_SUPPORTED
  *   NV_ERR_INVALID_ARGUMENT
  */
-#define NV0000_CTRL_CMD_GPU_GET_PCI_INFO (0x21bU) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_GET_PCI_INFO_PARAMS_MESSAGE_ID" */
+#define NV0000_CTRL_CMD_GPU_GET_PCI_INFO                  (0x21bU) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_GET_PCI_INFO_PARAMS_MESSAGE_ID" */
 
 #define NV0000_CTRL_GPU_GET_PCI_INFO_PARAMS_MESSAGE_ID (0x1BU)
 
@@ -803,9 +835,7 @@ typedef struct NV0000_CTRL_GPU_GET_MEMOP_ENABLE_PARAMS {
     NvU32 enableMask;
 } NV0000_CTRL_GPU_GET_MEMOP_ENABLE_PARAMS;
 
-#define NV0000_CTRL_GPU_FLAGS_MEMOP_ENABLE   (0x00000001U)
-
-
+#define NV0000_CTRL_GPU_FLAGS_MEMOP_ENABLE      (0x00000001U)
 
 /*
  * NV0000_CTRL_CMD_GPU_DISABLE_NVLINK_INIT
@@ -831,7 +861,8 @@ typedef struct NV0000_CTRL_GPU_GET_MEMOP_ENABLE_PARAMS {
 
 typedef struct NV0000_CTRL_GPU_DISABLE_NVLINK_INIT_PARAMS {
     NvU32  gpuId;
-    NvU32  mask;
+    NvU32  mask; // This field will be deprecated in the future, please use links
+    NV_DECLARE_ALIGNED(NV0000_CTRL_NVLINK_LINK_MASK links, 8);
     NvBool bSkipHwNvlinkDisable;
 } NV0000_CTRL_GPU_DISABLE_NVLINK_INIT_PARAMS;
 

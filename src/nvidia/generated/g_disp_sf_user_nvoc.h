@@ -163,7 +163,12 @@ NV_STATUS __nvoc_objCreate_DispSfUser(DispSfUser**, Dynamic*, NvU32, struct CALL
     __nvoc_objCreate_DispSfUser((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS dispsfConstruct_IMPL(struct DispSfUser *arg_pDispSfUser, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_dispsfConstruct(arg_pDispSfUser, arg_pCallContext, arg_pParams) dispsfConstruct_IMPL(arg_pDispSfUser, arg_pCallContext, arg_pParams)
+
+
+// Wrapper macros for halified functions
 #define dispsfGetRegBaseOffsetAndSize_FNPTR(pDispSfUser) pDispSfUser->__nvoc_metadata_ptr->vtable.__dispsfGetRegBaseOffsetAndSize__
 #define dispsfGetRegBaseOffsetAndSize(pDispSfUser, pGpu, pOffset, pSize) dispsfGetRegBaseOffsetAndSize_DISPATCH(pDispSfUser, pGpu, pOffset, pSize)
 #define dispsfControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
@@ -318,9 +323,6 @@ static inline void dispsfAddAdditionalDependants_DISPATCH(struct RsClient *pClie
 
 NV_STATUS dispsfGetRegBaseOffsetAndSize_IMPL(struct DispSfUser *pDispSfUser, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize);
 
-NV_STATUS dispsfConstruct_IMPL(struct DispSfUser *arg_pDispSfUser, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_dispsfConstruct(arg_pDispSfUser, arg_pCallContext, arg_pParams) dispsfConstruct_IMPL(arg_pDispSfUser, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 

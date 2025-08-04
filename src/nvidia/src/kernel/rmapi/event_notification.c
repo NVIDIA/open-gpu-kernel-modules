@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -607,7 +607,6 @@ eventGetEngineTypeFromSubNotifyIndex
         case NV2080_NOTIFIERS_NVENC2:
             *pRmEngineId = RM_ENGINE_TYPE_NVENC2;
             break;
-// Bug 4175886 - Use this new value for all chips once GB20X is released
         case NV2080_NOTIFIERS_NVENC3:
             *pRmEngineId = RM_ENGINE_TYPE_NVENC3;
             break;

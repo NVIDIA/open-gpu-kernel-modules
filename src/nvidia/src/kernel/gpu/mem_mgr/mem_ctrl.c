@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -46,6 +46,57 @@
 
 #include "ctrl/ctrl0041.h"
 
+static NV_STATUS
+_memmgrGetSurfaceComprInfo
+(
+    MEMORY_DESCRIPTOR *pMemDesc,
+    NvU32             *pComprOffset,
+    NvU32             *pComprKind,
+    NvU32             *pLineMin,
+    NvU32             *pLineMax
+)
+{
+    OBJGPU *pGpu = pMemDesc->pGpu;
+
+    if (pGpu == NULL || IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
+    {
+        //
+        // vGPU-legacy: pPrivate->pCompTags is not initialized in the guest RM
+        // SRIOV:       same handling as raw mode
+        // GPU=NULL:    devicelless sysmem, can't have comptags
+        //
+        *pComprKind = 0;
+        *pComprOffset = 0;
+        *pLineMin = 0;
+        *pLineMax = 0;
+        return NV_OK;
+    }
+
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    COMPR_INFO comprInfo;
+    NvU32 unused;
+
+    NV_ASSERT_OK_OR_RETURN(memmgrGetKindComprFromMemDesc(pMemoryManager, pMemDesc, 0, &unused, &comprInfo));
+
+    if (memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE, comprInfo.kind))
+    {
+        *pLineMin = comprInfo.compTagLineMin;
+        *pLineMax = comprInfo.compPageIndexHi - comprInfo.compPageIndexLo + comprInfo.compTagLineMin;
+        *pComprOffset = comprInfo.compPageIndexLo;
+        *pComprKind = 1;
+    }
+    else
+    {
+        // No coverage at all (stripped by release/reacquire or invalid hw res).
+        *pComprKind = 0;
+        *pComprOffset = 0;
+        *pLineMin = ~0;
+        *pLineMax = ~0;
+    }
+
+        return NV_OK;
+}
+
 NV_STATUS
 memCtrlCmdGetSurfaceCompressionCoverageLvm_IMPL
 (
@@ -53,16 +104,14 @@ memCtrlCmdGetSurfaceCompressionCoverageLvm_IMPL
     NV0041_CTRL_GET_SURFACE_COMPRESSION_COVERAGE_PARAMS *pParams
 )
 {
-    NvU64               _zero = 0, _contigSegmentSize;
-    NvU32               _memAperture, _memFormat, _comprOffset, _zcullId;
-    NvU32               _gpuCacheAttr, _gpuP2PCacheAttr;
-    NV_STATUS           status = NV_OK;
-    CALL_CONTEXT       *pCallContext = resservGetTlsCallContext();
-    OBJGPU             *pGpu = pMemory->pGpu;
+    MEMORY_DESCRIPTOR *pMemDesc = pMemory->pMemDesc;
+    NvU32 unused;
 
     if (pParams->hSubDevice)
     {
+        CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
         Subdevice *pSubDevice;
+        NV_STATUS status;
 
         // Alloc operation in unicast mode
         status = subdeviceGetByHandle(pCallContext->pClient,
@@ -71,18 +120,12 @@ memCtrlCmdGetSurfaceCompressionCoverageLvm_IMPL
         if (status != NV_OK)
             return status;
 
-        pGpu = GPU_RES_GET_GPU(pSubDevice);
-
         GPU_RES_SET_THREAD_BC_STATE(pSubDevice);
+
+        pMemDesc = memdescGetMemDescFromGpu(pMemDesc, GPU_RES_GET_GPU(pSubDevice));
     }
 
-    status = memmgrGetSurfacePhysAttr_HAL(pGpu, GPU_GET_MEMORY_MANAGER(pGpu), pMemory,
-                                          &_zero, &_memAperture, &_memFormat,
-                                          &_comprOffset, &pParams->format, &pParams->lineMin, &pParams->lineMax,
-                                          &_zcullId,
-                                          &_gpuCacheAttr, &_gpuP2PCacheAttr,
-                                          &_contigSegmentSize);
-    return status;
+    return _memmgrGetSurfaceComprInfo(pMemory->pMemDesc, &unused, &pParams->format, &pParams->lineMin, &pParams->lineMax);
 }
 
 NV_STATUS
@@ -93,13 +136,8 @@ memCtrlCmdGetSurfaceInfoLvm_IMPL
 )
 {
     NV0041_CTRL_SURFACE_INFO *pSurfaceInfos = NvP64_VALUE(pSurfaceInfoParams->surfaceInfoList);
-    OBJGPU             *pGpu    = pMemory->pGpu;
     NV_STATUS           status  = NV_OK;
     NvU32               i;
-    MemoryManager      *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    NvOffset            zero, contigSegmentSize;
-    NvU32               memAperture,  comprOffset, comprFormat, lineMin, lineMax, zcullId;
-    NvU32               memFormat, gpuCacheAttr, gpuP2PCacheAttr;
     NvU32               data    = 0;
     NvU64               size    = 0;
 
@@ -134,15 +172,13 @@ memCtrlCmdGetSurfaceInfoLvm_IMPL
                      pMemory->pHwResource->attr &
                     DRF_DEF(OS32, _ATTR, _COMPR, _REQUIRED))
                 {
-                    zero = 0;
-                    status = memmgrGetSurfacePhysAttr_HAL(pGpu, pMemoryManager,
-                                                          pMemory,
-                                                          &zero,
-                                                          &memAperture, &memFormat,
-                                                          &comprOffset, &comprFormat, &lineMin, &lineMax,
-                                                          &zcullId,
-                                                          &gpuCacheAttr, &gpuP2PCacheAttr,
-                                                          &contigSegmentSize);
+                    NvU64 contigSegmentSize;
+                    NvU32 unused;
+                    NvU64 zero = 0;
+
+                    status = memdescFillMemdescForPhysAttr(pMemory->pMemDesc, AT_GPU, &zero, &unused,
+                                                           &unused, &unused, &unused,
+                                                           &contigSegmentSize);
                     if (status == NV_OK)
                     {
                         // report compression coverage in units of 64k
@@ -151,9 +187,23 @@ memCtrlCmdGetSurfaceInfoLvm_IMPL
                 }
                 break;
             }
+            case NV0041_CTRL_SURFACE_INFO_INDEX_PHYS_SIZE_LO:
+            {
+                // Report the low 32 bits of the size of the physical allocation
+                size = memdescGetSize(pMemory->pMemDesc);
+                data = NvU64_LO32(size);
+                break;
+            }
+            case NV0041_CTRL_SURFACE_INFO_INDEX_PHYS_SIZE_HI:
+            {
+                // Report the high 32 bits of the size of the physical allocation
+                size = memdescGetSize(pMemory->pMemDesc);
+                data = NvU64_HI32(size);
+                break;
+            }
             case NV0041_CTRL_SURFACE_INFO_INDEX_PHYS_SIZE:
             {
-                // Report the size of the physical allocation
+                // Report the scaled size of the physical allocation
                 size = (memdescGetSize(pMemory->pMemDesc) / NV0041_CTRL_SURFACE_INFO_PHYS_SIZE_SCALE_FACTOR);
                 data = NvOffset_LO32(size);
                 NV_ASSERT_OR_RETURN((NvU64)data == size, NV_ERR_OUT_OF_RANGE);
@@ -224,7 +274,6 @@ memCtrlCmdGetSurfaceInfoLvm_IMPL
     return status;
 }
 
-
 NV_STATUS
 memCtrlCmdGetSurfacePhysAttrLvm_IMPL
 (
@@ -232,19 +281,17 @@ memCtrlCmdGetSurfacePhysAttrLvm_IMPL
     NV0041_CTRL_GET_SURFACE_PHYS_ATTR_PARAMS *pGPAP
 )
 {
-    OBJGPU             *pGpu = pMemory->pGpu;
-    MemoryManager      *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    NvU32               _zcullId, _lineMin, _lineMax;
-    NV_STATUS           status = NV_OK;
+    NvU32 unused;
 
-    // get desired new attributes
-    status = memmgrGetSurfacePhysAttr_HAL(pGpu, pMemoryManager, pMemory, &pGPAP->memOffset, &pGPAP->memAperture,
-                                          &pGPAP->memFormat, &pGPAP->comprOffset, &pGPAP->comprFormat,
-                                          &_lineMin, &_lineMax, &_zcullId,
-                                          &pGPAP->gpuCacheAttr, &pGPAP->gpuP2PCacheAttr,
-                                          &pGPAP->contigSegmentSize);
+    NV_ASSERT_OK_OR_RETURN(
+        memdescFillMemdescForPhysAttr(pMemory->pMemDesc, AT_GPU, &pGPAP->memOffset, &pGPAP->memAperture,
+                                      &pGPAP->memFormat, &pGPAP->gpuCacheAttr, &pGPAP->gpuP2PCacheAttr,
+                                      &pGPAP->contigSegmentSize));
 
-    return status;
+    NV_ASSERT_OK_OR_RETURN(
+        _memmgrGetSurfaceComprInfo(pMemory->pMemDesc, &pGPAP->comprOffset, &pGPAP->comprFormat, &unused, &unused));
+
+    return NV_OK;
 }
 
 
@@ -259,6 +306,8 @@ memCtrlCmdSurfaceFlushGpuCache_IMPL
     NV_STATUS status = NV_OK;
     FB_CACHE_OP cacheOp = FB_CACHE_OP_UNDEFINED;
     FB_CACHE_MEMTYPE memType = FB_CACHE_MEM_UNDEFINED;
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGpu != NULL, NV_ERR_NOT_SUPPORTED);
 
     NV_PRINTF(LEVEL_INFO, "\n");
 
@@ -344,27 +393,7 @@ memCtrlCmdGetMemPageSize_IMPL
     NV0041_CTRL_GET_MEM_PAGE_SIZE_PARAMS *pPageSizeParams
 )
 {
-    OBJGPU             *pGpu = pMemory->pGpu;
-    PMEMORY_DESCRIPTOR  pTempMemDesc = NULL;
-    NvU64               tempPageSize = 0;
-
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-    {
-        pTempMemDesc = memdescGetMemDescFromGpu(pMemory->pMemDesc, pGpu);
-
-        // Take the first, assert if inconsistent
-        if (tempPageSize == 0)
-        {
-            tempPageSize = memdescGetPageSize(pTempMemDesc, AT_GPU);
-        }
-        else
-        {
-            NV_ASSERT(tempPageSize == memdescGetPageSize(pTempMemDesc, AT_GPU));
-        }
-    }
-    SLI_LOOP_END
-
-    pPageSizeParams->pageSize = tempPageSize;
+    pPageSizeParams->pageSize = memdescGetPageSize(pMemory->pMemDesc, AT_GPU);
 
     return NV_OK;
 }
@@ -378,6 +407,8 @@ memCtrlCmdUpdateSurfaceCompression_IMPL
 {
     OBJGPU     *pGpu = pMemory->pGpu;
     NV_STATUS   status = NV_OK;
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGpu != NULL, NV_ERR_NOT_SUPPORTED);
 
     NV_ASSERT_OR_RETURN(pMemory->pHwResource, NV_ERR_INVALID_ARGUMENT);
 
@@ -416,6 +447,44 @@ memCtrlCmdGetTag_IMPL
 )
 {
     pParams->tag = pMemory->tag;
+
+    return NV_OK;
+}
+
+NV_STATUS
+memCtrlCmdMapMemoryForGpuAccess_IMPL
+(
+    Memory *pMemory,
+    NV0041_CTRL_MAP_MEMORY_FOR_GPU_ACCESS_PARAMS *pParams
+)
+{
+    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    MEMORY_DESCRIPTOR *pMemDesc = pMemory->pMemDesc;
+    Subdevice *pSubdevice;
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, subdeviceGetByHandle(pCallContext->pClient, pParams->hSubdevice, &pSubdevice));
+    NV_ASSERT_OK_OR_RETURN(memdescMapIommu(pMemDesc, GPU_RES_GET_GPU(pSubdevice)->busInfo.iovaspaceId));
+
+    memdescGetPhysAddrsForGpu(pMemDesc, GPU_RES_GET_GPU(pSubdevice), AT_GPU, 0, 0, 1, &pParams->address);
+
+    return NV_OK;
+}
+
+NV_STATUS
+memCtrlCmdUnmapMemoryForGpuAccess_IMPL
+(
+    Memory *pMemory,
+    NV0041_CTRL_UNMAP_MEMORY_FOR_GPU_ACCESS_PARAMS *pParams
+)
+{
+    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    MEMORY_DESCRIPTOR *pMemDesc = pMemory->pMemDesc;
+    Subdevice *pSubdevice;
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, subdeviceGetByHandle(pCallContext->pClient, pParams->hSubdevice, &pSubdevice));
+    memdescUnmapIommu(pMemDesc, GPU_RES_GET_GPU(pSubdevice)->busInfo.iovaspaceId);
 
     return NV_OK;
 }

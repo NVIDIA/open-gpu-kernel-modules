@@ -166,17 +166,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_TimedSemaSwObject =
     /*pExportInfo=*/        &__nvoc_export_info__TimedSemaSwObject
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_TimedSemaSwObject[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) tsemaCtrlCmdFlush_IMPL,
+        /*pFunc=*/      (void (*)(void)) &tsemaCtrlCmdFlush_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -191,7 +193,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_TimedSem
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) tsemaCtrlCmdGetTime_IMPL,
+        /*pFunc=*/      (void (*)(void)) &tsemaCtrlCmdGetTime_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -206,7 +208,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_TimedSem
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) tsemaCtrlCmdRelease_IMPL,
+        /*pFunc=*/      (void (*)(void)) &tsemaCtrlCmdRelease_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -217,7 +219,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_TimedSem
         /*func=*/       "tsemaCtrlCmdRelease"
 #endif
     },
-
 };
 
 
@@ -580,6 +581,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__TimedSemaSwObject =
     /*pExportEntries=*/ __nvoc_exported_method_def_TimedSemaSwObject
 };
 
+void __nvoc_tsemaDestruct(TimedSemaSwObject*);
 void __nvoc_dtor_ChannelDescendant(ChannelDescendant*);
 void __nvoc_dtor_TimedSemaSwObject(TimedSemaSwObject *pThis) {
     __nvoc_tsemaDestruct(pThis);
@@ -613,28 +615,11 @@ __nvoc_ctor_TimedSemaSwObject_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_TimedSemaSwObject_1(TimedSemaSwObject *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // tsemaCtrlCmdFlush -- exported (id=0x90740101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__tsemaCtrlCmdFlush__ = &tsemaCtrlCmdFlush_IMPL;
-#endif
-
-    // tsemaCtrlCmdGetTime -- exported (id=0x90740102)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__tsemaCtrlCmdGetTime__ = &tsemaCtrlCmdGetTime_IMPL;
-#endif
-
-    // tsemaCtrlCmdRelease -- exported (id=0x90740103)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__tsemaCtrlCmdRelease__ = &tsemaCtrlCmdRelease_IMPL;
-#endif
-} // End __nvoc_init_funcTable_TimedSemaSwObject_1 with approximately 3 basic block(s).
+} // End __nvoc_init_funcTable_TimedSemaSwObject_1
 
 
-// Initialize vtable(s) for 35 virtual method(s).
+// Initialize vtable(s) for 32 virtual method(s).
 void __nvoc_init_funcTable_TimedSemaSwObject(TimedSemaSwObject *pThis) {
-
-    // Initialize vtable(s) with 3 per-object function pointer(s).
     __nvoc_init_funcTable_TimedSemaSwObject_1(pThis);
 }
 

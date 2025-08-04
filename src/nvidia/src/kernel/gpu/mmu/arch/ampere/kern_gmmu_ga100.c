@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,6 +32,7 @@
 
 #include "published/ampere/ga100/dev_fault.h"
 #include "published/ampere/ga100/dev_top.h"
+#include "published/ampere/ga100/dev_top_addendum.h"
 #include "published/ampere/ga100/dev_vm.h"
 
 
@@ -185,7 +186,7 @@ kgmmuSetupWarForBug2720120FmtFamily_GA100
                              pFam->bug2720120WarPde0.v8);
         gmmuFieldSetAddress(gmmuFmtPdePhysAddrFld(pPde0Fmt, aperture),
                              kgmmuEncodePhysAddr(pKernelGmmu, aperture,
-                                     memdescGetPhysAddr(pKernelGmmu->pWarSmallPageTable,
+                                     memdescGetPtePhysAddr(pKernelGmmu->pWarSmallPageTable,
                                                         AT_GPU, 0),
                                      NVLINK_INVALID_FABRIC_ADDR),
                              pFam->bug2720120WarPde0.v8);
@@ -227,7 +228,7 @@ kgmmuSetupWarForBug2720120FmtFamily_GA100
                              pFam->bug2720120WarPde1.v8);
         gmmuFieldSetAddress(gmmuFmtPdePhysAddrFld(pPde1Fmt, aperture),
                              kgmmuEncodePhysAddr(pKernelGmmu, aperture,
-                                     memdescGetPhysAddr(pKernelGmmu->pWarPageDirectory0,
+                                     memdescGetPtePhysAddr(pKernelGmmu->pWarPageDirectory0,
                                                         AT_GPU, 0),
                                      NVLINK_INVALID_FABRIC_ADDR),
                              pFam->bug2720120WarPde1.v8);
@@ -272,7 +273,7 @@ kgmmuInitCeMmuFaultIdRange_GA100
 
     for (i = 0; i < pGpu->numDeviceInfoEntries; i++)
     {
-        if (pGpu->pDeviceInfoTable[i].typeEnum == NV_PTOP_DEVICE_INFO2_DEV_TYPE_ENUM_LCE)
+        if (pGpu->pDeviceInfoTable[i].typeEnum == NV_PTOP_ZB_DEVICE_INFO_DEV_TYPE_ENUM_LCE)
         {
             minMmuFaultId = NV_MIN(minMmuFaultId, pGpu->pDeviceInfoTable[i].faultId);
             maxMmuFaultId = NV_MAX(maxMmuFaultId, pGpu->pDeviceInfoTable[i].faultId);

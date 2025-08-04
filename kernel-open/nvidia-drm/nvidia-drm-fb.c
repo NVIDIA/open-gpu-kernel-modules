@@ -20,9 +20,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "nvidia-drm-conftest.h" /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+#include "nvidia-drm-conftest.h" /* NV_DRM_AVAILABLE */
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #include "nvidia-drm-priv.h"
 #include "nvidia-drm-ioctl.h"
@@ -41,7 +41,7 @@ static void __nv_drm_framebuffer_free(struct nv_drm_framebuffer *nv_fb)
 
     /* Unreference gem object */
     for (i = 0; i < NVKMS_MAX_PLANES_PER_SURFACE; i++) {
-        struct drm_gem_object *gem = nv_fb_get_gem_obj(fb, i);
+        struct drm_gem_object *gem = fb->obj[i];
         if (gem != NULL) {
             struct nv_drm_gem_object *nv_gem = to_nv_gem_object(gem);
             nv_drm_gem_object_unreference_unlocked(nv_gem);
@@ -73,7 +73,7 @@ nv_drm_framebuffer_create_handle(struct drm_framebuffer *fb,
                                  struct drm_file *file, unsigned int *handle)
 {
     return nv_drm_gem_handle_create(file,
-                                    to_nv_gem_object(nv_fb_get_gem_obj(fb, 0)),
+                                    to_nv_gem_object(fb->obj[0]),
                                     handle);
 }
 
@@ -83,11 +83,10 @@ static struct drm_framebuffer_funcs nv_framebuffer_funcs = {
 };
 
 static struct nv_drm_framebuffer *nv_drm_framebuffer_alloc(
-    struct drm_device *dev,
+    struct nv_drm_device *nv_dev,
     struct drm_file *file,
-    struct drm_mode_fb_cmd2 *cmd)
+    const struct drm_mode_fb_cmd2 *cmd)
 {
-    struct nv_drm_device *nv_dev = to_nv_device(dev);
     struct nv_drm_framebuffer *nv_fb;
     struct nv_drm_gem_object *nv_gem;
     const int num_planes = nv_drm_format_num_planes(cmd->pixel_format);
@@ -109,7 +108,7 @@ static struct nv_drm_framebuffer *nv_drm_framebuffer_alloc(
     }
 
     for (i = 0; i < num_planes; i++) {
-        nv_gem = nv_drm_gem_object_lookup(dev, file, cmd->handles[i]);
+        nv_gem = nv_drm_gem_object_lookup(file, cmd->handles[i]);
 
         if (nv_gem == NULL) {
             NV_DRM_DEV_DEBUG_DRIVER(
@@ -118,7 +117,7 @@ static struct nv_drm_framebuffer *nv_drm_framebuffer_alloc(
             goto failed;
         }
 
-        nv_fb_set_gem_obj(&nv_fb->base, i, &nv_gem->base);
+        nv_fb->base.obj[i] = &nv_gem->base;
     }
 
      return nv_fb;
@@ -154,27 +153,13 @@ static int nv_drm_framebuffer_init(struct drm_device *dev,
     }
 
     for (i = 0; i < NVKMS_MAX_PLANES_PER_SURFACE; i++) {
-        struct drm_gem_object *gem = nv_fb_get_gem_obj(fb, i);
+        struct drm_gem_object *gem = fb->obj[i];
         if (gem != NULL) {
             nv_gem = to_nv_gem_object(gem);
 
             params.planes[i].memory = nv_gem->pMemory;
             params.planes[i].offset = fb->offsets[i];
             params.planes[i].pitch = fb->pitches[i];
-
-            /*
-             * XXX Use drm_framebuffer_funcs.dirty and
-             * drm_fb_helper_funcs.fb_dirty instead
-             *
-             * Currently using noDisplayCaching when registering surfaces with
-             * NVKMS that are using memory allocated through the DRM
-             * Dumb-Buffers API. This prevents Display Idle Frame Rate from
-             * kicking in and preventing CPU updates to the surface memory from
-             * not being reflected on the display. Ideally, DIFR would be
-             * dynamically disabled whenever a user of the memory blits to the
-             * frontbuffer. DRM provides the needed callbacks to achieve this.
-             */
-            params.noDisplayCaching |= !!nv_gem->is_drm_dumb;
         }
     }
     params.height = fb->height;
@@ -254,19 +239,17 @@ fail:
     return -EINVAL;
 }
 
-struct drm_framebuffer *nv_drm_internal_framebuffer_create(
+struct drm_framebuffer *nv_drm_framebuffer_create(
     struct drm_device *dev,
     struct drm_file *file,
-    struct drm_mode_fb_cmd2 *cmd)
+    const struct drm_mode_fb_cmd2 *cmd)
 {
     struct nv_drm_device *nv_dev = to_nv_device(dev);
     struct nv_drm_framebuffer *nv_fb;
     uint64_t modifier = 0;
     int ret;
     enum NvKmsSurfaceMemoryFormat format;
-#if defined(NV_DRM_FORMAT_MODIFIERS_PRESENT)
     int i;
-#endif
     bool have_modifier = false;
 
     /* Check whether NvKms supports the given pixel format */
@@ -277,7 +260,6 @@ struct drm_framebuffer *nv_drm_internal_framebuffer_create(
         return ERR_PTR(-EINVAL);
     }
 
-#if defined(NV_DRM_FORMAT_MODIFIERS_PRESENT)
     if (cmd->flags & DRM_MODE_FB_MODIFIERS) {
         have_modifier = true;
         modifier = cmd->modifier[0];
@@ -296,9 +278,8 @@ struct drm_framebuffer *nv_drm_internal_framebuffer_create(
             return ERR_PTR(-EINVAL);
         }
     }
-#endif
 
-    nv_fb = nv_drm_framebuffer_alloc(dev, file, cmd);
+    nv_fb = nv_drm_framebuffer_alloc(nv_dev, file, cmd);
     if (IS_ERR(nv_fb)) {
         return (struct drm_framebuffer *)nv_fb;
     }
@@ -306,9 +287,7 @@ struct drm_framebuffer *nv_drm_internal_framebuffer_create(
     /* Fill out framebuffer metadata from the userspace fb creation request */
 
     drm_helper_mode_fill_fb_struct(
-        #if defined(NV_DRM_HELPER_MODE_FILL_FB_STRUCT_HAS_DEV_ARG)
         dev,
-        #endif
         &nv_fb->base,
         cmd);
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2002-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2002-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -288,7 +288,7 @@ static void _osRunAll1HzCallbacks(OBJGPU *pGpu)
             ppEntryPtr = &entry->next;
         }
     }
-    pGpu->lastCallbackTime = osGetCurrentTick();
+    pGpu->lastCallbackTime = osGetMonotonicTimeNs();
 }
 
 //

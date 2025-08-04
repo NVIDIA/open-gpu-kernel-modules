@@ -153,9 +153,6 @@ struct DispSwObject {
     struct ChannelDescendant *__nvoc_pbase_ChannelDescendant;    // chandes super
     struct DispSwObject *__nvoc_pbase_DispSwObject;    // dispsw
 
-    // Vtable with 1 per-object function pointer
-    NV_STATUS (*__dispswCtrlCmdNotifyOnVblank__)(struct DispSwObject * /*this*/, NV9072_CTRL_CMD_NOTIFY_ON_VBLANK_PARAMS *);  // exported (id=0x90720101)
-
     // Data members
     NvU32 Flags;
     DISPCOMMONOBJECT DispCommon;
@@ -236,12 +233,28 @@ NV_STATUS __nvoc_objCreate_DispSwObject(DispSwObject**, Dynamic*, NvU32, CALL_CO
     __nvoc_objCreate_DispSwObject((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS dispswConstruct_IMPL(struct DispSwObject *arg_pDispSw, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_dispswConstruct(arg_pDispSw, arg_pCallContext, arg_pParams) dispswConstruct_IMPL(arg_pDispSw, arg_pCallContext, arg_pParams)
+
+void dispswDestruct_IMPL(struct DispSwObject *pDispSw);
+#define __nvoc_dispswDestruct(pDispSw) dispswDestruct_IMPL(pDispSw)
+
+NV_STATUS dispswCtrlCmdNotifyOnVblank_IMPL(struct DispSwObject *pDispSwObject, NV9072_CTRL_CMD_NOTIFY_ON_VBLANK_PARAMS *pNotifyParams);
+#ifdef __nvoc_dispsw_h_disabled
+static inline NV_STATUS dispswCtrlCmdNotifyOnVblank(struct DispSwObject *pDispSwObject, NV9072_CTRL_CMD_NOTIFY_ON_VBLANK_PARAMS *pNotifyParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispSwObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_dispsw_h_disabled
+#define dispswCtrlCmdNotifyOnVblank(pDispSwObject, pNotifyParams) dispswCtrlCmdNotifyOnVblank_IMPL(pDispSwObject, pNotifyParams)
+#endif // __nvoc_dispsw_h_disabled
+
+
+// Wrapper macros for halified functions
 #define dispswGetSwMethods_FNPTR(pDispSw) pDispSw->__nvoc_metadata_ptr->vtable.__dispswGetSwMethods__
 #define dispswGetSwMethods(pDispSw, ppMethods, pNumMethods) dispswGetSwMethods_DISPATCH(pDispSw, ppMethods, pNumMethods)
 #define dispswGetSwMethods_HAL(pDispSw, ppMethods, pNumMethods) dispswGetSwMethods_DISPATCH(pDispSw, ppMethods, pNumMethods)
-#define dispswCtrlCmdNotifyOnVblank_FNPTR(pDispSwObject) pDispSwObject->__dispswCtrlCmdNotifyOnVblank__
-#define dispswCtrlCmdNotifyOnVblank(pDispSwObject, pNotifyParams) dispswCtrlCmdNotifyOnVblank_DISPATCH(pDispSwObject, pNotifyParams)
 #define dispswIsSwMethodStalling_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesIsSwMethodStalling__
 #define dispswIsSwMethodStalling(pChannelDescendant, hHandle) dispswIsSwMethodStalling_DISPATCH(pChannelDescendant, hHandle)
 #define dispswCheckMemInterUnmap_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesCheckMemInterUnmap__
@@ -308,10 +321,6 @@ NV_STATUS __nvoc_objCreate_DispSwObject(DispSwObject**, Dynamic*, NvU32, CALL_CO
 // Dispatch functions
 static inline NV_STATUS dispswGetSwMethods_DISPATCH(struct DispSwObject *pDispSw, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pDispSw->__nvoc_metadata_ptr->vtable.__dispswGetSwMethods__(pDispSw, ppMethods, pNumMethods);
-}
-
-static inline NV_STATUS dispswCtrlCmdNotifyOnVblank_DISPATCH(struct DispSwObject *pDispSwObject, NV9072_CTRL_CMD_NOTIFY_ON_VBLANK_PARAMS *pNotifyParams) {
-    return pDispSwObject->__dispswCtrlCmdNotifyOnVblank__(pDispSwObject, pNotifyParams);
 }
 
 static inline NvBool dispswIsSwMethodStalling_DISPATCH(struct DispSwObject *pChannelDescendant, NvU32 hHandle) {
@@ -444,12 +453,6 @@ static inline NV_STATUS dispswGetSwMethods_46f6a7(struct DispSwObject *pDispSw, 
 
 NV_STATUS dispswCtrlCmdNotifyOnVblank_IMPL(struct DispSwObject *pDispSwObject, NV9072_CTRL_CMD_NOTIFY_ON_VBLANK_PARAMS *pNotifyParams);
 
-NV_STATUS dispswConstruct_IMPL(struct DispSwObject *arg_pDispSw, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_dispswConstruct(arg_pDispSw, arg_pCallContext, arg_pParams) dispswConstruct_IMPL(arg_pDispSw, arg_pCallContext, arg_pParams)
-void dispswDestruct_IMPL(struct DispSwObject *pDispSw);
-
-#define __nvoc_dispswDestruct(pDispSw) dispswDestruct_IMPL(pDispSw)
 #undef PRIVATE_FIELD
 
 

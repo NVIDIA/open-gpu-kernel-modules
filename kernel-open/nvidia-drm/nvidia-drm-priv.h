@@ -31,13 +31,8 @@
 #include <drm/drmP.h>
 #endif
 
-#if defined(NV_DRM_DRM_DEVICE_H_PRESENT)
 #include <drm/drm_device.h>
-#endif
-
-#if defined(NV_DRM_DRM_GEM_H_PRESENT)
 #include <drm/drm_gem.h>
-#endif
 
 #include "nvidia-drm-os-interface.h"
 
@@ -99,7 +94,6 @@ struct nv_drm_device {
 
     struct NvKmsKapiDevice *pDevice;
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
     /*
      * Lock to protect drm-subsystem and fields of this structure
      * from concurrent access.
@@ -129,9 +123,7 @@ struct nv_drm_device {
     NvU8 genericPageKind;
     NvU8 pageKindGeneration;
     NvU8 sectorLayout;
-#if defined(NV_DRM_FORMAT_MODIFIERS_PRESENT)
     NvU64 modifiers[6 /* block linear */ + 1 /* linear */ + 1 /* terminator */];
-#endif
 
     struct delayed_work hotplug_event_work;
     atomic_t enable_event_handling;
@@ -144,12 +136,8 @@ struct nv_drm_device {
      */
     wait_queue_head_t flip_event_wq;
 
-#endif
-
-#if defined(NV_DRM_FENCE_AVAILABLE)
     NvU64 semsurf_stride;
     NvU64 semsurf_max_submitted_offset;
-#endif
 
     NvBool hasVideoMemory;
 

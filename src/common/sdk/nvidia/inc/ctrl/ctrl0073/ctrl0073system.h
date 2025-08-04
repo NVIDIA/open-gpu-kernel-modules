@@ -1502,38 +1502,6 @@ typedef struct NV0073_CTRL_SYSTEM_CONFIG_VRR_PSTATE_SWITCH_PARAMS {
     NvU32  minVblankExtension;
 } NV0073_CTRL_SYSTEM_CONFIG_VRR_PSTATE_SWITCH_PARAMS;
 
-/*
- * NV0073_CTRL_CMD_SYSTEM_INLINE_DISP_INTR_SERVICE_WAR_FOR_VR
- *
- * This command engages the WAR when VR devices are connected,
- * where the Pstate switching can cause delay in Vblank callbacks
- * reported to KMD, by servicing disp interrupts inline and reporting the
- * callbacks to KMD. Without the WAR, there can be stutters during pstate switch.
- * Bug#1778552
- *
- *   subDeviceInstance
- *     This parameter specifies the subdevice instance within the
- *     NV04_DISPLAY_COMMON parent device to which the operation should be
- *     directed.
- *   bEngageWAR
- *     Indicates if inline disp interrupt serving WAR has to be engaged or
- *     disengaged.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_PARAM_STRUCT
- *   NV_ERR_INVALID_ARGUMENT
- */
-
-#define NV0073_CTRL_CMD_SYSTEM_INLINE_DISP_INTR_SERVICE_WAR_FOR_VR (0x730187U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_SYSTEM_INLINE_DISP_INTR_SERVICE_WAR_FOR_VR_PARAMS_MESSAGE_ID" */
-
-#define NV0073_CTRL_SYSTEM_INLINE_DISP_INTR_SERVICE_WAR_FOR_VR_PARAMS_MESSAGE_ID (0x87U)
-
-typedef struct NV0073_CTRL_SYSTEM_INLINE_DISP_INTR_SERVICE_WAR_FOR_VR_PARAMS {
-    NvU32  subDeviceInstance;
-    NvBool bEngageWAR;
-} NV0073_CTRL_SYSTEM_INLINE_DISP_INTR_SERVICE_WAR_FOR_VR_PARAMS;
-
 
 
 /*

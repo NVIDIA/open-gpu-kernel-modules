@@ -25,10 +25,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE;
 
 // Forward declarations for KernelHwpm
 void __nvoc_init__OBJENGSTATE(OBJENGSTATE*);
-void __nvoc_init__KernelHwpm(KernelHwpm*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_funcTable_KernelHwpm(KernelHwpm*, RmHalspecOwner *pRmhalspecowner);
-NV_STATUS __nvoc_ctor_KernelHwpm(KernelHwpm*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_dataField_KernelHwpm(KernelHwpm*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init__KernelHwpm(KernelHwpm*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_funcTable_KernelHwpm(KernelHwpm*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+NV_STATUS __nvoc_ctor_KernelHwpm(KernelHwpm*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_dataField_KernelHwpm(KernelHwpm*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_KernelHwpm(KernelHwpm*);
 
 // Structures used within RTTI (run-time type information)
@@ -210,12 +210,13 @@ void __nvoc_dtor_KernelHwpm(KernelHwpm *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_KernelHwpm(KernelHwpm *pThis, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+void __nvoc_init_dataField_KernelHwpm(KernelHwpm *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
@@ -236,7 +237,7 @@ void __nvoc_init_dataField_KernelHwpm(KernelHwpm *pThis, RmHalspecOwner *pRmhals
 
     // NVOC Property Hal field -- PDB_PROP_KHWPM_HES_CWD_SUPPORTED
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xe0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e6UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->setProperty(pThis, PDB_PROP_KHWPM_HES_CWD_SUPPORTED, NV_TRUE);
     }
@@ -254,14 +255,26 @@ void __nvoc_init_dataField_KernelHwpm(KernelHwpm *pThis, RmHalspecOwner *pRmhals
     {
         pThis->setProperty(pThis, PDB_PROP_KHWPM_EXTENDED_BUFFER_SUPPORTED, NV_FALSE);
     }
+
+    // NVOC Property Hal field -- PDB_PROP_KHWPM_PROFILING_B1CC_SUPPORTED
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x70000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->setProperty(pThis, PDB_PROP_KHWPM_PROFILING_B1CC_SUPPORTED, NV_TRUE);
+    }
+    // default
+    else
+    {
+        pThis->setProperty(pThis, PDB_PROP_KHWPM_PROFILING_B1CC_SUPPORTED, NV_FALSE);
+    }
 }
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
-NV_STATUS __nvoc_ctor_KernelHwpm(KernelHwpm *pThis, RmHalspecOwner *pRmhalspecowner) {
+NV_STATUS __nvoc_ctor_KernelHwpm(KernelHwpm *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
     if (status != NV_OK) goto __nvoc_ctor_KernelHwpm_fail_OBJENGSTATE;
-    __nvoc_init_dataField_KernelHwpm(pThis, pRmhalspecowner);
+    __nvoc_init_dataField_KernelHwpm(pThis, pGpuhalspecowner, pRmhalspecowner);
     goto __nvoc_ctor_KernelHwpm_exit; // Success
 
 __nvoc_ctor_KernelHwpm_fail_OBJENGSTATE:
@@ -271,12 +284,13 @@ __nvoc_ctor_KernelHwpm_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_KernelHwpm_1(KernelHwpm *pThis, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+static void __nvoc_init_funcTable_KernelHwpm_1(KernelHwpm *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
@@ -292,30 +306,31 @@ static void __nvoc_init_funcTable_KernelHwpm_1(KernelHwpm *pThis, RmHalspecOwner
     {
         pThis->__khwpmGetCblockInfo__ = &khwpmGetCblockInfo_GB10B;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GB20B */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) )) /* ChipHal: GB20B | GB20C */ 
     {
         pThis->__khwpmGetCblockInfo__ = &khwpmGetCblockInfo_GB20B;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e6UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 */ 
     {
-        pThis->__khwpmGetCblockInfo__ = &khwpmGetCblockInfo_GM107;
+        pThis->__khwpmGetCblockInfo__ = &khwpmGetCblockInfo_GB100;
     }
     else
     {
-        pThis->__khwpmGetCblockInfo__ = &khwpmGetCblockInfo_GB100;
+        pThis->__khwpmGetCblockInfo__ = &khwpmGetCblockInfo_GM107;
     }
 } // End __nvoc_init_funcTable_KernelHwpm_1 with approximately 5 basic block(s).
 
 
 // Initialize vtable(s) for 15 virtual method(s).
-void __nvoc_init_funcTable_KernelHwpm(KernelHwpm *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init_funcTable_KernelHwpm(KernelHwpm *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
     // Initialize vtable(s) with 1 per-object function pointer(s).
-    __nvoc_init_funcTable_KernelHwpm_1(pThis, pRmhalspecowner);
+    __nvoc_init_funcTable_KernelHwpm_1(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__KernelHwpm(KernelHwpm *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init__KernelHwpm(KernelHwpm *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
     // Initialize pointers to inherited data.
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object;    // (obj) super^2
@@ -331,7 +346,7 @@ void __nvoc_init__KernelHwpm(KernelHwpm *pThis, RmHalspecOwner *pRmhalspecowner)
     pThis->__nvoc_metadata_ptr = &__nvoc_metadata__KernelHwpm;    // (khwpm) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_KernelHwpm(pThis, pRmhalspecowner);
+    __nvoc_init_funcTable_KernelHwpm(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_KernelHwpm(KernelHwpm **ppThis, Dynamic *pParent, NvU32 createFlags)
@@ -339,6 +354,7 @@ NV_STATUS __nvoc_objCreate_KernelHwpm(KernelHwpm **ppThis, Dynamic *pParent, NvU
     NV_STATUS status;
     Object *pParentObj = NULL;
     KernelHwpm *pThis;
+    GpuHalspecOwner *pGpuhalspecowner;
     RmHalspecOwner *pRmhalspecowner;
 
     // Assign `pThis`, allocating memory unless suppressed by flag.
@@ -365,12 +381,15 @@ NV_STATUS __nvoc_objCreate_KernelHwpm(KernelHwpm **ppThis, Dynamic *pParent, NvU
         pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.pParent = NULL;
     }
 
+    if ((pGpuhalspecowner = dynamicCast(pParent, GpuHalspecOwner)) == NULL)
+        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, pParent);
+    NV_ASSERT_OR_RETURN(pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
     if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
         pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
     NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init__KernelHwpm(pThis, pRmhalspecowner);
-    status = __nvoc_ctor_KernelHwpm(pThis, pRmhalspecowner);
+    __nvoc_init__KernelHwpm(pThis, pGpuhalspecowner, pRmhalspecowner);
+    status = __nvoc_ctor_KernelHwpm(pThis, pGpuhalspecowner, pRmhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_KernelHwpm_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

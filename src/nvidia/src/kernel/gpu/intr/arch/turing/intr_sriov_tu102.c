@@ -26,39 +26,11 @@
 #include "gpu/gpu.h"
 #include "os/os.h"
 
-#include "published/turing/tu102/dev_ctrl.h"
 #include "published/turing/tu102/dev_vm.h"
 
 //
 // Turing HAL routines required for hypervisor/guest support
 //
-
-/*!
- * @brief Services virtual interrupts, i.e. interrupts triggered by PRIV_DOORBELL
- * writes from virtual functions
- *
- * @param[in]   pGpu        OBJGPU pointer
- * @param[in]   pIntr       Intr pointer
- */
-void
-intrServiceVirtual_TU102
-(
-    OBJGPU  *pGpu,
-    Intr    *pIntr
-)
-{
-    NvU32 i;
-
-    // For now, servicing only involves clearing interrupts from all GFIDs
-    for (i = 0; i < NV_CTRL_VIRTUAL_INTR_LEAF__SIZE_1; i++)
-    {
-        NvU32 val = GPU_REG_RD32(pGpu, NV_CTRL_VIRTUAL_INTR_LEAF(i));
-        if (val != 0)
-        {
-            GPU_REG_WR32(pGpu, NV_CTRL_VIRTUAL_INTR_LEAF(i), val);
-        }
-    }
-}
 
 /*!
  * @brief Trigger the PRIV doorbell

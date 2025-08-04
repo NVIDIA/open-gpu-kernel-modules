@@ -164,7 +164,15 @@ NV_STATUS __nvoc_objCreate_MIGMonitorSession(MIGMonitorSession**, Dynamic*, NvU3
     __nvoc_objCreate_MIGMonitorSession((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS migmonitorsessionConstruct_IMPL(struct MIGMonitorSession *arg_pMIGMonitorSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_migmonitorsessionConstruct(arg_pMIGMonitorSession, arg_pCallContext, arg_pParams) migmonitorsessionConstruct_IMPL(arg_pMIGMonitorSession, arg_pCallContext, arg_pParams)
+
+void migmonitorsessionDestruct_IMPL(struct MIGMonitorSession *pMIGMonitorSession);
+#define __nvoc_migmonitorsessionDestruct(pMIGMonitorSession) migmonitorsessionDestruct_IMPL(pMIGMonitorSession)
+
+
+// Wrapper macros for halified functions
 #define migmonitorsessionAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define migmonitorsessionAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) migmonitorsessionAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define migmonitorsessionShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
@@ -293,12 +301,6 @@ static inline void migmonitorsessionAddAdditionalDependants_DISPATCH(struct RsCl
     pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-NV_STATUS migmonitorsessionConstruct_IMPL(struct MIGMonitorSession *arg_pMIGMonitorSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_migmonitorsessionConstruct(arg_pMIGMonitorSession, arg_pCallContext, arg_pParams) migmonitorsessionConstruct_IMPL(arg_pMIGMonitorSession, arg_pCallContext, arg_pParams)
-void migmonitorsessionDestruct_IMPL(struct MIGMonitorSession *pMIGMonitorSession);
-
-#define __nvoc_migmonitorsessionDestruct(pMIGMonitorSession) migmonitorsessionDestruct_IMPL(pMIGMonitorSession)
 #undef PRIVATE_FIELD
 
 

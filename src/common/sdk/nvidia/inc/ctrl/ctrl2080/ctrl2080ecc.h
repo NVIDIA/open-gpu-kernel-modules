@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -108,5 +108,114 @@ typedef struct NV2080_CTRL_ECC_GET_VOLATILE_COUNTS_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 dramCorTot, 8);
     NV_DECLARE_ALIGNED(NvU64 dramUncTot, 8);
 } NV2080_CTRL_ECC_GET_VOLATILE_COUNTS_PARAMS;
+
+typedef struct eccLocation {
+    NvU32 location;
+    NvU32 sublocation;
+    NvU32 extlocation;
+} eccLocation;
+
+/*
+ * NV2080_CTRL_ECC_SRAM_UNIQUE_UNCORR_COUNTS_ENTRY
+ *
+ * unit
+ *   The unit the error occurred in
+ * location
+ *   The location info for the error
+ * address
+ *   The address of the error
+ * bIsParity
+ *   True if error is parity error, false if error is SEC-DED error
+ * count
+ *   The number of uncorrectable unique error counts that occurred
+ */
+
+typedef struct NV2080_CTRL_ECC_SRAM_UNIQUE_UNCORR_COUNTS_ENTRY {
+    NvU32       unit;
+    eccLocation location;
+    NvU32       address;
+    NvBool      bIsParity;
+    NvU32       count;
+} NV2080_CTRL_ECC_SRAM_UNIQUE_UNCORR_COUNTS_ENTRY;
+
+/*
+ * NV2080_CTRL_CMD_ECC_GET_SRAM_UNIQUE_UNCORR_COUNTS
+ *
+ * This command is used to query the ECC inforom object and determine the number
+ * of unique uncorrectable error counts that occurred at an address.
+ *
+ *   entryCount
+ *     The number of entries
+ *
+ *   entries
+ *     The array of NV2080_CTRL_ECC_SRAM_UNIQUE_UNCORR_COUNTS_ENTRY
+ */
+
+#define NV2080_CTRL_ECC_SRAM_UNIQUE_UNCORR_COUNTS_MAX_COUNT 600
+
+#define NV2080_CTRL_CMD_ECC_GET_SRAM_UNIQUE_UNCORR_COUNTS   (0x20803402) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_ECC_INTERFACE_ID << 8) | NV2080_CTRL_ECC_GET_SRAM_UNIQUE_UNCORR_COUNTS_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_ECC_GET_SRAM_UNIQUE_UNCORR_COUNTS_PARAMS_MESSAGE_ID (0x2U)
+
+typedef struct NV2080_CTRL_ECC_GET_SRAM_UNIQUE_UNCORR_COUNTS_PARAMS {
+    NvU32                                           entryCount;
+    NV2080_CTRL_ECC_SRAM_UNIQUE_UNCORR_COUNTS_ENTRY entries[NV2080_CTRL_ECC_SRAM_UNIQUE_UNCORR_COUNTS_MAX_COUNT];
+} NV2080_CTRL_ECC_GET_SRAM_UNIQUE_UNCORR_COUNTS_PARAMS;
+
+#define NV2080_CTRL_ECC_ERROR_TYPE_CORRECTED    0
+#define NV2080_CTRL_ECC_ERROR_TYPE_UNCORRECTED  1
+
+/*
+ * NV2080_CTRL_CMD_ECC_INJECT_ERROR
+ *
+ * This command is used to inject ECC errors.
+ *
+ *   unit
+ *     The ECC unit
+ *
+ *   errorType
+ *     The type of error to be injected
+ *
+ *   location
+ *     The location within the ECC unit to be injected
+ *
+ *   flags
+ *     Specific injection flags
+ *
+ *   address
+ *     Specific injection address for DRAM
+ */
+
+#define NV2080_CTRL_CMD_ECC_INJECT_ERROR (0x20803403) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_ECC_INTERFACE_ID << 8) | NV2080_CTRL_ECC_INJECT_ERROR_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_ECC_INJECT_ERROR_PARAMS_MESSAGE_ID (0x3U)
+
+typedef struct NV2080_CTRL_ECC_INJECT_ERROR_PARAMS {
+    NvU32       unit;
+    NvU8        errorType;
+    eccLocation location;
+    NvU32       flags;
+    NV_DECLARE_ALIGNED(NvU64 address, 8);
+} NV2080_CTRL_ECC_INJECT_ERROR_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_ECC_GET_REPAIR_STATUS
+ *
+ * This command is used to query the status of TPC/Channel repair
+ *
+ * bTpcRepairPending
+ *   Boolean indicating if TPC repair is pending
+ * bChannelRepairPending
+ *   Boolean indicating if Channel repair is pending
+ */
+
+#define NV2080_CTRL_CMD_ECC_GET_REPAIR_STATUS (0x20803404) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_ECC_INTERFACE_ID << 8) | NV2080_CTRL_ECC_GET_REPAIR_STATUS_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_ECC_GET_REPAIR_STATUS_PARAMS_MESSAGE_ID (0x4U)
+
+typedef struct NV2080_CTRL_ECC_GET_REPAIR_STATUS_PARAMS {
+    NvBool bTpcRepairPending;
+    NvBool bChannelRepairPending;
+} NV2080_CTRL_ECC_GET_REPAIR_STATUS_PARAMS;
 
 /* _ctrl2080ecc_h_ */

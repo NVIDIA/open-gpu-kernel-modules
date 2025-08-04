@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,6 +31,8 @@
 
 #include "core/core.h"
 
+
+#define NVOC_OBJTMR_H_PRIVATE_ACCESS_ALLOWED
 
 #include "core/locks.h"
 #include "gpu/subdevice/subdevice.h"
@@ -328,7 +330,7 @@ subdeviceCtrlCmdTimerGetGpuCpuTimeCorrelationInfo_IMPL
         // If GSP time is requested, forward the whole request to GSP.
         // This can only be supported in GSP-RM offload mode.
         //
-        if (!IS_GSP_CLIENT(pGpu))
+        if (!IS_FW_CLIENT(pGpu))
             return NV_ERR_NOT_SUPPORTED;
 
         RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
@@ -353,7 +355,7 @@ subdeviceCtrlCmdTimerGetGpuCpuTimeCorrelationInfo_IMPL
         {
             for (i = 0; i < pParams->sampleCount; i++)
             {
-                osGetCurrentTime(&sec, &usec);
+                osGetSystemTime(&sec, &usec);
                 pParams->samples[i].cpuTime = (((NvU64)sec) * 1000000) + usec;
                 status = tmrGetCurrentTime(pTmr,
                     &pParams->samples[i].gpuTime);
@@ -364,6 +366,7 @@ subdeviceCtrlCmdTimerGetGpuCpuTimeCorrelationInfo_IMPL
                               status);
                     break;
                 }
+                pParams->samples[i].gpuTime += tmrGetPtimerOffsetNs_HAL(pGpu, pTmr);
             }
             break;
         }
@@ -427,7 +430,7 @@ subdeviceCtrlCmdTimerGetGpuCpuTimeCorrelationInfo_IMPL
             }
 
             pParams->samples[0].gpuTime = ((((NvU64)gpuTimeHiNew) << 32) |
-                                           gpuTimeLo[closestPairBeginIndex]);
+                                           gpuTimeLo[closestPairBeginIndex]) + tmrGetPtimerOffsetNs_HAL(pGpu, pTmr);
             pParams->samples[0].cpuTime = (cpuTime[closestPairBeginIndex] +
                                            cpuTime[closestPairBeginIndex + 1])/2;
             NV_PRINTF(LEVEL_INFO,

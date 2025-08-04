@@ -99,6 +99,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__RsResource =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_resDestruct(RsResource*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_RsResource(RsResource *pThis) {
     __nvoc_resDestruct(pThis);

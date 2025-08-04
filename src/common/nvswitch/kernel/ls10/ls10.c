@@ -293,9 +293,18 @@ nvswitch_destroy_device_state_ls10
 {
     ls10_device *chip_device = NVSWITCH_GET_CHIP_DEVICE_LS10(device);
 
-    if (NVSWITCH_ENG_VALID_LS10(device, SOE, 0) && nvswitch_is_soe_supported(device))
+    if (NVSWITCH_ENG_VALID_LS10(device, SOE, 0) &&
+        nvswitch_is_soe_supported(device))
     {
-        nvswitch_soe_unregister_events(device);
+        if (!nvswitch_is_tnvl_mode_enabled(device))
+        {
+            nvswitch_soe_unregister_events(device);
+        }
+        else
+        {
+            NVSWITCH_PRINT(device, INFO, "Skipping un-registering SOE callbacks since TNVL is enabled\n");
+        }
+
         nvswitch_unload_soe_ls10(device);
     }
 

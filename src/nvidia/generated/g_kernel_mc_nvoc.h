@@ -94,8 +94,13 @@ struct KernelMc {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct KernelMc *__nvoc_pbase_KernelMc;    // kmc
 
-    // Vtable with 1 per-object function pointer
+    // Vtable with 3 per-object function pointers
     NV_STATUS (*__kmcWritePmcEnableReg__)(struct OBJGPU *, struct KernelMc * /*this*/, NvU32, NvBool, NvBool);  // halified (3 hals) body
+    NV_STATUS (*__kmcPrepareForXVEReset__)(struct OBJGPU *, struct KernelMc * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__kmcGetMcBar0MapInfo__)(struct OBJGPU *, struct KernelMc * /*this*/, NvU64 *, NvU32 *);  // halified (2 hals) body
+
+    // 1 PDB property
+//  NvBool PDB_PROP_KMC_IS_MISSING inherited from OBJENGSTATE
 
     // Data members
     LATENCY_TIMER_CONTROL LatencyTimerControl;
@@ -153,6 +158,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelMc;
 #define PDB_PROP_KMC_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_KMC_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 
+
 NV_STATUS __nvoc_objCreateDynamic_KernelMc(KernelMc**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelMc(KernelMc**, Dynamic*, NvU32);
@@ -160,7 +166,9 @@ NV_STATUS __nvoc_objCreate_KernelMc(KernelMc**, Dynamic*, NvU32);
     __nvoc_objCreate_KernelMc((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+
+// Wrapper macros for halified functions
 #define kmcStateInitLocked_FNPTR(pKernelMc) pKernelMc->__nvoc_metadata_ptr->vtable.__kmcStateInitLocked__
 #define kmcStateInitLocked(pGpu, pKernelMc) kmcStateInitLocked_DISPATCH(pGpu, pKernelMc)
 #define kmcStateLoad_FNPTR(pKernelMc) pKernelMc->__nvoc_metadata_ptr->vtable.__kmcStateLoad__
@@ -168,6 +176,12 @@ NV_STATUS __nvoc_objCreate_KernelMc(KernelMc**, Dynamic*, NvU32);
 #define kmcWritePmcEnableReg_FNPTR(pKernelMc) pKernelMc->__kmcWritePmcEnableReg__
 #define kmcWritePmcEnableReg(pGpu, pKernelMc, arg3, arg4, arg5) kmcWritePmcEnableReg_DISPATCH(pGpu, pKernelMc, arg3, arg4, arg5)
 #define kmcWritePmcEnableReg_HAL(pGpu, pKernelMc, arg3, arg4, arg5) kmcWritePmcEnableReg_DISPATCH(pGpu, pKernelMc, arg3, arg4, arg5)
+#define kmcPrepareForXVEReset_FNPTR(pKernelMc) pKernelMc->__kmcPrepareForXVEReset__
+#define kmcPrepareForXVEReset(pGpu, pKernelMc) kmcPrepareForXVEReset_DISPATCH(pGpu, pKernelMc)
+#define kmcPrepareForXVEReset_HAL(pGpu, pKernelMc) kmcPrepareForXVEReset_DISPATCH(pGpu, pKernelMc)
+#define kmcGetMcBar0MapInfo_FNPTR(pKernelMc) pKernelMc->__kmcGetMcBar0MapInfo__
+#define kmcGetMcBar0MapInfo(pGpu, pKernelMc, arg3, arg4) kmcGetMcBar0MapInfo_DISPATCH(pGpu, pKernelMc, arg3, arg4)
+#define kmcGetMcBar0MapInfo_HAL(pGpu, pKernelMc, arg3, arg4) kmcGetMcBar0MapInfo_DISPATCH(pGpu, pKernelMc, arg3, arg4)
 #define kmcConstructEngine_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define kmcConstructEngine(pGpu, pEngstate, arg3) kmcConstructEngine_DISPATCH(pGpu, pEngstate, arg3)
 #define kmcInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
@@ -204,6 +218,14 @@ static inline NV_STATUS kmcStateLoad_DISPATCH(struct OBJGPU *pGpu, struct Kernel
 
 static inline NV_STATUS kmcWritePmcEnableReg_DISPATCH(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg3, NvBool arg4, NvBool arg5) {
     return pKernelMc->__kmcWritePmcEnableReg__(pGpu, pKernelMc, arg3, arg4, arg5);
+}
+
+static inline NV_STATUS kmcPrepareForXVEReset_DISPATCH(struct OBJGPU *pGpu, struct KernelMc *pKernelMc) {
+    return pKernelMc->__kmcPrepareForXVEReset__(pGpu, pKernelMc);
+}
+
+static inline NV_STATUS kmcGetMcBar0MapInfo_DISPATCH(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU64 *arg3, NvU32 *arg4) {
+    return pKernelMc->__kmcGetMcBar0MapInfo__(pGpu, pKernelMc, arg3, arg4);
 }
 
 static inline NV_STATUS kmcConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelMc *pEngstate, ENGDESCRIPTOR arg3) {
@@ -254,34 +276,6 @@ static inline NvBool kmcIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelMc 
     return pEngstate->__nvoc_metadata_ptr->vtable.__kmcIsPresent__(pGpu, pEngstate);
 }
 
-NV_STATUS kmcPrepareForXVEReset_GM107(struct OBJGPU *pGpu, struct KernelMc *pKernelMc);
-
-
-#ifdef __nvoc_kernel_mc_h_disabled
-static inline NV_STATUS kmcPrepareForXVEReset(struct OBJGPU *pGpu, struct KernelMc *pKernelMc) {
-    NV_ASSERT_FAILED_PRECOMP("KernelMc was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_mc_h_disabled
-#define kmcPrepareForXVEReset(pGpu, pKernelMc) kmcPrepareForXVEReset_GM107(pGpu, pKernelMc)
-#endif //__nvoc_kernel_mc_h_disabled
-
-#define kmcPrepareForXVEReset_HAL(pGpu, pKernelMc) kmcPrepareForXVEReset(pGpu, pKernelMc)
-
-NV_STATUS kmcGetMcBar0MapInfo_GM107(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU64 *arg3, NvU32 *arg4);
-
-
-#ifdef __nvoc_kernel_mc_h_disabled
-static inline NV_STATUS kmcGetMcBar0MapInfo(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU64 *arg3, NvU32 *arg4) {
-    NV_ASSERT_FAILED_PRECOMP("KernelMc was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_mc_h_disabled
-#define kmcGetMcBar0MapInfo(pGpu, pKernelMc, arg3, arg4) kmcGetMcBar0MapInfo_GM107(pGpu, pKernelMc, arg3, arg4)
-#endif //__nvoc_kernel_mc_h_disabled
-
-#define kmcGetMcBar0MapInfo_HAL(pGpu, pKernelMc, arg3, arg4) kmcGetMcBar0MapInfo(pGpu, pKernelMc, arg3, arg4)
-
 NV_STATUS kmcStateInitLocked_IMPL(struct OBJGPU *pGpu, struct KernelMc *pKernelMc);
 
 NV_STATUS kmcStateLoad_IMPL(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg3);
@@ -292,6 +286,18 @@ NV_STATUS kmcWritePmcEnableReg_GA100(struct OBJGPU *pGpu, struct KernelMc *pKern
 
 static inline NV_STATUS kmcWritePmcEnableReg_5baef9(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg3, NvBool arg4, NvBool arg5) {
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+NV_STATUS kmcPrepareForXVEReset_GM107(struct OBJGPU *pGpu, struct KernelMc *pKernelMc);
+
+static inline NV_STATUS kmcPrepareForXVEReset_56cd7a(struct OBJGPU *pGpu, struct KernelMc *pKernelMc) {
+    return NV_OK;
+}
+
+NV_STATUS kmcGetMcBar0MapInfo_GM107(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU64 *arg3, NvU32 *arg4);
+
+static inline NV_STATUS kmcGetMcBar0MapInfo_46f6a7(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU64 *arg3, NvU32 *arg4) {
+    return NV_ERR_NOT_SUPPORTED;
 }
 
 #undef PRIVATE_FIELD

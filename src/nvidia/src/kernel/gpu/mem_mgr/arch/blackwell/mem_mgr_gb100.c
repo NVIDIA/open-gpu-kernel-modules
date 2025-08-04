@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,16 @@
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 
+#include "blackwell/gb100/hwproject.h"
+
+NvBool
+memmgrIsFlaSysmemSupported_GB100(OBJGPU *pGpu, MemoryManager *pMemoryManager)
+{
+    // FLA+EGM is preferred over FLA+sysmem since the latter has very low bandwidth
+    return (!IS_SILICON(pGpu) || pMemoryManager->bForceEnableFlaSysmem) &&
+        !memmgrIsLocalEgmEnabled(pMemoryManager);
+}
+
 NvBool
 memmgrIsMemDescSupportedByFla_GB100
 (
@@ -35,7 +45,8 @@ memmgrIsMemDescSupportedByFla_GB100
 {
     NV_ADDRESS_SPACE addrSpace = memdescGetAddressSpace(pMemDesc);
 
-    if (!IS_SILICON(pGpu) && (addrSpace == ADDR_SYSMEM))
+    if ((addrSpace == ADDR_SYSMEM) &&
+        memmgrIsFlaSysmemSupported_HAL(pGpu, pMemoryManager))
     {
         return NV_TRUE;
     }
@@ -53,4 +64,14 @@ memmgrGetFBEndReserveSizeEstimate_GB100
     const NvU32 ESTIMATED_RESERVE_FB = 0x220000;
 
     return ESTIMATED_RESERVE_FB;
+}
+
+NvU8
+memmgrGetLocalizedOffset_GB100
+(
+    OBJGPU *pGpu,
+    MemoryManager *pMemoryManager
+)
+{
+    return NV_LOCALIZATION_MODE_BIT_IN_ADDRESS_OFFSET;
 }

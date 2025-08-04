@@ -783,7 +783,7 @@ void parseCta861VideoFormatDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawIn
 
                 if (NvTiming_CalcOVT(width, height, VF_FRAME_RATE[rateIdx], &newTiming) == NVT_STATUS_SUCCESS)
                 {
-                    if (pExt861->vfdb[vfdb_idx].info.y420 && newTiming.pclk > NVT_HDMI_YUV_420_PCLK_SUPPORTED_MIN)
+                    if (pExt861->vfdb[vfdb_idx].info.y420 && newTiming.pclk1khz > NVT_HDMI_YUV_420_PCLK_SUPPORTED_MIN)
                     {
                         UPDATE_BPC_FOR_COLORFORMAT(newTiming.etc.yuv420, 0, 1,
                                                    pInfo->hdmiForumInfo.dc_30bit_420,
@@ -927,7 +927,7 @@ void parse861bShortYuv420Timing(NVT_EDID_CEA861_INFO *pExt861,
 
         // calculate the pixel clock
         newTiming.pclk     = RRx1kToPclk(&newTiming);
-        newTiming.pclk1khz = (newTiming.pclk << 3) + (newTiming.pclk << 1); // *10
+        newTiming.pclk1khz = RRx1kToPclk1khz(&newTiming);
 
         // From CTA-861-F: By default, Y420VDB SVDs, when present in the EDID, shall be less preferred than all regular Video Data Block SVDs.
         // So it should use normal VIC code without native flag.
@@ -2275,7 +2275,7 @@ NVT_STATUS NvTiming_CalcCEA861bTiming(NvU32 width, NvU32 height, NvU32 rr, NvU32
 
             // calculate the pixel clock
             pT->pclk      = RRx1kToPclk (pT);
-            pT->pclk1khz  = (pT->pclk << 3) + (pT->pclk << 1); // *10
+            pT->pclk1khz  = RRx1kToPclk1khz (pT);
 
             NVT_SET_CEA_FORMAT(pT->etc.status, NVT_GET_TIMING_STATUS_SEQ(pT->etc.status));
 
@@ -3915,7 +3915,7 @@ void parseCta861DIDType7VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void
                 pT7Descriptor = (const DISPLAYID_2_0_TIMING_7_DESCRIPTOR *)
                                     &pExt861->did_type7_data_block[t7db_idx].payload[i*eachOfDescSize];
 
-                if (pT7Descriptor->options.is_preferred_or_ycc420 == 1 && newTiming.pclk > NVT_HDMI_YUV_420_PCLK_SUPPORTED_MIN)
+                if (pT7Descriptor->options.is_preferred_or_ycc420 == 1 && newTiming.pclk1khz > NVT_HDMI_YUV_420_PCLK_SUPPORTED_MIN)
                 {
                     newTiming.etc.yuv420.bpcs = 0;
                     UPDATE_BPC_FOR_COLORFORMAT(newTiming.etc.yuv420, 0, 1,
@@ -3976,7 +3976,7 @@ void parseCta861DIDType8VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void
             if (parseDisplayId20Timing8Descriptor(pExt861->did_type8_data_block[t8db_idx].payload,
                                                   &newTiming, codeType, codeSize, i, startSeqNum + i) == NVT_STATUS_SUCCESS)
             {
-                if (pExt861->did_type8_data_block[t8db_idx].version.t8y420 == 1 && newTiming.pclk > NVT_HDMI_YUV_420_PCLK_SUPPORTED_MIN)
+                if (pExt861->did_type8_data_block[t8db_idx].version.t8y420 == 1 && newTiming.pclk1khz > NVT_HDMI_YUV_420_PCLK_SUPPORTED_MIN)
                 {
                     UPDATE_BPC_FOR_COLORFORMAT(newTiming.etc.yuv420, 0, 1,
                                                 pInfo->hdmiForumInfo.dc_30bit_420,
@@ -4037,7 +4037,7 @@ void parseCta861DIDType10VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, voi
                 p6bytesDescriptor = (const DISPLAYID_2_0_TIMING_10_6BYTES_DESCRIPTOR *)
                                     &pExt861->did_type10_data_block[t10db_idx].payload[i*eachOfDescriptorsSize];
 
-                if (p6bytesDescriptor->options.ycc420_support && newTiming.pclk > NVT_HDMI_YUV_420_PCLK_SUPPORTED_MIN)
+                if (p6bytesDescriptor->options.ycc420_support && newTiming.pclk1khz > NVT_HDMI_YUV_420_PCLK_SUPPORTED_MIN)
                 {
                     UPDATE_BPC_FOR_COLORFORMAT(newTiming.etc.yuv420, 0, 1,
                                                pInfo->hdmiForumInfo.dc_30bit_420,

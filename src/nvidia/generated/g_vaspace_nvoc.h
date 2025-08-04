@@ -365,7 +365,40 @@ NV_STATUS __nvoc_objCreate_OBJVASPACE(OBJVASPACE**, Dynamic*, NvU32);
     __nvoc_objCreate_OBJVASPACE((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+void vaspaceIncRefCnt_IMPL(struct OBJVASPACE *pVAS);
+#ifdef __nvoc_vaspace_h_disabled
+static inline void vaspaceIncRefCnt(struct OBJVASPACE *pVAS) {
+    NV_ASSERT_FAILED_PRECOMP("OBJVASPACE was disabled!");
+}
+#else // __nvoc_vaspace_h_disabled
+#define vaspaceIncRefCnt(pVAS) vaspaceIncRefCnt_IMPL(pVAS)
+#endif // __nvoc_vaspace_h_disabled
+
+void vaspaceDecRefCnt_IMPL(struct OBJVASPACE *pVAS);
+#ifdef __nvoc_vaspace_h_disabled
+static inline void vaspaceDecRefCnt(struct OBJVASPACE *pVAS) {
+    NV_ASSERT_FAILED_PRECOMP("OBJVASPACE was disabled!");
+}
+#else // __nvoc_vaspace_h_disabled
+#define vaspaceDecRefCnt(pVAS) vaspaceDecRefCnt_IMPL(pVAS)
+#endif // __nvoc_vaspace_h_disabled
+
+NV_STATUS vaspaceGetByHandleOrDeviceDefault_IMPL(struct RsClient *pClient, NvHandle hDeviceOrSubDevice, NvHandle hVASpace, struct OBJVASPACE **ppVAS);
+#define vaspaceGetByHandleOrDeviceDefault(pClient, hDeviceOrSubDevice, hVASpace, ppVAS) vaspaceGetByHandleOrDeviceDefault_IMPL(pClient, hDeviceOrSubDevice, hVASpace, ppVAS)
+
+NV_STATUS vaspaceFillAllocParams_IMPL(struct OBJVASPACE *pVAS, const FB_ALLOC_INFO *pAllocInfo, NvU64 *pSize, NvU64 *pAlign, NvU64 *pRangeLo, NvU64 *pRangeHi, NvU64 *pPageSizeLockMask, VAS_ALLOC_FLAGS *pFlags);
+#ifdef __nvoc_vaspace_h_disabled
+static inline NV_STATUS vaspaceFillAllocParams(struct OBJVASPACE *pVAS, const FB_ALLOC_INFO *pAllocInfo, NvU64 *pSize, NvU64 *pAlign, NvU64 *pRangeLo, NvU64 *pRangeHi, NvU64 *pPageSizeLockMask, VAS_ALLOC_FLAGS *pFlags) {
+    NV_ASSERT_FAILED_PRECOMP("OBJVASPACE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_vaspace_h_disabled
+#define vaspaceFillAllocParams(pVAS, pAllocInfo, pSize, pAlign, pRangeLo, pRangeHi, pPageSizeLockMask, pFlags) vaspaceFillAllocParams_IMPL(pVAS, pAllocInfo, pSize, pAlign, pRangeLo, pRangeHi, pPageSizeLockMask, pFlags)
+#endif // __nvoc_vaspace_h_disabled
+
+
+// Wrapper macros for halified functions
 #define vaspaceConstruct__FNPTR(pVAS) pVAS->__nvoc_metadata_ptr->vtable.__vaspaceConstruct___
 #define vaspaceConstruct_(pVAS, classId, vaspaceId, vaStart, vaLimit, vaStartInternal, vaLimitInternal, flags) vaspaceConstruct__DISPATCH(pVAS, classId, vaspaceId, vaStart, vaLimit, vaStartInternal, vaLimitInternal, flags)
 #define vaspaceAlloc_FNPTR(pVAS) pVAS->__nvoc_metadata_ptr->vtable.__vaspaceAlloc__
@@ -648,40 +681,6 @@ static inline NV_STATUS vaspaceFreeV2_14ee5e(struct OBJVASPACE *pVAS, NvU64 vAdd
     NV_ASSERT_PRECOMP(NV_FALSE);
     return NV_ERR_NOT_SUPPORTED;
 }
-
-void vaspaceIncRefCnt_IMPL(struct OBJVASPACE *pVAS);
-
-#ifdef __nvoc_vaspace_h_disabled
-static inline void vaspaceIncRefCnt(struct OBJVASPACE *pVAS) {
-    NV_ASSERT_FAILED_PRECOMP("OBJVASPACE was disabled!");
-}
-#else //__nvoc_vaspace_h_disabled
-#define vaspaceIncRefCnt(pVAS) vaspaceIncRefCnt_IMPL(pVAS)
-#endif //__nvoc_vaspace_h_disabled
-
-void vaspaceDecRefCnt_IMPL(struct OBJVASPACE *pVAS);
-
-#ifdef __nvoc_vaspace_h_disabled
-static inline void vaspaceDecRefCnt(struct OBJVASPACE *pVAS) {
-    NV_ASSERT_FAILED_PRECOMP("OBJVASPACE was disabled!");
-}
-#else //__nvoc_vaspace_h_disabled
-#define vaspaceDecRefCnt(pVAS) vaspaceDecRefCnt_IMPL(pVAS)
-#endif //__nvoc_vaspace_h_disabled
-
-NV_STATUS vaspaceGetByHandleOrDeviceDefault_IMPL(struct RsClient *pClient, NvHandle hDeviceOrSubDevice, NvHandle hVASpace, struct OBJVASPACE **ppVAS);
-
-#define vaspaceGetByHandleOrDeviceDefault(pClient, hDeviceOrSubDevice, hVASpace, ppVAS) vaspaceGetByHandleOrDeviceDefault_IMPL(pClient, hDeviceOrSubDevice, hVASpace, ppVAS)
-NV_STATUS vaspaceFillAllocParams_IMPL(struct OBJVASPACE *pVAS, const FB_ALLOC_INFO *pAllocInfo, NvU64 *pSize, NvU64 *pAlign, NvU64 *pRangeLo, NvU64 *pRangeHi, NvU64 *pPageSizeLockMask, VAS_ALLOC_FLAGS *pFlags);
-
-#ifdef __nvoc_vaspace_h_disabled
-static inline NV_STATUS vaspaceFillAllocParams(struct OBJVASPACE *pVAS, const FB_ALLOC_INFO *pAllocInfo, NvU64 *pSize, NvU64 *pAlign, NvU64 *pRangeLo, NvU64 *pRangeHi, NvU64 *pPageSizeLockMask, VAS_ALLOC_FLAGS *pFlags) {
-    NV_ASSERT_FAILED_PRECOMP("OBJVASPACE was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_vaspace_h_disabled
-#define vaspaceFillAllocParams(pVAS, pAllocInfo, pSize, pAlign, pRangeLo, pRangeHi, pPageSizeLockMask, pFlags) vaspaceFillAllocParams_IMPL(pVAS, pAllocInfo, pSize, pAlign, pRangeLo, pRangeHi, pPageSizeLockMask, pFlags)
-#endif //__nvoc_vaspace_h_disabled
 
 #undef PRIVATE_FIELD
 

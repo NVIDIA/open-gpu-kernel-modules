@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,6 +34,13 @@
 
 bool libspdm_requester_data_sign
 (
+//
+// Note : Even LIBSPDM_HAL_PASS_SPDM_CONTEXT is 0, we still need to add this
+//        define check; otherwise extra garbage parameters will pass in.
+//
+#if LIBSPDM_HAL_PASS_SPDM_CONTEXT
+    void                 *spdm_context,
+#endif
     spdm_version_number_t spdm_version,
     uint8_t               op_code,
     uint16_t              req_base_asym_alg,

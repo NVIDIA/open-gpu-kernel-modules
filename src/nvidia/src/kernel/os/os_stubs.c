@@ -184,12 +184,6 @@ osRCCallback_v2
     return RC_CALLBACK_IGNORE;
 }
 
-NV_STATUS osSetupVBlank(OBJGPU *pGpu, void * pProc,
-                        void * pParm1, void * pParm2, NvU32 Head, void * pParm3)
-{
-    return NV_OK;
-}
-
 RmPhysAddr
 osPageArrayGetPhysAddr(OS_GPU_INFO *pOsGpuInfo, void* pPageData, NvU32 pageIndex)
 {
@@ -365,6 +359,7 @@ osTegraSocDsiPanelCleanup
 NV_STATUS
 osTegraSocHspSemaphoreAcquire
 (
+    OBJGPU *pGpu,
     NvU32 ownerId,
     NvBool bAcquire,
     NvU64 timeout
@@ -654,132 +649,6 @@ osGetNvGlobalRegistryDword
     return NV_ERR_NOT_SUPPORTED;
 }
 
-#if !RMCFG_FEATURE_PLATFORM_DCE /* dce_core_rm_clk_reset.c */ && \
-    (!RMCFG_FEATURE_PLATFORM_UNIX || !RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY || \
-     RMCFG_FEATURE_DCE_CLIENT_RM /* osSocNvDisp.c */ )
-NV_STATUS
-osTegraSocEnableClk
-(
-    OS_GPU_INFO             *pOsGpuInfo,
-    NvU32     whichClkRM
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS
-osTegraSocDisableClk
-(
-    OS_GPU_INFO             *pOsGpuInfo,
-    NvU32                   whichClkRM
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS
-osTegraSocGetCurrFreqKHz
-(
-    OS_GPU_INFO             *pOsGpuInfo,
-    NvU32                   whichClkRM,
-    NvU32                   *pCurrFreqKHz
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS
-osTegraSocGetMaxFreqKHz
-(
-    OS_GPU_INFO             *pOsGpuInfo,
-    NvU32                    whichClkRM,
-    NvU32                   *pMaxFreqKHz
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS
-osTegraSocGetMinFreqKHz
-(
-    OS_GPU_INFO             *pOsGpuInfo,
-    NvU32                    whichClkRM,
-    NvU32                   *pMinFreqKHz
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS
-osTegraSocSetFreqKHz
-(
-    OS_GPU_INFO             *pOsGpuInfo,
-    NvU32                    whichClkRM,
-    NvU32                    reqFreqKHz
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS
-osTegraSocSetParent
-(
-    OS_GPU_INFO             *pOsGpuInfo,
-    NvU32                    whichClkRMsource,
-    NvU32                    whichClkRMparent
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS
-osTegraSocGetParent
-(
-    OS_GPU_INFO             *pOsGpuInfo,
-    NvU32                    whichClkRMsource,
-    NvU32                   *pWhichClkRMparent
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS
-osTegraSocDeviceReset
-(
-    OS_GPU_INFO *pOsGpuInfo
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-#if (RMCFG_FEATURE_PLATFORM_WINDOWS && !RMCFG_FEATURE_TEGRA_BPMP) || \
-    (!RMCFG_FEATURE_PLATFORM_WINDOWS && !RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY)
-NV_STATUS
-osTegraSocPmPowergate
-(
-    OBJGPU *pGpu
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS
-osTegraSocPmUnpowergate
-(
-    OBJGPU *pGpu
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-#endif
-
-NvU32
-osTegraSocFuseRegRead(NvU32 addr)
-{
-    return 0;
-}
-#endif
-
 #if !(RMCFG_FEATURE_PLATFORM_UNIX) || \
     (RMCFG_FEATURE_PLATFORM_UNIX && !RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY)
 NV_STATUS
@@ -815,5 +684,4 @@ osMapGsc
 {
     return NV_ERR_NOT_SUPPORTED;
 }
-
 

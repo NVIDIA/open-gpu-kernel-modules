@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -306,7 +306,8 @@ kmemsysInitFlushSysmemBuffer_GM107
         // If DMA address size modification ever becomes needed in more places,
         // making it a part of the memdesc APIs would be cleaner.
         //
-        if (gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM) > flushBufferDmaAddressSize)
+        NvU32 gpuSysPhysAddrWidth = gpuarchGetSystemPhysAddrWidth_HAL(gpuGetArch(pGpu));
+        if (gpuSysPhysAddrWidth > flushBufferDmaAddressSize)
         {
             memdescOverridePhysicalAddressWidthWindowsWAR(pGpu, pKernelMemorySystem->pSysmemFlushBufferMemDesc, flushBufferDmaAddressSize);
             osDmaSetAddressSize(pGpu->pOsGpuInfo, flushBufferDmaAddressSize);
@@ -316,9 +317,9 @@ kmemsysInitFlushSysmemBuffer_GM107
                         pKernelMemorySystem->pSysmemFlushBufferMemDesc);
 
         // Restore it back to what HW supports
-        if (gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM) > flushBufferDmaAddressSize)
+        if (gpuSysPhysAddrWidth > flushBufferDmaAddressSize)
         {
-            osDmaSetAddressSize(pGpu->pOsGpuInfo, gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM));
+            osDmaSetAddressSize(pGpu->pOsGpuInfo, gpuSysPhysAddrWidth);
         }
 
         if (status == NV_OK)
@@ -408,16 +409,22 @@ kmemsysProgramSysmemFlushBuffer_GM107
  * @param[in] pGpu                OBJGPU pointer
  * @param[in[ pKernelMemorySystem KernelMemorySystem pointer
  *
- * @returns void
+ * @returns NV_STATUS - NV_OK if sysmemFlushBuffer is valid otherwise NV_ERR_INVALID_STATE
  */
-void
+NV_STATUS
 kmemsysAssertSysmemFlushBufferValid_GM107
 (
     OBJGPU *pGpu,
     KernelMemorySystem *pKernelMemorySystem
 )
 {
-    NV_ASSERT(GPU_REG_RD_DRF(pGpu, _PFB, _NISO_FLUSH_SYSMEM_ADDR, _ADR_39_08) != 0);
+    NvU32 regPfbNisoFlushSysmemAddrVal = GPU_REG_RD_DRF(pGpu, _PFB, _NISO_FLUSH_SYSMEM_ADDR, _ADR_39_08);
+    if (regPfbNisoFlushSysmemAddrVal == 0)
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
+    return NV_OK;
 }
 
 NvU32

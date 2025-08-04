@@ -93,6 +93,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__RsClient =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_clientDestruct(RsClient*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_RsClient(RsClient *pThis) {
     __nvoc_clientDestruct(pThis);
@@ -436,6 +437,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__RsClientResource =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_clientresDestruct(RsClientResource*);
 void __nvoc_dtor_RsResource(RsResource*);
 void __nvoc_dtor_RsClientResource(RsClientResource *pThis) {
     __nvoc_clientresDestruct(pThis);

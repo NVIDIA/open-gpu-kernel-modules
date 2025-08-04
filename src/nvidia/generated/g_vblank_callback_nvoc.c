@@ -121,17 +121,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_VblankCallback =
     /*pExportInfo=*/        &__nvoc_export_info__VblankCallback
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_VblankCallback[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) vblcbCtrlSetVBlankNotification_IMPL,
+        /*pFunc=*/      (void (*)(void)) &vblcbCtrlSetVBlankNotification_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
         /*flags=*/      0x0u,
         /*accessRight=*/0x0u,
@@ -142,7 +144,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_VblankCa
         /*func=*/       "vblcbCtrlSetVBlankNotification"
 #endif
     },
-
 };
 
 
@@ -406,6 +407,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__VblankCallback =
     /*pExportEntries=*/ __nvoc_exported_method_def_VblankCallback
 };
 
+void __nvoc_vblcbDestruct(VblankCallback*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_VblankCallback(VblankCallback *pThis) {
     __nvoc_vblcbDestruct(pThis);
@@ -439,18 +441,11 @@ __nvoc_ctor_VblankCallback_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_VblankCallback_1(VblankCallback *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // vblcbCtrlSetVBlankNotification -- exported (id=0x90100101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
-    pThis->__vblcbCtrlSetVBlankNotification__ = &vblcbCtrlSetVBlankNotification_IMPL;
-#endif
-} // End __nvoc_init_funcTable_VblankCallback_1 with approximately 1 basic block(s).
+} // End __nvoc_init_funcTable_VblankCallback_1
 
 
-// Initialize vtable(s) for 26 virtual method(s).
+// Initialize vtable(s) for 25 virtual method(s).
 void __nvoc_init_funcTable_VblankCallback(VblankCallback *pThis) {
-
-    // Initialize vtable(s) with 1 per-object function pointer(s).
     __nvoc_init_funcTable_VblankCallback_1(pThis);
 }
 

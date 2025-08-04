@@ -167,7 +167,18 @@ NV_STATUS __nvoc_objCreate_VideoMemory(VideoMemory**, Dynamic*, NvU32, CALL_CONT
     __nvoc_objCreate_VideoMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS vidmemConstruct_IMPL(struct VideoMemory *arg_pVideoMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_vidmemConstruct(arg_pVideoMemory, arg_pCallContext, arg_pParams) vidmemConstruct_IMPL(arg_pVideoMemory, arg_pCallContext, arg_pParams)
+
+void vidmemDestruct_IMPL(struct VideoMemory *pVideoMemory);
+#define __nvoc_vidmemDestruct(pVideoMemory) vidmemDestruct_IMPL(pVideoMemory)
+
+struct Heap * vidmemGetHeap_IMPL(struct OBJGPU *pGpu, struct Device *pDevice, NvBool bSubheap, NvBool bForceGlobalHeap);
+#define vidmemGetHeap(pGpu, pDevice, bSubheap, bForceGlobalHeap) vidmemGetHeap_IMPL(pGpu, pDevice, bSubheap, bForceGlobalHeap)
+
+
+// Wrapper macros for halified functions
 #define vidmemCheckCopyPermissions_FNPTR(pVideoMemory) pVideoMemory->__nvoc_metadata_ptr->vtable.__vidmemCheckCopyPermissions__
 #define vidmemCheckCopyPermissions(pVideoMemory, pDstGpu, pDstDevice) vidmemCheckCopyPermissions_DISPATCH(pVideoMemory, pDstGpu, pDstDevice)
 #define vidmemCanCopy_FNPTR(pStandardMemory) pStandardMemory->__nvoc_base_StandardMemory.__nvoc_metadata_ptr->vtable.__stdmemCanCopy__
@@ -328,15 +339,6 @@ static inline void vidmemAddAdditionalDependants_DISPATCH(struct RsClient *pClie
 
 NV_STATUS vidmemCheckCopyPermissions_IMPL(struct VideoMemory *pVideoMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice);
 
-NV_STATUS vidmemConstruct_IMPL(struct VideoMemory *arg_pVideoMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_vidmemConstruct(arg_pVideoMemory, arg_pCallContext, arg_pParams) vidmemConstruct_IMPL(arg_pVideoMemory, arg_pCallContext, arg_pParams)
-void vidmemDestruct_IMPL(struct VideoMemory *pVideoMemory);
-
-#define __nvoc_vidmemDestruct(pVideoMemory) vidmemDestruct_IMPL(pVideoMemory)
-struct Heap *vidmemGetHeap_IMPL(struct OBJGPU *pGpu, struct Device *pDevice, NvBool bSubheap, NvBool bForceGlobalHeap);
-
-#define vidmemGetHeap(pGpu, pDevice, bSubheap, bForceGlobalHeap) vidmemGetHeap_IMPL(pGpu, pDevice, bSubheap, bForceGlobalHeap)
 #undef PRIVATE_FIELD
 
 

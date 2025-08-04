@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -62,22 +62,20 @@ gpuresConstruct_IMPL
     NvBool         bBcResource = NV_TRUE;
     NV_STATUS      status;
 
-    // Check if instance is a subdevice
-    pGpuResource->pSubdevice = dynamicCast(pGpuResource, Subdevice);
-
-    // Else check for ancestor
-    if (!pGpuResource->pSubdevice)
+    // Check if instance is a subdevice or device, else check for ancestor
+    if (pResourceRef->internalClassId == classId(Subdevice))
+        pGpuResource->pSubdevice = dynamicCast(pGpuResource, Subdevice);
+    else
     {
         status = refFindAncestorOfType(pResourceRef, classId(Subdevice), &pSubdeviceRef);
         if (status == NV_OK)
             pGpuResource->pSubdevice = dynamicCast(pSubdeviceRef->pResource, Subdevice);
     }
 
-    // Check if instance is a device
-    pGpuResource->pDevice = dynamicCast(pGpuResource, Device);
-
-    // Else check for ancestor
-    if (!pGpuResource->pDevice)
+    // Check if instance is a device, else check for ancestor
+    if (pResourceRef->internalClassId == classId(Device))
+        pGpuResource->pDevice = dynamicCast(pGpuResource, Device);
+    else
     {
         status = refFindAncestorOfType(pResourceRef, classId(Device), &pDeviceRef);
         if (status == NV_OK)
@@ -87,8 +85,10 @@ gpuresConstruct_IMPL
     if (RS_IS_COPY_CTOR(pParams))
         return gpuresCopyConstruct(pGpuResource, pCallContext, pParams);
 
+
     // Fails during device/subdevice ctor. Subclass ctor calls gpuresSetGpu
     status = gpuGetByRef(pResourceRef, &bBcResource, &pGpu);
+
     if (status == NV_OK)
         gpuresSetGpu(pGpuResource, pGpu, bBcResource);
 

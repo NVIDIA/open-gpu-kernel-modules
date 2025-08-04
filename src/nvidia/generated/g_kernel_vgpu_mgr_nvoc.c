@@ -80,6 +80,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelVgpuMgr =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_kvgpumgrDestruct(KernelVgpuMgr*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_KernelVgpuMgr(KernelVgpuMgr *pThis) {
     __nvoc_kvgpumgrDestruct(pThis);

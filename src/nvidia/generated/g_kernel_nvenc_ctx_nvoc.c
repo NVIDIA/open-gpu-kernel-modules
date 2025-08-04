@@ -523,6 +523,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__MsencContext =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_msencctxDestruct(MsencContext*);
 void __nvoc_dtor_ChannelDescendant(ChannelDescendant*);
 void __nvoc_dtor_MsencContext(MsencContext *pThis) {
     __nvoc_msencctxDestruct(pThis);

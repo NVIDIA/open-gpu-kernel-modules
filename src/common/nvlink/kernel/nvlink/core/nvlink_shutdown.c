@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -408,6 +408,60 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
 /**
  * [PSEUDO-CLEAN SHUTDOWN]
  *
+ * Shutdown the given array of links from ACTIVE to OFF state
+ *
+ * @param[in]  ppLinks    Array of links to shutdown
+ * @param[in]  linkCount  Number of links in the array
+ * @param[in]  flags      Flags to track if shutdown is sync/async
+ *
+ * return NVL_SUCCESS if the links shutdown successfully
+ */
+NvlStatus
+nvlink_core_unilateral_powerdown_links_from_active_to_off
+(
+    nvlink_link **ppLinks,
+    NvU32         linkCount,
+    NvU32         flags
+)
+{
+    NvU32 i;
+
+    if ((ppLinks == NULL) || (linkCount == 0))
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: No links to shutdown\n",
+            __FUNCTION__));
+
+        return NVL_ERR_GENERIC;
+    }
+
+    // Poll for sublinks to reach SAFE state
+    for (i = 0; i < linkCount; i++)
+    {
+        if (ppLinks[i] == NULL)
+            continue;
+
+        // Caller already checked this so this is paranoia
+        if (!nvlink_core_link_states_symmetric(ppLinks[i]))
+            continue;
+
+        if (ppLinks[i]->bCciManaged)
+            continue;
+
+        ppLinks[i]->link_handlers->set_dl_link_mode(ppLinks[i], NVLINK_LINKSTATE_OFF, flags);
+        _nvlink_core_clear_link_state(ppLinks[i]);
+    }
+
+    //
+    // Squash status. If any side of link doesn not respond the link is
+    // shutdown unilaterally
+    //
+    return NVL_SUCCESS;
+}
+
+/**
+ * [PSEUDO-CLEAN SHUTDOWN]
+ *
  * Shutdown the given array of intranode connections from ACTIVE to OFF state
  *
  * @param[in]  conns      Array of connections to shutdown
@@ -693,6 +747,10 @@ nvlink_core_powerdown_intranode_conns_from_active_to_swcfg
 
         return NVL_ERR_GENERIC;
     }
+
+    // Don't even attempt if device does not support SAFE
+    if (!nvlink_core_link_state_supported(conns[0]->end0, NVLINK_LINKSTATE_SAFE))
+        return NVL_ERR_NOT_SUPPORTED;
 
     for (i = 0; i < connCount; i++)
     {

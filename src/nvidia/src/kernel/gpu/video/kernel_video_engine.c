@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -174,7 +174,7 @@ NV_STATUS kvidengInitLogging_KERNEL
     /*!
      * Random number generator used for generate noisy timestamp
      */
-    seed = osGetCurrentTick();
+    seed = osGetMonotonicTimeNs();
     pKernelVideoEngine->videoTraceInfo.pVideoLogPrng = portCryptoPseudoRandomGeneratorCreate(seed);
 
     pKernelVideoEngine->bVideoTraceEnabled = NV_TRUE;

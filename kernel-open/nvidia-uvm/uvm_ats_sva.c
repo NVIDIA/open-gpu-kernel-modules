@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2023 NVIDIA Corporation
+    Copyright (c) 2018-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -164,7 +164,7 @@ static NV_STATUS uvm_ats_smmu_war_init(uvm_parent_gpu_t *parent_gpu)
     if (!smmu_cmdqv_base)
         return NV_ERR_NO_MEMORY;
 
-    parent_gpu->smmu_war.smmu_cmdqv_base = smmu_cmdqv_base;
+    parent_gpu->ats.smmu_war.smmu_cmdqv_base = smmu_cmdqv_base;
     cmdqv_config = ioread32(smmu_cmdqv_base + SMMU_CMDQV_CONFIG);
     if (!(cmdqv_config & SMMU_CMDQV_CONFIG_CMDQV_EN)) {
         status = NV_ERR_OBJECT_NOT_FOUND;
@@ -172,8 +172,8 @@ static NV_STATUS uvm_ats_smmu_war_init(uvm_parent_gpu_t *parent_gpu)
     }
 
     // Allocate SMMU CMDQ pages for WAR
-    parent_gpu->smmu_war.smmu_cmdq = alloc_page(NV_UVM_GFP_FLAGS | __GFP_ZERO);
-    if (!parent_gpu->smmu_war.smmu_cmdq) {
+    parent_gpu->ats.smmu_war.smmu_cmdq = alloc_page(NV_UVM_GFP_FLAGS | __GFP_ZERO);
+    if (!parent_gpu->ats.smmu_war.smmu_cmdq) {
         status = NV_ERR_NO_MEMORY;
         goto out;
     }
@@ -187,42 +187,42 @@ static NV_STATUS uvm_ats_smmu_war_init(uvm_parent_gpu_t *parent_gpu)
               smmu_cmdqv_base + SMMU_CMDQV_CMDQ_ALLOC_MAP(VCMDQ));
 
     smmu_vcmdq_write64(smmu_cmdqv_base, SMMU_VCMDQ_CMDQ_BASE,
-                       page_to_phys(parent_gpu->smmu_war.smmu_cmdq) | SMMU_VCMDQ_CMDQ_BASE_LOG2SIZE);
+                       page_to_phys(parent_gpu->ats.smmu_war.smmu_cmdq) | SMMU_VCMDQ_CMDQ_BASE_LOG2SIZE);
     smmu_vcmdq_write32(smmu_cmdqv_base, SMMU_VCMDQ_CONS, 0);
     smmu_vcmdq_write32(smmu_cmdqv_base, SMMU_VCMDQ_PROD, 0);
     smmu_vcmdq_write32(smmu_cmdqv_base, SMMU_VCMDQ_CONFIG, SMMU_VCMDQ_CONFIG_ENABLE);
     UVM_SPIN_WHILE(!(smmu_vcmdq_read32(smmu_cmdqv_base, SMMU_VCMDQ_STATUS) & SMMU_VCMDQ_STATUS_ENABLED), &spin);
 
-    uvm_mutex_init(&parent_gpu->smmu_war.smmu_lock, UVM_LOCK_ORDER_LEAF);
-    parent_gpu->smmu_war.smmu_prod = 0;
-    parent_gpu->smmu_war.smmu_cons = 0;
+    uvm_mutex_init(&parent_gpu->ats.smmu_war.smmu_lock, UVM_LOCK_ORDER_LEAF);
+    parent_gpu->ats.smmu_war.smmu_prod = 0;
+    parent_gpu->ats.smmu_war.smmu_cons = 0;
 
     return NV_OK;
 
 out:
-    iounmap(parent_gpu->smmu_war.smmu_cmdqv_base);
-    parent_gpu->smmu_war.smmu_cmdqv_base = NULL;
+    iounmap(parent_gpu->ats.smmu_war.smmu_cmdqv_base);
+    parent_gpu->ats.smmu_war.smmu_cmdqv_base = NULL;
 
     return status;
 }
 
 static void uvm_ats_smmu_war_deinit(uvm_parent_gpu_t *parent_gpu)
 {
-    void __iomem *smmu_cmdqv_base = parent_gpu->smmu_war.smmu_cmdqv_base;
+    void __iomem *smmu_cmdqv_base = parent_gpu->ats.smmu_war.smmu_cmdqv_base;
     NvU32 cmdq_alloc_map;
 
-    if (parent_gpu->smmu_war.smmu_cmdqv_base) {
+    if (parent_gpu->ats.smmu_war.smmu_cmdqv_base) {
         smmu_vcmdq_write32(smmu_cmdqv_base, SMMU_VCMDQ_CONFIG, 0);
         cmdq_alloc_map = ioread32(smmu_cmdqv_base + SMMU_CMDQV_CMDQ_ALLOC_MAP(VCMDQ));
         iowrite32(cmdq_alloc_map & SMMU_CMDQV_CMDQ_ALLOC_MAP_ALLOC, smmu_cmdqv_base + SMMU_CMDQV_CMDQ_ALLOC_MAP(VCMDQ));
         smmu_vintf_write32(smmu_cmdqv_base, SMMU_VINTF_CONFIG, 0);
     }
 
-    if (parent_gpu->smmu_war.smmu_cmdq)
-        __free_page(parent_gpu->smmu_war.smmu_cmdq);
+    if (parent_gpu->ats.smmu_war.smmu_cmdq)
+        __free_page(parent_gpu->ats.smmu_war.smmu_cmdq);
 
-    if (parent_gpu->smmu_war.smmu_cmdqv_base)
-        iounmap(parent_gpu->smmu_war.smmu_cmdqv_base);
+    if (parent_gpu->ats.smmu_war.smmu_cmdqv_base)
+        iounmap(parent_gpu->ats.smmu_war.smmu_cmdqv_base);
 }
 
 // The SMMU on ARM64 can run under different translation regimes depending on
@@ -253,13 +253,13 @@ void uvm_ats_smmu_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space, NvU64 addr, 
     uvm_spin_loop_t spin;
     NvU16 asid;
 
-    if (!parent_gpu->smmu_war.smmu_cmdqv_base)
+    if (!parent_gpu->ats.smmu_war.smmu_cmdqv_base)
         return;
 
     asid = arm64_mm_context_get(mm);
-    vcmdq = kmap(parent_gpu->smmu_war.smmu_cmdq);
-    uvm_mutex_lock(&parent_gpu->smmu_war.smmu_lock);
-    vcmdq_prod = parent_gpu->smmu_war.smmu_prod;
+    vcmdq = kmap(parent_gpu->ats.smmu_war.smmu_cmdq);
+    uvm_mutex_lock(&parent_gpu->ats.smmu_war.smmu_lock);
+    vcmdq_prod = parent_gpu->ats.smmu_war.smmu_prod;
 
     // Our queue management is very simple. The mutex prevents multiple
     // producers writing to the queue and all our commands require waiting for
@@ -293,28 +293,21 @@ void uvm_ats_smmu_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space, NvU64 addr, 
 
     // MSB is the wrap bit
     vcmdq_prod &= (1UL << (SMMU_VCMDQ_CMDQ_BASE_LOG2SIZE + 1)) - 1;
-    parent_gpu->smmu_war.smmu_prod = vcmdq_prod;
-    smmu_vcmdq_write32(parent_gpu->smmu_war.smmu_cmdqv_base, SMMU_VCMDQ_PROD, parent_gpu->smmu_war.smmu_prod);
+    parent_gpu->ats.smmu_war.smmu_prod = vcmdq_prod;
+    smmu_vcmdq_write32(parent_gpu->ats.smmu_war.smmu_cmdqv_base, SMMU_VCMDQ_PROD, parent_gpu->ats.smmu_war.smmu_prod);
 
     UVM_SPIN_WHILE(
-        (smmu_vcmdq_read32(parent_gpu->smmu_war.smmu_cmdqv_base, SMMU_VCMDQ_CONS) & GENMASK(19, 0)) != vcmdq_prod,
+        (smmu_vcmdq_read32(parent_gpu->ats.smmu_war.smmu_cmdqv_base, SMMU_VCMDQ_CONS) & GENMASK(19, 0)) != vcmdq_prod,
         &spin);
 
-    uvm_mutex_unlock(&parent_gpu->smmu_war.smmu_lock);
-    kunmap(parent_gpu->smmu_war.smmu_cmdq);
+    uvm_mutex_unlock(&parent_gpu->ats.smmu_war.smmu_lock);
+    kunmap(parent_gpu->ats.smmu_war.smmu_cmdq);
     arm64_mm_context_put(mm);
 }
 #endif
 
 NV_STATUS uvm_ats_sva_add_gpu(uvm_parent_gpu_t *parent_gpu)
 {
-#if NV_IS_EXPORT_SYMBOL_GPL_iommu_dev_enable_feature
-    int ret;
-
-    ret = iommu_dev_enable_feature(&parent_gpu->pci_dev->dev, IOMMU_DEV_FEAT_SVA);
-    if (ret)
-        return errno_to_nv_status(ret);
-#endif
     if (UVM_ATS_SMMU_WAR_REQUIRED())
         return uvm_ats_smmu_war_init(parent_gpu);
     else
@@ -325,10 +318,6 @@ void uvm_ats_sva_remove_gpu(uvm_parent_gpu_t *parent_gpu)
 {
     if (UVM_ATS_SMMU_WAR_REQUIRED())
         uvm_ats_smmu_war_deinit(parent_gpu);
-
-#if NV_IS_EXPORT_SYMBOL_GPL_iommu_dev_disable_feature
-    iommu_dev_disable_feature(&parent_gpu->pci_dev->dev, IOMMU_DEV_FEAT_SVA);
-#endif
 }
 
 NV_STATUS uvm_ats_sva_bind_gpu(uvm_gpu_va_space_t *gpu_va_space)

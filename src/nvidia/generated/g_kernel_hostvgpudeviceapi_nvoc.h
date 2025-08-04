@@ -125,15 +125,17 @@ NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceShr(KernelHostVgpuDeviceShr**, Dy
     __nvoc_objCreate_KernelHostVgpuDeviceShr((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS kernelhostvgpudeviceshrConstruct_IMPL(struct KernelHostVgpuDeviceShr *arg_pKernelHostVgpuDeviceShr);
+#define __nvoc_kernelhostvgpudeviceshrConstruct(arg_pKernelHostVgpuDeviceShr) kernelhostvgpudeviceshrConstruct_IMPL(arg_pKernelHostVgpuDeviceShr)
+
+void kernelhostvgpudeviceshrDestruct_IMPL(struct KernelHostVgpuDeviceShr *pKernelHostVgpuDeviceShr);
+#define __nvoc_kernelhostvgpudeviceshrDestruct(pKernelHostVgpuDeviceShr) kernelhostvgpudeviceshrDestruct_IMPL(pKernelHostVgpuDeviceShr)
+
+
+// Wrapper macros for halified functions
 
 // Dispatch functions
-NV_STATUS kernelhostvgpudeviceshrConstruct_IMPL(struct KernelHostVgpuDeviceShr *arg_pKernelHostVgpuDeviceShr);
-
-#define __nvoc_kernelhostvgpudeviceshrConstruct(arg_pKernelHostVgpuDeviceShr) kernelhostvgpudeviceshrConstruct_IMPL(arg_pKernelHostVgpuDeviceShr)
-void kernelhostvgpudeviceshrDestruct_IMPL(struct KernelHostVgpuDeviceShr *pKernelHostVgpuDeviceShr);
-
-#define __nvoc_kernelhostvgpudeviceshrDestruct(pKernelHostVgpuDeviceShr) kernelhostvgpudeviceshrDestruct_IMPL(pKernelHostVgpuDeviceShr)
 #undef PRIVATE_FIELD
 
 
@@ -179,23 +181,9 @@ struct KernelHostVgpuDeviceApi {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct KernelHostVgpuDeviceApi *__nvoc_pbase_KernelHostVgpuDeviceApi;    // kernelhostvgpudeviceapi
 
-    // Vtable with 12 per-object function pointers
-    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_VGPU_DEVICE_INFO_PARAMS *);  // exported (id=0xa0840101)
-    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_VGPU_GUEST_LIFE_CYCLE_STATE_PARAMS *);  // exported (id=0xa0840102)
-    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_OFFLINED_PAGE_PATCHINFO_PARAMS *);  // exported (id=0xa0840103)
-    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdVfConfigSpaceAccess__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_VF_CONFIG_SPACE_ACCESS_PARAMS *);  // exported (id=0xa0840104)
-    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BIND_FECS_EVTBUF_PARAMS *);  // exported (id=0xa0840105)
-    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_TRIGGER_PRIV_DOORBELL_PARAMS *);  // exported (id=0xa0840106)
-    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdEventSetNotification__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_EVENT_SET_NOTIFICATION_PARAMS *);  // exported (id=0xa0840107)
-    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_GET_BAR_MAPPING_RANGES_PARAMS *);  // exported (id=0xa084010a)
-    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition__)(struct KernelHostVgpuDeviceApi * /*this*/);  // exported (id=0xa084010b)
-    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdFreeStates__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_FREE_STATES_PARAMS *);  // exported (id=0xa084010c)
-    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS *);  // exported (id=0xa084010d)
-    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdSetPlacementId__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_SET_PLACEMENT_ID_PARAMS *);  // exported (id=0xa084010e)
-
     // Data members
     struct KernelHostVgpuDeviceShr *pShared;
-    NvU32 notifyActions[8];
+    NvU32 notifyActions[9];
 };
 
 
@@ -270,33 +258,147 @@ NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi**, Dy
     __nvoc_objCreate_KernelHostVgpuDeviceApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS kernelhostvgpudeviceapiConstruct_IMPL(struct KernelHostVgpuDeviceApi *arg_pKernelHostVgpuDeviceApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_kernelhostvgpudeviceapiConstruct(arg_pKernelHostVgpuDeviceApi, arg_pCallContext, arg_pParams) kernelhostvgpudeviceapiConstruct_IMPL(arg_pKernelHostVgpuDeviceApi, arg_pCallContext, arg_pParams)
+
+NV_STATUS kernelhostvgpudeviceapiCopyConstruct_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#ifdef __nvoc_kernel_hostvgpudeviceapi_h_disabled
+static inline NV_STATUS kernelhostvgpudeviceapiCopyConstruct(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHostVgpuDeviceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+#define kernelhostvgpudeviceapiCopyConstruct(pKernelHostVgpuDeviceApi, pCallContext, pParams) kernelhostvgpudeviceapiCopyConstruct_IMPL(pKernelHostVgpuDeviceApi, pCallContext, pParams)
+#endif // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+
+void kernelhostvgpudeviceapiDestruct_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi);
+#define __nvoc_kernelhostvgpudeviceapiDestruct(pKernelHostVgpuDeviceApi) kernelhostvgpudeviceapiDestruct_IMPL(pKernelHostVgpuDeviceApi)
+
+NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_VGPU_DEVICE_INFO_PARAMS *pParams);
+#ifdef __nvoc_kernel_hostvgpudeviceapi_h_disabled
+static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_VGPU_DEVICE_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHostVgpuDeviceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+#define kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo_IMPL(pKernelHostVgpuDeviceApi, pParams)
+#endif // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+
+NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_VGPU_GUEST_LIFE_CYCLE_STATE_PARAMS *pParams);
+#ifdef __nvoc_kernel_hostvgpudeviceapi_h_disabled
+static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_VGPU_GUEST_LIFE_CYCLE_STATE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHostVgpuDeviceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+#define kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState_IMPL(pKernelHostVgpuDeviceApi, pParams)
+#endif // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+
+NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_OFFLINED_PAGE_PATCHINFO_PARAMS *pParams);
+#ifdef __nvoc_kernel_hostvgpudeviceapi_h_disabled
+static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_OFFLINED_PAGE_PATCHINFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHostVgpuDeviceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+#define kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo_IMPL(pKernelHostVgpuDeviceApi, pParams)
+#endif // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+
+NV_STATUS kernelhostvgpudeviceapiCtrlCmdVfConfigSpaceAccess_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_VF_CONFIG_SPACE_ACCESS_PARAMS *pParams);
+#ifdef __nvoc_kernel_hostvgpudeviceapi_h_disabled
+static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdVfConfigSpaceAccess(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_VF_CONFIG_SPACE_ACCESS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHostVgpuDeviceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+#define kernelhostvgpudeviceapiCtrlCmdVfConfigSpaceAccess(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdVfConfigSpaceAccess_IMPL(pKernelHostVgpuDeviceApi, pParams)
+#endif // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+
+NV_STATUS kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BIND_FECS_EVTBUF_PARAMS *pParams);
+#ifdef __nvoc_kernel_hostvgpudeviceapi_h_disabled
+static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BIND_FECS_EVTBUF_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHostVgpuDeviceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+#define kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf_IMPL(pKernelHostVgpuDeviceApi, pParams)
+#endif // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+
+NV_STATUS kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_TRIGGER_PRIV_DOORBELL_PARAMS *pParams);
+#ifdef __nvoc_kernel_hostvgpudeviceapi_h_disabled
+static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_TRIGGER_PRIV_DOORBELL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHostVgpuDeviceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+#define kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell_IMPL(pKernelHostVgpuDeviceApi, pParams)
+#endif // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+
+NV_STATUS kernelhostvgpudeviceapiCtrlCmdEventSetNotification_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams);
+#ifdef __nvoc_kernel_hostvgpudeviceapi_h_disabled
+static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdEventSetNotification(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHostVgpuDeviceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+#define kernelhostvgpudeviceapiCtrlCmdEventSetNotification(pKernelHostVgpuDeviceApi, pSetEventParams) kernelhostvgpudeviceapiCtrlCmdEventSetNotification_IMPL(pKernelHostVgpuDeviceApi, pSetEventParams)
+#endif // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+
+NV_STATUS kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_GET_BAR_MAPPING_RANGES_PARAMS *pParams);
+#ifdef __nvoc_kernel_hostvgpudeviceapi_h_disabled
+static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_GET_BAR_MAPPING_RANGES_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHostVgpuDeviceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+#define kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_IMPL(pKernelHostVgpuDeviceApi, pParams)
+#endif // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+
+NV_STATUS kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi);
+#ifdef __nvoc_kernel_hostvgpudeviceapi_h_disabled
+static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHostVgpuDeviceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+#define kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition(pKernelHostVgpuDeviceApi) kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition_IMPL(pKernelHostVgpuDeviceApi)
+#endif // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+
+NV_STATUS kernelhostvgpudeviceapiCtrlCmdFreeStates_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_FREE_STATES_PARAMS *pParams);
+#ifdef __nvoc_kernel_hostvgpudeviceapi_h_disabled
+static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdFreeStates(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_FREE_STATES_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHostVgpuDeviceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+#define kernelhostvgpudeviceapiCtrlCmdFreeStates(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdFreeStates_IMPL(pKernelHostVgpuDeviceApi, pParams)
+#endif // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+
+NV_STATUS kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS *pParams);
+#ifdef __nvoc_kernel_hostvgpudeviceapi_h_disabled
+static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHostVgpuDeviceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+#define kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_IMPL(pKernelHostVgpuDeviceApi, pParams)
+#endif // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+
+NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetPlacementId_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_SET_PLACEMENT_ID_PARAMS *pParams);
+#ifdef __nvoc_kernel_hostvgpudeviceapi_h_disabled
+static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetPlacementId(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_SET_PLACEMENT_ID_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHostVgpuDeviceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+#define kernelhostvgpudeviceapiCtrlCmdSetPlacementId(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdSetPlacementId_IMPL(pKernelHostVgpuDeviceApi, pParams)
+#endif // __nvoc_kernel_hostvgpudeviceapi_h_disabled
+
+
+// Wrapper macros for halified functions
 #define kernelhostvgpudeviceapiCanCopy_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__nvoc_metadata_ptr->vtable.__kernelhostvgpudeviceapiCanCopy__
 #define kernelhostvgpudeviceapiCanCopy(pKernelHostVgpuDeviceApi) kernelhostvgpudeviceapiCanCopy_DISPATCH(pKernelHostVgpuDeviceApi)
-#define kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo__
-#define kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
-#define kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState__
-#define kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
-#define kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo__
-#define kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
-#define kernelhostvgpudeviceapiCtrlCmdVfConfigSpaceAccess_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdVfConfigSpaceAccess__
-#define kernelhostvgpudeviceapiCtrlCmdVfConfigSpaceAccess(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdVfConfigSpaceAccess_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
-#define kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf__
-#define kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
-#define kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell__
-#define kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
-#define kernelhostvgpudeviceapiCtrlCmdEventSetNotification_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdEventSetNotification__
-#define kernelhostvgpudeviceapiCtrlCmdEventSetNotification(pKernelHostVgpuDeviceApi, pSetEventParams) kernelhostvgpudeviceapiCtrlCmdEventSetNotification_DISPATCH(pKernelHostVgpuDeviceApi, pSetEventParams)
-#define kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges__
-#define kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
-#define kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition__
-#define kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition(pKernelHostVgpuDeviceApi) kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition_DISPATCH(pKernelHostVgpuDeviceApi)
-#define kernelhostvgpudeviceapiCtrlCmdFreeStates_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdFreeStates__
-#define kernelhostvgpudeviceapiCtrlCmdFreeStates(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdFreeStates_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
-#define kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask__
-#define kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
-#define kernelhostvgpudeviceapiCtrlCmdSetPlacementId_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdSetPlacementId__
-#define kernelhostvgpudeviceapiCtrlCmdSetPlacementId(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdSetPlacementId_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
 #define kernelhostvgpudeviceapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define kernelhostvgpudeviceapiControl(pGpuResource, pCallContext, pParams) kernelhostvgpudeviceapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define kernelhostvgpudeviceapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
@@ -359,54 +461,6 @@ NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi**, Dy
 // Dispatch functions
 static inline NvBool kernelhostvgpudeviceapiCanCopy_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi) {
     return pKernelHostVgpuDeviceApi->__nvoc_metadata_ptr->vtable.__kernelhostvgpudeviceapiCanCopy__(pKernelHostVgpuDeviceApi);
-}
-
-static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_VGPU_DEVICE_INFO_PARAMS *pParams) {
-    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo__(pKernelHostVgpuDeviceApi, pParams);
-}
-
-static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_VGPU_GUEST_LIFE_CYCLE_STATE_PARAMS *pParams) {
-    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState__(pKernelHostVgpuDeviceApi, pParams);
-}
-
-static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_OFFLINED_PAGE_PATCHINFO_PARAMS *pParams) {
-    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo__(pKernelHostVgpuDeviceApi, pParams);
-}
-
-static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdVfConfigSpaceAccess_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_VF_CONFIG_SPACE_ACCESS_PARAMS *pParams) {
-    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdVfConfigSpaceAccess__(pKernelHostVgpuDeviceApi, pParams);
-}
-
-static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BIND_FECS_EVTBUF_PARAMS *pParams) {
-    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf__(pKernelHostVgpuDeviceApi, pParams);
-}
-
-static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_TRIGGER_PRIV_DOORBELL_PARAMS *pParams) {
-    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell__(pKernelHostVgpuDeviceApi, pParams);
-}
-
-static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdEventSetNotification_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams) {
-    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdEventSetNotification__(pKernelHostVgpuDeviceApi, pSetEventParams);
-}
-
-static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_GET_BAR_MAPPING_RANGES_PARAMS *pParams) {
-    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges__(pKernelHostVgpuDeviceApi, pParams);
-}
-
-static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi) {
-    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition__(pKernelHostVgpuDeviceApi);
-}
-
-static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdFreeStates_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_FREE_STATES_PARAMS *pParams) {
-    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdFreeStates__(pKernelHostVgpuDeviceApi, pParams);
-}
-
-static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS *pParams) {
-    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask__(pKernelHostVgpuDeviceApi, pParams);
-}
-
-static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetPlacementId_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_SET_PLACEMENT_ID_PARAMS *pParams) {
-    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdSetPlacementId__(pKernelHostVgpuDeviceApi, pParams);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiControl_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -551,23 +605,6 @@ NV_STATUS kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_IMPL(struct KernelHostV
 
 NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetPlacementId_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_SET_PLACEMENT_ID_PARAMS *pParams);
 
-NV_STATUS kernelhostvgpudeviceapiConstruct_IMPL(struct KernelHostVgpuDeviceApi *arg_pKernelHostVgpuDeviceApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_kernelhostvgpudeviceapiConstruct(arg_pKernelHostVgpuDeviceApi, arg_pCallContext, arg_pParams) kernelhostvgpudeviceapiConstruct_IMPL(arg_pKernelHostVgpuDeviceApi, arg_pCallContext, arg_pParams)
-NV_STATUS kernelhostvgpudeviceapiCopyConstruct_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
-
-#ifdef __nvoc_kernel_hostvgpudeviceapi_h_disabled
-static inline NV_STATUS kernelhostvgpudeviceapiCopyConstruct(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("KernelHostVgpuDeviceApi was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_hostvgpudeviceapi_h_disabled
-#define kernelhostvgpudeviceapiCopyConstruct(pKernelHostVgpuDeviceApi, pCallContext, pParams) kernelhostvgpudeviceapiCopyConstruct_IMPL(pKernelHostVgpuDeviceApi, pCallContext, pParams)
-#endif //__nvoc_kernel_hostvgpudeviceapi_h_disabled
-
-void kernelhostvgpudeviceapiDestruct_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi);
-
-#define __nvoc_kernelhostvgpudeviceapiDestruct(pKernelHostVgpuDeviceApi) kernelhostvgpudeviceapiDestruct_IMPL(pKernelHostVgpuDeviceApi)
 #undef PRIVATE_FIELD
 
 

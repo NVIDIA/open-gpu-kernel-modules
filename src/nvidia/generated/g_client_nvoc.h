@@ -131,15 +131,17 @@ NV_STATUS __nvoc_objCreate_UserInfo(UserInfo**, Dynamic*, NvU32);
     __nvoc_objCreate_UserInfo((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS userinfoConstruct_IMPL(struct UserInfo *arg_pUserInfo);
+#define __nvoc_userinfoConstruct(arg_pUserInfo) userinfoConstruct_IMPL(arg_pUserInfo)
+
+void userinfoDestruct_IMPL(struct UserInfo *pUserInfo);
+#define __nvoc_userinfoDestruct(pUserInfo) userinfoDestruct_IMPL(pUserInfo)
+
+
+// Wrapper macros for halified functions
 
 // Dispatch functions
-NV_STATUS userinfoConstruct_IMPL(struct UserInfo *arg_pUserInfo);
-
-#define __nvoc_userinfoConstruct(arg_pUserInfo) userinfoConstruct_IMPL(arg_pUserInfo)
-void userinfoDestruct_IMPL(struct UserInfo *pUserInfo);
-
-#define __nvoc_userinfoDestruct(pUserInfo) userinfoDestruct_IMPL(pUserInfo)
 #undef PRIVATE_FIELD
 
 
@@ -259,7 +261,54 @@ NV_STATUS __nvoc_objCreate_RmClient(RmClient**, Dynamic*, NvU32, struct PORT_MEM
     __nvoc_objCreate_RmClient((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pAllocator, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS rmclientConstruct_IMPL(struct RmClient *arg_pClient, struct PORT_MEM_ALLOCATOR *arg_pAllocator, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_rmclientConstruct(arg_pClient, arg_pAllocator, arg_pParams) rmclientConstruct_IMPL(arg_pClient, arg_pAllocator, arg_pParams)
+
+void rmclientDestruct_IMPL(struct RmClient *pClient);
+#define __nvoc_rmclientDestruct(pClient) rmclientDestruct_IMPL(pClient)
+
+void rmclientSetClientFlags_IMPL(struct RmClient *pClient, NvU32 clientFlags);
+#ifdef __nvoc_client_h_disabled
+static inline void rmclientSetClientFlags(struct RmClient *pClient, NvU32 clientFlags) {
+    NV_ASSERT_FAILED_PRECOMP("RmClient was disabled!");
+}
+#else // __nvoc_client_h_disabled
+#define rmclientSetClientFlags(pClient, clientFlags) rmclientSetClientFlags_IMPL(pClient, clientFlags)
+#endif // __nvoc_client_h_disabled
+
+void * rmclientGetSecurityToken_IMPL(struct RmClient *pClient);
+#ifdef __nvoc_client_h_disabled
+static inline void * rmclientGetSecurityToken(struct RmClient *pClient) {
+    NV_ASSERT_FAILED_PRECOMP("RmClient was disabled!");
+    return NULL;
+}
+#else // __nvoc_client_h_disabled
+#define rmclientGetSecurityToken(pClient) rmclientGetSecurityToken_IMPL(pClient)
+#endif // __nvoc_client_h_disabled
+
+NvBool rmclientIsCapableOrAdmin_IMPL(struct RmClient *pClient, NvU32 capability, RS_PRIV_LEVEL privLevel);
+#ifdef __nvoc_client_h_disabled
+static inline NvBool rmclientIsCapableOrAdmin(struct RmClient *pClient, NvU32 capability, RS_PRIV_LEVEL privLevel) {
+    NV_ASSERT_FAILED_PRECOMP("RmClient was disabled!");
+    return NV_FALSE;
+}
+#else // __nvoc_client_h_disabled
+#define rmclientIsCapableOrAdmin(pClient, capability, privLevel) rmclientIsCapableOrAdmin_IMPL(pClient, capability, privLevel)
+#endif // __nvoc_client_h_disabled
+
+NvBool rmclientIsCapable_IMPL(struct RmClient *pClient, NvU32 capability);
+#ifdef __nvoc_client_h_disabled
+static inline NvBool rmclientIsCapable(struct RmClient *pClient, NvU32 capability) {
+    NV_ASSERT_FAILED_PRECOMP("RmClient was disabled!");
+    return NV_FALSE;
+}
+#else // __nvoc_client_h_disabled
+#define rmclientIsCapable(pClient, capability) rmclientIsCapable_IMPL(pClient, capability)
+#endif // __nvoc_client_h_disabled
+
+
+// Wrapper macros for halified functions
 #define rmclientValidate_FNPTR(pClient) pClient->__nvoc_metadata_ptr->vtable.__rmclientValidate__
 #define rmclientValidate(pClient, pSecInfo) rmclientValidate_DISPATCH(pClient, pSecInfo)
 #define rmclientValidateLocks_FNPTR(pClient) pClient->__nvoc_metadata_ptr->vtable.__rmclientValidateLocks__
@@ -349,55 +398,6 @@ NV_STATUS rmclientPostProcessPendingFreeList_IMPL(struct RmClient *pClient, stru
 RS_PRIV_LEVEL rmclientGetCachedPrivilege_IMPL(struct RmClient *pClient);
 
 NvBool rmclientIsAdmin_IMPL(struct RmClient *pClient, RS_PRIV_LEVEL privLevel);
-
-NV_STATUS rmclientConstruct_IMPL(struct RmClient *arg_pClient, struct PORT_MEM_ALLOCATOR *arg_pAllocator, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_rmclientConstruct(arg_pClient, arg_pAllocator, arg_pParams) rmclientConstruct_IMPL(arg_pClient, arg_pAllocator, arg_pParams)
-void rmclientDestruct_IMPL(struct RmClient *pClient);
-
-#define __nvoc_rmclientDestruct(pClient) rmclientDestruct_IMPL(pClient)
-void rmclientSetClientFlags_IMPL(struct RmClient *pClient, NvU32 clientFlags);
-
-#ifdef __nvoc_client_h_disabled
-static inline void rmclientSetClientFlags(struct RmClient *pClient, NvU32 clientFlags) {
-    NV_ASSERT_FAILED_PRECOMP("RmClient was disabled!");
-}
-#else //__nvoc_client_h_disabled
-#define rmclientSetClientFlags(pClient, clientFlags) rmclientSetClientFlags_IMPL(pClient, clientFlags)
-#endif //__nvoc_client_h_disabled
-
-void *rmclientGetSecurityToken_IMPL(struct RmClient *pClient);
-
-#ifdef __nvoc_client_h_disabled
-static inline void *rmclientGetSecurityToken(struct RmClient *pClient) {
-    NV_ASSERT_FAILED_PRECOMP("RmClient was disabled!");
-    return NULL;
-}
-#else //__nvoc_client_h_disabled
-#define rmclientGetSecurityToken(pClient) rmclientGetSecurityToken_IMPL(pClient)
-#endif //__nvoc_client_h_disabled
-
-NvBool rmclientIsCapableOrAdmin_IMPL(struct RmClient *pClient, NvU32 capability, RS_PRIV_LEVEL privLevel);
-
-#ifdef __nvoc_client_h_disabled
-static inline NvBool rmclientIsCapableOrAdmin(struct RmClient *pClient, NvU32 capability, RS_PRIV_LEVEL privLevel) {
-    NV_ASSERT_FAILED_PRECOMP("RmClient was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_client_h_disabled
-#define rmclientIsCapableOrAdmin(pClient, capability, privLevel) rmclientIsCapableOrAdmin_IMPL(pClient, capability, privLevel)
-#endif //__nvoc_client_h_disabled
-
-NvBool rmclientIsCapable_IMPL(struct RmClient *pClient, NvU32 capability);
-
-#ifdef __nvoc_client_h_disabled
-static inline NvBool rmclientIsCapable(struct RmClient *pClient, NvU32 capability) {
-    NV_ASSERT_FAILED_PRECOMP("RmClient was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_client_h_disabled
-#define rmclientIsCapable(pClient, capability) rmclientIsCapable_IMPL(pClient, capability)
-#endif //__nvoc_client_h_disabled
 
 #undef PRIVATE_FIELD
 

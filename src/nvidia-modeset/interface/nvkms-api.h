@@ -2720,6 +2720,7 @@ enum NvKmsDpyAttribute {
     NV_KMS_DPY_ATTRIBUTE_DIGITAL_LINK_TYPE,
     NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_LINK_RATE,
     NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_LINK_RATE_10MHZ,
+    NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_FORCE_ENABLE_FEC,
     NV_KMS_DPY_ATTRIBUTE_FRAMELOCK_DISPLAY_CONFIG,
     /*
      * XXX NVKMS TODO: Delete UPDATE_GLS_FRAMELOCK; this event-only
@@ -4395,6 +4396,7 @@ struct NvKmsAccelVblankSemControlsParams {
  * It should be invoked after flip if needed. If device does not supports
  * VRR semaphores, then this is a no-op action for compatibility.
  */
+
 struct NvKmsVrrSignalSemaphoreRequest {
     NvKmsDeviceHandle deviceHandle;
     NvS32 vrrSemaphoreIndex;

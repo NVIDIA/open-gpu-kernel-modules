@@ -45,6 +45,7 @@
 
 #include "nv_smg.h"
 
+#include "class/cl00c3.h" /* NV01_MEMORY_SYNCPOINT */
 #include "class/cl0005.h" /* NV01_EVENT */
 
 #include <class/cl0070.h> // NV01_MEMORY_VIRTUAL
@@ -61,10 +62,14 @@
 #include "class/clc57e.h" /* NVC57E_WINDOW_CHANNEL_DMA */
 #include "class/clc67b.h" /* NVC67B_WINDOW_IMM_CHANNEL_DMA */
 #include "class/clc67e.h" /* NVC67E_WINDOW_CHANNEL_DMA */
+#include "class/clc97b.h" /* NVC97B_WINDOW_IMM_CHANNEL_DMA */
+#include "class/clc97e.h" /* NVC97E_WINDOW_CHANNEL_DMA */
 #include "class/clca7b.h" /* NVCA7B_WINDOW_IMM_CHANNEL_DMA */
 #include "class/clca7e.h" /* NVCA7E_WINDOW_CHANNEL_DMA */
 #include "class/clcb7b.h" /* NVCB7B_WINDOW_IMM_CHANNEL_DMA */
 #include "class/clcb7e.h" /* NVCB7E_WINDOW_CHANNEL_DMA */
+#include "class/clcc7b.h" /* NVCC7B_WINDOW_IMM_CHANNEL_DMA */
+#include "class/clcc7e.h" /* NVCC7E_WINDOW_CHANNEL_DMA */
 
 #include "class/cl917b.h" /* NV917B_OVERLAY_IMM_CHANNEL_PIO */
 
@@ -269,7 +274,8 @@ static NvBool QueryGpuCapabilities(NVDevEvoPtr pDevEvo)
     }
 
     pDevEvo->supportsSyncpts =
-        FALSE;
+        nvkms_kernel_supports_syncpts() &&
+        nvRmEvoClassListCheck(pDevEvo, NV01_MEMORY_SYNCPOINT);
 
     return TRUE;
 }
@@ -2533,7 +2539,8 @@ NvBool nvRmAllocEvoDma(NVDevEvoPtr pDevEvo, NVEvoDmaPtr pDma,
 
     // Create surface descriptor for this allocation.
     ret = pDevEvo->hal->AllocSurfaceDescriptor(pDevEvo, &surfaceDesc, memoryHandle,
-                                               localCtxDmaFlags, limit);
+                                               localCtxDmaFlags, limit,
+                                               FALSE /* mapToDisplayRm */);
 
     if (ret != NVOS_STATUS_SUCCESS) {
         if (pBase != NULL) {
@@ -3212,10 +3219,14 @@ NvBool nvRMAllocateWindowChannels(NVDevEvoPtr pDevEvo)
         NvU32 windowClass;
         NvU32 immClass;
     } windowChannelClasses[] = {
+        { NVCC7E_WINDOW_CHANNEL_DMA,
+          NVCC7B_WINDOW_IMM_CHANNEL_DMA },
         { NVCB7E_WINDOW_CHANNEL_DMA,
           NVCB7B_WINDOW_IMM_CHANNEL_DMA },
         { NVCA7E_WINDOW_CHANNEL_DMA,
           NVCA7B_WINDOW_IMM_CHANNEL_DMA },
+        { NVC97E_WINDOW_CHANNEL_DMA,
+          NVC97B_WINDOW_IMM_CHANNEL_DMA },
         { NVC67E_WINDOW_CHANNEL_DMA,
           NVC67B_WINDOW_IMM_CHANNEL_DMA },
         { NVC57E_WINDOW_CHANNEL_DMA,
@@ -3649,6 +3660,67 @@ NvBool nvRmEvoAllocAndBindSyncpt(
     NVSurfaceDescriptor *pSurfaceDesc,
     NVEvoSyncpt *pEvoSyncpt)
 {
+    NvU32 ret = FALSE;
+
+    NvU32 hSyncpt;
+    NV_MEMORY_SYNCPOINT_ALLOCATION_PARAMS syncptAllocParams = {0};
+
+    /*! Alloc SYNC Object */
+    syncptAllocParams.syncpointId = id;
+
+    hSyncpt = nvGenerateUnixRmHandle(&pDevEvo->handleAllocator);
+    if (hSyncpt == 0) {
+        goto skipEverythingAndFail;
+    }
+
+    ret = nvRmApiAlloc(nvEvoGlobal.clientHandle,
+                       pDevEvo->deviceHandle,
+                       hSyncpt,
+                       NV01_MEMORY_SYNCPOINT,
+                       &syncptAllocParams);
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvAssert(!"Failed to allocate syncpt object");
+        goto cleanHandleAndFail;
+    }
+
+    /*! Alloc surface descriptor for syncpt object */
+    ret = pDevEvo->hal->AllocSurfaceDescriptor(
+                pDevEvo, pSurfaceDesc, hSyncpt,
+                (DRF_DEF(OS03, _FLAGS, _HASH_TABLE, _DISABLE)),
+                65535 /* 64K-1 */,
+                FALSE /* mapToDisplayRm */);
+
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvAssert(!"Failed to allocate surface descriptor");
+        goto cleanSyncptHandleAndFail;
+    }
+
+    /*! Bind surface descriptor to syncpt Object */
+    ret = pDevEvo->hal->BindSurfaceDescriptor(pDevEvo, pChannel, pSurfaceDesc);
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvAssert(!"Failed to bind surface descriptor");
+        goto cleanEverythingAndFail;
+    }
+
+    pEvoSyncpt->id = id;
+    pEvoSyncpt->surfaceDesc = *pSurfaceDesc;
+    pEvoSyncpt->hSyncpt = hSyncpt;
+    pEvoSyncpt->allocated = TRUE;
+
+    return TRUE;
+
+cleanEverythingAndFail:
+    pDevEvo->hal->FreeSurfaceDescriptor(pDevEvo,
+                                        pDevEvo->deviceHandle,
+                                        pSurfaceDesc);
+
+cleanSyncptHandleAndFail:
+    nvRmApiFree(nvEvoGlobal.clientHandle, pDevEvo->deviceHandle, hSyncpt);
+
+cleanHandleAndFail:
+    nvFreeUnixRmHandle(&pDevEvo->handleAllocator, hSyncpt);
+
+skipEverythingAndFail:
     return FALSE;
 }
 
@@ -5688,7 +5760,8 @@ NvU32 nvRmAllocAndBindSurfaceDescriptor(
     NvU32 hMemory,
     const enum NvKmsSurfaceMemoryLayout layout,
     NvU64 limit,
-    NVSurfaceDescriptor *pSurfaceDesc)
+    NVSurfaceDescriptor *pSurfaceDesc,
+    NvBool mapToDisplayRm)
 {
     NVSurfaceDescriptor surfaceDesc;
     NvU32 flags = DRF_DEF(OS03, _FLAGS, _HASH_TABLE, _DISABLE);
@@ -5713,7 +5786,8 @@ NvU32 nvRmAllocAndBindSurfaceDescriptor(
 
     ret =
         pDevEvo->hal->AllocSurfaceDescriptor(pDevEvo, &surfaceDesc,
-                                             hMemory, flags, limit);
+                                             hMemory, flags, limit,
+                                             mapToDisplayRm);
 
     if (ret != NVOS_STATUS_SUCCESS) {
         return ret;

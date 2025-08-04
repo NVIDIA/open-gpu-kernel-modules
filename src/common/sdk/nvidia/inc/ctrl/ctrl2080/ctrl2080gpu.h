@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -112,8 +112,15 @@ typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_GPU_INFO;
 
 
 #define NV2080_CTRL_GPU_INFO_INDEX_IS_LOCALIZATION_SUPPORTED           (0x00000041U)
+#define NV2080_CTRL_GPU_INFO_INDEX_GPU_NON_PASID_ATS_CAPABILITY        (0x00000042U)
 
-#define NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE                             (0x00000042U)
+
+#define NV2080_CTRL_GPU_INFO_INDEX_COHERENT_GPU_MEMORY_MODE            (0x00000044U)
+
+#define NV2080_CTRL_GPU_INFO_INDEX_COMPR_BIT_BACKING_COPY_TYPE         (0x00000045U)
+
+#define NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE                             (0x00000046U)
+
 #define NV2080_CTRL_GPU_INFO_INDEX_GROUP_ID                30:24
 #define NV2080_CTRL_GPU_INFO_INDEX_RESERVED                31:31
 
@@ -227,6 +234,21 @@ typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_GPU_INFO;
 /* valid localization supported values */
 #define NV2080_CTRL_GPU_INFO_INDEX_IS_LOCALIZATION_SUPPORTED_NO        (0x00000000U)
 #define NV2080_CTRL_GPU_INFO_INDEX_IS_LOCALIZATION_SUPPORTED_YES       (0x00000001U)
+
+/* valid Non-PASID ATS capability values */
+#define NV2080_CTRL_GPU_INFO_INDEX_GPU_NON_PASID_ATS_CAPABILITY_NO     (0x00000000U)
+#define NV2080_CTRL_GPU_INFO_INDEX_GPU_NON_PASID_ATS_CAPABILITY_YES    (0x00000001U)
+
+
+
+/* valid coherent GPU memory mode capability values */
+#define NV2080_CTRL_GPU_INFO_INDEX_COHERENT_GPU_MEMORY_MODE_NONE       (0x00000000U)
+#define NV2080_CTRL_GPU_INFO_INDEX_COHERENT_GPU_MEMORY_MODE_NUMA       (0x00000001U)
+#define NV2080_CTRL_GPU_INFO_INDEX_COHERENT_GPU_MEMORY_MODE_DRIVER     (0x00000002U)
+
+/* valid compression bit backing copy type values */
+#define NV2080_CTRL_GPU_INFO_INDEX_COMP_BIT_BACKING_COPY_TYPE_PHYSICAL (0x00000000U)
+#define NV2080_CTRL_GPU_INFO_INDEX_COMP_BIT_BACKING_COPY_TYPE_VIRTUAL  (0x00000001U)
 
 /*
  * NV2080_CTRL_CMD_GPU_GET_INFO
@@ -1379,8 +1401,6 @@ typedef struct NV2080_CTRL_GPU_QUERY_ECC_CONFIGURATION_PARAMS {
 typedef struct NV2080_CTRL_GPU_SET_ECC_CONFIGURATION_PARAMS {
     NvU32 newConfiguration;
 } NV2080_CTRL_GPU_SET_ECC_CONFIGURATION_PARAMS;
-
-
 
 /*
  * NV2080_CTRL_CMD_GPU_RESET_ECC_ERROR_STATUS
@@ -2608,7 +2628,7 @@ typedef struct NV2080_CTRL_GPU_SET_PARTITION_INFO {
 #define NV2080_CTRL_GPU_MAX_PARTITIONS                                   0x00000008U
 #define NV2080_CTRL_GPU_MAX_PARTITION_IDS                                0x00000009U
 #define NV2080_CTRL_GPU_MAX_SMC_IDS                                      0x00000008U
-#define NV2080_CTRL_GPU_MAX_GPC_PER_SMC                                  0x0000000cU
+#define NV2080_CTRL_GPU_MAX_GPC_PER_SMC                                  0x00000010U
 #define NV2080_CTRL_GPU_MAX_CE_PER_SMC                                   0x00000008U
 
 #define NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE              1:0
@@ -3146,8 +3166,6 @@ typedef struct NV2080_CTRL_GPU_GET_VMMU_SEGMENT_SIZE_PARAMS {
 #define NV2080_CTRL_GPU_VMMU_SEGMENT_SIZE_256MB    0x10000000U
 #define NV2080_CTRL_GPU_VMMU_SEGMENT_SIZE_512MB    0x20000000U
 #define NV2080_CTRL_GPU_VMMU_SEGMENT_SIZE_1024MB   0x40000000U
-
-
 
 /*
  * NV2080_CTRL_GPU_GET_PARTITION_CAPACITY
@@ -3860,23 +3878,6 @@ typedef struct NV2080_CTRL_GPU_VALIDATE_MEM_MAP_REQUEST_PARAMS {
 } NV2080_CTRL_GPU_VALIDATE_MEM_MAP_REQUEST_PARAMS;
 
 /*
- * NV2080_CTRL_CMD_GPU_SET_EGM_GPA_FABRIC_BASE_ADDR
- *
- * @brief This command is similar to NV2080_CTRL_CMD_GPU_SET_FABRIC_BASE_ADDR
- * but will be used to set the EGM fabric base addr associated with the gpu.
- * Note: For EGM FLA, we will be making use of the existing control call i.e
- * NV2080_CTRL_CMD_FLA_RANGE
- *
- */
-#define NV2080_CTRL_CMD_GPU_SET_EGM_GPA_FABRIC_BASE_ADDR (0x20800199U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_SET_EGM_GPA_FABRIC_BASE_ADDR_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_GPU_SET_EGM_GPA_FABRIC_BASE_ADDR_PARAMS_MESSAGE_ID (0x99U)
-
-typedef struct NV2080_CTRL_GPU_SET_EGM_GPA_FABRIC_BASE_ADDR_PARAMS {
-    NV_DECLARE_ALIGNED(NvU64 egmGpaFabricBaseAddr, 8);
-} NV2080_CTRL_GPU_SET_EGM_GPA_FABRIC_BASE_ADDR_PARAMS;
-
-/*
  * NV2080_CTRL_CMD_GPU_GET_ENGINE_LOAD_TIMES
  *
  * This command is used to retrieve the load time (latency) of each engine.
@@ -3968,8 +3969,50 @@ typedef struct NV2080_CTRL_GPU_EXEC_REG_OPS_NOPTRS_PARAMS {
     NV_DECLARE_ALIGNED(NV2080_CTRL_GR_ROUTE_INFO grRouteInfo, 8);
 } NV2080_CTRL_GPU_EXEC_REG_OPS_NOPTRS_PARAMS;
 
+#define NV2080_CTRL_GPU_SKYLINE_INFO_MAX_SKYLINES            9U
+#define NV2080_CTRL_GPU_SKYLINE_INFO_MAX_NON_SINGLETON_VGPCS 12U
+/*!
+ * NV2080_CTRL_GPU_SKYLINE_INFO
+ * skylineVgpcSize[OUT]
+ *      - TPC count of non-singleton VGPCs
+ * singletonVgpcMask[OUT]
+ *      - Mask of active Singletons
+ * maxInstances[OUT]
+ *      - Max allowed instances of this skyline concurrently on a GPU
+ * computeSizeFlag
+ *      - One of NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_* flags which is associated with this skyline
+ */
+typedef struct NV2080_CTRL_GPU_SKYLINE_INFO {
+    NvU8  skylineVgpcSize[NV2080_CTRL_GPU_SKYLINE_INFO_MAX_NON_SINGLETON_VGPCS];
+    NvU32 singletonVgpcMask;
+    NvU32 maxInstances;
+    NvU32 computeSizeFlag;
+} NV2080_CTRL_GPU_SKYLINE_INFO;
 
+/*!
+ * NV2080_CTRL_GPU_GET_SKYLINE_INFO_PARAMS
+ * skylineTable[OUT]
+ *      - TPC count of non-singleton VGPCs
+ *      - Mask of singleton vGPC IDs active
+ *      - Max Instances of this skyline possible concurrently
+ *      - Associated compute size with the indexed skyline
+ * validEntries[OUT]
+ *      - Number of entries which contain valid info in skylineInfo
+ */
+#define NV2080_CTRL_GPU_GET_SKYLINE_INFO_PARAMS_MESSAGE_ID (0x9FU)
 
+typedef struct NV2080_CTRL_GPU_GET_SKYLINE_INFO_PARAMS {
+    NV2080_CTRL_GPU_SKYLINE_INFO skylineTable[NV2080_CTRL_GPU_SKYLINE_INFO_MAX_SKYLINES];
+    NvU32                        validEntries;
+} NV2080_CTRL_GPU_GET_SKYLINE_INFO_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_GPU_GET_SKYLINE_INFO
+ *
+ * Retrieves skyline information about the GPU. Params are sized to currently known max
+ * values, but will need to be modified in the future should that change.
+ */
+#define NV2080_CTRL_CMD_GPU_GET_SKYLINE_INFO (0x2080019fU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_SKYLINE_INFO_PARAMS_MESSAGE_ID" */
 
 /*!
  * NV2080_CTRL_GPU_P2P_PEER_CAPS_PEER_INFO
@@ -4146,6 +4189,19 @@ typedef struct NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS {
 #define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_ACCESS_TIMEOUT_RECOVERY_TRUE          1
 #define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_ACCESS_TIMEOUT_RECOVERY_FALSE         2
 
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_INCORRECT_CONFIGURATION                      11:8
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_INCORRECT_CONFIGURATION_NOT_SUPPORTED        0
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_INCORRECT_CONFIGURATION_NONE                 1
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_INCORRECT_CONFIGURATION_INCORRECT_SYSGUID    2
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_INCORRECT_CONFIGURATION_INCORRECT_CHASSIS_SN 3
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_INCORRECT_CONFIGURATION_NO_PARTITION         4
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_INCORRECT_CONFIGURATION_INSUFFICIENT_NVLINKS 5
+
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_SUMMARY_NOT_SUPPORTED 0
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_SUMMARY_HEALTHY 1
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_SUMMARY_UNHEALTHY 2
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_SUMMARY_LIMITED_CAPACITY 3
+
 /*!
  * NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS
  *
@@ -4177,6 +4233,8 @@ typedef struct NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS {
  *      - Unique ID of a set of GPUs within a fabric partition that can perform P2P
  *  fabricHealthMask[OUT]
  *      - Mask where bits indicate different status about the health of the fabric
+ *  fabricHealthSummary[OUT]
+ *      - Summary of the Fabric Health
  */
 #define NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS_MESSAGE_ID (0xA3U)
 
@@ -4188,6 +4246,7 @@ typedef struct NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 fabricCaps, 8);
     NvU32     fabricCliqueId;
     NvU32     fabricHealthMask;
+    NvU8      fabricHealthSummary;
 } NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS;
 
 #define NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO (0x208001a3) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS_MESSAGE_ID" */

@@ -155,7 +155,15 @@ NV_STATUS __nvoc_objCreate_NoDeviceMemory(NoDeviceMemory**, Dynamic*, NvU32, CAL
     __nvoc_objCreate_NoDeviceMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS nodevicememConstruct_IMPL(struct NoDeviceMemory *arg_pNoDeviceMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_nodevicememConstruct(arg_pNoDeviceMemory, arg_pCallContext, arg_pParams) nodevicememConstruct_IMPL(arg_pNoDeviceMemory, arg_pCallContext, arg_pParams)
+
+void nodevicememDestruct_IMPL(struct NoDeviceMemory *pNoDeviceMemory);
+#define __nvoc_nodevicememDestruct(pNoDeviceMemory) nodevicememDestruct_IMPL(pNoDeviceMemory)
+
+
+// Wrapper macros for halified functions
 #define nodevicememGetMapAddrSpace_FNPTR(pNoDeviceMemory) pNoDeviceMemory->__nvoc_metadata_ptr->vtable.__nodevicememGetMapAddrSpace__
 #define nodevicememGetMapAddrSpace(pNoDeviceMemory, pCallContext, mapFlags, pAddrSpace) nodevicememGetMapAddrSpace_DISPATCH(pNoDeviceMemory, pCallContext, mapFlags, pAddrSpace)
 #define nodevicememIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsDuplicate__
@@ -316,12 +324,6 @@ static inline void nodevicememAddAdditionalDependants_DISPATCH(struct RsClient *
 
 NV_STATUS nodevicememGetMapAddrSpace_IMPL(struct NoDeviceMemory *pNoDeviceMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);
 
-NV_STATUS nodevicememConstruct_IMPL(struct NoDeviceMemory *arg_pNoDeviceMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_nodevicememConstruct(arg_pNoDeviceMemory, arg_pCallContext, arg_pParams) nodevicememConstruct_IMPL(arg_pNoDeviceMemory, arg_pCallContext, arg_pParams)
-void nodevicememDestruct_IMPL(struct NoDeviceMemory *pNoDeviceMemory);
-
-#define __nvoc_nodevicememDestruct(pNoDeviceMemory) nodevicememDestruct_IMPL(pNoDeviceMemory)
 #undef PRIVATE_FIELD
 
 

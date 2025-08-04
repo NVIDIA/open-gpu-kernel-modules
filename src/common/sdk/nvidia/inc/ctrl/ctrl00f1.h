@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -96,14 +96,17 @@ typedef struct NV00F1_CTRL_FABRIC_MEM_UNIMPORT_EVENT_DATA {
 } NV00F1_CTRL_FABRIC_MEM_UNIMPORT_EVENT_DATA;
 
 /*
- *  gpuFabricProbeHandle [IN]
+ *  gpuFabricProbeHandle
  *    Fabric probe handle of the remote GPU
  *
- *  key [IN]
+ *  key
  *    Key is used by the GFM in the MCFLA team response as an ID to allow the
  *    RM to correlate it with the MCFLA team request.
  *
- *  cliqueId [IN]
+ *  bwModeEpoch
+ *    Currently active bwModeEpoch of the remote GPU being attached.
+ *
+ *  cliqueId
  *    Clique ID of the remote GPU being attached.
  *
  *  index
@@ -112,6 +115,9 @@ typedef struct NV00F1_CTRL_FABRIC_MEM_UNIMPORT_EVENT_DATA {
  *  exportNodeId
  *    ID of the exporter node where memory will be imported.
  *
+ *  bwMode
+ *    Currently active bwMode of the remote GPU being attached
+ *
  *  exportUuid
  *    Universally unique identifier of the export object. This is extracted
  *    from a fabric packet.
@@ -119,9 +125,11 @@ typedef struct NV00F1_CTRL_FABRIC_MEM_UNIMPORT_EVENT_DATA {
 typedef struct NV00F1_CTRL_ATTACH_REMOTE_GPU_EVENT_DATA {
     NV_DECLARE_ALIGNED(NvU64 gpuFabricProbeHandle, 8);
     NV_DECLARE_ALIGNED(NvU64 key, 8);
+    NV_DECLARE_ALIGNED(NvU64 bwModeEpoch, 8);
     NvU32 cliqueId;
     NvU16 index;
     NvU16 exportNodeId;
+    NvU8  bwMode;
     NvU8  exportUuid[NV_MEM_EXPORT_UUID_LEN];
 } NV00F1_CTRL_ATTACH_REMOTE_GPU_EVENT_DATA;
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,7 @@
 *   The GH100 specific HAL TMR routines reside in this file.                *
 *                                                                           *
 \***************************************************************************/
-
+#define NVOC_OBJTMR_H_PRIVATE_ACCESS_ALLOWED
 /* ------------------------- Includes --------------------------------------- */
 #include "gpu/gpu.h"
 #include "gpu/timer/objtmr.h"
@@ -58,10 +58,10 @@ NV_STATUS tmrSetCurrentTime_GH100
     NvU32 seconds;
     NvU32 useconds;
 
-    osGetCurrentTime(&seconds, &useconds);
+    osGetSystemTime(&seconds, &useconds);
 
     NV_PRINTF(LEVEL_INFO,
-        "osGetCurrentTime returns 0x%x seconds, 0x%x useconds\n",
+        "osGetSystemTime returns 0x%x seconds, 0x%x useconds\n",
         seconds, useconds);
 
     osTimeNs = ((NvU64)seconds * 1000000 + useconds) * 1000;

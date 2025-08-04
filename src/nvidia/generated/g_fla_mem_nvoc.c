@@ -394,6 +394,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__FlaMemory =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_flamemDestruct(FlaMemory*);
 void __nvoc_dtor_Memory(Memory*);
 void __nvoc_dtor_FlaMemory(FlaMemory *pThis) {
     __nvoc_flamemDestruct(pThis);

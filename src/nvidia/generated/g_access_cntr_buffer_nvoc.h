@@ -92,18 +92,6 @@ struct AccessCounterBuffer {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct AccessCounterBuffer *__nvoc_pbase_AccessCounterBuffer;    // accesscntr
 
-    // Vtable with 10 per-object function pointers
-    NV_STATUS (*__accesscntrCtrlCmdAccessCntrBufferReadGet__)(struct AccessCounterBuffer * /*this*/, NVC365_CTRL_ACCESS_CNTR_BUFFER_READ_GET_PARAMS *);  // exported (id=0xc3650101)
-    NV_STATUS (*__accesscntrCtrlCmdAccessCntrBufferReadPut__)(struct AccessCounterBuffer * /*this*/, NVC365_CTRL_ACCESS_CNTR_BUFFER_READ_PUT_PARAMS *);  // exported (id=0xc3650103)
-    NV_STATUS (*__accesscntrCtrlCmdAccessCntrBufferWriteGet__)(struct AccessCounterBuffer * /*this*/, NVC365_CTRL_ACCESS_CNTR_BUFFER_WRITE_GET_PARAMS *);  // exported (id=0xc3650102)
-    NV_STATUS (*__accesscntrCtrlCmdAccessCntrBufferEnable__)(struct AccessCounterBuffer * /*this*/, NVC365_CTRL_ACCESS_CNTR_BUFFER_ENABLE_PARAMS *);  // exported (id=0xc3650104)
-    NV_STATUS (*__accesscntrCtrlCmdAccessCntrBufferGetSize__)(struct AccessCounterBuffer * /*this*/, NVC365_CTRL_ACCESS_CNTR_BUFFER_GET_SIZE_PARAMS *);  // exported (id=0xc3650105)
-    NV_STATUS (*__accesscntrCtrlCmdAccessCntrBufferGetRegisterMappings__)(struct AccessCounterBuffer * /*this*/, NVC365_CTRL_ACCESS_CNTR_BUFFER_GET_REGISTER_MAPPINGS_PARAMS *);  // exported (id=0xc3650106)
-    NV_STATUS (*__accesscntrCtrlCmdAccessCntrBufferGetFullInfo__)(struct AccessCounterBuffer * /*this*/, NVC365_CTRL_ACCESS_CNTR_BUFFER_GET_FULL_INFO_PARAMS *);  // exported (id=0xc3650107)
-    NV_STATUS (*__accesscntrCtrlCmdAccessCntrBufferResetCounters__)(struct AccessCounterBuffer * /*this*/, NVC365_CTRL_ACCESS_CNTR_BUFFER_RESET_COUNTERS_PARAMS *);  // exported (id=0xc3650108)
-    NV_STATUS (*__accesscntrCtrlCmdAccessCntrSetConfig__)(struct AccessCounterBuffer * /*this*/, NVC365_CTRL_ACCESS_CNTR_SET_CONFIG_PARAMS *);  // exported (id=0xc3650109)
-    NV_STATUS (*__accesscntrCtrlCmdAccessCntrBufferEnableIntr__)(struct AccessCounterBuffer * /*this*/, NVC365_CTRL_ACCESS_CNTR_BUFFER_ENABLE_INTR_PARAMS *);  // exported (id=0xc365010b)
-
     // Data members
     struct MEMORY_DESCRIPTOR *pUvmAccessCntrAllocMemDesc;
     NvU32 accessCounterIndex;
@@ -181,33 +169,121 @@ NV_STATUS __nvoc_objCreate_AccessCounterBuffer(AccessCounterBuffer**, Dynamic*, 
     __nvoc_objCreate_AccessCounterBuffer((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS accesscntrConstruct_IMPL(struct AccessCounterBuffer *arg_pAccessCounterBuffer, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_accesscntrConstruct(arg_pAccessCounterBuffer, arg_pCallContext, arg_pParams) accesscntrConstruct_IMPL(arg_pAccessCounterBuffer, arg_pCallContext, arg_pParams)
+
+void accesscntrDestruct_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer);
+#define __nvoc_accesscntrDestruct(pAccessCounterBuffer) accesscntrDestruct_IMPL(pAccessCounterBuffer)
+
+NV_STATUS accesscntrCtrlCmdAccessCntrBufferReadGet_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_READ_GET_PARAMS *pGetParams);
+#ifdef __nvoc_access_cntr_buffer_h_disabled
+static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferReadGet(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_READ_GET_PARAMS *pGetParams) {
+    NV_ASSERT_FAILED_PRECOMP("AccessCounterBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_access_cntr_buffer_h_disabled
+#define accesscntrCtrlCmdAccessCntrBufferReadGet(pAccessCounterBuffer, pGetParams) accesscntrCtrlCmdAccessCntrBufferReadGet_IMPL(pAccessCounterBuffer, pGetParams)
+#endif // __nvoc_access_cntr_buffer_h_disabled
+
+NV_STATUS accesscntrCtrlCmdAccessCntrBufferReadPut_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_READ_PUT_PARAMS *pParams);
+#ifdef __nvoc_access_cntr_buffer_h_disabled
+static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferReadPut(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_READ_PUT_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("AccessCounterBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_access_cntr_buffer_h_disabled
+#define accesscntrCtrlCmdAccessCntrBufferReadPut(pAccessCounterBuffer, pParams) accesscntrCtrlCmdAccessCntrBufferReadPut_IMPL(pAccessCounterBuffer, pParams)
+#endif // __nvoc_access_cntr_buffer_h_disabled
+
+NV_STATUS accesscntrCtrlCmdAccessCntrBufferWriteGet_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_WRITE_GET_PARAMS *pGetParams);
+#ifdef __nvoc_access_cntr_buffer_h_disabled
+static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferWriteGet(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_WRITE_GET_PARAMS *pGetParams) {
+    NV_ASSERT_FAILED_PRECOMP("AccessCounterBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_access_cntr_buffer_h_disabled
+#define accesscntrCtrlCmdAccessCntrBufferWriteGet(pAccessCounterBuffer, pGetParams) accesscntrCtrlCmdAccessCntrBufferWriteGet_IMPL(pAccessCounterBuffer, pGetParams)
+#endif // __nvoc_access_cntr_buffer_h_disabled
+
+NV_STATUS accesscntrCtrlCmdAccessCntrBufferEnable_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_ENABLE_PARAMS *pGetParams);
+#ifdef __nvoc_access_cntr_buffer_h_disabled
+static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferEnable(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_ENABLE_PARAMS *pGetParams) {
+    NV_ASSERT_FAILED_PRECOMP("AccessCounterBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_access_cntr_buffer_h_disabled
+#define accesscntrCtrlCmdAccessCntrBufferEnable(pAccessCounterBuffer, pGetParams) accesscntrCtrlCmdAccessCntrBufferEnable_IMPL(pAccessCounterBuffer, pGetParams)
+#endif // __nvoc_access_cntr_buffer_h_disabled
+
+NV_STATUS accesscntrCtrlCmdAccessCntrBufferGetSize_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_GET_SIZE_PARAMS *pGetParams);
+#ifdef __nvoc_access_cntr_buffer_h_disabled
+static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferGetSize(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_GET_SIZE_PARAMS *pGetParams) {
+    NV_ASSERT_FAILED_PRECOMP("AccessCounterBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_access_cntr_buffer_h_disabled
+#define accesscntrCtrlCmdAccessCntrBufferGetSize(pAccessCounterBuffer, pGetParams) accesscntrCtrlCmdAccessCntrBufferGetSize_IMPL(pAccessCounterBuffer, pGetParams)
+#endif // __nvoc_access_cntr_buffer_h_disabled
+
+NV_STATUS accesscntrCtrlCmdAccessCntrBufferGetRegisterMappings_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_GET_REGISTER_MAPPINGS_PARAMS *pParams);
+#ifdef __nvoc_access_cntr_buffer_h_disabled
+static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferGetRegisterMappings(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_GET_REGISTER_MAPPINGS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("AccessCounterBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_access_cntr_buffer_h_disabled
+#define accesscntrCtrlCmdAccessCntrBufferGetRegisterMappings(pAccessCounterBuffer, pParams) accesscntrCtrlCmdAccessCntrBufferGetRegisterMappings_IMPL(pAccessCounterBuffer, pParams)
+#endif // __nvoc_access_cntr_buffer_h_disabled
+
+NV_STATUS accesscntrCtrlCmdAccessCntrBufferGetFullInfo_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_GET_FULL_INFO_PARAMS *pParams);
+#ifdef __nvoc_access_cntr_buffer_h_disabled
+static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferGetFullInfo(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_GET_FULL_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("AccessCounterBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_access_cntr_buffer_h_disabled
+#define accesscntrCtrlCmdAccessCntrBufferGetFullInfo(pAccessCounterBuffer, pParams) accesscntrCtrlCmdAccessCntrBufferGetFullInfo_IMPL(pAccessCounterBuffer, pParams)
+#endif // __nvoc_access_cntr_buffer_h_disabled
+
+NV_STATUS accesscntrCtrlCmdAccessCntrBufferResetCounters_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_RESET_COUNTERS_PARAMS *pParams);
+#ifdef __nvoc_access_cntr_buffer_h_disabled
+static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferResetCounters(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_RESET_COUNTERS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("AccessCounterBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_access_cntr_buffer_h_disabled
+#define accesscntrCtrlCmdAccessCntrBufferResetCounters(pAccessCounterBuffer, pParams) accesscntrCtrlCmdAccessCntrBufferResetCounters_IMPL(pAccessCounterBuffer, pParams)
+#endif // __nvoc_access_cntr_buffer_h_disabled
+
+NV_STATUS accesscntrCtrlCmdAccessCntrSetConfig_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_SET_CONFIG_PARAMS *pParams);
+#ifdef __nvoc_access_cntr_buffer_h_disabled
+static inline NV_STATUS accesscntrCtrlCmdAccessCntrSetConfig(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_SET_CONFIG_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("AccessCounterBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_access_cntr_buffer_h_disabled
+#define accesscntrCtrlCmdAccessCntrSetConfig(pAccessCounterBuffer, pParams) accesscntrCtrlCmdAccessCntrSetConfig_IMPL(pAccessCounterBuffer, pParams)
+#endif // __nvoc_access_cntr_buffer_h_disabled
+
+NV_STATUS accesscntrCtrlCmdAccessCntrBufferEnableIntr_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_ENABLE_INTR_PARAMS *pGetParams);
+#ifdef __nvoc_access_cntr_buffer_h_disabled
+static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferEnableIntr(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_ENABLE_INTR_PARAMS *pGetParams) {
+    NV_ASSERT_FAILED_PRECOMP("AccessCounterBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_access_cntr_buffer_h_disabled
+#define accesscntrCtrlCmdAccessCntrBufferEnableIntr(pAccessCounterBuffer, pGetParams) accesscntrCtrlCmdAccessCntrBufferEnableIntr_IMPL(pAccessCounterBuffer, pGetParams)
+#endif // __nvoc_access_cntr_buffer_h_disabled
+
+
+// Wrapper macros for halified functions
 #define accesscntrMap_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__nvoc_metadata_ptr->vtable.__accesscntrMap__
 #define accesscntrMap(pAccessCounterBuffer, pCallContext, pParams, pCpuMapping) accesscntrMap_DISPATCH(pAccessCounterBuffer, pCallContext, pParams, pCpuMapping)
 #define accesscntrUnmap_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__nvoc_metadata_ptr->vtable.__accesscntrUnmap__
 #define accesscntrUnmap(pAccessCounterBuffer, pCallContext, pCpuMapping) accesscntrUnmap_DISPATCH(pAccessCounterBuffer, pCallContext, pCpuMapping)
 #define accesscntrGetMapAddrSpace_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__nvoc_metadata_ptr->vtable.__accesscntrGetMapAddrSpace__
 #define accesscntrGetMapAddrSpace(pAccessCounterBuffer, pCallContext, mapFlags, pAddrSpace) accesscntrGetMapAddrSpace_DISPATCH(pAccessCounterBuffer, pCallContext, mapFlags, pAddrSpace)
-#define accesscntrCtrlCmdAccessCntrBufferReadGet_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferReadGet__
-#define accesscntrCtrlCmdAccessCntrBufferReadGet(pAccessCounterBuffer, pGetParams) accesscntrCtrlCmdAccessCntrBufferReadGet_DISPATCH(pAccessCounterBuffer, pGetParams)
-#define accesscntrCtrlCmdAccessCntrBufferReadPut_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferReadPut__
-#define accesscntrCtrlCmdAccessCntrBufferReadPut(pAccessCounterBuffer, pParams) accesscntrCtrlCmdAccessCntrBufferReadPut_DISPATCH(pAccessCounterBuffer, pParams)
-#define accesscntrCtrlCmdAccessCntrBufferWriteGet_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferWriteGet__
-#define accesscntrCtrlCmdAccessCntrBufferWriteGet(pAccessCounterBuffer, pGetParams) accesscntrCtrlCmdAccessCntrBufferWriteGet_DISPATCH(pAccessCounterBuffer, pGetParams)
-#define accesscntrCtrlCmdAccessCntrBufferEnable_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferEnable__
-#define accesscntrCtrlCmdAccessCntrBufferEnable(pAccessCounterBuffer, pGetParams) accesscntrCtrlCmdAccessCntrBufferEnable_DISPATCH(pAccessCounterBuffer, pGetParams)
-#define accesscntrCtrlCmdAccessCntrBufferGetSize_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferGetSize__
-#define accesscntrCtrlCmdAccessCntrBufferGetSize(pAccessCounterBuffer, pGetParams) accesscntrCtrlCmdAccessCntrBufferGetSize_DISPATCH(pAccessCounterBuffer, pGetParams)
-#define accesscntrCtrlCmdAccessCntrBufferGetRegisterMappings_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferGetRegisterMappings__
-#define accesscntrCtrlCmdAccessCntrBufferGetRegisterMappings(pAccessCounterBuffer, pParams) accesscntrCtrlCmdAccessCntrBufferGetRegisterMappings_DISPATCH(pAccessCounterBuffer, pParams)
-#define accesscntrCtrlCmdAccessCntrBufferGetFullInfo_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferGetFullInfo__
-#define accesscntrCtrlCmdAccessCntrBufferGetFullInfo(pAccessCounterBuffer, pParams) accesscntrCtrlCmdAccessCntrBufferGetFullInfo_DISPATCH(pAccessCounterBuffer, pParams)
-#define accesscntrCtrlCmdAccessCntrBufferResetCounters_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferResetCounters__
-#define accesscntrCtrlCmdAccessCntrBufferResetCounters(pAccessCounterBuffer, pParams) accesscntrCtrlCmdAccessCntrBufferResetCounters_DISPATCH(pAccessCounterBuffer, pParams)
-#define accesscntrCtrlCmdAccessCntrSetConfig_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrSetConfig__
-#define accesscntrCtrlCmdAccessCntrSetConfig(pAccessCounterBuffer, pParams) accesscntrCtrlCmdAccessCntrSetConfig_DISPATCH(pAccessCounterBuffer, pParams)
-#define accesscntrCtrlCmdAccessCntrBufferEnableIntr_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferEnableIntr__
-#define accesscntrCtrlCmdAccessCntrBufferEnableIntr(pAccessCounterBuffer, pGetParams) accesscntrCtrlCmdAccessCntrBufferEnableIntr_DISPATCH(pAccessCounterBuffer, pGetParams)
 #define accesscntrControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define accesscntrControl(pGpuResource, pCallContext, pParams) accesscntrControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define accesscntrShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
@@ -274,46 +350,6 @@ static inline NV_STATUS accesscntrUnmap_DISPATCH(struct AccessCounterBuffer *pAc
 
 static inline NV_STATUS accesscntrGetMapAddrSpace_DISPATCH(struct AccessCounterBuffer *pAccessCounterBuffer, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pAccessCounterBuffer->__nvoc_metadata_ptr->vtable.__accesscntrGetMapAddrSpace__(pAccessCounterBuffer, pCallContext, mapFlags, pAddrSpace);
-}
-
-static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferReadGet_DISPATCH(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_READ_GET_PARAMS *pGetParams) {
-    return pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferReadGet__(pAccessCounterBuffer, pGetParams);
-}
-
-static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferReadPut_DISPATCH(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_READ_PUT_PARAMS *pParams) {
-    return pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferReadPut__(pAccessCounterBuffer, pParams);
-}
-
-static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferWriteGet_DISPATCH(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_WRITE_GET_PARAMS *pGetParams) {
-    return pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferWriteGet__(pAccessCounterBuffer, pGetParams);
-}
-
-static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferEnable_DISPATCH(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_ENABLE_PARAMS *pGetParams) {
-    return pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferEnable__(pAccessCounterBuffer, pGetParams);
-}
-
-static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferGetSize_DISPATCH(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_GET_SIZE_PARAMS *pGetParams) {
-    return pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferGetSize__(pAccessCounterBuffer, pGetParams);
-}
-
-static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferGetRegisterMappings_DISPATCH(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_GET_REGISTER_MAPPINGS_PARAMS *pParams) {
-    return pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferGetRegisterMappings__(pAccessCounterBuffer, pParams);
-}
-
-static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferGetFullInfo_DISPATCH(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_GET_FULL_INFO_PARAMS *pParams) {
-    return pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferGetFullInfo__(pAccessCounterBuffer, pParams);
-}
-
-static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferResetCounters_DISPATCH(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_RESET_COUNTERS_PARAMS *pParams) {
-    return pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferResetCounters__(pAccessCounterBuffer, pParams);
-}
-
-static inline NV_STATUS accesscntrCtrlCmdAccessCntrSetConfig_DISPATCH(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_SET_CONFIG_PARAMS *pParams) {
-    return pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrSetConfig__(pAccessCounterBuffer, pParams);
-}
-
-static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferEnableIntr_DISPATCH(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_ENABLE_INTR_PARAMS *pGetParams) {
-    return pAccessCounterBuffer->__accesscntrCtrlCmdAccessCntrBufferEnableIntr__(pAccessCounterBuffer, pGetParams);
 }
 
 static inline NV_STATUS accesscntrControl_DISPATCH(struct AccessCounterBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -450,12 +486,6 @@ NV_STATUS accesscntrCtrlCmdAccessCntrSetConfig_IMPL(struct AccessCounterBuffer *
 
 NV_STATUS accesscntrCtrlCmdAccessCntrBufferEnableIntr_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_ENABLE_INTR_PARAMS *pGetParams);
 
-NV_STATUS accesscntrConstruct_IMPL(struct AccessCounterBuffer *arg_pAccessCounterBuffer, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_accesscntrConstruct(arg_pAccessCounterBuffer, arg_pCallContext, arg_pParams) accesscntrConstruct_IMPL(arg_pAccessCounterBuffer, arg_pCallContext, arg_pParams)
-void accesscntrDestruct_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer);
-
-#define __nvoc_accesscntrDestruct(pAccessCounterBuffer) accesscntrDestruct_IMPL(pAccessCounterBuffer)
 #undef PRIVATE_FIELD
 
 

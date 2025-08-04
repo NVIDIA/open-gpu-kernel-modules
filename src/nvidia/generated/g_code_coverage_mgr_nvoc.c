@@ -80,6 +80,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__CodeCoverageManager =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_codecovmgrDestruct(CodeCoverageManager*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_CodeCoverageManager(CodeCoverageManager *pThis) {
     __nvoc_codecovmgrDestruct(pThis);

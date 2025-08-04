@@ -331,6 +331,18 @@ NV_STATUS NV_API_CALL os_registry_init(void)
                 "RmMsg", NVreg_RmMsg, strlen(NVreg_RmMsg));
     }
 
+    //
+    // CoherentGPUMemoryMode=driver just implies the older 
+    // EnableUserNUMAManagement=0 option
+    //
+    if (NVreg_CoherentGPUMemoryMode != NULL)
+    {
+        if (strcmp(NVreg_CoherentGPUMemoryMode, "driver") == 0)
+        {
+            NVreg_EnableUserNUMAManagement = 0;
+        }
+    }
+
     rm_parse_option_string(sp, NVreg_RegistryDwords);
 
     for (i = 0; (entry = &nv_parms[i])->name != NULL; i++)

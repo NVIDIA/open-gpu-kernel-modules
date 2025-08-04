@@ -42,7 +42,8 @@ extern "C" {
 #define NVA084_NOTIFIERS_EVENT_PRINT_ERROR_MESSAGE              (5)
 #define NVA084_NOTIFIERS_EVENT_GUEST_LICENSE_STATE_CHANGED      (6)
 #define NVA084_NOTIFIERS_EVENT_UPDATE_GUEST_OS_TYPE             (7)
-#define NVA084_NOTIFIERS_MAXCOUNT                               (8)
+#define NVA084_NOTIFIERS_EVENT_INIT_GR_ENGINE                   (8)
+#define NVA084_NOTIFIERS_MAXCOUNT                               (9)
 
 #define NVA084_NOTIFICATION_STATUS_IN_PROGRESS              (0x8000)
 #define NVA084_NOTIFICATION_STATUS_BAD_ARGUMENT             (0x4000)

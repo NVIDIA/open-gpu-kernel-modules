@@ -516,7 +516,8 @@ kceMapPceLceForNvlinkPeers_GB100
                 KernelCE *pKCeLce          = GPU_GET_KCE(pGpu, lceIndex);
                 if(pKCeLce != NULL)
                 {
-                   pKCeLce->ceCapsMask    |= NVBIT32(CE_CAPS_NVLINK_P2P);
+                   pKCeLce->ceCapsMask     |= NVBIT32(CE_CAPS_NVLINK_P2P);
+                   pKCeLce->nvlinkPeerMask |= NVBIT32(pRemoteGpu->gpuInstance);
                 }
                 NV_PRINTF(LEVEL_INFO, "Nvlink peer CE Mapping for GPU%d <-> GPU%d -- PCE Index: %d -> LCE Index: %d\n",
                           pGpu->gpuInstance,
@@ -1613,4 +1614,78 @@ kceAssignCeCaps_GB100
         NV_PRINTF(LEVEL_INFO, "LCE %d assigned for NVLINK.\n", pKCe->publicID);
         RMCTRL_SET_CAP(pKCeCaps, NV2080_CTRL_CE_CAPS, _CE_NVLINK_P2P);
     }
+}
+
+/**
+ * @brief Returns the CEs marked for P2P based on PCE-LCE mapping algorithm
+ *
+ * @param[in]      pKCe               KernelCE pointer
+ * @param[in]      pGpu               OBJGPU pointer
+ * @param[in]      gpuMask            GPU mask
+ * @param[out]     pNvlinkP2PCeMask   Mask of LCEs marked for P2P
+ */
+NV_STATUS
+kceGetP2PCes_GB100
+(
+    KernelCE *pKCe,
+    OBJGPU   *pGpu,
+    NvU32     gpuMask,
+    NvU32    *pNvlinkP2PCeMask
+)
+{
+    NvU32          gpuCount       = gpumgrGetSubDeviceCount(gpuMask);
+    KernelNvlink  *pKernelNvlink  = GPU_GET_KERNEL_NVLINK(pGpu);
+    KernelCE      *pKCeLoop;
+    NvU32          remoteGpuMask  = 0;
+
+    if (pKernelNvlink == NULL)
+    {
+        return NV_WARN_NOTHING_TO_DO;
+    }
+
+    //
+    // Get the remote GPU mask. In the case of loopback mode, GPU count will be
+    // 1. So, current GPU will be the remote GPU as well. If the GPU count is 2,
+    // then in the case, figure out the remote GPU mask.
+    //
+    if (gpuCount == 1)
+    {
+        remoteGpuMask = gpuMask;
+    }
+    else
+    {
+        OBJGPU  *pRemoteGpu     = NULL;
+        NvU32    gpuInstance    = 0;
+
+        while ((pRemoteGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+        {
+            if (pRemoteGpu != pGpu)
+            {
+                remoteGpuMask = NVBIT32(gpuGetInstance(pRemoteGpu));
+                break;
+            }
+        }
+    }
+
+    KCE_ITER_ALL_BEGIN(pGpu, pKCeLoop, 0)
+    {
+        if (pKCeLoop->bStubbed)
+            continue;
+
+        if (kceIsCeNvlinkP2P_HAL(pGpu, pKCeLoop))
+        {
+            if ((pKCeLoop->nvlinkPeerMask & remoteGpuMask) > 0)
+            {
+                *pNvlinkP2PCeMask |= NVBIT32(pKCeLoop->publicID);
+            }
+        }
+    }
+    KCE_ITER_END
+
+    if (*pNvlinkP2PCeMask == 0)
+    {
+        return kceGetP2PCes_GH100(pKCe, pGpu, gpuMask, pNvlinkP2PCeMask);
+    }
+
+    return NV_OK;
 }

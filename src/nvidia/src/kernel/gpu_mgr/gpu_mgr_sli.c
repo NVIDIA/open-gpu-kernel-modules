@@ -47,6 +47,7 @@
 #include "gpu_mgr/gpu_group.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/rc/kernel_rc.h"
+#include "kernel/gpu/gr/kernel_graphics.h"
 
 #include "nvRmReg.h"
 
@@ -528,9 +529,9 @@ gpumgrGetSliLinks(NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS *pVideoLinksParams)
     while ((pGpu = gpumgrGetNextGpu(gpuAttachMask, &gpuIndex)) &&
            (i < NV0000_CTRL_GPU_MAX_ATTACHED_GPUS))
     {
-        if (pGpu->gpuInstance >= NV2080_MAX_SUBDEVICES)
+        if (pGpu->gpuInstance >= NV_MAX_DEVICES)
         {
-            NV_ASSERT(pGpu->gpuInstance < NV2080_MAX_SUBDEVICES);
+            NV_ASSERT(pGpu->gpuInstance < NV_MAX_DEVICES);
             continue;
         }
 
@@ -542,7 +543,7 @@ gpumgrGetSliLinks(NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS *pVideoLinksParams)
                (j < NV0000_CTRL_GPU_MAX_VIDEO_LINKS))
         {
             if ((peerGpuIndex == gpuIndex) ||
-                (pPeerGpu->gpuInstance >= NV2080_MAX_SUBDEVICES))
+                (pPeerGpu->gpuInstance >= NV_MAX_DEVICES))
             {
                 continue;
             }

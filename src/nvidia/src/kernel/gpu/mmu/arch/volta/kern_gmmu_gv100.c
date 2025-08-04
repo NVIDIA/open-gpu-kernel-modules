@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -2191,7 +2191,8 @@ kgmmuServiceMmuFault_GV100
                                                pMmuExceptionData, pKernelChannel);
     if (NV_OK != rmStatus)
     {
-        NV_PRINTF(LEVEL_ERROR, "Could not service MMU fault for chid %x\n",
+        NV_PRINTF(LEVEL_ERROR,
+                  "Could not service MMU fault for " FMT_CHANNEL_DEBUG_TAG "\n",
                   kchannelGetDebugTag(pKernelChannel));
     }
 

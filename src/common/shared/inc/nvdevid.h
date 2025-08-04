@@ -172,6 +172,11 @@
 // A16
 #define NV_PCI_SUBID_DEVICE_PG171_SKU200             0x14A9
 
+// NVIDIA B200
+#define NV_PCI_SUBID_DEVICE_PG525_SKU220             0x1999
+#define NV_PCI_SUBID_DEVICE_PG525_SKU225             0x199B
+#define NV_PCI_SUBID_DEVICE_PG525_SKU230             0x20DA
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 //
 // CHIPSET IDs
@@ -646,9 +651,14 @@ enum {
 ,     CS_PHYTIUM_S5000
 ,     CS_RESERVED_2
 ,     CS_RESERVED_3
+,     CS_AMD_RPH
+,     CS_INTEL_B660
 ,     CS_AMPERE_AMPEREONE192
 ,     CS_MAX_PCIE
 };
+
+// Chip IDs for Tegra SoCs
+#define NV_CHIP_ID_T234 0x2350
 
 enum {
     RP_UNKNOWN = 0

@@ -159,20 +159,21 @@ NV_STATUS __nvoc_objCreate_OBJHAL(OBJHAL**, Dynamic*, NvU32);
     __nvoc_objCreate_OBJHAL((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
-
-// Dispatch functions
+// Wrapper macros for implementation functions
 PMODULEDESCRIPTOR objhalGetModuleDescriptor_IMPL(struct OBJHAL *pHal);
-
 #ifdef __nvoc_hal_h_disabled
 static inline PMODULEDESCRIPTOR objhalGetModuleDescriptor(struct OBJHAL *pHal) {
     NV_ASSERT_FAILED_PRECOMP("OBJHAL was disabled!");
     return NULL;
 }
-#else //__nvoc_hal_h_disabled
+#else // __nvoc_hal_h_disabled
 #define objhalGetModuleDescriptor(pHal) objhalGetModuleDescriptor_IMPL(pHal)
-#endif //__nvoc_hal_h_disabled
+#endif // __nvoc_hal_h_disabled
 
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
 #undef PRIVATE_FIELD
 
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -49,6 +49,8 @@ typedef enum
     NV_FIRMWARE_CHIP_FAMILY_GH100 = 6,
     NV_FIRMWARE_CHIP_FAMILY_GB10X = 8,
     NV_FIRMWARE_CHIP_FAMILY_GB20X = 9,
+    NV_FIRMWARE_CHIP_FAMILY_GB10Y = 11,
+    NV_FIRMWARE_CHIP_FAMILY_GB20Y = 12,
     NV_FIRMWARE_CHIP_FAMILY_END,
 } nv_firmware_chip_family_t;
 
@@ -58,6 +60,8 @@ static inline const char *nv_firmware_chip_family_to_string(
 {
     switch (fw_chip_family) {
         case NV_FIRMWARE_CHIP_FAMILY_GB10X: return "gb10x";
+        case NV_FIRMWARE_CHIP_FAMILY_GB10Y: return "gb10y";
+        case NV_FIRMWARE_CHIP_FAMILY_GB20Y: return "gb20y";
         case NV_FIRMWARE_CHIP_FAMILY_GB20X: return "gb20x";
         case NV_FIRMWARE_CHIP_FAMILY_GH100: return "gh100";
         case NV_FIRMWARE_CHIP_FAMILY_AD10X: return "ad10x";
@@ -68,9 +72,9 @@ static inline const char *nv_firmware_chip_family_to_string(
 
         case NV_FIRMWARE_CHIP_FAMILY_END:  // fall through
         case NV_FIRMWARE_CHIP_FAMILY_NULL:
-            return NULL;
+            return "";
     }
-    return NULL;
+    return "";
 }
 
 // The includer may optionally define
@@ -89,6 +93,8 @@ static inline const char *nv_firmware_for_chip_family(
         switch (fw_chip_family)
         {
             case NV_FIRMWARE_CHIP_FAMILY_GB10X:  // fall through
+            case NV_FIRMWARE_CHIP_FAMILY_GB10Y:  // fall through
+            case NV_FIRMWARE_CHIP_FAMILY_GB20Y:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_GB20X:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_GH100:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_AD10X:  // fall through
@@ -110,6 +116,8 @@ static inline const char *nv_firmware_for_chip_family(
         switch (fw_chip_family)
         {
             case NV_FIRMWARE_CHIP_FAMILY_GB10X:  // fall through
+            case NV_FIRMWARE_CHIP_FAMILY_GB10Y:  // fall through
+            case NV_FIRMWARE_CHIP_FAMILY_GB20Y:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_GB20X:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_GH100:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_AD10X:  // fall through

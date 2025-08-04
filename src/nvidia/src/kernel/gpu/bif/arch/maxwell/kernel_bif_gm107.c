@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1407,7 +1407,7 @@ kbifGetMigrationBandwidth_GM107
     }
     else
     {
-        if (kbifIsPciBusFamily(pKernelBif))
+        if (gpuIsPciBusFamily(pGpu))
         {
             NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kbifControlGetPCIEInfo(pGpu, pKernelBif, &busInfo));
         }
@@ -1423,7 +1423,7 @@ kbifGetMigrationBandwidth_GM107
     busInfo.index = NV2080_CTRL_BUS_INFO_INDEX_PCIE_GPU_LINK_CTRL_STATUS;
     busInfo.data = 0;
 
-    if (kbifIsPciBusFamily(pKernelBif))
+    if (gpuIsPciBusFamily(pGpu))
     {
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kbifControlGetPCIEInfo(pGpu, pKernelBif, &busInfo));
     }

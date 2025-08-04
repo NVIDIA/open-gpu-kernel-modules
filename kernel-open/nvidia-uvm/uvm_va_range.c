@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -25,8 +25,11 @@
 #include "uvm_linux.h"
 #include "uvm_types.h"
 #include "uvm_api.h"
+#include "uvm_processors.h"
 #include "uvm_global.h"
+#include "uvm_gpu.h"
 #include "uvm_hal.h"
+#include "uvm_va_space.h"
 #include "uvm_va_range.h"
 #include "uvm_va_block.h"
 #include "uvm_kvmalloc.h"
@@ -607,6 +610,7 @@ void uvm_va_range_destroy(uvm_va_range_t *va_range, struct list_head *deferred_f
             uvm_va_range_destroy_semaphore_pool(uvm_va_range_to_semaphore_pool(va_range));
             return;
         case UVM_VA_RANGE_TYPE_DEVICE_P2P:
+            unmap_mapping_range(va_range->va_space->mapping, va_range->node.start, uvm_va_range_size(va_range), 1);
             uvm_va_range_destroy_device_p2p(uvm_va_range_to_device_p2p(va_range), deferred_free_list);
             return;
         default:
@@ -624,6 +628,118 @@ void uvm_va_range_zombify(uvm_va_range_managed_t *managed_range)
 
     // Destroy will be done by uvm_destroy_vma_managed
     managed_range->vma_wrapper = NULL;
+}
+
+static NV_STATUS uvm_free_semaphore_pool(uvm_va_range_semaphore_pool_t *semaphore_pool_range)
+{
+    // Semaphore pools must be first unmapped from the CPU with munmap to
+    // invalidate the vma.
+    if (uvm_mem_mapped_on_cpu_user(semaphore_pool_range->mem))
+        return NV_ERR_INVALID_ARGUMENT;
+
+    return NV_OK;
+}
+
+static uvm_processor_mask_t *uvm_free_external(uvm_va_range_external_t *external_range)
+{
+    uvm_processor_mask_t *retained_mask = external_range->retained_mask;
+    uvm_va_space_t *va_space = external_range->va_range.va_space;
+
+    // Set the retained_mask to NULL to prevent uvm_va_range_destroy_external()
+    // from freeing the mask.
+    external_range->retained_mask = NULL;
+
+    UVM_ASSERT(retained_mask);
+
+    // External ranges may have deferred free work, so the GPUs may have to be
+    // retained. Construct the mask of all the GPUs that need to be retained.
+    uvm_processor_mask_and(retained_mask, &external_range->mapped_gpus, &va_space->registered_gpus);
+
+    return retained_mask;
+}
+
+// This destroys VA ranges created by ioctl. VA ranges created by mmap, such as
+// through UvmMemMap, go through munmap.
+static NV_STATUS uvm_free(uvm_va_space_t *va_space, NvU64 base, NvU64 length)
+{
+    uvm_va_range_t *va_range;
+    NV_STATUS status = NV_OK;
+    uvm_processor_mask_t *retained_mask = NULL;
+    uvm_gpu_t *retained_gpu = NULL;
+    LIST_HEAD(deferred_free_list);
+
+    if (uvm_api_range_invalid_4k(base, length))
+        return NV_ERR_INVALID_ADDRESS;
+
+    uvm_va_space_down_write(va_space);
+
+    // Non-managed ranges are defined to not require splitting, so a partial
+    // free attempt is an error.
+    //
+    // TODO: Bug 1763676: The length parameter may be needed for MPS. If not, it
+    //       should be removed from the ioctl.
+    va_range = uvm_va_range_find(va_space, base);
+    if (!va_range || va_range->node.start != base || va_range->node.end != base + length - 1) {
+        status = NV_ERR_INVALID_ADDRESS;
+        goto out;
+    }
+
+    switch (va_range->type) {
+        case UVM_VA_RANGE_TYPE_EXTERNAL:
+            retained_mask = uvm_free_external(uvm_va_range_to_external(va_range));
+            break;
+
+        case UVM_VA_RANGE_TYPE_SEMAPHORE_POOL:
+            status = uvm_free_semaphore_pool(uvm_va_range_to_semaphore_pool(va_range));
+            break;
+
+        case UVM_VA_RANGE_TYPE_DEVICE_P2P:
+            retained_gpu = uvm_va_range_to_device_p2p(va_range)->gpu;
+            break;
+
+        case UVM_VA_RANGE_TYPE_SKED_REFLECTED:
+            break;
+
+        default:
+            status = NV_ERR_INVALID_ADDRESS;
+            break;
+    }
+
+    if (status != NV_OK)
+        goto out;
+
+    uvm_va_range_destroy(va_range, &deferred_free_list);
+
+    // If there is deferred work, retain the required GPUs.
+    if (!list_empty(&deferred_free_list)) {
+        if (retained_mask)
+            uvm_global_gpu_retain(retained_mask);
+        else
+            uvm_gpu_retain(retained_gpu);
+    }
+
+out:
+    uvm_va_space_up_write(va_space);
+
+    if (!list_empty(&deferred_free_list)) {
+        UVM_ASSERT(status == NV_OK);
+        uvm_deferred_free_object_list(&deferred_free_list);
+        if (retained_mask)
+            uvm_global_gpu_release(retained_mask);
+        else
+            uvm_gpu_release(retained_gpu);
+    }
+
+    // Free the mask allocated in uvm_va_range_create_external() since
+    // uvm_va_range_destroy() won't free this mask.
+    uvm_processor_mask_cache_free(retained_mask);
+
+    return status;
+}
+
+NV_STATUS uvm_api_free(UVM_FREE_PARAMS *params, struct file *filp)
+{
+    return uvm_free(uvm_va_space_get(filp), params->base, params->length);
 }
 
 NV_STATUS uvm_api_clean_up_zombie_resources(UVM_CLEAN_UP_ZOMBIE_RESOURCES_PARAMS *params, struct file *filp)
@@ -830,6 +946,7 @@ void uvm_va_range_remove_gpu_va_space(uvm_va_range_t *va_range,
                                                         gpu_va_space->gpu);
             break;
         case UVM_VA_RANGE_TYPE_DEVICE_P2P:
+            unmap_mapping_range(va_range->va_space->mapping, va_range->node.start, uvm_va_range_size(va_range), 1);
             uvm_va_range_deinit_device_p2p(uvm_va_range_to_device_p2p(va_range), deferred_free_list);
             break;
         default:
@@ -1816,6 +1933,53 @@ NV_STATUS uvm_va_range_unset_read_duplication(uvm_va_range_managed_t *managed_ra
 
     for_each_va_block_in_va_range(managed_range, va_block) {
         status = uvm_va_block_unset_read_duplication(va_block, va_block_context);
+
+        if (status != NV_OK)
+            return status;
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS uvm_va_range_discard(uvm_va_range_managed_t *managed_range,
+                               uvm_va_block_context_t *va_block_context,
+                               NvU64 start,
+                               NvU64 end,
+                               NvU64 flags)
+{
+    size_t i;
+    const size_t first_block_index = uvm_va_range_block_index(managed_range, start);
+    const size_t last_block_index = uvm_va_range_block_index(managed_range, end);
+    uvm_va_block_region_t covered_region;
+
+    UVM_ASSERT(managed_range);
+    UVM_ASSERT(va_block_context);
+    UVM_ASSERT(start >= managed_range->va_range.node.start);
+    UVM_ASSERT(end <= managed_range->va_range.node.end);
+    uvm_assert_rwsem_locked(&managed_range->va_range.va_space->lock);
+
+    // Iterate over blocks, discarding them if covered by range [start, end]
+    for (i = first_block_index; i <= last_block_index; i++) {
+        NV_STATUS status;
+        uvm_va_block_t *va_block;
+
+        // If the block doesn't exist yet, create it so we can track discarded
+        // pages.
+        status = uvm_va_range_block_create(managed_range, i, &va_block);
+        if (status != NV_OK)
+            return status;
+
+        // Unlike preferred_location which is a policy, hence causing block
+        // splits, discarded status is transient.
+        // As a result, discarded page ranges can span block or cover
+        // partial blocks.
+        covered_region = uvm_va_block_region_from_start_end(va_block,
+                                                            max(start, va_block->start),
+                                                            min(end, va_block->end));
+        uvm_page_mask_init_from_region(&va_block_context->discard.discarded_pages, covered_region, NULL);
+
+        // The minimum discard unit is a va_block
+        status = uvm_va_block_discard(va_block, va_block_context, flags);
 
         if (status != NV_OK)
             return status;

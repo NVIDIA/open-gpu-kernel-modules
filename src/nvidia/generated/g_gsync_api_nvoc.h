@@ -92,37 +92,6 @@ struct GSyncApi {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct GSyncApi *__nvoc_pbase_GSyncApi;    // gsyncapi
 
-    // Vtable with 29 per-object function pointers
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncGetVersion__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_GET_VERSION_PARAMS *);  // exported (id=0x30f10101)
-    NV_STATUS (*__gsyncapiCtrlCmdGetGsyncGpuTopology__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GET_GSYNC_GPU_TOPOLOGY_PARAMS *);  // exported (id=0x30f10106)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncGetStatusSignals__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_GET_STATUS_SIGNALS_PARAMS *);  // exported (id=0x30f10102)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncGetControlParams__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_GET_CONTROL_PARAMS_PARAMS *);  // exported (id=0x30f10103)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncSetControlParams__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_SET_CONTROL_PARAMS_PARAMS *);  // exported (id=0x30f10104)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncGetControlSync__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_GET_CONTROL_SYNC_PARAMS *);  // exported (id=0x30f10110)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncSetControlSync__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_SET_CONTROL_SYNC_PARAMS *);  // exported (id=0x30f10111)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncSetControlUnsync__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_SET_CONTROL_UNSYNC_PARAMS *);  // exported (id=0x30f10112)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncGetStatusSync__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_GET_STATUS_SYNC_PARAMS *);  // exported (id=0x30f10113)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncGetStatus__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_GET_STATUS_PARAMS *);  // exported (id=0x30f10114)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncGetControlTesting__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_GET_CONTROL_TESTING_PARAMS *);  // exported (id=0x30f10120)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncSetControlTesting__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_SET_CONTROL_TESTING_PARAMS *);  // exported (id=0x30f10121)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncSetControlWatchdog__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_SET_CONTROL_WATCHDOG_PARAMS *);  // exported (id=0x30f10130)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncGetControlInterlaceMode__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_GET_CONTROL_INTERLACE_MODE_PARAMS *);  // exported (id=0x30f10140)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncSetControlInterlaceMode__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_SET_CONTROL_INTERLACE_MODE_PARAMS *);  // exported (id=0x30f10141)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncGetControlSwapBarrier__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_GET_CONTROL_SWAP_BARRIER_PARAMS *);  // exported (id=0x30f10150)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncSetControlSwapBarrier__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_SET_CONTROL_SWAP_BARRIER_PARAMS *);  // exported (id=0x30f10151)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncGetControlSwapLockWindow__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_GET_CONTROL_SWAP_LOCK_WINDOW_PARAMS *);  // exported (id=0x30f10153)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncGetCaps__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_GET_CAPS_PARAMS *);  // exported (id=0x30f10105)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncGetOptimizedTiming__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_GET_OPTIMIZED_TIMING_PARAMS *);  // exported (id=0x30f10160)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncSetEventNotification__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_SET_EVENT_NOTIFICATION_PARAMS *);  // exported (id=0x30f10170)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncGetControlStereoLockMode__)(struct GSyncApi * /*this*/, NV30F1_CTRL_CMD_GSYNC_GET_CONTROL_STEREO_LOCK_MODE_PARAMS *);  // exported (id=0x30f10173)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncSetControlStereoLockMode__)(struct GSyncApi * /*this*/, NV30F1_CTRL_CMD_GSYNC_SET_CONTROL_STEREO_LOCK_MODE_PARAMS *);  // exported (id=0x30f10172)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncReadRegister__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_READ_REGISTER_PARAMS *);  // exported (id=0x30f10180)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncWriteRegister__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_WRITE_REGISTER_PARAMS *);  // exported (id=0x30f10181)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncSetLocalSync__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_SET_LOCAL_SYNC_PARAMS *);  // exported (id=0x30f10185)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncConfigFlash__)(struct GSyncApi * /*this*/, NV30F1_CTRL_CMD_GSYNC_CONFIG_FLASH_PARAMS *);  // exported (id=0x30f10186)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncGetHouseSyncMode__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_PARAMS *);  // exported (id=0x30f10187)
-    NV_STATUS (*__gsyncapiCtrlCmdGsyncSetHouseSyncMode__)(struct GSyncApi * /*this*/, NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_PARAMS *);  // exported (id=0x30f10188)
-
     // Data members
     NvU32 instance;
     NvU32 classNum;
@@ -200,67 +169,304 @@ NV_STATUS __nvoc_objCreate_GSyncApi(GSyncApi**, Dynamic*, NvU32, struct CALL_CON
     __nvoc_objCreate_GSyncApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS gsyncapiConstruct_IMPL(struct GSyncApi *arg_pGsyncApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_gsyncapiConstruct(arg_pGsyncApi, arg_pCallContext, arg_pParams) gsyncapiConstruct_IMPL(arg_pGsyncApi, arg_pCallContext, arg_pParams)
+
+NV_STATUS gsyncapiCtrlCmdGsyncGetVersion_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_VERSION_PARAMS *pGsyncGetVersionParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncGetVersion(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_VERSION_PARAMS *pGsyncGetVersionParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncGetVersion(pGsyncApi, pGsyncGetVersionParams) gsyncapiCtrlCmdGsyncGetVersion_IMPL(pGsyncApi, pGsyncGetVersionParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGetGsyncGpuTopology_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GET_GSYNC_GPU_TOPOLOGY_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGetGsyncGpuTopology(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GET_GSYNC_GPU_TOPOLOGY_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGetGsyncGpuTopology(pGsyncApi, pParams) gsyncapiCtrlCmdGetGsyncGpuTopology_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncGetStatusSignals_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_STATUS_SIGNALS_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncGetStatusSignals(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_STATUS_SIGNALS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncGetStatusSignals(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetStatusSignals_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncGetControlParams_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_PARAMS_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncGetControlParams(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_PARAMS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncGetControlParams(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetControlParams_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncSetControlParams_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_PARAMS_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncSetControlParams(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_PARAMS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncSetControlParams(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetControlParams_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncGetControlSync_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_SYNC_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncGetControlSync(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_SYNC_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncGetControlSync(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetControlSync_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncSetControlSync_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_SYNC_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncSetControlSync(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_SYNC_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncSetControlSync(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetControlSync_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncSetControlUnsync_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_UNSYNC_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncSetControlUnsync(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_UNSYNC_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncSetControlUnsync(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetControlUnsync_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncGetStatusSync_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_STATUS_SYNC_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncGetStatusSync(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_STATUS_SYNC_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncGetStatusSync(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetStatusSync_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncGetStatus_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_STATUS_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncGetStatus(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_STATUS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncGetStatus(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetStatus_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncGetControlTesting_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_TESTING_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncGetControlTesting(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_TESTING_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncGetControlTesting(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetControlTesting_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncSetControlTesting_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_TESTING_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncSetControlTesting(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_TESTING_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncSetControlTesting(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetControlTesting_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncSetControlWatchdog_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_WATCHDOG_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncSetControlWatchdog(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_WATCHDOG_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncSetControlWatchdog(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetControlWatchdog_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncGetControlInterlaceMode_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_INTERLACE_MODE_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncGetControlInterlaceMode(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_INTERLACE_MODE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncGetControlInterlaceMode(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetControlInterlaceMode_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncSetControlInterlaceMode_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_INTERLACE_MODE_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncSetControlInterlaceMode(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_INTERLACE_MODE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncSetControlInterlaceMode(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetControlInterlaceMode_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncGetControlSwapBarrier_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_SWAP_BARRIER_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncGetControlSwapBarrier(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_SWAP_BARRIER_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncGetControlSwapBarrier(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetControlSwapBarrier_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncSetControlSwapBarrier_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_SWAP_BARRIER_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncSetControlSwapBarrier(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_SWAP_BARRIER_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncSetControlSwapBarrier(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetControlSwapBarrier_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncGetControlSwapLockWindow_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_SWAP_LOCK_WINDOW_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncGetControlSwapLockWindow(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_SWAP_LOCK_WINDOW_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncGetControlSwapLockWindow(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetControlSwapLockWindow_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncGetCaps_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CAPS_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncGetCaps(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CAPS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncGetCaps(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetCaps_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncGetOptimizedTiming_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_OPTIMIZED_TIMING_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncGetOptimizedTiming(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_OPTIMIZED_TIMING_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncGetOptimizedTiming(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetOptimizedTiming_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncSetEventNotification_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_EVENT_NOTIFICATION_PARAMS *pSetEventParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncSetEventNotification(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_EVENT_NOTIFICATION_PARAMS *pSetEventParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncSetEventNotification(pGsyncApi, pSetEventParams) gsyncapiCtrlCmdGsyncSetEventNotification_IMPL(pGsyncApi, pSetEventParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncGetControlStereoLockMode_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_CMD_GSYNC_GET_CONTROL_STEREO_LOCK_MODE_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncGetControlStereoLockMode(struct GSyncApi *pGsyncApi, NV30F1_CTRL_CMD_GSYNC_GET_CONTROL_STEREO_LOCK_MODE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncGetControlStereoLockMode(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetControlStereoLockMode_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncSetControlStereoLockMode_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_CMD_GSYNC_SET_CONTROL_STEREO_LOCK_MODE_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncSetControlStereoLockMode(struct GSyncApi *pGsyncApi, NV30F1_CTRL_CMD_GSYNC_SET_CONTROL_STEREO_LOCK_MODE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncSetControlStereoLockMode(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetControlStereoLockMode_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncReadRegister_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_READ_REGISTER_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncReadRegister(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_READ_REGISTER_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncReadRegister(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncReadRegister_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncWriteRegister_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_WRITE_REGISTER_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncWriteRegister(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_WRITE_REGISTER_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncWriteRegister(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncWriteRegister_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncSetLocalSync_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_LOCAL_SYNC_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncSetLocalSync(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_LOCAL_SYNC_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncSetLocalSync(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetLocalSync_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncConfigFlash_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_CMD_GSYNC_CONFIG_FLASH_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncConfigFlash(struct GSyncApi *pGsyncApi, NV30F1_CTRL_CMD_GSYNC_CONFIG_FLASH_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncConfigFlash(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncConfigFlash_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncGetHouseSyncMode_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncGetHouseSyncMode(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncGetHouseSyncMode(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetHouseSyncMode_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+NV_STATUS gsyncapiCtrlCmdGsyncSetHouseSyncMode_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_PARAMS *pParams);
+#ifdef __nvoc_gsync_api_h_disabled
+static inline NV_STATUS gsyncapiCtrlCmdGsyncSetHouseSyncMode(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GSyncApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gsync_api_h_disabled
+#define gsyncapiCtrlCmdGsyncSetHouseSyncMode(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetHouseSyncMode_IMPL(pGsyncApi, pParams)
+#endif // __nvoc_gsync_api_h_disabled
+
+
+// Wrapper macros for halified functions
 #define gsyncapiControl_FNPTR(pGsyncApi) pGsyncApi->__nvoc_metadata_ptr->vtable.__gsyncapiControl__
 #define gsyncapiControl(pGsyncApi, pCallContext, pParams) gsyncapiControl_DISPATCH(pGsyncApi, pCallContext, pParams)
-#define gsyncapiCtrlCmdGsyncGetVersion_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncGetVersion__
-#define gsyncapiCtrlCmdGsyncGetVersion(pGsyncApi, pGsyncGetVersionParams) gsyncapiCtrlCmdGsyncGetVersion_DISPATCH(pGsyncApi, pGsyncGetVersionParams)
-#define gsyncapiCtrlCmdGetGsyncGpuTopology_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGetGsyncGpuTopology__
-#define gsyncapiCtrlCmdGetGsyncGpuTopology(pGsyncApi, pParams) gsyncapiCtrlCmdGetGsyncGpuTopology_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncGetStatusSignals_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncGetStatusSignals__
-#define gsyncapiCtrlCmdGsyncGetStatusSignals(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetStatusSignals_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncGetControlParams_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncGetControlParams__
-#define gsyncapiCtrlCmdGsyncGetControlParams(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetControlParams_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncSetControlParams_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncSetControlParams__
-#define gsyncapiCtrlCmdGsyncSetControlParams(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetControlParams_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncGetControlSync_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncGetControlSync__
-#define gsyncapiCtrlCmdGsyncGetControlSync(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetControlSync_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncSetControlSync_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncSetControlSync__
-#define gsyncapiCtrlCmdGsyncSetControlSync(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetControlSync_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncSetControlUnsync_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncSetControlUnsync__
-#define gsyncapiCtrlCmdGsyncSetControlUnsync(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetControlUnsync_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncGetStatusSync_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncGetStatusSync__
-#define gsyncapiCtrlCmdGsyncGetStatusSync(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetStatusSync_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncGetStatus_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncGetStatus__
-#define gsyncapiCtrlCmdGsyncGetStatus(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetStatus_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncGetControlTesting_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncGetControlTesting__
-#define gsyncapiCtrlCmdGsyncGetControlTesting(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetControlTesting_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncSetControlTesting_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncSetControlTesting__
-#define gsyncapiCtrlCmdGsyncSetControlTesting(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetControlTesting_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncSetControlWatchdog_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncSetControlWatchdog__
-#define gsyncapiCtrlCmdGsyncSetControlWatchdog(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetControlWatchdog_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncGetControlInterlaceMode_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncGetControlInterlaceMode__
-#define gsyncapiCtrlCmdGsyncGetControlInterlaceMode(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetControlInterlaceMode_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncSetControlInterlaceMode_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncSetControlInterlaceMode__
-#define gsyncapiCtrlCmdGsyncSetControlInterlaceMode(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetControlInterlaceMode_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncGetControlSwapBarrier_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncGetControlSwapBarrier__
-#define gsyncapiCtrlCmdGsyncGetControlSwapBarrier(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetControlSwapBarrier_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncSetControlSwapBarrier_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncSetControlSwapBarrier__
-#define gsyncapiCtrlCmdGsyncSetControlSwapBarrier(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetControlSwapBarrier_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncGetControlSwapLockWindow_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncGetControlSwapLockWindow__
-#define gsyncapiCtrlCmdGsyncGetControlSwapLockWindow(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetControlSwapLockWindow_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncGetCaps_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncGetCaps__
-#define gsyncapiCtrlCmdGsyncGetCaps(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetCaps_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncGetOptimizedTiming_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncGetOptimizedTiming__
-#define gsyncapiCtrlCmdGsyncGetOptimizedTiming(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetOptimizedTiming_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncSetEventNotification_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncSetEventNotification__
-#define gsyncapiCtrlCmdGsyncSetEventNotification(pGsyncApi, pSetEventParams) gsyncapiCtrlCmdGsyncSetEventNotification_DISPATCH(pGsyncApi, pSetEventParams)
-#define gsyncapiCtrlCmdGsyncGetControlStereoLockMode_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncGetControlStereoLockMode__
-#define gsyncapiCtrlCmdGsyncGetControlStereoLockMode(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetControlStereoLockMode_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncSetControlStereoLockMode_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncSetControlStereoLockMode__
-#define gsyncapiCtrlCmdGsyncSetControlStereoLockMode(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetControlStereoLockMode_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncReadRegister_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncReadRegister__
-#define gsyncapiCtrlCmdGsyncReadRegister(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncReadRegister_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncWriteRegister_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncWriteRegister__
-#define gsyncapiCtrlCmdGsyncWriteRegister(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncWriteRegister_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncSetLocalSync_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncSetLocalSync__
-#define gsyncapiCtrlCmdGsyncSetLocalSync(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetLocalSync_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncConfigFlash_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncConfigFlash__
-#define gsyncapiCtrlCmdGsyncConfigFlash(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncConfigFlash_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncGetHouseSyncMode_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncGetHouseSyncMode__
-#define gsyncapiCtrlCmdGsyncGetHouseSyncMode(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncGetHouseSyncMode_DISPATCH(pGsyncApi, pParams)
-#define gsyncapiCtrlCmdGsyncSetHouseSyncMode_FNPTR(pGsyncApi) pGsyncApi->__gsyncapiCtrlCmdGsyncSetHouseSyncMode__
-#define gsyncapiCtrlCmdGsyncSetHouseSyncMode(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetHouseSyncMode_DISPATCH(pGsyncApi, pParams)
 #define gsyncapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define gsyncapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) gsyncapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define gsyncapiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
@@ -315,122 +521,6 @@ NV_STATUS __nvoc_objCreate_GSyncApi(GSyncApi**, Dynamic*, NvU32, struct CALL_CON
 // Dispatch functions
 static inline NV_STATUS gsyncapiControl_DISPATCH(struct GSyncApi *pGsyncApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pGsyncApi->__nvoc_metadata_ptr->vtable.__gsyncapiControl__(pGsyncApi, pCallContext, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncGetVersion_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_VERSION_PARAMS *pGsyncGetVersionParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncGetVersion__(pGsyncApi, pGsyncGetVersionParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGetGsyncGpuTopology_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GET_GSYNC_GPU_TOPOLOGY_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGetGsyncGpuTopology__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncGetStatusSignals_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_STATUS_SIGNALS_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncGetStatusSignals__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncGetControlParams_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_PARAMS_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncGetControlParams__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncSetControlParams_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_PARAMS_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncSetControlParams__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncGetControlSync_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_SYNC_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncGetControlSync__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncSetControlSync_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_SYNC_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncSetControlSync__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncSetControlUnsync_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_UNSYNC_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncSetControlUnsync__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncGetStatusSync_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_STATUS_SYNC_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncGetStatusSync__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncGetStatus_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_STATUS_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncGetStatus__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncGetControlTesting_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_TESTING_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncGetControlTesting__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncSetControlTesting_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_TESTING_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncSetControlTesting__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncSetControlWatchdog_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_WATCHDOG_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncSetControlWatchdog__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncGetControlInterlaceMode_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_INTERLACE_MODE_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncGetControlInterlaceMode__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncSetControlInterlaceMode_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_INTERLACE_MODE_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncSetControlInterlaceMode__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncGetControlSwapBarrier_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_SWAP_BARRIER_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncGetControlSwapBarrier__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncSetControlSwapBarrier_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_CONTROL_SWAP_BARRIER_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncSetControlSwapBarrier__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncGetControlSwapLockWindow_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CONTROL_SWAP_LOCK_WINDOW_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncGetControlSwapLockWindow__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncGetCaps_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_CAPS_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncGetCaps__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncGetOptimizedTiming_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_OPTIMIZED_TIMING_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncGetOptimizedTiming__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncSetEventNotification_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_EVENT_NOTIFICATION_PARAMS *pSetEventParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncSetEventNotification__(pGsyncApi, pSetEventParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncGetControlStereoLockMode_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_CMD_GSYNC_GET_CONTROL_STEREO_LOCK_MODE_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncGetControlStereoLockMode__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncSetControlStereoLockMode_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_CMD_GSYNC_SET_CONTROL_STEREO_LOCK_MODE_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncSetControlStereoLockMode__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncReadRegister_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_READ_REGISTER_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncReadRegister__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncWriteRegister_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_WRITE_REGISTER_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncWriteRegister__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncSetLocalSync_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_SET_LOCAL_SYNC_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncSetLocalSync__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncConfigFlash_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_CMD_GSYNC_CONFIG_FLASH_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncConfigFlash__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncGetHouseSyncMode_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncGetHouseSyncMode__(pGsyncApi, pParams);
-}
-
-static inline NV_STATUS gsyncapiCtrlCmdGsyncSetHouseSyncMode_DISPATCH(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_PARAMS *pParams) {
-    return pGsyncApi->__gsyncapiCtrlCmdGsyncSetHouseSyncMode__(pGsyncApi, pParams);
 }
 
 static inline NvBool gsyncapiAccessCallback_DISPATCH(struct GSyncApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
@@ -593,9 +683,6 @@ NV_STATUS gsyncapiCtrlCmdGsyncGetHouseSyncMode_IMPL(struct GSyncApi *pGsyncApi, 
 
 NV_STATUS gsyncapiCtrlCmdGsyncSetHouseSyncMode_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_PARAMS *pParams);
 
-NV_STATUS gsyncapiConstruct_IMPL(struct GSyncApi *arg_pGsyncApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_gsyncapiConstruct(arg_pGsyncApi, arg_pCallContext, arg_pParams) gsyncapiConstruct_IMPL(arg_pGsyncApi, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 

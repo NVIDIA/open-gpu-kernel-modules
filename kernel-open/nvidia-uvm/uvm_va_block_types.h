@@ -286,6 +286,27 @@ typedef struct
         uvm_page_mask_t running_page_mask;
     } update_read_duplicated_pages;
 
+    struct
+    {
+        // Mask used by both UVM discard API and VA block migration code.
+        //
+        // UvmDiscard uses it as per-VA block mask holding the set of pages that
+        // are being discarded in that block.
+        //
+        // Migration API uses it as the subset of pages that are being migrated
+        // that are also discarded. This is needed in order to correctly update
+        // residency status.
+        uvm_page_mask_t discarded_pages;
+
+        // Scratch page mask. This page amsk is used as scratch space for
+        // computing page mask during discard operations.
+        uvm_page_mask_t scratch_page_mask;
+
+        // Mask used during migrations to track pages that can be
+        // read-duplicated vs pages that need to be collapsed.
+        uvm_page_mask_t make_resident_mask;
+    } discard;
+
     // mm to use for the operation. If this is non-NULL, the caller guarantees
     // that the mm will be valid (reference held) for the duration of the
     // block operation.

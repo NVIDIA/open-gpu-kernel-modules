@@ -22,7 +22,8 @@
  */
 
 //
-// This file provides common types for both UVM driver and RM's UVM interface.
+// This file provides common types for both the UVM kernel driver and RM's UVM
+// interface.
 //
 
 #ifndef _NV_UVM_TYPES_H_
@@ -32,20 +33,8 @@
 #include "nvstatus.h"
 #include "nvgputypes.h"
 #include "nvCpuUuid.h"
+#include "nv_uvm_user_types.h" // For UvmGpuCachingType, UvmGpuMappingType, etc
 
-
-//
-// Default Page Size if left "0" because in RM BIG page size is default & there
-// are multiple BIG page sizes in RM. These defines are used as flags to "0"
-// should be OK when user is not sure which pagesize allocation it wants
-//
-#define UVM_PAGE_SIZE_DEFAULT    0x0ULL
-#define UVM_PAGE_SIZE_4K         0x1000ULL
-#define UVM_PAGE_SIZE_64K        0x10000ULL
-#define UVM_PAGE_SIZE_128K       0x20000ULL
-#define UVM_PAGE_SIZE_2M         0x200000ULL
-#define UVM_PAGE_SIZE_512M       0x20000000ULL
-#define UVM_PAGE_SIZE_256G       0x4000000000ULL
 
 //
 // When modifying flags, make sure they are compatible with the mirrored
@@ -80,9 +69,6 @@
 // mirrored in PMA.
 //
 #define UVM_PMA_CALLED_FROM_PMA_EVICTION        16384
-
-#define UVM_UUID_LEN 16
-#define UVM_SW_OBJ_SUBCHANNEL 5
 
 typedef unsigned long long UvmGpuPointer;
 
@@ -447,80 +433,22 @@ typedef struct UvmGpuAllocInfo_tag
                                       // SEV or GPU CC modes are enabled. Ignored otherwise
 } UvmGpuAllocInfo;
 
-typedef enum
-{
-    UVM_VIRT_MODE_NONE = 0,             // Baremetal or passthrough virtualization
-    UVM_VIRT_MODE_LEGACY = 1,           // Virtualization without SRIOV support
-    UVM_VIRT_MODE_SRIOV_HEAVY = 2,      // Virtualization with SRIOV Heavy configured
-    UVM_VIRT_MODE_SRIOV_STANDARD = 3,   // Virtualization with SRIOV Standard configured
-    UVM_VIRT_MODE_COUNT = 4,
-} UVM_VIRT_MODE;
-
-// !!! The following enums (with UvmRm prefix) are defined and documented in
-// mm/uvm/interface/uvm_types.h and must be mirrored. Please refer to that file
-// for more details.
-
-// UVM GPU mapping types
-typedef enum
-{
-    UvmRmGpuMappingTypeDefault = 0,
-    UvmRmGpuMappingTypeReadWriteAtomic = 1,
-    UvmRmGpuMappingTypeReadWrite = 2,
-    UvmRmGpuMappingTypeReadOnly = 3,
-    UvmRmGpuMappingTypeCount = 4
-} UvmRmGpuMappingType;
-
-// UVM GPU caching types
-typedef enum
-{
-    UvmRmGpuCachingTypeDefault = 0,
-    UvmRmGpuCachingTypeForceUncached = 1,
-    UvmRmGpuCachingTypeForceCached = 2,
-    UvmRmGpuCachingTypeCount = 3
-} UvmRmGpuCachingType;
-
-// UVM GPU format types
-typedef enum {
-   UvmRmGpuFormatTypeDefault = 0,
-   UvmRmGpuFormatTypeBlockLinear = 1,
-   UvmRmGpuFormatTypeCount = 2
-} UvmRmGpuFormatType;
-
-// UVM GPU Element bits types
-typedef enum {
-   UvmRmGpuFormatElementBitsDefault = 0,
-   UvmRmGpuFormatElementBits8 = 1,
-   UvmRmGpuFormatElementBits16 = 2,
-   // Cuda does not support 24-bit width
-   UvmRmGpuFormatElementBits32 = 4,
-   UvmRmGpuFormatElementBits64 = 5,
-   UvmRmGpuFormatElementBits128 = 6,
-   UvmRmGpuFormatElementBitsCount = 7
-} UvmRmGpuFormatElementBits;
-
-// UVM GPU Compression types
-typedef enum {
-    UvmRmGpuCompressionTypeDefault = 0,
-    UvmRmGpuCompressionTypeEnabledNoPlc = 1,
-    UvmRmGpuCompressionTypeCount = 2
-} UvmRmGpuCompressionType;
-
 typedef struct UvmGpuExternalMappingInfo_tag
 {
     // In: GPU caching ability.
-    UvmRmGpuCachingType cachingType;
+    UvmGpuCachingType cachingType;
 
     // In: Virtual permissions.
-    UvmRmGpuMappingType mappingType;
+    UvmGpuMappingType mappingType;
 
     // In: RM virtual mapping memory format
-    UvmRmGpuFormatType formatType;
+    UvmGpuFormatType formatType;
 
     // In: RM virtual mapping element bits
-    UvmRmGpuFormatElementBits elementBits;
+    UvmGpuFormatElementBits elementBits;
 
     // In: RM virtual compression type
-    UvmRmGpuCompressionType compressionType;
+    UvmGpuCompressionType compressionType;
 
     // In: Size of the buffer to store PTEs (in bytes).
     NvU64 pteBufferSize;
@@ -546,6 +474,9 @@ typedef struct UvmGpuExternalMappingInfo_tag
 
     // Out: PTE size (in bytes)
     NvU32 pteSize;
+
+    // Out: UVM needs to invalidate L2 at unmap
+    NvBool bNeedL2InvalidateAtUnmap;
 } UvmGpuExternalMappingInfo;
 
 typedef struct UvmGpuExternalPhysAddrInfo_tag
@@ -553,7 +484,7 @@ typedef struct UvmGpuExternalPhysAddrInfo_tag
     // In: Virtual permissions. Returns
     // NV_ERR_INVALID_ACCESS_TYPE if input is
     // inaccurate
-    UvmRmGpuMappingType mappingType;
+    UvmGpuMappingType mappingType;
 
     // In: Size of the buffer to store PhysAddrs (in bytes).
     NvU64 physAddrBufferSize;
@@ -603,6 +534,11 @@ typedef struct UvmGpuP2PCapsParams_tag
     // second, not taking into account the protocols overhead. The reported
     // bandwidth for indirect peers is zero.
     NvU32 totalLinkLineRateMBps;
+
+    // Out: IOMMU/DMA mappings of bar1 of the respective peer vidmem.
+    // Size is 0 if bar1 p2p is not supported.
+    NvU64 bar1DmaAddress[2];
+    NvU64 bar1DmaSize[2];
 } UvmGpuP2PCapsParams;
 
 // Platform-wide information
@@ -746,6 +682,9 @@ typedef struct UvmGpuInfo_tag
 
     // GPU supports ATS capability
     NvBool atsSupport;
+
+    // GPU supports Non-PASID ATS capability
+    NvBool nonPasidAtsSupport;
 } UvmGpuInfo;
 
 typedef struct UvmGpuFbInfo_tag
@@ -759,6 +698,7 @@ typedef struct UvmGpuFbInfo_tag
     NvBool bZeroFb;            // Zero FB mode enabled.
     NvU64  maxVidmemPageSize;  // Largest GPU page size to access vidmem.
     NvBool bStaticBar1Enabled; // Static BAR1 mode is enabled
+    NvBool bStaticBar1WriteCombined; // Write combined is enabled
     NvU64  staticBar1StartOffset;  // The start offset of the the static mapping
     NvU64  staticBar1Size;     // The size of the static mapping
     NvU32  heapStart;          // The start offset of heap in KB, helpful for MIG
@@ -794,19 +734,6 @@ typedef struct UvmPmaAllocationOptions_tag
 
     NvU32 resultFlags;          // valid if the allocation function returns NV_OK
 } UvmPmaAllocationOptions;
-
-//
-// Mirrored in PMA (PMA_STATS)
-//
-typedef struct UvmPmaStatistics_tag
-{
-    volatile NvU64 numPages2m;                // PMA-wide 2MB pages count across all regions
-    volatile NvU64 numFreePages64k;           // PMA-wide free 64KB page count across all regions
-    volatile NvU64 numFreePages2m;            // PMA-wide free 2MB pages count across all regions
-    volatile NvU64 numPages2mProtected;       // PMA-wide 2MB pages count in protected memory
-    volatile NvU64 numFreePages64kProtected;  // PMA-wide free 64KB page count in protected memory
-    volatile NvU64 numFreePages2mProtected;   // PMA-wide free 2MB pages count in protected memory
-} UvmPmaStatistics;
 
 /*******************************************************************************
     uvmEventSuspend
@@ -1099,14 +1026,6 @@ typedef struct UvmGpuAccessCntrInfo_tag
     NvU32  bufferSize;
     NvHandle accessCntrBufferHandle;
 } UvmGpuAccessCntrInfo;
-
-typedef enum
-{
-    UVM_ACCESS_COUNTER_GRANULARITY_64K = 1,
-    UVM_ACCESS_COUNTER_GRANULARITY_2M  = 2,
-    UVM_ACCESS_COUNTER_GRANULARITY_16M = 3,
-    UVM_ACCESS_COUNTER_GRANULARITY_16G = 4,
-} UVM_ACCESS_COUNTER_GRANULARITY;
 
 typedef struct UvmGpuAccessCntrConfig_tag
 {

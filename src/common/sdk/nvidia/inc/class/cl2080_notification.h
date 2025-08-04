@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -221,7 +221,6 @@ extern "C" {
 #define NV2080_NOTIFIERS_OFA1                                      (180)
 #define NV2080_NOTIFIERS_AUX_POWER_EVENT                           (181)
 #define NV2080_NOTIFIERS_AUX_POWER_STATE_CHANGE                    (182)
-// Bug 4175886 - Use this new value for all chips once GB20X is released
 #define NV2080_NOTIFIERS_NVENC3                                    (183)
 #define NV2080_NOTIFIERS_GSP_PERF_TRACE                            (184)
 #define NV2080_NOTIFIERS_INBAND_RESPONSE                           (185)
@@ -251,7 +250,6 @@ extern "C" {
                                        (((x) >= NV2080_NOTIFIERS_CE10) && ((x) <= NV2080_NOTIFIERS_CE19)))
 
 // Indexed MSENC notifier reference
-// Bug 4175886 - Use this new value for all chips once GB20X is released
 #define NV2080_NOTIFIERS_NVENC(x)         (((x) < 3) ? (NV2080_NOTIFIERS_NVENC0 + (x)) : (NV2080_NOTIFIERS_NVENC3 + (x) - 3))
 #define NV2080_NOTIFIERS_NVENC_IDX(x)     (((x) <= NV2080_NOTIFIERS_NVENC2) ? ((x) - NV2080_NOTIFIERS_NVENC0) : ((x) - NV2080_NOTIFIERS_NVENC3 + 3))
 #define NV2080_NOTIFIER_TYPE_IS_NVENC(x)  ((((x) >= NV2080_NOTIFIERS_NVENC0) && ((x) <= NV2080_NOTIFIERS_NVENC2)) || \
@@ -350,7 +348,6 @@ extern "C" {
 #define NV2080_ENGINE_TYPE_COPY18                     (0x0000003c)
 #define NV2080_ENGINE_TYPE_COPY19                     (0x0000003d)
 #define NV2080_ENGINE_TYPE_OFA1                       (0x0000003e)
-// Bug 4175886 - Use this new value for all chips once GB20X is released
 #define NV2080_ENGINE_TYPE_NVENC3                     (0x0000003f)
 // See TBD documentation for how these defines work with existing ENGINE_TYPE_COPYN defines
 #define NV2080_ENGINE_TYPE_COMP_DECOMP_COPY0          (0x00000040)
@@ -402,7 +399,6 @@ extern "C" {
 #define NV2080_ENGINE_TYPE_COPY_IDX(i) (((i) <= NV2080_ENGINE_TYPE_COPY9) ? \
                                         ((i) - NV2080_ENGINE_TYPE_COPY0) : ((i) - NV2080_ENGINE_TYPE_COPY10 + 10))
 
-// Bug 4175886 - Use this new value for all chips once GB20X is released
 #define NV2080_ENGINE_TYPE_NVENC(i)     (((i) < 3) ? (NV2080_ENGINE_TYPE_NVENC0 + (i)) : (NV2080_ENGINE_TYPE_NVENC3 + (i) - 3))
 #define NV2080_ENGINE_TYPE_IS_NVENC(i)  ((((i) >= NV2080_ENGINE_TYPE_NVENC0) && ((i) <= NV2080_ENGINE_TYPE_NVENC2)) || \
                                         (((i) == NV2080_ENGINE_TYPE_NVENC3)))

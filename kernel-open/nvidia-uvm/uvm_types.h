@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2013-2024 NVidia Corporation
+    Copyright (c) 2013-2025 NVidia Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -33,6 +33,7 @@
 #include "nvtypes.h"
 #include "nvstatus.h"
 #include "nvCpuUuid.h"
+#include "nv_uvm_user_types.h"
 
 
 /*******************************************************************************
@@ -71,94 +72,14 @@ typedef unsigned long long UvmStream;
 
 #define UVM_RANGE_GROUP_ID_NONE        ((NvU64)0)
 
-//------------------------------------------------------------------------------
-// UVM GPU mapping types
+//-----------------------------------------------------------------------------
+// UVM Discard flags
 //
-// These types indicate the kinds of accesses allowed from a given GPU at the
-// specified virtual address range. There are 3 basic kinds of accesses: read,
-// write and atomics. Each type indicates what kinds of accesses are allowed.
-// Accesses of any disallowed kind are fatal. The "Default" type specifies that
-// the UVM driver should decide on the types of accesses allowed.
-//------------------------------------------------------------------------------
-typedef enum
-{
-    UvmGpuMappingTypeDefault = 0,
-    UvmGpuMappingTypeReadWriteAtomic = 1,
-    UvmGpuMappingTypeReadWrite = 2,
-    UvmGpuMappingTypeReadOnly = 3,
-    UvmGpuMappingTypeCount = 4
-} UvmGpuMappingType;
-
-//------------------------------------------------------------------------------
-// UVM GPU caching types
-//
-// These types indicate the cacheability of the specified virtual address range
-// from a given GPU. The "Default" type specifies that the UVM driver should
-// set caching on or off as required to follow the UVM coherence model. The
-// "ForceUncached" and "ForceCached" types will always turn caching off or on
-// respectively. These two types override the cacheability specified by the UVM
-// coherence model.
-//------------------------------------------------------------------------------
-typedef enum
-{
-    UvmGpuCachingTypeDefault = 0,
-    UvmGpuCachingTypeForceUncached = 1,
-    UvmGpuCachingTypeForceCached = 2,
-    UvmGpuCachingTypeCount = 3
-} UvmGpuCachingType;
-
-//------------------------------------------------------------------------------
-// UVM GPU format types
-//
-// These types indicate the memory format of the specified virtual address
-// range for a given GPU. The "Default" type specifies that the UVM driver will
-// detect the format based on the allocation and is mutually inclusive with
-// UvmGpuFormatElementBitsDefault.
-//------------------------------------------------------------------------------
-typedef enum {
-   UvmGpuFormatTypeDefault = 0,
-   UvmGpuFormatTypeBlockLinear = 1,
-   UvmGpuFormatTypeCount = 2
-} UvmGpuFormatType;
-
-//------------------------------------------------------------------------------
-// UVM GPU Element bits types
-//
-// These types indicate the element size of the specified virtual address range
-// for a given GPU. The "Default" type specifies that the UVM driver will
-// detect the element size based on the allocation and is mutually inclusive
-// with UvmGpuFormatTypeDefault. The element size is specified in bits:
-// UvmGpuFormatElementBits8 uses the 8-bits format.
-//------------------------------------------------------------------------------
-typedef enum {
-   UvmGpuFormatElementBitsDefault = 0,
-   UvmGpuFormatElementBits8 = 1,
-   UvmGpuFormatElementBits16 = 2,
-   // Cuda does not support 24-bit width
-   UvmGpuFormatElementBits32 = 4,
-   UvmGpuFormatElementBits64 = 5,
-   UvmGpuFormatElementBits128 = 6,
-   UvmGpuFormatElementBitsCount = 7
-} UvmGpuFormatElementBits;
-
-//------------------------------------------------------------------------------
-// UVM GPU Compression types
-//
-// These types indicate the compression type of the specified virtual address
-// range for a given GPU. The "Default" type specifies that the UVM driver will
-// detect the compression attributes based on the allocation. Any type other
-// than the default will override the compression behavior of the physical
-// allocation. UvmGpuCompressionTypeEnabledNoPlc will disable PLC but enables
-// generic compression. UvmGpuCompressionTypeEnabledNoPlc type is only supported
-// on Turing plus GPUs. Since UvmGpuCompressionTypeEnabledNoPlc type enables
-// generic compression, it can only be used when the compression attribute of
-// the underlying physical allocation is enabled.
-//------------------------------------------------------------------------------
-typedef enum {
-    UvmGpuCompressionTypeDefault = 0,
-    UvmGpuCompressionTypeEnabledNoPlc = 1,
-    UvmGpuCompressionTypeCount = 2
-} UvmGpuCompressionType;
+// These flags indicate the behavior of discard operations:
+// UVM_DISCARD_FLAGS_UNMAP: The discarded pages will be unmapped. This allows
+//      future writes to remove the discard status.
+//-----------------------------------------------------------------------------
+#define UVM_DISCARD_FLAGS_UNMAP ((NvU64)1)
 
 typedef struct
 {
@@ -173,7 +94,7 @@ typedef struct
 } UvmGpuMappingAttributes;
 
 // forward declaration of OS-dependent structure
-struct UvmGlobalState_tag;
+typedef struct UvmGlobalState_tag UvmGlobalState;
 
 // Platform specific parameters for UvmRegisterGpu*
 typedef union

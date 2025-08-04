@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: MIT
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,7 +31,7 @@ NV_USE_LIBSPDM   := 0
 
 # Set some common path defines for readability.
 LIBSPDM_SOURCE_DIR := src/libraries/libspdm
-LIBSPDM_VERSION    := 3.1.1
+LIBSPDM_VERSION    := 3.5.0
 
 # List all files which depend on libspdm headers under LIBSPDM_SOURCES.
 
@@ -47,6 +47,7 @@ LIBSPDM_SOURCES += src/kernel/gpu/spdm/kernel_spdm.c
 LIBSPDM_SOURCES += src/kernel/gpu/bus/p2p_api.c
 
 # NVIDIA-authored platform code
+LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/nvidia/nvspdm_cert.c
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/nvidia/nvspdm_crypt_null.c
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/nvidia/nvspdm_debuglib.c
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/nvidia/nvspdm_malloclib.c
@@ -109,4 +110,4 @@ LIBSPDM_INCLUDES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/os_stub/cryptlib_nu
 LIBSPDM_INCLUDES += $(LIBSPDM_SOURCE_DIR)/nvidia
 
 # Override the default libspdm configuration with our own.
-LIBSPDM_DEFINES  += LIBSPDM_CONFIG=\"nvspdm_rmconfig.h\"
+LIBSPDM_DEFINES  += "LIBSPDM_CONFIG=<nvspdm_rmconfig.h>"

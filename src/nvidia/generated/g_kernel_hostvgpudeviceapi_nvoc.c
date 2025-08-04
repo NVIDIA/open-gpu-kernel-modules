@@ -85,6 +85,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelHostVgpuDeviceShr =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_kernelhostvgpudeviceshrDestruct(KernelHostVgpuDeviceShr*);
 void __nvoc_dtor_RsShared(RsShared*);
 void __nvoc_dtor_KernelHostVgpuDeviceShr(KernelHostVgpuDeviceShr *pThis) {
     __nvoc_kernelhostvgpudeviceshrDestruct(pThis);
@@ -329,17 +330,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelHostVgpuDeviceApi =
     /*pExportInfo=*/        &__nvoc_export_info__KernelHostVgpuDeviceApi
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelHostVgpuDeviceApi[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -354,7 +357,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelHo
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -369,7 +372,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelHo
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -384,7 +387,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelHo
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kernelhostvgpudeviceapiCtrlCmdVfConfigSpaceAccess_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kernelhostvgpudeviceapiCtrlCmdVfConfigSpaceAccess_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -399,7 +402,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelHo
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x808u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x808u)
         /*flags=*/      0x808u,
         /*accessRight=*/0x0u,
@@ -414,7 +417,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelHo
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -429,7 +432,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelHo
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x118u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kernelhostvgpudeviceapiCtrlCmdEventSetNotification_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kernelhostvgpudeviceapiCtrlCmdEventSetNotification_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x118u)
         /*flags=*/      0x118u,
         /*accessRight=*/0x0u,
@@ -444,7 +447,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelHo
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -459,12 +462,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelHo
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xa084010bu,
-        /*paramSize=*/  0,
+        /*paramSize=*/  0 /* Singleton parameter list */,
         /*pClassInfo=*/ &(__nvoc_class_def_KernelHostVgpuDeviceApi.classInfo),
 #if NV_PRINTF_STRINGS_ALLOWED
         /*func=*/       "kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition"
@@ -474,7 +477,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelHo
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kernelhostvgpudeviceapiCtrlCmdFreeStates_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kernelhostvgpudeviceapiCtrlCmdFreeStates_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -489,7 +492,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelHo
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -504,7 +507,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelHo
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kernelhostvgpudeviceapiCtrlCmdSetPlacementId_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kernelhostvgpudeviceapiCtrlCmdSetPlacementId_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -515,7 +518,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelHo
         /*func=*/       "kernelhostvgpudeviceapiCtrlCmdSetPlacementId"
 #endif
     },
-
 };
 
 
@@ -830,6 +832,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelHostVgpuDeviceApi =
     /*pExportEntries=*/ __nvoc_exported_method_def_KernelHostVgpuDeviceApi
 };
 
+void __nvoc_kernelhostvgpudeviceapiDestruct(KernelHostVgpuDeviceApi*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_Notifier(Notifier*);
 void __nvoc_dtor_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi *pThis) {
@@ -870,73 +873,11 @@ __nvoc_ctor_KernelHostVgpuDeviceApi_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_KernelHostVgpuDeviceApi_1(KernelHostVgpuDeviceApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo -- exported (id=0xa0840101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo__ = &kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo_IMPL;
-#endif
-
-    // kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState -- exported (id=0xa0840102)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState__ = &kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState_IMPL;
-#endif
-
-    // kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo -- exported (id=0xa0840103)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo__ = &kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo_IMPL;
-#endif
-
-    // kernelhostvgpudeviceapiCtrlCmdVfConfigSpaceAccess -- exported (id=0xa0840104)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__kernelhostvgpudeviceapiCtrlCmdVfConfigSpaceAccess__ = &kernelhostvgpudeviceapiCtrlCmdVfConfigSpaceAccess_IMPL;
-#endif
-
-    // kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf -- exported (id=0xa0840105)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x808u)
-    pThis->__kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf__ = &kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf_IMPL;
-#endif
-
-    // kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell -- exported (id=0xa0840106)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell__ = &kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell_IMPL;
-#endif
-
-    // kernelhostvgpudeviceapiCtrlCmdEventSetNotification -- exported (id=0xa0840107)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x118u)
-    pThis->__kernelhostvgpudeviceapiCtrlCmdEventSetNotification__ = &kernelhostvgpudeviceapiCtrlCmdEventSetNotification_IMPL;
-#endif
-
-    // kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges -- exported (id=0xa084010a)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges__ = &kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_IMPL;
-#endif
-
-    // kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition -- exported (id=0xa084010b)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition__ = &kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition_IMPL;
-#endif
-
-    // kernelhostvgpudeviceapiCtrlCmdFreeStates -- exported (id=0xa084010c)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__kernelhostvgpudeviceapiCtrlCmdFreeStates__ = &kernelhostvgpudeviceapiCtrlCmdFreeStates_IMPL;
-#endif
-
-    // kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask -- exported (id=0xa084010d)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask__ = &kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_IMPL;
-#endif
-
-    // kernelhostvgpudeviceapiCtrlCmdSetPlacementId -- exported (id=0xa084010e)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__kernelhostvgpudeviceapiCtrlCmdSetPlacementId__ = &kernelhostvgpudeviceapiCtrlCmdSetPlacementId_IMPL;
-#endif
-} // End __nvoc_init_funcTable_KernelHostVgpuDeviceApi_1 with approximately 12 basic block(s).
+} // End __nvoc_init_funcTable_KernelHostVgpuDeviceApi_1
 
 
-// Initialize vtable(s) for 42 virtual method(s).
+// Initialize vtable(s) for 30 virtual method(s).
 void __nvoc_init_funcTable_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi *pThis) {
-
-    // Initialize vtable(s) with 12 per-object function pointer(s).
     __nvoc_init_funcTable_KernelHostVgpuDeviceApi_1(pThis);
 }
 

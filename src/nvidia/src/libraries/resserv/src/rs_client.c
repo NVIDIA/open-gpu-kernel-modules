@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1088,7 +1088,9 @@ clientDestructResourceRef_IMPL
         RS_RES_FREE_PARAMS_INTERNAL params;
         NV_STATUS      tmpStatus;
 
+#if !(RS_STANDALONE_TEST)
         NV_ASSERT(0 == multimapCountItems(&pResourceRef->childRefMap));
+#endif
 
         NV_PRINTF(LEVEL_ERROR, "Resource %x (Class %x) has unfreed children!\n",
                   pResourceRef->hResource, pResourceRef->externalClassId);
@@ -1279,6 +1281,8 @@ _unmapInterMapping
     params.hClient = pClient->hClient;
     params.hMapper = pMapperRef->hResource;
     params.hDevice = pMapping->pContextRef->hResource;
+
+    // This is a bug. Passing NVOS46 flags to virtmemUnmap which checks against NVOS47 flags.
     params.flags = pMapping->flags;
     params.dmaOffset = pMapping->dmaOffset;
     params.size = 0;

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -493,7 +493,7 @@ bool uvm_push_method_is_valid(uvm_push_t *push, NvU8 subch, NvU32 method_address
         return gpu->parent->ce_hal->method_is_valid(push, method_address, method_data);
     else if (subch == UVM_SUBCHANNEL_HOST)
         return gpu->parent->host_hal->method_is_valid(push, method_address, method_data);
-    else if (subch == UVM_SW_OBJ_SUBCHANNEL)
+    else if (subch == UVM_SUBCHANNEL_SW)
         return gpu->parent->host_hal->sw_method_is_valid(push, method_address, method_data);
     else if (subch == UVM_SUBCHANNEL_SEC2)
         return true;

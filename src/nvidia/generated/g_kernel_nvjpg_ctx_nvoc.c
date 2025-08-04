@@ -523,6 +523,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__NvjpgContext =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_nvjpgctxDestruct(NvjpgContext*);
 void __nvoc_dtor_ChannelDescendant(ChannelDescendant*);
 void __nvoc_dtor_NvjpgContext(NvjpgContext *pThis) {
     __nvoc_nvjpgctxDestruct(pThis);

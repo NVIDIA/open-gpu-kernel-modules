@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -762,7 +762,7 @@ serverAllocResourceUnderLock
     tmpStatus = gpuGetByRef(pParentRef, NULL, &pGpu);
 
     // Override locking flags if we'll need to RPC to GSP
-    if (pGpu != NULL && IS_GSP_CLIENT(pGpu) &&
+    if (pGpu != NULL && IS_FW_CLIENT(pGpu) &&
         (pResDesc->flags & RS_FLAGS_ALLOC_RPC_TO_PHYS_RM))
     {
         resLockAccess = LOCK_ACCESS_WRITE; // always write as we're RPCing to GSP
@@ -882,7 +882,7 @@ serverAllocResourceUnderLock
                 goto done;
             }
 
-            if (!IS_VIRTUAL(pGpu) && !IS_GSP_CLIENT(pGpu))
+            if (!IS_VIRTUAL(pGpu) && !IS_FW_CLIENT(pGpu))
             {
                 status = NV_OK;
                 goto done;
@@ -890,7 +890,7 @@ serverAllocResourceUnderLock
 
             // if physical RM RPC make sure we're a GSP client otherwise skip
             if (((pResDesc->flags & (RS_FLAGS_ALLOC_RPC_TO_VGPU_HOST | RS_FLAGS_ALLOC_RPC_TO_PHYS_RM)) == RS_FLAGS_ALLOC_RPC_TO_PHYS_RM) &&
-                (!IS_GSP_CLIENT(pGpu)))
+                (!IS_FW_CLIENT(pGpu)))
             {
                 status = NV_OK;
                 goto done;
@@ -973,7 +973,7 @@ serverFreeResourceRpcUnderLock
     pRmResource = dynamicCast(pResourceRef->pResource, RmResource);
     status = gpuGetByRef(pResourceRef, &bBcResource, &pGpu);
     if ((status != NV_OK) ||
-        (!IS_VIRTUAL(pGpu) && !IS_GSP_CLIENT(pGpu)) ||
+        (!IS_VIRTUAL(pGpu) && !IS_FW_CLIENT(pGpu)) ||
         (pRmResource == NULL) ||
         (pRmResource->bRpcFree == NV_FALSE))
     {
@@ -1085,7 +1085,7 @@ serverUpdateLockFlagsForFree
     if (gpuGetByRef(pLockInfo->pContextRef, NULL, &pGpu) == NV_OK)
     {
         RmResource *pRmResource = dynamicCast(pRmFreeParams->pResourceRef->pResource, RmResource);
-        if (pGpu != NULL && IS_GSP_CLIENT(pGpu) && pRmResource != NULL && pRmResource->bRpcFree)
+        if (pGpu != NULL && IS_FW_CLIENT(pGpu) && pRmResource != NULL && pRmResource->bRpcFree)
         {
             //
             // If the resource desc says no need for GPU locks, we still need to lock
@@ -1377,6 +1377,18 @@ resservResourceFactory
         if ((pGpu = gpumgrGetGpu(gpuInst)) == NULL)
         {
             return NV_ERR_INVALID_STATE;
+        }
+    }
+
+    if (pGpu != NULL &&
+        !RMCFG_FEATURE_PLATFORM_MODS &&
+        !gpuIsClassSupported(pGpu, pParams->externalClassId))
+    {
+        if (!IsGM107(pGpu) || // Allow unsupported classes on GM107 on VGPU: bug 5354490 WAR
+            !hypervisorIsVgxHyper())
+        {
+            NV_PRINTF(LEVEL_INFO, "Skipping unsupported class 0x%x\n", pParams->externalClassId);
+            return NV_ERR_NOT_SUPPORTED;
         }
     }
 

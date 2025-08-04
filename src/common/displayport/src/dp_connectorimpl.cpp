@@ -148,6 +148,7 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
     hal->applyRegkeyOverrides(dpRegkeyDatabase);
 
     hal->setConnectorTypeC(main->isConnectorUSBTypeC());
+
     highestAssessedLC = initMaxLinkConfig();
 }
 
@@ -171,19 +172,18 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
         this->bKeepLinkAliveMST = dpRegkeyDatabase.bOptLinkKeptAliveMst;
         this->bKeepLinkAliveSST = dpRegkeyDatabase.bOptLinkKeptAliveSst;
     }
-    this->bReportDeviceLostBeforeNew       = dpRegkeyDatabase.bReportDeviceLostBeforeNew;
-    this->bDisableSSC                      = dpRegkeyDatabase.bSscDisabled;
-    this->bEnableFastLT                    = dpRegkeyDatabase.bFastLinkTrainingEnabled;
-    this->bDscMstCapBug3143315             = dpRegkeyDatabase.bDscMstCapBug3143315;
-    this->bPowerDownPhyBeforeD3            = dpRegkeyDatabase.bPowerDownPhyBeforeD3;
+    this->bReportDeviceLostBeforeNew        = dpRegkeyDatabase.bReportDeviceLostBeforeNew;
+    this->bDisableSSC                       = dpRegkeyDatabase.bSscDisabled;
+    this->bEnableFastLT                     = dpRegkeyDatabase.bFastLinkTrainingEnabled;
+    this->bDscMstCapBug3143315              = dpRegkeyDatabase.bDscMstCapBug3143315;
+    this->bPowerDownPhyBeforeD3             = dpRegkeyDatabase.bPowerDownPhyBeforeD3;
     if (dpRegkeyDatabase.applyMaxLinkRateOverrides)
     {
-        this->maxLinkRateFromRegkey        = hal->mapLinkBandiwdthToLinkrate(dpRegkeyDatabase.applyMaxLinkRateOverrides); // BW to linkrate
+        this->maxLinkRateFromRegkey         = hal->mapLinkBandiwdthToLinkrate(dpRegkeyDatabase.applyMaxLinkRateOverrides); // BW to linkrate
     }
-    this->bForceDisableTunnelBwAllocation  = dpRegkeyDatabase.bForceDisableTunnelBwAllocation;
-    this->bSkipZeroOuiCache                = dpRegkeyDatabase.bSkipZeroOuiCache;
-    this->bForceHeadShutdownFromRegkey     = dpRegkeyDatabase.bForceHeadShutdown;
-    this->bEnableLowerBppCheckForDsc       = dpRegkeyDatabase.bEnableLowerBppCheckForDsc;
+    this->bForceDisableTunnelBwAllocation   = dpRegkeyDatabase.bForceDisableTunnelBwAllocation;
+    this->bSkipZeroOuiCache                 = dpRegkeyDatabase.bSkipZeroOuiCache;
+    this->bForceHeadShutdownFromRegkey      = dpRegkeyDatabase.bForceHeadShutdown;
     this->bDisableEffBppSST8b10b            = dpRegkeyDatabase.bDisableEffBppSST8b10b;
 }
 
@@ -944,6 +944,7 @@ Group * ConnectorImpl::resume(bool firmwareLinkHandsOff,
         activeGroups.insertBack((GroupImpl *)firmwareGroup);
 
         result = firmwareGroup;
+        bSkipResetLinkStateDuringPlug = true;
     }
 
     hal->overrideMultiStreamCap(bAllowMST);
@@ -1362,7 +1363,7 @@ bool ConnectorImpl::compoundQueryAttachMST(Group * target,
         // Incase of CompoundQueryAttachMSTGeneric failure, instead of returning false, check whether the mode can be supported with the max dsc compression bpp
         // and return true if it can be supported.
 
-        if (!compoundQueryResult && forceDscBitsPerPixelX16 == 0U && this->bEnableLowerBppCheckForDsc)
+        if (!compoundQueryResult && forceDscBitsPerPixelX16 == 0U)
         {
             pDscParams->bitsPerPixelX16 = MAX_DSC_COMPRESSION_BPPX16;
             result = compoundQueryAttachMSTDsc(target, modesetParams, &localInfo,
@@ -1783,11 +1784,8 @@ bool ConnectorImpl::compoundQueryAttachMSTGeneric(Group * target,
                 if ( tail->bandwidth.compound_query_state.timeslots_used_by_query > tail->bandwidth.compound_query_state.totalTimeSlots)
                 {
                     compoundQueryResult = false;
-                    if(this->bEnableLowerBppCheckForDsc)
-                    {
-                        tail->bandwidth.compound_query_state.timeslots_used_by_query -= linkConfig->slotsForPBN(base_pbn);
-                        tail->bandwidth.compound_query_state.bandwidthAllocatedForIndex &= ~(1 << compoundQueryCount);
-                    }
+                    tail->bandwidth.compound_query_state.timeslots_used_by_query -= linkConfig->slotsForPBN(base_pbn);
+                    tail->bandwidth.compound_query_state.bandwidthAllocatedForIndex &= ~(1 << compoundQueryCount);
                     SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH)
                 }
             }
@@ -1796,7 +1794,7 @@ bool ConnectorImpl::compoundQueryAttachMSTGeneric(Group * target,
     }
 
     // If the compoundQueryResult is false, we need to reset the compoundQueryLocalLinkPBN
-    if (!compoundQueryResult && this->bEnableLowerBppCheckForDsc)
+    if (!compoundQueryResult)
     {
         compoundQueryLocalLinkPBN -= slots_pbn;
     }
@@ -4397,7 +4395,7 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
                                                       this->hal->getEnhancedFraming(),
                                                       linkUseMultistream(),
                                                       false, /* disablePostLTRequest */
-                                                      false, /* bEnableFEC */
+                                                      bFECEnabled, /* bEnableFEC */
                                                       false, /* bDisableLTTPR */
                                                       this->getDownspreadDisabled());
             }
@@ -4791,8 +4789,11 @@ bool ConnectorImpl::isLinkLost()
 
         // update the sw cache if required
         hal->refreshLinkStatus();
-        if (!hal->getInterlaneAlignDone())
-            return true;
+        if (!(hal->isDpInTunnelingSupported() && main->isDpTunnelingHwBugWarEnabled()))
+        {
+            if (!hal->getInterlaneAlignDone())
+                return true;
+        }
 
         for (unsigned i = 0; i < activeLinkConfig.lanes; i++)
         {
@@ -4804,8 +4805,11 @@ bool ConnectorImpl::isLinkLost()
                 return true;
         }
 
-        if (!hal->getInterlaneAlignDone())
-            return true;
+        if (!(hal->isDpInTunnelingSupported() && main->isDpTunnelingHwBugWarEnabled()))
+        {
+            if (!hal->getInterlaneAlignDone())
+                return true;
+        }
     }
     return false;
 }
@@ -6801,6 +6805,12 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
         // Tear down old message manager
         DP_ASSERT( !hal->getSupportsMultistream() || (hal->isAtLeastVersion(1, 2) && " Device supports multistream but not DP 1.2 !?!? "));
 
+        if (!bSkipResetLinkStateDuringPlug)
+        {
+            linkState = DP_TRANSPORT_MODE_INIT;
+        }
+        bSkipResetLinkStateDuringPlug = false;
+
         // Check if we should be attempting a transition between MST<->SST
         if (main->hasMultistream())
         {
@@ -7124,7 +7134,6 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
         bKeepOptLinkAlive = false;
         bNoFallbackInPostLQA = false;
         bDscCapBasedOnParent = false;
-        linkState = DP_TRANSPORT_MODE_INIT;
         linkAwaitingTransition = false;
 
     }
@@ -7419,7 +7428,6 @@ void ConnectorImpl::notifyShortPulse()
             }
             return;
         }
-
         if (activeLinkConfig.isValid() && enableFlush())
         {
             if (!train(originalActiveLinkConfig, false))
@@ -8046,8 +8054,13 @@ bool ConnectorImpl::handlePhyPatternRequest()
 
     pattern_info.lqsPattern = hal->getPhyTestPattern();
 
-    // Get lane count from most current link training
-    unsigned requestedLanes = this->activeLinkConfig.lanes;
+    // Get lane count from highestAssessedLC as link might not be active before PHY CTS
+    unsigned requestedLanes = this->highestAssessedLC.lanes;
+
+    if (requestedLanes == 0) {
+        DP_PRINTF(DP_ERROR, "DP> Compliance: requestedLanes is 0. Default to 4 lanes");
+        requestedLanes = 4;
+    }
 
     if (pattern_info.lqsPattern == LINK_QUAL_80BIT_CUST)
     {
@@ -8300,9 +8313,9 @@ void ConnectorImpl::configInit()
     allocatedDpTunnelBw = 0;
     allocatedDpTunnelBwShadow = 0;
     bForceHeadShutdownPerMonitor = false;
-    bDP2XPreferNonDSCForLowPClk = false;
     bDisableDscMaxBppLimit = false;
     bForceHeadShutdownOnModeTransition = false;
+    bDP2XPreferNonDSCForLowPClk = false;
     bSkipResetMSTMBeforeLt = false;
 }
 

@@ -121,17 +121,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryMapper =
     /*pExportInfo=*/        &__nvoc_export_info__MemoryMapper
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MemoryMapper[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x808u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) memmapperCtrlCmdSubmitOperations_IMPL,
+        /*pFunc=*/      (void (*)(void)) &memmapperCtrlCmdSubmitOperations_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x808u)
         /*flags=*/      0x808u,
         /*accessRight=*/0x0u,
@@ -146,7 +148,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MemoryMa
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) memmapperCtrlCmdResizeQueue_IMPL,
+        /*pFunc=*/      (void (*)(void)) &memmapperCtrlCmdResizeQueue_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -157,7 +159,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MemoryMa
         /*func=*/       "memmapperCtrlCmdResizeQueue"
 #endif
     },
-
 };
 
 
@@ -421,6 +422,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__MemoryMapper =
     /*pExportEntries=*/ __nvoc_exported_method_def_MemoryMapper
 };
 
+void __nvoc_memmapperDestruct(MemoryMapper*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_MemoryMapper(MemoryMapper *pThis) {
     __nvoc_memmapperDestruct(pThis);
@@ -454,23 +456,11 @@ __nvoc_ctor_MemoryMapper_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_MemoryMapper_1(MemoryMapper *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // memmapperCtrlCmdSubmitOperations -- exported (id=0xfe0101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x808u)
-    pThis->__memmapperCtrlCmdSubmitOperations__ = &memmapperCtrlCmdSubmitOperations_IMPL;
-#endif
-
-    // memmapperCtrlCmdResizeQueue -- exported (id=0xfe0102)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__memmapperCtrlCmdResizeQueue__ = &memmapperCtrlCmdResizeQueue_IMPL;
-#endif
-} // End __nvoc_init_funcTable_MemoryMapper_1 with approximately 2 basic block(s).
+} // End __nvoc_init_funcTable_MemoryMapper_1
 
 
-// Initialize vtable(s) for 27 virtual method(s).
+// Initialize vtable(s) for 25 virtual method(s).
 void __nvoc_init_funcTable_MemoryMapper(MemoryMapper *pThis) {
-
-    // Initialize vtable(s) with 2 per-object function pointer(s).
     __nvoc_init_funcTable_MemoryMapper_1(pThis);
 }
 

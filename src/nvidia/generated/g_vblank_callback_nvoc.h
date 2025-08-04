@@ -94,9 +94,6 @@ struct VblankCallback {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct VblankCallback *__nvoc_pbase_VblankCallback;    // vblcb
 
-    // Vtable with 1 per-object function pointer
-    NV_STATUS (*__vblcbCtrlSetVBlankNotification__)(struct VblankCallback * /*this*/, NV9010_CTRL_CMD_SET_VBLANK_NOTIFICATION_PARAMS *);  // exported (id=0x90100101)
-
     // Data members
     VBLANKCALLBACK CallBack;
     OSVBLANKCALLBACKPROC pProc;
@@ -171,9 +168,25 @@ NV_STATUS __nvoc_objCreate_VblankCallback(VblankCallback**, Dynamic*, NvU32, CAL
     __nvoc_objCreate_VblankCallback((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
-#define vblcbCtrlSetVBlankNotification_FNPTR(pVblankCallback) pVblankCallback->__vblcbCtrlSetVBlankNotification__
-#define vblcbCtrlSetVBlankNotification(pVblankCallback, pParams) vblcbCtrlSetVBlankNotification_DISPATCH(pVblankCallback, pParams)
+// Wrapper macros for implementation functions
+NV_STATUS vblcbConstruct_IMPL(struct VblankCallback *arg_pVblankCallback, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_vblcbConstruct(arg_pVblankCallback, arg_pCallContext, arg_pParams) vblcbConstruct_IMPL(arg_pVblankCallback, arg_pCallContext, arg_pParams)
+
+void vblcbDestruct_IMPL(struct VblankCallback *pVblankCallback);
+#define __nvoc_vblcbDestruct(pVblankCallback) vblcbDestruct_IMPL(pVblankCallback)
+
+NV_STATUS vblcbCtrlSetVBlankNotification_IMPL(struct VblankCallback *pVblankCallback, NV9010_CTRL_CMD_SET_VBLANK_NOTIFICATION_PARAMS *pParams);
+#ifdef __nvoc_vblank_callback_h_disabled
+static inline NV_STATUS vblcbCtrlSetVBlankNotification(struct VblankCallback *pVblankCallback, NV9010_CTRL_CMD_SET_VBLANK_NOTIFICATION_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("VblankCallback was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_vblank_callback_h_disabled
+#define vblcbCtrlSetVBlankNotification(pVblankCallback, pParams) vblcbCtrlSetVBlankNotification_IMPL(pVblankCallback, pParams)
+#endif // __nvoc_vblank_callback_h_disabled
+
+
+// Wrapper macros for halified functions
 #define vblcbControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define vblcbControl(pGpuResource, pCallContext, pParams) vblcbControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define vblcbMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
@@ -226,10 +239,6 @@ NV_STATUS __nvoc_objCreate_VblankCallback(VblankCallback**, Dynamic*, NvU32, CAL
 #define vblcbAddAdditionalDependants(pClient, pResource, pReference) vblcbAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
-static inline NV_STATUS vblcbCtrlSetVBlankNotification_DISPATCH(struct VblankCallback *pVblankCallback, NV9010_CTRL_CMD_SET_VBLANK_NOTIFICATION_PARAMS *pParams) {
-    return pVblankCallback->__vblcbCtrlSetVBlankNotification__(pVblankCallback, pParams);
-}
-
 static inline NV_STATUS vblcbControl_DISPATCH(struct VblankCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pGpuResource->__nvoc_metadata_ptr->vtable.__vblcbControl__(pGpuResource, pCallContext, pParams);
 }
@@ -332,12 +341,6 @@ static inline void vblcbAddAdditionalDependants_DISPATCH(struct RsClient *pClien
 
 NV_STATUS vblcbCtrlSetVBlankNotification_IMPL(struct VblankCallback *pVblankCallback, NV9010_CTRL_CMD_SET_VBLANK_NOTIFICATION_PARAMS *pParams);
 
-NV_STATUS vblcbConstruct_IMPL(struct VblankCallback *arg_pVblankCallback, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_vblcbConstruct(arg_pVblankCallback, arg_pCallContext, arg_pParams) vblcbConstruct_IMPL(arg_pVblankCallback, arg_pCallContext, arg_pParams)
-void vblcbDestruct_IMPL(struct VblankCallback *pVblankCallback);
-
-#define __nvoc_vblcbDestruct(pVblankCallback) vblcbDestruct_IMPL(pVblankCallback)
 #undef PRIVATE_FIELD
 
 

@@ -122,17 +122,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_GpuUserSharedData =
     /*pExportInfo=*/        &__nvoc_export_info__GpuUserSharedData
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GpuUserSharedData[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) gpushareddataCtrlCmdRequestDataPoll_IMPL,
+        /*pFunc=*/      (void (*)(void)) &gpushareddataCtrlCmdRequestDataPoll_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -143,7 +145,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GpuUserS
         /*func=*/       "gpushareddataCtrlCmdRequestDataPoll"
 #endif
     },
-
 };
 
 
@@ -417,6 +418,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__GpuUserSharedData =
     /*pExportEntries=*/ __nvoc_exported_method_def_GpuUserSharedData
 };
 
+void __nvoc_gpushareddataDestruct(GpuUserSharedData*);
 void __nvoc_dtor_Memory(Memory*);
 void __nvoc_dtor_GpuUserSharedData(GpuUserSharedData *pThis) {
     __nvoc_gpushareddataDestruct(pThis);
@@ -450,18 +452,11 @@ __nvoc_ctor_GpuUserSharedData_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_GpuUserSharedData_1(GpuUserSharedData *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // gpushareddataCtrlCmdRequestDataPoll -- exported (id=0xde0001)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__gpushareddataCtrlCmdRequestDataPoll__ = &gpushareddataCtrlCmdRequestDataPoll_IMPL;
-#endif
-} // End __nvoc_init_funcTable_GpuUserSharedData_1 with approximately 1 basic block(s).
+} // End __nvoc_init_funcTable_GpuUserSharedData_1
 
 
-// Initialize vtable(s) for 27 virtual method(s).
+// Initialize vtable(s) for 26 virtual method(s).
 void __nvoc_init_funcTable_GpuUserSharedData(GpuUserSharedData *pThis) {
-
-    // Initialize vtable(s) with 1 per-object function pointer(s).
     __nvoc_init_funcTable_GpuUserSharedData_1(pThis);
 }
 

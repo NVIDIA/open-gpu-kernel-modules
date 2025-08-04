@@ -446,6 +446,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__DispChannel =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_dispchnDestruct(DispChannel*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_Notifier(Notifier*);
 void __nvoc_dtor_DispChannel(DispChannel *pThis) {

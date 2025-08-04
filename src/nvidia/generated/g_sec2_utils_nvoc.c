@@ -80,6 +80,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__Sec2Utils =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_sec2utilsDestruct(Sec2Utils*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_Sec2Utils(Sec2Utils *pThis) {
     __nvoc_sec2utilsDestruct(pThis);

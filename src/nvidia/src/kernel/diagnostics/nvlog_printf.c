@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2002-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2002-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1148,7 +1148,7 @@ RmMsgPrefix
 
     if (prefix & NVRM_MSG_PREFIX_OSTIMESTAMP)
     {
-        osGetCurrentTime(&sec, &usec);
+        osGetSystemTime(&sec, &usec);
 
         len += nvDbgSnprintf(str + len, totalLen - len, "%s%d.%06d", space, sec, usec);
     }

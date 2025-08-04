@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2011-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -183,6 +183,7 @@
 #define LSF_FALCON_ID_END_30           (30U)
 
 #define LSF_FALCON_INSTANCE_DEFAULT_0           (0x0U)
+#define LSF_FALCON_INSTANCE_DEFAULT_4           (0x4U)
 #define LSF_FALCON_INSTANCE_COUNT_DEFAULT_1     (0x1U)
 
 // Currently max supported instance is 8 for FECS/GPCCS SMC

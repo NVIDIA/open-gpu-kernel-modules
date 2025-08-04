@@ -287,14 +287,14 @@ NV_STATUS uvm_isr_top_half_entry(const NvProcessorUuid *gpu_uuid)
 static NV_STATUS init_queue_on_node(nv_kthread_q_t *queue, const char *name, int node)
 {
 #if UVM_THREAD_AFFINITY_SUPPORTED()
-    if (node != -1 && !cpumask_empty(uvm_cpumask_of_node(node))) {
+    if (node != -1 && !cpumask_empty(cpumask_of_node(node))) {
         NV_STATUS status;
 
         status = errno_to_nv_status(nv_kthread_q_init_on_node(queue, name, node));
         if (status != NV_OK)
             return status;
 
-        return errno_to_nv_status(set_cpus_allowed_ptr(queue->q_kthread, uvm_cpumask_of_node(node)));
+        return errno_to_nv_status(set_cpus_allowed_ptr(queue->q_kthread, cpumask_of_node(node)));
     }
 #endif
 

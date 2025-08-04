@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -78,7 +78,6 @@
 #define MC_ENGINE_IDX_NVENC                         38
 #define MC_ENGINE_IDX_NVENC1                        39
 #define MC_ENGINE_IDX_NVENC2                        40
-// Bug 4175886 - Use this new value for all chips once GB20X is released
 #define MC_ENGINE_IDX_NVENC3                        41
 #define MC_ENGINE_IDX_C2C                           42
 #define MC_ENGINE_IDX_LTC                           43
@@ -153,7 +152,6 @@
 #define MC_ENGINE_IDX_PXUC                          168
 #define MC_ENGINE_IDX_SYSLTC                        169
 #define MC_ENGINE_IDX_LRCC                          170
-// Bug 4175886 - Use this new value for all chips once GB20X is released
 #define MC_ENGINE_IDX_GSPLITE                       171
 #define MC_ENGINE_IDX_GSPLITE0                      MC_ENGINE_IDX_GSPLITE
 #define MC_ENGINE_IDX_GSPLITE1                      172
@@ -192,10 +190,7 @@
 // Index OFA reference
 #define MC_ENGINE_IDX_OFA(x)            (MC_ENGINE_IDX_OFA0 + (x))
 
-//
-// Bug 4175886 - Remove check once GB20X is released
 // Index GSPLITE reference
-//
 #define MC_ENGINE_IDX_GSPLITEn(x)       (MC_ENGINE_IDX_GSPLITE + (x))
 
 MAKE_BITVECTOR(MC_ENGINE_BITVECTOR, MC_ENGINE_IDX_MAX);

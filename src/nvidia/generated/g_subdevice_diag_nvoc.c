@@ -134,17 +134,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_DiagApi =
     /*pExportInfo=*/        &__nvoc_export_info__DiagApi
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdFifoCheckEngineContext_IMPL,
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdFifoCheckEngineContext_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -156,12 +158,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10008u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdFifoGetChannelState_DISPATCH,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-        /*flags=*/      0x8u,
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdFifoGetChannelState_DISPATCH,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10008u)
+        /*flags=*/      0x10008u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x208f0403u,
         /*paramSize=*/  sizeof(NV208F_CTRL_FIFO_GET_CHANNEL_STATE_PARAMS),
@@ -174,7 +176,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdFbCtrlGpuCache_IMPL,
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdFbCtrlGpuCache_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -189,7 +191,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdFbEccSetKillPtr_IMPL,
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdFbEccSetKillPtr_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -201,10 +203,40 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
 #endif
     },
     {               /*  [4] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdFbEccInjectionSupported_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x208f0510u,
+        /*paramSize=*/  sizeof(NV208F_CTRL_FB_ECC_INJECTION_SUPPORTED_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_DiagApi.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "diagapiCtrlCmdFbEccInjectionSupported"
+#endif
+    },
+    {               /*  [5] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdFbEccSetWriteKill_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x208f0511u,
+        /*paramSize=*/  sizeof(NV208F_CTRL_FB_ECC_SET_WRITE_KILL_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_DiagApi.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "diagapiCtrlCmdFbEccSetWriteKill"
+#endif
+    },
+    {               /*  [6] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdFbClearRemappedRows_IMPL,
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdFbClearRemappedRows_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*flags=*/      0x44u,
         /*accessRight=*/0x0u,
@@ -215,11 +247,11 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
         /*func=*/       "diagapiCtrlCmdFbClearRemappedRows"
 #endif
     },
-    {               /*  [5] */
+    {               /*  [7] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdBifPBIWriteCommand_IMPL,
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdBifPBIWriteCommand_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -230,11 +262,11 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
         /*func=*/       "diagapiCtrlCmdBifPBIWriteCommand"
 #endif
     },
-    {               /*  [6] */
+    {               /*  [8] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdBifConfigRegRead_IMPL,
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdBifConfigRegRead_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -245,11 +277,11 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
         /*func=*/       "diagapiCtrlCmdBifConfigRegRead"
 #endif
     },
-    {               /*  [7] */
+    {               /*  [9] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdBifConfigRegWrite_IMPL,
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdBifConfigRegWrite_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -260,11 +292,11 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
         /*func=*/       "diagapiCtrlCmdBifConfigRegWrite"
 #endif
     },
-    {               /*  [8] */
+    {               /*  [10] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdBifInfo_IMPL,
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdBifInfo_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -275,11 +307,11 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
         /*func=*/       "diagapiCtrlCmdBifInfo"
 #endif
     },
-    {               /*  [9] */
+    {               /*  [11] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdGpuGetRamSvopValues_IMPL,
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdGpuGetRamSvopValues_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -290,11 +322,11 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
         /*func=*/       "diagapiCtrlCmdGpuGetRamSvopValues"
 #endif
     },
-    {               /*  [10] */
+    {               /*  [12] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdGpuSetRamSvopValues_IMPL,
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdGpuSetRamSvopValues_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -305,11 +337,11 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
         /*func=*/       "diagapiCtrlCmdGpuSetRamSvopValues"
 #endif
     },
-    {               /*  [11] */
+    {               /*  [13] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdGpuVerifyInforom_IMPL,
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdGpuVerifyInforom_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -320,11 +352,11 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
         /*func=*/       "diagapiCtrlCmdGpuVerifyInforom"
 #endif
     },
-    {               /*  [12] */
+    {               /*  [14] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x100048u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdGrInjectCtxswUcodeError_IMPL,
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdGrInjectCtxswUcodeError_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x100048u)
         /*flags=*/      0x100048u,
         /*accessRight=*/0x0u,
@@ -335,11 +367,11 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
         /*func=*/       "diagapiCtrlCmdGrInjectCtxswUcodeError"
 #endif
     },
-    {               /*  [13] */
+    {               /*  [15] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdUcodeCoverageGetState_IMPL,
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdUcodeCoverageGetState_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -350,11 +382,11 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
         /*func=*/       "diagapiCtrlCmdUcodeCoverageGetState"
 #endif
     },
-    {               /*  [14] */
+    {               /*  [16] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdUcodeCoverageSetState_IMPL,
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdUcodeCoverageSetState_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -365,11 +397,11 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
         /*func=*/       "diagapiCtrlCmdUcodeCoverageSetState"
 #endif
     },
-    {               /*  [15] */
+    {               /*  [17] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdUcodeCoverageGetData_IMPL,
+        /*pFunc=*/      (void (*)(void)) &diagapiCtrlCmdUcodeCoverageGetData_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -380,7 +412,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
         /*func=*/       "diagapiCtrlCmdUcodeCoverageGetData"
 #endif
     },
-
 };
 
 
@@ -691,7 +722,7 @@ NV_STATUS __nvoc_up_thunk_Notifier_diagapiGetOrAllocNotifShare(struct DiagApi *p
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__DiagApi = 
 {
-    /*numEntries=*/     16,
+    /*numEntries=*/     18,
     /*pExportEntries=*/ __nvoc_exported_method_def_DiagApi
 };
 
@@ -745,11 +776,6 @@ static void __nvoc_init_funcTable_DiagApi_1(DiagApi *pThis, RmHalspecOwner *pRmh
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
-    // diagapiCtrlCmdFifoCheckEngineContext -- exported (id=0x208f0401)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__diagapiCtrlCmdFifoCheckEngineContext__ = &diagapiCtrlCmdFifoCheckEngineContext_IMPL;
-#endif
-
     // diagapiCtrlCmdFifoGetChannelState -- halified (2 hals) exported (id=0x208f0403) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
@@ -759,83 +785,13 @@ static void __nvoc_init_funcTable_DiagApi_1(DiagApi *pThis, RmHalspecOwner *pRmh
     {
         pThis->__diagapiCtrlCmdFifoGetChannelState__ = &diagapiCtrlCmdFifoGetChannelState_IMPL;
     }
-
-    // diagapiCtrlCmdFbCtrlGpuCache -- exported (id=0x208f0506)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__diagapiCtrlCmdFbCtrlGpuCache__ = &diagapiCtrlCmdFbCtrlGpuCache_IMPL;
-#endif
-
-    // diagapiCtrlCmdFbEccSetKillPtr -- exported (id=0x208f050e)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__diagapiCtrlCmdFbEccSetKillPtr__ = &diagapiCtrlCmdFbEccSetKillPtr_IMPL;
-#endif
-
-    // diagapiCtrlCmdFbClearRemappedRows -- exported (id=0x208f0515)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
-    pThis->__diagapiCtrlCmdFbClearRemappedRows__ = &diagapiCtrlCmdFbClearRemappedRows_IMPL;
-#endif
-
-    // diagapiCtrlCmdGpuGetRamSvopValues -- exported (id=0x208f1101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__diagapiCtrlCmdGpuGetRamSvopValues__ = &diagapiCtrlCmdGpuGetRamSvopValues_IMPL;
-#endif
-
-    // diagapiCtrlCmdGpuSetRamSvopValues -- exported (id=0x208f1102)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__diagapiCtrlCmdGpuSetRamSvopValues__ = &diagapiCtrlCmdGpuSetRamSvopValues_IMPL;
-#endif
-
-    // diagapiCtrlCmdGpuVerifyInforom -- exported (id=0x208f1105)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__diagapiCtrlCmdGpuVerifyInforom__ = &diagapiCtrlCmdGpuVerifyInforom_IMPL;
-#endif
-
-    // diagapiCtrlCmdGrInjectCtxswUcodeError -- exported (id=0x208f1206)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x100048u)
-    pThis->__diagapiCtrlCmdGrInjectCtxswUcodeError__ = &diagapiCtrlCmdGrInjectCtxswUcodeError_IMPL;
-#endif
-
-    // diagapiCtrlCmdBifPBIWriteCommand -- exported (id=0x208f0701)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__diagapiCtrlCmdBifPBIWriteCommand__ = &diagapiCtrlCmdBifPBIWriteCommand_IMPL;
-#endif
-
-    // diagapiCtrlCmdBifConfigRegRead -- exported (id=0x208f0702)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__diagapiCtrlCmdBifConfigRegRead__ = &diagapiCtrlCmdBifConfigRegRead_IMPL;
-#endif
-
-    // diagapiCtrlCmdBifConfigRegWrite -- exported (id=0x208f0703)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__diagapiCtrlCmdBifConfigRegWrite__ = &diagapiCtrlCmdBifConfigRegWrite_IMPL;
-#endif
-
-    // diagapiCtrlCmdBifInfo -- exported (id=0x208f0704)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__diagapiCtrlCmdBifInfo__ = &diagapiCtrlCmdBifInfo_IMPL;
-#endif
-
-    // diagapiCtrlCmdUcodeCoverageGetState -- exported (id=0x208f1901)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__diagapiCtrlCmdUcodeCoverageGetState__ = &diagapiCtrlCmdUcodeCoverageGetState_IMPL;
-#endif
-
-    // diagapiCtrlCmdUcodeCoverageSetState -- exported (id=0x208f1902)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__diagapiCtrlCmdUcodeCoverageSetState__ = &diagapiCtrlCmdUcodeCoverageSetState_IMPL;
-#endif
-
-    // diagapiCtrlCmdUcodeCoverageGetData -- exported (id=0x208f1903)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__diagapiCtrlCmdUcodeCoverageGetData__ = &diagapiCtrlCmdUcodeCoverageGetData_IMPL;
-#endif
-} // End __nvoc_init_funcTable_DiagApi_1 with approximately 17 basic block(s).
+} // End __nvoc_init_funcTable_DiagApi_1 with approximately 2 basic block(s).
 
 
-// Initialize vtable(s) for 46 virtual method(s).
+// Initialize vtable(s) for 31 virtual method(s).
 void __nvoc_init_funcTable_DiagApi(DiagApi *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 16 per-object function pointer(s).
+    // Initialize vtable(s) with 1 per-object function pointer(s).
     __nvoc_init_funcTable_DiagApi_1(pThis, pRmhalspecowner);
 }
 

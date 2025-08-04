@@ -249,13 +249,13 @@ void* NV_API_CALL nv_i2c_add_adapter(nv_state_t *nv, NvU32 port)
     if (nvl->pci_dev != NULL)
     {
         snprintf(pI2cAdapter->name, sizeof(pI2cAdapter->name),
-            "NVIDIA i2c adapter %u at %x:%02x.%u", port, nv->pci_info.bus,
+            "NVIDIA i2c adapter %u at %x:%02x.%u\n", port, nv->pci_info.bus,
              nv->pci_info.slot, PCI_FUNC(nvl->pci_dev->devfn));
     }
     else
     {
         snprintf(pI2cAdapter->name, sizeof(pI2cAdapter->name),
-            "NVIDIA SOC i2c adapter %u", port);
+            "NVIDIA SOC i2c adapter %u\n", port);
     }
 
     // add our data to the structure
@@ -306,7 +306,7 @@ static struct i2c_client * nv_i2c_register_client(
     i2c_adapter = i2c_get_adapter(linuxI2CSwPort);
     if (i2c_adapter == NULL)
     {
-        nv_printf(NV_DBG_ERRORS, "Unable to get i2c adapter for port(%d)",
+        nv_printf(NV_DBG_ERRORS, "NVRM: Unable to get i2c adapter for port(%d)\n",
                   linuxI2CSwPort);
         return NULL;
     }
@@ -314,12 +314,12 @@ static struct i2c_client * nv_i2c_register_client(
 #if defined(NV_I2C_NEW_CLIENT_DEVICE_PRESENT)
     client = i2c_new_client_device(i2c_adapter, &i2c_dev_info);
 #else
-    nv_printf(NV_DBG_ERRORS, "nv_i2c_new_device not present\n");
+    nv_printf(NV_DBG_ERRORS, "NVRM: nv_i2c_new_device not present\n");
     client = NULL;
 #endif
     if (client == NULL)
     {
-        nv_printf(NV_DBG_ERRORS, "Unable to register client for address(0x%x)",
+        nv_printf(NV_DBG_ERRORS, "NVRM: Unable to register client for address(0x%x)\n",
                   address);
         i2c_put_adapter(i2c_adapter);
         return NULL;
@@ -394,7 +394,7 @@ NV_STATUS NV_API_CALL nv_i2c_transfer(
     //
     if (!(linuxI2CSwPort >= 0 && linuxI2CSwPort < MAX_TEGRA_I2C_PORTS))
     {
-        nv_printf(NV_DBG_ERRORS, "Invalid I2C port:%d\n", linuxI2CSwPort);
+        nv_printf(NV_DBG_ERRORS, "NVRM: Invalid I2C port:%d\n", linuxI2CSwPort);
         return NV_ERR_INVALID_ARGUMENT;
     }
 
@@ -411,7 +411,7 @@ NV_STATUS NV_API_CALL nv_i2c_transfer(
             client = nv_i2c_register_client(nv, linuxI2CSwPort, nv_msgs[count].addr);
             if (client == NULL)
             {
-                nv_printf(NV_DBG_ERRORS, "i2c client register failed for addr:0x%x\n",
+                nv_printf(NV_DBG_ERRORS, "NVRM: i2c client register failed for addr:0x%x\n",
                           nv_msgs[count].addr);
                 return NV_ERR_GENERIC;
             }
@@ -421,7 +421,7 @@ NV_STATUS NV_API_CALL nv_i2c_transfer(
     msgs = kzalloc((num_msgs * sizeof(*msgs)), GFP_KERNEL);
     if (msgs == NULL)
     {
-        nv_printf(NV_DBG_ERRORS, "i2c message allocation failed\n");
+        nv_printf(NV_DBG_ERRORS, "NVRM: i2c message allocation failed\n");
         return NV_ERR_NO_MEMORY;
     }
 
@@ -435,7 +435,7 @@ NV_STATUS NV_API_CALL nv_i2c_transfer(
     rc = i2c_transfer(client->adapter, msgs, num_msgs);
     if (rc != num_msgs)
     {
-        nv_printf(NV_DBG_ERRORS, "i2c transfer failed for addr:0x%x",
+        nv_printf(NV_DBG_ERRORS, "NVRM: i2c transfer failed for addr: 0x%x\n",
                   address);
         status = NV_ERR_GENERIC;
     }
@@ -461,11 +461,7 @@ void NV_API_CALL nv_i2c_unregister_clients(nv_state_t *nv)
             client = (struct i2c_client *)nvl->i2c_clients[p_index].pOsClient[c_index];
             if (client)
             {
-#if defined(NV_I2C_UNREGISTER_DEVICE_PRESENT)
                 i2c_unregister_device(client);
-#else
-                nv_printf(NV_DBG_ERRORS, "i2c_unregister_device not present\n");
-#endif
                 nvl->i2c_clients[p_index].pOsClient[c_index] = NULL;
             }
         }
@@ -488,7 +484,7 @@ NV_STATUS NV_API_CALL nv_i2c_bus_status(
     //
     if (!(linuxI2CSwPort >= 0 && linuxI2CSwPort < MAX_TEGRA_I2C_PORTS))
     {
-        nv_printf(NV_DBG_ERRORS, "Invalid I2C port:%d\n", linuxI2CSwPort);
+        nv_printf(NV_DBG_ERRORS, "NVRM: Invalid I2C port:%d\n", linuxI2CSwPort);
         return NV_ERR_INVALID_ARGUMENT;
     }
 
@@ -496,7 +492,7 @@ NV_STATUS NV_API_CALL nv_i2c_bus_status(
     i2c_adapter = i2c_get_adapter(linuxI2CSwPort);
     if (i2c_adapter == NULL)
     {
-        nv_printf(NV_DBG_ERRORS, "Unable to get i2c adapter for port(%d)",
+        nv_printf(NV_DBG_ERRORS, "NVRM: Unable to get i2c adapter for port(%d)\n",
                   linuxI2CSwPort);
         return NULL;
     }
@@ -505,7 +501,7 @@ NV_STATUS NV_API_CALL nv_i2c_bus_status(
     ret = i2c_bus_status(i2c_adapter, scl, sda);
     if (ret < 0)
     {
-        nv_printf(NV_DBG_ERRORS, "i2c_bus_status failed:%d\n", ret);
+        nv_printf(NV_DBG_ERRORS, "NVRM: i2c_bus_status failed:%d\n", ret);
         return NV_ERR_GENERIC;
     }
     i2c_put_adapter(i2c_adapter);
@@ -531,7 +527,9 @@ void* NV_API_CALL nv_i2c_add_adapter(nv_state_t *nv, NvU32 port)
 #endif
 
 
-#if !NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE
+#if !NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE || \
+    (NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE && \
+    (!defined(CONFIG_I2C) && !defined(CONFIG_I2C_MODULE)))
 
 NV_STATUS NV_API_CALL nv_i2c_transfer(
     nv_state_t *nv,

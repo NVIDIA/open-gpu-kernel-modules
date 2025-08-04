@@ -169,7 +169,41 @@ NV_STATUS __nvoc_objCreate_VirtualMemory(VirtualMemory**, Dynamic*, NvU32, CALL_
     __nvoc_objCreate_VirtualMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS virtmemConstruct_IMPL(struct VirtualMemory *arg_pVirtualMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_virtmemConstruct(arg_pVirtualMemory, arg_pCallContext, arg_pParams) virtmemConstruct_IMPL(arg_pVirtualMemory, arg_pCallContext, arg_pParams)
+
+void virtmemDestruct_IMPL(struct VirtualMemory *pVirtualMemory);
+#define __nvoc_virtmemDestruct(pVirtualMemory) virtmemDestruct_IMPL(pVirtualMemory)
+
+NV_STATUS virtmemReserveMempool_IMPL(struct VirtualMemory *pVirtualMemory, struct OBJGPU *arg2, struct Device *pDevice, NvU64 size, NvU64 pageSizeMask);
+#ifdef __nvoc_virtual_mem_h_disabled
+static inline NV_STATUS virtmemReserveMempool(struct VirtualMemory *pVirtualMemory, struct OBJGPU *arg2, struct Device *pDevice, NvU64 size, NvU64 pageSizeMask) {
+    NV_ASSERT_FAILED_PRECOMP("VirtualMemory was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_virtual_mem_h_disabled
+#define virtmemReserveMempool(pVirtualMemory, arg2, pDevice, size, pageSizeMask) virtmemReserveMempool_IMPL(pVirtualMemory, arg2, pDevice, size, pageSizeMask)
+#endif // __nvoc_virtual_mem_h_disabled
+
+NvBool virtmemMatchesVASpace_IMPL(struct VirtualMemory *pVirtualMemory, NvHandle hClient, NvHandle hVASpace);
+#ifdef __nvoc_virtual_mem_h_disabled
+static inline NvBool virtmemMatchesVASpace(struct VirtualMemory *pVirtualMemory, NvHandle hClient, NvHandle hVASpace) {
+    NV_ASSERT_FAILED_PRECOMP("VirtualMemory was disabled!");
+    return NV_FALSE;
+}
+#else // __nvoc_virtual_mem_h_disabled
+#define virtmemMatchesVASpace(pVirtualMemory, hClient, hVASpace) virtmemMatchesVASpace_IMPL(pVirtualMemory, hClient, hVASpace)
+#endif // __nvoc_virtual_mem_h_disabled
+
+NV_STATUS virtmemGetByHandleAndDevice_IMPL(struct RsClient *pClient, NvHandle hMemory, NvHandle hDevice, struct VirtualMemory **ppVirtualMemory);
+#define virtmemGetByHandleAndDevice(pClient, hMemory, hDevice, ppVirtualMemory) virtmemGetByHandleAndDevice_IMPL(pClient, hMemory, hDevice, ppVirtualMemory)
+
+void virtmemGetAddressAndSize_IMPL(struct VirtualMemory *arg1, NvU64 *pVAddr, NvU64 *pSize);
+#define virtmemGetAddressAndSize(arg1, pVAddr, pSize) virtmemGetAddressAndSize_IMPL(arg1, pVAddr, pSize)
+
+
+// Wrapper macros for halified functions
 #define virtmemMapTo_FNPTR(pVirtualMemory) pVirtualMemory->__nvoc_metadata_ptr->vtable.__virtmemMapTo__
 #define virtmemMapTo(pVirtualMemory, pParams) virtmemMapTo_DISPATCH(pVirtualMemory, pParams)
 #define virtmemUnmapFrom_FNPTR(pVirtualMemory) pVirtualMemory->__nvoc_metadata_ptr->vtable.__virtmemUnmapFrom__
@@ -336,40 +370,6 @@ static inline NvBool virtmemIsPartialUnmapSupported_e661f0(struct VirtualMemory 
     return NV_TRUE;
 }
 
-NV_STATUS virtmemConstruct_IMPL(struct VirtualMemory *arg_pVirtualMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_virtmemConstruct(arg_pVirtualMemory, arg_pCallContext, arg_pParams) virtmemConstruct_IMPL(arg_pVirtualMemory, arg_pCallContext, arg_pParams)
-void virtmemDestruct_IMPL(struct VirtualMemory *pVirtualMemory);
-
-#define __nvoc_virtmemDestruct(pVirtualMemory) virtmemDestruct_IMPL(pVirtualMemory)
-NV_STATUS virtmemReserveMempool_IMPL(struct VirtualMemory *pVirtualMemory, struct OBJGPU *arg2, struct Device *pDevice, NvU64 size, NvU64 pageSizeMask);
-
-#ifdef __nvoc_virtual_mem_h_disabled
-static inline NV_STATUS virtmemReserveMempool(struct VirtualMemory *pVirtualMemory, struct OBJGPU *arg2, struct Device *pDevice, NvU64 size, NvU64 pageSizeMask) {
-    NV_ASSERT_FAILED_PRECOMP("VirtualMemory was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_virtual_mem_h_disabled
-#define virtmemReserveMempool(pVirtualMemory, arg2, pDevice, size, pageSizeMask) virtmemReserveMempool_IMPL(pVirtualMemory, arg2, pDevice, size, pageSizeMask)
-#endif //__nvoc_virtual_mem_h_disabled
-
-NvBool virtmemMatchesVASpace_IMPL(struct VirtualMemory *pVirtualMemory, NvHandle hClient, NvHandle hVASpace);
-
-#ifdef __nvoc_virtual_mem_h_disabled
-static inline NvBool virtmemMatchesVASpace(struct VirtualMemory *pVirtualMemory, NvHandle hClient, NvHandle hVASpace) {
-    NV_ASSERT_FAILED_PRECOMP("VirtualMemory was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_virtual_mem_h_disabled
-#define virtmemMatchesVASpace(pVirtualMemory, hClient, hVASpace) virtmemMatchesVASpace_IMPL(pVirtualMemory, hClient, hVASpace)
-#endif //__nvoc_virtual_mem_h_disabled
-
-NV_STATUS virtmemGetByHandleAndDevice_IMPL(struct RsClient *pClient, NvHandle hMemory, NvHandle hDevice, struct VirtualMemory **ppVirtualMemory);
-
-#define virtmemGetByHandleAndDevice(pClient, hMemory, hDevice, ppVirtualMemory) virtmemGetByHandleAndDevice_IMPL(pClient, hMemory, hDevice, ppVirtualMemory)
-void virtmemGetAddressAndSize_IMPL(struct VirtualMemory *arg1, NvU64 *pVAddr, NvU64 *pSize);
-
-#define virtmemGetAddressAndSize(arg1, pVAddr, pSize) virtmemGetAddressAndSize_IMPL(arg1, pVAddr, pSize)
 #undef PRIVATE_FIELD
 
 

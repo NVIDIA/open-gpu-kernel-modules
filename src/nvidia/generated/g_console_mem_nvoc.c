@@ -122,28 +122,29 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_ConsoleMemory =
     /*pExportInfo=*/        &__nvoc_export_info__ConsoleMemory
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ConsoleMemory[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) conmemCtrlCmdNotifyConsoleDisabled_IMPL,
+        /*pFunc=*/      (void (*)(void)) &conmemCtrlCmdNotifyConsoleDisabled_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
         /*flags=*/      0x0u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x760101u,
-        /*paramSize=*/  0,
+        /*paramSize=*/  0 /* Singleton parameter list */,
         /*pClassInfo=*/ &(__nvoc_class_def_ConsoleMemory.classInfo),
 #if NV_PRINTF_STRINGS_ALLOWED
         /*func=*/       "conmemCtrlCmdNotifyConsoleDisabled"
 #endif
     },
-
 };
 
 
@@ -449,18 +450,11 @@ __nvoc_ctor_ConsoleMemory_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_ConsoleMemory_1(ConsoleMemory *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // conmemCtrlCmdNotifyConsoleDisabled -- exported (id=0x760101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
-    pThis->__conmemCtrlCmdNotifyConsoleDisabled__ = &conmemCtrlCmdNotifyConsoleDisabled_IMPL;
-#endif
-} // End __nvoc_init_funcTable_ConsoleMemory_1 with approximately 1 basic block(s).
+} // End __nvoc_init_funcTable_ConsoleMemory_1
 
 
-// Initialize vtable(s) for 27 virtual method(s).
+// Initialize vtable(s) for 26 virtual method(s).
 void __nvoc_init_funcTable_ConsoleMemory(ConsoleMemory *pThis) {
-
-    // Initialize vtable(s) with 1 per-object function pointer(s).
     __nvoc_init_funcTable_ConsoleMemory_1(pThis);
 }
 

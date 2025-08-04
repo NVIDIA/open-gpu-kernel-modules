@@ -602,7 +602,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Disable DSC max BPP limit of 16 for DSC.");
             }
             else if (ProductID == 0x5CA7 || ProductID == 0x9E9D || ProductID == 0x9EA0 || ProductID == 0x9EA5 || ProductID == 0x5CB7 ||
-                     ProductID == 0x9EA8 || ProductID == 0x9EAF || ProductID == 0x7846 || ProductID == 0x7849 || ProductID == 0x5CB5)
+                     ProductID == 0x9EA8 || ProductID == 0x9EAF || ProductID == 0x7846 || ProductID == 0x7849 || ProductID == 0x5CB5 ||
+                     ProductID == 0x77E0 || ProductID == 0x9EB9)
             {
                 this->WARFlags.bForceHeadShutdownOnModeTransition = true;
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Force head shutdown on Mode transition.");
@@ -657,6 +658,14 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             {
                 this->WARFlags.bSkipResetMSTMBeforeLt = true;
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Sony SDM27Q10S needs to skip reset MST_EN before LT");
+            }
+            break;
+        case 0xAC10:
+            if (ProductID == 0x42AD || ProductID == 0x42AC)
+            {
+                this->WARFlags.bApplyStuffDummySymbolsWAR   = true;
+                this->WARData.bStuffDummySymbolsFor128b132b = true;
+                this->WARData.bStuffDummySymbolsFor8b10b    = false;
             }
             break;
         default:

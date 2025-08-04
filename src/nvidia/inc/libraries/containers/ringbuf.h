@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -94,7 +94,7 @@ typedef struct RingBufBase
 
 
 #define ringbufConstructDynamic(pBuf, logSz, pAlloc) \
-    (pBuf->pAllocator = pAlloc, ringbufConstructDynamic_IMPL(&((pBuf)->base), logSz, sizeof(*((pBuf)->elem)), pAlloc))
+    ((pBuf)->pAllocator = pAlloc, ringbufConstructDynamic_IMPL(&((pBuf)->base), logSz, sizeof(*((pBuf)->elem)), pAlloc))
 
 #define ringbufConstruct(pBuf) \
     ringbufConstruct_IMPL(&((pBuf)->base), sizeof((pBuf)->lgSz),  (void*)((pBuf)->elem))

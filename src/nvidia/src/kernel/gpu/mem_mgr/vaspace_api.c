@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -79,6 +79,7 @@ vaspaceapiConstruct_IMPL
     NvBool                            bLockAcquired         = NV_FALSE;
     MemoryManager                    *pMemoryManager        = GPU_GET_MEMORY_MANAGER(pGpu);
     KernelMIGManager                 *pKernelMIGManager     = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    OBJSYS                           *pSys                  = SYS_GET_INSTANCE();
     NvU64                             originalVaBase;
     NvU64                             originalVaSize;
     NvU32                             gfid                  = 0;
@@ -206,6 +207,22 @@ vaspaceapiConstruct_IMPL
             done);
     }
 
+    if (!hypervisorIsVgxHyper() &&
+        (allocFlags & NV_VASPACE_ALLOCATION_FLAGS_ENABLE_NVLINK_ATS_TEST))
+    {
+        NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR,
+                              pSys->getProperty(pSys, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE),
+                              NV_ERR_INVALID_ARGUMENT,
+                              done);
+        NV_CHECK_OK_OR_GOTO(
+            status, LEVEL_ERROR,
+            os_iommu_sva_bind(pGpu->pOsGpuInfo,
+                              &pVaspaceApi->sva_handle,
+                              &pNvVASpaceAllocParams->pasid),
+            done);
+        NV_PRINTF(LEVEL_ERROR, "os_iommu_sva_bind pasid: %d\n", pNvVASpaceAllocParams->pasid);
+    }
+
     // RS-TODO - Move this to allocWithResServer
     if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
     {
@@ -328,7 +345,6 @@ vaspaceapiConstruct_IMPL
                 NV_ASSERT_OR_GOTO(0, done);
             }
         }
-
         // Get flags for the requested big page size
         flags |= translatePageSizeToVASpaceFlags(pNvVASpaceAllocParams);
 
@@ -379,6 +395,19 @@ vaspaceapiConstruct_IMPL
     }
 
     pVaspaceApi->pVASpace = pVAS;
+    if (allocFlags & NV_VASPACE_ALLOCATION_FLAGS_ENABLE_NVLINK_ATS_TEST)
+    {
+        NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR,
+                         pSys->getProperty(pSys, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE),
+                         NV_ERR_INVALID_ARGUMENT,
+                         done);
+        OBJGVASPACE *pGVAS = dynamicCast(pVaspaceApi->pVASpace, OBJGVASPACE);
+        if (pGVAS != NULL)
+        {
+            pGVAS->processAddrSpaceId = pNvVASpaceAllocParams->pasid;
+            NV_PRINTF(LEVEL_INFO, "pasid: %d\n", pNvVASpaceAllocParams->pasid);
+        }
+    }
 
     NV_PRINTF(LEVEL_INFO,
               "Created vaspaceapi 0x%x, hParent 0x%x, device 0x%x, client 0x%x, varef"
@@ -518,6 +547,12 @@ vaspaceapiDestruct_IMPL(VaSpaceApi *pVaspaceApi)
         }
     }
 
+    if (pVaspaceApi->sva_handle != NULL)
+    {
+        os_iommu_sva_unbind(pVaspaceApi->sva_handle);
+    }
+
+
     vmmDestroyVaspace(pVmm, pVaspaceApi->pVASpace);
 
 skip_destroy:
@@ -557,6 +592,7 @@ static NV_STATUS translateAllocFlagsToVASpaceFlags(NvU32 allocFlags, NvU32 *tran
 {
     NV_STATUS status = NV_OK;
     NvU32     flags  = 0;
+    OBJSYS    *pSys  = SYS_GET_INSTANCE();
 
     if (allocFlags & NV_VASPACE_ALLOCATION_FLAGS_MINIMIZE_PTETABLE_SIZE)
     {
@@ -619,35 +655,40 @@ static NV_STATUS translateAllocFlagsToVASpaceFlags(NvU32 allocFlags, NvU32 *tran
             (flags & VASPACE_FLAGS_SET_MIRRORED)),
         NV_ERR_INVALID_ARGUMENT);
 
-    //
-    // MODS environment requires ATS to be enabled but RM to continue to own
-    // page table management with PASID coming from the MODS OS layer.
-    //
-    // For production driver, PASID comes from UVM via NV0080_CTRL_DMA_SET_PAGE_DIRECTORY
-    // and so only VASPACE_FLAGS_IS_EXTERNALLY_OWNED or VASPACE_FLAGS_SHARED_MANAGEMENT is
-    // supported which is where NV0080_CTRL_DMA_SET_PAGE_DIRECTORY happens.
-    // ATS on VASPACE_FLAGS_SHARED_MANAGEMENT is allowed only when it is from
-    // kernel client(UVM) or for VF context (where vaspace is allocated in the host for a
-    // kernel client created vaspace within the VF's VM).
-    //
-    NV_CHECK_OR_RETURN(LEVEL_WARNING,
-        !((flags & VASPACE_FLAGS_ENABLE_ATS) &&
-            !((flags & VASPACE_FLAGS_IS_EXTERNALLY_OWNED) ||
-              ((flags & VASPACE_FLAGS_SHARED_MANAGEMENT) && (bKernelClient || IS_GFID_VF(gfid))))),
-        NV_ERR_INVALID_ARGUMENT);
-    //
-    // 1766112: Prevent channels in fault-capable VAS from running unless bound
-    //  User-mode clients can allocate a fault-capable VAS and schedule it
-    //  without registering it with the UVM driver if it is not marked as
-    //  externally owned. This will cause what looks like a hang on the GPU
-    //  until the app is killed.
-    //  ATS still requires non-externally-owned fault-capable VAS in MODS,
-    //  but otherwise this combination is disallowed.
-    //
-    NV_CHECK_OR_RETURN(LEVEL_WARNING,
-        !((flags & VASPACE_FLAGS_ENABLE_FAULTING) &&
-            !(flags & VASPACE_FLAGS_IS_EXTERNALLY_OWNED)),
-        NV_ERR_INVALID_ARGUMENT);
+    if (!RMCFG_FEATURE_MODS_FEATURES &&
+        !pSys->getProperty(pSys, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE))
+    {
+        //
+        // MODS environment and debug driver requires ATS to be enabled but
+        // RM to continue to own page table management with PASID coming from the OS layer.
+        //
+        // For production driver, PASID comes from UVM via NV0080_CTRL_DMA_SET_PAGE_DIRECTORY
+        // and so only VASPACE_FLAGS_IS_EXTERNALLY_OWNED or VASPACE_FLAGS_SHARED_MANAGEMENT is
+        // supported which is where NV0080_CTRL_DMA_SET_PAGE_DIRECTORY happens.
+        // ATS on VASPACE_FLAGS_SHARED_MANAGEMENT is allowed only when it is from
+        // kernel client(UVM) or for VF context (where vaspace is allocated in the host for a
+        // kernel client created vaspace within the VF's VM).
+        //
+        NV_CHECK_OR_RETURN(LEVEL_WARNING,
+                           !((flags & VASPACE_FLAGS_ENABLE_ATS) &&
+                             !((flags & VASPACE_FLAGS_IS_EXTERNALLY_OWNED) ||
+                               ((flags & VASPACE_FLAGS_SHARED_MANAGEMENT) &&
+                                (bKernelClient || IS_GFID_VF(gfid))))),
+                           NV_ERR_INVALID_ARGUMENT);
+        //
+        // 1766112: Prevent channels in fault-capable VAS from running unless bound
+        //  User-mode clients can allocate a fault-capable VAS and schedule it
+        //  without registering it with the UVM driver if it is not marked as
+        //  externally owned. This will cause what looks like a hang on the GPU
+        //  until the app is killed.
+        //  ATS still requires non-externally-owned fault-capable VAS in MODS,
+        //  but otherwise this combination is disallowed.
+        //
+        NV_CHECK_OR_RETURN(LEVEL_WARNING,
+                           !((flags & VASPACE_FLAGS_ENABLE_FAULTING) &&
+                             !(flags & VASPACE_FLAGS_IS_EXTERNALLY_OWNED)),
+                           NV_ERR_INVALID_ARGUMENT);
+    }
 
     *translatedFlags |= flags;
 

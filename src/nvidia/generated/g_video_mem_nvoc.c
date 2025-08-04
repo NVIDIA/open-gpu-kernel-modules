@@ -450,6 +450,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__VideoMemory =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_vidmemDestruct(VideoMemory*);
 void __nvoc_dtor_StandardMemory(StandardMemory*);
 void __nvoc_dtor_VideoMemory(VideoMemory *pThis) {
     __nvoc_vidmemDestruct(pThis);

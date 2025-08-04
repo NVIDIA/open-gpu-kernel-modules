@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -303,6 +303,17 @@ gpuConstructDeviceInfoTable_VF
             .deviceBroadcastPriBase = pSrc->deviceBroadcastPriBase,
             .groupLocalInstanceId   = pSrc->groupLocalInstanceId
         };
+
+        NV_PRINTF(LEVEL_INFO, "VF: Engine Entry [%d]\n", i);
+        NV_PRINTF(LEVEL_INFO, "VF:     Type Enum        : %d\n",     pSrc->typeEnum);
+        NV_PRINTF(LEVEL_INFO, "VF:     DieletGlobal Id  : %d\n",     pSrc->instanceId);
+        NV_PRINTF(LEVEL_INFO, "VF:     Dielet, LocalId  : %d, %d\n", pSrc->groupId, pSrc->groupLocalInstanceId);
+        NV_PRINTF(LEVEL_INFO, "VF:     Fault Id         : %d\n",     pSrc->faultId);
+        NV_PRINTF(LEVEL_INFO, "VF:     Reset Id         : %d\n",     pSrc->resetId);
+        NV_PRINTF(LEVEL_INFO, "VF:     Device PRI Base  : 0x%x\n",   pSrc->devicePriBase);
+        NV_PRINTF(LEVEL_INFO, "VF:     Is Engine        : %d\n",     pSrc->isEngine);
+        NV_PRINTF(LEVEL_INFO, "VF:     Runlist Engine ID: %d\n",     pSrc->rlEngId);
+        NV_PRINTF(LEVEL_INFO, "VF:     Runlist PRI Base : 0x%x\n",   pSrc->runlistPriBase);
     }
 
     return NV_OK;

@@ -240,7 +240,7 @@ channelSetupChannelBufferSizes
 
     // These sizes depend on size of each block of pushbuffer methods
     pChannel->channelPbSize = pChannel->methodSizePerBlock * NUM_COPY_BLOCKS;
-    pChannel->channelSize = pChannel->channelPbSize + GPFIFO_SIZE + 
+    pChannel->channelSize = pChannel->channelPbSize + GPFIFO_SIZE +
                             CHANNEL_HOST_SEMAPHORE_SIZE + CHANNEL_ENGINE_SEMAPHORE_SIZE;
     if (pChannel->type == SWL_SCRUBBER_CHANNEL)
     {
@@ -354,13 +354,13 @@ channelWaitForFinishPayload
     NV_STATUS status = NV_OK;
 
     gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
-    while (1) 
+    while (1)
     {
         if (READ_CHANNEL_PAYLOAD_SEMA(pChannel) >= targetPayload)
         {
             break;
         }
-        
+
         status = gpuCheckTimeout(pGpu, &timeout);
         if (status == NV_ERR_TIMEOUT)
         {
@@ -417,13 +417,13 @@ channelWaitForFreeEntry
         {
             break;
         }
-        
+
         status = gpuCheckTimeout(pGpu, &timeout);
         if (status == NV_ERR_TIMEOUT)
         {
             break;
         }
-        
+
         if (rmDeviceGpuLockIsOwner(pGpu->gpuInstance))
         {
             if (!kfifoIsLiteModeEnabled_HAL(pGpu, GPU_GET_KERNEL_FIFO(pGpu)))
@@ -488,14 +488,14 @@ channelFillGpFifo
 
     pbPutOffset = (pChannel->pbGpuVA + (putIndex * pChannel->methodSizePerBlock));
 
-    GpEntry0 = DRF_DEF(906F, _GP_ENTRY0, _NO_CONTEXT_SWITCH, _FALSE) | 
+    GpEntry0 = DRF_DEF(906F, _GP_ENTRY0, _NO_CONTEXT_SWITCH, _FALSE) |
                DRF_NUM(906F, _GP_ENTRY0, _GET, NvU64_LO32(pbPutOffset) >> 2);
 
-    GpEntry1 = DRF_NUM(906F, _GP_ENTRY1, _GET_HI, NvU64_HI32(pbPutOffset)) | 
+    GpEntry1 = DRF_NUM(906F, _GP_ENTRY1, _GET_HI, NvU64_HI32(pbPutOffset)) |
                DRF_NUM(906F, _GP_ENTRY1, _LENGTH, methodsLength >> 2) |
                DRF_DEF(906F, _GP_ENTRY1, _LEVEL, _MAIN);
 
-    pGpEntry = (NvU32 *)(((NvU8 *)pChannel->pbCpuVA) + pChannel->channelPbSize + 
+    pGpEntry = (NvU32 *)(((NvU8 *)pChannel->pbCpuVA) + pChannel->channelPbSize +
                 (pChannel->lastSubmittedEntry * NV906F_GP_ENTRY__SIZE));
 
     MEM_WR32(&pGpEntry[0], GpEntry0);
@@ -503,7 +503,7 @@ channelFillGpFifo
 
     if (bReleaseMapping)
     {
-        memmgrMemDescEndTransfer(pMemoryManager, pChannel->pChannelBufferMemdesc, 
+        memmgrMemDescEndTransfer(pMemoryManager, pChannel->pChannelBufferMemdesc,
                                  transferFlags);
         pChannel->pbCpuVA = NULL;
     }
@@ -513,7 +513,7 @@ channelFillGpFifo
     // write GP put
     if (pChannel->pControlGPFifo == NULL)
     {
-        pChannel->pControlGPFifo = 
+        pChannel->pControlGPFifo =
             (void *)memmgrMemDescBeginTransfer(pMemoryManager, pChannel->pUserdMemdesc,
                                                transferFlags);
         NV_ASSERT_OR_RETURN(pChannel->pControlGPFifo != NULL, NV_ERR_INVALID_STATE);
@@ -563,8 +563,8 @@ channelFillGpFifo
     {
         if (pChannel->pTokenFromNotifier == NULL)
         {
-            NvU8 *pErrNotifierCpuVA = 
-                (void *)memmgrMemDescBeginTransfer(pMemoryManager, 
+            NvU8 *pErrNotifierCpuVA =
+                (void *)memmgrMemDescBeginTransfer(pMemoryManager,
                     pChannel->pErrNotifierMemdesc, transferFlags);
 
             NV_ASSERT_OR_RETURN(pErrNotifierCpuVA != NULL, NV_ERR_INVALID_STATE);
@@ -577,7 +577,7 @@ channelFillGpFifo
         }
 
         // Use the token from notifier memory for VM migration support.
-        MEM_WR32(pChannel->pDoorbellRegisterOffset, 
+        MEM_WR32(pChannel->pDoorbellRegisterOffset,
                  MEM_RD32(&(pChannel->pTokenFromNotifier->info32)));
 
         if (bReleaseMapping)
@@ -590,11 +590,12 @@ channelFillGpFifo
     return NV_OK;
 }
 
+
 NvU32
 channelFillPbFastScrub
 (
     OBJCHANNEL      *pChannel,
-    NvU32            putIndex, 
+    NvU32            putIndex,
     NvBool           bPipelined,
     NvBool           bInsertFinishPayload,
     CHANNEL_PB_INFO *pChannelPbInfo
@@ -694,11 +695,12 @@ channelFillPbFastScrub
     return methodSize;
 }
 
+
 static void
 channelAddHostSema
 (
     OBJCHANNEL *pChannel,
-    NvU32       putIndex, 
+    NvU32       putIndex,
     NvU32     **ppPtr
 )
 {
@@ -782,7 +784,7 @@ NvU32
 channelFillCePb
 (
     OBJCHANNEL      *pChannel,
-    NvU32            putIndex, 
+    NvU32            putIndex,
     NvBool           bPipelined,
     NvBool           bInsertFinishPayload,
     CHANNEL_PB_INFO *pChannelPbInfo
@@ -809,7 +811,7 @@ channelFillCePb
     if (bInsertFinishPayload)
     {
         semaValue = DRF_DEF(B0B5, _LAUNCH_DMA, _SEMAPHORE_TYPE, _RELEASE_ONE_WORD_SEMAPHORE);
-        
+
         // Do not support client semaphore for now
         NV_ASSERT(pChannelPbInfo->clientSemaAddr == 0);
 
@@ -921,7 +923,7 @@ channelFillSec2Pb
     execute |= FLD_SET_DRF(CBA2, _EXECUTE, _PHYSICAL_SCRUBBER, _ENABLE, execute);
     NV_ASSERT_OK_OR_GOTO(status, addMethodsToMethodBuf(NVCBA2_EXECUTE, execute, pMethods, methodIdx++), cleanup);
 
-    NvU32 hmacBufferSizeBytes = 2 * methodIdx * sizeof(NvU32); 
+    NvU32 hmacBufferSizeBytes = 2 * methodIdx * sizeof(NvU32);
     NvU8  hmacDigest[SHA_256_HASH_SIZE_BYTE] = {0};
     NvU8* pBufScrub = &pScrubMethdAuthTagBuf[scrubAuthTagBufoffset];
 
@@ -948,7 +950,7 @@ channelFillSec2Pb
         NV_ASSERT_OK_OR_GOTO(status, addMethodsToMethodBuf(NVCBA2_SET_SEMAPHORE_PAYLOAD_LOWER, pChannelPbInfo->payload, pMethods, methodIdx++), cleanup);
         NV_ASSERT_OK_OR_GOTO(status, addMethodsToMethodBuf(NVCBA2_SEMAPHORE_D, semaD, pMethods, methodIdx++), cleanup);
 
-        hmacBufferSizeBytes = 2 * methodIdx * sizeof(NvU32); 
+        hmacBufferSizeBytes = 2 * methodIdx * sizeof(NvU32);
         portMemSet(&hmacDigest[0], 0, SHA_256_HASH_SIZE_BYTE);
         NvU8* pBufSema = &pSemaAuthTagBuf[semaAuthTagBufoffset];
 
@@ -959,7 +961,7 @@ channelFillSec2Pb
         for (NvU32 i = 0; i < methodIdx; i++)
         {
             NV_PUSH_INC_1U(RM_SUBCHANNEL, pMethods[i*2 + 0], pMethods[i*2 + 1]);
-        }        
+        }
     }
 
     channelAddHostSema(pChannel, putIndex, &pPtr);
@@ -983,7 +985,7 @@ cleanup:
 }
 
 /*** Implementation for static methods ***/
-static NvU32 
+static NvU32
 channelPushMemoryProperties
 (
     OBJCHANNEL      *pChannel,
@@ -1001,7 +1003,7 @@ channelPushMemoryProperties
     NvU32 data = 0;
     NvU32 retVal = 0;
     NvU32 *pPtr = *ppPtr;
-    
+
     if (!pChannelPbInfo->bCeMemcopy)
     {
         // If memset, push remap components
@@ -1026,7 +1028,7 @@ channelPushMemoryProperties
         {
             data = DRF_DEF(B0B5, _SET_SRC_PHYS_MODE, _TARGET, _NONCOHERENT_SYSMEM);
         }
-        
+
         NV_PUSH_INC_1U(RM_SUBCHANNEL, NVB0B5_SET_SRC_PHYS_MODE, data);
 
         if (pChannel->bUseVasForCeCopy && srcAddressSpace == ADDR_FBMEM)
@@ -1057,7 +1059,7 @@ channelPushMemoryProperties
     {
         data = DRF_DEF(B0B5, _SET_DST_PHYS_MODE, _TARGET, _NONCOHERENT_SYSMEM);
     }
-    
+
     NV_PUSH_INC_1U(RM_SUBCHANNEL, NVB0B5_SET_DST_PHYS_MODE, data);
 
     if (pChannel->bUseVasForCeCopy && dstAddressSpace == ADDR_FBMEM)
@@ -1133,8 +1135,8 @@ channelPushMethod
         launchParams =  DRF_DEF(B0B5, _LAUNCH_DMA, _REMAP_ENABLE, _TRUE) | disablePlcKind;
     }
 
-    NV_PUSH_INC_1U(RM_SUBCHANNEL, NVB0B5_LAUNCH_DMA, 
-                   launchParams | 
+    NV_PUSH_INC_1U(RM_SUBCHANNEL, NVB0B5_LAUNCH_DMA,
+                   launchParams |
                    DRF_DEF(B0B5, _LAUNCH_DMA, _SRC_MEMORY_LAYOUT, _PITCH) |
                    DRF_DEF(B0B5, _LAUNCH_DMA, _DST_MEMORY_LAYOUT, _PITCH) |
                    DRF_DEF(B0B5, _LAUNCH_DMA, _MULTI_LINE_ENABLE, _FALSE) |

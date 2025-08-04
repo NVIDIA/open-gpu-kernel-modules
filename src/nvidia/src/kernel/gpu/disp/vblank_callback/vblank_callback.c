@@ -29,7 +29,6 @@
 ******************************************************************************/
 
 #include "gpu/disp/vblank_callback/vblank_callback.h"
-#include "os/os.h"
 #include "gpu/disp/kern_disp.h"
 #include "gpu/disp/head/kernel_head.h"
 
@@ -98,7 +97,7 @@ vblcbConstruct_IMPL
     pKernelDisplay->pRgVblankCb = (void *)&pVblankCallback->CallBack;
 
     kheadAddVblankCallback(pGpu, pKernelHead, &pVblankCallback->CallBack);
-    status = osSetupVBlank(pGpu, pAllocParams->pProc, pAllocParams->pParm1, pAllocParams->pParm2, pAllocParams->LogicalHead, &pVblankCallback->CallBack);
+    status = kdispSetupVBlank(pGpu, pKernelDisplay, pAllocParams->pProc, pAllocParams->pParm1, pAllocParams->pParm2, pAllocParams->LogicalHead, &pVblankCallback->CallBack);
 
     if (status != NV_OK)
     {
@@ -119,7 +118,7 @@ vblcbDestruct_IMPL
     KernelHead    *pKernelHead    = KDISP_GET_HEAD(pKernelDisplay, pVblankCallback->LogicalHead);
 
     pKernelDisplay->pRgVblankCb = NULL;
-    osSetupVBlank(pGpu, NULL, NULL, NULL, pVblankCallback->LogicalHead, NULL);
+    kdispSetupVBlank(pGpu, pKernelDisplay, NULL, NULL, NULL, pVblankCallback->LogicalHead, NULL);
     kheadDeleteVblankCallback(pGpu, pKernelHead, &pVblankCallback->CallBack);
 }
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2024 NVIDIA Corporation
+    Copyright (c) 2016-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -24,6 +24,7 @@
 #ifndef __UVM_TOOLS_H__
 #define __UVM_TOOLS_H__
 
+#include "uvm_api.h"
 #include "uvm_types.h"
 #include "uvm_processors.h"
 #include "uvm_forward_decl.h"
@@ -88,14 +89,21 @@ void uvm_tools_record_map_remote(uvm_va_block_t *va_block,
                                  size_t region_size,
                                  UvmEventMapRemoteCause cause);
 
-void uvm_tools_record_block_migration_begin(uvm_va_block_t *va_block,
-                                            uvm_push_t *push,
-                                            uvm_processor_id_t dst_id,
-                                            int dst_nid,
-                                            uvm_processor_id_t src_id,
-                                            int src_nid,
-                                            NvU64 start,
-                                            uvm_make_resident_cause_t cause);
+// This function is used as a begin marker to group all migrations in the same
+// call to block_copy_resident_pages_between() or
+// uvm_migrate_vma_copy_pages_from(). All of these are pushed to the same
+// uvm_push_t object, and will be notified in burst when the last one finishes.
+// start parameter is only valid for managed migrations and ignored for pageable
+// migrations.
+void uvm_tools_record_migration_begin(uvm_va_space_t *va_space,
+                                      uvm_push_t *push,
+                                      uvm_processor_id_t dst_id,
+                                      int dst_nid,
+                                      uvm_processor_id_t src_id,
+                                      int src_nid,
+                                      NvU64 start,
+                                      uvm_make_resident_cause_t cause,
+                                      uvm_api_range_type_t type);
 
 void uvm_tools_record_read_duplicate(uvm_va_block_t *va_block,
                                      uvm_processor_id_t dst,

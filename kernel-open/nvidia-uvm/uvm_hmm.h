@@ -37,6 +37,7 @@ typedef struct
     // This stores pointers to uvm_va_block_t for HMM blocks.
     uvm_range_tree_t blocks;
     uvm_mutex_t blocks_lock;
+    atomic64_t allocated_page_count;
 } uvm_hmm_va_space_t;
 
 #if UVM_IS_CONFIG_HMM()

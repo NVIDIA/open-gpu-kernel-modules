@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,8 @@
 #include "core/thread_state.h"
 #include "platform/sli/sli.h"
 #include "nv_ref.h"
+
+#include "gpu/hfrp/kernel_hfrp.h"
 
 // Following enums are duplicated in 'apps/nvbucket/oca/ocarm.h'.
 typedef enum {
@@ -263,6 +265,8 @@ ioaprtConstruct_IMPL
     NvU32            length
 )
 {
+    NV_ASSERT_OR_RETURN(length > 0, NV_ERR_INVALID_ARGUMENT);
+
     if (pParentAperture != NULL)
     {
         NV_ASSERT_OR_RETURN(pMapping == NULL, NV_ERR_INVALID_ARGUMENT);
@@ -1518,8 +1522,15 @@ gpuSanityCheckRegisterAccess_IMPL
     NvU32       *pRetVal
 )
 {
-    NV_STATUS status = NV_OK;
-    NvU32     retVal = ~0;
+    NV_STATUS   status = NV_OK;
+    NvU32       retVal = ~0;
+    NvBool      bIsPowerHfrpEnabled = NV_FALSE;
+    KernelHFRP *pKernelHfrp  = GPU_GET_KERNEL_HFRP(pGpu);
+    if (pKernelHfrp != NULL)
+    {
+        bIsPowerHfrpEnabled = pKernelHfrp->getProperty(pKernelHfrp, PDB_PROP_KHFRP_IS_ENABLED);
+    }
+
 
     if (API_GPU_IN_RESET_SANITY_CHECK(pGpu))
     {
@@ -1569,6 +1580,7 @@ gpuSanityCheckRegisterAccess_IMPL
          )                                                           &&
         !pGpu->getProperty(pGpu, PDB_PROP_GPU_MSHYBRID_GC6_ACTIVE)   &&
         !pGpu->getProperty(pGpu, PDB_PROP_GPU_ENABLE_REG_ACCESS_IN_LOW_POWER_FOR_SIM_SRTEST) &&
+        !bIsPowerHfrpEnabled                                         &&
         !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH))
     {
         DBG_BREAKPOINT();
@@ -1592,7 +1604,7 @@ done:
  *
  * @param[in] pGpu
  * @param[in] offset
- * @param[in] bSkipPermissionValidation 
+ * @param[in] bSkipPermissionValidation
  *
  * @returns NV_OK if valid
  * @returns NV_ERR_INVALID_ARGUMENT if offset is too large for bar

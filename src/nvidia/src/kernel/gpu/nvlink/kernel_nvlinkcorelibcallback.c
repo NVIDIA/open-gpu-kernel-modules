@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -460,8 +460,10 @@ knvlinkCoreQueueLinkChangeCallback
     // This function will free the argument if it succeeds, hence the need for
     // the work item data wrapper.
     //
-    status = osQueueWorkItem(pGpu, _knvlinkCorePassiveLinkChangeCallback,
-                             pWorkItemData);
+    status = osQueueWorkItem(pGpu,
+                             _knvlinkCorePassiveLinkChangeCallback,
+                             pWorkItemData,
+                             OS_QUEUE_WORKITEM_FLAGS_NONE);
     if (status != NV_OK)
     {
         portMemFree(pWorkItemData);
@@ -514,6 +516,9 @@ knvlinkCoreSetDlLinkModeCallback
     pKernelIoctrl = KNVLINK_LINK_GET_IOCTRL(pKernelNvlink, linkIndex);
 
     if ((pKernelNvlink->ipVerNvlink < NVLINK_VERSION_50) && (pKernelIoctrl == NULL))
+        return 0;
+
+    if ((knvlinkGetSupportedCoreLinkStateMask_HAL(pGpu, pKernelNvlink) & NVBIT32(mode)) == 0x0)
         return 0;
 
     // If link training is disabled through regkey

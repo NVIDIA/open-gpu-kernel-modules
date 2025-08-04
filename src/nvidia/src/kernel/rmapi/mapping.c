@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -280,12 +280,7 @@ serverInterUnmap_Epilogue
 static NV_STATUS
 _rmapiRmUnmapMemoryDma
 (
-    NvHandle            hClient,
-    NvHandle            hDevice,
-    NvHandle            hMemCtx,
-    NvU32               flags,
-    NvU64               dmaOffset,
-    NvU64               size,
+    NVOS47_PARAMETERS  *pParms,
     RS_LOCK_INFO       *pLockInfo,
     API_SECURITY_INFO  *pSecInfo
 )
@@ -295,18 +290,18 @@ _rmapiRmUnmapMemoryDma
     RS_INTER_UNMAP_PARAMS params;
     RS_INTER_UNMAP_PRIVATE private;
 
-    NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
+    NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, pParms->hClient, &pRsClient));
 
     portMemSet(&params, 0, sizeof(params));
-    params.hClient = hClient;
-    params.hMapper = hMemCtx;
-    params.hDevice = hDevice;
-    params.flags = flags;
-    params.dmaOffset = dmaOffset;
+    params.hClient = pParms->hClient;
+    params.hMapper = pParms->hDma;
+    params.hDevice = pParms->hDevice;
+    params.flags = pParms->flags;
+    params.dmaOffset = pParms->dmaOffset;
     params.pLockInfo = pLockInfo;
     params.pSecInfo = pSecInfo;
 
-    params.size = size;
+    params.size = pParms->size;
 
     portMemSet(&private, 0, sizeof(private));
     params.pPrivate = &private;
@@ -317,36 +312,21 @@ _rmapiRmUnmapMemoryDma
 NV_STATUS
 rmapiMap
 (
-    RM_API   *pRmApi,
-    NvHandle  hClient,
-    NvHandle  hDevice,
-    NvHandle  hMemCtx,
-    NvHandle  hMemory,
-    NvU64     offset,
-    NvU64     length,
-    NvU32     flags,
-    NvU64    *pDmaOffset
+    RM_API            *pRmApi,
+    NVOS46_PARAMETERS *pParms
 )
 {
     if (!pRmApi->bHasDefaultSecInfo)
         return NV_ERR_NOT_SUPPORTED;
 
-    return pRmApi->MapWithSecInfo(pRmApi, hClient, hDevice, hMemCtx, hMemory, offset,
-                                  length, flags, pDmaOffset, &pRmApi->defaultSecInfo);
+    return pRmApi->MapWithSecInfo(pRmApi, pParms, &pRmApi->defaultSecInfo);
 }
 
 NV_STATUS
 rmapiMapWithSecInfo
 (
     RM_API            *pRmApi,
-    NvHandle           hClient,
-    NvHandle           hDevice,
-    NvHandle           hMemCtx,
-    NvHandle           hMemory,
-    NvU64              offset,
-    NvU64              length,
-    NvU32              flags,
-    NvU64             *pDmaOffset,
+    NVOS46_PARAMETERS *pParms,
     API_SECURITY_INFO *pSecInfo
 )
 {
@@ -357,20 +337,20 @@ rmapiMapWithSecInfo
     RS_LOCK_INFO lockInfo;
 
     NV_PRINTF(LEVEL_INFO,
-              "Nv04Map: client:0x%x device:0x%x context:0x%x memory:0x%x flags:0x%x\n",
-              hClient, hDevice, hMemCtx, hMemory, flags);
+              "Nv04Map: client:0x%x device:0x%x context:0x%x memory:0x%x flags:0x%x flags2:0x%x\n",
+              pParms->hClient, pParms->hDevice, pParms->hDma, pParms->hMemory, pParms->flags, pParms->flags2);
     NV_PRINTF(LEVEL_INFO,
               "Nv04Map:  offset:0x%llx length:0x%llx dmaOffset:0x%08llx\n",
-              offset, length, *pDmaOffset);
+              pParms->offset, pParms->length, pParms->dmaOffset);
 
-    NV_PRINTF(LEVEL_INFO, "MMU_PROFILER Nv04Map 0x%x\n", flags);
+    NV_PRINTF(LEVEL_INFO, "MMU_PROFILER Nv04Map 0x%x\n", pParms->flags);
 
     status = rmapiPrologue(pRmApi, &rmApiContext);
     if (status != NV_OK)
         return status;
 
     portMemSet(&lockInfo, 0, sizeof(lockInfo));
-    status = rmapiInitLockInfo(pRmApi, hClient, NV01_NULL_OBJECT, &lockInfo);
+    status = rmapiInitLockInfo(pRmApi, pParms->hClient, NV01_NULL_OBJECT, &lockInfo);
     if (status != NV_OK)
     {
         rmapiEpilogue(pRmApi, &rmApiContext);
@@ -395,14 +375,16 @@ rmapiMapWithSecInfo
 
 
     portMemSet(&params, 0, sizeof(params));
-    params.hClient = hClient;
-    params.hMapper = hMemCtx;
-    params.hDevice = hDevice;
-    params.hMappable = hMemory;
-    params.offset = offset;
-    params.length = length;
-    params.flags = flags;
-    params.dmaOffset = *pDmaOffset;
+    params.hClient = pParms->hClient;
+    params.hMapper = pParms->hDma;
+    params.hDevice = pParms->hDevice;
+    params.hMappable = pParms->hMemory;
+    params.offset = pParms->offset;
+    params.length = pParms->length;
+    params.flags = pParms->flags;
+    params.flags2 = pParms->flags2;
+    params.kindOverride = pParms->kindOverride;
+    params.dmaOffset = pParms->dmaOffset;
     params.pLockInfo = &lockInfo;
     params.pSecInfo = pSecInfo;
 
@@ -412,14 +394,14 @@ rmapiMapWithSecInfo
     // map DMA memory
     status = serverInterMap(&g_resServ, &params);
 
-    *pDmaOffset = params.dmaOffset;
+    pParms->dmaOffset = params.dmaOffset;
 
     rmapiEpilogue(pRmApi, &rmApiContext);
 
     if (status == NV_OK)
     {
         NV_PRINTF(LEVEL_INFO, "Nv04Map: map complete\n");
-        NV_PRINTF(LEVEL_INFO, "Nv04Map:  dmaOffset: 0x%08llx\n", *pDmaOffset);
+        NV_PRINTF(LEVEL_INFO, "Nv04Map:  dmaOffset: 0x%08llx\n", pParms->dmaOffset);
     }
     else
     {
@@ -434,14 +416,7 @@ NV_STATUS
 rmapiMapWithSecInfoTls
 (
     RM_API            *pRmApi,
-    NvHandle           hClient,
-    NvHandle           hDevice,
-    NvHandle           hMemCtx,
-    NvHandle           hMemory,
-    NvU64              offset,
-    NvU64              length,
-    NvU32              flags,
-    NvU64             *pDmaOffset,
+    NVOS46_PARAMETERS *pParms,
     API_SECURITY_INFO *pSecInfo
 )
 {
@@ -450,8 +425,7 @@ rmapiMapWithSecInfoTls
 
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    status = rmapiMapWithSecInfo(pRmApi, hClient, hDevice, hMemCtx, hMemory, offset,
-                                 length, flags, pDmaOffset, pSecInfo);
+    status = rmapiMapWithSecInfo(pRmApi, pParms, pSecInfo);
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
@@ -461,32 +435,21 @@ rmapiMapWithSecInfoTls
 NV_STATUS
 rmapiUnmap
 (
-    RM_API   *pRmApi,
-    NvHandle  hClient,
-    NvHandle  hDevice,
-    NvHandle  hMemCtx,
-    NvU32     flags,
-    NvU64     dmaOffset,
-    NvU64     size
+    RM_API            *pRmApi,
+    NVOS47_PARAMETERS *pParms
 )
 {
     if (!pRmApi->bHasDefaultSecInfo)
         return NV_ERR_NOT_SUPPORTED;
 
-    return pRmApi->UnmapWithSecInfo(pRmApi, hClient, hDevice, hMemCtx,
-                                    flags, dmaOffset, size, &pRmApi->defaultSecInfo);
+    return pRmApi->UnmapWithSecInfo(pRmApi, pParms, &pRmApi->defaultSecInfo);
 }
 
 NV_STATUS
 rmapiUnmapWithSecInfo
 (
     RM_API            *pRmApi,
-    NvHandle           hClient,
-    NvHandle           hDevice,
-    NvHandle           hMemCtx,
-    NvU32              flags,
-    NvU64              dmaOffset,
-    NvU64              size,
+    NVOS47_PARAMETERS *pParms,
     API_SECURITY_INFO *pSecInfo
 )
 {
@@ -496,16 +459,16 @@ rmapiUnmapWithSecInfo
 
     NV_PRINTF(LEVEL_INFO,
               "Nv04Unmap: client:0x%x device:0x%x context:0x%x\n",
-              hClient, hDevice, hMemCtx);
+              pParms->hClient, pParms->hDevice, pParms->hDma);
     NV_PRINTF(LEVEL_INFO, "Nv04Unmap:  flags:0x%x dmaOffset:0x%08llx size:0x%llx\n",
-              flags, dmaOffset, size);
+              pParms->flags, pParms->dmaOffset, pParms->size);
 
     status = rmapiPrologue(pRmApi, &rmApiContext);
     if (status != NV_OK)
         return status;
 
     portMemSet(&lockInfo, 0, sizeof(lockInfo));
-    status = rmapiInitLockInfo(pRmApi, hClient, NV01_NULL_OBJECT, &lockInfo);
+    status = rmapiInitLockInfo(pRmApi, pParms->hClient, NV01_NULL_OBJECT, &lockInfo);
     if (status != NV_OK)
     {
         rmapiEpilogue(pRmApi, &rmApiContext);
@@ -514,11 +477,10 @@ rmapiUnmapWithSecInfo
     lockInfo.flags |= RM_LOCK_FLAGS_GPU_GROUP_LOCK |
                       RM_LOCK_FLAGS_NO_GPUS_LOCK;
 
-    LOCK_METER_DATA(UNMAPMEM_DMA, flags, 0, 0);
+    LOCK_METER_DATA(UNMAPMEM_DMA, pParms->flags, 0, 0);
 
     // Unmap DMA memory
-    status = _rmapiRmUnmapMemoryDma(hClient, hDevice, hMemCtx, flags,
-                                    dmaOffset, size, &lockInfo, pSecInfo);
+    status = _rmapiRmUnmapMemoryDma(pParms, &lockInfo, pSecInfo);
 
     rmapiEpilogue(pRmApi, &rmApiContext);
 
@@ -540,12 +502,7 @@ NV_STATUS
 rmapiUnmapWithSecInfoTls
 (
     RM_API            *pRmApi,
-    NvHandle           hClient,
-    NvHandle           hDevice,
-    NvHandle           hMemCtx,
-    NvU32              flags,
-    NvU64              dmaOffset,
-    NvU64              size,
+    NVOS47_PARAMETERS *pParms,
     API_SECURITY_INFO *pSecInfo
 )
 {
@@ -554,7 +511,7 @@ rmapiUnmapWithSecInfoTls
 
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    status = rmapiUnmapWithSecInfo(pRmApi, hClient, hDevice, hMemCtx, flags, dmaOffset, size, pSecInfo);
+    status = rmapiUnmapWithSecInfo(pRmApi, pParms, pSecInfo);
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 

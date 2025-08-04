@@ -152,7 +152,15 @@ NV_STATUS __nvoc_objCreate_LockTestRelaxedDupObject(LockTestRelaxedDupObject**, 
     __nvoc_objCreate_LockTestRelaxedDupObject((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS lockTestRelaxedDupObjConstruct_IMPL(struct LockTestRelaxedDupObject *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_lockTestRelaxedDupObjConstruct(arg_pResource, arg_pCallContext, arg_pParams) lockTestRelaxedDupObjConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+
+void lockTestRelaxedDupObjDestruct_IMPL(struct LockTestRelaxedDupObject *pResource);
+#define __nvoc_lockTestRelaxedDupObjDestruct(pResource) lockTestRelaxedDupObjDestruct_IMPL(pResource)
+
+
+// Wrapper macros for halified functions
 #define lockTestRelaxedDupObjCanCopy_FNPTR(pResource) pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjCanCopy__
 #define lockTestRelaxedDupObjCanCopy(pResource) lockTestRelaxedDupObjCanCopy_DISPATCH(pResource)
 #define lockTestRelaxedDupObjControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
@@ -309,12 +317,6 @@ static inline NvBool lockTestRelaxedDupObjCanCopy_e661f0(struct LockTestRelaxedD
     return NV_TRUE;
 }
 
-NV_STATUS lockTestRelaxedDupObjConstruct_IMPL(struct LockTestRelaxedDupObject *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_lockTestRelaxedDupObjConstruct(arg_pResource, arg_pCallContext, arg_pParams) lockTestRelaxedDupObjConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
-void lockTestRelaxedDupObjDestruct_IMPL(struct LockTestRelaxedDupObject *pResource);
-
-#define __nvoc_lockTestRelaxedDupObjDestruct(pResource) lockTestRelaxedDupObjDestruct_IMPL(pResource)
 #undef PRIVATE_FIELD
 
 

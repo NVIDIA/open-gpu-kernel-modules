@@ -25,8 +25,6 @@
 
 #include "nvidia-drm-conftest.h"
 
-#if defined(NV_DRM_FENCE_AVAILABLE)
-
 /*
  * linux/reservation.h is renamed to linux/dma-resv.h, by commit
  * 52791eeec1d9 (dma-buf: rename reservation_object to dma_resv)
@@ -39,7 +37,7 @@
 #include <linux/reservation.h>
 #endif
 
-#include <nvidia-dma-fence-helper.h>
+#include <linux/dma-fence.h>
 
 #if defined(NV_LINUX_DMA_RESV_H_PRESENT)
 typedef struct dma_resv nv_dma_resv_t;
@@ -108,7 +106,7 @@ static inline int nv_dma_resv_reserve_fences(nv_dma_resv_t *obj,
 }
 
 static inline void nv_dma_resv_add_excl_fence(nv_dma_resv_t *obj,
-                                              nv_dma_fence_t *fence)
+                                              struct dma_fence *fence)
 {
 #if defined(NV_LINUX_DMA_RESV_H_PRESENT)
 #if defined(NV_DMA_RESV_ADD_FENCE_PRESENT)
@@ -122,7 +120,7 @@ static inline void nv_dma_resv_add_excl_fence(nv_dma_resv_t *obj,
 }
 
 static inline void nv_dma_resv_add_shared_fence(nv_dma_resv_t *obj,
-                                                nv_dma_fence_t *fence)
+                                                struct dma_fence *fence)
 {
 #if defined(NV_LINUX_DMA_RESV_H_PRESENT)
 #if defined(NV_DMA_RESV_ADD_FENCE_PRESENT)
@@ -134,7 +132,5 @@ static inline void nv_dma_resv_add_shared_fence(nv_dma_resv_t *obj,
     reservation_object_add_shared_fence(obj, fence);
 #endif
 }
-
-#endif /* defined(NV_DRM_FENCE_AVAILABLE) */
 
 #endif /* __NVIDIA_DMA_RESV_HELPER_H__ */

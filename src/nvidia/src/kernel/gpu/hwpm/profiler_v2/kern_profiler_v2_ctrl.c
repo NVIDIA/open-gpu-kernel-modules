@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -469,7 +469,7 @@ _profilerBaseCtrlCmdAllocPmaStreamVgpuGuest
 _profilerBaseCtrlCmdAllocPmaStreamVgpuGuest_fail:
     if (pCpuAddr != NvP64_NULL)
     {
-        memdescUnmap(pTgtMemDescPmaAvailBytes, NV_TRUE, osGetCurrentProcess(), pCpuAddr, pPriv);
+        memdescUnmap(pTgtMemDescPmaAvailBytes, NV_TRUE, pCpuAddr, pPriv);
         if (pProfiler->pPmaStreamList)
         {
             pProfiler->pPmaStreamList[pParams->pmaChannelIdx].pNumBytesCpuAddr = NvP64_NULL;
@@ -563,6 +563,7 @@ _profilerBaseCtrlCmdPmaStreamUpdateGetPutVgpuGuest
     if (pParams->bUpdateAvailableBytes)
     {
         *pMemBytesAddr = NVB0CC_AVAILABLE_BYTES_DEFAULT_VALUE;
+        pParams->bytesAvailable = NVB0CC_AVAILABLE_BYTES_DEFAULT_VALUE;
     }
 
     status = _issueRpcToHost(pGpu);
@@ -579,7 +580,9 @@ _profilerBaseCtrlCmdPmaStreamUpdateGetPutVgpuGuest
         threadStateResetTimeout(pGpu);
         gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
 
-        while (*pMemBytesAddr == NVB0CC_AVAILABLE_BYTES_DEFAULT_VALUE)
+        // Available Bytes for non-resident context is updated through pParams->bytesAvailable from the host
+        while (*pMemBytesAddr == NVB0CC_AVAILABLE_BYTES_DEFAULT_VALUE &&
+               pParams->bytesAvailable == NVB0CC_AVAILABLE_BYTES_DEFAULT_VALUE)
         {
             if (status == NV_ERR_TIMEOUT)
             {
@@ -590,7 +593,15 @@ _profilerBaseCtrlCmdPmaStreamUpdateGetPutVgpuGuest
             status = gpuCheckTimeout(pGpu, &timeout);
         }
 
-        pParams->bytesAvailable = *pMemBytesAddr;
+        if (*pMemBytesAddr != NVB0CC_AVAILABLE_BYTES_DEFAULT_VALUE)
+            pParams->bytesAvailable = *pMemBytesAddr;
+
+        // pMemBytesAddr is not going to be updated from the host in case of
+        // non-resedent context and profilerBaseQuiesceStreamout relies on
+        // pMemBytesAddr to check if the previous pma stream is complete hence
+        // updating pMemBytesAddr also.
+        if (pParams->bytesAvailable != NVB0CC_AVAILABLE_BYTES_DEFAULT_VALUE)
+            *pMemBytesAddr = pParams->bytesAvailable;
 
         NV_PRINTF(LEVEL_INFO, "status=0x%08x, *MEM_BYTES_ADDR=0x%08x.\n", status, *pMemBytesAddr);
     }
@@ -724,6 +735,9 @@ profilerBaseCtrlCmdInternalSriovPromotePmaStream_VF
     OBJGPU *pGpu = GPU_RES_GET_GPU(pProfiler);
     KernelHwpm *pKernelHwpm = GPU_GET_KERNEL_HWPM(pGpu);
     NvU32 vPmaChIdx = pParams->pmaChannelIdx;
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, vPmaChIdx < pKernelHwpm->maxPmaChannels, NV_ERR_INVALID_ARGUMENT);
+
     NvU32 vBpcIdx = vPmaChIdx / pKernelHwpm->maxChannelPerCblock;
     MEMORY_DESCRIPTOR *pInstBlkMemDesc = NULL;
 
@@ -734,7 +748,7 @@ profilerBaseCtrlCmdInternalSriovPromotePmaStream_VF
 
     pParams->pmaBufferVA = pProfiler->pPmaStreamList[vPmaChIdx].vaddrRecordBuf;
     pParams->membytesVA = pProfiler->pPmaStreamList[vPmaChIdx].vaddrNumBytesBuf;
-    pParams->pmaBufferSize = pProfiler->pPmaStreamList[pParams->pmaChannelIdx].pRecordBufDesc->Size;
+    pParams->pmaBufferSize = pProfiler->pPmaStreamList[vPmaChIdx].pRecordBufDesc->Size;
 
     pInstBlkMemDesc = pKernelHwpm->streamoutState[vBpcIdx].pInstBlkMemDesc;
 

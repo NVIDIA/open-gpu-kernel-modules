@@ -100,6 +100,23 @@ static void DpyDisconnectEvo(NVDpyEvoPtr pDpyEvo, const NvBool bSendHdmiCapsToRm
     ClearEdid(pDpyEvo, bSendHdmiCapsToRm);
 }
 
+static void HdmiFrlSetConfig(NVDpyEvoRec *pDpyEvo)
+{
+    NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
+    NvU32 head;
+
+    if ((pDpyEvo->apiHead == NV_INVALID_HEAD) || !nvDpyIsHdmiEvo(pDpyEvo) ||
+            !nvHdmiDpySupportsFrl(pDpyEvo)) {
+        return;
+    }
+
+    head = nvGetPrimaryHwHead(pDispEvo, pDpyEvo->apiHead);
+
+    nvAssert(head != NV_INVALID_HEAD);
+
+    nvHdmiFrlSetConfig(pDispEvo, head);
+}
+
 static NvBool DpyConnectEvo(
     NVDpyEvoPtr pDpyEvo,
     struct NvKmsQueryDpyDynamicDataParams *pParams)
@@ -122,6 +139,8 @@ static NvBool DpyConnectEvo(
     }
 
     nvUpdateInfoFrames(pDpyEvo);
+
+    HdmiFrlSetConfig(pDpyEvo);
 
     return TRUE;
 }
@@ -667,6 +686,95 @@ static void ReadAndApplyEdidEvo(
     nvFree(pParsedEdid);
 }
 
+typedef enum {
+    NV_EVO_PASSIVE_DP_DONGLE_UNUSED,
+    NV_EVO_PASSIVE_DP_DONGLE_DP2DVI,
+    NV_EVO_PASSIVE_DP_DONGLE_DP2HDMI_TYPE_1,
+    NV_EVO_PASSIVE_DP_DONGLE_DP2HDMI_TYPE_2,
+} NVEvoPassiveDpDongleType;
+
+/*!
+ * Query RM for the passive Displayport dongle type; this can influence
+ * the maximum pixel clock allowed on that display.
+ */
+static NVEvoPassiveDpDongleType
+DpyGetPassiveDpDongleType(const NVDpyEvoRec *pDpyEvo,
+                          NvU32 *passiveDpDongleMaxPclkKHz)
+{
+    NV0073_CTRL_DFP_GET_DISPLAYPORT_DONGLE_INFO_PARAMS params = { 0 };
+    NvU32 ret;
+    NVConnectorEvoPtr pConnectorEvo = pDpyEvo->pConnectorEvo;
+    NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+
+    NVEvoPassiveDpDongleType passiveDpDongleType =
+        NV_EVO_PASSIVE_DP_DONGLE_UNUSED;
+
+    // The rmcontrol below fails if we try querying the dongle info on
+    // non-TMDS connectors.
+    if (!IsConnectorTMDS(pConnectorEvo)) {
+        return passiveDpDongleType;
+    }
+
+    params.displayId = nvDpyIdToNvU32(pConnectorEvo->displayId);
+    params.subDeviceInstance = pDispEvo->displayOwner;
+    params.flags = 0;
+
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                         pDevEvo->displayCommonHandle,
+                         NV0073_CTRL_CMD_DFP_GET_DISPLAYPORT_DONGLE_INFO,
+                         &params, sizeof(params));
+
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvEvoLogDisp(pDispEvo, EVO_LOG_ERROR,
+                     "Failure reading DP dongle info "
+                     "for display device %s.", pDpyEvo->name);
+        return passiveDpDongleType;
+    }
+
+    if (FLD_TEST_DRF(0073_CTRL_DFP,
+                     _GET_DISPLAYPORT_DONGLE_INFO_FLAGS,
+                     _ATTACHED, _TRUE, params.flags))
+    {
+        if (FLD_TEST_DRF(0073_CTRL_DFP,
+                         _GET_DISPLAYPORT_DONGLE_INFO_FLAGS, _TYPE, _DP2DVI,
+                         params.flags)) {
+
+            passiveDpDongleType = NV_EVO_PASSIVE_DP_DONGLE_DP2DVI;
+
+            if (passiveDpDongleMaxPclkKHz) {
+                *passiveDpDongleMaxPclkKHz = TMDS_SINGLE_LINK_PCLK_MAX;
+            }
+        } else if (FLD_TEST_DRF(0073_CTRL_DFP,
+                                _GET_DISPLAYPORT_DONGLE_INFO_FLAGS, _TYPE, _DP2HDMI,
+                                params.flags)) {
+            if (FLD_TEST_DRF(0073_CTRL_DFP,
+                             _GET_DISPLAYPORT_DONGLE_INFO_FLAGS_DP2TMDS_DONGLE, _TYPE, _1,
+                             params.flags)) {
+
+                passiveDpDongleType = NV_EVO_PASSIVE_DP_DONGLE_DP2HDMI_TYPE_1;
+
+                if (passiveDpDongleMaxPclkKHz) {
+                    *passiveDpDongleMaxPclkKHz = params.maxTmdsClkRateHz / 1000;
+                }
+            } else if (FLD_TEST_DRF(0073_CTRL_DFP,
+                                    _GET_DISPLAYPORT_DONGLE_INFO_FLAGS_DP2TMDS_DONGLE, _TYPE, _2,
+                                    params.flags)) {
+
+                passiveDpDongleType = NV_EVO_PASSIVE_DP_DONGLE_DP2HDMI_TYPE_2;
+
+                if (passiveDpDongleMaxPclkKHz) {
+                    *passiveDpDongleMaxPclkKHz = params.maxTmdsClkRateHz / 1000;
+                }
+            }
+            // For other dongle types: LFH_DVI (DMS59-DVI) and LFH_VGA (DMS59-VGA) breakout dongles,
+            // We consider them as native connection, hence we don't track passiveDpDongleType here
+        }
+    }
+
+    return passiveDpDongleType;
+}
+
 /*!
  * Get the maximum allowed pixel clock for pDpyEvo.
  *
@@ -825,7 +933,7 @@ void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo)
      * these dongles is in use, and override the limit accordingly.
      */
     passiveDpDongleType =
-        nvDpyGetPassiveDpDongleType(pDpyEvo, &passiveDpDongleMaxPclkKHz);
+        DpyGetPassiveDpDongleType(pDpyEvo, &passiveDpDongleMaxPclkKHz);
 
     if (passiveDpDongleType != NV_EVO_PASSIVE_DP_DONGLE_UNUSED) {
         pDpyEvo->maxPixelClockKHz = NV_MIN(passiveDpDongleMaxPclkKHz,
@@ -897,89 +1005,6 @@ static NvBool IsConnectorTMDS(NVConnectorEvoPtr pConnectorEvo)
              (protocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_B) ||
              (protocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_DUAL_TMDS)));
 }
-
-/*!
- * Query RM for the passive Displayport dongle type; this can influence
- * the maximum pixel clock allowed on that display.
- */
-NVEvoPassiveDpDongleType
-nvDpyGetPassiveDpDongleType(const NVDpyEvoRec *pDpyEvo,
-                            NvU32 *passiveDpDongleMaxPclkKHz)
-{
-    NV0073_CTRL_DFP_GET_DISPLAYPORT_DONGLE_INFO_PARAMS params = { 0 };
-    NvU32 ret;
-    NVConnectorEvoPtr pConnectorEvo = pDpyEvo->pConnectorEvo;
-    NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
-    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-
-    NVEvoPassiveDpDongleType passiveDpDongleType =
-        NV_EVO_PASSIVE_DP_DONGLE_UNUSED;
-
-    // The rmcontrol below fails if we try querying the dongle info on
-    // non-TMDS connectors.
-    if (!IsConnectorTMDS(pConnectorEvo)) {
-        return passiveDpDongleType;
-    }
-
-    params.displayId = nvDpyIdToNvU32(pConnectorEvo->displayId);
-    params.subDeviceInstance = pDispEvo->displayOwner;
-    params.flags = 0;
-
-    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
-                         pDevEvo->displayCommonHandle,
-                         NV0073_CTRL_CMD_DFP_GET_DISPLAYPORT_DONGLE_INFO,
-                         &params, sizeof(params));
-
-    if (ret != NVOS_STATUS_SUCCESS) {
-        nvEvoLogDisp(pDispEvo, EVO_LOG_ERROR,
-                     "Failure reading DP dongle info "
-                     "for display device %s.", pDpyEvo->name);
-        return passiveDpDongleType;
-    }
-
-    if (FLD_TEST_DRF(0073_CTRL_DFP,
-                     _GET_DISPLAYPORT_DONGLE_INFO_FLAGS,
-                     _ATTACHED, _TRUE, params.flags))
-    {
-        if (FLD_TEST_DRF(0073_CTRL_DFP,
-                         _GET_DISPLAYPORT_DONGLE_INFO_FLAGS, _TYPE, _DP2DVI,
-                         params.flags)) {
-
-            passiveDpDongleType = NV_EVO_PASSIVE_DP_DONGLE_DP2DVI;
-
-            if (passiveDpDongleMaxPclkKHz) {
-                *passiveDpDongleMaxPclkKHz = TMDS_SINGLE_LINK_PCLK_MAX;
-            }
-        } else if (FLD_TEST_DRF(0073_CTRL_DFP,
-                                _GET_DISPLAYPORT_DONGLE_INFO_FLAGS, _TYPE, _DP2HDMI,
-                                params.flags)) {
-            if (FLD_TEST_DRF(0073_CTRL_DFP,
-                             _GET_DISPLAYPORT_DONGLE_INFO_FLAGS_DP2TMDS_DONGLE, _TYPE, _1,
-                             params.flags)) {
-
-                passiveDpDongleType = NV_EVO_PASSIVE_DP_DONGLE_DP2HDMI_TYPE_1;
-
-                if (passiveDpDongleMaxPclkKHz) {
-                    *passiveDpDongleMaxPclkKHz = params.maxTmdsClkRateHz / 1000;
-                }
-            } else if (FLD_TEST_DRF(0073_CTRL_DFP,
-                                    _GET_DISPLAYPORT_DONGLE_INFO_FLAGS_DP2TMDS_DONGLE, _TYPE, _2,
-                                    params.flags)) {
-
-                passiveDpDongleType = NV_EVO_PASSIVE_DP_DONGLE_DP2HDMI_TYPE_2;
-
-                if (passiveDpDongleMaxPclkKHz) {
-                    *passiveDpDongleMaxPclkKHz = params.maxTmdsClkRateHz / 1000;
-                }
-            }
-            // For other dongle types: LFH_DVI (DMS59-DVI) and LFH_VGA (DMS59-VGA) breakout dongles,
-            // We consider them as native connection, hence we don't track passiveDpDongleType here
-        }
-    }
-
-    return passiveDpDongleType;
-}
-
 
 /*!
  * Validate an NVKMS client-specified NvKmsModeValidationFrequencyRanges.

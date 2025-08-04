@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2021-2024 NVIDIA Corporation
+    Copyright (c) 2021-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -115,6 +115,11 @@ void uvm_hal_maxwell_host_tlb_invalidate_va(uvm_push_t *push,
     uvm_push_get_gpu(push)->parent->host_hal->tlb_invalidate_all(push, pdb, depth, membar);
 }
 
+void uvm_hal_maxwell_host_tlb_invalidate_phys_unsupported(uvm_push_t *push)
+{
+    UVM_ASSERT_MSG(false, "GPA caching is not supported on Maxwell\n");
+}
+
 void uvm_hal_maxwell_host_tlb_invalidate_test(uvm_push_t *push,
                                               uvm_gpu_phys_address_t pdb,
                                               UVM_TEST_INVALIDATE_TLB_PARAMS *params)
@@ -143,6 +148,11 @@ void uvm_hal_maxwell_host_tlb_invalidate_test(uvm_push_t *push,
                      MEM_OP_B, HWCONST(A16F, MEM_OP_B, OPERATION, MMU_TLB_INVALIDATE) |
                                HWCONST(A16F, MEM_OP_B, MMU_TLB_INVALIDATE_PDB, ONE) |
                                invalidate_gpc_value);
+}
+
+void uvm_hal_maxwell_host_tlb_flush_prefetch_unsupported(uvm_push_t *push)
+{
+    UVM_ASSERT_MSG(false, "Prefetch flushing not needed on Maxwell\n");
 }
 
 void uvm_hal_maxwell_host_noop(uvm_push_t *push, NvU32 size)

@@ -225,7 +225,7 @@ NVT_STATUS NvTiming_CalcCVT(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT
 
     pT->etc.flag = 0;
     pT->etc.rr = (NvU16)rr;
-    pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk, (NvU32)10000*(NvU32)1000, (NvU32)pT->HTotal*(NvU32)pT->VTotal);
+    pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk1khz, (NvU32)1000*(NvU32)1000, (NvU32)pT->HTotal*(NvU32)pT->VTotal);
     pT->etc.aspect = 0;
     pT->etc.rep = 0x1;
     NVT_SNPRINTF((char *)pT->etc.name, 40, "CVT:%dx%dx%dHz",width, height, rr);
@@ -240,6 +240,7 @@ NVT_STATUS NvTiming_CalcCVT(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT
             pT->interlaced = NVT_INTERLACED_NO_EXTRA_VBLANK_ON_FIELD2;
 
         pT->pclk   >>= 1;
+        pT->pclk1khz >>= 1;
         pT->VTotal >>= 1;
         pT->VVisible = (pT->VVisible + 1) / 2;
     }
@@ -299,6 +300,7 @@ NVT_STATUS NvTiming_CalcCVT_RB(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, 
     pT->VSyncWidth = (NvU16)dwVSyncWidth;
 
     pT->pclk = dwPClk;
+    pT->pclk1khz = (dwPClk << 3) + (dwPClk << 1); // *10;
 
     pT->HSyncPol = NVT_H_SYNC_POSITIVE;
     pT->VSyncPol = NVT_V_SYNC_NEGATIVE;
@@ -310,7 +312,7 @@ NVT_STATUS NvTiming_CalcCVT_RB(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, 
     // fill in the extra timing info
     pT->etc.flag = 0;
     pT->etc.rr = (NvU16)rr;
-    pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk, (NvU32)10000*(NvU32)1000, (NvU32)pT->HTotal*(NvU32)pT->VTotal);
+    pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk1khz, (NvU32)1000*(NvU32)1000, (NvU32)pT->HTotal*(NvU32)pT->VTotal);
     pT->etc.aspect = 0;
     pT->etc.rep = 0x1;
     NVT_SNPRINTF((char *)pT->etc.name, 40, "CVT-RB:%dx%dx%dHz",width, height, rr);
@@ -325,6 +327,7 @@ NVT_STATUS NvTiming_CalcCVT_RB(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, 
             pT->interlaced = NVT_INTERLACED_NO_EXTRA_VBLANK_ON_FIELD2;
 
         pT->pclk   >>= 1;
+        pT->pclk1khz >>= 1;
         pT->VTotal >>= 1;
         pT->VVisible = (pT->VVisible + 1) / 2;
     }

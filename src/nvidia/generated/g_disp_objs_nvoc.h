@@ -213,13 +213,44 @@ NV_STATUS __nvoc_objCreate_DisplayApi(DisplayApi**, Dynamic*, NvU32, struct CALL
     __nvoc_objCreate_DisplayApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS dispapiConstruct_IMPL(struct DisplayApi *arg_pDisplayApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_dispapiConstruct(arg_pDisplayApi, arg_pCallContext, arg_pParams) dispapiConstruct_IMPL(arg_pDisplayApi, arg_pCallContext, arg_pParams)
+
+void dispapiDestruct_IMPL(struct DisplayApi *pDisplayApi);
+#define __nvoc_dispapiDestruct(pDisplayApi) dispapiDestruct_IMPL(pDisplayApi)
+
+NV_STATUS dispapiCtrlCmdEventSetNotification_IMPL(struct DisplayApi *pDisplayApi, NV0073_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispapiCtrlCmdEventSetNotification(struct DisplayApi *pDisplayApi, NV0073_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams) {
+    NV_ASSERT_FAILED_PRECOMP("DisplayApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispapiCtrlCmdEventSetNotification(pDisplayApi, pSetEventParams) dispapiCtrlCmdEventSetNotification_IMPL(pDisplayApi, pSetEventParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispapiValidateRmctrlPriv_IMPL(struct OBJGPU *pGpu);
+#define dispapiValidateRmctrlPriv(pGpu) dispapiValidateRmctrlPriv_IMPL(pGpu)
+
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispapiSetUnicastAndSynchronize(struct DisplayApi *pDisplayApi, struct OBJGPUGRP *pGpuGroup, struct OBJGPU **ppGpu, OBJDISP **ppDisp, NvU32 subDeviceInstance) {
+    NV_ASSERT_FAILED_PRECOMP("DisplayApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispapiSetUnicastAndSynchronize(pDisplayApi, pGpuGroup, ppGpu, ppDisp, subDeviceInstance) dispapiSetUnicastAndSynchronize_KERNEL(pDisplayApi, pGpuGroup, ppGpu, ppDisp, subDeviceInstance)
+#endif // __nvoc_disp_objs_h_disabled
+
+
+// Wrapper macros for halified functions
 #define dispapiControl_FNPTR(pDisplayApi) pDisplayApi->__nvoc_metadata_ptr->vtable.__dispapiControl__
 #define dispapiControl(pDisplayApi, pCallContext, pParams) dispapiControl_DISPATCH(pDisplayApi, pCallContext, pParams)
 #define dispapiControl_Prologue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_metadata_ptr->vtable.__dispapiControl_Prologue__
 #define dispapiControl_Prologue(pDisplayApi, pCallContext, pRsParams) dispapiControl_Prologue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
 #define dispapiControl_Epilogue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_metadata_ptr->vtable.__dispapiControl_Epilogue__
 #define dispapiControl_Epilogue(pDisplayApi, pCallContext, pRsParams) dispapiControl_Epilogue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
+#define dispapiSetUnicastAndSynchronize_HAL(pDisplayApi, pGpuGroup, ppGpu, ppDisp, subDeviceInstance) dispapiSetUnicastAndSynchronize(pDisplayApi, pGpuGroup, ppGpu, ppDisp, subDeviceInstance)
 #define dispapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define dispapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) dispapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define dispapiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
@@ -375,39 +406,11 @@ static inline NV_STATUS dispapiGetOrAllocNotifShare_DISPATCH(struct DisplayApi *
 NV_STATUS dispapiSetUnicastAndSynchronize_KERNEL(struct DisplayApi *pDisplayApi, struct OBJGPUGRP *pGpuGroup, struct OBJGPU **ppGpu, OBJDISP **ppDisp, NvU32 subDeviceInstance);
 
 
-#ifdef __nvoc_disp_objs_h_disabled
-static inline NV_STATUS dispapiSetUnicastAndSynchronize(struct DisplayApi *pDisplayApi, struct OBJGPUGRP *pGpuGroup, struct OBJGPU **ppGpu, OBJDISP **ppDisp, NvU32 subDeviceInstance) {
-    NV_ASSERT_FAILED_PRECOMP("DisplayApi was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_disp_objs_h_disabled
-#define dispapiSetUnicastAndSynchronize(pDisplayApi, pGpuGroup, ppGpu, ppDisp, subDeviceInstance) dispapiSetUnicastAndSynchronize_KERNEL(pDisplayApi, pGpuGroup, ppGpu, ppDisp, subDeviceInstance)
-#endif //__nvoc_disp_objs_h_disabled
-
-#define dispapiSetUnicastAndSynchronize_HAL(pDisplayApi, pGpuGroup, ppGpu, ppDisp, subDeviceInstance) dispapiSetUnicastAndSynchronize(pDisplayApi, pGpuGroup, ppGpu, ppDisp, subDeviceInstance)
-
 NV_STATUS dispapiControl_IMPL(struct DisplayApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
 NV_STATUS dispapiControl_Prologue_IMPL(struct DisplayApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);
 
 void dispapiControl_Epilogue_IMPL(struct DisplayApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);
-
-NV_STATUS dispapiConstruct_IMPL(struct DisplayApi *arg_pDisplayApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_dispapiConstruct(arg_pDisplayApi, arg_pCallContext, arg_pParams) dispapiConstruct_IMPL(arg_pDisplayApi, arg_pCallContext, arg_pParams)
-void dispapiDestruct_IMPL(struct DisplayApi *pDisplayApi);
-
-#define __nvoc_dispapiDestruct(pDisplayApi) dispapiDestruct_IMPL(pDisplayApi)
-NV_STATUS dispapiCtrlCmdEventSetNotification_IMPL(struct DisplayApi *pDisplayApi, NV0073_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams);
-
-#ifdef __nvoc_disp_objs_h_disabled
-static inline NV_STATUS dispapiCtrlCmdEventSetNotification(struct DisplayApi *pDisplayApi, NV0073_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams) {
-    NV_ASSERT_FAILED_PRECOMP("DisplayApi was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_disp_objs_h_disabled
-#define dispapiCtrlCmdEventSetNotification(pDisplayApi, pSetEventParams) dispapiCtrlCmdEventSetNotification_IMPL(pDisplayApi, pSetEventParams)
-#endif //__nvoc_disp_objs_h_disabled
 
 #undef PRIVATE_FIELD
 
@@ -456,27 +459,6 @@ struct DispObject {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super^2
     struct DisplayApi *__nvoc_pbase_DisplayApi;    // dispapi super
     struct DispObject *__nvoc_pbase_DispObject;    // dispobj
-
-    // Vtable with 19 per-object function pointers
-    NV_STATUS (*__dispobjCtrlCmdGetPinsetCount__)(struct DispObject * /*this*/, NV5070_CTRL_GET_PINSET_COUNT_PARAMS *);  // exported (id=0x50700115)
-    NV_STATUS (*__dispobjCtrlCmdGetPinsetPeer__)(struct DispObject * /*this*/, NV5070_CTRL_GET_PINSET_PEER_PARAMS *);  // exported (id=0x50700116)
-    NV_STATUS (*__dispobjCtrlCmdSetMempoolWARForBlitTearing__)(struct DispObject * /*this*/, NV5070_CTRL_SET_MEMPOOL_WAR_FOR_BLIT_TEARING_PARAMS *);  // exported (id=0x50700119)
-    NV_STATUS (*__dispobjCtrlCmdGetPinsetLockpins__)(struct DispObject * /*this*/, NV5070_CTRL_GET_PINSET_LOCKPINS_PARAMS *);  // exported (id=0x5070020b)
-    NV_STATUS (*__dispobjCtrlCmdGetFrameLockHeaderLockPins__)(struct DispObject * /*this*/, NV5070_CTRL_GET_FRAMELOCK_HEADER_LOCKPINS_PARAMS *);  // exported (id=0x5070020d)
-    NV_STATUS (*__dispobjCtrlCmdSetRmFreeFlags__)(struct DispObject * /*this*/, NV5070_CTRL_SET_RMFREE_FLAGS_PARAMS *);  // exported (id=0x50700117)
-    NV_STATUS (*__dispobjCtrlCmdIMPSetGetParameter__)(struct DispObject * /*this*/, NV5070_CTRL_IMP_SET_GET_PARAMETER_PARAMS *);  // exported (id=0x50700118)
-    NV_STATUS (*__dispobjCtrlCmdGetRgStatus__)(struct DispObject * /*this*/, NV5070_CTRL_CMD_GET_RG_STATUS_PARAMS *);  // exported (id=0x50700202)
-    NV_STATUS (*__dispobjCtrlCmdGetRgUnderflowProp__)(struct DispObject * /*this*/, NV5070_CTRL_CMD_GET_RG_UNDERFLOW_PROP_PARAMS *);  // exported (id=0x50700203)
-    NV_STATUS (*__dispobjCtrlCmdSetRgUnderflowProp__)(struct DispObject * /*this*/, NV5070_CTRL_CMD_SET_RG_UNDERFLOW_PROP_PARAMS *);  // exported (id=0x50700204)
-    NV_STATUS (*__dispobjCtrlCmdGetRgFliplockProp__)(struct DispObject * /*this*/, NV5070_CTRL_CMD_GET_RG_FLIPLOCK_PROP_PARAMS *);  // exported (id=0x50700205)
-    NV_STATUS (*__dispobjCtrlCmdSetRgFliplockProp__)(struct DispObject * /*this*/, NV5070_CTRL_CMD_SET_RG_FLIPLOCK_PROP_PARAMS *);  // exported (id=0x50700206)
-    NV_STATUS (*__dispobjCtrlCmdGetRgConnectedLockpinStateless__)(struct DispObject * /*this*/, NV5070_CTRL_GET_RG_CONNECTED_LOCKPIN_STATELESS_PARAMS *);  // exported (id=0x5070020a)
-    NV_STATUS (*__dispobjCtrlCmdGetRgScanLine__)(struct DispObject * /*this*/, NV5070_CTRL_CMD_GET_RG_SCAN_LINE_PARAMS *);  // exported (id=0x5070020c)
-    NV_STATUS (*__dispobjCtrlCmdGetSorOpMode__)(struct DispObject * /*this*/, NV5070_CTRL_CMD_GET_SOR_OP_MODE_PARAMS *);  // exported (id=0x50700422)
-    NV_STATUS (*__dispobjCtrlCmdSetSorOpMode__)(struct DispObject * /*this*/, NV5070_CTRL_CMD_SET_SOR_OP_MODE_PARAMS *);  // exported (id=0x50700423)
-    NV_STATUS (*__dispobjCtrlCmdSetSorFlushMode__)(struct DispObject * /*this*/, NV5070_CTRL_SET_SOR_FLUSH_MODE_PARAMS *);  // exported (id=0x50700457)
-    NV_STATUS (*__dispobjCtrlCmdC370SetSorFlushMode__)(struct DispObject * /*this*/, NVC370_CTRL_SET_SOR_FLUSH_MODE_PARAMS *);  // exported (id=0xc3700401)
-    NV_STATUS (*__dispobjCtrlCmdSystemGetCapsV2__)(struct DispObject * /*this*/, NV5070_CTRL_SYSTEM_GET_CAPS_V2_PARAMS *);  // exported (id=0x50700709)
 
     // Data members
     NvU32 rmFreeFlags;
@@ -549,45 +531,237 @@ NV_STATUS __nvoc_objCreate_DispObject(DispObject**, Dynamic*, NvU32, struct CALL
     __nvoc_objCreate_DispObject((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
-#define dispobjCtrlCmdGetPinsetCount_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdGetPinsetCount__
-#define dispobjCtrlCmdGetPinsetCount(pDispObject, pParams) dispobjCtrlCmdGetPinsetCount_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdGetPinsetPeer_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdGetPinsetPeer__
-#define dispobjCtrlCmdGetPinsetPeer(pDispObject, pParams) dispobjCtrlCmdGetPinsetPeer_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdSetMempoolWARForBlitTearing_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdSetMempoolWARForBlitTearing__
-#define dispobjCtrlCmdSetMempoolWARForBlitTearing(pDispObject, pParams) dispobjCtrlCmdSetMempoolWARForBlitTearing_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdGetPinsetLockpins_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdGetPinsetLockpins__
-#define dispobjCtrlCmdGetPinsetLockpins(pDispObject, pParams) dispobjCtrlCmdGetPinsetLockpins_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdGetFrameLockHeaderLockPins_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdGetFrameLockHeaderLockPins__
-#define dispobjCtrlCmdGetFrameLockHeaderLockPins(pDispObject, pParams) dispobjCtrlCmdGetFrameLockHeaderLockPins_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdSetRmFreeFlags_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdSetRmFreeFlags__
-#define dispobjCtrlCmdSetRmFreeFlags(pDispObject, pParams) dispobjCtrlCmdSetRmFreeFlags_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdIMPSetGetParameter_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdIMPSetGetParameter__
-#define dispobjCtrlCmdIMPSetGetParameter(pDispObject, pImpSetGetParams) dispobjCtrlCmdIMPSetGetParameter_DISPATCH(pDispObject, pImpSetGetParams)
-#define dispobjCtrlCmdGetRgStatus_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdGetRgStatus__
-#define dispobjCtrlCmdGetRgStatus(pDispObject, pParams) dispobjCtrlCmdGetRgStatus_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdGetRgUnderflowProp_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdGetRgUnderflowProp__
-#define dispobjCtrlCmdGetRgUnderflowProp(pDispObject, pParams) dispobjCtrlCmdGetRgUnderflowProp_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdSetRgUnderflowProp_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdSetRgUnderflowProp__
-#define dispobjCtrlCmdSetRgUnderflowProp(pDispObject, pParams) dispobjCtrlCmdSetRgUnderflowProp_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdGetRgFliplockProp_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdGetRgFliplockProp__
-#define dispobjCtrlCmdGetRgFliplockProp(pDispObject, pParams) dispobjCtrlCmdGetRgFliplockProp_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdSetRgFliplockProp_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdSetRgFliplockProp__
-#define dispobjCtrlCmdSetRgFliplockProp(pDispObject, pParams) dispobjCtrlCmdSetRgFliplockProp_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdGetRgConnectedLockpinStateless_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdGetRgConnectedLockpinStateless__
-#define dispobjCtrlCmdGetRgConnectedLockpinStateless(pDispObject, pParams) dispobjCtrlCmdGetRgConnectedLockpinStateless_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdGetRgScanLine_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdGetRgScanLine__
-#define dispobjCtrlCmdGetRgScanLine(pDispObject, pParams) dispobjCtrlCmdGetRgScanLine_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdGetSorOpMode_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdGetSorOpMode__
-#define dispobjCtrlCmdGetSorOpMode(pDispObject, pParams) dispobjCtrlCmdGetSorOpMode_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdSetSorOpMode_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdSetSorOpMode__
-#define dispobjCtrlCmdSetSorOpMode(pDispObject, pParams) dispobjCtrlCmdSetSorOpMode_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdSetSorFlushMode_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdSetSorFlushMode__
-#define dispobjCtrlCmdSetSorFlushMode(pDispObject, pParams) dispobjCtrlCmdSetSorFlushMode_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdC370SetSorFlushMode_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdC370SetSorFlushMode__
-#define dispobjCtrlCmdC370SetSorFlushMode(pDispObject, pParams) dispobjCtrlCmdC370SetSorFlushMode_DISPATCH(pDispObject, pParams)
-#define dispobjCtrlCmdSystemGetCapsV2_FNPTR(pDispObject) pDispObject->__dispobjCtrlCmdSystemGetCapsV2__
-#define dispobjCtrlCmdSystemGetCapsV2(pDispObject, pCapsParams) dispobjCtrlCmdSystemGetCapsV2_DISPATCH(pDispObject, pCapsParams)
+// Wrapper macros for implementation functions
+NV_STATUS dispobjConstruct_IMPL(struct DispObject *arg_pDispObject, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_dispobjConstruct(arg_pDispObject, arg_pCallContext, arg_pParams) dispobjConstruct_IMPL(arg_pDispObject, arg_pCallContext, arg_pParams)
+
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjConstructHal(struct DispObject *pDispObject, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjConstructHal(pDispObject, pCallContext, pParams) dispobjConstructHal_IMPL(pDispObject, pCallContext, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjGetByHandle_IMPL(struct RsClient *pClient, NvHandle hDispObject, struct DispObject **ppDispObject);
+#define dispobjGetByHandle(pClient, hDispObject, ppDispObject) dispobjGetByHandle_IMPL(pClient, hDispObject, ppDispObject)
+
+NV_STATUS dispobjGetByDevice_IMPL(struct RsClient *pClient, struct Device *pDevice, struct DispObject **ppDispObject);
+#define dispobjGetByDevice(pClient, pDevice, ppDispObject) dispobjGetByDevice_IMPL(pClient, pDevice, ppDispObject)
+
+void dispobjClearRmFreeFlags_IMPL(struct DispObject *pDispObject);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline void dispobjClearRmFreeFlags(struct DispObject *pDispObject) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjClearRmFreeFlags(pDispObject) dispobjClearRmFreeFlags_IMPL(pDispObject)
+#endif // __nvoc_disp_objs_h_disabled
+
+NvBool dispobjGetRmFreeFlags_IMPL(struct DispObject *pDispObject);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NvBool dispobjGetRmFreeFlags(struct DispObject *pDispObject) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_FALSE;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjGetRmFreeFlags(pDispObject) dispobjGetRmFreeFlags_IMPL(pDispObject)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdGetPinsetCount_IMPL(struct DispObject *pDispObject, NV5070_CTRL_GET_PINSET_COUNT_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdGetPinsetCount(struct DispObject *pDispObject, NV5070_CTRL_GET_PINSET_COUNT_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdGetPinsetCount(pDispObject, pParams) dispobjCtrlCmdGetPinsetCount_IMPL(pDispObject, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdGetPinsetPeer_IMPL(struct DispObject *pDispObject, NV5070_CTRL_GET_PINSET_PEER_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdGetPinsetPeer(struct DispObject *pDispObject, NV5070_CTRL_GET_PINSET_PEER_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdGetPinsetPeer(pDispObject, pParams) dispobjCtrlCmdGetPinsetPeer_IMPL(pDispObject, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdSetMempoolWARForBlitTearing_IMPL(struct DispObject *pDispObject, NV5070_CTRL_SET_MEMPOOL_WAR_FOR_BLIT_TEARING_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdSetMempoolWARForBlitTearing(struct DispObject *pDispObject, NV5070_CTRL_SET_MEMPOOL_WAR_FOR_BLIT_TEARING_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdSetMempoolWARForBlitTearing(pDispObject, pParams) dispobjCtrlCmdSetMempoolWARForBlitTearing_IMPL(pDispObject, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdGetPinsetLockpins_IMPL(struct DispObject *pDispObject, NV5070_CTRL_GET_PINSET_LOCKPINS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdGetPinsetLockpins(struct DispObject *pDispObject, NV5070_CTRL_GET_PINSET_LOCKPINS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdGetPinsetLockpins(pDispObject, pParams) dispobjCtrlCmdGetPinsetLockpins_IMPL(pDispObject, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdGetFrameLockHeaderLockPins_IMPL(struct DispObject *pDispObject, NV5070_CTRL_GET_FRAMELOCK_HEADER_LOCKPINS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdGetFrameLockHeaderLockPins(struct DispObject *pDispObject, NV5070_CTRL_GET_FRAMELOCK_HEADER_LOCKPINS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdGetFrameLockHeaderLockPins(pDispObject, pParams) dispobjCtrlCmdGetFrameLockHeaderLockPins_IMPL(pDispObject, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdSetRmFreeFlags_IMPL(struct DispObject *pDispObject, NV5070_CTRL_SET_RMFREE_FLAGS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdSetRmFreeFlags(struct DispObject *pDispObject, NV5070_CTRL_SET_RMFREE_FLAGS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdSetRmFreeFlags(pDispObject, pParams) dispobjCtrlCmdSetRmFreeFlags_IMPL(pDispObject, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdIMPSetGetParameter_IMPL(struct DispObject *pDispObject, NV5070_CTRL_IMP_SET_GET_PARAMETER_PARAMS *pImpSetGetParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdIMPSetGetParameter(struct DispObject *pDispObject, NV5070_CTRL_IMP_SET_GET_PARAMETER_PARAMS *pImpSetGetParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdIMPSetGetParameter(pDispObject, pImpSetGetParams) dispobjCtrlCmdIMPSetGetParameter_IMPL(pDispObject, pImpSetGetParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdGetRgStatus_IMPL(struct DispObject *pDispObject, NV5070_CTRL_CMD_GET_RG_STATUS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdGetRgStatus(struct DispObject *pDispObject, NV5070_CTRL_CMD_GET_RG_STATUS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdGetRgStatus(pDispObject, pParams) dispobjCtrlCmdGetRgStatus_IMPL(pDispObject, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdGetRgUnderflowProp_IMPL(struct DispObject *pDispObject, NV5070_CTRL_CMD_GET_RG_UNDERFLOW_PROP_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdGetRgUnderflowProp(struct DispObject *pDispObject, NV5070_CTRL_CMD_GET_RG_UNDERFLOW_PROP_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdGetRgUnderflowProp(pDispObject, pParams) dispobjCtrlCmdGetRgUnderflowProp_IMPL(pDispObject, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdSetRgUnderflowProp_IMPL(struct DispObject *pDispObject, NV5070_CTRL_CMD_SET_RG_UNDERFLOW_PROP_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdSetRgUnderflowProp(struct DispObject *pDispObject, NV5070_CTRL_CMD_SET_RG_UNDERFLOW_PROP_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdSetRgUnderflowProp(pDispObject, pParams) dispobjCtrlCmdSetRgUnderflowProp_IMPL(pDispObject, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdGetRgFliplockProp_IMPL(struct DispObject *pDispObject, NV5070_CTRL_CMD_GET_RG_FLIPLOCK_PROP_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdGetRgFliplockProp(struct DispObject *pDispObject, NV5070_CTRL_CMD_GET_RG_FLIPLOCK_PROP_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdGetRgFliplockProp(pDispObject, pParams) dispobjCtrlCmdGetRgFliplockProp_IMPL(pDispObject, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdSetRgFliplockProp_IMPL(struct DispObject *pDispObject, NV5070_CTRL_CMD_SET_RG_FLIPLOCK_PROP_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdSetRgFliplockProp(struct DispObject *pDispObject, NV5070_CTRL_CMD_SET_RG_FLIPLOCK_PROP_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdSetRgFliplockProp(pDispObject, pParams) dispobjCtrlCmdSetRgFliplockProp_IMPL(pDispObject, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdGetRgConnectedLockpinStateless_IMPL(struct DispObject *pDispObject, NV5070_CTRL_GET_RG_CONNECTED_LOCKPIN_STATELESS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdGetRgConnectedLockpinStateless(struct DispObject *pDispObject, NV5070_CTRL_GET_RG_CONNECTED_LOCKPIN_STATELESS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdGetRgConnectedLockpinStateless(pDispObject, pParams) dispobjCtrlCmdGetRgConnectedLockpinStateless_IMPL(pDispObject, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdGetRgScanLine_IMPL(struct DispObject *pDispObject, NV5070_CTRL_CMD_GET_RG_SCAN_LINE_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdGetRgScanLine(struct DispObject *pDispObject, NV5070_CTRL_CMD_GET_RG_SCAN_LINE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdGetRgScanLine(pDispObject, pParams) dispobjCtrlCmdGetRgScanLine_IMPL(pDispObject, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdGetSorOpMode_IMPL(struct DispObject *pDispObject, NV5070_CTRL_CMD_GET_SOR_OP_MODE_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdGetSorOpMode(struct DispObject *pDispObject, NV5070_CTRL_CMD_GET_SOR_OP_MODE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdGetSorOpMode(pDispObject, pParams) dispobjCtrlCmdGetSorOpMode_IMPL(pDispObject, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdSetSorOpMode_IMPL(struct DispObject *pDispObject, NV5070_CTRL_CMD_SET_SOR_OP_MODE_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdSetSorOpMode(struct DispObject *pDispObject, NV5070_CTRL_CMD_SET_SOR_OP_MODE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdSetSorOpMode(pDispObject, pParams) dispobjCtrlCmdSetSorOpMode_IMPL(pDispObject, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdSetSorFlushMode_IMPL(struct DispObject *pDispObject, NV5070_CTRL_SET_SOR_FLUSH_MODE_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdSetSorFlushMode(struct DispObject *pDispObject, NV5070_CTRL_SET_SOR_FLUSH_MODE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdSetSorFlushMode(pDispObject, pParams) dispobjCtrlCmdSetSorFlushMode_IMPL(pDispObject, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdC370SetSorFlushMode_IMPL(struct DispObject *pDispObject, NVC370_CTRL_SET_SOR_FLUSH_MODE_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdC370SetSorFlushMode(struct DispObject *pDispObject, NVC370_CTRL_SET_SOR_FLUSH_MODE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdC370SetSorFlushMode(pDispObject, pParams) dispobjCtrlCmdC370SetSorFlushMode_IMPL(pDispObject, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispobjCtrlCmdSystemGetCapsV2_IMPL(struct DispObject *pDispObject, NV5070_CTRL_SYSTEM_GET_CAPS_V2_PARAMS *pCapsParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispobjCtrlCmdSystemGetCapsV2(struct DispObject *pDispObject, NV5070_CTRL_SYSTEM_GET_CAPS_V2_PARAMS *pCapsParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispobjCtrlCmdSystemGetCapsV2(pDispObject, pCapsParams) dispobjCtrlCmdSystemGetCapsV2_IMPL(pDispObject, pCapsParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+
+// Wrapper macros for halified functions
+#define dispobjConstructHal_HAL(pDispObject, pCallContext, pParams) dispobjConstructHal(pDispObject, pCallContext, pParams)
 #define dispobjControl_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl__
 #define dispobjControl(pDisplayApi, pCallContext, pParams) dispobjControl_DISPATCH(pDisplayApi, pCallContext, pParams)
 #define dispobjControl_Prologue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl_Prologue__
@@ -642,82 +816,6 @@ NV_STATUS __nvoc_objCreate_DispObject(DispObject**, Dynamic*, NvU32, struct CALL
 #define dispobjGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) dispobjGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
-static inline NV_STATUS dispobjCtrlCmdGetPinsetCount_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_GET_PINSET_COUNT_PARAMS *pParams) {
-    return pDispObject->__dispobjCtrlCmdGetPinsetCount__(pDispObject, pParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdGetPinsetPeer_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_GET_PINSET_PEER_PARAMS *pParams) {
-    return pDispObject->__dispobjCtrlCmdGetPinsetPeer__(pDispObject, pParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdSetMempoolWARForBlitTearing_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_SET_MEMPOOL_WAR_FOR_BLIT_TEARING_PARAMS *pParams) {
-    return pDispObject->__dispobjCtrlCmdSetMempoolWARForBlitTearing__(pDispObject, pParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdGetPinsetLockpins_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_GET_PINSET_LOCKPINS_PARAMS *pParams) {
-    return pDispObject->__dispobjCtrlCmdGetPinsetLockpins__(pDispObject, pParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdGetFrameLockHeaderLockPins_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_GET_FRAMELOCK_HEADER_LOCKPINS_PARAMS *pParams) {
-    return pDispObject->__dispobjCtrlCmdGetFrameLockHeaderLockPins__(pDispObject, pParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdSetRmFreeFlags_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_SET_RMFREE_FLAGS_PARAMS *pParams) {
-    return pDispObject->__dispobjCtrlCmdSetRmFreeFlags__(pDispObject, pParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdIMPSetGetParameter_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_IMP_SET_GET_PARAMETER_PARAMS *pImpSetGetParams) {
-    return pDispObject->__dispobjCtrlCmdIMPSetGetParameter__(pDispObject, pImpSetGetParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdGetRgStatus_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_CMD_GET_RG_STATUS_PARAMS *pParams) {
-    return pDispObject->__dispobjCtrlCmdGetRgStatus__(pDispObject, pParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdGetRgUnderflowProp_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_CMD_GET_RG_UNDERFLOW_PROP_PARAMS *pParams) {
-    return pDispObject->__dispobjCtrlCmdGetRgUnderflowProp__(pDispObject, pParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdSetRgUnderflowProp_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_CMD_SET_RG_UNDERFLOW_PROP_PARAMS *pParams) {
-    return pDispObject->__dispobjCtrlCmdSetRgUnderflowProp__(pDispObject, pParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdGetRgFliplockProp_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_CMD_GET_RG_FLIPLOCK_PROP_PARAMS *pParams) {
-    return pDispObject->__dispobjCtrlCmdGetRgFliplockProp__(pDispObject, pParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdSetRgFliplockProp_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_CMD_SET_RG_FLIPLOCK_PROP_PARAMS *pParams) {
-    return pDispObject->__dispobjCtrlCmdSetRgFliplockProp__(pDispObject, pParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdGetRgConnectedLockpinStateless_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_GET_RG_CONNECTED_LOCKPIN_STATELESS_PARAMS *pParams) {
-    return pDispObject->__dispobjCtrlCmdGetRgConnectedLockpinStateless__(pDispObject, pParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdGetRgScanLine_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_CMD_GET_RG_SCAN_LINE_PARAMS *pParams) {
-    return pDispObject->__dispobjCtrlCmdGetRgScanLine__(pDispObject, pParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdGetSorOpMode_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_CMD_GET_SOR_OP_MODE_PARAMS *pParams) {
-    return pDispObject->__dispobjCtrlCmdGetSorOpMode__(pDispObject, pParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdSetSorOpMode_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_CMD_SET_SOR_OP_MODE_PARAMS *pParams) {
-    return pDispObject->__dispobjCtrlCmdSetSorOpMode__(pDispObject, pParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdSetSorFlushMode_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_SET_SOR_FLUSH_MODE_PARAMS *pParams) {
-    return pDispObject->__dispobjCtrlCmdSetSorFlushMode__(pDispObject, pParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdC370SetSorFlushMode_DISPATCH(struct DispObject *pDispObject, NVC370_CTRL_SET_SOR_FLUSH_MODE_PARAMS *pParams) {
-    return pDispObject->__dispobjCtrlCmdC370SetSorFlushMode__(pDispObject, pParams);
-}
-
-static inline NV_STATUS dispobjCtrlCmdSystemGetCapsV2_DISPATCH(struct DispObject *pDispObject, NV5070_CTRL_SYSTEM_GET_CAPS_V2_PARAMS *pCapsParams) {
-    return pDispObject->__dispobjCtrlCmdSystemGetCapsV2__(pDispObject, pCapsParams);
-}
-
 static inline NV_STATUS dispobjControl_DISPATCH(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pDisplayApi->__nvoc_metadata_ptr->vtable.__dispobjControl__(pDisplayApi, pCallContext, pParams);
 }
@@ -825,17 +923,6 @@ static inline NV_STATUS dispobjGetOrAllocNotifShare_DISPATCH(struct DispObject *
 NV_STATUS dispobjConstructHal_IMPL(struct DispObject *pDispObject, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 
 
-#ifdef __nvoc_disp_objs_h_disabled
-static inline NV_STATUS dispobjConstructHal(struct DispObject *pDispObject, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_disp_objs_h_disabled
-#define dispobjConstructHal(pDispObject, pCallContext, pParams) dispobjConstructHal_IMPL(pDispObject, pCallContext, pParams)
-#endif //__nvoc_disp_objs_h_disabled
-
-#define dispobjConstructHal_HAL(pDispObject, pCallContext, pParams) dispobjConstructHal(pDispObject, pCallContext, pParams)
-
 NV_STATUS dispobjCtrlCmdGetPinsetCount_IMPL(struct DispObject *pDispObject, NV5070_CTRL_GET_PINSET_COUNT_PARAMS *pParams);
 
 NV_STATUS dispobjCtrlCmdGetPinsetPeer_IMPL(struct DispObject *pDispObject, NV5070_CTRL_GET_PINSET_PEER_PARAMS *pParams);
@@ -873,36 +960,6 @@ NV_STATUS dispobjCtrlCmdSetSorFlushMode_IMPL(struct DispObject *pDispObject, NV5
 NV_STATUS dispobjCtrlCmdC370SetSorFlushMode_IMPL(struct DispObject *pDispObject, NVC370_CTRL_SET_SOR_FLUSH_MODE_PARAMS *pParams);
 
 NV_STATUS dispobjCtrlCmdSystemGetCapsV2_IMPL(struct DispObject *pDispObject, NV5070_CTRL_SYSTEM_GET_CAPS_V2_PARAMS *pCapsParams);
-
-NV_STATUS dispobjConstruct_IMPL(struct DispObject *arg_pDispObject, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_dispobjConstruct(arg_pDispObject, arg_pCallContext, arg_pParams) dispobjConstruct_IMPL(arg_pDispObject, arg_pCallContext, arg_pParams)
-NV_STATUS dispobjGetByHandle_IMPL(struct RsClient *pClient, NvHandle hDispObject, struct DispObject **ppDispObject);
-
-#define dispobjGetByHandle(pClient, hDispObject, ppDispObject) dispobjGetByHandle_IMPL(pClient, hDispObject, ppDispObject)
-NV_STATUS dispobjGetByDevice_IMPL(struct RsClient *pClient, struct Device *pDevice, struct DispObject **ppDispObject);
-
-#define dispobjGetByDevice(pClient, pDevice, ppDispObject) dispobjGetByDevice_IMPL(pClient, pDevice, ppDispObject)
-void dispobjClearRmFreeFlags_IMPL(struct DispObject *pDispObject);
-
-#ifdef __nvoc_disp_objs_h_disabled
-static inline void dispobjClearRmFreeFlags(struct DispObject *pDispObject) {
-    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
-}
-#else //__nvoc_disp_objs_h_disabled
-#define dispobjClearRmFreeFlags(pDispObject) dispobjClearRmFreeFlags_IMPL(pDispObject)
-#endif //__nvoc_disp_objs_h_disabled
-
-NvBool dispobjGetRmFreeFlags_IMPL(struct DispObject *pDispObject);
-
-#ifdef __nvoc_disp_objs_h_disabled
-static inline NvBool dispobjGetRmFreeFlags(struct DispObject *pDispObject) {
-    NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_disp_objs_h_disabled
-#define dispobjGetRmFreeFlags(pDispObject) dispobjGetRmFreeFlags_IMPL(pDispObject)
-#endif //__nvoc_disp_objs_h_disabled
 
 #undef PRIVATE_FIELD
 
@@ -952,15 +1009,6 @@ struct NvDispApi {
     struct DisplayApi *__nvoc_pbase_DisplayApi;    // dispapi super^2
     struct DispObject *__nvoc_pbase_DispObject;    // dispobj super
     struct NvDispApi *__nvoc_pbase_NvDispApi;    // nvdispapi
-
-    // Vtable with 7 per-object function pointers
-    NV_STATUS (*__nvdispapiCtrlCmdIdleChannel__)(struct NvDispApi * /*this*/, NVC370_CTRL_IDLE_CHANNEL_PARAMS *);  // exported (id=0xc3700101)
-    NV_STATUS (*__nvdispapiCtrlCmdSetAccl__)(struct NvDispApi * /*this*/, NVC370_CTRL_SET_ACCL_PARAMS *);  // exported (id=0xc3700102)
-    NV_STATUS (*__nvdispapiCtrlCmdGetAccl__)(struct NvDispApi * /*this*/, NVC370_CTRL_GET_ACCL_PARAMS *);  // exported (id=0xc3700103)
-    NV_STATUS (*__nvdispapiCtrlCmdGetChannelInfo__)(struct NvDispApi * /*this*/, NVC370_CTRL_CMD_GET_CHANNEL_INFO_PARAMS *);  // exported (id=0xc3700104)
-    NV_STATUS (*__nvdispapiCtrlCmdSetSwaprdyGpioWar__)(struct NvDispApi * /*this*/, NVC370_CTRL_SET_SWAPRDY_GPIO_WAR_PARAMS *);  // exported (id=0xc3700202)
-    NV_STATUS (*__nvdispapiCtrlCmdGetLockpinsCaps__)(struct NvDispApi * /*this*/, NVC370_CTRL_GET_LOCKPINS_CAPS_PARAMS *);  // exported (id=0xc3700201)
-    NV_STATUS (*__nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides__)(struct NvDispApi * /*this*/, NVC370_CTRL_CMD_SET_FORCE_MODESWITCH_FLAGS_OVERRIDES_PARAMS *);  // exported (id=0xc3700602)
 };
 
 
@@ -1030,21 +1078,92 @@ NV_STATUS __nvoc_objCreate_NvDispApi(NvDispApi**, Dynamic*, NvU32, struct CALL_C
     __nvoc_objCreate_NvDispApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
-#define nvdispapiCtrlCmdIdleChannel_FNPTR(pNvDispApi) pNvDispApi->__nvdispapiCtrlCmdIdleChannel__
-#define nvdispapiCtrlCmdIdleChannel(pNvDispApi, pParams) nvdispapiCtrlCmdIdleChannel_DISPATCH(pNvDispApi, pParams)
-#define nvdispapiCtrlCmdSetAccl_FNPTR(pNvDispApi) pNvDispApi->__nvdispapiCtrlCmdSetAccl__
-#define nvdispapiCtrlCmdSetAccl(pNvDispApi, pParams) nvdispapiCtrlCmdSetAccl_DISPATCH(pNvDispApi, pParams)
-#define nvdispapiCtrlCmdGetAccl_FNPTR(pNvDispApi) pNvDispApi->__nvdispapiCtrlCmdGetAccl__
-#define nvdispapiCtrlCmdGetAccl(pNvDispApi, pParams) nvdispapiCtrlCmdGetAccl_DISPATCH(pNvDispApi, pParams)
-#define nvdispapiCtrlCmdGetChannelInfo_FNPTR(pNvDispApi) pNvDispApi->__nvdispapiCtrlCmdGetChannelInfo__
-#define nvdispapiCtrlCmdGetChannelInfo(pNvDispApi, pParams) nvdispapiCtrlCmdGetChannelInfo_DISPATCH(pNvDispApi, pParams)
-#define nvdispapiCtrlCmdSetSwaprdyGpioWar_FNPTR(pNvDispApi) pNvDispApi->__nvdispapiCtrlCmdSetSwaprdyGpioWar__
-#define nvdispapiCtrlCmdSetSwaprdyGpioWar(pNvDispApi, pParams) nvdispapiCtrlCmdSetSwaprdyGpioWar_DISPATCH(pNvDispApi, pParams)
-#define nvdispapiCtrlCmdGetLockpinsCaps_FNPTR(pNvDispApi) pNvDispApi->__nvdispapiCtrlCmdGetLockpinsCaps__
-#define nvdispapiCtrlCmdGetLockpinsCaps(pNvDispApi, pParams) nvdispapiCtrlCmdGetLockpinsCaps_DISPATCH(pNvDispApi, pParams)
-#define nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides_FNPTR(pNvDispApi) pNvDispApi->__nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides__
-#define nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides(pNvDispApi, pParams) nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides_DISPATCH(pNvDispApi, pParams)
+// Wrapper macros for implementation functions
+NV_STATUS nvdispapiConstruct_IMPL(struct NvDispApi *arg_pNvdispApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_nvdispapiConstruct(arg_pNvdispApi, arg_pCallContext, arg_pParams) nvdispapiConstruct_IMPL(arg_pNvdispApi, arg_pCallContext, arg_pParams)
+
+NV_STATUS nvdispapiCtrlCmdIdleChannel_IMPL(struct NvDispApi *pNvDispApi, NVC370_CTRL_IDLE_CHANNEL_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS nvdispapiCtrlCmdIdleChannel(struct NvDispApi *pNvDispApi, NVC370_CTRL_IDLE_CHANNEL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("NvDispApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define nvdispapiCtrlCmdIdleChannel(pNvDispApi, pParams) nvdispapiCtrlCmdIdleChannel_IMPL(pNvDispApi, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS nvdispapiCtrlCmdSetAccl_IMPL(struct NvDispApi *pNvDispApi, NVC370_CTRL_SET_ACCL_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS nvdispapiCtrlCmdSetAccl(struct NvDispApi *pNvDispApi, NVC370_CTRL_SET_ACCL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("NvDispApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define nvdispapiCtrlCmdSetAccl(pNvDispApi, pParams) nvdispapiCtrlCmdSetAccl_IMPL(pNvDispApi, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS nvdispapiCtrlCmdGetAccl_IMPL(struct NvDispApi *pNvDispApi, NVC370_CTRL_GET_ACCL_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS nvdispapiCtrlCmdGetAccl(struct NvDispApi *pNvDispApi, NVC370_CTRL_GET_ACCL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("NvDispApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define nvdispapiCtrlCmdGetAccl(pNvDispApi, pParams) nvdispapiCtrlCmdGetAccl_IMPL(pNvDispApi, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS nvdispapiCtrlCmdGetChannelInfo_IMPL(struct NvDispApi *pNvDispApi, NVC370_CTRL_CMD_GET_CHANNEL_INFO_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS nvdispapiCtrlCmdGetChannelInfo(struct NvDispApi *pNvDispApi, NVC370_CTRL_CMD_GET_CHANNEL_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("NvDispApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define nvdispapiCtrlCmdGetChannelInfo(pNvDispApi, pParams) nvdispapiCtrlCmdGetChannelInfo_IMPL(pNvDispApi, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS nvdispapiCtrlCmdChannelCancelFlip_IMPL(struct NvDispApi *pNvDispApi, NVC370_CTRL_CHANNEL_CANCEL_FLIP_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS nvdispapiCtrlCmdChannelCancelFlip(struct NvDispApi *pNvDispApi, NVC370_CTRL_CHANNEL_CANCEL_FLIP_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("NvDispApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define nvdispapiCtrlCmdChannelCancelFlip(pNvDispApi, pParams) nvdispapiCtrlCmdChannelCancelFlip_IMPL(pNvDispApi, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS nvdispapiCtrlCmdSetSwaprdyGpioWar_IMPL(struct NvDispApi *pNvDispApi, NVC370_CTRL_SET_SWAPRDY_GPIO_WAR_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS nvdispapiCtrlCmdSetSwaprdyGpioWar(struct NvDispApi *pNvDispApi, NVC370_CTRL_SET_SWAPRDY_GPIO_WAR_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("NvDispApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define nvdispapiCtrlCmdSetSwaprdyGpioWar(pNvDispApi, pParams) nvdispapiCtrlCmdSetSwaprdyGpioWar_IMPL(pNvDispApi, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS nvdispapiCtrlCmdGetLockpinsCaps_IMPL(struct NvDispApi *pNvDispApi, NVC370_CTRL_GET_LOCKPINS_CAPS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS nvdispapiCtrlCmdGetLockpinsCaps(struct NvDispApi *pNvDispApi, NVC370_CTRL_GET_LOCKPINS_CAPS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("NvDispApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define nvdispapiCtrlCmdGetLockpinsCaps(pNvDispApi, pParams) nvdispapiCtrlCmdGetLockpinsCaps_IMPL(pNvDispApi, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides_IMPL(struct NvDispApi *pNvDispApi, NVC370_CTRL_CMD_SET_FORCE_MODESWITCH_FLAGS_OVERRIDES_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides(struct NvDispApi *pNvDispApi, NVC370_CTRL_CMD_SET_FORCE_MODESWITCH_FLAGS_OVERRIDES_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("NvDispApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides(pNvDispApi, pParams) nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides_IMPL(pNvDispApi, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+
+// Wrapper macros for halified functions
 #define nvdispapiControl_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl__
 #define nvdispapiControl(pDisplayApi, pCallContext, pParams) nvdispapiControl_DISPATCH(pDisplayApi, pCallContext, pParams)
 #define nvdispapiControl_Prologue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl_Prologue__
@@ -1099,34 +1218,6 @@ NV_STATUS __nvoc_objCreate_NvDispApi(NvDispApi**, Dynamic*, NvU32, struct CALL_C
 #define nvdispapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) nvdispapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
-static inline NV_STATUS nvdispapiCtrlCmdIdleChannel_DISPATCH(struct NvDispApi *pNvDispApi, NVC370_CTRL_IDLE_CHANNEL_PARAMS *pParams) {
-    return pNvDispApi->__nvdispapiCtrlCmdIdleChannel__(pNvDispApi, pParams);
-}
-
-static inline NV_STATUS nvdispapiCtrlCmdSetAccl_DISPATCH(struct NvDispApi *pNvDispApi, NVC370_CTRL_SET_ACCL_PARAMS *pParams) {
-    return pNvDispApi->__nvdispapiCtrlCmdSetAccl__(pNvDispApi, pParams);
-}
-
-static inline NV_STATUS nvdispapiCtrlCmdGetAccl_DISPATCH(struct NvDispApi *pNvDispApi, NVC370_CTRL_GET_ACCL_PARAMS *pParams) {
-    return pNvDispApi->__nvdispapiCtrlCmdGetAccl__(pNvDispApi, pParams);
-}
-
-static inline NV_STATUS nvdispapiCtrlCmdGetChannelInfo_DISPATCH(struct NvDispApi *pNvDispApi, NVC370_CTRL_CMD_GET_CHANNEL_INFO_PARAMS *pParams) {
-    return pNvDispApi->__nvdispapiCtrlCmdGetChannelInfo__(pNvDispApi, pParams);
-}
-
-static inline NV_STATUS nvdispapiCtrlCmdSetSwaprdyGpioWar_DISPATCH(struct NvDispApi *pNvDispApi, NVC370_CTRL_SET_SWAPRDY_GPIO_WAR_PARAMS *pParams) {
-    return pNvDispApi->__nvdispapiCtrlCmdSetSwaprdyGpioWar__(pNvDispApi, pParams);
-}
-
-static inline NV_STATUS nvdispapiCtrlCmdGetLockpinsCaps_DISPATCH(struct NvDispApi *pNvDispApi, NVC370_CTRL_GET_LOCKPINS_CAPS_PARAMS *pParams) {
-    return pNvDispApi->__nvdispapiCtrlCmdGetLockpinsCaps__(pNvDispApi, pParams);
-}
-
-static inline NV_STATUS nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides_DISPATCH(struct NvDispApi *pNvDispApi, NVC370_CTRL_CMD_SET_FORCE_MODESWITCH_FLAGS_OVERRIDES_PARAMS *pParams) {
-    return pNvDispApi->__nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides__(pNvDispApi, pParams);
-}
-
 static inline NV_STATUS nvdispapiControl_DISPATCH(struct NvDispApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pDisplayApi->__nvoc_metadata_ptr->vtable.__nvdispapiControl__(pDisplayApi, pCallContext, pParams);
 }
@@ -1239,15 +1330,14 @@ NV_STATUS nvdispapiCtrlCmdGetAccl_IMPL(struct NvDispApi *pNvDispApi, NVC370_CTRL
 
 NV_STATUS nvdispapiCtrlCmdGetChannelInfo_IMPL(struct NvDispApi *pNvDispApi, NVC370_CTRL_CMD_GET_CHANNEL_INFO_PARAMS *pParams);
 
+NV_STATUS nvdispapiCtrlCmdChannelCancelFlip_IMPL(struct NvDispApi *pNvDispApi, NVC370_CTRL_CHANNEL_CANCEL_FLIP_PARAMS *pParams);
+
 NV_STATUS nvdispapiCtrlCmdSetSwaprdyGpioWar_IMPL(struct NvDispApi *pNvDispApi, NVC370_CTRL_SET_SWAPRDY_GPIO_WAR_PARAMS *pParams);
 
 NV_STATUS nvdispapiCtrlCmdGetLockpinsCaps_IMPL(struct NvDispApi *pNvDispApi, NVC370_CTRL_GET_LOCKPINS_CAPS_PARAMS *pParams);
 
 NV_STATUS nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides_IMPL(struct NvDispApi *pNvDispApi, NVC370_CTRL_CMD_SET_FORCE_MODESWITCH_FLAGS_OVERRIDES_PARAMS *pParams);
 
-NV_STATUS nvdispapiConstruct_IMPL(struct NvDispApi *arg_pNvdispApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_nvdispapiConstruct(arg_pNvdispApi, arg_pCallContext, arg_pParams) nvdispapiConstruct_IMPL(arg_pNvdispApi, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 
@@ -1298,12 +1388,6 @@ struct DispSwObj {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super^2
     struct DisplayApi *__nvoc_pbase_DisplayApi;    // dispapi super
     struct DispSwObj *__nvoc_pbase_DispSwObj;    // dispswobj
-
-    // Vtable with 4 per-object function pointers
-    NV_STATUS (*__dispswobjCtrlCmdIsModePossible__)(struct DispSwObj * /*this*/, NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS *);  // exported (id=0xc3720101)
-    NV_STATUS (*__dispswobjCtrlCmdIsModePossibleOrSettings__)(struct DispSwObj * /*this*/, NVC372_CTRL_IS_MODE_POSSIBLE_OR_SETTINGS_PARAMS *);  // exported (id=0xc3720102)
-    NV_STATUS (*__dispswobjCtrlCmdVideoAdaptiveRefreshRate__)(struct DispSwObj * /*this*/, NVC372_CTRL_CMD_VIDEO_ADAPTIVE_REFRESH_RATE_PARAMS *);  // exported (id=0xc3720103)
-    NV_STATUS (*__dispswobjCtrlCmdGetActiveViewportPointIn__)(struct DispSwObj * /*this*/, NVC372_CTRL_CMD_GET_ACTIVE_VIEWPORT_POINT_IN_PARAMS *);  // exported (id=0xc3720104)
 };
 
 
@@ -1373,15 +1457,52 @@ NV_STATUS __nvoc_objCreate_DispSwObj(DispSwObj**, Dynamic*, NvU32, struct CALL_C
     __nvoc_objCreate_DispSwObj((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
-#define dispswobjCtrlCmdIsModePossible_FNPTR(pDispSwObj) pDispSwObj->__dispswobjCtrlCmdIsModePossible__
-#define dispswobjCtrlCmdIsModePossible(pDispSwObj, pParams) dispswobjCtrlCmdIsModePossible_DISPATCH(pDispSwObj, pParams)
-#define dispswobjCtrlCmdIsModePossibleOrSettings_FNPTR(pDispSwObj) pDispSwObj->__dispswobjCtrlCmdIsModePossibleOrSettings__
-#define dispswobjCtrlCmdIsModePossibleOrSettings(pDispSwObj, pParams) dispswobjCtrlCmdIsModePossibleOrSettings_DISPATCH(pDispSwObj, pParams)
-#define dispswobjCtrlCmdVideoAdaptiveRefreshRate_FNPTR(pDispSwObj) pDispSwObj->__dispswobjCtrlCmdVideoAdaptiveRefreshRate__
-#define dispswobjCtrlCmdVideoAdaptiveRefreshRate(pDispSwObj, pParams) dispswobjCtrlCmdVideoAdaptiveRefreshRate_DISPATCH(pDispSwObj, pParams)
-#define dispswobjCtrlCmdGetActiveViewportPointIn_FNPTR(pDispSwObj) pDispSwObj->__dispswobjCtrlCmdGetActiveViewportPointIn__
-#define dispswobjCtrlCmdGetActiveViewportPointIn(pDispSwObj, pParams) dispswobjCtrlCmdGetActiveViewportPointIn_DISPATCH(pDispSwObj, pParams)
+// Wrapper macros for implementation functions
+NV_STATUS dispswobjConstruct_IMPL(struct DispSwObj *arg_pDispSwObj, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_dispswobjConstruct(arg_pDispSwObj, arg_pCallContext, arg_pParams) dispswobjConstruct_IMPL(arg_pDispSwObj, arg_pCallContext, arg_pParams)
+
+NV_STATUS dispswobjCtrlCmdIsModePossible_IMPL(struct DispSwObj *pDispSwObj, NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispswobjCtrlCmdIsModePossible(struct DispSwObj *pDispSwObj, NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispSwObj was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispswobjCtrlCmdIsModePossible(pDispSwObj, pParams) dispswobjCtrlCmdIsModePossible_IMPL(pDispSwObj, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispswobjCtrlCmdIsModePossibleOrSettings_IMPL(struct DispSwObj *pDispSwObj, NVC372_CTRL_IS_MODE_POSSIBLE_OR_SETTINGS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispswobjCtrlCmdIsModePossibleOrSettings(struct DispSwObj *pDispSwObj, NVC372_CTRL_IS_MODE_POSSIBLE_OR_SETTINGS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispSwObj was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispswobjCtrlCmdIsModePossibleOrSettings(pDispSwObj, pParams) dispswobjCtrlCmdIsModePossibleOrSettings_IMPL(pDispSwObj, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispswobjCtrlCmdVideoAdaptiveRefreshRate_IMPL(struct DispSwObj *pDispSwObj, NVC372_CTRL_CMD_VIDEO_ADAPTIVE_REFRESH_RATE_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispswobjCtrlCmdVideoAdaptiveRefreshRate(struct DispSwObj *pDispSwObj, NVC372_CTRL_CMD_VIDEO_ADAPTIVE_REFRESH_RATE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispSwObj was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispswobjCtrlCmdVideoAdaptiveRefreshRate(pDispSwObj, pParams) dispswobjCtrlCmdVideoAdaptiveRefreshRate_IMPL(pDispSwObj, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispswobjCtrlCmdGetActiveViewportPointIn_IMPL(struct DispSwObj *pDispSwObj, NVC372_CTRL_CMD_GET_ACTIVE_VIEWPORT_POINT_IN_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispswobjCtrlCmdGetActiveViewportPointIn(struct DispSwObj *pDispSwObj, NVC372_CTRL_CMD_GET_ACTIVE_VIEWPORT_POINT_IN_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispSwObj was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispswobjCtrlCmdGetActiveViewportPointIn(pDispSwObj, pParams) dispswobjCtrlCmdGetActiveViewportPointIn_IMPL(pDispSwObj, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+
+// Wrapper macros for halified functions
 #define dispswobjControl_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl__
 #define dispswobjControl(pDisplayApi, pCallContext, pParams) dispswobjControl_DISPATCH(pDisplayApi, pCallContext, pParams)
 #define dispswobjControl_Prologue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl_Prologue__
@@ -1436,22 +1557,6 @@ NV_STATUS __nvoc_objCreate_DispSwObj(DispSwObj**, Dynamic*, NvU32, struct CALL_C
 #define dispswobjGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) dispswobjGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
-static inline NV_STATUS dispswobjCtrlCmdIsModePossible_DISPATCH(struct DispSwObj *pDispSwObj, NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS *pParams) {
-    return pDispSwObj->__dispswobjCtrlCmdIsModePossible__(pDispSwObj, pParams);
-}
-
-static inline NV_STATUS dispswobjCtrlCmdIsModePossibleOrSettings_DISPATCH(struct DispSwObj *pDispSwObj, NVC372_CTRL_IS_MODE_POSSIBLE_OR_SETTINGS_PARAMS *pParams) {
-    return pDispSwObj->__dispswobjCtrlCmdIsModePossibleOrSettings__(pDispSwObj, pParams);
-}
-
-static inline NV_STATUS dispswobjCtrlCmdVideoAdaptiveRefreshRate_DISPATCH(struct DispSwObj *pDispSwObj, NVC372_CTRL_CMD_VIDEO_ADAPTIVE_REFRESH_RATE_PARAMS *pParams) {
-    return pDispSwObj->__dispswobjCtrlCmdVideoAdaptiveRefreshRate__(pDispSwObj, pParams);
-}
-
-static inline NV_STATUS dispswobjCtrlCmdGetActiveViewportPointIn_DISPATCH(struct DispSwObj *pDispSwObj, NVC372_CTRL_CMD_GET_ACTIVE_VIEWPORT_POINT_IN_PARAMS *pParams) {
-    return pDispSwObj->__dispswobjCtrlCmdGetActiveViewportPointIn__(pDispSwObj, pParams);
-}
-
 static inline NV_STATUS dispswobjControl_DISPATCH(struct DispSwObj *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pDisplayApi->__nvoc_metadata_ptr->vtable.__dispswobjControl__(pDisplayApi, pCallContext, pParams);
 }
@@ -1564,9 +1669,6 @@ NV_STATUS dispswobjCtrlCmdVideoAdaptiveRefreshRate_IMPL(struct DispSwObj *pDispS
 
 NV_STATUS dispswobjCtrlCmdGetActiveViewportPointIn_IMPL(struct DispSwObj *pDispSwObj, NVC372_CTRL_CMD_GET_ACTIVE_VIEWPORT_POINT_IN_PARAMS *pParams);
 
-NV_STATUS dispswobjConstruct_IMPL(struct DispSwObj *arg_pDispSwObj, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_dispswobjConstruct(arg_pDispSwObj, arg_pCallContext, arg_pParams) dispswobjConstruct_IMPL(arg_pDispSwObj, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 
@@ -1613,149 +1715,6 @@ struct DispCommon {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super^2
     struct DisplayApi *__nvoc_pbase_DisplayApi;    // dispapi super
     struct DispCommon *__nvoc_pbase_DispCommon;    // dispcmn
-
-    // Vtable with 141 per-object function pointers
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetVblankCounter__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_VBLANK_COUNTER_PARAMS *);  // exported (id=0x730105)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetVblankEnable__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_VBLANK_ENABLE_PARAMS *);  // exported (id=0x730106)
-    NV_STATUS (*__dispcmnCtrlCmdSystemCheckSidebandSrSupport__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_CHECK_SIDEBAND_SR_SUPPORT_PARAMS *);  // exported (id=0x73014c)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetHotplugState__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_HOTPLUG_STATE_PARAMS *);  // exported (id=0x73010a)
-    NV_STATUS (*__dispcmnCtrlCmdSystemNotifyDrrMscgWar__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_NOTIFY_DRR_MSCG_WAR_PARAMS *);  // exported (id=0x730159)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetInternalDisplays__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_INTERNAL_DISPLAYS_PARAMS *);  // exported (id=0x730116)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetConnectorTable__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_CONNECTOR_TABLE_PARAMS *);  // exported (id=0x73011d)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetLoadVCounterInfo__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO_PARAMS *);  // exported (id=0x730154)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetCrashLockCounterInfo__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_GET_CRASH_LOCK_COUNTER_INFO_PARAMS *);  // exported (id=0x730160)
-    NV_STATUS (*__dispcmnCtrlCmdSystemVrrDisplayInfo__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_VRR_DISPLAY_INFO_PARAMS *);  // exported (id=0x73012c)
-    NV_STATUS (*__dispcmnCtrlCmdVRRSetRgLineActive__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *);  // exported (id=0x73014d)
-    NV_STATUS (*__dispcmnCtrlCmdInternalVRRSetRgLineActive__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *);  // exported (id=0x730402)
-    NV_STATUS (*__dispcmnCtrlCmdDpEnableVrr__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS *);  // exported (id=0x73137d)
-    NV_STATUS (*__dispcmnCtrlCmdClearELVBlock__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_CLEAR_ELV_BLOCK_PARAMS *);  // exported (id=0x73012e)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificDisplayChange__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_PARAMS *);  // exported (id=0x7302a4)
-    NV_STATUS (*__dispcmnCtrlCmdDfpGetSpreadSpectrum__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_GET_SPREAD_SPECTRUM_PARAMS *);  // exported (id=0x73114c)
-    NV_STATUS (*__dispcmnCtrlCmdDfpGetLcdGpioPinNum__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_GET_LCD_GPIO_PIN_NUM_PARAMS *);  // exported (id=0x731154)
-    NV_STATUS (*__dispcmnCtrlCmdDpRetrieveDpRingBuffer__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_RETRIEVE_DP_RING_BUFFER_PARAMS *);  // exported (id=0x731371)
-    NV_STATUS (*__dispcmnCtrlCmdDpAuxchI2cTransferCtrl__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_AUXCH_I2C_TRANSFER_CTRL_PARAMS *);  // exported (id=0x73137c)
-    NV_STATUS (*__dispcmnCtrlCmdDpASSRCtrl__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_ASSR_CTRL_PARAMS *);  // exported (id=0x73135a)
-    NV_STATUS (*__dispcmnCtrlCmdDpSetEcf__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_SET_ECF_PARAMS *);  // exported (id=0x731366)
-    NV_STATUS (*__dispcmnCtrlCmdDfpRecordChannelRegisters__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_RECORD_CHANNEL_REGS_PARAMS *);  // exported (id=0x73014a)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificGetBacklightBrightness__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS *);  // exported (id=0x730291)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificSetBacklightBrightness__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS *);  // exported (id=0x730292)
-    NV_STATUS (*__dispcmnCtrlCmdPsrGetSrPanelInfo__)(struct DispCommon * /*this*/, NV0073_CTRL_PSR_GET_SR_PANEL_INFO_PARAMS *);  // exported (id=0x731602)
-    NV_STATUS (*__dispcmnCtrlCmdDfpSwitchDispMux__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DFP_SWITCH_DISP_MUX_PARAMS *);  // exported (id=0x731160)
-    NV_STATUS (*__dispcmnCtrlCmdInternalDfpSwitchDispMux__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DFP_SWITCH_DISP_MUX_PARAMS *);  // exported (id=0x730460)
-    NV_STATUS (*__dispcmnCtrlCmdDfpRunPreDispMuxOperations__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DFP_RUN_PRE_DISP_MUX_OPERATIONS_PARAMS *);  // exported (id=0x731161)
-    NV_STATUS (*__dispcmnCtrlCmdDfpRunPostDispMuxOperations__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DFP_RUN_POST_DISP_MUX_OPERATIONS_PARAMS *);  // exported (id=0x731162)
-    NV_STATUS (*__dispcmnCtrlCmdDfpGetDispMuxStatus__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS *);  // exported (id=0x731163)
-    NV_STATUS (*__dispcmnCtrlCmdInternalDfpGetDispMuxStatus__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS *);  // exported (id=0x730404)
-    NV_STATUS (*__dispcmnCtrlCmdDfpInternalLcdOverdrive__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_AUXCH_OD_CTRL_PARAMS *);  // exported (id=0x731380)
-    NV_STATUS (*__dispcmnCtrlCmdDfpVariableBacklightCtrl__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_AUXCH_VBL_CTRL_PARAMS *);  // exported (id=0x731386)
-    NV_STATUS (*__dispcmnCtrlCmdSystemExecuteAcpiMethod__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS *);  // exported (id=0x730120)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetAcpiIdMap__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_ACPI_ID_MAP_PARAMS *);  // exported (id=0x730115)
-    NV_STATUS (*__dispcmnCtrlCmdSystemAcpiSubsystemActivated__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_ACPI_SUBSYSTEM_ACTIVATED_PARAMS *);  // exported (id=0x730117)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificSetAcpiIdMapping__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_SET_ACPI_ID_MAPPING_PARAMS *);  // exported (id=0x730284)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment__)(struct DispCommon * /*this*/, NV0073_CTRL_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT_PARAMS *);  // exported (id=0x730285)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetCapsV2__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_CAPS_V2_PARAMS *);  // exported (id=0x730101)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetNumHeads__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_NUM_HEADS_PARAMS *);  // exported (id=0x730102)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetScanline__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_SCANLINE_PARAMS *);  // exported (id=0x730104)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetSuppported__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_SUPPORTED_PARAMS *);  // exported (id=0x730107)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetConnectState__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_CONNECT_STATE_PARAMS *);  // exported (id=0x730108)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetHotplugUnplugState__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_HOTPLUG_UNPLUG_STATE_PARAMS *);  // exported (id=0x73012d)
-    NV_STATUS (*__dispcmnCtrlCmdInternalGetHotplugUnplugState__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_HOTPLUG_UNPLUG_STATE_PARAMS *);  // exported (id=0x730401)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetHeadRoutingMap__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_HEAD_ROUTING_MAP_PARAMS *);  // exported (id=0x73010b)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetActive__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_ACTIVE_PARAMS *);  // exported (id=0x73010c)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetBootDisplays__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_BOOT_DISPLAYS_PARAMS *);  // exported (id=0x73011e)
-    NV_STATUS (*__dispcmnCtrlCmdSystemQueryDisplayIdsWithMux__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_QUERY_DISPLAY_IDS_WITH_MUX_PARAMS *);  // exported (id=0x73013d)
-    NV_STATUS (*__dispcmnCtrlCmdSystemCheckSidebandI2cSupport__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SYSTEM_CHECK_SIDEBAND_I2C_SUPPORT_PARAMS *);  // exported (id=0x73014b)
-    NV_STATUS (*__dispcmnCtrlCmdSystemAllocateDisplayBandwidth__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS *);  // exported (id=0x730143)
-    NV_STATUS (*__dispcmnCtrlCmdSystemInternalAllocateDisplayBandwidth__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_INTERNAL_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS *);  // exported (id=0x730157)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetHotplugConfig__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_GET_SET_HOTPLUG_CONFIG_PARAMS *);  // exported (id=0x730109)
-    NV_STATUS (*__dispcmnCtrlCmdSystemGetHotplugEventConfig__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_HOTPLUG_EVENT_CONFIG_PARAMS *);  // exported (id=0x730144)
-    NV_STATUS (*__dispcmnCtrlCmdSystemSetHotplugEventConfig__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_HOTPLUG_EVENT_CONFIG_PARAMS *);  // exported (id=0x730145)
-    NV_STATUS (*__dispcmnCtrlCmdSystemArmLightweightSupervisor__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_ARM_LIGHTWEIGHT_SUPERVISOR_PARAMS *);  // exported (id=0x73012f)
-    NV_STATUS (*__dispcmnCtrlCmdSystemConfigVrrPstateSwitch__)(struct DispCommon * /*this*/, NV0073_CTRL_SYSTEM_CONFIG_VRR_PSTATE_SWITCH_PARAMS *);  // exported (id=0x730134)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificGetType__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_GET_TYPE_PARAMS *);  // exported (id=0x730240)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificGetEdidV2__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_GET_EDID_V2_PARAMS *);  // exported (id=0x730245)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificSetEdidV2__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_SET_EDID_V2_PARAMS *);  // exported (id=0x730246)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificFakeDevice__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SPECIFIC_FAKE_DEVICE_PARAMS *);  // exported (id=0x730243)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificGetConnectorData__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_GET_CONNECTOR_DATA_PARAMS *);  // exported (id=0x730250)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificSetHdmiEnable__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_SET_HDMI_ENABLE_PARAMS *);  // exported (id=0x730273)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificCtrlHdmi__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_CTRL_HDMI_PARAMS *);  // exported (id=0x730274)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificGetAllHeadMask__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_GET_ALL_HEAD_MASK_PARAMS *);  // exported (id=0x730287)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificSetOdPacket__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_SET_OD_PACKET_PARAMS *);  // exported (id=0x730288)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificAcquireSharedGenericPacket__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_ACQUIRE_SHARED_GENERIC_PACKET_PARAMS *);  // exported (id=0x7302aa)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificSetSharedGenericPacket__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_SET_SHARED_GENERIC_PACKET_PARAMS *);  // exported (id=0x7302a9)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificReleaseSharedGenericPacket__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_RELEASE_SHARED_GENERIC_PACKET_PARAMS *);  // exported (id=0x7302ab)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificSetOdPacketCtrl__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_SET_OD_PACKET_CTRL_PARAMS *);  // exported (id=0x730289)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificOrGetInfo__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_OR_GET_INFO_PARAMS *);  // exported (id=0x73028b)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificGetPclkLimit__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_GET_PCLK_LIMIT_PARAMS *);  // exported (id=0x73028a)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificSetHdmiSinkCaps__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_SET_HDMI_SINK_CAPS_PARAMS *);  // exported (id=0x730293)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificSetMonitorPower__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_SET_MONITOR_POWER_PARAMS *);  // exported (id=0x730295)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificSetHdmiFrlLinkConfig__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_SET_HDMI_FRL_LINK_CONFIG_PARAMS *);  // exported (id=0x73029a)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificApplyEdidOverrideV2__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_APPLY_EDID_OVERRIDE_V2_PARAMS *);  // exported (id=0x7302a1)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificGetI2cPortid__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_GET_I2C_PORTID_PARAMS *);  // exported (id=0x730211)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificGetHdmiGpuCaps__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_GET_HDMI_GPU_CAPS_PARAMS *);  // exported (id=0x7302a2)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificGetHdmiScdcData__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_GET_HDMI_SCDC_DATA_PARAMS *);  // exported (id=0x7302a6)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificIsDirectmodeDisplay__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_IS_DIRECTMODE_DISPLAY_PARAMS *);  // exported (id=0x7302a7)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificDefaultAdaptivesyncDisplay__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS *);  // exported (id=0x7302ae)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_GET_HDMI_FRL_CAPACITY_COMPUTATION_PARAMS *);  // exported (id=0x7302a8)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificDispI2cReadWrite__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS *);  // exported (id=0x7302ac)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment__)(struct DispCommon * /*this*/, NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS *);  // exported (id=0x7302ad)
-    NV_STATUS (*__dispcmnCtrlCmdSpecificSetHdmiAudioMutestream__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_PARAMS *);  // exported (id=0x730275)
-    NV_STATUS (*__dispcmnCtrlCmdDfpEdpDriverUnload__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS *);  // exported (id=0x731176)
-    NV_STATUS (*__dispcmnCtrlCmdDfpSetForceBlackPixels__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_SET_FORCE_BLACK_PIXELS_PARAMS *);  // exported (id=0x731179)
-    NV_STATUS (*__dispcmnCtrlCmdDfpGetInfo__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_GET_INFO_PARAMS *);  // exported (id=0x731140)
-    NV_STATUS (*__dispcmnCtrlCmdDfpGetDisplayportDongleInfo__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_GET_DISPLAYPORT_DONGLE_INFO_PARAMS *);  // exported (id=0x731142)
-    NV_STATUS (*__dispcmnCtrlCmdDfpSetEldAudioCaps__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_SET_ELD_AUDIO_CAP_PARAMS *);  // exported (id=0x731144)
-    NV_STATUS (*__dispcmnCtrlCmdDfpSetAudioEnable__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_SET_AUDIO_ENABLE_PARAMS *);  // exported (id=0x731150)
-    NV_STATUS (*__dispcmnCtrlCmdDfpUpdateDynamicDfpCache__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_UPDATE_DYNAMIC_DFP_CACHE_PARAMS *);  // exported (id=0x73114e)
-    NV_STATUS (*__dispcmnCtrlCmdDfpAssignSor__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_ASSIGN_SOR_PARAMS *);  // exported (id=0x731152)
-    NV_STATUS (*__dispcmnCtrlCmdDfpDscCrcControl__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_DSC_CRC_CONTROL_PARAMS *);  // exported (id=0x731157)
-    NV_STATUS (*__dispcmnCtrlCmdDfpInitMuxData__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DFP_INIT_MUX_DATA_PARAMS *);  // exported (id=0x731158)
-    NV_STATUS (*__dispcmnCtrlCmdDfpGetDsiModeTiming__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DFP_GET_DSI_MODE_TIMING_PARAMS *);  // exported (id=0x731166)
-    NV_STATUS (*__dispcmnCtrlCmdDfpConfigTwoHeadOneOr__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_CONFIG_TWO_HEAD_ONE_OR_PARAMS *);  // exported (id=0x731156)
-    NV_STATUS (*__dispcmnCtrlCmdDfpGetPadlinkMask__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_GET_PADLINK_MASK_PARAMS *);  // exported (id=0x731153)
-    NV_STATUS (*__dispcmnCtrlCmdDfpGetFixedModeTiming__)(struct DispCommon * /*this*/, NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS *);  // exported (id=0x731172)
-    NV_STATUS (*__dispcmnCtrlCmdDpAuxchCtrl__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_AUXCH_CTRL_PARAMS *);  // exported (id=0x731341)
-    NV_STATUS (*__dispcmnCtrlCmdDpCtrl__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_CTRL_PARAMS *);  // exported (id=0x731343)
-    NV_STATUS (*__dispcmnCtrlCmdDp2xLinkTrain__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL_PARAMS *);  // exported (id=0x731383)
-    NV_STATUS (*__dispcmnCtrlCmdDp2xGetLaneData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *);  // exported (id=0x731384)
-    NV_STATUS (*__dispcmnCtrlCmdDp2xSetLaneData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *);  // exported (id=0x731385)
-    NV_STATUS (*__dispcmnCtrlCmdCalculateDpImp__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS *);  // exported (id=0x73138c)
-    NV_STATUS (*__dispcmnCtrlCmdDpGetLaneData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_LANE_DATA_PARAMS *);  // exported (id=0x731345)
-    NV_STATUS (*__dispcmnCtrlCmdDpSetLaneData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_LANE_DATA_PARAMS *);  // exported (id=0x731346)
-    NV_STATUS (*__dispcmnCtrlCmdDpGetTestpattern__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_GET_TESTPATTERN_PARAMS *);  // exported (id=0x731348)
-    NV_STATUS (*__dispcmnCtrlCmdDpSetTestpattern__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_SET_TESTPATTERN_PARAMS *);  // exported (id=0x731347)
-    NV_STATUS (*__dispcmnCtrlCmdDpMainLinkCtrl__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_MAIN_LINK_CTRL_PARAMS *);  // exported (id=0x731356)
-    NV_STATUS (*__dispcmnCtrlCmdDpSetAudioMuteStream__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_SET_AUDIO_MUTESTREAM_PARAMS *);  // exported (id=0x731359)
-    NV_STATUS (*__dispcmnCtrlCmdDpGetLinkConfig__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_GET_LINK_CONFIG_PARAMS *);  // exported (id=0x731360)
-    NV_STATUS (*__dispcmnCtrlCmdDpGetEDPData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_GET_EDP_DATA_PARAMS *);  // exported (id=0x731361)
-    NV_STATUS (*__dispcmnCtrlCmdDpTopologyAllocateDisplayId__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_TOPOLOGY_ALLOCATE_DISPLAYID_PARAMS *);  // exported (id=0x73135b)
-    NV_STATUS (*__dispcmnCtrlCmdDpTopologyFreeDisplayId__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_TOPOLOGY_FREE_DISPLAYID_PARAMS *);  // exported (id=0x73135c)
-    NV_STATUS (*__dispcmnCtrlCmdDpConfigStream__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_CONFIG_STREAM_PARAMS *);  // exported (id=0x731362)
-    NV_STATUS (*__dispcmnCtrlCmdDpConfigSingleHeadMultiStream__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_CONFIG_SINGLE_HEAD_MULTI_STREAM_PARAMS *);  // exported (id=0x73136e)
-    NV_STATUS (*__dispcmnCtrlCmdDpSetRateGov__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_SET_RATE_GOV_PARAMS *);  // exported (id=0x731363)
-    NV_STATUS (*__dispcmnCtrlCmdDpSendACT__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_SEND_ACT_PARAMS *);  // exported (id=0x731367)
-    NV_STATUS (*__dispcmnCtrlCmdDpSetManualDisplayPort__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_SET_MANUAL_DISPLAYPORT_PARAMS *);  // exported (id=0x731365)
-    NV_STATUS (*__dispcmnCtrlCmdDpGetCaps__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS *);  // exported (id=0x731369)
-    NV_STATUS (*__dispcmnCtrlCmdDpSetMSAPropertiesv2__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS *);  // exported (id=0x731381)
-    NV_STATUS (*__dispcmnCtrlCmdDpSetStereoMSAProperties__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_SET_STEREO_MSA_PROPERTIES_PARAMS *);  // exported (id=0x731378)
-    NV_STATUS (*__dispcmnCtrlCmdDpGenerateFakeInterrupt__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_GENERATE_FAKE_INTERRUPT_PARAMS *);  // exported (id=0x73136b)
-    NV_STATUS (*__dispcmnCtrlCmdDpConfigRadScratchReg__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_CONFIG_RAD_SCRATCH_REG_PARAMS *);  // exported (id=0x73136c)
-    NV_STATUS (*__dispcmnCtrlCmdDpSetTriggerSelect__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_SET_TRIGGER_SELECT_PARAMS *);  // exported (id=0x73136f)
-    NV_STATUS (*__dispcmnCtrlCmdDpSetTriggerAll__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_SET_TRIGGER_ALL_PARAMS *);  // exported (id=0x731370)
-    NV_STATUS (*__dispcmnCtrlCmdDpGetAuxLogData__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_GET_AUXLOGGER_BUFFER_DATA_PARAMS *);  // exported (id=0x731373)
-    NV_STATUS (*__dispcmnCtrlCmdDpConfigIndexedLinkRates__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_CONFIG_INDEXED_LINK_RATES_PARAMS *);  // exported (id=0x731377)
-    NV_STATUS (*__dispcmnCtrlCmdDpConfigureFec__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_CONFIGURE_FEC_PARAMS *);  // exported (id=0x73137a)
-    NV_STATUS (*__dispcmnCtrlCmdDpGetGenericInfoframe__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_GET_GENERIC_INFOFRAME_PARAMS *);  // exported (id=0x73137e)
-    NV_STATUS (*__dispcmnCtrlCmdDpGetMsaAttributes__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_GET_MSA_ATTRIBUTES_PARAMS *);  // exported (id=0x73137f)
-    NV_STATUS (*__dispcmnCtrlCmdFrlConfigMacroPad__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD_PARAMS *);  // exported (id=0x730502)
-    NV_STATUS (*__dispcmnCtrlCmdDpConfigMacroPad__)(struct DispCommon * /*this*/, NV0073_CTRL_CMD_DP_CONFIG_MACRO_PAD_PARAMS *);  // exported (id=0x73137b)
-    NV_STATUS (*__dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_SET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS *);  // exported (id=0x731351)
-    NV_STATUS (*__dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_GET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS *);  // exported (id=0x731352)
-    NV_STATUS (*__dispcmnCtrlCmdDpSetLevelInfoTableData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_SET_LEVEL_INFO_TABLE_DATA_PARAMS *);  // exported (id=0x731387)
-    NV_STATUS (*__dispcmnCtrlCmdDpGetLevelInfoTableData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_GET_LEVEL_INFO_TABLE_DATA_PARAMS *);  // exported (id=0x731388)
-    NV_STATUS (*__dispcmnCtrlCmdDp2xSetLevelInfoTableData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP2X_SET_LEVEL_INFO_TABLE_DATA_PARAMS *);  // exported (id=0x731389)
-    NV_STATUS (*__dispcmnCtrlCmdDp2xGetLevelInfoTableData__)(struct DispCommon * /*this*/, NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA_PARAMS *);  // exported (id=0x73138a)
-    NV_STATUS (*__dispcmnCtrlCmdDPGetCableIDInfoFromMacro__)(struct DispCommon * /*this*/, NV0073_CTRL_DP_USBC_CABLEID_INFO_PARAMS *);  // exported (id=0x73138d)
 
     // Data members
     NvU32 hotPlugMaskToBeReported;
@@ -1829,289 +1788,1478 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
     __nvoc_objCreate_DispCommon((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
-#define dispcmnCtrlCmdSystemGetVblankCounter_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetVblankCounter__
-#define dispcmnCtrlCmdSystemGetVblankCounter(pDispCommon, pVBCounterParams) dispcmnCtrlCmdSystemGetVblankCounter_DISPATCH(pDispCommon, pVBCounterParams)
-#define dispcmnCtrlCmdSystemGetVblankEnable_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetVblankEnable__
-#define dispcmnCtrlCmdSystemGetVblankEnable(pDispCommon, pVBEnableParams) dispcmnCtrlCmdSystemGetVblankEnable_DISPATCH(pDispCommon, pVBEnableParams)
-#define dispcmnCtrlCmdSystemCheckSidebandSrSupport_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemCheckSidebandSrSupport__
-#define dispcmnCtrlCmdSystemCheckSidebandSrSupport(pDispCommon, pParams) dispcmnCtrlCmdSystemCheckSidebandSrSupport_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSystemGetHotplugState_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetHotplugState__
-#define dispcmnCtrlCmdSystemGetHotplugState(pDispCommon, pHotplugParams) dispcmnCtrlCmdSystemGetHotplugState_DISPATCH(pDispCommon, pHotplugParams)
-#define dispcmnCtrlCmdSystemNotifyDrrMscgWar_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemNotifyDrrMscgWar__
-#define dispcmnCtrlCmdSystemNotifyDrrMscgWar(pDispCommon, pDrrMscgParams) dispcmnCtrlCmdSystemNotifyDrrMscgWar_DISPATCH(pDispCommon, pDrrMscgParams)
-#define dispcmnCtrlCmdSystemGetInternalDisplays_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetInternalDisplays__
-#define dispcmnCtrlCmdSystemGetInternalDisplays(pDispCommon, pInternalDisplaysParams) dispcmnCtrlCmdSystemGetInternalDisplays_DISPATCH(pDispCommon, pInternalDisplaysParams)
-#define dispcmnCtrlCmdSystemGetConnectorTable_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetConnectorTable__
-#define dispcmnCtrlCmdSystemGetConnectorTable(pDispCommon, pParams) dispcmnCtrlCmdSystemGetConnectorTable_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSystemGetLoadVCounterInfo_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetLoadVCounterInfo__
-#define dispcmnCtrlCmdSystemGetLoadVCounterInfo(pDispCommon, pLoadVCounterInfoParams) dispcmnCtrlCmdSystemGetLoadVCounterInfo_DISPATCH(pDispCommon, pLoadVCounterInfoParams)
-#define dispcmnCtrlCmdSystemGetCrashLockCounterInfo_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetCrashLockCounterInfo__
-#define dispcmnCtrlCmdSystemGetCrashLockCounterInfo(pDispCommon, pCrashLockCounterInfoParams) dispcmnCtrlCmdSystemGetCrashLockCounterInfo_DISPATCH(pDispCommon, pCrashLockCounterInfoParams)
-#define dispcmnCtrlCmdSystemVrrDisplayInfo_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemVrrDisplayInfo__
-#define dispcmnCtrlCmdSystemVrrDisplayInfo(pDispCommon, pParams) dispcmnCtrlCmdSystemVrrDisplayInfo_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdVRRSetRgLineActive_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdVRRSetRgLineActive__
-#define dispcmnCtrlCmdVRRSetRgLineActive(pDispCommon, pParams) dispcmnCtrlCmdVRRSetRgLineActive_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdInternalVRRSetRgLineActive_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdInternalVRRSetRgLineActive__
-#define dispcmnCtrlCmdInternalVRRSetRgLineActive(pDispCommon, pParams) dispcmnCtrlCmdInternalVRRSetRgLineActive_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpEnableVrr_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpEnableVrr__
-#define dispcmnCtrlCmdDpEnableVrr(pDispCommon, pParams) dispcmnCtrlCmdDpEnableVrr_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdClearELVBlock_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdClearELVBlock__
-#define dispcmnCtrlCmdClearELVBlock(pDispCommon, pParams) dispcmnCtrlCmdClearELVBlock_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificDisplayChange_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificDisplayChange__
-#define dispcmnCtrlCmdSpecificDisplayChange(pDispCommon, pParams) dispcmnCtrlCmdSpecificDisplayChange_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpGetSpreadSpectrum_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpGetSpreadSpectrum__
-#define dispcmnCtrlCmdDfpGetSpreadSpectrum(pDispCommon, pParams) dispcmnCtrlCmdDfpGetSpreadSpectrum_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpGetLcdGpioPinNum_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpGetLcdGpioPinNum__
-#define dispcmnCtrlCmdDfpGetLcdGpioPinNum(pDispCommon, pParams) dispcmnCtrlCmdDfpGetLcdGpioPinNum_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpRetrieveDpRingBuffer_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpRetrieveDpRingBuffer__
-#define dispcmnCtrlCmdDpRetrieveDpRingBuffer(pDispCommon, pParams) dispcmnCtrlCmdDpRetrieveDpRingBuffer_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpAuxchI2cTransferCtrl_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpAuxchI2cTransferCtrl__
-#define dispcmnCtrlCmdDpAuxchI2cTransferCtrl(pDispCommon, pParams) dispcmnCtrlCmdDpAuxchI2cTransferCtrl_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpASSRCtrl_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpASSRCtrl__
-#define dispcmnCtrlCmdDpASSRCtrl(pDispCommon, pParams) dispcmnCtrlCmdDpASSRCtrl_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpSetEcf_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpSetEcf__
-#define dispcmnCtrlCmdDpSetEcf(pDispCommon, pCtrlEcfParams) dispcmnCtrlCmdDpSetEcf_DISPATCH(pDispCommon, pCtrlEcfParams)
-#define dispcmnCtrlCmdDfpRecordChannelRegisters_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpRecordChannelRegisters__
-#define dispcmnCtrlCmdDfpRecordChannelRegisters(pDispCommon, pParams) dispcmnCtrlCmdDfpRecordChannelRegisters_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificGetBacklightBrightness_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificGetBacklightBrightness__
-#define dispcmnCtrlCmdSpecificGetBacklightBrightness(pDispCommon, pAllHeadMaskParams) dispcmnCtrlCmdSpecificGetBacklightBrightness_DISPATCH(pDispCommon, pAllHeadMaskParams)
-#define dispcmnCtrlCmdSpecificSetBacklightBrightness_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificSetBacklightBrightness__
-#define dispcmnCtrlCmdSpecificSetBacklightBrightness(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetBacklightBrightness_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdPsrGetSrPanelInfo_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdPsrGetSrPanelInfo__
-#define dispcmnCtrlCmdPsrGetSrPanelInfo(pDispCommon, pParams) dispcmnCtrlCmdPsrGetSrPanelInfo_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpSwitchDispMux_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpSwitchDispMux__
-#define dispcmnCtrlCmdDfpSwitchDispMux(pDispCommon, pParams) dispcmnCtrlCmdDfpSwitchDispMux_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdInternalDfpSwitchDispMux_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdInternalDfpSwitchDispMux__
-#define dispcmnCtrlCmdInternalDfpSwitchDispMux(pDispCommon, pParams) dispcmnCtrlCmdInternalDfpSwitchDispMux_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpRunPreDispMuxOperations_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpRunPreDispMuxOperations__
-#define dispcmnCtrlCmdDfpRunPreDispMuxOperations(pDispCommon, pParams) dispcmnCtrlCmdDfpRunPreDispMuxOperations_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpRunPostDispMuxOperations_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpRunPostDispMuxOperations__
-#define dispcmnCtrlCmdDfpRunPostDispMuxOperations(pDispCommon, pParams) dispcmnCtrlCmdDfpRunPostDispMuxOperations_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpGetDispMuxStatus_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpGetDispMuxStatus__
-#define dispcmnCtrlCmdDfpGetDispMuxStatus(pDispCommon, pParams) dispcmnCtrlCmdDfpGetDispMuxStatus_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdInternalDfpGetDispMuxStatus_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdInternalDfpGetDispMuxStatus__
-#define dispcmnCtrlCmdInternalDfpGetDispMuxStatus(pDispCommon, pParams) dispcmnCtrlCmdInternalDfpGetDispMuxStatus_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpInternalLcdOverdrive_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpInternalLcdOverdrive__
-#define dispcmnCtrlCmdDfpInternalLcdOverdrive(pDispCommon, pParams) dispcmnCtrlCmdDfpInternalLcdOverdrive_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpVariableBacklightCtrl_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpVariableBacklightCtrl__
-#define dispcmnCtrlCmdDfpVariableBacklightCtrl(pDispCommon, pParams) dispcmnCtrlCmdDfpVariableBacklightCtrl_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSystemExecuteAcpiMethod_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemExecuteAcpiMethod__
-#define dispcmnCtrlCmdSystemExecuteAcpiMethod(pDispCommon, pAcpiMethodParams) dispcmnCtrlCmdSystemExecuteAcpiMethod_DISPATCH(pDispCommon, pAcpiMethodParams)
-#define dispcmnCtrlCmdSystemGetAcpiIdMap_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetAcpiIdMap__
-#define dispcmnCtrlCmdSystemGetAcpiIdMap(pDispCommon, pAcpiIdMapParams) dispcmnCtrlCmdSystemGetAcpiIdMap_DISPATCH(pDispCommon, pAcpiIdMapParams)
-#define dispcmnCtrlCmdSystemAcpiSubsystemActivated_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemAcpiSubsystemActivated__
-#define dispcmnCtrlCmdSystemAcpiSubsystemActivated(pDispCommon, pParams) dispcmnCtrlCmdSystemAcpiSubsystemActivated_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificSetAcpiIdMapping_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificSetAcpiIdMapping__
-#define dispcmnCtrlCmdSpecificSetAcpiIdMapping(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetAcpiIdMapping_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment__
-#define dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSystemGetCapsV2_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetCapsV2__
-#define dispcmnCtrlCmdSystemGetCapsV2(pDispCommon, pCapsParams) dispcmnCtrlCmdSystemGetCapsV2_DISPATCH(pDispCommon, pCapsParams)
-#define dispcmnCtrlCmdSystemGetNumHeads_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetNumHeads__
-#define dispcmnCtrlCmdSystemGetNumHeads(pDispCommon, pNumHeadsParams) dispcmnCtrlCmdSystemGetNumHeads_DISPATCH(pDispCommon, pNumHeadsParams)
-#define dispcmnCtrlCmdSystemGetScanline_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetScanline__
-#define dispcmnCtrlCmdSystemGetScanline(pDispCommon, pScanlineParams) dispcmnCtrlCmdSystemGetScanline_DISPATCH(pDispCommon, pScanlineParams)
-#define dispcmnCtrlCmdSystemGetSuppported_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetSuppported__
-#define dispcmnCtrlCmdSystemGetSuppported(pDispCommon, pSupportedParams) dispcmnCtrlCmdSystemGetSuppported_DISPATCH(pDispCommon, pSupportedParams)
-#define dispcmnCtrlCmdSystemGetConnectState_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetConnectState__
-#define dispcmnCtrlCmdSystemGetConnectState(pDispCommon, pConnectParams) dispcmnCtrlCmdSystemGetConnectState_DISPATCH(pDispCommon, pConnectParams)
-#define dispcmnCtrlCmdSystemGetHotplugUnplugState_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetHotplugUnplugState__
-#define dispcmnCtrlCmdSystemGetHotplugUnplugState(pDispCommon, pHotplugParams) dispcmnCtrlCmdSystemGetHotplugUnplugState_DISPATCH(pDispCommon, pHotplugParams)
-#define dispcmnCtrlCmdInternalGetHotplugUnplugState_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdInternalGetHotplugUnplugState__
-#define dispcmnCtrlCmdInternalGetHotplugUnplugState(pDispCommon, pHotplugParams) dispcmnCtrlCmdInternalGetHotplugUnplugState_DISPATCH(pDispCommon, pHotplugParams)
-#define dispcmnCtrlCmdSystemGetHeadRoutingMap_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetHeadRoutingMap__
-#define dispcmnCtrlCmdSystemGetHeadRoutingMap(pDispCommon, pMapParams) dispcmnCtrlCmdSystemGetHeadRoutingMap_DISPATCH(pDispCommon, pMapParams)
-#define dispcmnCtrlCmdSystemGetActive_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetActive__
-#define dispcmnCtrlCmdSystemGetActive(pDispCommon, pActiveParams) dispcmnCtrlCmdSystemGetActive_DISPATCH(pDispCommon, pActiveParams)
-#define dispcmnCtrlCmdSystemGetBootDisplays_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetBootDisplays__
-#define dispcmnCtrlCmdSystemGetBootDisplays(pDispCommon, pParams) dispcmnCtrlCmdSystemGetBootDisplays_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSystemQueryDisplayIdsWithMux_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemQueryDisplayIdsWithMux__
-#define dispcmnCtrlCmdSystemQueryDisplayIdsWithMux(pDispCommon, pParams) dispcmnCtrlCmdSystemQueryDisplayIdsWithMux_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSystemCheckSidebandI2cSupport_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemCheckSidebandI2cSupport__
-#define dispcmnCtrlCmdSystemCheckSidebandI2cSupport(pDispCommon, pParams) dispcmnCtrlCmdSystemCheckSidebandI2cSupport_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSystemAllocateDisplayBandwidth_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemAllocateDisplayBandwidth__
-#define dispcmnCtrlCmdSystemAllocateDisplayBandwidth(pDispCommon, pParams) dispcmnCtrlCmdSystemAllocateDisplayBandwidth_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSystemInternalAllocateDisplayBandwidth_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemInternalAllocateDisplayBandwidth__
-#define dispcmnCtrlCmdSystemInternalAllocateDisplayBandwidth(pDispCommon, pParams) dispcmnCtrlCmdSystemInternalAllocateDisplayBandwidth_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSystemGetHotplugConfig_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetHotplugConfig__
-#define dispcmnCtrlCmdSystemGetHotplugConfig(pDispCommon, pHotplugParams) dispcmnCtrlCmdSystemGetHotplugConfig_DISPATCH(pDispCommon, pHotplugParams)
-#define dispcmnCtrlCmdSystemGetHotplugEventConfig_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemGetHotplugEventConfig__
-#define dispcmnCtrlCmdSystemGetHotplugEventConfig(pDispCommon, pParams) dispcmnCtrlCmdSystemGetHotplugEventConfig_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSystemSetHotplugEventConfig_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemSetHotplugEventConfig__
-#define dispcmnCtrlCmdSystemSetHotplugEventConfig(pDispCommon, pParams) dispcmnCtrlCmdSystemSetHotplugEventConfig_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSystemArmLightweightSupervisor_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemArmLightweightSupervisor__
-#define dispcmnCtrlCmdSystemArmLightweightSupervisor(pDispCommon, pParams) dispcmnCtrlCmdSystemArmLightweightSupervisor_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSystemConfigVrrPstateSwitch_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSystemConfigVrrPstateSwitch__
-#define dispcmnCtrlCmdSystemConfigVrrPstateSwitch(pDispCommon, pParams) dispcmnCtrlCmdSystemConfigVrrPstateSwitch_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificGetType_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificGetType__
-#define dispcmnCtrlCmdSpecificGetType(pDispCommon, pDisplayTypeParams) dispcmnCtrlCmdSpecificGetType_DISPATCH(pDispCommon, pDisplayTypeParams)
-#define dispcmnCtrlCmdSpecificGetEdidV2_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificGetEdidV2__
-#define dispcmnCtrlCmdSpecificGetEdidV2(pDispCommon, pEdidParams) dispcmnCtrlCmdSpecificGetEdidV2_DISPATCH(pDispCommon, pEdidParams)
-#define dispcmnCtrlCmdSpecificSetEdidV2_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificSetEdidV2__
-#define dispcmnCtrlCmdSpecificSetEdidV2(pDispCommon, pEdidParams) dispcmnCtrlCmdSpecificSetEdidV2_DISPATCH(pDispCommon, pEdidParams)
-#define dispcmnCtrlCmdSpecificFakeDevice_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificFakeDevice__
-#define dispcmnCtrlCmdSpecificFakeDevice(pDispCommon, pTestParams) dispcmnCtrlCmdSpecificFakeDevice_DISPATCH(pDispCommon, pTestParams)
-#define dispcmnCtrlCmdSpecificGetConnectorData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificGetConnectorData__
-#define dispcmnCtrlCmdSpecificGetConnectorData(pDispCommon, pConnectorParams) dispcmnCtrlCmdSpecificGetConnectorData_DISPATCH(pDispCommon, pConnectorParams)
-#define dispcmnCtrlCmdSpecificSetHdmiEnable_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificSetHdmiEnable__
-#define dispcmnCtrlCmdSpecificSetHdmiEnable(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetHdmiEnable_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificCtrlHdmi_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificCtrlHdmi__
-#define dispcmnCtrlCmdSpecificCtrlHdmi(pDispCommon, pParams) dispcmnCtrlCmdSpecificCtrlHdmi_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificGetAllHeadMask_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificGetAllHeadMask__
-#define dispcmnCtrlCmdSpecificGetAllHeadMask(pDispCommon, pAllHeadMaskParams) dispcmnCtrlCmdSpecificGetAllHeadMask_DISPATCH(pDispCommon, pAllHeadMaskParams)
-#define dispcmnCtrlCmdSpecificSetOdPacket_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificSetOdPacket__
-#define dispcmnCtrlCmdSpecificSetOdPacket(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetOdPacket_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificAcquireSharedGenericPacket_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificAcquireSharedGenericPacket__
-#define dispcmnCtrlCmdSpecificAcquireSharedGenericPacket(pDispCommon, pParams) dispcmnCtrlCmdSpecificAcquireSharedGenericPacket_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificSetSharedGenericPacket_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificSetSharedGenericPacket__
-#define dispcmnCtrlCmdSpecificSetSharedGenericPacket(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetSharedGenericPacket_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificReleaseSharedGenericPacket_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificReleaseSharedGenericPacket__
-#define dispcmnCtrlCmdSpecificReleaseSharedGenericPacket(pDispCommon, pParams) dispcmnCtrlCmdSpecificReleaseSharedGenericPacket_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificSetOdPacketCtrl_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificSetOdPacketCtrl__
-#define dispcmnCtrlCmdSpecificSetOdPacketCtrl(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetOdPacketCtrl_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificOrGetInfo_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificOrGetInfo__
-#define dispcmnCtrlCmdSpecificOrGetInfo(pDispCommon, pParams) dispcmnCtrlCmdSpecificOrGetInfo_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificGetPclkLimit_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificGetPclkLimit__
-#define dispcmnCtrlCmdSpecificGetPclkLimit(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetPclkLimit_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificSetHdmiSinkCaps_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificSetHdmiSinkCaps__
-#define dispcmnCtrlCmdSpecificSetHdmiSinkCaps(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetHdmiSinkCaps_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificSetMonitorPower_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificSetMonitorPower__
-#define dispcmnCtrlCmdSpecificSetMonitorPower(pDispCommon, setMonitorPowerParams) dispcmnCtrlCmdSpecificSetMonitorPower_DISPATCH(pDispCommon, setMonitorPowerParams)
-#define dispcmnCtrlCmdSpecificSetHdmiFrlLinkConfig_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificSetHdmiFrlLinkConfig__
-#define dispcmnCtrlCmdSpecificSetHdmiFrlLinkConfig(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetHdmiFrlLinkConfig_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificApplyEdidOverrideV2_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificApplyEdidOverrideV2__
-#define dispcmnCtrlCmdSpecificApplyEdidOverrideV2(pDispCommon, pEdidOverrideParams) dispcmnCtrlCmdSpecificApplyEdidOverrideV2_DISPATCH(pDispCommon, pEdidOverrideParams)
-#define dispcmnCtrlCmdSpecificGetI2cPortid_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificGetI2cPortid__
-#define dispcmnCtrlCmdSpecificGetI2cPortid(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetI2cPortid_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificGetHdmiGpuCaps_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificGetHdmiGpuCaps__
-#define dispcmnCtrlCmdSpecificGetHdmiGpuCaps(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetHdmiGpuCaps_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificGetHdmiScdcData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificGetHdmiScdcData__
-#define dispcmnCtrlCmdSpecificGetHdmiScdcData(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetHdmiScdcData_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificIsDirectmodeDisplay_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificIsDirectmodeDisplay__
-#define dispcmnCtrlCmdSpecificIsDirectmodeDisplay(pDispCommon, pParams) dispcmnCtrlCmdSpecificIsDirectmodeDisplay_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificDefaultAdaptivesyncDisplay_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificDefaultAdaptivesyncDisplay__
-#define dispcmnCtrlCmdSpecificDefaultAdaptivesyncDisplay(pDispCommon, pParams) dispcmnCtrlCmdSpecificDefaultAdaptivesyncDisplay_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation__
-#define dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificDispI2cReadWrite_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificDispI2cReadWrite__
-#define dispcmnCtrlCmdSpecificDispI2cReadWrite(pDispCommon, pParams) dispcmnCtrlCmdSpecificDispI2cReadWrite_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment__
-#define dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdSpecificSetHdmiAudioMutestream_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdSpecificSetHdmiAudioMutestream__
-#define dispcmnCtrlCmdSpecificSetHdmiAudioMutestream(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetHdmiAudioMutestream_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpEdpDriverUnload_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpEdpDriverUnload__
-#define dispcmnCtrlCmdDfpEdpDriverUnload(pDispCommon, pParams) dispcmnCtrlCmdDfpEdpDriverUnload_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpSetForceBlackPixels_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpSetForceBlackPixels__
-#define dispcmnCtrlCmdDfpSetForceBlackPixels(pDispCommon, pParams) dispcmnCtrlCmdDfpSetForceBlackPixels_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpGetInfo_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpGetInfo__
-#define dispcmnCtrlCmdDfpGetInfo(pDispCommon, pParams) dispcmnCtrlCmdDfpGetInfo_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpGetDisplayportDongleInfo_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpGetDisplayportDongleInfo__
-#define dispcmnCtrlCmdDfpGetDisplayportDongleInfo(pDispCommon, pParams) dispcmnCtrlCmdDfpGetDisplayportDongleInfo_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpSetEldAudioCaps_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpSetEldAudioCaps__
-#define dispcmnCtrlCmdDfpSetEldAudioCaps(pDispCommon, pEldAudioCapsParams) dispcmnCtrlCmdDfpSetEldAudioCaps_DISPATCH(pDispCommon, pEldAudioCapsParams)
-#define dispcmnCtrlCmdDfpSetAudioEnable_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpSetAudioEnable__
-#define dispcmnCtrlCmdDfpSetAudioEnable(pDispCommon, pParams) dispcmnCtrlCmdDfpSetAudioEnable_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpUpdateDynamicDfpCache_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpUpdateDynamicDfpCache__
-#define dispcmnCtrlCmdDfpUpdateDynamicDfpCache(pDispCommon, pParams) dispcmnCtrlCmdDfpUpdateDynamicDfpCache_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpAssignSor_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpAssignSor__
-#define dispcmnCtrlCmdDfpAssignSor(pDispCommon, pParams) dispcmnCtrlCmdDfpAssignSor_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpDscCrcControl_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpDscCrcControl__
-#define dispcmnCtrlCmdDfpDscCrcControl(pDispCommon, pParams) dispcmnCtrlCmdDfpDscCrcControl_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpInitMuxData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpInitMuxData__
-#define dispcmnCtrlCmdDfpInitMuxData(pDispCommon, pParams) dispcmnCtrlCmdDfpInitMuxData_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpGetDsiModeTiming_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpGetDsiModeTiming__
-#define dispcmnCtrlCmdDfpGetDsiModeTiming(pDispCommon, pParams) dispcmnCtrlCmdDfpGetDsiModeTiming_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpConfigTwoHeadOneOr_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpConfigTwoHeadOneOr__
-#define dispcmnCtrlCmdDfpConfigTwoHeadOneOr(pDispCommon, pParams) dispcmnCtrlCmdDfpConfigTwoHeadOneOr_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpGetPadlinkMask_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpGetPadlinkMask__
-#define dispcmnCtrlCmdDfpGetPadlinkMask(pDispCommon, pParams) dispcmnCtrlCmdDfpGetPadlinkMask_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDfpGetFixedModeTiming_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDfpGetFixedModeTiming__
-#define dispcmnCtrlCmdDfpGetFixedModeTiming(pDispCommon, pParams) dispcmnCtrlCmdDfpGetFixedModeTiming_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpAuxchCtrl_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpAuxchCtrl__
-#define dispcmnCtrlCmdDpAuxchCtrl(pDispCommon, pAuxchCtrlParams) dispcmnCtrlCmdDpAuxchCtrl_DISPATCH(pDispCommon, pAuxchCtrlParams)
-#define dispcmnCtrlCmdDpCtrl_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpCtrl__
-#define dispcmnCtrlCmdDpCtrl(pDispCommon, pParams) dispcmnCtrlCmdDpCtrl_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDp2xLinkTrain_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDp2xLinkTrain__
-#define dispcmnCtrlCmdDp2xLinkTrain(pDispCommon, pParams) dispcmnCtrlCmdDp2xLinkTrain_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDp2xGetLaneData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDp2xGetLaneData__
-#define dispcmnCtrlCmdDp2xGetLaneData(pDispCommon, pParams) dispcmnCtrlCmdDp2xGetLaneData_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDp2xSetLaneData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDp2xSetLaneData__
-#define dispcmnCtrlCmdDp2xSetLaneData(pDispCommon, pParams) dispcmnCtrlCmdDp2xSetLaneData_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdCalculateDpImp_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdCalculateDpImp__
-#define dispcmnCtrlCmdCalculateDpImp(pDispCommon, pParams) dispcmnCtrlCmdCalculateDpImp_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpGetLaneData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpGetLaneData__
-#define dispcmnCtrlCmdDpGetLaneData(pDispCommon, pParams) dispcmnCtrlCmdDpGetLaneData_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpSetLaneData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpSetLaneData__
-#define dispcmnCtrlCmdDpSetLaneData(pDispCommon, pParams) dispcmnCtrlCmdDpSetLaneData_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpGetTestpattern_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpGetTestpattern__
-#define dispcmnCtrlCmdDpGetTestpattern(pDispCommon, pParams) dispcmnCtrlCmdDpGetTestpattern_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpSetTestpattern_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpSetTestpattern__
-#define dispcmnCtrlCmdDpSetTestpattern(pDispCommon, pParams) dispcmnCtrlCmdDpSetTestpattern_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpMainLinkCtrl_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpMainLinkCtrl__
-#define dispcmnCtrlCmdDpMainLinkCtrl(pDispCommon, pParams) dispcmnCtrlCmdDpMainLinkCtrl_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpSetAudioMuteStream_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpSetAudioMuteStream__
-#define dispcmnCtrlCmdDpSetAudioMuteStream(pDispCommon, pParams) dispcmnCtrlCmdDpSetAudioMuteStream_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpGetLinkConfig_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpGetLinkConfig__
-#define dispcmnCtrlCmdDpGetLinkConfig(pDispCommon, pParams) dispcmnCtrlCmdDpGetLinkConfig_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpGetEDPData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpGetEDPData__
-#define dispcmnCtrlCmdDpGetEDPData(pDispCommon, pParams) dispcmnCtrlCmdDpGetEDPData_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpTopologyAllocateDisplayId_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpTopologyAllocateDisplayId__
-#define dispcmnCtrlCmdDpTopologyAllocateDisplayId(pDispCommon, pParams) dispcmnCtrlCmdDpTopologyAllocateDisplayId_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpTopologyFreeDisplayId_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpTopologyFreeDisplayId__
-#define dispcmnCtrlCmdDpTopologyFreeDisplayId(pDispCommon, pParams) dispcmnCtrlCmdDpTopologyFreeDisplayId_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpConfigStream_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpConfigStream__
-#define dispcmnCtrlCmdDpConfigStream(pDispCommon, pParams) dispcmnCtrlCmdDpConfigStream_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpConfigSingleHeadMultiStream_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpConfigSingleHeadMultiStream__
-#define dispcmnCtrlCmdDpConfigSingleHeadMultiStream(pDispCommon, pParams) dispcmnCtrlCmdDpConfigSingleHeadMultiStream_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpSetRateGov_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpSetRateGov__
-#define dispcmnCtrlCmdDpSetRateGov(pDispCommon, pParams) dispcmnCtrlCmdDpSetRateGov_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpSendACT_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpSendACT__
-#define dispcmnCtrlCmdDpSendACT(pDispCommon, pParams) dispcmnCtrlCmdDpSendACT_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpSetManualDisplayPort_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpSetManualDisplayPort__
-#define dispcmnCtrlCmdDpSetManualDisplayPort(pDispCommon, pParams) dispcmnCtrlCmdDpSetManualDisplayPort_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpGetCaps_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpGetCaps__
-#define dispcmnCtrlCmdDpGetCaps(pDispCommon, pParams) dispcmnCtrlCmdDpGetCaps_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpSetMSAPropertiesv2_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpSetMSAPropertiesv2__
-#define dispcmnCtrlCmdDpSetMSAPropertiesv2(pDispCommon, pParams) dispcmnCtrlCmdDpSetMSAPropertiesv2_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpSetStereoMSAProperties_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpSetStereoMSAProperties__
-#define dispcmnCtrlCmdDpSetStereoMSAProperties(pDispCommon, pParams) dispcmnCtrlCmdDpSetStereoMSAProperties_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpGenerateFakeInterrupt_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpGenerateFakeInterrupt__
-#define dispcmnCtrlCmdDpGenerateFakeInterrupt(pDispCommon, pParams) dispcmnCtrlCmdDpGenerateFakeInterrupt_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpConfigRadScratchReg_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpConfigRadScratchReg__
-#define dispcmnCtrlCmdDpConfigRadScratchReg(pDispCommon, pParams) dispcmnCtrlCmdDpConfigRadScratchReg_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpSetTriggerSelect_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpSetTriggerSelect__
-#define dispcmnCtrlCmdDpSetTriggerSelect(pDispCommon, pTriggerSelectParams) dispcmnCtrlCmdDpSetTriggerSelect_DISPATCH(pDispCommon, pTriggerSelectParams)
-#define dispcmnCtrlCmdDpSetTriggerAll_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpSetTriggerAll__
-#define dispcmnCtrlCmdDpSetTriggerAll(pDispCommon, pTriggerAllParams) dispcmnCtrlCmdDpSetTriggerAll_DISPATCH(pDispCommon, pTriggerAllParams)
-#define dispcmnCtrlCmdDpGetAuxLogData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpGetAuxLogData__
-#define dispcmnCtrlCmdDpGetAuxLogData(pDispCommon, pDpAuxBufferWrapper) dispcmnCtrlCmdDpGetAuxLogData_DISPATCH(pDispCommon, pDpAuxBufferWrapper)
-#define dispcmnCtrlCmdDpConfigIndexedLinkRates_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpConfigIndexedLinkRates__
-#define dispcmnCtrlCmdDpConfigIndexedLinkRates(pDispCommon, pParams) dispcmnCtrlCmdDpConfigIndexedLinkRates_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpConfigureFec_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpConfigureFec__
-#define dispcmnCtrlCmdDpConfigureFec(pDispCommon, pParams) dispcmnCtrlCmdDpConfigureFec_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpGetGenericInfoframe_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpGetGenericInfoframe__
-#define dispcmnCtrlCmdDpGetGenericInfoframe(pDispCommon, pParams) dispcmnCtrlCmdDpGetGenericInfoframe_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpGetMsaAttributes_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpGetMsaAttributes__
-#define dispcmnCtrlCmdDpGetMsaAttributes(pDispCommon, pParams) dispcmnCtrlCmdDpGetMsaAttributes_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdFrlConfigMacroPad_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdFrlConfigMacroPad__
-#define dispcmnCtrlCmdFrlConfigMacroPad(pDispCommon, pParams) dispcmnCtrlCmdFrlConfigMacroPad_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpConfigMacroPad_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpConfigMacroPad__
-#define dispcmnCtrlCmdDpConfigMacroPad(pDispCommon, pParams) dispcmnCtrlCmdDpConfigMacroPad_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data__
-#define dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data(pDispCommon, pParams) dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data__
-#define dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data(pDispCommon, pParams) dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpSetLevelInfoTableData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpSetLevelInfoTableData__
-#define dispcmnCtrlCmdDpSetLevelInfoTableData(pDispCommon, pParams) dispcmnCtrlCmdDpSetLevelInfoTableData_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpGetLevelInfoTableData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDpGetLevelInfoTableData__
-#define dispcmnCtrlCmdDpGetLevelInfoTableData(pDispCommon, pParams) dispcmnCtrlCmdDpGetLevelInfoTableData_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDp2xSetLevelInfoTableData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDp2xSetLevelInfoTableData__
-#define dispcmnCtrlCmdDp2xSetLevelInfoTableData(pDispCommon, pParams) dispcmnCtrlCmdDp2xSetLevelInfoTableData_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDp2xGetLevelInfoTableData_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDp2xGetLevelInfoTableData__
-#define dispcmnCtrlCmdDp2xGetLevelInfoTableData(pDispCommon, pParams) dispcmnCtrlCmdDp2xGetLevelInfoTableData_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDPGetCableIDInfoFromMacro_FNPTR(pDispCommon) pDispCommon->__dispcmnCtrlCmdDPGetCableIDInfoFromMacro__
-#define dispcmnCtrlCmdDPGetCableIDInfoFromMacro(pDispCommon, pParams) dispcmnCtrlCmdDPGetCableIDInfoFromMacro_DISPATCH(pDispCommon, pParams)
+// Wrapper macros for implementation functions
+NV_STATUS dispcmnConstruct_IMPL(struct DispCommon *arg_pDispCommon, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_dispcmnConstruct(arg_pDispCommon, arg_pCallContext, arg_pParams) dispcmnConstruct_IMPL(arg_pDispCommon, arg_pCallContext, arg_pParams)
+
+NV_STATUS dispcmnGetByHandle_IMPL(struct RsClient *pClient, NvHandle hDispCommon, struct DispCommon **ppDispCommon);
+#define dispcmnGetByHandle(pClient, hDispCommon, ppDispCommon) dispcmnGetByHandle_IMPL(pClient, hDispCommon, ppDispCommon)
+
+void dispcmnGetByDevice_IMPL(struct RsClient *pClient, NvHandle hDevice, struct DispCommon **ppDispCommon);
+#define dispcmnGetByDevice(pClient, hDevice, ppDispCommon) dispcmnGetByDevice_IMPL(pClient, hDevice, ppDispCommon)
+
+NV_STATUS dispcmnCtrlCmdSystemGetVblankCounter_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_VBLANK_COUNTER_PARAMS *pVBCounterParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetVblankCounter(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_VBLANK_COUNTER_PARAMS *pVBCounterParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetVblankCounter(pDispCommon, pVBCounterParams) dispcmnCtrlCmdSystemGetVblankCounter_IMPL(pDispCommon, pVBCounterParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetVblankEnable_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_VBLANK_ENABLE_PARAMS *pVBEnableParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetVblankEnable(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_VBLANK_ENABLE_PARAMS *pVBEnableParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetVblankEnable(pDispCommon, pVBEnableParams) dispcmnCtrlCmdSystemGetVblankEnable_IMPL(pDispCommon, pVBEnableParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemCheckSidebandSrSupport_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_CHECK_SIDEBAND_SR_SUPPORT_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemCheckSidebandSrSupport(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_CHECK_SIDEBAND_SR_SUPPORT_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemCheckSidebandSrSupport(pDispCommon, pParams) dispcmnCtrlCmdSystemCheckSidebandSrSupport_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetHotplugState_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_HOTPLUG_STATE_PARAMS *pHotplugParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetHotplugState(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_HOTPLUG_STATE_PARAMS *pHotplugParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetHotplugState(pDispCommon, pHotplugParams) dispcmnCtrlCmdSystemGetHotplugState_IMPL(pDispCommon, pHotplugParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemNotifyDrrMscgWar_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_NOTIFY_DRR_MSCG_WAR_PARAMS *pDrrMscgParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemNotifyDrrMscgWar(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_NOTIFY_DRR_MSCG_WAR_PARAMS *pDrrMscgParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemNotifyDrrMscgWar(pDispCommon, pDrrMscgParams) dispcmnCtrlCmdSystemNotifyDrrMscgWar_IMPL(pDispCommon, pDrrMscgParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetInternalDisplays_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_INTERNAL_DISPLAYS_PARAMS *pInternalDisplaysParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetInternalDisplays(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_INTERNAL_DISPLAYS_PARAMS *pInternalDisplaysParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetInternalDisplays(pDispCommon, pInternalDisplaysParams) dispcmnCtrlCmdSystemGetInternalDisplays_IMPL(pDispCommon, pInternalDisplaysParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetConnectorTable_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_CONNECTOR_TABLE_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetConnectorTable(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_CONNECTOR_TABLE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetConnectorTable(pDispCommon, pParams) dispcmnCtrlCmdSystemGetConnectorTable_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetLoadVCounterInfo_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO_PARAMS *pLoadVCounterInfoParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetLoadVCounterInfo(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO_PARAMS *pLoadVCounterInfoParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetLoadVCounterInfo(pDispCommon, pLoadVCounterInfoParams) dispcmnCtrlCmdSystemGetLoadVCounterInfo_IMPL(pDispCommon, pLoadVCounterInfoParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetCrashLockCounterInfo_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_GET_CRASH_LOCK_COUNTER_INFO_PARAMS *pCrashLockCounterInfoParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetCrashLockCounterInfo(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_GET_CRASH_LOCK_COUNTER_INFO_PARAMS *pCrashLockCounterInfoParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetCrashLockCounterInfo(pDispCommon, pCrashLockCounterInfoParams) dispcmnCtrlCmdSystemGetCrashLockCounterInfo_IMPL(pDispCommon, pCrashLockCounterInfoParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemVrrDisplayInfo_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_VRR_DISPLAY_INFO_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemVrrDisplayInfo(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_VRR_DISPLAY_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemVrrDisplayInfo(pDispCommon, pParams) dispcmnCtrlCmdSystemVrrDisplayInfo_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdVRRSetRgLineActive_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdVRRSetRgLineActive(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdVRRSetRgLineActive(pDispCommon, pParams) dispcmnCtrlCmdVRRSetRgLineActive_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdInternalVRRSetRgLineActive_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdInternalVRRSetRgLineActive(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdInternalVRRSetRgLineActive(pDispCommon, pParams) dispcmnCtrlCmdInternalVRRSetRgLineActive_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpEnableVrr_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpEnableVrr(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpEnableVrr(pDispCommon, pParams) dispcmnCtrlCmdDpEnableVrr_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdClearELVBlock_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_CLEAR_ELV_BLOCK_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdClearELVBlock(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_CLEAR_ELV_BLOCK_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdClearELVBlock(pDispCommon, pParams) dispcmnCtrlCmdClearELVBlock_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificDisplayChange_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificDisplayChange(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificDisplayChange(pDispCommon, pParams) dispcmnCtrlCmdSpecificDisplayChange_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpGetSpreadSpectrum_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_SPREAD_SPECTRUM_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpGetSpreadSpectrum(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_SPREAD_SPECTRUM_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpGetSpreadSpectrum(pDispCommon, pParams) dispcmnCtrlCmdDfpGetSpreadSpectrum_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpGetLcdGpioPinNum_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_LCD_GPIO_PIN_NUM_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpGetLcdGpioPinNum(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_LCD_GPIO_PIN_NUM_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpGetLcdGpioPinNum(pDispCommon, pParams) dispcmnCtrlCmdDfpGetLcdGpioPinNum_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpRetrieveDpRingBuffer_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_RETRIEVE_DP_RING_BUFFER_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpRetrieveDpRingBuffer(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_RETRIEVE_DP_RING_BUFFER_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpRetrieveDpRingBuffer(pDispCommon, pParams) dispcmnCtrlCmdDpRetrieveDpRingBuffer_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpAuxchI2cTransferCtrl_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_AUXCH_I2C_TRANSFER_CTRL_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpAuxchI2cTransferCtrl(struct DispCommon *pDispCommon, NV0073_CTRL_DP_AUXCH_I2C_TRANSFER_CTRL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpAuxchI2cTransferCtrl(pDispCommon, pParams) dispcmnCtrlCmdDpAuxchI2cTransferCtrl_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpASSRCtrl_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_ASSR_CTRL_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpASSRCtrl(struct DispCommon *pDispCommon, NV0073_CTRL_DP_ASSR_CTRL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpASSRCtrl(pDispCommon, pParams) dispcmnCtrlCmdDpASSRCtrl_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpSetEcf_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_ECF_PARAMS *pCtrlEcfParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpSetEcf(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_ECF_PARAMS *pCtrlEcfParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpSetEcf(pDispCommon, pCtrlEcfParams) dispcmnCtrlCmdDpSetEcf_IMPL(pDispCommon, pCtrlEcfParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpRecordChannelRegisters_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_RECORD_CHANNEL_REGS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpRecordChannelRegisters(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_RECORD_CHANNEL_REGS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpRecordChannelRegisters(pDispCommon, pParams) dispcmnCtrlCmdDfpRecordChannelRegisters_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificGetBacklightBrightness_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS *pAllHeadMaskParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificGetBacklightBrightness(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS *pAllHeadMaskParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificGetBacklightBrightness(pDispCommon, pAllHeadMaskParams) dispcmnCtrlCmdSpecificGetBacklightBrightness_IMPL(pDispCommon, pAllHeadMaskParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificSetBacklightBrightness_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificSetBacklightBrightness(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificSetBacklightBrightness(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetBacklightBrightness_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdPsrGetSrPanelInfo_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_PSR_GET_SR_PANEL_INFO_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdPsrGetSrPanelInfo(struct DispCommon *pDispCommon, NV0073_CTRL_PSR_GET_SR_PANEL_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdPsrGetSrPanelInfo(pDispCommon, pParams) dispcmnCtrlCmdPsrGetSrPanelInfo_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpSwitchDispMux_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_SWITCH_DISP_MUX_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpSwitchDispMux(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_SWITCH_DISP_MUX_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpSwitchDispMux(pDispCommon, pParams) dispcmnCtrlCmdDfpSwitchDispMux_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdInternalDfpSwitchDispMux_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_SWITCH_DISP_MUX_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdInternalDfpSwitchDispMux(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_SWITCH_DISP_MUX_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdInternalDfpSwitchDispMux(pDispCommon, pParams) dispcmnCtrlCmdInternalDfpSwitchDispMux_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpRunPreDispMuxOperations_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_RUN_PRE_DISP_MUX_OPERATIONS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpRunPreDispMuxOperations(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_RUN_PRE_DISP_MUX_OPERATIONS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpRunPreDispMuxOperations(pDispCommon, pParams) dispcmnCtrlCmdDfpRunPreDispMuxOperations_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpRunPostDispMuxOperations_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_RUN_POST_DISP_MUX_OPERATIONS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpRunPostDispMuxOperations(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_RUN_POST_DISP_MUX_OPERATIONS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpRunPostDispMuxOperations(pDispCommon, pParams) dispcmnCtrlCmdDfpRunPostDispMuxOperations_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpGetDispMuxStatus_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpGetDispMuxStatus(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpGetDispMuxStatus(pDispCommon, pParams) dispcmnCtrlCmdDfpGetDispMuxStatus_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdInternalDfpGetDispMuxStatus_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdInternalDfpGetDispMuxStatus(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdInternalDfpGetDispMuxStatus(pDispCommon, pParams) dispcmnCtrlCmdInternalDfpGetDispMuxStatus_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpInternalLcdOverdrive_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_AUXCH_OD_CTRL_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpInternalLcdOverdrive(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_AUXCH_OD_CTRL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpInternalLcdOverdrive(pDispCommon, pParams) dispcmnCtrlCmdDfpInternalLcdOverdrive_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpVariableBacklightCtrl_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_AUXCH_VBL_CTRL_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpVariableBacklightCtrl(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_AUXCH_VBL_CTRL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpVariableBacklightCtrl(pDispCommon, pParams) dispcmnCtrlCmdDfpVariableBacklightCtrl_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS *pAcpiMethodParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemExecuteAcpiMethod(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS *pAcpiMethodParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemExecuteAcpiMethod(pDispCommon, pAcpiMethodParams) dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL(pDispCommon, pAcpiMethodParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetAcpiIdMap_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_ACPI_ID_MAP_PARAMS *pAcpiIdMapParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetAcpiIdMap(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_ACPI_ID_MAP_PARAMS *pAcpiIdMapParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetAcpiIdMap(pDispCommon, pAcpiIdMapParams) dispcmnCtrlCmdSystemGetAcpiIdMap_IMPL(pDispCommon, pAcpiIdMapParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemAcpiSubsystemActivated_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_ACPI_SUBSYSTEM_ACTIVATED_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemAcpiSubsystemActivated(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_ACPI_SUBSYSTEM_ACTIVATED_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemAcpiSubsystemActivated(pDispCommon, pParams) dispcmnCtrlCmdSystemAcpiSubsystemActivated_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificSetAcpiIdMapping_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_ACPI_ID_MAPPING_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificSetAcpiIdMapping(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_ACPI_ID_MAPPING_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificSetAcpiIdMapping(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetAcpiIdMapping_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment(struct DispCommon *pDispCommon, NV0073_CTRL_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetCapsV2_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_CAPS_V2_PARAMS *pCapsParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetCapsV2(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_CAPS_V2_PARAMS *pCapsParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetCapsV2(pDispCommon, pCapsParams) dispcmnCtrlCmdSystemGetCapsV2_IMPL(pDispCommon, pCapsParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetNumHeads_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_NUM_HEADS_PARAMS *pNumHeadsParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetNumHeads(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_NUM_HEADS_PARAMS *pNumHeadsParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetNumHeads(pDispCommon, pNumHeadsParams) dispcmnCtrlCmdSystemGetNumHeads_IMPL(pDispCommon, pNumHeadsParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetScanline_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_SCANLINE_PARAMS *pScanlineParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetScanline(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_SCANLINE_PARAMS *pScanlineParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetScanline(pDispCommon, pScanlineParams) dispcmnCtrlCmdSystemGetScanline_IMPL(pDispCommon, pScanlineParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetSuppported_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_SUPPORTED_PARAMS *pSupportedParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetSuppported(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_SUPPORTED_PARAMS *pSupportedParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetSuppported(pDispCommon, pSupportedParams) dispcmnCtrlCmdSystemGetSuppported_IMPL(pDispCommon, pSupportedParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetConnectState_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_CONNECT_STATE_PARAMS *pConnectParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetConnectState(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_CONNECT_STATE_PARAMS *pConnectParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetConnectState(pDispCommon, pConnectParams) dispcmnCtrlCmdSystemGetConnectState_IMPL(pDispCommon, pConnectParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetHotplugUnplugState_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_HOTPLUG_UNPLUG_STATE_PARAMS *pHotplugParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetHotplugUnplugState(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_HOTPLUG_UNPLUG_STATE_PARAMS *pHotplugParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetHotplugUnplugState(pDispCommon, pHotplugParams) dispcmnCtrlCmdSystemGetHotplugUnplugState_IMPL(pDispCommon, pHotplugParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdInternalGetHotplugUnplugState_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_HOTPLUG_UNPLUG_STATE_PARAMS *pHotplugParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdInternalGetHotplugUnplugState(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_HOTPLUG_UNPLUG_STATE_PARAMS *pHotplugParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdInternalGetHotplugUnplugState(pDispCommon, pHotplugParams) dispcmnCtrlCmdInternalGetHotplugUnplugState_IMPL(pDispCommon, pHotplugParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetHeadRoutingMap_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_HEAD_ROUTING_MAP_PARAMS *pMapParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetHeadRoutingMap(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_HEAD_ROUTING_MAP_PARAMS *pMapParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetHeadRoutingMap(pDispCommon, pMapParams) dispcmnCtrlCmdSystemGetHeadRoutingMap_IMPL(pDispCommon, pMapParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetActive_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_ACTIVE_PARAMS *pActiveParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetActive(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_ACTIVE_PARAMS *pActiveParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetActive(pDispCommon, pActiveParams) dispcmnCtrlCmdSystemGetActive_IMPL(pDispCommon, pActiveParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetBootDisplays_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_BOOT_DISPLAYS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetBootDisplays(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_BOOT_DISPLAYS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetBootDisplays(pDispCommon, pParams) dispcmnCtrlCmdSystemGetBootDisplays_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemQueryDisplayIdsWithMux_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_QUERY_DISPLAY_IDS_WITH_MUX_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemQueryDisplayIdsWithMux(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_QUERY_DISPLAY_IDS_WITH_MUX_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemQueryDisplayIdsWithMux(pDispCommon, pParams) dispcmnCtrlCmdSystemQueryDisplayIdsWithMux_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemCheckSidebandI2cSupport_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_CHECK_SIDEBAND_I2C_SUPPORT_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemCheckSidebandI2cSupport(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_CHECK_SIDEBAND_I2C_SUPPORT_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemCheckSidebandI2cSupport(pDispCommon, pParams) dispcmnCtrlCmdSystemCheckSidebandI2cSupport_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemAllocateDisplayBandwidth_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemAllocateDisplayBandwidth(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemAllocateDisplayBandwidth(pDispCommon, pParams) dispcmnCtrlCmdSystemAllocateDisplayBandwidth_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemInternalAllocateDisplayBandwidth_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_INTERNAL_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemInternalAllocateDisplayBandwidth(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_INTERNAL_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemInternalAllocateDisplayBandwidth(pDispCommon, pParams) dispcmnCtrlCmdSystemInternalAllocateDisplayBandwidth_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetHotplugConfig_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_SET_HOTPLUG_CONFIG_PARAMS *pHotplugParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetHotplugConfig(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_SET_HOTPLUG_CONFIG_PARAMS *pHotplugParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetHotplugConfig(pDispCommon, pHotplugParams) dispcmnCtrlCmdSystemGetHotplugConfig_IMPL(pDispCommon, pHotplugParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemGetHotplugEventConfig_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_HOTPLUG_EVENT_CONFIG_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemGetHotplugEventConfig(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_HOTPLUG_EVENT_CONFIG_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemGetHotplugEventConfig(pDispCommon, pParams) dispcmnCtrlCmdSystemGetHotplugEventConfig_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemSetHotplugEventConfig_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_HOTPLUG_EVENT_CONFIG_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemSetHotplugEventConfig(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_HOTPLUG_EVENT_CONFIG_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemSetHotplugEventConfig(pDispCommon, pParams) dispcmnCtrlCmdSystemSetHotplugEventConfig_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemArmLightweightSupervisor_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_ARM_LIGHTWEIGHT_SUPERVISOR_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemArmLightweightSupervisor(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_ARM_LIGHTWEIGHT_SUPERVISOR_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemArmLightweightSupervisor(pDispCommon, pParams) dispcmnCtrlCmdSystemArmLightweightSupervisor_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemSetRegionRamRectangles_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_SET_REGION_RAM_RECTANGLES_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemSetRegionRamRectangles(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_SET_REGION_RAM_RECTANGLES_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemSetRegionRamRectangles(pDispCommon, pParams) dispcmnCtrlCmdSystemSetRegionRamRectangles_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemConfigureSafetyInterrupts_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_CONFIGURE_SAFETY_INTERRUPTS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemConfigureSafetyInterrupts(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_CONFIGURE_SAFETY_INTERRUPTS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemConfigureSafetyInterrupts(pDispCommon, pParams) dispcmnCtrlCmdSystemConfigureSafetyInterrupts_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSystemConfigVrrPstateSwitch_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_CONFIG_VRR_PSTATE_SWITCH_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSystemConfigVrrPstateSwitch(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_CONFIG_VRR_PSTATE_SWITCH_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSystemConfigVrrPstateSwitch(pDispCommon, pParams) dispcmnCtrlCmdSystemConfigVrrPstateSwitch_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificGetType_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_TYPE_PARAMS *pDisplayTypeParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificGetType(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_TYPE_PARAMS *pDisplayTypeParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificGetType(pDispCommon, pDisplayTypeParams) dispcmnCtrlCmdSpecificGetType_IMPL(pDispCommon, pDisplayTypeParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificGetEdidV2_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_EDID_V2_PARAMS *pEdidParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificGetEdidV2(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_EDID_V2_PARAMS *pEdidParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificGetEdidV2(pDispCommon, pEdidParams) dispcmnCtrlCmdSpecificGetEdidV2_IMPL(pDispCommon, pEdidParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificSetEdidV2_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_EDID_V2_PARAMS *pEdidParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificSetEdidV2(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_EDID_V2_PARAMS *pEdidParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificSetEdidV2(pDispCommon, pEdidParams) dispcmnCtrlCmdSpecificSetEdidV2_IMPL(pDispCommon, pEdidParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificFakeDevice_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SPECIFIC_FAKE_DEVICE_PARAMS *pTestParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificFakeDevice(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SPECIFIC_FAKE_DEVICE_PARAMS *pTestParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificFakeDevice(pDispCommon, pTestParams) dispcmnCtrlCmdSpecificFakeDevice_IMPL(pDispCommon, pTestParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificGetConnectorData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_CONNECTOR_DATA_PARAMS *pConnectorParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificGetConnectorData(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_CONNECTOR_DATA_PARAMS *pConnectorParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificGetConnectorData(pDispCommon, pConnectorParams) dispcmnCtrlCmdSpecificGetConnectorData_IMPL(pDispCommon, pConnectorParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificSetHdmiEnable_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_HDMI_ENABLE_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificSetHdmiEnable(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_HDMI_ENABLE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificSetHdmiEnable(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetHdmiEnable_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificCtrlHdmi_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_CTRL_HDMI_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificCtrlHdmi(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_CTRL_HDMI_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificCtrlHdmi(pDispCommon, pParams) dispcmnCtrlCmdSpecificCtrlHdmi_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificGetAllHeadMask_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_ALL_HEAD_MASK_PARAMS *pAllHeadMaskParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificGetAllHeadMask(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_ALL_HEAD_MASK_PARAMS *pAllHeadMaskParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificGetAllHeadMask(pDispCommon, pAllHeadMaskParams) dispcmnCtrlCmdSpecificGetAllHeadMask_IMPL(pDispCommon, pAllHeadMaskParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificSetOdPacket_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_OD_PACKET_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificSetOdPacket(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_OD_PACKET_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificSetOdPacket(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetOdPacket_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificAcquireSharedGenericPacket_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_ACQUIRE_SHARED_GENERIC_PACKET_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificAcquireSharedGenericPacket(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_ACQUIRE_SHARED_GENERIC_PACKET_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificAcquireSharedGenericPacket(pDispCommon, pParams) dispcmnCtrlCmdSpecificAcquireSharedGenericPacket_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificSetSharedGenericPacket_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_SHARED_GENERIC_PACKET_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificSetSharedGenericPacket(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_SHARED_GENERIC_PACKET_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificSetSharedGenericPacket(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetSharedGenericPacket_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificReleaseSharedGenericPacket_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_RELEASE_SHARED_GENERIC_PACKET_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificReleaseSharedGenericPacket(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_RELEASE_SHARED_GENERIC_PACKET_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificReleaseSharedGenericPacket(pDispCommon, pParams) dispcmnCtrlCmdSpecificReleaseSharedGenericPacket_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificSetOdPacketCtrl_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_OD_PACKET_CTRL_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificSetOdPacketCtrl(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_OD_PACKET_CTRL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificSetOdPacketCtrl(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetOdPacketCtrl_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificOrGetInfo_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_OR_GET_INFO_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificOrGetInfo(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_OR_GET_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificOrGetInfo(pDispCommon, pParams) dispcmnCtrlCmdSpecificOrGetInfo_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificGetPclkLimit_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_PCLK_LIMIT_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificGetPclkLimit(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_PCLK_LIMIT_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificGetPclkLimit(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetPclkLimit_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificSetHdmiSinkCaps_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_HDMI_SINK_CAPS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificSetHdmiSinkCaps(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_HDMI_SINK_CAPS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificSetHdmiSinkCaps(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetHdmiSinkCaps_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificSetMonitorPower_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_MONITOR_POWER_PARAMS *setMonitorPowerParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificSetMonitorPower(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_MONITOR_POWER_PARAMS *setMonitorPowerParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificSetMonitorPower(pDispCommon, setMonitorPowerParams) dispcmnCtrlCmdSpecificSetMonitorPower_IMPL(pDispCommon, setMonitorPowerParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificSetHdmiFrlLinkConfig_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_HDMI_FRL_LINK_CONFIG_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificSetHdmiFrlLinkConfig(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_HDMI_FRL_LINK_CONFIG_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificSetHdmiFrlLinkConfig(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetHdmiFrlLinkConfig_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificApplyEdidOverrideV2_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_APPLY_EDID_OVERRIDE_V2_PARAMS *pEdidOverrideParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificApplyEdidOverrideV2(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_APPLY_EDID_OVERRIDE_V2_PARAMS *pEdidOverrideParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificApplyEdidOverrideV2(pDispCommon, pEdidOverrideParams) dispcmnCtrlCmdSpecificApplyEdidOverrideV2_IMPL(pDispCommon, pEdidOverrideParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificGetI2cPortid_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_I2C_PORTID_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificGetI2cPortid(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_I2C_PORTID_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificGetI2cPortid(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetI2cPortid_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificGetHdmiGpuCaps_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_HDMI_GPU_CAPS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificGetHdmiGpuCaps(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_HDMI_GPU_CAPS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificGetHdmiGpuCaps(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetHdmiGpuCaps_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificGetHdmiScdcData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_HDMI_SCDC_DATA_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificGetHdmiScdcData(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_HDMI_SCDC_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificGetHdmiScdcData(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetHdmiScdcData_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificIsDirectmodeDisplay_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_IS_DIRECTMODE_DISPLAY_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificIsDirectmodeDisplay(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_IS_DIRECTMODE_DISPLAY_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificIsDirectmodeDisplay(pDispCommon, pParams) dispcmnCtrlCmdSpecificIsDirectmodeDisplay_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificDefaultAdaptivesyncDisplay_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificDefaultAdaptivesyncDisplay(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificDefaultAdaptivesyncDisplay(pDispCommon, pParams) dispcmnCtrlCmdSpecificDefaultAdaptivesyncDisplay_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_HDMI_FRL_CAPACITY_COMPUTATION_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_HDMI_FRL_CAPACITY_COMPUTATION_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificDispI2cReadWrite_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificDispI2cReadWrite(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificDispI2cReadWrite(pDispCommon, pParams) dispcmnCtrlCmdSpecificDispI2cReadWrite_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificSetHdmiAudioMutestream_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificSetHdmiAudioMutestream(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificSetHdmiAudioMutestream(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetHdmiAudioMutestream_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpEdpDriverUnload_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpEdpDriverUnload(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpEdpDriverUnload(pDispCommon, pParams) dispcmnCtrlCmdDfpEdpDriverUnload_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpSetForceBlackPixels_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_SET_FORCE_BLACK_PIXELS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpSetForceBlackPixels(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_SET_FORCE_BLACK_PIXELS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpSetForceBlackPixels(pDispCommon, pParams) dispcmnCtrlCmdDfpSetForceBlackPixels_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpGetInfo_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_INFO_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpGetInfo(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpGetInfo(pDispCommon, pParams) dispcmnCtrlCmdDfpGetInfo_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpGetDisplayportDongleInfo_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_DISPLAYPORT_DONGLE_INFO_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpGetDisplayportDongleInfo(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_DISPLAYPORT_DONGLE_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpGetDisplayportDongleInfo(pDispCommon, pParams) dispcmnCtrlCmdDfpGetDisplayportDongleInfo_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpSetEldAudioCaps_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_SET_ELD_AUDIO_CAP_PARAMS *pEldAudioCapsParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpSetEldAudioCaps(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_SET_ELD_AUDIO_CAP_PARAMS *pEldAudioCapsParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpSetEldAudioCaps(pDispCommon, pEldAudioCapsParams) dispcmnCtrlCmdDfpSetEldAudioCaps_IMPL(pDispCommon, pEldAudioCapsParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpSetAudioEnable_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_SET_AUDIO_ENABLE_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpSetAudioEnable(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_SET_AUDIO_ENABLE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpSetAudioEnable(pDispCommon, pParams) dispcmnCtrlCmdDfpSetAudioEnable_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpUpdateDynamicDfpCache_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_UPDATE_DYNAMIC_DFP_CACHE_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpUpdateDynamicDfpCache(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_UPDATE_DYNAMIC_DFP_CACHE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpUpdateDynamicDfpCache(pDispCommon, pParams) dispcmnCtrlCmdDfpUpdateDynamicDfpCache_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpAssignSor_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_ASSIGN_SOR_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpAssignSor(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_ASSIGN_SOR_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpAssignSor(pDispCommon, pParams) dispcmnCtrlCmdDfpAssignSor_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpDscCrcControl_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_DSC_CRC_CONTROL_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpDscCrcControl(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_DSC_CRC_CONTROL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpDscCrcControl(pDispCommon, pParams) dispcmnCtrlCmdDfpDscCrcControl_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpInitMuxData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_INIT_MUX_DATA_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpInitMuxData(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_INIT_MUX_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpInitMuxData(pDispCommon, pParams) dispcmnCtrlCmdDfpInitMuxData_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpGetDsiModeTiming_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_GET_DSI_MODE_TIMING_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpGetDsiModeTiming(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_GET_DSI_MODE_TIMING_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpGetDsiModeTiming(pDispCommon, pParams) dispcmnCtrlCmdDfpGetDsiModeTiming_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpConfigTwoHeadOneOr_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_CONFIG_TWO_HEAD_ONE_OR_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpConfigTwoHeadOneOr(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_CONFIG_TWO_HEAD_ONE_OR_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpConfigTwoHeadOneOr(pDispCommon, pParams) dispcmnCtrlCmdDfpConfigTwoHeadOneOr_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpGetPadlinkMask_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_PADLINK_MASK_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpGetPadlinkMask(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_PADLINK_MASK_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpGetPadlinkMask(pDispCommon, pParams) dispcmnCtrlCmdDfpGetPadlinkMask_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpGetFixedModeTiming_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpGetFixedModeTiming(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpGetFixedModeTiming(pDispCommon, pParams) dispcmnCtrlCmdDfpGetFixedModeTiming_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpAuxchCtrl_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_AUXCH_CTRL_PARAMS *pAuxchCtrlParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpAuxchCtrl(struct DispCommon *pDispCommon, NV0073_CTRL_DP_AUXCH_CTRL_PARAMS *pAuxchCtrlParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpAuxchCtrl(pDispCommon, pAuxchCtrlParams) dispcmnCtrlCmdDpAuxchCtrl_IMPL(pDispCommon, pAuxchCtrlParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpCtrl_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_CTRL_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpCtrl(struct DispCommon *pDispCommon, NV0073_CTRL_DP_CTRL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpCtrl(pDispCommon, pParams) dispcmnCtrlCmdDpCtrl_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDp2xLinkTrain_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDp2xLinkTrain(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDp2xLinkTrain(pDispCommon, pParams) dispcmnCtrlCmdDp2xLinkTrain_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDp2xGetLaneData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDp2xGetLaneData(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDp2xGetLaneData(pDispCommon, pParams) dispcmnCtrlCmdDp2xGetLaneData_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDp2xSetLaneData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDp2xSetLaneData(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDp2xSetLaneData(pDispCommon, pParams) dispcmnCtrlCmdDp2xSetLaneData_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdCalculateDpImp_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdCalculateDpImp(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdCalculateDpImp(pDispCommon, pParams) dispcmnCtrlCmdCalculateDpImp_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpGetLaneData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_LANE_DATA_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpGetLaneData(struct DispCommon *pDispCommon, NV0073_CTRL_DP_LANE_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpGetLaneData(pDispCommon, pParams) dispcmnCtrlCmdDpGetLaneData_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpSetLaneData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_LANE_DATA_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpSetLaneData(struct DispCommon *pDispCommon, NV0073_CTRL_DP_LANE_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpSetLaneData(pDispCommon, pParams) dispcmnCtrlCmdDpSetLaneData_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpGetTestpattern_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_TESTPATTERN_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpGetTestpattern(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_TESTPATTERN_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpGetTestpattern(pDispCommon, pParams) dispcmnCtrlCmdDpGetTestpattern_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpSetTestpattern_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_SET_TESTPATTERN_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpSetTestpattern(struct DispCommon *pDispCommon, NV0073_CTRL_DP_SET_TESTPATTERN_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpSetTestpattern(pDispCommon, pParams) dispcmnCtrlCmdDpSetTestpattern_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpMainLinkCtrl_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_MAIN_LINK_CTRL_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpMainLinkCtrl(struct DispCommon *pDispCommon, NV0073_CTRL_DP_MAIN_LINK_CTRL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpMainLinkCtrl(pDispCommon, pParams) dispcmnCtrlCmdDpMainLinkCtrl_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpSetAudioMuteStream_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_SET_AUDIO_MUTESTREAM_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpSetAudioMuteStream(struct DispCommon *pDispCommon, NV0073_CTRL_DP_SET_AUDIO_MUTESTREAM_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpSetAudioMuteStream(pDispCommon, pParams) dispcmnCtrlCmdDpSetAudioMuteStream_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpGetLinkConfig_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_LINK_CONFIG_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpGetLinkConfig(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_LINK_CONFIG_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpGetLinkConfig(pDispCommon, pParams) dispcmnCtrlCmdDpGetLinkConfig_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpGetEDPData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_EDP_DATA_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpGetEDPData(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_EDP_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpGetEDPData(pDispCommon, pParams) dispcmnCtrlCmdDpGetEDPData_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpTopologyAllocateDisplayId_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_TOPOLOGY_ALLOCATE_DISPLAYID_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpTopologyAllocateDisplayId(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_TOPOLOGY_ALLOCATE_DISPLAYID_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpTopologyAllocateDisplayId(pDispCommon, pParams) dispcmnCtrlCmdDpTopologyAllocateDisplayId_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpTopologyFreeDisplayId_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_TOPOLOGY_FREE_DISPLAYID_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpTopologyFreeDisplayId(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_TOPOLOGY_FREE_DISPLAYID_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpTopologyFreeDisplayId(pDispCommon, pParams) dispcmnCtrlCmdDpTopologyFreeDisplayId_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpConfigStream_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIG_STREAM_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpConfigStream(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIG_STREAM_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpConfigStream(pDispCommon, pParams) dispcmnCtrlCmdDpConfigStream_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpConfigSingleHeadMultiStream_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIG_SINGLE_HEAD_MULTI_STREAM_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpConfigSingleHeadMultiStream(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIG_SINGLE_HEAD_MULTI_STREAM_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpConfigSingleHeadMultiStream(pDispCommon, pParams) dispcmnCtrlCmdDpConfigSingleHeadMultiStream_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpSetRateGov_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_RATE_GOV_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpSetRateGov(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_RATE_GOV_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpSetRateGov(pDispCommon, pParams) dispcmnCtrlCmdDpSetRateGov_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpSendACT_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SEND_ACT_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpSendACT(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SEND_ACT_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpSendACT(pDispCommon, pParams) dispcmnCtrlCmdDpSendACT_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpSetManualDisplayPort_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_MANUAL_DISPLAYPORT_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpSetManualDisplayPort(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_MANUAL_DISPLAYPORT_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpSetManualDisplayPort(pDispCommon, pParams) dispcmnCtrlCmdDpSetManualDisplayPort_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpGetCaps_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpGetCaps(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpGetCaps(pDispCommon, pParams) dispcmnCtrlCmdDpGetCaps_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpSetMSAPropertiesv2_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpSetMSAPropertiesv2(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpSetMSAPropertiesv2(pDispCommon, pParams) dispcmnCtrlCmdDpSetMSAPropertiesv2_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpSetStereoMSAProperties_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_STEREO_MSA_PROPERTIES_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpSetStereoMSAProperties(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_STEREO_MSA_PROPERTIES_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpSetStereoMSAProperties(pDispCommon, pParams) dispcmnCtrlCmdDpSetStereoMSAProperties_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpGenerateFakeInterrupt_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_GENERATE_FAKE_INTERRUPT_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpGenerateFakeInterrupt(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_GENERATE_FAKE_INTERRUPT_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpGenerateFakeInterrupt(pDispCommon, pParams) dispcmnCtrlCmdDpGenerateFakeInterrupt_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpConfigRadScratchReg_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIG_RAD_SCRATCH_REG_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpConfigRadScratchReg(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIG_RAD_SCRATCH_REG_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpConfigRadScratchReg(pDispCommon, pParams) dispcmnCtrlCmdDpConfigRadScratchReg_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpSetTriggerSelect_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_TRIGGER_SELECT_PARAMS *pTriggerSelectParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpSetTriggerSelect(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_TRIGGER_SELECT_PARAMS *pTriggerSelectParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpSetTriggerSelect(pDispCommon, pTriggerSelectParams) dispcmnCtrlCmdDpSetTriggerSelect_IMPL(pDispCommon, pTriggerSelectParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpSetTriggerAll_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_TRIGGER_ALL_PARAMS *pTriggerAllParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpSetTriggerAll(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_TRIGGER_ALL_PARAMS *pTriggerAllParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpSetTriggerAll(pDispCommon, pTriggerAllParams) dispcmnCtrlCmdDpSetTriggerAll_IMPL(pDispCommon, pTriggerAllParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpGetAuxLogData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_GET_AUXLOGGER_BUFFER_DATA_PARAMS *pDpAuxBufferWrapper);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpGetAuxLogData(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_GET_AUXLOGGER_BUFFER_DATA_PARAMS *pDpAuxBufferWrapper) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpGetAuxLogData(pDispCommon, pDpAuxBufferWrapper) dispcmnCtrlCmdDpGetAuxLogData_IMPL(pDispCommon, pDpAuxBufferWrapper)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpConfigIndexedLinkRates_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIG_INDEXED_LINK_RATES_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpConfigIndexedLinkRates(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIG_INDEXED_LINK_RATES_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpConfigIndexedLinkRates(pDispCommon, pParams) dispcmnCtrlCmdDpConfigIndexedLinkRates_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpConfigureFec_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIGURE_FEC_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpConfigureFec(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIGURE_FEC_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpConfigureFec(pDispCommon, pParams) dispcmnCtrlCmdDpConfigureFec_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpGetGenericInfoframe_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_GENERIC_INFOFRAME_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpGetGenericInfoframe(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_GENERIC_INFOFRAME_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpGetGenericInfoframe(pDispCommon, pParams) dispcmnCtrlCmdDpGetGenericInfoframe_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpGetMsaAttributes_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_MSA_ATTRIBUTES_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpGetMsaAttributes(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_MSA_ATTRIBUTES_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpGetMsaAttributes(pDispCommon, pParams) dispcmnCtrlCmdDpGetMsaAttributes_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdFrlConfigMacroPad_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdFrlConfigMacroPad(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdFrlConfigMacroPad(pDispCommon, pParams) dispcmnCtrlCmdFrlConfigMacroPad_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpConfigMacroPad_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIG_MACRO_PAD_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpConfigMacroPad(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIG_MACRO_PAD_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpConfigMacroPad(pDispCommon, pParams) dispcmnCtrlCmdDpConfigMacroPad_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_SET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data(struct DispCommon *pDispCommon, NV0073_CTRL_DP_SET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data(pDispCommon, pParams) dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data(pDispCommon, pParams) dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpSetLevelInfoTableData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_SET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpSetLevelInfoTableData(struct DispCommon *pDispCommon, NV0073_CTRL_DP_SET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpSetLevelInfoTableData(pDispCommon, pParams) dispcmnCtrlCmdDpSetLevelInfoTableData_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDpGetLevelInfoTableData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpGetLevelInfoTableData(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpGetLevelInfoTableData(pDispCommon, pParams) dispcmnCtrlCmdDpGetLevelInfoTableData_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDp2xSetLevelInfoTableData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_SET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDp2xSetLevelInfoTableData(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_SET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDp2xSetLevelInfoTableData(pDispCommon, pParams) dispcmnCtrlCmdDp2xSetLevelInfoTableData_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDp2xGetLevelInfoTableData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDp2xGetLevelInfoTableData(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDp2xGetLevelInfoTableData(pDispCommon, pParams) dispcmnCtrlCmdDp2xGetLevelInfoTableData_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDPGetCableIDInfoFromMacro_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_USBC_CABLEID_INFO_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDPGetCableIDInfoFromMacro(struct DispCommon *pDispCommon, NV0073_CTRL_DP_USBC_CABLEID_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDPGetCableIDInfoFromMacro(pDispCommon, pParams) dispcmnCtrlCmdDPGetCableIDInfoFromMacro_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdSpecificGetRegionalCrcs_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SPECIFIC_GET_REGIONAL_CRCS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificGetRegionalCrcs(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SPECIFIC_GET_REGIONAL_CRCS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificGetRegionalCrcs(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetRegionalCrcs_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpEnterDisplayPowerGating_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_ENTER_DISPLAY_POWER_GATING_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpEnterDisplayPowerGating(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_ENTER_DISPLAY_POWER_GATING_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpEnterDisplayPowerGating(pDispCommon, pParams) dispcmnCtrlCmdDfpEnterDisplayPowerGating_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+NV_STATUS dispcmnCtrlCmdDfpExitDisplayPowerGating_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_EXIT_DISPLAY_POWER_GATING_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDfpExitDisplayPowerGating(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_EXIT_DISPLAY_POWER_GATING_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDfpExitDisplayPowerGating(pDispCommon, pParams) dispcmnCtrlCmdDfpExitDisplayPowerGating_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
+
+// Wrapper macros for halified functions
 #define dispcmnControl_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl__
 #define dispcmnControl(pDisplayApi, pCallContext, pParams) dispcmnControl_DISPATCH(pDisplayApi, pCallContext, pParams)
 #define dispcmnControl_Prologue_FNPTR(pDisplayApi) pDisplayApi->__nvoc_base_DisplayApi.__nvoc_metadata_ptr->vtable.__dispapiControl_Prologue__
@@ -2166,570 +3314,6 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) dispcmnGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
-static inline NV_STATUS dispcmnCtrlCmdSystemGetVblankCounter_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_VBLANK_COUNTER_PARAMS *pVBCounterParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetVblankCounter__(pDispCommon, pVBCounterParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetVblankEnable_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_VBLANK_ENABLE_PARAMS *pVBEnableParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetVblankEnable__(pDispCommon, pVBEnableParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemCheckSidebandSrSupport_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_CHECK_SIDEBAND_SR_SUPPORT_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemCheckSidebandSrSupport__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetHotplugState_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_HOTPLUG_STATE_PARAMS *pHotplugParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetHotplugState__(pDispCommon, pHotplugParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemNotifyDrrMscgWar_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_NOTIFY_DRR_MSCG_WAR_PARAMS *pDrrMscgParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemNotifyDrrMscgWar__(pDispCommon, pDrrMscgParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetInternalDisplays_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_INTERNAL_DISPLAYS_PARAMS *pInternalDisplaysParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetInternalDisplays__(pDispCommon, pInternalDisplaysParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetConnectorTable_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_CONNECTOR_TABLE_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetConnectorTable__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetLoadVCounterInfo_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO_PARAMS *pLoadVCounterInfoParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetLoadVCounterInfo__(pDispCommon, pLoadVCounterInfoParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetCrashLockCounterInfo_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_GET_CRASH_LOCK_COUNTER_INFO_PARAMS *pCrashLockCounterInfoParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetCrashLockCounterInfo__(pDispCommon, pCrashLockCounterInfoParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemVrrDisplayInfo_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_VRR_DISPLAY_INFO_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemVrrDisplayInfo__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdVRRSetRgLineActive_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdVRRSetRgLineActive__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdInternalVRRSetRgLineActive_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdInternalVRRSetRgLineActive__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpEnableVrr_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpEnableVrr__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdClearELVBlock_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_CLEAR_ELV_BLOCK_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdClearELVBlock__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificDisplayChange_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificDisplayChange__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpGetSpreadSpectrum_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_SPREAD_SPECTRUM_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpGetSpreadSpectrum__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpGetLcdGpioPinNum_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_LCD_GPIO_PIN_NUM_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpGetLcdGpioPinNum__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpRetrieveDpRingBuffer_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_RETRIEVE_DP_RING_BUFFER_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpRetrieveDpRingBuffer__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpAuxchI2cTransferCtrl_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_AUXCH_I2C_TRANSFER_CTRL_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpAuxchI2cTransferCtrl__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpASSRCtrl_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_ASSR_CTRL_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpASSRCtrl__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpSetEcf_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_ECF_PARAMS *pCtrlEcfParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpSetEcf__(pDispCommon, pCtrlEcfParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpRecordChannelRegisters_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_RECORD_CHANNEL_REGS_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpRecordChannelRegisters__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificGetBacklightBrightness_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS *pAllHeadMaskParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificGetBacklightBrightness__(pDispCommon, pAllHeadMaskParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificSetBacklightBrightness_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificSetBacklightBrightness__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdPsrGetSrPanelInfo_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_PSR_GET_SR_PANEL_INFO_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdPsrGetSrPanelInfo__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpSwitchDispMux_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_SWITCH_DISP_MUX_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpSwitchDispMux__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdInternalDfpSwitchDispMux_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_SWITCH_DISP_MUX_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdInternalDfpSwitchDispMux__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpRunPreDispMuxOperations_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_RUN_PRE_DISP_MUX_OPERATIONS_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpRunPreDispMuxOperations__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpRunPostDispMuxOperations_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_RUN_POST_DISP_MUX_OPERATIONS_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpRunPostDispMuxOperations__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpGetDispMuxStatus_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpGetDispMuxStatus__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdInternalDfpGetDispMuxStatus_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdInternalDfpGetDispMuxStatus__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpInternalLcdOverdrive_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_AUXCH_OD_CTRL_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpInternalLcdOverdrive__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpVariableBacklightCtrl_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_AUXCH_VBL_CTRL_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpVariableBacklightCtrl__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemExecuteAcpiMethod_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS *pAcpiMethodParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemExecuteAcpiMethod__(pDispCommon, pAcpiMethodParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetAcpiIdMap_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_ACPI_ID_MAP_PARAMS *pAcpiIdMapParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetAcpiIdMap__(pDispCommon, pAcpiIdMapParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemAcpiSubsystemActivated_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_ACPI_SUBSYSTEM_ACTIVATED_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemAcpiSubsystemActivated__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificSetAcpiIdMapping_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_ACPI_ID_MAPPING_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificSetAcpiIdMapping__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetCapsV2_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_CAPS_V2_PARAMS *pCapsParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetCapsV2__(pDispCommon, pCapsParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetNumHeads_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_NUM_HEADS_PARAMS *pNumHeadsParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetNumHeads__(pDispCommon, pNumHeadsParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetScanline_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_SCANLINE_PARAMS *pScanlineParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetScanline__(pDispCommon, pScanlineParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetSuppported_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_SUPPORTED_PARAMS *pSupportedParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetSuppported__(pDispCommon, pSupportedParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetConnectState_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_CONNECT_STATE_PARAMS *pConnectParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetConnectState__(pDispCommon, pConnectParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetHotplugUnplugState_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_HOTPLUG_UNPLUG_STATE_PARAMS *pHotplugParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetHotplugUnplugState__(pDispCommon, pHotplugParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdInternalGetHotplugUnplugState_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_HOTPLUG_UNPLUG_STATE_PARAMS *pHotplugParams) {
-    return pDispCommon->__dispcmnCtrlCmdInternalGetHotplugUnplugState__(pDispCommon, pHotplugParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetHeadRoutingMap_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_HEAD_ROUTING_MAP_PARAMS *pMapParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetHeadRoutingMap__(pDispCommon, pMapParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetActive_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_ACTIVE_PARAMS *pActiveParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetActive__(pDispCommon, pActiveParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetBootDisplays_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_BOOT_DISPLAYS_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetBootDisplays__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemQueryDisplayIdsWithMux_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_QUERY_DISPLAY_IDS_WITH_MUX_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemQueryDisplayIdsWithMux__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemCheckSidebandI2cSupport_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_CHECK_SIDEBAND_I2C_SUPPORT_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemCheckSidebandI2cSupport__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemAllocateDisplayBandwidth_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemAllocateDisplayBandwidth__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemInternalAllocateDisplayBandwidth_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_INTERNAL_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemInternalAllocateDisplayBandwidth__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetHotplugConfig_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_SET_HOTPLUG_CONFIG_PARAMS *pHotplugParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetHotplugConfig__(pDispCommon, pHotplugParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemGetHotplugEventConfig_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_HOTPLUG_EVENT_CONFIG_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemGetHotplugEventConfig__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemSetHotplugEventConfig_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_HOTPLUG_EVENT_CONFIG_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemSetHotplugEventConfig__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemArmLightweightSupervisor_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_ARM_LIGHTWEIGHT_SUPERVISOR_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemArmLightweightSupervisor__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSystemConfigVrrPstateSwitch_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_CONFIG_VRR_PSTATE_SWITCH_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSystemConfigVrrPstateSwitch__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificGetType_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_TYPE_PARAMS *pDisplayTypeParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificGetType__(pDispCommon, pDisplayTypeParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificGetEdidV2_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_EDID_V2_PARAMS *pEdidParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificGetEdidV2__(pDispCommon, pEdidParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificSetEdidV2_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_EDID_V2_PARAMS *pEdidParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificSetEdidV2__(pDispCommon, pEdidParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificFakeDevice_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SPECIFIC_FAKE_DEVICE_PARAMS *pTestParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificFakeDevice__(pDispCommon, pTestParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificGetConnectorData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_CONNECTOR_DATA_PARAMS *pConnectorParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificGetConnectorData__(pDispCommon, pConnectorParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificSetHdmiEnable_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_HDMI_ENABLE_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificSetHdmiEnable__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificCtrlHdmi_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_CTRL_HDMI_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificCtrlHdmi__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificGetAllHeadMask_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_ALL_HEAD_MASK_PARAMS *pAllHeadMaskParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificGetAllHeadMask__(pDispCommon, pAllHeadMaskParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificSetOdPacket_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_OD_PACKET_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificSetOdPacket__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificAcquireSharedGenericPacket_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_ACQUIRE_SHARED_GENERIC_PACKET_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificAcquireSharedGenericPacket__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificSetSharedGenericPacket_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_SHARED_GENERIC_PACKET_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificSetSharedGenericPacket__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificReleaseSharedGenericPacket_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_RELEASE_SHARED_GENERIC_PACKET_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificReleaseSharedGenericPacket__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificSetOdPacketCtrl_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_OD_PACKET_CTRL_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificSetOdPacketCtrl__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificOrGetInfo_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_OR_GET_INFO_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificOrGetInfo__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificGetPclkLimit_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_PCLK_LIMIT_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificGetPclkLimit__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificSetHdmiSinkCaps_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_HDMI_SINK_CAPS_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificSetHdmiSinkCaps__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificSetMonitorPower_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_MONITOR_POWER_PARAMS *setMonitorPowerParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificSetMonitorPower__(pDispCommon, setMonitorPowerParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificSetHdmiFrlLinkConfig_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_HDMI_FRL_LINK_CONFIG_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificSetHdmiFrlLinkConfig__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificApplyEdidOverrideV2_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_APPLY_EDID_OVERRIDE_V2_PARAMS *pEdidOverrideParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificApplyEdidOverrideV2__(pDispCommon, pEdidOverrideParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificGetI2cPortid_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_I2C_PORTID_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificGetI2cPortid__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificGetHdmiGpuCaps_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_HDMI_GPU_CAPS_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificGetHdmiGpuCaps__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificGetHdmiScdcData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_HDMI_SCDC_DATA_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificGetHdmiScdcData__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificIsDirectmodeDisplay_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_IS_DIRECTMODE_DISPLAY_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificIsDirectmodeDisplay__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificDefaultAdaptivesyncDisplay_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificDefaultAdaptivesyncDisplay__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_HDMI_FRL_CAPACITY_COMPUTATION_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificDispI2cReadWrite_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificDispI2cReadWrite__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdSpecificSetHdmiAudioMutestream_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdSpecificSetHdmiAudioMutestream__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpEdpDriverUnload_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpEdpDriverUnload__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpSetForceBlackPixels_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_SET_FORCE_BLACK_PIXELS_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpSetForceBlackPixels__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpGetInfo_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_INFO_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpGetInfo__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpGetDisplayportDongleInfo_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_DISPLAYPORT_DONGLE_INFO_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpGetDisplayportDongleInfo__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpSetEldAudioCaps_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_SET_ELD_AUDIO_CAP_PARAMS *pEldAudioCapsParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpSetEldAudioCaps__(pDispCommon, pEldAudioCapsParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpSetAudioEnable_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_SET_AUDIO_ENABLE_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpSetAudioEnable__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpUpdateDynamicDfpCache_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_UPDATE_DYNAMIC_DFP_CACHE_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpUpdateDynamicDfpCache__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpAssignSor_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_ASSIGN_SOR_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpAssignSor__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpDscCrcControl_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_DSC_CRC_CONTROL_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpDscCrcControl__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpInitMuxData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_INIT_MUX_DATA_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpInitMuxData__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpGetDsiModeTiming_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_GET_DSI_MODE_TIMING_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpGetDsiModeTiming__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpConfigTwoHeadOneOr_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_CONFIG_TWO_HEAD_ONE_OR_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpConfigTwoHeadOneOr__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpGetPadlinkMask_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_PADLINK_MASK_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpGetPadlinkMask__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDfpGetFixedModeTiming_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDfpGetFixedModeTiming__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpAuxchCtrl_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_AUXCH_CTRL_PARAMS *pAuxchCtrlParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpAuxchCtrl__(pDispCommon, pAuxchCtrlParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpCtrl_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_CTRL_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpCtrl__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDp2xLinkTrain_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDp2xLinkTrain__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDp2xGetLaneData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDp2xGetLaneData__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDp2xSetLaneData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_LANE_DATA_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDp2xSetLaneData__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdCalculateDpImp_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdCalculateDpImp__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpGetLaneData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_LANE_DATA_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpGetLaneData__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpSetLaneData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_LANE_DATA_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpSetLaneData__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpGetTestpattern_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_TESTPATTERN_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpGetTestpattern__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpSetTestpattern_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_SET_TESTPATTERN_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpSetTestpattern__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpMainLinkCtrl_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_MAIN_LINK_CTRL_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpMainLinkCtrl__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpSetAudioMuteStream_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_SET_AUDIO_MUTESTREAM_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpSetAudioMuteStream__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpGetLinkConfig_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_LINK_CONFIG_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpGetLinkConfig__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpGetEDPData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_EDP_DATA_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpGetEDPData__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpTopologyAllocateDisplayId_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_TOPOLOGY_ALLOCATE_DISPLAYID_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpTopologyAllocateDisplayId__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpTopologyFreeDisplayId_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_TOPOLOGY_FREE_DISPLAYID_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpTopologyFreeDisplayId__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpConfigStream_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIG_STREAM_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpConfigStream__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpConfigSingleHeadMultiStream_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIG_SINGLE_HEAD_MULTI_STREAM_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpConfigSingleHeadMultiStream__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpSetRateGov_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_RATE_GOV_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpSetRateGov__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpSendACT_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SEND_ACT_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpSendACT__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpSetManualDisplayPort_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_MANUAL_DISPLAYPORT_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpSetManualDisplayPort__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpGetCaps_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpGetCaps__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpSetMSAPropertiesv2_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpSetMSAPropertiesv2__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpSetStereoMSAProperties_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_STEREO_MSA_PROPERTIES_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpSetStereoMSAProperties__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpGenerateFakeInterrupt_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_GENERATE_FAKE_INTERRUPT_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpGenerateFakeInterrupt__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpConfigRadScratchReg_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIG_RAD_SCRATCH_REG_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpConfigRadScratchReg__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpSetTriggerSelect_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_TRIGGER_SELECT_PARAMS *pTriggerSelectParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpSetTriggerSelect__(pDispCommon, pTriggerSelectParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpSetTriggerAll_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_TRIGGER_ALL_PARAMS *pTriggerAllParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpSetTriggerAll__(pDispCommon, pTriggerAllParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpGetAuxLogData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_GET_AUXLOGGER_BUFFER_DATA_PARAMS *pDpAuxBufferWrapper) {
-    return pDispCommon->__dispcmnCtrlCmdDpGetAuxLogData__(pDispCommon, pDpAuxBufferWrapper);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpConfigIndexedLinkRates_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIG_INDEXED_LINK_RATES_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpConfigIndexedLinkRates__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpConfigureFec_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIGURE_FEC_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpConfigureFec__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpGetGenericInfoframe_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_GENERIC_INFOFRAME_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpGetGenericInfoframe__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpGetMsaAttributes_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_MSA_ATTRIBUTES_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpGetMsaAttributes__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdFrlConfigMacroPad_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdFrlConfigMacroPad__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpConfigMacroPad_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIG_MACRO_PAD_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpConfigMacroPad__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_SET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpSetLevelInfoTableData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_SET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpSetLevelInfoTableData__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDpGetLevelInfoTableData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpGetLevelInfoTableData__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDp2xSetLevelInfoTableData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_SET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDp2xSetLevelInfoTableData__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDp2xGetLevelInfoTableData_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDp2xGetLevelInfoTableData__(pDispCommon, pParams);
-}
-
-static inline NV_STATUS dispcmnCtrlCmdDPGetCableIDInfoFromMacro_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DP_USBC_CABLEID_INFO_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDPGetCableIDInfoFromMacro__(pDispCommon, pParams);
-}
-
 static inline NV_STATUS dispcmnControl_DISPATCH(struct DispCommon *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pDisplayApi->__nvoc_metadata_ptr->vtable.__dispcmnControl__(pDisplayApi, pCallContext, pParams);
 }
@@ -2946,6 +3530,10 @@ NV_STATUS dispcmnCtrlCmdSystemSetHotplugEventConfig_IMPL(struct DispCommon *pDis
 
 NV_STATUS dispcmnCtrlCmdSystemArmLightweightSupervisor_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_ARM_LIGHTWEIGHT_SUPERVISOR_PARAMS *pParams);
 
+NV_STATUS dispcmnCtrlCmdSystemSetRegionRamRectangles_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_SET_REGION_RAM_RECTANGLES_PARAMS *pParams);
+
+NV_STATUS dispcmnCtrlCmdSystemConfigureSafetyInterrupts_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_CONFIGURE_SAFETY_INTERRUPTS_PARAMS *pParams);
+
 NV_STATUS dispcmnCtrlCmdSystemConfigVrrPstateSwitch_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_CONFIG_VRR_PSTATE_SWITCH_PARAMS *pParams);
 
 NV_STATUS dispcmnCtrlCmdSpecificGetType_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_TYPE_PARAMS *pDisplayTypeParams);
@@ -3116,15 +3704,12 @@ NV_STATUS dispcmnCtrlCmdDp2xGetLevelInfoTableData_IMPL(struct DispCommon *pDispC
 
 NV_STATUS dispcmnCtrlCmdDPGetCableIDInfoFromMacro_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_USBC_CABLEID_INFO_PARAMS *pParams);
 
-NV_STATUS dispcmnConstruct_IMPL(struct DispCommon *arg_pDispCommon, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+NV_STATUS dispcmnCtrlCmdSpecificGetRegionalCrcs_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SPECIFIC_GET_REGIONAL_CRCS_PARAMS *pParams);
 
-#define __nvoc_dispcmnConstruct(arg_pDispCommon, arg_pCallContext, arg_pParams) dispcmnConstruct_IMPL(arg_pDispCommon, arg_pCallContext, arg_pParams)
-NV_STATUS dispcmnGetByHandle_IMPL(struct RsClient *pClient, NvHandle hDispCommon, struct DispCommon **ppDispCommon);
+NV_STATUS dispcmnCtrlCmdDfpEnterDisplayPowerGating_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_ENTER_DISPLAY_POWER_GATING_PARAMS *pParams);
 
-#define dispcmnGetByHandle(pClient, hDispCommon, ppDispCommon) dispcmnGetByHandle_IMPL(pClient, hDispCommon, ppDispCommon)
-void dispcmnGetByDevice_IMPL(struct RsClient *pClient, NvHandle hDevice, struct DispCommon **ppDispCommon);
+NV_STATUS dispcmnCtrlCmdDfpExitDisplayPowerGating_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_EXIT_DISPLAY_POWER_GATING_PARAMS *pParams);
 
-#define dispcmnGetByDevice(pClient, hDevice, ppDispCommon) dispcmnGetByDevice_IMPL(pClient, hDevice, ppDispCommon)
 #undef PRIVATE_FIELD
 
 

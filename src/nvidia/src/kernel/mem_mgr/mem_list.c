@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -670,15 +670,6 @@ continue_alloc_object:
                       pFbAllocInfo->hwResId);
 
             hwResId = pFbAllocInfo->hwResId;
-
-            //
-            // For Linux Guest, we allocate hardware resources on the host through
-            // NV01_MEMORY_LIST_OBJECT or NV01_MEMORY_LIST_FBMEM class objects.
-            // isGuestAllocated flag when set TRUE indicates that hardware resource
-            // is allocated for Linux Guest and we will free it in
-            // memDestructCommon.
-            //
-            pHwResource->isGuestAllocated = NV_TRUE;
         }
         else if (src_hHwResHandle != 0)
         {

@@ -80,6 +80,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__RsShared =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_shrDestruct(RsShared*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_RsShared(RsShared *pThis) {
     __nvoc_shrDestruct(pThis);
@@ -276,6 +277,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__RsSession =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_sessionDestruct(RsSession*);
 void __nvoc_dtor_RsShared(RsShared*);
 void __nvoc_dtor_RsSession(RsSession *pThis) {
     __nvoc_sessionDestruct(pThis);

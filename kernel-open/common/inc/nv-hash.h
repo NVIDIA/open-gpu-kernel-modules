@@ -29,17 +29,9 @@
 #include <linux/kernel.h>
 #include <linux/hash.h>
 
-#if defined(NV_LINUX_STRINGHASH_H_PRESENT)
 #include <linux/stringhash.h>       /* full_name_hash() */
-#else
-#include <linux/dcache.h>
-#endif
 
-#if (NV_FULL_NAME_HASH_ARGUMENT_COUNT == 3)
 #define nv_string_hash(_str) full_name_hash(NULL, _str, strlen(_str))
-#else
-#define nv_string_hash(_str) full_name_hash(_str, strlen(_str))
-#endif
 
 /**
  * This naive hashtable was introduced by commit d9b482c8ba19 (v3.7, 2012-10-31).

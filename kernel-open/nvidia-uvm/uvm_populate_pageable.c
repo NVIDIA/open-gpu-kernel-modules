@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2024 NVIDIA Corporation
+    Copyright (c) 2018-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -30,9 +30,7 @@
 #include "uvm_va_space.h"
 #include "uvm_populate_pageable.h"
 
-#if defined(NV_HANDLE_MM_FAULT_HAS_MM_ARG)
-#define UVM_HANDLE_MM_FAULT(vma, addr, flags)       handle_mm_fault(vma->vm_mm, vma, addr, flags)
-#elif defined(NV_HANDLE_MM_FAULT_HAS_PT_REGS_ARG)
+#if defined(NV_HANDLE_MM_FAULT_HAS_PT_REGS_ARG)
 #define UVM_HANDLE_MM_FAULT(vma, addr, flags)       handle_mm_fault(vma, addr, flags, NULL)
 #else
 #define UVM_HANDLE_MM_FAULT(vma, addr, flags)       handle_mm_fault(vma, addr, flags)
@@ -55,30 +53,19 @@ static bool is_write_populate(struct vm_area_struct *vma, uvm_populate_permissio
 
 static NV_STATUS handle_fault(struct vm_area_struct *vma, unsigned long start, unsigned long num_pages, bool is_write)
 {
-    NV_STATUS status = NV_OK;
-
     unsigned long i;
     unsigned int ret = 0;
     unsigned int fault_flags = is_write ? FAULT_FLAG_WRITE : 0;
 
-#if defined(NV_MM_HAS_FAULT_FLAG_REMOTE)
     fault_flags |= (FAULT_FLAG_REMOTE);
-#endif
 
     for (i = 0; i < num_pages; i++) {
         ret = UVM_HANDLE_MM_FAULT(vma, start + (i * PAGE_SIZE), fault_flags);
-        if (ret & VM_FAULT_ERROR) {
-#if defined(NV_VM_FAULT_TO_ERRNO_PRESENT)
-            int err = vm_fault_to_errno(ret, fault_flags);
-            status = errno_to_nv_status(err);
-#else
-            status = errno_to_nv_status(-EFAULT);
-#endif
-            break;
-        }
+        if (ret & VM_FAULT_ERROR)
+            return errno_to_nv_status(vm_fault_to_errno(ret, fault_flags));
     }
 
-    return status;
+    return NV_OK;
 }
 
 static bool should_use_gup(struct vm_area_struct *vma, NvU32 flags)

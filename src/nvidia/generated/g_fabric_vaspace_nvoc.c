@@ -324,6 +324,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__FABRIC_VASPACE =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_fabricvaspaceDestruct(FABRIC_VASPACE*);
 void __nvoc_dtor_OBJVASPACE(OBJVASPACE*);
 void __nvoc_dtor_FABRIC_VASPACE(FABRIC_VASPACE *pThis) {
     __nvoc_fabricvaspaceDestruct(pThis);

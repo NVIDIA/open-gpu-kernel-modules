@@ -170,7 +170,24 @@ NV_STATUS __nvoc_objCreate_UvmSwObject(UvmSwObject**, Dynamic*, NvU32, struct CA
     __nvoc_objCreate_UvmSwObject((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS uvmswConstruct_IMPL(struct UvmSwObject *arg_pUvmSw, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_uvmswConstruct(arg_pUvmSw, arg_pCallContext, arg_pParams) uvmswConstruct_IMPL(arg_pUvmSw, arg_pCallContext, arg_pParams)
+
+void uvmswDestruct_IMPL(struct UvmSwObject *pUvmSw);
+#define __nvoc_uvmswDestruct(pUvmSw) uvmswDestruct_IMPL(pUvmSw)
+
+void uvmswInitSwMethodState_IMPL(struct UvmSwObject *pUvmSw);
+#ifdef __nvoc_uvm_sw_h_disabled
+static inline void uvmswInitSwMethodState(struct UvmSwObject *pUvmSw) {
+    NV_ASSERT_FAILED_PRECOMP("UvmSwObject was disabled!");
+}
+#else // __nvoc_uvm_sw_h_disabled
+#define uvmswInitSwMethodState(pUvmSw) uvmswInitSwMethodState_IMPL(pUvmSw)
+#endif // __nvoc_uvm_sw_h_disabled
+
+
+// Wrapper macros for halified functions
 #define uvmswGetSwMethods_FNPTR(pUvmSw) pUvmSw->__nvoc_metadata_ptr->vtable.__uvmswGetSwMethods__
 #define uvmswGetSwMethods(pUvmSw, ppMethods, pNumMethods) uvmswGetSwMethods_DISPATCH(pUvmSw, ppMethods, pNumMethods)
 #define uvmswGetSwMethods_HAL(pUvmSw, ppMethods, pNumMethods) uvmswGetSwMethods_DISPATCH(pUvmSw, ppMethods, pNumMethods)
@@ -369,22 +386,6 @@ static inline NV_STATUS uvmswGetOrAllocNotifShare_DISPATCH(struct UvmSwObject *p
 static inline NV_STATUS uvmswGetSwMethods_56cd7a(struct UvmSwObject *pUvmSw, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return NV_OK;
 }
-
-NV_STATUS uvmswConstruct_IMPL(struct UvmSwObject *arg_pUvmSw, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_uvmswConstruct(arg_pUvmSw, arg_pCallContext, arg_pParams) uvmswConstruct_IMPL(arg_pUvmSw, arg_pCallContext, arg_pParams)
-void uvmswDestruct_IMPL(struct UvmSwObject *pUvmSw);
-
-#define __nvoc_uvmswDestruct(pUvmSw) uvmswDestruct_IMPL(pUvmSw)
-void uvmswInitSwMethodState_IMPL(struct UvmSwObject *pUvmSw);
-
-#ifdef __nvoc_uvm_sw_h_disabled
-static inline void uvmswInitSwMethodState(struct UvmSwObject *pUvmSw) {
-    NV_ASSERT_FAILED_PRECOMP("UvmSwObject was disabled!");
-}
-#else //__nvoc_uvm_sw_h_disabled
-#define uvmswInitSwMethodState(pUvmSw) uvmswInitSwMethodState_IMPL(pUvmSw)
-#endif //__nvoc_uvm_sw_h_disabled
 
 #undef PRIVATE_FIELD
 

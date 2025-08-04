@@ -155,7 +155,12 @@ NV_STATUS __nvoc_objCreate_RegisterMemory(RegisterMemory**, Dynamic*, NvU32, CAL
     __nvoc_objCreate_RegisterMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS regmemConstruct_IMPL(struct RegisterMemory *arg_pRegisterMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_regmemConstruct(arg_pRegisterMemory, arg_pCallContext, arg_pParams) regmemConstruct_IMPL(arg_pRegisterMemory, arg_pCallContext, arg_pParams)
+
+
+// Wrapper macros for halified functions
 #define regmemCanCopy_FNPTR(pRegisterMemory) pRegisterMemory->__nvoc_metadata_ptr->vtable.__regmemCanCopy__
 #define regmemCanCopy(pRegisterMemory) regmemCanCopy_DISPATCH(pRegisterMemory)
 #define regmemIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsDuplicate__
@@ -316,9 +321,6 @@ static inline void regmemAddAdditionalDependants_DISPATCH(struct RsClient *pClie
 
 NvBool regmemCanCopy_IMPL(struct RegisterMemory *pRegisterMemory);
 
-NV_STATUS regmemConstruct_IMPL(struct RegisterMemory *arg_pRegisterMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_regmemConstruct(arg_pRegisterMemory, arg_pCallContext, arg_pParams) regmemConstruct_IMPL(arg_pRegisterMemory, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 

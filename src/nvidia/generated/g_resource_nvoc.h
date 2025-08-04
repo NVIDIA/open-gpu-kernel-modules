@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -81,6 +81,8 @@ struct RS_RES_MAP_TO_PARAMS
     NvU64      offset;                     ///< [in]
     NvU64      length;                     ///< [in]
     NvU32      flags;                      ///< [in]
+    NvU32      flags2;                     ///< [in]
+    NvU32      kindOverride;               ///< [in]
     NvU64     *pDmaOffset;                 ///< [inout]
     NvBool     bSubdeviceHandleProvided;   ///< [in]
     NvBool     bFlaMapping;                ///< [in]
@@ -198,12 +200,14 @@ NV_STATUS __nvoc_objCreate_RmResourceCommon(RmResourceCommon**, Dynamic*, NvU32)
     __nvoc_objCreate_RmResourceCommon((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS rmrescmnConstruct_IMPL(struct RmResourceCommon *arg_pResourceCommmon);
+#define __nvoc_rmrescmnConstruct(arg_pResourceCommmon) rmrescmnConstruct_IMPL(arg_pResourceCommmon)
+
+
+// Wrapper macros for halified functions
 
 // Dispatch functions
-NV_STATUS rmrescmnConstruct_IMPL(struct RmResourceCommon *arg_pResourceCommmon);
-
-#define __nvoc_rmrescmnConstruct(arg_pResourceCommmon) rmrescmnConstruct_IMPL(arg_pResourceCommmon)
 #undef PRIVATE_FIELD
 
 
@@ -315,7 +319,12 @@ NV_STATUS __nvoc_objCreate_RmResource(RmResource**, Dynamic*, NvU32, struct CALL
     __nvoc_objCreate_RmResource((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS rmresConstruct_IMPL(struct RmResource *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_rmresConstruct(arg_pResource, arg_pCallContext, arg_pParams) rmresConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+
+
+// Wrapper macros for halified functions
 #define rmresAccessCallback_FNPTR(pResource) pResource->__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define rmresAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) rmresAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define rmresShareCallback_FNPTR(pResource) pResource->__nvoc_metadata_ptr->vtable.__rmresShareCallback__
@@ -462,9 +471,6 @@ NV_STATUS rmresControl_Prologue_IMPL(struct RmResource *pResource, struct CALL_C
 
 void rmresControl_Epilogue_IMPL(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
-NV_STATUS rmresConstruct_IMPL(struct RmResource *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_rmresConstruct(arg_pResource, arg_pCallContext, arg_pParams) rmresConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -245,8 +245,8 @@ chandesConstruct_IMPL
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "Invalid object allocation request on channel:0x%08x\n",
-                  kchannelGetDebugTag(pKernelChannel));
+            "Invalid object allocation request on " FMT_CHANNEL_DEBUG_TAG "\n",
+            kchannelGetDebugTag(pKernelChannel));
         SLI_LOOP_RETURN(status);
     }
     SLI_LOOP_END

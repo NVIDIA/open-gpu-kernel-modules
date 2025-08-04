@@ -182,7 +182,174 @@ NV_STATUS __nvoc_objCreate_RsClient(RsClient**, Dynamic*, NvU32, struct PORT_MEM
     __nvoc_objCreate_RsClient((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pAllocator, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS clientConstruct_IMPL(struct RsClient *arg_pClient, struct PORT_MEM_ALLOCATOR *arg_pAllocator, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_clientConstruct(arg_pClient, arg_pAllocator, arg_pParams) clientConstruct_IMPL(arg_pClient, arg_pAllocator, arg_pParams)
+
+void clientDestruct_IMPL(struct RsClient *pClient);
+#define __nvoc_clientDestruct(pClient) clientDestruct_IMPL(pClient)
+
+NV_STATUS clientGetResourceByRef_IMPL(struct RsClient *pClient, struct RsResourceRef *pResourceRef, struct RsResource **ppResource);
+#ifdef __nvoc_rs_client_h_disabled
+static inline NV_STATUS clientGetResourceByRef(struct RsClient *pClient, struct RsResourceRef *pResourceRef, struct RsResource **ppResource) {
+    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_client_h_disabled
+#define clientGetResourceByRef(pClient, pResourceRef, ppResource) clientGetResourceByRef_IMPL(pClient, pResourceRef, ppResource)
+#endif // __nvoc_rs_client_h_disabled
+
+NV_STATUS clientGetResource_IMPL(struct RsClient *pClient, NvHandle hResource, NvU32 internalClassId, struct RsResource **ppResource);
+#ifdef __nvoc_rs_client_h_disabled
+static inline NV_STATUS clientGetResource(struct RsClient *pClient, NvHandle hResource, NvU32 internalClassId, struct RsResource **ppResource) {
+    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_client_h_disabled
+#define clientGetResource(pClient, hResource, internalClassId, ppResource) clientGetResource_IMPL(pClient, hResource, internalClassId, ppResource)
+#endif // __nvoc_rs_client_h_disabled
+
+NV_STATUS clientGetResourceRef_IMPL(struct RsClient *pClient, NvHandle hResource, struct RsResourceRef **ppResourceRef);
+#ifdef __nvoc_rs_client_h_disabled
+static inline NV_STATUS clientGetResourceRef(struct RsClient *pClient, NvHandle hResource, struct RsResourceRef **ppResourceRef) {
+    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_client_h_disabled
+#define clientGetResourceRef(pClient, hResource, ppResourceRef) clientGetResourceRef_IMPL(pClient, hResource, ppResourceRef)
+#endif // __nvoc_rs_client_h_disabled
+
+NV_STATUS clientGetResourceRefWithAccess_IMPL(struct RsClient *pClient, NvHandle hResource, const RS_ACCESS_MASK *pRightsRequired, struct RsResourceRef **ppResourceRef);
+#ifdef __nvoc_rs_client_h_disabled
+static inline NV_STATUS clientGetResourceRefWithAccess(struct RsClient *pClient, NvHandle hResource, const RS_ACCESS_MASK *pRightsRequired, struct RsResourceRef **ppResourceRef) {
+    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_client_h_disabled
+#define clientGetResourceRefWithAccess(pClient, hResource, pRightsRequired, ppResourceRef) clientGetResourceRefWithAccess_IMPL(pClient, hResource, pRightsRequired, ppResourceRef)
+#endif // __nvoc_rs_client_h_disabled
+
+NV_STATUS clientGetResourceRefByType_IMPL(struct RsClient *pClient, NvHandle hResource, NvU32 internalClassId, struct RsResourceRef **ppResourceRef);
+#ifdef __nvoc_rs_client_h_disabled
+static inline NV_STATUS clientGetResourceRefByType(struct RsClient *pClient, NvHandle hResource, NvU32 internalClassId, struct RsResourceRef **ppResourceRef) {
+    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_client_h_disabled
+#define clientGetResourceRefByType(pClient, hResource, internalClassId, ppResourceRef) clientGetResourceRefByType_IMPL(pClient, hResource, internalClassId, ppResourceRef)
+#endif // __nvoc_rs_client_h_disabled
+
+NV_STATUS clientAllocResource_IMPL(struct RsClient *pClient, RsServer *pServer, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#ifdef __nvoc_rs_client_h_disabled
+static inline NV_STATUS clientAllocResource(struct RsClient *pClient, RsServer *pServer, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_client_h_disabled
+#define clientAllocResource(pClient, pServer, pParams) clientAllocResource_IMPL(pClient, pServer, pParams)
+#endif // __nvoc_rs_client_h_disabled
+
+NV_STATUS clientCopyResource_IMPL(struct RsClient *pClient, RsServer *pServer, struct RS_RES_DUP_PARAMS_INTERNAL *pParams);
+#ifdef __nvoc_rs_client_h_disabled
+static inline NV_STATUS clientCopyResource(struct RsClient *pClient, RsServer *pServer, struct RS_RES_DUP_PARAMS_INTERNAL *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_client_h_disabled
+#define clientCopyResource(pClient, pServer, pParams) clientCopyResource_IMPL(pClient, pServer, pParams)
+#endif // __nvoc_rs_client_h_disabled
+
+NV_STATUS clientGenResourceHandle_IMPL(struct RsClient *pClient, NvHandle *pHandle);
+#ifdef __nvoc_rs_client_h_disabled
+static inline NV_STATUS clientGenResourceHandle(struct RsClient *pClient, NvHandle *pHandle) {
+    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_client_h_disabled
+#define clientGenResourceHandle(pClient, pHandle) clientGenResourceHandle_IMPL(pClient, pHandle)
+#endif // __nvoc_rs_client_h_disabled
+
+NV_STATUS clientAssignResourceHandle_IMPL(struct RsClient *pClient, NvHandle *phResource);
+#ifdef __nvoc_rs_client_h_disabled
+static inline NV_STATUS clientAssignResourceHandle(struct RsClient *pClient, NvHandle *phResource) {
+    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_client_h_disabled
+#define clientAssignResourceHandle(pClient, phResource) clientAssignResourceHandle_IMPL(pClient, phResource)
+#endif // __nvoc_rs_client_h_disabled
+
+NV_STATUS clientUpdatePendingFreeList_IMPL(struct RsClient *pClient, struct RsResourceRef *pTarget, struct RsResourceRef *pReference, NvBool bMove);
+#ifdef __nvoc_rs_client_h_disabled
+static inline NV_STATUS clientUpdatePendingFreeList(struct RsClient *pClient, struct RsResourceRef *pTarget, struct RsResourceRef *pReference, NvBool bMove) {
+    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_client_h_disabled
+#define clientUpdatePendingFreeList(pClient, pTarget, pReference, bMove) clientUpdatePendingFreeList_IMPL(pClient, pTarget, pReference, bMove)
+#endif // __nvoc_rs_client_h_disabled
+
+NV_STATUS clientAddAccessBackRef_IMPL(struct RsClient *pClient, struct RsResourceRef *pResourceRef);
+#ifdef __nvoc_rs_client_h_disabled
+static inline NV_STATUS clientAddAccessBackRef(struct RsClient *pClient, struct RsResourceRef *pResourceRef) {
+    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_client_h_disabled
+#define clientAddAccessBackRef(pClient, pResourceRef) clientAddAccessBackRef_IMPL(pClient, pResourceRef)
+#endif // __nvoc_rs_client_h_disabled
+
+void clientFreeAccessBackRefs_IMPL(struct RsClient *pClient, RsServer *pServer);
+#ifdef __nvoc_rs_client_h_disabled
+static inline void clientFreeAccessBackRefs(struct RsClient *pClient, RsServer *pServer) {
+    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
+}
+#else // __nvoc_rs_client_h_disabled
+#define clientFreeAccessBackRefs(pClient, pServer) clientFreeAccessBackRefs_IMPL(pClient, pServer)
+#endif // __nvoc_rs_client_h_disabled
+
+NV_STATUS clientSetHandleGenerator_IMPL(struct RsClient *pClient, NvHandle handleRangeStart, NvHandle handleRangeSize);
+#ifdef __nvoc_rs_client_h_disabled
+static inline NV_STATUS clientSetHandleGenerator(struct RsClient *pClient, NvHandle handleRangeStart, NvHandle handleRangeSize) {
+    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_client_h_disabled
+#define clientSetHandleGenerator(pClient, handleRangeStart, handleRangeSize) clientSetHandleGenerator_IMPL(pClient, handleRangeStart, handleRangeSize)
+#endif // __nvoc_rs_client_h_disabled
+
+NV_STATUS clientCanShareResource_IMPL(struct RsClient *pClient, struct RsResourceRef *pResourceRef, RS_SHARE_POLICY *pSharePolicy, struct CALL_CONTEXT *pCallContext);
+#ifdef __nvoc_rs_client_h_disabled
+static inline NV_STATUS clientCanShareResource(struct RsClient *pClient, struct RsResourceRef *pResourceRef, RS_SHARE_POLICY *pSharePolicy, struct CALL_CONTEXT *pCallContext) {
+    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_client_h_disabled
+#define clientCanShareResource(pClient, pResourceRef, pSharePolicy, pCallContext) clientCanShareResource_IMPL(pClient, pResourceRef, pSharePolicy, pCallContext)
+#endif // __nvoc_rs_client_h_disabled
+
+NV_STATUS clientShareResourceTargetClient_IMPL(struct RsClient *pClient, struct RsResourceRef *pResourceRef, RS_SHARE_POLICY *pSharePolicy, struct CALL_CONTEXT *pCallContext);
+#ifdef __nvoc_rs_client_h_disabled
+static inline NV_STATUS clientShareResourceTargetClient(struct RsClient *pClient, struct RsResourceRef *pResourceRef, RS_SHARE_POLICY *pSharePolicy, struct CALL_CONTEXT *pCallContext) {
+    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_client_h_disabled
+#define clientShareResourceTargetClient(pClient, pResourceRef, pSharePolicy, pCallContext) clientShareResourceTargetClient_IMPL(pClient, pResourceRef, pSharePolicy, pCallContext)
+#endif // __nvoc_rs_client_h_disabled
+
+NV_STATUS clientSetRestrictedRange_IMPL(struct RsClient *pClient, NvHandle handleRangeStart, NvU32 handleRangeSize);
+#ifdef __nvoc_rs_client_h_disabled
+static inline NV_STATUS clientSetRestrictedRange(struct RsClient *pClient, NvHandle handleRangeStart, NvU32 handleRangeSize) {
+    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_client_h_disabled
+#define clientSetRestrictedRange(pClient, handleRangeStart, handleRangeSize) clientSetRestrictedRange_IMPL(pClient, handleRangeStart, handleRangeSize)
+#endif // __nvoc_rs_client_h_disabled
+
+
+// Wrapper macros for halified functions
 #define clientValidate_FNPTR(pClient) pClient->__nvoc_metadata_ptr->vtable.__clientValidate__
 #define clientValidate(pClient, pSecInfo) clientValidate_DISPATCH(pClient, pSecInfo)
 #define clientValidateLocks_FNPTR(pClient) pClient->__nvoc_metadata_ptr->vtable.__clientValidateLocks__
@@ -280,187 +447,6 @@ NV_STATUS clientValidateNewResourceHandle_IMPL(struct RsClient *pClient, NvHandl
 NV_STATUS clientPostProcessPendingFreeList_IMPL(struct RsClient *pClient, struct RsResourceRef **ppFirstLowPriRef);
 
 NV_STATUS clientShareResource_IMPL(struct RsClient *pClient, struct RsResourceRef *pResourceRef, RS_SHARE_POLICY *pSharePolicy, struct CALL_CONTEXT *pCallContext);
-
-NV_STATUS clientConstruct_IMPL(struct RsClient *arg_pClient, struct PORT_MEM_ALLOCATOR *arg_pAllocator, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_clientConstruct(arg_pClient, arg_pAllocator, arg_pParams) clientConstruct_IMPL(arg_pClient, arg_pAllocator, arg_pParams)
-void clientDestruct_IMPL(struct RsClient *pClient);
-
-#define __nvoc_clientDestruct(pClient) clientDestruct_IMPL(pClient)
-NV_STATUS clientGetResourceByRef_IMPL(struct RsClient *pClient, struct RsResourceRef *pResourceRef, struct RsResource **ppResource);
-
-#ifdef __nvoc_rs_client_h_disabled
-static inline NV_STATUS clientGetResourceByRef(struct RsClient *pClient, struct RsResourceRef *pResourceRef, struct RsResource **ppResource) {
-    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_client_h_disabled
-#define clientGetResourceByRef(pClient, pResourceRef, ppResource) clientGetResourceByRef_IMPL(pClient, pResourceRef, ppResource)
-#endif //__nvoc_rs_client_h_disabled
-
-NV_STATUS clientGetResource_IMPL(struct RsClient *pClient, NvHandle hResource, NvU32 internalClassId, struct RsResource **ppResource);
-
-#ifdef __nvoc_rs_client_h_disabled
-static inline NV_STATUS clientGetResource(struct RsClient *pClient, NvHandle hResource, NvU32 internalClassId, struct RsResource **ppResource) {
-    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_client_h_disabled
-#define clientGetResource(pClient, hResource, internalClassId, ppResource) clientGetResource_IMPL(pClient, hResource, internalClassId, ppResource)
-#endif //__nvoc_rs_client_h_disabled
-
-NV_STATUS clientGetResourceRef_IMPL(struct RsClient *pClient, NvHandle hResource, struct RsResourceRef **ppResourceRef);
-
-#ifdef __nvoc_rs_client_h_disabled
-static inline NV_STATUS clientGetResourceRef(struct RsClient *pClient, NvHandle hResource, struct RsResourceRef **ppResourceRef) {
-    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_client_h_disabled
-#define clientGetResourceRef(pClient, hResource, ppResourceRef) clientGetResourceRef_IMPL(pClient, hResource, ppResourceRef)
-#endif //__nvoc_rs_client_h_disabled
-
-NV_STATUS clientGetResourceRefWithAccess_IMPL(struct RsClient *pClient, NvHandle hResource, const RS_ACCESS_MASK *pRightsRequired, struct RsResourceRef **ppResourceRef);
-
-#ifdef __nvoc_rs_client_h_disabled
-static inline NV_STATUS clientGetResourceRefWithAccess(struct RsClient *pClient, NvHandle hResource, const RS_ACCESS_MASK *pRightsRequired, struct RsResourceRef **ppResourceRef) {
-    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_client_h_disabled
-#define clientGetResourceRefWithAccess(pClient, hResource, pRightsRequired, ppResourceRef) clientGetResourceRefWithAccess_IMPL(pClient, hResource, pRightsRequired, ppResourceRef)
-#endif //__nvoc_rs_client_h_disabled
-
-NV_STATUS clientGetResourceRefByType_IMPL(struct RsClient *pClient, NvHandle hResource, NvU32 internalClassId, struct RsResourceRef **ppResourceRef);
-
-#ifdef __nvoc_rs_client_h_disabled
-static inline NV_STATUS clientGetResourceRefByType(struct RsClient *pClient, NvHandle hResource, NvU32 internalClassId, struct RsResourceRef **ppResourceRef) {
-    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_client_h_disabled
-#define clientGetResourceRefByType(pClient, hResource, internalClassId, ppResourceRef) clientGetResourceRefByType_IMPL(pClient, hResource, internalClassId, ppResourceRef)
-#endif //__nvoc_rs_client_h_disabled
-
-NV_STATUS clientAllocResource_IMPL(struct RsClient *pClient, RsServer *pServer, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
-
-#ifdef __nvoc_rs_client_h_disabled
-static inline NV_STATUS clientAllocResource(struct RsClient *pClient, RsServer *pServer, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_client_h_disabled
-#define clientAllocResource(pClient, pServer, pParams) clientAllocResource_IMPL(pClient, pServer, pParams)
-#endif //__nvoc_rs_client_h_disabled
-
-NV_STATUS clientCopyResource_IMPL(struct RsClient *pClient, RsServer *pServer, struct RS_RES_DUP_PARAMS_INTERNAL *pParams);
-
-#ifdef __nvoc_rs_client_h_disabled
-static inline NV_STATUS clientCopyResource(struct RsClient *pClient, RsServer *pServer, struct RS_RES_DUP_PARAMS_INTERNAL *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_client_h_disabled
-#define clientCopyResource(pClient, pServer, pParams) clientCopyResource_IMPL(pClient, pServer, pParams)
-#endif //__nvoc_rs_client_h_disabled
-
-NV_STATUS clientGenResourceHandle_IMPL(struct RsClient *pClient, NvHandle *pHandle);
-
-#ifdef __nvoc_rs_client_h_disabled
-static inline NV_STATUS clientGenResourceHandle(struct RsClient *pClient, NvHandle *pHandle) {
-    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_client_h_disabled
-#define clientGenResourceHandle(pClient, pHandle) clientGenResourceHandle_IMPL(pClient, pHandle)
-#endif //__nvoc_rs_client_h_disabled
-
-NV_STATUS clientAssignResourceHandle_IMPL(struct RsClient *pClient, NvHandle *phResource);
-
-#ifdef __nvoc_rs_client_h_disabled
-static inline NV_STATUS clientAssignResourceHandle(struct RsClient *pClient, NvHandle *phResource) {
-    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_client_h_disabled
-#define clientAssignResourceHandle(pClient, phResource) clientAssignResourceHandle_IMPL(pClient, phResource)
-#endif //__nvoc_rs_client_h_disabled
-
-NV_STATUS clientUpdatePendingFreeList_IMPL(struct RsClient *pClient, struct RsResourceRef *pTarget, struct RsResourceRef *pReference, NvBool bMove);
-
-#ifdef __nvoc_rs_client_h_disabled
-static inline NV_STATUS clientUpdatePendingFreeList(struct RsClient *pClient, struct RsResourceRef *pTarget, struct RsResourceRef *pReference, NvBool bMove) {
-    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_client_h_disabled
-#define clientUpdatePendingFreeList(pClient, pTarget, pReference, bMove) clientUpdatePendingFreeList_IMPL(pClient, pTarget, pReference, bMove)
-#endif //__nvoc_rs_client_h_disabled
-
-NV_STATUS clientAddAccessBackRef_IMPL(struct RsClient *pClient, struct RsResourceRef *pResourceRef);
-
-#ifdef __nvoc_rs_client_h_disabled
-static inline NV_STATUS clientAddAccessBackRef(struct RsClient *pClient, struct RsResourceRef *pResourceRef) {
-    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_client_h_disabled
-#define clientAddAccessBackRef(pClient, pResourceRef) clientAddAccessBackRef_IMPL(pClient, pResourceRef)
-#endif //__nvoc_rs_client_h_disabled
-
-void clientFreeAccessBackRefs_IMPL(struct RsClient *pClient, RsServer *pServer);
-
-#ifdef __nvoc_rs_client_h_disabled
-static inline void clientFreeAccessBackRefs(struct RsClient *pClient, RsServer *pServer) {
-    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
-}
-#else //__nvoc_rs_client_h_disabled
-#define clientFreeAccessBackRefs(pClient, pServer) clientFreeAccessBackRefs_IMPL(pClient, pServer)
-#endif //__nvoc_rs_client_h_disabled
-
-NV_STATUS clientSetHandleGenerator_IMPL(struct RsClient *pClient, NvHandle handleRangeStart, NvHandle handleRangeSize);
-
-#ifdef __nvoc_rs_client_h_disabled
-static inline NV_STATUS clientSetHandleGenerator(struct RsClient *pClient, NvHandle handleRangeStart, NvHandle handleRangeSize) {
-    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_client_h_disabled
-#define clientSetHandleGenerator(pClient, handleRangeStart, handleRangeSize) clientSetHandleGenerator_IMPL(pClient, handleRangeStart, handleRangeSize)
-#endif //__nvoc_rs_client_h_disabled
-
-NV_STATUS clientCanShareResource_IMPL(struct RsClient *pClient, struct RsResourceRef *pResourceRef, RS_SHARE_POLICY *pSharePolicy, struct CALL_CONTEXT *pCallContext);
-
-#ifdef __nvoc_rs_client_h_disabled
-static inline NV_STATUS clientCanShareResource(struct RsClient *pClient, struct RsResourceRef *pResourceRef, RS_SHARE_POLICY *pSharePolicy, struct CALL_CONTEXT *pCallContext) {
-    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_client_h_disabled
-#define clientCanShareResource(pClient, pResourceRef, pSharePolicy, pCallContext) clientCanShareResource_IMPL(pClient, pResourceRef, pSharePolicy, pCallContext)
-#endif //__nvoc_rs_client_h_disabled
-
-NV_STATUS clientShareResourceTargetClient_IMPL(struct RsClient *pClient, struct RsResourceRef *pResourceRef, RS_SHARE_POLICY *pSharePolicy, struct CALL_CONTEXT *pCallContext);
-
-#ifdef __nvoc_rs_client_h_disabled
-static inline NV_STATUS clientShareResourceTargetClient(struct RsClient *pClient, struct RsResourceRef *pResourceRef, RS_SHARE_POLICY *pSharePolicy, struct CALL_CONTEXT *pCallContext) {
-    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_client_h_disabled
-#define clientShareResourceTargetClient(pClient, pResourceRef, pSharePolicy, pCallContext) clientShareResourceTargetClient_IMPL(pClient, pResourceRef, pSharePolicy, pCallContext)
-#endif //__nvoc_rs_client_h_disabled
-
-NV_STATUS clientSetRestrictedRange_IMPL(struct RsClient *pClient, NvHandle handleRangeStart, NvU32 handleRangeSize);
-
-#ifdef __nvoc_rs_client_h_disabled
-static inline NV_STATUS clientSetRestrictedRange(struct RsClient *pClient, NvHandle handleRangeStart, NvU32 handleRangeSize) {
-    NV_ASSERT_FAILED_PRECOMP("RsClient was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_client_h_disabled
-#define clientSetRestrictedRange(pClient, handleRangeStart, handleRangeSize) clientSetRestrictedRange_IMPL(pClient, handleRangeStart, handleRangeSize)
-#endif //__nvoc_rs_client_h_disabled
 
 #undef PRIVATE_FIELD
 
@@ -626,7 +612,15 @@ NV_STATUS __nvoc_objCreate_RsClientResource(RsClientResource**, Dynamic*, NvU32,
     __nvoc_objCreate_RsClientResource((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS clientresConstruct_IMPL(struct RsClientResource *arg_pClientRes, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_clientresConstruct(arg_pClientRes, arg_pCallContext, arg_pParams) clientresConstruct_IMPL(arg_pClientRes, arg_pCallContext, arg_pParams)
+
+void clientresDestruct_IMPL(struct RsClientResource *pClientRes);
+#define __nvoc_clientresDestruct(pClientRes) clientresDestruct_IMPL(pClientRes)
+
+
+// Wrapper macros for halified functions
 #define clientresCanCopy_FNPTR(pResource) pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define clientresCanCopy(pResource) clientresCanCopy_DISPATCH(pResource)
 #define clientresIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
@@ -737,12 +731,6 @@ static inline void clientresAddAdditionalDependants_DISPATCH(struct RsClient *pC
     pResource->__nvoc_metadata_ptr->vtable.__clientresAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-NV_STATUS clientresConstruct_IMPL(struct RsClientResource *arg_pClientRes, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_clientresConstruct(arg_pClientRes, arg_pCallContext, arg_pParams) clientresConstruct_IMPL(arg_pClientRes, arg_pCallContext, arg_pParams)
-void clientresDestruct_IMPL(struct RsClientResource *pClientRes);
-
-#define __nvoc_clientresDestruct(pClientRes) clientresDestruct_IMPL(pClientRes)
 #undef PRIVATE_FIELD
 
 

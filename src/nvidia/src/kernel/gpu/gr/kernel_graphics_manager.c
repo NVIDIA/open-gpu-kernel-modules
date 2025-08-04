@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@
 #include "kernel/gpu/device/device.h"
 #include "kernel/gpu/fifo/kernel_channel_group_api.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
+#include "kernel/gpu/mem_sys/kern_mem_sys.h"
 
 #include "kernel/rmapi/client.h"
 #include "kernel/rmapi/client_resource.h"

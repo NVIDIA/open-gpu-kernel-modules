@@ -29,12 +29,7 @@
 #include <linux/completion.h>
 #include <linux/module.h>
 #include <linux/mm.h>
-
-#if defined(NV_LINUX_BUG_H_PRESENT)
-    #include <linux/bug.h>
-#else
-    #include <asm/bug.h>
-#endif
+#include <linux/bug.h>
 
 // Today's implementation is a little simpler and more limited than the
 // API description allows for in nv-kthread-q.h. Details include:

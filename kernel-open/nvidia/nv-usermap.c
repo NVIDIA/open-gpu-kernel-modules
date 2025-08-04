@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -116,21 +116,20 @@ NV_STATUS NV_API_CALL nv_alloc_user_mapping(
     nv_alloc_t *at = pAllocPrivate;
 
     if (at->flags.contig)
-        *pUserAddress = (at->page_table[0]->phys_addr + (pageIndex * PAGE_SIZE) + pageOffset);
+        *pUserAddress = (at->page_table[0].phys_addr + (pageIndex * PAGE_SIZE) + pageOffset);
     else
-        *pUserAddress = (at->page_table[pageIndex]->phys_addr + pageOffset);
+        *pUserAddress = (at->page_table[pageIndex].phys_addr + pageOffset);
 
     return NV_OK;
 }
 
-NV_STATUS NV_API_CALL nv_free_user_mapping(
+void NV_API_CALL nv_free_user_mapping(
     nv_state_t *nv,
     void       *pAllocPrivate,
     NvU64       userAddress,
     void       *pPrivate
 )
 {
-    return NV_OK;
 }
 
 /*

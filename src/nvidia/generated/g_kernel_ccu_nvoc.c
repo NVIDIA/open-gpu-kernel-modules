@@ -25,10 +25,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE;
 
 // Forward declarations for KernelCcu
 void __nvoc_init__OBJENGSTATE(OBJENGSTATE*);
-void __nvoc_init__KernelCcu(KernelCcu*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_funcTable_KernelCcu(KernelCcu*, RmHalspecOwner *pRmhalspecowner);
-NV_STATUS __nvoc_ctor_KernelCcu(KernelCcu*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_dataField_KernelCcu(KernelCcu*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init__KernelCcu(KernelCcu*, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner);
+void __nvoc_init_funcTable_KernelCcu(KernelCcu*, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner);
+NV_STATUS __nvoc_ctor_KernelCcu(KernelCcu*, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner);
+void __nvoc_init_dataField_KernelCcu(KernelCcu*, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner);
 void __nvoc_dtor_KernelCcu(KernelCcu*);
 
 // Structures used within RTTI (run-time type information)
@@ -210,13 +210,14 @@ void __nvoc_dtor_KernelCcu(KernelCcu *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_KernelCcu(KernelCcu *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init_dataField_KernelCcu(KernelCcu *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(chipHal);
@@ -230,11 +231,11 @@ void __nvoc_init_dataField_KernelCcu(KernelCcu *pThis, RmHalspecOwner *pRmhalspe
 }
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
-NV_STATUS __nvoc_ctor_KernelCcu(KernelCcu *pThis, RmHalspecOwner *pRmhalspecowner) {
+NV_STATUS __nvoc_ctor_KernelCcu(KernelCcu *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
     if (status != NV_OK) goto __nvoc_ctor_KernelCcu_fail_OBJENGSTATE;
-    __nvoc_init_dataField_KernelCcu(pThis, pRmhalspecowner);
+    __nvoc_init_dataField_KernelCcu(pThis, pRmhalspecowner, pGpuhalspecowner);
     goto __nvoc_ctor_KernelCcu_exit; // Success
 
 __nvoc_ctor_KernelCcu_fail_OBJENGSTATE:
@@ -244,13 +245,14 @@ __nvoc_ctor_KernelCcu_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_KernelCcu_1(KernelCcu *pThis, RmHalspecOwner *pRmhalspecowner) {
+static void __nvoc_init_funcTable_KernelCcu_1(KernelCcu *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(chipHal);
@@ -258,7 +260,7 @@ static void __nvoc_init_funcTable_KernelCcu_1(KernelCcu *pThis, RmHalspecOwner *
 
     // kccuMigShrBufHandler -- halified (2 hals)
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kccuMigShrBufHandler__ = &kccuMigShrBufHandler_GH100;
     }
@@ -274,7 +276,7 @@ static void __nvoc_init_funcTable_KernelCcu_1(KernelCcu *pThis, RmHalspecOwner *
         pThis->__kccuGetBufSize__ = &kccuGetBufSize_GH100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xe0000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e6UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kccuGetBufSize__ = &kccuGetBufSize_GB100;
     }
@@ -287,14 +289,14 @@ static void __nvoc_init_funcTable_KernelCcu_1(KernelCcu *pThis, RmHalspecOwner *
 
 
 // Initialize vtable(s) for 16 virtual method(s).
-void __nvoc_init_funcTable_KernelCcu(KernelCcu *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init_funcTable_KernelCcu(KernelCcu *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
 
     // Initialize vtable(s) with 2 per-object function pointer(s).
-    __nvoc_init_funcTable_KernelCcu_1(pThis, pRmhalspecowner);
+    __nvoc_init_funcTable_KernelCcu_1(pThis, pRmhalspecowner, pGpuhalspecowner);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__KernelCcu(KernelCcu *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init__KernelCcu(KernelCcu *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
 
     // Initialize pointers to inherited data.
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object;    // (obj) super^2
@@ -310,7 +312,7 @@ void __nvoc_init__KernelCcu(KernelCcu *pThis, RmHalspecOwner *pRmhalspecowner) {
     pThis->__nvoc_metadata_ptr = &__nvoc_metadata__KernelCcu;    // (kccu) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_KernelCcu(pThis, pRmhalspecowner);
+    __nvoc_init_funcTable_KernelCcu(pThis, pRmhalspecowner, pGpuhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_KernelCcu(KernelCcu **ppThis, Dynamic *pParent, NvU32 createFlags)
@@ -319,6 +321,7 @@ NV_STATUS __nvoc_objCreate_KernelCcu(KernelCcu **ppThis, Dynamic *pParent, NvU32
     Object *pParentObj = NULL;
     KernelCcu *pThis;
     RmHalspecOwner *pRmhalspecowner;
+    GpuHalspecOwner *pGpuhalspecowner;
 
     // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelCcu), (void**)&pThis, (void**)ppThis);
@@ -347,9 +350,12 @@ NV_STATUS __nvoc_objCreate_KernelCcu(KernelCcu **ppThis, Dynamic *pParent, NvU32
     if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
         pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
     NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
+    if ((pGpuhalspecowner = dynamicCast(pParent, GpuHalspecOwner)) == NULL)
+        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, pParent);
+    NV_ASSERT_OR_RETURN(pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init__KernelCcu(pThis, pRmhalspecowner);
-    status = __nvoc_ctor_KernelCcu(pThis, pRmhalspecowner);
+    __nvoc_init__KernelCcu(pThis, pRmhalspecowner, pGpuhalspecowner);
+    status = __nvoc_ctor_KernelCcu(pThis, pRmhalspecowner, pGpuhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_KernelCcu_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

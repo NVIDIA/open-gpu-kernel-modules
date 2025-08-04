@@ -113,13 +113,6 @@ static inline void nv_jiffy_timer_callback_typed_data(struct timer_list *timer)
 
     nv_nstimer->nv_nano_timer_callback(nv_nstimer);
 }
-
-static inline void nv_jiffy_timer_callback_anon_data(unsigned long arg)
-{
-    struct nv_nano_timer *nv_nstimer = (struct nv_nano_timer *)arg;
-
-    nv_nstimer->nv_nano_timer_callback(nv_nstimer);
-}
 #endif
 
 /*!
@@ -158,13 +151,7 @@ void NV_API_CALL nv_create_nano_timer(
     nv_nstimer->hr_timer.function = nv_nano_timer_callback_typed_data;
 #endif // NV_IS_EXPORT_SYMBOL_PRESENT_hrtimer_setup
 #else
-#if defined(NV_TIMER_SETUP_PRESENT)
     timer_setup(&nv_nstimer->jiffy_timer, nv_jiffy_timer_callback_typed_data, 0);
-#else
-    init_timer(&nv_nstimer->jiffy_timer);
-    nv_nstimer->jiffy_timer.function = nv_jiffy_timer_callback_anon_data;
-    nv_nstimer->jiffy_timer.data = (unsigned long)nv_nstimer;
-#endif // NV_TIMER_SETUP_PRESENT
 #endif // NV_NANO_TIMER_USE_HRTIMER
 
     *pnv_nstimer = nv_nstimer;

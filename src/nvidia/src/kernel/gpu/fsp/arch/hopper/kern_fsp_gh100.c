@@ -492,7 +492,6 @@ kfspProcessNvdmMessage_GH100
     return status;
 }
 
-
 /*!
  * @brief Process FSP command response
  *
@@ -535,6 +534,7 @@ kfspProcessCommandResponse_GH100
     {
         NV_PRINTF(LEVEL_ERROR, "FSP response reported error. Task ID: 0x%0x Command type: 0x%0x Error code: 0x%0x\n",
                 pCmdResponse->taskId, pCmdResponse->commandNvdmType, pCmdResponse->errorCode);
+        kfspDumpDebugState_HAL(pGpu, pKernelFsp);
     }
 
     return status;
@@ -832,6 +832,7 @@ kfspGetGspUcodeArchive
 
         if (kgspIsDebugModeEnabled_HAL(pGpu, pKernelGsp))
         {
+
             if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
             {
                 return NULL;
@@ -867,17 +868,6 @@ kfspGetGspUcodeArchive
             if (gpuIsGspToBootInInstInSysMode_HAL(pGpu))
             {
                 NV_PRINTF(LEVEL_ERROR, "Loading GSP debug inst-in-sys image for monolithic RM using FSP.\n");
-
-                //
-                // GB20X inst-in-sys images will reset PMU, FBFALCON, FECS and GPCCS
-                // and then lower CPUCTL/reset PLM.
-                // Reason for that is that there is fuse configration
-                // changing source isolation of those registers (to GSP/FSP/SEC2).
-                //
-                if (IsGB20X(pGpu))
-                {
-                    pGsp->setProperty(pGsp, PDB_PROP_GSP_INST_IN_SYS_FMC_WILL_RESET_ENGINES, NV_TRUE);
-                }
 
                 return gspGetBinArchiveGspFmcInstInSysGfwDebugSigned_HAL(pGsp);
             }
@@ -917,17 +907,6 @@ kfspGetGspUcodeArchive
             {
                 NV_PRINTF(LEVEL_ERROR, "Loading GSP prod inst-in-sys image for monolithic RM using FSP.\n");
 
-                //
-                // GB20X inst-in-sys images will reset PMU, FBFALCON, FECS and GPCCS
-                // and then lower CPUCTL/reset PLM.
-                // Reason for that is that there is fuse configration
-                // changing source isolation of those registers (to GSP/FSP/SEC2).
-                //
-                if (IsGB20X(pGpu))
-                {
-                    pGsp->setProperty(pGsp, PDB_PROP_GSP_INST_IN_SYS_FMC_WILL_RESET_ENGINES, NV_TRUE);
-                }
-
                 return gspGetBinArchiveGspFmcInstInSysGfwProdSigned_HAL(pGsp);
             }
             else
@@ -945,7 +924,7 @@ kfspGetGspUcodeArchive
                     else
                     {
                         // When CC is enabled but SPDM is not enabled. Only for MODS.
-                        return gspGetBinArchiveGspFmcGfwDebugSigned_HAL(pGsp);
+                        return gspGetBinArchiveGspFmcGfwProdSigned_HAL(pGsp);
                     }
                 }
                 else
@@ -1071,7 +1050,7 @@ kfspSetupGspImages
     NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
     // Clean up CPU side resources since they are not needed anymore
-    memdescUnmap(pKernelFsp->pGspFmcMemdesc, NV_TRUE, 0, pVaKernel, pPrivKernel);
+    memdescUnmap(pKernelFsp->pGspFmcMemdesc, NV_TRUE, pVaKernel, pPrivKernel);
 
     pCotPayload->gspFmcSysmemOffset = memdescGetPhysAddr(pKernelFsp->pGspFmcMemdesc, AT_GPU, 0);
 
@@ -1123,11 +1102,10 @@ _kfspIsGspTargetMaskReleased
     NvU32 reg;
 
     //
-    // This register is read with the raw OS read to avoid the 0xbadf sanity checking
+    // This register is read with GPU_REG_RD32_UNCHECKED to avoid the 0xbadf sanity checking
     // done by the usual register read utilities.
     //
-    reg = osDevReadReg032(pGpu, gpuGetDeviceMapping(pGpu, DEVICE_INDEX_GPU, 0),
-                          DRF_BASE(NV_PGSP) + NV_PFALCON_FALCON_HWCFG2);
+    reg = GPU_REG_RD32_UNCHECKED(pGpu, DRF_BASE(NV_PGSP) + NV_PFALCON_FALCON_HWCFG2);
 
     return ((reg != 0) && ((reg & privErrTargetLockedMask) != privErrTargetLocked));
 }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -49,8 +49,6 @@
 // 7. confComputeKeyStoreUpdateKey() as needed.
 // 8. confComputeKeyStoreDeinit() at the end of the confidential compute session.
 //
-
-#define CONCAT64(hi, low) ((((NvU64)(hi) << 32)) | ((NvU64)(low)))
 
 typedef struct cryptoBundle_t
 {
@@ -221,15 +219,20 @@ confComputeKeyStoreClearExportMasterKey_GH100(ConfidentialCompute *pConfCompute)
 NV_STATUS
 confComputeKeyStoreRetrieveViaChannel_GH100
 (
-    ConfidentialCompute *pConfCompute,
-    KernelChannel       *pKernelChannel,
-    ROTATE_IV_TYPE       rotateOperation,
-    NvBool               bIncludeIvOrNonce,
-    CC_KMB              *keyMaterialBundle
+    ConfidentialCompute     *pConfCompute,
+    KernelChannel           *pKernelChannel,
+    ROTATE_IV_TYPE           rotateOperation,
+    CHANNEL_IV_OPERATION     ivOperation,
+    CC_KMB                  *keyMaterialBundle
 )
 {
     NvU32 globalKeyId;
     NvU16 keyId;
+
+    if (ivOperation < CHANNEL_IV_OPERATION_NONE || ivOperation >= CHANNEL_IV_OPERATION_INVALID)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
 
     if (RM_ENGINE_TYPE_IS_COPY(kchannelGetEngineType(pKernelChannel)))
     {
@@ -262,6 +265,9 @@ confComputeKeyStoreRetrieveViaChannel_GH100
     {
         return NV_ERR_INVALID_PARAMETER;
     }
+
+    const NvBool bIncludeIvOrNonce = (ivOperation == CHANNEL_IV_OPERATION_INCLUDE_ONLY)
+                                      || (ivOperation == CHANNEL_IV_OPERATION_INCLUDE_AND_ROTATE);
 
     return confComputeKeyStoreRetrieveViaKeyId_GH100(pConfCompute, globalKeyId, rotateOperation,
                                                      bIncludeIvOrNonce, keyMaterialBundle);
@@ -413,6 +419,8 @@ confComputeKeyStoreUpdateKey_GH100(ConfidentialCompute *pConfCompute, NvU32 glob
         pKey = (uint8_t *)(*pKeyStore)[slotIndex].cryptBundle.key;
         keySize = sizeof((*pKeyStore)[slotIndex].cryptBundle.key);
     }
+
+    NV_ASSERT_OR_RETURN(pKey != NULL, NV_ERR_INVALID_POINTER);
 
     if (!libspdm_sha256_hash_all((const void *)pKey, keySize, tempMem))
     {

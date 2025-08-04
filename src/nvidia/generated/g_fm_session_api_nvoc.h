@@ -108,10 +108,6 @@ struct FmSessionApi {
     struct RmResource *__nvoc_pbase_RmResource;    // rmres super
     struct FmSessionApi *__nvoc_pbase_FmSessionApi;    // fmsessionapi
 
-    // Vtable with 2 per-object function pointers
-    NV_STATUS (*__fmsessionapiCtrlCmdSetFmState__)(struct FmSessionApi * /*this*/);  // exported (id=0xf0101)
-    NV_STATUS (*__fmsessionapiCtrlCmdClearFmState__)(struct FmSessionApi * /*this*/);  // exported (id=0xf0102)
-
     // Data members
     NvU64 dupedCapDescriptor;
 };
@@ -178,11 +174,35 @@ NV_STATUS __nvoc_objCreate_FmSessionApi(FmSessionApi**, Dynamic*, NvU32, struct 
     __nvoc_objCreate_FmSessionApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
-#define fmsessionapiCtrlCmdSetFmState_FNPTR(pFmSessionApi) pFmSessionApi->__fmsessionapiCtrlCmdSetFmState__
-#define fmsessionapiCtrlCmdSetFmState(pFmSessionApi) fmsessionapiCtrlCmdSetFmState_DISPATCH(pFmSessionApi)
-#define fmsessionapiCtrlCmdClearFmState_FNPTR(pFmSessionApi) pFmSessionApi->__fmsessionapiCtrlCmdClearFmState__
-#define fmsessionapiCtrlCmdClearFmState(pFmSessionApi) fmsessionapiCtrlCmdClearFmState_DISPATCH(pFmSessionApi)
+// Wrapper macros for implementation functions
+NV_STATUS fmsessionapiConstruct_IMPL(struct FmSessionApi *arg_pFmSessionApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_fmsessionapiConstruct(arg_pFmSessionApi, arg_pCallContext, arg_pParams) fmsessionapiConstruct_IMPL(arg_pFmSessionApi, arg_pCallContext, arg_pParams)
+
+void fmsessionapiDestruct_IMPL(struct FmSessionApi *pFmSessionApi);
+#define __nvoc_fmsessionapiDestruct(pFmSessionApi) fmsessionapiDestruct_IMPL(pFmSessionApi)
+
+NV_STATUS fmsessionapiCtrlCmdSetFmState_IMPL(struct FmSessionApi *pFmSessionApi);
+#ifdef __nvoc_fm_session_api_h_disabled
+static inline NV_STATUS fmsessionapiCtrlCmdSetFmState(struct FmSessionApi *pFmSessionApi) {
+    NV_ASSERT_FAILED_PRECOMP("FmSessionApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_fm_session_api_h_disabled
+#define fmsessionapiCtrlCmdSetFmState(pFmSessionApi) fmsessionapiCtrlCmdSetFmState_IMPL(pFmSessionApi)
+#endif // __nvoc_fm_session_api_h_disabled
+
+NV_STATUS fmsessionapiCtrlCmdClearFmState_IMPL(struct FmSessionApi *pFmSessionApi);
+#ifdef __nvoc_fm_session_api_h_disabled
+static inline NV_STATUS fmsessionapiCtrlCmdClearFmState(struct FmSessionApi *pFmSessionApi) {
+    NV_ASSERT_FAILED_PRECOMP("FmSessionApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_fm_session_api_h_disabled
+#define fmsessionapiCtrlCmdClearFmState(pFmSessionApi) fmsessionapiCtrlCmdClearFmState_IMPL(pFmSessionApi)
+#endif // __nvoc_fm_session_api_h_disabled
+
+
+// Wrapper macros for halified functions
 #define fmsessionapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define fmsessionapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) fmsessionapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define fmsessionapiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
@@ -227,14 +247,6 @@ NV_STATUS __nvoc_objCreate_FmSessionApi(FmSessionApi**, Dynamic*, NvU32, struct 
 #define fmsessionapiAddAdditionalDependants(pClient, pResource, pReference) fmsessionapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
-static inline NV_STATUS fmsessionapiCtrlCmdSetFmState_DISPATCH(struct FmSessionApi *pFmSessionApi) {
-    return pFmSessionApi->__fmsessionapiCtrlCmdSetFmState__(pFmSessionApi);
-}
-
-static inline NV_STATUS fmsessionapiCtrlCmdClearFmState_DISPATCH(struct FmSessionApi *pFmSessionApi) {
-    return pFmSessionApi->__fmsessionapiCtrlCmdClearFmState__(pFmSessionApi);
-}
-
 static inline NvBool fmsessionapiAccessCallback_DISPATCH(struct FmSessionApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__nvoc_metadata_ptr->vtable.__fmsessionapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
@@ -323,12 +335,6 @@ NV_STATUS fmsessionapiCtrlCmdSetFmState_IMPL(struct FmSessionApi *pFmSessionApi)
 
 NV_STATUS fmsessionapiCtrlCmdClearFmState_IMPL(struct FmSessionApi *pFmSessionApi);
 
-NV_STATUS fmsessionapiConstruct_IMPL(struct FmSessionApi *arg_pFmSessionApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_fmsessionapiConstruct(arg_pFmSessionApi, arg_pCallContext, arg_pParams) fmsessionapiConstruct_IMPL(arg_pFmSessionApi, arg_pCallContext, arg_pParams)
-void fmsessionapiDestruct_IMPL(struct FmSessionApi *pFmSessionApi);
-
-#define __nvoc_fmsessionapiDestruct(pFmSessionApi) fmsessionapiDestruct_IMPL(pFmSessionApi)
 #undef PRIVATE_FIELD
 
 

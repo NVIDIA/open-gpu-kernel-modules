@@ -153,7 +153,12 @@ NV_STATUS __nvoc_objCreate_Hdacodec(Hdacodec**, Dynamic*, NvU32, struct CALL_CON
     __nvoc_objCreate_Hdacodec((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS hdacodecConstruct_IMPL(struct Hdacodec *arg_pHdacodecApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_hdacodecConstruct(arg_pHdacodecApi, arg_pCallContext, arg_pParams) hdacodecConstruct_IMPL(arg_pHdacodecApi, arg_pCallContext, arg_pParams)
+
+
+// Wrapper macros for halified functions
 #define hdacodecControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define hdacodecControl(pGpuResource, pCallContext, pParams) hdacodecControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define hdacodecMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
@@ -306,9 +311,6 @@ static inline void hdacodecAddAdditionalDependants_DISPATCH(struct RsClient *pCl
     pResource->__nvoc_metadata_ptr->vtable.__hdacodecAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-NV_STATUS hdacodecConstruct_IMPL(struct Hdacodec *arg_pHdacodecApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_hdacodecConstruct(arg_pHdacodecApi, arg_pCallContext, arg_pParams) hdacodecConstruct_IMPL(arg_pHdacodecApi, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 

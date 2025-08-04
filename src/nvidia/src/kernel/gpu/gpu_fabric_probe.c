@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -537,7 +537,7 @@ _gpuFrabricProbeUpdateSupportedBwModes
     {
         // Check if maxRbmLinks is within max supported links
         NV_ASSERT_OR_RETURN_VOID(maxRbmLinks <= NVLINK_MAX_LINKS_SW);
-        pKernelNvlink->maxRbmLinks = maxRbmLinks;
+        knvlinkSetMaxBWModeLinks(pGpu, pKernelNvlink, maxRbmLinks);
     }
 }
 
@@ -627,7 +627,7 @@ gpuFabricProbeReceiveKernelCallback
     portAtomicSetU32(&pGpuFabricProbeInfoKernel->probeRespRcvd, 1);
 
     status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfoKernel);
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, status == NV_OK, status);
+    NV_CHECK_OR_RETURN(LEVEL_INFO, status == NV_OK, status);
 
     _gpuFabricProbeSetupGpaRange(pGpu, pGpuFabricProbeInfoKernel);
     _gpuFabricProbeSetupFlaRange(pGpu, pGpuFabricProbeInfoKernel);
@@ -810,7 +810,7 @@ _gpuFabricProbeRbmWakeLinks
     FOR_EACH_INDEX_IN_MASK(32, i, enabledLinkMask)
     {
         powerStatusParams.linkId = i;
-        NV_CHECK_OK(status, LEVEL_ERROR,
+        NV_CHECK_OK(status, LEVEL_INFO,
             pRmApi->Control(pRmApi,
                             pGpu->hInternalClient,
                             pGpu->hInternalSubdevice,
@@ -878,7 +878,7 @@ gpuFabricProbeStart
     {
         if (pKernelNvlink != NULL)
         {
-            pGpuFabricProbeInfoKernel->bwMode = pKernelNvlink->nvlinkBwMode;
+            pGpuFabricProbeInfoKernel->bwMode = knvlinkGetBWMode(pGpu, pKernelNvlink);
         }
     }
     else
@@ -1035,7 +1035,7 @@ gpuFabricProbeSetBwModePerGpu
         if (pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_RBM_LINK_COUNT_ENABLED))
         {
             _gpuFabricProbeRbmWakeLinks(pGpu, pGpuFabricProbeInfoKernel);
-            pKernelNvlink->nvlinkBwMode = mode;
+            knvlinkSetBWMode(pGpu, pKernelNvlink, mode);
         }
     }
 

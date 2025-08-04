@@ -402,8 +402,6 @@ typedef struct NV2080_CTRL_GR_GET_INFO_PARAMS {
     NV_DECLARE_ALIGNED(NV2080_CTRL_GR_ROUTE_INFO grRouteInfo, 8);
 } NV2080_CTRL_GR_GET_INFO_PARAMS;
 
-
-
 /*
  * NV2080_CTRL_CMD_GR_CTXSW_ZCULL_MODE
  *
@@ -1208,6 +1206,8 @@ typedef struct NV2080_CTRL_GR_GET_GLOBAL_SM_ORDER_PARAMS {
         NvU16 virtualGpcId;
         NvU16 migratableTpcId;
         NvU16 ugpuId;
+        NvU16 physicalCpcId;
+        NvU16 virtualTpcId;
     } globalSmId[NV2080_CTRL_CMD_GR_GET_GLOBAL_SM_ORDER_MAX_SM_COUNT];
 
     NvU16 numSm;
@@ -1714,6 +1714,35 @@ typedef struct NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS {
     NvU32                                    smIssueRateModifierListSize;
     NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2 smIssueRateModifierList[NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_MAX_LIST_SIZE];
 } NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS;
+
+#define NV2080_CTRL_GR_SM_ISSUE_THROTTLE_CTRL_MAX_LIST_SIZE (0xFFU)
+#define NV2080_CTRL_GR_SM_ISSUE_THROTTLE_CTRL_MASK          (0x0U)
+
+/*
+ * NV2080_CTRL_CMD_GR_GET_SM_ISSUE_THROTTLE_CTRL
+ *
+ * This command provides an interface to retrieve the throttle contol values of
+ * various instruction types for a GR engine.
+ *
+ *   smIssueThrottleCtrlListSize
+ *     This field specifies the number of entries on the caller's
+ *     smIssueThrottleCtrlList.
+ *     When caller passes smIssueThrottleCtrlListSize = 0, all fuse
+ *     values are returned.
+ *   smIssueThrottleCtrlList
+ *     This field specifies a pointer in the caller's address space
+ *     to the buffer into which the throttle control values are to be returned.
+ */
+#define NV2080_CTRL_CMD_GR_GET_SM_ISSUE_THROTTLE_CTRL       (0x2080123dU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GR_INTERFACE_ID << 8) | NV2080_CTRL_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS_MESSAGE_ID" */
+
+typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_GR_SM_ISSUE_THROTTLE_CTRL;
+
+#define NV2080_CTRL_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS_MESSAGE_ID (0x3DU)
+
+typedef struct NV2080_CTRL_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS {
+    NvU32                                 smIssueThrottleCtrlListSize;
+    NV2080_CTRL_GR_SM_ISSUE_THROTTLE_CTRL smIssueThrottleCtrlList[NV2080_CTRL_GR_SM_ISSUE_THROTTLE_CTRL_MAX_LIST_SIZE];
+} NV2080_CTRL_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS;
 
 /*
  * NV2080_CTRL_CMD_GR_FECS_BIND_EVTBUF_FOR_UID

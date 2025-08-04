@@ -38,26 +38,21 @@
 #include "published/blackwell/gb100/dev_therm_addendum.h"
 #include "published/blackwell/gb100/dev_fsp_pri.h"
 #include "published/blackwell/gb100/dev_fsp_addendum.h"
+#include "published/blackwell/gb100/dev_gsp.h"
+#include "published/blackwell/gb100/dev_oob_pri.h"
 
 #include "os/os.h"
 #include "nvRmReg.h"
 #include "nverror.h"
 
-static NvBool _kfspWaitBootCond_GB100(OBJGPU *pGpu, void *pArg);
+#define CMS2_LOG_START   0x50U
+#define CMS2_LOG_END     0x7FU
+#define CMS2_LOG_DWORDS  (CMS2_LOG_END - CMS2_LOG_START + 1)
+#define CMS2_LOG_BYTES   (CMS2_LOG_DWORDS * sizeof(NvU32))
 
-static NvBool
-_kfspWaitBootCond_GB100
-(
-    OBJGPU *pGpu,
-    void   *pArg
-)
-{
-    //
-    // In GB100, Bootfsm triggers FSP execution out of chip reset.
-    // FSP writes 0xFF value in NV_THERM_I2CS_SCRATCH register after completion of boot
-    //
-    return GPU_FLD_TEST_DRF_DEF(pGpu, _THERM_I2CS_SCRATCH, _FSP_BOOT_COMPLETE, _STATUS, _SUCCESS);
-}
+static void _kfspPrintCms2Log_GB100(OBJGPU *pGpu, KernelFsp *pKernelFsp, NvU8 *cms2Log);
+static NvBool _kfspWaitBootCond_GB100(OBJGPU *pGpu, void *pArg);
+static void _kfspGatherCms2Log_GB100(OBJGPU *pGpu, NvU32  *cms2Log);
 
 NV_STATUS
 kfspWaitForSecureBoot_GB100
@@ -92,6 +87,8 @@ kfspWaitForSecureBoot_GB100
                      GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1)),
                      GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(2)),
                      GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(3)));
+
+        kfspDumpDebugState_HAL(pGpu, pKernelFsp);
     }
 
     if (GPU_FLD_TEST_DRF_DEF(pGpu, _PFSP, _FUSE_ERROR_CHECK, _STATUS, _SUCCESS))
@@ -145,6 +142,61 @@ kfspCheckForClockBoostCapability_GB100
     }
 }
 
+/*!
+ * @brief Dump debug registers for FSP
+ *
+ * @param[in] pGpu       OBJGPU pointer
+ * @param[in] pKernelFsp KernelFsp pointer
+ *
+ * @return NV_OK, or error if failed
+ */
+void
+kfspDumpDebugState_GB100
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    NvU32 i;
+    NvU32 cms2Log[CMS2_LOG_DWORDS];
+    const NvU32 fspUcodeVersion = GPU_REG_RD_DRF(pGpu, _GFW, _FSP_UCODE_VERSION, _FULL);
+    //
+    // Older microcodes did not have the version populated in scratch.
+    // They will report a version of 0.
+    //
+    if (fspUcodeVersion > 0)
+    {
+        NV_PRINTF(LEVEL_ERROR, "FSP microcode v%u.%u\n",
+                  DRF_VAL(_GFW, _FSP_UCODE_VERSION, _MAJOR, fspUcodeVersion),
+                  DRF_VAL(_GFW, _FSP_UCODE_VERSION, _MINOR, fspUcodeVersion));
+    }
+
+    NV_PRINTF(LEVEL_ERROR, "GPU %04x:%02x:%02x\n",
+              gpuGetDomain(pGpu), gpuGetBus(pGpu), gpuGetDevice(pGpu));
+
+    NV_PRINTF(LEVEL_ERROR, "NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0) = 0x%x\n",
+              GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0)));
+    NV_PRINTF(LEVEL_ERROR, "NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1) = 0x%x\n",
+              GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1)));
+    NV_PRINTF(LEVEL_ERROR, "NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(2) = 0x%x\n",
+              GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(2)));
+    NV_PRINTF(LEVEL_ERROR, "NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(3) = 0x%x\n",
+              GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(3)));
+
+    NV_PRINTF(LEVEL_ERROR, "NV_PGSP_FALCON_MAILBOX0 = 0x%x\n",
+              GPU_REG_RD32(pGpu, NV_PGSP_FALCON_MAILBOX0));
+    NV_PRINTF(LEVEL_ERROR, "NV_PGSP_FALCON_MAILBOX1 = 0x%x\n",
+              GPU_REG_RD32(pGpu, NV_PGSP_FALCON_MAILBOX1));
+    for(i = 0; i < NV_PGSP_MAILBOX__SIZE_1; i++)
+    {
+        NV_PRINTF(LEVEL_ERROR, "NV_PGSP_MAILBOX(%d) = 0x%x\n",
+                  i, GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(i)));
+    }
+
+    _kfspGatherCms2Log_GB100(pGpu, cms2Log);
+    _kfspPrintCms2Log_GB100(pGpu, pKernelFsp, (NvU8*) cms2Log);
+}
+
 NV_STATUS
 kfspSendClockBoostRpc_GB100
 (
@@ -159,3 +211,46 @@ kfspSendClockBoostRpc_GB100
     return kfspSendAndReadMessage(pGpu, pKernelFsp, (NvU8*) &inputPayload, sizeof(inputPayload),
                                   NVDM_TYPE_CLOCK_BOOST, NULL, 0);
 }
+
+static void
+_kfspPrintCms2Log_GB100
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp,
+    NvU8      *cms2Log
+)
+{
+    NV_PRINTF(LEVEL_ERROR, "CMS2 Log:\n");
+    nvDbgDumpBufferBytes(cms2Log, CMS2_LOG_BYTES);
+}
+
+static NvBool
+_kfspWaitBootCond_GB100
+(
+    OBJGPU *pGpu,
+    void   *pArg
+)
+{
+    //
+    // In GB100, Bootfsm triggers FSP execution out of chip reset.
+    // FSP writes 0xFF value in NV_THERM_I2CS_SCRATCH register after completion of boot
+    //
+    return GPU_FLD_TEST_DRF_DEF(pGpu, _THERM_I2CS_SCRATCH, _FSP_BOOT_COMPLETE, _STATUS, _SUCCESS);
+}
+
+static void
+_kfspGatherCms2Log_GB100
+(
+    OBJGPU *pGpu,
+    NvU32  *cms2Log
+)
+{
+    NvU32 index;
+
+    for (index = 0; index < CMS2_LOG_DWORDS; index++)
+    {
+        GPU_REG_WR32(pGpu, NV_POOBHUB_RCV_INDIRECT_CMS2_MEM_RD_ADDR, CMS2_LOG_START + index);
+        cms2Log[index] = GPU_REG_RD32(pGpu, NV_POOBHUB_RCV_INDIRECT_CMS2_MEM_RD_DATA);
+    }
+}
+

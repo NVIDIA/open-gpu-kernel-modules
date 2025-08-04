@@ -42,6 +42,7 @@
 #include "nvrm_registry.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/mem_mgr/heap.h"
+#include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h"
 #include "kernel/gpu/intr/engine_idx.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
 #include "gpu/mmu/kern_gmmu.h"
@@ -346,6 +347,15 @@ kgraphicsStateLoad_IMPL
 {
     KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
 
+    if (IS_VIRTUAL_WITH_SRIOV(pGpu))
+    {
+        //
+        // Force initialize scratch registers
+        // so won't read back X and assert in RTL
+        //
+        kgraphicsSetFecsTraceHwEnable_HAL(pGpu, pKernelGraphics, NV_FALSE);
+    }
+
     if (fecsGetCtxswLogConsumerCount(pGpu, pKernelGraphicsManager) > 0)
     {
         fecsBufferMap(pGpu, pKernelGraphics);
@@ -378,21 +388,7 @@ kgraphicsStatePreUnload_IMPL
     NvU32 flags
 )
 {
-    if (pKernelGraphics->bug4208224Info.bConstructed)
-    {
-        RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-        NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS params = {0};
-
-        params.bTeardown = NV_TRUE;
-        NV_ASSERT_OK(pRmApi->Control(pRmApi,
-                     pKernelGraphics->bug4208224Info.hClient,
-                     pKernelGraphics->bug4208224Info.hSubdeviceId,
-                     NV2080_CTRL_CMD_INTERNAL_KGR_INIT_BUG4208224_WAR,
-                     &params,
-                     sizeof(params)));
-        NV_ASSERT_OK(pRmApi->Free(pRmApi, pKernelGraphics->bug4208224Info.hClient, pKernelGraphics->bug4208224Info.hClient));
-        pKernelGraphics->bug4208224Info.bConstructed = NV_FALSE;
-    }
+    kgraphicsTeardownBug4208224State_HAL(pGpu, pKernelGraphics);
 
     fecsBufferUnmap(pGpu, pKernelGraphics);
 
@@ -495,7 +491,7 @@ _kgraphicsPostSchedulingEnableHandler
         Heap *pHeap = GPU_GET_HEAP(pGpu);
         NvU32 pmaConfig = PMA_QUERY_SCRUB_ENABLED | PMA_QUERY_SCRUB_VALID;
 
-        NV_ASSERT_OK_OR_RETURN(pmaQueryConfigs(&pHeap->pmaObject, &pmaConfig));
+        NV_ASSERT_OK_OR_RETURN(pmaQueryConfigs(pHeap->pPmaObject, &pmaConfig));
 
         //
         // Scrubber is also constructed from the same Fifo post scheduling
@@ -545,6 +541,9 @@ kgraphicsInvalidateStaticInfo_IMPL
 
     portMemFree(pKernelGraphics->pPrivate->staticInfo.pSmIssueRateModifierV2);
     pKernelGraphics->pPrivate->staticInfo.pSmIssueRateModifierV2 = NULL;
+
+    portMemFree(pKernelGraphics->pPrivate->staticInfo.pSmIssueThrottleCtrl);
+    pKernelGraphics->pPrivate->staticInfo.pSmIssueThrottleCtrl = NULL;
 
     portMemFree(pKernelGraphics->pPrivate->staticInfo.pFecsTraceDefines);
     pKernelGraphics->pPrivate->staticInfo.pFecsTraceDefines = NULL;
@@ -1107,6 +1106,7 @@ kgraphicsLoadStaticInfo_KERNEL
         NV2080_CTRL_INTERNAL_STATIC_GR_GET_ROP_INFO_PARAMS                  ropInfo;
         NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS    smIssueRateModifier;
         NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS smIssueRateModifierV2;
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS    smIssueThrottleCtrl;
         NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_RECORD_SIZE_PARAMS          fecsRecordSize;
         NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS        fecsTraceDefines;
         NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS            pdbProperties;
@@ -1399,6 +1399,32 @@ kgraphicsLoadStaticInfo_KERNEL
         status = NV_OK;
     }
 
+    // SM Issue Throttle Control
+    portMemSet(pParams, 0, sizeof(*pParams));
+    status = pRmApi->Control(pRmApi,
+                             hClient,
+                             hSubdevice,
+                             NV2080_CTRL_CMD_INTERNAL_STATIC_KGR_GET_SM_ISSUE_THROTTLE_CTRL,
+                             pParams,
+                             sizeof(pParams->smIssueThrottleCtrl));
+
+    if (status == NV_OK)
+    {
+        pPrivate->staticInfo.pSmIssueThrottleCtrl = portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pSmIssueThrottleCtrl));
+        if (pPrivate->staticInfo.pSmIssueThrottleCtrl == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup;
+        }
+
+        portMemCopy(pPrivate->staticInfo.pSmIssueThrottleCtrl, sizeof(*pPrivate->staticInfo.pSmIssueThrottleCtrl),
+                    &pParams->smIssueThrottleCtrl.smIssueThrottleCtrl[grIdx], sizeof(pParams->smIssueThrottleCtrl.smIssueThrottleCtrl[grIdx]));
+    }
+    else if (status == NV_ERR_NOT_SUPPORTED)
+    {
+        status = NV_OK;
+    }
+
     // FECS Record Size
     portMemSet(pParams, 0, sizeof(*pParams));
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
@@ -1498,6 +1524,9 @@ cleanup:
 
         portMemFree(pPrivate->staticInfo.pSmIssueRateModifierV2);
         pPrivate->staticInfo.pSmIssueRateModifierV2 = NULL;
+
+        portMemFree(pPrivate->staticInfo.pSmIssueThrottleCtrl);
+        pPrivate->staticInfo.pSmIssueThrottleCtrl = NULL;
 
         portMemFree(pPrivate->staticInfo.pFecsTraceDefines);
         pPrivate->staticInfo.pFecsTraceDefines = NULL;
@@ -1927,6 +1956,7 @@ kgraphicsMapCtxBuffer_IMPL
                     dmaAllocMapping_HAL(pGpu, GPU_GET_DMA(pGpu), pVAS, pMemDesc,
                                         &vaddr,
                                         mapFlags,
+                                        0,
                                         NULL,
                                         KMIGMGR_SWIZZID_INVALID),
                     /* do nothing on error, but make sure we overwrite status */;);
@@ -3099,6 +3129,8 @@ subdeviceCtrlCmdKGrGetGlobalSmOrder_IMPL
         pParams->globalSmId[i].virtualGpcId    = pStaticInfo->globalSmOrder.globalSmId[i].virtualGpcId;
         pParams->globalSmId[i].migratableTpcId = pStaticInfo->globalSmOrder.globalSmId[i].migratableTpcId;
         pParams->globalSmId[i].ugpuId          = pStaticInfo->globalSmOrder.globalSmId[i].ugpuId;
+        pParams->globalSmId[i].physicalCpcId   = pStaticInfo->globalSmOrder.globalSmId[i].physicalCpcId;
+        pParams->globalSmId[i].virtualTpcId    = pStaticInfo->globalSmOrder.globalSmId[i].virtualTpcId;
     }
 
     return status;
@@ -3258,6 +3290,106 @@ subdeviceCtrlCmdKGrGetSmIssueRateModifierV2_IMPL
     for (NvU32 i = 0; i < pParams->smIssueRateModifierListSize; i++)
     {
         NV_ASSERT_OK_OR_RETURN(findSmIssueRateModifier(pParams->smIssueRateModifierList[i].index, &(pParams->smIssueRateModifierList[i].data), pStaticInfo->pSmIssueRateModifierV2));
+    }
+
+    return NV_OK;
+}
+
+static NvU8
+findSmIssueThrottleCtrl
+(
+    NvU32 index,
+    NvU32 *pData,
+    NV2080_CTRL_INTERNAL_STATIC_GR_SM_ISSUE_THROTTLE_CTRL *pSmIssueThrottleCtrl
+)
+{
+    for (NvU32 i = 0; i < pSmIssueThrottleCtrl->smIssueThrottleCtrlListSize; i++)
+    {
+        if (pSmIssueThrottleCtrl->smIssueThrottleCtrlList[i].index == index)
+        {
+            *pData = pSmIssueThrottleCtrl->smIssueThrottleCtrlList[i].data;
+            return NV_OK;
+        }
+    }
+    return NV_ERR_INVALID_ARGUMENT;
+}
+
+/*!
+ * subdeviceCtrlCmdKGrGetSmIssueThrottleCtrl
+ *
+ * Lock Requirements:
+ *      Assert that API lock and GPUs lock held on entry
+ */
+NV_STATUS
+subdeviceCtrlCmdKGrGetSmIssueThrottleCtrl_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelGraphics *pKernelGraphics;
+    Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
+    const KGRAPHICS_STATIC_INFO *pStaticInfo;
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    NvU32 fuseValue = 0;
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+
+    if (!IS_MIG_IN_USE(pGpu) || kmigmgrIsDeviceUsingDeviceProfiling(pGpu, pKernelMIGManager, pDevice))
+    {
+        NvU32 grIdx;
+        for (grIdx = 0; grIdx < GPU_MAX_GRS; grIdx++)
+        {
+            pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, grIdx);
+            if (pKernelGraphics != NULL)
+                break;
+        }
+        if (pKernelGraphics == NULL)
+            return NV_ERR_INVALID_STATE;
+    }
+    else
+    {
+        MIG_INSTANCE_REF ref;
+        RM_ENGINE_TYPE globalGrEngine;
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref));
+        NV_ASSERT_OR_RETURN(ref.pMIGComputeInstance != NULL && ref.pKernelMIGGpuInstance != NULL, NV_ERR_INVALID_STATE);
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref, RM_ENGINE_TYPE_GR(0), &globalGrEngine));
+
+        pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, RM_ENGINE_TYPE_GR_IDX(globalGrEngine));
+    }
+
+    // Verify static info is available
+    pStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
+    NV_ASSERT_OR_RETURN(pStaticInfo != NULL, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(pStaticInfo->pSmIssueThrottleCtrl != NULL, NV_ERR_NOT_SUPPORTED);
+
+    if (pParams->smIssueThrottleCtrlListSize >= NV2080_CTRL_GR_SM_ISSUE_THROTTLE_CTRL_MAX_LIST_SIZE)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+    else if (pParams->smIssueThrottleCtrlListSize != 0)
+    {
+        // Discarding fuse values. Will collect agn after validating all fuse indexes are valid.
+        for (NvU32 i = 0; i < pParams->smIssueThrottleCtrlListSize; i++)
+        {
+            NV_ASSERT_OK_OR_RETURN(findSmIssueThrottleCtrl(pParams->smIssueThrottleCtrlList[i].index, &fuseValue, pStaticInfo->pSmIssueThrottleCtrl));
+        }
+    }
+    else if (pParams->smIssueThrottleCtrlListSize == 0)
+    {
+        pParams->smIssueThrottleCtrlListSize = pStaticInfo->pSmIssueThrottleCtrl->smIssueThrottleCtrlListSize;
+        for (NvU32 i = 0; i < pParams->smIssueThrottleCtrlListSize; i++)
+            pParams->smIssueThrottleCtrlList[i].index = pStaticInfo->pSmIssueThrottleCtrl->smIssueThrottleCtrlList[i].index;
+    }
+
+    for (NvU32 i = 0; i < pParams->smIssueThrottleCtrlListSize; i++)
+    {
+        NV_ASSERT_OK_OR_RETURN(findSmIssueThrottleCtrl(pParams->smIssueThrottleCtrlList[i].index, &(pParams->smIssueThrottleCtrlList[i].data), pStaticInfo->pSmIssueThrottleCtrl));
     }
 
     return NV_OK;

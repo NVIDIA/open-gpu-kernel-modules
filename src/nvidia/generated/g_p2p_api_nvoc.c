@@ -303,6 +303,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__P2PApi =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_p2papiDestruct(P2PApi*);
 void __nvoc_dtor_RmResource(RmResource*);
 void __nvoc_dtor_P2PApi(P2PApi *pThis) {
     __nvoc_p2papiDestruct(pThis);

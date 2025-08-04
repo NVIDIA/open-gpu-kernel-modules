@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,7 +28,6 @@
 #include "diagnostics/nv_debug_dump.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mmu/kern_gmmu.h"
-#include "kernel/gpu/bif/kernel_bif.h"
 #include "nvrm_registry.h"
 #include "nv_ref.h"
 
@@ -132,6 +131,7 @@ _kmcDumpEngineFunc(OBJGPU *pGpu, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState, 
         External_Cleanup);
 
     prbEncAddUInt32(pPrbEnc, NVDEBUG_ENG_MC_RMDATA_PMCBOOT0, pGpu->chipId0);
+    prbEncAddUInt32(pPrbEnc, NVDEBUG_ENG_MC_RMDATA_PMCBOOT42, pGpu->chipId1);
 
     NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR, // NVDEBUG_ENG_MC_RM_DATA
         prbEncNestedEnd(pPrbEnc),
@@ -202,8 +202,7 @@ kmcStateLoad_IMPL
 )
 {
     if (!RMCFG_FEATURE_PLATFORM_GSP &&
-        kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu)) !=
-        NV2080_CTRL_BUS_INFO_TYPE_AXI)
+        gpuGetBusIntfType_HAL(pGpu) != NV2080_CTRL_BUS_INFO_TYPE_AXI)
     {
         // Adjust the pci latency timer if needed
         _kmcSetPciLatencyTimer(pGpu, pKernelMc);

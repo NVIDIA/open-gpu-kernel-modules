@@ -55,11 +55,10 @@
 
 #endif
 
-#if defined(NV_DRM_DRIVER_HAS_GEM_PRIME_RES_OBJ) || \
-    defined(NV_DRM_GEM_OBJECT_HAS_RESV)
-#define NV_DRM_FENCE_AVAILABLE
-#else
-#undef NV_DRM_FENCE_AVAILABLE
+#include <linux/kconfig.h> // for IS_ENABLED()
+
+#if IS_ENABLED(CONFIG_DRM) || defined(__FreeBSD__)
+#define NV_DRM_AVAILABLE
 #endif
 
 #if defined(NV_DRM_FBDEV_GENERIC_SETUP_PRESENT) &&                             \
@@ -85,17 +84,6 @@
 #define NV_DRM_FBDEV_AVAILABLE
 #define NV_DRM_CLIENT_AVAILABLE
 #endif
-#endif
-
-/*
- * We can support color management if either drm_helper_crtc_enable_color_mgmt()
- * or drm_crtc_enable_color_mgmt() exist.
- */
-#if defined(NV_DRM_HELPER_CRTC_ENABLE_COLOR_MGMT_PRESENT) || \
-    defined(NV_DRM_CRTC_ENABLE_COLOR_MGMT_PRESENT)
-#define NV_DRM_COLOR_MGMT_AVAILABLE
-#else
-#undef NV_DRM_COLOR_MGMT_AVAILABLE
 #endif
 
 /*

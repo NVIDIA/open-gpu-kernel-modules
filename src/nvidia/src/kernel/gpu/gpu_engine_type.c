@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -88,7 +88,6 @@ RM_ENGINE_TYPE gpuGetRmEngineType_IMPL(NvU32 index)
         case NV2080_ENGINE_TYPE_NVENC0:                 return RM_ENGINE_TYPE_NVENC0;
         case NV2080_ENGINE_TYPE_NVENC1:                 return RM_ENGINE_TYPE_NVENC1;
         case NV2080_ENGINE_TYPE_NVENC2:                 return RM_ENGINE_TYPE_NVENC2;
-// Bug 4175886 - Use this new value for all chips once GB20X is released
         case NV2080_ENGINE_TYPE_NVENC3:                 return RM_ENGINE_TYPE_NVENC3;
         case NV2080_ENGINE_TYPE_VP:                     return RM_ENGINE_TYPE_VP;
         case NV2080_ENGINE_TYPE_ME:                     return RM_ENGINE_TYPE_ME;
@@ -209,7 +208,6 @@ NvU32 gpuGetNv2080EngineType_IMPL(RM_ENGINE_TYPE index)
         case RM_ENGINE_TYPE_NVENC0:     return NV2080_ENGINE_TYPE_NVENC0;
         case RM_ENGINE_TYPE_NVENC1:     return NV2080_ENGINE_TYPE_NVENC1;
         case RM_ENGINE_TYPE_NVENC2:     return NV2080_ENGINE_TYPE_NVENC2;
-// Bug 4175886 - Use this new value for all chips once GB20X is released
         case RM_ENGINE_TYPE_NVENC3:     return NV2080_ENGINE_TYPE_NVENC3;
         case RM_ENGINE_TYPE_VP:         return NV2080_ENGINE_TYPE_VP;
         case RM_ENGINE_TYPE_ME:         return NV2080_ENGINE_TYPE_ME;

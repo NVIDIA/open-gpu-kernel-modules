@@ -25,10 +25,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE;
 
 // Forward declarations for NvDebugDump
 void __nvoc_init__OBJENGSTATE(OBJENGSTATE*);
-void __nvoc_init__NvDebugDump(NvDebugDump*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_funcTable_NvDebugDump(NvDebugDump*, RmHalspecOwner *pRmhalspecowner);
-NV_STATUS __nvoc_ctor_NvDebugDump(NvDebugDump*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_dataField_NvDebugDump(NvDebugDump*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init__NvDebugDump(NvDebugDump*, GpuHalspecOwner *pGpuhalspecowner);
+void __nvoc_init_funcTable_NvDebugDump(NvDebugDump*, GpuHalspecOwner *pGpuhalspecowner);
+NV_STATUS __nvoc_ctor_NvDebugDump(NvDebugDump*, GpuHalspecOwner *pGpuhalspecowner);
+void __nvoc_init_dataField_NvDebugDump(NvDebugDump*, GpuHalspecOwner *pGpuhalspecowner);
 void __nvoc_dtor_NvDebugDump(NvDebugDump*);
 
 // Structures used within RTTI (run-time type information)
@@ -204,6 +204,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__NvDebugDump =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_nvdDestruct(NvDebugDump*);
 void __nvoc_dtor_OBJENGSTATE(OBJENGSTATE*);
 void __nvoc_dtor_NvDebugDump(NvDebugDump *pThis) {
     __nvoc_nvdDestruct(pThis);
@@ -211,27 +212,32 @@ void __nvoc_dtor_NvDebugDump(NvDebugDump *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_NvDebugDump(NvDebugDump *pThis, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+void __nvoc_init_dataField_NvDebugDump(NvDebugDump *pThis, GpuHalspecOwner *pGpuhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
-    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 
     // NVOC Property Hal field -- PDB_PROP_NVD_IS_MISSING
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->setProperty(pThis, PDB_PROP_NVD_IS_MISSING, NV_TRUE);
+    }
     // default
+    else
     {
         pThis->setProperty(pThis, PDB_PROP_NVD_IS_MISSING, NV_FALSE);
     }
 }
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
-NV_STATUS __nvoc_ctor_NvDebugDump(NvDebugDump *pThis, RmHalspecOwner *pRmhalspecowner) {
+NV_STATUS __nvoc_ctor_NvDebugDump(NvDebugDump *pThis, GpuHalspecOwner *pGpuhalspecowner) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
     if (status != NV_OK) goto __nvoc_ctor_NvDebugDump_fail_OBJENGSTATE;
-    __nvoc_init_dataField_NvDebugDump(pThis, pRmhalspecowner);
+    __nvoc_init_dataField_NvDebugDump(pThis, pGpuhalspecowner);
     goto __nvoc_ctor_NvDebugDump_exit; // Success
 
 __nvoc_ctor_NvDebugDump_fail_OBJENGSTATE:
@@ -241,23 +247,23 @@ __nvoc_ctor_NvDebugDump_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_NvDebugDump_1(NvDebugDump *pThis, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+static void __nvoc_init_funcTable_NvDebugDump_1(NvDebugDump *pThis, GpuHalspecOwner *pGpuhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
-    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 } // End __nvoc_init_funcTable_NvDebugDump_1
 
 
 // Initialize vtable(s) for 14 virtual method(s).
-void __nvoc_init_funcTable_NvDebugDump(NvDebugDump *pThis, RmHalspecOwner *pRmhalspecowner) {
-    __nvoc_init_funcTable_NvDebugDump_1(pThis, pRmhalspecowner);
+void __nvoc_init_funcTable_NvDebugDump(NvDebugDump *pThis, GpuHalspecOwner *pGpuhalspecowner) {
+    __nvoc_init_funcTable_NvDebugDump_1(pThis, pGpuhalspecowner);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__NvDebugDump(NvDebugDump *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init__NvDebugDump(NvDebugDump *pThis, GpuHalspecOwner *pGpuhalspecowner) {
 
     // Initialize pointers to inherited data.
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object;    // (obj) super^2
@@ -273,7 +279,7 @@ void __nvoc_init__NvDebugDump(NvDebugDump *pThis, RmHalspecOwner *pRmhalspecowne
     pThis->__nvoc_metadata_ptr = &__nvoc_metadata__NvDebugDump;    // (nvd) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_NvDebugDump(pThis, pRmhalspecowner);
+    __nvoc_init_funcTable_NvDebugDump(pThis, pGpuhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_NvDebugDump(NvDebugDump **ppThis, Dynamic *pParent, NvU32 createFlags)
@@ -281,7 +287,7 @@ NV_STATUS __nvoc_objCreate_NvDebugDump(NvDebugDump **ppThis, Dynamic *pParent, N
     NV_STATUS status;
     Object *pParentObj = NULL;
     NvDebugDump *pThis;
-    RmHalspecOwner *pRmhalspecowner;
+    GpuHalspecOwner *pGpuhalspecowner;
 
     // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(NvDebugDump), (void**)&pThis, (void**)ppThis);
@@ -307,12 +313,12 @@ NV_STATUS __nvoc_objCreate_NvDebugDump(NvDebugDump **ppThis, Dynamic *pParent, N
         pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.pParent = NULL;
     }
 
-    if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
-        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
-    NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
+    if ((pGpuhalspecowner = dynamicCast(pParent, GpuHalspecOwner)) == NULL)
+        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, pParent);
+    NV_ASSERT_OR_RETURN(pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init__NvDebugDump(pThis, pRmhalspecowner);
-    status = __nvoc_ctor_NvDebugDump(pThis, pRmhalspecowner);
+    __nvoc_init__NvDebugDump(pThis, pGpuhalspecowner);
+    status = __nvoc_ctor_NvDebugDump(pThis, pGpuhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_NvDebugDump_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

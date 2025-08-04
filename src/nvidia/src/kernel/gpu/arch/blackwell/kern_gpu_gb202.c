@@ -41,6 +41,8 @@
 #include "published/blackwell/gb202/dev_therm.h"
 #include "published/blackwell/gb202/dev_therm_addendum.h"
 
+#include "kernel/gpu/ce/kernel_ce_shared.h"
+
 //
 // List of GPU children that present for the chip. List entries contain$
 // {CLASS-ID, # of instances} pairs, e.g.: {CE, 2} is 2 instance of OBJCE. This$
@@ -177,43 +179,6 @@ gpuWritePcieConfigCycle_GB202
     osPciWriteDword(pGpu->hPci, hwDefAddr, value);
 
     return NV_OK;
-}
-
-//
-// Workaround for Bug 5041782.
-//
-// This function is not created through HAL infrastructure. It needs to be
-// called when OBJGPU is not created. HAL infrastructure can't be used for
-// this case, so it has been added manually. It will be invoked directly by
-// gpumgrWaitForBarFirewall() after checking the GPU devId.
-//
-// See kfspWaitForSecureBoot_GH100
-#define GPU_FSP_BOOT_COMPLETION_TIMEOUT_US 4000000
-NvBool gpuWaitForBarFirewall_GB202(NvU32 domain, NvU8 bus, NvU8 device, NvU8 function)
-{
-    NvU32 data;
-    NvU32 timeUs = 0;
-    void *hPci = osPciInitHandle(domain, bus, device, function, NULL, NULL);
-
-    while (timeUs < GPU_FSP_BOOT_COMPLETION_TIMEOUT_US)
-    {
-        data = osPciReadDword(hPci,
-            NV_EP_PCFG_GPU_VSEC_DEBUG_SEC_2);
-
-        // Firewall is lowered if 0
-        if (DRF_VAL(_EP_PCFG_GPU,
-                    _VSEC_DEBUG_SEC_2,
-                    _BAR_FIREWALL_ENGAGE,
-                    data) == 0)
-        {
-            return NV_TRUE;
-        }
-
-        osDelayUs(1000);
-        timeUs += 1000;
-    }
-
-    return NV_FALSE;
 }
 
 /*!
@@ -394,50 +359,31 @@ gpuIsInternalSkuFuseEnabled_GB202
 }
 
 /*!
- * @brief Check if GRCE that is present is required or not
+ * @brief Check if GRCE presence is required or not
  *
- * @param[in]  pGpu            OBJGPU pointer
- * @param[in]  engDesc
+ * @param[in]  pGpu                OBJGPU pointer
+ * @param[in]  engDesc             Engine Descriptor
+ * @param[out] pIsEngineRequired   Boolean to indicate whether the presence of the GRCE engine is required
  *
- * @return NV_TRUE if GRCE that is present is required, NV_FALSE otherwise
+ * @return NV_OK on success, NV_ERR_NOT_SUPPORTED otherwise
  */
-NvBool
+NV_STATUS
 gpuRequireGrCePresence_GB202
 (
     OBJGPU *pGpu,
-    ENGDESCRIPTOR  engDesc
+    ENGDESCRIPTOR  engDesc,
+    NvBool *pIsEngineRequired
 )
 {
     KernelFifo *pKernelFifo  = GPU_GET_KERNEL_FIFO(pGpu);
     NvBool    bSupported;
-
-    NV_ASSERT_OR_RETURN(pKernelFifo != NULL, NV_FALSE);
-
-    NvBool isEnginePresent = (kfifoCheckEngine_HAL(pGpu, pKernelFifo,
-                                         engDesc,
-                                         &bSupported) == NV_OK &&
-                                         bSupported);
-
-    RM_ENGINE_TYPE   rmCeEngineType = RM_ENGINE_TYPE_COPY(GET_CE_IDX(engDesc));
-
-    if (isEnginePresent)
-    {
-        // NOTE: This is a temporary WAR. This will be updated with a generic fix by finding partnered GR.
-        if ((rmCeEngineType == RM_ENGINE_TYPE_COPY1 && !(kfifoCheckEngine_HAL(pGpu, pKernelFifo,
-                                     ENG_GR(1),
-                                     &bSupported) == NV_OK &&
-               bSupported)) ||
-           (rmCeEngineType == RM_ENGINE_TYPE_COPY2 && !(kfifoCheckEngine_HAL(pGpu, pKernelFifo,
-                                     ENG_GR(2),
-                                     &bSupported) == NV_OK &&
-               bSupported)) ||
-           (rmCeEngineType == RM_ENGINE_TYPE_COPY3 && !(kfifoCheckEngine_HAL(pGpu, pKernelFifo,
-                                     ENG_GR(3),
-                                     &bSupported) == NV_OK &&
-               bSupported)))
-        {
-            isEnginePresent = NV_FALSE;
-        }
-    }
-    return isEnginePresent;
+    NV_ASSERT_OR_RETURN(pKernelFifo != NULL, NV_ERR_NOT_SUPPORTED);
+    // Check if GRCE actually exists
+    NvBool bCheckEnginePresence = (kfifoCheckEngine_HAL(pGpu, pKernelFifo,
+                                                        engDesc,
+                                                        &bSupported) == NV_OK &&
+                                   bSupported);
+    // check for partnered GR
+    *pIsEngineRequired = bCheckEnginePresence && ceIsCeGrce(pGpu, RM_ENGINE_TYPE_COPY(GET_CE_IDX(engDesc)));
+    return NV_OK;
 }

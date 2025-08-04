@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1154,7 +1154,7 @@ void nv_uvm_notify_start_device(const NvU8 *pUuid)
     NvProcessorUuid uvmUuid;
     struct UvmOpsUvmEvents *events;
 
-    memcpy(uvmUuid.uuid, pUuid, UVM_UUID_LEN);
+    memcpy(uvmUuid.uuid, pUuid, NV_UUID_LEN);
 
     // Synchronize callbacks with unregistration
     down(&g_pNvUvmEventsLock);
@@ -1175,7 +1175,7 @@ void nv_uvm_notify_stop_device(const NvU8 *pUuid)
     NvProcessorUuid uvmUuid;
     struct UvmOpsUvmEvents *events;
 
-    memcpy(uvmUuid.uuid, pUuid, UVM_UUID_LEN);
+    memcpy(uvmUuid.uuid, pUuid, NV_UUID_LEN);
 
     // Synchronize callbacks with unregistration
     down(&g_pNvUvmEventsLock);
@@ -1246,7 +1246,7 @@ NV_STATUS nv_uvm_drain_P2P(const NvU8 *uuid)
     struct UvmOpsUvmEvents *events;
     NV_STATUS ret = NV_ERR_NOT_SUPPORTED;
 
-    memcpy(uvmUuid.uuid, uuid, UVM_UUID_LEN);
+    memcpy(uvmUuid.uuid, uuid, NV_UUID_LEN);
 
     // Synchronize callbacks with unregistration
     down(&g_pNvUvmEventsLock);
@@ -1270,7 +1270,7 @@ NV_STATUS nv_uvm_resume_P2P(const NvU8 *uuid)
     struct UvmOpsUvmEvents *events;
     NV_STATUS ret = NV_ERR_NOT_SUPPORTED;
 
-    memcpy(uvmUuid.uuid, uuid, UVM_UUID_LEN);
+    memcpy(uvmUuid.uuid, uuid, NV_UUID_LEN);
 
     // Synchronize callbacks with unregistration
     down(&g_pNvUvmEventsLock);

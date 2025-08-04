@@ -482,6 +482,59 @@ bool DeviceImpl::setRawDscCaps(const NvU8 *buffer, NvU32 bufferSize)
     return parseDscCaps(&rawDscCaps[0], sizeof(rawDscCaps));
 }
 
+bool DeviceImpl::setValidatedRawDscCaps(NvU8 *buffer, NvU32 bufferSize)
+{
+     // DSC decompression support DPCD 0x60[0] should not be disabled
+     if ((buffer[0x0] & 0x1) == 0)
+         return false;
+
+     // DPCD 0X61h - DSC major version should be 1 and minor version can be either 1 or 2
+     if (!((buffer[0x1] & 0x1) && ((buffer[0x1] & 0x10) || (buffer[0x1] & 0x20))))
+         return false;
+
+     // DPCD 0x64h - DSC Slice Capabilities should not be 0
+     if (buffer[0x4] == 0)
+         return false;
+
+     // DPCD 0x65h - Line buffer bit depth can be less than equal to 8
+     if ((buffer[0x5] & 0xf) > 8)
+         return false;
+
+     // DPCD 0x69h - DSC Decoder Color format Capability should not be 0
+     if ((buffer[0x9] & 0xF) == 0)
+         return false;
+
+     // DPCD 0x6Ah - DSC Decoder Color Depth Capability should not be 0
+     if ((buffer[0xa] & 0x7) == 0)
+         return false;
+
+     // DPCD 0x6Bh - Either DSC peak throughput mode 0 or mode 1 should be non-zero
+     if (!((buffer[0xb] & 0xf) || (buffer[0xb] & 0xf0)))
+         return false;
+
+     // DPCD 0x6Ch - max slice width should not be 0
+     if ((buffer[0xc] & 0xff) == 0)
+         return false;
+
+     // DPCD 0x6fh - Bits per pixel Increment value should be less than 5
+     if ((buffer[0xf] & 0x7) > 4)
+         return false;
+
+     return setRawDscCaps(buffer, bufferSize);
+}
+
+bool DeviceImpl::validatePPSData(DSCPPSDATA *pPps)
+{
+    NVT_STATUS result = DSC_ValidatePPSData(pPps);
+    if (result != NVT_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "DPDEV> DSC PPS data validation failed!");
+        return false;
+    }
+    return true;
+}
+
+
 AuxBus::status DeviceImpl::transaction(Action action, Type type, int address,
                                        NvU8 * buffer, unsigned sizeRequested,
                                        unsigned * sizeCompleted,

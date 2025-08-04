@@ -85,6 +85,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__UserInfo =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_userinfoDestruct(UserInfo*);
 void __nvoc_dtor_RsShared(RsShared*);
 void __nvoc_dtor_UserInfo(UserInfo *pThis) {
     __nvoc_userinfoDestruct(pThis);
@@ -383,6 +384,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__RmClient =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_rmclientDestruct(RmClient*);
 void __nvoc_dtor_RsClient(RsClient*);
 void __nvoc_dtor_RmClient(RmClient *pThis) {
     __nvoc_rmclientDestruct(pThis);

@@ -85,6 +85,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelCtxShare =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_kctxshareDestruct(KernelCtxShare*);
 void __nvoc_dtor_RsShared(RsShared*);
 void __nvoc_dtor_KernelCtxShare(KernelCtxShare *pThis) {
     __nvoc_kctxshareDestruct(pThis);
@@ -334,17 +335,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCtxShareApi =
     /*pExportInfo=*/        &__nvoc_export_info__KernelCtxShareApi
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCtxShareApi[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kctxshareapiCtrlCmdSetTpcPartitionTable_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kctxshareapiCtrlCmdSetTpcPartitionTable_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*flags=*/      0x40u,
         /*accessRight=*/0x0u,
@@ -359,7 +362,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCt
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kctxshareapiCtrlCmdGetCwdWatermark_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kctxshareapiCtrlCmdGetCwdWatermark_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*flags=*/      0x40u,
         /*accessRight=*/0x0u,
@@ -374,7 +377,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCt
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kctxshareapiCtrlCmdSetCwdWatermark_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kctxshareapiCtrlCmdSetCwdWatermark_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*flags=*/      0x40u,
         /*accessRight=*/0x0u,
@@ -385,7 +388,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCt
         /*func=*/       "kctxshareapiCtrlCmdSetCwdWatermark"
 #endif
     },
-
 };
 
 
@@ -652,6 +654,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelCtxShareApi =
     /*pExportEntries=*/ __nvoc_exported_method_def_KernelCtxShareApi
 };
 
+void __nvoc_kctxshareapiDestruct(KernelCtxShareApi*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_KernelCtxShareApi(KernelCtxShareApi *pThis) {
     __nvoc_kctxshareapiDestruct(pThis);
@@ -685,28 +688,11 @@ __nvoc_ctor_KernelCtxShareApi_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_KernelCtxShareApi_1(KernelCtxShareApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // kctxshareapiCtrlCmdSetTpcPartitionTable -- exported (id=0x90670102)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
-    pThis->__kctxshareapiCtrlCmdSetTpcPartitionTable__ = &kctxshareapiCtrlCmdSetTpcPartitionTable_IMPL;
-#endif
-
-    // kctxshareapiCtrlCmdGetCwdWatermark -- exported (id=0x90670201)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
-    pThis->__kctxshareapiCtrlCmdGetCwdWatermark__ = &kctxshareapiCtrlCmdGetCwdWatermark_IMPL;
-#endif
-
-    // kctxshareapiCtrlCmdSetCwdWatermark -- exported (id=0x90670202)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
-    pThis->__kctxshareapiCtrlCmdSetCwdWatermark__ = &kctxshareapiCtrlCmdSetCwdWatermark_IMPL;
-#endif
-} // End __nvoc_init_funcTable_KernelCtxShareApi_1 with approximately 3 basic block(s).
+} // End __nvoc_init_funcTable_KernelCtxShareApi_1
 
 
-// Initialize vtable(s) for 28 virtual method(s).
+// Initialize vtable(s) for 25 virtual method(s).
 void __nvoc_init_funcTable_KernelCtxShareApi(KernelCtxShareApi *pThis) {
-
-    // Initialize vtable(s) with 3 per-object function pointer(s).
     __nvoc_init_funcTable_KernelCtxShareApi_1(pThis);
 }
 

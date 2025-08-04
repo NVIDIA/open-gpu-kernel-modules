@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -83,6 +83,12 @@ struct OBJHOSTENG {
 
     // Ancestor object pointers for `staticCast` feature
     struct OBJHOSTENG *__nvoc_pbase_OBJHOSTENG;    // hosteng
+
+    // 1 PDB property
+    NvBool PDB_PROP_HOSTENG_ENSURE_HALT_SUCCEEDS_BEFORE_RESET;
+
+    // Data members
+    NvBool bHostengHaltBeforeResetFailed;
 };
 
 
@@ -119,6 +125,11 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHOSTENG;
     ((OBJHOSTENG*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJHOSTENG)))
 #endif //__nvoc_host_eng_h_disabled
 
+// Property macros
+#define PDB_PROP_HOSTENG_ENSURE_HALT_SUCCEEDS_BEFORE_RESET_BASE_CAST
+#define PDB_PROP_HOSTENG_ENSURE_HALT_SUCCEEDS_BEFORE_RESET_BASE_NAME PDB_PROP_HOSTENG_ENSURE_HALT_SUCCEEDS_BEFORE_RESET
+
+
 NV_STATUS __nvoc_objCreateDynamic_OBJHOSTENG(OBJHOSTENG**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJHOSTENG(OBJHOSTENG**, Dynamic*, NvU32);
@@ -126,7 +137,9 @@ NV_STATUS __nvoc_objCreate_OBJHOSTENG(OBJHOSTENG**, Dynamic*, NvU32);
     __nvoc_objCreate_OBJHOSTENG((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+
+// Wrapper macros for halified functions
 #define hostengHaltAndReset_FNPTR(pHosteng) pHosteng->__nvoc_metadata_ptr->vtable.__hostengHaltAndReset__
 #define hostengHaltAndReset(pGpu, pHosteng, pRmTimeout) hostengHaltAndReset_DISPATCH(pGpu, pHosteng, pRmTimeout)
 

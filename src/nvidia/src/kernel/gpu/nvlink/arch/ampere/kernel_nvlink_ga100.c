@@ -28,6 +28,7 @@
 #include "kernel/gpu/nvlink/kernel_ioctrl.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/gpu.h"
+#include "swref/common_def_nvlink.h"
 
 /**
  * @brief This routine overrides the nvlink connection topology if chiplib arguments

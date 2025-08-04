@@ -374,39 +374,41 @@ static NvBool ValidateRegisterSurfaceRequest(
     return TRUE;
 }
 
-static NvBool ValidateSurfaceAddressSpace(
+static NvBool ValidateSurfaceAllocation(
     NVDevEvoPtr pDevEvo,
+    NvU64 rmObjectSizeInBytes,
     const struct NvKmsRegisterSurfaceRequest *pRequest,
     NvU32 rmHandle)
 {
     NV0041_CTRL_GET_SURFACE_INFO_PARAMS surfaceInfoParams = {};
-    NV0041_CTRL_SURFACE_INFO surfaceInfo = {};
+    NV0041_CTRL_SURFACE_INFO surfaceInfo[3];
+    enum {
+        PHYS_SIZE_LO = 0,
+        PHYS_SIZE_HI,
+        ADDR_SPACE_TYPE,
+    };
     NV_STATUS status;
-
+    NvU64 memSize;
     /*
-     * Don't do these checks on tegra. Tegra has different capabilities.
-     * Here we always say display is possible so we never fail framebuffer
-     * creation.
-     */
-    if (pDevEvo->isSOCDisplay) {
-        return TRUE;
-    }
-
-    /*
-     * Don't do these checks for surfaces that do not need access to display
+     * Do not require vidmem on tegra. Tegra has different capabilities. Here we
+     * always say display is possible so we never fail framebuffer creation.
+     *
+     * Do not require vidmem for surfaces that do not need access to display
      * hardware.
-     */
-    if (pRequest->noDisplayHardwareAccess) {
-        return TRUE;
-    }
-
-    /*
+     *
      * If the memory is not isochronous, the memory will not be scanned out to a
      * display. The checks are not needed for such memory types.
      */
-    if (pRequest->isoType != NVKMS_MEMORY_ISO) {
-        return TRUE;
-    }
+    NvBool requireVidmem = (pRequest->isoType == NVKMS_MEMORY_ISO) &&
+                           !pDevEvo->isSOCDisplay &&
+                           !pRequest->noDisplayHardwareAccess;
+
+    /*
+     * Check if the surface's actual size matches the request's sizeInBytes
+     * specification after duplicating the RM object under the NVKMS RM client.
+     */
+    surfaceInfo[PHYS_SIZE_LO].index = NV0041_CTRL_SURFACE_INFO_INDEX_PHYS_SIZE_LO;
+    surfaceInfo[PHYS_SIZE_HI].index = NV0041_CTRL_SURFACE_INFO_INDEX_PHYS_SIZE_HI;
 
     /*
      * Check if the memory we are registering this surface with is valid. We
@@ -415,9 +417,9 @@ static NvBool ValidateSurfaceAddressSpace(
      * If we cannot use this memory for display it may be resident in sysmem
      * or may belong to another GPU.
      */
-    surfaceInfo.index = NV0041_CTRL_SURFACE_INFO_INDEX_ADDR_SPACE_TYPE;
+    surfaceInfo[ADDR_SPACE_TYPE].index = NV0041_CTRL_SURFACE_INFO_INDEX_ADDR_SPACE_TYPE;
 
-    surfaceInfoParams.surfaceInfoListSize = 1;
+    surfaceInfoParams.surfaceInfoListSize = requireVidmem ? 3 : 2;
     surfaceInfoParams.surfaceInfoList = (NvP64)&surfaceInfo;
 
     status = nvRmApiControl(nvEvoGlobal.clientHandle,
@@ -427,12 +429,21 @@ static NvBool ValidateSurfaceAddressSpace(
                             sizeof(surfaceInfoParams));
     if (status != NV_OK) {
         nvEvoLogDevDebug(pDevEvo, EVO_LOG_ERROR,
-                          "Failed to get memory location of RM memory object 0x%x",
-                          rmHandle);
+                         "Failed to get surface information of RM memory object 0x%x",
+                         rmHandle);
         return FALSE;
     }
 
-    if (surfaceInfo.data != NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_VIDMEM) {
+    memSize = NvU64_BUILD(surfaceInfo[PHYS_SIZE_HI].data,
+                          surfaceInfo[PHYS_SIZE_LO].data);
+    if (memSize < rmObjectSizeInBytes) {
+        nvEvoLogDevDebug(pDevEvo, EVO_LOG_ERROR,
+                         "Memory allocated is not large enough for the surface");
+        return FALSE;
+    }
+
+    if (requireVidmem &&
+        surfaceInfo[ADDR_SPACE_TYPE].data != NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_VIDMEM) {
         nvEvoLogDevDebug(pDevEvo, EVO_LOG_ERROR,
                          "Memory used for surface not appropriate for scanout");
         return FALSE;
@@ -601,20 +612,37 @@ void nvEvoRegisterSurface(NVDevEvoPtr pDevEvo,
             goto fail;
         }
 
-        if (!ValidateSurfaceAddressSpace(pDevEvo, pRequest, planeRmHandle)) {
+        if (!ValidateSurfaceAllocation(pDevEvo,
+                                       pRequest->planes[planeIndex].rmObjectSizeInBytes,
+                                       pRequest,
+                                       planeRmHandle)) {
             goto fail;
         }
 
-        /* XXX Validate sizeInBytes: can we query the surface size from RM? */
-
         if (!pRequest->noDisplayHardwareAccess) {
-            NvU32 ret =
+            NvU32 ret;
+
+            /*
+             * For the surfaces that need display HW access, if the the 'fd' or the
+             * (rmClient, rmObject) tuple from the request is allocated from sysmem,
+             * irrespective of whether it is allocated by the same or a different GPU
+             * than the one nvkms is using for display or is allocated by an external
+             * allocator (like nvmap), map it for access by the GPU device that nvkms
+             * is using for display, using NV0041_CTRL_CMD_MAP_MEMORY_FOR_GPU_ACCESS.
+             * If the mapping is already created, the ctrl call will just refcount it.
+             */
+            if (pDevEvo->isSOCDisplay) {
+                pSurfaceEvo->mapToDisplayRm = TRUE;
+            }
+
+            ret =
                 nvRmAllocAndBindSurfaceDescriptor(
                         pDevEvo,
                         planeRmHandle,
                         pRequest->layout,
                         pRequest->planes[planeIndex].rmObjectSizeInBytes - 1,
-                        &pSurfaceEvo->planes[planeIndex].surfaceDesc);
+                        &pSurfaceEvo->planes[planeIndex].surfaceDesc,
+                        pSurfaceEvo->mapToDisplayRm);
             if (ret != NVOS_STATUS_SUCCESS) {
                 goto fail;
             }

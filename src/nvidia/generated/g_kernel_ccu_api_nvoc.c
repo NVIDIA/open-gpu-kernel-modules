@@ -121,17 +121,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCcuApi =
     /*pExportInfo=*/        &__nvoc_export_info__KernelCcuApi
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCcuApi[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kccuapiCtrlCmdSubscribe_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kccuapiCtrlCmdSubscribe_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -146,12 +148,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCc
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kccuapiCtrlCmdUnsubscribe_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kccuapiCtrlCmdUnsubscribe_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xcbca0102u,
-        /*paramSize=*/  0,
+        /*paramSize=*/  0 /* Singleton parameter list */,
         /*pClassInfo=*/ &(__nvoc_class_def_KernelCcuApi.classInfo),
 #if NV_PRINTF_STRINGS_ALLOWED
         /*func=*/       "kccuapiCtrlCmdUnsubscribe"
@@ -161,7 +163,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCc
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kccuapiCtrlCmdSetStreamState_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kccuapiCtrlCmdSetStreamState_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -176,7 +178,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCc
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kccuapiCtrlCmdGetStreamState_IMPL,
+        /*pFunc=*/      (void (*)(void)) &kccuapiCtrlCmdGetStreamState_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -187,7 +189,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCc
         /*func=*/       "kccuapiCtrlCmdGetStreamState"
 #endif
     },
-
 };
 
 
@@ -454,6 +455,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelCcuApi =
     /*pExportEntries=*/ __nvoc_exported_method_def_KernelCcuApi
 };
 
+void __nvoc_kccuapiDestruct(KernelCcuApi*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_KernelCcuApi(KernelCcuApi *pThis) {
     __nvoc_kccuapiDestruct(pThis);
@@ -487,33 +489,11 @@ __nvoc_ctor_KernelCcuApi_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_KernelCcuApi_1(KernelCcuApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // kccuapiCtrlCmdSubscribe -- exported (id=0xcbca0101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__kccuapiCtrlCmdSubscribe__ = &kccuapiCtrlCmdSubscribe_IMPL;
-#endif
-
-    // kccuapiCtrlCmdUnsubscribe -- exported (id=0xcbca0102)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__kccuapiCtrlCmdUnsubscribe__ = &kccuapiCtrlCmdUnsubscribe_IMPL;
-#endif
-
-    // kccuapiCtrlCmdSetStreamState -- exported (id=0xcbca0103)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__kccuapiCtrlCmdSetStreamState__ = &kccuapiCtrlCmdSetStreamState_IMPL;
-#endif
-
-    // kccuapiCtrlCmdGetStreamState -- exported (id=0xcbca0104)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__kccuapiCtrlCmdGetStreamState__ = &kccuapiCtrlCmdGetStreamState_IMPL;
-#endif
-} // End __nvoc_init_funcTable_KernelCcuApi_1 with approximately 4 basic block(s).
+} // End __nvoc_init_funcTable_KernelCcuApi_1
 
 
-// Initialize vtable(s) for 29 virtual method(s).
+// Initialize vtable(s) for 25 virtual method(s).
 void __nvoc_init_funcTable_KernelCcuApi(KernelCcuApi *pThis) {
-
-    // Initialize vtable(s) with 4 per-object function pointer(s).
     __nvoc_init_funcTable_KernelCcuApi_1(pThis);
 }
 

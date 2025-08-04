@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -116,13 +116,13 @@
 #define READ_CHANNEL_PAYLOAD_SEMA(channel)  channelReadChannelMemdesc(channel, channel->finishPayloadOffset)
 #define READ_CHANNEL_PB_SEMA(channel)       channelReadChannelMemdesc(channel, channel->semaOffset)
 
-// 
-// This struct contains parameters needed to send a pushbuffer for a CE
-// operation. This interface only supports contiguous operations. 
 //
-typedef struct 
+// This struct contains parameters needed to send a pushbuffer for a CE
+// operation. This interface only supports contiguous operations.
+//
+typedef struct
 {
-    NvBool bCeMemcopy;   // Whether this is a CE memcopy; 
+    NvBool bCeMemcopy;   // Whether this is a CE memcopy;
                          // If set to false, this will be a memset operation
     NvU64 dstAddr;       // Physical address of the source address
     NvU64 srcAddr;       // Physical address of the source address; only valid for memcopy
@@ -152,11 +152,12 @@ NV_STATUS channelWaitForFreeEntry(OBJCHANNEL *pChannel, NvU32 *pPutIndex);
 NV_STATUS channelFillGpFifo(OBJCHANNEL *pChannel, NvU32 putIndex, NvU32 methodsLength);
 NvU32 channelFillCePb(OBJCHANNEL *pChannel, NvU32 putIndex, NvBool bPipelined,
                       NvBool bInsertFinishPayload, CHANNEL_PB_INFO *pChannelPbInfo);
+
 NvU32 channelFillPbFastScrub(OBJCHANNEL *pChannel, NvU32 putIndex, NvBool bPipelined,
                     NvBool bInsertFinishPayload, CHANNEL_PB_INFO *pChannelPbInfo);
 
 NV_STATUS channelFillSec2Pb(OBJCHANNEL *pChannel, NvU32 putIndex, NvBool bInsertFinishPayload,
-                            CHANNEL_PB_INFO *pChannelPbInfo, CCSL_CONTEXT *pCcslCtx, 
+                            CHANNEL_PB_INFO *pChannelPbInfo, CCSL_CONTEXT *pCcslCtx,
                             MEMORY_DESCRIPTOR *pScrubMemDesc, MEMORY_DESCRIPTOR *pSemaMemDesc,
                             NvU64 scrubMthdAuthTagBufGpuVA, NvU32 scrubAuthTagBufIndex,
                             NvU64 semaMthdAuthTagBufGpuVA, NvU32 semaAuthTagBufIndex, NvU32* methodLength);

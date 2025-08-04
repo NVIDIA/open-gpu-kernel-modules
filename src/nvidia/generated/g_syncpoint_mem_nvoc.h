@@ -153,7 +153,12 @@ NV_STATUS __nvoc_objCreate_SyncpointMemory(SyncpointMemory**, Dynamic*, NvU32, C
     __nvoc_objCreate_SyncpointMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS syncpointConstruct_IMPL(struct SyncpointMemory *arg_pSyncpointMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_syncpointConstruct(arg_pSyncpointMemory, arg_pCallContext, arg_pParams) syncpointConstruct_IMPL(arg_pSyncpointMemory, arg_pCallContext, arg_pParams)
+
+
+// Wrapper macros for halified functions
 #define syncpointCanCopy_FNPTR(pSyncpointMemory) pSyncpointMemory->__nvoc_metadata_ptr->vtable.__syncpointCanCopy__
 #define syncpointCanCopy(pSyncpointMemory) syncpointCanCopy_DISPATCH(pSyncpointMemory)
 #define syncpointIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsDuplicate__
@@ -314,9 +319,6 @@ static inline void syncpointAddAdditionalDependants_DISPATCH(struct RsClient *pC
 
 NvBool syncpointCanCopy_IMPL(struct SyncpointMemory *pSyncpointMemory);
 
-NV_STATUS syncpointConstruct_IMPL(struct SyncpointMemory *arg_pSyncpointMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_syncpointConstruct(arg_pSyncpointMemory, arg_pCallContext, arg_pParams) syncpointConstruct_IMPL(arg_pSyncpointMemory, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 

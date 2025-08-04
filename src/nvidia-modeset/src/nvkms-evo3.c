@@ -1588,11 +1588,11 @@ static void EvoSetRasterParamsC5(NVDevEvoPtr pDevEvo, int head,
 static NvU32 GetHdmiDscHBlankPixelTarget(const NVHwModeTimingsEvo *pTimings,
                                          const NVDscInfoEvoRec *pDscInfo)
 {
-    nvAssert((pDscInfo->dp.dscMode == NV_DSC_EVO_MODE_DUAL) ||
-                 (pDscInfo->dp.dscMode == NV_DSC_EVO_MODE_SINGLE));
+    nvAssert((pDscInfo->hdmi.dscMode == NV_DSC_EVO_MODE_DUAL) ||
+             (pDscInfo->hdmi.dscMode == NV_DSC_EVO_MODE_SINGLE));
 
     const NvU32 hblankMin =
-        (pDscInfo->dp.dscMode == NV_DSC_EVO_MODE_DUAL) ?
+        (pDscInfo->hdmi.dscMode == NV_DSC_EVO_MODE_DUAL) ?
             ((pDscInfo->hdmi.hblankMin + 1) / 2) :
             pDscInfo->hdmi.hblankMin;
 
@@ -1603,7 +1603,7 @@ static NvU32 GetHdmiDscHBlankPixelTarget(const NVHwModeTimingsEvo *pTimings,
 
     hBlankPixelTarget = NV_MAX(hblankMin, hBlankPixelTarget);
 
-    if (pDscInfo->dp.dscMode == NV_DSC_EVO_MODE_DUAL) {
+    if (pDscInfo->hdmi.dscMode == NV_DSC_EVO_MODE_DUAL) {
         hBlankPixelTarget += (hBlankPixelTarget % 2);
     }
 
@@ -8031,7 +8031,8 @@ static void EvoSetMergeModeC5(const NVDispEvoRec *pDispEvo,
 static NvU32 EvoAllocSurfaceDescriptorC3(
     NVDevEvoPtr pDevEvo, NVSurfaceDescriptor *pSurfaceDesc,
     NvU32 memoryHandle, NvU32 localCtxDmaFlags,
-    NvU64 limit)
+    NvU64 limit,
+    NvBool mapToDisplayRm)
 {
     return nvCtxDmaAlloc(pDevEvo, &pSurfaceDesc->ctxDmaHandle,
                          memoryHandle,

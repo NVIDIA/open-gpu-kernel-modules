@@ -91,6 +91,9 @@ enum NVDpLinkMode nvDPGetActiveLinkMode(NVDPLibConnectorPtr pDpLibConnector);
 
 void nvDPSetLinkHandoff(NVDPLibConnectorPtr pDpLibConnector, NvBool enable);
 
+NvBool nvDPIsFECForceEnabled(NVConnectorEvoPtr pConnectorEvo);
+NvBool nvDPForceEnableFEC(NVConnectorEvoPtr pConnectorEvo, NvBool enable);
+
 #ifdef __cplusplus
 };
 #endif

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -372,7 +372,7 @@ _gpuInitGlobalSurfaceOverride
     OBJGPU *pGpu
 )
 {
-    NvU32 globalOverride;
+    NvU32 globalOverride = 0;
 
     //
     // Precedence of global overrides.
@@ -387,7 +387,7 @@ _gpuInitGlobalSurfaceOverride
             (pGpu->instLocOverrides3 != 0) ||
             (pGpu->instLocOverrides4 != 0))
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_INFO,
                 "INSTLOC overrides may not work with large mem systems on GP100+\n");
         }
         else

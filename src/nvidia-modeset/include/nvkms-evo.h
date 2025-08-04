@@ -172,6 +172,7 @@ NvBool nvConstructHwModeTimingsEvo(const NVDpyEvoRec *pDpyEvo,
                                    const struct NvKmsMode *pKmsMode,
                                    const struct NvKmsSize *pViewPortSizeIn,
                                    const struct NvKmsRect *pViewPortOut,
+                                   const NvBool dscPassThrough,
                                    NVDpyAttributeColor *pDpyColor,
                                    NVHwModeTimingsEvoPtr pTimings,
                                    const struct NvKmsModeValidationParams

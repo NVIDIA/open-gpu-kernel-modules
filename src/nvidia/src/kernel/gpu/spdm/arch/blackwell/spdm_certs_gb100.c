@@ -91,9 +91,9 @@ spdmGetIndividualCertificate_GB100
 {
     NV_STATUS              status;
     NvU64                  certSize;
-    NvBool                 bNeedCopy   = NV_FALSE;
-    const BINDATA_ARCHIVE *pBinArchive = NULL;
-    const BINDATA_STORAGE *pBinStorage = NULL;
+    NvBool                 bNeedCopy        = NV_FALSE;
+    const BINDATA_ARCHIVE *pBinArchive      = NULL;
+    const BINDATA_STORAGE *pBinStorage      = NULL;
 
     if (pCertSize == NULL)
     {
@@ -126,16 +126,19 @@ spdmGetIndividualCertificate_GB100
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    pBinStorage = bDerFormat ?
-                  (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_CERTIFICATE_DER) :
-                  (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_CERTIFICATE_PEM);
+    pBinStorage = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_CERTIFICATE_PEM);
 
     if (pBinStorage == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
 
+
     certSize = bindataGetBufferSize(pBinStorage);
+    if (bDerFormat)
+    {
+        return spdmConvertCertificateToDer_HAL(pGpu, pSpdm, pBinStorage, bNeedCopy, pCert, pCertSize);
+    }
 
     if (bNeedCopy)
     {

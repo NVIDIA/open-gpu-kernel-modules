@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2024 NVIDIA Corporation
+    Copyright (c) 2016-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -40,6 +40,7 @@
 #include "uvm_tlb_batch.h"
 #include "nv_uvm_interface.h"
 #include "nv_uvm_types.h"
+#include "nv_uvm_user_types.h"
 
 #include "uvm_pushbuffer.h"
 
@@ -102,11 +103,11 @@ static NV_STATUS uvm_pte_buffer_init(uvm_va_range_t *va_range,
 
     pte_buffer->va_range = va_range;
     pte_buffer->gpu = gpu;
-    pte_buffer->mapping_info.cachingType        = (UvmRmGpuCachingType) map_rm_params->caching_type;
-    pte_buffer->mapping_info.mappingType        = (UvmRmGpuMappingType) map_rm_params->mapping_type;
-    pte_buffer->mapping_info.formatType         = (UvmRmGpuFormatType) map_rm_params->format_type;
-    pte_buffer->mapping_info.elementBits        = (UvmRmGpuFormatElementBits) map_rm_params->element_bits;
-    pte_buffer->mapping_info.compressionType    = (UvmRmGpuCompressionType) map_rm_params->compression_type;
+    pte_buffer->mapping_info.cachingType        = map_rm_params->caching_type;
+    pte_buffer->mapping_info.mappingType        = map_rm_params->mapping_type;
+    pte_buffer->mapping_info.formatType         = map_rm_params->format_type;
+    pte_buffer->mapping_info.elementBits        = map_rm_params->element_bits;
+    pte_buffer->mapping_info.compressionType    = map_rm_params->compression_type;
     if (va_range->type == UVM_VA_RANGE_TYPE_EXTERNAL)
         pte_buffer->mapping_info.mappingPageSize = page_size;
 
@@ -133,7 +134,8 @@ static NV_STATUS uvm_pte_buffer_get(uvm_pte_buffer_t *pte_buffer,
                                     NvHandle mem_handle,
                                     NvU64 map_offset,
                                     NvU64 map_size,
-                                    NvU64 **ptes_out)
+                                    NvU64 **ptes_out,
+                                    bool *need_l2_invalidate_at_unmap)
 {
     NV_STATUS status;
     size_t pte_offset;
@@ -155,6 +157,7 @@ static NV_STATUS uvm_pte_buffer_get(uvm_pte_buffer_t *pte_buffer,
     if (pte_buffer->pte_offset <= pte_offset && pte_buffer->pte_offset + pte_buffer->num_ptes >= pte_offset + num_ptes) {
         pte_offset -= pte_buffer->pte_offset;
         *ptes_out = (NvU64 *)((char *)pte_buffer->mapping_info.pteBuffer + pte_offset * pte_buffer->pte_size);
+        *need_l2_invalidate_at_unmap = pte_buffer->mapping_info.bNeedL2InvalidateAtUnmap;
         return NV_OK;
     }
 
@@ -202,7 +205,7 @@ static NV_STATUS uvm_pte_buffer_get(uvm_pte_buffer_t *pte_buffer,
     }
 
     *ptes_out = pte_buffer->mapping_info.pteBuffer;
-
+    *need_l2_invalidate_at_unmap = pte_buffer->mapping_info.bNeedL2InvalidateAtUnmap;
     return NV_OK;
 }
 
@@ -281,7 +284,8 @@ static NV_STATUS map_rm_pt_range(uvm_page_tree_t *tree,
                                  NvHandle mem_handle,
                                  NvU64 map_start,
                                  NvU64 map_offset,
-                                 uvm_tracker_t *tracker)
+                                 uvm_tracker_t *tracker,
+                                 bool *need_l2_invalidate_out)
 {
     uvm_gpu_phys_address_t pte_addr;
     NvU64 page_size = pt_range->page_size;
@@ -308,14 +312,18 @@ static NV_STATUS map_rm_pt_range(uvm_page_tree_t *tree,
     ptes_left = (size_t)uvm_div_pow2_64(uvm_page_table_range_size(pt_range), page_size);
     while (addr < end) {
         NvU64 *pte_bits;
+        bool need_l2_invalidate = false;
 
         num_ptes = min(max_ptes, ptes_left);
         map_size = num_ptes * page_size;
         UVM_ASSERT(addr + map_size <= end + 1);
 
-        status = uvm_pte_buffer_get(pte_buffer, mem_handle, map_offset, map_size, &pte_bits);
+        status = uvm_pte_buffer_get(pte_buffer, mem_handle, map_offset, map_size, &pte_bits, &need_l2_invalidate);
         if (status != NV_OK)
             return status;
+
+        if (need_l2_invalidate)
+            *need_l2_invalidate_out = true;
 
         last_mapping = (addr + map_size - 1 == range_node->end);
 
@@ -381,6 +389,7 @@ NV_STATUS uvm_va_range_map_rm_allocation(uvm_va_range_t *va_range,
     NvU64 map_offset = map_rm_params->map_offset;
     size_t i;
     NV_STATUS status;
+    bool need_l2_invalidate = false;
     uvm_tracker_t *tracker;
 
     // Track local pushes in a separate tracker, instead of adding them
@@ -433,6 +442,10 @@ NV_STATUS uvm_va_range_map_rm_allocation(uvm_va_range_t *va_range,
                                  &pte_buffer);
     if (status != NV_OK)
         return status;
+    
+    // Initialize L2 invalidation flag
+    if (ext_gpu_map) 
+        ext_gpu_map->need_l2_invalidate_at_unmap = false;
 
     // Allocate all page tables for this VA range.
     //
@@ -451,6 +464,7 @@ NV_STATUS uvm_va_range_map_rm_allocation(uvm_va_range_t *va_range,
     addr = node->start;
     for (i = 0; i < pt_range_vec->range_count; i++) {
         pt_range = &pt_range_vec->ranges[i];
+        need_l2_invalidate = false;
 
         // External allocations track pushes in their own trackers. User channel
         // mappings don't have their own trackers, so for those the local tracker
@@ -462,13 +476,19 @@ NV_STATUS uvm_va_range_map_rm_allocation(uvm_va_range_t *va_range,
                                  ext_gpu_map ? ext_gpu_map->mem_handle->rm_handle : 0,
                                  addr,
                                  map_offset,
-                                 tracker);
+                                 tracker,
+                                 &need_l2_invalidate);
         if (status != NV_OK)
             goto out;
 
         size = uvm_page_table_range_size(pt_range);
         addr += size;
         map_offset += size;
+
+        if(need_l2_invalidate) {
+            UVM_ASSERT(ext_gpu_map);
+            ext_gpu_map->need_l2_invalidate_at_unmap = true;
+        }
     }
 
     status = uvm_tracker_add_tracker(out_tracker, tracker);
@@ -495,12 +515,6 @@ out:
 
 static bool uvm_api_mapping_type_invalid(UvmGpuMappingType map_type)
 {
-    BUILD_BUG_ON((int)UvmGpuMappingTypeDefault != (int)UvmRmGpuMappingTypeDefault);
-    BUILD_BUG_ON((int)UvmGpuMappingTypeReadWriteAtomic != (int)UvmRmGpuMappingTypeReadWriteAtomic);
-    BUILD_BUG_ON((int)UvmGpuMappingTypeReadWrite != (int)UvmRmGpuMappingTypeReadWrite);
-    BUILD_BUG_ON((int)UvmGpuMappingTypeReadOnly != (int)UvmRmGpuMappingTypeReadOnly);
-    BUILD_BUG_ON((int)UvmGpuMappingTypeCount != (int)UvmRmGpuMappingTypeCount);
-
     switch (map_type) {
         case UvmGpuMappingTypeDefault:
         case UvmGpuMappingTypeReadWriteAtomic:
@@ -514,11 +528,6 @@ static bool uvm_api_mapping_type_invalid(UvmGpuMappingType map_type)
 
 static bool uvm_api_caching_type_invalid(UvmGpuCachingType cache_type)
 {
-    BUILD_BUG_ON((int)UvmGpuCachingTypeDefault != (int)UvmRmGpuCachingTypeDefault);
-    BUILD_BUG_ON((int)UvmGpuCachingTypeForceUncached != (int)UvmRmGpuCachingTypeForceUncached);
-    BUILD_BUG_ON((int)UvmGpuCachingTypeForceCached != (int)UvmRmGpuCachingTypeForceCached);
-    BUILD_BUG_ON((int)UvmGpuCachingTypeCount != (int)UvmRmGpuCachingTypeCount);
-
     switch (cache_type) {
         case UvmGpuCachingTypeDefault:
         case UvmGpuCachingTypeForceUncached:
@@ -533,22 +542,6 @@ static bool uvm_api_kind_type_invalid(UvmGpuFormatType format_type,
                                       UvmGpuFormatElementBits element_bits,
                                       UvmGpuCompressionType compression_type)
 {
-    BUILD_BUG_ON((int)UvmGpuFormatTypeDefault != (int)UvmRmGpuFormatTypeDefault);
-    BUILD_BUG_ON((int)UvmGpuFormatTypeBlockLinear != (int)UvmRmGpuFormatTypeBlockLinear);
-    BUILD_BUG_ON((int)UvmGpuFormatTypeCount != (int)UvmRmGpuFormatTypeCount);
-
-    BUILD_BUG_ON((int)UvmGpuFormatElementBitsDefault != (int)UvmRmGpuFormatElementBitsDefault);
-    BUILD_BUG_ON((int)UvmGpuFormatElementBits8 != (int)UvmRmGpuFormatElementBits8);
-    BUILD_BUG_ON((int)UvmGpuFormatElementBits16 != (int)UvmRmGpuFormatElementBits16);
-    BUILD_BUG_ON((int)UvmGpuFormatElementBits32 != (int)UvmRmGpuFormatElementBits32);
-    BUILD_BUG_ON((int)UvmGpuFormatElementBits64 != (int)UvmRmGpuFormatElementBits64);
-    BUILD_BUG_ON((int)UvmGpuFormatElementBits128 != (int)UvmRmGpuFormatElementBits128);
-    BUILD_BUG_ON((int)UvmGpuFormatElementBitsCount != (int)UvmRmGpuFormatElementBitsCount);
-
-    BUILD_BUG_ON((int)UvmGpuCompressionTypeDefault != (int)UvmRmGpuCompressionTypeDefault);
-    BUILD_BUG_ON((int)UvmGpuCompressionTypeEnabledNoPlc != (int)UvmRmGpuCompressionTypeEnabledNoPlc);
-    BUILD_BUG_ON((int)UvmGpuCompressionTypeCount != (int)UvmRmGpuCompressionTypeCount);
-
     if (compression_type >= UvmGpuCompressionTypeCount)
         return true;
 
@@ -1264,7 +1257,7 @@ void uvm_ext_gpu_map_destroy(uvm_va_range_external_t *external_range,
     uvm_membar_t membar;
     uvm_ext_gpu_range_tree_t *range_tree;
     uvm_gpu_t *mapped_gpu;
-
+    NV_STATUS status;
     if (!ext_gpu_map)
         return;
 
@@ -1282,6 +1275,14 @@ void uvm_ext_gpu_map_destroy(uvm_va_range_external_t *external_range,
     mapped_gpu = ext_gpu_map->gpu;
 
     range_tree = uvm_ext_gpu_range_tree(external_range, mapped_gpu);
+
+    // Perform L2 cache invalidation for noncoherent sysmem mappings. 
+    // This is done only on systems with write-back cache which is iGPUs as of now.
+    if (ext_gpu_map->need_l2_invalidate_at_unmap) {
+        UVM_ASSERT(ext_gpu_map->gpu->parent->is_integrated_gpu);
+        status = uvm_mmu_l2_invalidate_noncoh_sysmem(mapped_gpu);
+        UVM_ASSERT(status == NV_OK);
+    }
 
     uvm_assert_mutex_locked(&range_tree->lock);
     UVM_ASSERT(uvm_gpu_va_space_get(external_range->va_range.va_space, mapped_gpu));
@@ -1369,103 +1370,4 @@ NV_STATUS uvm_api_unmap_external(UVM_UNMAP_EXTERNAL_PARAMS *params, struct file 
 {
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
     return uvm_unmap_external(va_space, params->base, params->length, &params->gpuUuid);
-}
-
-// This destroys VA ranges created by UvmMapExternalAllocation,
-// UvmMapDynamicParallelismRegion, UvmAllocDeviceP2P and UvmAllocSemaphorePool
-// *only*. VA ranges created by UvmMemMap and UvmAlloc go through mmap/munmap.
-static NV_STATUS uvm_free(uvm_va_space_t *va_space, NvU64 base, NvU64 length)
-{
-    uvm_va_range_t *va_range;
-    NV_STATUS status = NV_OK;
-    uvm_processor_mask_t *retained_mask = NULL;
-    uvm_gpu_t *retained_gpu = NULL;
-    LIST_HEAD(deferred_free_list);
-
-    if (uvm_api_range_invalid_4k(base, length))
-        return NV_ERR_INVALID_ADDRESS;
-
-    uvm_va_space_down_write(va_space);
-
-    // Non-managed ranges are defined to not require splitting, so a partial
-    // free attempt is an error.
-    //
-    // TODO: Bug 1763676: The length parameter may be needed for MPS. If not, it
-    //       should be removed from the ioctl.
-    va_range = uvm_va_range_find(va_space, base);
-    if (!va_range                                    ||
-        (va_range->type != UVM_VA_RANGE_TYPE_EXTERNAL &&
-         va_range->type != UVM_VA_RANGE_TYPE_SKED_REFLECTED &&
-         va_range->type != UVM_VA_RANGE_TYPE_DEVICE_P2P &&
-         va_range->type != UVM_VA_RANGE_TYPE_SEMAPHORE_POOL) ||
-        va_range->node.start != base                 ||
-        va_range->node.end != base + length - 1) {
-        status = NV_ERR_INVALID_ADDRESS;
-        goto out;
-    }
-
-    if ((va_range->type == UVM_VA_RANGE_TYPE_SEMAPHORE_POOL) &&
-        uvm_mem_mapped_on_cpu_user(uvm_va_range_to_semaphore_pool(va_range)->mem)) {
-        // Semaphore pools must be first unmapped from the CPU with munmap to
-        // invalidate the vma.
-        status = NV_ERR_INVALID_ARGUMENT;
-        goto out;
-    }
-
-    if (va_range->type == UVM_VA_RANGE_TYPE_EXTERNAL) {
-        uvm_va_range_external_t *external_range = uvm_va_range_to_external(va_range);
-
-        retained_mask = external_range->retained_mask;
-
-        // Set the retained_mask to NULL to prevent
-        // uvm_va_range_destroy_external() from freeing the mask.
-        external_range->retained_mask = NULL;
-
-        UVM_ASSERT(retained_mask);
-
-        // External ranges may have deferred free work, so the GPUs may have to
-        // be retained. Construct the mask of all the GPUs that need to be
-        // retained.
-        uvm_processor_mask_and(retained_mask, &external_range->mapped_gpus, &va_space->registered_gpus);
-    }
-
-    if (va_range->type == UVM_VA_RANGE_TYPE_DEVICE_P2P) {
-        uvm_va_range_device_p2p_t *device_p2p_range = uvm_va_range_to_device_p2p(va_range);
-
-        retained_gpu = device_p2p_range->gpu;
-    }
-
-    uvm_va_range_destroy(va_range, &deferred_free_list);
-
-    // If there is deferred work, retain the required GPUs.
-    if (!list_empty(&deferred_free_list)) {
-        if (retained_mask)
-            uvm_global_gpu_retain(retained_mask);
-        else
-            uvm_gpu_retain(retained_gpu);
-    }
-
-out:
-    uvm_va_space_up_write(va_space);
-
-    if (!list_empty(&deferred_free_list)) {
-        UVM_ASSERT(status == NV_OK);
-        uvm_deferred_free_object_list(&deferred_free_list);
-        if (retained_mask)
-            uvm_global_gpu_release(retained_mask);
-        else
-            uvm_gpu_release(retained_gpu);
-    }
-
-    // Free the mask allocated in uvm_va_range_create_external() since
-    // uvm_va_range_destroy() won't free this mask.
-    uvm_processor_mask_cache_free(retained_mask);
-
-    return status;
-}
-
-NV_STATUS uvm_api_free(UVM_FREE_PARAMS *params, struct file *filp)
-{
-    uvm_va_space_t *va_space = uvm_va_space_get(filp);
-    return uvm_free(va_space, params->base, params->length);
 }

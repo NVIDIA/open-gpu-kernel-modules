@@ -99,22 +99,6 @@ gpuGetVirtRegPhysOffset_TU102(OBJGPU *pGpu)
         return DRF_BASE(NV_VIRTUAL_FUNCTION_FULL_PHYS_OFFSET);
 }
 
-/*!
- * @brief Returns the physical address width for the given @ref NV_ADDRESS_SPACE
- */
-NvU32 gpuGetPhysAddrWidth_TU102
-(
-    OBJGPU          *pGpu,
-    NV_ADDRESS_SPACE addrSp
-)
-{
-    // Currently this function supports only sysmem addresses
-    NV_ASSERT_OR_RETURN(ADDR_SYSMEM == addrSp, 0);
-
-    return NV_CHIP_EXTENDED_SYSTEM_PHYSICAL_ADDRESS_BITS;
-}
-
-
 //
 // List of GPU children that present for the chip. List entries contain$
 // {CLASS-ID, # of instances} pairs, e.g.: {CE, 2} is 2 instance of OBJCE. This$

@@ -121,17 +121,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_NvencSession =
     /*pExportInfo=*/        &__nvoc_export_info__NvencSession
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_NvencSession[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) nvencsessionCtrlCmdNvencSwSessionUpdateInfo_IMPL,
+        /*pFunc=*/      (void (*)(void)) &nvencsessionCtrlCmdNvencSwSessionUpdateInfo_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -143,12 +145,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_NvencSes
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10008u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-        /*flags=*/      0x8u,
+        /*pFunc=*/      (void (*)(void)) &nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10008u)
+        /*flags=*/      0x10008u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xa0bc0102u,
         /*paramSize=*/  sizeof(NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_V2_PARAMS),
@@ -157,7 +159,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_NvencSes
         /*func=*/       "nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2"
 #endif
     },
-
 };
 
 
@@ -421,6 +422,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__NvencSession =
     /*pExportEntries=*/ __nvoc_exported_method_def_NvencSession
 };
 
+void __nvoc_nvencsessionDestruct(NvencSession*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_NvencSession(NvencSession *pThis) {
     __nvoc_nvencsessionDestruct(pThis);
@@ -454,23 +456,11 @@ __nvoc_ctor_NvencSession_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_NvencSession_1(NvencSession *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // nvencsessionCtrlCmdNvencSwSessionUpdateInfo -- exported (id=0xa0bc0101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__nvencsessionCtrlCmdNvencSwSessionUpdateInfo__ = &nvencsessionCtrlCmdNvencSwSessionUpdateInfo_IMPL;
-#endif
-
-    // nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2 -- exported (id=0xa0bc0102)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2__ = &nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_IMPL;
-#endif
-} // End __nvoc_init_funcTable_NvencSession_1 with approximately 2 basic block(s).
+} // End __nvoc_init_funcTable_NvencSession_1
 
 
-// Initialize vtable(s) for 27 virtual method(s).
+// Initialize vtable(s) for 25 virtual method(s).
 void __nvoc_init_funcTable_NvencSession(NvencSession *pThis) {
-
-    // Initialize vtable(s) with 2 per-object function pointer(s).
     __nvoc_init_funcTable_NvencSession_1(pThis);
 }
 

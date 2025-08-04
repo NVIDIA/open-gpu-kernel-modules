@@ -150,7 +150,15 @@ NV_STATUS __nvoc_objCreate_SyncGpuBoost(SyncGpuBoost**, Dynamic*, NvU32, struct 
     __nvoc_objCreate_SyncGpuBoost((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS syncgpuboostConstruct_IMPL(struct SyncGpuBoost *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_syncgpuboostConstruct(arg_pResource, arg_pCallContext, arg_pParams) syncgpuboostConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+
+void syncgpuboostDestruct_IMPL(struct SyncGpuBoost *pResource);
+#define __nvoc_syncgpuboostDestruct(pResource) syncgpuboostDestruct_IMPL(pResource)
+
+
+// Wrapper macros for halified functions
 #define syncgpuboostAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define syncgpuboostAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) syncgpuboostAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define syncgpuboostShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
@@ -279,12 +287,6 @@ static inline void syncgpuboostAddAdditionalDependants_DISPATCH(struct RsClient 
     pResource->__nvoc_metadata_ptr->vtable.__syncgpuboostAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-NV_STATUS syncgpuboostConstruct_IMPL(struct SyncGpuBoost *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_syncgpuboostConstruct(arg_pResource, arg_pCallContext, arg_pParams) syncgpuboostConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
-void syncgpuboostDestruct_IMPL(struct SyncGpuBoost *pResource);
-
-#define __nvoc_syncgpuboostDestruct(pResource) syncgpuboostDestruct_IMPL(pResource)
 #undef PRIVATE_FIELD
 
 

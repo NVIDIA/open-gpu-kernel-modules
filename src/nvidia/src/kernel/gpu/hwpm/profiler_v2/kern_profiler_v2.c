@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,7 +23,10 @@
 
 #include "gpu/hwpm/profiler_v2.h"
 #include "gpu/hwpm/kern_hwpm.h"
+#include "rmapi/rs_utils.h"
 #include "vgpu/rpc.h"
+#include "kernel/gpu/fifo/kernel_channel_group_api.h"
+#include "kernel/gpu/fifo/kernel_channel_group.h"
 
 static NV_INLINE NvBool
 _isNonAdminProfilingPermitted(OBJGPU *pGpu)
@@ -274,7 +277,7 @@ profilerBaseDestructState_VF
 
         if (pProf->pPmaStreamList[pmaChIdx].pNumBytesCpuAddr != NvP64_NULL )
         {
-            memdescUnmap(pProf->pPmaStreamList[pmaChIdx].pNumBytesBufDesc, NV_TRUE, osGetCurrentProcess(),
+            memdescUnmap(pProf->pPmaStreamList[pmaChIdx].pNumBytesBufDesc, NV_TRUE,
                          pProf->pPmaStreamList[pmaChIdx].pNumBytesCpuAddr,
                          pProf->pPmaStreamList[pmaChIdx].pNumBytesCpuAddrPriv);
         }
@@ -548,12 +551,9 @@ profilerDevConstructStateEpilogue_FWCLIENT
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    ProfilerBase *pProfBase = staticCast(pProfDev, ProfilerBase);
     RsResourceRef *pParentRef = pCallContext->pResourceRef->pParentRef;
 
     NV_ASSERT_OR_RETURN((pParentRef->internalClassId == classId(Subdevice)), NV_ERR_INVALID_OBJECT_PARENT);
-
-    pProfBase->hSubDevice = pParentRef->hResource;
 
     return NV_OK;
 }
@@ -615,13 +615,47 @@ profilerCtxConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    ProfilerBase      *pProfBase  = staticCast(pProfCtx, ProfilerBase);
+    OBJGPU            *pGpu        = GPU_RES_GET_GPU(pProfCtx);
+    KernelHwpm        *pKernelHwpm = GPU_GET_KERNEL_HWPM(pGpu);
+    ProfilerBase      *pProfBase   = staticCast(pProfCtx, ProfilerBase);
+    RsResourceRef     *pParentRef  = pCallContext->pResourceRef->pParentRef;
+    RmClient          *pClient     = serverutilGetClientUnderLock(pCallContext->pClient->hClient);
     PROFILER_CLIENT_PERMISSIONS clientPermissions = {0};
 
-    if (!profilerBaseQueryCapabilities_HAL(pProfBase, pCallContext, pParams,
-                                            &clientPermissions))
+    if (!pKernelHwpm->getProperty(pKernelHwpm, PDB_PROP_KHWPM_PROFILING_B1CC_SUPPORTED))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Context level profiler is not supported\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    if (!profilerBaseQueryCapabilities_HAL(pProfBase, pCallContext, pParams, &clientPermissions))
     {
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
+    //
+    // Bug: 5225901
+    // Restrict B1CC HES the profiler session to user with profiling permission
+    // when TSG is shared between multiple processes (MPS mode).
+    //
+    if (pParentRef->internalClassId == classId(KernelChannelGroupApi) && pClient)
+    {
+        API_SECURITY_INFO   *pSecInfo   = pParams->pSecInfo;
+
+        if (!_isProfilingPermitted(pGpu, pProfBase, pSecInfo))
+        {
+            CHANNEL_NODE   *pChanNode;
+            KernelChannelGroupApi *pKernelChannelGroupApi = dynamicCast(pParentRef->pResource,
+                                                                KernelChannelGroupApi);
+            KernelChannelGroup *pKernelChannelGroup = pKernelChannelGroupApi->pKernelChannelGroup;
+
+            for (pChanNode = pKernelChannelGroup->pChanList->pHead; pChanNode; pChanNode = pChanNode->pNext)
+            {
+                KernelChannel *pChannel = pChanNode->pKernelChannel;
+
+                NV_CHECK_OR_RETURN(LEVEL_NOTICE, (pClient->ProcID == pChannel->ProcessID),  NV_ERR_INSUFFICIENT_PERMISSIONS);
+            }
+        }
     }
 
     return profilerCtxConstructState(pProfCtx, pCallContext, pParams, clientPermissions);

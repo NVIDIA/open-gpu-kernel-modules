@@ -303,6 +303,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__MIGMonitorSession =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_migmonitorsessionDestruct(MIGMonitorSession*);
 void __nvoc_dtor_RmResource(RmResource*);
 void __nvoc_dtor_MIGMonitorSession(MIGMonitorSession *pThis) {
     __nvoc_migmonitorsessionDestruct(pThis);

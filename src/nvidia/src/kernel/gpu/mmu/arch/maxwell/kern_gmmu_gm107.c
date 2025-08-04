@@ -302,30 +302,6 @@ kgmmuDetermineMaxVASize_GM107
     }
 }
 
-/*
- * @brief Checks the system memory address against the PA capabilities of the
- *        GMMU.
- */
-void
-kgmmuEncodeSysmemAddrs_GM107
-(
-    KernelGmmu *pKernelGmmu,
-    NvU64      *pAddresses,
-    NvU64       count
-)
-{
-    OBJGPU     *pGpu    = ENG_GET_GPU(pKernelGmmu);
-    const NvU32 paWidth = gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM);
-    NvU64 i;
-
-    for (i = 0; i < count; ++i)
-    {
-        NvU64 address = pAddresses[i];
-
-        NV_ASSERT(address <= (NVBIT64(paWidth) - 1));
-    }
-}
-
 /*!
  * @brief This function returns the largest page size
  * that is supported by the system.

@@ -24,9 +24,9 @@
 #if defined(NVRM)
 #   include "os/os.h"
 #else
-#   include "shrdebug.h"
 #   include "nvos.h"
 #endif
+#include "utils/nvassert.h"
 #include "containers/eheap_old.h"
 
 #if !defined(SRT_BUILD)

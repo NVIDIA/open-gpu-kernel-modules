@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,6 +39,7 @@ typedef enum
     DEVICE_INDEX_FUSE,
     DEVICE_INDEX_KFUSE,
     DEVICE_INDEX_MIPICAL,
+    DEVICE_INDEX_HFRP,
     DEVICE_INDEX_MAX  //Should always be the last entry
 } DEVICE_INDEX;
 
@@ -47,6 +48,8 @@ typedef enum
     SOC_DEV_MAPPING_DISP = 0,
     SOC_DEV_MAPPING_DPAUX0,
     SOC_DEV_MAPPING_DPAUX1,
+    SOC_DEV_MAPPING_DPAUX2,
+    SOC_DEV_MAPPING_DPAUX3,  // Update NV_MAX_SOC_DPAUX_NUM_DEVICES if adding new DPAUX mappings
     SOC_DEV_MAPPING_HDACODEC,
     SOC_DEV_MAPPING_MIPICAL,
     SOC_DEV_MAPPING_MAX

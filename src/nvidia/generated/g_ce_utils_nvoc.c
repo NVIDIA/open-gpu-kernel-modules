@@ -80,6 +80,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__CeUtils =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_ceutilsDestruct(CeUtils*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_CeUtils(CeUtils *pThis) {
     __nvoc_ceutilsDestruct(pThis);
@@ -312,17 +313,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_CeUtilsApi =
     /*pExportInfo=*/        &__nvoc_export_info__CeUtilsApi
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_CeUtilsApi[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) ceutilsapiCtrlCmdMemset_IMPL,
+        /*pFunc=*/      (void (*)(void)) &ceutilsapiCtrlCmdMemset_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
         /*flags=*/      0x104u,
         /*accessRight=*/0x0u,
@@ -337,7 +340,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_CeUtilsA
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) ceutilsapiCtrlCmdMemcopy_IMPL,
+        /*pFunc=*/      (void (*)(void)) &ceutilsapiCtrlCmdMemcopy_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
         /*flags=*/      0x104u,
         /*accessRight=*/0x0u,
@@ -352,7 +355,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_CeUtilsA
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) ceutilsapiCtrlCmdCheckProgress_IMPL,
+        /*pFunc=*/      (void (*)(void)) &ceutilsapiCtrlCmdCheckProgress_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
         /*flags=*/      0x104u,
         /*accessRight=*/0x0u,
@@ -363,7 +366,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_CeUtilsA
         /*func=*/       "ceutilsapiCtrlCmdCheckProgress"
 #endif
     },
-
 };
 
 
@@ -627,6 +629,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__CeUtilsApi =
     /*pExportEntries=*/ __nvoc_exported_method_def_CeUtilsApi
 };
 
+void __nvoc_ceutilsapiDestruct(CeUtilsApi*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_CeUtilsApi(CeUtilsApi *pThis) {
     __nvoc_ceutilsapiDestruct(pThis);
@@ -660,28 +663,11 @@ __nvoc_ctor_CeUtilsApi_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_CeUtilsApi_1(CeUtilsApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // ceutilsapiCtrlCmdMemset -- exported (id=0x500101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
-    pThis->__ceutilsapiCtrlCmdMemset__ = &ceutilsapiCtrlCmdMemset_IMPL;
-#endif
-
-    // ceutilsapiCtrlCmdMemcopy -- exported (id=0x500102)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
-    pThis->__ceutilsapiCtrlCmdMemcopy__ = &ceutilsapiCtrlCmdMemcopy_IMPL;
-#endif
-
-    // ceutilsapiCtrlCmdCheckProgress -- exported (id=0x500103)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
-    pThis->__ceutilsapiCtrlCmdCheckProgress__ = &ceutilsapiCtrlCmdCheckProgress_IMPL;
-#endif
-} // End __nvoc_init_funcTable_CeUtilsApi_1 with approximately 3 basic block(s).
+} // End __nvoc_init_funcTable_CeUtilsApi_1
 
 
-// Initialize vtable(s) for 28 virtual method(s).
+// Initialize vtable(s) for 25 virtual method(s).
 void __nvoc_init_funcTable_CeUtilsApi(CeUtilsApi *pThis) {
-
-    // Initialize vtable(s) with 3 per-object function pointer(s).
     __nvoc_init_funcTable_CeUtilsApi_1(pThis);
 }
 

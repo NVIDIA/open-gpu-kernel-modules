@@ -103,6 +103,7 @@ struct KernelIoctrl {
     NV_STATUS (*__kioctrlMinionConstruct__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // halified (2 hals) body
 
     // 4 PDB properties
+//  NvBool PDB_PROP_KIOCTRL_IS_MISSING inherited from OBJENGSTATE
     NvBool PDB_PROP_KIOCTRL_MINION_AVAILABLE;
     NvBool PDB_PROP_KIOCTRL_MINION_FORCE_BOOT;
     NvBool PDB_PROP_KIOCTRL_MINION_CACHE_SEEDS;
@@ -139,6 +140,7 @@ struct KernelIoctrl_PRIVATE {
     NV_STATUS (*__kioctrlMinionConstruct__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // halified (2 hals) body
 
     // 4 PDB properties
+//  NvBool PDB_PROP_KIOCTRL_IS_MISSING inherited from OBJENGSTATE
     NvBool PDB_PROP_KIOCTRL_MINION_AVAILABLE;
     NvBool PDB_PROP_KIOCTRL_MINION_FORCE_BOOT;
     NvBool PDB_PROP_KIOCTRL_MINION_CACHE_SEEDS;
@@ -202,14 +204,15 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelIoctrl;
 #endif //__nvoc_kernel_ioctrl_h_disabled
 
 // Property macros
-#define PDB_PROP_KIOCTRL_MINION_CACHE_SEEDS_BASE_CAST
-#define PDB_PROP_KIOCTRL_MINION_CACHE_SEEDS_BASE_NAME PDB_PROP_KIOCTRL_MINION_CACHE_SEEDS
 #define PDB_PROP_KIOCTRL_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_KIOCTRL_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 #define PDB_PROP_KIOCTRL_MINION_AVAILABLE_BASE_CAST
 #define PDB_PROP_KIOCTRL_MINION_AVAILABLE_BASE_NAME PDB_PROP_KIOCTRL_MINION_AVAILABLE
 #define PDB_PROP_KIOCTRL_MINION_FORCE_BOOT_BASE_CAST
 #define PDB_PROP_KIOCTRL_MINION_FORCE_BOOT_BASE_NAME PDB_PROP_KIOCTRL_MINION_FORCE_BOOT
+#define PDB_PROP_KIOCTRL_MINION_CACHE_SEEDS_BASE_CAST
+#define PDB_PROP_KIOCTRL_MINION_CACHE_SEEDS_BASE_NAME PDB_PROP_KIOCTRL_MINION_CACHE_SEEDS
+
 
 NV_STATUS __nvoc_objCreateDynamic_KernelIoctrl(KernelIoctrl**, Dynamic*, NvU32, va_list);
 
@@ -218,7 +221,18 @@ NV_STATUS __nvoc_objCreate_KernelIoctrl(KernelIoctrl**, Dynamic*, NvU32);
     __nvoc_objCreate_KernelIoctrl((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+void kioctrlDestructEngine_IMPL(struct KernelIoctrl *arg_this);
+#ifdef __nvoc_kernel_ioctrl_h_disabled
+static inline void kioctrlDestructEngine(struct KernelIoctrl *arg_this) {
+    NV_ASSERT_FAILED_PRECOMP("KernelIoctrl was disabled!");
+}
+#else // __nvoc_kernel_ioctrl_h_disabled
+#define kioctrlDestructEngine(arg_this) kioctrlDestructEngine_IMPL(arg_this)
+#endif // __nvoc_kernel_ioctrl_h_disabled
+
+
+// Wrapper macros for halified functions
 #define kioctrlConstructEngine_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kioctrlConstructEngine__
 #define kioctrlConstructEngine(arg1, arg_this, arg3) kioctrlConstructEngine_DISPATCH(arg1, arg_this, arg3)
 #define kioctrlGetMinionEnableDefault_FNPTR(pKernelIoctrl) pKernelIoctrl->__kioctrlGetMinionEnableDefault__
@@ -347,16 +361,6 @@ static inline NvU32 kioctrlGetPublicId(struct OBJGPU *pGpu, struct KernelIoctrl 
     struct KernelIoctrl_PRIVATE *pKernelIoctrl_PRIVATE = (struct KernelIoctrl_PRIVATE *)pKernelIoctrl;
     return pKernelIoctrl_PRIVATE->PublicId;
 }
-
-void kioctrlDestructEngine_IMPL(struct KernelIoctrl *arg1);
-
-#ifdef __nvoc_kernel_ioctrl_h_disabled
-static inline void kioctrlDestructEngine(struct KernelIoctrl *arg1) {
-    NV_ASSERT_FAILED_PRECOMP("KernelIoctrl was disabled!");
-}
-#else //__nvoc_kernel_ioctrl_h_disabled
-#define kioctrlDestructEngine(arg1) kioctrlDestructEngine_IMPL(arg1)
-#endif //__nvoc_kernel_ioctrl_h_disabled
 
 #undef PRIVATE_FIELD
 

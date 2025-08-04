@@ -27,6 +27,7 @@
 #include "kernel/gpu/device/device.h"
 
 #include "class/clc0b7.h"
+#include "class/cld1b7.h"
 #include "class/cld0b7.h"
 #include "class/clc1b7.h"
 #include "class/clc2b7.h"
@@ -35,6 +36,7 @@
 #include "class/clb4b7.h"
 #include "class/clc7b7.h"
 #include "class/clc9b7.h"
+#include "class/clceb7.h"
 #include "class/clcfb7.h"
 
 /*
@@ -68,6 +70,7 @@ msencGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAl
         case NVC0B7_VIDEO_ENCODER:
             engineInstance = 0;
             break;
+        case NVD1B7_VIDEO_ENCODER:
         case NVD0B7_VIDEO_ENCODER:
         case NVC1B7_VIDEO_ENCODER:
         case NVC2B7_VIDEO_ENCODER:
@@ -76,6 +79,7 @@ msencGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAl
         case NVB4B7_VIDEO_ENCODER:
         case NVC7B7_VIDEO_ENCODER:
         case NVC9B7_VIDEO_ENCODER:
+        case NVCEB7_VIDEO_ENCODER:
         case NVCFB7_VIDEO_ENCODER:
             engineInstance = pMsencAllocParms->engineInstance;
             NV_PRINTF(LEVEL_INFO, "Supported msenc class Id (classId = 0x%x / engineInstance = 0x%x)\n",

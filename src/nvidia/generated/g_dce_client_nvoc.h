@@ -96,6 +96,9 @@ struct OBJDCECLIENTRM {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct OBJDCECLIENTRM *__nvoc_pbase_OBJDCECLIENTRM;    // dceclient
 
+    // 1 PDB property
+//  NvBool PDB_PROP_DCECLIENT_IS_MISSING inherited from OBJENGSTATE
+
     // Data members
     struct OBJRPC *pRpc;
     NvU32 clientId[2];
@@ -154,6 +157,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJDCECLIENTRM;
 #define PDB_PROP_DCECLIENT_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_DCECLIENT_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 
+
 NV_STATUS __nvoc_objCreateDynamic_OBJDCECLIENTRM(OBJDCECLIENTRM**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJDCECLIENTRM(OBJDCECLIENTRM**, Dynamic*, NvU32);
@@ -161,7 +165,51 @@ NV_STATUS __nvoc_objCreate_OBJDCECLIENTRM(OBJDCECLIENTRM**, Dynamic*, NvU32);
     __nvoc_objCreate_OBJDCECLIENTRM((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+void dceclientDestruct_IMPL(struct OBJDCECLIENTRM *arg_this);
+#define __nvoc_dceclientDestruct(arg_this) dceclientDestruct_IMPL(arg_this)
+
+NV_STATUS dceclientInitRpcInfra_IMPL(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg_this);
+#ifdef __nvoc_dce_client_h_disabled
+static inline NV_STATUS dceclientInitRpcInfra(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg_this) {
+    NV_ASSERT_FAILED_PRECOMP("OBJDCECLIENTRM was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_dce_client_h_disabled
+#define dceclientInitRpcInfra(arg1, arg_this) dceclientInitRpcInfra_IMPL(arg1, arg_this)
+#endif // __nvoc_dce_client_h_disabled
+
+void dceclientDeinitRpcInfra_IMPL(struct OBJDCECLIENTRM *arg_this);
+#ifdef __nvoc_dce_client_h_disabled
+static inline void dceclientDeinitRpcInfra(struct OBJDCECLIENTRM *arg_this) {
+    NV_ASSERT_FAILED_PRECOMP("OBJDCECLIENTRM was disabled!");
+}
+#else // __nvoc_dce_client_h_disabled
+#define dceclientDeinitRpcInfra(arg_this) dceclientDeinitRpcInfra_IMPL(arg_this)
+#endif // __nvoc_dce_client_h_disabled
+
+NV_STATUS dceclientDceRmInit_IMPL(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg_this, NvBool arg3);
+#ifdef __nvoc_dce_client_h_disabled
+static inline NV_STATUS dceclientDceRmInit(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg_this, NvBool arg3) {
+    NV_ASSERT_FAILED_PRECOMP("OBJDCECLIENTRM was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_dce_client_h_disabled
+#define dceclientDceRmInit(arg1, arg_this, arg3) dceclientDceRmInit_IMPL(arg1, arg_this, arg3)
+#endif // __nvoc_dce_client_h_disabled
+
+NV_STATUS dceclientSendRpc_IMPL(struct OBJDCECLIENTRM *arg_this, void *arg2, NvU32 arg3);
+#ifdef __nvoc_dce_client_h_disabled
+static inline NV_STATUS dceclientSendRpc(struct OBJDCECLIENTRM *arg_this, void *arg2, NvU32 arg3) {
+    NV_ASSERT_FAILED_PRECOMP("OBJDCECLIENTRM was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_dce_client_h_disabled
+#define dceclientSendRpc(arg_this, arg2, arg3) dceclientSendRpc_IMPL(arg_this, arg2, arg3)
+#endif // __nvoc_dce_client_h_disabled
+
+
+// Wrapper macros for halified functions
 #define dceclientConstructEngine_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__dceclientConstructEngine__
 #define dceclientConstructEngine(arg1, arg_this, arg3) dceclientConstructEngine_DISPATCH(arg1, arg_this, arg3)
 #define dceclientStateDestroy_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__dceclientStateDestroy__
@@ -255,52 +303,6 @@ void dceclientStateDestroy_IMPL(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg2
 NV_STATUS dceclientStateLoad_IMPL(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg2, NvU32 arg3);
 
 NV_STATUS dceclientStateUnload_IMPL(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg2, NvU32 arg3);
-
-void dceclientDestruct_IMPL(struct OBJDCECLIENTRM *arg1);
-
-#define __nvoc_dceclientDestruct(arg1) dceclientDestruct_IMPL(arg1)
-NV_STATUS dceclientInitRpcInfra_IMPL(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg2);
-
-#ifdef __nvoc_dce_client_h_disabled
-static inline NV_STATUS dceclientInitRpcInfra(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg2) {
-    NV_ASSERT_FAILED_PRECOMP("OBJDCECLIENTRM was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_dce_client_h_disabled
-#define dceclientInitRpcInfra(arg1, arg2) dceclientInitRpcInfra_IMPL(arg1, arg2)
-#endif //__nvoc_dce_client_h_disabled
-
-void dceclientDeinitRpcInfra_IMPL(struct OBJDCECLIENTRM *arg1);
-
-#ifdef __nvoc_dce_client_h_disabled
-static inline void dceclientDeinitRpcInfra(struct OBJDCECLIENTRM *arg1) {
-    NV_ASSERT_FAILED_PRECOMP("OBJDCECLIENTRM was disabled!");
-}
-#else //__nvoc_dce_client_h_disabled
-#define dceclientDeinitRpcInfra(arg1) dceclientDeinitRpcInfra_IMPL(arg1)
-#endif //__nvoc_dce_client_h_disabled
-
-NV_STATUS dceclientDceRmInit_IMPL(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg2, NvBool arg3);
-
-#ifdef __nvoc_dce_client_h_disabled
-static inline NV_STATUS dceclientDceRmInit(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg2, NvBool arg3) {
-    NV_ASSERT_FAILED_PRECOMP("OBJDCECLIENTRM was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_dce_client_h_disabled
-#define dceclientDceRmInit(arg1, arg2, arg3) dceclientDceRmInit_IMPL(arg1, arg2, arg3)
-#endif //__nvoc_dce_client_h_disabled
-
-NV_STATUS dceclientSendRpc_IMPL(struct OBJDCECLIENTRM *arg1, void *arg2, NvU32 arg3);
-
-#ifdef __nvoc_dce_client_h_disabled
-static inline NV_STATUS dceclientSendRpc(struct OBJDCECLIENTRM *arg1, void *arg2, NvU32 arg3) {
-    NV_ASSERT_FAILED_PRECOMP("OBJDCECLIENTRM was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_dce_client_h_disabled
-#define dceclientSendRpc(arg1, arg2, arg3) dceclientSendRpc_IMPL(arg1, arg2, arg3)
-#endif //__nvoc_dce_client_h_disabled
 
 #undef PRIVATE_FIELD
 

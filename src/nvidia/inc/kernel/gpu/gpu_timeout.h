@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,7 +45,7 @@ struct OBJGPU;
 #define GPU_TIMEOUT_FLAGS_DEFAULT               NVBIT(0)  //!< default timeout mechanism as set by platform
 #define GPU_TIMEOUT_FLAGS_USE_THREAD_STATE      NVBIT(1)  //!< default timeout time used - use the ThreadState
 #define GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE   NVBIT(2)  //!< even if default time was used - skip the ThreadState
-#define GPU_TIMEOUT_FLAGS_OSTIMER               NVBIT(3)  //!< osGetCurrentTime()
+#define GPU_TIMEOUT_FLAGS_OSTIMER               NVBIT(3)  //!< osGetSystemTime()
 #define GPU_TIMEOUT_FLAGS_OSDELAY               NVBIT(4)  //!< osDelay()
 #define GPU_TIMEOUT_FLAGS_TMR                   NVBIT(5)  //!< tmrGetCurrentTime()
 #define GPU_TIMEOUT_FLAGS_BYPASS_JOURNAL_LOG    NVBIT(6)  //!< bypass timeout logging in the RM journal

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -148,7 +148,7 @@ krcErrorWriteNotifier_CPU
         if (status == NV_OK)
         {
             NV_PRINTF(LEVEL_INFO,
-                      "notified (ECC) channel %d\n",
+                      "notified (ECC) " FMT_CHANNEL_DEBUG_TAG "\n",
                       kchannelGetDebugTag(pKernelChannel));
         }
         else
@@ -171,7 +171,8 @@ krcErrorWriteNotifier_CPU
                            exceptType,
                            (NvU16)gpuGetNv2080EngineType(localRmEngineType),
                            notifierStatus);
-        NV_PRINTF(LEVEL_INFO, "notified channel %d\n",
+        NV_PRINTF(LEVEL_INFO,
+                  "notified " FMT_CHANNEL_DEBUG_TAG "\n",
                   kchannelGetDebugTag(pKernelChannel));
         if (pEventNotifications)
         {
@@ -198,7 +199,7 @@ krcErrorWriteNotifier_CPU
         if (status == NV_OK)
         {
             NV_PRINTF(LEVEL_INFO,
-                      "notified channel %d\n",
+                      "notified " FMT_CHANNEL_DEBUG_TAG "\n",
                       kchannelGetDebugTag(pKernelChannel));
         }
         else

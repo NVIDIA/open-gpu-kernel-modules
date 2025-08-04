@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -302,7 +302,9 @@ pfmreqhndlrOperatingLimitUpdate_IMPL
     if (!pPlatformRequestHandler->sysControlData.bWorkItemPending)
     {
         status = osQueueWorkItem(pGpu,
-            _pfmreqhndlrUpdateSystemParamLimitWorkItem, NULL);
+                                 _pfmreqhndlrUpdateSystemParamLimitWorkItem,
+                                 NULL,
+                                 OS_QUEUE_WORKITEM_FLAGS_NONE);
 
         if (status != NV_OK)
         {
@@ -723,7 +725,11 @@ cliresCtrlCmdSystemPfmreqhndlrCtrl_IMPL
             {
                 pPlatformRequestHandler->ppmData.ppmIdxRequested = clientPpmIdx;
                 // Create a workItem to change Platform Power Mode
-                status = osQueueWorkItem(pGpu, _pfmreqhndlrUpdatePlatformPowerModeWorkItem, NULL);
+                status = osQueueWorkItem(
+                    pGpu,
+                    _pfmreqhndlrUpdatePlatformPowerModeWorkItem,
+                    NULL,
+                    OS_QUEUE_WORKITEM_FLAGS_NONE);
                 if (status == NV_OK)
                 {
                     // Queing workitem succeeded, mark it as pending.
@@ -1762,8 +1768,11 @@ pfmreqhndlrHandlePlatformSetEdppLimitInfo_IMPL
     if (!pEdppLimit->bWorkItemPending)
     {
         // Queue workitem to send the EDP limit info to platform
-        status = osQueueWorkItem(pGpu,
-                    _pfmreqhndlrHandlePlatformSetEdppLimitInfoWorkItem, NULL);
+        status = osQueueWorkItem(
+            pGpu,
+            _pfmreqhndlrHandlePlatformSetEdppLimitInfoWorkItem,
+            NULL,
+            OS_QUEUE_WORKITEM_FLAGS_NONE);
         if(status == NV_OK)
         {
             pEdppLimit->bWorkItemPending = NV_TRUE;

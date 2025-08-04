@@ -309,6 +309,17 @@ static void EvoSetRasterParams9(NVDevEvoPtr pDevEvo, int head,
     nvDmaSetEvoMethodData(pChannel, hdmiStereoCtrl);
 }
 
+static void EvoSetRasterParamsC9(NVDevEvoPtr pDevEvo, int head,
+                                 const NVHwModeTimingsEvo *pTimings,
+                                 const NvU8 tilePosition,
+                                 const NVDscInfoEvoRec *pDscInfo,
+                                 const NVEvoColorRec *pOverscanColor,
+                                 NVEvoUpdateState *updateState)
+{
+    nvAssert(tilePosition == 0);
+    EvoSetRasterParams9(pDevEvo, head, pTimings, pOverscanColor, updateState);
+}
+
 static void EvoSetOCsc1C9(NVDispEvoPtr pDispEvo, const NvU32 head)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
@@ -1476,7 +1487,8 @@ static void EvoSetDscParamsC9(const NVDispEvoRec *pDispEvo,
 static NvU32 EvoAllocSurfaceDescriptorC9(
     NVDevEvoPtr pDevEvo, NVSurfaceDescriptor *pSurfaceDesc,
     NvU32 memoryHandle, NvU32 localCtxDmaFlags,
-    NvU64 limit)
+    NvU64 limit,
+    NvBool mapToDisplayRm)
 {
     NV0041_CTRL_GET_SURFACE_PHYS_ATTR_PARAMS params = { };
     NvU32 ret;
@@ -1494,9 +1506,7 @@ static NvU32 EvoAllocSurfaceDescriptorC9(
     if (ret != NVOS_STATUS_SUCCESS) {
         return ret;
     }
-    pSurfaceDesc->bValid = TRUE;
 
-    pSurfaceDesc->memOffset = params.memOffset;
     pSurfaceDesc->memAperture = params.memAperture;
 
 #if defined(NV_EVO4_PB_ALLOC_WAR)
@@ -1504,6 +1514,38 @@ static NvU32 EvoAllocSurfaceDescriptorC9(
                         memoryHandle,
                         localCtxDmaFlags, limit);
 #endif
+
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvEvoLog(EVO_LOG_ERROR, "nvCtxDmaAlloc failed\n");
+        return ret;
+    }
+
+    if (mapToDisplayRm) {
+        NV0041_CTRL_MAP_MEMORY_FOR_GPU_ACCESS_PARAMS mapParams = { };
+
+        mapParams.hSubdevice = pDevEvo->pSubDevices[0]->handle;
+        ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                             memoryHandle,
+                             NV0041_CTRL_CMD_MAP_MEMORY_FOR_GPU_ACCESS,
+                             &mapParams, sizeof(mapParams));
+
+        if (ret != NVOS_STATUS_SUCCESS) {
+            nvEvoLog(EVO_LOG_ERROR, "NV0041_CTRL_CMD_MAP_MEMORY_FOR_GPU_ACCESS failed\n");
+#if defined(NV_EVO4_PB_ALLOC_WAR)
+            nvCtxDmaFree(pDevEvo, pDevEvo->deviceHandle, &pSurfaceDesc->ctxDmaHandle);
+#endif
+            return ret;
+        }
+
+        pSurfaceDesc->memOffset = mapParams.address;
+        pSurfaceDesc->memoryHandle = memoryHandle;
+        pSurfaceDesc->isMemoryMappedForDisplayAccess = TRUE;
+    } else {
+        pSurfaceDesc->memOffset = params.memOffset;
+        pSurfaceDesc->isMemoryMappedForDisplayAccess = FALSE;
+    }
+
+    pSurfaceDesc->bValid = TRUE;
 
     return ret;
 }
@@ -1513,9 +1555,27 @@ static void EvoFreeSurfaceDescriptorC9(
     NvU32 deviceHandle,
     NVSurfaceDescriptor *pSurfaceDesc)
 {
+    NvU32 ret;
+
     if (!pSurfaceDesc->bValid) {
         return;
     }
+
+    if (pSurfaceDesc->isMemoryMappedForDisplayAccess) {
+        NV0041_CTRL_UNMAP_MEMORY_FOR_GPU_ACCESS_PARAMS params = { };
+
+        params.hSubdevice = pDevEvo->pSubDevices[0]->handle;
+        ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                             pSurfaceDesc->memoryHandle,
+                             NV0041_CTRL_CMD_UNMAP_MEMORY_FOR_GPU_ACCESS,
+                             &params, sizeof(params));
+
+        if (ret != NVOS_STATUS_SUCCESS) {
+            nvEvoLog(EVO_LOG_ERROR, "NV0041_CTRL_CMD_UNMAP_MEMORY_FOR_GPU_ACCESS failed\n");
+        }
+        pSurfaceDesc->isMemoryMappedForDisplayAccess = FALSE;
+    }
+
 #if defined(NV_EVO4_PB_ALLOC_WAR)
    nvCtxDmaFree(pDevEvo, deviceHandle, &pSurfaceDesc->ctxDmaHandle);
 #endif
@@ -2424,18 +2484,34 @@ static void EvoInitWindowMappingCA(const NVDispEvoRec *pDispEvo,
                              pModesetUpdateState);
 
     /*
-     * clear the default tile/phywin assigments of all inactive heads.
+     * Clear the default tile assignments of all inactive heads.
      *
-     * By default, the hardware assigns tile-n to head-n and phywin-n to win-n.
-     * These assignments should be cleared during the first modeset after the
-     * core channel allocation.
+     * By default, the hardware assigns tile-n to head-n, but NVKMS may change
+     * the tile assignment at modeset time.
      *
-     * If the default tile/phywin assignments are left as-is, subsequent
-     * modesets may end up assigning the same tile/phywin to more than one
-     * head/win, which is not allowed and causes XID 56 or display engine hang.
+     * If the default tile assignments are left as-is, subsequent modesets may
+     * end up assigning the same tile to more than one head, which is not
+     * allowed and causes XID 56 or display engine hang.
      *
-     * If required, the default tile/phywin assigments of active heads gets
-     * clear as part of modeset.
+     * If required, the default tile assigments of active heads gets cleared as
+     * part of modeset.
+     *
+     * Note that some chips have more than pDevEvo->numHeads, and the tile
+     * assignment needs to be cleared on all of them. Infer the number of
+     * possible heads from the class.
+     */
+    for (NvU32 head = 0; head < NVCA73_SYS_CAP_HEAD_EXISTS__SIZE_1; head++) {
+        if (!nvHeadIsActive(pDispEvo, head)) {
+            nvDmaSetStartEvoMethod(pChannel, NVCA7D_HEAD_SET_TILE_MASK(head), 1);
+            nvDmaSetEvoMethodData(pChannel, 0x0);
+        }
+    }
+
+    /*
+     * Clear the default phywin assigments of all inactive heads.
+     *
+     * Similar to the loop above, make sure the same phywin isn't assigned to
+     * two window channels simultaneously.
      */
     for (NvU32 head = 0; head < pDevEvo->numHeads; head++) {
         const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
@@ -2444,8 +2520,6 @@ static void EvoInitWindowMappingCA(const NVDispEvoRec *pDispEvo,
             continue;
         }
 
-        nvDmaSetStartEvoMethod(pChannel, NVCA7D_HEAD_SET_TILE_MASK(head), 1);
-        nvDmaSetEvoMethodData(pChannel, 0x0);
         for (NvU32 layer = 0;
                 layer < pDevEvo->head[head].numLayers; layer++) {
             const NVEvoChannel *pWinChannel = pDevEvo->head[head].layer[layer];
@@ -2974,6 +3048,104 @@ static void EvoSetMultiTileConfigCA(const NVDispEvoRec *pDispEvo,
 
     nvPopEvoSubDevMask(pDevEvo);
 }
+
+NVEvoHAL nvEvoC9 = {
+    EvoSetRasterParamsC9,                         /* SetRasterParams */
+    EvoSetProcAmpC9,                              /* SetProcAmp */
+    EvoSetHeadControlC9,                          /* SetHeadControl */
+    NULL,                                         /* SetHeadRefClk */
+    EvoHeadSetControlORC9,                        /* HeadSetControlOR */
+    nvEvoORSetControlC3,                          /* ORSetControl */
+    EvoHeadSetDisplayIdC9,                        /* HeadSetDisplayId */
+    nvEvoSetUsageBoundsC5,                        /* SetUsageBounds */
+    nvEvoUpdateC3,                                /* Update */
+    nvEvoIsModePossibleC3,                        /* IsModePossible */
+    nvEvoPrePostIMPC3,                            /* PrePostIMP */
+    nvEvoSetNotifierC3,                           /* SetNotifier */
+    nvEvoGetCapabilitiesC6,                       /* GetCapabilities */
+    nvEvoFlipC6,                                  /* Flip */
+    nvEvoFlipTransitionWARC6,                     /* FlipTransitionWAR */
+    nvEvoFillLUTSurfaceC5,                        /* FillLUTSurface */
+    EvoSetOutputLutC9,                            /* SetOutputLut */
+    EvoSetOutputScalerC9,                         /* SetOutputScaler */
+    EvoSetViewportPointInC9,                      /* SetViewportPointIn */
+    EvoSetViewportInOutC9,                        /* SetViewportInOut */
+    EvoSetCursorImageC9,                          /* SetCursorImage */
+    nvEvoValidateCursorSurfaceC3,                 /* ValidateCursorSurface */
+    nvEvoValidateWindowFormatC6,                  /* ValidateWindowFormat */
+    nvEvoInitCompNotifierC3,                      /* InitCompNotifier */
+    nvEvoIsCompNotifierCompleteC3,                /* IsCompNotifierComplete */
+    nvEvoWaitForCompNotifierC3,                   /* WaitForCompNotifier */
+    EvoSetDitherC9,                               /* SetDither */
+    EvoSetStallLockC9,                            /* SetStallLock */
+    EvoSetDisplayRateC9,                          /* SetDisplayRate */
+    EvoInitChannelC9,                             /* InitChannel */
+    nvEvoInitDefaultLutC5,                        /* InitDefaultLut */
+    nvEvoInitWindowMappingC5,                     /* InitWindowMapping */
+    nvEvoIsChannelIdleC3,                         /* IsChannelIdle */
+    nvEvoIsChannelMethodPendingC3,                /* IsChannelMethodPending */
+    nvEvoForceIdleSatelliteChannelC3,             /* ForceIdleSatelliteChannel */
+    nvEvoForceIdleSatelliteChannelIgnoreLockC3,   /* ForceIdleSatelliteChannelIgnoreLock */
+    nvEvoAccelerateChannelC3,                     /* AccelerateChannel */
+    nvEvoResetChannelAcceleratorsC3,              /* ResetChannelAccelerators */
+    nvEvoAllocRmCtrlObjectC3,                     /* AllocRmCtrlObject */
+    nvEvoFreeRmCtrlObjectC3,                      /* FreeRmCtrlObject */
+    nvEvoSetImmPointOutC3,                        /* SetImmPointOut */
+    EvoStartHeadCRC32CaptureC9,                   /* StartCRC32Capture */
+    EvoStopHeadCRC32CaptureC9,                    /* StopCRC32Capture */
+    nvEvoQueryHeadCRC32_C3,                       /* QueryCRC32 */
+    nvEvoGetScanLineC3,                           /* GetScanLine */
+    EvoConfigureVblankSyncObjectC9,               /* ConfigureVblankSyncObject */
+    EvoSetDscParamsC9,                            /* SetDscParams */
+    NULL,                                         /* EnableMidFrameAndDWCFWatermark */
+    nvEvoGetActiveViewportOffsetC3,               /* GetActiveViewportOffset */
+    NULL,                                         /* ClearSurfaceUsage */
+    nvEvoComputeWindowScalingTapsC5,              /* ComputeWindowScalingTaps */
+    nvEvoGetWindowScalingCapsC3,                  /* GetWindowScalingCaps */
+    NULL,                                         /* SetMergeMode */
+    nvEvo1SendHdmiInfoFrame,                      /* SendHdmiInfoFrame */
+    nvEvo1DisableHdmiInfoFrame,                   /* DisableHdmiInfoFrame */
+    nvEvo1SendDpInfoFrameSdp,                     /* SendDpInfoFrameSdp */
+    NULL,                                         /* SetDpVscSdp */
+    NULL,                                         /* InitHwHeadMultiTileConfig */
+    NULL,                                         /* SetMultiTileConfig */
+    EvoAllocSurfaceDescriptorC9,                  /* AllocSurfaceDescriptor */
+    EvoFreeSurfaceDescriptorC9,                   /* FreeSurfaceDescriptor */
+    EvoBindSurfaceDescriptorC9,                   /* BindSurfaceDescriptor */
+    EvoSetTmoLutSurfaceAddressC9,                 /* SetTmoLutSurfaceAddress */
+    EvoSetILUTSurfaceAddressC9,                   /* SetILUTSurfaceAddress */
+    EvoSetISOSurfaceAddressC9,                    /* SetISOSurfaceAddress */
+    EvoSetCoreNotifierSurfaceAddressAndControlC9, /* SetCoreNotifierSurfaceAddressAndControl */
+    EvoSetWinNotifierSurfaceAddressAndControlC9,  /* SetWinNotifierSurfaceAddressAndControl */
+    EvoSetSemaphoreSurfaceAddressAndControlC9,    /* SetSemaphoreSurfaceAddressAndControl */
+    EvoSetAcqSemaphoreSurfaceAddressAndControlC9, /* SetAcqSemaphoreSurfaceAddressAndControl */
+    {                                             /* caps */
+        TRUE,                                     /* supportsNonInterlockedUsageBoundsUpdate */
+        TRUE,                                     /* supportsDisplayRate */
+        FALSE,                                    /* supportsFlipLockRGStatus */
+        TRUE,                                     /* needDefaultLutSurface */
+        TRUE,                                     /* hasUnorm10OLUT */
+        FALSE,                                    /* supportsImageSharpening */
+        TRUE,                                     /* supportsHDMIVRR */
+        FALSE,                                    /* supportsCoreChannelSurface */
+        TRUE,                                     /* supportsHDMIFRL */
+        FALSE,                                    /* supportsSetStorageMemoryLayout */
+        TRUE,                                     /* supportsIndependentAcqRelSemaphore */
+        FALSE,                                    /* supportsCoreLut */
+        TRUE,                                     /* supportsSynchronizedOverlayPositionUpdate */
+        TRUE,                                     /* supportsVblankSyncObjects */
+        FALSE,                                    /* requiresScalingTapsInBothDimensions */
+        FALSE,                                    /* supportsMergeMode */
+        TRUE,                                     /* supportsHDMI10BPC */
+        TRUE,                                     /* supportsDPAudio192KHz */
+        TRUE,                                     /* supportsInputColorSpace */
+        TRUE,                                     /* supportsInputColorRange */
+        NV_EVO3_SUPPORTED_DITHERING_MODES,        /* supportedDitheringModes */
+        sizeof(NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS), /* impStructSize */
+        NV_EVO_SCALER_2TAPS,                      /* minScalerTaps */
+        NV_EVO3_X_EMULATED_SURFACE_MEMORY_FORMATS_C6, /* xEmulatedSurfaceMemoryFormats */
+    },
+};
 
 NVEvoHAL nvEvoCA = {
     EvoSetRasterParamsCA,                         /* SetRasterParams */

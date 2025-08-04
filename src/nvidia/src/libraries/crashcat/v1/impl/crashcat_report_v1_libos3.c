@@ -75,13 +75,22 @@ void crashcatReportLogSource_V1_LIBOS3(CrashCatReport *pReport)
     NvCrashCatNvriscvPartition sourcePartition = crashcatReportV1SourcePartition(pReportV1);
     NvCrashCatNvriscvUcodeId sourceUcodeId = crashcatReportV1SourceUcodeId(pReportV1);    
 
+    /*
+     * We use the CRASHCAT_REPORT_LOG_PACKET_TYPE macro to get the correct 
+     * prefix/indentation for the watchdog report 
+     */
 #define CRASHCAT_LOG_LIBOS3_SOURCE(fmt, ...)                                                     \
-    if (taskId == NV_CRASHCAT_REPORT_V1_SOURCE_ID_LIBOS3_TASK_ID_UNSPECIFIED)                    \
-        crashcatEnginePrintf(pReport->pEngine, NV_TRUE, fmt ", partition:%u#%u",                 \
-                             __VA_ARGS__, sourcePartition, sourceUcodeId);                       \
-    else                                                                                         \
-        crashcatEnginePrintf(pReport->pEngine, NV_TRUE, fmt ", partition:%u#%u, task:%u",        \
-                             __VA_ARGS__, sourcePartition, sourceUcodeId, taskId)
+    do {                                                                                         \
+        if (crashcatReportIsWatchdog_HAL(pReport))                                               \
+            CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport, fmt ", partition:%u#%u, task:%u\n",         \
+                                 ##__VA_ARGS__, sourcePartition, sourceUcodeId, taskId);         \
+        else if (taskId == NV_CRASHCAT_REPORT_V1_SOURCE_ID_LIBOS3_TASK_ID_UNSPECIFIED)           \
+            crashcatEnginePrintf(pReport->pEngine, NV_TRUE, fmt ", partition:%u#%u",             \
+                                 ##__VA_ARGS__, sourcePartition, sourceUcodeId);                 \
+        else                                                                                     \
+            crashcatEnginePrintf(pReport->pEngine, NV_TRUE, fmt ", partition:%u#%u, task:%u",    \
+                                 ##__VA_ARGS__, sourcePartition, sourceUcodeId, taskId);         \
+    } while(0)
 
     const char *pModeStr = crashcatReportModeToString_LIBOS3(crashcatReportV1SourceMode(pReportV1));
     switch (crashcatReportV1SourceCauseType(pReportV1))
@@ -101,6 +110,13 @@ void crashcatReportLogSource_V1_LIBOS3(CrashCatReport *pReport)
             // Task timeout (no way for libos3 to self-report kernel timeouts)
             CRASHCAT_LOG_LIBOS3_SOURCE(
                 "%s timeout @ pc:0x%" NvU64_fmtx,
+                pModeStr, pReportV1->sourcePc);
+            break;
+        }
+        case NV_CRASHCAT_CAUSE_TYPE_WATCHDOG:
+        {
+            CRASHCAT_LOG_LIBOS3_SOURCE(
+                "%s watchdog timeout @ pc:0x%" NvU64_fmtx,
                 pModeStr, pReportV1->sourcePc);
             break;
         }

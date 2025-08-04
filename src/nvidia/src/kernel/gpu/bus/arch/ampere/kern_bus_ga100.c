@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1044,16 +1044,13 @@ kbusGetNvlinkP2PPeerId_GA100
     if ((knvlinkIsForcedConfig(pGpu0, pKernelNvlink0) ||
         knvlinkAreLinksRegistryOverriden(pGpu0, pKernelNvlink0)) && !bEgmPeer)
     {
-        if (knvlinkGetPeersNvlinkMaskFromHshub(pGpu0, pKernelNvlink0) != 0)
-        {
-            *nvlinkPeer = kbusGetPeerIdFromTable_HAL(pGpu0, pKernelBus0,
-                                                     pGpu0->gpuInstance,
-                                                     pGpu1->gpuInstance);
+        *nvlinkPeer = kbusGetPeerIdFromTable_HAL(pGpu0, pKernelBus0,
+                                                 pGpu0->gpuInstance,
+                                                 pGpu1->gpuInstance);
 
-            if (*nvlinkPeer == BUS_INVALID_PEER)
-            {
-                return NV_ERR_INVALID_REQUEST;
-            }
+        if (*nvlinkPeer == BUS_INVALID_PEER)
+        {
+            return NV_ERR_INVALID_REQUEST;
         }
         return NV_OK;
     }

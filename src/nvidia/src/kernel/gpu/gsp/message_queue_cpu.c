@@ -418,7 +418,7 @@ void GspMsgQueuesCleanup(MESSAGE_QUEUE_COLLECTION **ppMQCollection)
         // Destroy kernel mapping for command queue.
         if (pVaKernel != 0)
         {
-            memdescUnmap(pMQCollection->pSharedMemDesc, NV_TRUE, osGetCurrentProcess(),
+            memdescUnmap(pMQCollection->pSharedMemDesc, NV_TRUE,
                          pVaKernel, pPrivKernel);
         }
 

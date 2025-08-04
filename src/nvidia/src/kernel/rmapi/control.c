@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -778,12 +778,22 @@ NV_STATUS serverControl_ValidateCookie
         (pRmCtrlExecuteCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL) &&
         !(pRmCtrlExecuteCookie->ctrlFlags & (RMCTRL_FLAGS_ROUTE_TO_VGPU_HOST | RMCTRL_FLAGS_PHYSICAL_IMPLEMENTED_ON_VGPU_GUEST)))
     {
-        if (!rmapiutilSkipErrorMessageForUnsupportedVgpuGuestControl(pRmCtrlParams->cmd))
+        if (!rmapiutilSkipErrorMessageForUnsupportedVgpuGuestControl(pRmCtrlParams->pGpu, pRmCtrlParams->cmd))
         {
             NV_PRINTF(LEVEL_ERROR, "Unsupported ROUTE_TO_PHYSICAL control 0x%x was called on vGPU guest\n", pRmCtrlParams->cmd);
         }
 
         return NV_ERR_NOT_SUPPORTED;
+    }
+
+    // confirm command is on allowlist for target gpu
+    if (pRmCtrlParams->pGpu != NULL)
+    {
+        status = gpuValidateRmctrlCmd_HAL(pRmCtrlParams->pGpu, pRmCtrlParams->cmd);
+        if (status != NV_OK)
+        {
+            return status;
+        }
     }
 
     if ((pRmCtrlExecuteCookie->ctrlFlags & RMCTRL_FLAGS_INTERNAL))

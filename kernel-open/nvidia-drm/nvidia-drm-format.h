@@ -25,7 +25,7 @@
 
 #include "nvidia-drm-conftest.h"
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #include <drm/drm_fourcc.h>
 
@@ -40,6 +40,6 @@ uint32_t *nv_drm_format_array_alloc(
 
 bool nv_drm_format_is_yuv(u32 format);
 
-#endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+#endif /* NV_DRM_AVAILABLE */
 
 #endif /* __NVIDIA_DRM_FORMAT_H__ */

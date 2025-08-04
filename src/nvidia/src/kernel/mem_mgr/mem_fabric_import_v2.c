@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -922,5 +922,26 @@ memoryfabricimportv2IsGpuMapAllowed_IMPL
         return NV_FALSE;
     }
 
-    return (cliqueId == pMemdescData->cliqueId);
+    if (pMemdescData->cliqueId != cliqueId)
+    {
+        NV_PRINTF(LEVEL_ERROR, "cliqueId does not match: owner %u, mapper %u\n",
+                  pMemdescData->cliqueId, cliqueId);
+        return NV_FALSE;
+    }
+
+    if (pMemdescData->bwMode != knvlinkGetBWMode(pGpu, GPU_GET_KERNEL_NVLINK(pGpu)))
+    {
+        NV_PRINTF(LEVEL_ERROR, "bwMode does not match: owner %u, mapper  %u\n",
+                  pMemdescData->bwMode, knvlinkGetBWMode(pGpu, GPU_GET_KERNEL_NVLINK(pGpu)));
+        return NV_FALSE;
+    }
+
+    if (pMemdescData->bwModeEpoch != knvlinkGetBWModeEpoch(pGpu, GPU_GET_KERNEL_NVLINK(pGpu)))
+    {
+        NV_PRINTF(LEVEL_ERROR, "bwModeEpoch does not match: owner %llu, mapper %llu\n",
+                  pMemdescData->bwModeEpoch, knvlinkGetBWModeEpoch(pGpu, GPU_GET_KERNEL_NVLINK(pGpu)));
+        return NV_FALSE;
+    }
+
+    return NV_TRUE;
 }

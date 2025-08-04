@@ -290,15 +290,17 @@ NV_STATUS __nvoc_objCreate_P2PTokenShare(P2PTokenShare**, Dynamic*, NvU32);
     __nvoc_objCreate_P2PTokenShare((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS shrp2pConstruct_IMPL(struct P2PTokenShare *arg_pP2PTokenShare);
+#define __nvoc_shrp2pConstruct(arg_pP2PTokenShare) shrp2pConstruct_IMPL(arg_pP2PTokenShare)
+
+void shrp2pDestruct_IMPL(struct P2PTokenShare *pP2PTokenShare);
+#define __nvoc_shrp2pDestruct(pP2PTokenShare) shrp2pDestruct_IMPL(pP2PTokenShare)
+
+
+// Wrapper macros for halified functions
 
 // Dispatch functions
-NV_STATUS shrp2pConstruct_IMPL(struct P2PTokenShare *arg_pP2PTokenShare);
-
-#define __nvoc_shrp2pConstruct(arg_pP2PTokenShare) shrp2pConstruct_IMPL(arg_pP2PTokenShare)
-void shrp2pDestruct_IMPL(struct P2PTokenShare *pP2PTokenShare);
-
-#define __nvoc_shrp2pDestruct(pP2PTokenShare) shrp2pDestruct_IMPL(pP2PTokenShare)
 #undef PRIVATE_FIELD
 
 
@@ -337,13 +339,6 @@ struct ThirdPartyP2P {
     struct RmResource *__nvoc_pbase_RmResource;    // rmres super^2
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct ThirdPartyP2P *__nvoc_pbase_ThirdPartyP2P;    // thirdpartyp2p
-
-    // Vtable with 5 per-object function pointers
-    NV_STATUS (*__thirdpartyp2pCtrlCmdRegisterVaSpace__)(struct ThirdPartyP2P * /*this*/, NV503C_CTRL_REGISTER_VA_SPACE_PARAMS *);  // exported (id=0x503c0102)
-    NV_STATUS (*__thirdpartyp2pCtrlCmdUnregisterVaSpace__)(struct ThirdPartyP2P * /*this*/, NV503C_CTRL_UNREGISTER_VA_SPACE_PARAMS *);  // exported (id=0x503c0103)
-    NV_STATUS (*__thirdpartyp2pCtrlCmdRegisterVidmem__)(struct ThirdPartyP2P * /*this*/, NV503C_CTRL_REGISTER_VIDMEM_PARAMS *);  // exported (id=0x503c0104)
-    NV_STATUS (*__thirdpartyp2pCtrlCmdUnregisterVidmem__)(struct ThirdPartyP2P * /*this*/, NV503C_CTRL_UNREGISTER_VIDMEM_PARAMS *);  // exported (id=0x503c0105)
-    NV_STATUS (*__thirdpartyp2pCtrlCmdRegisterPid__)(struct ThirdPartyP2P * /*this*/, NV503C_CTRL_REGISTER_PID_PARAMS *);  // exported (id=0x503c0106)
 
     // Data members
     NODE Node;
@@ -429,17 +424,115 @@ NV_STATUS __nvoc_objCreate_ThirdPartyP2P(ThirdPartyP2P**, Dynamic*, NvU32, struc
     __nvoc_objCreate_ThirdPartyP2P((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
-#define thirdpartyp2pCtrlCmdRegisterVaSpace_FNPTR(pThirdPartyP2P) pThirdPartyP2P->__thirdpartyp2pCtrlCmdRegisterVaSpace__
-#define thirdpartyp2pCtrlCmdRegisterVaSpace(pThirdPartyP2P, pRegisterVaSpaceParams) thirdpartyp2pCtrlCmdRegisterVaSpace_DISPATCH(pThirdPartyP2P, pRegisterVaSpaceParams)
-#define thirdpartyp2pCtrlCmdUnregisterVaSpace_FNPTR(pThirdPartyP2P) pThirdPartyP2P->__thirdpartyp2pCtrlCmdUnregisterVaSpace__
-#define thirdpartyp2pCtrlCmdUnregisterVaSpace(pThirdPartyP2P, pUnregisterVaSpaceParams) thirdpartyp2pCtrlCmdUnregisterVaSpace_DISPATCH(pThirdPartyP2P, pUnregisterVaSpaceParams)
-#define thirdpartyp2pCtrlCmdRegisterVidmem_FNPTR(pThirdPartyP2P) pThirdPartyP2P->__thirdpartyp2pCtrlCmdRegisterVidmem__
-#define thirdpartyp2pCtrlCmdRegisterVidmem(pThirdPartyP2P, pRegisterVidmemParams) thirdpartyp2pCtrlCmdRegisterVidmem_DISPATCH(pThirdPartyP2P, pRegisterVidmemParams)
-#define thirdpartyp2pCtrlCmdUnregisterVidmem_FNPTR(pThirdPartyP2P) pThirdPartyP2P->__thirdpartyp2pCtrlCmdUnregisterVidmem__
-#define thirdpartyp2pCtrlCmdUnregisterVidmem(pThirdPartyP2P, pUnregisterVidmemParams) thirdpartyp2pCtrlCmdUnregisterVidmem_DISPATCH(pThirdPartyP2P, pUnregisterVidmemParams)
-#define thirdpartyp2pCtrlCmdRegisterPid_FNPTR(pThirdPartyP2P) pThirdPartyP2P->__thirdpartyp2pCtrlCmdRegisterPid__
-#define thirdpartyp2pCtrlCmdRegisterPid(pThirdPartyP2P, pParams) thirdpartyp2pCtrlCmdRegisterPid_DISPATCH(pThirdPartyP2P, pParams)
+// Wrapper macros for implementation functions
+NV_STATUS thirdpartyp2pConstruct_IMPL(struct ThirdPartyP2P *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_thirdpartyp2pConstruct(arg_pResource, arg_pCallContext, arg_pParams) thirdpartyp2pConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+
+void thirdpartyp2pDestruct_IMPL(struct ThirdPartyP2P *pResource);
+#define __nvoc_thirdpartyp2pDestruct(pResource) thirdpartyp2pDestruct_IMPL(pResource)
+
+NvBool thirdpartyp2pIsValidClientPid_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, NvU32 pid, NvHandle hClient);
+#ifdef __nvoc_third_party_p2p_h_disabled
+static inline NvBool thirdpartyp2pIsValidClientPid(struct ThirdPartyP2P *pThirdPartyP2P, NvU32 pid, NvHandle hClient) {
+    NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
+    return NV_FALSE;
+}
+#else // __nvoc_third_party_p2p_h_disabled
+#define thirdpartyp2pIsValidClientPid(pThirdPartyP2P, pid, hClient) thirdpartyp2pIsValidClientPid_IMPL(pThirdPartyP2P, pid, hClient)
+#endif // __nvoc_third_party_p2p_h_disabled
+
+NV_STATUS thirdpartyp2pDelMappingInfoByKey_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey);
+#ifdef __nvoc_third_party_p2p_h_disabled
+static inline NV_STATUS thirdpartyp2pDelMappingInfoByKey(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey) {
+    NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_third_party_p2p_h_disabled
+#define thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2P, pKey) thirdpartyp2pDelMappingInfoByKey_IMPL(pThirdPartyP2P, pKey)
+#endif // __nvoc_third_party_p2p_h_disabled
+
+NV_STATUS thirdpartyp2pDelPersistentMappingInfoByKey_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey);
+#ifdef __nvoc_third_party_p2p_h_disabled
+static inline NV_STATUS thirdpartyp2pDelPersistentMappingInfoByKey(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey) {
+    NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_third_party_p2p_h_disabled
+#define thirdpartyp2pDelPersistentMappingInfoByKey(pThirdPartyP2P, pKey) thirdpartyp2pDelPersistentMappingInfoByKey_IMPL(pThirdPartyP2P, pKey)
+#endif // __nvoc_third_party_p2p_h_disabled
+
+NV_STATUS thirdpartyp2pGetVASpaceInfoFromToken_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, NvU32 vaSpaceToken, PCLI_THIRD_PARTY_P2P_VASPACE_INFO *ppVASpaceInfo);
+#ifdef __nvoc_third_party_p2p_h_disabled
+static inline NV_STATUS thirdpartyp2pGetVASpaceInfoFromToken(struct ThirdPartyP2P *pThirdPartyP2P, NvU32 vaSpaceToken, PCLI_THIRD_PARTY_P2P_VASPACE_INFO *ppVASpaceInfo) {
+    NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_third_party_p2p_h_disabled
+#define thirdpartyp2pGetVASpaceInfoFromToken(pThirdPartyP2P, vaSpaceToken, ppVASpaceInfo) thirdpartyp2pGetVASpaceInfoFromToken_IMPL(pThirdPartyP2P, vaSpaceToken, ppVASpaceInfo)
+#endif // __nvoc_third_party_p2p_h_disabled
+
+NV_STATUS thirdpartyp2pGetNextVASpaceInfo_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, PCLI_THIRD_PARTY_P2P_VASPACE_INFO *arg2);
+#ifdef __nvoc_third_party_p2p_h_disabled
+static inline NV_STATUS thirdpartyp2pGetNextVASpaceInfo(struct ThirdPartyP2P *pThirdPartyP2P, PCLI_THIRD_PARTY_P2P_VASPACE_INFO *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_third_party_p2p_h_disabled
+#define thirdpartyp2pGetNextVASpaceInfo(pThirdPartyP2P, arg2) thirdpartyp2pGetNextVASpaceInfo_IMPL(pThirdPartyP2P, arg2)
+#endif // __nvoc_third_party_p2p_h_disabled
+
+NV_STATUS thirdpartyp2pCtrlCmdRegisterVaSpace_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_REGISTER_VA_SPACE_PARAMS *pRegisterVaSpaceParams);
+#ifdef __nvoc_third_party_p2p_h_disabled
+static inline NV_STATUS thirdpartyp2pCtrlCmdRegisterVaSpace(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_REGISTER_VA_SPACE_PARAMS *pRegisterVaSpaceParams) {
+    NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_third_party_p2p_h_disabled
+#define thirdpartyp2pCtrlCmdRegisterVaSpace(pThirdPartyP2P, pRegisterVaSpaceParams) thirdpartyp2pCtrlCmdRegisterVaSpace_IMPL(pThirdPartyP2P, pRegisterVaSpaceParams)
+#endif // __nvoc_third_party_p2p_h_disabled
+
+NV_STATUS thirdpartyp2pCtrlCmdUnregisterVaSpace_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_UNREGISTER_VA_SPACE_PARAMS *pUnregisterVaSpaceParams);
+#ifdef __nvoc_third_party_p2p_h_disabled
+static inline NV_STATUS thirdpartyp2pCtrlCmdUnregisterVaSpace(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_UNREGISTER_VA_SPACE_PARAMS *pUnregisterVaSpaceParams) {
+    NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_third_party_p2p_h_disabled
+#define thirdpartyp2pCtrlCmdUnregisterVaSpace(pThirdPartyP2P, pUnregisterVaSpaceParams) thirdpartyp2pCtrlCmdUnregisterVaSpace_IMPL(pThirdPartyP2P, pUnregisterVaSpaceParams)
+#endif // __nvoc_third_party_p2p_h_disabled
+
+NV_STATUS thirdpartyp2pCtrlCmdRegisterVidmem_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_REGISTER_VIDMEM_PARAMS *pRegisterVidmemParams);
+#ifdef __nvoc_third_party_p2p_h_disabled
+static inline NV_STATUS thirdpartyp2pCtrlCmdRegisterVidmem(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_REGISTER_VIDMEM_PARAMS *pRegisterVidmemParams) {
+    NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_third_party_p2p_h_disabled
+#define thirdpartyp2pCtrlCmdRegisterVidmem(pThirdPartyP2P, pRegisterVidmemParams) thirdpartyp2pCtrlCmdRegisterVidmem_IMPL(pThirdPartyP2P, pRegisterVidmemParams)
+#endif // __nvoc_third_party_p2p_h_disabled
+
+NV_STATUS thirdpartyp2pCtrlCmdUnregisterVidmem_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_UNREGISTER_VIDMEM_PARAMS *pUnregisterVidmemParams);
+#ifdef __nvoc_third_party_p2p_h_disabled
+static inline NV_STATUS thirdpartyp2pCtrlCmdUnregisterVidmem(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_UNREGISTER_VIDMEM_PARAMS *pUnregisterVidmemParams) {
+    NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_third_party_p2p_h_disabled
+#define thirdpartyp2pCtrlCmdUnregisterVidmem(pThirdPartyP2P, pUnregisterVidmemParams) thirdpartyp2pCtrlCmdUnregisterVidmem_IMPL(pThirdPartyP2P, pUnregisterVidmemParams)
+#endif // __nvoc_third_party_p2p_h_disabled
+
+NV_STATUS thirdpartyp2pCtrlCmdRegisterPid_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_REGISTER_PID_PARAMS *pParams);
+#ifdef __nvoc_third_party_p2p_h_disabled
+static inline NV_STATUS thirdpartyp2pCtrlCmdRegisterPid(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_REGISTER_PID_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_third_party_p2p_h_disabled
+#define thirdpartyp2pCtrlCmdRegisterPid(pThirdPartyP2P, pParams) thirdpartyp2pCtrlCmdRegisterPid_IMPL(pThirdPartyP2P, pParams)
+#endif // __nvoc_third_party_p2p_h_disabled
+
+
+// Wrapper macros for halified functions
 #define thirdpartyp2pControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define thirdpartyp2pControl(pGpuResource, pCallContext, pParams) thirdpartyp2pControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define thirdpartyp2pMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
@@ -492,26 +585,6 @@ NV_STATUS __nvoc_objCreate_ThirdPartyP2P(ThirdPartyP2P**, Dynamic*, NvU32, struc
 #define thirdpartyp2pAddAdditionalDependants(pClient, pResource, pReference) thirdpartyp2pAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
-static inline NV_STATUS thirdpartyp2pCtrlCmdRegisterVaSpace_DISPATCH(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_REGISTER_VA_SPACE_PARAMS *pRegisterVaSpaceParams) {
-    return pThirdPartyP2P->__thirdpartyp2pCtrlCmdRegisterVaSpace__(pThirdPartyP2P, pRegisterVaSpaceParams);
-}
-
-static inline NV_STATUS thirdpartyp2pCtrlCmdUnregisterVaSpace_DISPATCH(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_UNREGISTER_VA_SPACE_PARAMS *pUnregisterVaSpaceParams) {
-    return pThirdPartyP2P->__thirdpartyp2pCtrlCmdUnregisterVaSpace__(pThirdPartyP2P, pUnregisterVaSpaceParams);
-}
-
-static inline NV_STATUS thirdpartyp2pCtrlCmdRegisterVidmem_DISPATCH(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_REGISTER_VIDMEM_PARAMS *pRegisterVidmemParams) {
-    return pThirdPartyP2P->__thirdpartyp2pCtrlCmdRegisterVidmem__(pThirdPartyP2P, pRegisterVidmemParams);
-}
-
-static inline NV_STATUS thirdpartyp2pCtrlCmdUnregisterVidmem_DISPATCH(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_UNREGISTER_VIDMEM_PARAMS *pUnregisterVidmemParams) {
-    return pThirdPartyP2P->__thirdpartyp2pCtrlCmdUnregisterVidmem__(pThirdPartyP2P, pUnregisterVidmemParams);
-}
-
-static inline NV_STATUS thirdpartyp2pCtrlCmdRegisterPid_DISPATCH(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_REGISTER_PID_PARAMS *pParams) {
-    return pThirdPartyP2P->__thirdpartyp2pCtrlCmdRegisterPid__(pThirdPartyP2P, pParams);
-}
-
 static inline NV_STATUS thirdpartyp2pControl_DISPATCH(struct ThirdPartyP2P *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pGpuResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pControl__(pGpuResource, pCallContext, pParams);
 }
@@ -621,67 +694,6 @@ NV_STATUS thirdpartyp2pCtrlCmdRegisterVidmem_IMPL(struct ThirdPartyP2P *pThirdPa
 NV_STATUS thirdpartyp2pCtrlCmdUnregisterVidmem_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_UNREGISTER_VIDMEM_PARAMS *pUnregisterVidmemParams);
 
 NV_STATUS thirdpartyp2pCtrlCmdRegisterPid_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_REGISTER_PID_PARAMS *pParams);
-
-NV_STATUS thirdpartyp2pConstruct_IMPL(struct ThirdPartyP2P *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_thirdpartyp2pConstruct(arg_pResource, arg_pCallContext, arg_pParams) thirdpartyp2pConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
-void thirdpartyp2pDestruct_IMPL(struct ThirdPartyP2P *pResource);
-
-#define __nvoc_thirdpartyp2pDestruct(pResource) thirdpartyp2pDestruct_IMPL(pResource)
-NvBool thirdpartyp2pIsValidClientPid_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, NvU32 pid, NvHandle hClient);
-
-#ifdef __nvoc_third_party_p2p_h_disabled
-static inline NvBool thirdpartyp2pIsValidClientPid(struct ThirdPartyP2P *pThirdPartyP2P, NvU32 pid, NvHandle hClient) {
-    NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_third_party_p2p_h_disabled
-#define thirdpartyp2pIsValidClientPid(pThirdPartyP2P, pid, hClient) thirdpartyp2pIsValidClientPid_IMPL(pThirdPartyP2P, pid, hClient)
-#endif //__nvoc_third_party_p2p_h_disabled
-
-NV_STATUS thirdpartyp2pDelMappingInfoByKey_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey);
-
-#ifdef __nvoc_third_party_p2p_h_disabled
-static inline NV_STATUS thirdpartyp2pDelMappingInfoByKey(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey) {
-    NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_third_party_p2p_h_disabled
-#define thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2P, pKey) thirdpartyp2pDelMappingInfoByKey_IMPL(pThirdPartyP2P, pKey)
-#endif //__nvoc_third_party_p2p_h_disabled
-
-NV_STATUS thirdpartyp2pDelPersistentMappingInfoByKey_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey);
-
-#ifdef __nvoc_third_party_p2p_h_disabled
-static inline NV_STATUS thirdpartyp2pDelPersistentMappingInfoByKey(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey) {
-    NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_third_party_p2p_h_disabled
-#define thirdpartyp2pDelPersistentMappingInfoByKey(pThirdPartyP2P, pKey) thirdpartyp2pDelPersistentMappingInfoByKey_IMPL(pThirdPartyP2P, pKey)
-#endif //__nvoc_third_party_p2p_h_disabled
-
-NV_STATUS thirdpartyp2pGetVASpaceInfoFromToken_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, NvU32 vaSpaceToken, PCLI_THIRD_PARTY_P2P_VASPACE_INFO *ppVASpaceInfo);
-
-#ifdef __nvoc_third_party_p2p_h_disabled
-static inline NV_STATUS thirdpartyp2pGetVASpaceInfoFromToken(struct ThirdPartyP2P *pThirdPartyP2P, NvU32 vaSpaceToken, PCLI_THIRD_PARTY_P2P_VASPACE_INFO *ppVASpaceInfo) {
-    NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_third_party_p2p_h_disabled
-#define thirdpartyp2pGetVASpaceInfoFromToken(pThirdPartyP2P, vaSpaceToken, ppVASpaceInfo) thirdpartyp2pGetVASpaceInfoFromToken_IMPL(pThirdPartyP2P, vaSpaceToken, ppVASpaceInfo)
-#endif //__nvoc_third_party_p2p_h_disabled
-
-NV_STATUS thirdpartyp2pGetNextVASpaceInfo_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, PCLI_THIRD_PARTY_P2P_VASPACE_INFO *arg2);
-
-#ifdef __nvoc_third_party_p2p_h_disabled
-static inline NV_STATUS thirdpartyp2pGetNextVASpaceInfo(struct ThirdPartyP2P *pThirdPartyP2P, PCLI_THIRD_PARTY_P2P_VASPACE_INFO *arg2) {
-    NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_third_party_p2p_h_disabled
-#define thirdpartyp2pGetNextVASpaceInfo(pThirdPartyP2P, arg2) thirdpartyp2pGetNextVASpaceInfo_IMPL(pThirdPartyP2P, arg2)
-#endif //__nvoc_third_party_p2p_h_disabled
 
 #undef PRIVATE_FIELD
 

@@ -93,19 +93,6 @@ struct ConfidentialComputeApi {
     struct RmResource *__nvoc_pbase_RmResource;    // rmres super
     struct ConfidentialComputeApi *__nvoc_pbase_ConfidentialComputeApi;    // confComputeApi
 
-    // Vtable with 11 per-object function pointers
-    NV_STATUS (*__confComputeApiCtrlCmdSystemGetCapabilities__)(struct ConfidentialComputeApi * /*this*/, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_CAPABILITIES_PARAMS *);  // exported (id=0xcb330101)
-    NV_STATUS (*__confComputeApiCtrlCmdSystemGetGpusState__)(struct ConfidentialComputeApi * /*this*/, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_GPUS_STATE_PARAMS *);  // exported (id=0xcb330104)
-    NV_STATUS (*__confComputeApiCtrlCmdSystemSetGpusState__)(struct ConfidentialComputeApi * /*this*/, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_SET_GPUS_STATE_PARAMS *);  // exported (id=0xcb330105)
-    NV_STATUS (*__confComputeApiCtrlCmdGpuGetVidmemSize__)(struct ConfidentialComputeApi * /*this*/, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_VIDMEM_SIZE_PARAMS *);  // exported (id=0xcb330106)
-    NV_STATUS (*__confComputeApiCtrlCmdGpuSetVidmemSize__)(struct ConfidentialComputeApi * /*this*/, NV_CONF_COMPUTE_CTRL_CMD_GPU_SET_VIDMEM_SIZE_PARAMS *);  // exported (id=0xcb330107)
-    NV_STATUS (*__confComputeApiCtrlCmdGetGpuCertificate__)(struct ConfidentialComputeApi * /*this*/, NV_CONF_COMPUTE_CTRL_CMD_GET_GPU_CERTIFICATE_PARAMS *);  // exported (id=0xcb330109)
-    NV_STATUS (*__confComputeApiCtrlCmdGetGpuAttestationReport__)(struct ConfidentialComputeApi * /*this*/, NV_CONF_COMPUTE_CTRL_CMD_GET_GPU_ATTESTATION_REPORT_PARAMS *);  // exported (id=0xcb33010a)
-    NV_STATUS (*__confComputeApiCtrlCmdGpuGetNumSecureChannels__)(struct ConfidentialComputeApi * /*this*/, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_NUM_SECURE_CHANNELS_PARAMS *);  // exported (id=0xcb33010b)
-    NV_STATUS (*__confComputeApiCtrlCmdSystemGetSecurityPolicy__)(struct ConfidentialComputeApi * /*this*/, NV_CONF_COMPUTE_CTRL_GET_SECURITY_POLICY_PARAMS *);  // exported (id=0xc56f010e)
-    NV_STATUS (*__confComputeApiCtrlCmdSystemSetSecurityPolicy__)(struct ConfidentialComputeApi * /*this*/, NV_CONF_COMPUTE_CTRL_SET_SECURITY_POLICY_PARAMS *);  // exported (id=0xc56f010d)
-    NV_STATUS (*__confComputeApiCtrlCmdGpuGetKeyRotationState__)(struct ConfidentialComputeApi * /*this*/, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS *);  // exported (id=0xcb33010c)
-
     // Data members
     struct CONF_COMPUTE_CAPS *pCcCaps;
 };
@@ -172,29 +159,125 @@ NV_STATUS __nvoc_objCreate_ConfidentialComputeApi(ConfidentialComputeApi**, Dyna
     __nvoc_objCreate_ConfidentialComputeApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
-#define confComputeApiCtrlCmdSystemGetCapabilities_FNPTR(pConfComputeApi) pConfComputeApi->__confComputeApiCtrlCmdSystemGetCapabilities__
-#define confComputeApiCtrlCmdSystemGetCapabilities(pConfComputeApi, pParams) confComputeApiCtrlCmdSystemGetCapabilities_DISPATCH(pConfComputeApi, pParams)
-#define confComputeApiCtrlCmdSystemGetGpusState_FNPTR(pConfComputeApi) pConfComputeApi->__confComputeApiCtrlCmdSystemGetGpusState__
-#define confComputeApiCtrlCmdSystemGetGpusState(pConfComputeApi, pParams) confComputeApiCtrlCmdSystemGetGpusState_DISPATCH(pConfComputeApi, pParams)
-#define confComputeApiCtrlCmdSystemSetGpusState_FNPTR(pConfComputeApi) pConfComputeApi->__confComputeApiCtrlCmdSystemSetGpusState__
-#define confComputeApiCtrlCmdSystemSetGpusState(pConfComputeApi, pParams) confComputeApiCtrlCmdSystemSetGpusState_DISPATCH(pConfComputeApi, pParams)
-#define confComputeApiCtrlCmdGpuGetVidmemSize_FNPTR(pConfComputeApi) pConfComputeApi->__confComputeApiCtrlCmdGpuGetVidmemSize__
-#define confComputeApiCtrlCmdGpuGetVidmemSize(pConfComputeApi, pParams) confComputeApiCtrlCmdGpuGetVidmemSize_DISPATCH(pConfComputeApi, pParams)
-#define confComputeApiCtrlCmdGpuSetVidmemSize_FNPTR(pConfComputeApi) pConfComputeApi->__confComputeApiCtrlCmdGpuSetVidmemSize__
-#define confComputeApiCtrlCmdGpuSetVidmemSize(pConfComputeApi, pParams) confComputeApiCtrlCmdGpuSetVidmemSize_DISPATCH(pConfComputeApi, pParams)
-#define confComputeApiCtrlCmdGetGpuCertificate_FNPTR(pConfComputeApi) pConfComputeApi->__confComputeApiCtrlCmdGetGpuCertificate__
-#define confComputeApiCtrlCmdGetGpuCertificate(pConfComputeApi, pParams) confComputeApiCtrlCmdGetGpuCertificate_DISPATCH(pConfComputeApi, pParams)
-#define confComputeApiCtrlCmdGetGpuAttestationReport_FNPTR(pConfComputeApi) pConfComputeApi->__confComputeApiCtrlCmdGetGpuAttestationReport__
-#define confComputeApiCtrlCmdGetGpuAttestationReport(pConfComputeApi, pParams) confComputeApiCtrlCmdGetGpuAttestationReport_DISPATCH(pConfComputeApi, pParams)
-#define confComputeApiCtrlCmdGpuGetNumSecureChannels_FNPTR(pConfComputeApi) pConfComputeApi->__confComputeApiCtrlCmdGpuGetNumSecureChannels__
-#define confComputeApiCtrlCmdGpuGetNumSecureChannels(pConfComputeApi, pParams) confComputeApiCtrlCmdGpuGetNumSecureChannels_DISPATCH(pConfComputeApi, pParams)
-#define confComputeApiCtrlCmdSystemGetSecurityPolicy_FNPTR(pConfComputeApi) pConfComputeApi->__confComputeApiCtrlCmdSystemGetSecurityPolicy__
-#define confComputeApiCtrlCmdSystemGetSecurityPolicy(pConfComputeApi, pParams) confComputeApiCtrlCmdSystemGetSecurityPolicy_DISPATCH(pConfComputeApi, pParams)
-#define confComputeApiCtrlCmdSystemSetSecurityPolicy_FNPTR(pConfComputeApi) pConfComputeApi->__confComputeApiCtrlCmdSystemSetSecurityPolicy__
-#define confComputeApiCtrlCmdSystemSetSecurityPolicy(pConfComputeApi, pParams) confComputeApiCtrlCmdSystemSetSecurityPolicy_DISPATCH(pConfComputeApi, pParams)
-#define confComputeApiCtrlCmdGpuGetKeyRotationState_FNPTR(pConfComputeApi) pConfComputeApi->__confComputeApiCtrlCmdGpuGetKeyRotationState__
-#define confComputeApiCtrlCmdGpuGetKeyRotationState(pConfComputeApi, pParams) confComputeApiCtrlCmdGpuGetKeyRotationState_DISPATCH(pConfComputeApi, pParams)
+// Wrapper macros for implementation functions
+NV_STATUS confComputeApiConstruct_IMPL(struct ConfidentialComputeApi *arg_pConfComputeApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_confComputeApiConstruct(arg_pConfComputeApi, arg_pCallContext, arg_pParams) confComputeApiConstruct_IMPL(arg_pConfComputeApi, arg_pCallContext, arg_pParams)
+
+void confComputeApiDestruct_IMPL(struct ConfidentialComputeApi *pConfComputeApi);
+#define __nvoc_confComputeApiDestruct(pConfComputeApi) confComputeApiDestruct_IMPL(pConfComputeApi)
+
+NV_STATUS confComputeApiCtrlCmdSystemGetCapabilities_IMPL(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_CAPABILITIES_PARAMS *pParams);
+#ifdef __nvoc_conf_compute_api_h_disabled
+static inline NV_STATUS confComputeApiCtrlCmdSystemGetCapabilities(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_CAPABILITIES_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialComputeApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_conf_compute_api_h_disabled
+#define confComputeApiCtrlCmdSystemGetCapabilities(pConfComputeApi, pParams) confComputeApiCtrlCmdSystemGetCapabilities_IMPL(pConfComputeApi, pParams)
+#endif // __nvoc_conf_compute_api_h_disabled
+
+NV_STATUS confComputeApiCtrlCmdSystemGetGpusState_IMPL(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_GPUS_STATE_PARAMS *pParams);
+#ifdef __nvoc_conf_compute_api_h_disabled
+static inline NV_STATUS confComputeApiCtrlCmdSystemGetGpusState(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_GPUS_STATE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialComputeApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_conf_compute_api_h_disabled
+#define confComputeApiCtrlCmdSystemGetGpusState(pConfComputeApi, pParams) confComputeApiCtrlCmdSystemGetGpusState_IMPL(pConfComputeApi, pParams)
+#endif // __nvoc_conf_compute_api_h_disabled
+
+NV_STATUS confComputeApiCtrlCmdSystemSetGpusState_IMPL(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_SET_GPUS_STATE_PARAMS *pParams);
+#ifdef __nvoc_conf_compute_api_h_disabled
+static inline NV_STATUS confComputeApiCtrlCmdSystemSetGpusState(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_SET_GPUS_STATE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialComputeApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_conf_compute_api_h_disabled
+#define confComputeApiCtrlCmdSystemSetGpusState(pConfComputeApi, pParams) confComputeApiCtrlCmdSystemSetGpusState_IMPL(pConfComputeApi, pParams)
+#endif // __nvoc_conf_compute_api_h_disabled
+
+NV_STATUS confComputeApiCtrlCmdGpuGetVidmemSize_IMPL(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_VIDMEM_SIZE_PARAMS *pParams);
+#ifdef __nvoc_conf_compute_api_h_disabled
+static inline NV_STATUS confComputeApiCtrlCmdGpuGetVidmemSize(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_VIDMEM_SIZE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialComputeApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_conf_compute_api_h_disabled
+#define confComputeApiCtrlCmdGpuGetVidmemSize(pConfComputeApi, pParams) confComputeApiCtrlCmdGpuGetVidmemSize_IMPL(pConfComputeApi, pParams)
+#endif // __nvoc_conf_compute_api_h_disabled
+
+NV_STATUS confComputeApiCtrlCmdGpuSetVidmemSize_IMPL(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GPU_SET_VIDMEM_SIZE_PARAMS *pParams);
+#ifdef __nvoc_conf_compute_api_h_disabled
+static inline NV_STATUS confComputeApiCtrlCmdGpuSetVidmemSize(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GPU_SET_VIDMEM_SIZE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialComputeApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_conf_compute_api_h_disabled
+#define confComputeApiCtrlCmdGpuSetVidmemSize(pConfComputeApi, pParams) confComputeApiCtrlCmdGpuSetVidmemSize_IMPL(pConfComputeApi, pParams)
+#endif // __nvoc_conf_compute_api_h_disabled
+
+NV_STATUS confComputeApiCtrlCmdGetGpuCertificate_IMPL(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GET_GPU_CERTIFICATE_PARAMS *pParams);
+#ifdef __nvoc_conf_compute_api_h_disabled
+static inline NV_STATUS confComputeApiCtrlCmdGetGpuCertificate(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GET_GPU_CERTIFICATE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialComputeApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_conf_compute_api_h_disabled
+#define confComputeApiCtrlCmdGetGpuCertificate(pConfComputeApi, pParams) confComputeApiCtrlCmdGetGpuCertificate_IMPL(pConfComputeApi, pParams)
+#endif // __nvoc_conf_compute_api_h_disabled
+
+NV_STATUS confComputeApiCtrlCmdGetGpuAttestationReport_IMPL(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GET_GPU_ATTESTATION_REPORT_PARAMS *pParams);
+#ifdef __nvoc_conf_compute_api_h_disabled
+static inline NV_STATUS confComputeApiCtrlCmdGetGpuAttestationReport(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GET_GPU_ATTESTATION_REPORT_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialComputeApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_conf_compute_api_h_disabled
+#define confComputeApiCtrlCmdGetGpuAttestationReport(pConfComputeApi, pParams) confComputeApiCtrlCmdGetGpuAttestationReport_IMPL(pConfComputeApi, pParams)
+#endif // __nvoc_conf_compute_api_h_disabled
+
+NV_STATUS confComputeApiCtrlCmdGpuGetNumSecureChannels_IMPL(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_NUM_SECURE_CHANNELS_PARAMS *pParams);
+#ifdef __nvoc_conf_compute_api_h_disabled
+static inline NV_STATUS confComputeApiCtrlCmdGpuGetNumSecureChannels(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_NUM_SECURE_CHANNELS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialComputeApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_conf_compute_api_h_disabled
+#define confComputeApiCtrlCmdGpuGetNumSecureChannels(pConfComputeApi, pParams) confComputeApiCtrlCmdGpuGetNumSecureChannels_IMPL(pConfComputeApi, pParams)
+#endif // __nvoc_conf_compute_api_h_disabled
+
+NV_STATUS confComputeApiCtrlCmdSystemGetSecurityPolicy_IMPL(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_GET_SECURITY_POLICY_PARAMS *pParams);
+#ifdef __nvoc_conf_compute_api_h_disabled
+static inline NV_STATUS confComputeApiCtrlCmdSystemGetSecurityPolicy(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_GET_SECURITY_POLICY_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialComputeApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_conf_compute_api_h_disabled
+#define confComputeApiCtrlCmdSystemGetSecurityPolicy(pConfComputeApi, pParams) confComputeApiCtrlCmdSystemGetSecurityPolicy_IMPL(pConfComputeApi, pParams)
+#endif // __nvoc_conf_compute_api_h_disabled
+
+NV_STATUS confComputeApiCtrlCmdSystemSetSecurityPolicy_IMPL(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_SET_SECURITY_POLICY_PARAMS *pParams);
+#ifdef __nvoc_conf_compute_api_h_disabled
+static inline NV_STATUS confComputeApiCtrlCmdSystemSetSecurityPolicy(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_SET_SECURITY_POLICY_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialComputeApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_conf_compute_api_h_disabled
+#define confComputeApiCtrlCmdSystemSetSecurityPolicy(pConfComputeApi, pParams) confComputeApiCtrlCmdSystemSetSecurityPolicy_IMPL(pConfComputeApi, pParams)
+#endif // __nvoc_conf_compute_api_h_disabled
+
+NV_STATUS confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS *pParams);
+#ifdef __nvoc_conf_compute_api_h_disabled
+static inline NV_STATUS confComputeApiCtrlCmdGpuGetKeyRotationState(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialComputeApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_conf_compute_api_h_disabled
+#define confComputeApiCtrlCmdGpuGetKeyRotationState(pConfComputeApi, pParams) confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL(pConfComputeApi, pParams)
+#endif // __nvoc_conf_compute_api_h_disabled
+
+
+// Wrapper macros for halified functions
 #define confComputeApiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define confComputeApiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) confComputeApiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define confComputeApiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
@@ -239,50 +322,6 @@ NV_STATUS __nvoc_objCreate_ConfidentialComputeApi(ConfidentialComputeApi**, Dyna
 #define confComputeApiAddAdditionalDependants(pClient, pResource, pReference) confComputeApiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
-static inline NV_STATUS confComputeApiCtrlCmdSystemGetCapabilities_DISPATCH(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_CAPABILITIES_PARAMS *pParams) {
-    return pConfComputeApi->__confComputeApiCtrlCmdSystemGetCapabilities__(pConfComputeApi, pParams);
-}
-
-static inline NV_STATUS confComputeApiCtrlCmdSystemGetGpusState_DISPATCH(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_GPUS_STATE_PARAMS *pParams) {
-    return pConfComputeApi->__confComputeApiCtrlCmdSystemGetGpusState__(pConfComputeApi, pParams);
-}
-
-static inline NV_STATUS confComputeApiCtrlCmdSystemSetGpusState_DISPATCH(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_SET_GPUS_STATE_PARAMS *pParams) {
-    return pConfComputeApi->__confComputeApiCtrlCmdSystemSetGpusState__(pConfComputeApi, pParams);
-}
-
-static inline NV_STATUS confComputeApiCtrlCmdGpuGetVidmemSize_DISPATCH(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_VIDMEM_SIZE_PARAMS *pParams) {
-    return pConfComputeApi->__confComputeApiCtrlCmdGpuGetVidmemSize__(pConfComputeApi, pParams);
-}
-
-static inline NV_STATUS confComputeApiCtrlCmdGpuSetVidmemSize_DISPATCH(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GPU_SET_VIDMEM_SIZE_PARAMS *pParams) {
-    return pConfComputeApi->__confComputeApiCtrlCmdGpuSetVidmemSize__(pConfComputeApi, pParams);
-}
-
-static inline NV_STATUS confComputeApiCtrlCmdGetGpuCertificate_DISPATCH(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GET_GPU_CERTIFICATE_PARAMS *pParams) {
-    return pConfComputeApi->__confComputeApiCtrlCmdGetGpuCertificate__(pConfComputeApi, pParams);
-}
-
-static inline NV_STATUS confComputeApiCtrlCmdGetGpuAttestationReport_DISPATCH(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GET_GPU_ATTESTATION_REPORT_PARAMS *pParams) {
-    return pConfComputeApi->__confComputeApiCtrlCmdGetGpuAttestationReport__(pConfComputeApi, pParams);
-}
-
-static inline NV_STATUS confComputeApiCtrlCmdGpuGetNumSecureChannels_DISPATCH(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_NUM_SECURE_CHANNELS_PARAMS *pParams) {
-    return pConfComputeApi->__confComputeApiCtrlCmdGpuGetNumSecureChannels__(pConfComputeApi, pParams);
-}
-
-static inline NV_STATUS confComputeApiCtrlCmdSystemGetSecurityPolicy_DISPATCH(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_GET_SECURITY_POLICY_PARAMS *pParams) {
-    return pConfComputeApi->__confComputeApiCtrlCmdSystemGetSecurityPolicy__(pConfComputeApi, pParams);
-}
-
-static inline NV_STATUS confComputeApiCtrlCmdSystemSetSecurityPolicy_DISPATCH(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_SET_SECURITY_POLICY_PARAMS *pParams) {
-    return pConfComputeApi->__confComputeApiCtrlCmdSystemSetSecurityPolicy__(pConfComputeApi, pParams);
-}
-
-static inline NV_STATUS confComputeApiCtrlCmdGpuGetKeyRotationState_DISPATCH(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS *pParams) {
-    return pConfComputeApi->__confComputeApiCtrlCmdGpuGetKeyRotationState__(pConfComputeApi, pParams);
-}
-
 static inline NvBool confComputeApiAccessCallback_DISPATCH(struct ConfidentialComputeApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__nvoc_metadata_ptr->vtable.__confComputeApiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
@@ -389,12 +428,6 @@ NV_STATUS confComputeApiCtrlCmdSystemSetSecurityPolicy_IMPL(struct ConfidentialC
 
 NV_STATUS confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS *pParams);
 
-NV_STATUS confComputeApiConstruct_IMPL(struct ConfidentialComputeApi *arg_pConfComputeApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_confComputeApiConstruct(arg_pConfComputeApi, arg_pCallContext, arg_pParams) confComputeApiConstruct_IMPL(arg_pConfComputeApi, arg_pCallContext, arg_pParams)
-void confComputeApiDestruct_IMPL(struct ConfidentialComputeApi *pConfComputeApi);
-
-#define __nvoc_confComputeApiDestruct(pConfComputeApi) confComputeApiDestruct_IMPL(pConfComputeApi)
 #undef PRIVATE_FIELD
 
 #endif // CONF_COMPUTE_H

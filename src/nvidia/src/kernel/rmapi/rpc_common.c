@@ -64,6 +64,13 @@ static void rpcRmApiSetup(OBJGPU *pGpu)
     {
         // none for now
     }
+    else if (IS_DCE_CLIENT(pGpu))
+    {
+        pRmApi->Control         = rpcRmApiControl_dce;
+        pRmApi->AllocWithHandle = rpcRmApiAlloc_dce;
+        pRmApi->Free            = rpcRmApiFree_dce;
+        pRmApi->DupObject       = rpcRmApiDupObject_dce;
+    }
     else if (IS_GSP_CLIENT(pGpu))
     {
         pRmApi->Control         = rpcRmApiControl_GSP;
@@ -88,16 +95,19 @@ OBJRPC *initRpcObject(OBJGPU *pGpu)
     pRpc->timeoutCount = 0;
     pRpc->bQuietPrints = NV_FALSE;
 
-    // VIRTUALIZATION is disabled on DCE. Only run the below code on VGPU and GSP.
-    rpcSetIpVersion(pGpu, pRpc,
-                    RPC_VERSION_FROM_VGX_VERSION(VGX_MAJOR_VERSION_NUMBER,
-                                                 VGX_MINOR_VERSION_NUMBER));
-    rpcObjIfacesSetup(pRpc);
+    if (!IS_DCE_CLIENT(pGpu))
+    {
+        // VIRTUALIZATION is disabled on DCE. Only run the below code on VGPU and GSP.
+        rpcSetIpVersion(pGpu, pRpc,
+                        RPC_VERSION_FROM_VGX_VERSION(VGX_MAJOR_VERSION_NUMBER,
+                                                     VGX_MINOR_VERSION_NUMBER));
+        rpcObjIfacesSetup(pRpc);
+    }
 
     rpcRmApiSetup(pGpu);
 
     if (
-        !IS_GSP_CLIENT(pGpu))
+        !IS_FW_CLIENT(pGpu))
     {
         if (NV_OK != rpcConstruct(pGpu, pRpc))
         {

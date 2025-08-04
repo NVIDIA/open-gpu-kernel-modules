@@ -100,6 +100,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__CrashCatReport =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_crashcatReportDestruct(CrashCatReport*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_CrashCatReport(CrashCatReport *pThis) {
     __nvoc_crashcatReportDestruct(pThis);

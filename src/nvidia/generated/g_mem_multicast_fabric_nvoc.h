@@ -102,15 +102,6 @@ struct MemoryMulticastFabric {
     struct Memory *__nvoc_pbase_Memory;    // mem super
     struct MemoryMulticastFabric *__nvoc_pbase_MemoryMulticastFabric;    // memorymulticastfabric
 
-    // Vtable with 7 per-object function pointers
-    NV_STATUS (*__memorymulticastfabricCtrlGetInfo__)(struct MemoryMulticastFabric * /*this*/, NV00FD_CTRL_GET_INFO_PARAMS *);  // exported (id=0xfd0101)
-    NV_STATUS (*__memorymulticastfabricCtrlAttachMem__)(struct MemoryMulticastFabric * /*this*/, NV00FD_CTRL_ATTACH_MEM_PARAMS *);  // exported (id=0xfd0102)
-    NV_STATUS (*__memorymulticastfabricCtrlDetachMem__)(struct MemoryMulticastFabric * /*this*/, NV00FD_CTRL_DETACH_MEM_PARAMS *);  // exported (id=0xfd0105)
-    NV_STATUS (*__memorymulticastfabricCtrlAttachGpu__)(struct MemoryMulticastFabric * /*this*/, NV00FD_CTRL_ATTACH_GPU_PARAMS *);  // exported (id=0xfd0104)
-    NV_STATUS (*__memorymulticastfabricCtrlRegisterEvent__)(struct MemoryMulticastFabric * /*this*/, NV00FD_CTRL_REGISTER_EVENT_PARAMS *);  // exported (id=0xfd0103)
-    NV_STATUS (*__memorymulticastfabricCtrlAttachRemoteGpu__)(struct MemoryMulticastFabric * /*this*/, NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS *);  // exported (id=0xfd0106)
-    NV_STATUS (*__memorymulticastfabricCtrlSetFailure__)(struct MemoryMulticastFabric * /*this*/, NV00FD_CTRL_SET_FAILURE_PARAMS *);  // exported (id=0xfd0107)
-
     // Data members
     NvU16 expNodeId;
     NvBool bImported;
@@ -185,7 +176,94 @@ NV_STATUS __nvoc_objCreate_MemoryMulticastFabric(MemoryMulticastFabric**, Dynami
     __nvoc_objCreate_MemoryMulticastFabric((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS memorymulticastfabricConstruct_IMPL(struct MemoryMulticastFabric *arg_pMemoryMulticastFabric, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_memorymulticastfabricConstruct(arg_pMemoryMulticastFabric, arg_pCallContext, arg_pParams) memorymulticastfabricConstruct_IMPL(arg_pMemoryMulticastFabric, arg_pCallContext, arg_pParams)
+
+void memorymulticastfabricDestruct_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric);
+#define __nvoc_memorymulticastfabricDestruct(pMemoryMulticastFabric) memorymulticastfabricDestruct_IMPL(pMemoryMulticastFabric)
+
+NV_STATUS memorymulticastfabricCtrlGetInfo_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_GET_INFO_PARAMS *pParams);
+#ifdef __nvoc_mem_multicast_fabric_h_disabled
+static inline NV_STATUS memorymulticastfabricCtrlGetInfo(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_GET_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryMulticastFabric was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_mem_multicast_fabric_h_disabled
+#define memorymulticastfabricCtrlGetInfo(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlGetInfo_IMPL(pMemoryMulticastFabric, pParams)
+#endif // __nvoc_mem_multicast_fabric_h_disabled
+
+NV_STATUS memorymulticastfabricCtrlAttachMem_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_ATTACH_MEM_PARAMS *pParams);
+#ifdef __nvoc_mem_multicast_fabric_h_disabled
+static inline NV_STATUS memorymulticastfabricCtrlAttachMem(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_ATTACH_MEM_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryMulticastFabric was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_mem_multicast_fabric_h_disabled
+#define memorymulticastfabricCtrlAttachMem(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlAttachMem_IMPL(pMemoryMulticastFabric, pParams)
+#endif // __nvoc_mem_multicast_fabric_h_disabled
+
+NV_STATUS memorymulticastfabricCtrlDetachMem_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_DETACH_MEM_PARAMS *pParams);
+#ifdef __nvoc_mem_multicast_fabric_h_disabled
+static inline NV_STATUS memorymulticastfabricCtrlDetachMem(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_DETACH_MEM_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryMulticastFabric was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_mem_multicast_fabric_h_disabled
+#define memorymulticastfabricCtrlDetachMem(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlDetachMem_IMPL(pMemoryMulticastFabric, pParams)
+#endif // __nvoc_mem_multicast_fabric_h_disabled
+
+NV_STATUS memorymulticastfabricCtrlAttachGpu_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_ATTACH_GPU_PARAMS *pParams);
+#ifdef __nvoc_mem_multicast_fabric_h_disabled
+static inline NV_STATUS memorymulticastfabricCtrlAttachGpu(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_ATTACH_GPU_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryMulticastFabric was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_mem_multicast_fabric_h_disabled
+#define memorymulticastfabricCtrlAttachGpu(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlAttachGpu_IMPL(pMemoryMulticastFabric, pParams)
+#endif // __nvoc_mem_multicast_fabric_h_disabled
+
+NV_STATUS memorymulticastfabricCtrlRegisterEvent_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_REGISTER_EVENT_PARAMS *pParams);
+#ifdef __nvoc_mem_multicast_fabric_h_disabled
+static inline NV_STATUS memorymulticastfabricCtrlRegisterEvent(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_REGISTER_EVENT_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryMulticastFabric was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_mem_multicast_fabric_h_disabled
+#define memorymulticastfabricCtrlRegisterEvent(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlRegisterEvent_IMPL(pMemoryMulticastFabric, pParams)
+#endif // __nvoc_mem_multicast_fabric_h_disabled
+
+NV_STATUS memorymulticastfabricCtrlAttachRemoteGpu_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS *pParams);
+#ifdef __nvoc_mem_multicast_fabric_h_disabled
+static inline NV_STATUS memorymulticastfabricCtrlAttachRemoteGpu(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryMulticastFabric was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_mem_multicast_fabric_h_disabled
+#define memorymulticastfabricCtrlAttachRemoteGpu(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlAttachRemoteGpu_IMPL(pMemoryMulticastFabric, pParams)
+#endif // __nvoc_mem_multicast_fabric_h_disabled
+
+NV_STATUS memorymulticastfabricCtrlSetFailure_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_SET_FAILURE_PARAMS *pParams);
+#ifdef __nvoc_mem_multicast_fabric_h_disabled
+static inline NV_STATUS memorymulticastfabricCtrlSetFailure(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_SET_FAILURE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryMulticastFabric was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_mem_multicast_fabric_h_disabled
+#define memorymulticastfabricCtrlSetFailure(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlSetFailure_IMPL(pMemoryMulticastFabric, pParams)
+#endif // __nvoc_mem_multicast_fabric_h_disabled
+
+void memorymulticastfabricRemoveFromCache_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric);
+#ifdef __nvoc_mem_multicast_fabric_h_disabled
+static inline void memorymulticastfabricRemoveFromCache(struct MemoryMulticastFabric *pMemoryMulticastFabric) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryMulticastFabric was disabled!");
+}
+#else // __nvoc_mem_multicast_fabric_h_disabled
+#define memorymulticastfabricRemoveFromCache(pMemoryMulticastFabric) memorymulticastfabricRemoveFromCache_IMPL(pMemoryMulticastFabric)
+#endif // __nvoc_mem_multicast_fabric_h_disabled
+
+
+// Wrapper macros for halified functions
 #define memorymulticastfabricUnmapFrom_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricUnmapFrom__
 #define memorymulticastfabricUnmapFrom(pMemoryMulticastFabric, pParams) memorymulticastfabricUnmapFrom_DISPATCH(pMemoryMulticastFabric, pParams)
 #define memorymulticastfabricCanCopy_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricCanCopy__
@@ -202,20 +280,6 @@ NV_STATUS __nvoc_objCreate_MemoryMulticastFabric(MemoryMulticastFabric**, Dynami
 #define memorymulticastfabricIsExportAllowed(pMemoryMulticastFabric) memorymulticastfabricIsExportAllowed_DISPATCH(pMemoryMulticastFabric)
 #define memorymulticastfabricGetMapAddrSpace_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricGetMapAddrSpace__
 #define memorymulticastfabricGetMapAddrSpace(pMemoryMulticastFabric, pCallContext, mapFlags, pAddrSpace) memorymulticastfabricGetMapAddrSpace_DISPATCH(pMemoryMulticastFabric, pCallContext, mapFlags, pAddrSpace)
-#define memorymulticastfabricCtrlGetInfo_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__memorymulticastfabricCtrlGetInfo__
-#define memorymulticastfabricCtrlGetInfo(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlGetInfo_DISPATCH(pMemoryMulticastFabric, pParams)
-#define memorymulticastfabricCtrlAttachMem_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__memorymulticastfabricCtrlAttachMem__
-#define memorymulticastfabricCtrlAttachMem(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlAttachMem_DISPATCH(pMemoryMulticastFabric, pParams)
-#define memorymulticastfabricCtrlDetachMem_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__memorymulticastfabricCtrlDetachMem__
-#define memorymulticastfabricCtrlDetachMem(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlDetachMem_DISPATCH(pMemoryMulticastFabric, pParams)
-#define memorymulticastfabricCtrlAttachGpu_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__memorymulticastfabricCtrlAttachGpu__
-#define memorymulticastfabricCtrlAttachGpu(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlAttachGpu_DISPATCH(pMemoryMulticastFabric, pParams)
-#define memorymulticastfabricCtrlRegisterEvent_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__memorymulticastfabricCtrlRegisterEvent__
-#define memorymulticastfabricCtrlRegisterEvent(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlRegisterEvent_DISPATCH(pMemoryMulticastFabric, pParams)
-#define memorymulticastfabricCtrlAttachRemoteGpu_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__memorymulticastfabricCtrlAttachRemoteGpu__
-#define memorymulticastfabricCtrlAttachRemoteGpu(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlAttachRemoteGpu_DISPATCH(pMemoryMulticastFabric, pParams)
-#define memorymulticastfabricCtrlSetFailure_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__memorymulticastfabricCtrlSetFailure__
-#define memorymulticastfabricCtrlSetFailure(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlSetFailure_DISPATCH(pMemoryMulticastFabric, pParams)
 #define memorymulticastfabricIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsDuplicate__
 #define memorymulticastfabricIsDuplicate(pMemory, hMemory, pDuplicate) memorymulticastfabricIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define memorymulticastfabricMap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memMap__
@@ -286,34 +350,6 @@ static inline NvBool memorymulticastfabricIsExportAllowed_DISPATCH(struct Memory
 
 static inline NV_STATUS memorymulticastfabricGetMapAddrSpace_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricGetMapAddrSpace__(pMemoryMulticastFabric, pCallContext, mapFlags, pAddrSpace);
-}
-
-static inline NV_STATUS memorymulticastfabricCtrlGetInfo_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_GET_INFO_PARAMS *pParams) {
-    return pMemoryMulticastFabric->__memorymulticastfabricCtrlGetInfo__(pMemoryMulticastFabric, pParams);
-}
-
-static inline NV_STATUS memorymulticastfabricCtrlAttachMem_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_ATTACH_MEM_PARAMS *pParams) {
-    return pMemoryMulticastFabric->__memorymulticastfabricCtrlAttachMem__(pMemoryMulticastFabric, pParams);
-}
-
-static inline NV_STATUS memorymulticastfabricCtrlDetachMem_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_DETACH_MEM_PARAMS *pParams) {
-    return pMemoryMulticastFabric->__memorymulticastfabricCtrlDetachMem__(pMemoryMulticastFabric, pParams);
-}
-
-static inline NV_STATUS memorymulticastfabricCtrlAttachGpu_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_ATTACH_GPU_PARAMS *pParams) {
-    return pMemoryMulticastFabric->__memorymulticastfabricCtrlAttachGpu__(pMemoryMulticastFabric, pParams);
-}
-
-static inline NV_STATUS memorymulticastfabricCtrlRegisterEvent_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_REGISTER_EVENT_PARAMS *pParams) {
-    return pMemoryMulticastFabric->__memorymulticastfabricCtrlRegisterEvent__(pMemoryMulticastFabric, pParams);
-}
-
-static inline NV_STATUS memorymulticastfabricCtrlAttachRemoteGpu_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS *pParams) {
-    return pMemoryMulticastFabric->__memorymulticastfabricCtrlAttachRemoteGpu__(pMemoryMulticastFabric, pParams);
-}
-
-static inline NV_STATUS memorymulticastfabricCtrlSetFailure_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_SET_FAILURE_PARAMS *pParams) {
-    return pMemoryMulticastFabric->__memorymulticastfabricCtrlSetFailure__(pMemoryMulticastFabric, pParams);
 }
 
 static inline NV_STATUS memorymulticastfabricIsDuplicate_DISPATCH(struct MemoryMulticastFabric *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
@@ -421,22 +457,6 @@ NV_STATUS memorymulticastfabricCtrlRegisterEvent_IMPL(struct MemoryMulticastFabr
 NV_STATUS memorymulticastfabricCtrlAttachRemoteGpu_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS *pParams);
 
 NV_STATUS memorymulticastfabricCtrlSetFailure_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_SET_FAILURE_PARAMS *pParams);
-
-NV_STATUS memorymulticastfabricConstruct_IMPL(struct MemoryMulticastFabric *arg_pMemoryMulticastFabric, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_memorymulticastfabricConstruct(arg_pMemoryMulticastFabric, arg_pCallContext, arg_pParams) memorymulticastfabricConstruct_IMPL(arg_pMemoryMulticastFabric, arg_pCallContext, arg_pParams)
-void memorymulticastfabricDestruct_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric);
-
-#define __nvoc_memorymulticastfabricDestruct(pMemoryMulticastFabric) memorymulticastfabricDestruct_IMPL(pMemoryMulticastFabric)
-void memorymulticastfabricRemoveFromCache_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric);
-
-#ifdef __nvoc_mem_multicast_fabric_h_disabled
-static inline void memorymulticastfabricRemoveFromCache(struct MemoryMulticastFabric *pMemoryMulticastFabric) {
-    NV_ASSERT_FAILED_PRECOMP("MemoryMulticastFabric was disabled!");
-}
-#else //__nvoc_mem_multicast_fabric_h_disabled
-#define memorymulticastfabricRemoveFromCache(pMemoryMulticastFabric) memorymulticastfabricRemoveFromCache_IMPL(pMemoryMulticastFabric)
-#endif //__nvoc_mem_multicast_fabric_h_disabled
 
 #undef PRIVATE_FIELD
 

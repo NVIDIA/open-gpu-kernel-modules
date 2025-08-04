@@ -80,6 +80,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJGSYNCMGR =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_gsyncmgrDestruct(OBJGSYNCMGR*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_OBJGSYNCMGR(OBJGSYNCMGR *pThis) {
     __nvoc_gsyncmgrDestruct(pThis);
@@ -122,12 +123,12 @@ void __nvoc_init_funcTable_OBJGSYNCMGR(OBJGSYNCMGR *pThis) {
 }
 
 NvBool gsyncmgrIsFirmwareGPUMismatch_STATIC_DISPATCH(struct OBJGPU *pGpu, OBJGSYNC *pGsync) {
-    ChipHal *chipHal = &staticCast(pGpu, RmHalspecOwner)->chipHal;
+    ChipHal *chipHal = &staticCast(pGpu, GpuHalspecOwner)->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
 
 
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xe0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e6UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         return gsyncmgrIsFirmwareGPUMismatch_GB100(pGpu, pGsync);
     }

@@ -163,7 +163,15 @@ NV_STATUS __nvoc_objCreate_DebugBufferApi(DebugBufferApi**, Dynamic*, NvU32, CAL
     __nvoc_objCreate_DebugBufferApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS dbgbufConstruct_IMPL(struct DebugBufferApi *arg_pDebugBufferApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_dbgbufConstruct(arg_pDebugBufferApi, arg_pCallContext, arg_pParams) dbgbufConstruct_IMPL(arg_pDebugBufferApi, arg_pCallContext, arg_pParams)
+
+void dbgbufDestruct_IMPL(struct DebugBufferApi *pDebugBufferApi);
+#define __nvoc_dbgbufDestruct(pDebugBufferApi) dbgbufDestruct_IMPL(pDebugBufferApi)
+
+
+// Wrapper macros for halified functions
 #define dbgbufMap_FNPTR(pDebugBufferApi) pDebugBufferApi->__nvoc_metadata_ptr->vtable.__dbgbufMap__
 #define dbgbufMap(pDebugBufferApi, pCallContext, pParams, pCpuMapping) dbgbufMap_DISPATCH(pDebugBufferApi, pCallContext, pParams, pCpuMapping)
 #define dbgbufUnmap_FNPTR(pDebugBufferApi) pDebugBufferApi->__nvoc_metadata_ptr->vtable.__dbgbufUnmap__
@@ -324,12 +332,6 @@ NV_STATUS dbgbufGetMapAddrSpace_IMPL(struct DebugBufferApi *pDebugBufferApi, CAL
 
 NV_STATUS dbgbufGetMemoryMappingDescriptor_IMPL(struct DebugBufferApi *pDebugBufferApi, MEMORY_DESCRIPTOR **ppMemDesc);
 
-NV_STATUS dbgbufConstruct_IMPL(struct DebugBufferApi *arg_pDebugBufferApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_dbgbufConstruct(arg_pDebugBufferApi, arg_pCallContext, arg_pParams) dbgbufConstruct_IMPL(arg_pDebugBufferApi, arg_pCallContext, arg_pParams)
-void dbgbufDestruct_IMPL(struct DebugBufferApi *pDebugBufferApi);
-
-#define __nvoc_dbgbufDestruct(pDebugBufferApi) dbgbufDestruct_IMPL(pDebugBufferApi)
 #undef PRIVATE_FIELD
 
 

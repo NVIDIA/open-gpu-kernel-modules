@@ -217,7 +217,7 @@ rmresControlSerialization_Prologue_IMPL
 
     if (pGpu != NULL &&
         ((IS_VIRTUAL(pGpu)    && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_VGPU_HOST)
-        ) || (IS_GSP_CLIENT(pGpu) && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL))))
+        ) || (IS_FW_CLIENT(pGpu) && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL))))
     {
         return serverSerializeCtrlDown(pCallContext, pParams->cmd, &pParams->pParams, &pParams->paramsSize, &pParams->flags);
     }
@@ -241,7 +241,7 @@ rmresControlSerialization_Epilogue_IMPL
 
     if (pGpu != NULL &&
         ((IS_VIRTUAL(pGpu)    && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_VGPU_HOST)
-        ) || (IS_GSP_CLIENT(pGpu) && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL))))
+        ) || (IS_FW_CLIENT(pGpu) && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL))))
     {
         NV_ASSERT_OK(serverDeserializeCtrlUp(pCallContext, pParams->cmd, &pParams->pParams, &pParams->paramsSize, &pParams->flags));
     }
@@ -263,7 +263,7 @@ rmresControl_Prologue_IMPL
 
     if (pGpu != NULL &&
         ((IS_VIRTUAL(pGpu)    && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_VGPU_HOST)
-        ) || (IS_GSP_CLIENT(pGpu) && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL))))
+        ) || (IS_FW_CLIENT(pGpu) && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL))))
     {
         //
         // GPU lock is required to protect the RPC buffers.

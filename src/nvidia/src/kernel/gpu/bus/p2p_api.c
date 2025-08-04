@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -259,24 +259,15 @@ _p2papiUpdateTopologyInfo
 )
 {
     // Check if identifiers need to be programmed
-    if (!pLocalKernelNvlink->bGotNvleIdentifiers)
-    {
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, knvlinkEncryptionGetGpuIdentifiers_HAL(pLocalGpu, pLocalKernelNvlink));
-        pLocalKernelNvlink->bGotNvleIdentifiers = NV_TRUE;
-    }
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, knvlinkEncryptionGetGpuIdentifiers_HAL(pLocalGpu, pLocalKernelNvlink));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, knvlinkEncryptionGetGpuIdentifiers_HAL(pRemoteGpu, pRemoteKernelNvlink));
 
-    if (!pRemoteKernelNvlink->bGotNvleIdentifiers)
-    {
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, knvlinkEncryptionGetGpuIdentifiers_HAL(pRemoteGpu, pRemoteKernelNvlink));
-        pRemoteKernelNvlink->bGotNvleIdentifiers = NV_TRUE;
-    }
-    
     // Send topology to key manager
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, 
-        knvlinkEncryptionUpdateTopology_HAL(pLocalGpu, pLocalKernelNvlink, pRemoteKernelNvlink->alid, pRemoteKernelNvlink->clid));
-    
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, 
-        knvlinkEncryptionUpdateTopology_HAL(pRemoteGpu, pRemoteKernelNvlink, pLocalKernelNvlink->alid, pLocalKernelNvlink->clid));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        knvlinkEncryptionUpdateTopology_HAL(pLocalGpu, pLocalKernelNvlink, knvlinkGetALID(pRemoteGpu, pRemoteKernelNvlink), knvlinkGetCLID(pRemoteGpu, pRemoteKernelNvlink)));
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        knvlinkEncryptionUpdateTopology_HAL(pRemoteGpu, pRemoteKernelNvlink, knvlinkGetALID(pLocalGpu, pLocalKernelNvlink), knvlinkGetCLID(pLocalGpu, pLocalKernelNvlink)));
 
     return NV_OK;
 }
@@ -395,9 +386,9 @@ _p2papiDeriveEncryptionKeys
     }
 
     NV_ASSERT_OK_OR_GOTO(status,
-        _p2papiSendEncryptionKeys(pLocalGpu,  p2pKey, pRemoteKernelNvlink->clid, NV_FALSE), ErrorExit);
+        _p2papiSendEncryptionKeys(pLocalGpu,  p2pKey, knvlinkGetCLID(pRemoteGpu, pRemoteKernelNvlink), NV_FALSE), ErrorExit);
     NV_ASSERT_OK_OR_GOTO(status,
-        _p2papiSendEncryptionKeys(pRemoteGpu, p2pKey, pLocalKernelNvlink->clid,  NV_FALSE), ErrorExit);
+        _p2papiSendEncryptionKeys(pRemoteGpu, p2pKey, knvlinkGetCLID(pLocalGpu, pLocalKernelNvlink),  NV_FALSE), ErrorExit);
 
 ErrorExit:
     // Always be sure to scrub P2P key regardless of success
@@ -405,6 +396,7 @@ ErrorExit:
 
     return status;
 }
+
 
 NV_STATUS
 p2papiConstruct_IMPL
@@ -716,7 +708,6 @@ p2papiConstruct_IMPL
     bEgmPeer = (!bSpaAccessOnly &&
                 memmgrIsLocalEgmEnabled(GPU_GET_MEMORY_MANAGER(pLocalGpu)) &&
                 memmgrIsLocalEgmEnabled(GPU_GET_MEMORY_MANAGER(pRemoteGpu)));
-                
 
     if (bSpaAccessOnly &&
         memmgrIsLocalEgmEnabled(GPU_GET_MEMORY_MANAGER(pLocalGpu)) &&
@@ -736,7 +727,7 @@ p2papiConstruct_IMPL
         //
         // TODO: This function need to have a cleanup path when this function
         //       fails after kbusCreateP2PMaping(), busBindLocalGfidForP2P()
-        //       and busBindRemoteGfidForP2P(). The current state, the 
+        //       and busBindRemoteGfidForP2P(). The current state, the
         //       function just returns an error. Bug 4016670 filed to track
         //       the effort.
         //
@@ -766,7 +757,7 @@ p2papiConstruct_IMPL
 
             NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                                   kbusGetBar1P2PDmaInfo_HAL(pRemoteGpu, pLocalGpu,
-                                      pLocalKernelBus, 
+                                      pLocalKernelBus,
                                       &pNv503bAllocParams->p2lBar1P2PDmaInfo.dma_address,
                                       &pNv503bAllocParams->p2lBar1P2PDmaInfo.dma_size));
         }

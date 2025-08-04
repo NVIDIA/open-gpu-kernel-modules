@@ -27,13 +27,8 @@
 #include "nv-linux.h"
 #include "nv-platform.h"
 
-#if defined(NV_SOC_TEGRA_BPMP_ABI_H_PRESENT)
 #include <soc/tegra/bpmp-abi.h>
-#endif
-
-#if defined(NV_SOC_TEGRA_BPMP_H_PRESENT)
 #include <soc/tegra/bpmp.h>
-#endif
 
 // Use the CCF APIs if enabled in Kernel config and RM build
 // has Dual license define enabled.
@@ -59,6 +54,12 @@ static const char *osMapClk[] = {
     [TEGRASOC_WHICH_CLK_NVDISPLAY_DISP]    = "nvdisplay_disp_clk",
     [TEGRASOC_WHICH_CLK_NVDISPLAY_P0]      = "nvdisplay_p0_clk",
     [TEGRASOC_WHICH_CLK_NVDISPLAY_P1]      = "nvdisplay_p1_clk",
+    [TEGRASOC_WHICH_CLK_NVDISPLAY_P2]      = "nvdisplay_p2_clk",
+    [TEGRASOC_WHICH_CLK_NVDISPLAY_P3]      = "nvdisplay_p3_clk",
+    [TEGRASOC_WHICH_CLK_NVDISPLAY_P4]      = "nvdisplay_p4_clk",
+    [TEGRASOC_WHICH_CLK_NVDISPLAY_P5]      = "nvdisplay_p5_clk",
+    [TEGRASOC_WHICH_CLK_NVDISPLAY_P6]      = "nvdisplay_p6_clk",
+    [TEGRASOC_WHICH_CLK_NVDISPLAY_P7]      = "nvdisplay_p7_clk",
     [TEGRASOC_WHICH_CLK_DPAUX0]            = "dpaux0_clk",
     [TEGRASOC_WHICH_CLK_FUSE]              = "fuse_clk",
     [TEGRASOC_WHICH_CLK_DSIPLL_VCO]        = "dsipll_vco_clk",
@@ -77,9 +78,21 @@ static const char *osMapClk[] = {
     [TEGRASOC_WHICH_CLK_VPLL0_REF]         = "vpll0_ref_clk",
     [TEGRASOC_WHICH_CLK_VPLL0]             = "vpll0_clk",
     [TEGRASOC_WHICH_CLK_VPLL1]             = "vpll1_clk",
+    [TEGRASOC_WHICH_CLK_VPLL2]             = "vpll2_clk",
+    [TEGRASOC_WHICH_CLK_VPLL3]             = "vpll3_clk",
+    [TEGRASOC_WHICH_CLK_VPLL4]             = "vpll4_clk",
+    [TEGRASOC_WHICH_CLK_VPLL5]             = "vpll5_clk",
+    [TEGRASOC_WHICH_CLK_VPLL6]             = "vpll6_clk",
+    [TEGRASOC_WHICH_CLK_VPLL7]             = "vpll7_clk",
     [TEGRASOC_WHICH_CLK_NVDISPLAY_P0_REF]  = "nvdisplay_p0_ref_clk",
     [TEGRASOC_WHICH_CLK_RG0]               = "rg0_clk",
     [TEGRASOC_WHICH_CLK_RG1]               = "rg1_clk",
+    [TEGRASOC_WHICH_CLK_RG2]               = "rg2_clk",
+    [TEGRASOC_WHICH_CLK_RG3]               = "rg3_clk",
+    [TEGRASOC_WHICH_CLK_RG4]               = "rg4_clk",
+    [TEGRASOC_WHICH_CLK_RG5]               = "rg5_clk",
+    [TEGRASOC_WHICH_CLK_RG6]               = "rg6_clk",
+    [TEGRASOC_WHICH_CLK_RG7]               = "rg7_clk",
     [TEGRASOC_WHICH_CLK_DISPPLL]           = "disppll_clk",
     [TEGRASOC_WHICH_CLK_DISPHUBPLL]        = "disphubpll_clk",
     [TEGRASOC_WHICH_CLK_DSI_LP]            = "dsi_lp_clk",
@@ -87,9 +100,20 @@ static const char *osMapClk[] = {
     [TEGRASOC_WHICH_CLK_DSI_PIXEL]         = "dsi_pixel_clk",
     [TEGRASOC_WHICH_CLK_PRE_SOR0]          = "pre_sor0_clk",
     [TEGRASOC_WHICH_CLK_PRE_SOR1]          = "pre_sor1_clk",
+    [TEGRASOC_WHICH_CLK_PRE_SOR2]          = "pre_sor2_clk",
+    [TEGRASOC_WHICH_CLK_PRE_SOR3]          = "pre_sor3_clk",
     [TEGRASOC_WHICH_CLK_DP_LINKA_REF]      = "dp_link_ref_clk",
+    [TEGRASOC_WHICH_CLK_DP_LINKB_REF]      = "dp_linkb_ref_clk",
+    [TEGRASOC_WHICH_CLK_DP_LINKC_REF]      = "dp_linkc_ref_clk",
+    [TEGRASOC_WHICH_CLK_DP_LINKD_REF]      = "dp_linkd_ref_clk",
     [TEGRASOC_WHICH_CLK_SOR_LINKA_INPUT]   = "sor_linka_input_clk",
+    [TEGRASOC_WHICH_CLK_SOR_LINKB_INPUT]   = "sor_linkb_input_clk",
+    [TEGRASOC_WHICH_CLK_SOR_LINKC_INPUT]   = "sor_linkc_input_clk",
+    [TEGRASOC_WHICH_CLK_SOR_LINKD_INPUT]   = "sor_linkd_input_clk",
     [TEGRASOC_WHICH_CLK_SOR_LINKA_AFIFO]   = "sor_linka_afifo_clk",
+    [TEGRASOC_WHICH_CLK_SOR_LINKB_AFIFO]   = "sor_linkb_afifo_clk",
+    [TEGRASOC_WHICH_CLK_SOR_LINKC_AFIFO]   = "sor_linkc_afifo_clk",
+    [TEGRASOC_WHICH_CLK_SOR_LINKD_AFIFO]   = "sor_linkd_afifo_clk",
     [TEGRASOC_WHICH_CLK_SOR_LINKA_AFIFO_M] = "sor_linka_afifo_m_clk",
     [TEGRASOC_WHICH_CLK_RG0_M]             = "rg0_m_clk",
     [TEGRASOC_WHICH_CLK_RG1_M]             = "rg1_m_clk",
@@ -98,17 +122,36 @@ static const char *osMapClk[] = {
     [TEGRASOC_WHICH_CLK_PLLHUB]            = "pllhub_clk",
     [TEGRASOC_WHICH_CLK_SOR0]              = "sor0_clk",
     [TEGRASOC_WHICH_CLK_SOR1]              = "sor1_clk",
+    [TEGRASOC_WHICH_CLK_SOR2]              = "sor2_clk",
+    [TEGRASOC_WHICH_CLK_SOR3]              = "sor3_clk",
     [TEGRASOC_WHICH_CLK_SOR_PADA_INPUT]    = "sor_pad_input_clk",
+    [TEGRASOC_WHICH_CLK_SOR_PADB_INPUT]    = "sor_padb_input_clk",
+    [TEGRASOC_WHICH_CLK_SOR_PADC_INPUT]    = "sor_padc_input_clk",
+    [TEGRASOC_WHICH_CLK_SOR_PADD_INPUT]    = "sor_padd_input_clk",
+    [TEGRASOC_WHICH_CLK_SOR0_PAD]          = "sor0_pad_clk",
+    [TEGRASOC_WHICH_CLK_SOR1_PAD]          = "sor1_pad_clk",
+    [TEGRASOC_WHICH_CLK_SOR2_PAD]          = "sor2_pad_clk",
+    [TEGRASOC_WHICH_CLK_SOR3_PAD]          = "sor3_pad_clk",
     [TEGRASOC_WHICH_CLK_PRE_SF0]           = "pre_sf0_clk",
     [TEGRASOC_WHICH_CLK_SF0]               = "sf0_clk",
     [TEGRASOC_WHICH_CLK_SF1]               = "sf1_clk",
+    [TEGRASOC_WHICH_CLK_SF2]               = "sf2_clk",
+    [TEGRASOC_WHICH_CLK_SF3]               = "sf3_clk",
+    [TEGRASOC_WHICH_CLK_SF4]               = "sf4_clk",
+    [TEGRASOC_WHICH_CLK_SF5]               = "sf5_clk",
+    [TEGRASOC_WHICH_CLK_SF6]               = "sf6_clk",
+    [TEGRASOC_WHICH_CLK_SF7]               = "sf7_clk",
     [TEGRASOC_WHICH_CLK_DSI_PAD_INPUT]     = "dsi_pad_input_clk",
     [TEGRASOC_WHICH_CLK_PRE_SOR0_REF]      = "pre_sor0_ref_clk",
     [TEGRASOC_WHICH_CLK_PRE_SOR1_REF]      = "pre_sor1_ref_clk",
     [TEGRASOC_WHICH_CLK_SOR0_PLL_REF]      = "sor0_ref_pll_clk",
     [TEGRASOC_WHICH_CLK_SOR1_PLL_REF]      = "sor1_ref_pll_clk",
+    [TEGRASOC_WHICH_CLK_SOR2_PLL_REF]      = "sor2_ref_pll_clk",
+    [TEGRASOC_WHICH_CLK_SOR3_PLL_REF]      = "sor3_ref_pll_clk",
     [TEGRASOC_WHICH_CLK_SOR0_REF]          = "sor0_ref_clk",
     [TEGRASOC_WHICH_CLK_SOR1_REF]          = "sor1_ref_clk",
+    [TEGRASOC_WHICH_CLK_SOR2_REF]          = "sor2_ref_clk",
+    [TEGRASOC_WHICH_CLK_SOR3_REF]          = "sor3_ref_clk",
     [TEGRASOC_WHICH_CLK_OSC]               = "osc_clk",
     [TEGRASOC_WHICH_CLK_DSC]               = "dsc_clk",
     [TEGRASOC_WHICH_CLK_MAUD]              = "maud_clk",
@@ -122,6 +165,18 @@ static const char *osMapClk[] = {
     [TEGRASOC_WHICH_CLK_PLLA_DISP]         = "plla_disp",
     [TEGRASOC_WHICH_CLK_PLLA_DISPHUB]      = "plla_disphub",
     [TEGRASOC_WHICH_CLK_PLLA]              = "plla",
+    [TEGRASOC_WHICH_CLK_VPLLX_SOR0_MUXED]  = "vpllx_sor0_muxed_clk",
+    [TEGRASOC_WHICH_CLK_VPLLX_SOR1_MUXED]  = "vpllx_sor1_muxed_clk",
+    [TEGRASOC_WHICH_CLK_VPLLX_SOR2_MUXED]  = "vpllx_sor2_muxed_clk",
+    [TEGRASOC_WHICH_CLK_VPLLX_SOR3_MUXED]  = "vpllx_sor3_muxed_clk",
+    [TEGRASOC_WHICH_CLK_SF0_SOR]           = "sf0_sor_clk",
+    [TEGRASOC_WHICH_CLK_SF1_SOR]           = "sf1_sor_clk",
+    [TEGRASOC_WHICH_CLK_SF2_SOR]           = "sf2_sor_clk",
+    [TEGRASOC_WHICH_CLK_SF3_SOR]           = "sf3_sor_clk",
+    [TEGRASOC_WHICH_CLK_SF4_SOR]           = "sf4_sor_clk",
+    [TEGRASOC_WHICH_CLK_SF5_SOR]           = "sf5_sor_clk",
+    [TEGRASOC_WHICH_CLK_SF6_SOR]           = "sf6_sor_clk",
+    [TEGRASOC_WHICH_CLK_SF7_SOR]           = "sf7_sor_clk",
     [TEGRASOC_WHICH_CLK_EMC]               = "emc_clk",
     [TEGRASOC_WHICH_CLK_GPU_SYS]           = "sysclk",
     [TEGRASOC_WHICH_CLK_GPU_NVD]           = "nvdclk",
@@ -154,7 +209,7 @@ NV_STATUS NV_API_CALL nv_clk_get_handles(
     nv_state_t *nv)
 {
     NV_STATUS status = NV_OK;
-#if defined(NV_DEVM_CLK_BULK_GET_ALL_PRESENT) && NV_SUPPORTS_PLATFORM_DEVICE
+#if defined(NV_DEVM_CLK_BULK_GET_ALL_PRESENT)
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
     NvU32 i, j;
     int clk_count;
@@ -745,7 +800,7 @@ NV_STATUS NV_API_CALL nv_dp_uphy_pll_init
     NvU32 lanes_bitmap
 )
 {
-#if defined(NV_SOC_TEGRA_BPMP_ABI_H_PRESENT) && defined(NV_CMD_UPHY_DISPLAY_PORT_INIT_PRESENT)
+#if defined(NV_CMD_UPHY_DISPLAY_PORT_INIT_PRESENT)
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
     struct tegra_bpmp *bpmp;
     struct tegra_bpmp_message msg;
@@ -791,7 +846,7 @@ NV_STATUS NV_API_CALL nv_dp_uphy_pll_init
 
 NV_STATUS NV_API_CALL nv_dp_uphy_pll_deinit(nv_state_t *nv)
 {
-#if defined(NV_SOC_TEGRA_BPMP_ABI_H_PRESENT) && defined(NV_CMD_UPHY_DISPLAY_PORT_OFF_PRESENT)
+#if defined(NV_CMD_UPHY_DISPLAY_PORT_OFF_PRESENT)
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
     struct tegra_bpmp *bpmp;
     struct tegra_bpmp_message msg;

@@ -1170,9 +1170,11 @@ gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pGPUInstanceSubscription);
     KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance = pGPUInstanceSubscription->pKernelMIGGpuInstance;
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    Subdevice *pSubdevice = GPU_RES_GET_SUBDEVICE(pGPUInstanceSubscription);
 
     return kmigmgrComputeProfileGetCapacity(pGpu, pKernelMIGManager, pKernelMIGGpuInstance->pProfile,
-                                            pKernelMIGGpuInstance, pParams);
+                                            pKernelMIGGpuInstance, RES_GET_CLIENT_HANDLE(pGPUInstanceSubscription),
+                                            RES_GET_HANDLE(pSubdevice), pParams);
 }
 
 NV_STATUS

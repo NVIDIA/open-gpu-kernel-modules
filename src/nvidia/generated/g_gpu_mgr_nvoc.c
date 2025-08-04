@@ -80,6 +80,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJGPUMGR =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_gpumgrDestruct(OBJGPUMGR*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_OBJGPUMGR(OBJGPUMGR *pThis) {
     __nvoc_gpumgrDestruct(pThis);

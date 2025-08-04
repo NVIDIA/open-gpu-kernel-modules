@@ -90,6 +90,7 @@ struct KernelGsplite {
     struct KernelGsplite *__nvoc_pbase_KernelGsplite;    // kgsplite
 
     // 1 PDB property
+//  NvBool PDB_PROP_KGSPLITE_IS_MISSING inherited from OBJENGSTATE
 
     // Data members
     NvU32 PublicId;
@@ -147,6 +148,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGsplite;
 #define PDB_PROP_KGSPLITE_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_KGSPLITE_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 
+
 NV_STATUS __nvoc_objCreateDynamic_KernelGsplite(KernelGsplite**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelGsplite(KernelGsplite**, Dynamic*, NvU32);
@@ -154,7 +156,12 @@ NV_STATUS __nvoc_objCreate_KernelGsplite(KernelGsplite**, Dynamic*, NvU32);
     __nvoc_objCreate_KernelGsplite((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+void kgspliteDestruct_IMPL(struct KernelGsplite *pKernelGsplite);
+#define __nvoc_kgspliteDestruct(pKernelGsplite) kgspliteDestruct_IMPL(pKernelGsplite)
+
+
+// Wrapper macros for halified functions
 #define kgspliteConstructEngine_FNPTR(pKernelGsplite) pKernelGsplite->__nvoc_metadata_ptr->vtable.__kgspliteConstructEngine__
 #define kgspliteConstructEngine(pGpu, pKernelGsplite, engDesc) kgspliteConstructEngine_DISPATCH(pGpu, pKernelGsplite, engDesc)
 #define kgspliteStateInitUnlocked_FNPTR(pKernelGsplite) pKernelGsplite->__nvoc_metadata_ptr->vtable.__kgspliteStateInitUnlocked__
@@ -245,9 +252,6 @@ NV_STATUS kgspliteConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelGsplite
 
 NV_STATUS kgspliteStateInitUnlocked_IMPL(struct OBJGPU *pGpu, struct KernelGsplite *pKernelGsplite);
 
-void kgspliteDestruct_IMPL(struct KernelGsplite *pKernelGsplite);
-
-#define __nvoc_kgspliteDestruct(pKernelGsplite) kgspliteDestruct_IMPL(pKernelGsplite)
 #undef PRIVATE_FIELD
 
 

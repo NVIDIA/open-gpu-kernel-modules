@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -77,7 +77,18 @@ NV_STATUS deviceCtrlCmdNvjpgGetCapsV2_VF
     VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
     NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
 
+    // Sanity check for correct instance Id of NVDEC
+    if (pNvjpgCapsParams->instanceId >= GPU_MAX_NVJPGS)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Requested NVJPGS Id 0x%x is not present. Hence, returning capabilities of NVJPGS0\n",
+                  pNvjpgCapsParams->instanceId);
+        // Set default instance Id to zero if it's not set already.
+        pNvjpgCapsParams->instanceId = 0;
+    }
+
     portMemCopy(pNvjpgCapsParams->capsTbl, sizeof(pNvjpgCapsParams->capsTbl),
-                pVSI->jpegCaps, sizeof(pVSI->jpegCaps));
+                pVSI->jpegCaps[pNvjpgCapsParams->instanceId].capsTbl,
+                NV0080_CTRL_NVJPG_CAPS_TBL_SIZE);
     return NV_OK;
 }

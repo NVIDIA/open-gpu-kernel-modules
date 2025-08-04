@@ -93,19 +93,20 @@ memmapperExecuteMap
         pMap->size, pMap->dmaFlags);
 
     NvU64 dmaOffset = baseVirtAddr + pMap->virtualOffset;
-    NvU64 newDmaOffset = dmaOffset;
+    NVOS46_PARAMETERS mapDmaParams = {0};
+
+    mapDmaParams.hClient      = RES_GET_CLIENT_HANDLE(pMemoryMapper);
+    mapDmaParams.hDevice      = RES_GET_PARENT_HANDLE(pMemoryMapper->pSubdevice);
+    mapDmaParams.hDma         = pMap->hVirtualMemory;
+    mapDmaParams.hMemory      = pMap->hPhysicalMemory;
+    mapDmaParams.offset       = pMap->physicalOffset;
+    mapDmaParams.length       = pMap->size;
+    mapDmaParams.flags        = pMap->dmaFlags | DRF_DEF(OS46, _FLAGS, _DMA_OFFSET_FIXED, _TRUE);
+    mapDmaParams.dmaOffset    = dmaOffset;
+    mapDmaParams.kindOverride = pMap->kindOverride;
+
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        pRmApi->MapWithSecInfo(pRmApi,
-                               RES_GET_CLIENT_HANDLE(pMemoryMapper),
-                               RES_GET_PARENT_HANDLE(pMemoryMapper->pSubdevice),
-                               pMap->hVirtualMemory,
-                               pMap->hPhysicalMemory,
-                               pMap->physicalOffset,
-                               pMap->size,
-                               pMap->dmaFlags | DRF_DEF(OS46, _FLAGS, _DMA_OFFSET_FIXED, _TRUE),
-                               &newDmaOffset,
-                               &pMemoryMapper->secInfo));
-    NV_ASSERT_OR_RETURN(newDmaOffset == dmaOffset, NV_ERR_INVALID_STATE);
+        pRmApi->MapWithSecInfo(pRmApi, &mapDmaParams, &pMemoryMapper->secInfo));
 
     return NV_OK;
 }
@@ -131,15 +132,17 @@ memmapperExecuteUnmap
     NV_PRINTF(LEVEL_INFO, "unmap virt:(0x%x:0x%llx) size:0x%llx dmaFlags:0x%x\n",
         pUnmap->hVirtualMemory, pUnmap->virtualOffset, pUnmap->size, pUnmap->dmaFlags);
 
+    NVOS47_PARAMETERS unmapDmaParams = {0};
+
+    unmapDmaParams.hClient   = RES_GET_CLIENT_HANDLE(pMemoryMapper);
+    unmapDmaParams.hDevice   = RES_GET_PARENT_HANDLE(pMemoryMapper->pSubdevice);
+    unmapDmaParams.hDma      = pUnmap->hVirtualMemory;
+    unmapDmaParams.flags     = pUnmap->dmaFlags;
+    unmapDmaParams.dmaOffset = baseVirtAddr + pUnmap->virtualOffset;
+    unmapDmaParams.size      = pUnmap->size;
+
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        pRmApi->UnmapWithSecInfo(pRmApi,
-                                 RES_GET_CLIENT_HANDLE(pMemoryMapper),
-                                 RES_GET_PARENT_HANDLE(pMemoryMapper->pSubdevice),
-                                 pUnmap->hVirtualMemory,
-                                 pUnmap->dmaFlags,
-                                 baseVirtAddr + pUnmap->virtualOffset,
-                                 pUnmap->size,
-                                 &pMemoryMapper->secInfo));
+        pRmApi->UnmapWithSecInfo(pRmApi, &unmapDmaParams, &pMemoryMapper->secInfo));
 
     return NV_OK;
 }
@@ -291,16 +294,33 @@ memoryMapperWorker
 {
     MemoryMapperWorkerParams *pWorkerParams = pArg;
     MemoryMapper *pMemoryMapper = pWorkerParams->pMemoryMapper;
+    if (pWorkerParams ==NULL || pWorkerParams->pLock == NULL)
+    {
+        // Lock already destroyed, nothing to do
+        NV_PRINTF(LEVEL_ERROR, "worker is wrongly called after all work was finished \n");
+        return;
+    }
 
-    if (pMemoryMapper != NULL)
+    portSyncRwLockAcquireRead(pWorkerParams->pLock);
+    if (pWorkerParams->pMemoryMapper != NULL && pWorkerParams->numRefs > 1) 
     {
         memmapperProcessWork(pMemoryMapper);
     }
-
-    if (--pWorkerParams->numRefs == 0)
+    if(pWorkerParams->pMemoryMapper != NULL && pWorkerParams->numRefs ==1)
     {
+        NV_PRINTF(LEVEL_ERROR, "Worker is called , with reference count = 0x%x and pMemoryMapper not null \n",pWorkerParams->numRefs);
+        portSyncRwLockReleaseRead(pWorkerParams->pLock);
+        return;
+    }
+    portSyncRwLockReleaseRead(pWorkerParams->pLock);
+
+    if(pWorkerParams->numRefs !=0 && --pWorkerParams->numRefs == 0 && pWorkerParams->pMemoryMapper == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "worker is freeing param\n");
+        portSyncRwLockDestroy(pWorkerParams->pLock);
         portMemFree(pWorkerParams);
     }
+    
 }
 
 void
@@ -312,13 +332,14 @@ memmapperQueueWork_IMPL
     pMemoryMapper->pWorkerParams->numRefs++;
 
     // Queue work at passive IRQL
-    NV_ASSERT_OK(osQueueWorkItemWithFlags(GPU_RES_GET_GPU(pMemoryMapper),
-                                          memoryMapperWorker,
-                                          pMemoryMapper->pWorkerParams,
-                                          OS_QUEUE_WORKITEM_FLAGS_DONT_FREE_PARAMS
-                                          | OS_QUEUE_WORKITEM_FLAGS_DROP_ON_UNLOAD_QUEUE_FLUSH
-                                          | OS_QUEUE_WORKITEM_FLAGS_FALLBACK_TO_DPC
-                                          | OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW));
+    NV_ASSERT_OK(
+        osQueueWorkItem(GPU_RES_GET_GPU(pMemoryMapper),
+                        memoryMapperWorker,
+                        pMemoryMapper->pWorkerParams,
+                        OS_QUEUE_WORKITEM_FLAGS_DONT_FREE_PARAMS |
+                            OS_QUEUE_WORKITEM_FLAGS_DROP_ON_UNLOAD_QUEUE_FLUSH |
+                            OS_QUEUE_WORKITEM_FLAGS_FALLBACK_TO_DPC |
+                            OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW));
 }
 
 static void
@@ -409,6 +430,7 @@ memmapperConstruct_IMPL
     pMemoryMapper->pWorkerParams = portMemAllocNonPaged(sizeof(*pMemoryMapper->pWorkerParams));
     pMemoryMapper->pWorkerParams->pMemoryMapper = pMemoryMapper;
     pMemoryMapper->pWorkerParams->numRefs = 1;
+    pMemoryMapper->pWorkerParams->pLock = portSyncRwLockCreate(portMemAllocatorGetGlobalNonPaged());
     NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pMemoryMapper->pWorkerParams != NULL, NV_ERR_NO_MEMORY, failed);
 
     pMemoryMapper->semaphoreCallback.func = memmapperSemaphoreEventCallback;
@@ -453,11 +475,24 @@ memmapperDestruct_IMPL
     pRmApi->Free(pRmApi, pMemoryMapper->hInternalClient, pMemoryMapper->hInternalSemaphoreSurface);
     portMemFree(pMemoryMapper->pOperationQueue);
 
-    pMemoryMapper->pWorkerParams->pMemoryMapper = NULL;
-
-    if (--pMemoryMapper->pWorkerParams->numRefs == 0)
+    if (pMemoryMapper->pWorkerParams == NULL || 
+        pMemoryMapper->pWorkerParams->pLock == NULL)
     {
+        // Worker params or lock already freed, nothing to do
+        NV_PRINTF(LEVEL_ERROR, "Destructor is called after worker freed the params \n");
+        return;
+    }
+
+    portSyncRwLockAcquireWrite(pMemoryMapper->pWorkerParams->pLock);
+    pMemoryMapper->pWorkerParams->pMemoryMapper = NULL;
+    portSyncRwLockReleaseWrite(pMemoryMapper->pWorkerParams->pLock);
+    
+    NV_PRINTF(LEVEL_INFO, "Destructor is called , reference count = 0x%x\n",pMemoryMapper->pWorkerParams->numRefs);
+    if (pMemoryMapper->pWorkerParams->numRefs !=0 && --pMemoryMapper->pWorkerParams->numRefs == 0)
+    {
+        portSyncRwLockDestroy(pMemoryMapper->pWorkerParams->pLock);
         portMemFree(pMemoryMapper->pWorkerParams);
+        pMemoryMapper->pWorkerParams = NULL;
     }
 }
 

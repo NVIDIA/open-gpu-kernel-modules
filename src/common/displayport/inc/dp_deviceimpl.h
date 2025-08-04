@@ -391,6 +391,10 @@ namespace DisplayPort
             return maxModeBwRequired;
         }
 
+        bool getStuffDummySymbolsFor128b132b() const { return processedEdid.WARData.bStuffDummySymbolsFor128b132b; }
+        bool getStuffDummySymbolsFor8b10b() const { return processedEdid.WARData.bStuffDummySymbolsFor8b10b; }
+        bool getApplyStuffDummySymbolsWAR() const { return processedEdid.WARFlags.bApplyStuffDummySymbolsWAR; }
+
         virtual void queryGUID2();
 
         virtual bool getSDPExtnForColorimetrySupported();
@@ -433,6 +437,8 @@ namespace DisplayPort
         virtual bool    isMarkedForDeletion() {return bisMarkedForDeletion;};
         virtual bool    getRawDscCaps(NvU8 *buffer, NvU32 bufferSize);
         virtual bool    setRawDscCaps(const NvU8 *buffer, NvU32 bufferSize);
+        virtual bool    setValidatedRawDscCaps(NvU8 *buffer, NvU32 bufferSize);
+        virtual bool    validatePPSData(DSCPPSDATA *pPps);
 
         virtual AuxBus::status dscCrcControl(NvBool bEnable, gpuDscCrc *dataGpu, sinkDscCrc *dataSink);
 

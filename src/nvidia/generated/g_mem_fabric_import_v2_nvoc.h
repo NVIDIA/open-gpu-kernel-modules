@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -101,9 +101,6 @@ struct MemoryFabricImportV2 {
     struct Memory *__nvoc_pbase_Memory;    // mem super
     struct MemoryFabricImportV2 *__nvoc_pbase_MemoryFabricImportV2;    // memoryfabricimportv2
 
-    // Vtable with 1 per-object function pointer
-    NV_STATUS (*__memoryfabricimportv2CtrlGetInfo__)(struct MemoryFabricImportV2 * /*this*/, NV00F9_CTRL_GET_INFO_PARAMS *);  // exported (id=0xf90101)
-
     // Data members
     NvU16 expNodeId;
     MEM_FABRIC_IMPORT_DESCRIPTOR *PRIVATE_FIELD(pFabricImportDesc);
@@ -177,7 +174,34 @@ NV_STATUS __nvoc_objCreate_MemoryFabricImportV2(MemoryFabricImportV2**, Dynamic*
     __nvoc_objCreate_MemoryFabricImportV2((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS memoryfabricimportv2Construct_IMPL(struct MemoryFabricImportV2 *arg_pMemoryFabricImportV2, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_memoryfabricimportv2Construct(arg_pMemoryFabricImportV2, arg_pCallContext, arg_pParams) memoryfabricimportv2Construct_IMPL(arg_pMemoryFabricImportV2, arg_pCallContext, arg_pParams)
+
+void memoryfabricimportv2Destruct_IMPL(struct MemoryFabricImportV2 *pMemoryFabricImportV2);
+#define __nvoc_memoryfabricimportv2Destruct(pMemoryFabricImportV2) memoryfabricimportv2Destruct_IMPL(pMemoryFabricImportV2)
+
+void memoryfabricimportv2RemoveFromCache_IMPL(struct MemoryFabricImportV2 *pMemoryFabricImportV2);
+#ifdef __nvoc_mem_fabric_import_v2_h_disabled
+static inline void memoryfabricimportv2RemoveFromCache(struct MemoryFabricImportV2 *pMemoryFabricImportV2) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryFabricImportV2 was disabled!");
+}
+#else // __nvoc_mem_fabric_import_v2_h_disabled
+#define memoryfabricimportv2RemoveFromCache(pMemoryFabricImportV2) memoryfabricimportv2RemoveFromCache_IMPL(pMemoryFabricImportV2)
+#endif // __nvoc_mem_fabric_import_v2_h_disabled
+
+NV_STATUS memoryfabricimportv2CtrlGetInfo_IMPL(struct MemoryFabricImportV2 *pMemoryFabricImportV2, NV00F9_CTRL_GET_INFO_PARAMS *pParams);
+#ifdef __nvoc_mem_fabric_import_v2_h_disabled
+static inline NV_STATUS memoryfabricimportv2CtrlGetInfo(struct MemoryFabricImportV2 *pMemoryFabricImportV2, NV00F9_CTRL_GET_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryFabricImportV2 was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_mem_fabric_import_v2_h_disabled
+#define memoryfabricimportv2CtrlGetInfo(pMemoryFabricImportV2, pParams) memoryfabricimportv2CtrlGetInfo_IMPL(pMemoryFabricImportV2, pParams)
+#endif // __nvoc_mem_fabric_import_v2_h_disabled
+
+
+// Wrapper macros for halified functions
 #define memoryfabricimportv2CanCopy_FNPTR(pMemoryFabricImportV2) pMemoryFabricImportV2->__nvoc_metadata_ptr->vtable.__memoryfabricimportv2CanCopy__
 #define memoryfabricimportv2CanCopy(pMemoryFabricImportV2) memoryfabricimportv2CanCopy_DISPATCH(pMemoryFabricImportV2)
 #define memoryfabricimportv2IsReady_FNPTR(pMemoryFabricImportV2) pMemoryFabricImportV2->__nvoc_metadata_ptr->vtable.__memoryfabricimportv2IsReady__
@@ -188,8 +212,6 @@ NV_STATUS __nvoc_objCreate_MemoryFabricImportV2(MemoryFabricImportV2**, Dynamic*
 #define memoryfabricimportv2Control(pMemoryFabricImportV2, pCallContext, pParams) memoryfabricimportv2Control_DISPATCH(pMemoryFabricImportV2, pCallContext, pParams)
 #define memoryfabricimportv2GetMapAddrSpace_FNPTR(pMemoryFabricImportV2) pMemoryFabricImportV2->__nvoc_metadata_ptr->vtable.__memoryfabricimportv2GetMapAddrSpace__
 #define memoryfabricimportv2GetMapAddrSpace(pMemoryFabricImportV2, pCallContext, mapFlags, pAddrSpace) memoryfabricimportv2GetMapAddrSpace_DISPATCH(pMemoryFabricImportV2, pCallContext, mapFlags, pAddrSpace)
-#define memoryfabricimportv2CtrlGetInfo_FNPTR(pMemoryFabricImportV2) pMemoryFabricImportV2->__memoryfabricimportv2CtrlGetInfo__
-#define memoryfabricimportv2CtrlGetInfo(pMemoryFabricImportV2, pParams) memoryfabricimportv2CtrlGetInfo_DISPATCH(pMemoryFabricImportV2, pParams)
 #define memoryfabricimportv2IsGpuMapAllowed_FNPTR(pMemoryFabricImportV2) pMemoryFabricImportV2->__nvoc_metadata_ptr->vtable.__memoryfabricimportv2IsGpuMapAllowed__
 #define memoryfabricimportv2IsGpuMapAllowed(pMemoryFabricImportV2, pGpu) memoryfabricimportv2IsGpuMapAllowed_DISPATCH(pMemoryFabricImportV2, pGpu)
 #define memoryfabricimportv2IsExportAllowed_FNPTR(pMemoryFabricImportV2) pMemoryFabricImportV2->__nvoc_metadata_ptr->vtable.__memoryfabricimportv2IsExportAllowed__
@@ -254,10 +276,6 @@ static inline NV_STATUS memoryfabricimportv2Control_DISPATCH(struct MemoryFabric
 
 static inline NV_STATUS memoryfabricimportv2GetMapAddrSpace_DISPATCH(struct MemoryFabricImportV2 *pMemoryFabricImportV2, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemoryFabricImportV2->__nvoc_metadata_ptr->vtable.__memoryfabricimportv2GetMapAddrSpace__(pMemoryFabricImportV2, pCallContext, mapFlags, pAddrSpace);
-}
-
-static inline NV_STATUS memoryfabricimportv2CtrlGetInfo_DISPATCH(struct MemoryFabricImportV2 *pMemoryFabricImportV2, NV00F9_CTRL_GET_INFO_PARAMS *pParams) {
-    return pMemoryFabricImportV2->__memoryfabricimportv2CtrlGetInfo__(pMemoryFabricImportV2, pParams);
 }
 
 static inline NvBool memoryfabricimportv2IsGpuMapAllowed_DISPATCH(struct MemoryFabricImportV2 *pMemoryFabricImportV2, struct OBJGPU *pGpu) {
@@ -364,22 +382,6 @@ NvBool memoryfabricimportv2IsGpuMapAllowed_IMPL(struct MemoryFabricImportV2 *pMe
 
 NvBool memoryfabricimportv2IsExportAllowed_IMPL(struct MemoryFabricImportV2 *pMemoryFabricImportV2);
 
-NV_STATUS memoryfabricimportv2Construct_IMPL(struct MemoryFabricImportV2 *arg_pMemoryFabricImportV2, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_memoryfabricimportv2Construct(arg_pMemoryFabricImportV2, arg_pCallContext, arg_pParams) memoryfabricimportv2Construct_IMPL(arg_pMemoryFabricImportV2, arg_pCallContext, arg_pParams)
-void memoryfabricimportv2Destruct_IMPL(struct MemoryFabricImportV2 *pMemoryFabricImportV2);
-
-#define __nvoc_memoryfabricimportv2Destruct(pMemoryFabricImportV2) memoryfabricimportv2Destruct_IMPL(pMemoryFabricImportV2)
-void memoryfabricimportv2RemoveFromCache_IMPL(struct MemoryFabricImportV2 *pMemoryFabricImportV2);
-
-#ifdef __nvoc_mem_fabric_import_v2_h_disabled
-static inline void memoryfabricimportv2RemoveFromCache(struct MemoryFabricImportV2 *pMemoryFabricImportV2) {
-    NV_ASSERT_FAILED_PRECOMP("MemoryFabricImportV2 was disabled!");
-}
-#else //__nvoc_mem_fabric_import_v2_h_disabled
-#define memoryfabricimportv2RemoveFromCache(pMemoryFabricImportV2) memoryfabricimportv2RemoveFromCache_IMPL(pMemoryFabricImportV2)
-#endif //__nvoc_mem_fabric_import_v2_h_disabled
-
 #undef PRIVATE_FIELD
 
 
@@ -388,6 +390,8 @@ typedef struct
     NV_PHYSICAL_MEMORY_ATTRS physAttrs;
     NvU32 memFlags;
     NvU32 cliqueId;
+    NvU64 bwModeEpoch;
+    NvU8  bwMode;
 } FABRIC_IMPORT_MEMDESC_DATA;
 
 //

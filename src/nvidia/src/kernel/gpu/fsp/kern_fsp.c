@@ -108,12 +108,6 @@ kfspInitRegistryOverrides
 {
     NvU32 data = 0;
 
-    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_DEVINIT_BY_SECURE_BOOT, &data) == NV_OK && data == NV_REG_STR_RM_DEVINIT_BY_SECURE_BOOT_DISABLE)
-    {
-        NV_PRINTF(LEVEL_WARNING, "RM to boot GSP due to regkey override.\n");
-        pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_RM_BOOT_GSP, NV_TRUE);
-    }
-
     if (((osReadRegistryDword(pGpu, NV_REG_STR_RM_DISABLE_FSP, &data) == NV_OK) &&
         (data == NV_REG_STR_RM_DISABLE_FSP_YES) && IS_EMULATION(pGpu)) ||
         IS_FMODEL(pGpu) || IS_RTLSIM(pGpu))
@@ -173,7 +167,7 @@ kfspReleaseProxyImage_IMPL
     if (pKernelFsp->pSysmemFrtsMemdesc != NULL)
     {
         kfspFrtsSysmemLocationClear_HAL(pGpu, pKernelFsp);
-        memdescUnmap(pKernelFsp->pSysmemFrtsMemdesc, NV_TRUE, 0,
+        memdescUnmap(pKernelFsp->pSysmemFrtsMemdesc, NV_TRUE,
             memdescGetKernelMapping(pKernelFsp->pSysmemFrtsMemdesc),
             memdescGetKernelMappingPriv(pKernelFsp->pSysmemFrtsMemdesc));
         memdescFree(pKernelFsp->pSysmemFrtsMemdesc);
@@ -785,9 +779,12 @@ kfspPollForAsyncResponse
 
     if (kfspIsResponseAvailable_HAL(pGpu, pKernelFsp))
     {
-        status = osQueueWorkItemWithFlags(pGpu, kfspProcessAsyncResponseCallback, NULL,
-                                          OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
-                                          OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE);
+        status = osQueueWorkItem(
+            pGpu,
+            kfspProcessAsyncResponseCallback,
+            NULL,
+            OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
+                OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "Failed to schedule work item, status=%x\n", status);

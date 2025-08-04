@@ -18,11 +18,11 @@ extern const PRB_MSG_DESC prb_messages_nvdebug_eng[];
 
 // Message maximum lengths
 // Does not include repeated fields, strings and byte arrays.
-#define NVDEBUG_ENG_MC_LEN 66
+#define NVDEBUG_ENG_MC_LEN 72
 #define NVDEBUG_ENG_GPU_LEN 62
 #define NVDEBUG_ENG_NVD_LEN 30
 #define NVDEBUG_ENG_KGSP_LEN 88
-#define NVDEBUG_ENG_MC_RMDATA_LEN 6
+#define NVDEBUG_ENG_MC_RMDATA_LEN 12
 #define NVDEBUG_ENG_MC_PCIBARINFO_LEN 22
 #define NVDEBUG_ENG_KGSP_RPCINFO_LEN 40
 
@@ -34,7 +34,7 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_mc[];
 #define NVDEBUG_ENG_MC_REGS (&prb_fields_nvdebug_eng_mc[2])
 
 // 'Mc' field lengths
-#define NVDEBUG_ENG_MC_RM_DATA_LEN 9
+#define NVDEBUG_ENG_MC_RM_DATA_LEN 15
 #define NVDEBUG_ENG_MC_PCI_BARS_LEN 25
 #define NVDEBUG_ENG_MC_REGS_LEN 29
 
@@ -92,9 +92,11 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_mc_rmdata[];
 
 // 'RmData' field descriptor pointers
 #define NVDEBUG_ENG_MC_RMDATA_PMCBOOT0 (&prb_fields_nvdebug_eng_mc_rmdata[0])
+#define NVDEBUG_ENG_MC_RMDATA_PMCBOOT42 (&prb_fields_nvdebug_eng_mc_rmdata[1])
 
 // 'RmData' field lengths
 #define NVDEBUG_ENG_MC_RMDATA_PMCBOOT0_LEN 5
+#define NVDEBUG_ENG_MC_RMDATA_PMCBOOT42_LEN 5
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_mc_pcibarinfo[];
 

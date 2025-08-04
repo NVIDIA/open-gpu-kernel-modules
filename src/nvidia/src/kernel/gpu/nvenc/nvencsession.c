@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -197,7 +197,6 @@ nvencsessionDestruct_IMPL
     {
         memdescUnmap(pNvencSession->pMemory->pMemDesc,
                      NV_TRUE,
-                     osGetCurrentProcess(),
                      pNvencSession->pSessionStatsBuffer,
                      pNvencSession->pPriv);
     }
@@ -440,11 +439,11 @@ _gpuNvEncSessionDataProcessingCallback(OBJGPU *pGpu, void *data)
 
     if (!pGpu->bNvEncSessionDataProcessingWorkItemPending)
     {
-        status = osQueueWorkItemWithFlags(pGpu,
-                                          _gpuNvEncSessionDataProcessingWorkItem,
-                                          NULL,
-                                          OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA
-                                          | OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE);
+        status = osQueueWorkItem(pGpu,
+            _gpuNvEncSessionDataProcessingWorkItem,
+            NULL,
+            OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
+                OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,

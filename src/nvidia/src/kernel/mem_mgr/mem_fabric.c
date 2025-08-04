@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -962,9 +962,15 @@ memoryfabricCtrlCmdDescribe_IMPL
             NV_PRINTF(LEVEL_ERROR, "unable to query cliqueId 0x%x\n", status);
             return status;
         }
+
+        pParams->attrs.bwMode = knvlinkGetBWMode(pGpu, GPU_GET_KERNEL_NVLINK(pGpu));
+        pParams->attrs.bwModeEpoch = knvlinkGetBWModeEpoch(pGpu, GPU_GET_KERNEL_NVLINK(pGpu));
+
     }
     else
     {
+        pParams->attrs.bwMode = 0;
+        pParams->attrs.bwModeEpoch = 0;
         pParams->attrs.cliqueId = 0;
     }
 
@@ -991,7 +997,8 @@ memoryfabricCtrlCmdDescribe_IMPL
         return NV_ERR_NO_MEMORY;
 
     offset = pParams->offset * pageSize;
-    memdescGetPhysAddrsForGpu(pMemory->pMemDesc, pGpu, AT_GPU, offset,
+
+    memdescGetPtePhysAddrsForGpu(pMemory->pMemDesc, pGpu, AT_GPU, offset,
                               pageSize, pParams->numPfns, pFabricArray);
 
     for (i = 0; i < pParams->numPfns; i++)
@@ -1176,7 +1183,7 @@ memoryfabricCtrlGetPageLevelInfo_IMPL
                        pParams->offset < memdescGetSize(pFabricMemDesc),
                        NV_ERR_INVALID_ARGUMENT);
 
-    memdescGetPhysAddrsForGpu(pFabricMemDesc, pGpu, AT_GPU, pParams->offset,
+    memdescGetPtePhysAddrsForGpu(pFabricMemDesc, pGpu, AT_GPU, pParams->offset,
                               mappingPageSize, 1, &fabricAddr);
 
     pageLevelInfoParams.virtAddress = fabricAddr;

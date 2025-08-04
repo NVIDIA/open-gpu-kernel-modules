@@ -5305,28 +5305,6 @@ _nvswitch_service_nvltlc_tx_sys_fatal_ls10
         }
     }
 
-    bit = DRF_NUM(_NVLTLC_TX_SYS, _ERR_STATUS_0, _NCISOC_DAT_ECC_DBE_ERR, 1);
-    if (nvswitch_test_flags(pending, bit))
-    {
-        NVSWITCH_REPORT_FATAL(_HW_NVLTLC_TX_SYS_NCISOC_DAT_ECC_DBE_ERR, "NCISOC DAT ECC DBE Error", NV_FALSE);
-        nvswitch_clear_flags(&unhandled, bit);
-    }
-
-    bit = DRF_NUM(_NVLTLC_TX_SYS, _ERR_STATUS_0, _NCISOC_ECC_LIMIT_ERR, 1);
-    if (nvswitch_test_flags(pending, bit))
-    {
-        NVSWITCH_REPORT_FATAL(_HW_NVLTLC_TX_SYS_NCISOC_ECC_LIMIT_ERR, "NCISOC ECC Limit Error", NV_FALSE);
-        nvswitch_clear_flags(&unhandled, bit);
-
-        //
-        // Driver WAR to disable ECC error and prevent an interrupt storm.
-        // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-        //
-        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_SYS, _ERR_FATAL_REPORT_EN_0,
-            report.raw_enable &
-            ~DRF_NUM(_NVLTLC_TX_SYS, _ERR_FATAL_REPORT_EN_0, _NCISOC_ECC_LIMIT_ERR, 1));
-    }
-
     bit = DRF_NUM(_NVLTLC_TX_SYS, _ERR_STATUS_0, _TXPOISONDET, 1);
     if (nvswitch_test_flags(pending, bit))
     {
@@ -5394,6 +5372,7 @@ _nvswitch_service_nvltlc_rx_sys_fatal_ls10
     NvU32 pending, bit, unhandled;
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
     INFOROM_NVLINK_ERROR_EVENT error_event = { 0 };
+    NvlStatus status;
 
     report.raw_pending = NVSWITCH_LINK_RD32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_STATUS_0);
     report.raw_enable = NVSWITCH_LINK_RD32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0);
@@ -5436,24 +5415,20 @@ _nvswitch_service_nvltlc_rx_sys_fatal_ls10
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RX_SYS_HDR_RAM_ECC_LIMIT_ERR, "HDR RAM ECC Limit Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
 
-        //
-        // Driver WAR to disable ECC error and prevent an interrupt storm.
-        // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-        //
-        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0,
-            report.raw_enable &
-            ~DRF_NUM(_NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0, _HDR_RAM_ECC_LIMIT_ERR, 1));
-    }
-
-    bit = DRF_NUM(_NVLTLC_RX_SYS, _ERR_STATUS_0, _DAT0_RAM_ECC_DBE_ERR, 1);
-    if (nvswitch_test_flags(pending, bit))
-    {
-        NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RX_SYS_DAT0_RAM_ECC_DBE_ERR, "DAT0 RAM ECC DBE Error", NV_FALSE);
-        nvswitch_clear_flags(&unhandled, bit);
+        // Clear HDR RAM ECC_ERROR_COUNTER by sending command to SOE
+        status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                  RM_SOE_CORE_ENGINE_ID_NVLTLC,
+                                                                  RM_SOE_CORE_NVLTLC_RX_SYS_ERR_HDR_RAM_ECC_ERROR_COUNTER,
+                                                                  link
+                                                                 );
+        if(status != NVL_SUCCESS)
         {
-            // TODO 3014908 log these in the NVL object until we have ECC object support
-            error_event.error = INFOROM_NVLINK_TLC_RX_DAT0_RAM_ECC_DBE_FATAL;
-            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+            //
+            // Driver WAR to disable ECC error and prevent an interrupt storm.
+            //
+            NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0,
+                report.raw_enable &
+                ~DRF_NUM(_NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0, _HDR_RAM_ECC_LIMIT_ERR, 1));
         }
     }
 
@@ -5463,24 +5438,20 @@ _nvswitch_service_nvltlc_rx_sys_fatal_ls10
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RX_SYS_DAT0_RAM_ECC_LIMIT_ERR, "DAT0 RAM ECC Limit Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
 
-        //
-        // Driver WAR to disable ECC error and prevent an interrupt storm.
-        // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-        //
-        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0,
-            report.raw_enable &
-            ~DRF_NUM(_NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0, _DAT0_RAM_ECC_LIMIT_ERR, 1));
-    }
-
-    bit = DRF_NUM(_NVLTLC_RX_SYS, _ERR_STATUS_0, _DAT1_RAM_ECC_DBE_ERR, 1);
-    if (nvswitch_test_flags(pending, bit))
-    {
-        NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RX_SYS_DAT1_RAM_ECC_DBE_ERR, "DAT1 RAM ECC DBE Error", NV_FALSE);
-        nvswitch_clear_flags(&unhandled, bit);
+        // Clear DAT0 RAM ECC_ERROR_COUNTER by sending command to SOE
+        status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                  RM_SOE_CORE_ENGINE_ID_NVLTLC,
+                                                                  RM_SOE_CORE_NVLTLC_RX_SYS_ERR_DAT0_RAM_ECC_ERROR_COUNTER,
+                                                                  link
+                                                                 );
+        if(status != NVL_SUCCESS)
         {
-            // TODO 3014908 log these in the NVL object until we have ECC object support
-            error_event.error = INFOROM_NVLINK_TLC_RX_DAT1_RAM_ECC_DBE_FATAL;
-            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+            //
+            // Driver WAR to disable ECC error and prevent an interrupt storm.
+            //
+            NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0,
+                report.raw_enable &
+                ~DRF_NUM(_NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0, _DAT0_RAM_ECC_LIMIT_ERR, 1));
         }
     }
 
@@ -5490,13 +5461,21 @@ _nvswitch_service_nvltlc_rx_sys_fatal_ls10
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RX_SYS_DAT1_RAM_ECC_LIMIT_ERR, "DAT1 RAM ECC Limit Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
 
-        //
-        // Driver WAR to disable ECC error and prevent an interrupt storm.
-        // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-        //
-        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0,
-            report.raw_enable &
-            ~DRF_NUM(_NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0, _DAT1_RAM_ECC_LIMIT_ERR, 1));
+        // Clear DAT1 RAM ECC_ERROR_COUNTER by sending command to SOE
+        status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                  RM_SOE_CORE_ENGINE_ID_NVLTLC,
+                                                                  RM_SOE_CORE_NVLTLC_RX_SYS_ERR_DAT1_RAM_ECC_ERROR_COUNTER,
+                                                                  link
+                                                                 );
+        if(status != NVL_SUCCESS)
+        {
+            //
+            // Driver WAR to disable ECC error and prevent an interrupt storm.
+            //
+            NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0,
+                report.raw_enable &
+                ~DRF_NUM(_NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0, _DAT1_RAM_ECC_LIMIT_ERR, 1));
+        }
     }
 
     if (report.raw_first & report.mask)
@@ -7144,6 +7123,7 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_0_ls10
     NvU32 pending, bit, unhandled;
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
     INFOROM_NVLINK_ERROR_EVENT error_event;
+    NvlStatus status;
 
     report.raw_pending = NVSWITCH_LINK_RD32(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_STATUS_0);
     report.raw_enable = NVSWITCH_LINK_RD32(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0);
@@ -7179,13 +7159,21 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_0_ls10
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_LNK_CREQ_RAM_ECC_LIMIT_ERR, "CREQ RAM DAT ECC Limit Error");
         nvswitch_clear_flags(&unhandled, bit);
 
-        //
-        // Driver WAR to disable ECC error and prevent an interrupt storm.
-        // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-        //
-        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0,
-            report.raw_enable &
-            ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0, _CREQ_RAM_ECC_LIMIT_ERR, 1));
+        // Clear CREQ RAM ECC_ERROR_COUNTER by sending command to SOE
+        status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                  RM_SOE_CORE_ENGINE_ID_NVLTLC,
+                                                                  RM_SOE_CORE_NVLTLC_TX_LNK_ERR_CREQ_RAM_ECC_ERROR_COUNTER,
+                                                                  link
+                                                                 );
+        if(status != NVL_SUCCESS)
+        {
+            //
+            // Driver WAR to disable ECC error and prevent an interrupt storm.
+            //
+            NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0,
+                report.raw_enable &
+                ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0, _CREQ_RAM_ECC_LIMIT_ERR, 1));
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_0, _RSP_RAM_DAT_ECC_DBE_ERR, 1);
@@ -7228,13 +7216,21 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_0_ls10
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_LNK_COM_RAM_ECC_LIMIT_ERR, "COM RAM ECC Limit Error");
         nvswitch_clear_flags(&unhandled, bit);
 
-        //
-        // Driver WAR to disable ECC error and prevent an interrupt storm.
-        // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-        //
-        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0,
-            report.raw_enable &
-            ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0, _COM_RAM_ECC_LIMIT_ERR, 1));
+        // Clear COM RAM ECC_ERROR_COUNTER by sending command to SOE
+        status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                  RM_SOE_CORE_ENGINE_ID_NVLTLC,
+                                                                  RM_SOE_CORE_NVLTLC_TX_LNK_ERR_COM_RAM_ECC_ERROR_COUNTER,
+                                                                  link
+                                                                 );
+        if(status != NVL_SUCCESS)
+        {
+            //
+            // Driver WAR to disable ECC error and prevent an interrupt storm.
+            //
+            NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0,
+                report.raw_enable &
+                ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0, _COM_RAM_ECC_LIMIT_ERR, 1));
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_0, _RSP1_RAM_ECC_LIMIT_ERR, 1);
@@ -7243,13 +7239,21 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_0_ls10
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_LNK_RSP1_RAM_ECC_LIMIT_ERR, "RSP1 RAM ECC Limit Error");
         nvswitch_clear_flags(&unhandled, bit);
 
-        //
-        // Driver WAR to disable ECC error and prevent an interrupt storm.
-        // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
-        //
-        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0,
-            report.raw_enable &
-            ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0, _RSP1_RAM_ECC_LIMIT_ERR, 1));
+        // Clear RSP1 RAM ECC_ERROR_COUNTER by sending command to SOE
+        status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                  RM_SOE_CORE_ENGINE_ID_NVLTLC,
+                                                                  RM_SOE_CORE_NVLTLC_TX_LNK_ERR_RSP1_RAM_ECC_ERROR_COUNTER,
+                                                                  link
+                                                                 );
+        if(status != NVL_SUCCESS)
+        {
+            //
+            // Driver WAR to disable ECC error and prevent an interrupt storm.
+            //
+            NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0,
+                report.raw_enable &
+                ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0, _RSP1_RAM_ECC_LIMIT_ERR, 1));
+        }
     }
 
     NVSWITCH_UNHANDLED_CHECK(device, unhandled);
@@ -7502,6 +7506,170 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_1_ls10
 }
 
 static NvlStatus
+_nvswitch_service_nvltlc_tx_sys_nonfatal_ls10
+(
+    nvswitch_device *device,
+    NvU32 nvlipt_instance,
+    NvU32 link
+)
+{
+    NvU32 pending, bit, unhandled;
+    NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
+    NvlStatus status;
+
+    report.raw_pending = NVSWITCH_LINK_RD32_LS10(device, link, NVLTLC, _NVLTLC_TX_SYS, _ERR_STATUS_0);
+    report.raw_enable = NVSWITCH_LINK_RD32_LS10(device, link, NVLTLC, _NVLTLC_TX_SYS, _ERR_NON_FATAL_REPORT_EN_0);
+    report.mask = report.raw_enable;
+    pending = report.raw_pending & report.mask;
+
+    if (pending == 0)
+    {
+        return -NVL_NOT_FOUND;
+    }
+
+    unhandled = pending;
+    report.raw_first = NVSWITCH_LINK_RD32_LS10(device, link, NVLTLC, _NVLTLC_TX_SYS, _ERR_FIRST_0);
+
+    bit = DRF_NUM(_NVLTLC_TX_SYS, _ERR_STATUS_0, _NCISOC_DAT_ECC_DBE_ERR, 1);
+    if (nvswitch_test_flags(pending, bit))
+    {
+        NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_SYS_NCISOC_DAT_ECC_DBE_ERR, "NCISOC DAT ECC DBE Error");
+        nvswitch_clear_flags(&unhandled, bit);
+    }
+
+    bit = DRF_NUM(_NVLTLC_TX_SYS, _ERR_STATUS_0, _NCISOC_ECC_LIMIT_ERR, 1);
+    if (nvswitch_test_flags(pending, bit))
+    {
+        NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_SYS_NCISOC_ECC_LIMIT_ERR, "NCISOC ECC Limit Error");
+        nvswitch_clear_flags(&unhandled, bit);
+
+        // Clear NCISOC_ ECC_ERROR_COUNTER by sending command to SOE 
+        status = nvswitch_soe_clear_engine_interrupt_counter_ls10(device,
+                                                                  RM_SOE_CORE_ENGINE_ID_NVLTLC,
+                                                                  RM_SOE_CORE_NVLTLC_TX_SYS_ERR_NCISOC_ECC_ERROR_COUNTER,
+                                                                  link
+                                                                 );
+        if(status != NVL_SUCCESS)
+        {
+            //
+            // Driver WAR to disable ECC error and prevent an interrupt storm.
+            //
+            NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_SYS, _ERR_NON_FATAL_REPORT_EN_0,
+                report.raw_enable &
+                ~DRF_NUM(_NVLTLC_TX_SYS, _ERR_NON_FATAL_REPORT_EN_0, _NCISOC_ECC_LIMIT_ERR, 1));
+        }
+    }
+
+    if (report.raw_first & report.mask)
+    {
+        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_SYS, _ERR_FIRST_0,
+            report.raw_first & report.mask);
+    }
+
+    NVSWITCH_UNHANDLED_CHECK(device, unhandled);
+
+    // Disable interrupts that have occurred after fatal error.
+    if (device->link[link].fatal_error_occurred)
+    {
+        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_SYS, _ERR_NON_FATAL_REPORT_EN_0,
+                report.raw_enable & ~pending);
+    }
+
+    NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_SYS, _ERR_STATUS_0, pending);
+
+    if (unhandled != 0)
+    {
+        NVSWITCH_PRINT(device, WARN,
+                "%s: Unhandled NVLTLC_TX_SYS interrupts, link: %d pending: 0x%x enabled: 0x%x.\n",
+                 __FUNCTION__, link, pending, report.raw_enable);
+        return -NVL_MORE_PROCESSING_REQUIRED;
+    }
+
+    return NVL_SUCCESS;
+}
+
+static NvlStatus
+_nvswitch_service_nvltlc_rx_sys_nonfatal_ls10
+(
+    nvswitch_device *device,
+    NvU32 nvlipt_instance,
+    NvU32 link
+)
+{
+    NvU32 pending, bit, unhandled;
+    NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
+    INFOROM_NVLINK_ERROR_EVENT error_event = { 0 };
+
+    report.raw_pending = NVSWITCH_LINK_RD32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_STATUS_0);
+    report.raw_enable = NVSWITCH_LINK_RD32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_NON_FATAL_REPORT_EN_0);
+    report.mask = report.raw_enable;
+    pending = report.raw_pending & report.mask;
+
+    error_event.nvliptInstance = (NvU8) nvlipt_instance;
+    error_event.localLinkIdx   = (NvU8) NVSWITCH_NVLIPT_GET_LOCAL_LINK_ID_LS10(link);
+
+    if (pending == 0)
+    {
+        return -NVL_NOT_FOUND;
+    }
+
+    unhandled = pending;
+    report.raw_first = NVSWITCH_LINK_RD32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_FIRST_0);
+
+
+    bit = DRF_NUM(_NVLTLC_RX_SYS, _ERR_STATUS_0, _DAT0_RAM_ECC_DBE_ERR, 1);
+    if (nvswitch_test_flags(pending, bit))
+    {
+        NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_RX_SYS_DAT0_RAM_ECC_DBE_ERR, "DAT0 RAM ECC DBE Error");
+        nvswitch_clear_flags(&unhandled, bit);
+        {
+            // TODO 3014908 log these in the NVL object until we have ECC object support
+            error_event.error = INFOROM_NVLINK_TLC_RX_DAT0_RAM_ECC_DBE_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
+    }
+
+    bit = DRF_NUM(_NVLTLC_RX_SYS, _ERR_STATUS_0, _DAT1_RAM_ECC_DBE_ERR, 1);
+    if (nvswitch_test_flags(pending, bit))
+    {
+        NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_RX_SYS_DAT1_RAM_ECC_DBE_ERR, "DAT1 RAM ECC DBE Error");
+        nvswitch_clear_flags(&unhandled, bit);
+        {
+            // TODO 3014908 log these in the NVL object until we have ECC object support
+            error_event.error = INFOROM_NVLINK_TLC_RX_DAT1_RAM_ECC_DBE_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
+    }
+
+    if (report.raw_first & report.mask)
+    {
+        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_FIRST_0,
+            report.raw_first & report.mask);
+    }
+
+    NVSWITCH_UNHANDLED_CHECK(device, unhandled);
+
+    // Disable interrupts that have occurred after fatal error.
+    if (device->link[link].fatal_error_occurred)
+    {
+        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_NON_FATAL_REPORT_EN_0,
+                report.raw_enable & ~pending);
+    }
+
+    NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_STATUS_0, pending);
+
+    if (unhandled != 0)
+    {
+        NVSWITCH_PRINT(device, WARN,
+                "%s: Unhandled NVLTLC_RX_SYS interrupts, link: %d pending: 0x%x enabled: 0x%x.\n",
+                 __FUNCTION__, link, pending, report.raw_enable);
+        return -NVL_MORE_PROCESSING_REQUIRED;
+    }
+
+    return NVL_SUCCESS;
+}
+
+static NvlStatus
 _nvswitch_service_nvltlc_nonfatal_ls10
 (
     nvswitch_device *device,
@@ -7572,6 +7740,18 @@ _nvswitch_service_nvltlc_nonfatal_ls10
         }
 
         status = _nvswitch_service_nvltlc_tx_lnk_nonfatal_1_ls10(device, nvlipt_instance, i);
+        if (status != NVL_SUCCESS)
+        {
+            return_status = status;
+        }
+
+        status = _nvswitch_service_nvltlc_tx_sys_nonfatal_ls10(device, nvlipt_instance, i);
+        if (status != NVL_SUCCESS)
+        {
+            return_status = status;
+        }
+
+        status = _nvswitch_service_nvltlc_rx_sys_nonfatal_ls10(device, nvlipt_instance, i);
         if (status != NVL_SUCCESS)
         {
             return_status = status;
@@ -8616,6 +8796,12 @@ nvswitch_initialize_interrupt_tree_ls10
 
    // NVLIPT
     _nvswitch_initialize_nvlipt_interrupts_ls10(device);
+
+    // Disable non-fatal and legacy interrupts in TNVL mode
+    if (nvswitch_is_tnvl_mode_enabled(device))
+    {
+       nvswitch_tnvl_disable_interrupts(device);
+    }
 }
 
 //

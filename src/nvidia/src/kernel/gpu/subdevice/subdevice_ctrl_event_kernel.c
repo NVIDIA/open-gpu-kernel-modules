@@ -105,7 +105,7 @@ subdeviceCtrlCmdEventSetNotification_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    if (IS_GSP_CLIENT(pGpu))
+    if (IS_FW_CLIENT(pGpu))
     {
         RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
@@ -129,24 +129,12 @@ subdeviceCtrlCmdEventSetNotification_IMPL
                 break;
             }
 
-            if (pSetEventParams->event == NV2080_NOTIFIERS_FIFO_EVENT_MTHD)
-            {
-                pGpu->activeFifoEventMthdNotifiers++;
-            }
-
             pSubdevice->notifyActions[pSetEventParams->event] = pSetEventParams->action;
             break;
         }
 
         case NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE:
         {
-            if ((pSetEventParams->event == NV2080_NOTIFIERS_FIFO_EVENT_MTHD) &&
-                (pSubdevice->notifyActions[pSetEventParams->event] != NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE))
-            {
-                NV_ASSERT(pGpu->activeFifoEventMthdNotifiers);
-                pGpu->activeFifoEventMthdNotifiers--;
-            }
-
             pSubdevice->notifyActions[pSetEventParams->event] = pSetEventParams->action;
             break;
         }

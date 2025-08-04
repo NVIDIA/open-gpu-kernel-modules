@@ -83,6 +83,7 @@ typedef struct tagHDMI_QUERY_FRL_CLIENT_CONTROL
 
     NvU32 forceFRLRate        :  1;
     NvU32 forceAudio2Ch48KHz  :  1;
+    NvU32 forceDisableDSC     :  1;
     NvU32 enableDSC           :  1;
     NvU32 forceSliceCount     :  1;
     NvU32 forceSliceWidth     :  1;

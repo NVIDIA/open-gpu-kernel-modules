@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -76,6 +76,10 @@
  *
  *   This call shall return NV_ERR_NOT_SUPPORTED if FORCE_PCIE type is used on non-Grace platforms.
  *
+ * bAllowMmap
+ *   mmap support is allowed or not for the specific dmabuf based fd. User can control it.
+ *   That way user can enable mmap for testing/specific use cases and not for any all handles.
+ *
  * handles
  *   An array of {handle, offset, size} that describes the dma-buf.
  *   The offsets and sizes must be OS page-size aligned.
@@ -110,12 +114,13 @@ typedef struct NV2080_CTRL_DMABUF_MEM_HANDLE_INFO {
 #define NV2080_CTRL_DMABUF_EXPORT_MEM_PARAMS_MESSAGE_ID (0x1U)
 
 typedef struct NV2080_CTRL_DMABUF_EXPORT_MEM_PARAMS {
-    NvS32 fd;
-    NvU32 totalObjects;
-    NvU32 numObjects;
-    NvU32 index;
+    NvS32  fd;
+    NvU32  totalObjects;
+    NvU32  numObjects;
+    NvU32  index;
     NV_DECLARE_ALIGNED(NvU64 totalSize, 8);
-    NvU8  mappingType;
+    NvU8   mappingType;
+    NvBool bAllowMmap;
     NV_DECLARE_ALIGNED(NV2080_CTRL_DMABUF_MEM_HANDLE_INFO handles[NV2080_CTRL_DMABUF_MAX_HANDLES], 8);
 } NV2080_CTRL_DMABUF_EXPORT_MEM_PARAMS;
 

@@ -162,7 +162,12 @@ NV_STATUS __nvoc_objCreate_UserModeApi(UserModeApi**, Dynamic*, NvU32, CALL_CONT
     __nvoc_objCreate_UserModeApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS usrmodeConstruct_IMPL(struct UserModeApi *arg_pUserModeApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_usrmodeConstruct(arg_pUserModeApi, arg_pCallContext, arg_pParams) usrmodeConstruct_IMPL(arg_pUserModeApi, arg_pCallContext, arg_pParams)
+
+
+// Wrapper macros for halified functions
 #define usrmodeCanCopy_FNPTR(pUserModeApi) pUserModeApi->__nvoc_metadata_ptr->vtable.__usrmodeCanCopy__
 #define usrmodeCanCopy(pUserModeApi) usrmodeCanCopy_DISPATCH(pUserModeApi)
 #define usrmodeGetMemInterMapParams_FNPTR(pMemory) pMemory->__nvoc_metadata_ptr->vtable.__usrmodeGetMemInterMapParams__
@@ -325,9 +330,6 @@ NvBool usrmodeCanCopy_IMPL(struct UserModeApi *pUserModeApi);
 
 NV_STATUS usrmodeGetMemInterMapParams_IMPL(struct UserModeApi *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams);
 
-NV_STATUS usrmodeConstruct_IMPL(struct UserModeApi *arg_pUserModeApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_usrmodeConstruct(arg_pUserModeApi, arg_pCallContext, arg_pParams) usrmodeConstruct_IMPL(arg_pUserModeApi, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 

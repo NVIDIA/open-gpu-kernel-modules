@@ -90,6 +90,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__CrashCatWayfinder =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_crashcatWayfinderDestruct(CrashCatWayfinder*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_CrashCatWayfinder(CrashCatWayfinder *pThis) {
     __nvoc_crashcatWayfinderDestruct(pThis);

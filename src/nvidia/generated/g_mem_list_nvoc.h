@@ -154,7 +154,12 @@ NV_STATUS __nvoc_objCreate_MemoryList(MemoryList**, Dynamic*, NvU32, CALL_CONTEX
     __nvoc_objCreate_MemoryList((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS memlistConstruct_IMPL(struct MemoryList *arg_pMemoryList, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_memlistConstruct(arg_pMemoryList, arg_pCallContext, arg_pParams) memlistConstruct_IMPL(arg_pMemoryList, arg_pCallContext, arg_pParams)
+
+
+// Wrapper macros for halified functions
 #define memlistCanCopy_FNPTR(pMemoryList) pMemoryList->__nvoc_metadata_ptr->vtable.__memlistCanCopy__
 #define memlistCanCopy(pMemoryList) memlistCanCopy_DISPATCH(pMemoryList)
 #define memlistIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsDuplicate__
@@ -315,9 +320,6 @@ static inline void memlistAddAdditionalDependants_DISPATCH(struct RsClient *pCli
 
 NvBool memlistCanCopy_IMPL(struct MemoryList *pMemoryList);
 
-NV_STATUS memlistConstruct_IMPL(struct MemoryList *arg_pMemoryList, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_memlistConstruct(arg_pMemoryList, arg_pCallContext, arg_pParams) memlistConstruct_IMPL(arg_pMemoryList, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 

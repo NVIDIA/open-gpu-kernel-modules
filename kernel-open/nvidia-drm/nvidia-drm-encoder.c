@@ -20,9 +20,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "nvidia-drm-conftest.h" /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+#include "nvidia-drm-conftest.h" /* NV_DRM_AVAILABLE */
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #include "nvidia-drm-priv.h"
 #include "nvidia-drm-encoder.h"
@@ -139,12 +139,8 @@ nv_drm_encoder_new(struct drm_device *dev,
 
     ret = drm_encoder_init(dev,
                            &nv_encoder->base, &nv_encoder_funcs,
-                           nvkms_connector_signal_to_drm_encoder_signal(format)
-#if defined(NV_DRM_ENCODER_INIT_HAS_NAME_ARG)
-                           , NULL
-#endif
-                           );
-
+                           nvkms_connector_signal_to_drm_encoder_signal(format),
+                           NULL);
     if (ret != 0) {
         nv_drm_free(nv_encoder);
 
@@ -335,17 +331,6 @@ void nv_drm_handle_dynamic_display_connected(struct nv_drm_device *nv_dev,
             hDisplay);
         return;
     }
-
-    /*
-     * On some kernels, DRM has the notion of a "primary group" that
-     * tracks the global mode setting state for the device.
-     *
-     * On kernels where DRM has a primary group, we need to reinitialize
-     * after adding encoders and connectors.
-     */
-#if defined(NV_DRM_REINIT_PRIMARY_MODE_GROUP_PRESENT)
-    drm_reinit_primary_mode_group(dev);
-#endif
 
     schedule_delayed_work(&nv_dev->hotplug_event_work, 0);
 }

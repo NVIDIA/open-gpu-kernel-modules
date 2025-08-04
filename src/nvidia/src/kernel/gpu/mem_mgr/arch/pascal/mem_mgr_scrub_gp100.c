@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -75,7 +75,6 @@ memmgrScrubHandlePreSchedulingDisable_GP100
 )
 {
     Heap             *pHeap               = GPU_GET_HEAP(pGpu);
-    OBJMEMSCRUB      *pMemscrub           = NULL;
     NvBool            bIsMIGEnabled       = IS_MIG_ENABLED(pGpu);
     NvBool            bIsMIGInUse         = IS_MIG_IN_USE(pGpu);
     KernelMIGManager *pKernelMIGManager   = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
@@ -91,16 +90,13 @@ memmgrScrubHandlePreSchedulingDisable_GP100
     if (bIsMIGInUse && !(IS_VIRTUAL(pGpu) && bIsVgpuLegacyPolicy))
         return NV_WARN_MORE_PROCESSING_REQUIRED;
 
-    pMemscrub = pHeap->pmaObject.pScrubObj;
-
     // Bug: 2997744, skipping the top level scrubber since GPU instances are not created.
     if (!IsSLIEnabled(pGpu) &&
          memmgrIsScrubOnFreeEnabled(pMemoryManager) &&
          memmgrIsPmaInitialized(pMemoryManager) &&
          !(bIsMIGEnabled && IS_VIRTUAL(pGpu) && !bIsVgpuLegacyPolicy))
     {
-        scrubberDestruct(pGpu, pHeap, pMemscrub);
-        pHeap->pmaObject.pScrubObj = NULL;
+        scrubberDestruct(pGpu, pHeap);
     }
 
     return NV_OK;

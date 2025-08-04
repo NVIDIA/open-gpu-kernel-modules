@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -301,6 +301,13 @@ nvlink_core_check_intranode_conn_state
         return NVL_BAD_ARGS;
     }
 
+    // Link cannot be in unsupported state
+    if (!nvlink_core_link_state_supported(conn->end0, linkMode) ||
+        !nvlink_core_link_state_supported(conn->end1, linkMode))
+    {
+        return NVL_ERR_NOT_SUPPORTED;
+    }
+
     switch (linkMode)
     {
         case NVLINK_LINKSTATE_OFF:
@@ -331,9 +338,6 @@ nvlink_core_check_intranode_conn_state
 
         case NVLINK_LINKSTATE_RESET:
         {
-            if (conn->end0->version >= NVLINK_DEVICE_VERSION_50)
-                return NVL_ERR_GENERIC;
-
             if ((nvlink_core_check_link_state(conn->end0, NVLINK_LINKSTATE_RESET)) &&
                 (nvlink_core_check_link_state(conn->end1, NVLINK_LINKSTATE_RESET)))
             {
@@ -360,9 +364,6 @@ nvlink_core_check_intranode_conn_state
 
         case NVLINK_LINKSTATE_SAFE:
         {
-            if (conn->end0->version >= NVLINK_DEVICE_VERSION_50)
-                return NVL_SUCCESS;
-
             // Check if both ends and their sublinks are already in SAFE mode
             if ((nvlink_core_check_link_state(conn->end0, NVLINK_LINKSTATE_SAFE)) &&
                 (nvlink_core_check_link_state(conn->end1, NVLINK_LINKSTATE_SAFE)))

@@ -603,10 +603,10 @@ _unmapAndFreeMemory
         return;
 
     if (userAddr)
-        memdescUnmap(pMemDesc, bKernel, osGetCurrentProcess(), userAddr, userPriv);
+        memdescUnmap(pMemDesc, bKernel, userAddr, userPriv);
 
     if (kernelAddr)
-        memdescUnmap(pMemDesc, NV_TRUE, osGetCurrentProcess(), kernelAddr, kernelPriv);
+        memdescUnmap(pMemDesc, NV_TRUE, kernelAddr, kernelPriv);
 
     memdescFree(pMemDesc);
     memdescDestroy(pMemDesc);

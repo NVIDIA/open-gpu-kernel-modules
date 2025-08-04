@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1993-2024, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 1993-2025, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -134,7 +134,6 @@
 #define ROBUST_CHANNEL_OFA1_ERROR                       (139)
 #define UNRECOVERABLE_ECC_ERROR_ESCAPE                  (140)
 #define ROBUST_CHANNEL_FAST_PATH_ERROR                  (141)
-// Bug 4175886 - Use this new value for all chips once GB20X is released
 #define ROBUST_CHANNEL_NVENC3_ERROR                     (142)
 #define GPU_INIT_ERROR                                  (143)
 #define NVLINK_SAW_ERROR                                (144)
@@ -151,12 +150,22 @@
 #define NVLINK_SW_DEFINED_ERROR                         (155)
 #define RESOURCE_RETIREMENT_EVENT                       (156)
 #define RESOURCE_RETIREMENT_FAILURE                     (157)
-
 #define GPU_FATAL_TIMEOUT                               (158)
 #define ROBUST_CHANNEL_CHI_NON_DATA_ERROR               (159)
 #define CHANNEL_RETIREMENT_EVENT                        (160)
 #define CHANNEL_RETIREMENT_FAILURE                      (161)
-#define ROBUST_CHANNEL_LAST_ERROR                       (161)
+#define ISINK_REENGAGED                                 (162)
+#define ISINK_DISENGAGED                                (163)
+#define ISINK_LOW_LIFETIME                              (164)
+#define ISINK_ZERO_LIFETIME                             (165)
+#define NVLINK_SECURE_INTERRUPT_ERROR                   (166)
+#define PCIE_FATAL_TIMEOUT                              (167)
+#define REDUCED_GPU_MEMORY_CAPACITY                     (168)
+#define SEC2_HALT_ERROR                                 (169)
+#define ROBUST_CHANNEL_UNUSED_ERROR_170                 (170)
+#define UNCORRECTABLE_DRAM_ERROR                        (171)
+#define UNCORRECTABLE_SRAM_ERROR                        (172)
+#define ROBUST_CHANNEL_LAST_ERROR                       (172)
 
 // Indexed CE reference
 #define ROBUST_CHANNEL_CE_ERROR(x)                                        \
@@ -223,7 +232,6 @@
          (x - ROBUST_CHANNEL_NVDEC5_ERROR + 5))))
 
 // Indexed NVENC reference
-// Bug 4175886 - Use this new value for all chips once GB20X is released
 #define ROBUST_CHANNEL_NVENC_ERROR(x)                       \
     ((x == 0) ? (ROBUST_CHANNEL_NVENC0_ERROR) :             \
                 ((x == 1) ? (ROBUST_CHANNEL_NVENC1_ERROR) : \

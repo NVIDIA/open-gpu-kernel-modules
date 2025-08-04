@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -333,8 +333,10 @@ triggerKeyRotationByKeyPair
                 {
                     NV_ASSERT_OK_OR_RETURN(kchannelUpdateNotifierMem(pKernelChannel, NV_CHANNELGPFIFO_NOTIFICATION_TYPE_KEY_ROTATION_STATUS,
                                                                      pConfCompute->keyRotationCount[h2dIndex], 0, (NvU32)KEY_ROTATION_STATUS_PENDING));
-                    NV_PRINTF(LEVEL_INFO, "chid 0x%x has pending key rotation, writing notifier with val 0x%x\n",
-                    kchannelGetDebugTag(pKernelChannel), (NvU32)KEY_ROTATION_STATUS_PENDING);
+                    NV_PRINTF(LEVEL_INFO,
+                        FMT_CHANNEL_DEBUG_TAG " has pending key rotation, writing notifier with val 0x%x\n",
+                        kchannelGetDebugTag(pKernelChannel),
+                        (NvU32)KEY_ROTATION_STATUS_PENDING);
 
                     // send events to clients if registered
                     kchannelNotifyEvent(pKernelChannel, NVC86F_NOTIFIERS_KEY_ROTATION, pConfCompute->keyRotationCount[h2dIndex],
@@ -412,8 +414,10 @@ calculateEncryptionStatsByKeyPair
         if (pEncStats == NULL)
         {
             NV_ASSERT(pEncStats != NULL);
-            NV_PRINTF(LEVEL_ERROR, "Failed to get stats for chid = 0x%x RM engineId = 0x%x\n",
-                kchannelGetDebugTag(pKernelChannel), kchannelGetEngineType(pKernelChannel));
+            NV_PRINTF(LEVEL_ERROR,
+                "Failed to get stats for " FMT_CHANNEL_DEBUG_TAG " RM engineId = 0x%x\n",
+                kchannelGetDebugTag(pKernelChannel),
+                kchannelGetEngineType(pKernelChannel));
             return NV_ERR_INVALID_STATE;
         }
         totalH2Dbytes += pEncStats->bytesEncryptedH2D;
@@ -421,8 +425,10 @@ calculateEncryptionStatsByKeyPair
         totalEncryptOpsH2D += pEncStats->numEncryptionsH2D;
         totalEncryptOpsD2H += pEncStats->numEncryptionsD2H;
 
-        NV_PRINTF(LEVEL_SILENT, "Encryption stats for chid 0x%x with h2dKey 0x%x\n",
-                  kchannelGetDebugTag(pKernelChannel), h2dKey);
+        NV_PRINTF(LEVEL_SILENT,
+            "Encryption stats for " FMT_CHANNEL_DEBUG_TAG " with h2dKey 0x%x\n",
+            kchannelGetDebugTag(pKernelChannel),
+            h2dKey);
         NV_PRINTF(LEVEL_SILENT, "Total h2d bytes encrypted  = 0x%llx\n", pEncStats->bytesEncryptedH2D);
         NV_PRINTF(LEVEL_SILENT, "Total d2h bytes encrypted  = 0x%llx\n", pEncStats->bytesEncryptedD2H);
         NV_PRINTF(LEVEL_SILENT, "Total h2d encrypt ops  = 0x%llx\n", pEncStats->numEncryptionsH2D);

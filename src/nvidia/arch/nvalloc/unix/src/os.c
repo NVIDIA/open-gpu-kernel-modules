@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -67,6 +67,8 @@
 
 #include "vgpu/vgpu_util.h"
 
+#include "platform/chipset/chipset.h"
+
 #include <acpidsmguids.h>
 #include <pex.h>
 #include "gps.h"
@@ -115,28 +117,28 @@ NV_STATUS osGetDriverBlock
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NvU64 osGetCurrentTick(void)
+NvU64 osGetMonotonicTimeNs(void)
 {
-    return os_get_current_tick();
+    return os_get_monotonic_time_ns();
 }
 
-NvU64 osGetTickResolution(void)
+NvU64 osGetMonotonicTickResolutionNs(void)
 {
-    return os_get_tick_resolution();
+    return os_get_monotonic_tick_resolution_ns();
 }
 
 NV_STATUS osGetPerformanceCounter(NvU64 *pTimeInNs)
 {
-    *pTimeInNs = os_get_current_tick_hr();
+    *pTimeInNs = os_get_monotonic_time_ns_hr();
     return NV_OK;
 }
 
-NV_STATUS osGetCurrentTime(
+NV_STATUS osGetSystemTime(
     NvU32 *pSeconds,
     NvU32 *pMicroSeconds
 )
 {
-    return os_get_current_time(pSeconds, pMicroSeconds);
+    return os_get_system_time(pSeconds, pMicroSeconds);
 }
 
 /*!
@@ -146,7 +148,7 @@ NV_STATUS osGetCurrentTime(
  *
  * The returned value is OS dependent.  We want the time stamp to use
  * KeQueryPerformanceCounter on Windows so it matches the DirectX timestamps.
- * Linux uses microseconds since 1970 (osGetCurrentTime), since matching DirectX
+ * Linux uses microseconds since 1970 (osGetSystemTime), since matching DirectX
  * is not a priority.
  *
  * osGetTimestampFreq returns the frequency required to decode the time stamps.
@@ -157,7 +159,7 @@ NvU64 osGetTimestamp(void)
 {
     NvU32 sec  = 0;
     NvU32 usec = 0;
-    osGetCurrentTime(&sec, &usec);
+    osGetSystemTime(&sec, &usec);
     return (NvU64)sec * 1000000 + usec;
 }
 
@@ -547,12 +549,10 @@ void osUnmapSystemMemory
 (
     MEMORY_DESCRIPTOR *pMemDesc,
     NvBool Kernel,
-    NvU32  ProcessId,
     NvP64  pAddress,
     NvP64  pPrivate
 )
 {
-    NV_STATUS status;
     void *pAllocPrivate;
     OBJGPU *pGpu = pMemDesc->pGpu;
     nv_state_t *nv = NV_GET_NV_STATE(pGpu);
@@ -562,12 +562,12 @@ void osUnmapSystemMemory
 
     if (Kernel)
     {
-        status = nv_free_kernel_mapping(nv, pAllocPrivate, NvP64_VALUE(pAddress),
+        nv_free_kernel_mapping(nv, pAllocPrivate, NvP64_VALUE(pAddress),
                 NvP64_VALUE(pPrivate));
     }
     else
     {
-        status = nv_free_user_mapping(nv, pAllocPrivate, (NvU64)pAddress,
+        nv_free_user_mapping(nv, pAllocPrivate, (NvU64)pAddress,
                 NvP64_VALUE(pPrivate));
     }
 
@@ -579,8 +579,6 @@ void osUnmapSystemMemory
         nv_unregister_phys_pages(nv, pAllocPrivate);
         memdescSetMemData(pMemDesc, NULL, NULL);
     }
-
-    NV_ASSERT(status == NV_OK);
 }
 
 void osIoWriteByte(
@@ -729,7 +727,7 @@ NV_STATUS osSchedule(void)
     return os_schedule();
 }
 
-NV_STATUS osQueueWorkItemWithFlags(
+NV_STATUS osQueueWorkItem(
     OBJGPU *pGpu,
     OSWorkItemFunction pFunction,
     void *pParams,
@@ -873,21 +871,22 @@ static NV_STATUS osGetPagesInfo(
     NvU64 *rmPageCount
 )
 {
-        NvU64 osPageSize  = osGetPageSize();
+    NvU64 osPageSize  = osGetPageSize();
+    NvU64 maxPageSize = NV_MAX(osPageSize, RM_PAGE_SIZE);
+    NvU64 alignedSize = NV_ALIGN_UP(pMemDesc->Size, maxPageSize);
 
-        // TODO: Switch out for macro before submission.
-        *osPageCount = NV_ALIGN_UP(pMemDesc->Size, osPageSize) >> BIT_IDX_32(osPageSize);
-        *rmPageCount = NV_ALIGN_UP(pMemDesc->Size, RM_PAGE_SIZE) >> RM_PAGE_SHIFT;
-        *pageSize = memdescGetAdjustedPageSize(pMemDesc);
+    *osPageCount = alignedSize >> BIT_IDX_32(osPageSize);
+    *rmPageCount = alignedSize >> RM_PAGE_SHIFT;
+    *pageSize = memdescGetAdjustedPageSize(pMemDesc);
 
-        // In the non-contig case need to protect against page array overflows.
-        if (!memdescGetContiguity(pMemDesc, AT_CPU))
-            NV_ASSERT_OR_RETURN(*rmPageCount <= pMemDesc->pageArraySize, NV_ERR_INVALID_ARGUMENT);
+    // In the non-contig case need to protect against page array overflows.
+    if (!memdescGetContiguity(pMemDesc, AT_CPU))
+        NV_ASSERT_OR_RETURN(*rmPageCount <= pMemDesc->pageArraySize, NV_ERR_INVALID_ARGUMENT);
 
-        if (*osPageCount > NV_U32_MAX || *rmPageCount > NV_U32_MAX)
-            return NV_ERR_INVALID_LIMIT;
+    if (*osPageCount > NV_U32_MAX || *rmPageCount > NV_U32_MAX)
+        return NV_ERR_INVALID_LIMIT;
 
-        return NV_OK;
+    return NV_OK;
 }
 
 NV_STATUS osAllocPagesInternal(
@@ -904,9 +903,23 @@ NV_STATUS osAllocPagesInternal(
     NvU64             pageSize;
     NvU64             osPageCount;
     NvU64             rmPageCount;
+    NvU32             cpuCacheAttrib = memdescGetCpuCacheAttrib(pMemDesc);
 
     memdescSetAddress(pMemDesc, NvP64_NULL);
     memdescSetMemData(pMemDesc, NULL, NULL);
+
+#if (defined(NVCPU_AARCH64) && RMCFG_MODULE_CL)
+    {
+        OBJCL   *pCl       = SYS_GET_CL(pSys);
+
+        if ((pCl != NULL) &&
+             pCl->getProperty(pCl, PDB_PROP_CL_IS_CHIPSET_IO_COHERENT) &&
+             !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_NON_IO_COHERENT))
+        {
+            cpuCacheAttrib = NV_MEMORY_CACHED;
+        }
+    }
+#endif
 
     //
     // For carveout, the memory is already reserved so we don't have
@@ -939,7 +952,7 @@ NV_STATUS osAllocPagesInternal(
             osPageCount,
             pageSize,
             memdescGetContiguity(pMemDesc, AT_CPU),
-            memdescGetCpuCacheAttrib(pMemDesc),
+            cpuCacheAttrib,
             memdescGetGuestId(pMemDesc),
             memdescGetPteArray(pMemDesc, AT_CPU),
             memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT),
@@ -961,6 +974,29 @@ NV_STATUS osAllocPagesInternal(
         //
         unencrypted = memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY);
 
+        //
+        // OBJGPU/nv may be NULL if constructing NV01_MEMORY_DEVICELESS. Assume that
+        // NV01_MEMORY_DEVICELESS won't be used for display.
+        //
+        if (pGpu != NULL &&
+            pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY) &&
+            addrSpace == ADDR_SYSMEM)
+        {
+            if (!memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MEMORY_TYPE_DISPLAY_NISO) &&
+                !NV_SOC_IS_ISO_IOMMU_PRESENT(nv))
+            {
+                NV_PRINTF(LEVEL_INFO, "Forcing physically contiguous flags for ISO\n");
+                memdescSetContiguity(pMemDesc, AT_CPU, NV_TRUE);
+            }
+
+            if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MEMORY_TYPE_DISPLAY_NISO) &&
+                !NV_SOC_IS_NISO_IOMMU_PRESENT(nv))
+            {
+                NV_PRINTF(LEVEL_INFO, "Forcing physically contiguous flags for NISO\n");
+                memdescSetContiguity(pMemDesc, AT_CPU, NV_TRUE);
+            }
+        }
+
         if (addrSpace == ADDR_SYSMEM)
         {
             nodeId = memdescGetNumaNode(pMemDesc);
@@ -979,7 +1015,7 @@ NV_STATUS osAllocPagesInternal(
             osPageCount,  // TODO: This call needs to receive the page count param at the requested page size.
             pageSize,
             memdescGetContiguity(pMemDesc, AT_CPU),
-            memdescGetCpuCacheAttrib(pMemDesc),
+            cpuCacheAttrib,
             pSys->getProperty(pSys,
                 PDB_PROP_SYS_INITIALIZE_SYSTEM_MEMORY_ALLOCATIONS),
             unencrypted,
@@ -1982,9 +2018,39 @@ void osFlushLog(void)
     // Not implemented
 }
 
+static NvU32 _osGetTegraPlatform(void)
+{
+    NV_STATUS status;
+    NvU32 mode;
+
+    status = os_get_tegra_platform(&mode);
+    if (status != NV_ERR_NOT_SUPPORTED)
+    {
+        return mode;
+    }
+
+    return NV_OS_TEGRA_PLATFORM_SILICON;
+}
+
 NvU32 osGetSimulationMode(void)
 {
-    return NV_SIM_MODE_HARDWARE;
+    NvU32 mode;
+
+    switch (_osGetTegraPlatform())
+    {
+        case NV_OS_TEGRA_PLATFORM_SIM:
+            mode = NV_SIM_MODE_CMODEL;
+            break;
+        case NV_OS_TEGRA_PLATFORM_FPGA:
+            mode = NV_SIM_MODE_TEGRA_FPGA;
+            break;
+        case NV_OS_TEGRA_PLATFORM_SILICON:
+        default:
+            mode = NV_SIM_MODE_HARDWARE;
+            break;
+    }
+
+    return mode;
 }
 
 NV_STATUS
@@ -2451,7 +2517,7 @@ cliresCtrlCmdOsUnixImportObjectFromFd_IMPL
     }
 
     if ((nvfp->handles == NULL) || (nvfp->handles[0] == 0) ||
-        (nvfp->maxHandles > 1))
+        (nvfp->maxHandles < 1))
     {
         status = NV_ERR_INVALID_PARAMETER;
         goto done;
@@ -3066,7 +3132,40 @@ osI2CClosePorts
     NvU32        numPorts
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    nv_i2c_unregister_clients(pOsGpuInfo);
+    return NV_OK;
+}
+
+static NvU32
+i2cSwPortMapping(
+    nv_state_t *nv,
+    NvU32 physicalI2CPort
+)
+{
+    NvU32 linuxI2CSwPort = NV_U32_MAX;
+
+    /**
+     *  For T23X, Linux Tegra I2C controller driver uses logical port(controller) number
+     *  where logical port number of I2C1(Gen1) controller is 0, logical port number for
+     *  I2C2(Gen2) controller is 1 and so on. But RM passes I2C physical port(controller)
+     *  number i.e RM passes "1" for I2C1(Gen1), 2 for I2C2(Gen2), etc. So convert
+     *  physical port number to logical port number(linuxI2CSwPort).
+     *
+     *  For other chips, the above mentioned logic does not apply and we do not need
+     *  conversion as the physical controller number was updated to 0 and RM passes the
+     *  same.
+     */
+    if ((nv->disp_sw_soc_chip_id == NV_CHIP_ID_T234)
+        )
+    {
+        linuxI2CSwPort = physicalI2CPort - 1;
+    }
+    else
+    {
+        linuxI2CSwPort = physicalI2CPort;
+    }
+
+    return linuxI2CSwPort;
 }
 
 NV_STATUS
@@ -3079,7 +3178,17 @@ osI2CTransfer
     NvU32 count
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    nv_state_t *nv = NV_GET_NV_STATE(pGpu);
+    if (NV_IS_SOC_DISPLAY_DEVICE(nv))
+    {
+        Port = i2cSwPortMapping(nv, Port);
+        return nv_i2c_transfer(nv, Port, Address,
+                               nv_i2c_msgs, count);
+    }
+    else
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
 }
 
 NV_STATUS
@@ -3091,7 +3200,15 @@ osTegraI2CGetBusState
     NvS32 *sda
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    if (NV_IS_SOC_DISPLAY_DEVICE(pOsGpuInfo))
+    {
+        port = i2cSwPortMapping(pOsGpuInfo, port);
+        return nv_i2c_bus_status(pOsGpuInfo, port, scl, sda);
+    }
+    else
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
 }
 
 NV_STATUS
@@ -3195,7 +3312,7 @@ NvBool osTestPcieExtendedConfigAccess(void *handle, NvU32 offset)
     retryAllowed = NV_FALSE;
 
     pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
-    if (pKernelBif == NULL || kbifGetBusIntfType_HAL(pKernelBif) !=
+    if (pKernelBif == NULL || gpuGetBusIntfType_HAL(pGpu) !=
                                   NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS)
     {
         return configAccess;
@@ -3223,6 +3340,25 @@ static NvBool skipIovaMappingForTegra
     nv_state_t *nv
 )
 {
+    //
+    // TODO: When ISO SMMU is not present, dma mapping of imported ISO memory
+    //       causes crash during __clean_dcache_area_poc. dma mapping of ISO
+    //       memory allocated by RM (via __get_free_pages) still works.
+    //       Skip dma mapping of imported ISO memory to unblock Tegra Display in
+    //       AV+L. Bug 200765629
+    //
+
+    NV_ASSERT(nv != NULL);
+
+    if (NV_IS_SOC_DISPLAY_DEVICE(nv) &&
+        !NV_SOC_IS_ISO_IOMMU_PRESENT(nv) &&
+        !memdescGetFlag(pIovaMapping->pPhysMemDesc, MEMDESC_FLAGS_MEMORY_TYPE_DISPLAY_NISO) &&
+        memdescGetFlag(pIovaMapping->pPhysMemDesc, MEMDESC_FLAGS_EXT_PAGE_ARRAY_MEM))
+    {
+        NV_PRINTF(LEVEL_INFO, "%s: Skip memdescMapIommu mapping\n", __FUNCTION__);
+        return NV_TRUE;
+    }
+
     return NV_FALSE;
 }
 
@@ -4272,6 +4408,17 @@ osGetPageSize(void)
     return os_page_size;
 }
 
+NvU64
+osGetSupportedSysmemPageSizeMask(void)
+{
+    //
+    // We assume that the kernel can support all power-of-two pagesizes 
+    // between os_page_size and os_max_page_size (inclusive).  Return a 
+    // bitmask containing all of those.
+    //
+    return (((os_max_page_size << 1) - 1) & (~(os_page_size - 1)));
+}
+
 NvU8
 osGetPageShift(void)
 {
@@ -5008,6 +5155,118 @@ osReadPFPciConfigInVF
 }
 
 /*!
+ * @brief Callback function to notify RM when unix layer receives an event
+ *
+ * This function is basically a wrapper to call the Core RM layer and is
+ * being called from DCE KMD when an event is received from DCE RM.
+ *
+ * @param[in]  handle         handle allocated for corresponding IPC type with DCE
+ * @param[in]  interfaceType  RM IPC interface type
+ * @param[in]  length         length of the message passed from DCE
+ * @param[in]  data           any specific data if present
+ * @param[in]  usrCtx         any specific user context if present
+ *
+ * @returns void
+ */
+static void
+osTegraDceClientIpcCallback
+(
+    NvU32 handle,
+    NvU32 interfaceType,
+    NvU32 length,
+    void *data,
+    void *usrCtx
+)
+{
+    THREAD_STATE_NODE threadState;
+    NvU32 rmInterfaceType = nv_tegra_get_rm_interface_type(interfaceType);
+
+    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+
+    if (rmLocksAcquireAll(RM_LOCK_MODULES_KERNEL_RM_EVENTS) == NV_OK)
+    {
+        dceclientHandleAsyncRpcCallback(handle, rmInterfaceType, length, data, usrCtx);
+
+        rmLocksReleaseAll();
+    }
+
+    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
+}
+
+/*!
+ * @brief Performs IPC Client registration with DCE
+ *
+ * This function is basically a wrapper to call the unix/linux layer.
+ *
+ * @param[in]  interfaceType  RM IPC interface type
+ * @param[in]  usrCtx         any specific user context if present
+ * @param[out] clientId       unique ID registered with DCE for IPC
+ *
+ * @returns NV_OK if successful,
+ *          NV_ERR_NOT_SUPPORTED if the functionality is not available, or
+ *          other errors as may be returned by subfunctions.
+ */
+NV_STATUS
+osTegraDceRegisterIpcClient
+(
+    NvU32 interfaceType,
+    void *usrCtx,
+    NvU32 *clientId
+)
+{
+    if (interfaceType == DCE_CLIENT_RM_IPC_TYPE_SYNC)
+        return nv_tegra_dce_register_ipc_client(interfaceType, usrCtx, NULL, clientId);
+    else if (interfaceType == DCE_CLIENT_RM_IPC_TYPE_EVENT)
+        return nv_tegra_dce_register_ipc_client(interfaceType, usrCtx, osTegraDceClientIpcCallback, clientId);
+    else
+        return NV_ERR_INVALID_ARGUMENT;
+}
+
+/*!
+ * @brief Performs IPC Client destroy with DCE
+ *
+ * This function is basically a wrapper to call the unix/linux layer.
+ *
+ * @param[in] clientId  unique ID registered with DCE for IPC
+ *
+ * @returns NV_OK if successful,
+ *          NV_ERR_NOT_SUPPORTED if the functionality is not available, or
+ *          other errors as may be returned by subfunctions.
+ */
+NV_STATUS
+osTegraDceUnregisterIpcClient
+(
+    NvU32 clientId
+)
+{
+    return nv_tegra_dce_unregister_ipc_client(clientId);
+}
+
+/*!
+ * @brief Performs IPC Send/Receive to/from DCE
+ *
+ * This function is basically a wrapper to call the unix/linux layer.
+ *
+ * @param[in]  clientId   unique ID registered with DCE KMD for corresponding IPC type
+ * @param[in]  msg        structure to hold dce ipc message info
+ * @param[in]  msgLength  length of the message
+ *
+ * @returns NV_OK if successful,
+ *          NV_ERR_NOT_SUPPORTED if the functionality is not available, or
+ *          other errors as may be returned by subfunctions.
+ */
+NV_STATUS
+osTegraDceClientIpcSendRecv
+(
+    NvU32 clientId,
+    void *msg,
+    NvU32 msgLength
+)
+{
+    return nv_tegra_dce_client_ipc_send_recv(clientId, msg, msgLength);
+}
+
+/*!
  * @brief Sends an MRQ (message-request) to BPMP
  *
  * The request, response, and ret parameters of this function correspond to the
@@ -5044,7 +5303,25 @@ osTegraSocBpmpSendMrq
     NvS32       *pApiRet
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_SOC_SDM))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+    else if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
+    {
+        return nv_bpmp_send_mrq(pGpu->pOsGpuInfo,
+                                mrq,
+                                pRequestData,
+                                requestDataSize,
+                                pResponseData,
+                                responseDataSize,
+                                pRet,
+                                pApiRet);
+    }
+    else
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
 }
 
 /*!
@@ -5063,10 +5340,18 @@ osTegraSocBpmpSendMrq
 NV_STATUS
 osTegraSocGetImpImportData
 (
+    OBJGPU *pGpu,
     TEGRA_IMP_IMPORT_DATA *pTegraImpImportData
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
+    {
+        return nv_imp_get_import_data(pTegraImpImportData);
+    }
+    else
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
 }
 
 /*!
@@ -5095,7 +5380,14 @@ osTegraSocEnableDisableRfl
     NvBool       bEnable
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    if (NV_IS_SOC_DISPLAY_DEVICE(pOsGpuInfo))
+    {
+        return nv_imp_enable_disable_rfl(pOsGpuInfo, bEnable);
+    }
+    else
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
 }
 
 /*!
@@ -5129,7 +5421,16 @@ osTegraAllocateDisplayBandwidth
     NvU32        floorBandwidthKBPS
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    if (NV_IS_SOC_DISPLAY_DEVICE(pOsGpuInfo))
+    {
+        return nv_imp_icc_set_bw(pOsGpuInfo,
+                                 averageBandwidthKBPS,
+                                 floorBandwidthKBPS);
+    }
+    else
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
 }
 
 /*!
@@ -5224,7 +5525,14 @@ osGetTegraNumDpAuxInstances
     NvU32  *pNumIntances
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    if (NV_IS_SOC_DISPLAY_DEVICE(pOsGpuInfo))
+    {
+        return nv_get_num_dpaux_instances(pOsGpuInfo, pNumIntances);
+    }
+    else
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
 }
 
 /*
@@ -5245,7 +5553,14 @@ osGetCurrentIrqPrivData
     NvU32  *pPrivData
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    if (NV_IS_SOC_DISPLAY_DEVICE(pOsGpuInfo))
+    {
+        return nv_get_current_irq_priv_data(pOsGpuInfo, pPrivData);
+    }
+    else
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
 }
 
 /*!
@@ -5266,7 +5581,14 @@ osGetTegraBrightnessLevel
     NvU32 *brightness
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    if (NV_IS_SOC_DISPLAY_DEVICE(pOsGpuInfo))
+    {
+        return nv_get_tegra_brightness_level(pOsGpuInfo, brightness);
+    }
+    else
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
 }
 
 /*!
@@ -5287,7 +5609,14 @@ osSetTegraBrightnessLevel
     NvU32 brightness
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    if (NV_IS_SOC_DISPLAY_DEVICE(pOsGpuInfo))
+    {
+        return nv_set_tegra_brightness_level(pOsGpuInfo, brightness);
+    }
+    else
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
 }
 
 /* @brief Gets syncpoint aperture information

@@ -85,6 +85,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__P2PTokenShare =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_shrp2pDestruct(P2PTokenShare*);
 void __nvoc_dtor_RsShared(RsShared*);
 void __nvoc_dtor_P2PTokenShare(P2PTokenShare *pThis) {
     __nvoc_shrp2pDestruct(pThis);
@@ -316,17 +317,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_ThirdPartyP2P =
     /*pExportInfo=*/        &__nvoc_export_info__ThirdPartyP2P
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ThirdPartyP2P[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) thirdpartyp2pCtrlCmdRegisterVaSpace_IMPL,
+        /*pFunc=*/      (void (*)(void)) &thirdpartyp2pCtrlCmdRegisterVaSpace_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -341,7 +344,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ThirdPar
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) thirdpartyp2pCtrlCmdUnregisterVaSpace_IMPL,
+        /*pFunc=*/      (void (*)(void)) &thirdpartyp2pCtrlCmdUnregisterVaSpace_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -356,7 +359,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ThirdPar
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) thirdpartyp2pCtrlCmdRegisterVidmem_IMPL,
+        /*pFunc=*/      (void (*)(void)) &thirdpartyp2pCtrlCmdRegisterVidmem_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -371,7 +374,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ThirdPar
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) thirdpartyp2pCtrlCmdUnregisterVidmem_IMPL,
+        /*pFunc=*/      (void (*)(void)) &thirdpartyp2pCtrlCmdUnregisterVidmem_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -386,7 +389,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ThirdPar
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) thirdpartyp2pCtrlCmdRegisterPid_IMPL,
+        /*pFunc=*/      (void (*)(void)) &thirdpartyp2pCtrlCmdRegisterPid_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -397,7 +400,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ThirdPar
         /*func=*/       "thirdpartyp2pCtrlCmdRegisterPid"
 #endif
     },
-
 };
 
 
@@ -661,6 +663,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__ThirdPartyP2P =
     /*pExportEntries=*/ __nvoc_exported_method_def_ThirdPartyP2P
 };
 
+void __nvoc_thirdpartyp2pDestruct(ThirdPartyP2P*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_ThirdPartyP2P(ThirdPartyP2P *pThis) {
     __nvoc_thirdpartyp2pDestruct(pThis);
@@ -694,38 +697,11 @@ __nvoc_ctor_ThirdPartyP2P_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_ThirdPartyP2P_1(ThirdPartyP2P *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // thirdpartyp2pCtrlCmdRegisterVaSpace -- exported (id=0x503c0102)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__thirdpartyp2pCtrlCmdRegisterVaSpace__ = &thirdpartyp2pCtrlCmdRegisterVaSpace_IMPL;
-#endif
-
-    // thirdpartyp2pCtrlCmdUnregisterVaSpace -- exported (id=0x503c0103)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__thirdpartyp2pCtrlCmdUnregisterVaSpace__ = &thirdpartyp2pCtrlCmdUnregisterVaSpace_IMPL;
-#endif
-
-    // thirdpartyp2pCtrlCmdRegisterVidmem -- exported (id=0x503c0104)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__thirdpartyp2pCtrlCmdRegisterVidmem__ = &thirdpartyp2pCtrlCmdRegisterVidmem_IMPL;
-#endif
-
-    // thirdpartyp2pCtrlCmdUnregisterVidmem -- exported (id=0x503c0105)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__thirdpartyp2pCtrlCmdUnregisterVidmem__ = &thirdpartyp2pCtrlCmdUnregisterVidmem_IMPL;
-#endif
-
-    // thirdpartyp2pCtrlCmdRegisterPid -- exported (id=0x503c0106)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__thirdpartyp2pCtrlCmdRegisterPid__ = &thirdpartyp2pCtrlCmdRegisterPid_IMPL;
-#endif
-} // End __nvoc_init_funcTable_ThirdPartyP2P_1 with approximately 5 basic block(s).
+} // End __nvoc_init_funcTable_ThirdPartyP2P_1
 
 
-// Initialize vtable(s) for 30 virtual method(s).
+// Initialize vtable(s) for 25 virtual method(s).
 void __nvoc_init_funcTable_ThirdPartyP2P(ThirdPartyP2P *pThis) {
-
-    // Initialize vtable(s) with 5 per-object function pointer(s).
     __nvoc_init_funcTable_ThirdPartyP2P_1(pThis);
 }
 

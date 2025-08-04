@@ -30,8 +30,7 @@
 /*!
  * @brief Returns a bitfield with only MC_ENGINE_IDX_DISP set if it's pending in hardware
  *        On Turing+, there are multiple stall interrupt registers, and reading them
- *        all in the top half would be expensive. To saitsfy bug 3220319, only find out
- *        if display interrupt is pending. Fix this in bug 3279300.
+ *        all in the top half would be expensive.
  *        GB20X+, we we report a separate low latency DISP bit that is only pending if the
  *        low latency interrupt is pending.
  *

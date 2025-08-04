@@ -86,6 +86,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJRCDB =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_rcdbDestruct(OBJRCDB*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_OBJTRACEABLE(OBJTRACEABLE*);
 void __nvoc_dtor_OBJRCDB(OBJRCDB *pThis) {

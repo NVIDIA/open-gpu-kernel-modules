@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -92,6 +92,7 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
     NvU32 data              = 0;
     NvBool bPhysicalForward = NV_FALSE;
 
+    // Note that calls using nonzero _GROUP_ID would need to call this multiple times
     if ((pParams->gpuInfoListSize > NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE) ||
         (pParams->gpuInfoListSize == 0))
     {
@@ -319,6 +320,18 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                 }
                 break;
             }
+            case NV2080_CTRL_GPU_INFO_INDEX_GPU_NON_PASID_ATS_CAPABILITY:
+            {
+                if (kmemsysIsNonPasidAtsSupported_HAL(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu)))
+                {
+                    data = NV2080_CTRL_GPU_INFO_INDEX_GPU_NON_PASID_ATS_CAPABILITY_YES;
+                }
+                else
+                {
+                    data = NV2080_CTRL_GPU_INFO_INDEX_GPU_NON_PASID_ATS_CAPABILITY_NO;
+                }
+                break;
+            }
             case NV2080_CTRL_GPU_INFO_INDEX_NVENC_STATS_REPORTING_STATE:
             {
                 if (IS_VIRTUAL(pGpu))
@@ -455,6 +468,25 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                 }
                 break;
             }
+            case NV2080_CTRL_GPU_INFO_INDEX_COHERENT_GPU_MEMORY_MODE:
+            {
+                if (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
+                {
+                    if (osNumaOnliningEnabled(pGpu->pOsGpuInfo))
+                    {
+                        data = NV2080_CTRL_GPU_INFO_INDEX_COHERENT_GPU_MEMORY_MODE_NUMA;
+                    }
+                    else
+                    {
+                        data = NV2080_CTRL_GPU_INFO_INDEX_COHERENT_GPU_MEMORY_MODE_DRIVER;
+                    }
+                }
+                else
+                {
+                    data = NV2080_CTRL_GPU_INFO_INDEX_COHERENT_GPU_MEMORY_MODE_NONE;
+                }
+                break;
+            }
             case NV2080_CTRL_GPU_INFO_INDEX_CMP_SKU:
             {
                 if (gpuGetChipInfo(pGpu) && gpuGetChipInfo(pGpu)->isCmpSku)
@@ -472,7 +504,6 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                 data = NV2080_CTRL_GPU_INFO_INDEX_DMABUF_CAPABILITY_NO;
 
                 if (osDmabufIsSupported() &&
-                    (!IS_VIRTUAL(pGpu)) &&
                     (!gpuIsApmFeatureEnabled(pGpu)) &&
                     (!NVCPU_IS_PPC64LE))
                 {
@@ -493,6 +524,19 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
             case NV2080_CTRL_GPU_INFO_INDEX_IS_LOCALIZATION_SUPPORTED:
             {
                 data = GPU_GET_MEMORY_MANAGER(pGpu)->bLocalizedMemorySupported;
+                break;
+            }
+            case NV2080_CTRL_GPU_INFO_INDEX_COMPR_BIT_BACKING_COPY_TYPE:
+            {
+                MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+                if (!pMemoryManager->bUseVirtualCopyOnSuspend)
+                {
+                    data = NV2080_CTRL_GPU_INFO_INDEX_COMP_BIT_BACKING_COPY_TYPE_PHYSICAL;
+                }
+                else
+                {
+                    data = NV2080_CTRL_GPU_INFO_INDEX_COMP_BIT_BACKING_COPY_TYPE_VIRTUAL;
+                }
                 break;
             }
             default:
@@ -2872,7 +2916,7 @@ NV_STATUS subdeviceCtrlCmdValidateMemMapRequest_IMPL
         // If the kernel side does not know about the object being mapped,
         // fall-through to GSP and see if it knows anything.
         //
-        if (IS_GSP_CLIENT(pGpu))
+        if (IS_FW_CLIENT(pGpu))
         {
             RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
@@ -3067,19 +3111,6 @@ subdeviceCtrlCmdUpdateGfidP2pCapability_IMPL
     return gpuUpdateGfidP2pCapability(GPU_RES_GET_GPU(pSubdevice), pParams);
 }
 
-/*
- * Set the EGM fabric base address
- */
-NV_STATUS
-subdeviceCtrlCmdGpuSetEgmGpaFabricAddr_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_GPU_SET_EGM_GPA_FABRIC_BASE_ADDR_PARAMS *pParams
-)
-{
-    return NV_OK;
-}
-
 /*!
  * @brief: This command returns the load time (latency) of each engine,
  *         implementing NV2080_CTRL_CMD_GPU_GET_ENGINE_LOAD_TIMES control call.
@@ -3203,6 +3234,34 @@ _convertGpuFabricProbeInfoCaps
     return fabricCaps;
 }
 
+static NvU8
+_convertGpuFabricProbeHealthSummary
+(
+    NvU8 fabricHealthSummary
+)
+{
+    switch (fabricHealthSummary)
+    {
+        case NVLINK_INBAND_FABRIC_HEALTH_SUMMARY_HEALTHY:
+        {
+            return NV2080_CTRL_GPU_FABRIC_HEALTH_SUMMARY_HEALTHY;
+        }
+        case NVLINK_INBAND_FABRIC_HEALTH_SUMMARY_UNHEALTHY:
+        {
+            return NV2080_CTRL_GPU_FABRIC_HEALTH_SUMMARY_UNHEALTHY;
+        }
+        case NVLINK_INBAND_FABRIC_HEALTH_SUMMARY_LIMITED_CAPACITY:
+        {
+            return NV2080_CTRL_GPU_FABRIC_HEALTH_SUMMARY_LIMITED_CAPACITY;
+        }
+        case NVLINK_INBAND_FABRIC_HEALTH_SUMMARY_NOT_SUPPORTED:
+        default:
+        {
+            return NV2080_CTRL_GPU_FABRIC_HEALTH_SUMMARY_NOT_SUPPORTED;
+        }
+    }
+}
+
 NV_STATUS
 subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
 (
@@ -3290,6 +3349,7 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
                                                  &mask);
     NV_ASSERT_OK_OR_RETURN(status);
 
+    // Fabric Degraded Bandwidth
     if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _DEGRADED_BW, _TRUE, mask))
     {
         healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
@@ -3308,6 +3368,7 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
                                   _DEGRADED_BW, _NOT_SUPPORTED, healthMask);
     }
 
+    // Fabric Route Update
     if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _ROUTE_UPDATE,
                      _TRUE, mask))
     {
@@ -3327,6 +3388,7 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
                                   _ROUTE_UPDATE, _NOT_SUPPORTED, healthMask);
     }
 
+    // Fabric Connection Unhealthy
     if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _CONNECTION_UNHEALTHY,
                      _TRUE, mask))
     {
@@ -3344,6 +3406,44 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
     {
         healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
                                    _CONNECTION_UNHEALTHY, _NOT_SUPPORTED, healthMask);
+    }
+
+    // Fabric Incorrect Configuration
+    if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _INCORRECT_CONFIGURATION,
+                     _NONE, mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                   _INCORRECT_CONFIGURATION, _NONE, healthMask);
+    }
+    else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _INCORRECT_CONFIGURATION,
+                          _INCORRECT_SYSGUID, mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                   _INCORRECT_CONFIGURATION, _INCORRECT_SYSGUID, healthMask);
+    }
+    else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _INCORRECT_CONFIGURATION,
+                          _INCORRECT_CHASSIS_SN, mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                   _INCORRECT_CONFIGURATION, _INCORRECT_CHASSIS_SN, healthMask);
+    }
+    else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _INCORRECT_CONFIGURATION,
+                          _NO_PARTITION, mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                   _INCORRECT_CONFIGURATION, _NO_PARTITION, healthMask);
+    }
+    else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _INCORRECT_CONFIGURATION,
+                          _INSUFFICIENT_NVLINKS, mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                   _INCORRECT_CONFIGURATION, _INSUFFICIENT_NVLINKS, healthMask);
+    }
+    else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _INCORRECT_CONFIGURATION,
+                          _NOT_SUPPORTED, mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                   _INCORRECT_CONFIGURATION, _NOT_SUPPORTED, healthMask);
     }
 
     if (gpuGetChipArch(pGpu) >= GPU_ARCHITECTURE_BLACKWELL_GB1XX)
@@ -3381,6 +3481,9 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
     }
 
     pParams->fabricHealthMask = healthMask;
+
+    pParams->fabricHealthSummary =
+        _convertGpuFabricProbeHealthSummary(nvlinkGetFabricHealthSummary(healthMask));
 
     return NV_OK;
 }
@@ -3646,7 +3749,7 @@ subdeviceCtrlCmdGpuRpcGspTest_IMPL
     NvU32 *data = (NvU32 *) pParams->data;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
 
-    if (IS_GSP_CLIENT(pGpu))
+    if (IS_FW_CLIENT(pGpu))
     {
         CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
         RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
@@ -3830,7 +3933,7 @@ subdeviceCtrlCmdThermalSystemExecuteV2_IMPL(Subdevice *pSubdevice,
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NvU32 instructionListSize = pSystemExecuteParams->instructionListSize;
-    (void)instructionListSize;
+
     NV_CHECK_OR_RETURN(LEVEL_ERROR,
                        instructionListSize <= NV_ARRAY_ELEMENTS(pSystemExecuteParams->instructionList),
                        NV_ERR_INVALID_ARGUMENT);
@@ -4118,4 +4221,3 @@ subdeviceCtrlCmdThermalSystemExecuteV2_IMPL(Subdevice *pSubdevice,
     return status;
 
 }
-

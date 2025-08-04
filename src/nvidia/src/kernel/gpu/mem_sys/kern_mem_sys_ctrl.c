@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,6 +26,8 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/mem_mgr/heap.h"
+#include "gpu/uvm/uvm.h"
+#include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h"
 #include "gpu/bus/kern_bus.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "gpu/mem_mgr/mem_desc.h"
@@ -127,6 +129,9 @@ kmemsysGetFbInfos_VF(OBJGPU *pGpu, KernelMemorySystem *pKernelMemorySystem, RsCl
 
     return NV_OK;
 }
+
+// Clients expect to be able to pass indices 0..NV2080_CTRL_FB_INFO_INDEX_MAX in one call
+ct_assert(NV2080_CTRL_FB_INFO_INDEX_MAX < NV2080_CTRL_FB_INFO_MAX_LIST_SIZE);
 
 // Common logic for all runtimes to populate NV2080_CTRL_FB_INFO array
 static NV_STATUS
@@ -342,7 +347,7 @@ _kmemsysGetFbInfos
                     NvU32 heapSizeKb;
                     if (bIsPmaEnabled)
                     {
-                        pmaGetTotalMemory(&pHeap->pmaObject, &bytesTotal);
+                        pmaGetTotalMemory(pHeap->pPmaObject, &bytesTotal);
                         NV_ASSERT(NvU64_HI32(bytesTotal >> 10) == 0);
                         heapSizeKb = NvU64_LO32(bytesTotal >> 10);
                     }
@@ -360,7 +365,7 @@ _kmemsysGetFbInfos
                 else
                 {
                     NV_ASSERT(0 == NvU64_HI32(pMemoryManager->Ram.fbTotalMemSizeMb << 10));
-                    data = NvU64_LO32(NV_MIN((pMemoryManager->Ram.fbTotalMemSizeMb << 10), 
+                    data = NvU64_LO32(NV_MIN((pMemoryManager->Ram.fbTotalMemSizeMb << 10),
                                              (pMemoryManager->Ram.fbOverrideSizeMb << 10))
                                              - pKernelMemorySystem->fbOverrideStartKb);
                     break;
@@ -381,7 +386,7 @@ _kmemsysGetFbInfos
                     NvU32 heapSizeKb;
                     if (bIsPmaEnabled)
                     {
-                        pmaGetTotalMemory(&pHeap->pmaObject, &bytesTotal);
+                        pmaGetTotalMemory(pHeap->pPmaObject, &bytesTotal);
                         NV_ASSERT(NvU64_HI32(bytesTotal >> 10) == 0);
                         heapSizeKb = NvU64_LO32(bytesTotal >> 10);
                     }
@@ -417,7 +422,7 @@ _kmemsysGetFbInfos
                     NvU32 heapSizeKb;
                     if (bIsPmaEnabled)
                     {
-                        pmaGetTotalMemory(&pHeap->pmaObject, &bytesTotal);
+                        pmaGetTotalMemory(pHeap->pPmaObject, &bytesTotal);
                         NV_ASSERT(NvU64_HI32(bytesTotal >> 10) == 0);
                         heapSizeKb = NvU64_LO32(bytesTotal >> 10);
                     }
@@ -442,7 +447,7 @@ _kmemsysGetFbInfos
             {
                 if (bIsPmaEnabled)
                 {
-                    pmaGetTotalMemory(&pHeap->pmaObject, &bytesTotal);
+                    pmaGetTotalMemory(pHeap->pPmaObject, &bytesTotal);
                     NV_ASSERT(NvU64_HI32(bytesTotal >> 10) == 0);
                     data = NvU64_LO32(bytesTotal >> 10);
                 }
@@ -471,7 +476,7 @@ _kmemsysGetFbInfos
                 {
                     if (bIsPmaEnabled)
                     {
-                        pmaGetLargestFree(&pHeap->pmaObject, &largestFree, &heapBase, &largestOffset);
+                        pmaGetLargestFree(pHeap->pPmaObject, &largestFree, &heapBase, &largestOffset);
                     }
                     else
                     {
@@ -496,7 +501,7 @@ _kmemsysGetFbInfos
                             data = NvU64_LO32(pKernelMemorySystem->fbOverrideStartKb);
                             NV_ASSERT_OR_ELSE((NvU64) data == pKernelMemorySystem->fbOverrideStartKb,
                                               status = NV_ERR_INVALID_DATA);
-                            
+
                         }
                         else
                         {
@@ -521,7 +526,7 @@ _kmemsysGetFbInfos
                     bytesFree = 0;
 
                     if (bIsPmaEnabled)
-                        pmaGetFreeMemory(&pHeap->pmaObject, &val);
+                        pmaGetFreeMemory(pHeap->pPmaObject, &val);
                     else
                         heapGetFree(pHeap, &val);
 
@@ -541,7 +546,7 @@ _kmemsysGetFbInfos
                         NvU32 config = PMA_QUERY_NUMA_ENABLED;
 
                         memmgrGetFreeMemoryForAllMIGGPUInstances(pGpu, pMemoryManager, &partTotalBytesFree);
-                        
+
                         //
                         // In the case of MIG+NUMA case(self hosted GPUs), NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE
                         // is not supported and hence the partition's memory is not accounted in the global PMA.
@@ -551,11 +556,11 @@ _kmemsysGetFbInfos
                         // partitions' free memory + (global total memory - all created partitions' total memory).
                         //
                         if (bIsPmaEnabled &&
-                            (pmaQueryConfigs(&pHeap->pmaObject, &config) == NV_OK) &&
+                            (pmaQueryConfigs(pHeap->pPmaObject, &config) == NV_OK) &&
                             (config & PMA_QUERY_NUMA_ENABLED))
                         {
                             memmgrGetTotalMemoryForAllMIGGPUInstances(pGpu, pMemoryManager, &partTotalBytes);
-                            pmaGetTotalMemory(&pHeap->pmaObject, &val);
+                            pmaGetTotalMemory(pHeap->pPmaObject, &val);
                             bytesFree = partTotalBytesFree + (val - partTotalBytes);
                         }
                         else
@@ -569,7 +574,7 @@ _kmemsysGetFbInfos
                 }
                 else if (bIsPmaEnabled)
                 {
-                    pmaGetFreeMemory(&pHeap->pmaObject, &bytesFree);
+                    pmaGetFreeMemory(pHeap->pPmaObject, &bytesFree);
 
                     NV_ASSERT(NvU64_HI32(bytesFree >> 10) == 0);
                     data = NvU64_LO32(bytesFree >> 10);
@@ -618,7 +623,7 @@ _kmemsysGetFbInfos
                 {
                     NvU32 heapSizeKb;
 
-                    pmaGetTotalMemory(&pHeap->pmaObject, &bytesTotal);
+                    pmaGetTotalMemory(pHeap->pPmaObject, &bytesTotal);
                     NV_ASSERT(NvU64_HI32(bytesTotal >> 10) == 0);
                     heapSizeKb = NvU64_LO32(bytesTotal >> 10);
 
@@ -662,7 +667,7 @@ _kmemsysGetFbInfos
             {
                 if (bIsPmaEnabled)
                 {
-                    pmaGetLargestFree(&pHeap->pmaObject, &largestFree, &heapBase, &largestOffset);
+                    pmaGetLargestFree(pHeap->pPmaObject, &largestFree, &heapBase, &largestOffset);
                 }
                 else
                 {
@@ -677,7 +682,7 @@ _kmemsysGetFbInfos
             {
                 if (bIsPmaEnabled)
                 {
-                    pmaGetLargestFree(&pHeap->pmaObject, &largestFree, &heapBase, &largestOffset);
+                    pmaGetLargestFree(pHeap->pPmaObject, &largestFree, &heapBase, &largestOffset);
                 }
                 else
                 {
@@ -692,7 +697,7 @@ _kmemsysGetFbInfos
             {
                 if (bIsPmaEnabled)
                 {
-                    pmaGetLargestFree(&pHeap->pmaObject, &largestFree, &heapBase, &largestOffset);
+                    pmaGetLargestFree(pHeap->pPmaObject, &largestFree, &heapBase, &largestOffset);
                 }
                 else
                 {
@@ -803,7 +808,7 @@ _kmemsysGetFbInfos
                 {
                     if (bIsPmaEnabled)
                     {
-                        pmaGetTotalProtectedMemory(&pHeap->pmaObject, &bytesTotal);
+                        pmaGetTotalProtectedMemory(pHeap->pPmaObject, &bytesTotal);
                         NV_ASSERT(NvU64_HI32(bytesTotal >> 10) == 0);
                         data = NvU64_LO32(bytesTotal >> 10);
                     }
@@ -830,7 +835,7 @@ _kmemsysGetFbInfos
                 {
                     if (bIsPmaEnabled)
                     {
-                        pmaGetFreeProtectedMemory(&pHeap->pmaObject, &bytesFree);
+                        pmaGetFreeProtectedMemory(pHeap->pPmaObject, &bytesFree);
                         NV_ASSERT(NvU64_HI32(bytesFree >> 10) == 0);
                         data = NvU64_LO32(bytesFree >> 10);
                     }
@@ -856,6 +861,37 @@ _kmemsysGetFbInfos
                 if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB))
                 {
                     data = 1;
+                }
+                else
+                {
+                    data = 0;
+                }
+                break;
+            }
+            case NV2080_CTRL_FB_INFO_INDEX_ACCESS_COUNTER_BUFFER_COUNT:
+            {
+                OBJUVM *pUvm = GPU_GET_UVM(pGpu);
+
+                if (pUvm != NULL)
+                {
+                    data = pUvm->accessCounterBufferCount;
+                }
+                else
+                {
+                    data = 0;
+                }
+                break;
+            }
+
+            case NV2080_CTRL_FB_INFO_INDEX_COHERENCE_INFO:
+            {
+                MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+
+                if (pMemoryManager != NULL)
+                {
+                    data = pMemoryManager->bPlatformFullyCoherent ?
+                        NV2080_CTRL_FB_INFO_INDEX_COHERENCE_INFO_FULLY_COHERENT :
+                        NV2080_CTRL_FB_INFO_INDEX_COHERENCE_INFO_NON_FULLY_COHERENT;
                 }
                 else
                 {
@@ -996,7 +1032,7 @@ subdeviceCtrlCmdFbGetCliManagedOfflinedPages_IMPL
         if (memmgrIsPmaInitialized(pMemoryManager))
         {
             // If PMA is enabled Client pages are located here.
-            pmaGetClientBlacklistedPages(&pHeap->pmaObject, chunks, &pageSize, &numChunks);
+            pmaGetClientBlacklistedPages(pHeap->pPmaObject, chunks, &pageSize, &numChunks);
 
             NV_ASSERT(numChunks <= NV2080_CTRL_FB_OFFLINED_PAGES_MAX_PAGES);
 
@@ -1051,7 +1087,7 @@ subdeviceCtrlCmdFbUpdateNumaStatus_IMPL
     OBJGPU             *pGpu                = GPU_RES_GET_GPU(pSubdevice);
     KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     Heap               *pHeap               = GPU_GET_HEAP(pGpu);
-    PMA                *pPma                = &pHeap->pmaObject;
+    PMA                *pPma                = pHeap->pPmaObject;
     NV_STATUS          status               = NV_OK;
 
     if (!RMCFG_FEATURE_PMA)
@@ -1224,6 +1260,8 @@ subdeviceCtrlCmdFbGetStaticBar1Info_IMPL
 {
     OBJGPU             *pGpu        = GPU_RES_GET_GPU(pSubdevice);
     KernelBus          *pKernelBus  = GPU_GET_KERNEL_BUS(pGpu);
+    OBJSYS             *pSys        = SYS_GET_INSTANCE();
+    OBJCL              *pCl         = pSys->pCl;
     NV_STATUS           status      = NV_OK;
     NvU32               gfid;
 
@@ -1233,6 +1271,7 @@ subdeviceCtrlCmdFbGetStaticBar1Info_IMPL
         NV_ERR_INVALID_LOCK_STATE);
 
     pParams->bStaticBar1Enabled = pKernelBus->bar1[gfid].bStaticBar1Enabled;
+    pParams->bStaticBar1WriteCombined = !pCl->getProperty(pCl, PDB_PROP_CL_DISABLE_IOMAP_WC);
 
     if (pParams->bStaticBar1Enabled)
     {
@@ -1248,14 +1287,14 @@ subdeviceCtrlCmdFbGetStaticBar1Info_IMPL
     return status;
 }
 
-NV_STATUS
-deviceCtrlCmdFbSetZbcReferenced_IMPL
+static NV_STATUS
+_kmemsysSetZbcReferenced
 (
+    OBJGPU *pGpu,
     Device *pDevice,
-    NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS *pParams
+    NvU32 bZbcSurfacesExist
 )
 {
-    OBJGPU       *pGpu = GPU_RES_GET_GPU(pDevice);
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
     NvU32         gfid;
     NV_STATUS     status = NV_OK;
@@ -1283,37 +1322,33 @@ deviceCtrlCmdFbSetZbcReferenced_IMPL
 }
 
 NV_STATUS
+deviceCtrlCmdFbSetZbcReferenced_IMPL
+(
+    Device *pDevice,
+    NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu;
+    Subdevice *pSubdevice;
+
+    NV_ASSERT_OK_OR_RETURN(subdeviceGetByInstance(RES_GET_CLIENT(pDevice), RES_GET_HANDLE(pDevice), pParams->subdevInstance, &pSubdevice));
+
+    pGpu = GPU_RES_GET_GPU(pSubdevice);
+
+    return _kmemsysSetZbcReferenced(pGpu, pDevice, pParams->bZbcSurfacesExist);
+}
+
+NV_STATUS
 subdeviceCtrlCmdFbSetZbcReferenced_IMPL
 (
     Subdevice *pSubdevice,
     NV2080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS *pParams
 )
 {
-    OBJGPU       *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
-    NvU32         gfid;
-    NV_STATUS     status = NV_OK;
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
 
-    NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
-
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, IS_GFID_VF(gfid) || pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL, NV_ERR_INSUFFICIENT_PERMISSIONS);
-
-    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
-    {
-        RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
-
-        NV_RM_RPC_CONTROL(pGpu,
-                          pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams,
-                          pRmCtrlParams->paramsSize,
-                          status);
-
-        return status;
-    }
-
-    return status;
+    return _kmemsysSetZbcReferenced(pGpu, pDevice, pParams->bZbcSurfacesExist);
 }
 
 NV_STATUS

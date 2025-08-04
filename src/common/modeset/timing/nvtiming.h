@@ -558,7 +558,7 @@ typedef enum NVT_TV_FORMAT
 #define NVT_CTA861_VIDEO_VIC_MASK            0xFF  //the VIC mask of the short video descriptor
 #define NVT_CTA861_7BIT_VIDEO_VIC_MASK       0x7F  //the 7 bits VIC mask of the short video descriptor
 #define NVT_CTA861_VIDEO_NATIVE_MASK         0x80  //the Native mask of the short video descriptor
-#define NVT_HDMI_YUV_420_PCLK_SUPPORTED_MIN  59000 //the vale shall equal or larger than 590MHz to support YCbCr in HDMI2.1
+#define NVT_HDMI_YUV_420_PCLK_SUPPORTED_MIN  590000//the vale shall equal or larger than 590MHz to support YCbCr in HDMI2.1 , unit of 1khz
 
 // CTA-861G supports more SVDs which is over 0x7F index
 // All value below 192 will be treated as 7 bit VIC. Value 128~192 shall be forbidden.
@@ -5782,7 +5782,7 @@ typedef enum
 #define NVT_FLAG_CEA_4X3_TIMING                  0x00000400
 #define NVT_FLAG_CEA_16X9_TIMING                 0x00000800
 #define NVT_FLAG_OS_ADDED_TIMING                 0x00001000
-#define NVT_FLAG_SPECTRUM_SPREAD                 0x00002000
+#define NVT_FLAG_SPECTRUM_SPREAD                 0x00002000 // TODO: remove this
 #define NVT_FLAG_EDID_TIMING_RR_MATCH            0x00004000
 #define NVT_FLAG_EDID_861_ST                     0x00008000
 #define NVT_FLAG_EDID_DTD_EIZO_SPLIT             0x00010000
@@ -5805,8 +5805,8 @@ extern "C" {
 #endif
 
 // Generic timing parameter calculation
-NvU16 NvTiming_CalcRR(NvU32 pclk, NvU16 interlaced, NvU16 HTotal, NvU16 VTotal);
-NvU32 NvTiming_CalcRRx1k(NvU32 pclk, NvU16 interlaced, NvU16 HTotal, NvU16 VTotal);
+NvU16 NvTiming_CalcRR(NvU32 pclk1khz, NvU16 interlaced, NvU16 HTotal, NvU16 VTotal);
+NvU32 NvTiming_CalcRRx1k(NvU32 pclk1khz, NvU16 interlaced, NvU16 HTotal, NvU16 VTotal);
 
 NvU32 NvTiming_IsRoundedRREqual(NvU16 rr1, NvU32 rr1x1k, NvU16 rr2);
 NvU32 NvTiming_IsTimingExactEqual(const NVT_TIMING *pT1, const NVT_TIMING *pT2);
@@ -5896,6 +5896,7 @@ NvU32 calculateCRC32(NvU8* pBuf, NvU32 bufsize);
 void  patchChecksum(NvU8* pBuf);
 NvBool isChecksumValid(NvU8* pBuf);
 NvU32 RRx1kToPclk (NVT_TIMING *pT);
+NvU32 RRx1kToPclk1khz (NVT_TIMING *pT);
 
 NVT_STATUS NvTiming_ComposeCustTimingString(NVT_TIMING *pT);
 

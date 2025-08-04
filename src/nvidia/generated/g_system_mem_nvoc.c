@@ -29,10 +29,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_StandardMemory;
 
 // Forward declarations for SystemMemory
 void __nvoc_init__StandardMemory(StandardMemory*);
-void __nvoc_init__SystemMemory(SystemMemory*);
-void __nvoc_init_funcTable_SystemMemory(SystemMemory*);
-NV_STATUS __nvoc_ctor_SystemMemory(SystemMemory*, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-void __nvoc_init_dataField_SystemMemory(SystemMemory*);
+void __nvoc_init__SystemMemory(SystemMemory*, GpuHalspecOwner *pGpuhalspecowner);
+void __nvoc_init_funcTable_SystemMemory(SystemMemory*, GpuHalspecOwner *pGpuhalspecowner);
+NV_STATUS __nvoc_ctor_SystemMemory(SystemMemory*, GpuHalspecOwner *pGpuhalspecowner, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+void __nvoc_init_dataField_SystemMemory(SystemMemory*, GpuHalspecOwner *pGpuhalspecowner);
 void __nvoc_dtor_SystemMemory(SystemMemory*);
 
 // Structures used within RTTI (run-time type information)
@@ -149,17 +149,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_SystemMemory =
     /*pExportInfo=*/        &__nvoc_export_info__SystemMemory
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_SystemMemory[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x101u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) sysmemCtrlCmdGetSurfaceNumPhysPages_IMPL,
+        /*pFunc=*/      (void (*)(void)) &sysmemCtrlCmdGetSurfaceNumPhysPages_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x101u)
         /*flags=*/      0x101u,
         /*accessRight=*/0x0u,
@@ -174,7 +176,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_SystemMe
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x101u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) sysmemCtrlCmdGetSurfacePhysPages_IMPL,
+        /*pFunc=*/      (void (*)(void)) &sysmemCtrlCmdGetSurfacePhysPages_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x101u)
         /*flags=*/      0x101u,
         /*accessRight=*/0x0u,
@@ -185,7 +187,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_SystemMe
         /*func=*/       "sysmemCtrlCmdGetSurfacePhysPages"
 #endif
     },
-
 };
 
 
@@ -492,16 +493,21 @@ void __nvoc_dtor_SystemMemory(SystemMemory *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_SystemMemory(SystemMemory *pThis) {
+void __nvoc_init_dataField_SystemMemory(SystemMemory *pThis, GpuHalspecOwner *pGpuhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
+    const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(chipHal);
+    PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 }
 
 NV_STATUS __nvoc_ctor_StandardMemory(StandardMemory* , CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
-NV_STATUS __nvoc_ctor_SystemMemory(SystemMemory *pThis, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_ctor_SystemMemory(SystemMemory *pThis, GpuHalspecOwner *pGpuhalspecowner, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_StandardMemory(&pThis->__nvoc_base_StandardMemory, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_ctor_SystemMemory_fail_StandardMemory;
-    __nvoc_init_dataField_SystemMemory(pThis);
+    __nvoc_init_dataField_SystemMemory(pThis, pGpuhalspecowner);
 
     status = __nvoc_sysmemConstruct(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_ctor_SystemMemory_fail__init;
@@ -516,30 +522,36 @@ __nvoc_ctor_SystemMemory_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_SystemMemory_1(SystemMemory *pThis) {
+static void __nvoc_init_funcTable_SystemMemory_1(SystemMemory *pThis, GpuHalspecOwner *pGpuhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
+    const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(chipHal);
+    PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 
-    // sysmemCtrlCmdGetSurfaceNumPhysPages -- exported (id=0x3e0102)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x101u)
-    pThis->__sysmemCtrlCmdGetSurfaceNumPhysPages__ = &sysmemCtrlCmdGetSurfaceNumPhysPages_IMPL;
-#endif
-
-    // sysmemCtrlCmdGetSurfacePhysPages -- exported (id=0x3e0103)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x101u)
-    pThis->__sysmemCtrlCmdGetSurfacePhysPages__ = &sysmemCtrlCmdGetSurfacePhysPages_IMPL;
-#endif
+    // sysmemInitAllocRequest -- halified (2 hals)
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__sysmemInitAllocRequest__ = &sysmemInitAllocRequest_SOC;
+    }
+    // default
+    else
+    {
+        pThis->__sysmemInitAllocRequest__ = &sysmemInitAllocRequest_HMM;
+    }
 } // End __nvoc_init_funcTable_SystemMemory_1 with approximately 2 basic block(s).
 
 
-// Initialize vtable(s) for 28 virtual method(s).
-void __nvoc_init_funcTable_SystemMemory(SystemMemory *pThis) {
+// Initialize vtable(s) for 27 virtual method(s).
+void __nvoc_init_funcTable_SystemMemory(SystemMemory *pThis, GpuHalspecOwner *pGpuhalspecowner) {
 
-    // Initialize vtable(s) with 2 per-object function pointer(s).
-    __nvoc_init_funcTable_SystemMemory_1(pThis);
+    // Initialize vtable(s) with 1 per-object function pointer(s).
+    __nvoc_init_funcTable_SystemMemory_1(pThis, pGpuhalspecowner);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__SystemMemory(SystemMemory *pThis) {
+void __nvoc_init__SystemMemory(SystemMemory *pThis, GpuHalspecOwner *pGpuhalspecowner) {
 
     // Initialize pointers to inherited data.
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;    // (obj) super^5
@@ -563,7 +575,7 @@ void __nvoc_init__SystemMemory(SystemMemory *pThis) {
     pThis->__nvoc_metadata_ptr = &__nvoc_metadata__SystemMemory;    // (sysmem) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_SystemMemory(pThis);
+    __nvoc_init_funcTable_SystemMemory(pThis, pGpuhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_SystemMemory(SystemMemory **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
@@ -571,6 +583,7 @@ NV_STATUS __nvoc_objCreate_SystemMemory(SystemMemory **ppThis, Dynamic *pParent,
     NV_STATUS status;
     Object *pParentObj = NULL;
     SystemMemory *pThis;
+    GpuHalspecOwner *pGpuhalspecowner;
 
     // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(SystemMemory), (void**)&pThis, (void**)ppThis);
@@ -582,8 +595,11 @@ NV_STATUS __nvoc_objCreate_SystemMemory(SystemMemory **ppThis, Dynamic *pParent,
 
     pThis->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
-    // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    // pParent must be a valid object that derives from a halspec owner class.
+    NV_ASSERT_OR_RETURN(pParent != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Link the child into the parent unless flagged not to do so.
+    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
         objAddChild(pParentObj, &pThis->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
@@ -593,8 +609,12 @@ NV_STATUS __nvoc_objCreate_SystemMemory(SystemMemory **ppThis, Dynamic *pParent,
         pThis->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init__SystemMemory(pThis);
-    status = __nvoc_ctor_SystemMemory(pThis, arg_pCallContext, arg_pParams);
+    if ((pGpuhalspecowner = dynamicCast(pParent, GpuHalspecOwner)) == NULL)
+        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, pParent);
+    NV_ASSERT_OR_RETURN(pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    __nvoc_init__SystemMemory(pThis, pGpuhalspecowner);
+    status = __nvoc_ctor_SystemMemory(pThis, pGpuhalspecowner, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_SystemMemory_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

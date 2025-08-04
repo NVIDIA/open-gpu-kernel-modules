@@ -28,7 +28,7 @@
 
 #if defined(NVCPU_FAMILY_X86) && defined(NV_FOLL_LONGTERM_PRESENT) && \
     (defined(NV_PIN_USER_PAGES_HAS_ARGS_VMAS) ||                      \
-     defined(NV_GET_USER_PAGES_HAS_ARGS_FLAGS_VMAS))
+     defined(NV_GET_USER_PAGES_HAS_VMAS_ARG))
 #define NV_NUM_PIN_PAGES_PER_ITERATION 0x80000
 #endif
 
@@ -258,7 +258,7 @@ NV_STATUS NV_API_CALL os_lock_user_pages(
     }
 #if defined(NVCPU_FAMILY_X86) && defined(NV_FOLL_LONGTERM_PRESENT) && \
     (defined(NV_PIN_USER_PAGES_HAS_ARGS_VMAS) ||                      \
-     defined(NV_GET_USER_PAGES_HAS_ARGS_FLAGS_VMAS))
+     defined(NV_GET_USER_PAGES_HAS_VMAS_ARG))
     //
     // NV_PIN_USER_PAGES() passes in NULL for the vmas parameter (if required)
     // in pin_user_pages() (or get_user_pages() if pin_user_pages() does not

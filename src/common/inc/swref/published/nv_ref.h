@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -151,6 +151,22 @@
 #define NV_PMC_BOOT_42_MINOR_REVISION                         15:12 /* R-XVF */
 #define NV_PMC_BOOT_42_MAJOR_REVISION                         19:16 /* R-XVF */
 #define NV_PMC_BOOT_42_IMPLEMENTATION                         23:20 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_0                  0x00000000 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_1                  0x00000001 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_2                  0x00000002 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_3                  0x00000003 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_4                  0x00000004 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_5                  0x00000005 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_6                  0x00000006 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_7                  0x00000007 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_8                  0x00000008 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_9                  0x00000009 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_A                  0x0000000A /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_B                  0x0000000B /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_C                  0x0000000C /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_D                  0x0000000D /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_E                  0x0000000E /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_F                  0x0000000F /*       */
 #define NV_PMC_BOOT_42_ARCHITECTURE                           29:24 /*       */
 #define NV_PMC_BOOT_42_CHIP_ID                                29:20 /* R-XVF */
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,7 +41,7 @@
  * Parameters:
  *
  * location
- *   Only used for HSHUBMMU.
+ *   Only used for HSHUBMMU for pre-Blackwell.
  *
  * sublocation
  *   Only used for HSHUBMMU.
@@ -68,7 +68,6 @@ typedef struct NV208F_CTRL_MMU_ECC_INJECT_ERROR_PARAMS {
     NvU32 sublocation;
     NvU8  unit;
     NvU8  errorType;
-    NvU8  instance;
 } NV208F_CTRL_MMU_ECC_INJECT_ERROR_PARAMS;
 
 
@@ -146,4 +145,5 @@ typedef struct NV208F_CTRL_MMU_GET_NUM_HUBMMUS_PARAMS {
     NvU32 numHubmmus;
 } NV208F_CTRL_MMU_GET_NUM_HUBMMUS_PARAMS;
 
+ // extension NV_VERIF_FEATURES
 /* _ctrl208fmmu_h_ */

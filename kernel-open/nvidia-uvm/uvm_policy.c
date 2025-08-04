@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -21,6 +21,7 @@
 
 *******************************************************************************/
 
+#include "uvm_ats.h"
 #include "uvm_ioctl.h"
 #include "uvm_va_space.h"
 #include "uvm_va_range.h"
@@ -31,6 +32,10 @@
 #include "uvm_va_space_mm.h"
 #include "uvm_processors.h"
 
+// Returns true if the interval [start, start + length - 1] is entirely covered
+// by vmas.
+//
+// Locking: mm->mmap_lock must be locked
 static bool uvm_is_valid_vma_range(struct mm_struct *mm, NvU64 start, NvU64 length)
 {
     const NvU64 end = start + length;
@@ -55,6 +60,7 @@ uvm_api_range_type_t uvm_api_range_type_check(uvm_va_space_t *va_space, struct m
 {
     uvm_va_range_managed_t *managed_range, *managed_range_last;
     const NvU64 last_address = base + length - 1;
+    bool potential_ats_range;
 
     if (mm)
         uvm_assert_mmap_lock_locked(mm);
@@ -66,11 +72,15 @@ uvm_api_range_type_t uvm_api_range_type_check(uvm_va_space_t *va_space, struct m
 
     // Check if passed interval overlaps with any VA range.
     if (uvm_va_space_range_empty(va_space, base, last_address)) {
-        if (g_uvm_global.ats.enabled &&
-            uvm_va_space_pageable_mem_access_supported(va_space) &&
-            mm &&
-            uvm_is_valid_vma_range(mm, base, length)) {
+        potential_ats_range = g_uvm_global.ats.enabled &&
+            !(va_space->initialization_flags & UVM_INIT_FLAGS_MULTI_PROCESS_SHARING_MODE) &&
+            mm && uvm_is_valid_vma_range(mm, base, length);
 
+        if (potential_ats_range && uvm_va_space_ats_unset(va_space)) {
+            uvm_va_space_ats_set(va_space, UVM_ATS_VA_SPACE_ATS_SUPPORTED);
+            return UVM_API_RANGE_TYPE_ATS;
+        }
+        else if (potential_ats_range && uvm_va_space_ats_supported(va_space)) {
             return UVM_API_RANGE_TYPE_ATS;
         }
         else if (uvm_hmm_is_enabled(va_space) && mm && uvm_is_valid_vma_range(mm, base, length)) {
@@ -501,11 +511,17 @@ NV_STATUS uvm_va_block_set_accessed_by_locked(uvm_va_block_t *va_block,
 
     uvm_assert_mutex_locked(&va_block->lock);
 
+    // Filter out discarded pages for which accessed-by mappings are not
+    // created.
+    uvm_page_mask_init_from_region(&va_block_context->mapping.filtered_page_mask, region, NULL);
+    uvm_page_mask_andnot(&va_block_context->mapping.filtered_page_mask,
+                         &va_block_context->mapping.filtered_page_mask,
+                         &va_block->discarded_pages);
     status = uvm_va_block_add_mappings(va_block,
                                        va_block_context,
                                        processor_id,
                                        region,
-                                       NULL,
+                                       &va_block_context->mapping.filtered_page_mask,
                                        UvmEventMapRemoteCausePolicy);
 
     tracker_status = uvm_tracker_add_tracker_safe(out_tracker, &va_block->tracker);
@@ -1038,4 +1054,77 @@ NV_STATUS uvm_api_disable_system_wide_atomics(UVM_DISABLE_SYSTEM_WIDE_ATOMICS_PA
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
 
     return system_wide_atomics_set(va_space, &params->gpu_uuid, false);
+}
+
+NV_STATUS uvm_api_discard(UVM_DISCARD_PARAMS *params, struct file *filp)
+{
+    uvm_va_space_t *va_space = uvm_va_space_get(filp);
+    NvU64 base = params->base;
+    NvU64 length = params->length;
+    uvm_va_range_managed_t *managed_range;
+    uvm_va_block_context_t *va_block_context;
+    struct mm_struct *mm;
+    NvU64 end = base + length;
+    uvm_api_range_type_t type;
+    NV_STATUS status = NV_OK;
+
+    UVM_ASSERT(va_space);
+
+    if (params->flags && params->flags != UVM_DISCARD_FLAGS_UNMAP)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    // Use a read lock for va_space, so UvmDiscard could concurrently happen
+    // with a UvmMigrate The user space caller is responsible for coordinating
+    // calls to UvmMigrate and UvmDiscard. Otherwise, even using a write lock
+    // will still result in undesirable results.
+    mm = uvm_va_space_mm_or_current_retain_lock(va_space);
+    uvm_va_space_down_read(va_space);
+
+    // Can't discard if any non-fault-capable GPUs have been registered
+    if (!uvm_processor_mask_empty(&va_space->non_faultable_processors)) {
+        status = NV_ERR_INVALID_DEVICE;
+        goto done;
+    }
+
+    type = uvm_api_range_type_check(va_space, mm, base, length);
+    if (type != UVM_API_RANGE_TYPE_MANAGED) {
+        // System allocated and HMM memory is validated but we don't do anything with it.
+        if (type == UVM_API_RANGE_TYPE_ATS || type == UVM_API_RANGE_TYPE_HMM)
+            status = NV_WARN_NOTHING_TO_DO;
+        else
+            status = NV_ERR_INVALID_ADDRESS;
+
+        goto done;
+    }
+
+    // TODO: Bug 5260180: Remove this check after tests and 
+    // related driver code are updated to account for 
+    // integrated GPUs.
+    if (uvm_va_space_has_integrated_gpu(va_space)) {
+        status = NV_OK;
+        goto done;
+    }
+
+    va_block_context = uvm_va_block_context_alloc(mm);
+    if (!va_block_context) {
+        status = NV_ERR_NO_MEMORY;
+        goto done;
+    }
+
+    uvm_for_each_va_range_managed_in_contig (managed_range, va_space, base, end - 1) {
+        status = uvm_va_range_discard(managed_range,
+                                      va_block_context,
+                                      max(base, managed_range->va_range.node.start),
+                                      min(end - 1, managed_range->va_range.node.end),
+                                      params->flags);
+        if (status != NV_OK)
+            break;
+    }
+
+    uvm_va_block_context_free(va_block_context);
+
+done:
+    uvm_va_space_up_read(va_space);
+    uvm_va_space_mm_or_current_release_unlock(va_space, mm);
+    return status;
 }

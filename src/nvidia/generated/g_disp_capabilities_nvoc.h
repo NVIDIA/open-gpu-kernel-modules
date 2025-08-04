@@ -163,7 +163,12 @@ NV_STATUS __nvoc_objCreate_DispCapabilities(DispCapabilities**, Dynamic*, NvU32,
     __nvoc_objCreate_DispCapabilities((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS dispcapConstruct_IMPL(struct DispCapabilities *arg_pDispCapabilities, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_dispcapConstruct(arg_pDispCapabilities, arg_pCallContext, arg_pParams) dispcapConstruct_IMPL(arg_pDispCapabilities, arg_pCallContext, arg_pParams)
+
+
+// Wrapper macros for halified functions
 #define dispcapGetRegBaseOffsetAndSize_FNPTR(pDispCapabilities) pDispCapabilities->__nvoc_metadata_ptr->vtable.__dispcapGetRegBaseOffsetAndSize__
 #define dispcapGetRegBaseOffsetAndSize(pDispCapabilities, pGpu, pOffset, pSize) dispcapGetRegBaseOffsetAndSize_DISPATCH(pDispCapabilities, pGpu, pOffset, pSize)
 #define dispcapControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
@@ -318,9 +323,6 @@ static inline void dispcapAddAdditionalDependants_DISPATCH(struct RsClient *pCli
 
 NV_STATUS dispcapGetRegBaseOffsetAndSize_IMPL(struct DispCapabilities *pDispCapabilities, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize);
 
-NV_STATUS dispcapConstruct_IMPL(struct DispCapabilities *arg_pDispCapabilities, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_dispcapConstruct(arg_pDispCapabilities, arg_pCallContext, arg_pParams) dispcapConstruct_IMPL(arg_pDispCapabilities, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 

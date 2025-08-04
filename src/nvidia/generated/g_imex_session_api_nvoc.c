@@ -95,17 +95,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_ImexSessionApi =
     /*pExportInfo=*/        &__nvoc_export_info__ImexSessionApi
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ImexSessionApi[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) imexsessionapiCtrlCmdGetFabricEvents_IMPL,
+        /*pFunc=*/      (void (*)(void)) &imexsessionapiCtrlCmdGetFabricEvents_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
         /*flags=*/      0x10bu,
         /*accessRight=*/0x0u,
@@ -120,7 +122,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ImexSess
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) imexsessionapiCtrlCmdFinishMemUnimport_IMPL,
+        /*pFunc=*/      (void (*)(void)) &imexsessionapiCtrlCmdFinishMemUnimport_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
         /*flags=*/      0x10bu,
         /*accessRight=*/0x0u,
@@ -135,7 +137,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ImexSess
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) imexsessionapiCtrlCmdDisableImporters_IMPL,
+        /*pFunc=*/      (void (*)(void)) &imexsessionapiCtrlCmdDisableImporters_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -146,7 +148,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ImexSess
         /*func=*/       "imexsessionapiCtrlCmdDisableImporters"
 #endif
     },
-
 };
 
 
@@ -357,6 +358,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__ImexSessionApi =
     /*pExportEntries=*/ __nvoc_exported_method_def_ImexSessionApi
 };
 
+void __nvoc_imexsessionapiDestruct(ImexSessionApi*);
 void __nvoc_dtor_RmResource(RmResource*);
 void __nvoc_dtor_ImexSessionApi(ImexSessionApi *pThis) {
     __nvoc_imexsessionapiDestruct(pThis);
@@ -390,28 +392,11 @@ __nvoc_ctor_ImexSessionApi_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_ImexSessionApi_1(ImexSessionApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // imexsessionapiCtrlCmdGetFabricEvents -- exported (id=0xf10001)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
-    pThis->__imexsessionapiCtrlCmdGetFabricEvents__ = &imexsessionapiCtrlCmdGetFabricEvents_IMPL;
-#endif
-
-    // imexsessionapiCtrlCmdFinishMemUnimport -- exported (id=0xf10002)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
-    pThis->__imexsessionapiCtrlCmdFinishMemUnimport__ = &imexsessionapiCtrlCmdFinishMemUnimport_IMPL;
-#endif
-
-    // imexsessionapiCtrlCmdDisableImporters -- exported (id=0xf10003)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__imexsessionapiCtrlCmdDisableImporters__ = &imexsessionapiCtrlCmdDisableImporters_IMPL;
-#endif
-} // End __nvoc_init_funcTable_ImexSessionApi_1 with approximately 3 basic block(s).
+} // End __nvoc_init_funcTable_ImexSessionApi_1
 
 
-// Initialize vtable(s) for 24 virtual method(s).
+// Initialize vtable(s) for 21 virtual method(s).
 void __nvoc_init_funcTable_ImexSessionApi(ImexSessionApi *pThis) {
-
-    // Initialize vtable(s) with 3 per-object function pointer(s).
     __nvoc_init_funcTable_ImexSessionApi_1(pThis);
 }
 

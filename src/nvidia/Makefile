@@ -64,9 +64,10 @@ $(call BUILD_OBJECT_LIST,$(LIBSPDM_SOURCES)): CFLAGS += $(addprefix -I ,$(LIBSPD
 $(call BUILD_OBJECT_LIST,$(LIBSPDM_SOURCES)): CFLAGS += $(addprefix -D,$(LIBSPDM_DEFINES))
 
 #if NV_USE_MBEDTLS
-CFLAGS += -I $(SRC_COMMON)/mbedtls/include
-CFLAGS += -I $(SRC_COMMON)/mbedtls/nvidia
-CFLAGS += -DMBEDTLS_USER_CONFIG_FILE=\"nvrm_mbedtls_config.h\"
+MBEDTLS_VERSION ?= 3.6.2
+CFLAGS += -I $(SRC_COMMON)/mbedtls/$(MBEDTLS_VERSION)/include
+CFLAGS += -I $(SRC_COMMON)/mbedtls/$(MBEDTLS_VERSION)/nvidia
+CFLAGS += -D"MBEDTLS_USER_CONFIG_FILE=<nvrm_mbedtls_config.h>"
 #endif
 
 CFLAGS += -Werror-implicit-function-declaration
@@ -183,7 +184,7 @@ ifeq ($(TARGET_ARCH),x86_64)
   endif
   CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -fno-jump-tables)
   CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mindirect-branch-register)
-  CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mindirect-branch=thunk-extern)
+    CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mindirect-branch=thunk-extern)
 endif
 
 CFLAGS += $(CONDITIONAL_CFLAGS)

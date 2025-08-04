@@ -164,6 +164,7 @@ NV_STATUS_CODE(NV_ERR_RESOURCE_RETIREMENT_ERROR,       0x00000086, "An error occ
 NV_STATUS_CODE(NV_ERR_FABRIC_STATE_OUT_OF_SYNC,        0x00000087, "NVLink fabric state cached by the driver is out of sync")
 NV_STATUS_CODE(NV_ERR_BUFFER_FULL,                     0x00000088, "Buffer is full")
 NV_STATUS_CODE(NV_ERR_BUFFER_EMPTY,                    0x00000089, "Buffer is empty")
+NV_STATUS_CODE(NV_ERR_MC_FLA_OFFSET_TABLE_FULL,        0x0000008A, "Multicast FLA offset table has no available slots")
 
 // Warnings:
 NV_STATUS_CODE(NV_WARN_HOT_SWITCH,                     0x00010001, "WARNING Hot switch")

@@ -403,6 +403,7 @@ vgpuconfigapiCtrlCmdVgpuConfigEnumerateVgpuPerPgpu_IMPL
         portMemCopy(pVgpuGuest->vgpuDevice.vgpuUuid, VGPU_UUID_SIZE, pKernelHostVgpuDevice->vgpuUuid, VGPU_UUID_SIZE);
 
         pVgpuGuest->vgpuDevice.vgpuPciId = pVgpuGuestGsp->vgpuDevice.vgpuPciId;
+        pVgpuGuest->vgpuDevice.accountingPid = pVgpuGuestGsp->vgpuDevice.accountingPid;
     }
 
     pParams->numVgpu  = pPhysGpuInfo->numActiveVgpu;
@@ -667,13 +668,14 @@ vgpuconfigapiCtrlCmdVgpuConfigGetSupportedVgpuTypes_IMPL
     for (i = 0; i < pPgpuInfo->numVgpuTypes; i++)
     {
         pVgpuTypeInfo = pPgpuInfo->vgpuTypes[i];
-        if (!kvgpumgrIsMigTimeslicingModeEnabled(pGpu))
+        if (pVgpuTypeInfo == NULL)
+        {
+            continue;
+        }
+        if ((!kvgpumgrIsMigTimeslicingModeEnabled(pGpu)) && (pVgpuTypeInfo->maxInstancePerGI > 1))
         {
             // If MIG-timeslicing mode is disabled on a timeslicing supported GPU, ignore timesliced vGPU types.
-            if (pVgpuTypeInfo->maxInstancePerGI > 1)
-            {
-                continue;
-            }
+            continue;
         }
         pParams->vgpuTypes[numVgpuTypes] = pVgpuTypeInfo->vgpuTypeId;
         numVgpuTypes++;

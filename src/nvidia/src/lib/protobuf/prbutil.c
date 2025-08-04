@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -673,7 +673,7 @@ prbEncGenExData(PRB_ENCODER *pPrbEnc, OBJGPU *pGpu, NvU32 chId, const PRB_FIELD_
     status = prbEncAddUInt32(pPrbEnc, GR_EXCEPTION_EXCEPTIONDATA_ERROR_SEQUENCE_NUMBER, errorSequenceNumber++);
     if (status != NV_OK)
         goto done;
-    osGetCurrentTime(&sec, &uSec);
+    osGetSystemTime(&sec, &uSec);
     curTime = (NvU64)sec * 1000000 + (NvU64)uSec;
     status = prbEncAddUInt64(pPrbEnc, GR_EXCEPTION_EXCEPTIONDATA_TIME_STAMP, curTime);
 

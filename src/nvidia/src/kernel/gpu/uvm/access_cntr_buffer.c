@@ -155,7 +155,6 @@ accesscntrUnmap_IMPL
 
     memdescUnmap(pAccessCounterBuffer->pUvmAccessCntrAllocMemDesc,
                  bKernel,
-                 pCpuMapping->processId,
                  pCpuMapping->pLinearAddress,
                  pCpuMapping->pPrivate->pPriv);
 

@@ -126,6 +126,7 @@ typedef struct
 {
     struct MemoryMapper *pMemoryMapper;
     NvU32         numRefs;
+    PORT_RWLOCK  *pLock; 
 } MemoryMapperWorkerParams;
 
 /*!
@@ -166,10 +167,6 @@ struct MemoryMapper {
     struct RmResource *__nvoc_pbase_RmResource;    // rmres super^2
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct MemoryMapper *__nvoc_pbase_MemoryMapper;    // memmapper
-
-    // Vtable with 2 per-object function pointers
-    NV_STATUS (*__memmapperCtrlCmdSubmitOperations__)(struct MemoryMapper * /*this*/, NV00FE_CTRL_SUBMIT_OPERATIONS_PARAMS *);  // exported (id=0xfe0101)
-    NV_STATUS (*__memmapperCtrlCmdResizeQueue__)(struct MemoryMapper * /*this*/, NV00FE_CTRL_RESIZE_QUEUE_PARAMS *);  // exported (id=0xfe0102)
 
     // Data members
     API_SECURITY_INFO secInfo;
@@ -257,11 +254,44 @@ NV_STATUS __nvoc_objCreate_MemoryMapper(MemoryMapper**, Dynamic*, NvU32, struct 
     __nvoc_objCreate_MemoryMapper((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
-#define memmapperCtrlCmdSubmitOperations_FNPTR(pMemoryMapper) pMemoryMapper->__memmapperCtrlCmdSubmitOperations__
-#define memmapperCtrlCmdSubmitOperations(pMemoryMapper, pParams) memmapperCtrlCmdSubmitOperations_DISPATCH(pMemoryMapper, pParams)
-#define memmapperCtrlCmdResizeQueue_FNPTR(pMemoryMapper) pMemoryMapper->__memmapperCtrlCmdResizeQueue__
-#define memmapperCtrlCmdResizeQueue(pMemoryMapper, pParams) memmapperCtrlCmdResizeQueue_DISPATCH(pMemoryMapper, pParams)
+// Wrapper macros for implementation functions
+NV_STATUS memmapperConstruct_IMPL(struct MemoryMapper *arg_pMemoryMapper, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_memmapperConstruct(arg_pMemoryMapper, arg_pCallContext, arg_pParams) memmapperConstruct_IMPL(arg_pMemoryMapper, arg_pCallContext, arg_pParams)
+
+void memmapperDestruct_IMPL(struct MemoryMapper *pMemoryMapper);
+#define __nvoc_memmapperDestruct(pMemoryMapper) memmapperDestruct_IMPL(pMemoryMapper)
+
+void memmapperQueueWork_IMPL(struct MemoryMapper *pMemoryMapper);
+#ifdef __nvoc_mem_mapper_h_disabled
+static inline void memmapperQueueWork(struct MemoryMapper *pMemoryMapper) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryMapper was disabled!");
+}
+#else // __nvoc_mem_mapper_h_disabled
+#define memmapperQueueWork(pMemoryMapper) memmapperQueueWork_IMPL(pMemoryMapper)
+#endif // __nvoc_mem_mapper_h_disabled
+
+NV_STATUS memmapperCtrlCmdSubmitOperations_IMPL(struct MemoryMapper *pMemoryMapper, NV00FE_CTRL_SUBMIT_OPERATIONS_PARAMS *pParams);
+#ifdef __nvoc_mem_mapper_h_disabled
+static inline NV_STATUS memmapperCtrlCmdSubmitOperations(struct MemoryMapper *pMemoryMapper, NV00FE_CTRL_SUBMIT_OPERATIONS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryMapper was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_mem_mapper_h_disabled
+#define memmapperCtrlCmdSubmitOperations(pMemoryMapper, pParams) memmapperCtrlCmdSubmitOperations_IMPL(pMemoryMapper, pParams)
+#endif // __nvoc_mem_mapper_h_disabled
+
+NV_STATUS memmapperCtrlCmdResizeQueue_IMPL(struct MemoryMapper *pMemoryMapper, NV00FE_CTRL_RESIZE_QUEUE_PARAMS *pParams);
+#ifdef __nvoc_mem_mapper_h_disabled
+static inline NV_STATUS memmapperCtrlCmdResizeQueue(struct MemoryMapper *pMemoryMapper, NV00FE_CTRL_RESIZE_QUEUE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryMapper was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_mem_mapper_h_disabled
+#define memmapperCtrlCmdResizeQueue(pMemoryMapper, pParams) memmapperCtrlCmdResizeQueue_IMPL(pMemoryMapper, pParams)
+#endif // __nvoc_mem_mapper_h_disabled
+
+
+// Wrapper macros for halified functions
 #define memmapperControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define memmapperControl(pGpuResource, pCallContext, pParams) memmapperControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define memmapperMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
@@ -314,14 +344,6 @@ NV_STATUS __nvoc_objCreate_MemoryMapper(MemoryMapper**, Dynamic*, NvU32, struct 
 #define memmapperAddAdditionalDependants(pClient, pResource, pReference) memmapperAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
-static inline NV_STATUS memmapperCtrlCmdSubmitOperations_DISPATCH(struct MemoryMapper *pMemoryMapper, NV00FE_CTRL_SUBMIT_OPERATIONS_PARAMS *pParams) {
-    return pMemoryMapper->__memmapperCtrlCmdSubmitOperations__(pMemoryMapper, pParams);
-}
-
-static inline NV_STATUS memmapperCtrlCmdResizeQueue_DISPATCH(struct MemoryMapper *pMemoryMapper, NV00FE_CTRL_RESIZE_QUEUE_PARAMS *pParams) {
-    return pMemoryMapper->__memmapperCtrlCmdResizeQueue__(pMemoryMapper, pParams);
-}
-
 static inline NV_STATUS memmapperControl_DISPATCH(struct MemoryMapper *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pGpuResource->__nvoc_metadata_ptr->vtable.__memmapperControl__(pGpuResource, pCallContext, pParams);
 }
@@ -425,22 +447,6 @@ static inline void memmapperAddAdditionalDependants_DISPATCH(struct RsClient *pC
 NV_STATUS memmapperCtrlCmdSubmitOperations_IMPL(struct MemoryMapper *pMemoryMapper, NV00FE_CTRL_SUBMIT_OPERATIONS_PARAMS *pParams);
 
 NV_STATUS memmapperCtrlCmdResizeQueue_IMPL(struct MemoryMapper *pMemoryMapper, NV00FE_CTRL_RESIZE_QUEUE_PARAMS *pParams);
-
-NV_STATUS memmapperConstruct_IMPL(struct MemoryMapper *arg_pMemoryMapper, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_memmapperConstruct(arg_pMemoryMapper, arg_pCallContext, arg_pParams) memmapperConstruct_IMPL(arg_pMemoryMapper, arg_pCallContext, arg_pParams)
-void memmapperDestruct_IMPL(struct MemoryMapper *pMemoryMapper);
-
-#define __nvoc_memmapperDestruct(pMemoryMapper) memmapperDestruct_IMPL(pMemoryMapper)
-void memmapperQueueWork_IMPL(struct MemoryMapper *pMemoryMapper);
-
-#ifdef __nvoc_mem_mapper_h_disabled
-static inline void memmapperQueueWork(struct MemoryMapper *pMemoryMapper) {
-    NV_ASSERT_FAILED_PRECOMP("MemoryMapper was disabled!");
-}
-#else //__nvoc_mem_mapper_h_disabled
-#define memmapperQueueWork(pMemoryMapper) memmapperQueueWork_IMPL(pMemoryMapper)
-#endif //__nvoc_mem_mapper_h_disabled
 
 #undef PRIVATE_FIELD
 

@@ -1,5 +1,5 @@
 ﻿/*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -113,6 +113,15 @@
 #define LIBSPDM_SEND_GET_CERTIFICATE_SUPPORT      1
 #define LIBSPDM_SEND_CHALLENGE_SUPPORT            0
 #define LIBSPDM_RESPOND_IF_READY_SUPPORT          0
+
+#define LIBSPDM_EVENT_RECIPIENT_SUPPORT                  1
+#define LIBSPDM_ENABLE_VENDOR_DEFINED_MESSAGES           1
+#define LIBSPDM_HAL_PASS_SPDM_CONTEXT                    1
+#define LIBSPDM_ENABLE_CAPABILITY_MEL_CAP                1
+#define LIBSPDM_ENABLE_CAPABILITY_GET_KEY_PAIR_INFO_CAP  1
+#define LIBSPDM_ENABLE_CAPABILITY_SET_KEY_PAIR_INFO_CAP  1
+#define LIBSPDM_ENABLE_CAPABILITY_EVENT_CAP              1
+#define LIBSPDM_ADDITIONAL_CHECK_CERT                    1
 
 // Enable message log to simplify Attestation Report retrieval.
 #define LIBSPDM_ENABLE_MSG_LOG                    1

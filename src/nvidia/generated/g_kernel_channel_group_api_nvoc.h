@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -117,25 +117,6 @@ struct KernelChannelGroupApi {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct KernelChannelGroupApi *__nvoc_pbase_KernelChannelGroupApi;    // kchangrpapi
 
-    // Vtable with 17 per-object function pointers
-    NV_STATUS (*__kchangrpapiCtrlCmdGpFifoSchedule__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_GPFIFO_SCHEDULE_PARAMS *);  // exported (id=0xa06c0101)
-    NV_STATUS (*__kchangrpapiCtrlCmdBind__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_BIND_PARAMS *);  // exported (id=0xa06c0102)
-    NV_STATUS (*__kchangrpapiCtrlCmdSetTimeslice__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_TIMESLICE_PARAMS *);  // exported (id=0xa06c0103)
-    NV_STATUS (*__kchangrpapiCtrlCmdGetTimeslice__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_TIMESLICE_PARAMS *);  // exported (id=0xa06c0104)
-    NV_STATUS (*__kchangrpapiCtrlCmdPreempt__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_PREEMPT_PARAMS *);  // exported (id=0xa06c0105)
-    NV_STATUS (*__kchangrpapiCtrlCmdGetInfo__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_GET_INFO_PARAMS *);  // exported (id=0xa06c0106)
-    NV_STATUS (*__kchangrpapiCtrlCmdSetInterleaveLevel__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_INTERLEAVE_LEVEL_PARAMS *);  // exported (id=0xa06c0107)
-    NV_STATUS (*__kchangrpapiCtrlCmdProgramVidmemPromote__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *);  // exported (id=0xa06c0109)
-    NV_STATUS (*__kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_INTERNAL_PROMOTE_FAULT_METHOD_BUFFERS_PARAMS *);  // exported (id=0xa06c010a)
-    NV_STATUS (*__kchangrpapiCtrlCmdMakeRealtime__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_MAKE_REALTIME_PARAMS *);  // exported (id=0xa06c0110)
-    NV_STATUS (*__kchangrpapiCtrlCmdInternalGpFifoSchedule__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_GPFIFO_SCHEDULE_PARAMS *);  // exported (id=0xa06c0201)
-    NV_STATUS (*__kchangrpapiCtrlCmdInternalSetTimeslice__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_TIMESLICE_PARAMS *);  // exported (id=0xa06c0202)
-    NV_STATUS (*__kchangrpapiCtrlGetTpcPartitionMode__)(struct KernelChannelGroupApi * /*this*/, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *);  // inline exported (id=0x900103) body
-    NV_STATUS (*__kchangrpapiCtrlSetTpcPartitionMode__)(struct KernelChannelGroupApi * /*this*/, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *);  // inline exported (id=0x900101) body
-    NV_STATUS (*__kchangrpapiCtrlGetMMUDebugMode__)(struct KernelChannelGroupApi * /*this*/, NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS *);  // inline exported (id=0x900105) body
-    NV_STATUS (*__kchangrpapiCtrlProgramVidmemPromote__)(struct KernelChannelGroupApi * /*this*/, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *);  // inline exported (id=0x900107) body
-    NV_STATUS (*__kchangrpapiCtrlSetLgSectorPromotion__)(struct KernelChannelGroupApi * /*this*/, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *);  // inline exported (id=0x90010b) body
-
     // Data members
     struct KernelChannelGroup *pKernelChannelGroup;
     NvHandle hErrorContext;
@@ -212,45 +193,159 @@ NV_STATUS __nvoc_objCreate_KernelChannelGroupApi(KernelChannelGroupApi**, Dynami
     __nvoc_objCreate_KernelChannelGroupApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS kchangrpapiConstruct_IMPL(struct KernelChannelGroupApi *arg_pKernelChannelGroupApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_kchangrpapiConstruct(arg_pKernelChannelGroupApi, arg_pCallContext, arg_pParams) kchangrpapiConstruct_IMPL(arg_pKernelChannelGroupApi, arg_pCallContext, arg_pParams)
+
+NV_STATUS kchangrpapiCopyConstruct_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#ifdef __nvoc_kernel_channel_group_api_h_disabled
+static inline NV_STATUS kchangrpapiCopyConstruct(struct KernelChannelGroupApi *pKernelChannelGroupApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroupApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_channel_group_api_h_disabled
+#define kchangrpapiCopyConstruct(pKernelChannelGroupApi, pCallContext, pParams) kchangrpapiCopyConstruct_IMPL(pKernelChannelGroupApi, pCallContext, pParams)
+#endif // __nvoc_kernel_channel_group_api_h_disabled
+
+void kchangrpapiDestruct_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi);
+#define __nvoc_kchangrpapiDestruct(pKernelChannelGroupApi) kchangrpapiDestruct_IMPL(pKernelChannelGroupApi)
+
+NV_STATUS kchangrpapiSetLegacyMode_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvHandle hClient);
+#ifdef __nvoc_kernel_channel_group_api_h_disabled
+static inline NV_STATUS kchangrpapiSetLegacyMode(struct KernelChannelGroupApi *pKernelChannelGroupApi, struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvHandle hClient) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroupApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_channel_group_api_h_disabled
+#define kchangrpapiSetLegacyMode(pKernelChannelGroupApi, pGpu, pKernelFifo, hClient) kchangrpapiSetLegacyMode_IMPL(pKernelChannelGroupApi, pGpu, pKernelFifo, hClient)
+#endif // __nvoc_kernel_channel_group_api_h_disabled
+
+NV_STATUS kchangrpapiCtrlCmdGpFifoSchedule_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_GPFIFO_SCHEDULE_PARAMS *pSchedParams);
+#ifdef __nvoc_kernel_channel_group_api_h_disabled
+static inline NV_STATUS kchangrpapiCtrlCmdGpFifoSchedule(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_GPFIFO_SCHEDULE_PARAMS *pSchedParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroupApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_channel_group_api_h_disabled
+#define kchangrpapiCtrlCmdGpFifoSchedule(pKernelChannelGroupApi, pSchedParams) kchangrpapiCtrlCmdGpFifoSchedule_IMPL(pKernelChannelGroupApi, pSchedParams)
+#endif // __nvoc_kernel_channel_group_api_h_disabled
+
+NV_STATUS kchangrpapiCtrlCmdBind_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_BIND_PARAMS *pParams);
+#ifdef __nvoc_kernel_channel_group_api_h_disabled
+static inline NV_STATUS kchangrpapiCtrlCmdBind(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_BIND_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroupApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_channel_group_api_h_disabled
+#define kchangrpapiCtrlCmdBind(pKernelChannelGroupApi, pParams) kchangrpapiCtrlCmdBind_IMPL(pKernelChannelGroupApi, pParams)
+#endif // __nvoc_kernel_channel_group_api_h_disabled
+
+NV_STATUS kchangrpapiCtrlCmdSetTimeslice_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_TIMESLICE_PARAMS *pTsParams);
+#ifdef __nvoc_kernel_channel_group_api_h_disabled
+static inline NV_STATUS kchangrpapiCtrlCmdSetTimeslice(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_TIMESLICE_PARAMS *pTsParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroupApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_channel_group_api_h_disabled
+#define kchangrpapiCtrlCmdSetTimeslice(pKernelChannelGroupApi, pTsParams) kchangrpapiCtrlCmdSetTimeslice_IMPL(pKernelChannelGroupApi, pTsParams)
+#endif // __nvoc_kernel_channel_group_api_h_disabled
+
+NV_STATUS kchangrpapiCtrlCmdGetTimeslice_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_TIMESLICE_PARAMS *pTsParams);
+#ifdef __nvoc_kernel_channel_group_api_h_disabled
+static inline NV_STATUS kchangrpapiCtrlCmdGetTimeslice(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_TIMESLICE_PARAMS *pTsParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroupApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_channel_group_api_h_disabled
+#define kchangrpapiCtrlCmdGetTimeslice(pKernelChannelGroupApi, pTsParams) kchangrpapiCtrlCmdGetTimeslice_IMPL(pKernelChannelGroupApi, pTsParams)
+#endif // __nvoc_kernel_channel_group_api_h_disabled
+
+NV_STATUS kchangrpapiCtrlCmdPreempt_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_PREEMPT_PARAMS *pPreemptParams);
+#ifdef __nvoc_kernel_channel_group_api_h_disabled
+static inline NV_STATUS kchangrpapiCtrlCmdPreempt(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_PREEMPT_PARAMS *pPreemptParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroupApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_channel_group_api_h_disabled
+#define kchangrpapiCtrlCmdPreempt(pKernelChannelGroupApi, pPreemptParams) kchangrpapiCtrlCmdPreempt_IMPL(pKernelChannelGroupApi, pPreemptParams)
+#endif // __nvoc_kernel_channel_group_api_h_disabled
+
+NV_STATUS kchangrpapiCtrlCmdGetInfo_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_GET_INFO_PARAMS *pParams);
+#ifdef __nvoc_kernel_channel_group_api_h_disabled
+static inline NV_STATUS kchangrpapiCtrlCmdGetInfo(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_GET_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroupApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_channel_group_api_h_disabled
+#define kchangrpapiCtrlCmdGetInfo(pKernelChannelGroupApi, pParams) kchangrpapiCtrlCmdGetInfo_IMPL(pKernelChannelGroupApi, pParams)
+#endif // __nvoc_kernel_channel_group_api_h_disabled
+
+NV_STATUS kchangrpapiCtrlCmdSetInterleaveLevel_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_INTERLEAVE_LEVEL_PARAMS *pParams);
+#ifdef __nvoc_kernel_channel_group_api_h_disabled
+static inline NV_STATUS kchangrpapiCtrlCmdSetInterleaveLevel(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_INTERLEAVE_LEVEL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroupApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_channel_group_api_h_disabled
+#define kchangrpapiCtrlCmdSetInterleaveLevel(pKernelChannelGroupApi, pParams) kchangrpapiCtrlCmdSetInterleaveLevel_IMPL(pKernelChannelGroupApi, pParams)
+#endif // __nvoc_kernel_channel_group_api_h_disabled
+
+NV_STATUS kchangrpapiCtrlCmdProgramVidmemPromote_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *pParams);
+#ifdef __nvoc_kernel_channel_group_api_h_disabled
+static inline NV_STATUS kchangrpapiCtrlCmdProgramVidmemPromote(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroupApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_channel_group_api_h_disabled
+#define kchangrpapiCtrlCmdProgramVidmemPromote(pKernelChannelGroupApi, pParams) kchangrpapiCtrlCmdProgramVidmemPromote_IMPL(pKernelChannelGroupApi, pParams)
+#endif // __nvoc_kernel_channel_group_api_h_disabled
+
+NV_STATUS kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_INTERNAL_PROMOTE_FAULT_METHOD_BUFFERS_PARAMS *pParams);
+#ifdef __nvoc_kernel_channel_group_api_h_disabled
+static inline NV_STATUS kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_INTERNAL_PROMOTE_FAULT_METHOD_BUFFERS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroupApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_channel_group_api_h_disabled
+#define kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers(pKernelChannelGroupApi, pParams) kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers_IMPL(pKernelChannelGroupApi, pParams)
+#endif // __nvoc_kernel_channel_group_api_h_disabled
+
+NV_STATUS kchangrpapiCtrlCmdMakeRealtime_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_MAKE_REALTIME_PARAMS *pParams);
+#ifdef __nvoc_kernel_channel_group_api_h_disabled
+static inline NV_STATUS kchangrpapiCtrlCmdMakeRealtime(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_MAKE_REALTIME_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroupApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_channel_group_api_h_disabled
+#define kchangrpapiCtrlCmdMakeRealtime(pKernelChannelGroupApi, pParams) kchangrpapiCtrlCmdMakeRealtime_IMPL(pKernelChannelGroupApi, pParams)
+#endif // __nvoc_kernel_channel_group_api_h_disabled
+
+NV_STATUS kchangrpapiCtrlCmdInternalGpFifoSchedule_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_GPFIFO_SCHEDULE_PARAMS *pSchedParams);
+#ifdef __nvoc_kernel_channel_group_api_h_disabled
+static inline NV_STATUS kchangrpapiCtrlCmdInternalGpFifoSchedule(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_GPFIFO_SCHEDULE_PARAMS *pSchedParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroupApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_channel_group_api_h_disabled
+#define kchangrpapiCtrlCmdInternalGpFifoSchedule(pKernelChannelGroupApi, pSchedParams) kchangrpapiCtrlCmdInternalGpFifoSchedule_IMPL(pKernelChannelGroupApi, pSchedParams)
+#endif // __nvoc_kernel_channel_group_api_h_disabled
+
+NV_STATUS kchangrpapiCtrlCmdInternalSetTimeslice_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_TIMESLICE_PARAMS *pTsParams);
+#ifdef __nvoc_kernel_channel_group_api_h_disabled
+static inline NV_STATUS kchangrpapiCtrlCmdInternalSetTimeslice(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_TIMESLICE_PARAMS *pTsParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroupApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_channel_group_api_h_disabled
+#define kchangrpapiCtrlCmdInternalSetTimeslice(pKernelChannelGroupApi, pTsParams) kchangrpapiCtrlCmdInternalSetTimeslice_IMPL(pKernelChannelGroupApi, pTsParams)
+#endif // __nvoc_kernel_channel_group_api_h_disabled
+
+
+// Wrapper macros for halified functions
 #define kchangrpapiCanCopy_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__nvoc_metadata_ptr->vtable.__kchangrpapiCanCopy__
 #define kchangrpapiCanCopy(pKernelChannelGroupApi) kchangrpapiCanCopy_DISPATCH(pKernelChannelGroupApi)
 #define kchangrpapiControl_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__nvoc_metadata_ptr->vtable.__kchangrpapiControl__
 #define kchangrpapiControl(pKernelChannelGroupApi, pCallContext, pParams) kchangrpapiControl_DISPATCH(pKernelChannelGroupApi, pCallContext, pParams)
-#define kchangrpapiCtrlCmdGpFifoSchedule_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlCmdGpFifoSchedule__
-#define kchangrpapiCtrlCmdGpFifoSchedule(pKernelChannelGroupApi, pSchedParams) kchangrpapiCtrlCmdGpFifoSchedule_DISPATCH(pKernelChannelGroupApi, pSchedParams)
-#define kchangrpapiCtrlCmdBind_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlCmdBind__
-#define kchangrpapiCtrlCmdBind(pKernelChannelGroupApi, pParams) kchangrpapiCtrlCmdBind_DISPATCH(pKernelChannelGroupApi, pParams)
-#define kchangrpapiCtrlCmdSetTimeslice_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlCmdSetTimeslice__
-#define kchangrpapiCtrlCmdSetTimeslice(pKernelChannelGroupApi, pTsParams) kchangrpapiCtrlCmdSetTimeslice_DISPATCH(pKernelChannelGroupApi, pTsParams)
-#define kchangrpapiCtrlCmdGetTimeslice_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlCmdGetTimeslice__
-#define kchangrpapiCtrlCmdGetTimeslice(pKernelChannelGroupApi, pTsParams) kchangrpapiCtrlCmdGetTimeslice_DISPATCH(pKernelChannelGroupApi, pTsParams)
-#define kchangrpapiCtrlCmdPreempt_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlCmdPreempt__
-#define kchangrpapiCtrlCmdPreempt(pKernelChannelGroupApi, pPreemptParams) kchangrpapiCtrlCmdPreempt_DISPATCH(pKernelChannelGroupApi, pPreemptParams)
-#define kchangrpapiCtrlCmdGetInfo_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlCmdGetInfo__
-#define kchangrpapiCtrlCmdGetInfo(pKernelChannelGroupApi, pParams) kchangrpapiCtrlCmdGetInfo_DISPATCH(pKernelChannelGroupApi, pParams)
-#define kchangrpapiCtrlCmdSetInterleaveLevel_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlCmdSetInterleaveLevel__
-#define kchangrpapiCtrlCmdSetInterleaveLevel(pKernelChannelGroupApi, pParams) kchangrpapiCtrlCmdSetInterleaveLevel_DISPATCH(pKernelChannelGroupApi, pParams)
-#define kchangrpapiCtrlCmdProgramVidmemPromote_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlCmdProgramVidmemPromote__
-#define kchangrpapiCtrlCmdProgramVidmemPromote(pKernelChannelGroupApi, pParams) kchangrpapiCtrlCmdProgramVidmemPromote_DISPATCH(pKernelChannelGroupApi, pParams)
-#define kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers__
-#define kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers(pKernelChannelGroupApi, pParams) kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers_DISPATCH(pKernelChannelGroupApi, pParams)
-#define kchangrpapiCtrlCmdMakeRealtime_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlCmdMakeRealtime__
-#define kchangrpapiCtrlCmdMakeRealtime(pKernelChannelGroupApi, pParams) kchangrpapiCtrlCmdMakeRealtime_DISPATCH(pKernelChannelGroupApi, pParams)
-#define kchangrpapiCtrlCmdInternalGpFifoSchedule_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlCmdInternalGpFifoSchedule__
-#define kchangrpapiCtrlCmdInternalGpFifoSchedule(pKernelChannelGroupApi, pSchedParams) kchangrpapiCtrlCmdInternalGpFifoSchedule_DISPATCH(pKernelChannelGroupApi, pSchedParams)
-#define kchangrpapiCtrlCmdInternalSetTimeslice_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlCmdInternalSetTimeslice__
-#define kchangrpapiCtrlCmdInternalSetTimeslice(pKernelChannelGroupApi, pTsParams) kchangrpapiCtrlCmdInternalSetTimeslice_DISPATCH(pKernelChannelGroupApi, pTsParams)
-#define kchangrpapiCtrlGetTpcPartitionMode_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlGetTpcPartitionMode__
-#define kchangrpapiCtrlGetTpcPartitionMode(pKernelChannelGroupApi, pParams) kchangrpapiCtrlGetTpcPartitionMode_DISPATCH(pKernelChannelGroupApi, pParams)
-#define kchangrpapiCtrlSetTpcPartitionMode_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlSetTpcPartitionMode__
-#define kchangrpapiCtrlSetTpcPartitionMode(pKernelChannelGroupApi, pParams) kchangrpapiCtrlSetTpcPartitionMode_DISPATCH(pKernelChannelGroupApi, pParams)
-#define kchangrpapiCtrlGetMMUDebugMode_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlGetMMUDebugMode__
-#define kchangrpapiCtrlGetMMUDebugMode(pKernelChannelGroupApi, pParams) kchangrpapiCtrlGetMMUDebugMode_DISPATCH(pKernelChannelGroupApi, pParams)
-#define kchangrpapiCtrlProgramVidmemPromote_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlProgramVidmemPromote__
-#define kchangrpapiCtrlProgramVidmemPromote(pKernelChannelGroupApi, pParams) kchangrpapiCtrlProgramVidmemPromote_DISPATCH(pKernelChannelGroupApi, pParams)
-#define kchangrpapiCtrlSetLgSectorPromotion_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlSetLgSectorPromotion__
-#define kchangrpapiCtrlSetLgSectorPromotion(pKernelChannelGroupApi, pParams) kchangrpapiCtrlSetLgSectorPromotion_DISPATCH(pKernelChannelGroupApi, pParams)
 #define kchangrpapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
 #define kchangrpapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) kchangrpapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define kchangrpapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
@@ -305,74 +400,6 @@ static inline NvBool kchangrpapiCanCopy_DISPATCH(struct KernelChannelGroupApi *p
 
 static inline NV_STATUS kchangrpapiControl_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pKernelChannelGroupApi->__nvoc_metadata_ptr->vtable.__kchangrpapiControl__(pKernelChannelGroupApi, pCallContext, pParams);
-}
-
-static inline NV_STATUS kchangrpapiCtrlCmdGpFifoSchedule_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_GPFIFO_SCHEDULE_PARAMS *pSchedParams) {
-    return pKernelChannelGroupApi->__kchangrpapiCtrlCmdGpFifoSchedule__(pKernelChannelGroupApi, pSchedParams);
-}
-
-static inline NV_STATUS kchangrpapiCtrlCmdBind_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_BIND_PARAMS *pParams) {
-    return pKernelChannelGroupApi->__kchangrpapiCtrlCmdBind__(pKernelChannelGroupApi, pParams);
-}
-
-static inline NV_STATUS kchangrpapiCtrlCmdSetTimeslice_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_TIMESLICE_PARAMS *pTsParams) {
-    return pKernelChannelGroupApi->__kchangrpapiCtrlCmdSetTimeslice__(pKernelChannelGroupApi, pTsParams);
-}
-
-static inline NV_STATUS kchangrpapiCtrlCmdGetTimeslice_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_TIMESLICE_PARAMS *pTsParams) {
-    return pKernelChannelGroupApi->__kchangrpapiCtrlCmdGetTimeslice__(pKernelChannelGroupApi, pTsParams);
-}
-
-static inline NV_STATUS kchangrpapiCtrlCmdPreempt_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_PREEMPT_PARAMS *pPreemptParams) {
-    return pKernelChannelGroupApi->__kchangrpapiCtrlCmdPreempt__(pKernelChannelGroupApi, pPreemptParams);
-}
-
-static inline NV_STATUS kchangrpapiCtrlCmdGetInfo_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_GET_INFO_PARAMS *pParams) {
-    return pKernelChannelGroupApi->__kchangrpapiCtrlCmdGetInfo__(pKernelChannelGroupApi, pParams);
-}
-
-static inline NV_STATUS kchangrpapiCtrlCmdSetInterleaveLevel_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_INTERLEAVE_LEVEL_PARAMS *pParams) {
-    return pKernelChannelGroupApi->__kchangrpapiCtrlCmdSetInterleaveLevel__(pKernelChannelGroupApi, pParams);
-}
-
-static inline NV_STATUS kchangrpapiCtrlCmdProgramVidmemPromote_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *pParams) {
-    return pKernelChannelGroupApi->__kchangrpapiCtrlCmdProgramVidmemPromote__(pKernelChannelGroupApi, pParams);
-}
-
-static inline NV_STATUS kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_INTERNAL_PROMOTE_FAULT_METHOD_BUFFERS_PARAMS *pParams) {
-    return pKernelChannelGroupApi->__kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers__(pKernelChannelGroupApi, pParams);
-}
-
-static inline NV_STATUS kchangrpapiCtrlCmdMakeRealtime_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_MAKE_REALTIME_PARAMS *pParams) {
-    return pKernelChannelGroupApi->__kchangrpapiCtrlCmdMakeRealtime__(pKernelChannelGroupApi, pParams);
-}
-
-static inline NV_STATUS kchangrpapiCtrlCmdInternalGpFifoSchedule_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_GPFIFO_SCHEDULE_PARAMS *pSchedParams) {
-    return pKernelChannelGroupApi->__kchangrpapiCtrlCmdInternalGpFifoSchedule__(pKernelChannelGroupApi, pSchedParams);
-}
-
-static inline NV_STATUS kchangrpapiCtrlCmdInternalSetTimeslice_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_TIMESLICE_PARAMS *pTsParams) {
-    return pKernelChannelGroupApi->__kchangrpapiCtrlCmdInternalSetTimeslice__(pKernelChannelGroupApi, pTsParams);
-}
-
-static inline NV_STATUS kchangrpapiCtrlGetTpcPartitionMode_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *pParams) {
-    return pKernelChannelGroupApi->__kchangrpapiCtrlGetTpcPartitionMode__(pKernelChannelGroupApi, pParams);
-}
-
-static inline NV_STATUS kchangrpapiCtrlSetTpcPartitionMode_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *pParams) {
-    return pKernelChannelGroupApi->__kchangrpapiCtrlSetTpcPartitionMode__(pKernelChannelGroupApi, pParams);
-}
-
-static inline NV_STATUS kchangrpapiCtrlGetMMUDebugMode_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS *pParams) {
-    return pKernelChannelGroupApi->__kchangrpapiCtrlGetMMUDebugMode__(pKernelChannelGroupApi, pParams);
-}
-
-static inline NV_STATUS kchangrpapiCtrlProgramVidmemPromote_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *pParams) {
-    return pKernelChannelGroupApi->__kchangrpapiCtrlProgramVidmemPromote__(pKernelChannelGroupApi, pParams);
-}
-
-static inline NV_STATUS kchangrpapiCtrlSetLgSectorPromotion_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *pParams) {
-    return pKernelChannelGroupApi->__kchangrpapiCtrlSetLgSectorPromotion__(pKernelChannelGroupApi, pParams);
 }
 
 static inline NV_STATUS kchangrpapiMap_DISPATCH(struct KernelChannelGroupApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
@@ -514,34 +541,6 @@ static inline NV_STATUS kchangrpapiCtrlProgramVidmemPromote_a094e1(struct Kernel
 static inline NV_STATUS kchangrpapiCtrlSetLgSectorPromotion_a094e1(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *pParams) {
     return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannelGroupApi->hKernelGraphicsContext);
 }
-
-NV_STATUS kchangrpapiConstruct_IMPL(struct KernelChannelGroupApi *arg_pKernelChannelGroupApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_kchangrpapiConstruct(arg_pKernelChannelGroupApi, arg_pCallContext, arg_pParams) kchangrpapiConstruct_IMPL(arg_pKernelChannelGroupApi, arg_pCallContext, arg_pParams)
-NV_STATUS kchangrpapiCopyConstruct_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
-
-#ifdef __nvoc_kernel_channel_group_api_h_disabled
-static inline NV_STATUS kchangrpapiCopyConstruct(struct KernelChannelGroupApi *pKernelChannelGroupApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroupApi was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_channel_group_api_h_disabled
-#define kchangrpapiCopyConstruct(pKernelChannelGroupApi, pCallContext, pParams) kchangrpapiCopyConstruct_IMPL(pKernelChannelGroupApi, pCallContext, pParams)
-#endif //__nvoc_kernel_channel_group_api_h_disabled
-
-void kchangrpapiDestruct_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi);
-
-#define __nvoc_kchangrpapiDestruct(pKernelChannelGroupApi) kchangrpapiDestruct_IMPL(pKernelChannelGroupApi)
-NV_STATUS kchangrpapiSetLegacyMode_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvHandle hClient);
-
-#ifdef __nvoc_kernel_channel_group_api_h_disabled
-static inline NV_STATUS kchangrpapiSetLegacyMode(struct KernelChannelGroupApi *pKernelChannelGroupApi, struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvHandle hClient) {
-    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroupApi was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_channel_group_api_h_disabled
-#define kchangrpapiSetLegacyMode(pKernelChannelGroupApi, pGpu, pKernelFifo, hClient) kchangrpapiSetLegacyMode_IMPL(pKernelChannelGroupApi, pGpu, pKernelFifo, hClient)
-#endif //__nvoc_kernel_channel_group_api_h_disabled
 
 #undef PRIVATE_FIELD
 

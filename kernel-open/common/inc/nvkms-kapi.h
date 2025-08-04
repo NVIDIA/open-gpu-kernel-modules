@@ -562,15 +562,34 @@ struct NvKmsKapiCreateSurfaceParams {
      *      explicit_layout is NV_TRUE and layout is
      *      NvKmsSurfaceMemoryLayoutBlockLinear */
     NvU8 log2GobsPerBlockY;
-
-    /* [IN] Whether a surface can be updated directly on the screen */
-    NvBool noDisplayCaching;
 };
 
 enum NvKmsKapiAllocationType {
     NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT = 0,
     NVKMS_KAPI_ALLOCATION_TYPE_NOTIFIER = 1,
     NVKMS_KAPI_ALLOCATION_TYPE_OFFSCREEN = 2,
+};
+
+struct NvKmsKapiAllocateMemoryParams {
+    /* [IN] BlockLinear or Pitch */
+    enum NvKmsSurfaceMemoryLayout layout;
+
+    /* [IN] Allocation type */
+    enum NvKmsKapiAllocationType type;
+
+    /* [IN] Size, in bytes, of the memory to allocate */
+    NvU64 size;
+
+    /* [IN] Whether memory can be updated directly on the screen */
+    NvBool noDisplayCaching;
+
+    /* [IN] Whether to allocate memory from video memory or system memory */
+    NvBool useVideoMemory;
+
+    /* [IN/OUT] For input, non-zero if compression backing store should be
+     * allocated for the memory, for output, non-zero if compression backing
+     * store was allocated for the memory */
+    NvU8 *compressible;
 };
 
 typedef enum NvKmsKapiRegisterWaiterResultRec {
@@ -602,14 +621,19 @@ struct NvKmsKapiFunctionsTable {
     } systemInfo;
 
     /*!
-     * Enumerate the available physical GPUs that can be used with NVKMS.
+     * Enumerate the available GPUs that can be used with NVKMS.
      *
-     * \param [out]  gpuInfo  The information of the enumerated GPUs.
-     *                        It is an array of NVIDIA_MAX_GPUS elements.
+     * The gpuCallback will be called with a NvKmsKapiGpuInfo for each
+     * physical and MIG GPU currently available in the system.
+     *
+     * \param [in] gpuCallback          Client function to handle each GPU.
      *
      * \return  Count of enumerated gpus.
      */
-    NvU32 (*enumerateGpus)(struct NvKmsKapiGpuInfo *kapiGpuInfo);
+    NvU32 (*enumerateGpus)
+    (
+        void (*gpuCallback)(const struct NvKmsKapiGpuInfo *info)
+    );
 
     /*!
      * Allocate an NVK device using which you can query/allocate resources on
@@ -839,66 +863,22 @@ struct NvKmsKapiFunctionsTable {
     );
 
     /*!
-     * Allocate some unformatted video memory of the specified size.
+     * Allocate some unformatted video or system memory of the specified size.
      *
-     * This function allocates video memory on the specified GPU.
-     * It should be suitable for mapping on the CPU as a pitch
-     * linear or block-linear surface.
+     * This function allocates video or system memory on the specified GPU. It
+     * should be suitable for mapping on the CPU as a pitch linear or
+     * block-linear surface.
      *
-     * \param [in] device  A device allocated using allocateDevice().
+     * \param [in]     device  A device allocated using allocateDevice().
      *
-     * \param [in] layout  BlockLinear or Pitch.
-     * 
-     * \param [in] type    Allocation type.
-     *
-     * \param [in] size    Size, in bytes, of the memory to allocate.
-     *
-     * \param [in/out] compressible For input, non-zero if compression
-     *                              backing store should be allocated for
-     *                              the memory, for output, non-zero if
-     *                              compression backing store was
-     *                              allocated for the memory.
+     * \param [in/out] params  Parameters required for memory allocation.
      *
      * \return An valid memory handle on success, NULL on failure.
      */
-    struct NvKmsKapiMemory* (*allocateVideoMemory)
+    struct NvKmsKapiMemory* (*allocateMemory)
     (
         struct NvKmsKapiDevice *device,
-        enum NvKmsSurfaceMemoryLayout layout,
-        enum NvKmsKapiAllocationType type,
-        NvU64 size,
-        NvU8 *compressible
-    );
-
-    /*!
-     * Allocate some unformatted system memory of the specified size.
-     *
-     * This function allocates system memory . It should be suitable
-     * for mapping on the CPU as a pitch linear or block-linear surface.
-     *
-     * \param [in] device  A device allocated using allocateDevice().
-     *
-     * \param [in] layout  BlockLinear or Pitch.
-     * 
-     * \param [in] type    Allocation type.
-     *
-     * \param [in] size    Size, in bytes, of the memory to allocate.
-     *
-     * \param [in/out] compressible For input, non-zero if compression
-     *                              backing store should be allocated for
-     *                              the memory, for output, non-zero if
-     *                              compression backing store was
-     *                              allocated for the memory.
-     *
-     * \return An valid memory handle on success, NULL on failure.
-     */
-    struct NvKmsKapiMemory* (*allocateSystemMemory)
-    (
-        struct NvKmsKapiDevice *device,
-        enum NvKmsSurfaceMemoryLayout layout,
-        enum NvKmsKapiAllocationType type,
-        NvU64 size,
-        NvU8 *compressible
+        struct NvKmsKapiAllocateMemoryParams *params
     );
 
     /*!

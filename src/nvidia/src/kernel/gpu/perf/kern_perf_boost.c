@@ -50,6 +50,15 @@ subdeviceCtrlCmdKPerfBoost_IMPL
     KernelPerf  *pKernelPerf     = GPU_GET_KERNEL_PERF(pGpu);
     NV_STATUS    status          = NV_OK;
 
+    /*
+     * There is no performance state concept for Tegra iGPU. This is just a
+     * WAR solution for CUDA SQA team to prevent NV_ERR_NOT_SUPPORTED failure.
+     */
+    if (IsGB10B(pGpu))
+    {
+        return NV_OK;
+    }
+
     NV_CHECK_OR_RETURN(LEVEL_INFO, (pKernelPerf != NULL), NV_ERR_NOT_SUPPORTED);
 
     status = kperfBoostSet(pKernelPerf, pSubdevice, pBoostParams);

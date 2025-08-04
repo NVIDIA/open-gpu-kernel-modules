@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -167,7 +167,9 @@ NV_STATUS __nvoc_objCreate_RmDebuggerSession(RmDebuggerSession**, Dynamic*, NvU3
     __nvoc_objCreate_RmDebuggerSession((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+
+// Wrapper macros for halified functions
 #define dbgSessionRemoveDependant_FNPTR(pDbgSession) pDbgSession->__nvoc_metadata_ptr->vtable.__dbgSessionRemoveDependant__
 #define dbgSessionRemoveDependant(pDbgSession, pResourceRef) dbgSessionRemoveDependant_DISPATCH(pDbgSession, pResourceRef)
 #define dbgSessionRemoveDependency_FNPTR(pDbgSession) pDbgSession->__nvoc_metadata_ptr->vtable.__dbgSessionRemoveDependency__
@@ -229,37 +231,7 @@ struct KernelSMDebuggerSession {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct KernelSMDebuggerSession *__nvoc_pbase_KernelSMDebuggerSession;    // ksmdbgssn
 
-    // Vtable with 31 per-object function pointers
-    NV_STATUS (*__ksmdbgssnCtrlCmdSMDebugModeEnable__)(struct KernelSMDebuggerSession * /*this*/);  // inline exported (id=0x83de0301) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdSMDebugModeDisable__)(struct KernelSMDebuggerSession * /*this*/);  // inline exported (id=0x83de0302) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugSetModeMMUDebug__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_SET_MODE_MMU_DEBUG_PARAMS *);  // inline exported (id=0x83de0307) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugGetModeMMUDebug__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_GET_MODE_MMU_DEBUG_PARAMS *);  // inline exported (id=0x83de0308) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugSetModeMMUGccDebug__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS *);  // inline exported (id=0x83de032a) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugGetModeMMUGccDebug__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS *);  // inline exported (id=0x83de032b) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugSetModeErrbarDebug__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_SET_MODE_ERRBAR_DEBUG_PARAMS *);  // inline exported (id=0x83de031f) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugGetModeErrbarDebug__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_GET_MODE_ERRBAR_DEBUG_PARAMS *);  // inline exported (id=0x83de0320) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugSetExceptionMask__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_SET_EXCEPTION_MASK_PARAMS *);  // inline exported (id=0x83de0309) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugReadSingleSmErrorState__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_READ_SINGLE_SM_ERROR_STATE_PARAMS *);  // inline exported (id=0x83de030b) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugReadAllSmErrorStates__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_READ_ALL_SM_ERROR_STATES_PARAMS *);  // exported (id=0x83de030c)
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugClearSingleSmErrorState__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_CLEAR_SINGLE_SM_ERROR_STATE_PARAMS *);  // inline exported (id=0x83de030f) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugClearAllSmErrorStates__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_CLEAR_ALL_SM_ERROR_STATES_PARAMS *);  // exported (id=0x83de0310)
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugSuspendContext__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_CMD_DEBUG_SUSPEND_CONTEXT_PARAMS *);  // inline exported (id=0x83de0317) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugResumeContext__)(struct KernelSMDebuggerSession * /*this*/);  // inline exported (id=0x83de0318) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdReadSurface__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_ACCESS_SURFACE_PARAMETERS *);  // exported (id=0x83de031a)
-    NV_STATUS (*__ksmdbgssnCtrlCmdWriteSurface__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_ACCESS_SURFACE_PARAMETERS *);  // exported (id=0x83de031b)
-    NV_STATUS (*__ksmdbgssnCtrlCmdGetMappings__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_GET_MAPPINGS_PARAMETERS *);  // exported (id=0x83de031c)
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugSetNextStopTriggerType__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_SET_NEXT_STOP_TRIGGER_TYPE_PARAMS *);  // inline exported (id=0x83de0313) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugSetSingleStepInterruptHandling__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_SET_SINGLE_STEP_INTERRUPT_HANDLING_PARAMS *);  // inline exported (id=0x83de0314) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugReadMemory__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *);  // exported (id=0x83de0315)
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugWriteMemory__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *);  // exported (id=0x83de0316)
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugExecRegOps__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_EXEC_REG_OPS_PARAMS *);  // exported (id=0x83de031d)
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugSetSingleSmSingleStep__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_SET_SINGLE_SM_SINGLE_STEP_PARAMS *);  // inline exported (id=0x83de0321) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugSetSingleSmStopTrigger__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_SET_SINGLE_SM_STOP_TRIGGER_PARAMS *);  // inline exported (id=0x83de0322) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugSetSingleSmRunTrigger__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_SET_SINGLE_SM_RUN_TRIGGER_PARAMS *);  // inline exported (id=0x83de0323) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugSetSingleSmSkipIdleWarpDetect__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_SET_SINGLE_SM_SKIP_IDLE_WARP_DETECT_PARAMS *);  // inline exported (id=0x83de0324) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugGetSingleSmDebuggerStatus__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_GET_SINGLE_SM_DEBUGGER_STATUS_PARAMS *);  // inline exported (id=0x83de0325) body
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugReadBatchMemory__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS *);  // exported (id=0x83de0326)
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugWriteBatchMemory__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS *);  // exported (id=0x83de0327)
+    // Vtable with 1 per-object function pointer
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugReadMMUFaultInfo__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS *);  // halified (2 hals) exported (id=0x83de0328)
 
     // Data members
@@ -349,71 +321,128 @@ NV_STATUS __nvoc_objCreate_KernelSMDebuggerSession(KernelSMDebuggerSession**, Dy
     __nvoc_objCreate_KernelSMDebuggerSession((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS ksmdbgssnConstruct_IMPL(struct KernelSMDebuggerSession *arg_pKernelSMDebuggerSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_ksmdbgssnConstruct(arg_pKernelSMDebuggerSession, arg_pCallContext, arg_pParams) ksmdbgssnConstruct_IMPL(arg_pKernelSMDebuggerSession, arg_pCallContext, arg_pParams)
+
+void ksmdbgssnDestruct_IMPL(struct KernelSMDebuggerSession *arg_this);
+#define __nvoc_ksmdbgssnDestruct(arg_this) ksmdbgssnDestruct_IMPL(arg_this)
+
+void ksmdbgssnFreeCallback_IMPL(struct KernelSMDebuggerSession *arg_this);
+#ifdef __nvoc_kernel_sm_debugger_session_h_disabled
+static inline void ksmdbgssnFreeCallback(struct KernelSMDebuggerSession *arg_this) {
+    NV_ASSERT_FAILED_PRECOMP("KernelSMDebuggerSession was disabled!");
+}
+#else // __nvoc_kernel_sm_debugger_session_h_disabled
+#define ksmdbgssnFreeCallback(arg_this) ksmdbgssnFreeCallback_IMPL(arg_this)
+#endif // __nvoc_kernel_sm_debugger_session_h_disabled
+
+NV_STATUS ksmdbgssnCtrlCmdDebugReadAllSmErrorStates_IMPL(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_READ_ALL_SM_ERROR_STATES_PARAMS *pParams);
+#ifdef __nvoc_kernel_sm_debugger_session_h_disabled
+static inline NV_STATUS ksmdbgssnCtrlCmdDebugReadAllSmErrorStates(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_READ_ALL_SM_ERROR_STATES_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelSMDebuggerSession was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_sm_debugger_session_h_disabled
+#define ksmdbgssnCtrlCmdDebugReadAllSmErrorStates(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugReadAllSmErrorStates_IMPL(pKernelSMDebuggerSession, pParams)
+#endif // __nvoc_kernel_sm_debugger_session_h_disabled
+
+NV_STATUS ksmdbgssnCtrlCmdDebugClearAllSmErrorStates_IMPL(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_CLEAR_ALL_SM_ERROR_STATES_PARAMS *pParams);
+#ifdef __nvoc_kernel_sm_debugger_session_h_disabled
+static inline NV_STATUS ksmdbgssnCtrlCmdDebugClearAllSmErrorStates(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_CLEAR_ALL_SM_ERROR_STATES_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelSMDebuggerSession was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_sm_debugger_session_h_disabled
+#define ksmdbgssnCtrlCmdDebugClearAllSmErrorStates(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugClearAllSmErrorStates_IMPL(pKernelSMDebuggerSession, pParams)
+#endif // __nvoc_kernel_sm_debugger_session_h_disabled
+
+NV_STATUS ksmdbgssnCtrlCmdReadSurface_IMPL(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_ACCESS_SURFACE_PARAMETERS *arg2);
+#ifdef __nvoc_kernel_sm_debugger_session_h_disabled
+static inline NV_STATUS ksmdbgssnCtrlCmdReadSurface(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_ACCESS_SURFACE_PARAMETERS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelSMDebuggerSession was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_sm_debugger_session_h_disabled
+#define ksmdbgssnCtrlCmdReadSurface(arg_this, arg2) ksmdbgssnCtrlCmdReadSurface_IMPL(arg_this, arg2)
+#endif // __nvoc_kernel_sm_debugger_session_h_disabled
+
+NV_STATUS ksmdbgssnCtrlCmdWriteSurface_IMPL(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_ACCESS_SURFACE_PARAMETERS *arg2);
+#ifdef __nvoc_kernel_sm_debugger_session_h_disabled
+static inline NV_STATUS ksmdbgssnCtrlCmdWriteSurface(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_ACCESS_SURFACE_PARAMETERS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelSMDebuggerSession was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_sm_debugger_session_h_disabled
+#define ksmdbgssnCtrlCmdWriteSurface(arg_this, arg2) ksmdbgssnCtrlCmdWriteSurface_IMPL(arg_this, arg2)
+#endif // __nvoc_kernel_sm_debugger_session_h_disabled
+
+NV_STATUS ksmdbgssnCtrlCmdGetMappings_IMPL(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_GET_MAPPINGS_PARAMETERS *arg2);
+#ifdef __nvoc_kernel_sm_debugger_session_h_disabled
+static inline NV_STATUS ksmdbgssnCtrlCmdGetMappings(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_GET_MAPPINGS_PARAMETERS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelSMDebuggerSession was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_sm_debugger_session_h_disabled
+#define ksmdbgssnCtrlCmdGetMappings(arg_this, arg2) ksmdbgssnCtrlCmdGetMappings_IMPL(arg_this, arg2)
+#endif // __nvoc_kernel_sm_debugger_session_h_disabled
+
+NV_STATUS ksmdbgssnCtrlCmdDebugReadMemory_IMPL(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *arg2);
+#ifdef __nvoc_kernel_sm_debugger_session_h_disabled
+static inline NV_STATUS ksmdbgssnCtrlCmdDebugReadMemory(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelSMDebuggerSession was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_sm_debugger_session_h_disabled
+#define ksmdbgssnCtrlCmdDebugReadMemory(arg_this, arg2) ksmdbgssnCtrlCmdDebugReadMemory_IMPL(arg_this, arg2)
+#endif // __nvoc_kernel_sm_debugger_session_h_disabled
+
+NV_STATUS ksmdbgssnCtrlCmdDebugWriteMemory_IMPL(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *arg2);
+#ifdef __nvoc_kernel_sm_debugger_session_h_disabled
+static inline NV_STATUS ksmdbgssnCtrlCmdDebugWriteMemory(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelSMDebuggerSession was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_sm_debugger_session_h_disabled
+#define ksmdbgssnCtrlCmdDebugWriteMemory(arg_this, arg2) ksmdbgssnCtrlCmdDebugWriteMemory_IMPL(arg_this, arg2)
+#endif // __nvoc_kernel_sm_debugger_session_h_disabled
+
+NV_STATUS ksmdbgssnCtrlCmdDebugExecRegOps_IMPL(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_EXEC_REG_OPS_PARAMS *pParams);
+#ifdef __nvoc_kernel_sm_debugger_session_h_disabled
+static inline NV_STATUS ksmdbgssnCtrlCmdDebugExecRegOps(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_EXEC_REG_OPS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelSMDebuggerSession was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_sm_debugger_session_h_disabled
+#define ksmdbgssnCtrlCmdDebugExecRegOps(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugExecRegOps_IMPL(pKernelSMDebuggerSession, pParams)
+#endif // __nvoc_kernel_sm_debugger_session_h_disabled
+
+NV_STATUS ksmdbgssnCtrlCmdDebugReadBatchMemory_IMPL(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS *arg2);
+#ifdef __nvoc_kernel_sm_debugger_session_h_disabled
+static inline NV_STATUS ksmdbgssnCtrlCmdDebugReadBatchMemory(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelSMDebuggerSession was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_sm_debugger_session_h_disabled
+#define ksmdbgssnCtrlCmdDebugReadBatchMemory(arg_this, arg2) ksmdbgssnCtrlCmdDebugReadBatchMemory_IMPL(arg_this, arg2)
+#endif // __nvoc_kernel_sm_debugger_session_h_disabled
+
+NV_STATUS ksmdbgssnCtrlCmdDebugWriteBatchMemory_IMPL(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS *arg2);
+#ifdef __nvoc_kernel_sm_debugger_session_h_disabled
+static inline NV_STATUS ksmdbgssnCtrlCmdDebugWriteBatchMemory(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelSMDebuggerSession was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_sm_debugger_session_h_disabled
+#define ksmdbgssnCtrlCmdDebugWriteBatchMemory(arg_this, arg2) ksmdbgssnCtrlCmdDebugWriteBatchMemory_IMPL(arg_this, arg2)
+#endif // __nvoc_kernel_sm_debugger_session_h_disabled
+
+
+// Wrapper macros for halified functions
 #define ksmdbgssnInternalControlForward_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__ksmdbgssnInternalControlForward__
 #define ksmdbgssnInternalControlForward(arg_this, command, pParams, size) ksmdbgssnInternalControlForward_DISPATCH(arg_this, command, pParams, size)
 #define ksmdbgssnGetInternalObjectHandle_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__ksmdbgssnGetInternalObjectHandle__
 #define ksmdbgssnGetInternalObjectHandle(arg_this) ksmdbgssnGetInternalObjectHandle_DISPATCH(arg_this)
-#define ksmdbgssnCtrlCmdSMDebugModeEnable_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdSMDebugModeEnable__
-#define ksmdbgssnCtrlCmdSMDebugModeEnable(pKernelSMDebuggerSession) ksmdbgssnCtrlCmdSMDebugModeEnable_DISPATCH(pKernelSMDebuggerSession)
-#define ksmdbgssnCtrlCmdSMDebugModeDisable_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdSMDebugModeDisable__
-#define ksmdbgssnCtrlCmdSMDebugModeDisable(pKernelSMDebuggerSession) ksmdbgssnCtrlCmdSMDebugModeDisable_DISPATCH(pKernelSMDebuggerSession)
-#define ksmdbgssnCtrlCmdDebugSetModeMMUDebug_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetModeMMUDebug__
-#define ksmdbgssnCtrlCmdDebugSetModeMMUDebug(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugSetModeMMUDebug_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugGetModeMMUDebug_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugGetModeMMUDebug__
-#define ksmdbgssnCtrlCmdDebugGetModeMMUDebug(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugGetModeMMUDebug_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugSetModeMMUGccDebug_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetModeMMUGccDebug__
-#define ksmdbgssnCtrlCmdDebugSetModeMMUGccDebug(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugSetModeMMUGccDebug_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugGetModeMMUGccDebug_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugGetModeMMUGccDebug__
-#define ksmdbgssnCtrlCmdDebugGetModeMMUGccDebug(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugGetModeMMUGccDebug_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugSetModeErrbarDebug_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetModeErrbarDebug__
-#define ksmdbgssnCtrlCmdDebugSetModeErrbarDebug(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugSetModeErrbarDebug_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugGetModeErrbarDebug_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugGetModeErrbarDebug__
-#define ksmdbgssnCtrlCmdDebugGetModeErrbarDebug(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugGetModeErrbarDebug_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugSetExceptionMask_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetExceptionMask__
-#define ksmdbgssnCtrlCmdDebugSetExceptionMask(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugSetExceptionMask_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugReadSingleSmErrorState_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugReadSingleSmErrorState__
-#define ksmdbgssnCtrlCmdDebugReadSingleSmErrorState(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugReadSingleSmErrorState_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugReadAllSmErrorStates_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugReadAllSmErrorStates__
-#define ksmdbgssnCtrlCmdDebugReadAllSmErrorStates(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugReadAllSmErrorStates_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugClearSingleSmErrorState_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugClearSingleSmErrorState__
-#define ksmdbgssnCtrlCmdDebugClearSingleSmErrorState(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugClearSingleSmErrorState_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugClearAllSmErrorStates_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugClearAllSmErrorStates__
-#define ksmdbgssnCtrlCmdDebugClearAllSmErrorStates(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugClearAllSmErrorStates_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugSuspendContext_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSuspendContext__
-#define ksmdbgssnCtrlCmdDebugSuspendContext(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugSuspendContext_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugResumeContext_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugResumeContext__
-#define ksmdbgssnCtrlCmdDebugResumeContext(pKernelSMDebuggerSession) ksmdbgssnCtrlCmdDebugResumeContext_DISPATCH(pKernelSMDebuggerSession)
-#define ksmdbgssnCtrlCmdReadSurface_FNPTR(arg_this) arg_this->__ksmdbgssnCtrlCmdReadSurface__
-#define ksmdbgssnCtrlCmdReadSurface(arg_this, arg2) ksmdbgssnCtrlCmdReadSurface_DISPATCH(arg_this, arg2)
-#define ksmdbgssnCtrlCmdWriteSurface_FNPTR(arg_this) arg_this->__ksmdbgssnCtrlCmdWriteSurface__
-#define ksmdbgssnCtrlCmdWriteSurface(arg_this, arg2) ksmdbgssnCtrlCmdWriteSurface_DISPATCH(arg_this, arg2)
-#define ksmdbgssnCtrlCmdGetMappings_FNPTR(arg_this) arg_this->__ksmdbgssnCtrlCmdGetMappings__
-#define ksmdbgssnCtrlCmdGetMappings(arg_this, arg2) ksmdbgssnCtrlCmdGetMappings_DISPATCH(arg_this, arg2)
-#define ksmdbgssnCtrlCmdDebugSetNextStopTriggerType_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetNextStopTriggerType__
-#define ksmdbgssnCtrlCmdDebugSetNextStopTriggerType(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugSetNextStopTriggerType_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugSetSingleStepInterruptHandling_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetSingleStepInterruptHandling__
-#define ksmdbgssnCtrlCmdDebugSetSingleStepInterruptHandling(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugSetSingleStepInterruptHandling_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugReadMemory_FNPTR(arg_this) arg_this->__ksmdbgssnCtrlCmdDebugReadMemory__
-#define ksmdbgssnCtrlCmdDebugReadMemory(arg_this, arg2) ksmdbgssnCtrlCmdDebugReadMemory_DISPATCH(arg_this, arg2)
-#define ksmdbgssnCtrlCmdDebugWriteMemory_FNPTR(arg_this) arg_this->__ksmdbgssnCtrlCmdDebugWriteMemory__
-#define ksmdbgssnCtrlCmdDebugWriteMemory(arg_this, arg2) ksmdbgssnCtrlCmdDebugWriteMemory_DISPATCH(arg_this, arg2)
-#define ksmdbgssnCtrlCmdDebugExecRegOps_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugExecRegOps__
-#define ksmdbgssnCtrlCmdDebugExecRegOps(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugExecRegOps_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugSetSingleSmSingleStep_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetSingleSmSingleStep__
-#define ksmdbgssnCtrlCmdDebugSetSingleSmSingleStep(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugSetSingleSmSingleStep_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugSetSingleSmStopTrigger_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetSingleSmStopTrigger__
-#define ksmdbgssnCtrlCmdDebugSetSingleSmStopTrigger(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugSetSingleSmStopTrigger_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugSetSingleSmRunTrigger_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetSingleSmRunTrigger__
-#define ksmdbgssnCtrlCmdDebugSetSingleSmRunTrigger(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugSetSingleSmRunTrigger_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugSetSingleSmSkipIdleWarpDetect_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetSingleSmSkipIdleWarpDetect__
-#define ksmdbgssnCtrlCmdDebugSetSingleSmSkipIdleWarpDetect(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugSetSingleSmSkipIdleWarpDetect_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugGetSingleSmDebuggerStatus_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugGetSingleSmDebuggerStatus__
-#define ksmdbgssnCtrlCmdDebugGetSingleSmDebuggerStatus(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugGetSingleSmDebuggerStatus_DISPATCH(pKernelSMDebuggerSession, pParams)
-#define ksmdbgssnCtrlCmdDebugReadBatchMemory_FNPTR(arg_this) arg_this->__ksmdbgssnCtrlCmdDebugReadBatchMemory__
-#define ksmdbgssnCtrlCmdDebugReadBatchMemory(arg_this, arg2) ksmdbgssnCtrlCmdDebugReadBatchMemory_DISPATCH(arg_this, arg2)
-#define ksmdbgssnCtrlCmdDebugWriteBatchMemory_FNPTR(arg_this) arg_this->__ksmdbgssnCtrlCmdDebugWriteBatchMemory__
-#define ksmdbgssnCtrlCmdDebugWriteBatchMemory(arg_this, arg2) ksmdbgssnCtrlCmdDebugWriteBatchMemory_DISPATCH(arg_this, arg2)
 #define ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_FNPTR(arg_this) arg_this->__ksmdbgssnCtrlCmdDebugReadMMUFaultInfo__
 #define ksmdbgssnCtrlCmdDebugReadMMUFaultInfo(arg_this, arg2) ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_DISPATCH(arg_this, arg2)
 #define ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_HAL(arg_this, arg2) ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_DISPATCH(arg_this, arg2)
@@ -481,126 +510,6 @@ static inline NV_STATUS ksmdbgssnInternalControlForward_DISPATCH(struct KernelSM
 
 static inline NvHandle ksmdbgssnGetInternalObjectHandle_DISPATCH(struct KernelSMDebuggerSession *arg_this) {
     return arg_this->__nvoc_metadata_ptr->vtable.__ksmdbgssnGetInternalObjectHandle__(arg_this);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdSMDebugModeEnable_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdSMDebugModeEnable__(pKernelSMDebuggerSession);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdSMDebugModeDisable_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdSMDebugModeDisable__(pKernelSMDebuggerSession);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugSetModeMMUDebug_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_SET_MODE_MMU_DEBUG_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetModeMMUDebug__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugGetModeMMUDebug_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_GET_MODE_MMU_DEBUG_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugGetModeMMUDebug__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugSetModeMMUGccDebug_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_SET_MODE_MMU_GCC_DEBUG_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetModeMMUGccDebug__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugGetModeMMUGccDebug_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_GET_MODE_MMU_GCC_DEBUG_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugGetModeMMUGccDebug__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugSetModeErrbarDebug_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_SET_MODE_ERRBAR_DEBUG_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetModeErrbarDebug__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugGetModeErrbarDebug_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_GET_MODE_ERRBAR_DEBUG_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugGetModeErrbarDebug__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugSetExceptionMask_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_SET_EXCEPTION_MASK_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetExceptionMask__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugReadSingleSmErrorState_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_READ_SINGLE_SM_ERROR_STATE_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugReadSingleSmErrorState__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugReadAllSmErrorStates_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_READ_ALL_SM_ERROR_STATES_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugReadAllSmErrorStates__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugClearSingleSmErrorState_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_CLEAR_SINGLE_SM_ERROR_STATE_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugClearSingleSmErrorState__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugClearAllSmErrorStates_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_CLEAR_ALL_SM_ERROR_STATES_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugClearAllSmErrorStates__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugSuspendContext_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_CMD_DEBUG_SUSPEND_CONTEXT_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSuspendContext__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugResumeContext_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugResumeContext__(pKernelSMDebuggerSession);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdReadSurface_DISPATCH(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_ACCESS_SURFACE_PARAMETERS *arg2) {
-    return arg_this->__ksmdbgssnCtrlCmdReadSurface__(arg_this, arg2);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdWriteSurface_DISPATCH(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_ACCESS_SURFACE_PARAMETERS *arg2) {
-    return arg_this->__ksmdbgssnCtrlCmdWriteSurface__(arg_this, arg2);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdGetMappings_DISPATCH(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_GET_MAPPINGS_PARAMETERS *arg2) {
-    return arg_this->__ksmdbgssnCtrlCmdGetMappings__(arg_this, arg2);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugSetNextStopTriggerType_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_SET_NEXT_STOP_TRIGGER_TYPE_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetNextStopTriggerType__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugSetSingleStepInterruptHandling_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_SET_SINGLE_STEP_INTERRUPT_HANDLING_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetSingleStepInterruptHandling__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugReadMemory_DISPATCH(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *arg2) {
-    return arg_this->__ksmdbgssnCtrlCmdDebugReadMemory__(arg_this, arg2);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugWriteMemory_DISPATCH(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *arg2) {
-    return arg_this->__ksmdbgssnCtrlCmdDebugWriteMemory__(arg_this, arg2);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugExecRegOps_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_EXEC_REG_OPS_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugExecRegOps__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugSetSingleSmSingleStep_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_SET_SINGLE_SM_SINGLE_STEP_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetSingleSmSingleStep__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugSetSingleSmStopTrigger_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_SET_SINGLE_SM_STOP_TRIGGER_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetSingleSmStopTrigger__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugSetSingleSmRunTrigger_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_SET_SINGLE_SM_RUN_TRIGGER_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetSingleSmRunTrigger__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugSetSingleSmSkipIdleWarpDetect_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_SET_SINGLE_SM_SKIP_IDLE_WARP_DETECT_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugSetSingleSmSkipIdleWarpDetect__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugGetSingleSmDebuggerStatus_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_GET_SINGLE_SM_DEBUGGER_STATUS_PARAMS *pParams) {
-    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdDebugGetSingleSmDebuggerStatus__(pKernelSMDebuggerSession, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugReadBatchMemory_DISPATCH(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS *arg2) {
-    return arg_this->__ksmdbgssnCtrlCmdDebugReadBatchMemory__(arg_this, arg2);
-}
-
-static inline NV_STATUS ksmdbgssnCtrlCmdDebugWriteBatchMemory_DISPATCH(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS *arg2) {
-    return arg_this->__ksmdbgssnCtrlCmdDebugWriteBatchMemory__(arg_this, arg2);
 }
 
 static inline NV_STATUS ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_DISPATCH(struct KernelSMDebuggerSession *arg_this, NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS *arg2) {
@@ -828,22 +737,6 @@ static inline NV_STATUS ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_46f6a7(struct Kern
 }
 
 NV_STATUS ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_IMPL(struct KernelSMDebuggerSession *arg1, NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS *arg2);
-
-NV_STATUS ksmdbgssnConstruct_IMPL(struct KernelSMDebuggerSession *arg_pKernelSMDebuggerSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_ksmdbgssnConstruct(arg_pKernelSMDebuggerSession, arg_pCallContext, arg_pParams) ksmdbgssnConstruct_IMPL(arg_pKernelSMDebuggerSession, arg_pCallContext, arg_pParams)
-void ksmdbgssnDestruct_IMPL(struct KernelSMDebuggerSession *arg1);
-
-#define __nvoc_ksmdbgssnDestruct(arg1) ksmdbgssnDestruct_IMPL(arg1)
-void ksmdbgssnFreeCallback_IMPL(struct KernelSMDebuggerSession *arg1);
-
-#ifdef __nvoc_kernel_sm_debugger_session_h_disabled
-static inline void ksmdbgssnFreeCallback(struct KernelSMDebuggerSession *arg1) {
-    NV_ASSERT_FAILED_PRECOMP("KernelSMDebuggerSession was disabled!");
-}
-#else //__nvoc_kernel_sm_debugger_session_h_disabled
-#define ksmdbgssnFreeCallback(arg1) ksmdbgssnFreeCallback_IMPL(arg1)
-#endif //__nvoc_kernel_sm_debugger_session_h_disabled
 
 #undef PRIVATE_FIELD
 

@@ -382,6 +382,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__PerfBuffer =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_perfbufferDestruct(PerfBuffer*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_PerfBuffer(PerfBuffer *pThis) {
     __nvoc_perfbufferDestruct(pThis);

@@ -239,7 +239,40 @@ NV_STATUS __nvoc_objCreate_OBJIOVASPACE(OBJIOVASPACE**, Dynamic*, NvU32);
     __nvoc_objCreate_OBJIOVASPACE((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+void iovaspaceDestruct_IMPL(struct OBJIOVASPACE *pIOVAS);
+#define __nvoc_iovaspaceDestruct(pIOVAS) iovaspaceDestruct_IMPL(pIOVAS)
+
+NV_STATUS iovaspaceAcquireMapping_IMPL(struct OBJIOVASPACE *pIOVAS, PMEMORY_DESCRIPTOR pIovaMapping);
+#ifdef __nvoc_io_vaspace_h_disabled
+static inline NV_STATUS iovaspaceAcquireMapping(struct OBJIOVASPACE *pIOVAS, PMEMORY_DESCRIPTOR pIovaMapping) {
+    NV_ASSERT_FAILED_PRECOMP("OBJIOVASPACE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_io_vaspace_h_disabled
+#define iovaspaceAcquireMapping(pIOVAS, pIovaMapping) iovaspaceAcquireMapping_IMPL(pIOVAS, pIovaMapping)
+#endif // __nvoc_io_vaspace_h_disabled
+
+void iovaspaceReleaseMapping_IMPL(struct OBJIOVASPACE *pIOVAS, PIOVAMAPPING pIovaMapping);
+#ifdef __nvoc_io_vaspace_h_disabled
+static inline void iovaspaceReleaseMapping(struct OBJIOVASPACE *pIOVAS, PIOVAMAPPING pIovaMapping) {
+    NV_ASSERT_FAILED_PRECOMP("OBJIOVASPACE was disabled!");
+}
+#else // __nvoc_io_vaspace_h_disabled
+#define iovaspaceReleaseMapping(pIOVAS, pIovaMapping) iovaspaceReleaseMapping_IMPL(pIOVAS, pIovaMapping)
+#endif // __nvoc_io_vaspace_h_disabled
+
+void iovaspaceDestroyMapping_IMPL(struct OBJIOVASPACE *pIOVAS, PIOVAMAPPING pIovaMapping);
+#ifdef __nvoc_io_vaspace_h_disabled
+static inline void iovaspaceDestroyMapping(struct OBJIOVASPACE *pIOVAS, PIOVAMAPPING pIovaMapping) {
+    NV_ASSERT_FAILED_PRECOMP("OBJIOVASPACE was disabled!");
+}
+#else // __nvoc_io_vaspace_h_disabled
+#define iovaspaceDestroyMapping(pIOVAS, pIovaMapping) iovaspaceDestroyMapping_IMPL(pIOVAS, pIovaMapping)
+#endif // __nvoc_io_vaspace_h_disabled
+
+
+// Wrapper macros for halified functions
 #define iovaspaceConstruct__FNPTR(pVAS) pVAS->__nvoc_metadata_ptr->vtable.__iovaspaceConstruct___
 #define iovaspaceConstruct_(pVAS, classId, vaspaceId, vaStart, vaLimit, vaStartInternal, vaLimitInternal, flags) iovaspaceConstruct__DISPATCH(pVAS, classId, vaspaceId, vaStart, vaLimit, vaStartInternal, vaLimitInternal, flags)
 #define iovaspaceAlloc_FNPTR(pVAS) pVAS->__nvoc_metadata_ptr->vtable.__iovaspaceAlloc__
@@ -431,40 +464,6 @@ NvU64 iovaspaceGetVaStart_IMPL(struct OBJIOVASPACE *pVAS);
 NvU64 iovaspaceGetVaLimit_IMPL(struct OBJIOVASPACE *pVAS);
 
 NV_STATUS iovaspaceGetVasInfo_IMPL(struct OBJIOVASPACE *pVAS, NV0080_CTRL_DMA_ADV_SCHED_GET_VA_CAPS_PARAMS *pParams);
-
-void iovaspaceDestruct_IMPL(struct OBJIOVASPACE *pIOVAS);
-
-#define __nvoc_iovaspaceDestruct(pIOVAS) iovaspaceDestruct_IMPL(pIOVAS)
-NV_STATUS iovaspaceAcquireMapping_IMPL(struct OBJIOVASPACE *pIOVAS, PMEMORY_DESCRIPTOR pIovaMapping);
-
-#ifdef __nvoc_io_vaspace_h_disabled
-static inline NV_STATUS iovaspaceAcquireMapping(struct OBJIOVASPACE *pIOVAS, PMEMORY_DESCRIPTOR pIovaMapping) {
-    NV_ASSERT_FAILED_PRECOMP("OBJIOVASPACE was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_io_vaspace_h_disabled
-#define iovaspaceAcquireMapping(pIOVAS, pIovaMapping) iovaspaceAcquireMapping_IMPL(pIOVAS, pIovaMapping)
-#endif //__nvoc_io_vaspace_h_disabled
-
-void iovaspaceReleaseMapping_IMPL(struct OBJIOVASPACE *pIOVAS, PIOVAMAPPING pIovaMapping);
-
-#ifdef __nvoc_io_vaspace_h_disabled
-static inline void iovaspaceReleaseMapping(struct OBJIOVASPACE *pIOVAS, PIOVAMAPPING pIovaMapping) {
-    NV_ASSERT_FAILED_PRECOMP("OBJIOVASPACE was disabled!");
-}
-#else //__nvoc_io_vaspace_h_disabled
-#define iovaspaceReleaseMapping(pIOVAS, pIovaMapping) iovaspaceReleaseMapping_IMPL(pIOVAS, pIovaMapping)
-#endif //__nvoc_io_vaspace_h_disabled
-
-void iovaspaceDestroyMapping_IMPL(struct OBJIOVASPACE *pIOVAS, PIOVAMAPPING pIovaMapping);
-
-#ifdef __nvoc_io_vaspace_h_disabled
-static inline void iovaspaceDestroyMapping(struct OBJIOVASPACE *pIOVAS, PIOVAMAPPING pIovaMapping) {
-    NV_ASSERT_FAILED_PRECOMP("OBJIOVASPACE was disabled!");
-}
-#else //__nvoc_io_vaspace_h_disabled
-#define iovaspaceDestroyMapping(pIOVAS, pIovaMapping) iovaspaceDestroyMapping_IMPL(pIOVAS, pIovaMapping)
-#endif //__nvoc_io_vaspace_h_disabled
 
 #undef PRIVATE_FIELD
 

@@ -156,21 +156,6 @@ gpuGetIdInfo_GH100
 
 }
 
-/*!
- * @brief Returns the physical address width for the given @ref NV_ADDRESS_SPACE
- */
-NvU32 gpuGetPhysAddrWidth_GH100
-(
-    OBJGPU          *pGpu,
-    NV_ADDRESS_SPACE addrSp
-)
-{
-    // Currently this function supports only sysmem addresses
-    NV_ASSERT_OR_RETURN(ADDR_SYSMEM == addrSp, 0);
-
-    return NV_CHIP_EXTENDED_SYSTEM_PHYSICAL_ADDRESS_BITS;
-}
-
 /**
  * @brief Check if the GPU supports ATS with SMC memory partitioning enabled.
  *
@@ -575,6 +560,7 @@ typedef struct
 #define NVDM_PRC_PPCIE_NUM_BYTES            0x02
 #define NVDM_PRC_PPCIE_KNOB_ID              0x2D
 
+
 /*!
  * @brief Check if protected pcie is actually supported in firmware
  *
@@ -597,7 +583,7 @@ gpuIsProtectedPcieSupportedInFirmware_GH100
     prcKnobReadPayload.numBytes     = NVDM_PRC_PPCIE_NUM_BYTES;
     prcKnobReadPayload.knobId       = NVDM_PRC_PPCIE_KNOB_ID;
 
-   // This function returns an error code in case we read an invalid knob id
+    // This function returns an error code in case we read an invalid knob id
     status = kfspSendAndReadMessage(pGpu, pKernelFsp,
                                     (NvU8*)&prcKnobReadPayload,
                                     sizeof(NVDM_PAYLOAD_PRC_OBJECT_READ),

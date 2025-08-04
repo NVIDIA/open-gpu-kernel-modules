@@ -650,6 +650,15 @@ _nvswitch_tnvl_get_cert_chain_from_fsp_ls10
     TNVL_GET_ATT_CERTS_RSP_PAYLOAD *pRspPayload   = nvswitch_os_malloc(sizeof(TNVL_GET_ATT_CERTS_RSP_PAYLOAD));
     NVSWITCH_TIMEOUT timeout;
 
+    if ((pCertChainLength == NULL) || (pCertChain == NULL))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Invalid Args\n",
+            __FUNCTION__);
+        status = -NVL_BAD_ARGS;
+        goto ErrorExit;
+    }
+
     if (pCmdPayload == NULL || pRspPayload == NULL)
     {
         NVSWITCH_PRINT(device, ERROR,
@@ -684,6 +693,17 @@ _nvswitch_tnvl_get_cert_chain_from_fsp_ls10
             "%s: Unknown submessage Id %d, Expected %d\n",
             __FUNCTION__,
             pRspPayload->subMessageId, TNVL_GET_ATT_CERTS_SUBMESSAGE_ID);
+        status = -NVL_ERR_INVALID_STATE;
+        goto ErrorExit;
+    }
+
+    // Validate response certChainLength
+    if (pRspPayload->certChainLength > TNVL_MAX_CERT_CHAIN_SIZE)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Response Cert-chain length (%d) is greater than max size (%d)\n",
+            __FUNCTION__,
+            pRspPayload->certChainLength, TNVL_MAX_CERT_CHAIN_SIZE);
         status = -NVL_ERR_INVALID_STATE;
         goto ErrorExit;
     }
@@ -860,6 +880,15 @@ nvswitch_tnvl_get_attestation_certificate_chain_ls10
         goto ErrorExit;
     }
 
+    if (attestationCertChainSize > NVSWITCH_ATTESTATION_CERT_CHAIN_MAX_SIZE)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Attestation cert chain size (%lu) greater than max size (%d)\n",
+            __FUNCTION__, attestationCertChainSize, NVSWITCH_ATTESTATION_CERT_CHAIN_MAX_SIZE);
+        status = -NVL_ERR_INVALID_STATE;
+        goto ErrorExit;
+    }
+
     nvswitch_os_memcpy(params->attestationCertChain, pAttestationCertChain, attestationCertChainSize);
     params->attestationCertChainSize = attestationCertChainSize;
 
@@ -882,6 +911,14 @@ nvswitch_tnvl_get_attestation_report_ls10
     TNVL_GET_ATT_REPORT_CMD_PAYLOAD *pCmdPayload;
     TNVL_GET_ATT_REPORT_RSP_PAYLOAD *pRspPayload;
     NVSWITCH_TIMEOUT timeout;
+
+    if (params == NULL)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+           "%s: Invalid args\n",
+           __FUNCTION__);
+        return -NVL_BAD_ARGS;
+    }
 
     if (!nvswitch_is_tnvl_mode_enabled(device))
     {
@@ -931,6 +968,16 @@ nvswitch_tnvl_get_attestation_report_ls10
             pRspPayload->subMessageId, TNVL_GET_ATT_REPORT_SUBMESSAGE_ID);
         status = -NVL_ERR_INVALID_STATE;
         goto ErrorExit;
+    }
+
+    // Validate measurement size
+    if (pRspPayload->measurementSize > NVSWITCH_ATTESTATION_REPORT_MAX_SIZE)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Response measurement size (%d) is greater than the attestation max size (%d)\n",
+            __FUNCTION__,
+            pRspPayload->measurementSize, NVSWITCH_ATTESTATION_REPORT_MAX_SIZE);
+        return -NVL_ERR_INVALID_STATE;
     }
 
     nvswitch_os_memcpy(params->attestationReport,
@@ -1250,6 +1297,14 @@ nvswitch_tnvl_disable_interrupts_ls10
     nvswitch_device *device
 )
 {
+
+    if (!nvswitch_is_tnvl_mode_enabled(device))
+    {
+        NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_TNVL_ERROR,
+           "Failed to disable non-fatal/legacy interrupts. TNVL mode is not enabled\n");
+        return;
+    }
+
     //
     // In TNVL locked disable non-fatal NVLW, NPG, and legacy interrupt,
     // disable additional non-fatals on those partitions.

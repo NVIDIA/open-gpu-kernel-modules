@@ -47,6 +47,7 @@ typedef NV_STATUS      Deserialize_NV2080_CTRL_INTERNAL_MEMSYS_GET_STATIC_CONFIG
 typedef NV_STATUS      Deserialize_NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS(NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_VGPU_P2P_CAPABILITY_PARAMS(VGPU_P2P_CAPABILITY_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS(NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
+typedef NV_STATUS      Deserialize_NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS(NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NVA080_CTRL_VGPU_GET_CONFIG_PARAMS(NVA080_CTRL_VGPU_GET_CONFIG_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_FB_GET_LTC_INFO_FOR_FBP_PARAMS(NV2080_CTRL_FB_GET_LTC_INFO_FOR_FBP_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS(NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
@@ -61,6 +62,7 @@ typedef NV_STATUS      Deserialize_VGPU_FB_GET_DYNAMIC_BLACKLISTED_PAGES(VGPU_FB
 typedef NV_STATUS      Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS(NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_VGPU_FB_GET_LTC_INFO_FOR_FBP(VGPU_FB_GET_LTC_INFO_FOR_FBP* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_VGPU_STATIC_DATA(VGPU_STATIC_DATA* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
+typedef NV_STATUS      Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS(NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS(NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_REQ_ATOMICS_CAPS_PARAMS(NV2080_CTRL_CMD_BUS_GET_PCIE_REQ_ATOMICS_CAPS_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS(NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
@@ -75,14 +77,15 @@ typedef NV_STATUS      Deserialize_GPU_EXEC_SYSPIPE_INFO(GPU_EXEC_SYSPIPE_INFO* 
 typedef NV_STATUS      Deserialize_VGPU_BSP_GET_CAPS(VGPU_BSP_GET_CAPS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS(NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_GPU_PARTITION_INFO(GPU_PARTITION_INFO* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
+typedef NV_STATUS      Deserialize_NV2080_CTRL_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS(NV2080_CTRL_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS(NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_MC_GET_ENGINE_NOTIFICATION_INTR_VECTORS_PARAMS(NV2080_CTRL_MC_GET_ENGINE_NOTIFICATION_INTR_VECTORS_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_ROP_INFO_PARAMS(NV2080_CTRL_INTERNAL_STATIC_GR_GET_ROP_INFO_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS(NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_RECORD_SIZE_PARAMS(NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_RECORD_SIZE_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS(NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
-typedef NV_STATUS      Deserialize_VGPU_STATIC_PROPERTIES(VGPU_STATIC_PROPERTIES* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_BUS_GET_INFO_V2_PARAMS(NV2080_CTRL_BUS_GET_INFO_V2_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
+typedef NV_STATUS      Deserialize_VGPU_STATIC_PROPERTIES(VGPU_STATIC_PROPERTIES* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_GPU_GET_CONSTRUCTED_FALCON_INFO_PARAMS(NV2080_CTRL_GPU_GET_CONSTRUCTED_FALCON_INFO_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS(NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_CONTEXT_BUFFERS_INFO_PARAMS(NV2080_CTRL_INTERNAL_STATIC_GR_GET_CONTEXT_BUFFERS_INFO_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
@@ -106,6 +109,7 @@ typedef struct RPCSTRUCTURECOPY_HAL_IFACES {
     Deserialize_NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS  *deserialize_NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS; /* HAL function to deserialize NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS */
     Deserialize_VGPU_P2P_CAPABILITY_PARAMS  *deserialize_VGPU_P2P_CAPABILITY_PARAMS; /* HAL function to deserialize VGPU_P2P_CAPABILITY_PARAMS */
     Deserialize_NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS  *deserialize_NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS; /* HAL function to deserialize NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS */
+    Deserialize_NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS  *deserialize_NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS; /* HAL function to deserialize NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS */
     Deserialize_NVA080_CTRL_VGPU_GET_CONFIG_PARAMS  *deserialize_NVA080_CTRL_VGPU_GET_CONFIG_PARAMS; /* HAL function to deserialize NVA080_CTRL_VGPU_GET_CONFIG_PARAMS */
     Deserialize_NV2080_CTRL_FB_GET_LTC_INFO_FOR_FBP_PARAMS  *deserialize_NV2080_CTRL_FB_GET_LTC_INFO_FOR_FBP_PARAMS; /* HAL function to deserialize NV2080_CTRL_FB_GET_LTC_INFO_FOR_FBP_PARAMS */
     Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS  *deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS; /* HAL function to deserialize NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS */
@@ -120,6 +124,7 @@ typedef struct RPCSTRUCTURECOPY_HAL_IFACES {
     Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS  *deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS; /* HAL function to deserialize NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS */
     Deserialize_VGPU_FB_GET_LTC_INFO_FOR_FBP  *deserialize_VGPU_FB_GET_LTC_INFO_FOR_FBP; /* HAL function to deserialize VGPU_FB_GET_LTC_INFO_FOR_FBP */
     Deserialize_VGPU_STATIC_DATA  *deserialize_VGPU_STATIC_DATA; /* HAL function to deserialize VGPU_STATIC_DATA */
+    Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS  *deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS; /* HAL function to deserialize NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS */
     Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS  *deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS; /* HAL function to deserialize NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS */
     Deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_REQ_ATOMICS_CAPS_PARAMS  *deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_REQ_ATOMICS_CAPS_PARAMS; /* HAL function to deserialize NV2080_CTRL_CMD_BUS_GET_PCIE_REQ_ATOMICS_CAPS_PARAMS */
     Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS  *deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS; /* HAL function to deserialize NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS */
@@ -134,14 +139,15 @@ typedef struct RPCSTRUCTURECOPY_HAL_IFACES {
     Deserialize_VGPU_BSP_GET_CAPS  *deserialize_VGPU_BSP_GET_CAPS; /* HAL function to deserialize VGPU_BSP_GET_CAPS */
     Deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS  *deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS; /* HAL function to deserialize NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS */
     Deserialize_GPU_PARTITION_INFO  *deserialize_GPU_PARTITION_INFO; /* HAL function to deserialize GPU_PARTITION_INFO */
+    Deserialize_NV2080_CTRL_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS  *deserialize_NV2080_CTRL_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS; /* HAL function to deserialize NV2080_CTRL_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS */
     Deserialize_NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS  *deserialize_NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS; /* HAL function to deserialize NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS */
     Deserialize_NV2080_CTRL_MC_GET_ENGINE_NOTIFICATION_INTR_VECTORS_PARAMS  *deserialize_NV2080_CTRL_MC_GET_ENGINE_NOTIFICATION_INTR_VECTORS_PARAMS; /* HAL function to deserialize NV2080_CTRL_MC_GET_ENGINE_NOTIFICATION_INTR_VECTORS_PARAMS */
     Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_ROP_INFO_PARAMS  *deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_ROP_INFO_PARAMS; /* HAL function to deserialize NV2080_CTRL_INTERNAL_STATIC_GR_GET_ROP_INFO_PARAMS */
     Deserialize_NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS  *deserialize_NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS; /* HAL function to deserialize NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS */
     Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_RECORD_SIZE_PARAMS  *deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_RECORD_SIZE_PARAMS; /* HAL function to deserialize NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_RECORD_SIZE_PARAMS */
     Deserialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS  *deserialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS; /* HAL function to deserialize NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS */
-    Deserialize_VGPU_STATIC_PROPERTIES  *deserialize_VGPU_STATIC_PROPERTIES; /* HAL function to deserialize VGPU_STATIC_PROPERTIES */
     Deserialize_NV2080_CTRL_BUS_GET_INFO_V2_PARAMS  *deserialize_NV2080_CTRL_BUS_GET_INFO_V2_PARAMS; /* HAL function to deserialize NV2080_CTRL_BUS_GET_INFO_V2_PARAMS */
+    Deserialize_VGPU_STATIC_PROPERTIES  *deserialize_VGPU_STATIC_PROPERTIES; /* HAL function to deserialize VGPU_STATIC_PROPERTIES */
     Deserialize_NV2080_CTRL_GPU_GET_CONSTRUCTED_FALCON_INFO_PARAMS  *deserialize_NV2080_CTRL_GPU_GET_CONSTRUCTED_FALCON_INFO_PARAMS; /* HAL function to deserialize NV2080_CTRL_GPU_GET_CONSTRUCTED_FALCON_INFO_PARAMS */
     Deserialize_NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS  *deserialize_NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS; /* HAL function to deserialize NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS */
     Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_CONTEXT_BUFFERS_INFO_PARAMS  *deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_CONTEXT_BUFFERS_INFO_PARAMS; /* HAL function to deserialize NV2080_CTRL_INTERNAL_STATIC_GR_GET_CONTEXT_BUFFERS_INFO_PARAMS */
@@ -172,6 +178,8 @@ typedef struct RPCSTRUCTURECOPY_HAL_IFACES {
         (_pRpcstructurecopy)->_hal.deserialize_VGPU_P2P_CAPABILITY_PARAMS(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
         (_pRpcstructurecopy)->_hal.deserialize_NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS(_pData, _pStream, _streamSize, _pOffset)
+#define deserialize_NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
+        (_pRpcstructurecopy)->_hal.deserialize_NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_NVA080_CTRL_VGPU_GET_CONFIG_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
         (_pRpcstructurecopy)->_hal.deserialize_NVA080_CTRL_VGPU_GET_CONFIG_PARAMS(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_NV2080_CTRL_FB_GET_LTC_INFO_FOR_FBP_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
@@ -200,6 +208,8 @@ typedef struct RPCSTRUCTURECOPY_HAL_IFACES {
         (_pRpcstructurecopy)->_hal.deserialize_VGPU_FB_GET_LTC_INFO_FOR_FBP(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_VGPU_STATIC_DATA_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
         (_pRpcstructurecopy)->_hal.deserialize_VGPU_STATIC_DATA(_pData, _pStream, _streamSize, _pOffset)
+#define deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
+        (_pRpcstructurecopy)->_hal.deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
         (_pRpcstructurecopy)->_hal.deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_REQ_ATOMICS_CAPS_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
@@ -228,6 +238,8 @@ typedef struct RPCSTRUCTURECOPY_HAL_IFACES {
         (_pRpcstructurecopy)->_hal.deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_GPU_PARTITION_INFO_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
         (_pRpcstructurecopy)->_hal.deserialize_GPU_PARTITION_INFO(_pData, _pStream, _streamSize, _pOffset)
+#define deserialize_NV2080_CTRL_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
+        (_pRpcstructurecopy)->_hal.deserialize_NV2080_CTRL_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
         (_pRpcstructurecopy)->_hal.deserialize_NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_NV2080_CTRL_MC_GET_ENGINE_NOTIFICATION_INTR_VECTORS_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
@@ -240,10 +252,10 @@ typedef struct RPCSTRUCTURECOPY_HAL_IFACES {
         (_pRpcstructurecopy)->_hal.deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_RECORD_SIZE_PARAMS(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
         (_pRpcstructurecopy)->_hal.deserialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS(_pData, _pStream, _streamSize, _pOffset)
-#define deserialize_VGPU_STATIC_PROPERTIES_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
-        (_pRpcstructurecopy)->_hal.deserialize_VGPU_STATIC_PROPERTIES(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_NV2080_CTRL_BUS_GET_INFO_V2_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
         (_pRpcstructurecopy)->_hal.deserialize_NV2080_CTRL_BUS_GET_INFO_V2_PARAMS(_pData, _pStream, _streamSize, _pOffset)
+#define deserialize_VGPU_STATIC_PROPERTIES_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
+        (_pRpcstructurecopy)->_hal.deserialize_VGPU_STATIC_PROPERTIES(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_NV2080_CTRL_GPU_GET_CONSTRUCTED_FALCON_INFO_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
         (_pRpcstructurecopy)->_hal.deserialize_NV2080_CTRL_GPU_GET_CONSTRUCTED_FALCON_INFO_PARAMS(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \

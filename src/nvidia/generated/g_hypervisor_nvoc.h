@@ -146,6 +146,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHYPERVISOR;
 #define PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED_BASE_CAST
 #define PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED_BASE_NAME PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED
 
+
 NV_STATUS __nvoc_objCreateDynamic_OBJHYPERVISOR(OBJHYPERVISOR**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJHYPERVISOR(OBJHYPERVISOR**, Dynamic*, NvU32);
@@ -153,98 +154,92 @@ NV_STATUS __nvoc_objCreate_OBJHYPERVISOR(OBJHYPERVISOR**, Dynamic*, NvU32);
     __nvoc_objCreate_OBJHYPERVISOR((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+#define hypervisorIsVgxHyper() hypervisorIsVgxHyper_IMPL()
+
+NvBool hypervisorCheckForObjectAccess_IMPL(NvHandle hClient);
+#define hypervisorCheckForObjectAccess(hClient) hypervisorCheckForObjectAccess_IMPL(hClient)
+
+NvBool hypervisorIsType_IMPL(HYPERVISOR_TYPE hyperType);
+#define hypervisorIsType(hyperType) hypervisorIsType_IMPL(hyperType)
+
+NV_STATUS hypervisorConstruct_IMPL(struct OBJHYPERVISOR *arg_);
+#define __nvoc_hypervisorConstruct(arg_) hypervisorConstruct_IMPL(arg_)
+
+void hypervisorDestruct_IMPL(struct OBJHYPERVISOR *arg_this);
+#define __nvoc_hypervisorDestruct(arg_this) hypervisorDestruct_IMPL(arg_this)
+
+NV_STATUS hypervisorDetection_IMPL(struct OBJHYPERVISOR *arg_this, struct OBJOS *arg2);
+#ifdef __nvoc_hypervisor_h_disabled
+static inline NV_STATUS hypervisorDetection(struct OBJHYPERVISOR *arg_this, struct OBJOS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_hypervisor_h_disabled
+#define hypervisorDetection(arg_this, arg2) hypervisorDetection_IMPL(arg_this, arg2)
+#endif // __nvoc_hypervisor_h_disabled
+
+NvBool hypervisorPcieP2pDetection_IMPL(struct OBJHYPERVISOR *arg_this, NvU32 arg2);
+#ifdef __nvoc_hypervisor_h_disabled
+static inline NvBool hypervisorPcieP2pDetection(struct OBJHYPERVISOR *arg_this, NvU32 arg2) {
+    NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
+    return NV_FALSE;
+}
+#else // __nvoc_hypervisor_h_disabled
+#define hypervisorPcieP2pDetection(arg_this, arg2) hypervisorPcieP2pDetection_IMPL(arg_this, arg2)
+#endif // __nvoc_hypervisor_h_disabled
+
+#ifdef __nvoc_hypervisor_h_disabled
+static inline NV_STATUS hypervisorInjectInterrupt(struct OBJHYPERVISOR *arg_this, VGPU_NS_INTR *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_hypervisor_h_disabled
+#define hypervisorInjectInterrupt(arg_this, arg2) hypervisorInjectInterrupt_IMPL(arg_this, arg2)
+#endif // __nvoc_hypervisor_h_disabled
+
+HYPERVISOR_TYPE hypervisorGetHypervisorType_IMPL(struct OBJHYPERVISOR *arg_this);
+#ifdef __nvoc_hypervisor_h_disabled
+static inline HYPERVISOR_TYPE hypervisorGetHypervisorType(struct OBJHYPERVISOR *arg_this) {
+    NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
+    return 0;
+}
+#else // __nvoc_hypervisor_h_disabled
+#define hypervisorGetHypervisorType(arg_this) hypervisorGetHypervisorType_IMPL(arg_this)
+#endif // __nvoc_hypervisor_h_disabled
+
+void hypervisorSetHypervisorType_IMPL(struct OBJHYPERVISOR *pHypervisor, HYPERVISOR_TYPE type);
+#ifdef __nvoc_hypervisor_h_disabled
+static inline void hypervisorSetHypervisorType(struct OBJHYPERVISOR *pHypervisor, HYPERVISOR_TYPE type) {
+    NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
+}
+#else // __nvoc_hypervisor_h_disabled
+#define hypervisorSetHypervisorType(pHypervisor, type) hypervisorSetHypervisorType_IMPL(pHypervisor, type)
+#endif // __nvoc_hypervisor_h_disabled
+
+#ifdef __nvoc_hypervisor_h_disabled
+static inline void hypervisorSetHypervVgpuSupported(struct OBJHYPERVISOR *arg_this) {
+    NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
+}
+#else // __nvoc_hypervisor_h_disabled
+#define hypervisorSetHypervVgpuSupported(arg_this) hypervisorSetHypervVgpuSupported_IMPL(arg_this)
+#endif // __nvoc_hypervisor_h_disabled
+
+
+// Wrapper macros for halified functions
+#define hypervisorIsVgxHyper_HAL() hypervisorIsVgxHyper()
+#define hypervisorInjectInterrupt_HAL(arg_this, arg2) hypervisorInjectInterrupt(arg_this, arg2)
+#define hypervisorSetHypervVgpuSupported_HAL(arg_this) hypervisorSetHypervVgpuSupported(arg_this)
 
 // Dispatch functions
 NvBool hypervisorIsVgxHyper_IMPL(void);
 
 
-#define hypervisorIsVgxHyper() hypervisorIsVgxHyper_IMPL()
-#define hypervisorIsVgxHyper_HAL() hypervisorIsVgxHyper()
-
 NV_STATUS hypervisorInjectInterrupt_IMPL(struct OBJHYPERVISOR *arg1, VGPU_NS_INTR *arg2);
 
 
-#ifdef __nvoc_hypervisor_h_disabled
-static inline NV_STATUS hypervisorInjectInterrupt(struct OBJHYPERVISOR *arg1, VGPU_NS_INTR *arg2) {
-    NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_hypervisor_h_disabled
-#define hypervisorInjectInterrupt(arg1, arg2) hypervisorInjectInterrupt_IMPL(arg1, arg2)
-#endif //__nvoc_hypervisor_h_disabled
-
-#define hypervisorInjectInterrupt_HAL(arg1, arg2) hypervisorInjectInterrupt(arg1, arg2)
-
 void hypervisorSetHypervVgpuSupported_IMPL(struct OBJHYPERVISOR *arg1);
 
-
-#ifdef __nvoc_hypervisor_h_disabled
-static inline void hypervisorSetHypervVgpuSupported(struct OBJHYPERVISOR *arg1) {
-    NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
-}
-#else //__nvoc_hypervisor_h_disabled
-#define hypervisorSetHypervVgpuSupported(arg1) hypervisorSetHypervVgpuSupported_IMPL(arg1)
-#endif //__nvoc_hypervisor_h_disabled
-
-#define hypervisorSetHypervVgpuSupported_HAL(arg1) hypervisorSetHypervVgpuSupported(arg1)
-
-NvBool hypervisorCheckForObjectAccess_IMPL(NvHandle hClient);
-
-#define hypervisorCheckForObjectAccess(hClient) hypervisorCheckForObjectAccess_IMPL(hClient)
-NvBool hypervisorIsType_IMPL(HYPERVISOR_TYPE hyperType);
-
-#define hypervisorIsType(hyperType) hypervisorIsType_IMPL(hyperType)
-NV_STATUS hypervisorConstruct_IMPL(struct OBJHYPERVISOR *arg_);
-
-#define __nvoc_hypervisorConstruct(arg_) hypervisorConstruct_IMPL(arg_)
-void hypervisorDestruct_IMPL(struct OBJHYPERVISOR *arg1);
-
-#define __nvoc_hypervisorDestruct(arg1) hypervisorDestruct_IMPL(arg1)
-NV_STATUS hypervisorDetection_IMPL(struct OBJHYPERVISOR *arg1, struct OBJOS *arg2);
-
-#ifdef __nvoc_hypervisor_h_disabled
-static inline NV_STATUS hypervisorDetection(struct OBJHYPERVISOR *arg1, struct OBJOS *arg2) {
-    NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_hypervisor_h_disabled
-#define hypervisorDetection(arg1, arg2) hypervisorDetection_IMPL(arg1, arg2)
-#endif //__nvoc_hypervisor_h_disabled
-
-NvBool hypervisorPcieP2pDetection_IMPL(struct OBJHYPERVISOR *arg1, NvU32 arg2);
-
-#ifdef __nvoc_hypervisor_h_disabled
-static inline NvBool hypervisorPcieP2pDetection(struct OBJHYPERVISOR *arg1, NvU32 arg2) {
-    NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_hypervisor_h_disabled
-#define hypervisorPcieP2pDetection(arg1, arg2) hypervisorPcieP2pDetection_IMPL(arg1, arg2)
-#endif //__nvoc_hypervisor_h_disabled
-
-HYPERVISOR_TYPE hypervisorGetHypervisorType_IMPL(struct OBJHYPERVISOR *arg1);
-
-#ifdef __nvoc_hypervisor_h_disabled
-static inline HYPERVISOR_TYPE hypervisorGetHypervisorType(struct OBJHYPERVISOR *arg1) {
-    NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
-    HYPERVISOR_TYPE ret;
-    portMemSet(&ret, 0, sizeof(HYPERVISOR_TYPE));
-    return ret;
-}
-#else //__nvoc_hypervisor_h_disabled
-#define hypervisorGetHypervisorType(arg1) hypervisorGetHypervisorType_IMPL(arg1)
-#endif //__nvoc_hypervisor_h_disabled
-
-void hypervisorSetHypervisorType_IMPL(struct OBJHYPERVISOR *pHypervisor, HYPERVISOR_TYPE type);
-
-#ifdef __nvoc_hypervisor_h_disabled
-static inline void hypervisorSetHypervisorType(struct OBJHYPERVISOR *pHypervisor, HYPERVISOR_TYPE type) {
-    NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
-}
-#else //__nvoc_hypervisor_h_disabled
-#define hypervisorSetHypervisorType(pHypervisor, type) hypervisorSetHypervisorType_IMPL(pHypervisor, type)
-#endif //__nvoc_hypervisor_h_disabled
 
 #undef PRIVATE_FIELD
 

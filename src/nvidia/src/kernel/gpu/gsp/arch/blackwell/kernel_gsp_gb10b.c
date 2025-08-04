@@ -39,6 +39,7 @@
  *
  *   ---------------------------- <- WPR2 End (1M aligned)
  *   | (potential align. gap)   |
+ *   | GFW_SR (only on G*20Y)   |
  *   ---------------------------- <- gspFwWprEnd (128K aligned)
  *   | BOOT BIN (e.g. GSP-FMC)  |
  *   ---------------------------- <- bootBinOffset

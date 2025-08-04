@@ -27,8 +27,8 @@
 #include "core/core.h"
 
 NV_STATUS  RmP2PGetPages            (NvU64, NvU32, NvU64, NvU64, NvU64 *, NvU32 *, NvU32 *, NvU32 *, OBJGPU **, void *, void (*)(void *), void *);
-NV_STATUS  RmP2PGetPagesWithoutCallbackRegistration (NvU64, NvU32, NvU64, NvU64, NvU64 *, NvU32 *, NvU32 *, NvU32 *, OBJGPU **, void *);
-NV_STATUS  RmP2PGetPagesPersistent  (NvU64, NvU64, void **, NvU64 *, NvU32 *, NvBool, void *, void *, void **);
+NV_STATUS  RmP2PGetPagesWithoutCallbackRegistration (NvU64, NvU32, NvU64, NvU64, NvU64 *, NvU32 *, NvU32 *, NvU32 *, NvBool *, OBJGPU **, void *);
+NV_STATUS  RmP2PGetPagesPersistent  (NvU64, NvU64, void **, NvU64 *, NvU32 *, NvBool *, NvBool, void *, void *, void **);
 NV_STATUS  RmP2PRegisterCallback    (NvU64, NvU64, NvU64, void *, void (*)(void *), void *);
 NV_STATUS  RmP2PPutPages            (NvU64, NvU32, NvU64, void *);
 NV_STATUS  RmP2PGetGpuByAddress     (NvU64, NvU64, OBJGPU **);

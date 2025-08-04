@@ -73,6 +73,7 @@ static void      objClGpuMapEnhCfgSpace(OBJGPU *, OBJCL *);
 static void      objClGpuUnmapEnhCfgSpace(OBJGPU *);
 static NV_STATUS objClGpuIs3DController(OBJGPU *);
 static void      objClLoadPcieVirtualP2PApproval(OBJGPU *);
+static void      objClLoadPcieVirtualConfigBits(OBJGPU *);
 static void      _objClAdjustTcVcMap(OBJGPU *, OBJCL *, PORTDATA *);
 static void      _objClGetDownstreamAtomicsEnabledMask(void  *, NvU32, NvU32 *);
 static void      _objClGetUpstreamAtomicRoutingCap(void  *, NvU32, NvBool *);
@@ -553,7 +554,7 @@ clCheckUpstreamLtrSupport_IMPL
     if (!pCl->getProperty(pCl, PDB_PROP_CL_PCIE_CONFIG_ACCESSIBLE))
     {
         {
-            NV_PRINTF(LEVEL_ERROR, "PCIE config space is inaccessible!\n");
+            NV_PRINTF(LEVEL_NOTICE, "PCIE config space is inaccessible!\n");
             status = NV_ERR_NOT_SUPPORTED;
             goto clCheckUpstreamLtrSupport_exit;
         }
@@ -933,7 +934,7 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
     OBJPFM    *pPfm       = SYS_GET_PFM(pSys);
     KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
     NvBool     bIsMultiGpu;
-    NvU32      busIntfType = kbifGetBusIntfType_HAL(pKernelBif);
+    NvU32      busIntfType = gpuGetBusIntfType_HAL(pGpu);
 
     // verify we're an PCI Express graphics card
     if (busIntfType != NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS &&
@@ -956,6 +957,9 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
 
     // Load PCI Express virtual P2P approval config
     objClLoadPcieVirtualP2PApproval(pGpu);
+
+    // Load additional configuraiton bits from virtualized cfg space
+    objClLoadPcieVirtualConfigBits(pGpu);
 
     //
     // Disable NOSNOOP bit for Passthrough.
@@ -983,6 +987,7 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
     // discovery to build the allow list for enabling PCIe atomics feature.
     //
     kbifProbePcieReqAtomicCaps_HAL(pGpu, pKernelBif);
+
     //
     // Read device atomic completer capabilities early so they can be
     // passed to GSP.
@@ -1101,7 +1106,7 @@ NV_STATUS clInitPcie_IMPL
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    busIntfType = kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu));
+    busIntfType = gpuGetBusIntfType_HAL(pGpu);
 
     // verify we're an PCI Express graphics card
     if (busIntfType != NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS &&
@@ -1187,8 +1192,7 @@ objClInitGpuPortData
         //
         // For MODS debug breakpoints are always fatal and MODS is sometimes run
         // on systems where the up stream port cannot be determined
-        if ((kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu)) !=
-             NV2080_CTRL_BUS_INFO_TYPE_FPCI) &&
+        if ((gpuGetBusIntfType_HAL(pGpu) != NV2080_CTRL_BUS_INFO_TYPE_FPCI) &&
             (!pHypervisor || !pHypervisor->bDetected) &&
             !RMCFG_FEATURE_MODS_FEATURES)
         {
@@ -1736,7 +1740,7 @@ clPcieReadPortConfigReg_IMPL
     NvU32    *value
 )
 {
-    if ((kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu)) !=
+    if ((gpuGetBusIntfType_HAL(pGpu) !=
          NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) ||
         !pPort->addr.valid)
     {
@@ -1842,7 +1846,7 @@ objClBR03Exists
     NvU32 gpuDomain;
     NvU16 vendor, device;
 
-    if ((kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu)) !=
+    if ((gpuGetBusIntfType_HAL(pGpu) !=
          NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) ||
         !pGpu->gpuClData.upstreamPort.addr.valid)
     {
@@ -1881,7 +1885,7 @@ objClBR04Exists
     NvU32 gpuDomain;
     NvU16 vendor, device;
 
-    if ((kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu)) !=
+    if ((gpuGetBusIntfType_HAL(pGpu) !=
          NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) ||
         !pGpu->gpuClData.upstreamPort.addr.valid)
     {
@@ -1927,7 +1931,7 @@ clFindBrdgUpstreamPort_IMPL
     NvU32 domain = 0;
     NvU16 vendor = 0, device = 0;
 
-    if ((kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu)) !=
+    if ((gpuGetBusIntfType_HAL(pGpu) !=
          NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) ||
         !pGpu->gpuClData.upstreamPort.addr.valid)
     {
@@ -2680,7 +2684,7 @@ clPcieWriteRootPortConfigReg_IMPL
     NvU32   value
 )
 {
-    if ((kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu)) !=
+    if ((gpuGetBusIntfType_HAL(pGpu) !=
          NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) ||
         !pGpu->gpuClData.rootPort.addr.valid)
     {
@@ -3540,7 +3544,7 @@ clPcieGetMaxCapableLinkWidth_IMPL
     // Taking care only mobile systems about system max capable link width issue
     // of bug 427155.
     //
-    if ((kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu)) ==
+    if ((gpuGetBusIntfType_HAL(pGpu) ==
          NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) &&
         pGpu->gpuClData.rootPort.addr.valid)
     {
@@ -3834,14 +3838,11 @@ GetMcfgTableFromOS
 
             // Second call to actually get the table
             if (osGetAcpiTable(NV_ACPI_TABLE_SIGNATURE_GFCM, ppMcfgTable,
-                               *pTableSize, &retSize) == NV_OK)
-            {
-                pOS->setProperty(pOS, PDB_PROP_OS_GET_ACPI_TABLE_FROM_UEFI, NV_TRUE);
-            }
-            else
+                               *pTableSize, &retSize) != NV_OK)
             {
                 portMemFree(*ppMcfgTable);
                 *pTableSize = 0;
+                return NV_FALSE;
             }
         }
 
@@ -4019,13 +4020,12 @@ typedef struct
 /*
  * @brief Store PCI-E config space base addresses for all domain numbers
  *
- * @param[in]  pOS            OBJOS pointer
  * @param[in]  pCl            OBJCL pointer
  * @param[in]  pMcfgTable     Pointer to buffer for MCFG table
  * @param[in]  len            Length of MCFG table
  *
  */
-static NV_STATUS storePcieGetConfigSpaceBaseFromMcfgTable(OBJOS *pOS, OBJCL *pCl, NvU8 *pMcfgTable, NvU32 len)
+static NV_STATUS storePcieGetConfigSpaceBaseFromMcfgTable(OBJCL *pCl, NvU8 *pMcfgTable, NvU32 len)
 {
     MCFG_ADDRESS_ALLOCATION_STRUCTURE *pMcfgAddressAllocationStructure;
     MCFG_ADDRESS_ALLOCATION_STRUCTURE mcfgAddressAllocationStructure;
@@ -4142,7 +4142,13 @@ clStorePcieConfigSpaceBaseFromMcfg_IMPL(OBJCL *pCl)
         return NV_ERR_INVALID_DATA;
     }
 
-    if (GetMcfgTableFromOS(pCl, pOS, (void **)&pData, &len) == NV_FALSE)
+    if (GetMcfgTableFromOS(pCl, pOS, (void **)&pData, &len))
+    {
+        status = storePcieGetConfigSpaceBaseFromMcfgTable(pCl, pData, len);
+        portMemFree(pData);
+        return status;
+    }
+    else
     {
         //
         // If OS api doesn't provide MCFG table then MCFG table address
@@ -4203,21 +4209,14 @@ clStorePcieConfigSpaceBaseFromMcfg_IMPL(OBJCL *pCl)
             goto clStorePcieConfigSpaceBaseFromMcfg_exit;
         }
 
+        status = storePcieGetConfigSpaceBaseFromMcfgTable(pCl, pData, len);
     }
 
-    status = storePcieGetConfigSpaceBaseFromMcfgTable(pOS, pCl, pData, len);
-
 clStorePcieConfigSpaceBaseFromMcfg_exit:
-    if (pData)
+
+    if (pData != NULL)
     {
-        if (pOS->getProperty(pOS, PDB_PROP_OS_GET_ACPI_TABLE_FROM_UEFI))
-        {
-            portMemFree(pData);
-        }
-        else
-        {
-            osUnmapKernelSpace((void*)pData, len);
-        }
+        osUnmapKernelSpace(pData, len);
     }
 
     return status;
@@ -4371,6 +4370,57 @@ objClLoadPcieVirtualP2PApproval(OBJGPU *pGpu)
     NV_PRINTF(LEVEL_INFO,
               "Hypervisor has assigned GPU%u to peer clique %u\n",
               gpuGetInstance(pGpu), pGpu->pciePeerClique.id);
+}
+
+static void
+objClLoadPcieVirtualConfigBits(OBJGPU *pGpu)
+{
+    void *handle;
+    NvU32 data32;
+    NvU8  cap;
+    NvU8  bus    = gpuGetBus(pGpu);
+    NvU8  device = gpuGetDevice(pGpu);
+    NvU32 domain = gpuGetDomain(pGpu);
+    NvU32 offset = 0;
+    NvU32 sig    = 0;
+
+    if (!IS_PASSTHRU(pGpu))
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "Skipping non-pass-through GPU%u\n", gpuGetInstance(pGpu));
+        return;
+    }
+
+    handle = osPciInitHandle(domain, bus, device, 0, NULL, NULL);
+
+    //
+    // Walk the list and find enable bits
+    //
+    cap = osPciReadByte(handle, PCI_CAPABILITY_LIST);
+    while ((cap != 0) && (sig != NV_PCI_VIRTUAL_CONFIG_BITS_SIGNATURE))
+    {
+        offset = cap;
+        data32 = osPciReadDword(handle, offset);
+        cap = (NvU8)((data32 >> 8) & 0xFF);
+
+        if ((data32 & CAP_ID_MASK) != CAP_ID_VENDOR_SPECIFIC)
+            continue;
+
+        sig = DRF_VAL(_PCI, _VIRTUAL_CONFIG_BITS_CAP_0, _SIG_LO, data32);
+        data32 = osPciReadDword(handle, offset + 4);
+        sig |= (DRF_VAL(_PCI, _VIRTUAL_CONFIG_BITS_CAP_1, _SIG_HI, data32) << 8);
+    }
+
+    if (sig == NV_PCI_VIRTUAL_CONFIG_BITS_SIGNATURE)
+    {
+        // data32 now contains the second dword of the capability structure.
+        pGpu->virtualConfigBits =
+            (NvU16) DRF_VAL(_PCI, _VIRTUAL_CONFIG_BITS_CAP_1, _VALUE, data32);
+
+        NV_PRINTF(LEVEL_INFO,
+                  "Hypervisor has specified config bits %u for GPU%u\n",
+                  pGpu->virtualConfigBits, gpuGetInstance(pGpu));
+    }
 }
 
 /*!

@@ -80,6 +80,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJCL =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_clDestruct(OBJCL*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_OBJCL(OBJCL *pThis) {
     __nvoc_clDestruct(pThis);

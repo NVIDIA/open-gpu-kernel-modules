@@ -86,11 +86,6 @@ struct VgpuApi {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct VgpuApi *__nvoc_pbase_VgpuApi;    // vgpuapi
 
-    // Vtable with 3 per-object function pointers
-    NV_STATUS (*__vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties__)(struct VgpuApi * /*this*/, NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES *);  // exported (id=0xa0800103)
-    NV_STATUS (*__vgpuapiCtrlCmdVgpuDisplayCleanupSurface__)(struct VgpuApi * /*this*/, NVA080_CTRL_VGPU_DISPLAY_CLEANUP_SURFACE_PARAMS *);  // exported (id=0xa0800104)
-    NV_STATUS (*__vgpuapiCtrlCmdVGpuGetConfig__)(struct VgpuApi * /*this*/, NVA080_CTRL_VGPU_GET_CONFIG_PARAMS *);  // exported (id=0xa0800301)
-
     // Data members
     NODE node;
     NvHandle handle;
@@ -163,13 +158,45 @@ NV_STATUS __nvoc_objCreate_VgpuApi(VgpuApi**, Dynamic*, NvU32, struct CALL_CONTE
     __nvoc_objCreate_VgpuApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
-#define vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties_FNPTR(pVgpuApi) pVgpuApi->__vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties__
-#define vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties(pVgpuApi, pParams) vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties_DISPATCH(pVgpuApi, pParams)
-#define vgpuapiCtrlCmdVgpuDisplayCleanupSurface_FNPTR(pVgpuApi) pVgpuApi->__vgpuapiCtrlCmdVgpuDisplayCleanupSurface__
-#define vgpuapiCtrlCmdVgpuDisplayCleanupSurface(pVgpuApi, pParams) vgpuapiCtrlCmdVgpuDisplayCleanupSurface_DISPATCH(pVgpuApi, pParams)
-#define vgpuapiCtrlCmdVGpuGetConfig_FNPTR(pVgpuApi) pVgpuApi->__vgpuapiCtrlCmdVGpuGetConfig__
-#define vgpuapiCtrlCmdVGpuGetConfig(pVgpuApi, pParams) vgpuapiCtrlCmdVGpuGetConfig_DISPATCH(pVgpuApi, pParams)
+// Wrapper macros for implementation functions
+NV_STATUS vgpuapiConstruct_IMPL(struct VgpuApi *arg_pVgpuApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_vgpuapiConstruct(arg_pVgpuApi, arg_pCallContext, arg_pParams) vgpuapiConstruct_IMPL(arg_pVgpuApi, arg_pCallContext, arg_pParams)
+
+void vgpuapiDestruct_IMPL(struct VgpuApi *pVgpuApi);
+#define __nvoc_vgpuapiDestruct(pVgpuApi) vgpuapiDestruct_IMPL(pVgpuApi)
+
+NV_STATUS vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties_IMPL(struct VgpuApi *pVgpuApi, NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES *pParams);
+#ifdef __nvoc_vgpuapi_h_disabled
+static inline NV_STATUS vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties(struct VgpuApi *pVgpuApi, NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("VgpuApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_vgpuapi_h_disabled
+#define vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties(pVgpuApi, pParams) vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties_IMPL(pVgpuApi, pParams)
+#endif // __nvoc_vgpuapi_h_disabled
+
+NV_STATUS vgpuapiCtrlCmdVgpuDisplayCleanupSurface_IMPL(struct VgpuApi *pVgpuApi, NVA080_CTRL_VGPU_DISPLAY_CLEANUP_SURFACE_PARAMS *pParams);
+#ifdef __nvoc_vgpuapi_h_disabled
+static inline NV_STATUS vgpuapiCtrlCmdVgpuDisplayCleanupSurface(struct VgpuApi *pVgpuApi, NVA080_CTRL_VGPU_DISPLAY_CLEANUP_SURFACE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("VgpuApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_vgpuapi_h_disabled
+#define vgpuapiCtrlCmdVgpuDisplayCleanupSurface(pVgpuApi, pParams) vgpuapiCtrlCmdVgpuDisplayCleanupSurface_IMPL(pVgpuApi, pParams)
+#endif // __nvoc_vgpuapi_h_disabled
+
+NV_STATUS vgpuapiCtrlCmdVGpuGetConfig_IMPL(struct VgpuApi *pVgpuApi, NVA080_CTRL_VGPU_GET_CONFIG_PARAMS *pParams);
+#ifdef __nvoc_vgpuapi_h_disabled
+static inline NV_STATUS vgpuapiCtrlCmdVGpuGetConfig(struct VgpuApi *pVgpuApi, NVA080_CTRL_VGPU_GET_CONFIG_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("VgpuApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_vgpuapi_h_disabled
+#define vgpuapiCtrlCmdVGpuGetConfig(pVgpuApi, pParams) vgpuapiCtrlCmdVGpuGetConfig_IMPL(pVgpuApi, pParams)
+#endif // __nvoc_vgpuapi_h_disabled
+
+
+// Wrapper macros for halified functions
 #define vgpuapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define vgpuapiControl(pGpuResource, pCallContext, pParams) vgpuapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define vgpuapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
@@ -222,18 +249,6 @@ NV_STATUS __nvoc_objCreate_VgpuApi(VgpuApi**, Dynamic*, NvU32, struct CALL_CONTE
 #define vgpuapiAddAdditionalDependants(pClient, pResource, pReference) vgpuapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
-static inline NV_STATUS vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties_DISPATCH(struct VgpuApi *pVgpuApi, NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES *pParams) {
-    return pVgpuApi->__vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties__(pVgpuApi, pParams);
-}
-
-static inline NV_STATUS vgpuapiCtrlCmdVgpuDisplayCleanupSurface_DISPATCH(struct VgpuApi *pVgpuApi, NVA080_CTRL_VGPU_DISPLAY_CLEANUP_SURFACE_PARAMS *pParams) {
-    return pVgpuApi->__vgpuapiCtrlCmdVgpuDisplayCleanupSurface__(pVgpuApi, pParams);
-}
-
-static inline NV_STATUS vgpuapiCtrlCmdVGpuGetConfig_DISPATCH(struct VgpuApi *pVgpuApi, NVA080_CTRL_VGPU_GET_CONFIG_PARAMS *pParams) {
-    return pVgpuApi->__vgpuapiCtrlCmdVGpuGetConfig__(pVgpuApi, pParams);
-}
-
 static inline NV_STATUS vgpuapiControl_DISPATCH(struct VgpuApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pGpuResource->__nvoc_metadata_ptr->vtable.__vgpuapiControl__(pGpuResource, pCallContext, pParams);
 }
@@ -340,12 +355,6 @@ NV_STATUS vgpuapiCtrlCmdVgpuDisplayCleanupSurface_IMPL(struct VgpuApi *pVgpuApi,
 
 NV_STATUS vgpuapiCtrlCmdVGpuGetConfig_IMPL(struct VgpuApi *pVgpuApi, NVA080_CTRL_VGPU_GET_CONFIG_PARAMS *pParams);
 
-NV_STATUS vgpuapiConstruct_IMPL(struct VgpuApi *arg_pVgpuApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_vgpuapiConstruct(arg_pVgpuApi, arg_pCallContext, arg_pParams) vgpuapiConstruct_IMPL(arg_pVgpuApi, arg_pCallContext, arg_pParams)
-void vgpuapiDestruct_IMPL(struct VgpuApi *pVgpuApi);
-
-#define __nvoc_vgpuapiDestruct(pVgpuApi) vgpuapiDestruct_IMPL(pVgpuApi)
 #undef PRIVATE_FIELD
 
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -238,7 +238,7 @@ NV_STATUS gsyncRefSignal_P2060               (OBJGPU *, PDACEXTERNALDEVICE, REFT
 NV_STATUS gsyncRefMaster_P2060               (OBJGPU *, OBJGSYNC *, REFTYPE, NvU32 *DisplayMask,
                                               NvU32 *Refresh, NvBool retainMaster,
                                               NvBool skipSwapBarrierWar);
-NV_STATUS gsyncRefSlaves_P2060               (OBJGPU *, PDACEXTERNALDEVICE, REFTYPE, NvU32 *DisplayMask_s, NvU32 *Refresh);
+NV_STATUS gsyncRefSlaves_P2060               (OBJGPU *, OBJGSYNC *, REFTYPE, NvU32 *DisplayMask_s, NvU32 *Refresh);
 NV_STATUS gsyncGetCplStatus_P2060            (OBJGPU *, PDACEXTERNALDEVICE, GSYNCSTATUS, NvU32 *);
 NV_STATUS gsyncGetEmitTestSignal_P2060       (OBJGPU *, PDACEXTERNALDEVICE, NvU32 *);
 NV_STATUS gsyncSetEmitTestSignal_P2060       (OBJGPU *, PDACEXTERNALDEVICE, NvU32);

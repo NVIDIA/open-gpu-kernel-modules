@@ -163,7 +163,15 @@ NV_STATUS __nvoc_objCreate_MIGConfigSession(MIGConfigSession**, Dynamic*, NvU32,
     __nvoc_objCreate_MIGConfigSession((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS migconfigsessionConstruct_IMPL(struct MIGConfigSession *arg_pMIGConfigSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_migconfigsessionConstruct(arg_pMIGConfigSession, arg_pCallContext, arg_pParams) migconfigsessionConstruct_IMPL(arg_pMIGConfigSession, arg_pCallContext, arg_pParams)
+
+void migconfigsessionDestruct_IMPL(struct MIGConfigSession *pMIGConfigSession);
+#define __nvoc_migconfigsessionDestruct(pMIGConfigSession) migconfigsessionDestruct_IMPL(pMIGConfigSession)
+
+
+// Wrapper macros for halified functions
 #define migconfigsessionAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
 #define migconfigsessionAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) migconfigsessionAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define migconfigsessionShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
@@ -292,12 +300,6 @@ static inline void migconfigsessionAddAdditionalDependants_DISPATCH(struct RsCli
     pResource->__nvoc_metadata_ptr->vtable.__migconfigsessionAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-NV_STATUS migconfigsessionConstruct_IMPL(struct MIGConfigSession *arg_pMIGConfigSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_migconfigsessionConstruct(arg_pMIGConfigSession, arg_pCallContext, arg_pParams) migconfigsessionConstruct_IMPL(arg_pMIGConfigSession, arg_pCallContext, arg_pParams)
-void migconfigsessionDestruct_IMPL(struct MIGConfigSession *pMIGConfigSession);
-
-#define __nvoc_migconfigsessionDestruct(pMIGConfigSession) migconfigsessionDestruct_IMPL(pMIGConfigSession)
 #undef PRIVATE_FIELD
 
 

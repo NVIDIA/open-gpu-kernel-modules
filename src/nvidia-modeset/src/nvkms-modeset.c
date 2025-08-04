@@ -148,14 +148,14 @@ ClearProposedModeSetHwState(const NVDevEvoRec *pDevEvo,
  * Inherit the previous modeset state as part of this modeset if:
  * - The requesting client is not the internal NVKMS client (i.e., this is not
  * a console restore modeset).
- * - There is no modeset ownership change since the last modeset.
+ * - There is no modeset ownership or sub-ownership change since the last modeset.
  */
 static NvBool
 InheritPreviousModesetState(const NVDevEvoRec *pDevEvo,
                             const struct NvKmsPerOpenDev *pCurrentModesetOpenDev)
 {
     return (pCurrentModesetOpenDev != pDevEvo->pNvKmsOpenDev) &&
-                !pDevEvo->modesetOwnerChanged;
+                !pDevEvo->modesetOwnerOrSubOwnerChanged;
 }
 
 /*!
@@ -4121,7 +4121,7 @@ NvBool nvSetDispModeEvo(NVDevEvoPtr pDevEvo,
 
     pDevEvo->skipConsoleRestore = FALSE;
 
-    pDevEvo->modesetOwnerChanged = FALSE;
+    pDevEvo->modesetOwnerOrSubOwnerChanged = FALSE;
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
         /*

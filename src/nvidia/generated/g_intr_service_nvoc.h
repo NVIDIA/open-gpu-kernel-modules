@@ -159,7 +159,9 @@ NV_STATUS __nvoc_objCreate_IntrService(IntrService**, Dynamic*, NvU32);
     __nvoc_objCreate_IntrService((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+
+// Wrapper macros for halified functions
 #define intrservRegisterIntrService_FNPTR(pIntrService) pIntrService->__nvoc_metadata_ptr->vtable.__intrservRegisterIntrService__
 #define intrservRegisterIntrService(pGpu, pIntrService, pRecords) intrservRegisterIntrService_DISPATCH(pGpu, pIntrService, pRecords)
 #define intrservClearInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_metadata_ptr->vtable.__intrservClearInterrupt__

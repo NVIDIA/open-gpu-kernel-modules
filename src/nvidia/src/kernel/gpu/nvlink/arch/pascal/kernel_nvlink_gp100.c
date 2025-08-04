@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -389,3 +389,16 @@ knvlinkCoreGetDevicePciInfo_GP100
     devInfo->pciInfo.function = 0;
 }
 #endif
+
+/*!
+ * @brief Get supported core link states for this device
+ */
+NvU32
+knvlinkGetSupportedCoreLinkStateMask_GP100
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    return 0xFFFFFFFF;
+}

@@ -155,7 +155,12 @@ NV_STATUS __nvoc_objCreate_PhysicalMemory(PhysicalMemory**, Dynamic*, NvU32, CAL
     __nvoc_objCreate_PhysicalMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS physmemConstruct_IMPL(struct PhysicalMemory *arg_pPhysicalMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_physmemConstruct(arg_pPhysicalMemory, arg_pCallContext, arg_pParams) physmemConstruct_IMPL(arg_pPhysicalMemory, arg_pCallContext, arg_pParams)
+
+
+// Wrapper macros for halified functions
 #define physmemCanCopy_FNPTR(pPhysicalMemory) pPhysicalMemory->__nvoc_metadata_ptr->vtable.__physmemCanCopy__
 #define physmemCanCopy(pPhysicalMemory) physmemCanCopy_DISPATCH(pPhysicalMemory)
 #define physmemIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsDuplicate__
@@ -316,9 +321,6 @@ static inline void physmemAddAdditionalDependants_DISPATCH(struct RsClient *pCli
 
 NvBool physmemCanCopy_IMPL(struct PhysicalMemory *pPhysicalMemory);
 
-NV_STATUS physmemConstruct_IMPL(struct PhysicalMemory *arg_pPhysicalMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_physmemConstruct(arg_pPhysicalMemory, arg_pCallContext, arg_pParams) physmemConstruct_IMPL(arg_pPhysicalMemory, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 

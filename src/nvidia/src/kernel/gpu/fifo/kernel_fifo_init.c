@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -173,6 +173,13 @@ kfifoDestruct_IMPL
     // Free all outstanding callback entries
     listDestroy(&pKernelFifo->postSchedulingEnableHandlerList);
     listDestroy(&pKernelFifo->preSchedulingDisableHandlerList);
+
+    // Destroy the Runlist write lock.
+    if (pKernelFifo->pLockRunlistWriteVfs != NULL)
+    {
+        portSyncSpinlockDestroy(pKernelFifo->pLockRunlistWriteVfs);
+        pKernelFifo->pLockRunlistWriteVfs = NULL;
+    }
 
     portMemFree(pEngineInfo->engineInfoList);
     pEngineInfo->engineInfoList = NULL;

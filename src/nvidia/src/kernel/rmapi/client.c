@@ -321,12 +321,14 @@ rmclientInterMap_IMPL
     // Use virtual MapTo to perform the class-specific mapping to pMapperRef
     portMemSet(&mapToParams, 0, sizeof(mapToParams));
 
-    mapToParams.pMemoryRef = pMappableRef;
-    mapToParams.offset     = pParams->offset;
-    mapToParams.length     = pParams->length;
-    mapToParams.flags      = pParams->flags;
-    mapToParams.pDmaOffset = &pParams->dmaOffset;
-    mapToParams.ppMemDesc = (MEMORY_DESCRIPTOR**)&pParams->pMemDesc;
+    mapToParams.pMemoryRef   = pMappableRef;
+    mapToParams.offset       = pParams->offset;
+    mapToParams.length       = pParams->length;
+    mapToParams.flags        = pParams->flags;
+    mapToParams.flags2       = pParams->flags2;
+    mapToParams.kindOverride = pParams->kindOverride;
+    mapToParams.pDmaOffset   = &pParams->dmaOffset;
+    mapToParams.ppMemDesc    = (MEMORY_DESCRIPTOR**)&pParams->pMemDesc;
 
     mapToParams.pGpu             = pPrivate->pGpu;
     mapToParams.pSrcGpu          = pPrivate->pSrcGpu;

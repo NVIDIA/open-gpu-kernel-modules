@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -297,8 +297,8 @@ NV_STATUS
 bitVectorClr_IMPL
 (
     NV_BITVECTOR *pBitVector,
-    NvU16 bitVectorLast,
-    NvU16 idx
+    NvU32 bitVectorLast,
+    NvU32 idx
 );
 
 NV_STATUS
@@ -320,8 +320,8 @@ NV_STATUS
 bitVectorSet_IMPL
 (
     NV_BITVECTOR *pBitVector,
-    NvU16 bitVectorLast,
-    NvU16 idx
+    NvU32 bitVectorLast,
+    NvU32 idx
 );
 
 NV_STATUS
@@ -336,8 +336,8 @@ NV_STATUS
 bitVectorInv_IMPL
 (
     NV_BITVECTOR *pBitVector,
-    NvU16 bitVectorLast,
-    NvU16 idx
+    NvU32 bitVectorLast,
+    NvU32 idx
 );
 
 NV_STATUS
@@ -393,8 +393,8 @@ NvBool
 bitVectorTest_IMPL
 (
     const NV_BITVECTOR *pBitVector,
-    NvU16 bitVectorLast,
-    NvU16 idx
+    NvU32 bitVectorLast,
+    NvU32 idx
 );
 
 NV_STATUS

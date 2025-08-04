@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -118,6 +118,13 @@ _intrCopyVfStaticInterruptTable
         entry.intrVector         = pParams->entries[i].intrVectorStall;
         entry.intrVectorNonStall = pParams->entries[i].intrVectorStall;
 
+        NV_PRINTF(LEVEL_INFO,
+            "VF: Static intr MC_ENGINE_IDX=%u, stall=0x%08x, nonstall=0x%08x, pmcMask=0x%08x\n",
+            entry.mcEngine,
+            entry.intrVector,
+            entry.intrVectorNonStall,
+            entry.pmcIntrMask);
+
         NV_ASSERT_OR_RETURN(vectAppend(pTable, &entry) != NULL,
                             NV_ERR_NO_MEMORY);
     }
@@ -198,6 +205,12 @@ _intrCopyVfDynamicInterruptTable
             entry.pmcIntrMask = NV_PMC_INTR_INVALID_MASK;
         }
 
+        NV_PRINTF(LEVEL_INFO,
+            "VF: Dynamic intr MC_ENGINE_IDX=%u, stall=0x%08x, nonstall=0x%08x, pmcMask=0x%08x\n",
+            entry.mcEngine,
+            entry.intrVector,
+            entry.intrVectorNonStall,
+            entry.pmcIntrMask);
         NV_ASSERT_OR_RETURN(vectAppend(pTable, &entry) != NULL,
                             NV_ERR_NO_MEMORY);
     }
@@ -239,8 +252,9 @@ intrInitInterruptTable_VF
                                                             &pVSI->mcEngineNotificationIntrVectors));
     vectTrim(&pIntr->intrTable, 0);
 
-    // Bug 3823562 TODO: Fetch this from Host RM
-    intrInitSubtreeMap_HAL(pGpu, pIntr);
+    portMemCopy(pIntr->subtreeMap, sizeof(pIntr->subtreeMap),
+                pVSI->intrCategorySubtreeMapParams.subtreeMap,
+                sizeof(pVSI->intrCategorySubtreeMapParams.subtreeMap));
 
     return NV_OK;
 }

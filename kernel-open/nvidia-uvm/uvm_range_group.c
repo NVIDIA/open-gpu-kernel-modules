@@ -184,6 +184,7 @@ static NV_STATUS uvm_range_group_va_range_migrate_block_locked(uvm_va_range_mana
     uvm_gpu_id_t gpu_id;
     uvm_processor_mask_t *map_mask = &va_block_context->caller_processor_mask;
     uvm_va_policy_t *policy = &managed_range->policy;
+
     // Set the migration CPU NUMA node from the policy.
     va_block_context->make_resident.dest_nid = policy->preferred_nid;
 

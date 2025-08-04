@@ -31,12 +31,24 @@
 #define NV_XAL_EP_UFLUSH_L2_FLUSH_DIRTY_COMPLETED_TOKEN                              30:0
 #define NV_XAL_EP_UFLUSH_L2_FLUSH_DIRTY_COMPLETED_STATUS                            31:31
 #define NV_XAL_EP_UFLUSH_L2_FLUSH_DIRTY_COMPLETED_STATUS_BUSY                         0x1
+#define NV_XAL_EP_UFLUSH_FB_FLUSH                                              0x0010f800 /* R--4R */
+#define NV_XAL_EP_UFLUSH_FB_FLUSH_TOKEN                                              30:0 /* R-IUF */
+#define NV_XAL_EP_UFLUSH_FB_FLUSH_TOKEN_INIT                                   0x00000000 /* R-I-V */
+#define NV_XAL_EP_UFLUSH_FB_FLUSH_COMPLETED                                    0x0010f804 /* R--4R */
+#define NV_XAL_EP_UFLUSH_FB_FLUSH_COMPLETED_TOKEN                                    30:0 /* R-IUF */
+#define NV_XAL_EP_UFLUSH_FB_FLUSH_COMPLETED_TOKEN_INIT                         0x00000000 /* R-I-V */
+#define NV_XAL_EP_UFLUSH_FB_FLUSH_COMPLETED_STATUS                                  31:31 /* R-IUF */
+#define NV_XAL_EP_UFLUSH_FB_FLUSH_COMPLETED_STATUS_IDLE                               0x0 /* R-I-V */
+#define NV_XAL_EP_UFLUSH_FB_FLUSH_COMPLETED_STATUS_BUSY                               0x1 /* R---V */
 #define NV_XAL_EP_UFLUSH_L2_CLEAN_COMPTAGS_COMPLETED                           0x0010f80c
 #define NV_XAL_EP_UFLUSH_L2_CLEAN_COMPTAGS_COMPLETED_TOKEN                           30:0
 #define NV_XAL_EP_UFLUSH_L2_CLEAN_COMPTAGS_COMPLETED_STATUS                         31:31
 #define NV_XAL_EP_UFLUSH_L2_CLEAN_COMPTAGS_COMPLETED_STATUS_BUSY                      0x1
 #define NV_XAL_EP_UFLUSH_L2_CLEAN_COMPTAGS                                     0x0010f808
 #define NV_XAL_EP_UFLUSH_L2_CLEAN_COMPTAGS_TOKEN                                     30:0
+#define NV_XAL_EP_ZEROS                                                        0x0010f900 /* C--4R */
+#define NV_XAL_EP_ZEROS_DATA                                                         31:0 /* C--VF */
+#define NV_XAL_EP_ZEROS_DATA_ZEROS                                             0x00000000 /* C---V */
 #define NV_XAL_EP_INTR_0                                                       0x0010f100
 #define NV_XAL_EP_INTR_0_FB_ACK_TIMEOUT                                               5:5
 #define NV_XAL_EP_INTR_0_FB_ACK_TIMEOUT_PENDING                                       0x1

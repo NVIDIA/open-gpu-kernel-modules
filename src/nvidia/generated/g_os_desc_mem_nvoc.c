@@ -393,6 +393,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__OsDescMemory =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_osdescDestruct(OsDescMemory*);
 void __nvoc_dtor_Memory(Memory*);
 void __nvoc_dtor_OsDescMemory(OsDescMemory *pThis) {
     __nvoc_osdescDestruct(pThis);

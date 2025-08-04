@@ -24,9 +24,7 @@
 
 #if defined(NV_DRM_AVAILABLE)
 
-#if defined(NV_DRM_DRM_PRIME_H_PRESENT)
 #include <drm/drm_prime.h>
-#endif
 
 #include "nvidia-drm-gem-user-memory.h"
 #include "nvidia-drm-helper.h"
@@ -116,11 +114,7 @@ static vm_fault_t __nv_vm_insert_mixed_helper(
 {
     int ret;
 
-#if defined(NV_PFN_TO_PFN_T_PRESENT)
     ret = vm_insert_mixed(vma, address, pfn_to_pfn_t(pfn));
-#else
-    ret = vm_insert_mixed(vma, address, pfn);
-#endif
 
     switch (ret) {
         case 0:
@@ -145,7 +139,7 @@ static vm_fault_t __nv_drm_gem_user_memory_handle_vma_fault(
     struct vm_fault *vmf)
 {
     struct nv_drm_gem_user_memory *nv_user_memory = to_nv_user_memory(nv_gem);
-    unsigned long address = nv_page_fault_va(vmf);
+    unsigned long address = vmf->address;
     struct drm_gem_object *gem = vma->vm_private_data;
     unsigned long page_offset;
     unsigned long pfn;
@@ -157,7 +151,13 @@ static vm_fault_t __nv_drm_gem_user_memory_handle_vma_fault(
 #if !defined(NV_LINUX)
     return vmf_insert_pfn(vma, address, pfn);
 #elif defined(NV_VMF_INSERT_MIXED_PRESENT)
+
+#if defined(NV_LINUX_PFN_T_H_PRESENT)
     return vmf_insert_mixed(vma, address, pfn_to_pfn_t(pfn));
+#else
+    return vmf_insert_mixed(vma, address, pfn);
+#endif
+
 #else
     return __nv_vm_insert_mixed_helper(vma, address, pfn);
 #endif

@@ -81,28 +81,24 @@
 
 #define NV_DP2X_IGNORE_CABLE_ID_CAPS                    "DP2X_IGNORE_CABLE_ID_CAPS"
 
-#define NV_DP2X_REGKEY_DISABLE_EFF_BPP_SST_8b10b        "DP2X_REGKEY_DISABLE_EFF_BPP_SST_8b10b"
-
 #define NV_DP2X_REGKEY_VCONN_SOURCE_UNKNOWN_WAR         "DP2X_VCONN_SOURCE_UNKNOWN_WAR"
+
+#define NV_DP2X_REGKEY_DISABLE_EFF_BPP_SST_8b10b        "DP2X_REGKEY_DISABLE_EFF_BPP_SST_8b10b"
 
 //
 // Bug 4388987 : This regkey will disable reading PCON caps for MST.
 //
-#define NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED    "DP_BUG_4388987_WAR"
-#define NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION   "DP_DISABLE_TUNNEL_BW_ALLOCATION"
+#define NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED                  "DP_BUG_4388987_WAR"
+#define NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION                 "DP_DISABLE_TUNNEL_BW_ALLOCATION"
 
-#define NV_DP_REGKEY_DISABLE_AVOID_HBR3_WAR            "DP_DISABLE_AVOID_HBR3_WAR"
+#define NV_DP_REGKEY_DISABLE_AVOID_HBR3_WAR                       "DP_DISABLE_AVOID_HBR3_WAR"
 
 // Bug 4793112 : On eDP panel, do not cache source OUI if it reads zero
-#define NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE            "DP_SKIP_ZERO_OUI_CACHE"
+#define NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE                          "DP_SKIP_ZERO_OUI_CACHE"
 
-#define NV_DP_REGKEY_ENABLE_FIX_FOR_5147205         "DP_ENABLE_5147205_FIX"
+#define NV_DP_REGKEY_ENABLE_FIX_FOR_5147205                       "DP_ENABLE_5147205_FIX"
 // Bug 5088957 : Force head shutdown in DpLib
-#define NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN            "DP_WAR_5088957"
-
-// Bug 5041041 : Enable Lower BPP check for DSC
-#define NV_DP_REGKEY_ENABLE_LOWER_BPP_CHECK_FOR_DSC "DP_ENABLE_LOWER_BPP_CHECK"
-
+#define NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN                          "DP_WAR_5088957"
 
 //
 // Data Base used to store all the regkey values.
@@ -146,7 +142,6 @@ struct DP_REGKEY_DATABASE
     bool  bSkipZeroOuiCache;
     bool  bEnable5147205Fix;
     bool  bForceHeadShutdown;
-    bool  bEnableLowerBppCheckForDsc;
 };
 
 extern struct DP_REGKEY_DATABASE dpRegkeyDatabase;

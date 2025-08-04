@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -322,41 +322,23 @@ static void uvm_destroy_vma_semaphore_pool(struct vm_area_struct *vma)
     uvm_mem_unmap_cpu_user(semaphore_pool_range->mem);
 }
 
-// If a fault handler is not set, paths like handle_pte_fault in older kernels
-// assume the memory is anonymous. That would make debugging this failure harder
-// so we force it to fail instead.
-static vm_fault_t uvm_vm_fault_sigbus(struct vm_area_struct *vma, struct vm_fault *vmf)
+// The kernel will also SIGBUS faults to vmas with valid ops but no fault
+// handler, but it didn't always do that. Make it explicit so we don't rely on
+// the kernel's implementation.
+static vm_fault_t uvm_vm_fault_sigbus(struct vm_fault *vmf)
 {
-    UVM_DBG_PRINT_RL("Fault to address 0x%lx in disabled vma\n", nv_page_fault_va(vmf));
+    UVM_DBG_PRINT_RL("Fault to address 0x%lx in disabled vma\n", vmf->address);
     return VM_FAULT_SIGBUS;
 }
 
-static vm_fault_t uvm_vm_fault_sigbus_entry(struct vm_area_struct *vma, struct vm_fault *vmf)
+static vm_fault_t uvm_vm_fault_sigbus_entry(struct vm_fault *vmf)
 {
-    UVM_ENTRY_RET(uvm_vm_fault_sigbus(vma, vmf));
-}
-
-static vm_fault_t uvm_vm_fault_sigbus_wrapper(struct vm_fault *vmf)
-{
-#if defined(NV_VM_OPS_FAULT_REMOVED_VMA_ARG)
-    return uvm_vm_fault_sigbus(vmf->vma, vmf);
-#else
-    return uvm_vm_fault_sigbus(NULL, vmf);
-#endif
-}
-
-static vm_fault_t uvm_vm_fault_sigbus_wrapper_entry(struct vm_fault *vmf)
-{
-    UVM_ENTRY_RET(uvm_vm_fault_sigbus_wrapper(vmf));
+    UVM_ENTRY_RET(uvm_vm_fault_sigbus(vmf));
 }
 
 static struct vm_operations_struct uvm_vm_ops_disabled =
 {
-#if defined(NV_VM_OPS_FAULT_REMOVED_VMA_ARG)
-    .fault = uvm_vm_fault_sigbus_wrapper_entry
-#else
-    .fault = uvm_vm_fault_sigbus_entry
-#endif
+    .fault = uvm_vm_fault_sigbus_entry,
 };
 
 static void uvm_disable_vma(struct vm_area_struct *vma)
@@ -573,44 +555,23 @@ static void uvm_vm_close_managed_entry(struct vm_area_struct *vma)
     UVM_ENTRY_VOID(uvm_vm_close_managed(vma));
 }
 
-static vm_fault_t uvm_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+static vm_fault_t uvm_vm_fault(struct vm_fault *vmf)
 {
-    uvm_va_space_t *va_space = uvm_va_space_get(vma->vm_file);
-
-    return uvm_va_space_cpu_fault_managed(va_space, vma, vmf);
+    uvm_va_space_t *va_space = uvm_va_space_get(vmf->vma->vm_file);
+    return uvm_va_space_cpu_fault_managed(va_space, vmf);
 }
 
-static vm_fault_t uvm_vm_fault_entry(struct vm_area_struct *vma, struct vm_fault *vmf)
+static vm_fault_t uvm_vm_fault_entry(struct vm_fault *vmf)
 {
-    UVM_ENTRY_RET(uvm_vm_fault(vma, vmf));
-}
-
-static vm_fault_t uvm_vm_fault_wrapper(struct vm_fault *vmf)
-{
-#if defined(NV_VM_OPS_FAULT_REMOVED_VMA_ARG)
-    return uvm_vm_fault(vmf->vma, vmf);
-#else
-    return uvm_vm_fault(NULL, vmf);
-#endif
-}
-
-static vm_fault_t uvm_vm_fault_wrapper_entry(struct vm_fault *vmf)
-{
-    UVM_ENTRY_RET(uvm_vm_fault_wrapper(vmf));
+    UVM_ENTRY_RET(uvm_vm_fault(vmf));
 }
 
 static struct vm_operations_struct uvm_vm_ops_managed =
 {
     .open         = uvm_vm_open_managed_entry,
     .close        = uvm_vm_close_managed_entry,
-
-#if defined(NV_VM_OPS_FAULT_REMOVED_VMA_ARG)
-    .fault        = uvm_vm_fault_wrapper_entry,
-    .page_mkwrite = uvm_vm_fault_wrapper_entry,
-#else
     .fault        = uvm_vm_fault_entry,
     .page_mkwrite = uvm_vm_fault_entry,
-#endif
 };
 
 // vm operations on semaphore pool allocations only control CPU mappings. Unmapping GPUs,
@@ -706,12 +667,7 @@ static struct vm_operations_struct uvm_vm_ops_semaphore_pool =
 {
     .open         = uvm_vm_open_semaphore_pool_entry,
     .close        = uvm_vm_close_semaphore_pool_entry,
-
-#if defined(NV_VM_OPS_FAULT_REMOVED_VMA_ARG)
-    .fault        = uvm_vm_fault_sigbus_wrapper_entry,
-#else
     .fault        = uvm_vm_fault_sigbus_entry,
-#endif
 };
 
 static void uvm_vm_open_device_p2p(struct vm_area_struct *vma)
@@ -753,7 +709,7 @@ static void uvm_vm_open_device_p2p(struct vm_area_struct *vma)
         origin_vma->vm_private_data = NULL;
         origin_vma->vm_ops = &uvm_vm_ops_disabled;
         vma->vm_ops = &uvm_vm_ops_disabled;
-        unmap_mapping_range(va_space->mapping, va_range->node.start, va_range->node.end - va_range->node.start + 1, 1);
+        unmap_mapping_range(va_space->mapping, va_range->node.start, uvm_va_range_size(va_range), 1);
     }
 
     uvm_va_space_up_write(va_space);
@@ -781,13 +737,24 @@ static struct vm_operations_struct uvm_vm_ops_device_p2p =
 {
     .open         = uvm_vm_open_device_p2p_entry,
     .close        = uvm_vm_close_device_p2p_entry,
-
-#if defined(NV_VM_OPS_FAULT_REMOVED_VMA_ARG)
-    .fault        = uvm_vm_fault_sigbus_wrapper_entry,
-#else
     .fault        = uvm_vm_fault_sigbus_entry,
-#endif
 };
+
+static bool va_range_type_expects_mmap(uvm_va_range_type_t type)
+{
+    switch (type) {
+        case UVM_VA_RANGE_TYPE_SEMAPHORE_POOL:
+        case UVM_VA_RANGE_TYPE_DEVICE_P2P:
+            return true;
+
+        // Although UVM_VA_RANGE_TYPE_MANAGED does support mmap, it doesn't
+        // expect mmap to be called on a pre-existing range. mmap itself creates
+        // the managed va range.
+
+        default:
+            return false;
+    }
+}
 
 static int uvm_mmap(struct file *filp, struct vm_area_struct *vma)
 {
@@ -891,28 +858,38 @@ static int uvm_mmap(struct file *filp, struct vm_area_struct *vma)
     status = uvm_va_range_create_mmap(va_space, current->mm, vma->vm_private_data, NULL);
 
     if (status == NV_ERR_UVM_ADDRESS_IN_USE) {
-        uvm_va_range_semaphore_pool_t *semaphore_pool_range;
-        uvm_va_range_device_p2p_t *device_p2p_range;
-        // If the mmap is for a semaphore pool, the VA range will have been
-        // allocated by a previous ioctl, and the mmap just creates the CPU
-        // mapping.
-        semaphore_pool_range = uvm_va_range_semaphore_pool_find(va_space, vma->vm_start);
-        device_p2p_range = uvm_va_range_device_p2p_find(va_space, vma->vm_start);
-        if (semaphore_pool_range && semaphore_pool_range->va_range.node.start == vma->vm_start &&
-                semaphore_pool_range->va_range.node.end + 1 == vma->vm_end) {
+        uvm_va_range_t *existing_range = uvm_va_range_find(va_space, vma->vm_start);
+
+        // Does the existing range exactly match the vma and expects mmap?
+        if (existing_range &&
+            existing_range->node.start == vma->vm_start &&
+            existing_range->node.end + 1 == vma->vm_end &&
+            va_range_type_expects_mmap(existing_range->type)) {
+
+            // We speculatively initialized the managed vma before checking for
+            // collisions because we expect successful insertion to be the
+            // common case. Undo that.
             uvm_vma_wrapper_destroy(vma->vm_private_data);
             vma_wrapper_allocated = false;
             vma->vm_private_data = vma;
-            vma->vm_ops = &uvm_vm_ops_semaphore_pool;
-            status = uvm_mem_map_cpu_user(semaphore_pool_range->mem, semaphore_pool_range->va_range.va_space, vma);
-        }
-        else if (device_p2p_range && device_p2p_range->va_range.node.start == vma->vm_start &&
-                 device_p2p_range->va_range.node.end + 1 == vma->vm_end) {
-            uvm_vma_wrapper_destroy(vma->vm_private_data);
-            vma_wrapper_allocated = false;
-            vma->vm_private_data = vma;
-            vma->vm_ops = &uvm_vm_ops_device_p2p;
-            status = uvm_va_range_device_p2p_map_cpu(va_space, vma, device_p2p_range);
+
+            switch (existing_range->type) {
+                case UVM_VA_RANGE_TYPE_SEMAPHORE_POOL:
+                    vma->vm_ops = &uvm_vm_ops_semaphore_pool;
+                    status = uvm_mem_map_cpu_user(uvm_va_range_to_semaphore_pool(existing_range)->mem, va_space, vma);
+                    break;
+
+                case UVM_VA_RANGE_TYPE_DEVICE_P2P:
+                    vma->vm_ops = &uvm_vm_ops_device_p2p;
+                    status = uvm_va_range_device_p2p_map_cpu(va_space,
+                                                             vma,
+                                                             uvm_va_range_to_device_p2p(existing_range));
+                    break;
+
+                default:
+                    UVM_ASSERT(0);
+                    break;
+            }
         }
     }
 
@@ -1039,6 +1016,7 @@ static long uvm_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         UVM_ROUTE_CMD_ALLOC_INIT_CHECK(UVM_MAP_EXTERNAL_ALLOCATION,        uvm_api_map_external_allocation);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_MAP_EXTERNAL_SPARSE,            uvm_api_map_external_sparse);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_FREE,                           uvm_api_free);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_DISCARD,                        uvm_api_discard);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_PREVENT_MIGRATION_RANGE_GROUPS, uvm_api_prevent_migration_range_groups);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_ALLOW_MIGRATION_RANGE_GROUPS,   uvm_api_allow_migration_range_groups);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_SET_PREFERRED_LOCATION,         uvm_api_set_preferred_location);

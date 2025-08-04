@@ -120,9 +120,26 @@ typedef struct GSP_FMC_BOOT_PARAMS
 } GSP_FMC_BOOT_PARAMS;
 
 /*!
+ * @brief Inform KeyMgr about which slots needs to be refreshed
+ */
+typedef enum {
+    //
+    // KeyMgr will program the received rotated session key in spare (the once which is not being used for
+    // current crypto flow) Rx key slot of all ports
+    //
+    refreshRxKeySlot,
+    //
+    // KeyMgr will program the received rotated session key in Tx key slot of all ports and flip the epoch
+    // to start using new session key for crypto flow
+    //
+    refreshTxKeySlot
+} sessionKeyRefreshStage;
+
+/*!
  * @brief Definitions for messages to GSP which will convey NVLE programming keys
  */
 #define RM_GSP_NVLE_CMD_ID_UPDATE_SESSION_KEYS  (0x80)
+#define RM_GSP_NVLE_CMD_ID_REFRESH_SESSION_KEYS (0x81)
 #define RM_GSP_NVLE_SESSION_KEY_ENTRY_SET_COUNT (1)
 #define RM_GSP_NVLE_AES_256_GCM_KEY_SIZE_BYTES  (32)
 #define RM_GSP_NVLE_AES_256_GCM_KEY_SIZE_DWORDS (RM_GSP_NVLE_AES_256_GCM_KEY_SIZE_BYTES / sizeof(NvU32))
@@ -133,15 +150,29 @@ typedef struct
 {
     NvU32  remoteScfDcfGpuId;
     NvU32  key[RM_GSP_NVLE_AES_256_GCM_KEY_SIZE_DWORDS];
+    //
+    // Epoch will inform which keyslot<0,1> is spare in case of refreshRxKeySlot stage and the epoch to which
+    // the Tx key slot needs to switch to in case of refreshTxKeySlot stage. Epoch is provided only when
+    // keyslot needs to be refreshed and keymgr will implicitly use epoch = 0 during setup stage
+    //
+    NvU8   epoch;
     NvBool bValid;
 } RM_GSP_NVLE_SESSION_KEY_ENTRY;
 
 typedef struct
 {
     NvU32                         cmdId;
-    NvBool                        bForKeyRotation;
+    NvBool                        bForKeyRotation;   // To be deprecated
     RM_GSP_NVLE_SESSION_KEY_ENTRY wrappedKeyEntries[RM_GSP_NVLE_SESSION_KEY_ENTRY_SET_COUNT];
     NvU32                         keyEntriesTag[RM_GSP_NVLE_CMD_TAG_SIZE_DWORDS];
 } RM_GSP_NVLE_UPDATE_SESSION_KEYS;
+
+typedef struct
+{
+    NvU32                         cmdId;
+    sessionKeyRefreshStage        stage;             // Inform KeyMgr about which slots needs to be programmmed
+    RM_GSP_NVLE_SESSION_KEY_ENTRY wrappedKeyEntries[RM_GSP_NVLE_SESSION_KEY_ENTRY_SET_COUNT];
+    NvU32                         keyEntriesTag[RM_GSP_NVLE_CMD_TAG_SIZE_DWORDS];
+} RM_GSP_NVLE_REFRESH_SESSION_KEYS;
 
 #endif // GSPIFPUB_H

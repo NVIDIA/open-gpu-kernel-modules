@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,17 +33,18 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/disp/disp_objs.h"
 #include "gpu/mem_mgr/mem_desc.h"
-#include "os/os.h"
 #include "core/locks.h"
 #include "gpu/device/device.h"
 #include "gpu/subdevice/subdevice.h"
 #include "vgpu/rpc.h"
 #include "platform/sli/sli.h"
 #include "deprecated/rmapi_deprecated.h"
+#include "vgpu/vgpu_util.h"
 
 #include "class/cl0041.h" // NV04_MEMORY
 #include "class/cl003e.h" // NV01_MEMORY_SYSTEM
 #include "class/cl0071.h" // NV01_MEMORY_SYSTEM_OS_DESCRIPTOR
+#include "class/cl00b1.h" // NV01_MEMORY_HW_RESOURCES
 
 NV_STATUS
 memConstruct_IMPL
@@ -173,7 +174,7 @@ memDestruct_IMPL
     }
 
     // if the allocation is RPC-ed, free using RPC
-    if (pMemory->bRpcAlloc && (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu)))
+    if (pMemory->bRpcAlloc && (IS_VIRTUAL(pGpu) || IS_FW_CLIENT(pGpu)))
     {
         NV_RM_RPC_FREE(pGpu, hClient, hParent, hMemory, status);
         NV_ASSERT((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET));
@@ -379,7 +380,8 @@ memConstructCommon_IMPL
     }
 
     // Memory has hw resources associated with it that need to be tracked.
-    if (pHwResource != NULL)
+    if ((pHwResource != NULL) &&
+        ((pHwResource->hwResId != 0) || (RES_GET_REF(pMemory)->externalClassId == NV01_MEMORY_HW_RESOURCES)))
     {
         pMemory->pHwResource = portMemAllocNonPaged(sizeof(HWRESOURCE_INFO));
         if (pMemory->pHwResource != NULL)
@@ -525,7 +527,7 @@ memRegisterWithGsp_IMPL
     NvU32              hClass;
 
     // Nothing to do without GSP
-    if (!IS_GSP_CLIENT(pGpu))
+    if (!IS_FW_CLIENT(pGpu))
     {
         return NV_OK;
     }
@@ -594,7 +596,7 @@ _memUnregisterFromGsp
 
     // Nothing to do without GSP
     if ((pMemory->pGpu == NULL) ||
-        !IS_GSP_CLIENT(pMemory->pGpu))
+        !IS_FW_CLIENT(pMemory->pGpu))
     {
         return;
     }
@@ -624,21 +626,6 @@ _memUnregisterFromGsp
     }
 }
 
-static NvBool
-_memCheckHostVgpuDeviceExists
-(
-    OBJGPU *pGpu
-)
-{
-    NV_STATUS status;
-
-    KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice = NULL;
-
-    NV_ASSERT_OK_OR_ELSE(status, vgpuGetCallingContextKernelHostVgpuDevice(pGpu, &pKernelHostVgpuDevice), return NV_FALSE);
-
-    return (pKernelHostVgpuDevice != NULL);
-}
-
 static void
 _memDestructCommonWithDevice
 (
@@ -653,7 +640,7 @@ _memDestructCommonWithDevice
     Subdevice             *pSubDeviceInfo;
     DispCommon            *pDispCommon;
     RsClient              *pRsClient = RES_GET_CLIENT(pMemory);
-    NV_STATUS              status;
+    NV_STATUS              status = NV_OK;
     RS_ITERATOR            subDevIt;
     FB_ALLOC_INFO         *pFbAllocInfo       = NULL;
     FB_ALLOC_PAGE_FORMAT  *pFbAllocPageFormat = NULL;
@@ -677,54 +664,70 @@ _memDestructCommonWithDevice
     //
     // Release any FB HW resources
     //
-    if (pMemory->pHwResource)
+    if (pMemory->pHwResource && --pMemory->pHwResource->refCount == 0)
     {
-        if (--pMemory->pHwResource->refCount == 0)
+        if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
         {
             MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-            NvBool bHostVgpuDeviceExists = _memCheckHostVgpuDeviceExists(pGpu);
 
-            if ((pMemory->categoryClassId == NV01_MEMORY_SYSTEM && memmgrComprSupported(pMemoryManager, ADDR_SYSMEM)) ||
-                (bHostVgpuDeviceExists && (pMemory->pHwResource->isGuestAllocated)))
+            pFbAllocInfo = portMemAllocNonPaged(sizeof(FB_ALLOC_INFO));
+            if (pFbAllocInfo == NULL)
             {
-                pFbAllocInfo = portMemAllocNonPaged(sizeof(FB_ALLOC_INFO));
-                if (pFbAllocInfo == NULL)
-                {
-                    NV_ASSERT(0);
-                    status = NV_ERR_NO_MEMORY;
-                    goto done;
-                }
-
-                pFbAllocPageFormat = portMemAllocNonPaged(sizeof(FB_ALLOC_PAGE_FORMAT));
-                if (pFbAllocPageFormat == NULL) {
-                    NV_ASSERT(0);
-                    status = NV_ERR_NO_MEMORY;
-                    goto done;
-                }
-
-                portMemSet(pFbAllocInfo, 0, sizeof(FB_ALLOC_INFO));
-                portMemSet(pFbAllocPageFormat, 0, sizeof(FB_ALLOC_PAGE_FORMAT));
-                pFbAllocInfo->pageFormat = pFbAllocPageFormat;
-
-                pFbAllocInfo->pageFormat->type = pMemory->Type;
-                pFbAllocInfo->pageFormat->attr = pMemory->Attr;
-                pFbAllocInfo->pageFormat->attr2 = pMemory->Attr2;
-                pFbAllocInfo->hwResId = memdescGetHwResId(pMemory->pMemDesc);
-                pFbAllocInfo->size = pMemory->Length;
-                pFbAllocInfo->format = memdescGetPteKind(pMemory->pMemDesc);
-                pFbAllocInfo->hClient = pRsClient->hClient;
-                pFbAllocInfo->hDevice = hDevice;
-
-                //
-                // Note that while freeing duped memory under a device, the
-                // device may not be the memory owning device. Hence, always use
-                // memory owning device (pMemDesc->pGpu) to free HW resources.
-                //
-                status = memmgrFreeHwResources(pMemory->pMemDesc->pGpu, pMemoryManager, pFbAllocInfo);
-                NV_ASSERT(status == NV_OK);
+                NV_ASSERT(0);
+                status = NV_ERR_NO_MEMORY;
+                goto done;
             }
-            portMemFree(pMemory->pHwResource);
+
+            pFbAllocPageFormat = portMemAllocNonPaged(sizeof(FB_ALLOC_PAGE_FORMAT));
+            if (pFbAllocPageFormat == NULL) {
+                NV_ASSERT(0);
+                status = NV_ERR_NO_MEMORY;
+                goto done;
+            }
+
+            portMemSet(pFbAllocInfo, 0, sizeof(FB_ALLOC_INFO));
+            portMemSet(pFbAllocPageFormat, 0, sizeof(FB_ALLOC_PAGE_FORMAT));
+            pFbAllocInfo->pageFormat = pFbAllocPageFormat;
+
+            pFbAllocInfo->pageFormat->type = pMemory->Type;
+            pFbAllocInfo->pageFormat->attr = pMemory->Attr;
+            pFbAllocInfo->pageFormat->attr2 = pMemory->Attr2;
+            pFbAllocInfo->hwResId = memdescGetHwResId(pMemory->pMemDesc);
+            pFbAllocInfo->size = pMemory->Length;
+            pFbAllocInfo->format = memdescGetPteKind(pMemory->pMemDesc);
+            pFbAllocInfo->hClient = pRsClient->hClient;
+            pFbAllocInfo->hDevice = hDevice;
+
+            //
+            // Note that while freeing duped memory under a device, the
+            // device may not be the memory owning device. Hence, always use
+            // memory owning device (pMemDesc->pGpu) to free HW resources.
+            //
+            if (pMemory->pHwResource->isVgpuHostAllocated)
+            {
+                //
+                // vGPU:
+                //
+                // Since vGPU does all real hardware management in the
+                // host, if we are in guest OS (where IS_VIRTUAL(pGpu) is true),
+                // do an RPC to the host to do the hardware update.
+                //
+                NV_RM_RPC_MANAGE_HW_RESOURCE_FREE(pMemory->pMemDesc->pGpu,
+                        RES_GET_CLIENT_HANDLE(pMemory),
+                        RES_GET_HANDLE(pDevice),
+                        RES_GET_HANDLE(pMemory),
+                        NVOS32_DELETE_RESOURCES_ALL,
+                        status);
+            }
+            else
+            {
+                status = memmgrFreeHwResources(pMemory->pMemDesc->pGpu, pMemoryManager, pFbAllocInfo);
+            }
+            NV_ASSERT(status == NV_OK);
         }
+
+        portMemFree(pMemory->pHwResource);
+        pMemory->pHwResource = NULL;
     }
 
     NV_ASSERT_OK_OR_GOTO(status, btreeUnlink(&pMemory->Node, &pDevice->DevMemoryTable), done);
@@ -780,7 +783,7 @@ memDestructCommon_IMPL
 
     if (pMemory->KernelVAddr != NvP64_NULL)
     {
-        memdescUnmap(pMemory->pMemDesc, NV_TRUE, osGetCurrentProcess(),
+        memdescUnmap(pMemory->pMemDesc, NV_TRUE,
                      pMemory->KernelVAddr, pMemory->KernelMapPriv);
         pMemory->KernelVAddr = NvP64_NULL;
         pMemory->KernelMapPriv = NvP64_NULL;
@@ -889,30 +892,7 @@ memControl_IMPL
     RS_RES_CONTROL_PARAMS_INTERNAL *pParams
 )
 {
-    RmCtrlParams *pRmCtrlParams = pParams->pLegacyParams;
-
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO, memIsReady(pMemory, NV_FALSE));
-
-    if (!pMemory->pGpu)
-        return NV_ERR_INVALID_OBJECT_PARENT;
-
-    if (REF_VAL(NVXXXX_CTRL_CMD_CLASS, pParams->cmd) == NV04_MEMORY)
-    {
-        //
-        // Tegra SOC import memory usecase uses NV01_MEMORY_SYSTEM_OS_DESCRIPTOR class for
-        // RM resource server registration of memory, RM can return the physical memory attributes
-        // for these imported buffers.
-        //
-        if ((pMemory->categoryClassId == NV01_MEMORY_SYSTEM_OS_DESCRIPTOR) &&
-            (pParams->cmd != NV0041_CTRL_CMD_GET_SURFACE_PHYS_ATTR))
-        {
-            return NV_ERR_NOT_SUPPORTED;
-        }
-    }
-
-    pRmCtrlParams->pGpu = pMemory->pGpu;
-
-    gpuSetThreadBcState(pMemory->pGpu, pMemory->bBcResource);
 
     return resControl_IMPL(staticCast(pMemory, RsResource), pCallContext, pParams);
 }
@@ -1063,7 +1043,7 @@ memCopyConstruct_IMPL
 done:
 
     // If the original allocation was RPCed, also send the Dup.
-    if (pMemory->bRpcAlloc && (IS_VIRTUAL(pSrcGpu) || IS_GSP_CLIENT(pSrcGpu)))
+    if (pMemory->bRpcAlloc && (IS_VIRTUAL(pSrcGpu) || IS_FW_CLIENT(pSrcGpu)))
     {
         NV_RM_RPC_DUP_OBJECT(pSrcGpu, pDstClient->hClient, pDstParentRef->hResource, pDstRef->hResource,
                              pSrcClient->hClient, pSrcRef->hResource, 0,
@@ -1203,10 +1183,15 @@ void memSetSysmemCacheAttrib_IMPL
 (
     OBJGPU                          *pGpu,
     NV_MEMORY_ALLOCATION_PARAMS     *pAllocData,
-    NvU32                           *pCpuCacheAttrib,
-    NvU32                           *pGpuCacheAttrib
+    MEMORY_DESCRIPTOR               *pMemDesc
 )
 {
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    NvU32 gpuCacheAttrib, cpuCacheAttrib;
+
+    NV_ASSERT((memdescGetAddressSpace(pMemDesc) == ADDR_EGM) ||
+              (memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM));
+
     //
     // For system memory default to GPU uncached. GPU caching is different from
     // the expected default memory model since it is not coherent.  Clients must
@@ -1222,27 +1207,27 @@ void memSetSysmemCacheAttrib_IMPL
     if (DRF_VAL(OS32, _ATTR2, _GPU_CACHEABLE, pAllocData->attr2) ==
         NVOS32_ATTR2_GPU_CACHEABLE_YES)
     {
-        *pGpuCacheAttrib = NV_MEMORY_CACHED;
+        gpuCacheAttrib = NV_MEMORY_CACHED;
     }
     else
     {
-        *pGpuCacheAttrib = NV_MEMORY_UNCACHED;
+        gpuCacheAttrib = NV_MEMORY_UNCACHED;
     }
 
     if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_UNCACHED)
-        *pCpuCacheAttrib = NV_MEMORY_UNCACHED;
+        cpuCacheAttrib = NV_MEMORY_UNCACHED;
     else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_CACHED)
-        *pCpuCacheAttrib = NV_MEMORY_CACHED;
+        cpuCacheAttrib = NV_MEMORY_CACHED;
     else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_COMBINE)
-        *pCpuCacheAttrib = NV_MEMORY_WRITECOMBINED;
+        cpuCacheAttrib = NV_MEMORY_WRITECOMBINED;
     else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_THROUGH)
-        *pCpuCacheAttrib = NV_MEMORY_CACHED;
+        cpuCacheAttrib = NV_MEMORY_CACHED;
     else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_PROTECT)
-        *pCpuCacheAttrib = NV_MEMORY_CACHED;
+        cpuCacheAttrib = NV_MEMORY_CACHED;
     else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_BACK)
-        *pCpuCacheAttrib = NV_MEMORY_CACHED;
+        cpuCacheAttrib = NV_MEMORY_CACHED;
     else
-        *pCpuCacheAttrib = 0;
+        cpuCacheAttrib = 0;
 
     ct_assert(NVOS32_ATTR_COHERENCY_UNCACHED      == NVOS02_FLAGS_COHERENCY_UNCACHED);
     ct_assert(NVOS32_ATTR_COHERENCY_CACHED        == NVOS02_FLAGS_COHERENCY_CACHED);
@@ -1250,4 +1235,57 @@ void memSetSysmemCacheAttrib_IMPL
     ct_assert(NVOS32_ATTR_COHERENCY_WRITE_THROUGH == NVOS02_FLAGS_COHERENCY_WRITE_THROUGH);
     ct_assert(NVOS32_ATTR_COHERENCY_WRITE_PROTECT == NVOS02_FLAGS_COHERENCY_WRITE_PROTECT);
     ct_assert(NVOS32_ATTR_COHERENCY_WRITE_BACK    == NVOS02_FLAGS_COHERENCY_WRITE_BACK);
+
+    memdescSetCpuCacheAttrib(pMemDesc, cpuCacheAttrib);
+    memdescSetGpuCacheAttrib(pMemDesc, gpuCacheAttrib);
+
+    memdescSetFlag(pMemDesc, MEMDESC_FLAGS_NON_IO_COHERENT,
+                   !memmgrIsMemoryIoCoherent(pGpu, pMemoryManager, pAllocData));
+}
+
+NV_STATUS
+memSetGpuCacheSnoop_IMPL
+(
+    OBJGPU                          *pGpu,
+    NvU32                           attr,
+    MEMORY_DESCRIPTOR               *pMemDesc
+)
+{
+    MemoryManager *pMemoryManager;
+    NV_STATUS status = NV_OK;
+    // Assume platform is fully coherent to cover nodevicemem case.
+    NvBool bPlatformFullyCoherent = NV_TRUE;
+
+    if (pGpu != NULL)
+    {
+        pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+        bPlatformFullyCoherent = pMemoryManager->bPlatformFullyCoherent;
+    }
+
+    // GPU cache snooping is a property of fully coherent platforms.
+    if (bPlatformFullyCoherent)
+    {
+        //
+        // The default allows the client to defer the choice to mapping time.
+        // This matches old RM behavior.
+        //
+        if (FLD_TEST_DRF(OS32, _ATTR, _GPU_CACHE_SNOOPABLE, _MAPPING, attr))
+        {
+            memdescSetGpuCacheSnoop(pMemDesc, MEMDESC_CACHE_SNOOP_DEFER_TO_MAP);
+        }
+        else if (FLD_TEST_DRF(OS32, _ATTR, _GPU_CACHE_SNOOPABLE, _ON, attr))
+        {
+            memdescSetGpuCacheSnoop(pMemDesc, MEMDESC_CACHE_SNOOP_ENABLE);
+        }
+        else if (FLD_TEST_DRF(OS32, _ATTR, _GPU_CACHE_SNOOPABLE, _OFF, attr))
+        {
+            memdescSetGpuCacheSnoop(pMemDesc, MEMDESC_CACHE_SNOOP_DISABLE);
+        }
+        else
+        {
+            status = NV_ERR_INVALID_ARGUMENT;
+        }
+    }
+
+    return status;
 }

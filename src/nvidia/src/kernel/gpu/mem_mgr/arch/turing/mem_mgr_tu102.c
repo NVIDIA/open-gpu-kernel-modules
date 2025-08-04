@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -245,6 +245,7 @@ memmgrChooseKind_TU102
                 case NVOS32_TYPE_NOTIFIER:
                 case NVOS32_TYPE_RESERVED:
                 case NVOS32_TYPE_PMA:
+                case NVOS32_TYPE_SYNCPOINT:
                 {
                     if (comprAttr == NVOS32_ATTR_COMPR_NONE || pMemorySystemConfig->bDisableCompbitBacking)
                     {

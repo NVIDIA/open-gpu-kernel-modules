@@ -26,11 +26,10 @@
  * @brief The PMA implementation file.
  * This file implements the PMA object and the public interfaces.
  *
- * @bug
- *  1. SLI broadcast -- Not implemented
  */
 
 #include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h"
+#include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator_private.h"
 #include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator_util.h"
 #include "gpu/mem_mgr/phys_mem_allocator/numa.h"
 #include "gpu/mem_mgr/mem_scrub.h"
@@ -107,16 +106,27 @@ _pmaDefaultStatsCallback
 //
 
 NV_STATUS
-pmaInitialize(PMA *pPma, NvU32 initFlags)
+pmaInitialize(PMA **ppPma, NvU32 initFlags)
 {
     NV_STATUS status = NV_OK;
     PMA_MAP_INFO *pMapInfo;
+    PMA *pPma;
 
-    if (pPma == NULL)
+    if (ppPma == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
 
+    *ppPma = portMemAllocNonPaged(sizeof(PMA));
+
+    if (*ppPma == NULL)
+    {
+        status = NV_ERR_NO_MEMORY;
+        goto error;
+    }
+
+    pPma = *ppPma;
+    portMemSet(pPma, 0, sizeof(PMA));
     pPma->pPmaLock = NULL;
     pPma->pEvictionCallbacksLock = NULL;
 
@@ -246,7 +256,7 @@ pmaInitialize(PMA *pPma, NvU32 initFlags)
     return NV_OK;
 
 error:
-    pmaDestroy(pPma);
+    pmaDestroy(*ppPma);
     return status;
 }
 
@@ -337,6 +347,15 @@ pmaUnregMemScrub(PMA *pPma)
     portSyncRwLockReleaseWrite(pPma->pScrubberValidLock);
 }
 
+OBJMEMSCRUB *
+pmaGetMemScrub(PMA *pPma)
+{
+    if (pPma == NULL)
+        return NULL;
+
+    return pPma->pScrubObj;
+}
+
 NV_STATUS
 pmaNumaOnlined(PMA *pPma, NvS32 numaNodeId,
                NvU64 coherentCpuFbBase, NvU64 coherentCpuFbSize)
@@ -380,7 +399,11 @@ pmaDestroy(PMA *pPma)
 {
     NvU32 i;
 
-    NV_ASSERT(pPma != NULL);
+    // Allow NULL free
+    if (pPma == NULL)
+    {
+        return;
+    }
 
     NV_ASSERT(pmaStateCheck(pPma));
 
@@ -439,6 +462,8 @@ pmaDestroy(PMA *pPma)
         portSyncSpinlockDestroy(pPma->pPmaLock);
         portMemFree(pPma->pPmaLock);
     }
+
+    portMemFree(pPma);
 }
 
 
@@ -538,7 +563,7 @@ pmaRegisterRegion
                                                            PMA_SCRUB_INITIALIZE);
     }
 
-    status = pmaRegisterBlacklistInfo(pPma, physBase, pBlacklistPageBase, blacklistCount, NV_TRUE);
+    status = pmaRegisterBlacklistInfo(pPma, physBase, pBlacklistPageBase, blacklistCount);
     if (status != NV_OK)
     {
         pPma->pMapInfo->pmaMapDestroy(pMap);
@@ -1140,7 +1165,7 @@ pmaAllocatePages_retry:
 
             pPma->pMapInfo->pmaMapChangeBlockStateAttrib(pMap, frameBase, numPagesAllocatedSoFar * framesPerPage,
                                                          pinOption, MAP_MASK);
-            
+
             pPma->pStatsUpdateCb(pPma->pStatsUpdateCtx, pPma->pmaStats.numFreeFrames);
 
             if (blacklistOffFlag && blacklistOffPerRegion[regId])
@@ -1275,28 +1300,6 @@ scrub_fatal:
 }
 
 NV_STATUS
-pmaAllocatePagesBroadcast
-(
-    PMA                   **pPma,
-    NvU32                   pmaCount,
-    NvLength                allocationCount,
-    NvU64                   pageSize,
-    PMA_ALLOCATION_OPTIONS *allocationOptions,
-    NvU64                  *pPages
-)
-{
-
-    if (pPma == NULL || pmaCount == 0 || allocationCount == 0
-        || (pageSize != _PMA_64KB && pageSize != _PMA_128KB && pageSize != _PMA_2MB && pageSize != _PMA_512MB)
-        || pPages == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    return NV_ERR_GENERIC;
-}
-
-NV_STATUS
 pmaPinPages
 (
     PMA      *pPma,
@@ -1397,6 +1400,7 @@ pmaFreePages
     // TODO Support free of multiple regions in one call??
     NvU64 i, j, frameNum, framesPerPage, addrBase;
     NvU32 regId;
+    NvU32 scrubFlags = 0;
     NvBool bScrubValid = NV_TRUE;
     NvBool bNeedScrub = pPma->bScrubOnFree && !(flag & PMA_FREE_SKIP_SCRUB);
 
@@ -1497,6 +1501,8 @@ pmaFreePages
         }
     }
 
+    scrubFlags |= SCRUBBER_SUBMIT_FLAGS_LOCALIZED_SCRUB;
+
     for (i = 0; i < pageCount; i++)
     {
         PMA_PAGESTATUS state;
@@ -1540,7 +1546,7 @@ pmaFreePages
             {
                 break;
             }
-        } 
+        }
 
         if (j == numFramesLocalized)
         {
@@ -1566,35 +1572,9 @@ localized_done:
     {
         PSCRUB_NODE pPmaScrubList = NULL;
         NvU64 count;
-        NvU32 flags = 0;
-
-        // Localized memory scrub
-
-        //
-        // the localization state was alreay cleared above though?
-        // need to move localized reclaim to below scrub
-        //
-        PMA_PAGESTATUS state;
-
-        //
-        // Optimization: the first one is expected to be the same as the rest of them.
-        // If no localized pages, then don't spend time checking through the
-        // rest of them
-        //
-        if (pageCount > 0)
-        {
-            regId = findRegionID(pPma, pPages[0]);
-            addrBase = pPma->pRegDescriptors[regId]->base;
-            frameNum = PMA_ADDR2FRAME(pPages[0], addrBase);
-            state = pPma->pMapInfo->pmaMapRead(pPma->pRegions[regId], frameNum, NV_TRUE);
-            if ((state & ATTRIB_LOCALIZED) != 0)
-            {
-                flags |= SCRUBBER_SUBMIT_FLAGS_LOCALIZED_SCRUB;
-            }
-        }
 
         if (scrubSubmitPages(pPma->pScrubObj, size, pPages, pageCount,
-                             &pPmaScrubList, &count, flags) == NV_OK)
+                             &pPmaScrubList, &count, scrubFlags) == NV_OK)
         {
             if (count > 0)
             {
@@ -1694,7 +1674,11 @@ pmaRegisterUpdateStatsCb
     // Only supported right after init, so we don't bother taking locks.
     pPma->pStatsUpdateCb = pUpdateCb;
     pPma->pStatsUpdateCtx = pCtxPtr;
-    pUpdateCb(pCtxPtr, pPma->pmaStats.numFreeFrames);
+
+    if (pUpdateCb != NULL)
+    {
+        pUpdateCb(pCtxPtr, pPma->pmaStats.numFreeFrames);
+    }
 }
 
 NV_STATUS
@@ -1908,6 +1892,18 @@ pmaGetRegionInfo
     return NV_OK;
 }
 
+PMA_STATS *
+pmaGetStats
+(
+    PMA *pPma
+)
+{
+    if (pPma == NULL)
+        return NULL;
+
+    return &pPma->pmaStats;
+}
+
 void
 pmaGetLargestFree
 (
@@ -1924,19 +1920,12 @@ pmaGetLargestFree
     *pLargestFree = 0;
     *pRegionBase = 0;
 
-    //
-    // FIXME: This field is still not being used by any RM client.
-    // Set it to "bad" value for the present time. This should ideally
-    // contain the offset of the largest free chunk.
-    //
-    *pLargestOffset = ~0ULL;
-
     portSyncSpinlockAcquire(pPma->pPmaLock);
 
     for (i = 0; i < pPma->regSize; i++)
     {
         pMap = pPma->pRegions[i];
-        pPma->pMapInfo->pmaMapGetLargestFree(pMap, &largestFreeInRegion);
+        pPma->pMapInfo->pmaMapGetLargestFree(pMap, &largestFreeInRegion, pLargestOffset);
 
         if (*pLargestFree < largestFreeInRegion)
         {
@@ -1947,8 +1936,8 @@ pmaGetLargestFree
 
     portSyncSpinlockRelease(pPma->pPmaLock);
 
-    NV_PRINTF(LEVEL_INFO, "Largest Free Bytes = 0x%llx, base = 0x%llx, largestOffset = 0x%llx.\n",
-        *pLargestFree, *pRegionBase, *pLargestOffset);
+    NV_PRINTF(LEVEL_INFO, "PMA Handle = 0x%p, Largest Free Bytes = 0x%llx, base = 0x%llx, largestOffset = 0x%llx\n",
+        (void *) pPma,*pLargestFree, *pRegionBase, *pLargestOffset);
 }
 
 /*!
@@ -2149,18 +2138,6 @@ pmaClearScrubbedPages
     _pmaClearScrubBit(pPma, pPmaScrubList, count);
 }
 
-void pmaPrintMapState
-(
-    PMA *pPma
-)
-{
-    NvU32 regionIdx;
-    for (regionIdx = 0; regionIdx < pPma->regSize; regionIdx++)
-    {
-        pmaRegionPrint(pPma, pPma->pRegDescriptors[regionIdx], pPma->pRegions[regionIdx]);
-    }
-}
-
 NV_STATUS
 pmaAddToBlacklistTracking
 (
@@ -2174,7 +2151,7 @@ pmaAddToBlacklistTracking
     {
         blacklistPages.physOffset  = physAddr;
         blacklistPages.bIsDynamic  = NV_TRUE;
-        status = pmaRegisterBlacklistInfo(pPma, 0, &blacklistPages, 1, NV_FALSE);
+        status = pmaRegisterBlacklistInfo(pPma, 0, &blacklistPages, 1);
     }
     return status;
 }

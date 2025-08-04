@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -46,6 +46,7 @@ extern "C" {
 
 #include "mem_mgr/standard_mem.h"
 #include "gpu/mem_mgr/heap_base.h"
+#include "gpu/gpu_halspec.h"
 
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
@@ -84,9 +85,8 @@ struct SystemMemory {
     struct StandardMemory *__nvoc_pbase_StandardMemory;    // stdmem super
     struct SystemMemory *__nvoc_pbase_SystemMemory;    // sysmem
 
-    // Vtable with 2 per-object function pointers
-    NV_STATUS (*__sysmemCtrlCmdGetSurfaceNumPhysPages__)(struct SystemMemory * /*this*/, NV003E_CTRL_GET_SURFACE_NUM_PHYS_PAGES_PARAMS *);  // exported (id=0x3e0102)
-    NV_STATUS (*__sysmemCtrlCmdGetSurfacePhysPages__)(struct SystemMemory * /*this*/, NV003E_CTRL_GET_SURFACE_PHYS_PAGES_PARAMS *);  // exported (id=0x3e0103)
+    // Vtable with 1 per-object function pointer
+    NV_STATUS (*__sysmemInitAllocRequest__)(struct OBJGPU *, struct SystemMemory * /*this*/, MEMORY_ALLOCATION_REQUEST *);  // halified (2 hals)
 };
 
 
@@ -156,11 +156,35 @@ NV_STATUS __nvoc_objCreate_SystemMemory(SystemMemory**, Dynamic*, NvU32, CALL_CO
     __nvoc_objCreate_SystemMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
-#define sysmemCtrlCmdGetSurfaceNumPhysPages_FNPTR(pStandardMemory) pStandardMemory->__sysmemCtrlCmdGetSurfaceNumPhysPages__
-#define sysmemCtrlCmdGetSurfaceNumPhysPages(pStandardMemory, pParams) sysmemCtrlCmdGetSurfaceNumPhysPages_DISPATCH(pStandardMemory, pParams)
-#define sysmemCtrlCmdGetSurfacePhysPages_FNPTR(pStandardMemory) pStandardMemory->__sysmemCtrlCmdGetSurfacePhysPages__
-#define sysmemCtrlCmdGetSurfacePhysPages(pStandardMemory, pParams) sysmemCtrlCmdGetSurfacePhysPages_DISPATCH(pStandardMemory, pParams)
+// Wrapper macros for implementation functions
+NV_STATUS sysmemConstruct_IMPL(struct SystemMemory *arg_pStandardMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_sysmemConstruct(arg_pStandardMemory, arg_pCallContext, arg_pParams) sysmemConstruct_IMPL(arg_pStandardMemory, arg_pCallContext, arg_pParams)
+
+NV_STATUS sysmemCtrlCmdGetSurfaceNumPhysPages_IMPL(struct SystemMemory *pStandardMemory, NV003E_CTRL_GET_SURFACE_NUM_PHYS_PAGES_PARAMS *pParams);
+#ifdef __nvoc_system_mem_h_disabled
+static inline NV_STATUS sysmemCtrlCmdGetSurfaceNumPhysPages(struct SystemMemory *pStandardMemory, NV003E_CTRL_GET_SURFACE_NUM_PHYS_PAGES_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("SystemMemory was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_system_mem_h_disabled
+#define sysmemCtrlCmdGetSurfaceNumPhysPages(pStandardMemory, pParams) sysmemCtrlCmdGetSurfaceNumPhysPages_IMPL(pStandardMemory, pParams)
+#endif // __nvoc_system_mem_h_disabled
+
+NV_STATUS sysmemCtrlCmdGetSurfacePhysPages_IMPL(struct SystemMemory *pStandardMemory, NV003E_CTRL_GET_SURFACE_PHYS_PAGES_PARAMS *pParams);
+#ifdef __nvoc_system_mem_h_disabled
+static inline NV_STATUS sysmemCtrlCmdGetSurfacePhysPages(struct SystemMemory *pStandardMemory, NV003E_CTRL_GET_SURFACE_PHYS_PAGES_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("SystemMemory was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_system_mem_h_disabled
+#define sysmemCtrlCmdGetSurfacePhysPages(pStandardMemory, pParams) sysmemCtrlCmdGetSurfacePhysPages_IMPL(pStandardMemory, pParams)
+#endif // __nvoc_system_mem_h_disabled
+
+
+// Wrapper macros for halified functions
+#define sysmemInitAllocRequest_FNPTR(pSystemMemory) pSystemMemory->__sysmemInitAllocRequest__
+#define sysmemInitAllocRequest(pGpu, pSystemMemory, pAllocRequest) sysmemInitAllocRequest_DISPATCH(pGpu, pSystemMemory, pAllocRequest)
+#define sysmemInitAllocRequest_HAL(pGpu, pSystemMemory, pAllocRequest) sysmemInitAllocRequest_DISPATCH(pGpu, pSystemMemory, pAllocRequest)
 #define sysmemCanCopy_FNPTR(pStandardMemory) pStandardMemory->__nvoc_base_StandardMemory.__nvoc_metadata_ptr->vtable.__stdmemCanCopy__
 #define sysmemCanCopy(pStandardMemory) sysmemCanCopy_DISPATCH(pStandardMemory)
 #define sysmemIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsDuplicate__
@@ -215,12 +239,8 @@ NV_STATUS __nvoc_objCreate_SystemMemory(SystemMemory**, Dynamic*, NvU32, CALL_CO
 #define sysmemAddAdditionalDependants(pClient, pResource, pReference) sysmemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
-static inline NV_STATUS sysmemCtrlCmdGetSurfaceNumPhysPages_DISPATCH(struct SystemMemory *pStandardMemory, NV003E_CTRL_GET_SURFACE_NUM_PHYS_PAGES_PARAMS *pParams) {
-    return pStandardMemory->__sysmemCtrlCmdGetSurfaceNumPhysPages__(pStandardMemory, pParams);
-}
-
-static inline NV_STATUS sysmemCtrlCmdGetSurfacePhysPages_DISPATCH(struct SystemMemory *pStandardMemory, NV003E_CTRL_GET_SURFACE_PHYS_PAGES_PARAMS *pParams) {
-    return pStandardMemory->__sysmemCtrlCmdGetSurfacePhysPages__(pStandardMemory, pParams);
+static inline NV_STATUS sysmemInitAllocRequest_DISPATCH(struct OBJGPU *pGpu, struct SystemMemory *pSystemMemory, MEMORY_ALLOCATION_REQUEST *pAllocRequest) {
+    return pSystemMemory->__sysmemInitAllocRequest__(pGpu, pSystemMemory, pAllocRequest);
 }
 
 static inline NvBool sysmemCanCopy_DISPATCH(struct SystemMemory *pStandardMemory) {
@@ -327,27 +347,14 @@ static inline void sysmemAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__nvoc_metadata_ptr->vtable.__sysmemAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-NV_STATUS sysmemInitAllocRequest_HMM(struct OBJGPU *pGpu, struct SystemMemory *pSystemMemory, MEMORY_ALLOCATION_REQUEST *pAllocRequest);
-
-
-#ifdef __nvoc_system_mem_h_disabled
-static inline NV_STATUS sysmemInitAllocRequest(struct OBJGPU *pGpu, struct SystemMemory *pSystemMemory, MEMORY_ALLOCATION_REQUEST *pAllocRequest) {
-    NV_ASSERT_FAILED_PRECOMP("SystemMemory was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_system_mem_h_disabled
-#define sysmemInitAllocRequest(pGpu, pSystemMemory, pAllocRequest) sysmemInitAllocRequest_HMM(pGpu, pSystemMemory, pAllocRequest)
-#endif //__nvoc_system_mem_h_disabled
-
-#define sysmemInitAllocRequest_HAL(pGpu, pSystemMemory, pAllocRequest) sysmemInitAllocRequest(pGpu, pSystemMemory, pAllocRequest)
-
 NV_STATUS sysmemCtrlCmdGetSurfaceNumPhysPages_IMPL(struct SystemMemory *pStandardMemory, NV003E_CTRL_GET_SURFACE_NUM_PHYS_PAGES_PARAMS *pParams);
 
 NV_STATUS sysmemCtrlCmdGetSurfacePhysPages_IMPL(struct SystemMemory *pStandardMemory, NV003E_CTRL_GET_SURFACE_PHYS_PAGES_PARAMS *pParams);
 
-NV_STATUS sysmemConstruct_IMPL(struct SystemMemory *arg_pStandardMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+NV_STATUS sysmemInitAllocRequest_HMM(struct OBJGPU *pGpu, struct SystemMemory *pSystemMemory, MEMORY_ALLOCATION_REQUEST *pAllocRequest);
 
-#define __nvoc_sysmemConstruct(arg_pStandardMemory, arg_pCallContext, arg_pParams) sysmemConstruct_IMPL(arg_pStandardMemory, arg_pCallContext, arg_pParams)
+NV_STATUS sysmemInitAllocRequest_SOC(struct OBJGPU *pGpu, struct SystemMemory *pSystemMemory, MEMORY_ALLOCATION_REQUEST *pAllocRequest);
+
 #undef PRIVATE_FIELD
 
 

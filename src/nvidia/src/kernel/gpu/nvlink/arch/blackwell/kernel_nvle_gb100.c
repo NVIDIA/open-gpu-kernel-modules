@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
 
 #include "core/core.h"
 
@@ -44,6 +46,9 @@ knvlinkEncryptionGetGpuIdentifiers_GB100
 {
     if (pKernelNvlink == NULL)
         return NV_ERR_INVALID_ARGUMENT;
+
+    if (pKernelNvlink->bGotNvleIdentifiers)
+        return NV_OK;
 
     // Switch system
     if (GPU_IS_NVSWITCH_DETECTED(pGpu))

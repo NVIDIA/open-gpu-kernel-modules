@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,7 @@
 #include "kernel/core/locks.h"
 #include "gpu/subdevice/subdevice.h"
 #include "kernel/gpu/mem_mgr/heap.h"
+#include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/rc/kernel_rc.h"
@@ -487,7 +488,7 @@ krcWatchdogInit_IMPL
             Heap *pHeap = GPU_GET_HEAP(pGpu);
             NvU32 pmaConfig = PMA_QUERY_NUMA_ENABLED | PMA_QUERY_NUMA_ONLINED;
 
-            if (pmaQueryConfigs(&pHeap->pmaObject, &pmaConfig) == NV_OK)
+            if (pmaQueryConfigs(pHeap->pPmaObject, &pmaConfig) == NV_OK)
             {
                 // PMA can't be used until it's onlined
                 if (pmaConfig & PMA_QUERY_NUMA_ENABLED)
@@ -702,6 +703,7 @@ krcWatchdogInit_IMPL
     {
         NV_MEMORY_ALLOCATION_PARAMS *pMem = &pParams->mem;
         NvU32 hClass = NV01_MEMORY_SYSTEM;
+        NVOS46_PARAMETERS mapDmaParams = {0};
 
         portMemSet(pMem, 0, sizeof *pMem);
         pMem->owner = HEAP_OWNER_RM_CLIENT_GENERIC;
@@ -821,24 +823,24 @@ krcWatchdogInit_IMPL
 
         portMemSet(pKernelRc->watchdogChannelInfo.pCpuAddr, 0, pMem->size);
 
+        mapDmaParams.hClient   = hClient;
+        mapDmaParams.hDevice   = WATCHDOG_DEVICE_ID;
+        mapDmaParams.hDma      = WATCHDOG_VIRTUAL_CTX_ID;
+        mapDmaParams.hMemory   = WATCHDOG_MEM_ID;
+        mapDmaParams.length    = allocationSize;
+        mapDmaParams.flags     = (bCacheSnoop ? DRF_DEF(OS46, _FLAGS, _CACHE_SNOOP, _ENABLE) :
+                                     DRF_DEF(OS46, _FLAGS, _CACHE_SNOOP, _DISABLE)) |
+                                     DRF_DEF(OS46, _FLAGS, _ACCESS, _READ_WRITE);
         // Map the allocation into the unified heap.
-        status = pRmApi->Map(pRmApi,
-            hClient                 /* hClient */,
-            WATCHDOG_DEVICE_ID      /* hDevice */,
-            WATCHDOG_VIRTUAL_CTX_ID /* hMemctx */,
-            WATCHDOG_MEM_ID         /* hMemory */,
-            0                       /* offset */,
-            allocationSize          /* length */,
-            (bCacheSnoop ? DRF_DEF(OS46, _FLAGS, _CACHE_SNOOP, _ENABLE) :
-                           DRF_DEF(OS46, _FLAGS, _CACHE_SNOOP, _DISABLE)) |
-                DRF_DEF(OS46, _FLAGS, _ACCESS, _READ_WRITE),
-            &pKernelRc->watchdogChannelInfo.pGpuAddr);
+        status = pRmApi->Map(pRmApi, &mapDmaParams);
+
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
                       "Unable to map memory into watchdog's heap\n");
             goto error;
         }
+        pKernelRc->watchdogChannelInfo.pGpuAddr = mapDmaParams.dmaOffset;
     }
 
     // Allocate the error notifier context DMA.

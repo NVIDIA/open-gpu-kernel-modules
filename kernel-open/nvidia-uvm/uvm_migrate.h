@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018 NVIDIA Corporation
+    Copyright (c) 2018-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -20,6 +20,8 @@
     DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
+
+#include "uvm_va_block.h"
 
 NV_STATUS uvm_migrate_init(void);
 void uvm_migrate_exit(void);

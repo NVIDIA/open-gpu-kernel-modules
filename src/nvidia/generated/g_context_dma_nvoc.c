@@ -108,17 +108,19 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_ContextDma =
     /*pExportInfo=*/        &__nvoc_export_info__ContextDma
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ContextDma[] = 
 {
     {               /*  [0] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) ctxdmaCtrlCmdUpdateContextdma_IMPL,
+        /*pFunc=*/      (void (*)(void)) &ctxdmaCtrlCmdUpdateContextdma_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
         /*flags=*/      0x0u,
         /*accessRight=*/0x0u,
@@ -133,7 +135,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ContextD
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) ctxdmaCtrlCmdBindContextdma_IMPL,
+        /*pFunc=*/      (void (*)(void)) &ctxdmaCtrlCmdBindContextdma_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -148,7 +150,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ContextD
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) ctxdmaCtrlCmdUnbindContextdma_IMPL,
+        /*pFunc=*/      (void (*)(void)) &ctxdmaCtrlCmdUnbindContextdma_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -159,7 +161,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ContextD
         /*func=*/       "ctxdmaCtrlCmdUnbindContextdma"
 #endif
     },
-
 };
 
 
@@ -421,6 +422,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__ContextDma =
     /*pExportEntries=*/ __nvoc_exported_method_def_ContextDma
 };
 
+void __nvoc_ctxdmaDestruct(ContextDma*);
 void __nvoc_dtor_RmResource(RmResource*);
 void __nvoc_dtor_Notifier(Notifier*);
 void __nvoc_dtor_ContextDma(ContextDma *pThis) {
@@ -461,28 +463,11 @@ __nvoc_ctor_ContextDma_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_ContextDma_1(ContextDma *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // ctxdmaCtrlCmdUpdateContextdma -- exported (id=0x20101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
-    pThis->__ctxdmaCtrlCmdUpdateContextdma__ = &ctxdmaCtrlCmdUpdateContextdma_IMPL;
-#endif
-
-    // ctxdmaCtrlCmdBindContextdma -- exported (id=0x20102)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__ctxdmaCtrlCmdBindContextdma__ = &ctxdmaCtrlCmdBindContextdma_IMPL;
-#endif
-
-    // ctxdmaCtrlCmdUnbindContextdma -- exported (id=0x20103)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__ctxdmaCtrlCmdUnbindContextdma__ = &ctxdmaCtrlCmdUnbindContextdma_IMPL;
-#endif
-} // End __nvoc_init_funcTable_ContextDma_1 with approximately 3 basic block(s).
+} // End __nvoc_init_funcTable_ContextDma_1
 
 
-// Initialize vtable(s) for 29 virtual method(s).
+// Initialize vtable(s) for 26 virtual method(s).
 void __nvoc_init_funcTable_ContextDma(ContextDma *pThis) {
-
-    // Initialize vtable(s) with 3 per-object function pointer(s).
     __nvoc_init_funcTable_ContextDma_1(pThis);
 }
 

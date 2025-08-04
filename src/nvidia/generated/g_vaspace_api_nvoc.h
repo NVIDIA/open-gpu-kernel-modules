@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -99,16 +99,9 @@ struct VaSpaceApi {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct VaSpaceApi *__nvoc_pbase_VaSpaceApi;    // vaspaceapi
 
-    // Vtable with 6 per-object function pointers
-    NV_STATUS (*__vaspaceapiCtrlCmdVaspaceGetGmmuFormat__)(struct VaSpaceApi * /*this*/, NV90F1_CTRL_VASPACE_GET_GMMU_FORMAT_PARAMS *);  // exported (id=0x90f10101)
-    NV_STATUS (*__vaspaceapiCtrlCmdVaspaceGetPageLevelInfo__)(struct VaSpaceApi * /*this*/, NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *);  // exported (id=0x90f10102)
-    NV_STATUS (*__vaspaceapiCtrlCmdVaspaceReserveEntries__)(struct VaSpaceApi * /*this*/, NV90F1_CTRL_VASPACE_RESERVE_ENTRIES_PARAMS *);  // exported (id=0x90f10103)
-    NV_STATUS (*__vaspaceapiCtrlCmdVaspaceReleaseEntries__)(struct VaSpaceApi * /*this*/, NV90F1_CTRL_VASPACE_RELEASE_ENTRIES_PARAMS *);  // exported (id=0x90f10104)
-    NV_STATUS (*__vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes__)(struct VaSpaceApi * /*this*/, NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS *);  // exported (id=0x90f10106)
-    NV_STATUS (*__vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize__)(struct VaSpaceApi * /*this*/, NV90F1_CTRL_VASPACE_GET_HOST_RM_MANAGED_SIZE_PARAMS *);  // exported (id=0x90f10107)
-
     // Data members
     struct OBJVASPACE *pVASpace;
+    void *sva_handle;
 };
 
 
@@ -177,21 +170,87 @@ NV_STATUS __nvoc_objCreate_VaSpaceApi(VaSpaceApi**, Dynamic*, NvU32, struct CALL
     __nvoc_objCreate_VaSpaceApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS vaspaceapiConstruct_IMPL(struct VaSpaceApi *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_vaspaceapiConstruct(arg_pResource, arg_pCallContext, arg_pParams) vaspaceapiConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+
+NV_STATUS vaspaceapiCopyConstruct_IMPL(struct VaSpaceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#ifdef __nvoc_vaspace_api_h_disabled
+static inline NV_STATUS vaspaceapiCopyConstruct(struct VaSpaceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("VaSpaceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_vaspace_api_h_disabled
+#define vaspaceapiCopyConstruct(pResource, pCallContext, pParams) vaspaceapiCopyConstruct_IMPL(pResource, pCallContext, pParams)
+#endif // __nvoc_vaspace_api_h_disabled
+
+void vaspaceapiDestruct_IMPL(struct VaSpaceApi *pResource);
+#define __nvoc_vaspaceapiDestruct(pResource) vaspaceapiDestruct_IMPL(pResource)
+
+NV_STATUS vaspaceapiCtrlCmdVaspaceGetGmmuFormat_IMPL(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_GET_GMMU_FORMAT_PARAMS *pGmmuFormatParams);
+#ifdef __nvoc_vaspace_api_h_disabled
+static inline NV_STATUS vaspaceapiCtrlCmdVaspaceGetGmmuFormat(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_GET_GMMU_FORMAT_PARAMS *pGmmuFormatParams) {
+    NV_ASSERT_FAILED_PRECOMP("VaSpaceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_vaspace_api_h_disabled
+#define vaspaceapiCtrlCmdVaspaceGetGmmuFormat(pVaspaceApi, pGmmuFormatParams) vaspaceapiCtrlCmdVaspaceGetGmmuFormat_IMPL(pVaspaceApi, pGmmuFormatParams)
+#endif // __nvoc_vaspace_api_h_disabled
+
+NV_STATUS vaspaceapiCtrlCmdVaspaceGetPageLevelInfo_IMPL(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pPageLevelInfoParams);
+#ifdef __nvoc_vaspace_api_h_disabled
+static inline NV_STATUS vaspaceapiCtrlCmdVaspaceGetPageLevelInfo(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pPageLevelInfoParams) {
+    NV_ASSERT_FAILED_PRECOMP("VaSpaceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_vaspace_api_h_disabled
+#define vaspaceapiCtrlCmdVaspaceGetPageLevelInfo(pVaspaceApi, pPageLevelInfoParams) vaspaceapiCtrlCmdVaspaceGetPageLevelInfo_IMPL(pVaspaceApi, pPageLevelInfoParams)
+#endif // __nvoc_vaspace_api_h_disabled
+
+NV_STATUS vaspaceapiCtrlCmdVaspaceReserveEntries_IMPL(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_RESERVE_ENTRIES_PARAMS *pReserveEntriesParams);
+#ifdef __nvoc_vaspace_api_h_disabled
+static inline NV_STATUS vaspaceapiCtrlCmdVaspaceReserveEntries(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_RESERVE_ENTRIES_PARAMS *pReserveEntriesParams) {
+    NV_ASSERT_FAILED_PRECOMP("VaSpaceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_vaspace_api_h_disabled
+#define vaspaceapiCtrlCmdVaspaceReserveEntries(pVaspaceApi, pReserveEntriesParams) vaspaceapiCtrlCmdVaspaceReserveEntries_IMPL(pVaspaceApi, pReserveEntriesParams)
+#endif // __nvoc_vaspace_api_h_disabled
+
+NV_STATUS vaspaceapiCtrlCmdVaspaceReleaseEntries_IMPL(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_RELEASE_ENTRIES_PARAMS *pReleaseEntriesParams);
+#ifdef __nvoc_vaspace_api_h_disabled
+static inline NV_STATUS vaspaceapiCtrlCmdVaspaceReleaseEntries(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_RELEASE_ENTRIES_PARAMS *pReleaseEntriesParams) {
+    NV_ASSERT_FAILED_PRECOMP("VaSpaceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_vaspace_api_h_disabled
+#define vaspaceapiCtrlCmdVaspaceReleaseEntries(pVaspaceApi, pReleaseEntriesParams) vaspaceapiCtrlCmdVaspaceReleaseEntries_IMPL(pVaspaceApi, pReleaseEntriesParams)
+#endif // __nvoc_vaspace_api_h_disabled
+
+NV_STATUS vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes_IMPL(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS *pCopyServerReservedPdesParams);
+#ifdef __nvoc_vaspace_api_h_disabled
+static inline NV_STATUS vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS *pCopyServerReservedPdesParams) {
+    NV_ASSERT_FAILED_PRECOMP("VaSpaceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_vaspace_api_h_disabled
+#define vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes(pVaspaceApi, pCopyServerReservedPdesParams) vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes_IMPL(pVaspaceApi, pCopyServerReservedPdesParams)
+#endif // __nvoc_vaspace_api_h_disabled
+
+NV_STATUS vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize_IMPL(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_GET_HOST_RM_MANAGED_SIZE_PARAMS *pVaspaceGetHostRmManagedSizeParams);
+#ifdef __nvoc_vaspace_api_h_disabled
+static inline NV_STATUS vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_GET_HOST_RM_MANAGED_SIZE_PARAMS *pVaspaceGetHostRmManagedSizeParams) {
+    NV_ASSERT_FAILED_PRECOMP("VaSpaceApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_vaspace_api_h_disabled
+#define vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize(pVaspaceApi, pVaspaceGetHostRmManagedSizeParams) vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize_IMPL(pVaspaceApi, pVaspaceGetHostRmManagedSizeParams)
+#endif // __nvoc_vaspace_api_h_disabled
+
+
+// Wrapper macros for halified functions
 #define vaspaceapiCanCopy_FNPTR(pResource) pResource->__nvoc_metadata_ptr->vtable.__vaspaceapiCanCopy__
 #define vaspaceapiCanCopy(pResource) vaspaceapiCanCopy_DISPATCH(pResource)
-#define vaspaceapiCtrlCmdVaspaceGetGmmuFormat_FNPTR(pVaspaceApi) pVaspaceApi->__vaspaceapiCtrlCmdVaspaceGetGmmuFormat__
-#define vaspaceapiCtrlCmdVaspaceGetGmmuFormat(pVaspaceApi, pGmmuFormatParams) vaspaceapiCtrlCmdVaspaceGetGmmuFormat_DISPATCH(pVaspaceApi, pGmmuFormatParams)
-#define vaspaceapiCtrlCmdVaspaceGetPageLevelInfo_FNPTR(pVaspaceApi) pVaspaceApi->__vaspaceapiCtrlCmdVaspaceGetPageLevelInfo__
-#define vaspaceapiCtrlCmdVaspaceGetPageLevelInfo(pVaspaceApi, pPageLevelInfoParams) vaspaceapiCtrlCmdVaspaceGetPageLevelInfo_DISPATCH(pVaspaceApi, pPageLevelInfoParams)
-#define vaspaceapiCtrlCmdVaspaceReserveEntries_FNPTR(pVaspaceApi) pVaspaceApi->__vaspaceapiCtrlCmdVaspaceReserveEntries__
-#define vaspaceapiCtrlCmdVaspaceReserveEntries(pVaspaceApi, pReserveEntriesParams) vaspaceapiCtrlCmdVaspaceReserveEntries_DISPATCH(pVaspaceApi, pReserveEntriesParams)
-#define vaspaceapiCtrlCmdVaspaceReleaseEntries_FNPTR(pVaspaceApi) pVaspaceApi->__vaspaceapiCtrlCmdVaspaceReleaseEntries__
-#define vaspaceapiCtrlCmdVaspaceReleaseEntries(pVaspaceApi, pReleaseEntriesParams) vaspaceapiCtrlCmdVaspaceReleaseEntries_DISPATCH(pVaspaceApi, pReleaseEntriesParams)
-#define vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes_FNPTR(pVaspaceApi) pVaspaceApi->__vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes__
-#define vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes(pVaspaceApi, pCopyServerReservedPdesParams) vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes_DISPATCH(pVaspaceApi, pCopyServerReservedPdesParams)
-#define vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize_FNPTR(pVaspaceApi) pVaspaceApi->__vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize__
-#define vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize(pVaspaceApi, pVaspaceGetHostRmManagedSizeParams) vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize_DISPATCH(pVaspaceApi, pVaspaceGetHostRmManagedSizeParams)
 #define vaspaceapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define vaspaceapiControl(pGpuResource, pCallContext, pParams) vaspaceapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define vaspaceapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
@@ -244,30 +303,6 @@ NV_STATUS __nvoc_objCreate_VaSpaceApi(VaSpaceApi**, Dynamic*, NvU32, struct CALL
 // Dispatch functions
 static inline NvBool vaspaceapiCanCopy_DISPATCH(struct VaSpaceApi *pResource) {
     return pResource->__nvoc_metadata_ptr->vtable.__vaspaceapiCanCopy__(pResource);
-}
-
-static inline NV_STATUS vaspaceapiCtrlCmdVaspaceGetGmmuFormat_DISPATCH(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_GET_GMMU_FORMAT_PARAMS *pGmmuFormatParams) {
-    return pVaspaceApi->__vaspaceapiCtrlCmdVaspaceGetGmmuFormat__(pVaspaceApi, pGmmuFormatParams);
-}
-
-static inline NV_STATUS vaspaceapiCtrlCmdVaspaceGetPageLevelInfo_DISPATCH(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pPageLevelInfoParams) {
-    return pVaspaceApi->__vaspaceapiCtrlCmdVaspaceGetPageLevelInfo__(pVaspaceApi, pPageLevelInfoParams);
-}
-
-static inline NV_STATUS vaspaceapiCtrlCmdVaspaceReserveEntries_DISPATCH(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_RESERVE_ENTRIES_PARAMS *pReserveEntriesParams) {
-    return pVaspaceApi->__vaspaceapiCtrlCmdVaspaceReserveEntries__(pVaspaceApi, pReserveEntriesParams);
-}
-
-static inline NV_STATUS vaspaceapiCtrlCmdVaspaceReleaseEntries_DISPATCH(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_RELEASE_ENTRIES_PARAMS *pReleaseEntriesParams) {
-    return pVaspaceApi->__vaspaceapiCtrlCmdVaspaceReleaseEntries__(pVaspaceApi, pReleaseEntriesParams);
-}
-
-static inline NV_STATUS vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes_DISPATCH(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS *pCopyServerReservedPdesParams) {
-    return pVaspaceApi->__vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes__(pVaspaceApi, pCopyServerReservedPdesParams);
-}
-
-static inline NV_STATUS vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize_DISPATCH(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_GET_HOST_RM_MANAGED_SIZE_PARAMS *pVaspaceGetHostRmManagedSizeParams) {
-    return pVaspaceApi->__vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize__(pVaspaceApi, pVaspaceGetHostRmManagedSizeParams);
 }
 
 static inline NV_STATUS vaspaceapiControl_DISPATCH(struct VaSpaceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -380,23 +415,6 @@ NV_STATUS vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes_IMPL(struct VaSpaceApi 
 
 NV_STATUS vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize_IMPL(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_GET_HOST_RM_MANAGED_SIZE_PARAMS *pVaspaceGetHostRmManagedSizeParams);
 
-NV_STATUS vaspaceapiConstruct_IMPL(struct VaSpaceApi *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_vaspaceapiConstruct(arg_pResource, arg_pCallContext, arg_pParams) vaspaceapiConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
-NV_STATUS vaspaceapiCopyConstruct_IMPL(struct VaSpaceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
-
-#ifdef __nvoc_vaspace_api_h_disabled
-static inline NV_STATUS vaspaceapiCopyConstruct(struct VaSpaceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("VaSpaceApi was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_vaspace_api_h_disabled
-#define vaspaceapiCopyConstruct(pResource, pCallContext, pParams) vaspaceapiCopyConstruct_IMPL(pResource, pCallContext, pParams)
-#endif //__nvoc_vaspace_api_h_disabled
-
-void vaspaceapiDestruct_IMPL(struct VaSpaceApi *pResource);
-
-#define __nvoc_vaspaceapiDestruct(pResource) vaspaceapiDestruct_IMPL(pResource)
 #undef PRIVATE_FIELD
 
 

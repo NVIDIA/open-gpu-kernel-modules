@@ -95,6 +95,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJENGSTATE =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_engstateDestruct(OBJENGSTATE*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_OBJENGSTATE(OBJENGSTATE *pThis) {
     __nvoc_engstateDestruct(pThis);

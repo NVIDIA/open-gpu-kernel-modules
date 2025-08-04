@@ -119,7 +119,7 @@ subdeviceConstruct_IMPL
 
     NV_ASSERT_OK_OR_RETURN(gpuRegisterSubdevice(pGpu, pSubdevice));
 
-    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
+    if (IS_VIRTUAL(pGpu) || IS_FW_CLIENT(pGpu))
     {
         NV_RM_RPC_ALLOC_SUBDEVICE(pPrimaryGpu, pRsClient->hClient, pParentRef->hResource,
                               pResourceRef->hResource, NV20_SUBDEVICE_0,
@@ -216,7 +216,7 @@ subdeviceDestruct_IMPL
     subdeviceUnsetGpuDebugMode(pSubdevice);
     subdeviceRestoreWatchdog(pSubdevice);
 
-    if (pResourceRef != NULL && (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu)))
+    if (pResourceRef != NULL && (IS_VIRTUAL(pGpu) || IS_FW_CLIENT(pGpu)))
     {
         NV_RM_RPC_FREE(pGpu, pRsClient->hClient,
                        pResourceRef->pParentRef->hResource,

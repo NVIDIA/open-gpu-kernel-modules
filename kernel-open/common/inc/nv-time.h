@@ -36,13 +36,6 @@
 #define NV_MAX_ISR_DELAY_MS           (NV_MAX_ISR_DELAY_US / 1000)
 #define NV_NSECS_TO_JIFFIES(nsec)     ((nsec) * HZ / 1000000000)
 
-#if !defined(NV_TIMESPEC64_PRESENT)
-struct timespec64 {
-    __s64 tv_sec;
-    long  tv_nsec;
-};
-#endif
-
 #if !defined(NV_KTIME_GET_RAW_TS64_PRESENT)
 static inline void ktime_get_raw_ts64(struct timespec64 *ts64)
 {
@@ -50,16 +43,6 @@ static inline void ktime_get_raw_ts64(struct timespec64 *ts64)
     getrawmonotonic(&ts);
     ts64->tv_sec = ts.tv_sec;
     ts64->tv_nsec = ts.tv_nsec;
-}
-#endif
-
-#if !defined(NV_KTIME_GET_REAL_TS64_PRESENT)
-static inline void ktime_get_real_ts64(struct timespec64 *ts64)
-{
-    struct timeval tv;
-    do_gettimeofday(&tv);
-    ts64->tv_sec = tv.tv_sec;
-    ts64->tv_nsec = tv.tv_usec * (NvU64) NSEC_PER_USEC;
 }
 #endif
 
@@ -72,49 +55,6 @@ static NvBool nv_timer_less_than
     return (a->tv_sec == b->tv_sec) ? (a->tv_nsec < b->tv_nsec)
                                     : (a->tv_sec < b->tv_sec);
 }
-
-#if !defined(NV_TIMESPEC64_PRESENT)
-static inline struct timespec64 timespec64_add
-(
-    const struct timespec64    a,
-    const struct timespec64    b
-)
-{
-    struct timespec64 result;
-
-    result.tv_sec = a.tv_sec + b.tv_sec;
-    result.tv_nsec = a.tv_nsec + b.tv_nsec;
-    while (result.tv_nsec >= NSEC_PER_SEC)
-    {
-        ++result.tv_sec;
-        result.tv_nsec -= NSEC_PER_SEC;
-    }
-    return result;
-}
-
-static inline struct timespec64  timespec64_sub
-(
-    const struct timespec64    a,
-    const struct timespec64    b
-)
-{
-    struct timespec64 result;
-
-    result.tv_sec = a.tv_sec - b.tv_sec;
-    result.tv_nsec = a.tv_nsec - b.tv_nsec;
-    while (result.tv_nsec < 0)
-    {
-        --(result.tv_sec);
-        result.tv_nsec += NSEC_PER_SEC;
-    }
-    return result;
-}
-
-static inline s64 timespec64_to_ns(struct timespec64 *ts)
-{
-    return ((s64) ts->tv_sec *  NSEC_PER_SEC) + ts->tv_nsec;
-}
-#endif
 
 static inline NvU64 nv_ktime_get_raw_ns(void)
 {

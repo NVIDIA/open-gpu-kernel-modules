@@ -204,7 +204,7 @@ _gmmuPrintPdb
 
     NV_PRINTF(LEVEL_INFO, "MMUTRACE: VA[0x%08llx-%08llx] PDB: ", va, vaLimit);
 
-    _gmmuPrintPa(memdescGetPhysAddr(pPDB, VAS_ADDRESS_TRANSLATION(pVAS), 0),
+    _gmmuPrintPa(memdescGetPtePhysAddr(pPDB, VAS_ADDRESS_TRANSLATION(pVAS), 0),
                  aperture, 0);
     NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "\n");
 #endif

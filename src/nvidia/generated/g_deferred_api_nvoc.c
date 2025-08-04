@@ -166,19 +166,21 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_DeferredApiObject =
     /*pExportInfo=*/        &__nvoc_export_info__DeferredApiObject
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DeferredApiObject[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40048u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x50048u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) defapiCtrlCmdDeferredApi_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40048u)
-        /*flags=*/      0x40048u,
+        /*pFunc=*/      (void (*)(void)) &defapiCtrlCmdDeferredApi_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x50048u)
+        /*flags=*/      0x50048u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x50800101u,
         /*paramSize=*/  sizeof(NV5080_CTRL_DEFERRED_API_PARAMS),
@@ -188,12 +190,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Deferred
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40048u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x50048u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) defapiCtrlCmdRemoveApi_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40048u)
-        /*flags=*/      0x40048u,
+        /*pFunc=*/      (void (*)(void)) &defapiCtrlCmdRemoveApi_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x50048u)
+        /*flags=*/      0x50048u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x50800102u,
         /*paramSize=*/  sizeof(NV5080_CTRL_REMOVE_API_PARAMS),
@@ -203,12 +205,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Deferred
 #endif
     },
     {               /*  [2] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10008u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) defapiCtrlCmdDeferredApiV2_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-        /*flags=*/      0x8u,
+        /*pFunc=*/      (void (*)(void)) &defapiCtrlCmdDeferredApiV2_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10008u)
+        /*flags=*/      0x10008u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x50800103u,
         /*paramSize=*/  sizeof(NV5080_CTRL_DEFERRED_API_V2_PARAMS),
@@ -218,12 +220,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Deferred
 #endif
     },
     {               /*  [3] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x400c8u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x500c8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) defapiCtrlCmdDeferredApiInternal_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x400c8u)
-        /*flags=*/      0x400c8u,
+        /*pFunc=*/      (void (*)(void)) &defapiCtrlCmdDeferredApiInternal_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x500c8u)
+        /*flags=*/      0x500c8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x50800104u,
         /*paramSize=*/  sizeof(NV5080_CTRL_DEFERRED_API_INTERNAL_PARAMS),
@@ -232,7 +234,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Deferred
         /*func=*/       "defapiCtrlCmdDeferredApiInternal"
 #endif
     },
-
 };
 
 
@@ -595,6 +596,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__DeferredApiObject =
     /*pExportEntries=*/ __nvoc_exported_method_def_DeferredApiObject
 };
 
+void __nvoc_defapiDestruct(DeferredApiObject*);
 void __nvoc_dtor_ChannelDescendant(ChannelDescendant*);
 void __nvoc_dtor_DeferredApiObject(DeferredApiObject *pThis) {
     __nvoc_defapiDestruct(pThis);
@@ -628,33 +630,11 @@ __nvoc_ctor_DeferredApiObject_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_DeferredApiObject_1(DeferredApiObject *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // defapiCtrlCmdDeferredApi -- exported (id=0x50800101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40048u)
-    pThis->__defapiCtrlCmdDeferredApi__ = &defapiCtrlCmdDeferredApi_IMPL;
-#endif
-
-    // defapiCtrlCmdDeferredApiV2 -- exported (id=0x50800103)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__defapiCtrlCmdDeferredApiV2__ = &defapiCtrlCmdDeferredApiV2_IMPL;
-#endif
-
-    // defapiCtrlCmdDeferredApiInternal -- exported (id=0x50800104)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x400c8u)
-    pThis->__defapiCtrlCmdDeferredApiInternal__ = &defapiCtrlCmdDeferredApiInternal_IMPL;
-#endif
-
-    // defapiCtrlCmdRemoveApi -- exported (id=0x50800102)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40048u)
-    pThis->__defapiCtrlCmdRemoveApi__ = &defapiCtrlCmdRemoveApi_IMPL;
-#endif
-} // End __nvoc_init_funcTable_DeferredApiObject_1 with approximately 4 basic block(s).
+} // End __nvoc_init_funcTable_DeferredApiObject_1
 
 
-// Initialize vtable(s) for 36 virtual method(s).
+// Initialize vtable(s) for 32 virtual method(s).
 void __nvoc_init_funcTable_DeferredApiObject(DeferredApiObject *pThis) {
-
-    // Initialize vtable(s) with 4 per-object function pointer(s).
     __nvoc_init_funcTable_DeferredApiObject_1(pThis);
 }
 

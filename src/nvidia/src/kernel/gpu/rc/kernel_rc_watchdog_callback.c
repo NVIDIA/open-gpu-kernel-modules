@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,7 +32,6 @@
 #include "platform/sli/sli.h"
 
 #include "kernel/gpu/intr/engine_idx.h"
-#include "kernel/gpu/intr/intr.h"
 
 #include "ctrl/ctrl906f.h"
 
@@ -70,7 +69,8 @@ _krcThwapChannel
         return;
     }
 
-    NV_PRINTF(LEVEL_INFO, "Thwapping channel 0x%02x.\n",
+    NV_PRINTF(LEVEL_INFO,
+              "Thwapping channel " FMT_CHANNEL_DEBUG_TAG ".\n",
               kchannelGetDebugTag(pKernelChannel));
 
 
@@ -242,7 +242,7 @@ krcWatchdog_IMPL
             }
         }
 
-        osGetCurrentTime(&sec, &usec);
+        osGetSystemTime(&sec, &usec);
         currentTime = (((NvU64)sec) * 1000000) + usec;
 
         //
@@ -372,7 +372,6 @@ void krcWatchdogCallbackVblankRecovery_IMPL
 {
     NvU32           head;
     KernelDisplay  *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
-    Intr           *pIntr = GPU_GET_INTR(pGpu);
     MC_ENGINE_BITVECTOR intrDispPending;
 
     if (!pKernelRc->bRobustChannelsEnabled ||
@@ -383,10 +382,19 @@ void krcWatchdogCallbackVblankRecovery_IMPL
     }
 
     //
-    // Determine the interrupt type for kdispServiceLowLatencyIntrs_HAL
-    // to know what interrupt type it is
+    // The pending intr would have been cleared from the HW by now
+    // if there is a deferred vblank. We don't need a retrigger for
+    // MC_ENGINE_IDX_DISP since that is handled in a separate function
+    // and doesn't need a clear if a vblank is pending.
+    // We do need a retrigger if we have a separate interrupt vector,
+    // so do one if we have it.
     //
-    intrGetPendingLowLatencyHwDisplayIntr_HAL(pGpu, pIntr, &intrDispPending, NULL);
+    bitVectorClrAll(&intrDispPending);
+
+    if (pKernelDisplay->getProperty(pKernelDisplay, PDB_PROP_KDISP_HAS_SEPARATE_LOW_LATENCY_LINE))
+    {
+        bitVectorSet(&intrDispPending, MC_ENGINE_IDX_DISP_LOW);
+    }
 
     for (head = 0; head < kdispGetNumHeads(pKernelDisplay); head++)
     {

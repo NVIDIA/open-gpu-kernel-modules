@@ -40,6 +40,11 @@
 #include "hwref/hopper/gh100/dev_fault.h"
 #include "hwref/hopper/gh100/dev_mmu.h"
 
+// Field defines which are unmaintained by HW
+#define NV_MMU_VER3_PTE_ADDRESS_SYS                                     51:12
+#define NV_MMU_VER3_PTE_ADDRESS_PEER                                    51:12
+#define NV_MMU_VER3_PTE_ADDRESS_VID                                     39:12
+
 #define MMU_BIG 0
 #define MMU_SMALL 1
 
@@ -177,6 +182,8 @@ static NvU64 make_pte_hopper(uvm_aperture_t aperture, NvU64 address, uvm_prot_t 
     // aperture 2:1
     if (aperture == UVM_APERTURE_SYS)
         aperture_bits = NV_MMU_VER3_PTE_APERTURE_SYSTEM_COHERENT_MEMORY;
+    else if (aperture == UVM_APERTURE_SYS_NON_COHERENT)
+        aperture_bits = NV_MMU_VER3_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY;
     else if (aperture == UVM_APERTURE_VID)
         aperture_bits = NV_MMU_VER3_PTE_APERTURE_VIDEO_MEMORY;
     else if (aperture >= UVM_APERTURE_PEER_0 && aperture <= UVM_APERTURE_PEER_7)
@@ -372,6 +379,12 @@ static NvU64 single_pde_hopper(uvm_mmu_page_table_alloc_t *phys_alloc, uvm_page_
             case UVM_APERTURE_VID:
                 pde_bits |= HWCONST64(_MMU_VER3, PDE, APERTURE, VIDEO_MEMORY);
                 break;
+            case UVM_APERTURE_SYS_NON_COHERENT:
+                // SYS_NON_COHERENT aperture is currently only used for testing
+                // in kernel_driver_get_rm_ptes. Since UVM never places page
+                // tables in peer memory. SYS_NON_COHERENT should never be used
+                // in PDEs.
+                // falls through
             default:
                 UVM_ASSERT_MSG(0, "Invalid aperture: %d\n", phys_alloc->addr.aperture);
                 break;
@@ -401,6 +414,12 @@ static NvU64 big_half_pde_hopper(uvm_mmu_page_table_alloc_t *phys_alloc, uvm_pag
             case UVM_APERTURE_VID:
                 pde_bits |= HWCONST64(_MMU_VER3, DUAL_PDE, APERTURE_BIG, VIDEO_MEMORY);
                 break;
+            case UVM_APERTURE_SYS_NON_COHERENT:
+                // SYS_NON_COHERENT aperture is currently only used for testing
+                // in kernel_driver_get_rm_ptes. Since UVM never places page
+                // tables in peer memory. SYS_NON_COHERENT should never be used
+                // in PDEs.
+                // falls through
             default:
                 UVM_ASSERT_MSG(0, "Invalid big aperture %d\n", phys_alloc->addr.aperture);
                 break;
@@ -433,6 +452,12 @@ static NvU64 small_half_pde_hopper(uvm_mmu_page_table_alloc_t *phys_alloc, uvm_p
             case UVM_APERTURE_VID:
                 pde_bits |= HWCONST64(_MMU_VER3, DUAL_PDE, APERTURE_SMALL, VIDEO_MEMORY);
                 break;
+            case UVM_APERTURE_SYS_NON_COHERENT:
+                // SYS_NON_COHERENT aperture is currently only used for testing
+                // in kernel_driver_get_rm_ptes. Since UVM never places page
+                // tables in peer memory. SYS_NON_COHERENT should never be used
+                // in PDEs.
+                // falls through
             default:
                 UVM_ASSERT_MSG(0, "Invalid small aperture %d\n", phys_alloc->addr.aperture);
                 break;

@@ -26,11 +26,8 @@
 
 #if defined(NV_DRM_AVAILABLE)
 
-#if defined(NV_LINUX_SYNC_FILE_H_PRESENT)
 #include <linux/file.h>
 #include <linux/sync_file.h>
-#endif
-
 #include <linux/vmalloc.h>
 #include <linux/sched.h>
 #include <linux/device.h>
@@ -64,18 +61,6 @@ void nv_drm_free(void *ptr)
     }
 
     kfree(ptr);
-}
-
-char *nv_drm_asprintf(const char *fmt, ...)
-{
-    va_list ap;
-    char *p;
-
-    va_start(ap, fmt);
-    p = kvasprintf(GFP_KERNEL, fmt, ap);
-    va_end(ap);
-
-    return p;
 }
 
 #if defined(NVCPU_X86) || defined(NVCPU_X86_64)
@@ -236,10 +221,8 @@ unsigned long nv_drm_timeout_from_ms(NvU64 relative_timeout_ms)
     return jiffies + msecs_to_jiffies(relative_timeout_ms);
 }
 
-#if defined(NV_DRM_FENCE_AVAILABLE)
-int nv_drm_create_sync_file(nv_dma_fence_t *fence)
+int nv_drm_create_sync_file(struct dma_fence *fence)
 {
-#if defined(NV_LINUX_SYNC_FILE_H_PRESENT)
     struct sync_file *sync;
     int fd = get_unused_fd_flags(O_CLOEXEC);
 
@@ -258,20 +241,12 @@ int nv_drm_create_sync_file(nv_dma_fence_t *fence)
     fd_install(fd, sync->file);
 
     return fd;
-#else /* defined(NV_LINUX_SYNC_FILE_H_PRESENT) */
-    return -EINVAL;
-#endif  /* defined(NV_LINUX_SYNC_FILE_H_PRESENT) */
 }
 
-nv_dma_fence_t *nv_drm_sync_file_get_fence(int fd)
+struct dma_fence *nv_drm_sync_file_get_fence(int fd)
 {
-#if defined(NV_SYNC_FILE_GET_FENCE_PRESENT)
     return sync_file_get_fence(fd);
-#else /* defined(NV_SYNC_FILE_GET_FENCE_PRESENT) */
-    return NULL;
-#endif  /* defined(NV_SYNC_FILE_GET_FENCE_PRESENT) */
 }
-#endif /* defined(NV_DRM_FENCE_AVAILABLE) */
 
 void nv_drm_yield(void)
 {

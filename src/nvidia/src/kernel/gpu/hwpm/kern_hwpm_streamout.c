@@ -71,7 +71,7 @@ _hwpmStreamoutAllocPmaMapping
     }
 
     // Map it in PMA VA
-    return dmaAllocMapping_HAL(pGpu, pDma, pPmaVAS, pMemDesc, &virtualAddress, flags, NULL, KMIGMGR_SWIZZID_INVALID);
+    return dmaAllocMapping_HAL(pGpu, pDma, pPmaVAS, pMemDesc, &virtualAddress, flags, 0, NULL, KMIGMGR_SWIZZID_INVALID);
 }
 
 static NV_STATUS
@@ -142,7 +142,7 @@ _hwpmStreamoutFreeCpuMapping
         }
         else
         {
-            memdescUnmap(pMemDesc, NV_TRUE, osGetCurrentProcess(), pCpuAddr, pPriv);
+            memdescUnmap(pMemDesc, NV_TRUE, pCpuAddr, pPriv);
         }
     }
 }

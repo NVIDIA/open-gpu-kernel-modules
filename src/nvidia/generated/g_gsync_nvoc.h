@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -142,7 +142,7 @@ typedef NV_STATUS GsyncSetInterlaceMode  (struct OBJGPU *, PDACEXTERNALDEVICE, N
 typedef NV_STATUS GsyncRefSwapBarrier    (struct OBJGPU *, PDACEXTERNALDEVICE, REFTYPE, NvBool *);
 typedef NV_STATUS GsyncRefSignal         (struct OBJGPU *, PDACEXTERNALDEVICE, REFTYPE, GSYNCSYNCSIGNAL, NvBool TestRate, NvU32 *);
 typedef NV_STATUS GsyncRefMaster         (struct OBJGPU *, OBJGSYNC *, REFTYPE, NvU32 *, NvU32 *, NvBool, NvBool);
-typedef NV_STATUS GsyncRefSlaves         (struct OBJGPU *, PDACEXTERNALDEVICE, REFTYPE, NvU32 *, NvU32 *);
+typedef NV_STATUS GsyncRefSlaves         (struct OBJGPU *, OBJGSYNC *, REFTYPE, NvU32 *, NvU32 *);
 typedef NV_STATUS GsyncGetCplStatus      (struct OBJGPU *, PDACEXTERNALDEVICE, GSYNCSTATUS, NvU32 *);
 typedef NV_STATUS GsyncSetWatchdog       (struct OBJGPU *, PDACEXTERNALDEVICE, NvU32);
 typedef NV_STATUS GsyncGetRevision       (struct OBJGPU *, OBJGSYNC *, GSYNCCAPSPARAMS *);
@@ -158,7 +158,7 @@ typedef NV_STATUS GsyncGetMulDiv         (struct OBJGPU *, DACEXTERNALDEVICE *, 
 typedef NV_STATUS GsyncSetMulDiv         (struct OBJGPU *, DACEXTERNALDEVICE *, NV30F1_CTRL_GSYNC_MULTIPLY_DIVIDE_SETTINGS *);
 typedef NV_STATUS GsyncGetVRR            (struct OBJGPU *, DACEXTERNALDEVICE *, NvU32 *);
 typedef NV_STATUS GsyncSetVRR            (struct OBJGPU *, DACEXTERNALDEVICE *, NvU32);
-typedef NV_STATUS GsyncSetRasterSyncDecodeMode (struct OBJGPU *, DACEXTERNALDEVICE *);
+typedef NV_STATUS GsyncSetRasterSyncDecodeMode (struct OBJGPU *, struct OBJGPU *, DACEXTERNALDEVICE *);
 
 typedef struct GSYNC_HAL_IFACES {
 
@@ -308,7 +308,15 @@ NV_STATUS __nvoc_objCreate_OBJGSYNCMGR(OBJGSYNCMGR**, Dynamic*, NvU32);
     __nvoc_objCreate_OBJGSYNCMGR((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS gsyncmgrConstruct_IMPL(struct OBJGSYNCMGR *arg_pGsyncmgr);
+#define __nvoc_gsyncmgrConstruct(arg_pGsyncmgr) gsyncmgrConstruct_IMPL(arg_pGsyncmgr)
+
+void gsyncmgrDestruct_IMPL(struct OBJGSYNCMGR *pGsyncmgr);
+#define __nvoc_gsyncmgrDestruct(pGsyncmgr) gsyncmgrDestruct_IMPL(pGsyncmgr)
+
+
+// Wrapper macros for halified functions
 #define gsyncmgrIsFirmwareGPUMismatch(pGpu, pGsync) gsyncmgrIsFirmwareGPUMismatch_STATIC_DISPATCH(pGpu, pGsync)
 #define gsyncmgrIsFirmwareGPUMismatch_HAL(pGpu, pGsync) gsyncmgrIsFirmwareGPUMismatch_STATIC_DISPATCH(pGpu, pGsync)
 
@@ -321,12 +329,6 @@ static inline NvBool gsyncmgrIsFirmwareGPUMismatch_4a4dee(struct OBJGPU *pGpu, O
 
 NvBool gsyncmgrIsFirmwareGPUMismatch_STATIC_DISPATCH(struct OBJGPU *pGpu, OBJGSYNC *pGsync);
 
-NV_STATUS gsyncmgrConstruct_IMPL(struct OBJGSYNCMGR *arg_pGsyncmgr);
-
-#define __nvoc_gsyncmgrConstruct(arg_pGsyncmgr) gsyncmgrConstruct_IMPL(arg_pGsyncmgr)
-void gsyncmgrDestruct_IMPL(struct OBJGSYNCMGR *pGsyncmgr);
-
-#define __nvoc_gsyncmgrDestruct(pGsyncmgr) gsyncmgrDestruct_IMPL(pGsyncmgr)
 #undef PRIVATE_FIELD
 
 

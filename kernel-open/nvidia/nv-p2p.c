@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2011-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -415,6 +415,7 @@ static int nv_p2p_get_pages(
     NvU8 *gpu_uuid = NULL;
     NvU8 uuid[NVIDIA_P2P_GPU_UUID_LEN] = {0};
     NvBool force_pcie = !!(flags & NVIDIA_P2P_FLAGS_FORCE_BAR1_MAPPING);
+    NvBool cpu_cacheable;
     int rc;
 
     if (!NV_IS_ALIGNED64(virtual_address, NVRM_P2P_PAGESIZE_BIG_64K) ||
@@ -520,7 +521,7 @@ static int nv_p2p_get_pages(
                                              &mem_info->private,
                                              physical_addresses, &entries,
                                              force_pcie, *page_table, gpu_info,
-                                             &mem_info->mig_info);
+                                             &mem_info->mig_info, &cpu_cacheable);
         if (status != NV_OK)
         {
             goto failed;
@@ -531,7 +532,7 @@ static int nv_p2p_get_pages(
         // Get regular old-style, non-persistent mappings
         status = rm_p2p_get_pages(sp, p2p_token, va_space,
                 virtual_address, length, physical_addresses, wreqmb_h,
-                rreqmb_h, &entries, &gpu_uuid, *page_table);
+                rreqmb_h, &entries, &gpu_uuid, *page_table, &cpu_cacheable);
         if (status != NV_OK)
         {
             goto failed;
@@ -577,6 +578,11 @@ static int nv_p2p_get_pages(
     }
 
     (*page_table)->page_size = page_size_index;
+
+    if (cpu_cacheable)
+    {
+        (*page_table)->flags |= NVIDIA_P2P_PAGE_TABLE_FLAGS_CPU_CACHEABLE;
+    }
 
     os_free_mem(physical_addresses);
     physical_addresses = NULL;

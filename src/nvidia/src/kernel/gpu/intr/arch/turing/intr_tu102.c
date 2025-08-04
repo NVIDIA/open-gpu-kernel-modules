@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -184,7 +184,7 @@ intrCacheIntrFields_TU102
     // interrupts (other interrupts are either not disabled or disabled
     // selectively at leaf level)
     //
-    pIntr->intrTopEnMask |= intrGetIntrTopLockedMask(pGpu, pIntr);
+    pIntr->intrTopEnMask |= intrGetIntrTopLockedMask_HAL(pIntr);
 
     // Cache client owned, shared interrupt, and display vectors for ease of use later
     pIntr->accessCntrIntrVector      = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_ACCESS_CNTR, NV_FALSE);
@@ -225,19 +225,17 @@ intrCacheIntrFields_TU102
         // assumed to be true)
         //
         NV2080_INTR_CATEGORY_SUBTREE_MAP uvmOwned;
-        NvU32 accessCntrSubtree = NV_CTRL_INTR_GPU_VECTOR_TO_SUBTREE(
-            pIntr->accessCntrIntrVector);
+        NvU64 accessCntrSubtreeMask = NVBIT64(NV_CTRL_INTR_GPU_VECTOR_TO_SUBTREE(
+                                      pIntr->accessCntrIntrVector));
         NV_ASSERT_OK_OR_RETURN(
             intrGetSubtreeRange(pIntr,
                                 NV2080_INTR_CATEGORY_UVM_OWNED,
                                 &uvmOwned));
-        if (!(uvmOwned.subtreeStart <= accessCntrSubtree &&
-              accessCntrSubtree     <= uvmOwned.subtreeEnd))
+        if (uvmOwned.subtreeMask != accessCntrSubtreeMask)
         {
             NV_PRINTF(LEVEL_ERROR,
                 "UVM owned interrupt vector for access counter is in an unexpected subtree\n"
-                "Expected range = [0x%x, 0x%x], actual = 0x%x\n",
-                uvmOwned.subtreeStart, uvmOwned.subtreeEnd, accessCntrSubtree);
+                "Expected mask = 0x%llx, actual = 0x%llx\n", uvmOwned.subtreeMask, accessCntrSubtreeMask);
             DBG_BREAKPOINT();
             status = NV_ERR_GENERIC;
             goto exit;
@@ -254,15 +252,17 @@ intrCacheIntrFields_TU102
         // Assert to make sure we have only one client shared subtree.
         // The below code assumes that.
         //
-        NV_ASSERT_OR_RETURN(uvmShared.subtreeStart == uvmShared.subtreeEnd,
-                            NV_ERR_INVALID_STATE);
+        NvU64 lowestSubtreeIdx = uvmShared.subtreeMask;
+        // This is a destructive operation
+        LOWESTBITIDX_64(lowestSubtreeIdx);
+        NV_ASSERT_OR_RETURN(ONEBITSET(uvmShared.subtreeMask), NV_ERR_INVALID_STATE);
 
         // Now cache the leaf enable mask for the subtree shared with the client
         NvU32 leafEnHi = intrReadRegLeafEnSet_HAL(pGpu, pIntr,
-            NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_START(uvmShared.subtreeStart),
+            NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_START(lowestSubtreeIdx),
             NULL);
         NvU32 leafEnLo = intrReadRegLeafEnSet_HAL(pGpu, pIntr,
-            NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_END(uvmShared.subtreeStart),
+            NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_END(lowestSubtreeIdx),
             NULL);
 
         pIntr->uvmSharedCpuLeafEn = ((NvU64)(leafEnHi) << 32) | leafEnLo;
@@ -465,8 +465,11 @@ _intrEnableStall_TU102
         // Assert to make sure we have only one client shared subtree.
         // The below code assumes that.
         //
-        NV_ASSERT(uvmShared.subtreeStart == uvmShared.subtreeEnd);
-        idx = uvmShared.subtreeStart;
+        NvU64 lowestSubtreeIdx = uvmShared.subtreeMask;
+        // This is a destructive operation
+        LOWESTBITIDX_64(lowestSubtreeIdx);
+        NV_ASSERT(ONEBITSET(uvmShared.subtreeMask));
+        idx = lowestSubtreeIdx;
     }
 
     if (NvU64_HI32(pIntr->uvmSharedCpuLeafEn) != 0)
@@ -554,8 +557,11 @@ _intrDisableStall_TU102
         // Assert to make sure we have only one client shared subtree.
         // The below code assumes that.
         //
-        NV_ASSERT(uvmShared.subtreeStart == uvmShared.subtreeEnd);
-        idx = uvmShared.subtreeStart;
+        NvU64 lowestSubtreeIdx = uvmShared.subtreeMask;
+        // This is a destructive operation
+        LOWESTBITIDX_64(lowestSubtreeIdx);
+        NV_ASSERT(ONEBITSET(uvmShared.subtreeMask));
+        idx = lowestSubtreeIdx;
     }
 
     if (!gpuIsStateLoaded(pGpu))
@@ -654,7 +660,65 @@ intrClearLeafVector_TU102
 }
 
 /*!
+ * @brief Checks if the given interrupt is pending at the top level INTR_CTRL interrupt tree
+ *
+ * @param[in]   pGpu          OBJGPU pointer
+ * @param[in]   pIntr         Intr pointer
+ * @param[in]   engIdx        the MC_ENGINE_IDX
+ * @param[in]   intrVector    intrVector if known already
+ * @param[in]   pThreadState  thread state node pointer
+ */
+NvBool
+intrIsPending_TU102
+(
+    OBJGPU            *pGpu,
+    Intr              *pIntr,
+    NvU16              engIdx,
+    NvU32              intrVector,
+    THREAD_STATE_NODE *pThreadState
+)
+{
+    NvBool bPending = NV_FALSE;
+    MC_ENGINE_BITVECTOR engines;
+
+    NV_ASSERT(engIdx < MC_ENGINE_IDX_MAX);
+
+    if (intrVector == NV_INTR_VECTOR_INVALID)
+    {
+        //
+        // Don't assert if intrVector is invalid since it
+        // may just be auxiliary.
+        //
+        INTR_TABLE_ENTRY *pEntry = intrGetInterruptTableEntryFromEngineId(
+                  pGpu, pIntr, engIdx, NV_FALSE);
+        NV_ASSERT_OR_RETURN(pEntry != NULL, NV_FALSE);
+        intrVector = pEntry->intrVector;
+    }
+
+    if (intrVector != NV_INTR_VECTOR_INVALID)
+    {
+        bPending = intrIsVectorPending_HAL(pGpu, pIntr, intrVector, pThreadState);
+
+        if (bPending)
+        {
+            return NV_TRUE;
+        }
+    }
+
+    bitVectorClrAll(&engines);
+    intrGetAuxiliaryPendingStall_HAL(pGpu, pIntr, &engines, NV_FALSE, engIdx, pThreadState);
+
+    return bitVectorTest(&engines, engIdx);
+}
+
+/*!
  * @brief Checks if the given interrupt vector is pending at the dev_ctrl LEAF level
+ *        This is an internal implementation of the intr module and should not be
+ *        used directly by other modules. Other modules should use intrIsPending_HAL
+ *        for a generic interface that works across generations and doesn't expose the
+ *        intrVector to the module. Extenuating circumstances, such as the interrupt
+ *        table not being initialized, can still use this.
+ * 
  *
  * @param[in]   pGpu          OBJGPU pointer
  * @param[in]   pIntr         Intr pointer
@@ -775,7 +839,6 @@ intrGetPendingStallEngines_TU102
     THREAD_STATE_NODE   *pThreadState
 )
 {
-    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
     InterruptTable    *pIntrTable;
     InterruptTableIter iter;
     NvU64 sanityCheckSubtreeMask = 0;
@@ -783,7 +846,7 @@ intrGetPendingStallEngines_TU102
     NV_ASSERT(numIntrLeaves <= NV_MAX_INTR_LEAVES);
     NvU32 intrLeafValues[NV_MAX_INTR_LEAVES];
 
-    sanityCheckSubtreeMask = intrGetIntrTopLegacyStallMask(pIntr);
+    sanityCheckSubtreeMask = intrGetIntrTopLegacyStallMask_HAL(pIntr);
 
     portMemSet(intrLeafValues, 0, numIntrLeaves * sizeof(NvU32));
     bitVectorClrAll(pEngines);
@@ -850,7 +913,26 @@ intrGetPendingStallEngines_TU102
         bitVectorSet(pEngines, pEntry->mcEngine);
     }
 
-    if (pKernelGmmu != NULL)
+    return NV_OK;
+}
+
+
+void intrGetAuxiliaryPendingStall_TU102
+(
+    OBJGPU              *pGpu,
+    Intr                *pIntr,
+    MC_ENGINE_BITVECTOR *pEngines,
+    NvBool               bGetAll,
+    NvU16                engIdx,
+    THREAD_STATE_NODE   *pThreadState
+)
+{
+    extern void intrGetAuxiliaryPendingStall_GP100(OBJGPU *pGpu, Intr *pIntr, MC_ENGINE_BITVECTOR *, NvBool bGetAll, NvU16 engIdx, THREAD_STATE_NODE *pThreadState);
+    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+
+    intrGetAuxiliaryPendingStall_GP100(pGpu, pIntr, pEngines, bGetAll, engIdx, pThreadState);
+
+    if ((bGetAll || engIdx == MC_ENGINE_IDX_GMMU) && pKernelGmmu != NULL)
     {
         NvBool bRmOwnsReplayableFault = !!(pKernelGmmu->uvmSharedIntrRmOwnsMask & RM_UVM_SHARED_INTR_MASK_MMU_REPLAYABLE_FAULT_NOTIFY);
         NvBool bRmOwnsAccessCntr      = !!(pKernelGmmu->uvmSharedIntrRmOwnsMask & RM_UVM_SHARED_INTR_MASK_HUB_ACCESS_COUNTER_NOTIFY);
@@ -876,8 +958,8 @@ intrGetPendingStallEngines_TU102
         }
     }
 
-    return NV_OK;
 }
+
 
 /*!
  * @brief Checks and services MMU non=replayable fault interrupts that may not
@@ -1035,7 +1117,7 @@ intrGetLeafStatus_TU102
     NvU32 leafIndex;
 
     FOR_EACH_INDEX_IN_MASK(64, subtreeIndex,
-                           intrGetIntrTopLegacyStallMask(pIntr))
+                           intrGetIntrTopLegacyStallMask_HAL(pIntr))
     {
         leafIndex = NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_START(subtreeIndex);
         if (pIntr->getProperty(pIntr, PDB_PROP_INTR_READ_ONLY_EVEN_NUMBERED_INTR_LEAF_REGS))
@@ -1061,8 +1143,7 @@ intrGetLeafStatus_TU102
 /*!
  * @brief Returns a bitfield with only MC_ENGINE_IDX_DISP set if it's pending in hardware
  *        On Turing+, there are multiple stall interrupt registers, and reading them
- *        all in the top half would be expensive. To saitsfy bug 3220319, only find out
- *        if display interrupt is pending. Fix this in bug 3279300.
+ *        all in the top half would be expensive.
  *        The MC_ENGINE_IDX_DISP that this function reports conflates both the low latency display
  *        interrupts and other display interrupts in architectures supported by this HAL.
  *
@@ -1115,10 +1196,7 @@ intrGetPendingLowLatencyHwDisplayIntr_TU102
  * The PMC_INTR_MASK HW registers were deprecated in Pascal, but the Pascal-Volta interrupt
  * code still emulates them in SW. The Turing+ code did not implement any of the masking code,
  * but as seen in bug 3152190, the ability to leave the display interupt unmasked is still
- * needed. The ability to unmask the interrupts to enable them to show up in interrupt registers
- * is not needed, so this call is not needed at callsites that just do that
- * (_intrEnterCriticalSection / _intrExitCriticalSection)
- * This whole interrupts code mess needs refactored - bug 3279300
+ * needed.
  *
  * @param[in] pGpu
  * @param[in] pIntr
@@ -1209,25 +1287,31 @@ intrInitSubtreeMap_TU102
     Intr   *pIntr
 )
 {
+    NvU8 i;
     NV2080_INTR_CATEGORY_SUBTREE_MAP *pCategoryEngine =
         &pIntr->subtreeMap[NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE];
-    pCategoryEngine->subtreeStart = NV_CPU_INTR_STALL_SUBTREE_START;
-    pCategoryEngine->subtreeEnd   = NV_CPU_INTR_STALL_SUBTREE_LAST;
+    for (i = NV_CPU_INTR_STALL_SUBTREE_START; i <= NV_CPU_INTR_STALL_SUBTREE_LAST; i++)
+    {
+        pCategoryEngine->subtreeMask |= NVBIT64(i);
+    }
 
     NV2080_INTR_CATEGORY_SUBTREE_MAP *pCategoryEngineNotification =
         &pIntr->subtreeMap[NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE_NOTIFICATION];
-    pCategoryEngineNotification->subtreeStart = NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_SUBTREE(0);
-    pCategoryEngineNotification->subtreeEnd   = NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_SUBTREE(0);
+    pCategoryEngineNotification->subtreeMask |= NVBIT64(NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_SUBTREE(0));
 
     NV2080_INTR_CATEGORY_SUBTREE_MAP *pCategoryUvmOwned =
         &pIntr->subtreeMap[NV2080_INTR_CATEGORY_UVM_OWNED];
-    pCategoryUvmOwned->subtreeStart = NV_CPU_INTR_UVM_SUBTREE_START;
-    pCategoryUvmOwned->subtreeEnd   = NV_CPU_INTR_UVM_SUBTREE_LAST;
+    for (i = NV_CPU_INTR_UVM_SUBTREE_START; i <= NV_CPU_INTR_UVM_SUBTREE_LAST; i++)
+    {
+        pCategoryUvmOwned->subtreeMask |= NVBIT64(i);
+    }
 
     NV2080_INTR_CATEGORY_SUBTREE_MAP *pCategoryUvmShared =
         &pIntr->subtreeMap[NV2080_INTR_CATEGORY_UVM_SHARED];
-    pCategoryUvmShared->subtreeStart = NV_CPU_INTR_UVM_SHARED_SUBTREE_START;
-    pCategoryUvmShared->subtreeEnd   = NV_CPU_INTR_UVM_SHARED_SUBTREE_LAST;
+    for (i = NV_CPU_INTR_UVM_SHARED_SUBTREE_START; i <= NV_CPU_INTR_UVM_SHARED_SUBTREE_LAST; i++)
+    {
+        pCategoryUvmShared->subtreeMask |= NVBIT64(i);
+    }
 
     return NV_OK;
 }
@@ -1316,4 +1400,33 @@ intrDecodeStallIntrEn_TU102
         default:
             return INTERRUPT_TYPE_MULTI;
     }
+}
+
+NvU64
+intrGetIntrTopLegacyStallMask_TU102
+(
+    Intr   *pIntr
+)
+{
+    NvU64 ret =
+        intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE) |
+        intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_UVM_OWNED) |
+        intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_UVM_SHARED);
+
+    // Sanity check that Intr.subtreeMap is initialized
+    NV_ASSERT_OR_RETURN(ret != 0, ret);
+    return ret;
+}
+
+NvU64
+intrGetIntrTopLockedMask_TU102
+(
+    Intr   *pIntr
+)
+{
+    NvU64 ret = intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE);
+
+    // Sanity check that Intr.subtreeMap is initialized
+    NV_ASSERT_OR_RETURN(ret != 0, ret);
+    return ret;
 }

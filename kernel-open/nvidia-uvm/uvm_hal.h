@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -209,6 +209,15 @@ void uvm_hal_blackwell_host_tlb_invalidate_va(uvm_push_t *push,
                                               NvU64 page_size,
                                               uvm_membar_t membar);
 
+// Issue a TLB invalidate applying to cached physical translations (GPAs), such
+// as those used by ATS for physical CE transfer. No membar is performed.
+typedef void (*uvm_hal_host_tlb_invalidate_phys_t)(uvm_push_t *push);
+
+// Volta was the first GPU which enabled caching of physical translations, but
+// we have no need to invalidate manually until Blackwell.
+void uvm_hal_maxwell_host_tlb_invalidate_phys_unsupported(uvm_push_t *push);
+void uvm_hal_blackwell_host_tlb_invalidate_phys(uvm_push_t *push);
+
 typedef void (*uvm_hal_host_tlb_invalidate_test_t)(uvm_push_t *push,
                                                    uvm_gpu_phys_address_t pdb,
                                                    UVM_TEST_INVALIDATE_TLB_PARAMS *params);
@@ -230,6 +239,20 @@ void uvm_hal_hopper_host_tlb_invalidate_test(uvm_push_t *push,
 void uvm_hal_blackwell_host_tlb_invalidate_test(uvm_push_t *push,
                                                 uvm_gpu_phys_address_t pdb,
                                                 UVM_TEST_INVALIDATE_TLB_PARAMS *params);
+
+// Flush out pending physical MMU prefetches to guarantee that no new
+// translations can observe them.
+typedef void (*uvm_hal_host_tlb_flush_prefetch_t)(uvm_push_t *push);
+
+// Blackwell is the first GPU which needs prefetch flushing
+void uvm_hal_maxwell_host_tlb_flush_prefetch_unsupported(uvm_push_t *push);
+void uvm_hal_blackwell_host_tlb_flush_prefetch(uvm_push_t *push);
+
+// L2 cache invalidate for non-coherent sysmem for systems with write back cache.
+// These are iGPUs as of now.
+typedef void (*uvm_hal_host_l2_invalidate_noncoh_sysmem_t)(uvm_push_t *push);
+void uvm_hal_blackwell_host_l2_invalidate_noncoh_sysmem(uvm_push_t *push);
+void uvm_hal_host_l2_invalidate_noncoh_sysmem_unsupported(uvm_push_t *push);
 
 // By default all semaphore release operations include a membar sys before the
 // operation. This can be affected by using UVM_PUSH_FLAG_NEXT_* flags with
@@ -796,7 +819,10 @@ struct uvm_host_hal_struct
     uvm_hal_host_write_gpu_put_t write_gpu_put;
     uvm_hal_host_tlb_invalidate_all_t tlb_invalidate_all;
     uvm_hal_host_tlb_invalidate_va_t tlb_invalidate_va;
+    uvm_hal_host_tlb_invalidate_phys_t tlb_invalidate_phys;
     uvm_hal_host_tlb_invalidate_test_t tlb_invalidate_test;
+    uvm_hal_host_tlb_flush_prefetch_t tlb_flush_prefetch;
+    uvm_hal_host_l2_invalidate_noncoh_sysmem_t l2_invalidate_noncoh_sysmem;
     uvm_hal_fault_buffer_replay_t replay_faults;
     uvm_hal_fault_cancel_global_t cancel_faults_global;
     uvm_hal_fault_cancel_targeted_t cancel_faults_targeted;
@@ -959,5 +985,9 @@ bool uvm_hal_membar_before_semaphore(uvm_push_t *push);
 // is_local_vidmem indicates whether all mappings being invalidated pointed to
 // the local GPU's memory.
 uvm_membar_t uvm_hal_downgrade_membar_type(uvm_gpu_t *gpu, bool is_local_vidmem);
+
+// Perform the requested physical GPU TLB invalidation for cached IOMMU
+// mappings. See uvm_dma_map_invalidation_t. No membar is performed.
+void uvm_hal_tlb_invalidate_phys(uvm_push_t *push, uvm_dma_map_invalidation_t inval_type);
 
 #endif // __UVM_HAL_H__

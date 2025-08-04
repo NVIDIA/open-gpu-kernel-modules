@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,6 +33,7 @@
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/heap.h"
+#include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "gpu/conf_compute/conf_compute_api.h"
@@ -253,8 +254,8 @@ confComputeApiCtrlCmdGpuGetVidmemSize_IMPL
              pHeap = pMemoryPartitionHeap;
     }
 
-    pmaGetTotalProtectedMemory(&pHeap->pmaObject, &totalProtectedBytes);
-    pmaGetTotalUnprotectedMemory(&pHeap->pmaObject, &totalUnprotectedBytes);
+    pmaGetTotalProtectedMemory(pHeap->pPmaObject, &totalProtectedBytes);
+    pmaGetTotalUnprotectedMemory(pHeap->pPmaObject, &totalUnprotectedBytes);
 
     pParams->protectedMemSizeInKb = totalProtectedBytes >> 10;
     pParams->unprotectedMemSizeInKb = totalUnprotectedBytes >> 10;

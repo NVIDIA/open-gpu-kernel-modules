@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,6 +31,7 @@
 //
 
 #include "ctrl/ctrl0080/ctrl0080base.h"
+#include "nvcfg_sdk.h"
 
 /*
  * NV0080_CTRL_CMD_BIF_RESET
@@ -47,7 +48,8 @@
  *         to _SBR, a secondary-bus reset is performed. When set to
  *         _FUNDAMENTAL, a fundamental reset is performed.
  *
- *         NOTE: _FUNDAMENTAL is not yet supported.
+ *         NOTE: _FUNDAMENTAL is not supported for Blackwell and later chips.
+ *         Use BOOT_DEVICE_FUSE or BOOT_DEVICE reset type instead.
  *
  * Possible status return values are:
  *   NV_OK
@@ -72,6 +74,8 @@ typedef struct NV0080_CTRL_BIF_RESET_PARAMS {
 #define NV0080_CTRL_BIF_RESET_FLAGS_TYPE_PEX              0x6
 #define NV0080_CTRL_BIF_RESET_FLAGS_TYPE_OOBHUB_TRIGGER   0x7
 #define NV0080_CTRL_BIF_RESET_FLAGS_TYPE_BASE             0x8
+
+
 
 /*
  * NV0080_CTRL_BIF_SET_ASPM_FEATURE

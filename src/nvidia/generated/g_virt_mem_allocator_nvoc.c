@@ -25,10 +25,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE;
 
 // Forward declarations for VirtMemAllocator
 void __nvoc_init__OBJENGSTATE(OBJENGSTATE*);
-void __nvoc_init__VirtMemAllocator(VirtMemAllocator*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_funcTable_VirtMemAllocator(VirtMemAllocator*, RmHalspecOwner *pRmhalspecowner);
-NV_STATUS __nvoc_ctor_VirtMemAllocator(VirtMemAllocator*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_dataField_VirtMemAllocator(VirtMemAllocator*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init__VirtMemAllocator(VirtMemAllocator*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_funcTable_VirtMemAllocator(VirtMemAllocator*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+NV_STATUS __nvoc_ctor_VirtMemAllocator(VirtMemAllocator*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_dataField_VirtMemAllocator(VirtMemAllocator*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_VirtMemAllocator(VirtMemAllocator*);
 
 // Structures used within RTTI (run-time type information)
@@ -204,6 +204,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__VirtMemAllocator =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_dmaDestruct(VirtMemAllocator*);
 void __nvoc_dtor_OBJENGSTATE(OBJENGSTATE*);
 void __nvoc_dtor_VirtMemAllocator(VirtMemAllocator *pThis) {
     __nvoc_dmaDestruct(pThis);
@@ -211,12 +212,13 @@ void __nvoc_dtor_VirtMemAllocator(VirtMemAllocator *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_VirtMemAllocator(VirtMemAllocator *pThis, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+void __nvoc_init_dataField_VirtMemAllocator(VirtMemAllocator *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
@@ -231,16 +233,26 @@ void __nvoc_init_dataField_VirtMemAllocator(VirtMemAllocator *pThis, RmHalspecOw
 
     // Hal field -- bDmaIsSupportedSparseVirtual
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->bDmaIsSupportedSparseVirtual = NV_TRUE;
+    }
+    // default
+    else
+    {
+        pThis->bDmaIsSupportedSparseVirtual = NV_FALSE;
     }
 
     // Hal field -- bDmaEnforce32BitPointer
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->bDmaEnforce32BitPointer = NV_TRUE;
+    }
+    // default
+    else
+    {
+        pThis->bDmaEnforce32BitPointer = NV_FALSE;
     }
 
     // Hal field -- bDmaEnableFullCompTagLine
@@ -257,11 +269,11 @@ void __nvoc_init_dataField_VirtMemAllocator(VirtMemAllocator *pThis, RmHalspecOw
 }
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
-NV_STATUS __nvoc_ctor_VirtMemAllocator(VirtMemAllocator *pThis, RmHalspecOwner *pRmhalspecowner) {
+NV_STATUS __nvoc_ctor_VirtMemAllocator(VirtMemAllocator *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
     if (status != NV_OK) goto __nvoc_ctor_VirtMemAllocator_fail_OBJENGSTATE;
-    __nvoc_init_dataField_VirtMemAllocator(pThis, pRmhalspecowner);
+    __nvoc_init_dataField_VirtMemAllocator(pThis, pGpuhalspecowner, pRmhalspecowner);
     goto __nvoc_ctor_VirtMemAllocator_exit; // Success
 
 __nvoc_ctor_VirtMemAllocator_fail_OBJENGSTATE:
@@ -271,21 +283,42 @@ __nvoc_ctor_VirtMemAllocator_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_VirtMemAllocator_1(VirtMemAllocator *pThis, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+static void __nvoc_init_funcTable_VirtMemAllocator_1(VirtMemAllocator *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
+    // dmaAllocMapping -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__dmaAllocMapping__ = &dmaAllocMapping_46f6a7;
+    }
+    else
+    {
+        pThis->__dmaAllocMapping__ = &dmaAllocMapping_GM107;
+    }
+
+    // dmaFreeMapping -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__dmaFreeMapping__ = &dmaFreeMapping_46f6a7;
+    }
+    else
+    {
+        pThis->__dmaFreeMapping__ = &dmaFreeMapping_GM107;
+    }
+
     // dmaAllocBar1P2PMapping -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__dmaAllocBar1P2PMapping__ = &dmaAllocBar1P2PMapping_GH100;
     }
@@ -297,7 +330,7 @@ static void __nvoc_init_funcTable_VirtMemAllocator_1(VirtMemAllocator *pThis, Rm
 
     // dmaFreeBar1P2PMapping -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__dmaFreeBar1P2PMapping__ = &dmaFreeBar1P2PMapping_GH100;
     }
@@ -306,18 +339,78 @@ static void __nvoc_init_funcTable_VirtMemAllocator_1(VirtMemAllocator *pThis, Rm
     {
         pThis->__dmaFreeBar1P2PMapping__ = &dmaFreeBar1P2PMapping_b3696a;
     }
-} // End __nvoc_init_funcTable_VirtMemAllocator_1 with approximately 4 basic block(s).
+
+    // dmaIsDefaultGpuUncached -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__dmaIsDefaultGpuUncached__ = &dmaIsDefaultGpuUncached_3dd2c9;
+    }
+    else
+    {
+        pThis->__dmaIsDefaultGpuUncached__ = &dmaIsDefaultGpuUncached_GM107;
+    }
+
+    // dmaUpdateVASpace -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__dmaUpdateVASpace__ = &dmaUpdateVASpace_46f6a7;
+    }
+    else
+    {
+        pThis->__dmaUpdateVASpace__ = &dmaUpdateVASpace_GF100;
+    }
+
+    // dmaXlateVAtoPAforChannel -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__dmaXlateVAtoPAforChannel__ = &dmaXlateVAtoPAforChannel_46f6a7;
+    }
+    else
+    {
+        pThis->__dmaXlateVAtoPAforChannel__ = &dmaXlateVAtoPAforChannel_GM107;
+    }
+
+    // dmaGetPTESize -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__dmaGetPTESize__ = &dmaGetPTESize_474d46;
+    }
+    else
+    {
+        pThis->__dmaGetPTESize__ = &dmaGetPTESize_GM107;
+    }
+
+    // dmaMapBuffer -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__dmaMapBuffer__ = &dmaMapBuffer_5baef9;
+    }
+    else
+    {
+        pThis->__dmaMapBuffer__ = &dmaMapBuffer_GM107;
+    }
+
+    // dmaUnmapBuffer -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__dmaUnmapBuffer__ = &dmaUnmapBuffer_f2d351;
+    }
+    else
+    {
+        pThis->__dmaUnmapBuffer__ = &dmaUnmapBuffer_GM107;
+    }
+} // End __nvoc_init_funcTable_VirtMemAllocator_1 with approximately 20 basic block(s).
 
 
-// Initialize vtable(s) for 16 virtual method(s).
-void __nvoc_init_funcTable_VirtMemAllocator(VirtMemAllocator *pThis, RmHalspecOwner *pRmhalspecowner) {
+// Initialize vtable(s) for 24 virtual method(s).
+void __nvoc_init_funcTable_VirtMemAllocator(VirtMemAllocator *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 2 per-object function pointer(s).
-    __nvoc_init_funcTable_VirtMemAllocator_1(pThis, pRmhalspecowner);
+    // Initialize vtable(s) with 10 per-object function pointer(s).
+    __nvoc_init_funcTable_VirtMemAllocator_1(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__VirtMemAllocator(VirtMemAllocator *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init__VirtMemAllocator(VirtMemAllocator *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
     // Initialize pointers to inherited data.
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object;    // (obj) super^2
@@ -333,7 +426,7 @@ void __nvoc_init__VirtMemAllocator(VirtMemAllocator *pThis, RmHalspecOwner *pRmh
     pThis->__nvoc_metadata_ptr = &__nvoc_metadata__VirtMemAllocator;    // (dma) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_VirtMemAllocator(pThis, pRmhalspecowner);
+    __nvoc_init_funcTable_VirtMemAllocator(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_VirtMemAllocator(VirtMemAllocator **ppThis, Dynamic *pParent, NvU32 createFlags)
@@ -341,6 +434,7 @@ NV_STATUS __nvoc_objCreate_VirtMemAllocator(VirtMemAllocator **ppThis, Dynamic *
     NV_STATUS status;
     Object *pParentObj = NULL;
     VirtMemAllocator *pThis;
+    GpuHalspecOwner *pGpuhalspecowner;
     RmHalspecOwner *pRmhalspecowner;
 
     // Assign `pThis`, allocating memory unless suppressed by flag.
@@ -367,12 +461,15 @@ NV_STATUS __nvoc_objCreate_VirtMemAllocator(VirtMemAllocator **ppThis, Dynamic *
         pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.pParent = NULL;
     }
 
+    if ((pGpuhalspecowner = dynamicCast(pParent, GpuHalspecOwner)) == NULL)
+        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, pParent);
+    NV_ASSERT_OR_RETURN(pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
     if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
         pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
     NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init__VirtMemAllocator(pThis, pRmhalspecowner);
-    status = __nvoc_ctor_VirtMemAllocator(pThis, pRmhalspecowner);
+    __nvoc_init__VirtMemAllocator(pThis, pGpuhalspecowner, pRmhalspecowner);
+    status = __nvoc_ctor_VirtMemAllocator(pThis, pGpuhalspecowner, pRmhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_VirtMemAllocator_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

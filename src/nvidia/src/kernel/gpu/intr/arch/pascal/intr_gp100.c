@@ -53,10 +53,17 @@ _intrSetIntrEnInHw_GP100
 
     // Only set the mask interrupt line and clear the rest all interrupt lines.
     pmcIntrEnSet   = pIntr->intrCachedEnSet   &   pIntr->intrMask.cached;
-    pmcIntrEnClear = pIntr->intrCachedEnClear | (~pIntr->intrMask.cached);
+    pmcIntrEnClear = pIntr->intrCachedEnClear | (~pIntr->intrMask.cached); // with INTR_MASK_FOR_LOCKING, this OR may not respect the pmcRmOwnsIntrMask
 
     // Mask the leaf level interrupts for cases where top PMC intr is not toggeled
     intrSetHubLeafIntr_HAL(pGpu, pIntr, pIntr->intrCachedEn0, &pmcIntrEnClear, &pmcIntrEnSet, pThreadState);
+
+    //
+    // Only toggle those interrupts that RM owns. With INTR_MASK_FOR_LOCKING,
+    // ORing intrCachedEnClear with something else could unintentionally clear the enable
+    //
+    pmcIntrEnSet &= pGpu->pmcRmOwnsIntrMask;
+    pmcIntrEnClear &= pGpu->pmcRmOwnsIntrMask;
 
     GPU_REG_WR32_EX(pGpu, NV_PMC_INTR_EN_CLEAR(0), pmcIntrEnClear, pThreadState);
     GPU_REG_WR32_EX(pGpu, NV_PMC_INTR_EN_SET(0),   pmcIntrEnSet,   pThreadState);
@@ -174,25 +181,22 @@ intrGetIntrMask_GP100
     return NV_OK;
 }
 
-/**
- * @brief Returns a bitfield with the MC_ENGINES that have pending interrupts
- */
-NV_STATUS
-intrGetPendingStall_GP100
+void intrGetAuxiliaryPendingStall_GP100
 (
     OBJGPU              *pGpu,
     Intr                *pIntr,
     MC_ENGINE_BITVECTOR *pEngines,
+    NvBool               bGetAll,
+    NvU16                engIdx,
     THREAD_STATE_NODE   *pThreadState
 )
 {
-    extern NV_STATUS intrGetPendingStall_GM107(OBJGPU *pGpu, Intr *pIntr, MC_ENGINE_BITVECTOR *pEngines, THREAD_STATE_NODE *pThreadState);
-    OBJTMR              *pTmr    = GPU_GET_TIMER(pGpu);
-    MC_ENGINE_BITVECTOR  pendingGmmuEngines;
+    extern void intrGetAuxiliaryPendingStall_GM107(OBJGPU *pGpu, Intr *pIntr, MC_ENGINE_BITVECTOR *, NvBool bGetAll, NvU16 engIdx, THREAD_STATE_NODE *pThreadState);
+    OBJTMR *pTmr    = GPU_GET_TIMER(pGpu);
 
-    NV_ASSERT_OK_OR_RETURN(intrGetPendingStall_GM107(pGpu, pIntr, pEngines, pThreadState));
+    intrGetAuxiliaryPendingStall_GM107(pGpu, pIntr, pEngines, bGetAll, engIdx, pThreadState);
 
-    if (pTmr)
+    if ((bGetAll || engIdx == MC_ENGINE_IDX_TMR) && pTmr != NULL)
     {
         NvU32   retVal;
 
@@ -203,15 +207,10 @@ intrGetPendingStall_GP100
         }
     }
 
-    intrGetGmmuInterrupts(pGpu, pIntr, &pendingGmmuEngines, pThreadState);
-    bitVectorOr(pEngines, pEngines, &pendingGmmuEngines);
-
-    if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu))
+    if (bGetAll || engIdx == MC_ENGINE_IDX_GMMU)
     {
-        return NV_ERR_GPU_IS_LOST;
+        intrGetGmmuInterrupts(pGpu, pIntr, pEngines, pThreadState);        
     }
-
-    return NV_OK;
 }
 
 /*!

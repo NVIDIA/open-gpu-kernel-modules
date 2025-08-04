@@ -7,7 +7,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig_util.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, T234D, T26XD
 //
 
 #ifndef _G_RMCFG_UTIL_H_
@@ -18,7 +18,56 @@
 // These cannot be put in rmconfig_private.h as they need the OBJ typedefs.
 //
 
+NvBool rmcfg_IsGF100orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGF100BorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGF104orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGF104BorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGF106orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGF106BorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGF108orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGF10XorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGF110DorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGF110orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGF117orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGF118orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGF119orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGF11XorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGF110ForBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGF110F2orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGF110F3orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGF10XForBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGK104orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGK106orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGK107orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGK20AorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGK10XorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGK110orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGK110BorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGK110CorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGK11XorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGK208orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGK208SorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGK20XorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGM107orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGM108orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGM10XorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGM200orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGM204orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGM206orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGM20XorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGP100orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGP102orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGP104orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGP106orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGP107orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGP108orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGP10XorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGV100orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGV10XorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGV11BorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGV11XorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsTU102(POBJGPU pGpu);
+NvBool rmcfg_IsTU102orBetter(POBJGPU pGpu);
 NvBool rmcfg_IsTU104(POBJGPU pGpu);
 NvBool rmcfg_IsTU104orBetter(POBJGPU pGpu);
 NvBool rmcfg_IsTU106(POBJGPU pGpu);
@@ -28,6 +77,7 @@ NvBool rmcfg_IsTU116orBetter(POBJGPU pGpu);
 NvBool rmcfg_IsTU117(POBJGPU pGpu);
 NvBool rmcfg_IsTU117orBetter(POBJGPU pGpu);
 NvBool rmcfg_IsTU10X(POBJGPU pGpu);
+NvBool rmcfg_IsTU10XorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsGA100(POBJGPU pGpu);
 NvBool rmcfg_IsGA100orBetter(POBJGPU pGpu);
 NvBool rmcfg_IsGA102(POBJGPU pGpu);
@@ -85,13 +135,37 @@ NvBool rmcfg_IsGB207(POBJGPU pGpu);
 NvBool rmcfg_IsGB207orBetter(POBJGPU pGpu);
 NvBool rmcfg_IsGB20B(POBJGPU pGpu);
 NvBool rmcfg_IsGB20BorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGB20C(POBJGPU pGpu);
+NvBool rmcfg_IsGB20CorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsGB20X(POBJGPU pGpu);
 NvBool rmcfg_IsGB20XorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsT234D(POBJGPU pGpu);
+NvBool rmcfg_IsT234DorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsT23XD(POBJGPU pGpu);
+NvBool rmcfg_IsT23XDorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsT264D(POBJGPU pGpu);
+NvBool rmcfg_IsT264DorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsT26XD(POBJGPU pGpu);
+NvBool rmcfg_IsT26XDorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsCLASSIC_GPUS(POBJGPU pGpu);
+NvBool rmcfg_IsCLASSIC_GPUSorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsdFERMIorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsFERMI_CLASSIC_GPUSorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsDISPLAYLESS_CLASSIC_GPUS(POBJGPU pGpu);
 NvBool rmcfg_IsDISPLAYLESS_CLASSIC_GPUSorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsdKEPLERorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsKEPLER_CLASSIC_GPUSorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsdMAXWELLorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsMAXWELL_CLASSIC_GPUSorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsdPASCALorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsCOMPUTE(POBJGPU pGpu);
+NvBool rmcfg_IsPASCAL_CLASSIC_GPUSorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsdVOLTAorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsVOLTA_CLASSIC_GPUSorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsdTURING(POBJGPU pGpu);
+NvBool rmcfg_IsdTURINGorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsTURING_CLASSIC_GPUS(POBJGPU pGpu);
+NvBool rmcfg_IsTURING_CLASSIC_GPUSorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsdAMPERE(POBJGPU pGpu);
 NvBool rmcfg_IsdAMPEREorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsAMPERE_CLASSIC_GPUS(POBJGPU pGpu);
@@ -113,6 +187,16 @@ NvBool rmcfg_IsTEGRA_DGPU_BLACKWELL(POBJGPU pGpu);
 NvBool rmcfg_IsTEGRA_DISP_CLASSIC_GPUS(POBJGPU pGpu);
 NvBool rmcfg_IsTEGRA_DISP_CLASSIC_GPUSorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsGB20Y(POBJGPU pGpu);
+NvBool rmcfg_IsTEGRA_NVDISP_GPUS(POBJGPU pGpu);
+NvBool rmcfg_IsTEGRA_NVDISP_GPUSorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsT23X_TEGRA_NVDISP_GPUS(POBJGPU pGpu);
+NvBool rmcfg_IsT23X_TEGRA_NVDISP_GPUSorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsTEGRA_TEGRA_NVDISP_GPUS(POBJGPU pGpu);
+NvBool rmcfg_IsTEGRA_TEGRA_NVDISP_GPUSorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsTEGRA_DISP_TEGRA_NVDISP_GPUS(POBJGPU pGpu);
+NvBool rmcfg_IsTEGRA_DISP_TEGRA_NVDISP_GPUSorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsT26X(POBJGPU pGpu);
+NvBool rmcfg_IsT26XorBetter(POBJGPU pGpu);
 
 
 #endif  // _G_RMCFG_UTIL_H_

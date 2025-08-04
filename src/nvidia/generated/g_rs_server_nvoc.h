@@ -162,15 +162,17 @@ NV_STATUS __nvoc_objCreate_RsShared(RsShared**, Dynamic*, NvU32);
     __nvoc_objCreate_RsShared((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS shrConstruct_IMPL(struct RsShared *arg_pShared);
+#define __nvoc_shrConstruct(arg_pShared) shrConstruct_IMPL(arg_pShared)
+
+void shrDestruct_IMPL(struct RsShared *pShared);
+#define __nvoc_shrDestruct(pShared) shrDestruct_IMPL(pShared)
+
+
+// Wrapper macros for halified functions
 
 // Dispatch functions
-NV_STATUS shrConstruct_IMPL(struct RsShared *arg_pShared);
-
-#define __nvoc_shrConstruct(arg_pShared) shrConstruct_IMPL(arg_pShared)
-void shrDestruct_IMPL(struct RsShared *pShared);
-
-#define __nvoc_shrDestruct(pShared) shrDestruct_IMPL(pShared)
 #undef PRIVATE_FIELD
 
 MAKE_INTRUSIVE_MAP(RsSharedMap, RsShared, node);
@@ -264,7 +266,54 @@ NV_STATUS __nvoc_objCreate_RsSession(RsSession**, Dynamic*, NvU32);
     __nvoc_objCreate_RsSession((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS sessionConstruct_IMPL(struct RsSession *arg_pSession);
+#define __nvoc_sessionConstruct(arg_pSession) sessionConstruct_IMPL(arg_pSession)
+
+void sessionDestruct_IMPL(struct RsSession *pSession);
+#define __nvoc_sessionDestruct(pSession) sessionDestruct_IMPL(pSession)
+
+NV_STATUS sessionAddDependant_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);
+#ifdef __nvoc_rs_server_h_disabled
+static inline NV_STATUS sessionAddDependant(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
+    NV_ASSERT_FAILED_PRECOMP("RsSession was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_server_h_disabled
+#define sessionAddDependant(pSession, pResourceRef) sessionAddDependant_IMPL(pSession, pResourceRef)
+#endif // __nvoc_rs_server_h_disabled
+
+NV_STATUS sessionAddDependency_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);
+#ifdef __nvoc_rs_server_h_disabled
+static inline NV_STATUS sessionAddDependency(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
+    NV_ASSERT_FAILED_PRECOMP("RsSession was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_server_h_disabled
+#define sessionAddDependency(pSession, pResourceRef) sessionAddDependency_IMPL(pSession, pResourceRef)
+#endif // __nvoc_rs_server_h_disabled
+
+NV_STATUS sessionCheckLocksForAdd_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);
+#ifdef __nvoc_rs_server_h_disabled
+static inline NV_STATUS sessionCheckLocksForAdd(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
+    NV_ASSERT_FAILED_PRECOMP("RsSession was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_server_h_disabled
+#define sessionCheckLocksForAdd(pSession, pResourceRef) sessionCheckLocksForAdd_IMPL(pSession, pResourceRef)
+#endif // __nvoc_rs_server_h_disabled
+
+void sessionCheckLocksForRemove_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);
+#ifdef __nvoc_rs_server_h_disabled
+static inline void sessionCheckLocksForRemove(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
+    NV_ASSERT_FAILED_PRECOMP("RsSession was disabled!");
+}
+#else // __nvoc_rs_server_h_disabled
+#define sessionCheckLocksForRemove(pSession, pResourceRef) sessionCheckLocksForRemove_IMPL(pSession, pResourceRef)
+#endif // __nvoc_rs_server_h_disabled
+
+
+// Wrapper macros for halified functions
 #define sessionRemoveDependant_FNPTR(pSession) pSession->__nvoc_metadata_ptr->vtable.__sessionRemoveDependant__
 #define sessionRemoveDependant(pSession, pResourceRef) sessionRemoveDependant_DISPATCH(pSession, pResourceRef)
 #define sessionRemoveDependency_FNPTR(pSession) pSession->__nvoc_metadata_ptr->vtable.__sessionRemoveDependency__
@@ -282,55 +331,6 @@ static inline void sessionRemoveDependency_DISPATCH(struct RsSession *pSession, 
 void sessionRemoveDependant_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);
 
 void sessionRemoveDependency_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);
-
-NV_STATUS sessionConstruct_IMPL(struct RsSession *arg_pSession);
-
-#define __nvoc_sessionConstruct(arg_pSession) sessionConstruct_IMPL(arg_pSession)
-void sessionDestruct_IMPL(struct RsSession *pSession);
-
-#define __nvoc_sessionDestruct(pSession) sessionDestruct_IMPL(pSession)
-NV_STATUS sessionAddDependant_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);
-
-#ifdef __nvoc_rs_server_h_disabled
-static inline NV_STATUS sessionAddDependant(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
-    NV_ASSERT_FAILED_PRECOMP("RsSession was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_server_h_disabled
-#define sessionAddDependant(pSession, pResourceRef) sessionAddDependant_IMPL(pSession, pResourceRef)
-#endif //__nvoc_rs_server_h_disabled
-
-NV_STATUS sessionAddDependency_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);
-
-#ifdef __nvoc_rs_server_h_disabled
-static inline NV_STATUS sessionAddDependency(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
-    NV_ASSERT_FAILED_PRECOMP("RsSession was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_server_h_disabled
-#define sessionAddDependency(pSession, pResourceRef) sessionAddDependency_IMPL(pSession, pResourceRef)
-#endif //__nvoc_rs_server_h_disabled
-
-NV_STATUS sessionCheckLocksForAdd_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);
-
-#ifdef __nvoc_rs_server_h_disabled
-static inline NV_STATUS sessionCheckLocksForAdd(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
-    NV_ASSERT_FAILED_PRECOMP("RsSession was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_server_h_disabled
-#define sessionCheckLocksForAdd(pSession, pResourceRef) sessionCheckLocksForAdd_IMPL(pSession, pResourceRef)
-#endif //__nvoc_rs_server_h_disabled
-
-void sessionCheckLocksForRemove_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);
-
-#ifdef __nvoc_rs_server_h_disabled
-static inline void sessionCheckLocksForRemove(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
-    NV_ASSERT_FAILED_PRECOMP("RsSession was disabled!");
-}
-#else //__nvoc_rs_server_h_disabled
-#define sessionCheckLocksForRemove(pSession, pResourceRef) sessionCheckLocksForRemove_IMPL(pSession, pResourceRef)
-#endif //__nvoc_rs_server_h_disabled
 
 #undef PRIVATE_FIELD
 

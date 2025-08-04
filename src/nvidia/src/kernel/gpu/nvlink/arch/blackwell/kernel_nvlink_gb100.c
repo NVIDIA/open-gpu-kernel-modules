@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -316,12 +316,14 @@ knvlinkGetHshubSupportedRbmModes_GB100
 
     //
     // TODO: Update hardcoded list with list retrieved from HSHUB query rpc.
-    // Current supported link counts: 0, 4, 8, 12
+    // Current supported link counts: 0, 2, 4, 6, 8, 12
     //
     const NvU8 gpuNvlinkHshubSupportedRbmList[] =
     {
         _nvlinkLinkCountToRbmMode(0),
+        _nvlinkLinkCountToRbmMode(2),
         _nvlinkLinkCountToRbmMode(4),
+        _nvlinkLinkCountToRbmMode(6),
         _nvlinkLinkCountToRbmMode(8),
         _nvlinkLinkCountToRbmMode(12)
     };
@@ -394,6 +396,87 @@ knvlinkValidateFabricEgmBaseAddress_GB100
     return NV_OK;
 }
 
+/**
+ * @brief Check if ENCRYPT_EN bit is set
+ *
+ * @param[in] pGpu           OBJGPU pointer
+ * @param[in] pKernelNvlink  KernelNvlink pointer
+ *
+ * @return  NV_TRUE is ENCRYPT_EN is set, else NV_FALSE
+ */
+
+NvBool
+knvlinkIsEncryptEnSet_GB100
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    NV2080_CTRL_NVLINK_GET_NVLE_ENCRYPT_EN_INFO_PARAMS params;
+    NV_STATUS status;
+    portMemSet(&params, 0, sizeof(params));
+
+    status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                                NV2080_CTRL_CMD_NVLINK_GET_NVLE_ENCRYPT_EN_INFO,
+                                (void *)&params, sizeof(params));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to execute RPC to get Nvlink Encrypt Enable Info\n");
+        return NV_FALSE;
+    }
+
+    return params.bEncryptEnSet;
+}
+
+/*!
+ * @brief  Check if NVLE PDB Property is set
+ * 
+ * @param[in]  pGpu              OBJGPU pointer
+ * @param[in]  pKernelNvlink     KernelNvlink pointer
+ *
+ */
+NvBool
+knvlinkIsNvleEnabled_GB100
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    NV2080_CTRL_NVLINK_SET_NVLE_ENABLED_STATE_PARAMS params;
+    NV_STATUS status;
+    if (!(pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED)))
+    {
+        //
+        // Nvlink Encryption PDB PROP is set when 
+        // 1. Nvlink Encryption regkey has been enabled AND
+        // 2. Encrypt Enable Bit is set by FSP AND
+        // 3. Secure Scratch Register Bit is set by FSP after reading the NVLE PRC Knob
+        //
+
+        if (knvlinkIsEncryptEnSet_HAL(pGpu, pKernelNvlink) &&
+            gpuIsNvleModeEnabledInHw_HAL(pGpu)
+            )
+        {
+            pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED, NV_TRUE);
+        }
+    }
+
+    params.bIsNvleEnabled = pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED);
+
+    // Update NVLE enablement status in GSP-RM
+    status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                                 NV2080_CTRL_CMD_NVLINK_SET_NVLE_ENABLED_STATE,
+                                 (void *)&params, sizeof(params));
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to execute RPC to set Nvlink Enablement Status\n");
+        return NV_FALSE;
+    }
+
+    return pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED);
+}
+
 /*!
  * @brief callback after FIFO is done initializing and we are ready to handle RC
  */
@@ -444,68 +527,25 @@ knvlinkPostSchedulingEnableCallbackUnregister_GB100
         _knvlinkHandlePostSchedulingEnableCallback_GB100, NULL, NULL, NULL);
 }
 
-/**
- * @brief Check if ENCRYPT_EN bit is set
- *
- * @param[in] pGpu           OBJGPU pointer
- * @param[in] pKernelNvlink  KernelNvlink pointer
- *
- * @return  NV_TRUE is ENCRYPT_EN is set, else NV_FALSE
- */
-
-NvBool
-knvlinkIsEncryptEnSet_GB100
-(
-    OBJGPU *pGpu,
-    KernelNvlink *pKernelNvlink
-)
-{
-    NV2080_CTRL_NVLINK_GET_NVLE_ENCRYPT_EN_INFO_PARAMS params;
-    NvU32 status;
-    portMemSet(&params, 0, sizeof(params));
-
-    status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                                NV2080_CTRL_CMD_NVLINK_GET_NVLE_ENCRYPT_EN_INFO,
-                                (void *)&params, sizeof(params));
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Failed to execute GSP-RM GPC to get Nvlink Encrypt Enable Info\n");
-        return NV_FALSE;
-    }
-
-    return params.bEncryptEnSet;
-}
-
 /*!
- * @brief  Check if NVLE PDB Property is set
- * 
- * @param[in]  pGpu              OBJGPU pointer
- * @param[in]  pKernelNvlink     KernelNvlink pointer
- *
+ * @brief Get supported core link states for this device
  */
-NvBool
-knvlinkIsNvleEnabled_GB100
+NvU32
+knvlinkGetSupportedCoreLinkStateMask_GB100
 (
     OBJGPU *pGpu,
     KernelNvlink *pKernelNvlink
 )
 {
-    if (!(pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED)))
-    {
-        //
-        // Nvlink Encryption PDB PROP is set when 
-        // 1. Nvlink Encryption regkey has been enabled AND
-        // 2. Encrypt Enable Bit is set by FSP AND
-        // 3. Secure Scratch Register Bit is set by FSP after reading the NVLE PRC Knob
-        //
-
-        if (knvlinkIsEncryptEnSet_HAL(pGpu, pKernelNvlink) &&
-            gpuIsNvleModeEnabledInHw_HAL(pGpu)
-            )
-        {
-            pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED, NV_TRUE);
-        }
-    }
-
-    return pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED);
+#if defined(INCLUDE_NVLINK_LIB)
+    return NVBIT32(NVLINK_LINKSTATE_OFF) |
+           NVBIT32(NVLINK_LINKSTATE_HS) |
+           NVBIT32(NVLINK_LINKSTATE_SLEEP) |
+           NVBIT32(NVLINK_LINKSTATE_DETECT) |
+           NVBIT32(NVLINK_LINKSTATE_ALI) |
+           NVBIT32(NVLINK_LINKSTATE_FAULT);
+#else
+    return 0x0;
+#endif // defined(INCLUDE_NVLINK_LIB)
 }
+

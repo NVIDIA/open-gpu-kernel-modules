@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -53,7 +53,7 @@ tmrGetTimeEx_OSTIMER
     // We get the time in seconds and microseconds since 1970
     // Note that we don't really need the real time of day
     //
-    osGetCurrentTime(&seconds, &useconds);
+    osGetSystemTime(&seconds, &useconds);
 
     //
     // Calculate ns since 1970.

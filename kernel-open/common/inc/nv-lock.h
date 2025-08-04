@@ -28,12 +28,9 @@
 
 #include <linux/spinlock.h>
 #include <linux/rwsem.h>
-#include <linux/sched.h> /* signal_pending, cond_resched */
+#include <linux/sched.h> /* cond_resched */
 #include <linux/semaphore.h>
-
-#if defined(NV_LINUX_SCHED_SIGNAL_H_PRESENT)
-#include <linux/sched/signal.h>     /* signal_pending for kernels >= 4.11 */
-#endif
+#include <linux/sched/signal.h> /* signal_pending */
 
 #if defined(CONFIG_PREEMPT_RT) || defined(CONFIG_PREEMPT_RT_FULL)
 typedef raw_spinlock_t            nv_spinlock_t;

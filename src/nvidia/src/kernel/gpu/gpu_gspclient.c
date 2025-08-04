@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -360,3 +360,17 @@ gpuResetRequiredStateChanged_FWCLIENT
     return NV_OK;
 }
 
+NvBool
+gpuIsSystemRebootRequired_FWCLIENT
+(
+    OBJGPU *pGpu
+)
+{
+    GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+    if (pGSCI == NULL)
+    {
+        return NV_FALSE;
+    }
+
+    return pGSCI->bSystemRebootRequired;
+}

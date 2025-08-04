@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -71,15 +71,22 @@ kmemsysProgramSysmemFlushBuffer_GB10B
  *
  * @returns void
  */
-void
+NV_STATUS
 kmemsysAssertSysmemFlushBufferValid_GB10B
 (
     OBJGPU *pGpu,
     KernelMemorySystem *pKernelMemorySystem
 )
 {
-    NV_ASSERT((GPU_REG_RD_DRF(pGpu, _PFB, _FBHUB0_PCIE_FLUSH_SYSMEM_ADDR_LO, _ADR) != 0) ||
-          (GPU_REG_RD_DRF(pGpu, _PFB, _FBHUB0_PCIE_FLUSH_SYSMEM_ADDR_HI, _ADR) != 0));
+    NvU32 regPfbFbhub0PcieFlushSysmemAddrValLo = GPU_REG_RD_DRF(pGpu, _PFB, _FBHUB0_PCIE_FLUSH_SYSMEM_ADDR_LO, _ADR);
+    NvU32 regPfbFbhub0PcieFlushSysmemAddrValHi = GPU_REG_RD_DRF(pGpu, _PFB, _FBHUB0_PCIE_FLUSH_SYSMEM_ADDR_HI, _ADR);
+
+    if (regPfbFbhub0PcieFlushSysmemAddrValLo == 0 && regPfbFbhub0PcieFlushSysmemAddrValHi == 0)
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
+    return NV_OK;
 }
 
 /*!

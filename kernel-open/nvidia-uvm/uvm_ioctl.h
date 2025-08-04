@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2013-2024 NVidia Corporation
+    Copyright (c) 2013-2025 NVidia Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -1120,6 +1120,18 @@ typedef struct
 {
     NV_STATUS       rmStatus; // OUT
 } UVM_CLEAR_ALL_ACCESS_COUNTERS_PARAMS;
+
+//
+// UvmDiscard
+//
+#define UVM_DISCARD                                                   UVM_IOCTL_BASE(80)
+typedef struct
+{
+    NvU64           base                                    NV_ALIGN_BYTES(8); // IN
+    NvU64           length;                                                    // IN
+    NvU64           flags;                                                     // IN
+    NV_STATUS       rmStatus;                                                  // OUT
+} UVM_DISCARD_PARAMS;
 
 //
 // Temporary ioctls which should be removed before UVM 8 release

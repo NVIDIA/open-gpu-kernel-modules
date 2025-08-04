@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -287,11 +287,11 @@ void vgpuServiceEventPstate(OBJGPU *pGpu, OBJVGPU *pVGpu)
     pCurrPstate = (pVGpu->shared_memory + (NV_VGPU_SHARED_MEMORY_POINTER_CURRENT_PSTATE / sizeof(NvU32)));
 
     //Schedule OS workitem to call pstate change notifier
-    status = osQueueWorkItemWithFlags(pGpu,
-                                      _rmPstateEventCallback,
-                                      (void *)pCurrPstate,
-                                      OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE |
-                                      OS_QUEUE_WORKITEM_FLAGS_DONT_FREE_PARAMS);
+    status = osQueueWorkItem(pGpu,
+                             _rmPstateEventCallback,
+                             (void *)pCurrPstate,
+                             OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE |
+                                 OS_QUEUE_WORKITEM_FLAGS_DONT_FREE_PARAMS);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to schedule Pstate callback! 0x%x\n",

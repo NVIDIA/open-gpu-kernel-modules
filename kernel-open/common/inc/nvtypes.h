@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,10 +23,6 @@
 
 #ifndef NVTYPES_INCLUDED
 #define NVTYPES_INCLUDED
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include "cpuopsys.h"
 
@@ -54,6 +50,10 @@ extern "C" {
 #define NV_HAS_WCHAR_T_TYPEDEF 1
 #endif
 #endif // __cplusplus
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #if defined(MAKE_NV64TYPES_8BYTES_ALIGNED) && defined(__i386__)
 // ensure or force 8-bytes alignment of NV 64-bit types

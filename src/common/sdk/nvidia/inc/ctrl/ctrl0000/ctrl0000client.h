@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -68,8 +68,7 @@ typedef struct NV0000_CTRL_CLIENT_GET_ADDR_SPACE_TYPE_PARAMS {
 #define NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_VIDMEM    0x00000002
 #define NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_REGMEM    0x00000003
 #define NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_FABRIC    0x00000004
-
-
+#define NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_FABRIC_MC 0x00000005
 
 /*
  * NV0000_CTRL_CMD_CLIENT_GET_HANDLE_INFO

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -228,6 +228,9 @@
 #if GPU_CHILD_MODULE(HDACODEC)
     GPU_CHILD_SINGLE_INST( OBJHDACODEC,          GPU_GET_HDACODEC,                    1,                NV_FALSE,        pHdacodec        )
 #endif
+#if GPU_CHILD_MODULE(GCX)
+    GPU_CHILD_SINGLE_INST( GCX,              GPU_GET_GCX,                        1,                NV_FALSE,           pGcx            )
+#endif
 #if GPU_CHILD_MODULE(LPWR)
     GPU_CHILD_SINGLE_INST( Lpwr,              GPU_GET_LPWR,                        1,                NV_FALSE,           pLpwr            )
 #endif
@@ -312,6 +315,9 @@
 #endif
 #if RMCFG_MODULE_KERNEL_GSPLITE && GPU_CHILD_MODULE(KERNEL_GSPLITE)
     GPU_CHILD_MULTI_INST( KernelGsplite,         GPU_GET_KERNEL_GSPLITE,              GPU_MAX_GSPLITES, NV_FALSE,        pKernelGsplite    )
+#endif
+#if RMCFG_MODULE_KERNEL_HFRP && GPU_CHILD_MODULE(KERNEL_HFRP)
+    GPU_CHILD_SINGLE_INST( KernelHFRP,              GPU_GET_KERNEL_HFRP,              1,                NV_FALSE,        pKernelHfrp       )
 #endif
 
 // Undefine the entry macros to simplify call sites

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -111,6 +111,13 @@ typedef struct NV00FD_CTRL_GET_INFO_PARAMS {
  *  flags [IN]
  *    For future use only. Must be zero for now.
  *
+ *  subPageOffset [IN]
+ *    For future use only. Must be zero for now.
+ */
+
+
+
+/*
  *  Restrictions:
  *  a. Memory belonging to only NVSwitch P2P supported GPUs
  *     which can do multicast can be attached
@@ -130,6 +137,7 @@ typedef struct NV00FD_CTRL_ATTACH_MEM_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 mapOffset, 8);
     NV_DECLARE_ALIGNED(NvU64 mapLength, 8);
     NvU32    flags;
+    NvU32    subPageOffset;
 } NV00FD_CTRL_ATTACH_MEM_PARAMS;
 
 /*
@@ -215,11 +223,17 @@ typedef struct NV00FD_CTRL_DETACH_MEM_PARAMS {
  *    Key is used by the GFM in the MCFLA team response as an ID to allow the
  *    RM to correlate it with the MCFLA team request.
  *
+ *  bwModeEpoch [IN]
+ *    Currently active bwModeEpoch of the remote GPU being attached.
+ *
  *  cliqueId [IN]
  *    Clique ID of the remote GPU being attached.
  *
  *  nodeId [IN]
  *    nodeID from which the remote GPU is being attached.
+ *
+ *  bwMode [IN]
+ *    Currently active bwMode of the remote GPU being attached.
  */
 #define NV00FD_CTRL_CMD_ATTACH_REMOTE_GPU (0xfd0106) /* finn: Evaluated from "(FINN_NV_MEMORY_MULTICAST_FABRIC_FABRIC_INTERFACE_ID << 8) | NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS_MESSAGE_ID" */
 
@@ -228,8 +242,10 @@ typedef struct NV00FD_CTRL_DETACH_MEM_PARAMS {
 typedef struct NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 gpuFabricProbeHandle, 8);
     NV_DECLARE_ALIGNED(NvU64 key, 8);
+    NV_DECLARE_ALIGNED(NvU64 bwModeEpoch, 8);
     NvU32 cliqueId;
     NvU16 nodeId;
+    NvU8  bwMode;
 } NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS;
 
 /*

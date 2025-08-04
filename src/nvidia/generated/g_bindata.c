@@ -73,174 +73,202 @@ typedef enum
     __idx_kgspBinArchiveGspRmBoot_GB100_BINDATA_LABEL_UCODE_DESC_DBG                                               = 18,
     __idx_kgspBinArchiveGspRmBoot_GB100_BINDATA_LABEL_UCODE_IMAGE_PROD                                             = 19,
     __idx_kgspBinArchiveGspRmBoot_GB100_BINDATA_LABEL_UCODE_DESC_PROD                                              = 20,
-    __idx_kgspBinArchiveGspRmBoot_GB202_BINDATA_LABEL_UCODE_IMAGE_DBG                                              = 21,
-    __idx_kgspBinArchiveGspRmBoot_GB202_BINDATA_LABEL_UCODE_DESC_DBG                                               = 22,
-    __idx_kgspBinArchiveGspRmBoot_GB202_BINDATA_LABEL_UCODE_IMAGE_PROD                                             = 23,
-    __idx_kgspBinArchiveGspRmBoot_GB202_BINDATA_LABEL_UCODE_DESC_PROD                                              = 24,
-    __idx_kgspBinArchiveConcatenatedFMCDesc_GH100_BINDATA_LABEL_UCODE_DESC_PROD                                    = 25,
-    __idx_kgspBinArchiveConcatenatedFMCDesc_GB100_BINDATA_LABEL_UCODE_DESC_PROD                                    = 26,
-    __idx_kgspBinArchiveConcatenatedFMC_GH100_BINDATA_LABEL_UCODE_IMAGE_PROD                                       = 27,
-    __idx_kgspBinArchiveConcatenatedFMC_GB100_BINDATA_LABEL_UCODE_IMAGE_PROD                                       = 28,
-    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GH100_BINDATA_LABEL_UCODE_IMAGE                                     = 29,
-    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GH100_BINDATA_LABEL_UCODE_HASH                                      = 30,
-    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GH100_BINDATA_LABEL_UCODE_SIG                                       = 31,
-    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GH100_BINDATA_LABEL_UCODE_PKEY                                      = 32,
-    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB100_BINDATA_LABEL_UCODE_IMAGE                                     = 33,
-    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB100_BINDATA_LABEL_UCODE_HASH                                      = 34,
-    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB100_BINDATA_LABEL_UCODE_SIG                                       = 35,
-    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB100_BINDATA_LABEL_UCODE_PKEY                                      = 36,
-    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB202_BINDATA_LABEL_UCODE_IMAGE                                     = 37,
-    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB202_BINDATA_LABEL_UCODE_HASH                                      = 38,
-    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB202_BINDATA_LABEL_UCODE_SIG                                       = 39,
-    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB202_BINDATA_LABEL_UCODE_PKEY                                      = 40,
-    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GH100_BINDATA_LABEL_UCODE_IMAGE                                      = 41,
-    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GH100_BINDATA_LABEL_UCODE_HASH                                       = 42,
-    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GH100_BINDATA_LABEL_UCODE_SIG                                        = 43,
-    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GH100_BINDATA_LABEL_UCODE_PKEY                                       = 44,
-    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB100_BINDATA_LABEL_UCODE_IMAGE                                      = 45,
-    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB100_BINDATA_LABEL_UCODE_HASH                                       = 46,
-    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB100_BINDATA_LABEL_UCODE_SIG                                        = 47,
-    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB100_BINDATA_LABEL_UCODE_PKEY                                       = 48,
-    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB202_BINDATA_LABEL_UCODE_IMAGE                                      = 49,
-    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB202_BINDATA_LABEL_UCODE_HASH                                       = 50,
-    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB202_BINDATA_LABEL_UCODE_SIG                                        = 51,
-    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB202_BINDATA_LABEL_UCODE_PKEY                                       = 52,
-    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GH100_BINDATA_LABEL_UCODE_IMAGE                                    = 53,
-    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GH100_BINDATA_LABEL_UCODE_HASH                                     = 54,
-    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GH100_BINDATA_LABEL_UCODE_SIG                                      = 55,
-    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GH100_BINDATA_LABEL_UCODE_PKEY                                     = 56,
-    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GB100_BINDATA_LABEL_UCODE_IMAGE                                    = 57,
-    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GB100_BINDATA_LABEL_UCODE_HASH                                     = 58,
-    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GB100_BINDATA_LABEL_UCODE_SIG                                      = 59,
-    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GB100_BINDATA_LABEL_UCODE_PKEY                                     = 60,
-    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_IMAGE_DBG                                              = 61,
-    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_HEADER_DBG                                             = 62,
-    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_IMAGE_PROD                                             = 63,
-    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_HEADER_PROD                                            = 64,
-    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_SIG_DBG                                                = 65,
-    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_SIG_PROD                                               = 66,
-    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_PATCH_LOC                                              = 67,
-    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_PATCH_SIG                                              = 68,
-    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_PATCH_META                                             = 69,
-    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_NUM_SIGS                                               = 70,
-    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_IMAGE_DBG                                              = 71,
-    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_HEADER_DBG                                             = 72,
-    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_IMAGE_PROD                                             = 73,
-    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_HEADER_PROD                                            = 74,
-    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_SIG_DBG                                                = 75,
-    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_SIG_PROD                                               = 76,
-    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_PATCH_LOC                                              = 77,
-    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_PATCH_SIG                                              = 78,
-    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_PATCH_META                                             = 79,
-    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_NUM_SIGS                                               = 80,
-    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_IMAGE_DBG                                              = 81,
-    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_HEADER_DBG                                             = 82,
-    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_IMAGE_PROD                                             = 83,
-    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_HEADER_PROD                                            = 84,
-    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_SIG_DBG                                                = 85,
-    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_SIG_PROD                                               = 86,
-    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_PATCH_LOC                                              = 87,
-    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_PATCH_SIG                                              = 88,
-    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_PATCH_META                                             = 89,
-    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_NUM_SIGS                                               = 90,
-    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_IMAGE_DBG                                              = 91,
-    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_HEADER_DBG                                             = 92,
-    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_IMAGE_PROD                                             = 93,
-    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_HEADER_PROD                                            = 94,
-    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_SIG_DBG                                                = 95,
-    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_SIG_PROD                                               = 96,
-    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_LOC                                              = 97,
-    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_SIG                                              = 98,
-    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_META                                             = 99,
-    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_NUM_SIGS                                               = 100,
-    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_IMAGE_DBG                                              = 101,
-    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_HEADER_DBG                                             = 102,
-    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_IMAGE_PROD                                             = 103,
-    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_HEADER_PROD                                            = 104,
-    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_SIG_DBG                                                = 105,
-    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_SIG_PROD                                               = 106,
-    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_PATCH_LOC                                              = 107,
-    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_PATCH_SIG                                              = 108,
-    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_PATCH_META                                             = 109,
-    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_NUM_SIGS                                               = 110,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_IMAGE_DBG                                            = 111,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_HEADER_DBG                                           = 112,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_IMAGE_PROD                                           = 113,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_HEADER_PROD                                          = 114,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_SIG_DBG                                              = 115,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_SIG_PROD                                             = 116,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_PATCH_LOC                                            = 117,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_PATCH_SIG                                            = 118,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_PATCH_META                                           = 119,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_NUM_SIGS                                             = 120,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_IMAGE_DBG                                            = 121,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_HEADER_DBG                                           = 122,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_IMAGE_PROD                                           = 123,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_HEADER_PROD                                          = 124,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_SIG_DBG                                              = 125,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_SIG_PROD                                             = 126,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_PATCH_LOC                                            = 127,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_PATCH_SIG                                            = 128,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_PATCH_META                                           = 129,
-    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_NUM_SIGS                                             = 130,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_IMAGE_DBG                                            = 131,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_HEADER_DBG                                           = 132,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_IMAGE_PROD                                           = 133,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_HEADER_PROD                                          = 134,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_SIG_DBG                                              = 135,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_SIG_PROD                                             = 136,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_PATCH_LOC                                            = 137,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_PATCH_SIG                                            = 138,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_PATCH_META                                           = 139,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_NUM_SIGS                                             = 140,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_IMAGE_DBG                                            = 141,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_HEADER_DBG                                           = 142,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_IMAGE_PROD                                           = 143,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_HEADER_PROD                                          = 144,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_SIG_DBG                                              = 145,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_SIG_PROD                                             = 146,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_PATCH_LOC                                            = 147,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_PATCH_SIG                                            = 148,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_PATCH_META                                           = 149,
-    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_NUM_SIGS                                             = 150,
-    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_IMAGE_DBG                                            = 151,
-    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_HEADER_DBG                                           = 152,
-    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_IMAGE_PROD                                           = 153,
-    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_HEADER_PROD                                          = 154,
-    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_SIG_DBG                                              = 155,
-    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_SIG_PROD                                             = 156,
-    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_PATCH_LOC                                            = 157,
-    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_PATCH_SIG                                            = 158,
-    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_PATCH_META                                           = 159,
-    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_NUM_SIGS                                             = 160,
-    __idx_ksec2BinArchiveBlUcode_TU102_BINDATA_LABEL_UCODE_IMAGE                                                   = 161,
-    __idx_ksec2BinArchiveBlUcode_TU102_BINDATA_LABEL_UCODE_DESC                                                    = 162,
-    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_IMAGE_DBG                                            = 163,
-    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_HEADER_DBG                                           = 164,
-    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_IMAGE_PROD                                           = 165,
-    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_HEADER_PROD                                          = 166,
-    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_SIG_DBG                                              = 167,
-    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_SIG_PROD                                             = 168,
-    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_PATCH_LOC                                            = 169,
-    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_PATCH_SIG                                            = 170,
-    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_PATCH_META                                           = 171,
-    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_NUM_SIGS                                             = 172,
-    __idx_spdmBinArchiveL1Certificate_IMPL_BINDATA_LABEL_CERTIFICATE_PEM                                           = 173,
-    __idx_spdmBinArchiveL1Certificate_IMPL_BINDATA_LABEL_CERTIFICATE_DER                                           = 174,
-    __idx_spdmBinArchiveIndividualL2Certificate_GH100_BINDATA_LABEL_CERTIFICATE_PEM                                = 175,
-    __idx_spdmBinArchiveIndividualL2Certificate_GH100_BINDATA_LABEL_CERTIFICATE_DER                                = 176,
-    __idx_spdmBinArchiveIndividualL3Certificate_GH100_BINDATA_LABEL_CERTIFICATE_PEM                                = 177,
-    __idx_spdmBinArchiveIndividualL3Certificate_GH100_BINDATA_LABEL_CERTIFICATE_DER                                = 178,
-    __idx_spdmBinArchiveIndividualL2Certificate_GB100_BINDATA_LABEL_CERTIFICATE_PEM                                = 179,
-    __idx_spdmBinArchiveIndividualL2Certificate_GB100_BINDATA_LABEL_CERTIFICATE_DER                                = 180,
-    __idx_spdmBinArchiveIndividualL3Certificate_GB100_BINDATA_LABEL_CERTIFICATE_PEM                                = 181,
-    __idx_spdmBinArchiveIndividualL3Certificate_GB100_BINDATA_LABEL_CERTIFICATE_DER                                = 182,
-    __idx_spdmBinArchiveIndividualL3Certificate_GB102_BINDATA_LABEL_CERTIFICATE_PEM                                = 183,
-    __idx_spdmBinArchiveIndividualL3Certificate_GB102_BINDATA_LABEL_CERTIFICATE_DER                                = 184,
-    __idx_spdmBinArchiveIndividualL3Certificate_GB110_BINDATA_LABEL_CERTIFICATE_PEM                                = 185,
-    __idx_spdmBinArchiveIndividualL3Certificate_GB110_BINDATA_LABEL_CERTIFICATE_DER                                = 186,
-    __idx_spdmBinArchiveIndividualL3Certificate_GB112_BINDATA_LABEL_CERTIFICATE_PEM                                = 187,
-    __idx_spdmBinArchiveIndividualL3Certificate_GB112_BINDATA_LABEL_CERTIFICATE_DER                                = 188,
+    __idx_kgspBinArchiveGspRmBoot_GB10B_BINDATA_LABEL_UCODE_IMAGE_DBG                                              = 21,
+    __idx_kgspBinArchiveGspRmBoot_GB10B_BINDATA_LABEL_UCODE_DESC_DBG                                               = 22,
+    __idx_kgspBinArchiveGspRmBoot_GB10B_BINDATA_LABEL_UCODE_IMAGE_PROD                                             = 23,
+    __idx_kgspBinArchiveGspRmBoot_GB10B_BINDATA_LABEL_UCODE_DESC_PROD                                              = 24,
+    __idx_kgspBinArchiveGspRmBoot_GB202_BINDATA_LABEL_UCODE_IMAGE_DBG                                              = 25,
+    __idx_kgspBinArchiveGspRmBoot_GB202_BINDATA_LABEL_UCODE_DESC_DBG                                               = 26,
+    __idx_kgspBinArchiveGspRmBoot_GB202_BINDATA_LABEL_UCODE_IMAGE_PROD                                             = 27,
+    __idx_kgspBinArchiveGspRmBoot_GB202_BINDATA_LABEL_UCODE_DESC_PROD                                              = 28,
+    __idx_kgspBinArchiveGspRmBoot_GB20B_BINDATA_LABEL_UCODE_IMAGE_DBG                                              = 29,
+    __idx_kgspBinArchiveGspRmBoot_GB20B_BINDATA_LABEL_UCODE_DESC_DBG                                               = 30,
+    __idx_kgspBinArchiveGspRmBoot_GB20B_BINDATA_LABEL_UCODE_IMAGE_PROD                                             = 31,
+    __idx_kgspBinArchiveGspRmBoot_GB20B_BINDATA_LABEL_UCODE_DESC_PROD                                              = 32,
+    __idx_kgspBinArchiveConcatenatedFMCDesc_GH100_BINDATA_LABEL_UCODE_DESC_PROD                                    = 33,
+    __idx_kgspBinArchiveConcatenatedFMCDesc_GB100_BINDATA_LABEL_UCODE_DESC_PROD                                    = 34,
+    __idx_kgspBinArchiveConcatenatedFMCDesc_GB202_BINDATA_LABEL_UCODE_DESC_PROD                                    = 35,
+    __idx_kgspBinArchiveConcatenatedFMC_GH100_BINDATA_LABEL_UCODE_IMAGE_PROD                                       = 36,
+    __idx_kgspBinArchiveConcatenatedFMC_GB100_BINDATA_LABEL_UCODE_IMAGE_PROD                                       = 37,
+    __idx_kgspBinArchiveConcatenatedFMC_GB202_BINDATA_LABEL_UCODE_IMAGE_PROD                                       = 38,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GH100_BINDATA_LABEL_UCODE_IMAGE                                     = 39,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GH100_BINDATA_LABEL_UCODE_HASH                                      = 40,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GH100_BINDATA_LABEL_UCODE_SIG                                       = 41,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GH100_BINDATA_LABEL_UCODE_PKEY                                      = 42,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB100_BINDATA_LABEL_UCODE_IMAGE                                     = 43,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB100_BINDATA_LABEL_UCODE_HASH                                      = 44,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB100_BINDATA_LABEL_UCODE_SIG                                       = 45,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB100_BINDATA_LABEL_UCODE_PKEY                                      = 46,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB10B_BINDATA_LABEL_UCODE_IMAGE                                     = 47,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB10B_BINDATA_LABEL_UCODE_HASH                                      = 48,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB10B_BINDATA_LABEL_UCODE_SIG                                       = 49,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB10B_BINDATA_LABEL_UCODE_PKEY                                      = 50,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB202_BINDATA_LABEL_UCODE_IMAGE                                     = 51,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB202_BINDATA_LABEL_UCODE_HASH                                      = 52,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB202_BINDATA_LABEL_UCODE_SIG                                       = 53,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB202_BINDATA_LABEL_UCODE_PKEY                                      = 54,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB20B_BINDATA_LABEL_UCODE_IMAGE                                     = 55,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB20B_BINDATA_LABEL_UCODE_HASH                                      = 56,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB20B_BINDATA_LABEL_UCODE_SIG                                       = 57,
+    __idx_kgspBinArchiveGspRmFmcGfwDebugSigned_GB20B_BINDATA_LABEL_UCODE_PKEY                                      = 58,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GH100_BINDATA_LABEL_UCODE_IMAGE                                      = 59,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GH100_BINDATA_LABEL_UCODE_HASH                                       = 60,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GH100_BINDATA_LABEL_UCODE_SIG                                        = 61,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GH100_BINDATA_LABEL_UCODE_PKEY                                       = 62,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB100_BINDATA_LABEL_UCODE_IMAGE                                      = 63,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB100_BINDATA_LABEL_UCODE_HASH                                       = 64,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB100_BINDATA_LABEL_UCODE_SIG                                        = 65,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB100_BINDATA_LABEL_UCODE_PKEY                                       = 66,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB10B_BINDATA_LABEL_UCODE_IMAGE                                      = 67,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB10B_BINDATA_LABEL_UCODE_HASH                                       = 68,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB10B_BINDATA_LABEL_UCODE_SIG                                        = 69,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB10B_BINDATA_LABEL_UCODE_PKEY                                       = 70,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB202_BINDATA_LABEL_UCODE_IMAGE                                      = 71,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB202_BINDATA_LABEL_UCODE_HASH                                       = 72,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB202_BINDATA_LABEL_UCODE_SIG                                        = 73,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB202_BINDATA_LABEL_UCODE_PKEY                                       = 74,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB20B_BINDATA_LABEL_UCODE_IMAGE                                      = 75,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB20B_BINDATA_LABEL_UCODE_HASH                                       = 76,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB20B_BINDATA_LABEL_UCODE_SIG                                        = 77,
+    __idx_kgspBinArchiveGspRmFmcGfwProdSigned_GB20B_BINDATA_LABEL_UCODE_PKEY                                       = 78,
+    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GH100_BINDATA_LABEL_UCODE_IMAGE                                    = 79,
+    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GH100_BINDATA_LABEL_UCODE_HASH                                     = 80,
+    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GH100_BINDATA_LABEL_UCODE_SIG                                      = 81,
+    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GH100_BINDATA_LABEL_UCODE_PKEY                                     = 82,
+    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GB100_BINDATA_LABEL_UCODE_IMAGE                                    = 83,
+    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GB100_BINDATA_LABEL_UCODE_HASH                                     = 84,
+    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GB100_BINDATA_LABEL_UCODE_SIG                                      = 85,
+    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GB100_BINDATA_LABEL_UCODE_PKEY                                     = 86,
+    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GB202_BINDATA_LABEL_UCODE_IMAGE                                    = 87,
+    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GB202_BINDATA_LABEL_UCODE_HASH                                     = 88,
+    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GB202_BINDATA_LABEL_UCODE_SIG                                      = 89,
+    __idx_kgspBinArchiveGspRmCcFmcGfwProdSigned_GB202_BINDATA_LABEL_UCODE_PKEY                                     = 90,
+    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_IMAGE_DBG                                              = 91,
+    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_HEADER_DBG                                             = 92,
+    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_IMAGE_PROD                                             = 93,
+    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_HEADER_PROD                                            = 94,
+    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_SIG_DBG                                                = 95,
+    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_SIG_PROD                                               = 96,
+    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_PATCH_LOC                                              = 97,
+    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_PATCH_SIG                                              = 98,
+    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_PATCH_META                                             = 99,
+    __idx_kgspBinArchiveBooterLoadUcode_TU102_BINDATA_LABEL_NUM_SIGS                                               = 100,
+    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_IMAGE_DBG                                              = 101,
+    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_HEADER_DBG                                             = 102,
+    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_IMAGE_PROD                                             = 103,
+    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_HEADER_PROD                                            = 104,
+    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_SIG_DBG                                                = 105,
+    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_SIG_PROD                                               = 106,
+    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_PATCH_LOC                                              = 107,
+    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_PATCH_SIG                                              = 108,
+    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_PATCH_META                                             = 109,
+    __idx_kgspBinArchiveBooterLoadUcode_TU116_BINDATA_LABEL_NUM_SIGS                                               = 110,
+    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_IMAGE_DBG                                              = 111,
+    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_HEADER_DBG                                             = 112,
+    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_IMAGE_PROD                                             = 113,
+    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_HEADER_PROD                                            = 114,
+    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_SIG_DBG                                                = 115,
+    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_SIG_PROD                                               = 116,
+    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_PATCH_LOC                                              = 117,
+    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_PATCH_SIG                                              = 118,
+    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_PATCH_META                                             = 119,
+    __idx_kgspBinArchiveBooterLoadUcode_GA100_BINDATA_LABEL_NUM_SIGS                                               = 120,
+    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_IMAGE_DBG                                              = 121,
+    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_HEADER_DBG                                             = 122,
+    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_IMAGE_PROD                                             = 123,
+    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_HEADER_PROD                                            = 124,
+    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_SIG_DBG                                                = 125,
+    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_SIG_PROD                                               = 126,
+    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_LOC                                              = 127,
+    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_SIG                                              = 128,
+    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_PATCH_META                                             = 129,
+    __idx_kgspBinArchiveBooterLoadUcode_GA102_BINDATA_LABEL_NUM_SIGS                                               = 130,
+    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_IMAGE_DBG                                              = 131,
+    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_HEADER_DBG                                             = 132,
+    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_IMAGE_PROD                                             = 133,
+    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_HEADER_PROD                                            = 134,
+    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_SIG_DBG                                                = 135,
+    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_SIG_PROD                                               = 136,
+    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_PATCH_LOC                                              = 137,
+    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_PATCH_SIG                                              = 138,
+    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_PATCH_META                                             = 139,
+    __idx_kgspBinArchiveBooterLoadUcode_AD102_BINDATA_LABEL_NUM_SIGS                                               = 140,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_IMAGE_DBG                                            = 141,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_HEADER_DBG                                           = 142,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_IMAGE_PROD                                           = 143,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_HEADER_PROD                                          = 144,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_SIG_DBG                                              = 145,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_SIG_PROD                                             = 146,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_PATCH_LOC                                            = 147,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_PATCH_SIG                                            = 148,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_PATCH_META                                           = 149,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU102_BINDATA_LABEL_NUM_SIGS                                             = 150,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_IMAGE_DBG                                            = 151,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_HEADER_DBG                                           = 152,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_IMAGE_PROD                                           = 153,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_HEADER_PROD                                          = 154,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_SIG_DBG                                              = 155,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_SIG_PROD                                             = 156,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_PATCH_LOC                                            = 157,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_PATCH_SIG                                            = 158,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_PATCH_META                                           = 159,
+    __idx_kgspBinArchiveBooterUnloadUcode_TU116_BINDATA_LABEL_NUM_SIGS                                             = 160,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_IMAGE_DBG                                            = 161,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_HEADER_DBG                                           = 162,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_IMAGE_PROD                                           = 163,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_HEADER_PROD                                          = 164,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_SIG_DBG                                              = 165,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_SIG_PROD                                             = 166,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_PATCH_LOC                                            = 167,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_PATCH_SIG                                            = 168,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_PATCH_META                                           = 169,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA100_BINDATA_LABEL_NUM_SIGS                                             = 170,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_IMAGE_DBG                                            = 171,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_HEADER_DBG                                           = 172,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_IMAGE_PROD                                           = 173,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_HEADER_PROD                                          = 174,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_SIG_DBG                                              = 175,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_SIG_PROD                                             = 176,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_PATCH_LOC                                            = 177,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_PATCH_SIG                                            = 178,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_PATCH_META                                           = 179,
+    __idx_kgspBinArchiveBooterUnloadUcode_GA102_BINDATA_LABEL_NUM_SIGS                                             = 180,
+    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_IMAGE_DBG                                            = 181,
+    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_HEADER_DBG                                           = 182,
+    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_IMAGE_PROD                                           = 183,
+    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_HEADER_PROD                                          = 184,
+    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_SIG_DBG                                              = 185,
+    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_SIG_PROD                                             = 186,
+    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_PATCH_LOC                                            = 187,
+    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_PATCH_SIG                                            = 188,
+    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_PATCH_META                                           = 189,
+    __idx_kgspBinArchiveBooterUnloadUcode_AD102_BINDATA_LABEL_NUM_SIGS                                             = 190,
+    __idx_ksec2BinArchiveBlUcode_TU102_BINDATA_LABEL_UCODE_IMAGE                                                   = 191,
+    __idx_ksec2BinArchiveBlUcode_TU102_BINDATA_LABEL_UCODE_DESC                                                    = 192,
+    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_IMAGE_DBG                                            = 193,
+    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_HEADER_DBG                                           = 194,
+    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_IMAGE_PROD                                           = 195,
+    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_HEADER_PROD                                          = 196,
+    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_SIG_DBG                                              = 197,
+    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_SIG_PROD                                             = 198,
+    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_PATCH_LOC                                            = 199,
+    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_PATCH_SIG                                            = 200,
+    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_PATCH_META                                           = 201,
+    __idx_ksec2BinArchiveSecurescrubUcode_AD10X_BINDATA_LABEL_NUM_SIGS                                             = 202,
+    __idx_spdmBinArchiveL1Certificate_IMPL_BINDATA_LABEL_CERTIFICATE_PEM                                           = 203,
+    __idx_spdmBinArchiveIndividualL2Certificate_GH100_BINDATA_LABEL_CERTIFICATE_PEM                                = 204,
+    __idx_spdmBinArchiveIndividualL3Certificate_GH100_BINDATA_LABEL_CERTIFICATE_PEM                                = 205,
+    __idx_spdmBinArchiveIndividualL2Certificate_GB100_BINDATA_LABEL_CERTIFICATE_PEM                                = 206,
+    __idx_spdmBinArchiveIndividualL3Certificate_GB100_BINDATA_LABEL_CERTIFICATE_PEM                                = 207,
+    __idx_spdmBinArchiveIndividualL3Certificate_GB102_BINDATA_LABEL_CERTIFICATE_PEM                                = 208,
+    __idx_spdmBinArchiveIndividualL3Certificate_GB110_BINDATA_LABEL_CERTIFICATE_PEM                                = 209,
+    __idx_spdmBinArchiveIndividualL3Certificate_GB112_BINDATA_LABEL_CERTIFICATE_PEM                                = 210,
+    __idx_spdmBinArchiveIndividualL2Certificate_GB20X_BINDATA_LABEL_CERTIFICATE_PEM                                = 211,
+    __idx_spdmBinArchiveIndividualL3Certificate_GB202_BINDATA_LABEL_CERTIFICATE_PEM                                = 212,
+    __idx_spdmBinArchiveIndividualL3Certificate_GB203_BINDATA_LABEL_CERTIFICATE_PEM                                = 213,
+    __idx_spdmBinArchiveIndividualL3Certificate_GB205_BINDATA_LABEL_CERTIFICATE_PEM                                = 214,
+    __idx_spdmBinArchiveIndividualL3Certificate_GB206_BINDATA_LABEL_CERTIFICATE_PEM                                = 215,
+    __idx_spdmBinArchiveIndividualL3Certificate_GB207_BINDATA_LABEL_CERTIFICATE_PEM                                = 216,
 
     BINDATA_INDEX_END
 } bindata_index_t;
@@ -256,19 +284,28 @@ struct BINDATA_STORAGE_PVT_ALL
 #include "g_bindata_kgspGetBinArchiveGspRmBoot_AD102.c"
 #include "g_bindata_kgspGetBinArchiveGspRmBoot_GH100.c"
 #include "g_bindata_kgspGetBinArchiveGspRmBoot_GB100.c"
+#include "g_bindata_kgspGetBinArchiveGspRmBoot_GB10B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmBoot_GB202.c"
+#include "g_bindata_kgspGetBinArchiveGspRmBoot_GB20B.c"
 #include "g_bindata_kgspGetBinArchiveConcatenatedFMCDesc_GH100.c"
 #include "g_bindata_kgspGetBinArchiveConcatenatedFMCDesc_GB100.c"
+#include "g_bindata_kgspGetBinArchiveConcatenatedFMCDesc_GB202.c"
 #include "g_bindata_kgspGetBinArchiveConcatenatedFMC_GH100.c"
 #include "g_bindata_kgspGetBinArchiveConcatenatedFMC_GB100.c"
+#include "g_bindata_kgspGetBinArchiveConcatenatedFMC_GB202.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GH100.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB100.c"
+#include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB10B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB202.c"
+#include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB20B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GH100.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GB100.c"
+#include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GB10B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GB202.c"
+#include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GB20B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmCcFmcGfwProdSigned_GH100.c"
 #include "g_bindata_kgspGetBinArchiveGspRmCcFmcGfwProdSigned_GB100.c"
+#include "g_bindata_kgspGetBinArchiveGspRmCcFmcGfwProdSigned_GB202.c"
 #include "g_bindata_kgspGetBinArchiveBooterLoadUcode_TU102.c"
 #include "g_bindata_kgspGetBinArchiveBooterLoadUcode_TU116.c"
 #include "g_bindata_kgspGetBinArchiveBooterLoadUcode_GA100.c"
@@ -289,6 +326,12 @@ struct BINDATA_STORAGE_PVT_ALL
 #include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB102.c"
 #include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB110.c"
 #include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB112.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL2Certificate_GB20X.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB202.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB203.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB205.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB206.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB207.c"
 
 #undef BINDATA_INCLUDE_STORAGE_PVT_DECL
 #undef BINDATA_NO_SEGMENTS
@@ -305,19 +348,28 @@ struct BINDATA_STORAGE_PVT_ALL
 #include "g_bindata_kgspGetBinArchiveGspRmBoot_AD102.c"
 #include "g_bindata_kgspGetBinArchiveGspRmBoot_GH100.c"
 #include "g_bindata_kgspGetBinArchiveGspRmBoot_GB100.c"
+#include "g_bindata_kgspGetBinArchiveGspRmBoot_GB10B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmBoot_GB202.c"
+#include "g_bindata_kgspGetBinArchiveGspRmBoot_GB20B.c"
 #include "g_bindata_kgspGetBinArchiveConcatenatedFMCDesc_GH100.c"
 #include "g_bindata_kgspGetBinArchiveConcatenatedFMCDesc_GB100.c"
+#include "g_bindata_kgspGetBinArchiveConcatenatedFMCDesc_GB202.c"
 #include "g_bindata_kgspGetBinArchiveConcatenatedFMC_GH100.c"
 #include "g_bindata_kgspGetBinArchiveConcatenatedFMC_GB100.c"
+#include "g_bindata_kgspGetBinArchiveConcatenatedFMC_GB202.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GH100.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB100.c"
+#include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB10B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB202.c"
+#include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB20B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GH100.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GB100.c"
+#include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GB10B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GB202.c"
+#include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GB20B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmCcFmcGfwProdSigned_GH100.c"
 #include "g_bindata_kgspGetBinArchiveGspRmCcFmcGfwProdSigned_GB100.c"
+#include "g_bindata_kgspGetBinArchiveGspRmCcFmcGfwProdSigned_GB202.c"
 #include "g_bindata_kgspGetBinArchiveBooterLoadUcode_TU102.c"
 #include "g_bindata_kgspGetBinArchiveBooterLoadUcode_TU116.c"
 #include "g_bindata_kgspGetBinArchiveBooterLoadUcode_GA100.c"
@@ -338,6 +390,12 @@ struct BINDATA_STORAGE_PVT_ALL
 #include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB102.c"
 #include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB110.c"
 #include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB112.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL2Certificate_GB20X.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB202.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB203.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB205.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB206.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB207.c"
 
 #undef BINDATA_INCLUDE_DATA
 
@@ -361,19 +419,28 @@ BINDATA_CONST BINDATA_STORAGE_PVT g_bindata_pvt[] =
 #include "g_bindata_kgspGetBinArchiveGspRmBoot_AD102.c"
 #include "g_bindata_kgspGetBinArchiveGspRmBoot_GH100.c"
 #include "g_bindata_kgspGetBinArchiveGspRmBoot_GB100.c"
+#include "g_bindata_kgspGetBinArchiveGspRmBoot_GB10B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmBoot_GB202.c"
+#include "g_bindata_kgspGetBinArchiveGspRmBoot_GB20B.c"
 #include "g_bindata_kgspGetBinArchiveConcatenatedFMCDesc_GH100.c"
 #include "g_bindata_kgspGetBinArchiveConcatenatedFMCDesc_GB100.c"
+#include "g_bindata_kgspGetBinArchiveConcatenatedFMCDesc_GB202.c"
 #include "g_bindata_kgspGetBinArchiveConcatenatedFMC_GH100.c"
 #include "g_bindata_kgspGetBinArchiveConcatenatedFMC_GB100.c"
+#include "g_bindata_kgspGetBinArchiveConcatenatedFMC_GB202.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GH100.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB100.c"
+#include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB10B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB202.c"
+#include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB20B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GH100.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GB100.c"
+#include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GB10B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GB202.c"
+#include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GB20B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmCcFmcGfwProdSigned_GH100.c"
 #include "g_bindata_kgspGetBinArchiveGspRmCcFmcGfwProdSigned_GB100.c"
+#include "g_bindata_kgspGetBinArchiveGspRmCcFmcGfwProdSigned_GB202.c"
 #include "g_bindata_kgspGetBinArchiveBooterLoadUcode_TU102.c"
 #include "g_bindata_kgspGetBinArchiveBooterLoadUcode_TU116.c"
 #include "g_bindata_kgspGetBinArchiveBooterLoadUcode_GA100.c"
@@ -394,6 +461,12 @@ BINDATA_CONST BINDATA_STORAGE_PVT g_bindata_pvt[] =
 #include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB102.c"
 #include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB110.c"
 #include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB112.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL2Certificate_GB20X.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB202.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB203.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB205.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB206.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB207.c"
 
 #undef BINDATA_INCLUDE_STORAGE_PVT_DEFN
 #undef BINDATA_NO_SEGMENTS
@@ -411,19 +484,28 @@ const NvU32 g_bindata_pvt_count = sizeof(g_bindata_pvt) / sizeof(BINDATA_STORAGE
 #include "g_bindata_kgspGetBinArchiveGspRmBoot_AD102.c"
 #include "g_bindata_kgspGetBinArchiveGspRmBoot_GH100.c"
 #include "g_bindata_kgspGetBinArchiveGspRmBoot_GB100.c"
+#include "g_bindata_kgspGetBinArchiveGspRmBoot_GB10B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmBoot_GB202.c"
+#include "g_bindata_kgspGetBinArchiveGspRmBoot_GB20B.c"
 #include "g_bindata_kgspGetBinArchiveConcatenatedFMCDesc_GH100.c"
 #include "g_bindata_kgspGetBinArchiveConcatenatedFMCDesc_GB100.c"
+#include "g_bindata_kgspGetBinArchiveConcatenatedFMCDesc_GB202.c"
 #include "g_bindata_kgspGetBinArchiveConcatenatedFMC_GH100.c"
 #include "g_bindata_kgspGetBinArchiveConcatenatedFMC_GB100.c"
+#include "g_bindata_kgspGetBinArchiveConcatenatedFMC_GB202.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GH100.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB100.c"
+#include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB10B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB202.c"
+#include "g_bindata_kgspGetBinArchiveGspRmFmcGfwDebugSigned_GB20B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GH100.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GB100.c"
+#include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GB10B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GB202.c"
+#include "g_bindata_kgspGetBinArchiveGspRmFmcGfwProdSigned_GB20B.c"
 #include "g_bindata_kgspGetBinArchiveGspRmCcFmcGfwProdSigned_GH100.c"
 #include "g_bindata_kgspGetBinArchiveGspRmCcFmcGfwProdSigned_GB100.c"
+#include "g_bindata_kgspGetBinArchiveGspRmCcFmcGfwProdSigned_GB202.c"
 #include "g_bindata_kgspGetBinArchiveBooterLoadUcode_TU102.c"
 #include "g_bindata_kgspGetBinArchiveBooterLoadUcode_TU116.c"
 #include "g_bindata_kgspGetBinArchiveBooterLoadUcode_GA100.c"
@@ -444,6 +526,12 @@ const NvU32 g_bindata_pvt_count = sizeof(g_bindata_pvt) / sizeof(BINDATA_STORAGE
 #include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB102.c"
 #include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB110.c"
 #include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB112.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL2Certificate_GB20X.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB202.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB203.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB205.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB206.c"
+#include "g_bindata_spdmGetBinArchiveIndividualL3Certificate_GB207.c"
 
 #undef BINDATA_INCLUDE_FUNCTION
 #undef BINDATA_INCLUDE_ARCHIVE

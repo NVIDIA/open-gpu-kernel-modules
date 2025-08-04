@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -130,6 +130,12 @@ struct nvlink_device
 
     // Client private information
     void *pDevInfo;
+
+    // mask of link states supported by this device / NVLINK version
+    NvU32 linkStateSupportedMask;
+
+    // Are link state transitions unilateral?
+    NvBool bLinkStatesSymmetric;
 };
 
 // nvlink link change type

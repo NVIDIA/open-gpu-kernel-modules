@@ -207,7 +207,55 @@ NV_STATUS __nvoc_objCreate_DispChannel(DispChannel**, Dynamic*, NvU32, struct CA
     __nvoc_objCreate_DispChannel((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams, arg_isDma)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS dispchnConstruct_IMPL(struct DispChannel *arg_pDispChannel, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams, NvU32 arg_isDma);
+#define __nvoc_dispchnConstruct(arg_pDispChannel, arg_pCallContext, arg_pParams, arg_isDma) dispchnConstruct_IMPL(arg_pDispChannel, arg_pCallContext, arg_pParams, arg_isDma)
+
+void dispchnDestruct_IMPL(struct DispChannel *pDispChannel);
+#define __nvoc_dispchnDestruct(pDispChannel) dispchnDestruct_IMPL(pDispChannel)
+
+void dispchnSetRegBaseOffsetAndSize_IMPL(struct DispChannel *pDispChannel, struct OBJGPU *pGpu);
+#ifdef __nvoc_disp_channel_h_disabled
+static inline void dispchnSetRegBaseOffsetAndSize(struct DispChannel *pDispChannel, struct OBJGPU *pGpu) {
+    NV_ASSERT_FAILED_PRECOMP("DispChannel was disabled!");
+}
+#else // __nvoc_disp_channel_h_disabled
+#define dispchnSetRegBaseOffsetAndSize(pDispChannel, pGpu) dispchnSetRegBaseOffsetAndSize_IMPL(pDispChannel, pGpu)
+#endif // __nvoc_disp_channel_h_disabled
+
+NV_STATUS dispchnGrabChannel_IMPL(struct DispChannel *pDispChannel, NvHandle hClient, NvHandle hParent, NvHandle hChannel, NvU32 hClass, void *pAllocParms);
+#ifdef __nvoc_disp_channel_h_disabled
+static inline NV_STATUS dispchnGrabChannel(struct DispChannel *pDispChannel, NvHandle hClient, NvHandle hParent, NvHandle hChannel, NvU32 hClass, void *pAllocParms) {
+    NV_ASSERT_FAILED_PRECOMP("DispChannel was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_channel_h_disabled
+#define dispchnGrabChannel(pDispChannel, hClient, hParent, hChannel, hClass, pAllocParms) dispchnGrabChannel_IMPL(pDispChannel, hClient, hParent, hChannel, hClass, pAllocParms)
+#endif // __nvoc_disp_channel_h_disabled
+
+NV_STATUS dispchnBindCtx_IMPL(struct OBJGPU *pGpu, struct ContextDma *pContextDma, NvHandle hDispChannel);
+#define dispchnBindCtx(pGpu, pContextDma, hDispChannel) dispchnBindCtx_IMPL(pGpu, pContextDma, hDispChannel)
+
+NV_STATUS dispchnUnbindCtx_IMPL(struct OBJGPU *pGpu, struct ContextDma *pContextDma, NvHandle hDispChannel);
+#define dispchnUnbindCtx(pGpu, pContextDma, hDispChannel) dispchnUnbindCtx_IMPL(pGpu, pContextDma, hDispChannel)
+
+void dispchnUnbindCtxFromAllChannels_IMPL(struct OBJGPU *pGpu, struct ContextDma *pContextDma);
+#define dispchnUnbindCtxFromAllChannels(pGpu, pContextDma) dispchnUnbindCtxFromAllChannels_IMPL(pGpu, pContextDma)
+
+void dispchnUnbindAllCtx_IMPL(struct OBJGPU *pGpu, struct DispChannel *pDispChannel);
+#ifdef __nvoc_disp_channel_h_disabled
+static inline void dispchnUnbindAllCtx(struct OBJGPU *pGpu, struct DispChannel *pDispChannel) {
+    NV_ASSERT_FAILED_PRECOMP("DispChannel was disabled!");
+}
+#else // __nvoc_disp_channel_h_disabled
+#define dispchnUnbindAllCtx(pGpu, pDispChannel) dispchnUnbindAllCtx_IMPL(pGpu, pDispChannel)
+#endif // __nvoc_disp_channel_h_disabled
+
+NV_STATUS dispchnGetByHandle_IMPL(struct RsClient *pClient, NvHandle hDisplayChannel, struct DispChannel **ppDispChannel);
+#define dispchnGetByHandle(pClient, hDisplayChannel, ppDispChannel) dispchnGetByHandle_IMPL(pClient, hDisplayChannel, ppDispChannel)
+
+
+// Wrapper macros for halified functions
 #define dispchnGetRegBaseOffsetAndSize_FNPTR(pDispChannel) pDispChannel->__nvoc_metadata_ptr->vtable.__dispchnGetRegBaseOffsetAndSize__
 #define dispchnGetRegBaseOffsetAndSize(pDispChannel, pGpu, pOffset, pSize) dispchnGetRegBaseOffsetAndSize_DISPATCH(pDispChannel, pGpu, pOffset, pSize)
 #define dispchnControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
@@ -392,55 +440,6 @@ static inline NV_STATUS dispchnGetOrAllocNotifShare_DISPATCH(struct DispChannel 
 
 NV_STATUS dispchnGetRegBaseOffsetAndSize_IMPL(struct DispChannel *pDispChannel, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize);
 
-NV_STATUS dispchnConstruct_IMPL(struct DispChannel *arg_pDispChannel, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams, NvU32 arg_isDma);
-
-#define __nvoc_dispchnConstruct(arg_pDispChannel, arg_pCallContext, arg_pParams, arg_isDma) dispchnConstruct_IMPL(arg_pDispChannel, arg_pCallContext, arg_pParams, arg_isDma)
-void dispchnDestruct_IMPL(struct DispChannel *pDispChannel);
-
-#define __nvoc_dispchnDestruct(pDispChannel) dispchnDestruct_IMPL(pDispChannel)
-void dispchnSetRegBaseOffsetAndSize_IMPL(struct DispChannel *pDispChannel, struct OBJGPU *pGpu);
-
-#ifdef __nvoc_disp_channel_h_disabled
-static inline void dispchnSetRegBaseOffsetAndSize(struct DispChannel *pDispChannel, struct OBJGPU *pGpu) {
-    NV_ASSERT_FAILED_PRECOMP("DispChannel was disabled!");
-}
-#else //__nvoc_disp_channel_h_disabled
-#define dispchnSetRegBaseOffsetAndSize(pDispChannel, pGpu) dispchnSetRegBaseOffsetAndSize_IMPL(pDispChannel, pGpu)
-#endif //__nvoc_disp_channel_h_disabled
-
-NV_STATUS dispchnGrabChannel_IMPL(struct DispChannel *pDispChannel, NvHandle hClient, NvHandle hParent, NvHandle hChannel, NvU32 hClass, void *pAllocParms);
-
-#ifdef __nvoc_disp_channel_h_disabled
-static inline NV_STATUS dispchnGrabChannel(struct DispChannel *pDispChannel, NvHandle hClient, NvHandle hParent, NvHandle hChannel, NvU32 hClass, void *pAllocParms) {
-    NV_ASSERT_FAILED_PRECOMP("DispChannel was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_disp_channel_h_disabled
-#define dispchnGrabChannel(pDispChannel, hClient, hParent, hChannel, hClass, pAllocParms) dispchnGrabChannel_IMPL(pDispChannel, hClient, hParent, hChannel, hClass, pAllocParms)
-#endif //__nvoc_disp_channel_h_disabled
-
-NV_STATUS dispchnBindCtx_IMPL(struct OBJGPU *pGpu, struct ContextDma *pContextDma, NvHandle hDispChannel);
-
-#define dispchnBindCtx(pGpu, pContextDma, hDispChannel) dispchnBindCtx_IMPL(pGpu, pContextDma, hDispChannel)
-NV_STATUS dispchnUnbindCtx_IMPL(struct OBJGPU *pGpu, struct ContextDma *pContextDma, NvHandle hDispChannel);
-
-#define dispchnUnbindCtx(pGpu, pContextDma, hDispChannel) dispchnUnbindCtx_IMPL(pGpu, pContextDma, hDispChannel)
-void dispchnUnbindCtxFromAllChannels_IMPL(struct OBJGPU *pGpu, struct ContextDma *pContextDma);
-
-#define dispchnUnbindCtxFromAllChannels(pGpu, pContextDma) dispchnUnbindCtxFromAllChannels_IMPL(pGpu, pContextDma)
-void dispchnUnbindAllCtx_IMPL(struct OBJGPU *pGpu, struct DispChannel *pDispChannel);
-
-#ifdef __nvoc_disp_channel_h_disabled
-static inline void dispchnUnbindAllCtx(struct OBJGPU *pGpu, struct DispChannel *pDispChannel) {
-    NV_ASSERT_FAILED_PRECOMP("DispChannel was disabled!");
-}
-#else //__nvoc_disp_channel_h_disabled
-#define dispchnUnbindAllCtx(pGpu, pDispChannel) dispchnUnbindAllCtx_IMPL(pGpu, pDispChannel)
-#endif //__nvoc_disp_channel_h_disabled
-
-NV_STATUS dispchnGetByHandle_IMPL(struct RsClient *pClient, NvHandle hDisplayChannel, struct DispChannel **ppDispChannel);
-
-#define dispchnGetByHandle(pClient, hDisplayChannel, ppDispChannel) dispchnGetByHandle_IMPL(pClient, hDisplayChannel, ppDispChannel)
 #undef PRIVATE_FIELD
 
 
@@ -558,7 +557,12 @@ NV_STATUS __nvoc_objCreate_DispChannelPio(DispChannelPio**, Dynamic*, NvU32, str
     __nvoc_objCreate_DispChannelPio((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS dispchnpioConstruct_IMPL(struct DispChannelPio *arg_pDispChannelPio, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_dispchnpioConstruct(arg_pDispChannelPio, arg_pCallContext, arg_pParams) dispchnpioConstruct_IMPL(arg_pDispChannelPio, arg_pCallContext, arg_pParams)
+
+
+// Wrapper macros for halified functions
 #define dispchnpioGetRegBaseOffsetAndSize_FNPTR(pDispChannel) pDispChannel->__nvoc_base_DispChannel.__nvoc_metadata_ptr->vtable.__dispchnGetRegBaseOffsetAndSize__
 #define dispchnpioGetRegBaseOffsetAndSize(pDispChannel, pGpu, pOffset, pSize) dispchnpioGetRegBaseOffsetAndSize_DISPATCH(pDispChannel, pGpu, pOffset, pSize)
 #define dispchnpioControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
@@ -741,9 +745,6 @@ static inline NV_STATUS dispchnpioGetOrAllocNotifShare_DISPATCH(struct DispChann
     return pNotifier->__nvoc_metadata_ptr->vtable.__dispchnpioGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-NV_STATUS dispchnpioConstruct_IMPL(struct DispChannelPio *arg_pDispChannelPio, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_dispchnpioConstruct(arg_pDispChannelPio, arg_pCallContext, arg_pParams) dispchnpioConstruct_IMPL(arg_pDispChannelPio, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 
@@ -861,7 +862,12 @@ NV_STATUS __nvoc_objCreate_DispChannelDma(DispChannelDma**, Dynamic*, NvU32, str
     __nvoc_objCreate_DispChannelDma((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS dispchndmaConstruct_IMPL(struct DispChannelDma *arg_pDispChannelDma, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_dispchndmaConstruct(arg_pDispChannelDma, arg_pCallContext, arg_pParams) dispchndmaConstruct_IMPL(arg_pDispChannelDma, arg_pCallContext, arg_pParams)
+
+
+// Wrapper macros for halified functions
 #define dispchndmaGetRegBaseOffsetAndSize_FNPTR(pDispChannel) pDispChannel->__nvoc_base_DispChannel.__nvoc_metadata_ptr->vtable.__dispchnGetRegBaseOffsetAndSize__
 #define dispchndmaGetRegBaseOffsetAndSize(pDispChannel, pGpu, pOffset, pSize) dispchndmaGetRegBaseOffsetAndSize_DISPATCH(pDispChannel, pGpu, pOffset, pSize)
 #define dispchndmaControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
@@ -1044,9 +1050,6 @@ static inline NV_STATUS dispchndmaGetOrAllocNotifShare_DISPATCH(struct DispChann
     return pNotifier->__nvoc_metadata_ptr->vtable.__dispchndmaGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-NV_STATUS dispchndmaConstruct_IMPL(struct DispChannelDma *arg_pDispChannelDma, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_dispchndmaConstruct(arg_pDispChannelDma, arg_pCallContext, arg_pParams) dispchndmaConstruct_IMPL(arg_pDispChannelDma, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
 

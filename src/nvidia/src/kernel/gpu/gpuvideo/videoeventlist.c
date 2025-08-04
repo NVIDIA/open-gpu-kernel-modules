@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -421,7 +421,12 @@ _videoTimerCallback
 {
     NV_STATUS status;
 
-    NV_CHECK_OK(status, LEVEL_ERROR, osQueueWorkItemWithFlags(pGpu, _videoOsWorkItem, NULL, OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE));
+    NV_CHECK_OK(status,
+                LEVEL_ERROR,
+                osQueueWorkItem(pGpu,
+                                _videoOsWorkItem,
+                                NULL,
+                                OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE));
 
     // TMR_FLAG_RECUR does not work, so reschedule it here.
     NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_ERROR, tmrEventScheduleRel(pTmr, pTmrEvent, NV_VIDEO_TRACE_CALLBACK_TIME_NS));

@@ -30,6 +30,7 @@ extern "C" {
 
 #include "nvmisc.h"
 #include "nvfixedtypes.h"
+#include "ctrl/ctrl2080/ctrl2080ecc.h"
 
 #define RM_USER_SHARED_DATA                      (0x000000de)
 
@@ -88,16 +89,6 @@ do {                                                                            
       (((timestamp) & (0x1LLU)) == 1LLU)))
 
 enum {
-    RUSD_CLK_PUBLIC_DOMAIN_GRAPHICS = 0,
-    RUSD_CLK_PUBLIC_DOMAIN_MEMORY,
-    RUSD_CLK_PUBLIC_DOMAIN_VIDEO,
-
-    // Put at the end. See bug 1000230 NVML doesn't report SM frequency on Kepler
-    RUSD_CLK_PUBLIC_DOMAIN_SM,
-    RUSD_CLK_PUBLIC_DOMAIN_MAX_TYPE,
-};
-
-enum {
     RUSD_CLK_THROTTLE_REASON_GPU_IDLE                         = NVBIT(0),
     RUSD_CLK_THROTTLE_REASON_APPLICATION_CLOCK_SETTING        = NVBIT(1), 
     RUSD_CLK_THROTTLE_REASON_SW_POWER_CAP                     = NVBIT(2), 
@@ -128,6 +119,16 @@ typedef struct RUSD_PMA_MEMORY_INFO {
     NvU64 totalPmaMemory;
     NvU64 freePmaMemory;
 } RUSD_PMA_MEMORY_INFO;
+
+enum {
+    RUSD_CLK_PUBLIC_DOMAIN_GRAPHICS = 0,
+    RUSD_CLK_PUBLIC_DOMAIN_MEMORY,
+    RUSD_CLK_PUBLIC_DOMAIN_VIDEO,
+
+    // Put at the end. See bug 1000230 NVML doesn't report SM frequency on Kepler
+    RUSD_CLK_PUBLIC_DOMAIN_SM,
+    RUSD_CLK_PUBLIC_DOMAIN_MAX_TYPE,
+};
 
 typedef struct RUSD_CLK_PUBLIC_DOMAIN_INFO {
     NvU32 targetClkMHz;
@@ -205,10 +206,18 @@ typedef struct RUSD_MEM_ERROR_COUNTS {
 #define RUSD_MEMORY_ERROR_TYPE_SRAM  2
 #define RUSD_MEMORY_ERROR_TYPE_COUNT 3
 
+typedef struct RUSD_ECC_COUNTS {
+    NV2080_CTRL_ECC_GET_VOLATILE_COUNTS_PARAMS volatileCounts;
+    NV2080_CTRL_ECC_GET_CLIENT_EXPOSED_COUNTERS_PARAMS clientExposedCounts;
+} RUSD_ECC_INFO;
+
 typedef struct RUSD_MEM_ECC {
     volatile NvU64 lastModifiedTimestamp;
-    // Provided from NV2080_CTRL_CMD_GPU_QUERY_ECC_STATUS
     RUSD_MEM_ERROR_COUNTS count[RUSD_MEMORY_ERROR_TYPE_COUNT];
+    // TODO: Due to incapability of getting voteup for X driver update with
+    // existing RM APIs, need to resolve bug 5138911 before fully updating
+    // RUSD_MEM_ECC and removing deprecated RUSD_MEM_ERROR_COUNTS.
+    RUSD_ECC_INFO info;
 } RUSD_MEM_ECC;
 
 typedef struct RUSD_POWER_LIMIT_INFO {

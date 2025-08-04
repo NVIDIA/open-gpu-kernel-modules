@@ -489,12 +489,18 @@ static NvBool ConstructDpLibIsModesetPossibleParamsOneHead(
                         DisplayPort::DSC_FORCE_ENABLE;
                     break;
                 case NVKMS_DSC_MODE_FORCE_DISABLE:
+                    nvAssert(!pTimings->dscPassThrough);
                     pParams->head[head].pDscParams->forceDsc =
                         DisplayPort::DSC_FORCE_DISABLE;
                     break;
                 default:
-                    pParams->head[head].pDscParams->forceDsc =
-                        DisplayPort::DSC_DEFAULT;
+                    if (pTimings->dscPassThrough) {
+                        pParams->head[head].pDscParams->forceDsc =
+                            DisplayPort::DSC_FORCE_ENABLE;
+                    } else {
+                        pParams->head[head].pDscParams->forceDsc =
+                            DisplayPort::DSC_DEFAULT;
+                    }
                     break;
             }
 
@@ -525,8 +531,35 @@ static NvBool ConstructDpLibIsModesetPossibleParamsOneHead(
             break;
     }
 
-    pParams->head[head].pDscParams->bitsPerPixelX16 =
-        pModeValidationParams->dscOverrideBitsPerPixelX16;
+    if (pTimings->dscPassThrough) {
+        const NVDpyEvoRec *pDpyEvo =
+            nvGetOneArbitraryDpyEvo(dpyIdList, pDispEvo);
+        const NVT_DISPLAYID_2_0_INFO *pDisplyIdInfo =
+            &pDpyEvo->parsedEdid.info.ext_displayid20;
+        const NVT_DISPLAYID_VENDOR_SPECIFIC *pDisplayIdVS =
+            &pDisplyIdInfo->vendor_specific;
+        const VESA_VSDB_PARSED_INFO *pVesaVSDB = &pDisplayIdVS->vesaVsdb;
+
+        if (pVesaVSDB->pass_through_integer.pass_through_integer_dsc == 0) {
+            goto failed;
+        }
+
+        const NvU32 dscPassThroughBitsPerPixel16 =
+            (pVesaVSDB->pass_through_integer.pass_through_integer_dsc * 16) +
+            pVesaVSDB->pass_through_fractional.pass_through_fraction_dsc;
+
+        if ((pModeValidationParams->dscOverrideBitsPerPixelX16 != 0) &&
+                (pModeValidationParams->dscOverrideBitsPerPixelX16 !=
+                     dscPassThroughBitsPerPixel16)) {
+            goto failed;
+        }
+
+        pParams->head[head].pDscParams->bitsPerPixelX16 =
+            dscPassThroughBitsPerPixel16;
+    } else {
+        pParams->head[head].pDscParams->bitsPerPixelX16 =
+            pModeValidationParams->dscOverrideBitsPerPixelX16;
+    }
     pParams->head[head].pErrorStatus = pErrorCode;
 
     return TRUE;
@@ -1214,4 +1247,26 @@ void nvDPSetLinkHandoff(NVDPLibConnectorPtr pDpLibConnector, NvBool enable)
         pDpLibConnector->linkHandoffEnabled = FALSE;
         pDpLibConnector->connector->releaseLinkHandsOff();
     }
+}
+
+NvBool nvDPIsFECForceEnabled(NVConnectorEvoPtr pConnectorEvo)
+{
+    NVDPLibConnectorPtr pDpLibConnector = pConnectorEvo->pDpLibConnector;
+    DisplayPort::LinkConfiguration linkConfig =
+        pDpLibConnector->connector->getActiveLinkConfig();
+
+    return linkConfig.bEnableFEC;
+}
+
+NvBool nvDPForceEnableFEC(NVConnectorEvoPtr pConnectorEvo, NvBool enable)
+{
+    NVDPLibConnectorPtr pDpLibConnector = pConnectorEvo->pDpLibConnector;
+    DisplayPort::LinkConfiguration linkConfig =
+        pDpLibConnector->connector->getActiveLinkConfig();
+
+    linkConfig.bEnableFEC = enable;
+
+    return pDpLibConnector->connector->setPreferredLinkConfig(linkConfig,
+                                                              TRUE /* commit */,
+                                                              TRUE /* force */);
 }

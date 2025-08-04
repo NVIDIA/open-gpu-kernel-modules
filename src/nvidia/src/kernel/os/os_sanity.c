@@ -134,8 +134,7 @@ static NV_STATUS _osVerifyInterrupts(
     // support required to run this interrupt sanity test has been brought up
     // yet for T234D SOC display.
     //
-    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY) ||
-        pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_IGPU))
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
     {
         //
         // Nothing to verify here for the time being
@@ -184,7 +183,8 @@ static NV_STATUS _osVerifyInterrupts(
     gpuInstance = i = 0;
     while ((pGpu = gpumgrGetNextGpu(gpuAttachMask, &gpuInstance)) != NULL)
     {
-        if (gpuIsGpuFullPower(pGpu) == NV_FALSE)
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY) ||
+            !gpuIsGpuFullPower(pGpu))
         {
             continue;
         }
@@ -199,13 +199,18 @@ static NV_STATUS _osVerifyInterrupts(
         pIntr = GPU_GET_INTR(pGpu);
         pIntrEn0[i] = intrGetIntrEnFromHw_HAL(pGpu, pIntr, NULL /* threadstate */);
         intrSetIntrEnInHw_HAL(pGpu, pIntr, INTERRUPT_TYPE_DISABLED, NULL /* threadstate */);
+        intrSetStall_HAL(pGpu, pIntr, INTERRUPT_TYPE_DISABLED, NULL /* threadstate */);
         i++;
     }
     pGpu = pGpuSaved;
     pIntr = GPU_GET_INTR(pGpu);
 
+    //
+    // Clear and rearm interrupt before we trigger it in case it were
+    // ever set for some reason (such as previous bad state or programming)
+    //
+    intrClearStallSWIntr_HAL(pGpu, pIntr);
     intrSetIntrEnInHw_HAL(pGpu, pIntr, INTERRUPT_TYPE_SOFTWARE, NULL /* threadstate */);
-    intrDisableStallSWIntr_HAL(pGpu, pIntr);
     intrEnableStallSWIntr_HAL(pGpu, pIntr);
     if (pIntr->getProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING))
     {
@@ -229,6 +234,7 @@ static NV_STATUS _osVerifyInterrupts(
     interrupt_triggered = 0;
 
     intrSetStallSWIntr_HAL(pGpu, pIntr);
+    kbifCheckAndRearmMSI(pGpu, pKernelBif);
 
     Bailout = 0;
 
@@ -262,7 +268,8 @@ static NV_STATUS _osVerifyInterrupts(
     gpuInstance = i = 0;
     while ((pGpu = gpumgrGetNextGpu(gpuAttachMask, &gpuInstance)) != NULL)
     {
-        if (gpuIsGpuFullPower(pGpu) == NV_FALSE)
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY) ||
+            !gpuIsGpuFullPower(pGpu))
         {
             continue;
         }
@@ -273,6 +280,7 @@ static NV_STATUS _osVerifyInterrupts(
 
         // Restore the stall interrupt tree enable
         intrSetIntrEnInHw_HAL(pGpu, pIntr, pIntrEn0[i], NULL /* threadstate */);
+        intrSetStall_HAL(pGpu, pIntr, pIntrEn0[i], NULL /* threadstate */);
         i++;
     }
 

@@ -450,6 +450,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__VirtualMemory =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_virtmemDestruct(VirtualMemory*);
 void __nvoc_dtor_StandardMemory(StandardMemory*);
 void __nvoc_dtor_VirtualMemory(VirtualMemory *pThis) {
     __nvoc_virtmemDestruct(pThis);

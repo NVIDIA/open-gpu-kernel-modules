@@ -150,6 +150,9 @@ typedef struct
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE0_950           (0x0000000D)
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE0_1000          (0x0000000E)
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE0_170           (0x0000000F)
+// Custom definition of peak throughput for HDMI YUV422/YUV420 modes since those are not defined in spec
+// Starting with 0x100 to provide headroom for DSC spec definitions in future
+#define DSC_DECODER_PEAK_THROUGHPUT_MODE0_680           (0x00000100)
 
         // Peak throughput supported for native 422 and 420 modes
         NvU32  peakThroughputMode1;
@@ -169,6 +172,9 @@ typedef struct
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_950           (0x0000000D)
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_1000          (0x0000000E)
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_170           (0x0000000F)
+// Custom definition of peak throughput for HDMI YUV modes since those are not defined in spec
+// Starting with 0x100 to provide headroom for DSC spec definitions in future
+#define DSC_DECODER_PEAK_THROUGHPUT_MODE1_680           (0x00000100)
 
         // Maximum bits_per_pixel supported by the DSC decompressor multiplied by 16
         NvU32  maxBitsPerPixelX16;
@@ -264,6 +270,11 @@ typedef struct {
     NvU8 data[500U]; // total size of DSC_IN/OUTPUT_PARAMS
 } DSC_GENERATE_PPS_OPAQUE_WORKAREA;
 
+typedef struct
+{
+    NvU32 pPps[DSC_MAX_PPS_SIZE_DWORD]; // Out - PPS SDP data
+} DSCPPSDATA;
+
 /*
  *  Windows testbed compiles are done with warnings as errors
  *  with the maximum warning level.  Here we turn off some
@@ -335,6 +346,8 @@ DSC_GeneratePPSWithSliceCountMask
     NvU32 *pBitsPerPixelX16,
     NvU32 *sliceCountMask
 );
+
+NVT_STATUS DSC_ValidatePPSData(DSCPPSDATA *pPps);
 
 #ifdef __cplusplus
 }

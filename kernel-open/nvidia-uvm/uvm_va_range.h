@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -202,6 +202,11 @@ typedef struct
     // This field is unused for sparse mappings. Since they don't have physical
     // backing there is no RM object to be freed when the mapping is unmapped.
     uvm_deferred_free_object_t deferred_free;
+
+    // Flag indicating whether L2 cache invalidation is needed at unmap time.
+    // This is set by RM during mapping and used during unmap to determine
+    // if L2 cache invalidation should be performed for non coherent sysmem.
+    bool need_l2_invalidate_at_unmap;
 } uvm_ext_gpu_map_t;
 
 typedef struct
@@ -1105,6 +1110,16 @@ NV_STATUS uvm_va_range_set_read_duplication(uvm_va_range_managed_t *managed_rang
 // LOCKING: If mm != NULL, the caller must hold mm->mmap_lock in at least read
 //          mode.
 NV_STATUS uvm_va_range_unset_read_duplication(uvm_va_range_managed_t *managed_range, struct mm_struct *mm);
+
+// Set discard status for all pages within the overlap of the VA range and
+// [start, end].
+//
+// LOCKING: The VA space lock should be held read mode.
+NV_STATUS uvm_va_range_discard(uvm_va_range_managed_t *va_range,
+                               uvm_va_block_context_t *va_block_context,
+                               NvU64 start,
+                               NvU64 end,
+                               NvU64 flags);
 
 // Create and destroy vma wrappers
 uvm_vma_wrapper_t *uvm_vma_wrapper_alloc(struct vm_area_struct *vma);

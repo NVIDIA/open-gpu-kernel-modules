@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -84,6 +84,21 @@ spdmStatePostLoad_KERNEL
 )
 {
     NV_STATUS status = NV_OK;
+
+    if (pSpdm->getProperty(pSpdm, PDB_PROP_SPDM_ENABLED))
+    {
+        if (!IS_GSP_CLIENT(pGpu))
+        {
+            NV_PRINTF(LEVEL_INFO, "Performing late SPDM initialization!\n");
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                                spdmEstablishSession(pGpu, pSpdm, NV_SPDM_REQUESTER_ID_MONOLITHIC), ErrorExit);
+        }
+
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, spdmSendInitRmDataCommand_HAL(pGpu, pSpdm), ErrorExit);
+    }
+
+ErrorExit:
+
     return status;
 }
 
@@ -95,8 +110,12 @@ spdmStatePreUnload_KERNEL
     NvU32   flags
 )
 {
-    NV_STATUS status = NV_OK;
-    return status;
+    if (!IS_GSP_CLIENT(pGpu) && pSpdm->getProperty(pSpdm, PDB_PROP_SPDM_ENABLED))
+    {
+        return spdmContextDeinit(pGpu, pSpdm, NV_TRUE);
+    }
+
+    return NV_OK;
 }
 
 

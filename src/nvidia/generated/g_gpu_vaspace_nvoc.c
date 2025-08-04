@@ -324,6 +324,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJGVASPACE =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_gvaspaceDestruct(OBJGVASPACE*);
 void __nvoc_dtor_OBJVASPACE(OBJVASPACE*);
 void __nvoc_dtor_OBJGVASPACE(OBJGVASPACE *pThis) {
     __nvoc_gvaspaceDestruct(pThis);

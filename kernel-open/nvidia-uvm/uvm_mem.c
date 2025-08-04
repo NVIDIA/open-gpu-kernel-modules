@@ -375,9 +375,10 @@ static void mem_free_sysmem_dma_chunks(uvm_mem_t *mem)
         if (!mem->sysmem.va[i])
             break;
 
-        uvm_parent_gpu_dma_free_page(mem->dma_owner->parent,
-                                     mem->sysmem.va[i],
-                                     mem->sysmem.dma_addrs[gpu_index][i]);
+        uvm_parent_gpu_dma_free(mem->chunk_size,
+                                mem->dma_owner->parent,
+                                mem->sysmem.va[i],
+                                mem->sysmem.dma_addrs[gpu_index][i]);
     }
 
 end:
@@ -436,16 +437,16 @@ static NV_STATUS mem_alloc_dma_addrs(uvm_mem_t *mem, const uvm_gpu_t *gpu)
     return NV_OK;
 }
 
-static gfp_t sysmem_allocation_gfp_flags(int order, bool zero)
+static gfp_t sysmem_allocation_gfp_flags(uvm_mem_t *mem, bool zero)
 {
     gfp_t gfp_flags = NV_UVM_GFP_FLAGS;
 
     if (zero)
         gfp_flags |= __GFP_ZERO;
 
-    // High-order page allocations require the __GFP_COMP flag to work with
+    // High-order non-DMA page allocations require the __GFP_COMP flag to work with
     // vm_insert_page.
-    if (order > 0)
+    if (get_order(mem->chunk_size) > 0 && !mem->dma_owner)
         gfp_flags |= __GFP_COMP;
 
     return gfp_flags;
@@ -468,10 +469,8 @@ static NV_STATUS mem_alloc_sysmem_dma_chunks(uvm_mem_t *mem, gfp_t gfp_flags)
     NV_STATUS status;
     NvU64 *dma_addrs;
 
-    UVM_ASSERT_MSG(mem->chunk_size == PAGE_SIZE,
-                   "mem->chunk_size is 0x%llx. PAGE_SIZE is only supported.",
-                   mem->chunk_size);
     UVM_ASSERT(uvm_mem_is_sysmem_dma(mem));
+    UVM_ASSERT(!(gfp_flags & __GFP_COMP));
 
     mem->sysmem.pages = uvm_kvmalloc_zero(sizeof(*mem->sysmem.pages) * mem->chunks_count);
     mem->sysmem.va = uvm_kvmalloc_zero(sizeof(*mem->sysmem.va) * mem->chunks_count);
@@ -487,7 +486,7 @@ static NV_STATUS mem_alloc_sysmem_dma_chunks(uvm_mem_t *mem, gfp_t gfp_flags)
     for (i = 0; i < mem->chunks_count; ++i) {
         void *va;
 
-        status = uvm_gpu_dma_alloc_page(mem->dma_owner, gfp_flags, &va, &dma_addrs[i]);
+        status = uvm_gpu_dma_alloc(mem->chunk_size, mem->dma_owner, gfp_flags, &va, &dma_addrs[i]);
         if (status != NV_OK)
             goto error;
 
@@ -578,7 +577,7 @@ static NV_STATUS mem_alloc_chunks(uvm_mem_t *mem, struct mm_struct *mm, bool zer
         NV_STATUS status;
 
         UVM_ASSERT(PAGE_ALIGNED(mem->chunk_size));
-        gfp_flags = sysmem_allocation_gfp_flags(get_order(mem->chunk_size), zero);
+        gfp_flags = sysmem_allocation_gfp_flags(mem, zero);
         if (UVM_CGROUP_ACCOUNTING_SUPPORTED() && mm)
             gfp_flags |= NV_UVM_GFP_FLAGS_ACCOUNT;
 
@@ -961,6 +960,7 @@ static uvm_gpu_phys_address_t mem_gpu_physical_sysmem(uvm_mem_t *mem, uvm_gpu_t 
     UVM_ASSERT(uvm_mem_is_sysmem(mem));
     UVM_ASSERT(sysmem_mapped_on_gpu_phys(mem, gpu));
 
+    // Sysmem should use coherent sys aperture
     return uvm_gpu_phys_address(UVM_APERTURE_SYS, dma_addr + offset % mem->chunk_size);
 }
 

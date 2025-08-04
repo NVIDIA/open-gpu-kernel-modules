@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -715,7 +715,9 @@ kchannelGetEngine_GM107
     if (pEngDesc == NULL)
         return NV_ERR_INVALID_ARGUMENT;
 
-    NV_PRINTF(LEVEL_INFO, "0x%x\n", kchannelGetDebugTag(pKernelChannel));
+    NV_PRINTF(LEVEL_INFO,
+              FMT_CHANNEL_DEBUG_TAG "\n",
+              kchannelGetDebugTag(pKernelChannel));
 
     *pEngDesc = kchannelGetRunlistId(pKernelChannel);
 

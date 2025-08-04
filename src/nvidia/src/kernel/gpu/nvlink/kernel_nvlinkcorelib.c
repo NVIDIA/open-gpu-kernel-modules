@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -216,6 +216,8 @@ knvlinkCoreAddDevice_IMPL
     dev->numActiveLinksPerIoctrl  = knvlinkGetNumActiveLinksPerIoctrl(pGpu, pKernelNvlink);
     dev->numLinksPerIoctrl        = knvlinkGetTotalNumLinksPerIoctrl(pGpu, pKernelNvlink);
     dev->bReducedNvlinkConfig     = knvlinkIsGpuReducedNvlinkConfig_HAL(pGpu, pKernelNvlink);
+    dev->linkStateSupportedMask   = knvlinkGetSupportedCoreLinkStateMask_HAL(pGpu, pKernelNvlink);
+    dev->bLinkStatesSymmetric     = pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_UNILATERAL_LINK_STATE_CHANGE_SUPPORTED);
 
     // Register the GPU in nvlink core
     if (nvlink_lib_register_device(dev) != 0)

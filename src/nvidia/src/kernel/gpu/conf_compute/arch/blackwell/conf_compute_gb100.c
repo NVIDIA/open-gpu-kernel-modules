@@ -182,3 +182,28 @@ confComputeGetKeySpaceFromKChannel_GB100
 
     return NV_OK;
 }
+
+/*!
+ * @brief confComputeIsGpuCcCapable
+ *        Checks if Gpu can handle ConfCompute workloads.
+ *
+ * @param[in]     pGpu                     : OBJGPU Pointer
+ * @param[in]     pConfCompute             : ConfidentialCompute pointer
+ */
+NvBool
+confComputeIsGpuCcCapable_GB100
+(
+    OBJGPU               *pGpu,
+    ConfidentialCompute  *pConfCompute
+)
+{
+    if (confComputeIsDebugModeEnabled_HAL(pGpu, pConfCompute))
+    {
+
+        NV_PRINTF(LEVEL_ERROR, "Cannot boot Confidential Compute as debug board is not supported.\n");
+        return NV_FALSE;
+    }
+
+    return NV_TRUE;
+}
+

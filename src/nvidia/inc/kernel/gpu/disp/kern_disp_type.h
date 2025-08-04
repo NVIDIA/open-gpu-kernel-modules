@@ -30,21 +30,6 @@
 *
 ******************************************************************************/
 #define NV_PDISP_CHN_NUM_ANY 0x7F
-#define DISP_ACCL_NONE                        (0x00)
-#define DISP_ACCL_IGNORE_PI                   NVBIT(0)
-#define DISP_ACCL_SKIP_NOTIF                  NVBIT(1)
-#define DISP_ACCL_SKIP_SEMA                   NVBIT(2)
-#define DISP_ACCL_IGNORE_INTERLOCK            NVBIT(3)
-#define DISP_ACCL_IGNORE_FLIPLOCK             NVBIT(4)
-#define DISP_ACCL_TRASH_ONLY                  NVBIT(5)
-#define DISP_ACCL_TRASH_AND_ABORT             NVBIT(6)
-#define DISP_ACCL_SKIP_SYNCPOINT              NVBIT(7)
-#define DISP_ACCL_IGNORE_TIMESTAMP            NVBIT(8)
-#define DISP_ACCL_IGNORE_MGI                  NVBIT(9)
-#define DISP_ACCL_DISABLE_PUTPTR_WRITE        NVBIT(16)
-#define DISP_ACCL_LOCK_PIO_FIFO               NVBIT(16)
-#define DISP_ACCL_DISABLE_INTR_DURING_SHTDWN  NVBIT(17)
-#define DISP_ACCL_ALL                         ~(DISP_ACCL_NONE)
 
 typedef enum
 {
@@ -58,31 +43,6 @@ typedef enum
     dispChnClass_Any,
     dispChnClass_Supported
 } DISPCHNCLASS;
-
-typedef enum
-{
-    dispChnState_Idle,
-    dispChnState_Wrtidle,
-    dispChnState_Empty,
-    dispChnState_Flushed,
-    dispChnState_Busy,
-    dispChnState_Dealloc,
-    dispChnState_DeallocLimbo,
-    dispChnState_Limbo1,
-    dispChnState_Limbo2,
-    dispChnState_Fcodeinit1,
-    dispChnState_Fcodeinit2,
-    dispChnState_Fcode,
-    dispChnState_Vbiosinit1,
-    dispChnState_Vbiosinit2,
-    dispChnState_Vbiosoper,
-    dispChnState_Unconnected,
-    dispChnState_Initialize1,
-    dispChnState_Initialize2,
-    dispChnState_Shutdown1,
-    dispChnState_Shutdown2,
-    dispChnState_Supported
-} DISPCHNSTATE;
 
 enum DISPLAY_ICC_BW_CLIENT
 {
@@ -104,14 +64,5 @@ typedef struct
     DISPMEMORYTARGET    memTarget;
     NvBool              valid;
 } VGAADDRDESC;
-
-//
-// Map HW channel state to SW channel state
-//
-typedef struct
-{
-    NvU32 hwChannelState;
-    DISPCHNSTATE dispChnState;
-} CHNSTATEMAP;
 
 #endif // #ifndef KERN_DISP_TYPE_H

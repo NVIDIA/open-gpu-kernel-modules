@@ -393,6 +393,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__MemoryHwResources =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_hwresDestruct(MemoryHwResources*);
 void __nvoc_dtor_Memory(Memory*);
 void __nvoc_dtor_MemoryHwResources(MemoryHwResources *pThis) {
     __nvoc_hwresDestruct(pThis);

@@ -166,7 +166,6 @@ namespace DisplayPort
         {
             setIgnoreCableIdCaps(false);
         }
-
         virtual void setConnectorTypeC(bool bTypeC);
 
         DPCDHALImpl2x(AuxBus * bus, Timer * timer) : DPCDHALImpl(bus, timer), bIgnoreCableIdCaps(false), bConnectorIsTypeC(false)

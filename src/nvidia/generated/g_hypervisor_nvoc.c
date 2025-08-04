@@ -80,6 +80,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJHYPERVISOR =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_hypervisorDestruct(OBJHYPERVISOR*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_OBJHYPERVISOR(OBJHYPERVISOR *pThis) {
     __nvoc_hypervisorDestruct(pThis);

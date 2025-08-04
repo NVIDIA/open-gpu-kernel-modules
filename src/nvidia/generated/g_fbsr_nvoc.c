@@ -24,10 +24,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
 // Forward declarations for OBJFBSR
 void __nvoc_init__Object(Object*);
-void __nvoc_init__OBJFBSR(OBJFBSR*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_funcTable_OBJFBSR(OBJFBSR*, RmHalspecOwner *pRmhalspecowner);
-NV_STATUS __nvoc_ctor_OBJFBSR(OBJFBSR*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_dataField_OBJFBSR(OBJFBSR*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init__OBJFBSR(OBJFBSR*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_funcTable_OBJFBSR(OBJFBSR*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+NV_STATUS __nvoc_ctor_OBJFBSR(OBJFBSR*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_dataField_OBJFBSR(OBJFBSR*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_OBJFBSR(OBJFBSR*);
 
 // Structures used within RTTI (run-time type information)
@@ -86,12 +86,13 @@ void __nvoc_dtor_OBJFBSR(OBJFBSR *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_OBJFBSR(OBJFBSR *pThis, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+void __nvoc_init_dataField_OBJFBSR(OBJFBSR *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
@@ -100,11 +101,11 @@ void __nvoc_init_dataField_OBJFBSR(OBJFBSR *pThis, RmHalspecOwner *pRmhalspecown
 }
 
 NV_STATUS __nvoc_ctor_Object(Object* );
-NV_STATUS __nvoc_ctor_OBJFBSR(OBJFBSR *pThis, RmHalspecOwner *pRmhalspecowner) {
+NV_STATUS __nvoc_ctor_OBJFBSR(OBJFBSR *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_Object(&pThis->__nvoc_base_Object);
     if (status != NV_OK) goto __nvoc_ctor_OBJFBSR_fail_Object;
-    __nvoc_init_dataField_OBJFBSR(pThis, pRmhalspecowner);
+    __nvoc_init_dataField_OBJFBSR(pThis, pGpuhalspecowner, pRmhalspecowner);
     goto __nvoc_ctor_OBJFBSR_exit; // Success
 
 __nvoc_ctor_OBJFBSR_fail_Object:
@@ -114,20 +115,45 @@ __nvoc_ctor_OBJFBSR_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_OBJFBSR_1(OBJFBSR *pThis, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+static void __nvoc_init_funcTable_OBJFBSR_1(OBJFBSR *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
-    // fbsrBegin -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
+    // fbsrInit -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__fbsrInit__ = &fbsrInit_56cd7a;
+    }
+    else
+    {
+        pThis->__fbsrInit__ = &fbsrInit_GM107;
+    }
+
+    // fbsrDestroy -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__fbsrDestroy__ = &fbsrDestroy_b3696a;
+    }
+    else
+    {
+        pThis->__fbsrDestroy__ = &fbsrDestroy_GM107;
+    }
+
+    // fbsrBegin -- halified (3 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__fbsrBegin__ = &fbsrBegin_46f6a7;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
         pThis->__fbsrBegin__ = &fbsrBegin_GA100;
     }
@@ -136,8 +162,12 @@ static void __nvoc_init_funcTable_OBJFBSR_1(OBJFBSR *pThis, RmHalspecOwner *pRmh
         pThis->__fbsrBegin__ = &fbsrBegin_GM107;
     }
 
-    // fbsrEnd -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
+    // fbsrEnd -- halified (3 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__fbsrEnd__ = &fbsrEnd_46f6a7;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
         pThis->__fbsrEnd__ = &fbsrEnd_GA100;
     }
@@ -146,9 +176,19 @@ static void __nvoc_init_funcTable_OBJFBSR_1(OBJFBSR *pThis, RmHalspecOwner *pRmh
         pThis->__fbsrEnd__ = &fbsrEnd_GM107;
     }
 
+    // fbsrCopyMemoryMemDesc -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__fbsrCopyMemoryMemDesc__ = &fbsrCopyMemoryMemDesc_f2d351;
+    }
+    else
+    {
+        pThis->__fbsrCopyMemoryMemDesc__ = &fbsrCopyMemoryMemDesc_GM107;
+    }
+
     // fbsrSendMemsysProgramRawCompressionMode -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0fc00UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e6UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__fbsrSendMemsysProgramRawCompressionMode__ = &fbsrSendMemsysProgramRawCompressionMode_GA100;
     }
@@ -157,18 +197,18 @@ static void __nvoc_init_funcTable_OBJFBSR_1(OBJFBSR *pThis, RmHalspecOwner *pRmh
     {
         pThis->__fbsrSendMemsysProgramRawCompressionMode__ = &fbsrSendMemsysProgramRawCompressionMode_56cd7a;
     }
-} // End __nvoc_init_funcTable_OBJFBSR_1 with approximately 6 basic block(s).
+} // End __nvoc_init_funcTable_OBJFBSR_1 with approximately 14 basic block(s).
 
 
-// Initialize vtable(s) for 3 virtual method(s).
-void __nvoc_init_funcTable_OBJFBSR(OBJFBSR *pThis, RmHalspecOwner *pRmhalspecowner) {
+// Initialize vtable(s) for 6 virtual method(s).
+void __nvoc_init_funcTable_OBJFBSR(OBJFBSR *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 3 per-object function pointer(s).
-    __nvoc_init_funcTable_OBJFBSR_1(pThis, pRmhalspecowner);
+    // Initialize vtable(s) with 6 per-object function pointer(s).
+    __nvoc_init_funcTable_OBJFBSR_1(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__OBJFBSR(OBJFBSR *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init__OBJFBSR(OBJFBSR *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
     // Initialize pointers to inherited data.
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;    // (obj) super
@@ -182,7 +222,7 @@ void __nvoc_init__OBJFBSR(OBJFBSR *pThis, RmHalspecOwner *pRmhalspecowner) {
     pThis->__nvoc_metadata_ptr = &__nvoc_metadata__OBJFBSR;    // (fbsr) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_OBJFBSR(pThis, pRmhalspecowner);
+    __nvoc_init_funcTable_OBJFBSR(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_OBJFBSR(OBJFBSR **ppThis, Dynamic *pParent, NvU32 createFlags)
@@ -190,6 +230,7 @@ NV_STATUS __nvoc_objCreate_OBJFBSR(OBJFBSR **ppThis, Dynamic *pParent, NvU32 cre
     NV_STATUS status;
     Object *pParentObj = NULL;
     OBJFBSR *pThis;
+    GpuHalspecOwner *pGpuhalspecowner;
     RmHalspecOwner *pRmhalspecowner;
 
     // Assign `pThis`, allocating memory unless suppressed by flag.
@@ -216,12 +257,15 @@ NV_STATUS __nvoc_objCreate_OBJFBSR(OBJFBSR **ppThis, Dynamic *pParent, NvU32 cre
         pThis->__nvoc_base_Object.pParent = NULL;
     }
 
+    if ((pGpuhalspecowner = dynamicCast(pParent, GpuHalspecOwner)) == NULL)
+        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, pParent);
+    NV_ASSERT_OR_RETURN(pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
     if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
         pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
     NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init__OBJFBSR(pThis, pRmhalspecowner);
-    status = __nvoc_ctor_OBJFBSR(pThis, pRmhalspecowner);
+    __nvoc_init__OBJFBSR(pThis, pGpuhalspecowner, pRmhalspecowner);
+    status = __nvoc_ctor_OBJFBSR(pThis, pGpuhalspecowner, pRmhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_OBJFBSR_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

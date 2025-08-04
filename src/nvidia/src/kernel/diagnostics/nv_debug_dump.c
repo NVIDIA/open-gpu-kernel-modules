@@ -21,7 +21,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "os/os.h"
 #include "diagnostics/journal.h"
 #include "diagnostics/nv_debug_dump.h"
 #include "diagnostics/journal.h"
@@ -483,7 +482,7 @@ nvdDumpDebugBuffers_IMPL
         portMemFreeStackOrHeap(dataBuffer);
         // Unmap DebugBuffer address
         memdescUnmap(pCurrent->pMemDesc, NV_TRUE, // Kernel mapping?
-                     osGetCurrentProcess(), pUmdBuffer, priv);
+                     pUmdBuffer, priv);
 
         // Check the error state AFTER unmapping the memory desc
         if (status != NV_OK)

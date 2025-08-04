@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -348,7 +348,45 @@ NV_STATUS __nvoc_objCreate_RsResource(RsResource**, Dynamic*, NvU32, struct CALL
     __nvoc_objCreate_RsResource((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 
-// Wrapper macros
+// Wrapper macros for implementation functions
+NV_STATUS resConstruct_IMPL(struct RsResource *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+#define __nvoc_resConstruct(arg_pResource, arg_pCallContext, arg_pParams) resConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+
+void resDestruct_IMPL(struct RsResource *pResource);
+#define __nvoc_resDestruct(pResource) resDestruct_IMPL(pResource)
+
+NV_STATUS resSetFreeParams_IMPL(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_FREE_PARAMS_INTERNAL *pParams);
+#ifdef __nvoc_rs_resource_h_disabled
+static inline NV_STATUS resSetFreeParams(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_FREE_PARAMS_INTERNAL *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("RsResource was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_resource_h_disabled
+#define resSetFreeParams(pResource, pCallContext, pParams) resSetFreeParams_IMPL(pResource, pCallContext, pParams)
+#endif // __nvoc_rs_resource_h_disabled
+
+NV_STATUS resGetFreeParams_IMPL(struct RsResource *pResource, struct CALL_CONTEXT **ppCallContext, struct RS_RES_FREE_PARAMS_INTERNAL **ppParams);
+#ifdef __nvoc_rs_resource_h_disabled
+static inline NV_STATUS resGetFreeParams(struct RsResource *pResource, struct CALL_CONTEXT **ppCallContext, struct RS_RES_FREE_PARAMS_INTERNAL **ppParams) {
+    NV_ASSERT_FAILED_PRECOMP("RsResource was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_resource_h_disabled
+#define resGetFreeParams(pResource, ppCallContext, ppParams) resGetFreeParams_IMPL(pResource, ppCallContext, ppParams)
+#endif // __nvoc_rs_resource_h_disabled
+
+NV_STATUS resControlLookup_IMPL(struct RsResource *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry);
+#ifdef __nvoc_rs_resource_h_disabled
+static inline NV_STATUS resControlLookup(struct RsResource *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    NV_ASSERT_FAILED_PRECOMP("RsResource was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_rs_resource_h_disabled
+#define resControlLookup(pResource, pParams, ppEntry) resControlLookup_IMPL(pResource, pParams, ppEntry)
+#endif // __nvoc_rs_resource_h_disabled
+
+
+// Wrapper macros for halified functions
 #define resCanCopy_FNPTR(pResource) pResource->__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define resCanCopy(pResource) resCanCopy_DISPATCH(pResource)
 #define resIsDuplicate_FNPTR(pResource) pResource->__nvoc_metadata_ptr->vtable.__resIsDuplicate__
@@ -497,45 +535,6 @@ NvBool resShareCallback_IMPL(struct RsResource *pResource, struct RsClient *pInv
 
 void resAddAdditionalDependants_IMPL(struct RsClient *pClient, struct RsResource *pResource, RsResourceRef *pReference);
 
-NV_STATUS resConstruct_IMPL(struct RsResource *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-
-#define __nvoc_resConstruct(arg_pResource, arg_pCallContext, arg_pParams) resConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
-void resDestruct_IMPL(struct RsResource *pResource);
-
-#define __nvoc_resDestruct(pResource) resDestruct_IMPL(pResource)
-NV_STATUS resSetFreeParams_IMPL(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_FREE_PARAMS_INTERNAL *pParams);
-
-#ifdef __nvoc_rs_resource_h_disabled
-static inline NV_STATUS resSetFreeParams(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_FREE_PARAMS_INTERNAL *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("RsResource was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_resource_h_disabled
-#define resSetFreeParams(pResource, pCallContext, pParams) resSetFreeParams_IMPL(pResource, pCallContext, pParams)
-#endif //__nvoc_rs_resource_h_disabled
-
-NV_STATUS resGetFreeParams_IMPL(struct RsResource *pResource, struct CALL_CONTEXT **ppCallContext, struct RS_RES_FREE_PARAMS_INTERNAL **ppParams);
-
-#ifdef __nvoc_rs_resource_h_disabled
-static inline NV_STATUS resGetFreeParams(struct RsResource *pResource, struct CALL_CONTEXT **ppCallContext, struct RS_RES_FREE_PARAMS_INTERNAL **ppParams) {
-    NV_ASSERT_FAILED_PRECOMP("RsResource was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_resource_h_disabled
-#define resGetFreeParams(pResource, ppCallContext, ppParams) resGetFreeParams_IMPL(pResource, ppCallContext, ppParams)
-#endif //__nvoc_rs_resource_h_disabled
-
-NV_STATUS resControlLookup_IMPL(struct RsResource *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry);
-
-#ifdef __nvoc_rs_resource_h_disabled
-static inline NV_STATUS resControlLookup(struct RsResource *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    NV_ASSERT_FAILED_PRECOMP("RsResource was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_rs_resource_h_disabled
-#define resControlLookup(pResource, pParams, ppEntry) resControlLookup_IMPL(pResource, pParams, ppEntry)
-#endif //__nvoc_rs_resource_h_disabled
-
 #undef PRIVATE_FIELD
 
 
@@ -642,6 +641,8 @@ struct RS_INTER_MAP_PARAMS
     NvU64           offset;
     NvU64           length;
     NvU32           flags;
+    NvU32           flags2;
+    NvU32           kindOverride;
     NvU64           dmaOffset;              ///< [inout] RS-TODO rename this
     void           *pMemDesc;               ///< [out]
 
@@ -682,6 +683,7 @@ struct RsInterMapping
     ListNode       mappableNode;
     ListNode       contextNode;
     NvU32 flags;                     ///< Flags passed when mapping, same flags also passed when unmapping
+    NvU32 flags2;                    ///< Additional flags for the mapping
     NvU64 dmaOffset;
     NvU64 size;
     void *pMemDesc;

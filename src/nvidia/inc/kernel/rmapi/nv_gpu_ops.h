@@ -35,6 +35,7 @@
 #define _NV_GPU_OPS_H_
 #include "nvgputypes.h"
 #include "nv_uvm_types.h"
+#include "nv_uvm_user_types.h"
 
 typedef struct gpuSession       *gpuSessionHandle;
 typedef struct gpuDevice        *gpuDeviceHandle;

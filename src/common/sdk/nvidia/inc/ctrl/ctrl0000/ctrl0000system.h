@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1571,24 +1571,6 @@ typedef struct NV0000_CTRL_SYSTEM_GPS_CTRL_PARAMS {
 #define NV0000_CTRL_GPS_CMD_PS_STATUS_OFF                      (0U)
 #define NV0000_CTRL_GPS_CMD_PS_STATUS_ON                       (1U)
 
-
-/*
- * NV0000_CTRL_CMD_SYSTEM_SET_SECURITY_SETTINGS
- *
- * This command allows privileged users to update the values of
- * security settings governing RM behavior.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_ARGUMENT,
- *   NV_ERR_INVALID_OBJECT_HANDLE
- *   NV_ERR_NOT_SUPPORTED
- *   NV_ERR_INSUFFICIENT_PERMISSIONS
- *
- * Please note: as implied above, administrator privileges are
- * required to modify security settings.
- */
-#define NV0000_CTRL_CMD_SYSTEM_SET_SECURITY_SETTINGS           (0x129U) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_SYSTEM_GPS_GET_PERF_SENSOR_COUNTERS_PARAMS_MESSAGE_ID" */
 
 #define GPS_MAX_COUNTERS_PER_BLOCK                             32U
 #define NV0000_CTRL_SYSTEM_GPS_GET_PERF_SENSOR_COUNTERS_PARAMS_MESSAGE_ID (0x29U)

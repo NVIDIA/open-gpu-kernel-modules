@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -816,6 +816,22 @@ kbusGetNvlinkP2PPeerId_GP100
     *nvlinkPeer = BUS_INVALID_PEER;
 
     //
+    // If running in forced-config use pre-determined
+    // PeerIDs from the static table
+    //
+    if (knvlinkIsForcedConfig(pGpu0, pKernelNvlink0) ||
+        knvlinkAreLinksRegistryOverriden(pGpu0, pKernelNvlink0))
+    {
+        *nvlinkPeer = kbusGetPeerIdFromTable_HAL(pGpu0, pKernelBus0,
+                                                 pGpu0->gpuInstance,
+                                                 pGpu1->gpuInstance);
+
+        if (*nvlinkPeer == BUS_INVALID_PEER)
+        {
+            return NV_ERR_INVALID_REQUEST;
+        }
+    }
+    //
     // Use the NVLINK-specific unique ID of the GPU (related to link ID) for
     // the peer ID. We expect that this will remain the same across multiple
     // runs, so the peer ID should be consistent.
@@ -825,50 +841,35 @@ kbusGetNvlinkP2PPeerId_GP100
     // no PCIe P2P will be used.
     //
     if ((pKernelNvlink0 != NULL) &&
-        (knvlinkGetPeersNvlinkMaskFromHshub(pGpu0, pKernelNvlink0) != 0))
+        (knvlinkGetNumLinksToPeer(pGpu0, pKernelNvlink0, pGpu1) != 0))
     {
-        if (knvlinkIsForcedConfig(pGpu0, pKernelNvlink0) ||
-            knvlinkAreLinksRegistryOverriden(pGpu0, pKernelNvlink0))
+        *nvlinkPeer = kbusGetPeerId_HAL(pGpu0, pKernelBus0, pGpu1);
+        if (*nvlinkPeer != BUS_INVALID_PEER)
         {
-            *nvlinkPeer = kbusGetPeerIdFromTable_HAL(pGpu0, pKernelBus0,
-                                                     pGpu0->gpuInstance,
-                                                     pGpu1->gpuInstance);
-
-            if (*nvlinkPeer == BUS_INVALID_PEER)
-            {
-                return NV_ERR_INVALID_REQUEST;
-            }
+            return NV_OK;
         }
-        else
+
+        // Reserve GPU0 peer IDs for NVLINK use
+        if (!pKernelBus0->p2p.bNvlinkPeerIdsReserved)
         {
-            *nvlinkPeer = kbusGetPeerId_HAL(pGpu0, pKernelBus0, pGpu1);
-            if (*nvlinkPeer != BUS_INVALID_PEER)
-            {
-                return NV_OK;
-            }
+            NvU32 idMask = knvlinkGetUniquePeerIdMask_HAL(pGpu0, pKernelNvlink0);
 
-            // Reserve GPU0 peer IDs for NVLINK use
-            if (!pKernelBus0->p2p.bNvlinkPeerIdsReserved)
+            //
+            // If NVLINK is topology is not forced, idMask will be non-zero
+            // if nvlinks are detected during topology discovery in core lib
+            //
+            if (idMask != 0)
             {
-                NvU32 idMask = knvlinkGetUniquePeerIdMask_HAL(pGpu0, pKernelNvlink0);
-
-                //
-                // If NVLINK is topology is not forced, idMask will be non-zero
-                // if nvlinks are detected during topology discovery in core lib
-                //
-                if (idMask != 0)
+                // Reserve GPU0 peer IDs for NVLINK use
+                status = kbusReserveP2PPeerIds_HAL(pGpu0, pKernelBus0, idMask);
+                if (status != NV_OK)
                 {
-                    // Reserve GPU0 peer IDs for NVLINK use
-                    status = kbusReserveP2PPeerIds_HAL(pGpu0, pKernelBus0, idMask);
-                    if (status != NV_OK)
-                    {
-                        return status;
-                    }
-                    pKernelBus0->p2p.bNvlinkPeerIdsReserved = NV_TRUE;
+                    return status;
                 }
+                pKernelBus0->p2p.bNvlinkPeerIdsReserved = NV_TRUE;
             }
-            *nvlinkPeer = knvlinkGetUniquePeerId_HAL(pGpu0, pKernelNvlink0, pGpu1);
         }
+        *nvlinkPeer = knvlinkGetUniquePeerId_HAL(pGpu0, pKernelNvlink0, pGpu1);
     }
 
     return status;

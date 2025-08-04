@@ -72,11 +72,13 @@ void crashcatReportLogSource_V1_LIBOS2(CrashCatReport *pReport)
 
     NvU8 taskId = crashcatReportV1SourceLibos2TaskId(pReportV1);
 
-#define CRASHCAT_LOG_LIBOS2_SOURCE(fmt, ...)                                                    \
-    if (taskId == NV_CRASHCAT_REPORT_V1_SOURCE_ID_LIBOS2_TASK_ID_UNSPECIFIED)                   \
-        crashcatEnginePrintf(pReport->pEngine, NV_TRUE, fmt, __VA_ARGS__ );                     \
-    else                                                                                        \
-        crashcatEnginePrintf(pReport->pEngine, NV_TRUE, fmt ", task:%u", __VA_ARGS__, taskId)
+#define CRASHCAT_LOG_LIBOS2_SOURCE(fmt, ...)                                                            \
+    do {                                                                                                \
+        if (taskId == NV_CRASHCAT_REPORT_V1_SOURCE_ID_LIBOS2_TASK_ID_UNSPECIFIED)                       \
+            crashcatEnginePrintf(pReport->pEngine, NV_TRUE, fmt, ##__VA_ARGS__);                        \
+        else                                                                                            \
+            crashcatEnginePrintf(pReport->pEngine, NV_TRUE, fmt ", task:%u", ##__VA_ARGS__, taskId);    \
+    } while (0)
 
     const char *pModeStr = crashcatReportModeToString_LIBOS2(crashcatReportV1SourceMode(pReportV1));
     switch (crashcatReportV1SourceCauseType(pReportV1))
@@ -106,6 +108,13 @@ void crashcatReportLogSource_V1_LIBOS2(CrashCatReport *pReport)
                 "%s panic: %s (%u) @ pc:0x%" NvU64_fmtx ", aux:0x%" NvU64_fmtx,
                 pModeStr, crashcatReportPanicReasonToString_LIBOS2(reason),
                 reason, pReportV1->sourcePc, pReportV1->sourceData);
+            break;
+        }
+        case NV_CRASHCAT_CAUSE_TYPE_WATCHDOG:
+        {
+            // Watchdog is not supported in libos2
+            CRASHCAT_LOG_LIBOS2_SOURCE(
+                "Watchdog is not supported in libos2, please check if NV_CRASHCAT_CAUSE_TYPE is set correctly");
             break;
         }
     }

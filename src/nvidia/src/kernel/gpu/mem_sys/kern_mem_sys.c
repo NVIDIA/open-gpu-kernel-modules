@@ -52,12 +52,23 @@ kmemsysInitRegistryOverrides
             pKernelMemorySystem->bL2CleanFbPull = NV_FALSE;
     }
 
-    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_OVERRIDE_TO_GMK, &data32) == NV_OK) && 
+    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_OVERRIDE_TO_GMK, &data32) == NV_OK) &&
         (data32 != NV_REG_STR_RM_OVERRIDE_TO_GMK_DISABLED))
     {
         pKernelMemorySystem->overrideToGMK = data32;
     }
 
+    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_OVERRIDE_COHERENT_CPU_FB_BASE, &data32)) == NV_OK)
+    {
+        pKernelMemorySystem->coherentCpuFbBaseOverride.bEnabled = NV_TRUE;
+        pKernelMemorySystem->coherentCpuFbBaseOverride.value = (NvU64)data32 << 32ULL;
+    }
+
+    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_OVERRIDE_NON_PASID_ATS_SUPPORT, &data32)) == NV_OK)
+    {
+        pKernelMemorySystem->nonPasIdAtsOverride.bEnabled = NV_TRUE;
+        pKernelMemorySystem->nonPasIdAtsOverride.bValue = !!data32;
+    }
 }
 
 NV_STATUS
@@ -236,7 +247,7 @@ kmemsysStatePreLoad_IMPL
     // to ucode won't program the register itself but will assert that its contents are valid).
     //
     kmemsysProgramSysmemFlushBuffer_HAL(pGpu, pKernelMemorySystem);
-    kmemsysAssertSysmemFlushBufferValid_HAL(pGpu, pKernelMemorySystem);
+    NV_ASSERT_OK_OR_RETURN(kmemsysAssertSysmemFlushBufferValid_HAL(pGpu, pKernelMemorySystem));
 
     // Self Hosted GPUs should have its memory onlined by now.
     if (gpuIsSelfHosted(pGpu) &&
@@ -281,6 +292,7 @@ kmemsysStatePostLoad_IMPL
 
     if (IS_SILICON(pGpu) && !hypervisorIsVgxHyper() &&
         pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED) &&
+        GPU_GET_KERNEL_NVLINK(pGpu) != NULL &&
         !GPU_IS_NVSWITCH_DETECTED(pGpu))
     {
         NV_STATUS status = kmemsysSetupAllAtsPeers_HAL(pGpu, pKernelMemorySystem);
@@ -334,6 +346,7 @@ void kmemsysStateDestroy_IMPL
     }
 
     portMemFree((void *)pKernelMemorySystem->pStaticConfig);
+
 }
 
 /*!
@@ -765,13 +778,13 @@ kmemsysPopulateMIGGPUInstanceMemConfig_KERNEL
         }
 
         //
-        // In GH180 for all the swizzId's for a given memory profile (FULL, HALF, QUARTER 
+        // In GH180 for all the swizzId's for a given memory profile (FULL, HALF, QUARTER
         // and EIGHTH partitions) might not be same. Modify numaMigPartitionSize array
         // for the partition size to be constant for a given profile. BUG 4284299.
         //
         for (memSize = NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_FULL; memSize < NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE__SIZE; memSize++)
         {
-            NV_RANGE swizzRange = kmigmgrMemSizeFlagToSwizzIdRange(pGpu, pKernelMIGManager, 
+            NV_RANGE swizzRange = kmigmgrMemSizeFlagToSwizzIdRange(pGpu, pKernelMIGManager,
                                       DRF_NUM(2080_CTRL_GPU, _PARTITION_FLAG, _MEMORY_SIZE, memSize));
             _kmemsysSetNumaMigPartitionSizeSubArrayToMinimumValue(pKernelMemorySystem, swizzRange.lo, swizzRange.hi);
         }
@@ -907,14 +920,33 @@ kmemsysSetupCoherentCpuLink_IMPL
                                                     &pKernelMemorySystem->coherentRsvdFbBase,
                                                     &numaNodeId));
 
-    if ((numaNodeId == NV0000_CTRL_NO_NUMA_NODE) && !hypervisorIsVgxHyper())
+    if ((osReadRegistryDword(pGpu,
+                             NV_REG_STR_OVERRIDE_GPU_NUMA_NODE_ID, &data32)) == NV_OK)
     {
-        /*
-         * Do not fail for vGPU host as the device memory is not added to
-         * the kernel and it is expected for node id to not be set.
-         */
-        NV_PRINTF(LEVEL_ERROR, "Failed to get NUMA node id for GPU memory\n");
-        return NV_ERR_INVALID_STATE;
+        numaNodeId = (NvS32)data32;
+        NV_PRINTF(LEVEL_ERROR, "Override GPU NUMA node ID %d!\n", numaNodeId);
+    }
+
+    //
+    // EnableUserNUMAManagement is the NV_REG_ENABLE_USER_NUMA_MANAGEMENT is a unix-layer regkey
+    // If NUMA onlining is explicitly disabled by regkey, then don't check for valid node.
+    // The rest of the code for mapping over coherent links will use osNumaOnliningEnabled
+    // to check whether we should use the NUMA path, but in this spot, we need to check for
+    // the regkey itself because we still need to sanity check we have a valid node when
+    // osNumaOnliningEnabled is supposed to work.
+    //
+    if (!(osReadRegistryDword(pGpu, "EnableUserNUMAManagement", &data32) == NV_OK && (data32 == 0)))
+    {
+        if ((IS_SILICON(pGpu) && (numaNodeId == NV0000_CTRL_NO_NUMA_NODE) && !hypervisorIsVgxHyper()))
+        {
+            //
+            // Do not fail for vGPU host as the device memory is not added to
+            // the kernel and it is expected for node id to not be set.
+            // Do not fail if NUMA onlining is explicitly disabled either
+            //
+            NV_PRINTF(LEVEL_ERROR, "Failed to get NUMA node id for GPU memory\n");
+            return NV_ERR_INVALID_STATE;
+        }
     }
 
     if (pKernelMemorySystem->coherentCpuFbBase == 0)
@@ -925,14 +957,6 @@ kmemsysSetupCoherentCpuLink_IMPL
 
     pKernelMemorySystem->coherentCpuFbEnd = pKernelMemorySystem->coherentCpuFbBase + fbSize;
 
-    if ((osReadRegistryDword(pGpu,
-                             NV_REG_STR_OVERRIDE_GPU_NUMA_NODE_ID, &data32)) == NV_OK)
-    {
-        numaNodeId = (NvS32)data32;
-        NV_PRINTF(LEVEL_ERROR, "Override GPU NUMA node ID %d!\n", numaNodeId);
-    }
-
-
     NV_ASSERT_OK_OR_RETURN(osNumaMemblockSize(&memblockSize));
 
     memmgrCalcReservedFbSpaceHal_HAL(pGpu, pMemoryManager, &rsvdFastSize, &rsvdSlowSize, &rsvdISOSize);
@@ -942,7 +966,7 @@ kmemsysSetupCoherentCpuLink_IMPL
     // kernel after accounting for different reserved memory requirements.
     //
     // Align rsvd memory to 64K granularity.
-    // TODO : rsvdMemorySize is not finalized at this point of time in 
+    // TODO : rsvdMemorySize is not finalized at this point of time in
     // GH180, currently rsvdMemorySize is not increasing after this
     // point. This needs to be fixed.
     //

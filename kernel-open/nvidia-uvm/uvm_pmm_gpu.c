@@ -480,15 +480,21 @@ uvm_gpu_t *uvm_gpu_chunk_get_gpu(const uvm_gpu_chunk_t *chunk)
     return gpu;
 }
 
-struct page *uvm_gpu_chunk_to_page(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
+NvU64 uvm_gpu_chunk_to_sys_addr(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
 {
     uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
     NvU64 sys_addr = chunk->address + gpu->parent->system_bus.memory_window_start;
-    unsigned long pfn = sys_addr >> PAGE_SHIFT;
 
     UVM_ASSERT(sys_addr + uvm_gpu_chunk_get_size(chunk) <= gpu->parent->system_bus.memory_window_end + 1);
-    UVM_ASSERT(gpu->mem_info.numa.enabled);
+    return sys_addr;
+}
 
+struct page *uvm_gpu_chunk_to_page(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
+{
+    uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
+    unsigned long pfn = uvm_gpu_chunk_to_sys_addr(pmm, chunk) >> PAGE_SHIFT;
+
+    UVM_ASSERT(gpu->mem_info.numa.enabled);
     return pfn_to_page(pfn);
 }
 
@@ -1457,6 +1463,11 @@ void uvm_pmm_gpu_mark_root_chunk_unused(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chu
     root_chunk_update_eviction_list(pmm, chunk, &pmm->root_chunks.va_block_unused);
 }
 
+void uvm_pmm_gpu_mark_root_chunk_discarded(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
+{
+    root_chunk_update_eviction_list(pmm, chunk, &pmm->root_chunks.va_block_discarded);
+}
+
 static uvm_gpu_root_chunk_t *pick_root_chunk_to_evict(uvm_pmm_gpu_t *pmm)
 {
     uvm_gpu_chunk_t *chunk;
@@ -1483,6 +1494,12 @@ static uvm_gpu_root_chunk_t *pick_root_chunk_to_evict(uvm_pmm_gpu_t *pmm)
 
     if (!chunk)
         chunk = list_first_chunk(&pmm->root_chunks.va_block_unused);
+
+    if (!chunk) {
+        // Discarded pages are chosen to be evicted after unused pages,
+        // as we expect some of them to get reverted to used pages.
+        chunk = list_first_chunk(&pmm->root_chunks.va_block_discarded);
+    }
 
     // TODO: Bug 1765193: Move the chunks to the tail of the used list whenever
     // they get mapped.
@@ -3111,9 +3128,12 @@ static bool uvm_pmm_gpu_check_orphan_pages(uvm_pmm_gpu_t *pmm)
 
 static void devmem_page_free(struct page *page)
 {
+    uvm_va_space_t *va_space = uvm_pmm_devmem_page_to_va_space(page);
     uvm_gpu_chunk_t *chunk = uvm_pmm_devmem_page_to_chunk(page);
     uvm_gpu_t *gpu = uvm_gpu_chunk_get_gpu(chunk);
 
+    atomic64_dec(&va_space->hmm.allocated_page_count);
+    UVM_ASSERT(atomic64_read(&va_space->hmm.allocated_page_count) >= 0);
     page->zone_device_data = NULL;
 
     // We should be calling free_chunk() except that it acquires a mutex and
@@ -3140,7 +3160,7 @@ static vm_fault_t devmem_fault(struct vm_fault *vmf)
     if (!va_space)
         return VM_FAULT_SIGBUS;
 
-    return uvm_va_space_cpu_fault_hmm(va_space, vmf->vma, vmf);
+    return uvm_va_space_cpu_fault_hmm(va_space, vmf);
 }
 
 static vm_fault_t devmem_fault_entry(struct vm_fault *vmf)
@@ -3286,7 +3306,11 @@ static bool uvm_pmm_gpu_check_orphan_pages(uvm_pmm_gpu_t *pmm)
 }
 #endif // UVM_IS_CONFIG_HMM()
 
-#if defined(CONFIG_PCI_P2PDMA) && defined(NV_STRUCT_PAGE_HAS_ZONE_DEVICE_DATA)
+// PCI P2PDMA pages are not well supported by the kernel/architecture on all
+// ARM64 based systems so disable support for those systems.
+// TODO: Bug 5303506: ARM64: P2PDMA pages cannot be accessed from the CPU on
+// ARM
+#if defined(CONFIG_PCI_P2PDMA) && defined(NV_STRUCT_PAGE_HAS_ZONE_DEVICE_DATA) && !defined(NVCPU_AARCH64)
 static void device_p2p_page_free_wake(struct nv_kref *ref)
 {
     uvm_device_p2p_mem_t *p2p_mem = container_of(ref, uvm_device_p2p_mem_t, refcount);
@@ -3322,11 +3346,18 @@ void uvm_pmm_gpu_device_p2p_init(uvm_gpu_t *gpu)
         return;
     }
 
-    // RM sets this when it has created a contiguous BAR mapping large enough to
-    // cover all of GPU memory that will be allocated to userspace buffers. This
-    // is required to support the P2PDMA feature to ensure we have a P2PDMA page
-    // available for every mapping.
-    if (!gpu->mem_info.static_bar1_size)
+    // RM sets static_bar1_size when it has created a contiguous BAR mapping
+    // large enough to cover all of GPU memory that will be allocated to
+    // userspace buffers. This is required to support the P2PDMA feature to
+    // ensure we have a P2PDMA page available for every mapping.
+    //
+    // Due to current limitations in the Linux kernel we can only create
+    // the P2PDMA pages if the BAR1 region has not already been mapped
+    // write-combined. By default RM maps the region write-combined, but this
+    // can be disabled by setting the RmForceDisableIomapWC regkey which allows
+    // creation of the P2PDMA pages.
+    // TODO: Bug 5044562: P2PDMA pages require the PCIe BAR to be mapped UC
+    if (!gpu->mem_info.static_bar1_size || gpu->mem_info.static_bar1_write_combined)
         return;
 
     if (pci_p2pdma_add_resource(gpu->parent->pci_dev, uvm_device_p2p_static_bar(gpu), 0, 0)) {
@@ -3370,6 +3401,12 @@ void uvm_pmm_gpu_device_p2p_init(uvm_gpu_t *gpu)
     uvm_mutex_init(&gpu->device_p2p_lock, UVM_LOCK_ORDER_GLOBAL);
 
     if (uvm_parent_gpu_is_coherent(gpu->parent)) {
+        // CDMM implies that there are no struct pages corresponding to
+        // the GPU memory. P2PDMA struct pages which are required for
+        // device P2P mappings are not currently supported on ARM.
+        if (gpu->mem_info.cdmm_enabled)
+            return;
+
         // A coherent system uses normal struct pages.
         gpu->device_p2p_initialised = true;
         return;
@@ -3435,6 +3472,7 @@ NV_STATUS uvm_pmm_gpu_init(uvm_pmm_gpu_t *pmm)
     INIT_LIST_HEAD(&pmm->root_chunks.va_block_used);
     INIT_LIST_HEAD(&pmm->root_chunks.va_block_unused);
     INIT_LIST_HEAD(&pmm->root_chunks.va_block_lazy_free);
+    INIT_LIST_HEAD(&pmm->root_chunks.va_block_discarded);
     nv_kthread_q_item_init(&pmm->root_chunks.va_block_lazy_free_q_item, process_lazy_free_entry, pmm);
 
     uvm_mutex_init(&pmm->lock, UVM_LOCK_ORDER_PMM);

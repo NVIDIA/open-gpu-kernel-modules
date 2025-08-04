@@ -189,6 +189,32 @@ bool EvoMainLink2x::queryAndUpdateDfpParams()
 }
 
 /*!
+* @brief Invalidate all entries with specific link rate in fallbackMandateTable based on request.
+*
+* @param[in]      linkRate     The link rate to be removed.
+*
+* Caller of this function has to complete the capabilities probing before calling
+* into this function.
+*
+* Output: EvoMainLink2x::fallbackMandateTable is updated for each entry to indicate
+*         if a specific link configuration is supported.
+*/
+void EvoMainLink2x::invalidateLinkRatesInFallbackTable(const LinkRate linkRate)
+{
+    NvU32 idx;
+
+    for (idx = 0U; idx < NV_DP2X_VALID_LINK_CONFIGURATION_COUNT; idx++)
+    {
+        if (fallbackMandateTable[idx].linkRate == linkRate)
+        {
+            fallbackMandateTable[idx].bSupported = NV_FALSE;
+            if (fallbackMandateTable[idx].laneCount == 1)
+                return;
+        }
+    }
+}
+
+/*!
  * @brief Update fallbackMandateTable based on the capabilities of GPU, Sink and CableId.
  *
  * @param[in]      maxLaneCount     Max Lanecount supported on the setup.
@@ -259,32 +285,6 @@ void EvoMainLink2x::updateFallbackMap
         else if (fallbackMandateTable[idx].linkRate > maxLinkRate)
         {
             fallbackMandateTable[idx].bSupported = NV_FALSE;
-        }
-    }
-}
-
-/*!
- * @brief Invalidate all entries with specific link rate in fallbackMandateTable based on request.
- *
- * @param[in]      linkRate     The link rate to be removed.
- *
- * Caller of this function has to complete the capabilities probing before calling
- * into this function.
- *
- * Output: EvoMainLink2x::fallbackMandateTable is updated for each entry to indicate
- *         if a specific link configuration is supported.
- */
-void EvoMainLink2x::invalidateLinkRatesInFallbackTable(const LinkRate linkRate)
-{
-    NvU32 idx;
-
-    for (idx = 0U; idx < NV_DP2X_VALID_LINK_CONFIGURATION_COUNT; idx++)
-    {
-        if (fallbackMandateTable[idx].linkRate == linkRate)
-        {
-            fallbackMandateTable[idx].bSupported = NV_FALSE;
-            if (fallbackMandateTable[idx].laneCount == 1)
-                return;
         }
     }
 }

@@ -123,7 +123,6 @@ dbgbufUnmap_IMPL
 
     memdescUnmap(pDebugBufferApi->pMemDesc,
                  bKernel,
-                 pCpuMapping->processId,
                  pCpuMapping->pLinearAddress,
                  pCpuMapping->pPrivate->pPriv);
 

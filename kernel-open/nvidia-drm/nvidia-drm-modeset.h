@@ -25,7 +25,7 @@
 
 #include "nvidia-drm-conftest.h"
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #include "nvkms-kapi.h"
 
@@ -48,6 +48,6 @@ void nv_drm_handle_flip_occurred(struct nv_drm_device *nv_dev,
 
 int nv_drm_shut_down_all_crtcs(struct drm_device *dev);
 
-#endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+#endif /* NV_DRM_AVAILABLE */
 
 #endif /* __NVIDIA_DRM_MODESET_H__ */

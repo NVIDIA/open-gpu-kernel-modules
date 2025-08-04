@@ -490,6 +490,42 @@ iovaspaceAcquireMapping_IMPL
         return NV_OK;
     }
 
+    {
+        OBJGPU *pMappingGpu = gpumgrGetGpuFromId(pVAS->vaspaceId);
+        if (IS_GSP_CLIENT(pMappingGpu) && IsGB20B(pMappingGpu))
+        {
+            NV_STATUS status;
+            NvU64 iova;
+            NvU32 i;
+            for (i = 0; i < 1000000; i++)
+            {
+                if (memdescIsSubMemoryMemDesc(pPhysMemDesc))
+                    status = _iovaspaceCreateSubmapping(pIOVAS, pPhysMemDesc);
+                else
+                    status = _iovaspaceCreateMapping(pIOVAS, pPhysMemDesc);
+
+                NV_ASSERT_OK_OR_RETURN(status);
+
+                iova = memdescGetPhysAddr(pPhysMemDesc, AT_GPU, 0);
+                if ((iova >= 0xA1600000) && (iova < 0xB9800000))
+                {
+                    pIovaMapping = memdescGetIommuMap(pPhysMemDesc, pVAS->vaspaceId);
+                    memdescRemoveIommuMap(pPhysMemDesc, pIovaMapping);
+                    continue;
+                }
+                else
+                {
+                    return NV_OK;
+                }
+            }
+
+            NV_PRINTF(LEVEL_ERROR,
+                      "failed to map memdesc into I/O VA space 0x%x, out of retries\n",
+                      pVAS->vaspaceId);
+            return NV_ERR_INVALID_STATE;
+        }
+    }
+
     if (memdescIsSubMemoryMemDesc(pPhysMemDesc))
         return _iovaspaceCreateSubmapping(pIOVAS, pPhysMemDesc);
     else

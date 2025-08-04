@@ -154,47 +154,46 @@ NV_STATUS __nvoc_objCreate_Sec2Utils(Sec2Utils**, Dynamic*, NvU32, struct OBJGPU
     __nvoc_objCreate_Sec2Utils((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pGpu, arg_pKernelMIGGPUInstance)
 
 
-// Wrapper macros
-
-// Dispatch functions
+// Wrapper macros for implementation functions
 NV_STATUS sec2utilsConstruct_IMPL(struct Sec2Utils *arg_psec2utils, struct OBJGPU *arg_pGpu, KERNEL_MIG_GPU_INSTANCE *arg_pKernelMIGGPUInstance);
-
 #define __nvoc_sec2utilsConstruct(arg_psec2utils, arg_pGpu, arg_pKernelMIGGPUInstance) sec2utilsConstruct_IMPL(arg_psec2utils, arg_pGpu, arg_pKernelMIGGPUInstance)
+
 void sec2utilsDestruct_IMPL(struct Sec2Utils *psec2utils);
-
 #define __nvoc_sec2utilsDestruct(psec2utils) sec2utilsDestruct_IMPL(psec2utils)
-NV_STATUS sec2utilsMemset_IMPL(struct Sec2Utils *psec2utils, SEC2UTILS_MEMSET_PARAMS *pParams);
 
+NV_STATUS sec2utilsMemset_IMPL(struct Sec2Utils *psec2utils, SEC2UTILS_MEMSET_PARAMS *pParams);
 #ifdef __nvoc_sec2_utils_h_disabled
 static inline NV_STATUS sec2utilsMemset(struct Sec2Utils *psec2utils, SEC2UTILS_MEMSET_PARAMS *pParams) {
     NV_ASSERT_FAILED_PRECOMP("Sec2Utils was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_sec2_utils_h_disabled
+#else // __nvoc_sec2_utils_h_disabled
 #define sec2utilsMemset(psec2utils, pParams) sec2utilsMemset_IMPL(psec2utils, pParams)
-#endif //__nvoc_sec2_utils_h_disabled
+#endif // __nvoc_sec2_utils_h_disabled
 
 NvU64 sec2utilsUpdateProgress_IMPL(struct Sec2Utils *psec2utils);
-
 #ifdef __nvoc_sec2_utils_h_disabled
 static inline NvU64 sec2utilsUpdateProgress(struct Sec2Utils *psec2utils) {
     NV_ASSERT_FAILED_PRECOMP("Sec2Utils was disabled!");
     return 0;
 }
-#else //__nvoc_sec2_utils_h_disabled
+#else // __nvoc_sec2_utils_h_disabled
 #define sec2utilsUpdateProgress(psec2utils) sec2utilsUpdateProgress_IMPL(psec2utils)
-#endif //__nvoc_sec2_utils_h_disabled
+#endif // __nvoc_sec2_utils_h_disabled
 
 void sec2utilsServiceInterrupts_IMPL(struct Sec2Utils *psec2utils);
-
 #ifdef __nvoc_sec2_utils_h_disabled
 static inline void sec2utilsServiceInterrupts(struct Sec2Utils *psec2utils) {
     NV_ASSERT_FAILED_PRECOMP("Sec2Utils was disabled!");
 }
-#else //__nvoc_sec2_utils_h_disabled
+#else // __nvoc_sec2_utils_h_disabled
 #define sec2utilsServiceInterrupts(psec2utils) sec2utilsServiceInterrupts_IMPL(psec2utils)
-#endif //__nvoc_sec2_utils_h_disabled
+#endif // __nvoc_sec2_utils_h_disabled
 
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
 #undef PRIVATE_FIELD
 
 

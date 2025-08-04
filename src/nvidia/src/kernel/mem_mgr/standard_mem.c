@@ -242,10 +242,6 @@ stdmemQueryPageSize
                                    pAllocData->format, pAllocData->flags, &retAttr, &retAttr2);
 }
 
-//
-// Control calls for system memory objects maintained outside the heap.
-//
-
 NvU64 stdmemGetSysmemPageSize_IMPL(OBJGPU * pGpu, StandardMemory *pStdMemory)
 {
     return GPU_GET_MEMORY_MANAGER(pGpu)->sysmemPageSize;

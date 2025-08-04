@@ -145,8 +145,8 @@ kgspAllocBootArgs_TU102
     NV_ASSERT_OK_OR_GOTO(nvStatus,
                          memdescCreate(&pKernelGsp->pLibosInitArgumentsDescriptor,
                                        pGpu,
-                                       LIBOS_INIT_ARGUMENTS_SIZE,
-                                       LIBOS_INIT_ARGUMENTS_SIZE,
+                                       LIBOS_MEMORY_REGION_INIT_ARGUMENTS_MAX,
+                                       LIBOS_MEMORY_REGION_INIT_ARGUMENTS_MAX,
                                        NV_TRUE, ADDR_SYSMEM, NV_MEMORY_UNCACHED,
                                        flags),
                          _kgspAllocBootArgs_exit_cleanup);
@@ -166,7 +166,7 @@ kgspAllocBootArgs_TU102
     pKernelGsp->pLibosInitArgumentsCached = (LibosMemoryRegionInitArgument *)NvP64_VALUE(pVa);
     pKernelGsp->pLibosInitArgumentsMappingPriv = pPriv;
 
-    portMemSet(pKernelGsp->pLibosInitArgumentsCached, 0, LIBOS_INIT_ARGUMENTS_SIZE);
+    portMemSet(pKernelGsp->pLibosInitArgumentsCached, 0, LIBOS_MEMORY_REGION_INIT_ARGUMENTS_MAX);
 
     // Setup bootloader arguments memory.
     NV_ASSERT(sizeof(GSP_ARGUMENTS_CACHED) <= 0x1000);
@@ -238,7 +238,7 @@ kgspFreeBootArgs_TU102
     if (pKernelGsp->pWprMeta != NULL)
     {
         memdescUnmap(pKernelGsp->pWprMetaDescriptor,
-                     NV_TRUE, osGetCurrentProcess(),
+                     NV_TRUE,
                      (void *)pKernelGsp->pWprMeta,
                      pKernelGsp->pWprMetaMappingPriv);
         pKernelGsp->pWprMeta = NULL;
@@ -255,7 +255,7 @@ kgspFreeBootArgs_TU102
     if (pKernelGsp->pLibosInitArgumentsCached != NULL)
     {
         memdescUnmap(pKernelGsp->pLibosInitArgumentsDescriptor,
-                     NV_TRUE, osGetCurrentProcess(),
+                     NV_TRUE,
                      (void *)pKernelGsp->pLibosInitArgumentsCached,
                      pKernelGsp->pLibosInitArgumentsMappingPriv);
         pKernelGsp->pLibosInitArgumentsCached = NULL;
@@ -272,7 +272,7 @@ kgspFreeBootArgs_TU102
     if (pKernelGsp->pGspArgumentsCached != NULL)
     {
         memdescUnmap(pKernelGsp->pGspArgumentsDescriptor,
-                     NV_TRUE, osGetCurrentProcess(),
+                     NV_TRUE,
                      (void *)pKernelGsp->pGspArgumentsCached,
                      pKernelGsp->pGspArgumentsMappingPriv);
         pKernelGsp->pGspArgumentsCached = NULL;
@@ -498,18 +498,19 @@ kgspBootstrap_TU102
     NV_STATUS status;
     KernelFalcon *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
 
+    // Execute Scrubber if needed
+    if (((bootMode == KGSP_BOOT_MODE_SR_RESUME) || (bootMode == KGSP_BOOT_MODE_NORMAL)) &&
+        (pKernelGsp->pScrubberUcode != NULL))
+    {
+        NV_ASSERT_OK_OR_RETURN(kgspExecuteScrubberIfNeeded_HAL(pGpu, pKernelGsp));
+    }
+
     //
     // For normal boot, additional setup is necessary.
     // Note: for resume or GC6 exit, Booter and/or GSP-RM will restore these.
     //
     if (bootMode == KGSP_BOOT_MODE_NORMAL)
     {
-        // Execute Scrubber if needed
-        if (pKernelGsp->pScrubberUcode != NULL)
-        {
-            NV_ASSERT_OK_OR_RETURN(kgspExecuteScrubberIfNeeded_HAL(pGpu, pKernelGsp));
-        }
-
         // Execute FWSEC to setup FRTS if we have a FRTS region.
         if (kgspGetFrtsSize_HAL(pGpu, pKernelGsp) > 0)
         {
@@ -800,7 +801,7 @@ kgspPopulateWprMeta_TU102
     pWprMeta->gspFwHeapSize = NV_ALIGN_DOWN64(pWprMeta->gspFwOffset - pWprMeta->gspFwHeapOffset, MB);
 
     // Number of VF partitions allocating sub-heaps from the WPR heap
-    pWprMeta->gspFwHeapVfPartitionCount = pGpu->bVgpuGspPluginOffloadEnabled ? MAX_PARTITIONS_WITH_GFID : 0;
+    pWprMeta->gspFwHeapVfPartitionCount = pGpu->bVgpuGspPluginOffloadEnabled ? MAX_PARTITIONS_WITH_GFID_32VM : 0;
 
     //
     // Start of WPR region (128K alignment requirement, but 1MB aligned so that
@@ -1029,6 +1030,21 @@ kgspHealthCheck_TU102
 
         while ((pReport = crashcatEngineGetNextCrashReport(pCrashCatEng)) != NULL)
         {
+            if (crashcatReportIsWatchdog_HAL(pReport))
+            {
+                NV_PRINTF(LEVEL_INFO, "Assign a CrashcatReport to pWatchdogReport\n");
+                //
+                // Keep the first report until the corresponding RPC is done
+                // Before that, subsequent reports are ignored
+                //
+                if (pKernelGsp->pWatchdogReport != NULL)
+                    objDelete(pReport);
+                else
+                    pKernelGsp->pWatchdogReport = pReport;
+
+                continue;
+            }
+
             if (kgspCrashCatReportImpactsGspRm(pReport))
                 bHealthy = NV_FALSE;
 
@@ -1342,7 +1358,7 @@ kgspPrepareSuspendResumeData_TU102
     portMemCopy(pVa, sizeof(gspfwSRMeta), &gspfwSRMeta, sizeof(gspfwSRMeta));
 
     memdescUnmap(pKernelGsp->pSRMetaDescriptor,
-                 NV_TRUE, osGetCurrentProcess(),
+                 NV_TRUE,
                  pVa, pPriv);
 
     return nvStatus;

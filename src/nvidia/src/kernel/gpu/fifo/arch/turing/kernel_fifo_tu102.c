@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -108,8 +108,8 @@ kfifoGenerateWorkSubmitTokenHal_TU102
     if (!kchannelIsRunlistSet(pGpu, pKernelChannel))
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "FAILED Channel 0x%x is not assigned to runlist yet\n",
-                  kchannelGetDebugTag(pKernelChannel));
+            "FAILED " FMT_CHANNEL_DEBUG_TAG " is not assigned to runlist yet\n",
+            kchannelGetDebugTag(pKernelChannel));
         return NV_ERR_INVALID_STATE;
     }
 
@@ -119,8 +119,10 @@ kfifoGenerateWorkSubmitTokenHal_TU102
     *pGeneratedToken = val;
 
     NV_PRINTF(LEVEL_INFO,
-              "Generated workSubmitToken 0x%x for channel 0x%x runlist 0x%x\n",
-              *pGeneratedToken, chId, kchannelGetRunlistId(pKernelChannel));
+        "Generated workSubmitToken 0x%x for " FMT_CHANNEL_DEBUG_TAG " runlist 0x%x\n",
+        *pGeneratedToken,
+        kchannelGetDebugTag(pKernelChannel),
+        kchannelGetRunlistId(pKernelChannel));
 
     return NV_OK;
 }

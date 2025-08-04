@@ -28,10 +28,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResource;
 
 // Forward declarations for ZbcApi
 void __nvoc_init__GpuResource(GpuResource*);
-void __nvoc_init__ZbcApi(ZbcApi*, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_funcTable_ZbcApi(ZbcApi*, RmHalspecOwner *pRmhalspecowner);
-NV_STATUS __nvoc_ctor_ZbcApi(ZbcApi*, RmHalspecOwner *pRmhalspecowner, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-void __nvoc_init_dataField_ZbcApi(ZbcApi*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init__ZbcApi(ZbcApi*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_funcTable_ZbcApi(ZbcApi*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+NV_STATUS __nvoc_ctor_ZbcApi(ZbcApi*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+void __nvoc_init_dataField_ZbcApi(ZbcApi*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_ZbcApi(ZbcApi*);
 
 // Structures used within RTTI (run-time type information)
@@ -121,19 +121,21 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_ZbcApi =
     /*pExportInfo=*/        &__nvoc_export_info__ZbcApi
 };
 
+// By default, all exported methods are enabled.
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
 
+// Exported method array
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ZbcApi[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10248u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) zbcapiCtrlCmdSetZbcColorClear_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-        /*flags=*/      0x248u,
+        /*pFunc=*/      (void (*)(void)) &zbcapiCtrlCmdSetZbcColorClear_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10248u)
+        /*flags=*/      0x10248u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90960101u,
         /*paramSize=*/  sizeof(NV9096_CTRL_SET_ZBC_COLOR_CLEAR_PARAMS),
@@ -143,12 +145,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ZbcApi[]
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10248u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) zbcapiCtrlCmdSetZbcDepthClear_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-        /*flags=*/      0x248u,
+        /*pFunc=*/      (void (*)(void)) &zbcapiCtrlCmdSetZbcDepthClear_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10248u)
+        /*flags=*/      0x10248u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90960102u,
         /*paramSize=*/  sizeof(NV9096_CTRL_SET_ZBC_DEPTH_CLEAR_PARAMS),
@@ -158,12 +160,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ZbcApi[]
 #endif
     },
     {               /*  [2] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10248u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) zbcapiCtrlCmdGetZbcClearTable_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-        /*flags=*/      0x248u,
+        /*pFunc=*/      (void (*)(void)) &zbcapiCtrlCmdGetZbcClearTable_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10248u)
+        /*flags=*/      0x10248u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90960103u,
         /*paramSize=*/  sizeof(NV9096_CTRL_GET_ZBC_CLEAR_TABLE_PARAMS),
@@ -176,7 +178,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ZbcApi[]
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) zbcapiCtrlCmdSetZbcClearTable_IMPL,
+        /*pFunc=*/      (void (*)(void)) &zbcapiCtrlCmdSetZbcClearTable_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
@@ -188,12 +190,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ZbcApi[]
 #endif
     },
     {               /*  [4] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10248u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) zbcapiCtrlCmdSetZbcStencilClear_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-        /*flags=*/      0x248u,
+        /*pFunc=*/      (void (*)(void)) &zbcapiCtrlCmdSetZbcStencilClear_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10248u)
+        /*flags=*/      0x10248u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90960105u,
         /*paramSize=*/  sizeof(NV9096_CTRL_SET_ZBC_STENCIL_CLEAR_PARAMS),
@@ -203,12 +205,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ZbcApi[]
 #endif
     },
     {               /*  [5] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40048u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x50048u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) zbcapiCtrlCmdGetZbcClearTableSize_DISPATCH,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40048u)
-        /*flags=*/      0x40048u,
+        /*pFunc=*/      (void (*)(void)) &zbcapiCtrlCmdGetZbcClearTableSize_DISPATCH,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x50048u)
+        /*flags=*/      0x50048u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90960106u,
         /*paramSize=*/  sizeof(NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS),
@@ -218,12 +220,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ZbcApi[]
 #endif
     },
     {               /*  [6] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10248u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) zbcapiCtrlCmdGetZbcClearTableEntry_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-        /*flags=*/      0x248u,
+        /*pFunc=*/      (void (*)(void)) &zbcapiCtrlCmdGetZbcClearTableEntry_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10248u)
+        /*flags=*/      0x10248u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90960107u,
         /*paramSize=*/  sizeof(NV9096_CTRL_GET_ZBC_CLEAR_TABLE_ENTRY_PARAMS),
@@ -232,7 +234,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ZbcApi[]
         /*func=*/       "zbcapiCtrlCmdGetZbcClearTableEntry"
 #endif
     },
-
 };
 
 
@@ -496,6 +497,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__ZbcApi =
     /*pExportEntries=*/ __nvoc_exported_method_def_ZbcApi
 };
 
+void __nvoc_zbcapiDestruct(ZbcApi*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_ZbcApi(ZbcApi *pThis) {
     __nvoc_zbcapiDestruct(pThis);
@@ -503,12 +505,13 @@ void __nvoc_dtor_ZbcApi(ZbcApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_ZbcApi(ZbcApi *pThis, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+void __nvoc_init_dataField_ZbcApi(ZbcApi *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
@@ -517,11 +520,11 @@ void __nvoc_init_dataField_ZbcApi(ZbcApi *pThis, RmHalspecOwner *pRmhalspecowner
 }
 
 NV_STATUS __nvoc_ctor_GpuResource(GpuResource* , struct CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
-NV_STATUS __nvoc_ctor_ZbcApi(ZbcApi *pThis, RmHalspecOwner *pRmhalspecowner, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_ctor_ZbcApi(ZbcApi *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_GpuResource(&pThis->__nvoc_base_GpuResource, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_ctor_ZbcApi_fail_GpuResource;
-    __nvoc_init_dataField_ZbcApi(pThis, pRmhalspecowner);
+    __nvoc_init_dataField_ZbcApi(pThis, pGpuhalspecowner, pRmhalspecowner);
 
     status = __nvoc_zbcapiConstruct(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_ctor_ZbcApi_fail__init;
@@ -536,42 +539,18 @@ __nvoc_ctor_ZbcApi_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_ZbcApi_1(ZbcApi *pThis, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+static void __nvoc_init_funcTable_ZbcApi_1(ZbcApi *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
+    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
-
-    // zbcapiCtrlCmdSetZbcColorClear -- exported (id=0x90960101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-    pThis->__zbcapiCtrlCmdSetZbcColorClear__ = &zbcapiCtrlCmdSetZbcColorClear_IMPL;
-#endif
-
-    // zbcapiCtrlCmdSetZbcDepthClear -- exported (id=0x90960102)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-    pThis->__zbcapiCtrlCmdSetZbcDepthClear__ = &zbcapiCtrlCmdSetZbcDepthClear_IMPL;
-#endif
-
-    // zbcapiCtrlCmdGetZbcClearTable -- exported (id=0x90960103)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-    pThis->__zbcapiCtrlCmdGetZbcClearTable__ = &zbcapiCtrlCmdGetZbcClearTable_IMPL;
-#endif
-
-    // zbcapiCtrlCmdSetZbcClearTable -- exported (id=0x90960104)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-    pThis->__zbcapiCtrlCmdSetZbcClearTable__ = &zbcapiCtrlCmdSetZbcClearTable_IMPL;
-#endif
-
-    // zbcapiCtrlCmdSetZbcStencilClear -- exported (id=0x90960105)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-    pThis->__zbcapiCtrlCmdSetZbcStencilClear__ = &zbcapiCtrlCmdSetZbcStencilClear_IMPL;
-#endif
 
     // zbcapiCtrlCmdGetZbcClearTableSize -- halified (2 hals) exported (id=0x90960106) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
@@ -582,23 +561,18 @@ static void __nvoc_init_funcTable_ZbcApi_1(ZbcApi *pThis, RmHalspecOwner *pRmhal
     {
         pThis->__zbcapiCtrlCmdGetZbcClearTableSize__ = &zbcapiCtrlCmdGetZbcClearTableSize_5baef9;
     }
-
-    // zbcapiCtrlCmdGetZbcClearTableEntry -- exported (id=0x90960107)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-    pThis->__zbcapiCtrlCmdGetZbcClearTableEntry__ = &zbcapiCtrlCmdGetZbcClearTableEntry_IMPL;
-#endif
-} // End __nvoc_init_funcTable_ZbcApi_1 with approximately 8 basic block(s).
+} // End __nvoc_init_funcTable_ZbcApi_1 with approximately 2 basic block(s).
 
 
-// Initialize vtable(s) for 32 virtual method(s).
-void __nvoc_init_funcTable_ZbcApi(ZbcApi *pThis, RmHalspecOwner *pRmhalspecowner) {
+// Initialize vtable(s) for 26 virtual method(s).
+void __nvoc_init_funcTable_ZbcApi(ZbcApi *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 7 per-object function pointer(s).
-    __nvoc_init_funcTable_ZbcApi_1(pThis, pRmhalspecowner);
+    // Initialize vtable(s) with 1 per-object function pointer(s).
+    __nvoc_init_funcTable_ZbcApi_1(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__ZbcApi(ZbcApi *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init__ZbcApi(ZbcApi *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
     // Initialize pointers to inherited data.
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;    // (obj) super^4
@@ -620,7 +594,7 @@ void __nvoc_init__ZbcApi(ZbcApi *pThis, RmHalspecOwner *pRmhalspecowner) {
     pThis->__nvoc_metadata_ptr = &__nvoc_metadata__ZbcApi;    // (zbcapi) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_ZbcApi(pThis, pRmhalspecowner);
+    __nvoc_init_funcTable_ZbcApi(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_ZbcApi(ZbcApi **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
@@ -628,6 +602,7 @@ NV_STATUS __nvoc_objCreate_ZbcApi(ZbcApi **ppThis, Dynamic *pParent, NvU32 creat
     NV_STATUS status;
     Object *pParentObj = NULL;
     ZbcApi *pThis;
+    GpuHalspecOwner *pGpuhalspecowner;
     RmHalspecOwner *pRmhalspecowner;
 
     // Assign `pThis`, allocating memory unless suppressed by flag.
@@ -654,12 +629,15 @@ NV_STATUS __nvoc_objCreate_ZbcApi(ZbcApi **ppThis, Dynamic *pParent, NvU32 creat
         pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
+    if ((pGpuhalspecowner = dynamicCast(pParent, GpuHalspecOwner)) == NULL)
+        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, pParent);
+    NV_ASSERT_OR_RETURN(pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
     if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
         pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
     NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    __nvoc_init__ZbcApi(pThis, pRmhalspecowner);
-    status = __nvoc_ctor_ZbcApi(pThis, pRmhalspecowner, arg_pCallContext, arg_pParams);
+    __nvoc_init__ZbcApi(pThis, pGpuhalspecowner, pRmhalspecowner);
+    status = __nvoc_ctor_ZbcApi(pThis, pGpuhalspecowner, pRmhalspecowner, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_ZbcApi_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

@@ -22,26 +22,19 @@
 
 #include "nvidia-drm-conftest.h"
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #include "nvidia-drm-gem-nvkms-memory.h"
 #include "nvidia-drm-helper.h"
 #include "nvidia-drm-ioctl.h"
 
-#if defined(NV_DRM_DRM_DRV_H_PRESENT)
 #include <drm/drm_drv.h>
-#endif
-
-#if defined(NV_DRM_DRM_PRIME_H_PRESENT)
 #include <drm/drm_prime.h>
-#endif
 
 #include <linux/io.h>
 #if defined(NV_BSD)
 #include <vm/vm_pageout.h>
 #endif
-
-#include "nv-mm.h"
 
 static void __nv_drm_gem_nvkms_memory_free(struct nv_drm_gem_object *nv_gem)
 {
@@ -94,10 +87,9 @@ static vm_fault_t __nv_drm_gem_nvkms_handle_vma_fault(
     struct vm_area_struct *vma,
     struct vm_fault *vmf)
 {
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
     struct nv_drm_gem_nvkms_memory *nv_nvkms_memory =
         to_nv_nvkms_memory(nv_gem);
-    unsigned long address = nv_page_fault_va(vmf);
+    unsigned long address = vmf->address;
     struct drm_gem_object *gem = vma->vm_private_data;
     unsigned long page_offset, pfn;
     vm_fault_t ret;
@@ -146,8 +138,6 @@ static vm_fault_t __nv_drm_gem_nvkms_handle_vma_fault(
     }
 #endif /* defined(NV_VMF_INSERT_PFN_PRESENT) */
     return ret;
-#endif /* defined(NV_DRM_ATOMIC_MODESET_AVAILABLE) */
-    return VM_FAULT_SIGBUS;
 }
 
 static struct drm_gem_object *__nv_drm_gem_nvkms_prime_dup(
@@ -340,6 +330,7 @@ int nv_drm_dumb_create(
     struct nv_drm_gem_nvkms_memory *nv_nvkms_memory;
     uint8_t compressible = 0;
     struct NvKmsKapiMemory *pMemory;
+    struct NvKmsKapiAllocateMemoryParams allocParams = { };
     int ret = 0;
 
     args->pitch = roundup(args->width * ((args->bpp + 7) >> 3),
@@ -357,20 +348,14 @@ int nv_drm_dumb_create(
         goto fail;
     }
 
-    if (nv_dev->hasVideoMemory) {
-        pMemory = nvKms->allocateVideoMemory(nv_dev->pDevice,
-                                             NvKmsSurfaceMemoryLayoutPitch,
-                                             NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT,
-                                             args->size,
-                                             &compressible);
-    } else {
-        pMemory = nvKms->allocateSystemMemory(nv_dev->pDevice,
-                                              NvKmsSurfaceMemoryLayoutPitch,
-                                              NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT,
-                                              args->size,
-                                              &compressible);
-    }
+    allocParams.layout = NvKmsSurfaceMemoryLayoutPitch;
+    allocParams.type = NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT;
+    allocParams.size = args->size;
+    allocParams.noDisplayCaching = true;
+    allocParams.useVideoMemory = nv_dev->hasVideoMemory;
+    allocParams.compressible = &compressible;
 
+    pMemory = nvKms->allocateMemory(nv_dev->pDevice, &allocParams);
     if (pMemory == NULL) {
         ret = -ENOMEM;
         NV_DRM_DEV_LOG_ERR(
@@ -384,8 +369,6 @@ int nv_drm_dumb_create(
     if (ret) {
         goto nvkms_gem_obj_init_failed;
     }
-
-    nv_nvkms_memory->base.is_drm_dumb = true;
 
     /* Always map dumb buffer memory up front.  Clients are only expected
      * to use dumb buffers for software rendering, so they're not much use
@@ -482,7 +465,6 @@ int nv_drm_gem_export_nvkms_memory_ioctl(struct drm_device *dev,
     }
 
     if ((nv_nvkms_memory = nv_drm_gem_object_nvkms_memory_lookup(
-                    dev,
                     filep,
                     p->handle)) == NULL) {
         ret = -EINVAL;
@@ -519,8 +501,7 @@ int nv_drm_gem_alloc_nvkms_memory_ioctl(struct drm_device *dev,
     struct drm_nvidia_gem_alloc_nvkms_memory_params *p = data;
     struct nv_drm_gem_nvkms_memory *nv_nvkms_memory = NULL;
     struct NvKmsKapiMemory *pMemory;
-    enum NvKmsSurfaceMemoryLayout layout;
-    enum NvKmsKapiAllocationType type;
+    struct NvKmsKapiAllocateMemoryParams allocParams = { };
     int ret = 0;
 
     if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
@@ -540,25 +521,15 @@ int nv_drm_gem_alloc_nvkms_memory_ioctl(struct drm_device *dev,
         goto failed;
     }
 
-    layout = p->block_linear ?
+    allocParams.layout = p->block_linear ?
         NvKmsSurfaceMemoryLayoutBlockLinear : NvKmsSurfaceMemoryLayoutPitch;
-    type = (p->flags & NV_GEM_ALLOC_NO_SCANOUT) ?
+    allocParams.type = (p->flags & NV_GEM_ALLOC_NO_SCANOUT) ?
         NVKMS_KAPI_ALLOCATION_TYPE_OFFSCREEN : NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT;
+    allocParams.size = p->memory_size;
+    allocParams.useVideoMemory = nv_dev->hasVideoMemory;
+    allocParams.compressible = &p->compressible;
 
-    if (nv_dev->hasVideoMemory) {
-        pMemory = nvKms->allocateVideoMemory(nv_dev->pDevice,
-                                             layout,
-                                             type,
-                                             p->memory_size,
-                                             &p->compressible);
-    } else {
-        pMemory = nvKms->allocateSystemMemory(nv_dev->pDevice,
-                                              layout,
-                                              type,
-                                              p->memory_size,
-                                              &p->compressible);
-    }
-
+    pMemory = nvKms->allocateMemory(nv_dev->pDevice, &allocParams);
     if (pMemory == NULL) {
         ret = -EINVAL;
         NV_DRM_DEV_LOG_ERR(nv_dev,
@@ -640,7 +611,6 @@ int nv_drm_dumb_map_offset(struct drm_file *file,
     int ret = -EINVAL;
 
     if ((nv_nvkms_memory = nv_drm_gem_object_nvkms_memory_lookup(
-                    dev,
                     file,
                     handle)) == NULL) {
         NV_DRM_DEV_LOG_ERR(

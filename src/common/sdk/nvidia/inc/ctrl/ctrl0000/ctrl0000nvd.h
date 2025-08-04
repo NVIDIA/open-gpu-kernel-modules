@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -554,6 +554,7 @@ typedef struct NV0000_CTRL_NVD_GET_NVLOG_PARAMS {
 #define NV0000_CTRL_CMD_NVD_RCERR_RPT_TYPE_GRSTATUS                                  1
 #define NV0000_CTRL_CMD_NVD_RCERR_RPT_TYPE_GPCSTATUS                                 2
 #define NV0000_CTRL_CMD_NVD_RCERR_RPT_TYPE_MMU_FAULT_STATUS                          3
+#define NV0000_CTRL_CMD_NVD_RCERR_RPT_TYPE_RC_ERROR                                  4
 
 // pseudo register enums                                                                                         attribute content
 #define NV0000_CTRL_CMD_NVD_RCERR_RPT_REG_EMPTY                                      0x00000000

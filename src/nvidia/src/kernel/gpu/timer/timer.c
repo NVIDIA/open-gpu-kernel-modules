@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -449,7 +449,7 @@ tmrEventTimeUntilNextCallback_IMPL
 
     if (tmrIsOSTimer(pTmr, pEventPublic))
     {
-        currentTime = osGetCurrentTick();
+        currentTime = osGetMonotonicTimeNs();
         // timens corresponds to relative time for OS timer
         NV_CHECK_OR_RETURN(LEVEL_ERROR, portSafeAddU64(pEvent->timens, pEvent->startTimeNs, &nextAlarmTime),
                            NV_ERR_INVALID_ARGUMENT);
@@ -635,7 +635,7 @@ NV_STATUS tmrEventScheduleRel_IMPL
         // Capture system time here, this will help in scheduling callbacks
         // if there is a state unload before receiving the OS timer callback.
         //
-        pEventPvt->startTimeNs = osGetCurrentTick();
+        pEventPvt->startTimeNs = osGetMonotonicTimeNs();
         if (!tmrEventOnList(pTmr, pEvent))
         {
             _tmrInsertCallback(pTmr, pEventPvt, RelTime);
@@ -1365,7 +1365,7 @@ _tmrStateLoadCallbacks
         // Capture system time here, this will help in scheduling callbacks
         // if there is a state unload before receiving the OS timer callback.
         //
-        pScan->startTimeNs = osGetCurrentTick();
+        pScan->startTimeNs = osGetMonotonicTimeNs();
         tmrEventScheduleRelOSTimer_HAL(pTmr, (TMR_EVENT *)pScan, pScan->timens);
         pScan = pScan->pNext;
     }
@@ -1445,7 +1445,7 @@ tmrGetSystemTime_IMPL
     if (pTime != NULL)
     {
         // Get the system time and calculate the contents of the returned structure.
-        osGetCurrentTime(&sec, &usec);
+        osGetSystemTime(&sec, &usec);
         pTime->days = sec / (3600 * 24);            // # of days since ref point
         sec = sec % (3600 * 24);                    // seconds since day began
         pTime->msecs = sec * 1000 + (usec / 1000);  // milliseconds since day began
@@ -1655,7 +1655,7 @@ tmrStateUnload_IMPL
     //
     while (pScan != NULL)
     {
-        currentSysTime = osGetCurrentTick();
+        currentSysTime = osGetMonotonicTimeNs();
         //
         // If somehow any of the time difference is negative,
         // we will use the  original time duration.

@@ -80,6 +80,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJHALMGR =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_halmgrDestruct(OBJHALMGR*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_OBJHALMGR(OBJHALMGR *pThis) {
     __nvoc_halmgrDestruct(pThis);

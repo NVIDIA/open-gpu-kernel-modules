@@ -1489,6 +1489,8 @@ static NV_STATUS service_notification_ats(uvm_gpu_va_space_t *gpu_va_space,
     // Atleast one notification should have been processed.
     UVM_ASSERT(index < *out_index);
 
+    ats_context->access_counters.buffer_index = access_counters->index;
+
     // TODO: Bug 2113632: [UVM] Don't clear access counters when the preferred
     //                    location is set
     // If no pages were actually migrated, don't clear the access counters.
@@ -1574,7 +1576,20 @@ static NV_STATUS service_notifications_batch(uvm_gpu_va_space_t *gpu_va_space,
         }
     }
     else if (uvm_ats_can_service_faults(gpu_va_space, mm)) {
-        status = service_notification_ats(gpu_va_space, mm, access_counters, index, out_index);
+        if (!gpu_va_space->gpu->mem_info.cdmm_enabled) {
+            status = service_notification_ats(gpu_va_space, mm, access_counters, index, out_index);
+        }
+        else {
+            status = notify_tools_and_process_flags(va_space,
+                                                    gpu_va_space->gpu,
+                                                    access_counters,
+                                                    0,
+                                                    batch_context->notifications,
+                                                    1,
+                                                    0,
+                                                    NULL);
+            *out_index = index + 1;
+        }
     }
     else {
         NvU32 flags;
@@ -1811,8 +1826,9 @@ static NV_STATUS access_counters_config_from_test_params(const UVM_TEST_RECONFIG
     if (config_granularity_to_bytes(params->granularity, &tracking_size) != NV_OK)
         return NV_ERR_INVALID_ARGUMENT;
 
-    // Since values for granularity are shared between tests and nv_uvm_types.h,
-    // the value will be checked in the call to nvUvmInterfaceEnableAccessCntr
+    // Since values for granularity are shared between tests and
+    // nv_uvm_user_types.h, the value will be checked in the call to
+    // nvUvmInterfaceEnableAccessCntr
     config->granularity = params->granularity;
     config->threshold = params->threshold;
 

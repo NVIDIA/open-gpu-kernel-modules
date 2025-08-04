@@ -385,6 +385,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__DebugBufferApi =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_dbgbufDestruct(DebugBufferApi*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_DebugBufferApi(DebugBufferApi *pThis) {
     __nvoc_dbgbufDestruct(pThis);

@@ -382,6 +382,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__RgLineCallback =
     /*pExportEntries=*/  0
 };
 
+void __nvoc_rglcbDestruct(RgLineCallback*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_RgLineCallback(RgLineCallback *pThis) {
     __nvoc_rglcbDestruct(pThis);

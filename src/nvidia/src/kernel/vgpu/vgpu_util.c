@@ -29,7 +29,6 @@
 //******************************************************************************
 
 #include "core/core.h"
-#include "os/os.h"
 #include "gpu/gpu.h"
 #include "gpu/device/device.h"
 #include "vgpu/dev_vgpu.h"
@@ -51,7 +50,6 @@ void vgpuFreeSysmemPfnBitMapNode(VGPU_SYSMEM_PFN_BITMAP_NODE_P node)
     {
         memdescUnmapOld(node->pMemDesc_sysmemPfnMap,
                         memdescGetFlag(node->pMemDesc_sysmemPfnMap, MEMDESC_FLAGS_KERNEL_MODE),
-                        osGetCurrentProcess(),
                         (void *)node->sysmemPfnMap,
                         (void *)node->sysmemPfnMap_priv);
 

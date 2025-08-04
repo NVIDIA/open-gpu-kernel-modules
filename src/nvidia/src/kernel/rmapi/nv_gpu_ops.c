@@ -103,6 +103,7 @@
 #include <gpu/device/device.h>
 #include <gpu/gpu.h>
 #include <gpu/mem_mgr/heap.h>
+#include <gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h>
 #include <gpu/mem_mgr/mem_mgr.h>
 #include <gpu/mem_mgr/virt_mem_allocator.h>
 #include <gpu/mem_sys/kern_mem_sys.h>
@@ -117,6 +118,7 @@
 #include <kernel/gpu/mig_mgr/gpu_instance_subscription.h>
 #include <kernel/gpu/mig_mgr/kernel_mig_manager.h>
 #include <kernel/gpu/nvlink/kernel_nvlink.h>
+#include <kernel/gpu/nvlink/common_nvlink.h>
 #include <kernel/rmapi/mapping_list.h>
 #include <mem_mgr/fabric_vaspace.h>
 #include <mem_mgr/fla_mem.h>
@@ -124,6 +126,7 @@
 #include <mem_mgr/vaspace.h>
 #include <mmu/gmmu_fmt.h>
 #include <nv_uvm_types.h>
+#include <nv_uvm_user_types.h>
 #include <gpu/rpc/objrpc.h>
 #include <gpu/uvm/uvm.h>
 #include <os/os.h>
@@ -145,8 +148,6 @@
 
 #define NV_GPU_OPS_NUM_GPFIFO_ENTRIES_DEFAULT 1024
 #define NV_GPU_SMALL_PAGESIZE (4 * 1024)
-
-#define PAGE_SIZE_DEFAULT UVM_PAGE_SIZE_DEFAULT
 
 typedef struct
 {
@@ -183,6 +184,7 @@ typedef struct
     NvU32 subDeviceCount;
     NvU32 arch;
     NvU32 implementation;
+    NvU32 gpuId;
 } deviceDesc;
 
 typedef struct
@@ -243,7 +245,7 @@ struct gpuPeerInfo
     NvBool peerSupported;
     NvU32  peerId;
     NvBool isLinkDegraded;
-    NvBool isNvLinkSupported;
+    NvBool isBar1Supported;
 };
 
 struct gpuP2pInfo
@@ -410,6 +412,9 @@ struct systemP2PCaps
     NvU32 nvlinkSupported : 1;
 
     NvU32 atomicSupported : 1;
+
+    // true if the two GPUs are BAR1P2P peers
+    NvU32 bar1Supported : 1;
 
     // optimalNvlinkWriteCEs[i] contains the index of the optimal CE to use when
     // writing from gpu[i] to gpu[1 - i]
@@ -884,7 +889,7 @@ static NV_STATUS nvGpuOpsVaSpaceRetainDummyAlloc(struct gpuAddressSpace *vaSpace
                                   vaSpace->dummyGpuAlloc.gpuAddr,
                                   NV_GPU_SMALL_PAGESIZE,
                                   (void **)&vaSpace->dummyGpuAlloc.cpuAddr,
-                                  PAGE_SIZE_DEFAULT);
+                                  UVM_PAGE_SIZE_DEFAULT);
     if (status != NV_OK)
         nvGpuOpsMemoryFree(vaSpace, vaSpace->dummyGpuAlloc.gpuAddr);
 
@@ -1109,6 +1114,7 @@ static NV_STATUS nvGpuOpsRmDeviceCreate(struct gpuDevice *device)
     if (status != NV_OK)
         goto cleanup_device;
 
+    rmDevice->gpuId = device->gpuId;
     rmDevice->arch = gpuGetChipArch(pGpu);
     rmDevice->implementation = gpuGetChipImpl(pGpu);
     rmDevice->btreeLock = portSyncRwLockCreate(pAlloc);
@@ -2011,6 +2017,7 @@ static NV_STATUS queryFbInfo(struct gpuDevice *device)
         goto out;
 
     device->fbInfo.bStaticBar1Enabled    = fbStaticBar1Params.bStaticBar1Enabled;
+    device->fbInfo.bStaticBar1WriteCombined    = fbStaticBar1Params.bStaticBar1WriteCombined;
     device->fbInfo.staticBar1StartOffset = fbStaticBar1Params.staticBar1StartOffset;
     device->fbInfo.staticBar1Size        = fbStaticBar1Params.staticBar1Size;
 
@@ -2111,6 +2118,33 @@ static NV_STATUS getPCIELinkRateMBps(NvHandle hClient, NvHandle hSubDevice, NvU3
                   __LINE__, nvstatusToString(status));
     }
 
+    return status;
+}
+
+static NV_STATUS _nvGpuOpsGetDeviceArchByGpuId(struct gpuSession *session,
+                                               NvU32 gpuId,
+                                               NvU32 *arch)
+{
+    PNODE     btreeNode = NULL;
+    NV_STATUS status    = NV_ERR_OBJECT_NOT_FOUND;
+
+    portSyncRwLockAcquireRead(session->devicesLock);
+    btreeEnumStart(0, &btreeNode, session->devices);
+
+    while (btreeNode != NULL)
+    {
+        deviceDesc *device = btreeNode->Data;
+
+        if (device->gpuId == gpuId)
+        {
+            *arch = device->arch;
+            status = NV_OK;
+            break;
+        }
+        btreeEnumNext(&btreeNode, session->devices);
+    }
+
+    portSyncRwLockReleaseRead(session->devicesLock);
     return status;
 }
 
@@ -2723,16 +2757,27 @@ static NvU32 getNvlinkConnectionToGpu(const NV2080_CTRL_CMD_NVLINK_GET_NVLINK_ST
                                       NvU32 *linkBandwidthMBps)
 {
     NvU32 i;
+    NV_STATUS status;
 
     NvU32 version  = NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_INVALID;
     NvU32 domain   = gpuGetDomain(pGpu);
     NvU16 bus      = gpuGetBus(pGpu);
     NvU16 device   = gpuGetDevice(pGpu);
     NvU32 bwMBps   = 0;
+    NV2080_NVLINK_BIT_VECTOR localLinkMask;
+
+    status = convertLinkMasksToBitVector(&nvlinkStatus->enabledLinkMask,
+                                         sizeof(nvlinkStatus->enabledLinkMask),
+                                         &nvlinkStatus->enabledLinks,
+                                         &localLinkMask);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to convert enabled linkmask into bit vector! 0x%x\n", status);
+    }
 
     for (i = 0; i < NV2080_CTRL_NVLINK_MAX_LINKS; ++i)
     {
-        if (((1 << i) & nvlinkStatus->enabledLinkMask) == 0)
+        if (bitVectorTest(&localLinkMask, i) == 0)
             continue;
 
         if (!nvlinkStatus->linkInfo[i].connected)
@@ -2813,14 +2858,25 @@ static NvU32 getNvlinkConnectionToNpu(const NV2080_CTRL_CMD_NVLINK_GET_NVLINK_ST
                                       NvU32 *linkBandwidthMBps)
 {
     NvU32 i;
+    NV_STATUS status;
     NvU32 bwMBps   = 0;
     NvU32 version  = NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_INVALID;
+    NV2080_NVLINK_BIT_VECTOR localLinkMask;
+
+    status = convertLinkMasksToBitVector(&nvlinkStatus->enabledLinkMask,
+                                    sizeof(nvlinkStatus->enabledLinkMask),
+                                    &nvlinkStatus->enabledLinks,
+                                    &localLinkMask);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to convert enabled linkmask into bit vector! 0x%x\n", status);
+    }
 
     *atomicSupported = NV_FALSE;
 
     for (i = 0; i < NV2080_CTRL_NVLINK_MAX_LINKS; ++i)
     {
-        if (((1 << i) & nvlinkStatus->enabledLinkMask) == 0)
+        if (bitVectorTest(&localLinkMask, i) == 0)
             continue;
 
         if (!nvlinkStatus->linkInfo[i].connected)
@@ -2861,12 +2917,23 @@ static NvU32 getNvlinkConnectionToSwitch(const NV2080_CTRL_CMD_NVLINK_GET_NVLINK
                                          NvU32 *linkBandwidthMBps)
 {
     NvU32 i;
+    NV_STATUS status;
     NvU32 bwMBps   = 0;
     NvU32 version  = NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_INVALID;
+    NV2080_NVLINK_BIT_VECTOR localLinkMask;
+
+    status = convertLinkMasksToBitVector(&nvlinkStatus->enabledLinkMask,
+                                         sizeof(nvlinkStatus->enabledLinkMask),
+                                         &nvlinkStatus->enabledLinks,
+                                         &localLinkMask);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to convert enabled linkmask into bit vector! 0x%x\n", status);
+    }
 
     for (i = 0; i < NV2080_CTRL_NVLINK_MAX_LINKS; ++i)
     {
-        if (((1 << i) & nvlinkStatus->enabledLinkMask) == 0)
+        if (bitVectorTest(&localLinkMask, i) == 0)
             continue;
 
         if (!nvlinkStatus->linkInfo[i].connected)
@@ -2948,6 +3015,7 @@ static NV_STATUS getSystemP2PCaps(struct gpuDevice *device1,
     p2pCaps->egmPeerIds[1] = p2pCapsParams->busEgmPeerIds[1 * 2 + 0];
     p2pCaps->nvlinkSupported = !!REF_VAL(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_NVLINK_SUPPORTED, p2pCapsParams->p2pCaps);
     p2pCaps->atomicSupported = !!REF_VAL(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_ATOMICS_SUPPORTED, p2pCapsParams->p2pCaps);
+    p2pCaps->bar1Supported = !!REF_VAL(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PCI_BAR1_SUPPORTED, p2pCapsParams->p2pCaps);
 
     // TODO: Bug 1768805: Check both reads and writes since RM seems to be
     //       currently incorrectly reporting just the P2P write cap on some
@@ -3103,6 +3171,10 @@ NV_STATUS nvGpuOpsGetP2PCaps(struct gpuDevice *device1,
     p2pCapsParams->peerIds[1]      = (NvU32)-1;
     p2pCapsParams->egmPeerIds[0]      = (NvU32)-1;
     p2pCapsParams->egmPeerIds[1]      = (NvU32)-1;
+    p2pCapsParams->bar1DmaAddress[0]  = (NvU64)-1;
+    p2pCapsParams->bar1DmaAddress[1]  = (NvU64)-1;
+    p2pCapsParams->bar1DmaSize[0]     = (NvU64)0;
+    p2pCapsParams->bar1DmaSize[1]     = (NvU64)0;
     p2pCapsParams->p2pLink         = UVM_LINK_TYPE_NONE;
 
     status = getSystemP2PCaps(device1, device2, &p2pCaps,
@@ -3157,6 +3229,30 @@ NV_STATUS nvGpuOpsGetP2PCaps(struct gpuDevice *device1,
                                          &linkBandwidthMBps2);
             if (status != NV_OK)
                 goto cleanup;
+
+            if (p2pCaps.bar1Supported)
+            {
+                OBJGPU *pLocalGpu    = gpumgrGetGpuFromId(device1->gpuId);
+                OBJGPU *pRemoteGpu   = gpumgrGetGpuFromId(device2->gpuId);
+
+                // Get BAR1 P2P DMA info using from local to peer
+                NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                    kbusGetBar1P2PDmaInfo_HAL(pLocalGpu,
+                                              pRemoteGpu,
+                                              GPU_GET_KERNEL_BUS(pRemoteGpu),
+                                              &p2pCapsParams->bar1DmaAddress[0],
+                                              &p2pCapsParams->bar1DmaSize[0]),
+                    cleanup);
+
+                // Get BAR1 P2P DMA info using from peer to local
+                NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                    kbusGetBar1P2PDmaInfo_HAL(pRemoteGpu,
+                                              pLocalGpu,
+                                              GPU_GET_KERNEL_BUS(pLocalGpu),
+                                              &p2pCapsParams->bar1DmaAddress[1],
+                                              &p2pCapsParams->bar1DmaSize[1]),
+                    cleanup);
+            }
 
             p2pCapsParams->p2pLink               = UVM_LINK_TYPE_PCIE;
             p2pCapsParams->totalLinkLineRateMBps = NV_MIN(linkBandwidthMBps1, linkBandwidthMBps2);
@@ -3221,40 +3317,35 @@ static NV_STATUS nvGpuOpsDestroyP2pInfoByP2pObjectHandle(struct gpuSession *sess
 
     status = serverGetClientUnderLock(&g_resServ, session->handle, &pClient);
     if (status != NV_OK)
-    {
-        rmapiLockRelease();
-        return status;
-    }
+        goto done;
 
     status = clientGetResourceRef(pClient, hP2pObject, &pResourceRef);
     if (status != NV_OK)
-    {
-        rmapiLockRelease();
-        return status;
-    }
+        goto done;
 
     pP2pApi = dynamicCast(pResourceRef->pResource, P2PApi);
     if (pP2pApi == NULL)
-    {
-        rmapiLockRelease();
-        return NV_ERR_INVALID_OBJECT_HANDLE;
-    }
+        goto done;
 
     gpuId1 = pP2pApi->peer1->gpuId;
     gpuId2 = pP2pApi->peer2->gpuId;
 
+done:
     if (!bApiLockAcquired)
         rmapiLockRelease();
 
-    // Destroy info for link in both directions
-    nvGpuOpsDestroyPeerInfo(session, gpuId1, gpuId2);
-    nvGpuOpsDestroyPeerInfo(session, gpuId2, gpuId1);
+    if (status == NV_OK)
+    {
+        // Destroy info for link in both directions
+        nvGpuOpsDestroyPeerInfo(session, gpuId1, gpuId2);
+        nvGpuOpsDestroyPeerInfo(session, gpuId2, gpuId1);
+    }
 
     return status;
 }
 
 static NV_STATUS nvGpuOpsAddP2pInfo(struct gpuSession *session, NvU32 memOwnerGpuId, NvU32 peerGpuId,
-                                    NvBool isPeerSupported, NvU32 peerId, NvBool isLinkDegraded)
+                                    NvBool isPeerSupported, NvBool isBar1Supported, NvU32 peerId, NvBool isLinkDegraded)
 {
     NV_STATUS           status    = NV_OK;
     PNODE               btreeNode = NULL;
@@ -3277,6 +3368,7 @@ static NV_STATUS nvGpuOpsAddP2pInfo(struct gpuSession *session, NvU32 memOwnerGp
         {
             peerInfo = btreeNode->Data;
             peerInfo->peerSupported = isPeerSupported;
+            peerInfo->isBar1Supported = isBar1Supported;
             peerInfo->peerId = peerId;
             peerInfo->isLinkDegraded = isLinkDegraded;
 
@@ -3317,6 +3409,7 @@ static NV_STATUS nvGpuOpsAddP2pInfo(struct gpuSession *session, NvU32 memOwnerGp
     peerInfo->btreeNode.Data = (void *)peerInfo;
 
     peerInfo->peerSupported = isPeerSupported;
+    peerInfo->isBar1Supported = isBar1Supported;
     peerInfo->peerId = peerId;
     peerInfo->isLinkDegraded = isLinkDegraded;
 
@@ -3332,6 +3425,7 @@ static NV_STATUS nvGpuOpsGetExternalAllocP2pInfo(struct gpuSession *session,
                                                  OBJGPU *pMemOwnerGpu,
                                                  OBJGPU *pGpu,
                                                  NvBool *isPeerSupported,
+                                                 NvBool *isBar1Supported,
                                                  NvU32 *peerId)
 {
     NV_STATUS status = NV_OK;
@@ -3358,6 +3452,7 @@ static NV_STATUS nvGpuOpsGetExternalAllocP2pInfo(struct gpuSession *session,
         {
             peerInfo = btreeNode->Data;
             *isPeerSupported = peerInfo->peerSupported;
+            *isBar1Supported = peerInfo->isBar1Supported;
             *peerId = peerInfo->peerId;
         }
         portSyncRwLockReleaseRead(p2pInfo->btreeLock);
@@ -3430,19 +3525,25 @@ static NV_STATUS nvGpuOpsGetExternalAllocP2pInfo(struct gpuSession *session,
             (REF_VAL(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_WRITES_SUPPORTED, p2pCapsParams->p2pCaps) &&
              REF_VAL(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_READS_SUPPORTED, p2pCapsParams->p2pCaps));
 
+    *isBar1Supported = REF_VAL(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PCI_BAR1_SUPPORTED, p2pCapsParams->p2pCaps);
+
     *peerId = p2pCapsParams->busPeerIds[0 * 2 + 1];
 
     status = nvGpuOpsAddP2pInfo(session, pMemOwnerGpu->gpuId, pGpu->gpuId,
-                                *isPeerSupported, *peerId, isMemOwnerGpuDegraded || isPeerGpuDegraded);
+                                *isPeerSupported, *isBar1Supported, *peerId,
+                                isMemOwnerGpuDegraded || isPeerGpuDegraded);
 
 done:
     portMemFree(p2pCapsParams);
     return status;
 }
 
-static GMMU_APERTURE nvGpuOpsGetExternalAllocAperture(PMEMORY_DESCRIPTOR pMemDesc,
+static GMMU_APERTURE nvGpuOpsGetExternalAllocAperture(struct gpuSession *session,
+                                                      PMEMORY_DESCRIPTOR pMemDesc,
                                                       NvBool isIndirectPeerSupported,
-                                                      NvBool isPeerSupported)
+                                                      NvBool isPeerSupported,
+                                                      NvBool isBar1P2PSupported,
+                                                      UvmGpuCachingType cachingType)
 {
     // Don't support both direct and indirect peers
     NV_ASSERT(!(isIndirectPeerSupported && isPeerSupported));
@@ -3452,6 +3553,27 @@ static GMMU_APERTURE nvGpuOpsGetExternalAllocAperture(PMEMORY_DESCRIPTOR pMemDes
     {
         if (isIndirectPeerSupported)
             return GMMU_APERTURE_SYS_COH;
+
+        if (isBar1P2PSupported)
+        {
+            NvU32 arch;
+            NV_STATUS status = _nvGpuOpsGetDeviceArchByGpuId(session, pMemDesc->pGpu->gpuId, &arch);
+
+            NV_ASSERT_OR_RETURN(status == NV_OK, GMMU_APERTURE_INVALID);
+
+            if (arch >= GPU_ARCHITECTURE_BLACKWELL_GB1XX)
+            {
+                return GMMU_APERTURE_SYS_COH;
+            }
+            else
+            {
+                //
+                // Pre-Blackwell devices do not support coherent peer mapping due to
+                // the lack of inbound atomics support. See bug 3264814.
+                //
+                return GMMU_APERTURE_SYS_NONCOH;
+            }
+        }
 
         if (isPeerSupported)
             return GMMU_APERTURE_PEER;
@@ -3470,6 +3592,34 @@ static GMMU_APERTURE nvGpuOpsGetExternalAllocAperture(PMEMORY_DESCRIPTOR pMemDes
         {
             return GMMU_APERTURE_PEER;
         }
+
+        // On platforms that support full coherence, the SYS_COH and SYS_NONCOH
+        // apertures are repurposed to determine if the GPU cache should be
+        // snoopable.
+        if (GPU_GET_MEMORY_MANAGER(pMemDesc->pGpu)->bPlatformFullyCoherent)
+        {
+            // By default the GPU cache is not snoopable.
+            NvBool isGpuSnoopEnabled = memdescGetGpuCacheSnoop(pMemDesc) == MEMDESC_CACHE_SNOOP_ENABLE;
+            NvBool isGpuCacheEnabled = memdescGetGpuCacheAttrib(pMemDesc) == NV_MEMORY_CACHED;
+
+            if (isGpuSnoopEnabled) {
+                return GMMU_APERTURE_SYS_COH;
+            }
+
+            // SYS_COH is used for mappings that are not cached on the GPU. This
+            // is because platform atomics are not supported through SYS_NONCOH.
+
+            if (cachingType == UvmGpuCachingTypeForceUncached) {
+                return GMMU_APERTURE_SYS_COH;
+            }
+
+            if (cachingType == UvmGpuCachingTypeDefault && !isGpuCacheEnabled) {
+                return GMMU_APERTURE_SYS_COH;
+            }
+
+            return GMMU_APERTURE_SYS_NONCOH;
+        }
+
         return GMMU_APERTURE_SYS_COH;
     }
 }
@@ -3477,16 +3627,17 @@ static GMMU_APERTURE nvGpuOpsGetExternalAllocAperture(PMEMORY_DESCRIPTOR pMemDes
 static NvBool nvGpuOpsGetExternalAllocVolatility(PMEMORY_DESCRIPTOR pMemDesc,
                                                  GMMU_APERTURE aperture,
                                                  NvBool isIndirectPeerSupported,
-                                                 UvmRmGpuCachingType cachingType)
+                                                 NvBool isBar1P2PSupported,
+                                                 UvmGpuCachingType cachingType)
 {
-    if (cachingType == UvmRmGpuCachingTypeDefault)
+    if (cachingType == UvmGpuCachingTypeDefault)
     {
-        if (aperture == GMMU_APERTURE_PEER || isIndirectPeerSupported)
+        if ((aperture == GMMU_APERTURE_PEER) || isIndirectPeerSupported || isBar1P2PSupported)
             return (memdescGetGpuP2PCacheAttrib(pMemDesc) == NV_MEMORY_UNCACHED) ? NV_TRUE : NV_FALSE;
         else
             return (memdescGetGpuCacheAttrib(pMemDesc) == NV_MEMORY_UNCACHED) ? NV_TRUE : NV_FALSE;
     }
-    else if (cachingType == UvmRmGpuCachingTypeForceUncached)
+    else if (cachingType == UvmGpuCachingTypeForceUncached)
     {
         return NV_TRUE;
     }
@@ -3496,7 +3647,7 @@ static NvBool nvGpuOpsGetExternalAllocVolatility(PMEMORY_DESCRIPTOR pMemDesc,
     }
 }
 
-static NV_STATUS nvGpuOpsGetExternalAllocMappingAttribute(UvmRmGpuMappingType mappingType,
+static NV_STATUS nvGpuOpsGetExternalAllocMappingAttribute(UvmGpuMappingType mappingType,
                                                           PMEMORY_DESCRIPTOR pMemDesc,
                                                           NvBool *readOnly,
                                                           NvBool *atomic)
@@ -3506,8 +3657,8 @@ static NV_STATUS nvGpuOpsGetExternalAllocMappingAttribute(UvmRmGpuMappingType ma
 
     if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_DEVICE_READ_ONLY))
     {
-        if (mappingType != UvmRmGpuMappingTypeDefault &&
-            mappingType != UvmRmGpuMappingTypeReadOnly)
+        if (mappingType != UvmGpuMappingTypeDefault &&
+            mappingType != UvmGpuMappingTypeReadOnly)
             return NV_ERR_INVALID_ACCESS_TYPE;
 
         *readOnly = NV_TRUE;
@@ -3515,9 +3666,9 @@ static NV_STATUS nvGpuOpsGetExternalAllocMappingAttribute(UvmRmGpuMappingType ma
     }
     else
     {
-        *readOnly = (mappingType == UvmRmGpuMappingTypeReadOnly);
-        *atomic = (mappingType == UvmRmGpuMappingTypeDefault ||
-                   mappingType == UvmRmGpuMappingTypeReadWriteAtomic);
+        *readOnly = (mappingType == UvmGpuMappingTypeReadOnly);
+        *atomic = (mappingType == UvmGpuMappingTypeDefault ||
+                   mappingType == UvmGpuMappingTypeReadWriteAtomic);
     }
 
     return NV_OK;
@@ -3534,7 +3685,7 @@ static NV_STATUS nvGpuOpsGetPteKind(OBJGPU *pMappingGpu,
     FB_ALLOC_PAGE_FORMAT    fbAllocPageFormat   = {0};
     NvU32                   ctagId;
 
-    if (pGpuExternalMappingInfo->compressionType == UvmRmGpuCompressionTypeEnabledNoPlc)
+    if (pGpuExternalMappingInfo->compressionType == UvmGpuCompressionTypeEnabledNoPlc)
     {
         if (memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE, *newKind))
         {
@@ -3553,9 +3704,9 @@ static NV_STATUS nvGpuOpsGetPteKind(OBJGPU *pMappingGpu,
             return status;
     }
 
-    if (pGpuExternalMappingInfo->formatType != UvmRmGpuFormatTypeDefault)
+    if (pGpuExternalMappingInfo->formatType != UvmGpuFormatTypeDefault)
     {
-        NV_ASSERT(pGpuExternalMappingInfo->elementBits != UvmRmGpuFormatElementBitsDefault);
+        NV_ASSERT(pGpuExternalMappingInfo->elementBits != UvmGpuFormatElementBitsDefault);
 
         fbAllocPageFormat.attr = pMemory->Attr;
         fbAllocPageFormat.attr2 = pMemory->Attr2;
@@ -3564,7 +3715,7 @@ static NV_STATUS nvGpuOpsGetPteKind(OBJGPU *pMappingGpu,
 
         switch (pGpuExternalMappingInfo->formatType)
         {
-            case UvmRmGpuFormatTypeBlockLinear:
+            case UvmGpuFormatTypeBlockLinear:
                 fbAllocPageFormat.attr = FLD_SET_DRF(OS32, _ATTR, _FORMAT, _BLOCK_LINEAR, fbAllocPageFormat.attr);
                 break;
             default:
@@ -3573,20 +3724,20 @@ static NV_STATUS nvGpuOpsGetPteKind(OBJGPU *pMappingGpu,
 
         switch (pGpuExternalMappingInfo->elementBits)
         {
-            case UvmRmGpuFormatElementBits8:
+            case UvmGpuFormatElementBits8:
                 fbAllocPageFormat.attr = FLD_SET_DRF(OS32, _ATTR, _DEPTH, _8, fbAllocPageFormat.attr);
                 break;
-            case UvmRmGpuFormatElementBits16:
+            case UvmGpuFormatElementBits16:
                 fbAllocPageFormat.attr = FLD_SET_DRF(OS32, _ATTR, _DEPTH, _16, fbAllocPageFormat.attr);
                 break;
             // CUDA does not support 24-bit width
-            case UvmRmGpuFormatElementBits32:
+            case UvmGpuFormatElementBits32:
                 fbAllocPageFormat.attr = FLD_SET_DRF(OS32, _ATTR, _DEPTH, _32, fbAllocPageFormat.attr);
                 break;
-            case UvmRmGpuFormatElementBits64:
+            case UvmGpuFormatElementBits64:
                 fbAllocPageFormat.attr = FLD_SET_DRF(OS32, _ATTR, _DEPTH, _64, fbAllocPageFormat.attr);
                 break;
-            case UvmRmGpuFormatElementBits128:
+            case UvmGpuFormatElementBits128:
                 fbAllocPageFormat.attr = FLD_SET_DRF(OS32, _ATTR, _DEPTH, _128, fbAllocPageFormat.attr);
                 break;
             default:
@@ -3616,8 +3767,8 @@ static NV_STATUS nvGpuOpsGetPteKind(OBJGPU *pMappingGpu,
     }
     else
     {
-        NV_ASSERT((pGpuExternalMappingInfo->elementBits == UvmRmGpuFormatElementBitsDefault) ||
-                  (pGpuExternalMappingInfo->elementBits == UvmRmGpuFormatElementBits8));
+        NV_ASSERT((pGpuExternalMappingInfo->elementBits == UvmGpuFormatElementBitsDefault) ||
+                  (pGpuExternalMappingInfo->elementBits == UvmGpuFormatElementBits8));
     }
 
     return NV_OK;
@@ -3656,11 +3807,38 @@ nvGpuOpsMemGetPageSize
     return NV_OK;
 }
 
+/*!
+ * @brief: Encodes BAR1P2P addresses.
+ *
+ * This function prepends the dmaBaseAddress to a physical address in order
+ * to generate an IOVA address from the IOVA address space.
+ *
+ * @param[in] pAddresses        : Array of physical addresses to be encoded.
+ * @param[in] dmaBaseAddress    : IOVA base address.
+ * @param[in] count             : Count of physical addresses.
+ */
+static void
+_nvGpuOpsEncodeBar1P2PAddrs
+(
+    NvU64 *pAddresses,
+    NvU64  dmaBaseAddress,
+    NvU64  count
+)
+{
+    NvU32 i;
+
+    for (i = 0; i < count; i++)
+    {
+        pAddresses[i] = dmaBaseAddress + pAddresses[i];
+    }
+}
+
 static
 NV_STATUS
 nvGpuOpsBuildExternalAllocPtes
 (
     OBJVASPACE *pVAS,
+    struct gpuSession *session,
     OBJGPU     *pMappingGpu,
     MEMORY_DESCRIPTOR *pMemDesc,
     Memory     *pMemory,
@@ -3668,6 +3846,7 @@ nvGpuOpsBuildExternalAllocPtes
     NvU64       size,
     NvBool      isIndirectPeerSupported,
     NvBool      isPeerSupported,
+    NvBool      isBar1P2PSupported,
     NvU32       peerId,
     gpuExternalMappingInfo *pGpuExternalMappingInfo
 )
@@ -3689,6 +3868,7 @@ nvGpuOpsBuildExternalAllocPtes
     NvBool        encrypted, privileged;
     NvU64         iter, physAddr, mappingSize, pteCount;
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pMappingGpu);
+    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pMappingGpu);
     KernelGmmu    *pKernelGmmu = GPU_GET_KERNEL_GMMU(pMappingGpu);
     NvU64          allocSize;
     NvBool         isCompressedKind;
@@ -3777,9 +3957,14 @@ nvGpuOpsBuildExternalAllocPtes
     if (kindChanged)
         memdescSetPteKindForGpu(pMemDesc, pMappingGpu, oldKind);
 
-    aperture = nvGpuOpsGetExternalAllocAperture(pMemDesc, isIndirectPeerSupported, isPeerSupported);
+    aperture = nvGpuOpsGetExternalAllocAperture(session,
+                                                pMemDesc,
+                                                isIndirectPeerSupported,
+                                                isPeerSupported,
+                                                isBar1P2PSupported,
+                                                pGpuExternalMappingInfo->cachingType);
 
-    vol = nvGpuOpsGetExternalAllocVolatility(pMemDesc, aperture, isIndirectPeerSupported,
+    vol = nvGpuOpsGetExternalAllocVolatility(pMemDesc, aperture, isIndirectPeerSupported, isBar1P2PSupported,
                                              pGpuExternalMappingInfo->cachingType);
 
     status = nvGpuOpsGetExternalAllocMappingAttribute(pGpuExternalMappingInfo->mappingType,
@@ -3937,7 +4122,38 @@ nvGpuOpsBuildExternalAllocPtes
     memdescGetPtePhysAddrsForGpu(pMemDesc, pMappingGpu, AT_GPU, offset, mappingPageSize,
                                  pteCount, physicalAddresses);
 
-    kgmmuEncodePhysAddrs(pKernelGmmu, aperture, physicalAddresses, fabricBaseAddress, pteCount);
+    if (isBar1P2PSupported)
+    {
+        OBJGPU *pRemoteGpu = pMemDesc->pGpu;
+        NvU64 dmaBaseAddress = 0;
+        NvU64 dmaSize = 0;
+
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                            kbusGetBar1P2PDmaInfo_HAL(pMappingGpu, pRemoteGpu,
+                                                      GPU_GET_KERNEL_BUS(pRemoteGpu),
+                                                      &dmaBaseAddress,
+                                                      &dmaSize),
+                            done);
+
+        if (dmaBaseAddress == NV_U64_MAX)
+        {
+            NV_PRINTF(LEVEL_ERROR, "DMA base address is not set for BAR1P2P mapping\n");
+            status = NV_ERR_INVALID_STATE;
+            goto done;
+        }
+
+        if (dmaSize == 0)
+        {
+            NV_PRINTF(LEVEL_ERROR, "DMA size is not set for BAR1P2P mapping\n");
+            status = NV_ERR_INVALID_STATE;
+            goto done;
+        }
+        _nvGpuOpsEncodeBar1P2PAddrs(physicalAddresses, dmaBaseAddress, pteCount);
+    }
+    else
+    {
+        kgmmuEncodePhysAddrs(pKernelGmmu, aperture, physicalAddresses, fabricBaseAddress, pteCount);
+    }
 
     //
     // Get information whether given physical address needs PLCable kind
@@ -3994,8 +4210,6 @@ nvGpuOpsBuildExternalAllocPtes
             {
                 NvBool bIsWarApplied = NV_FALSE;
                 NvU32  savedKind = comprInfo.kind;
-                MemoryManager  *pMemoryManager = GPU_GET_MEMORY_MANAGER(pMappingGpu);
-                KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pMappingGpu);
                 const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig =
                     kmemsysGetStaticConfig(pMappingGpu, pKernelMemorySystem);
 
@@ -4043,6 +4257,15 @@ nvGpuOpsBuildExternalAllocPtes
         offset += mappingPageSize;
     }
 
+    if (kmemsysNeedInvalidateGpuCacheOnMap_HAL(pMappingGpu, pKernelMemorySystem, vol, aperture))
+    {
+        kmemsysCacheOp_HAL(pMappingGpu, pKernelMemorySystem, NULL,
+                           (aperture == GMMU_APERTURE_PEER) ? FB_CACHE_PEER_MEMORY : FB_CACHE_SYSTEM_MEMORY,
+                           FB_CACHE_EVICT);
+    }
+
+    pGpuExternalMappingInfo->bNeedL2InvalidateAtUnmap =
+        kmemsysNeedInvalidateGpuCacheOnUnmap(pMappingGpu, pKernelMemorySystem, vol, aperture);
     pGpuExternalMappingInfo->numWrittenPtes = pteCount;
     pGpuExternalMappingInfo->numRemainingPtes = (mappingSize / mappingPageSize) - pteCount;
     pGpuExternalMappingInfo->pteSize = pLevelFmt->entrySize;
@@ -4064,6 +4287,7 @@ NV_STATUS
 nvGpuOpsBuildExternalAllocPhysAddrs
 (
     OBJVASPACE *pVAS,
+    struct gpuSession *session,
     OBJGPU     *pMappingGpu,
     MEMORY_DESCRIPTOR *pMemDesc,
     Memory     *pMemory,
@@ -4071,6 +4295,7 @@ nvGpuOpsBuildExternalAllocPhysAddrs
     NvU64       size,
     NvBool      isIndirectPeerSupported,
     NvBool      isPeerSupported,
+    NvBool      isBar1P2PSupported,
     NvU32       peerId,
     UvmGpuExternalPhysAddrInfo *pGpuExternalPhysAddrInfo
 )
@@ -4128,7 +4353,12 @@ nvGpuOpsBuildExternalAllocPhysAddrs
     if ((offset & (mappingPageSize - 1)) != 0)
         return NV_ERR_INVALID_ARGUMENT;
 
-    aperture = nvGpuOpsGetExternalAllocAperture(pMemDesc, isIndirectPeerSupported, isPeerSupported);
+    aperture = nvGpuOpsGetExternalAllocAperture(session,
+                                                pMemDesc,
+                                                isIndirectPeerSupported,
+                                                isPeerSupported,
+                                                isBar1P2PSupported,
+                                                UvmGpuCachingTypeDefault);
 
     status = nvGpuOpsGetExternalAllocMappingAttribute(pGpuExternalPhysAddrInfo->mappingType,
                                                       pMemDesc,
@@ -4206,7 +4436,38 @@ nvGpuOpsBuildExternalAllocPhysAddrs
     memdescGetPhysAddrsForGpu(pMemDesc, pMappingGpu, AT_GPU, offset, mappingPageSize,
                               physAddrCount, physicalAddresses);
 
-    kgmmuEncodePhysAddrs(pKernelGmmu, aperture, physicalAddresses, fabricBaseAddress, physAddrCount);
+    if (isBar1P2PSupported)
+    {
+        OBJGPU *pRemoteGpu = pMemDesc->pGpu;
+        NvU64 dmaBaseAddress = 0;
+        NvU64 dmaSize = 0;
+
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                            kbusGetBar1P2PDmaInfo_HAL(pMappingGpu, pRemoteGpu,
+                                                      GPU_GET_KERNEL_BUS(pRemoteGpu),
+                                                      &dmaBaseAddress,
+                                                      &dmaSize),
+                            done);
+
+        if (dmaBaseAddress == NV_U64_MAX)
+        {
+            NV_PRINTF(LEVEL_ERROR, "DMA base address is not set for BAR1P2P mapping\n");
+            status = NV_ERR_INVALID_STATE;
+            goto done;
+        }
+
+        if (dmaSize == 0)
+        {
+            NV_PRINTF(LEVEL_ERROR, "DMA size is not set for BAR1P2P mapping\n");
+            status = NV_ERR_INVALID_STATE;
+            goto done;
+        }
+        _nvGpuOpsEncodeBar1P2PAddrs(physicalAddresses, dmaBaseAddress, physAddrCount);
+    }
+    else
+    {
+        kgmmuEncodePhysAddrs(pKernelGmmu, aperture, physicalAddresses, fabricBaseAddress, physAddrCount);
+    }
 
 
     for (iter = 0; iter < physAddrCount; iter++)
@@ -4217,6 +4478,7 @@ nvGpuOpsBuildExternalAllocPhysAddrs
     pGpuExternalPhysAddrInfo->numWrittenPhysAddrs = physAddrCount;
     pGpuExternalPhysAddrInfo->numRemainingPhysAddrs = (mappingSize / mappingPageSize) - physAddrCount;
 
+done:
     portMemFree(physicalAddresses);
 
     return status;
@@ -4239,6 +4501,7 @@ NV_STATUS nvGpuOpsGetExternalAllocPtesOrPhysAddrs(struct gpuAddressSpace *vaSpac
     NvBool isSliSupported = NV_FALSE;
     NvBool isPeerSupported = NV_FALSE;
     NvBool isIndirectPeerSupported = NV_FALSE;
+    NvBool isBar1P2PSupported = NV_FALSE;
     OBJVASPACE *pVAS = NULL;
     FlaMemory *pFlaMemory = NULL;
     OBJGPU    *pSrcGpu = NULL;
@@ -4383,6 +4646,7 @@ NV_STATUS nvGpuOpsGetExternalAllocPtesOrPhysAddrs(struct gpuAddressSpace *vaSpac
                                                        (pFlaMemory) ? (pSrcGpu) :(pAdjustedMemDesc->pGpu),
                                                        pMappingGpu,
                                                        &isPeerSupported,
+                                                       &isBar1P2PSupported,
                                                        &peerId);
             if (status != NV_OK)
                 goto freeGpaMemdesc;
@@ -4463,16 +4727,25 @@ NV_STATUS nvGpuOpsGetExternalAllocPtesOrPhysAddrs(struct gpuAddressSpace *vaSpac
 
     if (pGpuExternalMappingInfo != NULL)
     {
-        status = nvGpuOpsBuildExternalAllocPtes(pVAS, pMappingGpu, pAdjustedMemDesc, pMemory, offset, size,
-                                                isIndirectPeerSupported, isPeerSupported, peerId,
+        status = nvGpuOpsBuildExternalAllocPtes(pVAS,
+                                                vaSpace->device->session,
+                                                pMappingGpu,
+                                                pAdjustedMemDesc,
+                                                pMemory,
+                                                offset,
+                                                size,
+                                                isIndirectPeerSupported,
+                                                isPeerSupported,
+                                                isBar1P2PSupported,
+                                                peerId,
                                                 pGpuExternalMappingInfo);
     }
 
     if (pGpuExternalPhysAddrInfo != NULL)
     {
-        status = nvGpuOpsBuildExternalAllocPhysAddrs(pVAS, pMappingGpu, pAdjustedMemDesc, pMemory, offset, size,
-                                                     isIndirectPeerSupported, isPeerSupported, peerId,
-                                                     pGpuExternalPhysAddrInfo);
+        status = nvGpuOpsBuildExternalAllocPhysAddrs(pVAS, vaSpace->device->session, pMappingGpu, pAdjustedMemDesc,
+                                                     pMemory, offset, size, isIndirectPeerSupported, isPeerSupported,
+                                                     isBar1P2PSupported, peerId, pGpuExternalPhysAddrInfo);
     }
 
 freeGpaMemdesc:
@@ -4769,10 +5042,10 @@ static NV_STATUS nvGpuOpsMapGpuMemory(struct gpuAddressSpace *vaSpace,
 {
     gpuMemDesc *memDescVa = NULL;
     NV_STATUS status;
-    NvU64 mappedVa = 0;
     NvU32 mapFlags = 0;
     NvU64 mapPageSize = 0;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+    NVOS46_PARAMETERS mapDmaParams = {0};
 
     if (!vaSpace || !gpuOffset)
         return NV_ERR_INVALID_ARGUMENT;
@@ -4810,20 +5083,18 @@ static NV_STATUS nvGpuOpsMapGpuMemory(struct gpuAddressSpace *vaSpace,
     // it's ignored for vidmem.
     mapFlags |= DRF_DEF(OS46, _FLAGS, _CACHE_SNOOP, _ENABLE);
 
-    // map the 2 surfaces
-    status = pRmApi->Map(pRmApi,
-                         vaSpace->device->session->handle,
-                         vaSpace->device->handle,
-                         memDescVa->handle,
-                         memDescVa->childHandle,
-                         0,
-                         length,
-                         mapFlags,
-                         &mappedVa);
+    mapDmaParams.hClient   = vaSpace->device->session->handle;
+    mapDmaParams.hDevice   = vaSpace->device->handle;
+    mapDmaParams.hDma      = memDescVa->handle;
+    mapDmaParams.hMemory   = memDescVa->childHandle;
+    mapDmaParams.length    = length;
+    mapDmaParams.flags     = mapFlags;
+
+    status = pRmApi->Map(pRmApi, &mapDmaParams);
     if (status != NV_OK)
         return status;
 
-    NV_ASSERT(memDescVa->address == mappedVa);
+    NV_ASSERT(memDescVa->address == mapDmaParams.dmaOffset);
 
     *gpuOffset = memDescVa->address;
 
@@ -4889,6 +5160,7 @@ static void nvGpuOpsUnmapGpuMemory(struct gpuAddressSpace *vaSpace,
 {
     gpuMemDesc *memDescVa = NULL;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+    NVOS47_PARAMETERS unmapDmaParams = {0};
 
     NV_ASSERT(vaSpace != NULL);
 
@@ -4901,15 +5173,12 @@ static void nvGpuOpsUnmapGpuMemory(struct gpuAddressSpace *vaSpace,
     NV_ASSERT(memDescVa->childHandle != 0);
     NV_ASSERT(memDescVa->address == gpuOffset);
 
-    NV_ASSERT_OK(pRmApi->Unmap(pRmApi,
-                               vaSpace->device->session->handle,
-                               vaSpace->device->handle,
-                               memDescVa->handle,
-                               NV04_MAP_MEMORY_FLAGS_NONE,
-                               gpuOffset,
-                               0));
+    unmapDmaParams.hClient   = vaSpace->device->session->handle;
+    unmapDmaParams.hDevice   = vaSpace->device->handle;
+    unmapDmaParams.hDma      = memDescVa->handle;
+    unmapDmaParams.dmaOffset = gpuOffset;
 
-    return;
+    NV_ASSERT_OK(pRmApi->Unmap(pRmApi, &unmapDmaParams));
 }
 
 static void nvGpuOpsFreeVirtual(struct gpuAddressSpace *vaSpace, NvU64 vaOffset)
@@ -4989,9 +5258,9 @@ NV_STATUS nvGpuOpsMemoryReopen(struct gpuAddressSpace *vaSpace,
     NvU64 vaOffset;
     NvHandle hVirtual = 0;
     RsResourceRef *pResourceRef;
-    NvU64 addressOffset = 0;
     NvHandle hParent;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+    NVOS46_PARAMETERS mapDmaParams = {0};
 
     // find device type
     // TODO: Acquired because serverutilGetResourceRef expects RMAPI lock. Necessary?
@@ -5044,20 +5313,18 @@ NV_STATUS nvGpuOpsMemoryReopen(struct gpuAddressSpace *vaSpace,
     if (status != NV_OK)
         goto cleanup_virt_allocation;
 
+    mapDmaParams.hClient   = vaSpace->device->session->handle;
+    mapDmaParams.hDevice   = vaSpace->device->handle;
+    mapDmaParams.hDma      = hVirtual;
+    mapDmaParams.hMemory   = hAllocation;
+    mapDmaParams.length    = length;
+
     // map the memory
-    status = pRmApi->Map(pRmApi,
-                         vaSpace->device->session->handle,
-                         vaSpace->device->handle,
-                         hVirtual,
-                         hAllocation,
-                         0,
-                         length,
-                         0,
-                         &addressOffset);
+    status = pRmApi->Map(pRmApi, &mapDmaParams);
     if (status != NV_OK)
         goto cleanup_virt_allocation;
 
-    NV_ASSERT((vaOffset == addressOffset) && "nvGpuOpsMemoryReopen: VA offset Mistmatch!");
+    NV_ASSERT((vaOffset == mapDmaParams.dmaOffset) && "nvGpuOpsMemoryReopen: VA offset Mismatch!");
 
     // return the mapped GPU pointer
     *gpuOffset = vaOffset;
@@ -5227,6 +5494,7 @@ static NV_STATUS gpuDeviceMapUsermodeRegion(struct gpuDevice *device)
     NvU32 usermodeClass = VOLTA_USERMODE_A;
     void *pParams = NULL;
     NvU32 paramsSize = 0;
+
     NV_HOPPER_USERMODE_A_PARAMS hopperParams =
     {
         .bBar1Mapping = NV_TRUE,
@@ -5549,7 +5817,7 @@ static NV_STATUS channelAllocate(const gpuTsgHandle tsg,
                                       channel->gpFifo,
                                       gpFifoSize,
                                       &cpuMap,
-                                      PAGE_SIZE_DEFAULT);
+                                      UVM_PAGE_SIZE_DEFAULT);
         if (status != NV_OK)
             goto cleanup_free_gpfifo_entries;
     }
@@ -5681,7 +5949,7 @@ static NV_STATUS channelAllocate(const gpuTsgHandle tsg,
                                           channel->userdGpuAddr,
                                           sizeof(KeplerAControlGPFifo),
                                           &gpfifoCtrl,
-                                          PAGE_SIZE_DEFAULT);
+                                          UVM_PAGE_SIZE_DEFAULT);
             if (status != NV_OK)
                 goto cleanup_free_virtual;
         }
@@ -6956,6 +7224,42 @@ static NV_STATUS getAtsInfo(OBJGPU *pGpu,
     return NV_OK;
 }
 
+static NV_STATUS getNonPasidAtsInfo(OBJGPU *pGpu,
+                                  NvHandle hClient,
+                                  NvHandle hSubDevice,
+                                  gpuInfo *pGpuInfo)
+{
+    NvU32 nonPasidAtsInfo;
+    NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *gpuInfoParams;
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+    NV_STATUS status;
+
+    gpuInfoParams = portMemAllocNonPaged(sizeof(*gpuInfoParams));
+    if (gpuInfoParams == NULL)
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+
+    portMemSet(gpuInfoParams, 0, sizeof(*gpuInfoParams));
+    gpuInfoParams->gpuInfoListSize = 1;
+    gpuInfoParams->gpuInfoList[0].index =
+        NV2080_CTRL_GPU_INFO_INDEX_GPU_NON_PASID_ATS_CAPABILITY;
+
+    status = pRmApi->Control(pRmApi,
+                             hClient,
+                             hSubDevice,
+                             NV2080_CTRL_CMD_GPU_GET_INFO_V2,
+                             gpuInfoParams,
+                             sizeof(*gpuInfoParams));
+    nonPasidAtsInfo = gpuInfoParams->gpuInfoList[0].data;
+    portMemFree(gpuInfoParams);
+
+    if (status != NV_OK)
+        return status;
+
+    pGpuInfo->nonPasidAtsSupport = (nonPasidAtsInfo == NV2080_CTRL_GPU_INFO_INDEX_GPU_NON_PASID_ATS_CAPABILITY_YES);
+    NV_PRINTF(LEVEL_INFO, "Non-PASID ATS supported: %d\n", pGpuInfo->nonPasidAtsSupport);
+
+    return NV_OK;
+}
 
 static NV_STATUS getEgmInfo(OBJGPU *pGpu,
                             NvHandle hClient,
@@ -7074,6 +7378,7 @@ NV_STATUS nvGpuOpsGetGpuInfo(const NvProcessorUuid *pUuid,
     NV0000_CTRL_GPU_GET_UUID_INFO_PARAMS gpuIdInfoParams = {{0}};
     NV2080_CTRL_MC_GET_ARCH_INFO_PARAMS  archInfoParams = {0};
     NV2080_CTRL_GPU_GET_NAME_STRING_PARAMS gpuNameParams = {0};
+    NV2080_CTRL_FB_GET_INFO_V2_PARAMS    fbInfoParams = {0};
     NvHandle                             clientHandle           = 0;
     NvHandle                             deviceHandle           = 1;
     NvHandle                             subDeviceHandle        = 2;
@@ -7083,7 +7388,6 @@ NV_STATUS nvGpuOpsGetGpuInfo(const NvProcessorUuid *pUuid,
     NV0080_CTRL_GPU_GET_NUM_SUBDEVICES_PARAMS subDevParams = { 0 };
     NV2080_CTRL_GPU_GET_SIMULATION_INFO_PARAMS simulationInfoParams = {0};
     OBJGPU                              *pGpu = NULL;
-    OBJUVM                              *pUvm = NULL;
     RM_API                              *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
     NvU32                                dummy;
 
@@ -7206,12 +7510,18 @@ NV_STATUS nvGpuOpsGetGpuInfo(const NvProcessorUuid *pUuid,
 
     getGpcTpcInfo(pGpu, pGpuInfo);
 
-    // TODO: Bug 4698194: [GB100] Implement RM control call to query the number
-    //                    of access counter buffers.
-    // Temporary WAR, the following logic can be removed when the RM control
-    // call is available.
-    pUvm = GPU_GET_UVM(pGpu);
-    pGpuInfo->accessCntrBufferCount = pUvm != NULL ? pUvm->accessCounterBufferCount : 0;
+    fbInfoParams.fbInfoList[0].index = NV2080_CTRL_FB_INFO_INDEX_ACCESS_COUNTER_BUFFER_COUNT;
+    fbInfoParams.fbInfoListSize = 1;
+    status = pRmApi->Control(pRmApi,
+                             clientHandle,
+                             subDeviceHandle,
+                             NV2080_CTRL_CMD_FB_GET_INFO_V2,
+                             &fbInfoParams,
+                             sizeof(fbInfoParams));
+    if (status != NV_OK)
+        goto cleanup;
+
+    pGpuInfo->accessCntrBufferCount = fbInfoParams.fbInfoList[0].data;
 
     if (IS_MIG_IN_USE(pGpu))
     {
@@ -7281,6 +7591,10 @@ NV_STATUS nvGpuOpsGetGpuInfo(const NvProcessorUuid *pUuid,
         goto cleanup;
 
     status = getAtsInfo(pGpu, clientHandle, subDeviceHandle, pGpuInfo);
+    if (status != NV_OK)
+        goto cleanup;
+
+    status = getNonPasidAtsInfo(pGpu, clientHandle, subDeviceHandle, pGpuInfo);
     if (status != NV_OK)
         goto cleanup;
 
@@ -7479,10 +7793,15 @@ static NV_STATUS nvGpuOpsFillGpuMemoryInfo(PMEMORY_DESCRIPTOR pMemDesc,
 
     if (pGpuMemoryInfo->contig)
     {
-        GMMU_APERTURE aperture = nvGpuOpsGetExternalAllocAperture(pMemDesc, NV_FALSE, NV_FALSE);
+        GMMU_APERTURE aperture = nvGpuOpsGetExternalAllocAperture(NULL,
+                                                                  pMemDesc,
+                                                                  NV_FALSE,
+                                                                  NV_FALSE,
+                                                                  NV_FALSE,
+                                                                  UvmGpuCachingTypeDefault);
         NvU64 physAddr;
 
-        memdescGetPhysAddrsForGpu(pMemDesc, pMappingGpu, AT_GPU, 0, 0, 1, &physAddr);
+        memdescGetPtePhysAddrsForGpu(pMemDesc, pMappingGpu, AT_GPU, 0, 0, 1, &physAddr);
 
         pGpuMemoryInfo->physAddr =
             kgmmuEncodePhysAddr(GPU_GET_KERNEL_GMMU(pGpu), aperture, physAddr, NVLINK_INVALID_FABRIC_ADDR);
@@ -8373,7 +8692,7 @@ NV_STATUS nvGpuOpsSetPageDirectory(struct gpuAddressSpace *vaSpace,
     // RM clients must not unmap this address, and instead rely on RM to unmap
     // it when nvGpuOpsUnsetPageDirectory() is called.
     //
-    *dmaAddress = memdescGetPhysAddr(vaspaceGetPageDirBase(pVAS, pGpu), AT_GPU, 0);
+    *dmaAddress = memdescGetPtePhysAddr(vaspaceGetPageDirBase(pVAS, pGpu), AT_GPU, 0);
 
     if (vaspaceIsExternallyOwned(pVAS))
     {
@@ -10307,9 +10626,9 @@ NV_STATUS nvGpuOpsGetChannelResourcePtes(struct gpuAddressSpace *vaSpace,
         return status;
     }
 
-    status = nvGpuOpsBuildExternalAllocPtes(pVAS, pMappingGpu, pMemDesc, NULL,
+    status = nvGpuOpsBuildExternalAllocPtes(pVAS, vaSpace->device->session, pMappingGpu, pMemDesc, NULL,
                                             offset, size, NV_FALSE, NV_FALSE,
-                                            0, pGpuExternalMappingInfo);
+                                            NV_FALSE, 0, pGpuExternalMappingInfo);
 
     _nvGpuOpsLocksRelease(&acquiredLocks);
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -10569,8 +10888,8 @@ NV_STATUS nvGpuOpsGetPmaObject(struct gpuDevice *device,
         memmgrIsPmaInitialized(pMemoryManager),
         status = NV_ERR_OBJECT_NOT_FOUND; goto done; );
 
-    *pPmaObject = (void *)&pHeap->pmaObject;
-    *pPmaStats = (const UvmPmaStatistics *)&pHeap->pmaObject.pmaStats;
+    *pPmaObject = (void *)pHeap->pPmaObject;
+    *pPmaStats = (const UvmPmaStatistics *)pmaGetStats(pHeap->pPmaObject);
 
 done:
     _nvGpuOpsLocksRelease(&acquiredLocks);

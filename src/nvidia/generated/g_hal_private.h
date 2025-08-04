@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_hal_private.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, T234D, T26XD
 //
 
 //
@@ -30,6 +30,8 @@
 #  define RMCFG_HAL_SETUP_GH10X          1
 #  define RMCFG_HAL_SETUP_GB10X          1
 #  define RMCFG_HAL_SETUP_GB20X          1
+#  define RMCFG_HAL_SETUP_T23XD          1
+#  define RMCFG_HAL_SETUP_T26XD          1
 #endif   // RMCFG_HAL_SETUP_ALL
 
 //
@@ -80,7 +82,16 @@
 #  define RMCFG_HAL_SETUP_GB206          1
 #  define RMCFG_HAL_SETUP_GB207          1
 #  define RMCFG_HAL_SETUP_GB20B          1
+#  define RMCFG_HAL_SETUP_GB20C          1
 #endif // GB20X
+
+#if defined(RMCFG_HAL_SETUP_T23XD)
+#  define RMCFG_HAL_SETUP_T234D          1
+#endif // T23XD
+
+#if defined(RMCFG_HAL_SETUP_T26XD)
+#  define RMCFG_HAL_SETUP_T264D          1
+#endif // T26XD
 
 #endif  // RMCFG_ENGINE_SETUP
 
@@ -543,6 +554,54 @@ NV_STATUS registerHalModule_GB20B(void)
 }
 
 #endif  // GB20X or GB20B
+
+#if defined(RMCFG_HAL_SETUP_GB20C)
+
+static const HAL_IFACE_SETUP halIface_GB20C = {
+
+    rpcHalIfacesSetup_GB20C,
+    rpcstructurecopyHalIfacesSetup_GB20C,
+
+};
+
+NV_STATUS registerHalModule_GB20C(void)
+{
+    return registerHalModule(HAL_IMPL_GB20C, &halIface_GB20C);
+}
+
+#endif  // GB20X or GB20C
+
+#if defined(RMCFG_HAL_SETUP_T234D)
+
+static const HAL_IFACE_SETUP halIface_T234D = {
+
+    rpcHalIfacesSetup_T234D,
+    rpcstructurecopyHalIfacesSetup_T234D,
+
+};
+
+NV_STATUS registerHalModule_T234D(void)
+{
+    return registerHalModule(HAL_IMPL_T234D, &halIface_T234D);
+}
+
+#endif  // T23XD or T234D
+
+#if defined(RMCFG_HAL_SETUP_T264D)
+
+static const HAL_IFACE_SETUP halIface_T264D = {
+
+    rpcHalIfacesSetup_T264D,
+    rpcstructurecopyHalIfacesSetup_T264D,
+
+};
+
+NV_STATUS registerHalModule_T264D(void)
+{
+    return registerHalModule(HAL_IMPL_T264D, &halIface_T264D);
+}
+
+#endif  // T26XD or T264D
 
 
 
