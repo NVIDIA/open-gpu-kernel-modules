@@ -3139,7 +3139,7 @@ nvpcf2xGetStaticParams_exit:
             NvU8 *pData = NULL;
             NvU32 i;
             NvU8 prevThreshold = 99;
-            NvU8 version;
+            NvU32 version;
             NvU16 size = NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_HEADER_SIZE_04 +
                          (NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_VERSION_10_MAX_ENTRIES *
                          NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_ENTRY_SIZE_11);

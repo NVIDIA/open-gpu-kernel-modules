@@ -117,9 +117,9 @@ void ConnectorImpl2x::applyOuiWARs()
                 (modelName[1] == 'C') &&
                 (modelName[2] == '2') &&
                 (modelName[3] == '9') &&
-                (modelName[4] == '0') &&
-                (modelName[5] == 0x04U))
+                (modelName[4] == '0'))
             {
+                bForceHeadShutdownPerMonitor = true;
                 bApplyStuffDummySymbolsWAR = true;
                 bStuffDummySymbolsFor128b132b = false;
                 bStuffDummySymbolsFor8b10b = true;

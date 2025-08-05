@@ -548,3 +548,8 @@ void crashcatReportLogIo32State_V1(CrashCatReport *pReport)
             break;
     }
 }
+
+NvBool crashcatReportIsWatchdog_V1(CrashCatReport *pReport)
+{
+    return crashcatReportV1SourceCauseType(&pReport->v1.report) == NV_CRASHCAT_CAUSE_TYPE_WATCHDOG;
+}

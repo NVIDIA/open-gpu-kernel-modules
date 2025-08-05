@@ -157,7 +157,13 @@ static vm_fault_t __nv_drm_gem_user_memory_handle_vma_fault(
 #if !defined(NV_LINUX)
     return vmf_insert_pfn(vma, address, pfn);
 #elif defined(NV_VMF_INSERT_MIXED_PRESENT)
+
+#if defined(NV_LINUX_PFN_T_H_PRESENT)
     return vmf_insert_mixed(vma, address, pfn_to_pfn_t(pfn));
+#else
+    return vmf_insert_mixed(vma, address, pfn);
+#endif
+
 #else
     return __nv_vm_insert_mixed_helper(vma, address, pfn);
 #endif

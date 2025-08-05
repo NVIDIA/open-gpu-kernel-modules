@@ -990,6 +990,21 @@ kgspHealthCheck_TU102
 
         while ((pReport = crashcatEngineGetNextCrashReport(pCrashCatEng)) != NULL)
         {
+            if (crashcatReportIsWatchdog_HAL(pReport))
+            {
+                NV_PRINTF(LEVEL_INFO, "Assign a CrashcatReport to pWatchdogReport\n");
+                //
+                // Keep the first report until the corresponding RPC is done
+                // Before that, subsequent reports are ignored
+                //
+                if (pKernelGsp->pWatchdogReport != NULL)
+                    objDelete(pReport);
+                else
+                    pKernelGsp->pWatchdogReport = pReport;
+
+                continue;
+            }
+
             if (kgspCrashCatReportImpactsGspRm(pReport))
                 bHealthy = NV_FALSE;
 

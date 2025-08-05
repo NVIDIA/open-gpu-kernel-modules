@@ -84,7 +84,8 @@ void crashcatReportLog_IMPL(CrashCatReport *pReport)
     }
     FOR_EACH_INDEX_IN_MASK_END;
 
-    CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport, "------------[ end crash report ]------------\n");
+    if (!crashcatReportIsWatchdog_HAL(pReport))
+        CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport, "------------[ end crash report ]------------\n");
 }
 
 // xcause CSR format and codes are a backward-compatible part of the RISC-V standard

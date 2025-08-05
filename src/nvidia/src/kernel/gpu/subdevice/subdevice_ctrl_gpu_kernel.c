@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,6 +39,7 @@
 #include "gpu/bif/kernel_bif.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/gsp/gsp_static_config.h"
+#include "gpu/gsp/kernel_gsp.h"
 #include "gpu/disp/kern_disp.h"
 #include "disp/nvfbc_session.h"
 #include "gpu/mmu/kern_gmmu.h"
@@ -547,6 +548,30 @@ subdeviceCtrlCmdGpuGetCachedInfo_IMPL
 )
 {
     return getGpuInfos(pSubdevice, pGpuInfoParams, NV_FALSE);
+}
+
+
+NV_STATUS
+subdeviceCtrlCmdGpuForceGspUnload_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GPU_FORCE_GSP_UNLOAD_PARAMS *pGpuInfoParams
+)
+{
+    NV_STATUS  rmStatus = NV_OK;
+    OBJGPU    *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+
+    NV_CHECK_OR_RETURN(LEVEL_INFO, !IS_MIG_IN_USE(pGpu), NV_ERR_NOT_SUPPORTED);
+
+    NV_CHECK_OR_RETURN(LEVEL_INFO, IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu), NV_ERR_NOT_SUPPORTED);
+
+    // Call gsp unload now.
+    rmStatus = kgspUnloadRm(pGpu, pKernelGsp, KGSP_UNLOAD_MODE_NORMAL, GPU_STATE_FLAGS_FAST_UNLOAD);
+
+    pKernelGsp->bFatalError = NV_TRUE;
+
+    return rmStatus;;
 }
 
 static OBJHWBC *

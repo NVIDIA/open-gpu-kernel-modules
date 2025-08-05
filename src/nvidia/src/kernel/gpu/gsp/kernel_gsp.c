@@ -91,6 +91,8 @@
 #include "diagnostics/code_coverage_mgr.h"
 #endif
 
+#include "crashcat/crashcat_report.h"
+
 #define RPC_HDR  ((rpc_message_header_v*)(pRpc->message_buffer))
 
 struct MIG_CI_UPDATE_CALLBACK_PARAMS
@@ -1963,7 +1965,7 @@ _kgspLogXid119
     NvU64 ts_end = osGetTimestamp();
     NvU64 duration;
     char  durationUnitsChar;
-
+    KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
     if (pRpc->timeoutCount == 1)
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -1990,6 +1992,13 @@ _kgspLogXid119
 
     if (pRpc->timeoutCount == 1)
     {
+        if (pKernelGsp->pWatchdogReport != NULL)
+        {
+            crashcatReportLog(pKernelGsp->pWatchdogReport);
+            objDelete(pKernelGsp->pWatchdogReport);
+            pKernelGsp->pWatchdogReport = NULL;
+        }
+
         kgspLogRpcDebugInfo(pGpu, pRpc, GSP_RPC_TIMEOUT, NV_TRUE/*bPollingForRpcResponse*/);
         osAssertFailed();
 
@@ -2163,6 +2172,12 @@ _kgspRpcRecvPoll
                 // The synchronous RPC response we were waiting for is here
                 _kgspCompleteRpcHistoryEntry(pRpc->rpcHistory, pRpc->rpcHistoryCurrent);
                 rpcStatus = NV_OK;
+                // The watchdog report that's related to this RPC is no longer needed
+                if (pKernelGsp->pWatchdogReport != NULL)
+                {
+                    objDelete(pKernelGsp->pWatchdogReport);
+                    pKernelGsp->pWatchdogReport = NULL;
+                }
                 goto done;
             case NV_OK:
                 // Check timeout and continue outer loop.
@@ -2515,6 +2530,7 @@ kgspInitVgpuPartitionLogging_IMPL
     NV_STATUS nvStatus = NV_OK;
     char sourceName[SOURCE_NAME_MAX_LENGTH];
     NvBool bPreserveLogBufferFull = NV_FALSE;
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
 
     if (gfid > MAX_PARTITIONS_WITH_GFID)
     {
@@ -2641,6 +2657,8 @@ kgspInitVgpuPartitionLogging_IMPL
     pKernelGsp->bHasVgpuLogs = NV_TRUE;
 
     *pPreserveLogBufferFull = bPreserveLogBufferFull;
+
+    libosLogUpdateTimerDelta(&pKernelGsp->logDecodeVgpuPartition[gfid - 1], pTmr->sysTimerOffsetNs);
 
 exit:
     if (nvStatus != NV_OK)
@@ -3874,6 +3892,12 @@ kgspUnloadRm_IMPL
         IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
     {
         osDelay(250);
+    }
+
+    if (pKernelGsp->pWatchdogReport != NULL)
+    {
+        objDelete(pKernelGsp->pWatchdogReport);
+        pKernelGsp->pWatchdogReport = NULL;
     }
 
     if (rpcStatus != NV_OK)

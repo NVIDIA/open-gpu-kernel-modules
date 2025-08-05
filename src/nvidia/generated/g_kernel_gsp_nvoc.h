@@ -73,6 +73,19 @@ extern "C" {
 typedef struct SimAccessBuffer SimAccessBuffer;
 typedef struct GSP_FMC_BOOT_PARAMS GSP_FMC_BOOT_PARAMS;
 
+struct CrashCatReport;
+
+#ifndef __NVOC_CLASS_CrashCatReport_TYPEDEF__
+#define __NVOC_CLASS_CrashCatReport_TYPEDEF__
+typedef struct CrashCatReport CrashCatReport;
+#endif /* __NVOC_CLASS_CrashCatReport_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_CrashCatReport
+#define __nvoc_class_id_CrashCatReport 0xde4777
+#endif /* __nvoc_class_id_CrashCatReport */
+
+
+
 /*!
  * Structure for VBIOS image for early FRTS.
  */
@@ -478,6 +491,7 @@ struct KernelGsp {
     NvBool bInLockdown;
     NvBool bPollingForRpcResponse;
     NvBool bFatalError;
+    struct CrashCatReport *pWatchdogReport;
     MEMORY_DESCRIPTOR *pMemDesc_simAccessBuf;
     SimAccessBuffer *pSimAccessBuf;
     NvP64 pSimAccessBufPriv;

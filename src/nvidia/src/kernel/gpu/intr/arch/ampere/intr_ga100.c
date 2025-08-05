@@ -61,7 +61,7 @@ intrGetLocklessVectorsInRmSubtree_GA100
     //
     NV_ASSERT(i < NV_ARRAY_ELEMENTS((*pInterruptVectors)));
 
-    if (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+    if (IS_VIRTUAL(pGpu) || !IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
     {
         (*pInterruptVectors)[i] = intrGetVectorFromEngineId(pGpu, pIntr,
             MC_ENGINE_IDX_NON_REPLAYABLE_FAULT,

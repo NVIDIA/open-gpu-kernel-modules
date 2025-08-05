@@ -107,7 +107,8 @@ const struct
     {NV_DP_REGKEY_ENABLE_FIX_FOR_5147205,                &dpRegkeyDatabase.bEnable5147205Fix,                 DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN,                   &dpRegkeyDatabase.bForceHeadShutdown,                DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_ENABLE_LOWER_BPP_CHECK_FOR_DSC,        &dpRegkeyDatabase.bEnableLowerBppCheckForDsc,        DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_SKIP_SETTING_LINK_STATE_DURING_UNPLUG, &dpRegkeyDatabase.bSkipSettingLinkStateDuringUnplug, DP_REG_VAL_BOOL}
+    {NV_DP_REGKEY_SKIP_SETTING_LINK_STATE_DURING_UNPLUG, &dpRegkeyDatabase.bSkipSettingLinkStateDuringUnplug, DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_EXPOSE_DSC_DEVID_WAR,                  &dpRegkeyDatabase.bEnableDevId,                      DP_REG_VAL_BOOL}
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :

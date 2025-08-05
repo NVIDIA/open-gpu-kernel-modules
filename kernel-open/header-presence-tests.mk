@@ -36,6 +36,7 @@ NV_HEADER_PRESENCE_TESTS = \
   generated/autoconf.h \
   generated/compile.h \
   generated/utsrelease.h \
+  linux/pfn_t.h \
   linux/aperture.h \
   linux/dma-direct.h \
   linux/efi.h \

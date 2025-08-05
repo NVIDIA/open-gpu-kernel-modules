@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023 - 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -259,7 +259,8 @@ typedef enum {
                                              // unhandled interrupt)
     NV_CRASHCAT_CAUSE_TYPE_TIMEOUT   = 0x1,  // Crash observed via timeout or hang condition
     NV_CRASHCAT_CAUSE_TYPE_PANIC     = 0x2,  // Crash observed via direct panic condition
-    NV_CRASHCAT_CAUSE_TYPE_LAST      = 0x2
+    NV_CRASHCAT_CAUSE_TYPE_WATCHDOG  = 0x3,  // Timeout observed via Libos watchdog
+    NV_CRASHCAT_CAUSE_TYPE_LAST      = 0x3
 } NV_CRASHCAT_CAUSE_TYPE;
 
 //
@@ -599,6 +600,7 @@ typedef struct NvCrashCatReport_V1 {
     #define NV_CRASHCAT_REPORT_V1_SOURCE_CAUSE_TYPE_EXCEPTION   NV_CRASHCAT_CAUSE_TYPE_EXCEPTION
     #define NV_CRASHCAT_REPORT_V1_SOURCE_CAUSE_TYPE_TIMEOUT     NV_CRASHCAT_CAUSE_TYPE_TIMEOUT
     #define NV_CRASHCAT_REPORT_V1_SOURCE_CAUSE_TYPE_PANIC       NV_CRASHCAT_CAUSE_TYPE_PANIC
+    #define NV_CRASHCAT_REPORT_V1_SOURCE_CAUSE_TYPE_WATCHDOG    NV_CRASHCAT_CAUSE_TYPE_WATCHDOG
     
     #define NV_CRASHCAT_REPORT_V1_SOURCE_CAUSE_CONTAINMENT      7:4
     #define NV_CRASHCAT_REPORT_V1_SOURCE_CAUSE_CONTAINMENT_UNSPECIFIED  \

@@ -148,7 +148,7 @@ struct Subdevice {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct Subdevice *__nvoc_pbase_Subdevice;    // subdevice
 
-    // Vtable with 620 per-object function pointers
+    // Vtable with 621 per-object function pointers
     NV_STATUS (*__subdeviceCtrlCmdBiosGetInfoV2__)(struct Subdevice * /*this*/, NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS *);  // halified (2 hals) exported (id=0x20800810) body
     NV_STATUS (*__subdeviceCtrlCmdBiosGetNbsiV2__)(struct Subdevice * /*this*/, NV2080_CTRL_BIOS_GET_NBSI_V2_PARAMS *);  // exported (id=0x2080080e)
     NV_STATUS (*__subdeviceCtrlCmdBiosGetSKUInfo__)(struct Subdevice * /*this*/, NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS *);  // halified (2 hals) exported (id=0x20800808)
@@ -424,6 +424,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdGrStaticGetFecsTraceDefines__)(struct Subdevice * /*this*/, NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS *);  // exported (id=0x20800a3e)
     NV_STATUS (*__subdeviceCtrlCmdKGrInternalInitBug4208224War__)(struct Subdevice * /*this*/, NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS *);  // exported (id=0x20800a46)
     NV_STATUS (*__subdeviceCtrlCmdGpuGetCachedInfo__)(struct Subdevice * /*this*/, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *);  // exported (id=0x20800182)
+    NV_STATUS (*__subdeviceCtrlCmdGpuForceGspUnload__)(struct Subdevice * /*this*/, NV2080_CTRL_GPU_FORCE_GSP_UNLOAD_PARAMS *);  // exported (id=0x208001e9)
     NV_STATUS (*__subdeviceCtrlCmdGpuGetInfoV2__)(struct Subdevice * /*this*/, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *);  // exported (id=0x20800102)
     NV_STATUS (*__subdeviceCtrlCmdGpuGetIpVersion__)(struct Subdevice * /*this*/, NV2080_CTRL_GPU_GET_IP_VERSION_PARAMS *);  // exported (id=0x2080014d)
     NV_STATUS (*__subdeviceCtrlCmdGpuGetPhysicalBridgeVersionInfo__)(struct Subdevice * /*this*/, NV2080_CTRL_GPU_GET_PHYSICAL_BRIDGE_VERSION_INFO_PARAMS *);  // exported (id=0x2080015a)
@@ -1460,6 +1461,8 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdKGrInternalInitBug4208224War(pSubdevice, pParams) subdeviceCtrlCmdKGrInternalInitBug4208224War_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGpuGetCachedInfo_FNPTR(pSubdevice) pSubdevice->__subdeviceCtrlCmdGpuGetCachedInfo__
 #define subdeviceCtrlCmdGpuGetCachedInfo(pSubdevice, pGpuInfoParams) subdeviceCtrlCmdGpuGetCachedInfo_DISPATCH(pSubdevice, pGpuInfoParams)
+#define subdeviceCtrlCmdGpuForceGspUnload_FNPTR(pSubdevice) pSubdevice->__subdeviceCtrlCmdGpuForceGspUnload__
+#define subdeviceCtrlCmdGpuForceGspUnload(pSubdevice, pGpuInfoParams) subdeviceCtrlCmdGpuForceGspUnload_DISPATCH(pSubdevice, pGpuInfoParams)
 #define subdeviceCtrlCmdGpuGetInfoV2_FNPTR(pSubdevice) pSubdevice->__subdeviceCtrlCmdGpuGetInfoV2__
 #define subdeviceCtrlCmdGpuGetInfoV2(pSubdevice, pGpuInfoParams) subdeviceCtrlCmdGpuGetInfoV2_DISPATCH(pSubdevice, pGpuInfoParams)
 #define subdeviceCtrlCmdGpuGetIpVersion_FNPTR(pSubdevice) pSubdevice->__subdeviceCtrlCmdGpuGetIpVersion__
@@ -3333,6 +3336,10 @@ static inline NV_STATUS subdeviceCtrlCmdKGrInternalInitBug4208224War_DISPATCH(st
 
 static inline NV_STATUS subdeviceCtrlCmdGpuGetCachedInfo_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pGpuInfoParams) {
     return pSubdevice->__subdeviceCtrlCmdGpuGetCachedInfo__(pSubdevice, pGpuInfoParams);
+}
+
+static inline NV_STATUS subdeviceCtrlCmdGpuForceGspUnload_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_FORCE_GSP_UNLOAD_PARAMS *pGpuInfoParams) {
+    return pSubdevice->__subdeviceCtrlCmdGpuForceGspUnload__(pSubdevice, pGpuInfoParams);
 }
 
 static inline NV_STATUS subdeviceCtrlCmdGpuGetInfoV2_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pGpuInfoParams) {
@@ -5528,6 +5535,8 @@ NV_STATUS subdeviceCtrlCmdGrStaticGetFecsTraceDefines_IMPL(struct Subdevice *pSu
 NV_STATUS subdeviceCtrlCmdKGrInternalInitBug4208224War_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS *pParams);
 
 NV_STATUS subdeviceCtrlCmdGpuGetCachedInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pGpuInfoParams);
+
+NV_STATUS subdeviceCtrlCmdGpuForceGspUnload_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_FORCE_GSP_UNLOAD_PARAMS *pGpuInfoParams);
 
 NV_STATUS subdeviceCtrlCmdGpuGetInfoV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pGpuInfoParams);
 

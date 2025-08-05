@@ -5451,6 +5451,7 @@ static const CHIPS_RELEASED sChipsReleased[] = {
     { 0x2D39, 0x0000, 0x0000, "NVIDIA RTX PRO 2000 Blackwell Generation Laptop GPU" },
     { 0x2D58, 0x0000, 0x0000, "NVIDIA GeForce RTX 5070 Laptop GPU" },
     { 0x2D59, 0x0000, 0x0000, "NVIDIA GeForce RTX 5060 Laptop GPU" },
+    { 0x2D83, 0xc791, 0x17aa, "NVIDIA GeForce RTX 5050" },
     { 0x2D98, 0x0000, 0x0000, "NVIDIA GeForce RTX 5050 Laptop GPU" },
     { 0x2DB8, 0x0000, 0x0000, "NVIDIA RTX PRO 1000 Blackwell Generation Laptop GPU" },
     { 0x2DB9, 0x0000, 0x0000, "NVIDIA RTX PRO 500 Blackwell Generation Laptop GPU" },

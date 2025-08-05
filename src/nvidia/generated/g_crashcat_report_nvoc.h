@@ -176,6 +176,20 @@ void crashcatReportDestruct_V1(struct CrashCatReport *arg1);
 
 
 #define __nvoc_crashcatReportDestruct(arg1) crashcatReportDestruct_V1(arg1)
+NvBool crashcatReportIsWatchdog_V1(struct CrashCatReport *arg1);
+
+
+#ifdef __nvoc_crashcat_report_h_disabled
+static inline NvBool crashcatReportIsWatchdog(struct CrashCatReport *arg1) {
+    NV_ASSERT_FAILED_PRECOMP("CrashCatReport was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_crashcat_report_h_disabled
+#define crashcatReportIsWatchdog(arg1) crashcatReportIsWatchdog_V1(arg1)
+#endif //__nvoc_crashcat_report_h_disabled
+
+#define crashcatReportIsWatchdog_HAL(arg1) crashcatReportIsWatchdog(arg1)
+
 void *crashcatReportExtract_V1(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
 
 
@@ -425,14 +439,18 @@ const char *crashcatReportRiscvCauseToString(NvU64 xcause);
 #endif
 
 #define CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport, fmt, ...)                  \
-    portDbgPrintf(CRASHCAT_LOG_PREFIX CRASHCAT_LOG_INDENT fmt, ##__VA_ARGS__);            \
-    NVLOG_PRINTF(NV_PRINTF_MODULE, NVLOG_ROUTE_RM, LEVEL_ERROR,         \
-                CRASHCAT_LOG_PREFIX CRASHCAT_LOG_INDENT fmt, ##__VA_ARGS__)
+    do {\
+        portDbgPrintf(CRASHCAT_LOG_PREFIX CRASHCAT_LOG_INDENT fmt, ##__VA_ARGS__);            \
+        NVLOG_PRINTF(NV_PRINTF_MODULE, NVLOG_ROUTE_RM, LEVEL_ERROR,         \
+                    CRASHCAT_LOG_PREFIX CRASHCAT_LOG_INDENT fmt, ##__VA_ARGS__);         \
+    } while (0)
 
 #define CRASHCAT_REPORT_LOG_DATA(pReport, fmt, ...)                         \
-    portDbgPrintf(CRASHCAT_LOG_PREFIX CRASHCAT_LOG_INDENT CRASHCAT_LOG_INDENT fmt, ##__VA_ARGS__);            \
-    NVLOG_PRINTF(NV_PRINTF_MODULE, NVLOG_ROUTE_RM, LEVEL_ERROR,         \
-                CRASHCAT_LOG_PREFIX CRASHCAT_LOG_INDENT CRASHCAT_LOG_INDENT fmt, ##__VA_ARGS__)
+    do {\
+        portDbgPrintf(CRASHCAT_LOG_PREFIX CRASHCAT_LOG_INDENT CRASHCAT_LOG_INDENT fmt, ##__VA_ARGS__);            \
+        NVLOG_PRINTF(NV_PRINTF_MODULE, NVLOG_ROUTE_RM, LEVEL_ERROR,         \
+                    CRASHCAT_LOG_PREFIX CRASHCAT_LOG_INDENT CRASHCAT_LOG_INDENT fmt, ##__VA_ARGS__);         \
+    } while (0)
 
 #endif // CRASHCAT_REPORT_H
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -4592,5 +4592,26 @@ typedef struct NV2080_CTRL_GPU_GET_TPC_RECONFIG_MASK_PARAMS {
     NvU32 gpc;
     NvU32 tpcReconfigMask;
 } NV2080_CTRL_GPU_GET_TPC_RECONFIG_MASK_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_GPU_FORCE_GSP_UNLOAD
+ *
+ * This command is used to trigger GSP Unload
+ *
+ *  flags[IN]
+ *     Flags passed by caller - For future use.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INSUFFICIENT_PERMISSIONS
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV2080_CTRL_CMD_GPU_FORCE_GSP_UNLOAD (0x208001e9U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_FORCE_GSP_UNLOAD_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_GPU_FORCE_GSP_UNLOAD_PARAMS_MESSAGE_ID (0xe9U)
+
+typedef struct NV2080_CTRL_GPU_FORCE_GSP_UNLOAD_PARAMS {
+    NvU32 flags;
+} NV2080_CTRL_GPU_FORCE_GSP_UNLOAD_PARAMS;
 
 /* _ctrl2080gpu_h_ */
