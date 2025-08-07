@@ -1880,7 +1880,9 @@ static struct drm_driver nv_drm_driver = {
     .gem_prime_get_sg_table = nv_drm_gem_prime_get_sg_table,
     .gem_prime_vmap         = nv_drm_gem_prime_vmap,
     .gem_prime_vunmap       = nv_drm_gem_prime_vunmap,
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
+    .gem_prime_mmap         = drm_gem_prime_mmap,
+#endif
     .gem_vm_ops             = &nv_drm_gem_vma_ops,
 #endif
 
