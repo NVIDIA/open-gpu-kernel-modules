@@ -1694,6 +1694,18 @@ memUtilsAllocMemDesc
     {
         NvU64 memDescFlags = MEMDESC_FLAGS_SKIP_RESOURCE_COMPUTE;
 
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_SOC_SDM))
+        {
+            if (FLD_TEST_DRF(OS32, _ATTR2, _USE_SCANOUT_CARVEOUT, _TRUE, pFbAllocInfo->retAttr2))
+            {
+                memDescFlags |= MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT;
+            }
+            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALLOC_ISO_SYS_MEM_FROM_CARVEOUT) &&
+                    FLD_TEST_DRF(OS32, _ATTR2, _ISO, _YES, pFbAllocInfo->retAttr2))
+            {
+                memDescFlags |= MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT;
+            }
+        }
         if (FLD_TEST_DRF(OS32, _ATTR2, _USE_EGM, _TRUE, pFbAllocInfo->retAttr2))
         {
             memDescFlags |= MEMDESC_FLAGS_ALLOC_FROM_EGM;

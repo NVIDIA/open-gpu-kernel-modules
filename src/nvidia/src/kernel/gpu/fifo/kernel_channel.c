@@ -753,7 +753,7 @@ kchannelConstruct_IMPL
     pKernelChannel->bUseScrubKey = FLD_TEST_DRF(OS04, _FLAGS, _CHANNEL_SKIP_SCRUBBER, _TRUE, pChannelGpfifoParams->flags);
     if (pKernelChannel->bCCSecureChannel)
     {
-        ConfidentialCompute* pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+        ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
 
         // return early if gpu is not ready to accept work
         if ((pConfCompute != NULL) && kchannelCheckIsUserMode(pKernelChannel)
@@ -778,8 +778,18 @@ kchannelConstruct_IMPL
                 goto cleanup;
             }
         }
-        status = kchannelDeriveAndRetrieveKmb_HAL(pGpu, pKernelChannel, &pKernelChannel->clientKmb);
-        NV_ASSERT_OR_GOTO(status == NV_OK, cleanup);
+
+        //
+        // Retrieve IV from keystore as it needs to be transmitted to GPU.
+        // On Hopper this will also retrieve the key and IV mask.
+        // On Blackwell and later the key and IV mask are retrieved after a successful control
+        // call to GSP-RM to ensure that the keystore and keymanager keyseeds stay in sync.
+        //
+        NV_ASSERT_OK_OR_GOTO(status,
+                             confComputeKeyStoreRetrieveViaChannel_HAL(pConfCompute, pKernelChannel, ROTATE_IV_ALL_VALID,
+                                                                       CHANNEL_IV_OPERATION_INCLUDE_ONLY,
+                                                                       &pKernelChannel->clientKmb),
+                             cleanup);
 
         portMemCopy(pChannelGpfifoParams->encryptIv,
                     sizeof(pChannelGpfifoParams->encryptIv),
@@ -795,7 +805,6 @@ kchannelConstruct_IMPL
                     sizeof(pChannelGpfifoParams->hmacNonce),
                     pKernelChannel->clientKmb.hmacBundle.nonce,
                     sizeof(pKernelChannel->clientKmb.hmacBundle.nonce));
-
     }
 
     // Set TLS state and BAR0 window if we are working with Gr
@@ -935,6 +944,17 @@ kchannelConstruct_IMPL
                                                           bFullSriov),
                              cleanup);
         bRpcAllocated = NV_TRUE;
+    }
+
+    if (pKernelChannel->bCCSecureChannel)
+    {
+        ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+
+        NV_ASSERT_OK_OR_GOTO(status,
+                             confComputeKeyStoreDeriveViaChannel_HAL(pConfCompute, pKernelChannel,
+                                                                     ROTATE_IV_ALL_VALID,
+                                                                     &pKernelChannel->clientKmb),
+                             cleanup);
     }
 
     if (kfifoIsPerRunlistChramEnabled(pKernelFifo) ||
@@ -4462,12 +4482,9 @@ NV_STATUS kchannelDeriveAndRetrieveKmb_KERNEL
 )
 {
     ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
-
     NV_ASSERT(pCC != NULL);
-
     NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveViaChannel_HAL(pCC, pKernelChannel, ROTATE_IV_ALL_VALID,
                                                                    keyMaterialBundle));
-
     return (confComputeKeyStoreRetrieveViaChannel_HAL(pCC, pKernelChannel, ROTATE_IV_ALL_VALID,
                                                       CHANNEL_IV_OPERATION_INCLUDE_ONLY, keyMaterialBundle));
 }
@@ -4538,14 +4555,14 @@ kchannelCtrlCmdGetKmb_KERNEL
             NV_ASSERT_OK_OR_RETURN(pRmApi->DupObject(pRmApi, hClient, hDevice,
                                                      &pKernelChannel->hEncryptStatsBuf,
                                                      hClient, pGetKmbParams->hMemory, 0));
-            NV_ASSERT_OK_OR_GOTO(status, 
+            NV_ASSERT_OK_OR_GOTO(status,
                 clientGetResourceRef(pRsClient, pKernelChannel->hEncryptStatsBuf, &pResourceRef),
                 cleanup);
             Memory *pMemory = dynamicCast(pResourceRef->pResource, Memory);
             NV_ASSERT_OR_ELSE((pMemory != NULL) && (pMemory->pMemDesc != NULL),
                 status = NV_ERR_INVALID_ARGUMENT;
                 goto cleanup);
-            NV_ASSERT_OK_OR_GOTO(status, 
+            NV_ASSERT_OK_OR_GOTO(status,
                 kchannelSetEncryptionStatsBuffer_HAL(pGpu, pKernelChannel, pMemory->pMemDesc, NV_TRUE),
                 cleanup);
         }

@@ -977,7 +977,8 @@ nvswitch_tnvl_get_attestation_report_ls10
             "%s: Response measurement size (%d) is greater than the attestation max size (%d)\n",
             __FUNCTION__,
             pRspPayload->measurementSize, NVSWITCH_ATTESTATION_REPORT_MAX_SIZE);
-        return -NVL_ERR_INVALID_STATE;
+        status = -NVL_ERR_INVALID_STATE;
+        goto ErrorExit;
     }
 
     nvswitch_os_memcpy(params->attestationReport,

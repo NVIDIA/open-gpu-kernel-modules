@@ -116,6 +116,7 @@ void __nvoc_init_dataField_OBJSYS(OBJSYS *pThis) {
 
     pThis->clientListDeferredFreeLimit = 0;
     pThis->setProperty(pThis, PDB_PROP_SYS_RECOVERY_REBOOT_REQUIRED, NV_FALSE);
+    pThis->setProperty(pThis, PDB_PROP_SYS_SUPPORTS_S0IX, (0));
 }
 
 NV_STATUS __nvoc_ctor_Object(Object* );

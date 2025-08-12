@@ -532,26 +532,6 @@ NV_STATUS heapInitInternal_IMPL
     //
     if ((pMemoryManager->Ram.numFBRegions > 0) && (pHeap->bHasFbRegions))
     {
-        FB_REGION_DESCRIPTOR consoleFbRegion;
-        portMemSet(&consoleFbRegion, 0, sizeof(consoleFbRegion));
-
-        if (heapType != HEAP_TYPE_PARTITION_LOCAL)
-        {
-            //
-            // If a region of FB is actively being used for console display memory
-            // on this GPU, mark it reserved in-place.
-            // In case of legacy SLI on Linux, console size is only known at StateInit
-            //
-            memmgrReserveConsoleRegion_HAL(pGpu, pMemoryManager, &consoleFbRegion);
-            status = memmgrAllocateConsoleRegion_HAL(pGpu, pMemoryManager, &consoleFbRegion);
-            if (status != NV_OK)
-            {
-                NV_PRINTF(LEVEL_WARNING, "Squashing the error status after failing to allocate console region, status: %x\n",
-                            status);
-                status = NV_OK;
-            }
-        }
-
         //
         // Define PMA-managed regions
         // This will be moved to memmgr once we refactor SMC partitions
@@ -738,13 +718,6 @@ heapDestruct_IMPL
         } while (pBlock != pHeap->pBlockList);
 
     } while (headptr_updated);
-
-    //
-    // Now that the console region is no longer reserved, free the console
-    // memdesc.
-    //
-    if (pHeap->heapType != HEAP_TYPE_PARTITION_LOCAL)
-        memmgrReleaseConsoleRegion(pGpu, pMemoryManager);
 
     //
     // Free the heap structure, if we freed everything

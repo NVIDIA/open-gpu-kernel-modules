@@ -487,8 +487,10 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info__SystemMemory =
     /*pExportEntries=*/ __nvoc_exported_method_def_SystemMemory
 };
 
+void __nvoc_sysmemDestruct(SystemMemory*);
 void __nvoc_dtor_StandardMemory(StandardMemory*);
 void __nvoc_dtor_SystemMemory(SystemMemory *pThis) {
+    __nvoc_sysmemDestruct(pThis);
     __nvoc_dtor_StandardMemory(&pThis->__nvoc_base_StandardMemory);
     PORT_UNREFERENCED_VARIABLE(pThis);
 }

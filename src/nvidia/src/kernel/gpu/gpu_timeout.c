@@ -111,6 +111,8 @@ timeoutRegistryOverride
         data32 :
         0);
 
+    pGpu->bug5203024OverrideTimeouts = bug5203024OverrideTimeouts;
+
     NvBool bOverrideDefaultTimeout = (DRF_VAL(_REG_STR,
                                               _RM_BUG5203024_OVERRIDE_TIMEOUT,
                                               _FLAGS_SET_RM_DEFAULT_TIMEOUT,

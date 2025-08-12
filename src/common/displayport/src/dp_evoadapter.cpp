@@ -106,7 +106,8 @@ const struct
     {NV_DP_REGKEY_DISABLE_AVOID_HBR3_WAR,                &dpRegkeyDatabase.bDisableAvoidHBR3War,              DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE,                   &dpRegkeyDatabase.bSkipZeroOuiCache,                 DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_ENABLE_FIX_FOR_5147205,                &dpRegkeyDatabase.bEnable5147205Fix,                 DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN,                   &dpRegkeyDatabase.bForceHeadShutdown,                DP_REG_VAL_BOOL}
+    {NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN,                   &dpRegkeyDatabase.bForceHeadShutdown,                DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_EXPOSE_DSC_DEVID_WAR,                  &dpRegkeyDatabase.bEnableDevId,                      DP_REG_VAL_BOOL}
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :

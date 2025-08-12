@@ -768,25 +768,3 @@ subdeviceCtrlCmdGbGetSemaphoreSurfaceLayout_IMPL
     return NV_OK;
 }
 
-//
-// subdeviceCtrlCmdFbGetCarveoutRegionInfo
-//
-// Lock Requirements:
-//      Assert that API and GPUs lock held on entry
-//
-NV_STATUS
-subdeviceCtrlCmdFbGetCarveoutRegionInfo_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS *pParams
-)
-{
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-
-    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
-
-    pParams->numCarveoutRegions = 0;
-
-    return memmgrGetCarveoutRegionInfo(pGpu, pMemoryManager, pParams);
-}

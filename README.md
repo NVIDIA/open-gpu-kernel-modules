@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 580.65.06.
+version 580.76.05.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-580.65.06 driver release.  This can be achieved by installing
+580.76.05 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -185,7 +185,7 @@ table below).
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/580.65.06/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/580.76.05/README/kernel_open.html
 
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
@@ -951,6 +951,7 @@ Subsystem Device ID.
 | NVIDIA GB200                                            | 2941 10DE 21CA |
 | NVIDIA GeForce RTX 5090                                 | 2B85           |
 | NVIDIA GeForce RTX 5090 D                               | 2B87           |
+| NVIDIA GeForce RTX 5090 D V2                            | 2B8C           |
 | NVIDIA RTX PRO 6000 Blackwell Workstation Edition       | 2BB1 1028 204B |
 | NVIDIA RTX PRO 6000 Blackwell Workstation Edition       | 2BB1 103C 204B |
 | NVIDIA RTX PRO 6000 Blackwell Workstation Edition       | 2BB1 10DE 204B |
@@ -972,6 +973,10 @@ Subsystem Device ID.
 | NVIDIA RTX PRO 4500 Blackwell                           | 2C31 103C 2051 |
 | NVIDIA RTX PRO 4500 Blackwell                           | 2C31 10DE 2051 |
 | NVIDIA RTX PRO 4500 Blackwell                           | 2C31 17AA 2051 |
+| NVIDIA RTX PRO 4000 Blackwell SFF Edition               | 2C33 1028 2053 |
+| NVIDIA RTX PRO 4000 Blackwell SFF Edition               | 2C33 103C 2053 |
+| NVIDIA RTX PRO 4000 Blackwell SFF Edition               | 2C33 10DE 2053 |
+| NVIDIA RTX PRO 4000 Blackwell SFF Edition               | 2C33 17AA 2053 |
 | NVIDIA RTX PRO 4000 Blackwell                           | 2C34 1028 2052 |
 | NVIDIA RTX PRO 4000 Blackwell                           | 2C34 103C 2052 |
 | NVIDIA RTX PRO 4000 Blackwell                           | 2C34 10DE 2052 |
@@ -984,6 +989,10 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 5060                                 | 2D05           |
 | NVIDIA GeForce RTX 5070 Laptop GPU                      | 2D18           |
 | NVIDIA GeForce RTX 5060 Laptop GPU                      | 2D19           |
+| NVIDIA RTX PRO 2000 Blackwell                           | 2D30 1028 2054 |
+| NVIDIA RTX PRO 2000 Blackwell                           | 2D30 103C 2054 |
+| NVIDIA RTX PRO 2000 Blackwell                           | 2D30 10DE 2054 |
+| NVIDIA RTX PRO 2000 Blackwell                           | 2D30 17AA 2054 |
 | NVIDIA RTX PRO 2000 Blackwell Generation Laptop GPU     | 2D39           |
 | NVIDIA GeForce RTX 5070 Laptop GPU                      | 2D58           |
 | NVIDIA GeForce RTX 5060 Laptop GPU                      | 2D59           |

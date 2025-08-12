@@ -559,7 +559,7 @@ done:
         if (rmStatus != NV_OK)
         {
             // Acquire the lock again for the cleanup path
-            NV_ASSERT_OK_OR_RETURN(rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_FIFO));
+            NV_ASSERT_OK_OR_RETURN(rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_FIFO));
             bLockAcquired = NV_TRUE;
             goto failed;
         }

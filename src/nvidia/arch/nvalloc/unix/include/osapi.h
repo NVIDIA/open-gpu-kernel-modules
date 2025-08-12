@@ -178,6 +178,8 @@ void       RmUpdateGc6ConsoleRefCount (nv_state_t *, NvBool);
 NvBool     rm_get_uefi_console_status (nv_state_t *);
 NvU64      rm_get_uefi_console_size (nv_state_t *, NvU64 *);
 
+void       rm_check_s0ix_regkey_and_platform_support(void);
+
 RM_API    *RmUnixRmApiPrologue      (nv_state_t *, THREAD_STATE_NODE *, NvU32 module);
 void       RmUnixRmApiEpilogue      (nv_state_t *, THREAD_STATE_NODE *);
 

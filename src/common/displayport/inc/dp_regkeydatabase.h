@@ -100,6 +100,9 @@
 // Bug 5088957 : Force head shutdown in DpLib
 #define NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN                          "DP_WAR_5088957"
 
+// This regkey forces devID to be exposed to vendors via DPCD 0x309 for DSC-enabled SKUs.
+#define NV_DP_REGKEY_EXPOSE_DSC_DEVID_WAR                         "DP_DSC_DEVID_WAR"
+
 //
 // Data Base used to store all the regkey values.
 // The actual data base is declared statically in dp_evoadapter.cpp.
@@ -142,6 +145,7 @@ struct DP_REGKEY_DATABASE
     bool  bSkipZeroOuiCache;
     bool  bEnable5147205Fix;
     bool  bForceHeadShutdown;
+    bool  bEnableDevId;
 };
 
 extern struct DP_REGKEY_DATABASE dpRegkeyDatabase;

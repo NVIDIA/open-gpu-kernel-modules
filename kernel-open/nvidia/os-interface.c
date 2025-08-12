@@ -2313,7 +2313,7 @@ static int os_numa_verify_gpu_memory_zone(struct notifier_block *nb,
     return NOTIFY_OK;
 }
 
-#define ADD_REMOVE_GPU_MEMORY_NUM_SEGMENTS 4
+#define ADD_REMOVE_GPU_MEMORY_NUM_SEGMENTS 128
 
 NV_STATUS NV_API_CALL os_numa_add_gpu_memory
 (

@@ -180,6 +180,9 @@ static inline NV_STATUS sysmemCtrlCmdGetSurfacePhysPages(struct SystemMemory *pS
 #define sysmemCtrlCmdGetSurfacePhysPages(pStandardMemory, pParams) sysmemCtrlCmdGetSurfacePhysPages_IMPL(pStandardMemory, pParams)
 #endif // __nvoc_system_mem_h_disabled
 
+void sysmemDestruct_IMPL(struct SystemMemory *pSystemMemory);
+#define __nvoc_sysmemDestruct(pSystemMemory) sysmemDestruct_IMPL(pSystemMemory)
+
 
 // Wrapper macros for halified functions
 #define sysmemInitAllocRequest_FNPTR(pSystemMemory) pSystemMemory->__sysmemInitAllocRequest__

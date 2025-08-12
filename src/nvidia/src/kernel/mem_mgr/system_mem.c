@@ -175,6 +175,16 @@ sysmemConstruct_IMPL
     // Copy-construction has already been done by the base Memory class
     if (RS_IS_COPY_CTOR(pParams))
     {
+        Memory            *pMemorySrc   = dynamicCast(pParams->pSrcRef->pResource, Memory);
+        MEMORY_DESCRIPTOR *pMemDesc     = pMemorySrc->pMemDesc;
+        NV_STATUS          status       = NV_ERR_INVALID_ARGUMENT;
+
+        if (memdescGetCustomHeap(pMemDesc) == MEMDESC_CUSTOM_HEAP_SCANOUT_CARVEOUT) {
+            status = memmgrDuplicateFromScanoutCarveoutRegion(pGpu,
+                                                              GPU_GET_MEMORY_MANAGER(pGpu),
+                                                              pMemDesc);
+            return status;
+        }
         return NV_OK;
     }
 
@@ -305,6 +315,21 @@ sysmemConstruct_IMPL
                                         AT_GPU, pageSizeAttr),
             failed_destroy_memdesc);
 
+    if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT))
+    {
+        NvU32 heapFlag  = NVOS32_ALLOC_FLAGS_FORCE_MEM_GROWS_DOWN;
+
+        rmStatus = memmgrAllocScanoutCarveoutRegionResources(GPU_GET_MEMORY_MANAGER(pGpu),
+                                                             pAllocData,
+                                                             pAllocRequest->hClient,
+                                                             &heapFlag,
+                                                             pMemDesc);
+        NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR, rmStatus, failed_destroy_memdesc);
+
+        sizeOut = pMemDesc->Size;
+        pAllocData->limit = sizeOut - 1;
+    }
+
         memdescTagAlloc(rmStatus, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_132, pMemDesc);
         if (rmStatus != NV_OK)
         {
@@ -324,7 +349,7 @@ sysmemConstruct_IMPL
             }
             else
             {
-                NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR, rmStatus, failed_destroy_memdesc);
+                NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR, rmStatus, failed_free_scanout_carveout);
             }
         }
         else
@@ -484,6 +509,11 @@ failed_destruct_common:
     memDestructCommon(pMemory);
 failed_free_memdesc:
     memdescFree(pMemDesc);
+failed_free_scanout_carveout:
+    if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT)) {
+        memmgrFreeScanoutCarveoutRegionResources(GPU_GET_MEMORY_MANAGER(pGpu),
+                                                 memdescGetPte(pMemDesc, AT_CPU, 0));
+    }
 failed_destroy_memdesc:
     memdescDestroy(pMemDesc);
 
@@ -792,3 +822,17 @@ failed:
     return status;
 }
 
+void sysmemDestruct_IMPL(SystemMemory *pSystemMemory)
+{
+    Memory             *pMemory  = staticCast(pSystemMemory, Memory);
+    OBJGPU             *pGpu     = pMemory->pGpu;
+    MEMORY_DESCRIPTOR  *pMemDesc = pMemory->pMemDesc;
+
+    if ((pMemDesc != NULL) &&
+        memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT))
+    {
+        memmgrFreeScanoutCarveoutRegionResources(GPU_GET_MEMORY_MANAGER(pGpu),
+                                                 memdescGetPte(pMemDesc, AT_CPU, 0));
+    }
+
+}

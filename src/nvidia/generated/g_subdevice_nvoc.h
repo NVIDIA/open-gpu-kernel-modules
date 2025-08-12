@@ -2932,6 +2932,16 @@ static inline NV_STATUS subdeviceCtrlCmdGpuGetCachedInfo(struct Subdevice *pSubd
 #define subdeviceCtrlCmdGpuGetCachedInfo(pSubdevice, pGpuInfoParams) subdeviceCtrlCmdGpuGetCachedInfo_IMPL(pSubdevice, pGpuInfoParams)
 #endif // __nvoc_subdevice_h_disabled
 
+NV_STATUS subdeviceCtrlCmdGpuForceGspUnload_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_FORCE_GSP_UNLOAD_PARAMS *pGpuInfoParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdGpuForceGspUnload(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_FORCE_GSP_UNLOAD_PARAMS *pGpuInfoParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdGpuForceGspUnload(pSubdevice, pGpuInfoParams) subdeviceCtrlCmdGpuForceGspUnload_IMPL(pSubdevice, pGpuInfoParams)
+#endif // __nvoc_subdevice_h_disabled
+
 NV_STATUS subdeviceCtrlCmdGpuGetInfoV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pGpuInfoParams);
 #ifdef __nvoc_subdevice_h_disabled
 static inline NV_STATUS subdeviceCtrlCmdGpuGetInfoV2(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pGpuInfoParams) {
@@ -7554,6 +7564,8 @@ NV_STATUS subdeviceCtrlCmdGrInternalSetFecsTraceWrOffset_IMPL(struct Subdevice *
 NV_STATUS subdeviceCtrlCmdGrStaticGetFecsTraceDefines_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS *pParams);
 
 NV_STATUS subdeviceCtrlCmdGpuGetCachedInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pGpuInfoParams);
+
+NV_STATUS subdeviceCtrlCmdGpuForceGspUnload_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_FORCE_GSP_UNLOAD_PARAMS *pGpuInfoParams);
 
 NV_STATUS subdeviceCtrlCmdGpuGetInfoV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pGpuInfoParams);
 

@@ -221,6 +221,7 @@ typedef struct GspSystemInfo
     NvU64  hostPageSize;
     NvBool bIsCmcBasedHws;
     NvBool bGspNocatEnabled;
+    NvBool bS0ixSupport;
 } GspSystemInfo;
 
 

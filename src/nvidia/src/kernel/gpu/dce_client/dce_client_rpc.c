@@ -259,6 +259,7 @@ static NV_STATUS _dceRpcAllocateMemory
 {
     NvU32 *message_buffer;
 
+    NV_ASSERT_OR_RETURN(pRpc != NULL, NV_ERR_INVALID_ARGUMENT);
     message_buffer = portMemAllocNonPaged(DCE_MAX_RPC_MSG_SIZE);
     if (message_buffer == NULL)
     {
@@ -420,8 +421,8 @@ NV_STATUS rpcRmApiControl_dce
     NvU32 paramsSize
 )
 {
-    OBJGPU *pGpu = (OBJGPU*)pRmApi->pPrivateContext;
-    OBJRPC *pRpc = GPU_GET_RPC(pGpu);
+    OBJGPU *pGpu = NULL;
+    OBJRPC *pRpc = NULL;
 
     rpc_generic_union *msg_data;
     rpc_gsp_rm_control_v *rpc_params = NULL;
@@ -429,12 +430,11 @@ NV_STATUS rpcRmApiControl_dce
 
     NV_PRINTF(LEVEL_INFO, "NVRM_RPC_DCE : Prepare and send RmApiControl RPC [cmd:0x%x]\n", cmd);
 
-    status = _dceRpcAllocateMemory(pRpc);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "NVRM_RPC_DCE: Memory Allocation Failed\n");
-        goto done;
-    }
+    NV_ASSERT_OR_RETURN(pRmApi != NULL, NV_ERR_INVALID_ARGUMENT);
+    pGpu = (OBJGPU*)pRmApi->pPrivateContext;
+    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_STATE);
+    pRpc = GPU_GET_RPC(pGpu);
+    NV_ASSERT_OK_OR_RETURN(_dceRpcAllocateMemory(pRpc));
 
     msg_data = _dceRpcGetMessageData(pRpc);
     rpc_params = &msg_data->gsp_rm_control_v;
@@ -491,8 +491,8 @@ NV_STATUS rpcRmApiAlloc_dce
     NvU32 allocParamSize
 )
 {
-    OBJGPU *pGpu = (OBJGPU*)pRmApi->pPrivateContext;
-    OBJRPC *pRpc = GPU_GET_RPC(pGpu);
+    OBJGPU *pGpu = NULL;
+    OBJRPC *pRpc = NULL;
 
     rpc_generic_union *msg_data;
     rpc_gsp_rm_alloc_v *rpc_params;
@@ -502,9 +502,11 @@ NV_STATUS rpcRmApiAlloc_dce
 
     NV_PRINTF(LEVEL_INFO, "NVRM_RPC_DCE: Prepare and send RmApiAlloc RPC\n");
 
-    NV_ASSERT_OK_OR_GOTO(status,
-                         _dceRpcAllocateMemory(pRpc),
-                         done);
+    NV_ASSERT_OR_RETURN(pRmApi != NULL, NV_ERR_INVALID_ARGUMENT);
+    pGpu = (OBJGPU*)pRmApi->pPrivateContext;
+    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_STATE);
+    pRpc = GPU_GET_RPC(pGpu);
+    NV_ASSERT_OK_OR_RETURN(_dceRpcAllocateMemory(pRpc));
 
     msg_data = _dceRpcGetMessageData(pRpc);
     rpc_params = &msg_data->gsp_rm_alloc_v;
@@ -567,8 +569,8 @@ done:
 
 NV_STATUS rpcRmApiFree_dce(RM_API *pRmApi, NvHandle hClient, NvHandle hObject)
 {
-    OBJGPU *pGpu = (OBJGPU*)pRmApi->pPrivateContext;
-    OBJRPC *pRpc = GPU_GET_RPC(pGpu);
+    OBJGPU *pGpu = NULL;
+    OBJRPC *pRpc = NULL;
 
     rpc_generic_union *msg_data;
     NVOS00_PARAMETERS_v *rpc_params;
@@ -577,8 +579,11 @@ NV_STATUS rpcRmApiFree_dce(RM_API *pRmApi, NvHandle hClient, NvHandle hObject)
     NV_PRINTF(LEVEL_INFO, "NVRM_RPC_DCE Free "
               "RPC Called for hClient: 0x%x\n", hClient);
 
-    status = _dceRpcAllocateMemory(pRpc);
-    NV_ASSERT_OK_OR_RETURN(status);
+    NV_ASSERT_OR_RETURN(pRmApi != NULL, NV_ERR_INVALID_ARGUMENT);
+    pGpu = (OBJGPU*)pRmApi->pPrivateContext;
+    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_STATE);
+    pRpc = GPU_GET_RPC(pGpu);
+    NV_ASSERT_OK_OR_RETURN(_dceRpcAllocateMemory(pRpc));
 
     msg_data = _dceRpcGetMessageData(pRpc);
     rpc_params = &msg_data->free_v.params;
@@ -628,8 +633,8 @@ NV_STATUS rpcRmApiDupObject_dce
     NvU32 flags
 )
 {
-    OBJGPU *pGpu = (OBJGPU*)pRmApi->pPrivateContext;
-    OBJRPC *pRpc = GPU_GET_RPC(pGpu);
+    OBJGPU *pGpu = NULL;
+    OBJRPC *pRpc = NULL;
 
     rpc_generic_union *msg_data;
     NVOS55_PARAMETERS_v03_00 *rpc_params = NULL;
@@ -639,8 +644,11 @@ NV_STATUS rpcRmApiDupObject_dce
               "RPC Called for hClient: 0x%x\n", hClient);
 
 
-    status = _dceRpcAllocateMemory(pRpc);
-    NV_ASSERT_OK_OR_RETURN(status);
+    NV_ASSERT_OR_RETURN(pRmApi != NULL, NV_ERR_INVALID_ARGUMENT);
+    pGpu = (OBJGPU*)pRmApi->pPrivateContext;
+    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_STATE);
+    pRpc = GPU_GET_RPC(pGpu);
+    NV_ASSERT_OK_OR_RETURN(_dceRpcAllocateMemory(pRpc));
 
     msg_data = _dceRpcGetMessageData(pRpc);
     rpc_params = &msg_data->dup_object_v.params;
@@ -687,9 +695,9 @@ rpcDceRmInit_dce
     NvBool bInit
 )
 {
-    OBJGPU *pGpu = (OBJGPU*)pRmApi->pPrivateContext;
-    OBJRPC *pRpc = GPU_GET_RPC(pGpu);
-    DceClient *pDceClientrm = GPU_GET_DCECLIENTRM(pGpu);
+    OBJGPU *pGpu = NULL;
+    OBJRPC *pRpc = NULL;
+    DceClient *pDceClientrm = NULL;
 
     rpc_generic_union *msg_data;
     NV_STATUS status = NV_ERR_NOT_SUPPORTED;
@@ -698,8 +706,12 @@ rpcDceRmInit_dce
     NV_PRINTF(LEVEL_INFO, "NVRM_RPC_DCE RPC to trigger %s called\n",
               bInit ? "RmInitAdapter" : "RmShutdownAdapter");
 
-    status = _dceRpcAllocateMemory(pRpc);
-    NV_ASSERT_OK_OR_RETURN(status);
+    NV_ASSERT_OR_RETURN(pRmApi != NULL, NV_ERR_INVALID_ARGUMENT);
+    pGpu = (OBJGPU*)pRmApi->pPrivateContext;
+    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_STATE);
+    pRpc = GPU_GET_RPC(pGpu);
+    pDceClientrm = GPU_GET_DCECLIENTRM(pGpu);
+    NV_ASSERT_OK_OR_RETURN(_dceRpcAllocateMemory(pRpc));
 
     msg_data = _dceRpcGetMessageData(pRpc);
     rpc_params = &msg_data->dce_rm_init_v;

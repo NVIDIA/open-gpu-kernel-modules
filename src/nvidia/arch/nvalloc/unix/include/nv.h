@@ -656,23 +656,24 @@ typedef NV_STATUS (*nvPmaEvictRangeCallback)(void *, NvU64, NvU64, nvgpuGpuMemor
  * flags
  */
 
-#define NV_FLAG_OPEN                        0x0001
-#define NV_FLAG_EXCLUDE                     0x0002
-#define NV_FLAG_CONTROL                     0x0004
-#define NV_FLAG_PCI_P2P_UNSUPPORTED_CHIPSET 0x0008
-#define NV_FLAG_SOC_DISPLAY                 0x0010
-#define NV_FLAG_USES_MSI                    0x0020
-#define NV_FLAG_USES_MSIX                   0x0040
-#define NV_FLAG_PASSTHRU                    0x0080
-#define NV_FLAG_SUSPENDED                   0x0100
+#define NV_FLAG_OPEN                            0x0001
+#define NV_FLAG_EXCLUDE                         0x0002
+#define NV_FLAG_CONTROL                         0x0004
+#define NV_FLAG_PCI_P2P_UNSUPPORTED_CHIPSET     0x0008
+#define NV_FLAG_SOC_DISPLAY                     0x0010
+#define NV_FLAG_USES_MSI                        0x0020
+#define NV_FLAG_USES_MSIX                       0x0040
+#define NV_FLAG_PASSTHRU                        0x0080
+#define NV_FLAG_SUSPENDED                       0x0100
+#define NV_FLAG_HAS_CONSOLE_IN_SYSMEM_CARVEOUT  0x0200
 /* To be set when an FLR needs to be triggered after device shut down. */
-#define NV_FLAG_TRIGGER_FLR                 0x0400
-#define NV_FLAG_PERSISTENT_SW_STATE         0x0800
-#define NV_FLAG_IN_RECOVERY                 0x1000
-#define NV_FLAG_PCI_REMOVE_IN_PROGRESS      0x2000
-#define NV_FLAG_UNBIND_LOCK                 0x4000
+#define NV_FLAG_TRIGGER_FLR                     0x0400
+#define NV_FLAG_PERSISTENT_SW_STATE             0x0800
+#define NV_FLAG_IN_RECOVERY                     0x1000
+#define NV_FLAG_PCI_REMOVE_IN_PROGRESS          0x2000
+#define NV_FLAG_UNBIND_LOCK                     0x4000
 /* To be set when GPU is not present on the bus, to help device teardown */
-#define NV_FLAG_IN_SURPRISE_REMOVAL         0x8000
+#define NV_FLAG_IN_SURPRISE_REMOVAL             0x8000
 
 typedef enum
 {
@@ -728,6 +729,9 @@ typedef enum
 
 #define NV_IS_DEVICE_IN_SURPRISE_REMOVAL(nv)    \
         (((nv)->flags & NV_FLAG_IN_SURPRISE_REMOVAL) != 0)
+
+#define NV_HAS_CONSOLE_IN_SYSMEM_CARVEOUT(nv)    \
+        (((nv)->flags & NV_FLAG_HAS_CONSOLE_IN_SYSMEM_CARVEOUT) != 0)
 
 /*
  * For console setup by EFI GOP, the base address is BAR1.

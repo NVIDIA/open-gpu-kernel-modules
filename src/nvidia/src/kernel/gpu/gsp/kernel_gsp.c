@@ -2698,6 +2698,7 @@ kgspInitVgpuPartitionLogging_IMPL
     char sourceName[SOURCE_NAME_MAX_LENGTH];
     NvBool bPreserveLogBufferFull = NV_FALSE;
     NvBool bMergeNvlog = NV_TRUE;
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
 
     if (gfid > MAX_PARTITIONS_WITH_GFID)
     {
@@ -2799,6 +2800,8 @@ kgspInitVgpuPartitionLogging_IMPL
     pKernelGsp->bHasVgpuLogs = NV_TRUE;
 
     *pPreserveLogBufferFull = bPreserveLogBufferFull;
+
+    libosLogUpdateTimerDelta(&pKernelGsp->logDecodeVgpuPartition[gfid - 1], pTmr->sysTimerOffsetNs);
 
 exit:
     if (nvStatus != NV_OK)

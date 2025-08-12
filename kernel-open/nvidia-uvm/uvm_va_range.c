@@ -785,7 +785,8 @@ static NV_STATUS va_range_add_gpu_va_space_managed(uvm_va_range_managed_t *manag
     NV_STATUS status = NV_OK;
     const bool should_add_remote_mappings =
         uvm_processor_mask_test(&managed_range->policy.accessed_by, gpu->id) ||
-        uvm_processor_mask_test(&managed_range->va_range.uvm_lite_gpus, gpu->id);
+        uvm_processor_mask_test(&managed_range->va_range.uvm_lite_gpus, gpu->id) ||
+        gpu->parent->is_integrated_gpu;
 
     // By this time, the gpu is already in the registration mask.
     const bool should_disable_read_duplication =

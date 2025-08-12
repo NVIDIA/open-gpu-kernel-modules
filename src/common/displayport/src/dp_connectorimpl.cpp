@@ -51,6 +51,17 @@
 #include "ctrl/ctrl0073/ctrl0073dp.h"
 #include "dp_tracing.h"
 
+/*
+ * This is needed by Synaptics to disable DisplayExpand feature 
+ * in some of their docking station based on if GPU supports DSC. 
+ * Feature is not needed if DSC is supported.
+ * Customers reported problems with the feature enabled on GB20x devices
+ * and requested GPU DSC detection to disable DisplayExpand feature.
+ * DSC is supported in Turing and later SKUs hence
+ * exposing Turing DevId to customers to address their requirement. 
+ */
+#define TURING_DEV_ID  0x1E
+
 using namespace DisplayPort;
 
 ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Connector::EventSink * sink)
@@ -184,6 +195,7 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     this->bForceDisableTunnelBwAllocation   = dpRegkeyDatabase.bForceDisableTunnelBwAllocation;
     this->bSkipZeroOuiCache                 = dpRegkeyDatabase.bSkipZeroOuiCache;
     this->bForceHeadShutdownFromRegkey      = dpRegkeyDatabase.bForceHeadShutdown;
+    this->bEnableDevId                      = dpRegkeyDatabase.bEnableDevId;
     this->bDisableEffBppSST8b10b            = dpRegkeyDatabase.bDisableEffBppSST8b10b;
 }
 
@@ -3904,14 +3916,20 @@ bool ConnectorImpl::getIgnoreSourceOuiHandshake()
 bool ConnectorImpl::performIeeeOuiHandshake()
 {
     const char *ieeeOuiDevId = "NVIDIA";
+    NvU8        chipRevision = 0x0;
+    bool        bGpuDscSupported = NV_FALSE;
+
+    main->getDscCaps(&bGpuDscSupported);
+    if ((this->bEnableDevId) && (bGpuDscSupported))
+    {
+        chipRevision = TURING_DEV_ID;
+    }
 
     if (!hal->getOuiSupported() || getIgnoreSourceOuiHandshake())
         return false;
 
-    if (hal->setOuiSource(DPCD_OUI_NVIDIA, ieeeOuiDevId, 6 /* string length of ieeeOuiDevId */, 0) == AuxRetry::ack)
+    if (hal->setOuiSource(DPCD_OUI_NVIDIA, ieeeOuiDevId, 6 /* string length of ieeeOuiDevId */, chipRevision) == AuxRetry::ack)
     {
-        NvU8 chipRevision = 0;
-
         // parse client OUI.
         if (hal->getOuiSink(ouiId, &modelName[0], sizeof(modelName), chipRevision))
         {

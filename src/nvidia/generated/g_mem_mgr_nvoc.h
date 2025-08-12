@@ -501,7 +501,6 @@ struct __nvoc_inner_struc_MemoryManager_2__ {
     NvU64 minFBPSize;
     NvU32 fbRegionPriority[16];
     NvU64 ReservedConsoleDispMemSize;
-    PMEMORY_DESCRIPTOR pReservedConsoleMemDesc;
     NvU32 lowerRangeMag;
     NvU32 lowerRangeScale;
     NvU32 middleRangeMag;
@@ -536,12 +535,12 @@ struct MemoryManager {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct MemoryManager *__nvoc_pbase_MemoryManager;    // memmgr
 
-    // Vtable with 77 per-object function pointers
+    // Vtable with 85 per-object function pointers
     NvU64 (*__memmgrDeterminePageSize__)(struct MemoryManager * /*this*/, NvHandle, NvU64, NvU32, NvU32, NvU32 *, NvU32 *);  // halified (2 hals) body
     NV_STATUS (*__memmgrFreeHwResources__)(OBJGPU *, struct MemoryManager * /*this*/, FB_ALLOC_INFO *);  // halified (2 hals) body
     NV_STATUS (*__memmgrCreateHeap__)(struct MemoryManager * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__memmgrInitFbRegions__)(OBJGPU *, struct MemoryManager * /*this*/);  // halified (2 hals) body
-    NV_STATUS (*__memmgrAllocateConsoleRegion__)(OBJGPU *, struct MemoryManager * /*this*/, FB_REGION_DESCRIPTOR *);  // halified (2 hals) body
+    NV_STATUS (*__memmgrAllocateConsoleRegion__)(OBJGPU *, struct MemoryManager * /*this*/);  // halified (4 hals) body
     NV_STATUS (*__memmgrScrubHandlePostSchedulingEnable__)(OBJGPU *, struct MemoryManager * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__memmgrScrubHandlePreSchedulingDisable__)(OBJGPU *, struct MemoryManager * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__memmgrMemUtilsChannelInitialize__)(OBJGPU *, struct MemoryManager * /*this*/, OBJCHANNEL *);  // halified (2 hals) body
@@ -610,6 +609,14 @@ struct MemoryManager {
     NV_STATUS (*__memmgrGetBlackListPages__)(OBJGPU *, struct MemoryManager * /*this*/, BLACKLIST_ADDRESS *, NvU32 *);  // halified (3 hals) body
     NV_STATUS (*__memmgrDiscoverMIGPartitionableMemoryRange__)(OBJGPU *, struct MemoryManager * /*this*/, struct NV_RANGE *);  // halified (2 hals) body
     NvU32 (*__memmgrGetFBEndReserveSizeEstimate__)(OBJGPU *, struct MemoryManager * /*this*/);  // halified (2 hals)
+    NV_STATUS (*__memmgrInitZeroFbRegionsHal__)(OBJGPU *, struct MemoryManager * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__memmgrAllocScanoutCarveoutRegionResources__)(struct MemoryManager * /*this*/, NV_MEMORY_ALLOCATION_PARAMS *, NvU32, NvU32 *, MEMORY_DESCRIPTOR *);  // halified (2 hals) body
+    NV_STATUS (*__memmgrAllocFromScanoutCarveoutRegion__)(POBJGPU, struct MemoryManager * /*this*/, NvU32, NV_MEMORY_ALLOCATION_PARAMS *, NvU32 *, PMEMORY_DESCRIPTOR *);  // halified (2 hals) body
+    void (*__memmgrFreeScanoutCarveoutRegionResources__)(struct MemoryManager * /*this*/, NvU64);  // halified (2 hals) body
+    void (*__memmgrFreeFromScanoutCarveoutRegion__)(POBJGPU, struct MemoryManager * /*this*/, PMEMORY_DESCRIPTOR);  // halified (2 hals) body
+    NV_STATUS (*__memmgrCreateScanoutCarveoutHeap__)(OBJGPU *, struct MemoryManager * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__memmgrDestroyScanoutCarveoutHeap__)(OBJGPU *, struct MemoryManager * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__memmgrDuplicateFromScanoutCarveoutRegion__)(POBJGPU, struct MemoryManager * /*this*/, PMEMORY_DESCRIPTOR);  // halified (2 hals) body
     NvBool (*__memmgrIsMemoryIoCoherent__)(OBJGPU *, struct MemoryManager * /*this*/, NV_MEMORY_ALLOCATION_PARAMS *);  // halified (2 hals) body
     NvU8 (*__memmgrGetLocalizedOffset__)(OBJGPU *, struct MemoryManager * /*this*/);  // halified (2 hals) body
     NvBool (*__memmgrIsFlaSysmemSupported__)(OBJGPU *, struct MemoryManager * /*this*/);  // halified (2 hals) body
@@ -619,6 +626,7 @@ struct MemoryManager {
 //  NvBool PDB_PROP_MEMMGR_IS_MISSING inherited from OBJENGSTATE
 
     // Data members
+    OBJEHEAP *pScanoutHeap;
     NvBool bFbsrWddmModeEnabled;
     NvBool bFbRegionsSupported;
     NvBool bPmaSupportedOnPlatform;
@@ -674,6 +682,7 @@ struct MemoryManager {
     NvBool bDisableGlobalCeUtils;
     OBJSCRUB eccScrubberState;
     struct __nvoc_inner_struc_MemoryManager_2__ Ram;
+    PMEMORY_DESCRIPTOR pReservedConsoleMemDesc;
     NvU32 PteKindOverride;
     NvU32 zbcSurfaces;
     NvU64 overrideInitHeapMin;
@@ -1110,12 +1119,12 @@ static inline NV_STATUS memmgrReserveVbiosVgaRegions(OBJGPU *pGpu, struct Memory
 #endif // __nvoc_mem_mgr_h_disabled
 
 #ifdef __nvoc_mem_mgr_h_disabled
-static inline NV_STATUS memmgrReserveConsoleRegion(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_REGION_DESCRIPTOR *arg3) {
+static inline NV_STATUS memmgrReserveConsoleRegion(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrReserveConsoleRegion(pGpu, pMemoryManager, arg3) memmgrReserveConsoleRegion_56cd7a(pGpu, pMemoryManager, arg3)
+#define memmgrReserveConsoleRegion(pGpu, pMemoryManager) memmgrReserveConsoleRegion_56cd7a(pGpu, pMemoryManager)
 #endif // __nvoc_mem_mgr_h_disabled
 
 void memmgrReleaseConsoleRegion_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
@@ -1727,7 +1736,7 @@ static inline NV_STATUS memmgrGetCarveoutRegionInfo(POBJGPU pGpu, struct MemoryM
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrGetCarveoutRegionInfo(pGpu, pMemoryManager, pParams) memmgrGetCarveoutRegionInfo_56cd7a(pGpu, pMemoryManager, pParams)
+#define memmgrGetCarveoutRegionInfo(pGpu, pMemoryManager, pParams) memmgrGetCarveoutRegionInfo_KERNEL(pGpu, pMemoryManager, pParams)
 #endif // __nvoc_mem_mgr_h_disabled
 
 
@@ -1763,10 +1772,10 @@ static inline NV_STATUS memmgrGetCarveoutRegionInfo(POBJGPU pGpu, struct MemoryM
 #define memmgrInitFbRegions(pGpu, pMemoryManager) memmgrInitFbRegions_DISPATCH(pGpu, pMemoryManager)
 #define memmgrInitFbRegions_HAL(pGpu, pMemoryManager) memmgrInitFbRegions_DISPATCH(pGpu, pMemoryManager)
 #define memmgrReserveVbiosVgaRegions_HAL(pGpu, pMemoryManager) memmgrReserveVbiosVgaRegions(pGpu, pMemoryManager)
-#define memmgrReserveConsoleRegion_HAL(pGpu, pMemoryManager, arg3) memmgrReserveConsoleRegion(pGpu, pMemoryManager, arg3)
+#define memmgrReserveConsoleRegion_HAL(pGpu, pMemoryManager) memmgrReserveConsoleRegion(pGpu, pMemoryManager)
 #define memmgrAllocateConsoleRegion_FNPTR(pMemoryManager) pMemoryManager->__memmgrAllocateConsoleRegion__
-#define memmgrAllocateConsoleRegion(pGpu, pMemoryManager, arg3) memmgrAllocateConsoleRegion_DISPATCH(pGpu, pMemoryManager, arg3)
-#define memmgrAllocateConsoleRegion_HAL(pGpu, pMemoryManager, arg3) memmgrAllocateConsoleRegion_DISPATCH(pGpu, pMemoryManager, arg3)
+#define memmgrAllocateConsoleRegion(pGpu, pMemoryManager) memmgrAllocateConsoleRegion_DISPATCH(pGpu, pMemoryManager)
+#define memmgrAllocateConsoleRegion_HAL(pGpu, pMemoryManager) memmgrAllocateConsoleRegion_DISPATCH(pGpu, pMemoryManager)
 #define memmgrGetKindComprForGpu_HAL(pMemoryManager, arg2, pGpu, offset, kind, pComprInfo) memmgrGetKindComprForGpu(pMemoryManager, arg2, pGpu, offset, kind, pComprInfo)
 #define memmgrScrubInit_HAL(pGpu, pMemoryManager) memmgrScrubInit(pGpu, pMemoryManager)
 #define memmgrScrubHandlePostSchedulingEnable_FNPTR(pMemoryManager) pMemoryManager->__memmgrScrubHandlePostSchedulingEnable__
@@ -2001,6 +2010,30 @@ static inline NV_STATUS memmgrGetCarveoutRegionInfo(POBJGPU pGpu, struct MemoryM
 #define memmgrFreeFbsrMemory_HAL(pGpu, pMemoryManager) memmgrFreeFbsrMemory(pGpu, pMemoryManager)
 #define memmgrReserveVgaWorkspaceMemDescForFbsr_HAL(pGpu, pMemoryManager) memmgrReserveVgaWorkspaceMemDescForFbsr(pGpu, pMemoryManager)
 #define memmgrCalculateHeapOffsetWithGSP_HAL(pGpu, pMemoryManager, offset) memmgrCalculateHeapOffsetWithGSP(pGpu, pMemoryManager, offset)
+#define memmgrInitZeroFbRegionsHal_FNPTR(pMemoryManager) pMemoryManager->__memmgrInitZeroFbRegionsHal__
+#define memmgrInitZeroFbRegionsHal(pGpu, pMemoryManager) memmgrInitZeroFbRegionsHal_DISPATCH(pGpu, pMemoryManager)
+#define memmgrInitZeroFbRegionsHal_HAL(pGpu, pMemoryManager) memmgrInitZeroFbRegionsHal_DISPATCH(pGpu, pMemoryManager)
+#define memmgrAllocScanoutCarveoutRegionResources_FNPTR(pMemoryManager) pMemoryManager->__memmgrAllocScanoutCarveoutRegionResources__
+#define memmgrAllocScanoutCarveoutRegionResources(pMemoryManager, pAllocData, owner, pHeapFlag, pMemDesc) memmgrAllocScanoutCarveoutRegionResources_DISPATCH(pMemoryManager, pAllocData, owner, pHeapFlag, pMemDesc)
+#define memmgrAllocScanoutCarveoutRegionResources_HAL(pMemoryManager, pAllocData, owner, pHeapFlag, pMemDesc) memmgrAllocScanoutCarveoutRegionResources_DISPATCH(pMemoryManager, pAllocData, owner, pHeapFlag, pMemDesc)
+#define memmgrAllocFromScanoutCarveoutRegion_FNPTR(pMemoryManager) pMemoryManager->__memmgrAllocFromScanoutCarveoutRegion__
+#define memmgrAllocFromScanoutCarveoutRegion(pGpu, pMemoryManager, owner, pVidHeapAlloc, pHeapFlag, ppMemDesc) memmgrAllocFromScanoutCarveoutRegion_DISPATCH(pGpu, pMemoryManager, owner, pVidHeapAlloc, pHeapFlag, ppMemDesc)
+#define memmgrAllocFromScanoutCarveoutRegion_HAL(pGpu, pMemoryManager, owner, pVidHeapAlloc, pHeapFlag, ppMemDesc) memmgrAllocFromScanoutCarveoutRegion_DISPATCH(pGpu, pMemoryManager, owner, pVidHeapAlloc, pHeapFlag, ppMemDesc)
+#define memmgrFreeScanoutCarveoutRegionResources_FNPTR(pMemoryManager) pMemoryManager->__memmgrFreeScanoutCarveoutRegionResources__
+#define memmgrFreeScanoutCarveoutRegionResources(pMemoryManager, base) memmgrFreeScanoutCarveoutRegionResources_DISPATCH(pMemoryManager, base)
+#define memmgrFreeScanoutCarveoutRegionResources_HAL(pMemoryManager, base) memmgrFreeScanoutCarveoutRegionResources_DISPATCH(pMemoryManager, base)
+#define memmgrFreeFromScanoutCarveoutRegion_FNPTR(pMemoryManager) pMemoryManager->__memmgrFreeFromScanoutCarveoutRegion__
+#define memmgrFreeFromScanoutCarveoutRegion(pGpu, pMemoryManager, pMemDesc) memmgrFreeFromScanoutCarveoutRegion_DISPATCH(pGpu, pMemoryManager, pMemDesc)
+#define memmgrFreeFromScanoutCarveoutRegion_HAL(pGpu, pMemoryManager, pMemDesc) memmgrFreeFromScanoutCarveoutRegion_DISPATCH(pGpu, pMemoryManager, pMemDesc)
+#define memmgrCreateScanoutCarveoutHeap_FNPTR(pMemoryManager) pMemoryManager->__memmgrCreateScanoutCarveoutHeap__
+#define memmgrCreateScanoutCarveoutHeap(pGpu, pMemoryManager) memmgrCreateScanoutCarveoutHeap_DISPATCH(pGpu, pMemoryManager)
+#define memmgrCreateScanoutCarveoutHeap_HAL(pGpu, pMemoryManager) memmgrCreateScanoutCarveoutHeap_DISPATCH(pGpu, pMemoryManager)
+#define memmgrDestroyScanoutCarveoutHeap_FNPTR(pMemoryManager) pMemoryManager->__memmgrDestroyScanoutCarveoutHeap__
+#define memmgrDestroyScanoutCarveoutHeap(pGpu, pMemoryManager) memmgrDestroyScanoutCarveoutHeap_DISPATCH(pGpu, pMemoryManager)
+#define memmgrDestroyScanoutCarveoutHeap_HAL(pGpu, pMemoryManager) memmgrDestroyScanoutCarveoutHeap_DISPATCH(pGpu, pMemoryManager)
+#define memmgrDuplicateFromScanoutCarveoutRegion_FNPTR(pMemoryManager) pMemoryManager->__memmgrDuplicateFromScanoutCarveoutRegion__
+#define memmgrDuplicateFromScanoutCarveoutRegion(pGpu, pMemoryManager, pMemDesc) memmgrDuplicateFromScanoutCarveoutRegion_DISPATCH(pGpu, pMemoryManager, pMemDesc)
+#define memmgrDuplicateFromScanoutCarveoutRegion_HAL(pGpu, pMemoryManager, pMemDesc) memmgrDuplicateFromScanoutCarveoutRegion_DISPATCH(pGpu, pMemoryManager, pMemDesc)
 #define memmgrGetCarveoutRegionInfo_HAL(pGpu, pMemoryManager, pParams) memmgrGetCarveoutRegionInfo(pGpu, pMemoryManager, pParams)
 #define memmgrIsMemoryIoCoherent_FNPTR(pMemoryManager) pMemoryManager->__memmgrIsMemoryIoCoherent__
 #define memmgrIsMemoryIoCoherent(pGpu, pMemoryManager, pAllocData) memmgrIsMemoryIoCoherent_DISPATCH(pGpu, pMemoryManager, pAllocData)
@@ -2076,8 +2109,8 @@ static inline NV_STATUS memmgrInitFbRegions_DISPATCH(OBJGPU *pGpu, struct Memory
     return pMemoryManager->__memmgrInitFbRegions__(pGpu, pMemoryManager);
 }
 
-static inline NV_STATUS memmgrAllocateConsoleRegion_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_REGION_DESCRIPTOR *arg3) {
-    return pMemoryManager->__memmgrAllocateConsoleRegion__(pGpu, pMemoryManager, arg3);
+static inline NV_STATUS memmgrAllocateConsoleRegion_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    return pMemoryManager->__memmgrAllocateConsoleRegion__(pGpu, pMemoryManager);
 }
 
 static inline NV_STATUS memmgrScrubHandlePostSchedulingEnable_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
@@ -2352,6 +2385,38 @@ static inline NvU32 memmgrGetFBEndReserveSizeEstimate_DISPATCH(OBJGPU *pGpu, str
     return pMemoryManager->__memmgrGetFBEndReserveSizeEstimate__(pGpu, pMemoryManager);
 }
 
+static inline NV_STATUS memmgrInitZeroFbRegionsHal_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    return pMemoryManager->__memmgrInitZeroFbRegionsHal__(pGpu, pMemoryManager);
+}
+
+static inline NV_STATUS memmgrAllocScanoutCarveoutRegionResources_DISPATCH(struct MemoryManager *pMemoryManager, NV_MEMORY_ALLOCATION_PARAMS *pAllocData, NvU32 owner, NvU32 *pHeapFlag, MEMORY_DESCRIPTOR *pMemDesc) {
+    return pMemoryManager->__memmgrAllocScanoutCarveoutRegionResources__(pMemoryManager, pAllocData, owner, pHeapFlag, pMemDesc);
+}
+
+static inline NV_STATUS memmgrAllocFromScanoutCarveoutRegion_DISPATCH(POBJGPU pGpu, struct MemoryManager *pMemoryManager, NvU32 owner, NV_MEMORY_ALLOCATION_PARAMS *pVidHeapAlloc, NvU32 *pHeapFlag, PMEMORY_DESCRIPTOR *ppMemDesc) {
+    return pMemoryManager->__memmgrAllocFromScanoutCarveoutRegion__(pGpu, pMemoryManager, owner, pVidHeapAlloc, pHeapFlag, ppMemDesc);
+}
+
+static inline void memmgrFreeScanoutCarveoutRegionResources_DISPATCH(struct MemoryManager *pMemoryManager, NvU64 base) {
+    pMemoryManager->__memmgrFreeScanoutCarveoutRegionResources__(pMemoryManager, base);
+}
+
+static inline void memmgrFreeFromScanoutCarveoutRegion_DISPATCH(POBJGPU pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR pMemDesc) {
+    pMemoryManager->__memmgrFreeFromScanoutCarveoutRegion__(pGpu, pMemoryManager, pMemDesc);
+}
+
+static inline NV_STATUS memmgrCreateScanoutCarveoutHeap_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    return pMemoryManager->__memmgrCreateScanoutCarveoutHeap__(pGpu, pMemoryManager);
+}
+
+static inline NV_STATUS memmgrDestroyScanoutCarveoutHeap_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    return pMemoryManager->__memmgrDestroyScanoutCarveoutHeap__(pGpu, pMemoryManager);
+}
+
+static inline NV_STATUS memmgrDuplicateFromScanoutCarveoutRegion_DISPATCH(POBJGPU pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR pMemDesc) {
+    return pMemoryManager->__memmgrDuplicateFromScanoutCarveoutRegion__(pGpu, pMemoryManager, pMemDesc);
+}
+
 static inline NvBool memmgrIsMemoryIoCoherent_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NV_MEMORY_ALLOCATION_PARAMS *pAllocData) {
     return pMemoryManager->__memmgrIsMemoryIoCoherent__(pGpu, pMemoryManager, pAllocData);
 }
@@ -2403,7 +2468,7 @@ static inline NV_STATUS memmgrReserveVbiosVgaRegions_56cd7a(OBJGPU *pGpu, struct
 }
 
 
-static inline NV_STATUS memmgrReserveConsoleRegion_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_REGION_DESCRIPTOR *arg3) {
+static inline NV_STATUS memmgrReserveConsoleRegion_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     return NV_OK;
 }
 
@@ -2580,6 +2645,10 @@ static inline NV_STATUS memmgrCalculateHeapOffsetWithGSP_46f6a7(OBJGPU *pGpu, st
 }
 
 
+NV_STATUS memmgrGetCarveoutRegionInfo_KERNEL(POBJGPU pGpu, struct MemoryManager *pMemoryManager, NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS *pParams);
+
+NV_STATUS memmgrGetCarveoutRegionInfo_GB10B(POBJGPU pGpu, struct MemoryManager *pMemoryManager, NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS *pParams);
+
 static inline NV_STATUS memmgrGetCarveoutRegionInfo_56cd7a(POBJGPU pGpu, struct MemoryManager *pMemoryManager, NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS *pParams) {
     return NV_OK;
 }
@@ -2625,11 +2694,13 @@ static inline NV_STATUS memmgrInitFbRegions_56cd7a(OBJGPU *pGpu, struct MemoryMa
 
 NV_STATUS memmgrInitFbRegions_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NV_STATUS memmgrAllocateConsoleRegion_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_REGION_DESCRIPTOR *arg3) {
+static inline NV_STATUS memmgrAllocateConsoleRegion_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     return NV_OK;
 }
 
-NV_STATUS memmgrAllocateConsoleRegion_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_REGION_DESCRIPTOR *arg3);
+NV_STATUS memmgrAllocateConsoleRegion_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+NV_STATUS memmgrAllocateConsoleRegion_GB10B(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
 NV_STATUS memmgrScrubHandlePostSchedulingEnable_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
@@ -3086,6 +3157,54 @@ static inline NV_STATUS memmgrDiscoverMIGPartitionableMemoryRange_46f6a7(OBJGPU 
 NvU32 memmgrGetFBEndReserveSizeEstimate_GB100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
 NvU32 memmgrGetFBEndReserveSizeEstimate_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+NV_STATUS memmgrInitZeroFbRegionsHal_GB10B(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+static inline NV_STATUS memmgrInitZeroFbRegionsHal_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    return NV_OK;
+}
+
+NV_STATUS memmgrAllocScanoutCarveoutRegionResources_GB10B(struct MemoryManager *pMemoryManager, NV_MEMORY_ALLOCATION_PARAMS *pAllocData, NvU32 owner, NvU32 *pHeapFlag, MEMORY_DESCRIPTOR *pMemDesc);
+
+static inline NV_STATUS memmgrAllocScanoutCarveoutRegionResources_46f6a7(struct MemoryManager *pMemoryManager, NV_MEMORY_ALLOCATION_PARAMS *pAllocData, NvU32 owner, NvU32 *pHeapFlag, MEMORY_DESCRIPTOR *pMemDesc) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS memmgrAllocFromScanoutCarveoutRegion_GB10B(POBJGPU pGpu, struct MemoryManager *pMemoryManager, NvU32 owner, NV_MEMORY_ALLOCATION_PARAMS *pVidHeapAlloc, NvU32 *pHeapFlag, PMEMORY_DESCRIPTOR *ppMemDesc);
+
+static inline NV_STATUS memmgrAllocFromScanoutCarveoutRegion_46f6a7(POBJGPU pGpu, struct MemoryManager *pMemoryManager, NvU32 owner, NV_MEMORY_ALLOCATION_PARAMS *pVidHeapAlloc, NvU32 *pHeapFlag, PMEMORY_DESCRIPTOR *ppMemDesc) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+void memmgrFreeScanoutCarveoutRegionResources_GB10B(struct MemoryManager *pMemoryManager, NvU64 base);
+
+static inline void memmgrFreeScanoutCarveoutRegionResources_b3696a(struct MemoryManager *pMemoryManager, NvU64 base) {
+    return;
+}
+
+void memmgrFreeFromScanoutCarveoutRegion_GB10B(POBJGPU pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR pMemDesc);
+
+static inline void memmgrFreeFromScanoutCarveoutRegion_b3696a(POBJGPU pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR pMemDesc) {
+    return;
+}
+
+NV_STATUS memmgrCreateScanoutCarveoutHeap_GB10B(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+static inline NV_STATUS memmgrCreateScanoutCarveoutHeap_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS memmgrDestroyScanoutCarveoutHeap_GB10B(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+static inline NV_STATUS memmgrDestroyScanoutCarveoutHeap_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS memmgrDuplicateFromScanoutCarveoutRegion_GB10B(POBJGPU pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR pMemDesc);
+
+static inline NV_STATUS memmgrDuplicateFromScanoutCarveoutRegion_46f6a7(POBJGPU pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR pMemDesc) {
+    return NV_ERR_NOT_SUPPORTED;
+}
 
 NvBool memmgrIsMemoryIoCoherent_GB20B(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
 

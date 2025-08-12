@@ -2055,3 +2055,54 @@ memmgrPreInitReservedMemory_GM107
 
     return status;
 }
+
+/*!
+ * Allocate console region in CPU-RM based on region table passed from Physical RM
+ */
+NV_STATUS
+memmgrAllocateConsoleRegion_GM107
+(
+    OBJGPU *pGpu,
+    MemoryManager *pMemoryManager
+)
+{
+
+    NV_STATUS status     = NV_OK;
+    NvU32     consoleRegionId = 0x0;
+    NvU64     regionSize, base, limit;
+
+    if (pMemoryManager->Ram.ReservedConsoleDispMemSize > 0)
+    {
+        pMemoryManager->Ram.fbRegion[consoleRegionId].bLostOnSuspend = NV_FALSE;
+        pMemoryManager->Ram.fbRegion[consoleRegionId].bPreserveOnSuspend = NV_TRUE;
+
+        base = pMemoryManager->Ram.fbRegion[consoleRegionId].base;
+        limit = pMemoryManager->Ram.fbRegion[consoleRegionId].limit;
+
+        regionSize = limit - base + 1;
+
+        // Once the console is reserved, we don't expect to reserve it again
+        NV_ASSERT_OR_RETURN(pMemoryManager->pReservedConsoleMemDesc == NULL,
+                        NV_ERR_STATE_IN_USE);
+
+        status = memdescCreate(&pMemoryManager->pReservedConsoleMemDesc, pGpu,
+                            regionSize, RM_PAGE_SIZE_64K, NV_TRUE, ADDR_FBMEM,
+                            NV_MEMORY_UNCACHED,
+                            MEMDESC_FLAGS_SKIP_RESOURCE_COMPUTE);
+        if (status != NV_OK)
+        {
+            return status;
+        }
+
+        memdescDescribe(pMemoryManager->pReservedConsoleMemDesc, ADDR_FBMEM,
+                        base, regionSize);
+        memdescSetPageSize(pMemoryManager->pReservedConsoleMemDesc,
+                    AT_GPU, RM_PAGE_SIZE);
+
+
+        NV_PRINTF(LEVEL_INFO, "Allocating console region of size: %llx, at base : %llx \n ",
+                        regionSize, base);
+    }
+
+    return status;
+}

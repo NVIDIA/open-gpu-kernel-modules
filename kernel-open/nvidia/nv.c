@@ -1450,16 +1450,16 @@ static int nv_start_device(nv_state_t *nv, nvidia_stack_t *sp)
     {
         rc = os_alloc_mutex(&nvl->isr_bh_unlocked_mutex);
         if (rc != 0)
-            goto failed;
+            goto failed_release_irq;
         nv_kthread_q_item_init(&nvl->bottom_half_q_item, nvidia_isr_bh_unlocked, (void *)nv);
         rc = nv_kthread_q_init(&nvl->bottom_half_q, nv_device_name);
         if (rc != 0)
-            goto failed;
+            goto failed_release_irq;
         kthread_init = NV_TRUE;
 
         rc = nv_kthread_q_init(&nvl->queue.nvk, "nv_queue");
         if (rc)
-            goto failed;
+            goto failed_release_irq;
         nv->queue = &nvl->queue;
 
         if (nv_platform_use_auto_online(nvl))
@@ -1467,33 +1467,18 @@ static int nv_start_device(nv_state_t *nv, nvidia_stack_t *sp)
             rc = nv_kthread_q_init(&nvl->remove_numa_memory_q,
                                    "nv_remove_numa_memory");
             if (rc)
-                goto failed;
+                goto failed_release_irq;
             remove_numa_memory_kthread_init = NV_TRUE;
         }
     }
 
     if (!rm_init_adapter(sp, nv))
     {
-        if (!(nv->flags & NV_FLAG_USES_MSIX) &&
-            !(nv->flags & NV_FLAG_SOC_DISPLAY))
-        {
-            free_irq(nv->interrupt_line, (void *) nvl);
-        }
-        else if (nv->flags & NV_FLAG_SOC_DISPLAY)
-        {
-            nv_soc_free_irqs(nv);
-        }
-#if defined(NV_LINUX_PCIE_MSI_SUPPORTED)
-        else
-        {
-            nv_free_msix_irq(nvl);
-        }
-#endif
         NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
                       "rm_init_adapter failed, device minor number %d\n",
                       nvl->minor_num);
         rc = -EIO;
-        goto failed;
+        goto failed_release_irq;
     }
 
     {
@@ -1526,6 +1511,26 @@ static int nv_start_device(nv_state_t *nv, nvidia_stack_t *sp)
     rm_unref_dynamic_power(sp, nv, NV_DYNAMIC_PM_FINE);
 
     return 0;
+
+failed_release_irq:
+    if (!(nv->flags & NV_FLAG_PERSISTENT_SW_STATE))
+    {
+        if (!(nv->flags & NV_FLAG_USES_MSIX) &&
+            !(nv->flags & NV_FLAG_SOC_DISPLAY))
+        {
+            free_irq(nv->interrupt_line, (void *) nvl);
+        }
+        else if (nv->flags & NV_FLAG_SOC_DISPLAY)
+        {
+            nv_soc_free_irqs(nv);
+        }
+#if defined(NV_LINUX_PCIE_MSI_SUPPORTED)
+        else
+        {
+            nv_free_msix_irq(nvl);
+        }
+#endif
+    }
 
 failed:
 #if defined(NV_LINUX_PCIE_MSI_SUPPORTED)
@@ -2452,6 +2457,7 @@ nvidia_ioctl(
     if (arg_cmd == NV_ESC_WAIT_OPEN_COMPLETE)
     {
         nv_ioctl_wait_open_complete_t *params = arg_copy;
+
         params->rc = nvlfp->open_rc;
         params->adapterStatus = nvlfp->adapter_status;
         goto done_early;
@@ -6154,8 +6160,13 @@ void NV_API_CALL nv_get_screen_info(
             if (!registered_fb[i])
                 continue;
 
-            /* Make sure base address is mapped to GPU BAR */
-            if (NV_IS_CONSOLE_MAPPED(nv, registered_fb[i]->fix.smem_start))
+            /*
+             * Ensure that either this is a zero-FB SOC GPU with a console in
+             * the system carveout, or it’s a dGPU device with  console mapped
+             * onto its BAR.
+             */
+            if (NV_HAS_CONSOLE_IN_SYSMEM_CARVEOUT(nv) ||
+                NV_IS_CONSOLE_MAPPED(nv, registered_fb[i]->fix.smem_start))
             {
                 *pPhysicalAddress = registered_fb[i]->fix.smem_start;
                 *pFbWidth = registered_fb[i]->var.xres;
@@ -6203,9 +6214,13 @@ void NV_API_CALL nv_get_screen_info(
             physAddr |= (NvU64)screen_info.ext_lfb_base << 32;
         }
 #endif
-
-        /* Make sure base address is mapped to GPU BAR */
-        if (NV_IS_CONSOLE_MAPPED(nv, physAddr))
+        /*
+         * Ensure that either this is a zero-FB SOC GPU with a console in the
+         * system carveout, or it’s a dGPU device with  console mapped onto its
+         * BAR.
+         */
+        if (NV_HAS_CONSOLE_IN_SYSMEM_CARVEOUT(nv) ||
+            NV_IS_CONSOLE_MAPPED(nv, physAddr))
         {
             *pPhysicalAddress = physAddr;
             *pFbWidth = screen_info.lfb_width;
@@ -6222,7 +6237,7 @@ void NV_API_CALL nv_get_screen_info(
      * If screen info can't be fetched with previous methods, then try
      * to get the base address and size from the memory resource tree.
      */
-    if (pci_dev != NULL)
+    if ((pci_dev != NULL) && !NV_HAS_CONSOLE_IN_SYSMEM_CARVEOUT(nv))
     {
         BUILD_BUG_ON(NV_GPU_BAR_INDEX_IMEM != NV_GPU_BAR_INDEX_FB + 1);
         for (i = NV_GPU_BAR_INDEX_FB; i <= NV_GPU_BAR_INDEX_IMEM; i++)

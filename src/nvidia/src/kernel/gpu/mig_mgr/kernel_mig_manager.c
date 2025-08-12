@@ -1089,7 +1089,7 @@ static NV_STATUS _kmigmgrHandlePreSchedulingDisableCallback
         swizzId = pKernelMIGGpuInstance->swizzId;
 
         // Shouldn't be any valid gpu instances
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "Invalidating valid gpu instance with swizzId = %d\n",
                   swizzId);
 
@@ -1105,7 +1105,7 @@ static NV_STATUS _kmigmgrHandlePreSchedulingDisableCallback
                 continue;
 
             // Shouldn't be any valid compute instances
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_INFO,
                       "Invalidating valid compute instance with id = %d\n",
                       CIIdx);
 

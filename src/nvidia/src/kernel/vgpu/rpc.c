@@ -1497,6 +1497,9 @@ NV_STATUS vgpuGspSetupBuffers(OBJGPU *pGpu)
         return NV_ERR_NOT_SUPPORTED;
     }
 
+    // Modifying the DMA address size to the value supported by the hardware
+    osDmaSetAddressSize(pGpu->pOsGpuInfo, gpuarchGetSystemPhysAddrWidth_HAL(gpuGetArch(pGpu)));
+
     rpcSendMessage_FNPTR(pVGpu->pRpc) = _rpcSendMessage_VGPUGSP;
     rpcRecvPoll_FNPTR(pVGpu->pRpc)    = _rpcRecvPoll_VGPUGSP;
 
@@ -10597,6 +10600,7 @@ NV_STATUS rpcGspSetSystemInfo_v17_00
 
         rpcInfo->bIsPrimary = pGpu->getProperty(pGpu, PDB_PROP_GPU_PRIMARY_DEVICE);
 
+        rpcInfo->bS0ixSupport = pSys->getProperty(pSys, PDB_PROP_SYS_SUPPORTS_S0IX);
 #if defined(NV_UNIX) && !RMCFG_FEATURE_MODS_FEATURES
         rpcInfo->isGridBuild = os_is_grid_supported();
 #endif

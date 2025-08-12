@@ -269,6 +269,8 @@ NV_STATUS osRmInitRm(void)
         return status;
     }
 
+    rm_check_s0ix_regkey_and_platform_support();
+
     // Setup any ThreadState defaults
     threadStateInitSetupFlags(THREAD_STATE_SETUP_FLAGS_ENABLED |
                               THREAD_STATE_SETUP_FLAGS_TIMEOUT_ENABLED |
@@ -845,6 +847,11 @@ osInitNvMapping(
     {
         nv->flags |= NV_FLAG_TRIGGER_FLR;
     }
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_SOC_SDM))
+    {
+        nv->flags |= NV_FLAG_HAS_CONSOLE_IN_SYSMEM_CARVEOUT;
+    }
 }
 
 void osInitScalabilityOptions
@@ -1012,6 +1019,21 @@ RmSetConsolePreservationParams(OBJGPU *pGpu)
         return;
 
     if (!gpuFuseSupportsDisplay_HAL(pGpu))
+    {
+        return;
+    }
+
+    //
+    // If this is the zero FB SOC GPU with a console in system carveout, then
+    // the console memory is not mapped onto the BAR. The kernel can directly
+    // access the console memory, while the GPU accesses system carveout memory
+    // through the SMMU.
+    // The carveout is a reserved region of system memory that doesn’t get used
+    // in standard memory allocation.
+    //
+    // In this scenario, you don’t need to reserve console memory or BAR mapping.
+    //
+    if (NV_HAS_CONSOLE_IN_SYSMEM_CARVEOUT(nv))
     {
         return;
     }

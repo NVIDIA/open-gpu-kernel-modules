@@ -486,6 +486,10 @@ vidmemCopyConstruct
 
     switch (memdescGetCustomHeap(pMemDesc))
     {
+        case MEMDESC_CUSTOM_HEAP_SCANOUT_CARVEOUT:
+            status = memmgrDuplicateFromScanoutCarveoutRegion(pGpu,
+                        GPU_GET_MEMORY_MANAGER(pGpu), pMemDesc);
+            break;
         case MEMDESC_CUSTOM_HEAP_NONE:
             SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
                 MEMORY_DESCRIPTOR *pSrcMemDesc = memdescGetMemDescFromGpu(pMemorySrc->pMemDesc, pGpu);
@@ -650,6 +654,7 @@ vidmemConstruct_IMPL
     bIsPmaAlloc = memmgrIsPmaInitialized(pMemoryManager) &&
                   !bSubheap &&
                   !bRsvdHeap &&
+                  !FLD_TEST_DRF(OS32, _ATTR2, _USE_SCANOUT_CARVEOUT, _TRUE, attr2) &&
                   !(pAllocData->flags & NVOS32_ALLOC_FLAGS_WPR1) &&
                   !(pAllocData->flags & NVOS32_ALLOC_FLAGS_WPR2) &&
                   (!(pAllocData->flags & NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE) ||
@@ -718,6 +723,7 @@ vidmemConstruct_IMPL
 
     // Don't allow FB allocations if FB is broken unless it is a virtual allocation or running in L2 cache only mode
     if (pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) &&
+        !FLD_TEST_DRF(OS32, _ATTR2, _USE_SCANOUT_CARVEOUT, _TRUE, pAllocData->attr2) &&
         !gpuIsCacheOnlyModeEnabled(pGpu))
     {
         NV_ASSERT_FAILED("Video memory requested despite BROKEN FB");
@@ -874,6 +880,7 @@ vidmemConstruct_IMPL
         SLI_LOOP_END;
     }
 
+    if (!memdescGetFlag(pTempMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT))
     {
         //
         // Video memory is always locally transparently cached.  It does not require
@@ -1193,6 +1200,11 @@ vidmemDestruct_IMPL
 
         }
     }
+    else if (customHeap == MEMDESC_CUSTOM_HEAP_SCANOUT_CARVEOUT)
+    {
+        MemoryManager      *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+        memmgrFreeFromScanoutCarveoutRegion(pGpu, pMemoryManager, pMemDesc);
+    }
 }
 
 NV_STATUS
@@ -1268,6 +1280,39 @@ vidmemAllocResources
                   "VA space handle used with physical allocation\n");
         status = NV_ERR_INVALID_ARGUMENT;
         goto failed;
+    }
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_SOC_SDM))
+    {
+        if (FLD_TEST_DRF(OS32, _ATTR2, _USE_SCANOUT_CARVEOUT, _TRUE, pVidHeapAlloc->attr2))
+        {
+            NvU32 heapFlag  = NVOS32_ALLOC_FLAGS_FORCE_MEM_GROWS_DOWN;
+
+            status = memmgrAllocFromScanoutCarveoutRegion(pGpu,
+                    pMemoryManager,
+                    pFbAllocInfo->hClient,
+                    pVidHeapAlloc,
+                    &heapFlag,
+                    &pAllocRequest->pMemDesc);
+
+            if (status == NV_OK)
+            {
+                pMemDesc = pAllocRequest->pMemDesc;
+                pMemDesc->pHeap = (Heap *)pMemoryManager->pScanoutHeap;
+                memdescSetCustomHeap(pMemDesc, MEMDESC_CUSTOM_HEAP_SCANOUT_CARVEOUT);
+                // Force the format to whatever is required by client.
+                memdescSetPteKind(pMemDesc, pFbAllocInfo->format);
+                NV_PRINTF(LEVEL_INFO, "Allocated surface in scanout region\n");
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_WARNING,
+                        "Failed to allocate surface in scanout region\n");
+                goto failed;
+            }
+
+            goto pre_alloc_done;
+        }
     }
 
     // Prior to this change, heap was silently ignoring non-contig Vidmem allocation requests.
@@ -1447,6 +1492,8 @@ vidmemAllocResources
         pHwResource->comprCovg  = pFbAllocInfo->comprCovg;
         pHwResource->ctagOffset = pFbAllocInfo->ctagOffset;
     }
+
+pre_alloc_done:
 
     pVidHeapAlloc->offset = pFbAllocInfo->offset;
 

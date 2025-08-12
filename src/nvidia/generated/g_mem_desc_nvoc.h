@@ -123,6 +123,7 @@ typedef NvU32      NV_ADDRESS_SPACE;
 typedef NvU32 MEMDESC_CUSTOM_HEAP;
 #define MEMDESC_CUSTOM_HEAP_NONE                0
 #define MEMDESC_CUSTOM_HEAP_ACR                 1
+#define MEMDESC_CUSTOM_HEAP_SCANOUT_CARVEOUT    2
 
 //
 // Address translation identifiers:
@@ -426,6 +427,7 @@ typedef struct ADDRESS_TRANSLATION_ *ADDRESS_TRANSLATION;
 //
 #define MEMDESC_FLAGS_ALLOC_AS_LOCALIZED           NVBIT64(50)
 
+// Indicate whether memdesc tracks the memory allocated from the scanout-carevout heap.
 #define MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT  NVBIT64(51)
 
 // Force-compress pte kind when mapping with virtual pte kind
@@ -440,6 +442,9 @@ typedef struct ADDRESS_TRANSLATION_ *ADDRESS_TRANSLATION;
 
 // Indicate if memdesc is allocated for non IO-coherent memory.
 #define MEMDESC_FLAGS_NON_IO_COHERENT              NVBIT64(54)
+
+// Indicate if memdesc is tracking the uefi carveout memory.
+#define MEMDESC_FLAGS_ALLOC_FROM_UEFI_CARVEOUT     NVBIT64(55)
 
 //
 // RM internal allocations owner tags
@@ -1215,6 +1220,13 @@ NV_STATUS memdescFillMemdescForPhysAttr(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRA
                                         NvU32 *pGpuCacheAttr, NvU32 *pGpuP2PCacheAttr, NvU64 *contigSegmentSize);
 NvBool memdescIsEgm(MEMORY_DESCRIPTOR *pMemDesc);
 NvU64 memdescGetAdjustedPageSize(MEMORY_DESCRIPTOR *pMemDesc);
+
+static inline NvBool
+memdescIsCarveoutMemory(MEMORY_DESCRIPTOR *pMemDesc)
+{
+    return !!(pMemDesc->_flags & (MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT |
+                                  MEMDESC_FLAGS_ALLOC_FROM_UEFI_CARVEOUT));
+}
 
 /*!
  *  @brief Get PTE kind

@@ -323,6 +323,7 @@
 #define RMCFG_FEATURE_VBLANK_CALLBACK             1  // Vblank callback functionality within RM
 #define RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY         1  // Tegra SOC NvDisplay Driver
 #define RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY_MINIMAL  0  // Enable only those parts of display code which are needed for Tegra SOC NvDisplay Driver
+#define RMCFG_FEATURE_TEGRA_SOC_SCANOUT_CARVEOUT  1  // Enable scanout carveout Tegra SOC NvDisplay Driver
 #define RMCFG_FEATURE_HEAD_REGIONAL_CRC           1  // Display Head Regional CRC support
 #define RMCFG_FEATURE_FEATURE_GH180               1  // RMconfig to encapsulate GH180 features
 #define RMCFG_FEATURE_MIG_GFX                     1  // RMconfig to encapsulate MIG With GFX support (SMG)

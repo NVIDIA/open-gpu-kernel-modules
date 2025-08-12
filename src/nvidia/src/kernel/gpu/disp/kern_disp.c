@@ -1100,10 +1100,7 @@ NV_STATUS kdispOptimizePerFrameOsCallbacks_IMPL
     //    
     kdispServiceAwakenIntr_HAL(pGpu, pKernelDisplay, pThreadState);
 
-    if (!IS_GSP_CLIENT(pGpu))
-    {
-        exVblankServiceHeadMask = kdispGetDeferredVblankHeadMask(pKernelDisplay);
-    }
+    exVblankServiceHeadMask = kdispGetDeferredVblankHeadMask(pKernelDisplay);
 
     for (head = 0; head < kdispGetNumHeads(pKernelDisplay); ++head)
     {
@@ -1135,11 +1132,8 @@ NV_STATUS kdispOptimizePerFrameOsCallbacks_IMPL
             VBLANKCALLBACK  *pCallback = NULL;
             NvBool dataValid = NV_FALSE;
 
-            if (!IS_GSP_CLIENT(pGpu))
-            {
-                // Keep track of which heads that we serviced
-                vblankServicedHeadMask |= NVBIT(head);
-            }
+            // Keep track of which heads that we serviced
+            vblankServicedHeadMask |= NVBIT(head);
 
             // Clear the intr if we were asked to
             if (clearIntr == NV_TRUE)

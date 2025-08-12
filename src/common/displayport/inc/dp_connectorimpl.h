@@ -391,6 +391,9 @@ namespace DisplayPort
         bool        bForceDisableTunnelBwAllocation;
         bool        bDisableEffBppSST8b10b;
 
+        // Use regkey DP_DSC_DEVID_WAR to toggle this flag.
+        bool        bEnableDevId;
+
         Group *perHeadAttachedGroup[NV_MAX_HEADS];
         NvU32 inTransitionHeadMask;
 

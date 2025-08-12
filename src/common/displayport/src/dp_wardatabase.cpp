@@ -112,6 +112,20 @@ void ConnectorImpl2x::applyOuiWARs()
                 }
             }
             break;
+        case 0xAD6000:
+            if ((modelName[0] == 'M') &&
+                (modelName[1] == 'C') &&
+                (modelName[2] == '2') &&
+                (modelName[3] == '9') &&
+                (modelName[4] == '0'))
+            {
+                bForceHeadShutdownPerMonitor = true;
+                bApplyStuffDummySymbolsWAR = true;
+                bStuffDummySymbolsFor128b132b = false;
+                bStuffDummySymbolsFor8b10b = true;
+            }
+            break;
+        
     }
 }
 

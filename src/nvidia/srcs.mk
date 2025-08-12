@@ -608,6 +608,7 @@ SRCS += src/kernel/gpu/mem_mgr/arch/ampere/fbsr_ga100.c
 SRCS += src/kernel/gpu/mem_mgr/arch/ampere/mem_mgr_ga100.c
 SRCS += src/kernel/gpu/mem_mgr/arch/ampere/mem_mgr_ga102.c
 SRCS += src/kernel/gpu/mem_mgr/arch/blackwell/mem_mgr_gb100.c
+SRCS += src/kernel/gpu/mem_mgr/arch/blackwell/mem_mgr_gb10b_phys.c
 SRCS += src/kernel/gpu/mem_mgr/arch/blackwell/mem_mgr_gb202.c
 SRCS += src/kernel/gpu/mem_mgr/arch/blackwell/mem_mgr_gb202_base.c
 SRCS += src/kernel/gpu/mem_mgr/arch/blackwell/mem_mgr_gb20b.c

@@ -79,7 +79,6 @@ confComputeKeyStoreDeriveViaChannel_GB100
     const uint8_t   *pStr = NULL;
     NvU8            curKeySeed[CC_EXPORT_MASTER_KEY_SIZE_BYTES] = {0};
 
-
     //
     // SEC2 Per Channel key support has not been added yet. Hence SEC2 keys need to be restored from keystore.
     // For CE, keys would be derived per channel. Replace the return with logic for deriving SEC2 keys
@@ -119,25 +118,6 @@ confComputeKeyStoreDeriveViaChannel_GB100
                 portMemSet(pKey, 0, sizeof(pConfCompute->channelKeySeed));
                 return NV_ERR_FATAL_ERROR;
             }
-
-            //
-            // IVs are moved to per channel from Blackwell onwards. Hence setting IV to 0.
-            // In Blackwell, message counter and channel counter start at 0. Channel
-            // counter is used to track the number of IV rotations done.
-            //
-            pKernelChannel->clientKmb.encryptBundle.iv[2] = 0;
-            pKernelChannel->clientKmb.encryptBundle.iv[1] = 0;
-            pKernelChannel->clientKmb.encryptBundle.iv[0] = 0;
-            pKernelChannel->clientKmb.encryptBundle.ivMask[2] = 0;
-            pKernelChannel->clientKmb.encryptBundle.ivMask[1] = 0;
-            pKernelChannel->clientKmb.encryptBundle.ivMask[0] = 0;
-
-            pKernelChannel->clientKmb.decryptBundle.iv[2] = 0;
-            pKernelChannel->clientKmb.decryptBundle.iv[1] = 0;
-            pKernelChannel->clientKmb.decryptBundle.iv[0] = 0;
-            pKernelChannel->clientKmb.decryptBundle.ivMask[2] = 0;
-            pKernelChannel->clientKmb.decryptBundle.ivMask[1] = 0;
-            pKernelChannel->clientKmb.decryptBundle.ivMask[0] = 0;
         }
 
     }
@@ -174,6 +154,11 @@ confComputeKeyStoreRetrieveViaChannel_GB100
 )
 {
 
+    if ((ivOperation < CHANNEL_IV_OPERATION_NONE) || (ivOperation >= CHANNEL_IV_OPERATION_INVALID))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
     //
     // SEC2 Per Channel key support has not been added yet. Hence SEC2 keys need to be restored from keystore.
     // For CE, keys would be derived per channel.
@@ -185,26 +170,46 @@ confComputeKeyStoreRetrieveViaChannel_GB100
     }
     else if (RM_ENGINE_TYPE_IS_COPY(kchannelGetEngineType(pKernelChannel)))
     {
-        if (ivOperation < CHANNEL_IV_OPERATION_NONE || ivOperation >= CHANNEL_IV_OPERATION_INVALID)
+        // On Blackwell per-channel CE keys initialize to all zeroes.
+        if (ivOperation == CHANNEL_IV_OPERATION_INCLUDE_ONLY)
         {
-            return NV_ERR_INVALID_ARGUMENT;
-        }
-        const NvBool bIvRotate = (ivOperation == CHANNEL_IV_OPERATION_ROTATE_ONLY)
-                                  || (ivOperation == CHANNEL_IV_OPERATION_INCLUDE_AND_ROTATE);
-        const NvBool bRotateEncrypt = (rotateOperation == ROTATE_IV_ENCRYPT) || (rotateOperation == ROTATE_IV_ALL_VALID);
-        const NvBool bRotateDecrypt = (rotateOperation == ROTATE_IV_DECRYPT) || (rotateOperation == ROTATE_IV_ALL_VALID);
+            NV_ASSERT(rotateOperation == ROTATE_IV_ALL_VALID);
 
-        // Handle encryption IV rotation
-        if (bRotateEncrypt && bIvRotate)
-        {
-            confComputeIncChannelCounter(&keyMaterialBundle->encryptBundle);
-        }
+            pKernelChannel->clientKmb.encryptBundle.iv[2] = 0;
+            pKernelChannel->clientKmb.encryptBundle.iv[1] = 0;
+            pKernelChannel->clientKmb.encryptBundle.iv[0] = 0;
+            pKernelChannel->clientKmb.encryptBundle.ivMask[2] = 0;
+            pKernelChannel->clientKmb.encryptBundle.ivMask[1] = 0;
+            pKernelChannel->clientKmb.encryptBundle.ivMask[0] = 0;
 
-        // Handle decryption IV rotation
-        if (bRotateDecrypt && bIvRotate)
+            pKernelChannel->clientKmb.decryptBundle.iv[2] = 0;
+            pKernelChannel->clientKmb.decryptBundle.iv[1] = 0;
+            pKernelChannel->clientKmb.decryptBundle.iv[0] = 0;
+            pKernelChannel->clientKmb.decryptBundle.ivMask[2] = 0;
+            pKernelChannel->clientKmb.decryptBundle.ivMask[1] = 0;
+            pKernelChannel->clientKmb.decryptBundle.ivMask[0] = 0;
+        }
+        else
         {
-            confComputeIncChannelCounter(&keyMaterialBundle->decryptBundle);
-            keyMaterialBundle->bIsWorkLaunch = NV_FALSE;
+            const NvBool bIvRotate = (ivOperation == CHANNEL_IV_OPERATION_ROTATE_ONLY) ||
+                                     (ivOperation == CHANNEL_IV_OPERATION_INCLUDE_AND_ROTATE);
+            const NvBool bRotateEncrypt = (rotateOperation == ROTATE_IV_ENCRYPT) ||
+                                          (rotateOperation == ROTATE_IV_ALL_VALID);
+            const NvBool bRotateDecrypt = (rotateOperation == ROTATE_IV_DECRYPT) ||
+                                          (rotateOperation == ROTATE_IV_ALL_VALID);
+
+            // Handle encryption IV rotation
+            if (bRotateEncrypt && bIvRotate)
+            {
+                confComputeIncChannelCounter(&keyMaterialBundle->encryptBundle);
+            }
+
+            // Handle decryption IV rotation
+            if (bRotateDecrypt && bIvRotate)
+            {
+                confComputeIncChannelCounter(&keyMaterialBundle->decryptBundle);
+                keyMaterialBundle->bIsWorkLaunch = NV_FALSE;
+            }
         }
     }
     else

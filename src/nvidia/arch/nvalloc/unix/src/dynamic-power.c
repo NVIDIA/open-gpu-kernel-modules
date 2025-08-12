@@ -806,6 +806,16 @@ void NV_API_CALL rm_init_tegra_dynamic_power_management(
     NV_EXIT_RM_RUNTIME(sp,fp);
 }
 
+void rm_check_s0ix_regkey_and_platform_support(void)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    NvU32 data;
+    NvBool status = ((nv_platform_supports_s0ix()) &&
+                     ((osReadRegistryDword(NULL, NV_REG_ENABLE_S0IX_POWER_MANAGEMENT, &data) == NV_OK) && (data == 1)));
+
+    pSys->setProperty(pSys, PDB_PROP_SYS_SUPPORTS_S0IX, status);
+}
+
 /*!
  * @brief Initialize state related to dynamic power management.
  * Called once per GPU during driver initialization.

@@ -113,6 +113,10 @@ memmgrDestruct_IMPL
 {
     NvU32 i;
 
+    OBJGPU *pGpu = ENG_GET_GPU(pMemoryManager);
+
+    memmgrDestroyScanoutCarveoutHeap_HAL(pGpu, pMemoryManager);
+
     for (i = 0; i < NUM_FBSR_TYPES; i++)
     {
         objDelete(pMemoryManager->pFbsr[i]);
@@ -649,6 +653,16 @@ memmgrStateInitLocked_IMPL
     }
 
     //
+    // If a region of FB or system memory is actively being used for console
+    // display memory on this GPU, mark it reserved in-place.
+    // In case of legacy SLI on Linux, console size is only known at StateInit
+    //
+
+    memmgrReserveConsoleRegion_HAL(pGpu, pMemoryManager);
+
+    NV_ASSERT_OK_OR_RETURN(memmgrAllocateConsoleRegion_HAL(pGpu, pMemoryManager));
+
+    //
     // Allocate framebuffer heap.  All memory must be allocated from here to keep the world
     // consistent (N.B. the heap size has been reduced by the amount of instance memory).
     //
@@ -944,6 +958,8 @@ memmgrStateDestroy_IMPL
         objDelete(pHeap);
         pMemoryManager->pHeap = NULL;
     }
+
+    memmgrReleaseConsoleRegion(pGpu, pMemoryManager);
 
     // RMCONFIG: only if FBSR engine is enabled
     if (RMCFG_MODULE_FBSR)
@@ -1987,59 +2003,6 @@ memmgrSetPlatformPmaSupport_IMPL
     return (NV_OK);
 }
 
-/*!
- * Allocate console region in CPU-RM based on region table passed from Physical RM
- */
-NV_STATUS
-memmgrAllocateConsoleRegion_IMPL
-(
-    OBJGPU *pGpu,
-    MemoryManager *pMemoryManager,
-    FB_REGION_DESCRIPTOR *pConsoleFbRegion
-)
-{
-
-    NV_STATUS status     = NV_OK;
-    NvU32     consoleRegionId = 0x0;
-    NvU64     regionSize;
-
-    if (pMemoryManager->Ram.ReservedConsoleDispMemSize > 0)
-    {
-        pMemoryManager->Ram.fbRegion[consoleRegionId].bLostOnSuspend = NV_FALSE;
-        pMemoryManager->Ram.fbRegion[consoleRegionId].bPreserveOnSuspend = NV_TRUE;
-
-        pConsoleFbRegion->base = pMemoryManager->Ram.fbRegion[consoleRegionId].base;
-        pConsoleFbRegion->limit = pMemoryManager->Ram.fbRegion[consoleRegionId].limit;
-
-        regionSize = pConsoleFbRegion->limit - pConsoleFbRegion->base + 1;
-
-        // Once the console is reserved, we don't expect to reserve it again
-        NV_ASSERT_OR_RETURN(pMemoryManager->Ram.pReservedConsoleMemDesc == NULL,
-                        NV_ERR_STATE_IN_USE);
-
-        status = memdescCreate(&pMemoryManager->Ram.pReservedConsoleMemDesc, pGpu,
-                            regionSize, RM_PAGE_SIZE_64K, NV_TRUE, ADDR_FBMEM,
-                            NV_MEMORY_UNCACHED,
-                            MEMDESC_FLAGS_SKIP_RESOURCE_COMPUTE);
-        if (status != NV_OK)
-        {
-            pConsoleFbRegion->base = pConsoleFbRegion->limit = 0;
-            return status;
-        }
-
-        memdescDescribe(pMemoryManager->Ram.pReservedConsoleMemDesc, ADDR_FBMEM,
-                        pConsoleFbRegion->base, regionSize);
-        memdescSetPageSize(pMemoryManager->Ram.pReservedConsoleMemDesc,
-                    AT_GPU, RM_PAGE_SIZE);
-
-
-        NV_PRINTF(LEVEL_INFO, "Allocating console region of size: %llx, at base : %llx \n ",
-                        regionSize, pConsoleFbRegion->base);
-    }
-
-    return status;
-}
-
 void
 memmgrReleaseConsoleRegion_IMPL
 (
@@ -2047,8 +2010,8 @@ memmgrReleaseConsoleRegion_IMPL
     MemoryManager *pMemoryManager
 )
 {
-    memdescDestroy(pMemoryManager->Ram.pReservedConsoleMemDesc);
-    pMemoryManager->Ram.pReservedConsoleMemDesc = NULL;
+    memdescDestroy(pMemoryManager->pReservedConsoleMemDesc);
+    pMemoryManager->pReservedConsoleMemDesc = NULL;
 }
 
 PMEMORY_DESCRIPTOR
@@ -2058,7 +2021,7 @@ memmgrGetReservedConsoleMemDesc_IMPL
     MemoryManager *pMemoryManager
 )
 {
-    return pMemoryManager->Ram.pReservedConsoleMemDesc;
+    return pMemoryManager->pReservedConsoleMemDesc;
 }
 
 /*!
@@ -3424,6 +3387,16 @@ memmgrInitFbRegions_IMPL
             NV_PRINTF(LEVEL_INFO,
                       "Bug 594534: HACK: Report 32MB of framebuffer instead of reading registers.\n");
 
+        }
+
+        //
+        // The carveout needs support from firmware side which is not
+        // configured in all the platforms.
+        //
+        if (memmgrInitZeroFbRegionsHal_HAL(pGpu, pMemoryManager) != NV_OK)
+        {
+            NV_PRINTF(LEVEL_INFO,
+                      "Failed to setup carveout. Carevout functionality is disabled\n");
         }
 
         return NV_OK;

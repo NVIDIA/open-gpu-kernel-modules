@@ -2416,7 +2416,7 @@ static NV_STATUS RmGetAllocPrivate(
     bPeerIoMem = memdescGetFlag(pMemDesc, MEMDESC_FLAGS_PEER_IO_MEM);
 
     if (!(pMemDesc->Allocated || bPeerIoMem ||
-          (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT)) ||
+          memdescIsCarveoutMemory(pMemDesc) ||
           (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOW_EXT_SYSMEM_USER_CPU_MAPPING))))
     {
         NV_PRINTF(LEVEL_ERROR, "Mmap is not allowed\n");

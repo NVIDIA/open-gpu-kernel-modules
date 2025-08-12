@@ -1344,6 +1344,7 @@ struct OBJGPU {
     DEVICE_MAPPING *pDeviceMappingsByDeviceInstance[13];
     void *gpuCfgAddr;
     TIMEOUT_DATA timeoutData;
+    NvU32 bug5203024OverrideTimeouts;
     NvU32 computeModeRules;
     NvS32 computeModeRefCount;
     NvHandle hComputeModeReservation;
@@ -4460,6 +4461,8 @@ NV_STATUS gpuGetNameString_T234D(struct OBJGPU *pGpu, NvU32 arg2, void *arg3);
 
 NV_STATUS gpuGetNameString_FWCLIENT(struct OBJGPU *pGpu, NvU32 arg2, void *arg3);
 
+NV_STATUS gpuGetNameString_GB20B(struct OBJGPU *pGpu, NvU32 arg2, void *arg3);
+
 NV_STATUS gpuGetNameString_IMPL(struct OBJGPU *pGpu, NvU32 arg2, void *arg3);
 
 NV_STATUS gpuGetShortNameString_VF(struct OBJGPU *pGpu, NvU8 *arg2);
@@ -4467,6 +4470,8 @@ NV_STATUS gpuGetShortNameString_VF(struct OBJGPU *pGpu, NvU8 *arg2);
 NV_STATUS gpuGetShortNameString_T234D(struct OBJGPU *pGpu, NvU8 *arg2);
 
 NV_STATUS gpuGetShortNameString_FWCLIENT(struct OBJGPU *pGpu, NvU8 *arg2);
+
+NV_STATUS gpuGetShortNameString_GB20B(struct OBJGPU *pGpu, NvU8 *arg2);
 
 NV_STATUS gpuGetShortNameString_IMPL(struct OBJGPU *pGpu, NvU8 *arg2);
 

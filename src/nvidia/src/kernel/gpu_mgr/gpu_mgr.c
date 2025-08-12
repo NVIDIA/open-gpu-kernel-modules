@@ -4254,6 +4254,9 @@ gpumgrUnregisterRmCapsForMIGGI_IMPL(NvU64 gpuDomainBusDevice)
             pGPUInstanceSave->bValid = NV_FALSE;
         }
     }
+
+    // Reset during teardown as static info not restored since boot
+    pTopologySave->bVgpuRestoredFromStaticInfo = NV_FALSE;
 }
 
 void
