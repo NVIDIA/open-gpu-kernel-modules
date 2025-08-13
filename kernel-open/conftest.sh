@@ -4819,6 +4819,28 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_HELPER_FUNCS_MODE_VALID_HAS_CONST_MODE_ARG" "" "types"
         ;;
 
+        drm_helper_mode_fill_fb_struct_has_info_arg)
+            #
+            # Determine if drm_helper_mode_fill_fb_struct() takes the info argument.
+            #
+            # The drm_helper_mode_fill_fb_struct() function was updated to take
+            # a const struct drm_format_info * argument by kernel commit
+            # a34cc7bf1034 ("drm: Allow the caller to pass in the format info
+            # to drm_helper_mode_fill_fb_struct()") in v6.17.
+            #
+            CODE="
+            #include <drm/drm_modeset_helper.h>
+            void conftest_drm_helper_mode_fill_fb_struct(void) {
+                struct drm_device *dev = NULL;
+                struct drm_framebuffer *fb = NULL;
+                const struct drm_format_info *info = NULL;
+                const struct drm_mode_fb_cmd2 *cmd = NULL;
+                drm_helper_mode_fill_fb_struct(dev, fb, info, cmd);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_HELPER_MODE_FILL_FB_STRUCT_HAS_INFO_ARG" "" "functions"
+        ;;
+
         # When adding a new conftest entry, please use the correct format for
         # specifying the relevant upstream Linux kernel commit.  Please
         # avoid specifying -rc kernels, and only use SHAs that actually exist

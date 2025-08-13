@@ -33,6 +33,9 @@
 #include "nvidia-drm-format.h"
 
 #include <drm/drm_crtc_helper.h>
+#if defined(NV_DRM_HELPER_MODE_FILL_FB_STRUCT_HAS_INFO_ARG)
+#include <drm/drm_fourcc.h>
+#endif
 
 static void __nv_drm_framebuffer_free(struct nv_drm_framebuffer *nv_fb)
 {
@@ -239,10 +242,18 @@ fail:
     return -EINVAL;
 }
 
+#if !defined(NV_DRM_HELPER_MODE_FILL_FB_STRUCT_HAS_INFO_ARG)
 struct drm_framebuffer *nv_drm_framebuffer_create(
     struct drm_device *dev,
     struct drm_file *file,
     const struct drm_mode_fb_cmd2 *cmd)
+#else
+struct drm_framebuffer *nv_drm_framebuffer_create(
+    struct drm_device *dev,
+    struct drm_file *file,
+    const struct drm_format_info *info,
+    const struct drm_mode_fb_cmd2 *cmd)
+#endif
 {
     struct nv_drm_device *nv_dev = to_nv_device(dev);
     struct nv_drm_framebuffer *nv_fb;
@@ -286,10 +297,23 @@ struct drm_framebuffer *nv_drm_framebuffer_create(
 
     /* Fill out framebuffer metadata from the userspace fb creation request */
 
+#if !defined(NV_DRM_HELPER_MODE_FILL_FB_STRUCT_HAS_INFO_ARG)
     drm_helper_mode_fill_fb_struct(
         dev,
         &nv_fb->base,
         cmd);
+#else
+    if (!info) {
+        u64 modifier = (cmd->flags & DRM_MODE_FB_MODIFIERS) ? 
+                       cmd->modifier[0] : DRM_FORMAT_MOD_INVALID;
+        info = drm_get_format_info(dev, cmd->pixel_format, modifier);
+    }
+    drm_helper_mode_fill_fb_struct(
+        dev,
+        &nv_fb->base,
+        info,
+        cmd);
+#endif
 
     /*
      * Finish up FB initialization by creating the backing NVKMS surface and

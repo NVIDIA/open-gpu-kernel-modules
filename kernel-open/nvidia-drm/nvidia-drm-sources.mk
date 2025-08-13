@@ -62,6 +62,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_plane_create_color_properties
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_atomic_helper_legacy_gamma_set
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += vmf_insert_mixed
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_gem_prime_mmap
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_helper_mode_fill_fb_struct_has_info_arg
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_driver_has_legacy_dev_list
 NV_CONFTEST_TYPE_COMPILE_TESTS += vm_ops_fault_removed_vma_arg
