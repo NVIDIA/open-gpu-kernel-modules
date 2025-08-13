@@ -121,6 +121,7 @@ else
 
   NV_VERBOSE ?=
   SPECTRE_V2_RETPOLINE ?= 0
+  INSTALL_MOD_DIR ?= kernel/drivers/video
 
   ifeq ($(NV_VERBOSE),1)
     KBUILD_PARAMS += V=1
