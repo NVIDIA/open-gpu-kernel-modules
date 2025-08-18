@@ -382,4 +382,3 @@ NvU32 nvStringLen(const char * str)
         ;
     return i - 1;
 }
-
