@@ -80,8 +80,7 @@ This is currently Linux kernel 4.15 or newer.
 ## How to Contribute
 
 Contributions can be made by creating a pull request on
-https://github.com/NVIDIA/open-gpu-kernel-modules
-We'll respond via GitHub.
+https://github.com/NVIDIA/open-gpu-kernel-modules. We'll respond via GitHub.
 
 Note that when submitting a pull request, you will be prompted to accept
 a Contributor License Agreement.
@@ -190,7 +189,7 @@ https://us.download.nvidia.com/XFree86/Linux-x86_64/580.76.05/README/kernel_open
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
 
-In the below table, if three IDs are listed, the first is the PCI Device 
+In the below table, if three IDs are listed, the first is the PCI Device
 ID, the second is the PCI Subsystem Vendor ID, and the third is the PCI
 Subsystem Device ID.
 
