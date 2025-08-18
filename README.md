@@ -76,6 +76,13 @@ The NVIDIA open kernel modules support the same range of Linux kernel
 versions that are supported with the proprietary NVIDIA kernel modules.
 This is currently Linux kernel 4.15 or newer.
 
+On some Linux distributions, `nvidia-driver-*-open` does not work by default
+after installation. If so, the `NVreg_OpenRmEnableUnsupportedGpus` kernel
+parameter may need to be enabled first. Here is a sample command to enable it:
+```
+echo "options nvidia NVreg_OpenRmEnableUnsupportedGpus=1" | sudo tee /etc/modprobe.d/nvidia-driver-open.conf
+```
+
 
 ## How to Contribute
 
