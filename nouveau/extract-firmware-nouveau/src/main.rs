@@ -404,6 +404,7 @@ fn round_up_to_base(x: u32, base: u32) -> u32 {
 
 fn bootloader(output: &Path, version: &str, gpu: &str, prod: &str) -> Result<(), String> {
     let gpu_upper = gpu.to_uppercase();
+    let prod_upper = prod.to_uppercase();
     let filename = PathBuf::from(format!(
         "src/nvidia/generated/g_bindata_kgspGetBinArchiveGspRmBoot_{gpu_upper}.c"
     ));
@@ -415,12 +416,12 @@ fn bootloader(output: &Path, version: &str, gpu: &str, prod: &str) -> Result<(),
         .map_err(|err| format!("Could not create nvidia/{gpu}/gsp/: {err}"))?;
 
     // Extract the actual bootloader firmware
-    let array = format!("kgspBinArchiveGspRmBoot_{gpu_upper}_ucode_image_{prod}data");
+    let array = format!("kgspBinArchiveGspRmBoot_{gpu_upper}_BINDATA_LABEL_UCODE_IMAGE_{prod_upper}data");
     let firmware = get_bytes(&filename, &array, None)?;
     let firmware_size: u32 = firmware.len() as u32;
 
     // Extract the descriptor (RM_RISCV_UCODE_DESC)
-    let array = format!("kgspBinArchiveGspRmBoot_{gpu_upper}_ucode_desc_{prod}data");
+    let array = format!("kgspBinArchiveGspRmBoot_{gpu_upper}_BINDATA_LABEL_UCODE_DESC_{prod_upper}data");
     let descriptor = get_bytes(&filename, &array, None)?;
     let descriptor_size: u32 = descriptor.len() as u32;
 
@@ -486,12 +487,12 @@ fn booter(output: &Path, version: &str, gpu: &str, load: &str, sigsize: u32) -> 
         .map_err(|err| format!("Could not create nvidia/{gpu}/gsp/: {err}"))?;
 
     // Extract the actual booter firmware
-    let array = format!("kgspBinArchiveBooter{load_upper}Ucode_{gpu_upper}_image_prod_data");
+    let array = format!("kgspBinArchiveBooter{load_upper}Ucode_{gpu_upper}_BINDATA_LABEL_IMAGE_PROD_data");
     let firmware = get_bytes(&filename, &array, None)?;
     let firmware_size = firmware.len() as u32;
 
     // Extract the signatures
-    let array = format!("kgspBinArchiveBooter{load_upper}Ucode_{gpu_upper}_sig_prod_data");
+    let array = format!("kgspBinArchiveBooter{load_upper}Ucode_{gpu_upper}_BINDATA_LABEL_SIG_PROD_data");
     let signatures = get_bytes(&filename, &array, None)?;
     let signatures_size = signatures.len() as u32;
     if (signatures_size % sigsize) != 0 {
@@ -503,12 +504,12 @@ fn booter(output: &Path, version: &str, gpu: &str, load: &str, sigsize: u32) -> 
     }
 
     // Extract the patch location
-    let array = format!("kgspBinArchiveBooter{load_upper}Ucode_{gpu_upper}_patch_loc_data");
+    let array = format!("kgspBinArchiveBooter{load_upper}Ucode_{gpu_upper}_BINDATA_LABEL_PATCH_LOC_data");
     let patch_loc_data = get_bytes(&filename, &array, Some(4))?;
     let patch_loc = LittleEndian::read_u32(&patch_loc_data);
 
     // Extract the patch meta variables
-    let array = format!("kgspBinArchiveBooter{load_upper}Ucode_{gpu_upper}_patch_meta_data");
+    let array = format!("kgspBinArchiveBooter{load_upper}Ucode_{gpu_upper}_BINDATA_LABEL_PATCH_META_data");
     let patch_meta_data = get_bytes(&filename, &array, Some(12))?;
 
     let (fuse_ver, engine_id, ucode_id) = patch_meta_data
@@ -569,7 +570,7 @@ fn booter(output: &Path, version: &str, gpu: &str, load: &str, sigsize: u32) -> 
         .map_err(|err| format!("Could not write to {}: {err}", filename.display()))?;
 
     // Extract the descriptor (nvkm_gsp_booter_fw_hdr)
-    let array = format!("kgspBinArchiveBooter{load_upper}Ucode_{gpu_upper}_header_prod_data");
+    let array = format!("kgspBinArchiveBooter{load_upper}Ucode_{gpu_upper}_BINDATA_LABEL_HEADER_PROD_data");
     let descriptor = get_bytes(&filename, &array, Some(36))?;
 
     // Fifth, the descriptor
@@ -603,12 +604,12 @@ fn scrubber(output: &Path, version: &str, gpu: &str, sigsize: u32) -> Result<(),
         .map_err(|err| format!("Could not create nvidia/{gpu}/gsp/: {err}"))?;
 
     // Extract the actual scrubber firmware
-    let array = format!("ksec2BinArchiveSecurescrubUcode_{gpux}_image_prod_data");
+    let array = format!("ksec2BinArchiveSecurescrubUcode_{gpux}_BINDATA_LABEL_IMAGE_PROD_data");
     let firmware = get_bytes(&filename, &array, None)?;
     let firmware_size = firmware.len() as u32;
 
     // Extract the signatures
-    let array = format!("ksec2BinArchiveSecurescrubUcode_{gpux}_sig_prod_data");
+    let array = format!("ksec2BinArchiveSecurescrubUcode_{gpux}_BINDATA_LABEL_SIG_PROD_data");
     let signatures = get_bytes(&filename, &array, None)?;
     let signatures_size = signatures.len() as u32;
     if (signatures_size % sigsize) != 0 {
@@ -620,12 +621,12 @@ fn scrubber(output: &Path, version: &str, gpu: &str, sigsize: u32) -> Result<(),
     }
 
     // Extract the patch location
-    let array = format!("ksec2BinArchiveSecurescrubUcode_{gpux}_patch_loc_data");
+    let array = format!("ksec2BinArchiveSecurescrubUcode_{gpux}_BINDATA_LABEL_PATCH_LOC_data");
     let patch_loc_data = get_bytes(&filename, &array, Some(4))?;
     let patch_loc = LittleEndian::read_u32(&patch_loc_data);
 
     // Extract the patch meta variables
-    let array = format!("ksec2BinArchiveSecurescrubUcode_{gpux}_patch_meta_data");
+    let array = format!("ksec2BinArchiveSecurescrubUcode_{gpux}_BINDATA_LABEL_PATCH_META_data");
     let patch_meta_data = get_bytes(&filename, &array, Some(12))?;
 
     let (fuse_ver, engine_id, ucode_id) = patch_meta_data
@@ -686,7 +687,7 @@ fn scrubber(output: &Path, version: &str, gpu: &str, sigsize: u32) -> Result<(),
         .map_err(|err| format!("Could not write to {}: {err}", filename.display()))?;
 
     // Extract the descriptor (nvkm_gsp_booter_fw_hdr)
-    let array = format!("ksec2BinArchiveSecurescrubUcode_{gpux}_header_prod_data");
+    let array = format!("ksec2BinArchiveSecurescrubUcode_{gpux}_BINDATA_LABEL_HEADER_PROD_data");
     let descriptor = get_bytes(&filename, &array, Some(36))?;
 
     // Fifth, the descriptor
