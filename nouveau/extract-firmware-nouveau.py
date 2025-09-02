@@ -120,6 +120,7 @@ def bootloader(gpu, fuse):
     global version
 
     GPU = gpu.upper()
+    FUSE = fuse.upper()
     filename = f"src/nvidia/generated/g_bindata_kgspGetBinArchiveGspRmBoot_{GPU}.c"
 
     print(f"Creating nvidia/{gpu}/gsp/bootloader-{version}.bin")
@@ -127,12 +128,12 @@ def bootloader(gpu, fuse):
 
     with open(f"{outputpath}/nvidia/{gpu}/gsp/bootloader-{version}.bin", "wb") as f:
         # Extract the actual bootloader firmware
-        array = f"kgspBinArchiveGspRmBoot_{GPU}_ucode_image{fuse}data"
+        array = f"kgspBinArchiveGspRmBoot_{GPU}_BINDATA_LABEL_UCODE_IMAGE{FUSE}data"
         firmware = getbytes(filename, array)
         firmware_size = len(firmware)
 
         # Extract the descriptor (RM_RISCV_UCODE_DESC)
-        array = f"kgspBinArchiveGspRmBoot_{GPU}_ucode_desc{fuse}data"
+        array = f"kgspBinArchiveGspRmBoot_{GPU}_BINDATA_LABEL_UCODE_DESC{FUSE}data"
         descriptor = getbytes(filename, array)
         descriptor_size = len(descriptor)
 
@@ -154,6 +155,7 @@ def booter(gpu, load, sigsize, fuse = "prod"):
 
     GPU = gpu.upper()
     LOAD = load.capitalize()
+    FUSE = fuse.upper()
 
     filename = f"src/nvidia/generated/g_bindata_kgspGetBinArchiveBooter{LOAD}Ucode_{GPU}.c"
 
@@ -162,12 +164,12 @@ def booter(gpu, load, sigsize, fuse = "prod"):
 
     with open(f"{outputpath}/nvidia/{gpu}/gsp/booter_{load}-{version}.bin", "wb") as f:
         # Extract the actual booter firmware
-        array = f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}_image_{fuse}_data"
+        array = f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}_BINDATA_LABEL_IMAGE_{FUSE}_data"
         firmware = getbytes(filename, array)
         firmware_size = len(firmware)
 
         # Extract the signatures
-        array = f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}_sig_{fuse}_data"
+        array = f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}_BINDATA_LABEL_SIG_{FUSE}_data"
         signatures = getbytes(filename, array)
         signatures_size = len(signatures)
         if signatures_size % sigsize:
@@ -195,12 +197,12 @@ def booter(gpu, load, sigsize, fuse = "prod"):
         f.write(signatures)
 
         # Extract the patch location
-        array = f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}_patch_loc_data"
+        array = f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}_BINDATA_LABEL_PATCH_LOC_data"
         bytes = getbytes(filename, array)
         patchloc = struct.unpack("<L", bytes)[0]
 
         # Extract the patch meta variables
-        array = f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}_patch_meta_data"
+        array = f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}_BINDATA_LABEL_PATCH_META_data"
         bytes = getbytes(filename, array)
         fuse_ver, engine_id, ucode_id = struct.unpack("<LLL", bytes)
 
@@ -208,7 +210,7 @@ def booter(gpu, load, sigsize, fuse = "prod"):
         f.write(struct.pack("<6L", patchloc, 0, fuse_ver, engine_id, ucode_id, num_sigs))
 
         # Extract the descriptor (nvkm_gsp_booter_fw_hdr)
-        array = f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}_header_{fuse}_data"
+        array = f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}_BINDATA_LABEL_HEADER_{FUSE}_data"
         descriptor = getbytes(filename, array)
 
         # Fifth, the descriptor
@@ -225,7 +227,7 @@ def scrubber(gpu, sigsize, fuse = "prod"):
     # Unfortunately, RM breaks convention with the scrubber image and labels
     # the files and arrays with AD10X instead of AD102.
     GPUX = f"{gpu[:-1].upper()}X"
-
+    FUSE = fuse.upper()
     filename = f"src/nvidia/generated/g_bindata_ksec2GetBinArchiveSecurescrubUcode_{GPUX}.c"
 
     print(f"Creating nvidia/{gpu}/gsp/scrubber-{version}.bin")
@@ -233,12 +235,12 @@ def scrubber(gpu, sigsize, fuse = "prod"):
 
     with open(f"{outputpath}/nvidia/{gpu}/gsp/scrubber-{version}.bin", "wb") as f:
         # Extract the actual scrubber firmware
-        array = f"ksec2BinArchiveSecurescrubUcode_{GPUX}_image_{fuse}_data[]"
+        array = f"ksec2BinArchiveSecurescrubUcode_{GPUX}_BINDATA_LABEL_IMAGE_{FUSE}_data[]"
         firmware = getbytes(filename, array)
         firmware_size = len(firmware)
 
         # Extract the signatures
-        array = f"ksec2BinArchiveSecurescrubUcode_{GPUX}_sig_{fuse}_data"
+        array = f"ksec2BinArchiveSecurescrubUcode_{GPUX}_BINDATA_LABEL_SIG_{FUSE}_data"
         signatures = getbytes(filename, array)
         signatures_size = len(signatures)
         if signatures_size % sigsize:
@@ -266,12 +268,12 @@ def scrubber(gpu, sigsize, fuse = "prod"):
         f.write(signatures)
 
         # Extract the patch location
-        array = f"ksec2BinArchiveSecurescrubUcode_{GPUX}_patch_loc_data"
+        array = f"ksec2BinArchiveSecurescrubUcode_{GPUX}_BINDATA_LABEL_PATCH_LOC_data"
         bytes = getbytes(filename, array)
         patchloc = struct.unpack("<L", bytes)[0]
 
         # Extract the patch meta variables
-        array = f"ksec2BinArchiveSecurescrubUcode_{GPUX}_patch_meta_data"
+        array = f"ksec2BinArchiveSecurescrubUcode_{GPUX}_BINDATA_LABEL_PATCH_META_data"
         bytes = getbytes(filename, array)
         fuse_ver, engine_id, ucode_id = struct.unpack("<LLL", bytes)
 
@@ -279,7 +281,7 @@ def scrubber(gpu, sigsize, fuse = "prod"):
         f.write(struct.pack("<6L", patchloc, 0, fuse_ver, engine_id, ucode_id, num_sigs))
 
         # Extract the descriptor (nvkm_gsp_booter_fw_hdr)
-        array = f"ksec2BinArchiveSecurescrubUcode_{GPUX}_header_{fuse}_data"
+        array = f"ksec2BinArchiveSecurescrubUcode_{GPUX}_BINDATA_LABEL_HEADER_{FUSE}_data"
         descriptor = getbytes(filename, array)
 
         # Fifth, the descriptor
@@ -395,19 +397,19 @@ def fmc(gpu, fuse = "Prod"):
     print(f"Creating nvidia/{gpu}/gsp/fmc-{version}.bin")
     os.makedirs(f"{outputpath}/nvidia/{gpu}/gsp/", exist_ok = True)
 
-    array = f"kgspBinArchiveGspRmFmcGfw{fuse}Signed_{GPU}_ucode_hash_data"
+    array = f"kgspBinArchiveGspRmFmcGfw{fuse}Signed_{GPU}_BINDATA_LABEL_UCODE_HASH_data"
     ucode_hash = getbytes(filename, array)
     (ucode_hash_size, ucode_hash_padded_size) = sizes(ucode_hash)
 
-    array = f"kgspBinArchiveGspRmFmcGfw{fuse}Signed_{GPU}_ucode_sig_data"
+    array = f"kgspBinArchiveGspRmFmcGfw{fuse}Signed_{GPU}_BINDATA_LABEL_UCODE_SIG_data"
     ucode_sig = getbytes(filename, array)
     (ucode_sig_size, ucode_sig_padded_size) = sizes(ucode_sig)
 
-    array = f"kgspBinArchiveGspRmFmcGfw{fuse}Signed_{GPU}_ucode_pkey_data"
+    array = f"kgspBinArchiveGspRmFmcGfw{fuse}Signed_{GPU}_BINDATA_LABEL_UCODE_PKEY_data"
     ucode_pkey = getbytes(filename, array)
     (ucode_pkey_size, ucode_pkey_padded_size) = sizes(ucode_pkey)
 
-    array = f"kgspBinArchiveGspRmFmcGfw{fuse}Signed_{GPU}_ucode_image_data"
+    array = f"kgspBinArchiveGspRmFmcGfw{fuse}Signed_{GPU}_BINDATA_LABEL_UCODE_IMAGE_data"
     ucode_image = getbytes(filename, array)
     (ucode_image_size, ucode_image_padded_size) = sizes(ucode_image)
 
