@@ -95,6 +95,7 @@ OBJRPC *initRpcObject(OBJGPU *pGpu)
     pRpc->timeoutCount = 0;
     pRpc->bQuietPrints = NV_FALSE;
 
+    pRpc->sequence = 0;
     if (!IS_DCE_CLIENT(pGpu))
     {
         // VIRTUALIZATION is disabled on DCE. Only run the below code on VGPU and GSP.

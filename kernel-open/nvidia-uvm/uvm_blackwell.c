@@ -143,8 +143,13 @@ void uvm_hal_blackwell_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
     // by UVM.
     if (parent_gpu->rm_info.gpuArch == NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100 &&
         parent_gpu->rm_info.gpuImplementation ==
-            NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB10B)
+            NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB10B) {
         parent_gpu->is_integrated_gpu = true;
+        // GB10B has sticky L2 coherent cache lines.
+        // For details, refer to the comments in uvm_gpu.h
+        // where this field is declared.
+        parent_gpu->sticky_l2_coherent_cache_lines = true;
+    }
     if (parent_gpu->rm_info.gpuArch == NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB200 &&
         parent_gpu->rm_info.gpuImplementation ==
             NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB20B)

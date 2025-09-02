@@ -52,13 +52,13 @@
 #include "dp_tracing.h"
 
 /*
- * This is needed by Synaptics to disable DisplayExpand feature 
- * in some of their docking station based on if GPU supports DSC. 
+ * This is needed by Synaptics to disable DisplayExpand feature
+ * in some of their docking station based on if GPU supports DSC.
  * Feature is not needed if DSC is supported.
  * Customers reported problems with the feature enabled on GB20x devices
  * and requested GPU DSC detection to disable DisplayExpand feature.
  * DSC is supported in Turing and later SKUs hence
- * exposing Turing DevId to customers to address their requirement. 
+ * exposing Turing DevId to customers to address their requirement.
  */
 #define TURING_DEV_ID  0x1E
 
@@ -90,7 +90,7 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
       hdcpCpIrqRxStatusRetries(0),
       bFromResumeToNAB(false),
       bAttachOnResume(false),
-      bHdcpAuthOnlyOnDemand(false),
+      bHdcpAuthOnlyOnDemand(true),
       constructorFailed(false),
       policyModesetOrderMitigation(false),
       policyForceLTAtNAB(false),
@@ -170,8 +170,8 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
 
     this->bSkipAssessLinkForEDP = dpRegkeyDatabase.bAssesslinkForEdpSkipped;
 
-    // If Hdcp authenticatoin on demand regkey is set, override to the provided value.
-    this->bHdcpAuthOnlyOnDemand = dpRegkeyDatabase.bHdcpAuthOnlyOnDemand;
+    // default bHdcpAuthOnlyOnDemand is true and override to false if regkey bMstAutoHdcpAuthAtAttach set as true.
+    this->bHdcpAuthOnlyOnDemand = !dpRegkeyDatabase.bMstAutoHdcpAuthAtAttach;
 
     if (dpRegkeyDatabase.bOptLinkKeptAlive)
     {
@@ -5687,6 +5687,12 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
         return false;
     }
 
+    //
+    // Cancel pending HDCP authentication callbacks if have or may interrupt
+    // active link training that violates spec.
+    //
+    cancelHdcpCallbacks();
+
     if (!lConfig.multistream)
     {
         for (Device * i = enumDevices(0); i; i=enumDevices(i))
@@ -7428,6 +7434,12 @@ void ConnectorImpl::notifyShortPulse()
             activeLinkConfig.peakRate > dp2LinkRate_10_0Gbps &&
             main->isCableVconnSourceUnknown())
         {
+            //
+            // Cancel pending HDCP authentication callbacks if have or may interrupt
+            // active link training that violates spec.
+            //
+            cancelHdcpCallbacks();
+
             if (activeLinkConfig.isValid() && enableFlush())
             {
                 train(originalActiveLinkConfig, true);

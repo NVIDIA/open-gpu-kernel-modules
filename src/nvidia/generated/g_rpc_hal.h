@@ -16,8 +16,8 @@
 
 typedef NV_STATUS      RpcConstruct(POBJGPU, POBJRPC);
 typedef void           RpcDestroy(POBJGPU, POBJRPC);
-typedef NV_STATUS      RpcSendMessage(POBJGPU, POBJRPC);
-typedef NV_STATUS      RpcRecvPoll(POBJGPU, POBJRPC, NvU32);
+typedef NV_STATUS      RpcSendMessage(POBJGPU, POBJRPC, NvU32 *);
+typedef NV_STATUS      RpcRecvPoll(POBJGPU, POBJRPC, NvU32, NvU32);
 
 
 //
@@ -42,10 +42,10 @@ typedef struct RPC_OBJ_IFACES {
         (_pRpc)->obj.__rpcConstruct__(_pGpu, _pRpc)
 #define rpcDestroy(_pGpu, _pRpc)  \
         (_pRpc)->obj.__rpcDestroy__(_pGpu, _pRpc)
-#define rpcSendMessage(_pGpu, _pRpc)  \
-        (_pRpc)->obj.__rpcSendMessage__(_pGpu, _pRpc)
-#define rpcRecvPoll(_pGpu, _pRpc, _arg0)  \
-        (_pRpc)->obj.__rpcRecvPoll__(_pGpu, _pRpc, _arg0)
+#define rpcSendMessage(_pGpu, _pRpc, _pArg0)  \
+        (_pRpc)->obj.__rpcSendMessage__(_pGpu, _pRpc, _pArg0)
+#define rpcRecvPoll(_pGpu, _pRpc, _arg0, _arg1)  \
+        (_pRpc)->obj.__rpcRecvPoll__(_pGpu, _pRpc, _arg0, _arg1)
 
 
 //

@@ -47,7 +47,7 @@
 #define NV_DP_REGKEY_APPLY_MAX_LINK_RATE_OVERRIDES    "APPLY_OVERRIDES_FOR_BUG_2489143"
 #define NV_DP_REGKEY_DISABLE_DSC                      "DISABLE_DSC"
 #define NV_DP_REGKEY_SKIP_ASSESSLINK_FOR_EDP          "HP_WAR_2189772"
-#define NV_DP_REGKEY_HDCP_AUTH_ONLY_ON_DEMAND         "DP_HDCP_AUTH_ONLY_ON_DEMAND"
+#define NV_DP_REGKEY_MST_AUTO_HDCP_AUTH_AT_ATTACH     "DP_MST_AUTO_HDCP_AUTH_AT_ATTACH"
 #define NV_DP_REGKEY_ENABLE_MSA_OVER_MST              "ENABLE_MSA_OVER_MST"
 #define NV_DP_REGKEY_DISABLE_DOWNSPREAD               "DISABLE_DOWNSPREAD"
 
@@ -126,7 +126,7 @@ struct DP_REGKEY_DATABASE
     NvU32 applyMaxLinkRateOverrides;
     bool  bDscDisabled;
     bool  bAssesslinkForEdpSkipped;
-    bool  bHdcpAuthOnlyOnDemand;
+    bool  bMstAutoHdcpAuthAtAttach;
     bool  bMsaOverMstEnabled;
     bool  bOptLinkKeptAlive;
     bool  bOptLinkKeptAliveMst;

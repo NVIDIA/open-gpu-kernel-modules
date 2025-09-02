@@ -2302,6 +2302,43 @@ compile_test() {
             fi
         ;;
 
+        drm_fb_create_takes_format_info)
+            #
+            # Determine if a `struct drm_format_info *` is passed into
+            # the .fb_create callback. If so, it will have 4 arguments.
+            # This parameter was added in commit 81112eaac559 ("drm:
+            # Pass the format info to .fb_create") in linux-next
+            # (2025-07-16)
+            CODE="
+            #include <drm/drm_mode_config.h>
+            #include <drm/drm_framebuffer.h>
+
+            static const struct drm_mode_config_funcs funcs;
+            void conftest_drm_fb_create_takes_format_info(void) {
+                funcs.fb_create(NULL, NULL, NULL, NULL); 
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_FB_CREATE_TAKES_FORMAT_INFO" "" "types"
+        ;;
+
+        drm_fill_fb_struct_takes_format_info)
+            #
+            # Determine if a `struct drm_format_info *` is passed into
+            # drm_helper_mode_fill_fb_struct(). If so, it will have 4 arguments.
+            # This parameter was added in commit a34cc7bf1034 ("drm:
+            # Allow the caller to pass in the format info to
+            # drm_helper_mode_fill_fb_struct()") in linux-next
+            # (2025-07-16)
+            CODE="
+            #include <drm/drm_modeset_helper.h>
+
+            void conftest_drm_fill_fb_struct_takes_format_info(void) {
+                drm_helper_mode_fill_fb_struct(NULL, NULL, NULL, NULL);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_FILL_FB_STRUCT_TAKES_FORMAT_INFO" "" "types"
+        ;;
+
         drm_connector_funcs_have_mode_in_name)
             #
             # Determine if _mode_ is present in connector function names.  We

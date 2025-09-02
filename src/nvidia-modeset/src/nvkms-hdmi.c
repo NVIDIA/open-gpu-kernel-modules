@@ -427,38 +427,28 @@ static void SendVideoInfoFrame(const NVDispEvoRec *pDispEvo,
 }
 
 /*
- * SendHDMI3DVendorSpecificInfoFrame() - Construct vendor specific infoframe
- * using provided EDID and call ->SendHdmiInfoFrame() to send it to RM. Currently
- * hardcoded to send the infoframe necessary for HDMI 3D.
+ * SendVendorSpecificInfoFrame() - Construct vendor specific infoframe using
+ * provided EDID and call ->SendHdmiInfoFrame() to send it to RM.
  */
 
 static void
-SendHDMI3DVendorSpecificInfoFrame(const NVDispEvoRec *pDispEvo,
-                                  const NvU32 head, NVT_EDID_INFO *pEdidInfo)
+SendVendorSpecificInfoFrame(const NVDispEvoRec *pDispEvo,
+                            const NvU32 head,
+                            const NVDispHeadInfoFrameStateEvoRec *pInfoFrameState,
+                            NVT_EDID_INFO *pEdidInfo)
 {
     const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
-    const NVDispHeadStateEvoRec *pHeadState =
-                                 &pDispEvo->headState[head];
-    NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL vendorCtrl = {
-        .Enable          = 1,
-        .HDMIFormat      = NVT_HDMI_VS_BYTE4_HDMI_VID_FMT_3D,
-        .HDMI_VIC        = NVT_HDMI_VS_BYTE5_HDMI_VIC_NA,
-        .ThreeDStruc     = NVT_HDMI_VS_BYTE5_HDMI_3DS_FRAMEPACK,
-        .ThreeDDetail    = NVT_HDMI_VS_BYTE_OPT1_HDMI_3DEX_NA,
-        .MetadataPresent = 0,
-        .MetadataType    = NVT_HDMI_VS_BYTE_OPT2_HDMI_METADATA_TYPE_NA,
-    };
+    NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL vendorCtrl = pInfoFrameState->vendorSpecificCtrl;
     NVT_VENDOR_SPECIFIC_INFOFRAME vendorInfoFrame;
     NVT_STATUS status;
 
-    if (!pEdidInfo->HDMI3DSupported) {
-        // Only send the HDMI 3D infoframe if the display supports HDMI 3D
-        return;
-    }
-
-    // Send the infoframe with HDMI 3D configured if we're setting an HDMI 3D
-    // mode.
-    if (!pHeadState->timings.hdmi3D) {
+    /*
+     * Disable the vendor specific infoframe if not requested to be
+     * enabled, or if HDMI 3D is requested but not supported by the monitor.
+     */
+    if (!vendorCtrl.Enable ||
+        ((vendorCtrl.HDMIFormat == NVT_HDMI_VS_BYTE4_HDMI_VID_FMT_3D) &&
+         !pEdidInfo->HDMI3DSupported)) {
         pDevEvo->hal->DisableHdmiInfoFrame(pDispEvo, head,
                                            NVT_INFOFRAME_TYPE_VENDOR_SPECIFIC);
         return;
@@ -575,9 +565,10 @@ void nvUpdateHdmiInfoFrames(const NVDispEvoRec *pDispEvo,
                        pInfoFrameState,
                        &pDpyEvo->parsedEdid.info);
 
-    SendHDMI3DVendorSpecificInfoFrame(pDispEvo,
-                                      head,
-                                      &pDpyEvo->parsedEdid.info);
+    SendVendorSpecificInfoFrame(pDispEvo,
+                                head,
+                                pInfoFrameState,
+                                &pDpyEvo->parsedEdid.info);
 
     SendHDRInfoFrame(pDispEvo,
                      head,
@@ -2146,7 +2137,9 @@ static NvBool nvHdmiFrlQueryConfigOneBpc(
 
     nvAssert(nvDpyIsHdmiEvo(pDpyEvo));
     nvAssert(nvHdmiDpySupportsFrl(pDpyEvo));
-    nvAssert(!nvHdmiIsTmdsPossible(pDpyEvo, pHwTimings, pDpyColor));
+
+    nvAssert(!nvHdmiIsTmdsPossible(pDpyEvo, pHwTimings, pDpyColor) ||
+             nvGetPreferHdmiFrlMode(pDevEvo, pValidationParams));
 
     /* See if we can find an NVT_TIMING for this mode from the EDID. */
     pNvtTiming = nvFindEdidNVT_TIMING(pDpyEvo, pModeTimings, pValidationParams);

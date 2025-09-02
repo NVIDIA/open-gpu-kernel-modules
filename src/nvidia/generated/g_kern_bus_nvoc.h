@@ -116,6 +116,14 @@ typedef enum
 #define BUS_MAP_FB_FLAGS_PRE_INIT              NVBIT(7)
 #define BUS_MAP_FB_FLAGS_ALLOW_DISCONTIG       NVBIT(8)
 #define BUS_MAP_FB_FLAGS_UNMANAGED_MEM_AREA    NVBIT(9)
+#define BUS_MAP_FB_FLAGS_PAGE_SIZE_4K          NVBIT(10)
+#define BUS_MAP_FB_FLAGS_PAGE_SIZE_64K         NVBIT(11)
+#define BUS_MAP_FB_FLAGS_PAGE_SIZE_2M          NVBIT(12)
+#define BUS_MAP_FB_FLAGS_PAGE_SIZE_512M        NVBIT(13)
+// Reserve 3 bits for future expansion of page size.
+#define BUS_MAP_FB_FLAGS_PAGE_SIZE_RESERVED_2  NVBIT(14)
+#define BUS_MAP_FB_FLAGS_PAGE_SIZE_RESERVED_3  NVBIT(15)
+#define BUS_MAP_FB_FLAGS_PAGE_SIZE_RESERVED_4  NVBIT(16)
 
 #define BUS_MAP_FB_FLAGS_ALL_FLAGS \
     (BUS_MAP_FB_FLAGS_MAP_RSVD_BAR1         |\
@@ -127,6 +135,10 @@ typedef enum
     BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED       |\
     BUS_MAP_FB_FLAGS_PRE_INIT               |\
     BUS_MAP_FB_FLAGS_ALLOW_DISCONTIG        |\
+    BUS_MAP_FB_FLAGS_PAGE_SIZE_4K           |\
+    BUS_MAP_FB_FLAGS_PAGE_SIZE_64K          |\
+    BUS_MAP_FB_FLAGS_PAGE_SIZE_2M           |\
+    BUS_MAP_FB_FLAGS_PAGE_SIZE_512M         |\
     BUS_MAP_FB_FLAGS_UNMANAGED_MEM_AREA)
 
 #define BUS_MAP_FB_FLAGS_FERMI_INVALID         ((~BUS_MAP_FB_FLAGS_ALL_FLAGS) | BUS_MAP_FB_FLAGS_MAP_RSVD_BAR1)
@@ -233,6 +245,7 @@ typedef struct Bar1VaInfo
     NvU64               apertureLength;     // Aperture length that is visible to CPU
     NvU64               mappableLength;     // Total mappable aperture length after WARs
     struct OBJVASPACE         *pVAS;
+    NvU64               vasFreeSize;        // Cached value of the BAR1 VAS's free size used by PMA
     NvU64               instBlockBase;
     MEMORY_DESCRIPTOR  *pInstBlkMemDesc;
     ReuseMappingDb      reuseDb;

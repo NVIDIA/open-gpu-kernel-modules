@@ -264,6 +264,11 @@ struct uvm_gpu_chunk_struct
 
         // This flag indicates an allocated user chunk is referenced by a device
         // private struct page PTE and therefore expects a page_free() callback.
+        // The flag is only for sanity checking since uvm_pmm_gpu_free()
+        // shouldn't be called if Linux has a device private reference to this
+        // chunk and devmem_page_free() should only be called from the Linux
+        // callback if a reference was created.
+        // See uvm_hmm_va_block_service_locked() and fill_dst_pfn() for details.
         //
         // This field is always false in kernel chunks.
         bool is_referenced : 1;
@@ -293,6 +298,9 @@ struct uvm_gpu_chunk_struct
     // The VA block using the chunk, if any.
     // User chunks that are not backed by a VA block are considered to be
     // temporarily pinned and cannot be evicted.
+    // Note that the chunk state is normally UVM_PMM_GPU_CHUNK_STATE_ALLOCATED
+    // but can also be UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED if an HMM va_block
+    // and device private struct page have a pointer to this chunk.
     //
     // This field is always NULL in kernel chunks.
     uvm_va_block_t *va_block;
@@ -441,17 +449,16 @@ NvU64 uvm_gpu_chunk_to_sys_addr(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk);
 // Allocates num_chunks chunks of size chunk_size in caller-supplied array
 // (chunks).
 //
-// Returned chunks are in the TEMP_PINNED state, requiring a call to either
-// uvm_pmm_gpu_unpin_allocated, uvm_pmm_gpu_unpin_referenced, or
-// uvm_pmm_gpu_free. If a tracker is passed in, all
-// the pending operations on the allocated chunks will be added to it
+// Returned chunks are in the TEMP_PINNED state, requiring a call to
+// uvm_pmm_gpu_unpin_allocated or uvm_pmm_gpu_free. If a tracker is passed in,
+// all the pending operations on the allocated chunks will be added to it
 // guaranteeing that all the entries come from the same GPU as the PMM.
 // Otherwise, when tracker is NULL, all the pending operations will be
 // synchronized before returning to the caller.
 //
 // Each of the allocated chunks list nodes (uvm_gpu_chunk_t::list) can be used
-// by the caller until the chunk is unpinned (uvm_pmm_gpu_unpin_allocated,
-// uvm_pmm_gpu_unpin_referenced) or freed (uvm_pmm_gpu_free). If used, the list
+// by the caller until the chunk is unpinned (uvm_pmm_gpu_unpin_allocated)
+// or freed (uvm_pmm_gpu_free). If used, the list
 // node has to be returned to a valid state before calling either of the APIs.
 //
 // In case of an error, the chunks array is guaranteed to be cleared.
@@ -483,12 +490,6 @@ NV_STATUS uvm_pmm_gpu_alloc_kernel(uvm_pmm_gpu_t *pmm,
 //
 // Can only be used on user memory.
 void uvm_pmm_gpu_unpin_allocated(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm_va_block_t *va_block);
-
-// Unpin a temporarily pinned chunk, set its reverse map to a VA block, and
-// mark it as referenced.
-//
-// Can only be used on user memory.
-void uvm_pmm_gpu_unpin_referenced(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm_va_block_t *va_block);
 
 // Free a user or kernel chunk. Temporarily pinned chunks are unpinned.
 //

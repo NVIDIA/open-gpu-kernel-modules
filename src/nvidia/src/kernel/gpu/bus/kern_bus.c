@@ -941,6 +941,7 @@ NvU32
 kbusConvertBusMapFlagsToDmaFlags(KernelBus *pKernelBus, MEMORY_DESCRIPTOR *pMemDesc, NvU32 busMapFlags)
 {
     NvU32 dmaFlags = DRF_DEF(OS46, _FLAGS, _DMA_UNICAST_REUSE_ALLOC, _FALSE);
+    NvBool bPageSizeLocked = NV_FALSE;
 
     if (busMapFlags & BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED)
     {
@@ -973,6 +974,33 @@ kbusConvertBusMapFlagsToDmaFlags(KernelBus *pKernelBus, MEMORY_DESCRIPTOR *pMemD
     {
         dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _ACCESS, _WRITE_ONLY, dmaFlags);
     }
+
+    // Resolve explicit map page size request. Required for fixed offset mapping at specific page size.
+    if (busMapFlags & BUS_MAP_FB_FLAGS_PAGE_SIZE_4K)
+    {
+        NV_ASSERT(!bPageSizeLocked);
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _PAGE_SIZE, _4KB, dmaFlags);
+        bPageSizeLocked = NV_TRUE;
+    }
+    if (!bPageSizeLocked && (busMapFlags & BUS_MAP_FB_FLAGS_PAGE_SIZE_64K))
+    {
+        NV_ASSERT(!bPageSizeLocked);
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _PAGE_SIZE, _BIG, dmaFlags);
+        bPageSizeLocked = NV_TRUE;
+    }
+    if (!bPageSizeLocked && (busMapFlags & BUS_MAP_FB_FLAGS_PAGE_SIZE_2M))
+    {
+        NV_ASSERT(!bPageSizeLocked);
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _PAGE_SIZE, _HUGE, dmaFlags);
+        bPageSizeLocked = NV_TRUE;
+    }
+    if (!bPageSizeLocked && (busMapFlags & BUS_MAP_FB_FLAGS_PAGE_SIZE_512M))
+    {
+        NV_ASSERT(!bPageSizeLocked);
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _PAGE_SIZE, _512M, dmaFlags);
+        bPageSizeLocked = NV_TRUE;
+    }
+
 
     return dmaFlags;
 }
@@ -1203,12 +1231,6 @@ kbusUpdateRusdStatistics_IMPL
     NvU64 bar1AvailSize = 0;
     NV_RANGE bar1VARange = NV_RANGE_EMPTY;
     NvBool bZeroRusd = kbusIsBar1Disabled(pKernelBus);
-    
-    if (kbusIsStaticBar1Enabled(pGpu, pKernelBus))
-    {
-        // PMA owns BAR1 info, so don't  update.
-        return NV_OK;
-    }
 
     bZeroRusd = bZeroRusd || IS_MIG_ENABLED(pGpu);
 
@@ -1227,6 +1249,29 @@ kbusUpdateRusdStatistics_IMPL
 
             pVASHeap->eheapInfoForRange(pVASHeap, bar1VARange, NULL, NULL, NULL, &freeSize);
             bar1AvailSize = (NvU32)(freeSize / 1024);
+
+            if (kbusIsStaticBar1Enabled(pGpu, pKernelBus))
+            {
+                RUSD_PMA_MEMORY_INFO *pPmaInfo;
+                NvU64 freeMem = 0;
+                NvU64 totalMem = 0;
+                NvU64 fbInUse;
+                NvU32 gfid = GPU_GFID_PF;
+
+                NV_ASSERT_OK(vgpuGetCallingContextGfid(pGpu, &gfid));
+
+                // Cache off the vasFreeSize for PMA to use when it updates the memory
+                pKernelBus->bar1[gfid].vasFreeSize = freeSize;
+                
+                pPmaInfo = gpushareddataWriteStart(pGpu, pmaMemoryInfo);
+                gpushareddataWriteFinish(pGpu, pmaMemoryInfo);
+                totalMem = MEM_RD64(&pPmaInfo->totalPmaMemory);
+                freeMem = MEM_RD64(&pPmaInfo->freePmaMemory);
+                fbInUse = totalMem - freeMem;
+
+                // Available size in KB
+                bar1AvailSize = (freeSize + pKernelBus->bar1[gfid].staticBar1.size - fbInUse) / 1024;
+            }
         }
     }
 

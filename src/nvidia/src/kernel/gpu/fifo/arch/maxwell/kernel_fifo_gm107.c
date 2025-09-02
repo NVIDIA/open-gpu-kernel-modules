@@ -1222,6 +1222,7 @@ kfifoPreAllocUserD_GM107
         memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager,
                                      pUserdInfo->userdPhysDesc[currentGpuInst],
                                      AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
+        mapFlags |= BUS_MAP_FB_FLAGS_PAGE_SIZE_4K;
         if (bFifoFirstInit)
         {
             pUserdInfo->userdBar1MapStartOffset = kfifoGetUserdBar1MapStartOffset_HAL(pGpu, pKernelFifo);
@@ -1243,6 +1244,7 @@ kfifoPreAllocUserD_GM107
         // Force page size to 4KB in broadcast to match host phys access
         memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, pUserdInfo->userdPhysDesc[currentGpuInst],
                                      AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
+        mapFlags |= BUS_MAP_FB_FLAGS_PAGE_SIZE_4K;
 
         //
         // If coherent link is available, just get a coherent mapping to USERD and

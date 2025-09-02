@@ -310,8 +310,6 @@ memdescCreate
     // (4k >> 12 = 1). This modification helps us to avoid overflow of variable
     // allocSize, in case caller of this function passes highest value of NvU64.
     //
-    // If allocSize is passed as 0, PageCount should be returned as 0.
-    //
     if (allocSize == 0)
     {
         PageCount = 0;

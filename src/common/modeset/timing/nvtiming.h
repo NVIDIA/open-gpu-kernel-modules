@@ -3807,6 +3807,11 @@ typedef struct tagNVT_VENDOR_SPECIFIC_INFOFRAME
 #define NVT_HDMI_VS_BYTE4_HDMI_VID_FMT_NONE         0x00
 #define NVT_HDMI_VS_BYTE4_HDMI_VID_FMT_EXT          0x01
 #define NVT_HDMI_VS_BYTE4_HDMI_VID_FMT_3D           0x02
+
+#define NVT_HDMI_HF_VS_BYTE4_VER_MASK               0xff
+#define NVT_HDMI_HF_VS_BYTE4_VER_SHIFT              0x00
+#define NVT_HDMI_HF_VS_BYTE4_VER_1_0                0x01
+
 // 0x03-0x07 reserved
 //
 #define NVT_HDMI_VS_BYTE5_HDMI_VIC_MASK             0xff    // HDMI_VID_FMT = HDMI_VID_FMT_EXT

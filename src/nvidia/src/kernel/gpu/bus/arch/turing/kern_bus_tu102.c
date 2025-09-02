@@ -29,6 +29,7 @@
 #include "gpu/fifo/kernel_fifo.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
 #include "nvrm_registry.h"
+#include "kernel/virtualization/hypervisor/hypervisor.h"
 
 #include "published/turing/tu102/dev_bus.h"
 #include "published/turing/tu102/dev_vm.h"
@@ -396,6 +397,15 @@ kbusIsStaticBar1Supported_TU102
         return NV_ERR_NOT_SUPPORTED;
     }
 
+    if (hypervisorIsVgxHyper())
+    {
+        //
+        // We don't want to consume BAR1 from the PF if
+        // we're not going to use it ourselves
+        //
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
     //
     // BAR1 mappings not supported in CC/PPCIE mode
     // TODO: Bug 5201018
@@ -525,6 +535,7 @@ kbusEnableStaticBar1Mapping_TU102
     NV_STATUS status = NV_OK;
     NvU64 bar1MapSize;
     NvU64 bar1BusAddr;
+    NvU32 mapFlags = BUS_MAP_FB_FLAGS_MAP_UNICAST | BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED;
 
     //
     // But use memmgrGetClientFbAddrSpaceSize
@@ -552,17 +563,22 @@ kbusEnableStaticBar1Mapping_TU102
 
     // Set to use RM_PAGE_SIZE_HUGE, 2MB
     memdescSetPageSize(pMemDesc, AT_GPU, RM_PAGE_SIZE_HUGE);
+    mapFlags |= BUS_MAP_FB_FLAGS_PAGE_SIZE_2M;
 
     pKernelBus->staticBar1DefaultKind = NV_MMU_PTE_KIND_GENERIC_MEMORY;
 
     // Setup GMK PTE type for this memory
     memdescSetPteKind(pMemDesc, pKernelBus->staticBar1DefaultKind);
 
-    // Deploy the static mapping.
+    //
+    // Deploy the static mapping. The RUSD statistics will read incorrectly
+    // until the subsequent call to kbusUpdateRusdStatistics at the end of
+    // kbusStatePostLoad_GM107 with bStaticBar1Enabled set
+    // 
     NV_ASSERT_OK_OR_GOTO(status,
         kbusMapFbApertureSingle(pGpu, pKernelBus, pMemDesc, 0,
             &bar1Offset, &bar1MapSize,
-            BUS_MAP_FB_FLAGS_MAP_UNICAST | BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED,
+            mapFlags,
             NV01_NULL_OBJECT),
         cleanup_mem);
 

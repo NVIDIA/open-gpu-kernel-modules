@@ -6893,17 +6893,18 @@ static NvBool GetDefaultFrlDpyColor(
     return FALSE;
 }
 
-static NvBool GetDfpHdmiProtocol(const NVDpyEvoRec *pDpyEvo,
-                                 const NvU32 overrides,
-                                 NVDpyAttributeColor *pDpyColor,
-                                 NVHwModeTimingsEvoPtr pTimings,
-                                 enum nvKmsTimingsProtocol *pTimingsProtocol)
+static NvBool GetDfpHdmiProtocol(
+    const NVDpyEvoRec *pDpyEvo,
+    const struct NvKmsModeValidationParams *pValidationParams,
+    NVDpyAttributeColor *pDpyColor,
+    NVHwModeTimingsEvoPtr pTimings,
+    enum nvKmsTimingsProtocol *pTimingsProtocol)
 {
     NVConnectorEvoPtr pConnectorEvo = pDpyEvo->pConnectorEvo;
+    const NVDevEvoRec *pDevEvo = pConnectorEvo->pDispEvo->pDevEvo;
     const NvU32 rmProtocol = pConnectorEvo->or.protocol;
     const NvKmsDpyOutputColorFormatInfo colorFormatsInfo =
         nvDpyGetOutputColorFormatInfo(pDpyEvo);
-    const NvBool forceHdmiFrlIfSupported = FALSE;
 
     nvAssert(rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_DUAL_TMDS ||
              rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A ||
@@ -6911,11 +6912,12 @@ static NvBool GetDfpHdmiProtocol(const NVDpyEvoRec *pDpyEvo,
 
     /* Override protocol if this mode requires HDMI FRL. */
     /* If we don't require boot clocks... */
-    if (((overrides & NVKMS_MODE_VALIDATION_REQUIRE_BOOT_CLOCKS) == 0) &&
+    if (((pValidationParams->overrides &
+          NVKMS_MODE_VALIDATION_REQUIRE_BOOT_CLOCKS) == 0) &&
         (!nvHdmiIsTmdsPossible(pDpyEvo, pTimings, pDpyColor) ||
-         forceHdmiFrlIfSupported) &&
-        /* If FRL is supported... */
-        nvHdmiDpySupportsFrl(pDpyEvo)) {
+         nvGetPreferHdmiFrlMode(pDevEvo, pValidationParams)) &&
+         /* If FRL is supported... */
+         nvHdmiDpySupportsFrl(pDpyEvo)) {
 
         /* Hardware does not support HDMI FRL with YUV422 */
         if ((pDpyColor->format ==
@@ -6977,7 +6979,7 @@ static NvBool GetDfpProtocol(const NVDpyEvoRec *pDpyEvo,
 
     if (pConnectorEvo->or.type == NV0073_CTRL_SPECIFIC_OR_TYPE_SOR) {
         if (nvDpyIsHdmiEvo(pDpyEvo)) {
-            if (!GetDfpHdmiProtocol(pDpyEvo, overrides, pDpyColor, pTimings,
+            if (!GetDfpHdmiProtocol(pDpyEvo, pParams, pDpyColor, pTimings,
                                     &timingsProtocol)) {
                 return FALSE;
             }

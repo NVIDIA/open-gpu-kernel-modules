@@ -58,6 +58,7 @@ TYPEDEF_BITVECTOR(MC_ENGINE_BITVECTOR);
 typedef struct RpcHistoryEntry
 {
     NvU32 function;
+    NvU32 sequence;
     NvU64 data[2];
     NvU64 ts_start;
     NvU64 ts_end;
@@ -89,6 +90,9 @@ struct OBJRPC{
     NvU32 rpcHistoryCurrent;
     RpcHistoryEntry rpcEventHistory[RPC_HISTORY_DEPTH];
     NvU32 rpcEventHistoryCurrent;
+
+    /* sequence number for RPC */ 
+    NvU32 sequence;
     NvU32 timeoutCount;
     NvBool bQuietPrints;
 

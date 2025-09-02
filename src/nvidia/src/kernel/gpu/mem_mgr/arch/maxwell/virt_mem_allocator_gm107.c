@@ -178,6 +178,91 @@ typedef struct VASINFO_MAXWELL
     VA_MANAGEMENT management; // Level of management.
 } VASINFO_MAXWELL, *PVASINFO_MAXWELL;
 
+static NV_STATUS _dmaGetMaxVAPageSize
+(
+    NvU64 vaAddr,
+    VirtualMemory *pVirtualMemory,
+    NvU64 physStartAddr,
+    NvU64 physSize,
+    NvU64 *pVaMaxPageSize,
+    NvU64 vaspaceBigPageSize
+)
+{
+    NvU64 vaMaxPageSize;
+    NvU64 targetSpaceLength;
+    NvU64 targetSpaceBase;
+    NvU64 targetSpaceLimit;
+    NvU64 physOffset;
+    NvU64 alignedVA;
+    NvBool bFoundPageSize = NV_FALSE;
+
+    if (pVirtualMemory == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    virtmemGetAddressAndSize(pVirtualMemory, &targetSpaceBase, &targetSpaceLength);
+    targetSpaceLimit = targetSpaceBase + targetSpaceLength - 1;
+
+    //
+    // Check VA and PA compatibility with a specific page size. 
+    // This check is used to determine the default mapping page size.
+    // RM will look to make sure that:
+    // 1. The page size aligned down vaAddr does not underflow the VA surface.
+    // 2. The physical size of the allocation, when aligned up to the page size does not overflow the end of the VA surface.
+    //
+    // Passing both checks ensures that the VA surface is compatible for mapping the surface
+    // at the selected (and smaller) page size(s).
+    //
+    if (!bFoundPageSize)
+    {
+        alignedVA = NV_ALIGN_DOWN64(vaAddr, RM_PAGE_SIZE_2M);
+        physOffset = physStartAddr & GET_PAGE_MASK(RM_PAGE_SIZE_2M);
+
+        if ((alignedVA >= targetSpaceBase) &&            
+            (NV_ALIGN_UP64(alignedVA + physOffset + physSize, RM_PAGE_SIZE_2M) - 1) <= targetSpaceLimit)
+        {
+            vaMaxPageSize = RM_PAGE_SIZE_2M;
+            bFoundPageSize = NV_TRUE;
+        }
+    }
+
+    if (!bFoundPageSize)
+    {
+        alignedVA = NV_ALIGN_DOWN64(vaAddr, vaspaceBigPageSize);
+        physOffset = physStartAddr & GET_PAGE_MASK(vaspaceBigPageSize);
+
+        if ((alignedVA >= targetSpaceBase) &&
+            (NV_ALIGN_UP64(alignedVA + physOffset + physSize, vaspaceBigPageSize) - 1) <= targetSpaceLimit)
+        {
+            vaMaxPageSize = vaspaceBigPageSize;
+            bFoundPageSize = NV_TRUE;
+        }
+    }
+
+    if (!bFoundPageSize)
+    {
+        alignedVA = NV_ALIGN_DOWN64(vaAddr, RM_PAGE_SIZE);
+        physOffset = physStartAddr & GET_PAGE_MASK(RM_PAGE_SIZE);
+
+        if ((alignedVA >= targetSpaceBase) &&
+            (NV_ALIGN_UP64(alignedVA + physOffset + physSize, RM_PAGE_SIZE) - 1) <= targetSpaceLimit)
+        {
+            vaMaxPageSize = RM_PAGE_SIZE;
+            bFoundPageSize = NV_TRUE;
+        }
+    }
+
+    if (!bFoundPageSize)
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
+    *pVaMaxPageSize = vaMaxPageSize;
+
+    return NV_OK;
+}
+
 NvBool
 dmaIsDefaultGpuUncached_GM107
 (
@@ -446,7 +531,86 @@ dmaAllocMapping_GM107
     {
         case NVOS46_FLAGS_PAGE_SIZE_DEFAULT:
         case NVOS46_FLAGS_PAGE_SIZE_BOTH:
-            pLocals->pageSize = memdescGetPageSize(pLocals->pTempMemDesc, addressTranslation);
+            if (pMemoryManager->bSysmemPageSizeDefaultAllowLargePages)
+            {
+                //
+                // On Fixed offset allocation, make sure that the least amount of VA is allocated
+                // while using the largest possible page size that completely covers the user requested physical surface.
+                //
+                if (FLD_TEST_DRF(OS46, _FLAGS, _DMA_OFFSET_FIXED, _TRUE, flags) ||
+                    (pCliMapInfo == NULL && !pLocals->bAllocVASpace))
+                {
+                    NvU64 vaddrAligned = RM_ALIGN_DOWN(*pVaddr, RM_PAGE_SIZE);
+                    // physAddr[0] - PteAdjust should always be at least 4K aligned.
+                    NvU64 physStartAddr = memdescGetPhysAddr(pLocals->pTempMemDesc, addressTranslation, 0) - pLocals->pTempMemDesc->PteAdjust;
+                    // Aligning up the size to 4K as that is the smallest page size that RM can map.
+                    NvU64 physEndAddr = RM_ALIGN_UP(memdescGetPhysAddr(pLocals->pTempMemDesc, addressTranslation, 0) +
+                                                    memdescGetSize(pLocals->pTempMemDesc), RM_PAGE_SIZE);
+
+                    NV_PRINTF(LEVEL_SILENT, "Choosing default map pagesize through fixed offset path.\n");
+
+                    if (NV_IS_ALIGNED64(physStartAddr, RM_PAGE_SIZE_2M) &&
+                        NV_IS_ALIGNED64(physEndAddr, RM_PAGE_SIZE_2M) &&
+                        NV_IS_ALIGNED64(vaddrAligned, RM_PAGE_SIZE_2M))
+                    {
+                        pLocals->pageSize = RM_PAGE_SIZE_2M;
+                    }
+                    else if (NV_IS_ALIGNED64(physStartAddr, pLocals->vaspaceBigPageSize) &&
+                            NV_IS_ALIGNED64(physEndAddr, pLocals->vaspaceBigPageSize) &&
+                            NV_IS_ALIGNED64(vaddrAligned, pLocals->vaspaceBigPageSize))
+                    {
+                        pLocals->pageSize = pLocals->vaspaceBigPageSize;
+                    }
+                    else
+                    {
+                        pLocals->pageSize = RM_PAGE_SIZE;
+                    }
+                }
+                else
+                {
+                    //
+                    // When a client provides a CliMapInfo RM is provided with the exact VA range that
+                    // the mapping is performed in.
+                    //
+                    // RM will parse the VA and PA range to find a compatible page size.
+                    //
+                    if (pCliMapInfo != NULL && !pLocals->bAllocVASpace)
+                    {
+                        NvU64 vaMaxPageSize = 0;
+
+                        NV_PRINTF(LEVEL_SILENT, "Choosing default map pagesize based on client provided VA range.\n");
+
+                        NV_ASSERT_OK_OR_GOTO(status, _dmaGetMaxVAPageSize(*pVaddr, pCliMapInfo->pVirtualMemory,
+                            memdescGetPhysAddr(pLocals->pTempMemDesc, addressTranslation, 0),
+                            memdescGetSize(pLocals->pTempMemDesc),
+                            &vaMaxPageSize,
+                            // TODO: Remove once Maxwell is deprecated.
+                            pLocals->vaspaceBigPageSize),
+                            cleanup);
+
+                        //
+                        // The output of _dmaGetMaxVAPageSize guarantees tha the VA surface
+                        // is compatible with all page sizes <= vaMaxPageSize.
+                        //
+                        pLocals->pageSize = NV_MIN(vaMaxPageSize, pLocals->physPageSize);
+                    }
+                    else
+                    {
+                        //
+                        // If the mapping call creates the VA surface, it has full control over the allocated VA range.
+                        // Optimize VA surface to match the physical page size.
+                        //
+                        NV_PRINTF(LEVEL_SILENT, "Choosing default map pagesize based on the map call allocating VA for the mapping.\n");
+                        pLocals->pageSize = memdescGetPageSize(pLocals->pTempMemDesc, addressTranslation);
+                    }
+                }
+            }
+            else
+            {
+                pLocals->pageSize = pLocals->physPageSize;
+            }
+
+            NV_ASSERT_OR_GOTO(pLocals->pageSize != 0, cleanup);
             break;
         case NVOS46_FLAGS_PAGE_SIZE_4KB:
             pLocals->pageSize = RM_PAGE_SIZE;
@@ -541,7 +705,8 @@ dmaAllocMapping_GM107
     //
     // Skipping it for Raw mode, See bug 4036809
     //
-    if ((pLocals->pageSize == RM_PAGE_SIZE) &&
+    if (!(pMemoryManager->bSysmemPageSizeDefaultAllowLargePages) &&
+        (pLocals->pageSize == RM_PAGE_SIZE) &&
         memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE, pLocals->kind) &&
         !(pMemorySystemConfig->bUseRawModeComptaglineAllocation))
     {

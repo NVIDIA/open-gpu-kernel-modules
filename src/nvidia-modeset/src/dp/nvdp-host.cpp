@@ -42,8 +42,21 @@ void dpFree(void *p)
 
 static NVEvoLogType dpSeverityToNvkmsMap(DP_LOG_LEVEL severity)
 {
-    NVEvoLogType level = EVO_LOG_INFO;
-    return level;
+    switch (severity) {
+        case DP_SILENT:
+        case DP_INFO:
+        case DP_NOTICE:
+            return EVO_LOG_INFO;
+        case DP_WARNING:
+            return EVO_LOG_WARN;
+        case DP_ERROR:
+        case DP_HW_ERROR:
+        case DP_FATAL:
+            return EVO_LOG_ERROR;
+    }
+
+    nvAssert(!"Invalid DP_LOG_LEVEL enumerant passed");
+    return EVO_LOG_ERROR;
 }
 
 void dpPrintf(DP_LOG_LEVEL severity, const char *format, ...)

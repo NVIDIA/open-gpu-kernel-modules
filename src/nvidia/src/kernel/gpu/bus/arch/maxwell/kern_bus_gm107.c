@@ -1095,6 +1095,7 @@ kbusInitBar1_GM107(OBJGPU *pGpu, KernelBus *pKernelBus, NvU32 gfid)
         NvU64              fbPhysOffset    = 0;
         PMEMORY_DESCRIPTOR pConsoleMemDesc = NULL;
         MEMORY_DESCRIPTOR  memdesc;
+        NvU32              mapFlags = BUS_MAP_FB_FLAGS_MAP_UNICAST | BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED | BUS_MAP_FB_FLAGS_PAGE_SIZE_4K;
 
         if (bSmoothTransitionEnabled)
         {
@@ -1106,7 +1107,7 @@ kbusInitBar1_GM107(OBJGPU *pGpu, KernelBus *pKernelBus, NvU32 gfid)
             pConsoleMemDesc = &memdesc;
             memdescCreateExisting(pConsoleMemDesc, pGpu, pGpu->uefiScanoutSurfaceSizeInMB * 1024 * 1024, ADDR_FBMEM, NV_MEMORY_UNCACHED, MEMDESC_FLAGS_NONE);
             memdescDescribe(pConsoleMemDesc, ADDR_FBMEM, 0, pGpu->uefiScanoutSurfaceSizeInMB * 1024 * 1024);
-            pConsoleMemDesc->_pageSize = RM_PAGE_SIZE;
+            memdescSetPageSize(pConsoleMemDesc, AT_GPU, RM_PAGE_SIZE);
         }
         else if (kbusIsPreserveBar1ConsoleEnabled(pKernelBus))
         {
@@ -1123,7 +1124,7 @@ kbusInitBar1_GM107(OBJGPU *pGpu, KernelBus *pKernelBus, NvU32 gfid)
 
             rmStatus = kbusMapFbApertureSingle(pGpu, pKernelBus, pConsoleMemDesc, fbPhysOffset,
                                                &bar1VAOffset, &consoleSize,
-                                               BUS_MAP_FB_FLAGS_MAP_UNICAST | BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED,
+                                               mapFlags,
                                                NULL);
             if (rmStatus != NV_OK)
             {
@@ -1203,7 +1204,8 @@ kbusInitBar1_GM107(OBJGPU *pGpu, KernelBus *pKernelBus, NvU32 gfid)
     {
         //
         // To support 512MB page sizes, we need to align the BAR1 offset to 512MB.
-        // This will lose up to (but not including) 512MB of BAR1 space.
+        // This up to (but not including) 512MB of BAR1 space will still be allocatable in
+        // the dynamic region
         //
         NvU64 bar1Offset = NV_ALIGN_UP(consoleSize + pKernelBus->p2pPcie.writeMailboxTotalSize, RM_PAGE_SIZE_512M);
         // Enable the static BAR1 mapping for the BAR1 P2P
@@ -2997,6 +2999,10 @@ _kbusDestroyMemdescBar1Cb
     BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED       |\
     BUS_MAP_FB_FLAGS_PRE_INIT               |\
     BUS_MAP_FB_FLAGS_ALLOW_DISCONTIG        |\
+    BUS_MAP_FB_FLAGS_PAGE_SIZE_4K           |\
+    BUS_MAP_FB_FLAGS_PAGE_SIZE_64K          |\
+    BUS_MAP_FB_FLAGS_PAGE_SIZE_2M           |\
+    BUS_MAP_FB_FLAGS_PAGE_SIZE_512M         |\
     BUS_MAP_FB_FLAGS_UNMANAGED_MEM_AREA)
 
 ct_assert((BUS_FLAGS_AFFECTING_MAPPING_MASK & BUS_FLAGS_NOT_AFFECTING_MAPPING_MASK) == 0);

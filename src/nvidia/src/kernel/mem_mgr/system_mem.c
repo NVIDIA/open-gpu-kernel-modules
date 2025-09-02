@@ -346,6 +346,7 @@ sysmemConstruct_IMPL
                 // Freeing memdescs to avoid leaks on retry.
                 memdescFree(pMemDesc);
                 memdescDestroy(pMemDesc);
+                pAllocRequest->pMemDesc = pMemDesc = NULL;
             }
             else
             {

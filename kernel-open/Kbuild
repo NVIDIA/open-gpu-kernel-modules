@@ -79,7 +79,7 @@ ccflags-y += -I$(src)/common/inc
 ccflags-y += -I$(src)
 ccflags-y += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-format-extra-args
 ccflags-y += -D__KERNEL__ -DMODULE -DNVRM
-ccflags-y += -DNV_VERSION_STRING=\"580.76.05\"
+ccflags-y += -DNV_VERSION_STRING=\"580.82.07\"
 
 # Include and link Tegra out-of-tree modules.
 ifneq ($(wildcard /usr/src/nvidia/nvidia-oot),)

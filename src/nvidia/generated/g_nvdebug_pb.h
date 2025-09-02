@@ -42,8 +42,8 @@ extern const PRB_MSG_DESC prb_messages_nvdebug[];
 // Message maximum lengths
 // Does not include repeated fields, strings and byte arrays.
 #define NVDEBUG_SYSTEMINFO_LEN 354
-#define NVDEBUG_GPUINFO_LEN 268
-#define NVDEBUG_NVDUMP_LEN 3265
+#define NVDEBUG_GPUINFO_LEN 280
+#define NVDEBUG_NVDUMP_LEN 3313
 #define NVDEBUG_SYSTEMINFO_NORTHBRIDGEINFO_LEN 12
 #define NVDEBUG_SYSTEMINFO_SOCINFO_LEN 12
 #define NVDEBUG_SYSTEMINFO_CPUINFO_LEN 24
@@ -101,7 +101,7 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_gpuinfo[];
 #define NVDEBUG_GPUINFO_ENG_GPU_LEN 65
 #define NVDEBUG_GPUINFO_ENG_MC_LEN 75
 #define NVDEBUG_GPUINFO_ENG_NVD_LEN 33
-#define NVDEBUG_GPUINFO_ENG_KGSP_LEN 91
+#define NVDEBUG_GPUINFO_ENG_KGSP_LEN 103
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_nvdump[];
 
@@ -114,8 +114,8 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_nvdump[];
 
 // 'NvDump' field lengths
 #define NVDEBUG_NVDUMP_SYSTEM_INFO_LEN 357
-#define NVDEBUG_NVDUMP_DCL_MSG_LEN 2265
-#define NVDEBUG_NVDUMP_GPU_INFO_LEN 271
+#define NVDEBUG_NVDUMP_DCL_MSG_LEN 2301
+#define NVDEBUG_NVDUMP_GPU_INFO_LEN 283
 #define NVDEBUG_NVDUMP_EXCEPTION_ADDRESS_LEN 10
 #define NVDEBUG_NVDUMP_SYSTEM_INFO_GSPRM_LEN 357
 

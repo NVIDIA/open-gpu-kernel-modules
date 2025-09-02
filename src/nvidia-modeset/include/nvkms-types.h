@@ -1843,6 +1843,7 @@ typedef struct _NVDispHeadAudioStateEvoRec {
 
 typedef struct _NVDispHeadInfoFrameStateEvoRec {
     NVT_VIDEO_INFOFRAME_CTRL ctrl;
+    NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL vendorSpecificCtrl;
     NvBool hdTimings;
 } NVDispHeadInfoFrameStateEvoRec;
 
@@ -2566,6 +2567,15 @@ static inline NvBool nvIs3DVisionStereoEvo(const enum NvKmsStereoMode stereo)
 {
     return (stereo == NVKMS_STEREO_NVIDIA_3D_VISION ||
             stereo == NVKMS_STEREO_NVIDIA_3D_VISION_PRO);
+}
+
+static inline NvBool nvGetPreferHdmiFrlMode(
+    const NVDevEvoRec *pDevEvo,
+    const struct NvKmsModeValidationParams *pParams)
+{
+    const NvBool preferHDMIFrlMode =
+        !!(pParams->overrides & NVKMS_MODE_VALIDATION_PREFER_HDMI_FRL_MODE);
+    return preferHDMIFrlMode;
 }
 
 /*

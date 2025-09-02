@@ -330,6 +330,9 @@ static struct page *uvm_migrate_vma_alloc_page(migrate_vma_state_t *state)
         }
     }
 
+    if (!dst_page)
+        state->out_of_memory = true;
+
     return dst_page;
 }
 
@@ -489,7 +492,11 @@ static NV_STATUS uvm_migrate_vma_populate_anon_pages(struct vm_area_struct *vma,
 
     // Pre-allocate the dst pages and mark the ones that failed
     for_each_set_bit(i, page_mask, state->num_pages) {
-        struct page *dst_page = uvm_migrate_vma_alloc_page(state);
+        struct page *dst_page = NULL;
+
+        if (!state->out_of_memory)
+            dst_page = uvm_migrate_vma_alloc_page(state);
+
         if (!dst_page) {
             __set_bit(i, state->allocation_failed_mask.page_mask);
             continue;
@@ -734,7 +741,11 @@ static NV_STATUS uvm_migrate_vma_copy_pages_from(struct vm_area_struct *vma,
 
     // Pre-allocate the dst pages and mark the ones that failed
     for_each_set_bit(i, page_mask, state->num_pages) {
-        struct page *dst_page = uvm_migrate_vma_alloc_page(state);
+        struct page *dst_page = NULL;
+
+        if (!state->out_of_memory)
+            dst_page = uvm_migrate_vma_alloc_page(state);
+
         if (!dst_page) {
             __set_bit(i, state->allocation_failed_mask.page_mask);
             continue;
@@ -1486,7 +1497,7 @@ NV_STATUS uvm_migrate_pageable(uvm_migrate_args_t *uvm_migrate_args)
         uvm_migrate_args->dst_node_id = uvm_gpu_numa_node(gpu);
     }
 
-    state = kmem_cache_alloc(g_uvm_migrate_vma_state_cache, NV_UVM_GFP_FLAGS);
+    state = nv_kmem_cache_zalloc(g_uvm_migrate_vma_state_cache, NV_UVM_GFP_FLAGS);
     if (!state)
         return NV_ERR_NO_MEMORY;
 

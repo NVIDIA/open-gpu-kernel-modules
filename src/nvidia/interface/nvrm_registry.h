@@ -1271,6 +1271,15 @@
 #define NV_REG_STR_FERMI_BIG_PAGE_SIZE_128KB            (128 * 1024)
 
 //
+// Type: DWORD
+// Regkey to enable/disable sysmem allocation retry.
+//
+#define NV_REG_STR_RM_ENABLE_LARGE_PAGE_SYSMEM_DEFAULT                  "RmEnableLargePageSizeSysmemDefault"
+#define NV_REG_STR_RM_ENABLE_LARGE_PAGE_SYSMEM_DEFAULT_DEFAULT          NV_REG_STR_RM_ENABLE_LARGE_PAGE_SYSMEM_DEFAULT_DISABLE
+#define NV_REG_STR_RM_ENABLE_LARGE_PAGE_SYSMEM_DEFAULT_ENABLE           (0x00000001)
+#define NV_REG_STR_RM_ENABLE_LARGE_PAGE_SYSMEM_DEFAULT_DISABLE          (0x00000000)
+
+//
 // TYPE DWORD
 // This setting will disable big page size per address space
 //

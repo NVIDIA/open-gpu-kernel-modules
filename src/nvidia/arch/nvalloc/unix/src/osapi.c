@@ -4307,9 +4307,24 @@ void NV_API_CALL rm_power_source_change_event(
 )
 {
     THREAD_STATE_NODE threadState;
-    void       *fp;
-    nv_state_t *nv;
-    NV_STATUS rmStatus = NV_OK;
+    void           *fp;
+    nv_state_t     *nv;
+    static NvBool   first_event_seen = NV_FALSE;
+    static NvU32    last_event_val = 0;
+    NV_STATUS       rmStatus = NV_OK;
+
+    // Some systems generate spurious power source changed ACPI events.
+    // Before entering the PM runtime and waking the GPU, see if the power
+    // state has actually changed. If not, return without waking the GPU.
+    if ((first_event_seen != NV_FALSE) && (last_event_val == event_val))
+    {
+        return;
+    }
+    else
+    {
+        first_event_seen = NV_TRUE;
+        last_event_val = event_val;
+    }
 
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);

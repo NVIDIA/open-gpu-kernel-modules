@@ -1375,9 +1375,11 @@ NV_STATUS uvm_va_block_service_finish(uvm_processor_id_t processor_id,
                                       uvm_va_block_t *va_block,
                                       uvm_service_block_context_t *service_context);
 
-// Allocate GPU state for the given va_block and registered GPUs.
+// Returns the gpu_state for the given GPU. The returned pointer is
+// internally managed and will be allocated (and freed) automatically,
+// rather than by the caller. Returns NULL if there is no memory.
 // Locking: The block lock must be held.
-NV_STATUS uvm_va_block_gpu_state_alloc(uvm_va_block_t *va_block);
+uvm_va_block_gpu_state_t *uvm_va_block_gpu_state_get_alloc(uvm_va_block_t *va_block, uvm_gpu_t *gpu);
 
 // Release any GPU or policy data associated with the given region in response
 // to munmap().
@@ -2152,10 +2154,13 @@ bool uvm_va_block_cpu_is_region_resident_on(uvm_va_block_t *va_block, int nid, u
 // Locking: The va_block lock must be held.
 NV_STATUS uvm_cpu_chunk_insert_in_block(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index);
 
-// Remove a CPU chunk at the given page_index from the va_block.
+// Remove the given CPU chunk at the given page_index from the va_block.
 // nid cannot be NUMA_NO_NODE.
 // Locking: The va_block lock must be held.
-void uvm_cpu_chunk_remove_from_block(uvm_va_block_t *va_block, int nid, uvm_page_index_t page_index);
+void uvm_cpu_chunk_remove_from_block(uvm_va_block_t *va_block,
+                                     uvm_cpu_chunk_t *chunk,
+                                     int nid,
+                                     uvm_page_index_t page_index);
 
 // Return the CPU chunk at the given page_index on the given NUMA node from the
 // va_block. nid cannot be NUMA_NO_NODE.
@@ -2287,6 +2292,13 @@ uvm_prot_t uvm_va_block_page_compute_highest_permission(uvm_va_block_t *va_block
 NV_STATUS uvm_va_block_populate_page_cpu(uvm_va_block_t *va_block,
                                          uvm_page_index_t page_index,
                                          uvm_va_block_context_t *block_context);
+
+// Populate all GPU chunks which cover the given region and page mask.
+NV_STATUS uvm_va_block_populate_pages_gpu(uvm_va_block_t *block,
+                                          uvm_va_block_retry_t *retry,
+                                          uvm_gpu_id_t gpu_id,
+                                          uvm_va_block_region_t region,
+                                          const uvm_page_mask_t *populate_mask);
 
 // A helper macro for handling allocation-retry
 //

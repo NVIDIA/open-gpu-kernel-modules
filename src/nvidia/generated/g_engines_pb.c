@@ -380,6 +380,18 @@ const PRB_FIELD_DESC prb_fields_nvdebug_eng_kgsp_rpcinfo[] = {
         PRB_MAYBE_FIELD_NAME("data1")
         PRB_MAYBE_FIELD_DEFAULT(0)
     },
+    {
+        6,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("sequence")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
 };
 
 // Message descriptors
@@ -415,7 +427,7 @@ const PRB_MSG_DESC prb_messages_nvdebug_eng[] = {
         PRB_MAYBE_MESSAGE_NAME("NvDebug.Eng.Mc.PciBarInfo")
     },
     {
-        5,
+        6,
         prb_fields_nvdebug_eng_kgsp_rpcinfo,
         PRB_MAYBE_MESSAGE_NAME("NvDebug.Eng.KGsp.RpcInfo")
     },

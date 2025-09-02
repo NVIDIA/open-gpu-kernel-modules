@@ -121,8 +121,8 @@ static NvU64 startTimeInNs, endTimeInNs, elapsedTimeInNs;
 static NV_STATUS updateHostVgpuFbUsage(OBJGPU *pGpu, NvHandle hClient, NvHandle hDevice,
                                        NvHandle hSubdevice);
 
-static NV_STATUS _rpcSendMessage_VGPUGSP(OBJGPU *pGpu, OBJRPC *pRPC);
-static NV_STATUS _rpcRecvPoll_VGPUGSP(OBJGPU *pGpu, OBJRPC *pRPC, NvU32 expectedFunc);
+static NV_STATUS _rpcSendMessage_VGPUGSP(OBJGPU *pGpu, OBJRPC *pRPC, NvU32 *pSequence);
+static NV_STATUS _rpcRecvPoll_VGPUGSP(OBJGPU *pGpu, OBJRPC *pRPC, NvU32 expectedFunc, NvU32 expectedSequence);
 void setGuestEccStatus(OBJGPU *pGpu);
 
 typedef NV_STATUS dma_control_copy_params_to_rpc_buffer_v(NvU32 cmd, void *Params, void *params_in);
@@ -1792,28 +1792,29 @@ NV_STATUS freeRpcInfrastructure_VGPU(OBJGPU *pGpu)
     return rmStatus;
 }
 
-NV_STATUS rpcSendMessage_IMPL(OBJGPU *pGpu, OBJRPC *pRpc)
+NV_STATUS rpcSendMessage_IMPL(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 *pSequence)
 {
     NV_PRINTF(LEVEL_ERROR, "virtual function not implemented.\n");
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NV_STATUS rpcRecvPoll_IMPL(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 expectedFunc)
+NV_STATUS rpcRecvPoll_IMPL(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 expectedFunc, NvU32 expectedSequence)
 {
     NV_PRINTF(LEVEL_ERROR, "virtual function not implemented.\n");
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static NV_STATUS _rpcSendMessage_VGPUGSP(OBJGPU *pGpu, OBJRPC *pRpc)
+static NV_STATUS _rpcSendMessage_VGPUGSP(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 *pSequence)
 {
     OBJVGPU *pVGpu = GPU_GET_VGPU(pGpu);
 
-    vgpu_rpc_message_header_v->sequence = pVGpu->sequence_base++;
+    NV_ASSERT(pSequence != NULL);
+    vgpu_rpc_message_header_v->sequence = *pSequence = pVGpu->sequence_base++;
 
     return _vgpuGspSendRpcRequest(pGpu, pRpc);
 }
 
-static NV_STATUS _rpcRecvPoll_VGPUGSP(OBJGPU *pGpu, OBJRPC *pRPC, NvU32 expectedFunc)
+static NV_STATUS _rpcRecvPoll_VGPUGSP(OBJGPU *pGpu, OBJRPC *pRPC, NvU32 expectedFunc, NvU32 expectedSequence)
 {
     return _vgpuGspWaitForResponse(pGpu);
 }
@@ -1851,6 +1852,15 @@ static NV_STATUS _issueRpcAndWait(OBJGPU *pGpu, OBJRPC *pRpc)
 
         pNewEntry->rpcData.rpcDataTag = vgpu_rpc_message_header_v->function;
 
+        switch (vgpu_rpc_message_header_v->function)
+        {
+            case NV_VGPU_MSG_FUNCTION_RM_API_CONTROL:
+                pNewEntry->rpcData.rpcExtraData = rpc_message->rm_api_control_v.params.cmd;
+                break;
+            default:
+                break;
+        }
+
         rpcProfilerEntryCount++;
 
         osGetPerformanceCounter(&pNewEntry->rpcData.startTimeInNs);
@@ -1858,13 +1868,14 @@ static NV_STATUS _issueRpcAndWait(OBJGPU *pGpu, OBJRPC *pRpc)
 
     // For HCC, cache expectedFunc value before encrypting.
     NvU32 expectedFunc = vgpu_rpc_message_header_v->function;
+    NvU32 expectedSequence = 0;
 
-    status = rpcSendMessage(pGpu, pRpc);
+    status = rpcSendMessage(pGpu, pRpc, &expectedSequence);
     if (status != NV_OK)
     {
         NV_PRINTF_COND(pRpc->bQuietPrints, LEVEL_INFO, LEVEL_ERROR,
-            "rpcSendMessage failed with status 0x%08x for fn %d!\n",
-            status, vgpu_rpc_message_header_v->function);
+            "rpcSendMessage failed with status 0x%08x for fn %d sequence %d!\n",
+            status, expectedFunc, expectedSequence);
         //
         // It has been observed that returning NV_ERR_BUSY_RETRY in a bad state (RPC
         // buffers full and not being serviced) can make things worse, i.e. turn RPC
@@ -1959,20 +1970,20 @@ static NV_STATUS _issueRpcAndWait(OBJGPU *pGpu, OBJRPC *pRpc)
     }
 
     // Use cached expectedFunc here because vgpu_rpc_message_header_v is encrypted for HCC.
-    status = rpcRecvPoll(pGpu, pRpc, expectedFunc);
+    status = rpcRecvPoll(pGpu, pRpc, expectedFunc, expectedSequence);
     if (status != NV_OK)
     {
         if (status == NV_ERR_TIMEOUT)
         {
             NV_PRINTF_COND(pRpc->bQuietPrints, LEVEL_INFO, LEVEL_ERROR,
-                "rpcRecvPoll timedout for fn %d!\n",
-                 vgpu_rpc_message_header_v->function);
+                "rpcRecvPoll timedout for fn %d sequence %u!\n",
+                 expectedFunc, expectedSequence);
         }
         else
         {
             NV_PRINTF_COND(pRpc->bQuietPrints, LEVEL_INFO, LEVEL_ERROR,
-                "rpcRecvPoll failed with status 0x%08x for fn %d!\n",
-                 status, vgpu_rpc_message_header_v->function);
+                "rpcRecvPoll failed with status 0x%08x for fn %d sequence %u!\n",
+                 status, expectedFunc, expectedSequence);
         }
         return status;
     }
@@ -2007,10 +2018,10 @@ static NV_STATUS _issueRpcAsync(OBJGPU *pGpu, OBJRPC *pRpc)
     // should not be called in broadcast mode
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
 
-    status = rpcSendMessage(pGpu, pRpc);
+    status = rpcSendMessage(pGpu, pRpc, NULL);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "rpcSendMessage failed with status 0x%08x for fn %d!\n",
+        NV_PRINTF(LEVEL_ERROR, "rpcSendMessage async failed with status 0x%08x for fn %d!\n",
                   status, vgpu_rpc_message_header_v->function);
         NV_ASSERT(0);
         //
@@ -2038,6 +2049,8 @@ static NV_STATUS _issueRpcLarge
     NvU8      *pBuf8         = (NvU8 *)pBuffer;
     NV_STATUS  nvStatus      = NV_OK;
     NvU32      expectedFunc  = vgpu_rpc_message_header_v->function;
+    NvU32      firstSequence = pRpc->sequence;
+    NvU32      lastSequence, waitSequence;
     NvU32      entryLength;
     NvU32      remainingSize = bufSize;
     NvU32      recordCount   = 0;
@@ -2054,7 +2067,7 @@ static NV_STATUS _issueRpcLarge
     // Set the correct length for this queue entry.
     vgpu_rpc_message_header_v->length = entryLength;
 
-    nvStatus = rpcSendMessage(pGpu, pRpc);
+    nvStatus = rpcSendMessage(pGpu, pRpc, &firstSequence);
     if (nvStatus != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "rpcSendMessage failed with status 0x%08x for fn %d!\n",
@@ -2090,7 +2103,7 @@ static NV_STATUS _issueRpcLarge
         vgpu_rpc_message_header_v->length   = entryLength + sizeof(rpc_message_header_v);
         vgpu_rpc_message_header_v->function = NV_VGPU_MSG_FUNCTION_CONTINUATION_RECORD;
 
-        nvStatus = rpcSendMessage(pGpu, pRpc);
+        nvStatus = rpcSendMessage(pGpu, pRpc, &lastSequence);
         if (nvStatus != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
@@ -2111,6 +2124,8 @@ static NV_STATUS _issueRpcLarge
         recordCount++;
     }
 
+    NV_ASSERT(lastSequence == (firstSequence + recordCount));
+
     if (!bWait)
     {
         // In case of Async RPC, we are done here.
@@ -2118,18 +2133,20 @@ static NV_STATUS _issueRpcLarge
     }
 
     // Always receive at least one..
-    nvStatus = rpcRecvPoll(pGpu, pRpc, expectedFunc);
+    waitSequence = firstSequence;
+
+    nvStatus = rpcRecvPoll(pGpu, pRpc, expectedFunc, waitSequence);
     if (nvStatus != NV_OK)
     {
         if (nvStatus == NV_ERR_TIMEOUT)
         {
-            NV_PRINTF(LEVEL_ERROR, "rpcRecvPoll timedout for fn %d!\n",
-                      vgpu_rpc_message_header_v->function);
+            NV_PRINTF(LEVEL_ERROR, "rpcRecvPoll timedout for fn %d sequence %d!\n",
+                      expectedFunc, waitSequence);
         }
         else
         {
-            NV_PRINTF(LEVEL_ERROR, "rpcRecvPoll failed with status 0x%08x for fn %d!\n",
-                      nvStatus, vgpu_rpc_message_header_v->function);
+            NV_PRINTF(LEVEL_ERROR, "rpcRecvPoll failed with status 0x%08x for fn %d sequence %d!\n",
+                      nvStatus, expectedFunc, waitSequence);
         }
         NV_ASSERT(0);
         return nvStatus;
@@ -2145,26 +2162,27 @@ static NV_STATUS _issueRpcLarge
 
     remainingSize -= entryLength;
     pBuf8   += entryLength;
+    waitSequence++;
 
     // For bidirectional transfer messages, need to receive all other frames as well
     if (bBidirectional && (recordCount > 0))
     {
         while (remainingSize > 0)
         {
-            nvStatus = rpcRecvPoll(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_CONTINUATION_RECORD);
+            nvStatus = rpcRecvPoll(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_CONTINUATION_RECORD, waitSequence);
             if (nvStatus != NV_OK)
             {
                 if (nvStatus == NV_ERR_TIMEOUT)
                 {
                     NV_PRINTF(LEVEL_ERROR,
-                              "rpcRecvPoll timedout for fn %d continuation record (remainingSize=0x%x)!\n",
-                              vgpu_rpc_message_header_v->function, remainingSize);
+                              "rpcRecvPoll timedout for fn %d sequence %d continuation record (remainingSize=0x%x)!\n",
+                              expectedFunc, waitSequence, remainingSize);
                 }
                 else
                 {
                     NV_PRINTF(LEVEL_ERROR,
-                              "rpcRecvPoll failed with status 0x%08x for fn %d continuation record! (remainingSize=0x%x)\n",
-                              nvStatus, vgpu_rpc_message_header_v->function, remainingSize);
+                              "rpcRecvPoll failed with status 0x%08x for fn %d sequence %d continuation record! (remainingSize=0x%x)\n",
+                              nvStatus, expectedFunc, waitSequence, remainingSize);
                 }
                 NV_ASSERT(0);
                 return nvStatus;
@@ -2182,9 +2200,11 @@ static NV_STATUS _issueRpcLarge
             remainingSize -= entryLength;
             pBuf8         += entryLength;
             recordCount--;
+            waitSequence++;
         }
         vgpu_rpc_message_header_v->function = expectedFunc;
         NV_ASSERT(recordCount == 0);
+        NV_ASSERT(waitSequence - 1 == lastSequence);
     }
 
     // Now check if RPC really succeeded

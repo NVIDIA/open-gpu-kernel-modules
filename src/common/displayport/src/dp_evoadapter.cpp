@@ -88,7 +88,7 @@ const struct
     {NV_DP_REGKEY_APPLY_MAX_LINK_RATE_OVERRIDES,         &dpRegkeyDatabase.applyMaxLinkRateOverrides,         DP_REG_VAL_U32},
     {NV_DP_REGKEY_DISABLE_DSC,                           &dpRegkeyDatabase.bDscDisabled,                      DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_SKIP_ASSESSLINK_FOR_EDP,               &dpRegkeyDatabase.bAssesslinkForEdpSkipped,          DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_HDCP_AUTH_ONLY_ON_DEMAND,              &dpRegkeyDatabase.bHdcpAuthOnlyOnDemand,             DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_MST_AUTO_HDCP_AUTH_AT_ATTACH,          &dpRegkeyDatabase.bMstAutoHdcpAuthAtAttach,          DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_ENABLE_MSA_OVER_MST,                   &dpRegkeyDatabase.bMsaOverMstEnabled,                DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE,                   &dpRegkeyDatabase.bOptLinkKeptAlive,                 DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE_MST,               &dpRegkeyDatabase.bOptLinkKeptAliveMst,              DP_REG_VAL_BOOL},

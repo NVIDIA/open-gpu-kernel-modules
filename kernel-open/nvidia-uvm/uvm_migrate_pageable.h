@@ -177,6 +177,9 @@ typedef struct
 
     // Number of pages that are directly populated on the destination
     unsigned long num_populate_anon_pages;
+
+    // Tracks if OOM condition was encountered.
+    bool out_of_memory;
 } migrate_vma_state_t;
 
 #if defined(CONFIG_MIGRATE_VMA_HELPER)

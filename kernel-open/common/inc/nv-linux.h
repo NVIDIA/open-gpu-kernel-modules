@@ -827,6 +827,10 @@ extern void *nvidia_stack_t_cache;
  * d50d82faa0c964e31f7a946ba8aba7c715ca7ab0 (4.18) fixes this issue by cleaning
  * up sysfs entry within slab_mutex, so the entry is deleted before a cache with
  * the same attributes could be created.
+ * The definition for sysfs_slab_unlink() was moved to mm/slab.h in commit
+ * 19975f83412f ("mm/slab: move the rest of slub_def.h to mm/slab.h") (6.8).
+ * Since we can't conftest mm/slab.h, use the fact that linux/slub_def.h was
+ * removed by the commit.
  *
  * To workaround this kernel issue, we take two steps:
  * - Create unmergeable caches: a kmem_cache with a constructor is unmergeable.
@@ -838,7 +842,7 @@ extern void *nvidia_stack_t_cache;
  *   wait for the timestamp to increment by at least one to ensure that we do
  *   not hit a name conflict in cache create -> destroy (async) -> create cycle.
  */
-#if !defined(NV_SYSFS_SLAB_UNLINK_PRESENT)
+#if !defined(NV_SYSFS_SLAB_UNLINK_PRESENT) && defined(NV_LINUX_SLUB_DEF_H_PRESENT)
 static inline void nv_kmem_ctor_dummy(void *arg)
 {
     (void)arg;
@@ -866,7 +870,7 @@ static inline void nv_kmem_ctor_dummy(void *arg)
 
 static inline void *nv_kmem_cache_zalloc(struct kmem_cache *k, gfp_t flags)
 {
-#if !defined(NV_SYSFS_SLAB_UNLINK_PRESENT)
+#if !defined(NV_SYSFS_SLAB_UNLINK_PRESENT) && defined(NV_LINUX_SLUB_DEF_H_PRESENT)
     /*
      * We cannot call kmem_cache_zalloc directly as it adds the __GFP_ZERO
      * flag. This flag together with the presence of a slab constructor is
@@ -1577,7 +1581,7 @@ static inline struct kmem_cache *nv_kmem_cache_create(const char *name, unsigned
     char *name_unique;
     struct kmem_cache *cache;
 
-#if !defined(NV_SYSFS_SLAB_UNLINK_PRESENT)
+#if !defined(NV_SYSFS_SLAB_UNLINK_PRESENT) && defined(NV_LINUX_SLUB_DEF_H_PRESENT)
     size_t len;
     NvU64 tm_ns = nv_ktime_get_raw_ns();
 

@@ -900,6 +900,33 @@ _kmemsysGetFbInfos
                 break;
             }
 
+            case NV2080_CTRL_FB_INFO_INDEX_NUMA_NODE_ID:
+            {
+                NvU32 nodeId = NV0000_CTRL_NO_NUMA_NODE;
+
+                if (bIsMIGInUse)
+                {
+                    MIG_INSTANCE_REF ref;
+
+                    if (kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref) == NV_OK)
+                    {
+                        NvU32 swizzId = ref.pKernelMIGGpuInstance->swizzId;
+
+                        if (pKernelMemorySystem->memPartitionNumaInfo[swizzId].bInUse)
+                        {
+                            nodeId = pKernelMemorySystem->memPartitionNumaInfo[swizzId].numaNodeId;
+                        }
+                    }
+                }
+                else
+                {
+                    nodeId = pGpu->numaNodeId;
+                }
+
+                data = nodeId;
+                break;
+            }
+
             default:
             {
                 if (status != NV_OK)

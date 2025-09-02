@@ -37,6 +37,7 @@ NV_HEADER_PRESENCE_TESTS = \
   linux/iosys-map.h \
   linux/vfio_pci_core.h \
   linux/cc_platform.h \
+  linux/slub_def.h \
   asm/mshyperv.h \
   crypto/sig.h
 

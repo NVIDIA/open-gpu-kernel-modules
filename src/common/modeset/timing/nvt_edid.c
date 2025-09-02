@@ -1200,6 +1200,10 @@ NVT_STATUS NV_STDCALL NvTiming_ParseEDIDInfo(NvU8 *pEdid, NvU32 length, NVT_EDID
 
     getEdidHDM1_4bVsdbTiming(pInfo);
 
+#if defined(NVT_USE_NVKMS)
+    prioritizeEdidHDMIExtTiming(pInfo);
+#endif
+
     // Assert if no timings were found (due to a bad EDID) or if we mistakenly
     // assigned more timings than we allocated space for (due to bad logic above)
     nvt_assert(pInfo->total_timings &&

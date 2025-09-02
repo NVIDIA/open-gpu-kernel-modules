@@ -2532,8 +2532,13 @@ nvidia_ioctl(
 
             NV_CTL_DEVICE_ONLY(nv);
 
-            if (num_arg_gpus == 0 || nvlfp->num_attached_gpus != 0 ||
-                arg_size % sizeof(NvU32) != 0)
+            if ((num_arg_gpus == 0) || (arg_size % sizeof(NvU32) != 0))
+            {
+                status = -EINVAL;
+                goto done;
+            }
+
+            if (nvlfp->num_attached_gpus != 0)
             {
                 status = -EINVAL;
                 goto done;
@@ -2562,6 +2567,7 @@ nvidia_ioctl(
                         if (nvlfp->attached_gpus[i] != 0)
                             nvidia_dev_put(nvlfp->attached_gpus[i], sp);
                     }
+
                     NV_KFREE(nvlfp->attached_gpus, arg_size);
                     nvlfp->num_attached_gpus = 0;
 

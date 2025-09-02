@@ -180,7 +180,8 @@ nvGetHwModeTimings(const NVDispEvoRec *pDispEvo,
                    const struct NvKmsSetModeOneHeadRequest *pRequestHead,
                    NVHwModeTimingsEvo *pTimings,
                    NVDpyAttributeColor *pDpyColor,
-                   NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl)
+                   NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl,
+                   NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl)
 {
     NVDpyEvoPtr pDpyEvo;
     NVDpyAttributeColor dpyColor = { };
@@ -208,7 +209,8 @@ nvGetHwModeTimings(const NVDispEvoRec *pDispEvo,
                                             &pRequestHead->viewPortOut : NULL,
                                   &dpyColor,
                                   pTimings,
-                                  pInfoFrameCtrl)) {
+                                  pInfoFrameCtrl,
+                                  pVSInfoFrameCtrl)) {
         return FALSE;
     }
 
@@ -1128,7 +1130,8 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
                                     pRequestHead,
                                     &pProposedApiHead->timings,
                                     &pProposedApiHead->attributes.color,
-                                    &pProposedApiHead->infoFrame.ctrl)) {
+                                    &pProposedApiHead->infoFrame.ctrl,
+                                    &pProposedApiHead->infoFrame.vendorSpecificCtrl)) {
                 pReply->disp[sd].head[apiHead].status =
                     NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_MODE;
                 ret = FALSE;

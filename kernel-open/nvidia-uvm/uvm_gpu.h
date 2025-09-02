@@ -1132,6 +1132,15 @@ struct uvm_parent_gpu_struct
     // by UVM.
     bool is_integrated_gpu;
 
+    // True if the GPU has sticky L2 coherent cache lines that prevent
+    // caching of system memory. GB10B experiences "sticky" lines.
+    // Bug 4577236 outlines the issue. Essentially normal eviction of coherent
+    // cache lines is prevented, causing "sticky" lines that persist until
+    // invalidate/snoop. This limits L2 cache availability and can cause
+    // cross-context interference. This is fixed in GB20B/GB20C. This field is
+    // set for specific GPU implementations that have this limitation i.e. GB10B.
+    bool sticky_l2_coherent_cache_lines;
+
     struct
     {
         // If true, the granularity of key rotation is a single channel. If
@@ -1560,6 +1569,14 @@ static NvU64 uvm_gpu_retained_count(uvm_gpu_t *gpu)
 void uvm_parent_gpu_kref_put(uvm_parent_gpu_t *gpu);
 
 // Returns a GPU peer pair index in the range [0 .. UVM_MAX_UNIQUE_GPU_PAIRS).
+
+static bool uvm_parent_gpu_supports_full_coherence(uvm_parent_gpu_t *parent_gpu)
+{
+    // TODO: Bug 5310178: Replace this with the value returned by RM to check
+    // if the GPU supports full coherence.
+    return parent_gpu->is_integrated_gpu;
+}
+
 NvU32 uvm_gpu_pair_index(const uvm_gpu_id_t id0, const uvm_gpu_id_t id1);
 
 // Either retains an existing PCIe peer entry or creates a new one. In both

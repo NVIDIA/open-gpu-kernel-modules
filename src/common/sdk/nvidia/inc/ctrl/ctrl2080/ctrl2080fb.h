@@ -364,8 +364,9 @@ typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_FB_INFO;
 #define NV2080_CTRL_FB_INFO_INDEX_LTC_MASK_1                        (0x00000038U)
 #define NV2080_CTRL_FB_INFO_INDEX_ACCESS_COUNTER_BUFFER_COUNT       (0x00000039U)
 #define NV2080_CTRL_FB_INFO_INDEX_COHERENCE_INFO                    (0x0000003AU)
+#define NV2080_CTRL_FB_INFO_INDEX_NUMA_NODE_ID                      (0x0000003BU)
 
-#define NV2080_CTRL_FB_INFO_INDEX_MAX                               NV2080_CTRL_FB_INFO_INDEX_ACCESS_COUNTER_BUFFER_COUNT
+#define NV2080_CTRL_FB_INFO_INDEX_MAX                               NV2080_CTRL_FB_INFO_INDEX_NUMA_NODE_ID
 
 /* Intentionally picking a value much bigger than NV2080_CTRL_FB_INFO_INDEX_MAX to prevent VGPU plumbing updates */
 #define NV2080_CTRL_FB_INFO_MAX_LIST_SIZE                           (0x00000080U)

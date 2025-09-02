@@ -150,6 +150,21 @@ _memmgrInitRegistryOverridesAtConstruct
 {
     NvU32 NV_ATTRIBUTE_UNUSED data32;
 
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_ENABLE_LARGE_PAGE_SYSMEM_DEFAULT, &data32) == NV_OK)
+    {
+        if (data32 == NV_REG_STR_RM_ENABLE_LARGE_PAGE_SYSMEM_DEFAULT_ENABLE)
+        {
+            pMemoryManager->bSysmemPageSizeDefaultAllowLargePages = NV_TRUE;
+        }
+        else
+        {
+            pMemoryManager->bSysmemPageSizeDefaultAllowLargePages = NV_FALSE;
+        }
+
+        NV_PRINTF(LEVEL_NOTICE, "Large page sysmem default override to 0x%x via regkey.\n",
+            pMemoryManager->bSysmemPageSizeDefaultAllowLargePages);
+    }
+
     if (osReadRegistryDword(
             pGpu, NV_REG_STR_RM_FORCE_ENABLE_FLA_SYSMEM, &data32) == NV_OK)
     {
@@ -3203,33 +3218,30 @@ _memmgrPmaStatsUpdateCb
 
     // static BAR1 update
     {
-        OBJVASPACE *pBar1VAS;
-        OBJEHEAP *pVASHeap;
         NvU64 freeSize = 0;
         NvU64 bar1AvailSize = 0;
-        NV_RANGE bar1VARange = NV_RANGE_EMPTY;
         NvBool bZeroRusd = kbusIsBar1Disabled(pKernelBus);
         NvU32 gfid;
-        NvU32 fbInUse;
+        NvU64 fbInUse;
         NV_STATUS status;
 
         NV_ASSERT_OK_OR_ELSE(status, vgpuGetCallingContextGfid(pGpu, &gfid), return);
 
         bZeroRusd = bZeroRusd || IS_MIG_ENABLED(pGpu);
 
-        if (!bZeroRusd)
+        // bar1Size is not owned here, no need to update anything if zero RUSD
+        if (bZeroRusd)
         {
-            pBar1VAS = kbusGetBar1VASpace_HAL(pGpu, pKernelBus);
-            NV_ASSERT_OR_ELSE(pBar1VAS != NULL, return);
-            pVASHeap = vaspaceGetHeap(pBar1VAS);
-            bar1VARange = rangeMake(vaspaceGetVaStart(pBar1VAS), vaspaceGetVaLimit(pBar1VAS));
-
-            // no need to update bar1size
-            if (pVASHeap != NULL)
-            {
-                pVASHeap->eheapInfoForRange(pVASHeap, bar1VARange, NULL, NULL, NULL, &freeSize);
-            }
+            return;
         }
+
+        // no need to update bar1size
+        //
+        // We access this structure locklessly and can't iterate the
+        // VASpace's structures which may change underneath us
+        // Use the cached value of the free size which always has a valid value
+        //
+        freeSize = pKernelBus->bar1[gfid].vasFreeSize;
 
         totalMem = MEM_RD64(&pSharedData->totalPmaMemory);
         fbInUse = totalMem - freeMem;
