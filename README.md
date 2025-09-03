@@ -971,6 +971,7 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 5080                                 | 2C02           |
 | NVIDIA GeForce RTX 5070 Ti                              | 2C05           |
 | NVIDIA GeForce RTX 5090 Laptop GPU                      | 2C18           |
+| NVIDIA GeForce RTX 5090 Laptop GPU                      | 2C58           |
 | NVIDIA GeForce RTX 5080 Laptop GPU                      | 2C19           |
 | NVIDIA RTX PRO 4500 Blackwell                           | 2C31 1028 2051 |
 | NVIDIA RTX PRO 4500 Blackwell                           | 2C31 103C 2051 |
