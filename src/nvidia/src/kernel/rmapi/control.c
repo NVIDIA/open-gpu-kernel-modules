@@ -428,13 +428,6 @@ _rmapiRmControl(NvHandle hClient, NvHandle hObject, NvU32 cmd, NvP64 pUserParams
         }
     }
 
-    // Potential race condition if run lockless?
-    if (serverutilGetClientUnderLock(hClient) == NULL)
-    {
-        rmStatus = NV_ERR_INVALID_CLIENT;
-        goto done;
-    }
-
     // only kernel clients can issue raised IRQL or lock bypass cmds
     // bypass client priv check for internal calls done on behalf of lower priv
     // clients
