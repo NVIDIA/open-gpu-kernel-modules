@@ -11267,9 +11267,6 @@ NV_STATUS rpcRmApiDupObject_GSP
     NVOS55_PARAMETERS_v03_00 *rpc_params = &rpc_message->dup_object_v03_00.params;
     NV_STATUS status;
     NvU32 gpuMaskRelease = 0;
-NV_ASSERT_OK_OR_RETURN(
-    rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE,
-        GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE, RM_LOCK_MODULES_RPC, &gpuMaskRelease));
 
     if (!rmDeviceGpuLockIsOwner(pGpu->gpuInstance))
     {
