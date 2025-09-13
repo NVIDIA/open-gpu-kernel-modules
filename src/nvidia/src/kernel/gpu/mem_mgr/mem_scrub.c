@@ -491,7 +491,6 @@ scrubSubmitPages
         *pSize  = 0;
     }
 
-
 cleanup:
     portSyncMutexRelease(pScrubber->pScrubberMutex);
 
