@@ -27,7 +27,7 @@ else
     KERNEL_SOURCES := $(SYSSRC)
   else
     KERNEL_UNAME ?= $(shell uname -r)
-    KERNEL_MODLIB := /lib/modules/$(KERNEL_UNAME)
+    KERNEL_MODLIB ?= /lib/modules/$(KERNEL_UNAME)
     KERNEL_SOURCES := $(shell ((test -d $(KERNEL_MODLIB)/source && echo $(KERNEL_MODLIB)/source) || (test -d $(KERNEL_MODLIB)/build/source && echo $(KERNEL_MODLIB)/build/source)) || echo $(KERNEL_MODLIB)/build)
   endif
 
@@ -41,7 +41,7 @@ else
     endif
   else
     KERNEL_UNAME ?= $(shell uname -r)
-    KERNEL_MODLIB := /lib/modules/$(KERNEL_UNAME)
+    KERNEL_MODLIB ?= /lib/modules/$(KERNEL_UNAME)
     # $(filter patter...,text) - Returns all whitespace-separated words in text that
     # do match any of the pattern words, removing any words that do not match.
     # Set the KERNEL_OUTPUT only if either $(KERNEL_MODLIB)/source or
