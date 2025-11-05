@@ -4871,6 +4871,24 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MEMORY_DEVICE_COHERENT_PRESENT" "" "types"
         ;;
 
+        get_dev_pagemap_single_arg)
+            #
+            # Determine if get_dev_pagemap() takes single argument.
+            #
+            # The get_dev_pagemap() function was updated to take only pfn argument
+            # and the lock parameter was removed in kernel v6.18.
+            #
+            CODE="
+            #include <linux/mm.h>
+            #include <linux/memremap.h>
+            void conftest_get_dev_pagemap(void) {
+                struct dev_pagemap *pgmap;
+                unsigned long pfn = 0;
+                pgmap = get_dev_pagemap(pfn);
+            }"
+
+            compile_check_conftest "$CODE" "NV_GET_DEV_PAGEMAP_SINGLE_ARG" "" "types"
+        ;;
 
         # When adding a new conftest entry, please use the correct format for
         # specifying the relevant upstream Linux kernel commit.  Please
