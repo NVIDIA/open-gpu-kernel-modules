@@ -286,6 +286,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += dmem_cgroup_register_region_has_init_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += misc_cgrp_id
 NV_CONFTEST_TYPE_COMPILE_TESTS += is_vma_write_locked_has_mm_lock_seq_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += percpu_mm_counter
+NV_CONFTEST_TYPE_COMPILE_TESTS += vm_ops_access_size_t_len
 
 NV_CONFTEST_GENERIC_COMPILE_TESTS += dom0_kernel_present
 NV_CONFTEST_GENERIC_COMPILE_TESTS += nvidia_vgpu_kvm_build
