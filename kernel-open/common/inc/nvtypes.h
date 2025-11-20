@@ -540,6 +540,17 @@ typedef struct
     #define NV_ATTRIBUTE_UNUSED
 #endif
 
+// grsecurity compatibility
+#ifndef __no_const
+#define __no_const
+#endif
+#ifndef __do_const
+#define __do_const
+#endif
+#ifndef __mutable_const
+#define __mutable_const
+#endif
+
 #if defined(_MSC_VER)
 
     #if _MSC_VER >= 1310
