@@ -249,6 +249,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += pci_resize_resource_has_exclude_bars_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += is_vma_write_locked_has_mm_lock_seq_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += dmem_cgrp_id
 NV_CONFTEST_TYPE_COMPILE_TESTS += misc_cgrp_id
+NV_CONFTEST_TYPE_COMPILE_TESTS += vm_ops_access_size_t_len
 
 NV_CONFTEST_GENERIC_COMPILE_TESTS += dom0_kernel_present
 NV_CONFTEST_GENERIC_COMPILE_TESTS += nvidia_vgpu_kvm_build
