@@ -259,7 +259,7 @@ struct file_operations ctl_fops =
 static int nvswitch_initialize_device_interrupt(NVSWITCH_DEV *nvswitch_dev);
 static void nvswitch_shutdown_device_interrupt(NVSWITCH_DEV *nvswitch_dev);
 static void nvswitch_load_bar_info(NVSWITCH_DEV *nvswitch_dev);
-static void nvswitch_task_dispatch(NVSWITCH_DEV *nvswitch_dev);
+static void nvswitch_task_dispatch(void *nvswitch_dev);
 
 static NvBool
 nvswitch_is_device_blacklisted
@@ -313,7 +313,7 @@ nvswitch_init_background_tasks
     NV_ATOMIC_SET(nvswitch_dev->task_q_ready, 1);
 
     nv_kthread_q_item_init(&nvswitch_dev->task_item,
-                           (nv_q_func_t) &nvswitch_task_dispatch,
+                           &nvswitch_task_dispatch,
                            nvswitch_dev);
 
     if (!nv_kthread_q_schedule_q_item(&nvswitch_dev->task_q,
@@ -1208,9 +1208,10 @@ nvswitch_isr_thread
 static void
 nvswitch_task_dispatch
 (
-    NVSWITCH_DEV *nvswitch_dev
+    void *_nvswitch_dev
 )
 {
+    NVSWITCH_DEV *nvswitch_dev = _nvswitch_dev;
     NvU64 nsec;
     NvU64 timeout;
     NvS64 rc;
