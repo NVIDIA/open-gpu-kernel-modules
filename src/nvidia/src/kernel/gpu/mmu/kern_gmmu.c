@@ -999,14 +999,14 @@ kgmmuFaultBufferGetAddressSpace_IMPL
     if (index == NON_REPLAYABLE_FAULT_BUFFER)
     {
         faultBufferAddrSpace = bAllocInVidmem ? ADDR_FBMEM : ADDR_SYSMEM;
-        faultBufferAttr      = bAllocInVidmem ? NV_MEMORY_UNCACHED : NV_MEMORY_CACHED;
+        faultBufferAttr      = bAllocInVidmem ? NV_MEMORY_UNCACHED : NV_MEMORY_DEFAULT;
         memdescOverrideInstLoc(DRF_VAL(_REG_STR_RM, _INST_LOC_3, _UVM_FAULT_BUFFER_NONREPLAYABLE, pGpu->instLocOverrides3),
                                "UVM non-replayable fault", &faultBufferAddrSpace, &faultBufferAttr);
     }
     else if (index == REPLAYABLE_FAULT_BUFFER)
     {
         faultBufferAddrSpace = bAllocInVidmem ? ADDR_FBMEM : ADDR_SYSMEM;
-        faultBufferAttr      = bAllocInVidmem ? NV_MEMORY_UNCACHED : NV_MEMORY_CACHED;
+        faultBufferAttr      = bAllocInVidmem ? NV_MEMORY_UNCACHED : NV_MEMORY_DEFAULT;
         memdescOverrideInstLoc(DRF_VAL(_REG_STR_RM, _INST_LOC_4, _UVM_FAULT_BUFFER_REPLAYABLE, pGpu->instLocOverrides4),
                                "UVM replayable fault", &faultBufferAddrSpace, &faultBufferAttr);
     }
@@ -1493,7 +1493,7 @@ _kgmmuClientShadowFaultBufferQueueAllocate
 
     status = memdescCreate(&pQueueMemDesc, pGpu,
                            sizeof(GMMU_SHADOW_FAULT_BUF), RM_PAGE_SIZE,
-                           NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED,
+                           NV_TRUE, ADDR_SYSMEM, NV_MEMORY_DEFAULT,
                            flags);
     if (status != NV_OK)
     {
@@ -1591,7 +1591,7 @@ _kgmmuClientShadowFaultBufferPagesAllocate
 
     status = memdescCreate(&pMemDesc, pGpu,
                            shadowFaultBufferSizeTotal, RM_PAGE_SIZE,
-                           NV_FALSE, ADDR_SYSMEM, NV_MEMORY_CACHED,
+                           NV_FALSE, ADDR_SYSMEM, NV_MEMORY_DEFAULT,
                            flags);
     if (status != NV_OK)
     {

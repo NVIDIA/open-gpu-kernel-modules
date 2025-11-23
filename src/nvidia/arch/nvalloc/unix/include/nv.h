@@ -864,6 +864,9 @@ static inline NvBool IS_IMEM_OFFSET(nv_state_t *nv, NvU64 offset, NvU64 length)
 #define NV_ALIGN_DOWN(v,g) ((v) & ~((g) - 1))
 #endif
 
+#define NV_OS_DMA_SYNC_TO_DEVICE       NVBIT(0)                                                // CPU flush
+#define NV_OS_DMA_SYNC_FROM_DEVICE     NVBIT(1)                                                // CPU invalidate
+#define NV_OS_DMA_SYNC_TO_FROM_DEVICE  (NV_OS_DMA_SYNC_TO_DEVICE | NV_OS_DMA_SYNC_FROM_DEVICE) // CPU flush + invalidate
 
 /*
  * driver internal interfaces
@@ -921,8 +924,11 @@ void       NV_API_CALL  nv_dma_unmap_peer        (nv_dma_device_t *, NvU64, NvU6
 NV_STATUS  NV_API_CALL  nv_dma_map_mmio          (nv_dma_device_t *, NvU64, NvU64 *);
 void       NV_API_CALL  nv_dma_unmap_mmio        (nv_dma_device_t *, NvU64, NvU64);
 
-void       NV_API_CALL  nv_dma_cache_invalidate  (nv_dma_device_t *, void *);
+void       NV_API_CALL  nv_dma_sync              (nv_dma_device_t *, void *, NvU32);
+
 NvBool     NV_API_CALL  nv_grdma_pci_topology_supported(nv_state_t *, nv_dma_device_t *);
+
+NvBool     NV_API_CALL  nv_dev_is_dma_coherent   (nv_dma_device_t *);
 
 NvS32  NV_API_CALL  nv_start_rc_timer            (nv_state_t *);
 NvS32  NV_API_CALL  nv_stop_rc_timer             (nv_state_t *);

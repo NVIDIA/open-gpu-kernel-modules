@@ -288,7 +288,14 @@ gpuCreateRusdMemory_IMPL
     if ((sysGetStaticConfig(SYS_GET_INSTANCE()))->bOsCCEnabled)
         return NV_OK;
 
-    // Create a kernel-side mapping for writing RUSD data
+    //
+    // Create a kernel-side mapping for writing RUSD data.
+    // This must be cached memory due to atomic intrinsic usage, which is not
+    // supported on uncached memory by some Arm platforms.
+    //
+    // XXX: There might be coherency issues with this allocation, although
+    // statistics appear fine at a quick glance.
+    //
     NV_ASSERT_OK_OR_RETURN(memdescCreate(ppMemDesc, pGpu, sizeof(NV00DE_SHARED_DATA), 0, NV_TRUE,
                            ADDR_SYSMEM, NV_MEMORY_CACHED, MEMDESC_FLAGS_USER_READ_ONLY));
 

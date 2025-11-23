@@ -47,7 +47,7 @@ kchangrpAllocFaultMethodBuffers_GV100
     NvU32                        runQueues      = kfifoGetNumRunqueues_HAL(pGpu, pKernelFifo);
     NvU32                        index          = 0;
     NvU32                        faultBufApert  = ADDR_SYSMEM;
-    NvU32                        faultBufAttr   = NV_MEMORY_CACHED;
+    NvU32                        faultBufAttr   = NV_MEMORY_DEFAULT;
     NvU64                        memDescFlags   = MEMDESC_FLAGS_LOST_ON_SUSPEND;
     HW_ENG_FAULT_METHOD_BUFFER  *pFaultMthdBuf  = NULL;
     NvU32                        gfid           = pKernelChannelGroup->gfid;
@@ -85,14 +85,12 @@ kchangrpAllocFaultMethodBuffers_GV100
         // host, force fault buffer aperture to vid mem.
         //
         faultBufApert = ADDR_FBMEM;
-        faultBufAttr  = NV_MEMORY_CACHED;
         memDescFlags  |= MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE;
     }
     else
     {
         // Get the right aperture/attribute
         faultBufApert = ADDR_SYSMEM;
-        faultBufAttr  = NV_MEMORY_CACHED;
         memdescOverrideInstLoc(DRF_VAL(_REG_STR_RM, _INST_LOC_3, _FAULT_METHOD_BUFFER, pGpu->instLocOverrides3),
                                "fault method buffer", &faultBufApert, &faultBufAttr);
         if (faultBufApert == ADDR_FBMEM)

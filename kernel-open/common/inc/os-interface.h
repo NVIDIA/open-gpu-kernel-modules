@@ -114,8 +114,6 @@ void        NV_API_CALL  os_unmap_kernel_space            (void *, NvU64);
 void*       NV_API_CALL  os_map_user_space                (MemoryArea *, NvU32, NvU32, void **);
 void        NV_API_CALL  os_unmap_user_space              (void *, NvU64, void *);
 #endif
-NV_STATUS   NV_API_CALL  os_flush_cpu_cache_all           (void);
-NV_STATUS   NV_API_CALL  os_flush_user_cache              (void);
 void        NV_API_CALL  os_flush_cpu_write_combine_buffer(void);
 NvU8        NV_API_CALL  os_io_read_byte                  (NvU32);
 NvU16       NV_API_CALL  os_io_read_word                  (NvU32);

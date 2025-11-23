@@ -1511,7 +1511,6 @@ NV_STATUS memdescSendMemDescToGSP(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc, NvH
 
 // cache maintenance functions
 void memdescFlushGpuCaches(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc);
-void memdescFlushCpuCaches(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc);
 
 // Map memory descriptor for RM internal access
 void* memdescMapInternal(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc, NvU32 flags);

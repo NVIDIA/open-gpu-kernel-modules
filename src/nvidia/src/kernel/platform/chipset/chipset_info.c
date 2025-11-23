@@ -1179,6 +1179,14 @@ ARMV8_generic_setupFunc
     OBJCL *pCl
 )
 {
+    //
+    // Arm platforms have historically had issues (corruption, bus errors) with
+    // non-Device MMIO mappings. Unlike DMA coherency, there's no way to check
+    // for this at runtime. Therefore, in the absence of better chipset info,
+    // disable WC iomaps by default.
+    //
+    pCl->setProperty(pCl, PDB_PROP_CL_DISABLE_IOMAP_WC, NV_TRUE);
+
     return NV_OK;
 }
 
@@ -1348,6 +1356,19 @@ Ampere_AmpereOne_setupFunc
 {
     // TODO Need to check if any more PDB properties should be set
     pCl->setProperty(pCl, PDB_PROP_CL_IS_CHIPSET_IO_COHERENT, NV_TRUE);
+    return NV_OK;
+}
+
+// Generic setup function
+static NV_STATUS
+Generic_setupFunc
+(
+    OBJCL *pCl
+)
+{
+#if NVCPU_IS_FAMILY_ARM
+    return ARMV8_generic_setupFunc(pCl);
+#endif
     return NV_OK;
 }
 

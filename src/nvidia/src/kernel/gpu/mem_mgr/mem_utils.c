@@ -162,7 +162,7 @@ _memmgrAllocAndMapSurface
 
     NV_ASSERT_OK_OR_RETURN(
         memdescCreate(ppMemDesc, pGpu, size, RM_PAGE_SIZE, NV_TRUE,
-                      ADDR_SYSMEM, NV_MEMORY_CACHED, flags));
+                      ADDR_SYSMEM, NV_MEMORY_DEFAULT, flags));
 
     memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_77,
                     (*ppMemDesc));

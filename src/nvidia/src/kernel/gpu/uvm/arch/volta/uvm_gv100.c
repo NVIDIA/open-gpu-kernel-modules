@@ -292,7 +292,7 @@ uvmInitAccessCntrBuffer_GV100
 
     accessCntrBufferSize = uvmGetAccessCounterBufferSize_HAL(pGpu, pUvm, pAccessCounterBuffer->accessCounterIndex);
     accessCntrBufferAperture = ADDR_SYSMEM;
-    accessCntrBufferAttr     = NV_MEMORY_CACHED;
+    accessCntrBufferAttr     = NV_MEMORY_DEFAULT;
     memdescOverrideInstLoc(DRF_VAL(_REG_STR_RM, _INST_LOC_4, _UVM_FAULT_BUFFER_REPLAYABLE, pGpu->instLocOverrides4),
                            "UVM access counter", &accessCntrBufferAperture, &accessCntrBufferAttr);
 

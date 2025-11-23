@@ -908,6 +908,11 @@ NV_STATUS osAllocPagesInternal(
     memdescSetAddress(pMemDesc, NvP64_NULL);
     memdescSetMemData(pMemDesc, NULL, NULL);
 
+    //
+    // XXX: Is this a workaround for hardware with broken NoSnoop?
+    // If so, consider checking PDB_PROP_CL_NOSNOOP_NOT_CAPABLE and
+    // move this to memdescSetCpuCacheAttrib().
+    //
 #if (defined(NVCPU_AARCH64) && RMCFG_MODULE_CL)
     {
         OBJCL   *pCl       = SYS_GET_CL(pSys);
@@ -1665,9 +1670,53 @@ NV_STATUS osUserHandleToKernelPtr(NvHandle hClient, NvP64 hEvent, NvP64 *pEvent)
     return result;
 }
 
-NV_STATUS osFlushCpuCache(void)
+ct_assert(OS_DMA_SYNC_TO_DEVICE == NV_OS_DMA_SYNC_TO_DEVICE);
+ct_assert(OS_DMA_SYNC_FROM_DEVICE == NV_OS_DMA_SYNC_FROM_DEVICE);
+ct_assert(OS_DMA_SYNC_TO_FROM_DEVICE == NV_OS_DMA_SYNC_TO_FROM_DEVICE);
+
+NV_STATUS osDmaSyncMem
+(
+    MEMORY_DESCRIPTOR *pMemDesc,
+    NvU32 dir
+)
 {
-    return os_flush_cpu_cache_all();
+    OBJGPU *pGpu = pMemDesc->pGpu;
+    KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
+
+    if ((pKernelBif == NULL)                     ||
+        kbifIsSnoopDmaCapable(pGpu, pKernelBif)  ||
+        (memdescGetCpuCacheAttrib(pMemDesc) != NV_MEMORY_CACHED))
+    {
+        return NV_OK;
+    }
+
+    nv_state_t *nv = NV_GET_NV_STATE(pGpu);
+    if (nv->iovaspace_id == NV_IOVA_DOMAIN_NONE)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    PIOVAMAPPING pIovaMapping = memdescGetIommuMap(pMemDesc, nv->iovaspace_id);
+    //
+    // This should only be called for devices that map memory descriptors
+    // through the nv-dma library, where the memory descriptor data
+    // contains all the kernel-specific context we need for the
+    // cache maintenance.
+    //
+    // (These checks match those in osIovaUnmap() leading up to
+    // nv_dma_unmap_alloc()).
+    //
+    if (pIovaMapping == NULL ||
+        pIovaMapping->pOsData == NULL ||
+        memdescGetFlag(pIovaMapping->pPhysMemDesc, MEMDESC_FLAGS_GUEST_ALLOCATED) ||
+        memdescGetFlag(pIovaMapping->pPhysMemDesc, MEMDESC_FLAGS_PEER_IO_MEM))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    nv_dma_sync(nv->dma_dev, pIovaMapping->pOsData, dir);
+
+    return NV_OK;
 }
 
 void osFlushCpuWriteCombineBuffer(void)
@@ -1704,6 +1753,16 @@ void osFlushGpuCoherentCpuCacheRange
 )
 {
     nv_flush_coherent_cpu_cache_range(pOsGpuInfo, cpuVirtual, size);
+}
+
+NvBool osDevIsDmaCoherent
+(
+    OBJGPU  *pGpu
+)
+{
+    nv_state_t *nv = NV_GET_NV_STATE(pGpu);
+
+    return nv_dev_is_dma_coherent(nv->dma_dev);
 }
 
 void osErrorLogV(OBJGPU *pGpu, XidContext context, const char * pFormat, va_list arglist)
@@ -2063,7 +2122,7 @@ cliresCtrlCmdOsUnixFlushUserCache_IMPL
     Memory *pMemory;
     MEMORY_DESCRIPTOR *pMemDesc;
     NvU64 start, end;
-    NvBool bInvalidateOnly;
+    NvU32 syncDir;
 
     NV_CHECK_OK_OR_RETURN(LEVEL_SILENT,
         memGetByHandle(RES_GET_CLIENT(pRmCliRes),
@@ -2091,13 +2150,16 @@ cliresCtrlCmdOsUnixFlushUserCache_IMPL
 
     switch(pAddressSpaceParams->cacheOps)
     {
-        case NV0000_CTRL_OS_UNIX_FLAGS_USER_CACHE_FLUSH_INVALIDATE:
         case NV0000_CTRL_OS_UNIX_FLAGS_USER_CACHE_FLUSH:
-            bInvalidateOnly = NV_FALSE;
+            syncDir = OS_DMA_SYNC_TO_DEVICE;
             break;
 
         case NV0000_CTRL_OS_UNIX_FLAGS_USER_CACHE_INVALIDATE:
-            bInvalidateOnly = NV_TRUE;
+            syncDir = OS_DMA_SYNC_FROM_DEVICE;
+            break;
+
+        case NV0000_CTRL_OS_UNIX_FLAGS_USER_CACHE_FLUSH_INVALIDATE:
+            syncDir = OS_DMA_SYNC_TO_FROM_DEVICE;
             break;
 
         default:
@@ -2113,54 +2175,7 @@ cliresCtrlCmdOsUnixFlushUserCache_IMPL
         return NV_ERR_INVALID_LIMIT;
     }
 
-    if (bInvalidateOnly)
-    {
-        //
-        // XXX: this seems fishy - I'm not sure if invalidating by the kernel
-        // VA only as nv_dma_cache_invalidate() does here is sufficient for
-        // this control call.
-        // pAddressSpaceParams->internalOnly is expected to be the RM client
-        // VA for this control call; if we wanted to invalidate the user VA we
-        // could do so using that.
-        //
-        // For I/O coherent platforms this won't actually do anything.
-        // On non-I/O-coherent platforms, there's no need to do a second
-        // invalidation after the full flush.
-        //
-        nv_state_t *nv = NV_GET_NV_STATE(pMemDesc->pGpu);
-        if (nv->iovaspace_id != NV_IOVA_DOMAIN_NONE)
-        {
-            PIOVAMAPPING pIovaMapping = memdescGetIommuMap(pMemDesc, nv->iovaspace_id);
-            //
-            // This should only be called for devices that map memory descriptors
-            // through the nv-dma library, where the memory descriptor data
-            // contains all the kernel-specific context we need for the
-            // invalidation.
-            //
-            // (These checks match those in osIovaUnmap() leading up to
-            // nv_dma_unmap_alloc()).
-            //
-            if (pIovaMapping == NULL ||
-                pIovaMapping->pOsData == NULL ||
-                memdescGetFlag(pIovaMapping->pPhysMemDesc, MEMDESC_FLAGS_GUEST_ALLOCATED) ||
-                memdescGetFlag(pIovaMapping->pPhysMemDesc, MEMDESC_FLAGS_PEER_IO_MEM))
-            {
-                return NV_ERR_INVALID_ARGUMENT;
-            }
-
-            nv_dma_cache_invalidate(nv->dma_dev, pIovaMapping->pOsData);
-        }
-        else
-        {
-            return NV_ERR_INVALID_ARGUMENT;
-        }
-    }
-    else
-    {
-        return os_flush_user_cache();
-    }
-
-    return NV_OK;
+    return osDmaSyncMem(pMemDesc, syncDir);
 }
 
 static NV_STATUS

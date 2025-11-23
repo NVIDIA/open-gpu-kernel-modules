@@ -97,7 +97,7 @@ CHIPSET_SETUP_FUNC(PLDA_XpressRichAXI_setupFunc)
 CHIPSET_SETUP_FUNC(Riscv_generic_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_A70D_setupFunc)
 CHIPSET_SETUP_FUNC(AMD_14D8_setupFunc)
-
+CHIPSET_SETUP_FUNC(Generic_setupFunc)
 
 // Keep string length <=32 (including termination) to avoid string copy overflow
 CSINFO chipsetInfo[] =
@@ -276,8 +276,8 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_AMPERE,      0xE110, CS_AMPERE_ALTRA, "Ampere Altra", Ampere_Altra_setupFunc},
     {PCI_VENDOR_ID_ARM,         0x0100, CS_ARM_NEOVERSEN1, "Arm Neoverse N1",  Arm_NeoverseN1_setupFunc},
     {PCI_VENDOR_ID_HYGON,       0x790E, CS_HYGON_C86,      "Hygon-C86-7151",   NULL},
-    {PCI_VENDOR_ID_MARVELL,     0xA02D, CS_MARVELL_OCTEON_CN96XX, "Marvell Octeon CN96xx", ARMV8_generic_setupFunc},
-    {PCI_VENDOR_ID_MARVELL,     0xA02D, CS_MARVELL_OCTEON_CN98XX, "Marvell Octeon CN98xx", ARMV8_generic_setupFunc},
+    {PCI_VENDOR_ID_MARVELL,     0xA02D, CS_MARVELL_OCTEON_CN96XX, "Marvell Octeon CN96xx", NULL},
+    {PCI_VENDOR_ID_MARVELL,     0xA02D, CS_MARVELL_OCTEON_CN98XX, "Marvell Octeon CN98xx", NULL},
     {PCI_VENDOR_ID_SIFIVE,      0x0000, CS_SIFIVE_FU740_C000, "SiFive FU740-000", Riscv_generic_setupFunc},
     {PCI_VENDOR_ID_PLDA,        0x1111, CS_PLDA_XPRESSRICH_AXI_REF, "XpressRich-AXI Ref Design", PLDA_XpressRichAXI_setupFunc},
     {PCI_VENDOR_ID_AMPERE,      0xE200, CS_AMPERE_AMPEREONE160, "Ampere AmpereOne-160", Ampere_AmpereOne_setupFunc},
@@ -302,7 +302,7 @@ CSINFO chipsetInfo[] =
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
     // last element must have chipset CS_UNKNOWN (zero)
-    {0,                         0,      CS_UNKNOWN,         "Unknown",      NULL}
+    {0,                         0,      CS_UNKNOWN,         "Unknown",      Generic_setupFunc}
 };
 
 

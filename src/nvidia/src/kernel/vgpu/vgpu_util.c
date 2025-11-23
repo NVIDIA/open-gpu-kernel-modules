@@ -143,7 +143,7 @@ NV_STATUS vgpuAllocSysmemPfnBitMapNode(OBJGPU *pGpu, VGPU_SYSMEM_PFN_BITMAP_NODE
                             0,
                             NV_MEMORY_NONCONTIGUOUS,
                             ADDR_SYSMEM,
-                            NV_MEMORY_CACHED,
+                            NV_MEMORY_DEFAULT,
                             memFlags);
      if (status != NV_OK)
      {

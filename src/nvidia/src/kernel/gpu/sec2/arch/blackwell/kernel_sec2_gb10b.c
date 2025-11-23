@@ -485,7 +485,7 @@ ksec2SetupGspImages_GB10B
         pGspImageMapSize = NV_ALIGN_UP(pGspImageSize, 0x1000);
 
         status = memdescCreate(&pKernelSec2->pGspFmcMemdesc, pGpu, pGspImageMapSize,
-                           0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED, flags);
+                           0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_DEFAULT, flags);
         NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
         memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_7,

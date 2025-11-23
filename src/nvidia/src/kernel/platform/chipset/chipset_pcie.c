@@ -971,6 +971,14 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
 
     objClBuildPcieAtomicsAllowList(pGpu, pCl);
 
+    //
+    // Check if the GPU device is on a cache-coherent bus.
+    //
+    if (osDevIsDmaCoherent(pGpu))
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_IS_CHIPSET_IO_COHERENT, NV_TRUE);
+    }
+
     objClInitPcieChipset(pGpu, pCl);
 
     //

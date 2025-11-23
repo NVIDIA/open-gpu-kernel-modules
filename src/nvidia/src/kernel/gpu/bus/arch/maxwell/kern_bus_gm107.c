@@ -2954,7 +2954,7 @@ _kbusInternalBar1Unmap
     mapRemove(&pVaInfo->reverseMap, ppVaToType);
 
     // TODO: investigate whether the tegra wbinvd flush is really necessary, seems only useful for SYSMEM_COH
-    memdescFlushCpuCaches(pGpu, pType->pMemDesc);
+    osDmaSyncMem(pType->pMemDesc, OS_DMA_SYNC_TO_DEVICE);
 
     dmaFreeMapping_HAL(pGpu, pDma, pVAS, virtRange.start, pType->pMemDesc, 0, NULL);
 }
@@ -3263,7 +3263,7 @@ kbusUnmapFbAperture_GM107
         OBJVASPACE       *pVAS = pBar1VaInfo->pVAS;
 
         // TODO: investigate whether the tegra wbinvd flush is really necessary, seems only useful for SYSMEM_COH
-        memdescFlushCpuCaches(pGpu, pMemDesc);
+        osDmaSyncMem(pMemDesc, OS_DMA_SYNC_TO_DEVICE);
         dmaFreeMapping_HAL(pGpu, pDma, pVAS, memArea.pRanges[0].start, pMemDesc, 0, NULL);
 
         goto done;

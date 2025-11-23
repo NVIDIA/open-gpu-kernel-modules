@@ -260,7 +260,7 @@ _allocRpcMemDescSysmem(
                       0,
                       bContig,
                       ADDR_SYSMEM,
-                      NV_MEMORY_CACHED,
+                      NV_MEMORY_DEFAULT,
                       memdescFlag));
 
     memdescSetFlag(*ppMemDesc, MEMDESC_FLAGS_KERNEL_MODE, NV_TRUE);

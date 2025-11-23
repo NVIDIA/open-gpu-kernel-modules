@@ -110,8 +110,6 @@ NvBool      NV_API_CALL  os_pci_remove_supported          (void);
 void        NV_API_CALL  os_pci_remove                    (void *);
 void*       NV_API_CALL  os_map_kernel_space              (NvU64, NvU64, NvU32);
 void        NV_API_CALL  os_unmap_kernel_space            (void *, NvU64);
-NV_STATUS   NV_API_CALL  os_flush_cpu_cache_all           (void);
-NV_STATUS   NV_API_CALL  os_flush_user_cache              (void);
 void        NV_API_CALL  os_flush_cpu_write_combine_buffer(void);
 NvU8        NV_API_CALL  os_io_read_byte                  (NvU32);
 NvU16       NV_API_CALL  os_io_read_word                  (NvU32);

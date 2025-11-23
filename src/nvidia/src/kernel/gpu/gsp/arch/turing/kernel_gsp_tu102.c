@@ -118,7 +118,7 @@ kgspAllocBootArgs_TU102
     NV_ASSERT_OK_OR_GOTO(nvStatus,
                          memdescCreate(&pKernelGsp->pWprMetaDescriptor,
                                        pGpu, 0x1000, 0x1000,
-                                       NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED,
+                                       NV_TRUE, ADDR_SYSMEM, NV_MEMORY_DEFAULT,
                                        flags),
                         _kgspAllocBootArgs_exit_cleanup);
 
@@ -174,7 +174,7 @@ kgspAllocBootArgs_TU102
     NV_ASSERT_OK_OR_GOTO(nvStatus,
                          memdescCreate(&pKernelGsp->pGspArgumentsDescriptor,
                                        pGpu, 0x1000, 0x1000,
-                                       NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED,
+                                       NV_TRUE, ADDR_SYSMEM, NV_MEMORY_DEFAULT,
                                        flags),
                          _kgspAllocBootArgs_exit_cleanup);
 

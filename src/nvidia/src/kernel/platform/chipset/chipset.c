@@ -50,13 +50,6 @@ clConstruct_IMPL(OBJCL *pCl)
 
     pCl->pPcieConfigSpaceBase = NULL;
 
-    //
-    // We set this property by default.
-    // Chipset setup function can override this.
-    // Right now only Tegra chipsets overide this setting.
-    //
-    pCl->setProperty(pCl, PDB_PROP_CL_IS_CHIPSET_IO_COHERENT, NV_TRUE);
-
     return NV_OK;
 }
 

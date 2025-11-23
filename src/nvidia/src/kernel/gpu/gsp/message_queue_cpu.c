@@ -230,7 +230,7 @@ GspMsgQueuesInit
     //
     NV_ASSERT_OK_OR_GOTO(nvStatus,
         memdescCreate(&pMQCollection->pSharedMemDesc, pGpu, sharedBufSize,
-            RM_PAGE_SIZE, NV_MEMORY_NONCONTIGUOUS, ADDR_SYSMEM, NV_MEMORY_CACHED,
+            RM_PAGE_SIZE, NV_MEMORY_NONCONTIGUOUS, ADDR_SYSMEM, NV_MEMORY_DEFAULT,
             flags),
         done);
 

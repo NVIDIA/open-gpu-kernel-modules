@@ -1214,20 +1214,34 @@ void memSetSysmemCacheAttrib_IMPL
         gpuCacheAttrib = NV_MEMORY_UNCACHED;
     }
 
-    if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_UNCACHED)
-        cpuCacheAttrib = NV_MEMORY_UNCACHED;
-    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_CACHED)
-        cpuCacheAttrib = NV_MEMORY_CACHED;
-    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_COMBINE)
-        cpuCacheAttrib = NV_MEMORY_WRITECOMBINED;
-    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_THROUGH)
-        cpuCacheAttrib = NV_MEMORY_CACHED;
-    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_PROTECT)
-        cpuCacheAttrib = NV_MEMORY_CACHED;
-    else if (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr) == NVOS32_ATTR_COHERENCY_WRITE_BACK)
-        cpuCacheAttrib = NV_MEMORY_CACHED;
-    else
-        cpuCacheAttrib = 0;
+    switch (DRF_VAL(OS32, _ATTR, _COHERENCY, pAllocData->attr))
+    {
+        case NVOS32_ATTR_COHERENCY_UNCACHED:
+            cpuCacheAttrib = NV_MEMORY_UNCACHED;
+            break;
+        case NVOS32_ATTR_COHERENCY_WRITE_COMBINE:
+            cpuCacheAttrib = NV_MEMORY_WRITECOMBINED;
+            break;
+        case NVOS32_ATTR_COHERENCY_CACHED:
+        case NVOS32_ATTR_COHERENCY_WRITE_THROUGH:
+        case NVOS32_ATTR_COHERENCY_WRITE_PROTECT:
+        case NVOS32_ATTR_COHERENCY_WRITE_BACK:
+            //
+            // XXX: It's unclear in which cases the clients will perform their own
+            // CPU cache maintenance, but it only seems to happen when the GPU mapping
+            // is also cached (cliresCtrlCmdOsUnixFlushUserCache() will be called).
+            // This indicates that not all clients factor in hardware coherency support
+            // when requesting cached mappings, so it may be safer to just always use
+            // NV_MEMORY_DEFAULT, which only gives cached memory on coherent hardware.
+            //
+            cpuCacheAttrib = (gpuCacheAttrib == NV_MEMORY_CACHED) ? NV_MEMORY_CACHED :
+                                                                    NV_MEMORY_DEFAULT;
+            break;
+        default:
+            NV_ASSERT(0);
+            cpuCacheAttrib = NV_MEMORY_UNCACHED;
+            break;
+    }
 
     ct_assert(NVOS32_ATTR_COHERENCY_UNCACHED      == NVOS02_FLAGS_COHERENCY_UNCACHED);
     ct_assert(NVOS32_ATTR_COHERENCY_CACHED        == NVOS02_FLAGS_COHERENCY_CACHED);

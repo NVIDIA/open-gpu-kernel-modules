@@ -162,7 +162,7 @@ kgspAllocBootArgs_GH100
     NV_ASSERT_OK_OR_GOTO(nvStatus,
                           memdescCreate(&pKernelGsp->pGspFmcArgumentsDescriptor,
                                         pGpu, sizeof(GSP_FMC_BOOT_PARAMS), 0x1000,
-                                        NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED,
+                                        NV_TRUE, ADDR_SYSMEM, NV_MEMORY_DEFAULT,
                                         flags),
                           _kgspAllocBootArgs_exit_cleanup);
 

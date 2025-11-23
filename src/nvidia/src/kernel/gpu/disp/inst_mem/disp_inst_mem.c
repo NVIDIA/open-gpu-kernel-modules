@@ -243,7 +243,7 @@ instmemInitMemDesc
         // dispInstMemAttr to NV_MEMORY_CACHED this needs to be set based on system configuration/registry parameter.
         //
         instmemSetMemory(pGpu, pInstMem,
-                         ADDR_SYSMEM, NV_MEMORY_CACHED,
+                         ADDR_SYSMEM, NV_MEMORY_DEFAULT,
                          0 /* base */, instMemSize);
     }
     else if (IS_GSP_CLIENT(pGpu))

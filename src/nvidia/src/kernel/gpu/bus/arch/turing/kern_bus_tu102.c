@@ -949,7 +949,7 @@ NV_STATUS kbusDecreaseStaticBar1Refcount_TU102
                         NV_ERR_INVALID_STATE);
 
     // TODO: investigate whether the tegra wbinvd flush is really necessary, seems only useful for SYSMEM_COH
-    memdescFlushCpuCaches(pGpu, pMemDesc);
+    osDmaSyncMem(pMemDesc, OS_DMA_SYNC_TO_DEVICE);
 
     pRootMemDesc = memdescGetRootMemDesc(pMemDesc, NULL);
 

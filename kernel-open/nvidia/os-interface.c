@@ -1034,57 +1034,6 @@ void NV_API_CALL os_unmap_kernel_space(
     nv_iounmap(addr, size_bytes);
 }
 
-#if NVCPU_IS_AARCH64
-
-static inline void nv_flush_cache_cpu(void *info)
-{
-    if (!nvos_is_chipset_io_coherent())
-    {
-#if defined(NV_FLUSH_CACHE_ALL_PRESENT)
-        flush_cache_all();
-#else
-        WARN_ONCE(0, "kernel does not provide flush_cache_all()\n");
-#endif
-    }
-}
-
-// flush the cache of all cpus
-NV_STATUS NV_API_CALL os_flush_cpu_cache_all(void)
-{
-    on_each_cpu(nv_flush_cache_cpu, NULL, 1);
-    return NV_OK;
-}
-
-NV_STATUS NV_API_CALL os_flush_user_cache(void)
-{
-    if (!NV_MAY_SLEEP())
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
-    //
-    // The Linux kernel does not export an interface for flushing a range,
-    // although it is possible. For now, just flush the entire cache to be
-    // safe.
-    //
-    on_each_cpu(nv_flush_cache_cpu, NULL, 1);
-    return NV_OK;
-}
-
-#else // NVCPU_IS_AARCH64
-
-NV_STATUS NV_API_CALL os_flush_cpu_cache_all(void)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS NV_API_CALL os_flush_user_cache(void)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-#endif
-
 void NV_API_CALL os_flush_cpu_write_combine_buffer(void)
 {
 #if defined(NVCPU_X86_64)

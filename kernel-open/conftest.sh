@@ -625,22 +625,6 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_SET_PAGES_ARRAY_UC_PRESENT" "" "functions"
         ;;
 
-        flush_cache_all)
-            #
-            # Determine if flush_cache_all() function is present
-            #
-            # flush_cache_all() was removed by commit id
-            # 68234df4ea79 ("arm64: kill flush_cache_all()") in 4.2 (2015-04-20)
-            # for aarch64
-            #
-            CODE="
-            #include <asm/cacheflush.h>
-            int conftest_flush_cache_all(void) {
-                return flush_cache_all();
-            }"
-            compile_check_conftest "$CODE" "NV_FLUSH_CACHE_ALL_PRESENT" "" "functions"
-        ;;
-
         ioremap_cache)
             #
             # Determine if the ioremap_cache() function is present.
@@ -2465,6 +2449,19 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_DMA_IS_DIRECT_PRESENT" "" "functions"
+        ;;
+
+        dev_is_dma_coherent)
+            #
+            # Determine whether dev_is_dma_coherent() exists.
+            #
+            CODE="
+            #include <linux/dma-map-ops.h>
+            void conftest_dev_is_dma_coherent(void) {
+                dev_is_dma_coherent();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DEV_IS_DMA_COHERENT_PRESENT" "" "functions"
         ;;
 
         cmd_uphy_display_port_init)

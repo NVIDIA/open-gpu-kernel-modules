@@ -179,7 +179,7 @@ kgraphicsConstructEngine_IMPL
 
     // FECS event buffer defaults to cached SYSMEM
     pKernelGraphics->globalCtxBuffersInfo.globalCtxAttr[GR_GLOBALCTX_BUFFER_FECS_EVENT].pAllocList = ADDRLIST_SYSMEM_ONLY;
-    pKernelGraphics->globalCtxBuffersInfo.globalCtxAttr[GR_GLOBALCTX_BUFFER_FECS_EVENT].cpuAttr    = NV_MEMORY_CACHED;
+    pKernelGraphics->globalCtxBuffersInfo.globalCtxAttr[GR_GLOBALCTX_BUFFER_FECS_EVENT].cpuAttr    = NV_MEMORY_DEFAULT;
 
     // Process instloc overrides
     {

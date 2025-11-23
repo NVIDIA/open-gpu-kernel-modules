@@ -1036,7 +1036,7 @@ kfspSetupGspImages
     {
         NV_ASSERT(pKernelFsp->pGspFmcMemdesc == NULL); // If we assert the pointer becomes a zombie.
         status = memdescCreate(&pKernelFsp->pGspFmcMemdesc, pGpu, pGspImageMapSize,
-                               0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED, flags);
+                               0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_DEFAULT, flags);
         NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
         memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_7,
@@ -1381,7 +1381,7 @@ kfspPrepareBootCommands_GH100
         {
             NV_ASSERT(pKernelFsp->pSysmemFrtsMemdesc == NULL); // If we assert the pointer becomes a zombie.
             status = memdescCreate(&pKernelFsp->pSysmemFrtsMemdesc, pGpu, frtsSize,
-                                   0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED, flags);
+                                   0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_DEFAULT, flags);
             NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
             memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_8,

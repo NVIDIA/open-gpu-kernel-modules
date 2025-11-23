@@ -242,7 +242,7 @@ uvmAccessCntrBufferRegister_IMPL
     NV_STATUS status;
     MEMORY_DESCRIPTOR *pMemDesc;
     NvU32 addrSpace = ADDR_SYSMEM;
-    NvU32 attr      = NV_MEMORY_CACHED;
+    NvU32 attr      = NV_MEMORY_DEFAULT;
 
     if (pUvm->pAccessCounterBuffers == NULL)
     {

@@ -274,7 +274,7 @@ spdmSetupCommunicationBuffers_IMPL
     // Create memory descriptor for payload buffer
     status = memdescCreate(&pSpdm->pPayloadBufferMemDesc, pGpu, NV_SPDM_SYSMEM_SURFACE_SIZE_PAGE_ALIGNED,
                            NV_SPDM_SYSMEM_SURFACE_ALIGNMENT_IN_BYTES, NV_TRUE, ADDR_SYSMEM,
-                           NV_MEMORY_CACHED, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY);
+                           NV_MEMORY_DEFAULT, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY);
     if (status != NV_OK || pSpdm->pPayloadBufferMemDesc == NULL)
     {
         status = NV_ERR_INSUFFICIENT_RESOURCES;

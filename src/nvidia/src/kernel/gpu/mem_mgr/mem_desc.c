@@ -38,6 +38,7 @@
 #include "mem_mgr/virt_mem_mgr.h"
 #include "core/system.h"
 #include "vgpu/vgpu_util.h"
+#include "platform/chipset/chipset.h"
 #include "platform/sli/sli.h"
 #include "resserv/rs_client.h"
 
@@ -2107,29 +2108,6 @@ memdescFlushGpuCaches
     }
 }
 
-void
-memdescFlushCpuCaches
-(
-    OBJGPU            *pGpu,
-    MEMORY_DESCRIPTOR *pMemDesc
-)
-{
-    // Flush WC to get the data written to this mapping out to memory
-    osFlushCpuWriteCombineBuffer();
-
-    KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
-
-    // Special care is needed on SOC, where the GPU cannot snoop the CPU L2
-    if ((pKernelBif != NULL)                     &&
-        !kbifIsSnoopDmaCapable(pGpu, pKernelBif) &&
-        (memdescGetCpuCacheAttrib(pMemDesc) == NV_MEMORY_CACHED))
-    {
-        // Flush CPU L2 so that the GPU will see any changes the CPU made
-        osFlushCpuCache();
-    }
-}
-
-
 /*
  * @brief map memory descriptor for internal access
  *
@@ -2158,7 +2136,10 @@ memdescMapInternal
     // We need to flush & invalidate GPU L2 cache only for directed BAR mappings.
     // Reflected BAR mappings will access memory via GPU, and hence go through GPU L2 cache.
     if (mapType == MEMDESC_MAP_INTERNAL_TYPE_SYSMEM_DIRECT)
+    {
         memdescFlushGpuCaches(pGpu, pMemDesc);
+        osDmaSyncMem(pMemDesc, OS_DMA_SYNC_FROM_DEVICE);
+    }
 
     if (pMemDesc->_pInternalMapping != NULL)
     {
@@ -2234,7 +2215,7 @@ void memdescUnmapInternal
 
     if (mapType == MEMDESC_MAP_INTERNAL_TYPE_SYSMEM_DIRECT || mapType == MEMDESC_MAP_INTERNAL_TYPE_BAR2)
     {
-        memdescFlushCpuCaches(pGpu, pMemDesc);
+        osDmaSyncMem(pMemDesc, OS_DMA_SYNC_TO_DEVICE);
     }
 
     if (--pMemDesc->_internalMappingRefCount == 0)
@@ -3664,6 +3645,27 @@ void memdescSetCpuCacheAttrib
     NvU32 cpuCacheAttrib
 )
 {
+    //
+    // Use NV_MEMORY_DEFAULT to get a reasonable default caching type for the
+    // given descriptor (i.e. DMA coherent), unless explicit cache maintenance
+    // is done (for performance reasons) or there are certain memory requirements
+    // (e.g. atomics need NV_MEMORY_CACHED on Arm).
+    //
+    if (cpuCacheAttrib == NV_MEMORY_DEFAULT)
+    {
+        OBJCL *pCl = SYS_GET_CL(SYS_GET_INSTANCE());
+
+        if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_CPU_ONLY) ||
+            ((pCl != NULL) && pCl->getProperty(pCl, PDB_PROP_CL_IS_CHIPSET_IO_COHERENT)))
+        {
+            cpuCacheAttrib = NV_MEMORY_CACHED;
+        }
+        else
+        {
+            cpuCacheAttrib = NV_MEMORY_UNCACHED;
+        }
+    }
+
     //
     // When running 64-bit MODS on ARM v8, we need to force all CPU mappings as WC.
     // This seems to be an issue with glibc. See bug 1556221.

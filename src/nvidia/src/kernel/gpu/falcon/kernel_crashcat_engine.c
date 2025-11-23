@@ -59,7 +59,7 @@ NV_STATUS kcrashcatEngineConfigure_IMPL
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             memdescCreate(&pKernelCrashCatEng->pQueueMemDesc, pKernelCrashCatEng->pGpu,
                           pEngConfig->allocQueueSize, CRASHCAT_QUEUE_ALIGNMENT, NV_TRUE,
-                          ADDR_SYSMEM, NV_MEMORY_CACHED, MEMDESC_FLAGS_NONE));
+                          ADDR_SYSMEM, NV_MEMORY_DEFAULT, MEMDESC_FLAGS_NONE));
 
         NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
             memdescAlloc(pKernelCrashCatEng->pQueueMemDesc),
@@ -230,7 +230,7 @@ static MEMORY_DESCRIPTOR *_kcrashcatEngineCreateBufferMemDesc
     NV_ADDRESS_SPACE bufAddrSpace = _crashcatApertureToAddressSpace(pBufDesc->aperture);
     NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR,
         memdescCreate(&pMemDesc, pKernelCrashCatEng->pGpu, pBufDesc->size, 0,
-                      NV_TRUE, bufAddrSpace, NV_MEMORY_CACHED, MEMDESC_FLAGS_NONE),
+                      NV_TRUE, bufAddrSpace, NV_MEMORY_DEFAULT, MEMDESC_FLAGS_NONE),
         return NULL;);
 
     memdescDescribe(pMemDesc, bufAddrSpace, pBufDesc->physOffset, pBufDesc->size);

@@ -848,7 +848,7 @@ spdmMessageProcess_GH100
 
         // First copy payload to shared buffer
         portMemCopy(pPayloadBuffer, requestSize, pRequest, requestSize);
-        memdescFlushCpuCaches(pGpu, pSpdm->pPayloadBufferMemDesc);
+        osDmaSyncMem(pSpdm->pPayloadBufferMemDesc, OS_DMA_SYNC_TO_DEVICE);
 
         // Trigger message pending value, then poll for response from GSP
         kflcnRegWrite_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX0, NV_SPDM_REQUESTER_MESSAGE_PENDING_TOKEN);

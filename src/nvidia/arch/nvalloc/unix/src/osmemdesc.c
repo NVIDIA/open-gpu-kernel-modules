@@ -593,7 +593,7 @@ osCreateOsDescriptorFromPhysAddr
     MEMORY_DESCRIPTOR *pMemDesc;
     NvU64 *pPteArray;
     NvU64  base = 0;
-    NvU32  cache_type = NV_MEMORY_CACHED;
+    NvU32  cache_type = NV_MEMORY_DEFAULT;
     NvU64  memdescFlags = MEMDESC_FLAGS_NONE;
     NvU64 *pPhys_addrs;
     NvU64  num_os_pages;
@@ -750,7 +750,7 @@ _createMemdescFromDmaBufSgtHelper
     }
     else if (!FLD_TEST_DRF(OS02, _FLAGS, _COHERENCY, _UNCACHED, flags))
     {
-        cacheType = NV_MEMORY_CACHED;
+        cacheType = NV_MEMORY_DEFAULT;
     }
 
     if (FLD_TEST_DRF(OS02, _FLAGS, _GPU_CACHEABLE, _YES, flags))

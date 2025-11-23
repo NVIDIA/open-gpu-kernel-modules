@@ -202,7 +202,7 @@ fbsrInit_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr)
         // to to use cached memory.
         //
         status = memdescCreate(&pFbsr->pSysMemDesc, pGpu, memSize,
-                               0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED,
+                               0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_DEFAULT,
                                MEMDESC_FLAGS_NONE);
         if (status != NV_OK)
         {
@@ -371,7 +371,7 @@ fbsrBegin_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, FBSR_OP_TYPE op)
                         // On Windows, pageable memory is also cacheable.
                         status = memdescCreate(&pFbsr->pSysMemDesc, pGpu,
                                                pFbsr->length, 0, NV_FALSE,
-                                               ADDR_SYSMEM, NV_MEMORY_CACHED,
+                                               ADDR_SYSMEM, NV_MEMORY_DEFAULT,
                                                MEMDESC_FLAGS_PAGED_SYSMEM);
                     }
                     if (status != NV_OK)

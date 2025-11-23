@@ -94,7 +94,7 @@ _kccuAllocMemory
 
     // Create a memory descriptor data structure for the shared buffer
     status = memdescCreate(&pKernelCcu->pMemDesc[idx], pGpu, shrBufSize, 0, NV_MEMORY_CONTIGUOUS,
-                           aperture, NV_MEMORY_CACHED, flags);
+                           aperture, NV_MEMORY_DEFAULT, flags);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "CCU memdescCreate failed for(%u) with status: 0x%x\n", idx, status);
