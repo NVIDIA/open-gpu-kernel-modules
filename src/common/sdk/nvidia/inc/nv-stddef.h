@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -14,28 +14,25 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
  * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
 
-/*
- * nvidia-3d-imports.h declares functions with nvidia-3d host drivers must
- * provide.
- */
 
-#ifndef __NVIDIA_3D_IMPORTS_H__
-#define __NVIDIA_3D_IMPORTS_H__
+#ifndef _NV_STDDEF_H_
+#define _NV_STDDEF_H_
 
-#include <nv-stddef.h> /* size_t */
+#if defined(NV_KERNEL_INTERFACE_LAYER) && defined(__FreeBSD__)
+  #include <sys/stddef.h>   // NULL
+#elif defined(NV_KERNEL_INTERFACE_LAYER) && defined(NV_LINUX)
+  #include <linux/stddef.h> // NULL
+  #include <linux/types.h>  // size_t
+  #include <linux/limits.h> // SIZE_MAX,...
+#else
+  #include <stddef.h>       // NULL
+#endif
 
-void *nv3dImportAlloc(size_t size);
-void nv3dImportFree(void *ptr);
-int nv3dImportMemCmp(const void *a, const void *b, size_t size);
-void nv3dImportMemSet(void *s, int c, size_t size);
-void nv3dImportMemCpy(void *dest, const void *src, size_t size);
-void nv3dImportMemMove(void *dest, const void *src, size_t size);
-
-#endif /* __NVIDIA_3D_IMPORTS_H__ */
+#endif // _NV_STDDEF_H_

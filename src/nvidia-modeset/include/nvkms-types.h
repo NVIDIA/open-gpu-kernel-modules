@@ -61,7 +61,7 @@ extern "C" {
 #include "timing/dpsdp.h"
 #include "hdmipacket/nvhdmi_frlInterface.h" // HDMI_{SRC,SINK}_CAPS
 
-#include <stddef.h>
+#include <nv-stddef.h>
 
 #include "nv_smg.h"
 

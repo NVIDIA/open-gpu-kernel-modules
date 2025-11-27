@@ -50,7 +50,7 @@ extern "C" {
 *                                                                           *
 \***************************************************************************/
 
-#include <stddef.h>
+#include <nv-stddef.h>
 #include "rmconfig.h"
 #include "g_rmconfig_private.h"
 

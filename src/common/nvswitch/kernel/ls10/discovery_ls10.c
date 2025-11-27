@@ -30,7 +30,7 @@
 #include "nvswitch/ls10/nxbar_discovery.h"
 #include "nvswitch/ls10/dev_npg_ip.h"
 
-#include <stddef.h>
+#include <nv-stddef.h>
 
 #define VERBOSE_MMIO_DISCOVERY      0
 

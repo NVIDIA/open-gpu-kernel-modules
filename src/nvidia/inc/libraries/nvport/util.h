@@ -193,7 +193,7 @@ PORT_UTIL_INLINE NvU32 portUtilCountTrailingZeros32(NvU32 n);
 
 /// @} End core functions
 
-#include <stddef.h> /* NULL */
+#include <nv-stddef.h> /* NULL */
 
 /**
  * @name Extended Functions

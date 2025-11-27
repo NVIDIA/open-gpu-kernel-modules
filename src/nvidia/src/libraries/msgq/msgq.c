@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include <stddef.h>
+#include <nv-stddef.h>
 #include <nvtypes.h>
 #include <nvmisc.h>
 

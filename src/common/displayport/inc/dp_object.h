@@ -33,7 +33,7 @@
 #define INCLUDED_DP_OBJECT_H
 
 #include "nvtypes.h"
-#include "stddef.h"
+#include "nv-stddef.h"
 #include "dp_hostimp.h"
 
 static inline void dpMemCopy(void * target, const void * source, size_t len)

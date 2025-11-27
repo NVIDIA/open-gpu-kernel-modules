@@ -37,7 +37,7 @@
 
 #include "ctrl/ctrl2080/ctrl2080fb.h" // NV2080_CTRL_FB_INFO
 
-#include <stddef.h>
+#include <nv-stddef.h>
 
 typedef NV_STATUS RmAllocMemoryFunc(
     DEPRECATED_CONTEXT *pContext,

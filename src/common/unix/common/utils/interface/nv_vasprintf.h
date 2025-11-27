@@ -28,8 +28,8 @@
 extern "C" {
 #endif
 
-#include <stdarg.h>
-#include <stddef.h>
+#include <nv_stdarg.h>
+#include <nv-stddef.h>
 
 /*
  * nv_vasprintf() depends on nv_vasprintf_{alloc,free,vsnprintf}().

@@ -45,7 +45,7 @@
 #include "rmapi/rs_utils.h"
 #include "rmapi/rmapi.h"
 
-#include <stddef.h> // NULL
+#include <nv-stddef.h> // NULL
 
 /**
  * Kernel-space deprecated control conversion.

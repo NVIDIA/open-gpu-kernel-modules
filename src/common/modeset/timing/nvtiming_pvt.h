@@ -46,7 +46,7 @@
 #define nvt_assert(p) ((void)0)
 #endif // DD_UNITTEST
 
-#include <stddef.h> // NULL
+#include <nv-stddef.h> // NULL
 
 #ifdef __cplusplus
 extern "C" {
