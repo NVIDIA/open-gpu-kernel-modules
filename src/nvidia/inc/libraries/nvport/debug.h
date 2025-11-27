@@ -32,7 +32,7 @@
 #ifndef _NVPORT_DEBUG_H_
 #define _NVPORT_DEBUG_H_
 
-#include <stdarg.h>
+#include "nv_stdarg.h"
 
 #ifdef __cplusplus
 extern "C" {

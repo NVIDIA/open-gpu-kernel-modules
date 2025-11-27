@@ -31,6 +31,7 @@
 #include <sys/types.h>
 #elif defined(NV_KERNEL_INTERFACE_LAYER) && NVOS_IS_LINUX
 #include <linux/types.h>
+#include <linux/limits.h>
 #else
 #include <stddef.h>
 #endif
