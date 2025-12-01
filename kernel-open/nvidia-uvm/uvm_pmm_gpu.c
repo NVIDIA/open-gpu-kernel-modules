@@ -3477,11 +3477,12 @@ void uvm_pmm_gpu_device_p2p_init(uvm_parent_gpu_t *parent_gpu)
 
 void uvm_pmm_gpu_device_p2p_deinit(uvm_parent_gpu_t *parent_gpu)
 {
-    unsigned long pci_start_pfn = pci_resource_start(parent_gpu->pci_dev,
-                                                     uvm_device_p2p_static_bar(parent_gpu)) >> PAGE_SHIFT;
+    unsigned long pci_start_pfn;
     struct page *p2p_page;
 
     if (parent_gpu->device_p2p_initialised && !uvm_parent_gpu_is_coherent(parent_gpu)) {
+        pci_start_pfn = pci_resource_start(parent_gpu->pci_dev,
+                                           uvm_device_p2p_static_bar(parent_gpu)) >> PAGE_SHIFT;
         p2p_page = pfn_to_page(pci_start_pfn);
         devm_memunmap_pages(&parent_gpu->pci_dev->dev, page_pgmap(p2p_page));
     }
