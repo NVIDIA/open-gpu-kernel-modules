@@ -7,6 +7,22 @@
 #
 # (c) 2025,2026 Open Source Security, Inc. All Rights Reserved.
 
+pfunc_filter() {
+	# What a hack!
+	#
+	# coccinelle doesn't evaluate both sides of a #if ...  #else ... #endif
+	# block and even worse, it doesn't even implement enough preprocessor
+	# logic to actually understand the #if expression and always only
+	# handles the #if branch for non-trivial expressions.
+	# Work around that by modifying the expression to '#if 0' and use
+	# --noif0-passing to get the #else branch. *sigh!*
+	case "$1" in
+		pre)	sed 's|\(#if\) \(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG\)|\1 0//\2|' -i generated/*.[ch]; ;;
+		diff)	sed 's|\(#if\) 0//\(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG\)|\1 \2|'; ;;
+		post)	sed 's|\(#if\) 0//\(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG\)|\1 \2|' -i generated/*.[ch]; ;;
+	esac
+}
+
 null_filter() {
 	case "$1" in
 		pre)	;;
