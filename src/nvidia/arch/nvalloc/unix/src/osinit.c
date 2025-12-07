@@ -470,7 +470,7 @@ RmCheckForExternalGpu
     NvU32 PCIECapPtr;
     RM_API *pRmApi;
     NV_STATUS status, rmStatus;
-    NvBool bThunderboltBridge = NV_FALSE, bSlotHotPlugSupport = NV_FALSE;
+    NvBool bTb3Bridge = NV_FALSE, bSlotHotPlugSupport = NV_FALSE;
     NvBool iseGPUBridge = NV_FALSE;
     nv_state_t *nv = NV_GET_NV_STATE(pGpu);
 
@@ -494,7 +494,7 @@ RmCheckForExternalGpu
 
         if (vendorIdUp == PCI_VENDOR_ID_INTEL)
         {
-            // Check for the supported Thunderbolt bridges (TB3/TB4/TB5/USB4).
+            // Check for the supported TB3(ThunderBolt 3) bridges.
             NV2080_CTRL_INTERNAL_GET_EGPU_BRIDGE_INFO_PARAMS params = { 0 };
 
             // LOCK: acquire GPUs lock
@@ -523,17 +523,11 @@ RmCheckForExternalGpu
             }
             else
             {
-                // Check for the approved eGPU bus types: TB3, TB4, TB5, or USB4
+                // Check for the approved eGPU BUS TB3
                 if (params.iseGPUBridge &&
-                    (params.approvedBusType == NV2080_CTRL_INTERNAL_EGPU_BUS_TYPE_TB3 ||
-                     params.approvedBusType == NV2080_CTRL_INTERNAL_EGPU_BUS_TYPE_TB4 ||
-                     params.approvedBusType == NV2080_CTRL_INTERNAL_EGPU_BUS_TYPE_TB5 ||
-                     params.approvedBusType == NV2080_CTRL_INTERNAL_EGPU_BUS_TYPE_USB4))
+                    params.approvedBusType == NV2080_CTRL_INTERNAL_EGPU_BUS_TYPE_TB3)
                 {
-                    NV_PRINTF(LEVEL_INFO,
-                              "GSP detected eGPU bridge: deviceId=0x%04x busType=%u\n",
-                              deviceIdUp, params.approvedBusType);
-                    bThunderboltBridge = NV_TRUE;
+                    bTb3Bridge =  NV_TRUE;
                 }
             }
 
@@ -552,24 +546,19 @@ RmCheckForExternalGpu
             // Get the slot capabilities.
             slotCaps = osPciReadDword(handleUp, CL_PCIE_SLOT_CAP - CL_PCIE_BEGIN + PCIECapPtr);
 
-            //
-            // For Thunderbolt connections, check for hotplug capability.
-            // Note: Some TB5 bridges report only Surprise+ without HotPlug+,
-            // so we accept either hotplug capable or surprise capable slots.
-            //
-            if ((CL_PCIE_SLOT_CAP_HOTPLUG_CAPABLE & slotCaps) ||
+            if ((CL_PCIE_SLOT_CAP_HOTPLUG_CAPABLE & slotCaps) &&
                 (CL_PCIE_SLOT_CAP_HOTPLUG_SURPRISE & slotCaps))
             {
                 bSlotHotPlugSupport = NV_TRUE;
             }
         }
 
-        if (bThunderboltBridge && bSlotHotPlugSupport)
+        if (bTb3Bridge && bSlotHotPlugSupport)
         {
             iseGPUBridge = NV_TRUE;
             NV_PRINTF(LEVEL_INFO,
-                      "External GPU detected: TB bridge=%s hotplug=%s slotCaps=0x%08x\n",
-                      bThunderboltBridge ? "yes" : "no",
+                      "External GPU detected: TB3 bridge=%s hotplug=%s slotCaps=0x%08x\n",
+                      bTb3Bridge ? "yes" : "no",
                       bSlotHotPlugSupport ? "yes" : "no",
                       slotCaps);
             break;
