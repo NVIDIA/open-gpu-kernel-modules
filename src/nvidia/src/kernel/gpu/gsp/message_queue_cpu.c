@@ -369,6 +369,15 @@ NV_STATUS GspStatusQueueInit(OBJGPU *pGpu, MESSAGE_QUEUE_INFO **ppMQI)
 
         osSpinLoop();
 
+        //
+        // Yield CPU periodically to prevent system hangs, especially
+        // important for external GPUs (Thunderbolt) with higher latency.
+        //
+        if ((nRetries & 0xFF) == 0xFF)
+        {
+            osSchedule();
+        }
+
         nvStatus = gpuCheckTimeout(pGpu, &timeout);
         if (nvStatus != NV_OK)
             break;
@@ -530,20 +539,32 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
         gpuSetTimeout(pGpu, 1000000, &timeout, timeoutFlags);
 
         // Wait for space to put the next element.
-        while (NV_TRUE)
         {
-            // Must get the buffers one at a time, since they could wrap.
-            pNextElement = (NvU8 *)msgqTxGetWriteBuffer(pMQI->hQueue, i);
+            NvU32 spinCount = 0;
+            while (NV_TRUE)
+            {
+                // Must get the buffers one at a time, since they could wrap.
+                pNextElement = (NvU8 *)msgqTxGetWriteBuffer(pMQI->hQueue, i);
 
-            if (pNextElement != NULL)
-                break;
+                if (pNextElement != NULL)
+                    break;
 
-            if (gpuCheckTimeout(pGpu, &timeout) != NV_OK)
-                break;
+                if (gpuCheckTimeout(pGpu, &timeout) != NV_OK)
+                    break;
 
-            portAtomicMemoryFenceFull();
+                portAtomicMemoryFenceFull();
 
-            osSpinLoop();
+                osSpinLoop();
+
+                //
+                // Yield CPU periodically to prevent system hangs, especially
+                // important for external GPUs (Thunderbolt) with higher latency.
+                //
+                if ((++spinCount & 0xFF) == 0)
+                {
+                    osSchedule();
+                }
+            }
         }
 
         if (pNextElement == NULL)

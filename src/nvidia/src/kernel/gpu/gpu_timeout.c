@@ -581,6 +581,7 @@ timeoutCondWait
     OBJGPU    *pGpu = pTD->pGpu;
     NV_STATUS  status = NV_OK;
     RMTIMEOUT  timeout;
+    NvU32      spinCount = 0;
 
     if (pTimeout == NULL)
     {
@@ -591,6 +592,11 @@ timeoutCondWait
     while (!pCondFunc(pGpu, pCondData))
     {
         osSpinLoop();
+
+        if ((++spinCount & 0xFF) == 0)
+        {
+            osSchedule();
+        }
 
         status = timeoutCheck(pTD, pTimeout, lineNum);
         if (status != NV_OK)

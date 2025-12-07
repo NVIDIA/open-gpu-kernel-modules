@@ -208,11 +208,21 @@ _ksec2WaitForResponse
 )
 {
     NV_STATUS status = NV_OK;
+    NvU32 spinCount = 0;
 
     // Poll for message queue to wait for SEC2's reply
     while (!ksec2IsResponseAvailable_HAL(pGpu, pKernelSec2))
     {
         osSpinLoop();
+
+        //
+        // Yield CPU periodically to prevent system lockup on external GPUs
+        // (Thunderbolt/USB4) which have higher latency.
+        //
+        if ((++spinCount & 0xFF) == 0)
+        {
+            osSchedule();
+        }
 
         status = _ksec2CheckResponseTimeout(pGpu, pKernelSec2);
         if (status != NV_OK)
@@ -611,6 +621,7 @@ ksec2PollForCanSend_IMPL
 {
     NV_STATUS status = NV_OK;
     RMTIMEOUT timeout;
+    NvU32 spinCount = 0;
 
     gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout,
         GPU_TIMEOUT_FLAGS_OSTIMER);
@@ -618,6 +629,11 @@ ksec2PollForCanSend_IMPL
     while (!ksec2CanSendPacket_HAL(pGpu, pKernelSec2))
     {
         osSpinLoop();
+
+        if ((++spinCount & 0xFF) == 0)
+        {
+            osSchedule();
+        }
 
         status = gpuCheckTimeout(pGpu, &timeout);
         if (status != NV_OK)

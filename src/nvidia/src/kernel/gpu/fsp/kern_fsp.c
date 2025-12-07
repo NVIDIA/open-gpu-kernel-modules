@@ -406,11 +406,21 @@ kfspWaitForResponse
 )
 {
     NV_STATUS status = NV_OK;
+    NvU32 spinCount = 0;
 
     // Poll for message queue to wait for FSP's reply
     while (!kfspIsResponseAvailable_HAL(pGpu, pKernelFsp))
     {
         osSpinLoop();
+
+        //
+        // Yield CPU periodically to prevent system hangs, especially
+        // important for external GPUs (Thunderbolt) with higher latency.
+        //
+        if ((++spinCount & 0xFF) == 0)
+        {
+            osSchedule();
+        }
 
         status = kfspCheckResponseTimeout(pGpu, pKernelFsp);
         if (status != NV_OK)
