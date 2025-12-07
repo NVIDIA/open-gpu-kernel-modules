@@ -4932,6 +4932,21 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MEMORY_DEVICE_COHERENT_PRESENT" "" "types"
         ;;
 
+        pci_dev_has_is_thunderbolt)
+            #
+            # Determine if 'pci_dev' structure has 'is_thunderbolt' field.
+            #
+            # Added by commit d72f27e1e48e ("PCI: Mark Thunderbolt devices as
+            # extra sensitive to PM changes") in v4.10.
+            #
+            CODE="
+            #include <linux/pci.h>
+            int conftest_pci_dev_has_is_thunderbolt(void) {
+                return offsetof(struct pci_dev, is_thunderbolt);
+            }"
+
+            compile_check_conftest "$CODE" "NV_PCI_DEV_HAS_IS_THUNDERBOLT" "" "types"
+        ;;
 
         # When adding a new conftest entry, please use the correct format for
         # specifying the relevant upstream Linux kernel commit.  Please

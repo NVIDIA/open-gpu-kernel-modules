@@ -1059,6 +1059,7 @@ kgspIssueNotifyOp_GH100
 
     NvU32 seqValue;
     NvU32 i;
+    NvU32 spinCount = 0;
     RMTIMEOUT timeout;
 
     // 1. Validate the arguments.
@@ -1083,6 +1084,15 @@ kgspIssueNotifyOp_GH100
         // We're not going to sleep, but safe to sleep also means safe to spin..
         NV_ASSERT_OR_RETURN(portSyncExSafeToSleep(), NV_ERR_INVALID_STATE);
         osSpinLoop();
+
+        //
+        // Yield CPU periodically to prevent system hangs, especially
+        // important for external GPUs (Thunderbolt) with higher latency.
+        //
+        if ((++spinCount & 0xFF) == 0)
+        {
+            osSchedule();
+        }
     }
 
     // 3. Read current sequence counter value.
@@ -1107,6 +1117,7 @@ kgspIssueNotifyOp_GH100
     GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_DOORBELL, NV_DOORBELL_NOTIFY_LEAF_SERVICE_LOCKLESS_OP_HANDLE);
 
     // 6. Poll on the sequence number to ensure the op completed.
+    spinCount = 0;
     while (seqValue + 1 != *pSeqAddr)
     {
         status = gpuCheckTimeout(pGpu, &timeout);
@@ -1117,6 +1128,15 @@ kgspIssueNotifyOp_GH100
             goto error_ret;
         }
         osSpinLoop();
+
+        //
+        // Yield CPU periodically to prevent system hangs, especially
+        // important for external GPUs (Thunderbolt) with higher latency.
+        //
+        if ((++spinCount & 0xFF) == 0)
+        {
+            osSchedule();
+        }
     }
 
     status = *pStatusAddr;

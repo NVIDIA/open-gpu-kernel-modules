@@ -1683,6 +1683,7 @@ nv_pci_probe
     NvU8 regs_bar_index = nv_bar_index_to_os_bar_index(pci_dev,
                                                        NV_GPU_BAR_INDEX_REGS);
     NvBool bar0_requested = NV_FALSE;
+    NvBool is_thunderbolt = NV_FALSE;
 
     nv_printf(NV_DBG_SETUP, "NVRM: probing 0x%x 0x%x, class 0x%x\n",
         pci_dev->vendor, pci_dev->device, pci_dev->class);
@@ -1770,9 +1771,59 @@ nv_pci_probe
         goto failed;
     }
 
-    // Validate if BAR0 is usable
+    //
+    // Check if device is connected via Thunderbolt using kernel's is_thunderbolt
+    // flag (Linux 4.10+). This detects Thunderbolt regardless of controller vendor.
+    //
+#if defined(NV_PCI_DEV_HAS_IS_THUNDERBOLT)
+    {
+        struct pci_dev *parent = pci_dev->bus ? pci_dev->bus->self : NULL;
+        while (parent != NULL)
+        {
+            if (parent->is_thunderbolt)
+            {
+                is_thunderbolt = NV_TRUE;
+                break;
+            }
+            parent = parent->bus ? parent->bus->self : NULL;
+        }
+    }
+#endif
+
+    //
+    // Validate BAR0. For Thunderbolt eGPUs, retry with exponential backoff
+    // if validation fails - the tunnel may not be ready on cold boot.
+    // PCIe Base Spec sec 6.6.1 allows up to 1 second for device ready.
+    //
     if (!nv_pci_validate_bars(pci_dev, /* only_bar0 = */ NV_TRUE))
+    {
+        if (is_thunderbolt)
+        {
+            NvU32 delayMs = 1;
+            NvU32 totalMs = 0;
+            const NvU32 maxMs = 1000;
+
+            while (totalMs < maxMs)
+            {
+                msleep(delayMs);
+                totalMs += delayMs;
+
+                if (nv_pci_validate_bars(pci_dev, /* only_bar0 = */ NV_TRUE))
+                {
+                    nv_printf(NV_DBG_SETUP,
+                        "NVRM: Thunderbolt eGPU BAR0 valid after %u ms\n",
+                        totalMs);
+                    goto bars_valid;
+                }
+                delayMs *= 2;
+            }
+            nv_printf(NV_DBG_ERRORS,
+                "NVRM: Thunderbolt eGPU BAR validation failed after %u ms\n",
+                totalMs);
+        }
         goto failed;
+    }
+bars_valid:
 
     if (!request_mem_region(NV_PCI_RESOURCE_START(pci_dev, regs_bar_index),
                             NV_PCI_RESOURCE_SIZE(pci_dev, regs_bar_index),
@@ -1834,6 +1885,7 @@ nv_pci_probe
     nv->pci_info.slot      = NV_PCI_SLOT_NUMBER(pci_dev);
     nv->handle             = pci_dev;
     nv->flags             |= flags;
+    nv->is_external_gpu    = is_thunderbolt;
 
     if (!nv_lock_init_locks(sp, nv))
     {

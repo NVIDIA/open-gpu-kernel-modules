@@ -354,12 +354,48 @@ osHandleGpuLost
     }
 
     pmc_boot_0 = NV_PRIV_REG_RD32(nv->regs->map_u, NV_PMC_BOOT_0);
+
+    //
+    // For external GPUs (Thunderbolt/USB4), retry with exponential backoff
+    // before declaring the GPU lost. The PCIe Base Spec sec 6.6.1 allows
+    // devices up to 1 second to become ready after reset. Thunderbolt PCIe
+    // tunneling adds latency that can cause transient read failures under
+    // load. The Linux kernel's pci_dev_wait() implements similar retry logic.
+    //
+    if (pmc_boot_0 != nvp->pmc_boot_0 &&
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU))
+    {
+        NvU32 delayMs = 1;
+        NvU32 totalDelayMs = 0;
+        const NvU32 maxDelayMs = 1000;
+
+        while (totalDelayMs < maxDelayMs)
+        {
+            osDelayUs(delayMs * 1000);
+            totalDelayMs += delayMs;
+
+            pmc_boot_0 = NV_PRIV_REG_RD32(nv->regs->map_u, NV_PMC_BOOT_0);
+            if (pmc_boot_0 == nvp->pmc_boot_0)
+            {
+                NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
+                              "External GPU recovered after %u ms.\n",
+                              totalDelayMs);
+                return NV_OK;
+            }
+
+            // Exponential backoff: 1, 2, 4, 8, 16, 32, 64, 128, 256, 512 ms
+            delayMs *= 2;
+        }
+
+        NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
+                      "External GPU did not recover after %u ms.\n",
+                      totalDelayMs);
+    }
+
     if (pmc_boot_0 != nvp->pmc_boot_0)
     {
         //
-        // This doesn't support PEX Reset and Recovery yet.
-        // This will help to prevent accessing registers of a GPU
-        // which has fallen off the bus.
+        // GPU did not respond. For external GPUs, we have already retried.
         //
         nvErrorLog_va((void *)pGpu, ROBUST_CHANNEL_GPU_HAS_FALLEN_OFF_THE_BUS,
                       "GPU has fallen off the bus.");
@@ -434,8 +470,15 @@ RmCheckForExternalGpu
     NvU32 PCIECapPtr;
     RM_API *pRmApi;
     NV_STATUS status, rmStatus;
-    NvBool bTb3Bridge = NV_FALSE, bSlotHotPlugSupport = NV_FALSE;
+    NvBool bThunderboltBridge = NV_FALSE, bSlotHotPlugSupport = NV_FALSE;
     NvBool iseGPUBridge = NV_FALSE;
+    nv_state_t *nv = NV_GET_NV_STATE(pGpu);
+
+    // If already detected as external GPU via kernel's is_thunderbolt flag, return early
+    if (nv != NULL && nv->is_external_gpu)
+    {
+        return NV_TRUE;
+    }
 
     pRmApi  = GPU_GET_PHYSICAL_RMAPI(pGpu);
     domain  = gpuGetDomain(pGpu);
@@ -451,7 +494,7 @@ RmCheckForExternalGpu
 
         if (vendorIdUp == PCI_VENDOR_ID_INTEL)
         {
-            // Check for the supported TB3(ThunderBolt 3) bridges.
+            // Check for the supported Thunderbolt bridges (TB3/TB4/TB5/USB4).
             NV2080_CTRL_INTERNAL_GET_EGPU_BRIDGE_INFO_PARAMS params = { 0 };
 
             // LOCK: acquire GPUs lock
@@ -480,13 +523,20 @@ RmCheckForExternalGpu
             }
             else
             {
-                // Check for the approved eGPU BUS TB3
+                // Check for the approved eGPU bus types: TB3, TB4, TB5, or USB4
                 if (params.iseGPUBridge &&
-                    params.approvedBusType == NV2080_CTRL_INTERNAL_EGPU_BUS_TYPE_TB3)
+                    (params.approvedBusType == NV2080_CTRL_INTERNAL_EGPU_BUS_TYPE_TB3 ||
+                     params.approvedBusType == NV2080_CTRL_INTERNAL_EGPU_BUS_TYPE_TB4 ||
+                     params.approvedBusType == NV2080_CTRL_INTERNAL_EGPU_BUS_TYPE_TB5 ||
+                     params.approvedBusType == NV2080_CTRL_INTERNAL_EGPU_BUS_TYPE_USB4))
                 {
-                    bTb3Bridge =  NV_TRUE;
+                    NV_PRINTF(LEVEL_INFO,
+                              "GSP detected eGPU bridge: deviceId=0x%04x busType=%u\n",
+                              deviceIdUp, params.approvedBusType);
+                    bThunderboltBridge = NV_TRUE;
                 }
             }
+
         }
 
         if (NV_OK != clSetPortPcieCapOffset(pCl, handleUp, &PCIECapPtr))
@@ -502,16 +552,26 @@ RmCheckForExternalGpu
             // Get the slot capabilities.
             slotCaps = osPciReadDword(handleUp, CL_PCIE_SLOT_CAP - CL_PCIE_BEGIN + PCIECapPtr);
 
-            if ((CL_PCIE_SLOT_CAP_HOTPLUG_CAPABLE & slotCaps) &&
+            //
+            // For Thunderbolt connections, check for hotplug capability.
+            // Note: Some TB5 bridges report only Surprise+ without HotPlug+,
+            // so we accept either hotplug capable or surprise capable slots.
+            //
+            if ((CL_PCIE_SLOT_CAP_HOTPLUG_CAPABLE & slotCaps) ||
                 (CL_PCIE_SLOT_CAP_HOTPLUG_SURPRISE & slotCaps))
             {
                 bSlotHotPlugSupport = NV_TRUE;
             }
         }
 
-        if (bTb3Bridge && bSlotHotPlugSupport)
+        if (bThunderboltBridge && bSlotHotPlugSupport)
         {
             iseGPUBridge = NV_TRUE;
+            NV_PRINTF(LEVEL_INFO,
+                      "External GPU detected: TB bridge=%s hotplug=%s slotCaps=0x%08x\n",
+                      bThunderboltBridge ? "yes" : "no",
+                      bSlotHotPlugSupport ? "yes" : "no",
+                      slotCaps);
             break;
         }
 

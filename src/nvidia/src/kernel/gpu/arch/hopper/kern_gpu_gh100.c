@@ -281,6 +281,8 @@ gpuHandleSanityCheckRegReadError_GH100
     NvU32 value
 )
 {
+    NvU32 pmcBoot0;
+
     // SEC_FAULT possibly detected, confirm by reading NV_PMC_BOOT_0
     if ((value == NV_XAL_EP_SCPM_PRI_DUMMY_DATA_PATTERN_INIT) &&
         (osGpuReadReg032(pGpu, NV_PMC_BOOT_0) == NV_XAL_EP_SCPM_PRI_DUMMY_DATA_PATTERN_INIT))
@@ -316,6 +318,26 @@ gpuHandleSanityCheckRegReadError_GH100
                       "Possible bad register read: addr: 0x%x,  regvalue: 0x%x\n",
                       addr, value);
 #endif // NV_PRINTF_STRINGS_ALLOWED
+
+            //
+            // For external GPUs (Thunderbolt/USB4), PRI errors may indicate PCIe link
+            // instability. Verify the GPU is still accessible by checking NV_PMC_BOOT_0.
+            // If BOOT_0 also returns an error pattern, treat this as GPU lost.
+            //
+            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU))
+            {
+                pmcBoot0 = osGpuReadReg032(pGpu, NV_PMC_BOOT_0);
+                NV_PRINTF(LEVEL_INFO,
+                          "External GPU PRI error check: addr=0x%x value=0x%x pmcBoot0=0x%x\n",
+                          addr, value, pmcBoot0);
+                if ((pmcBoot0 == GPU_REG_VALUE_INVALID) ||
+                    ((pmcBoot0 & GPU_READ_PRI_ERROR_MASK) == GPU_READ_PRI_ERROR_CODE))
+                {
+                    NV_PRINTF(LEVEL_ERROR,
+                              "External GPU unreachable after PRI error, triggering recovery\n");
+                    osHandleGpuLost(pGpu);
+                }
+            }
         }
     }
 }

@@ -1950,6 +1950,7 @@ NvU32 osGetCurrentProcessorNumber(void)
 void osGetTimeoutParams(OBJGPU *pGpu, NvU32 *pTimeoutUs, NvU32 *pScale, NvU32 *pFlags)
 {
     NvU32 gpuMode   = gpuGetMode(pGpu);
+    NvBool bExternalGpu = pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU);
 
     NV_ASSERT((NV_GPU_MODE_GRAPHICS_MODE == gpuMode) ||
               (NV_GPU_MODE_COMPUTE_MODE  == gpuMode));
@@ -1976,6 +1977,20 @@ void osGetTimeoutParams(OBJGPU *pGpu, NvU32 *pTimeoutUs, NvU32 *pScale, NvU32 *p
             *pTimeoutUs = 30 * 1000000;
             break;
         }
+    }
+
+    //
+    // External GPUs (Thunderbolt, USB4) have higher latency due to the
+    // tunneled PCIe connection. Increase timeout to prevent false failures.
+    //
+    if (bExternalGpu)
+    {
+        NvU32 origTimeoutUs = *pTimeoutUs;
+        *pTimeoutUs *= 4;
+        NV_PRINTF(LEVEL_INFO,
+                  "External GPU detected: timeout extended from %uus to %uus (mode=%s)\n",
+                  origTimeoutUs, *pTimeoutUs,
+                  (gpuMode == NV_GPU_MODE_COMPUTE_MODE) ? "compute" : "graphics");
     }
 
     *pFlags = GPU_TIMEOUT_FLAGS_OSTIMER;

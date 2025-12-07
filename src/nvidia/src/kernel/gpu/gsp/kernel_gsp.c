@@ -2271,6 +2271,7 @@ _kgspRpcRecvPoll
     NvU32      timeoutFlags;
     NvBool     bSlowGspRpc = IS_EMULATION(pGpu) || IS_SIMULATION(pGpu);
     NvU32      gpuMaskUnused;
+    NvU32      spinCount = 0;
 
 #if defined(GSPRM_HWASAN_ENABLE)
     //
@@ -2345,6 +2346,11 @@ _kgspRpcRecvPoll
 
     gpuSetTimeout(pGpu, timeoutUs, &timeout, timeoutFlags);
 
+    NV_PRINTF(LEVEL_INFO,
+              "GSP RPC poll start: func=%u seq=%u timeout=%uus external=%s\n",
+              expectedFunc, expectedSequence, timeoutUs,
+              pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU) ? "yes" : "no");
+
     for (;;)
     {
         //
@@ -2363,6 +2369,9 @@ _kgspRpcRecvPoll
                 {
                     _kgspCheckSlowRpc(pGpu, pRpc);
                 }
+                NV_PRINTF(LEVEL_INFO,
+                          "GSP RPC completed: func=%u seq=%u\n",
+                          expectedFunc, expectedSequence);
                 rpcStatus = NV_OK;
                 // The watchdog report that's related to this RPC is no longer needed
                 if (pKernelGsp->pWatchdogReport != NULL)
@@ -2441,6 +2450,14 @@ _kgspRpcRecvPoll
         }
 
         osSpinLoop();
+
+        //
+        // Yield CPU periodically to prevent system hangs.
+        //
+        if ((++spinCount & 0xFF) == 0)
+        {
+            osSchedule();
+        }
     }
 
     pRpc->timeoutCount = 0;
@@ -2649,7 +2666,10 @@ kgspFreeVgpuPartitionLogging_IMPL
         kgspDumpGspLogs(pKernelGsp, NV_FALSE);
 
         while (!portAtomicCompareAndSwapS32(&pKernelGsp->logDumpLock, 1, 0))
+        {
             osSpinLoop();
+            osSchedule();
+        }
 
         _kgspFreeLibosVgpuPartitionLoggingStructures(pGpu, pKernelGsp, gfid);
 
@@ -2769,7 +2789,10 @@ kgspInitVgpuPartitionLogging_IMPL
     }
 
     while (!portAtomicCompareAndSwapS32(&pKernelGsp->logDumpLock, 1, 0))
+    {
         osSpinLoop();
+        osSchedule();
+    }
 
     // Source name is used to generate a tag that is a unique identifier for nvlog buffers.
     // As the source name 'GSP' is already in use, we will need a custom source name.
@@ -4233,6 +4256,7 @@ kgspDumpGspLogs_IMPL
             }
 
             osSpinLoop();
+            osSchedule();
         }
 
         _kgspDumpGspLogsUnlocked(pKernelGsp, bSyncNvLog);

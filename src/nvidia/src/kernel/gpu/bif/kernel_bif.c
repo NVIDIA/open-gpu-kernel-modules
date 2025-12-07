@@ -1069,8 +1069,10 @@ kbifClearConfigErrors_IMPL
         if (xveAerFlags != 0)
         {
             NV_PRINTF(LEVEL_WARNING,
-                      "PCI-E device AER errors pending (%08X):\n",
-                      xveAerFlags);
+                      "PCI-E device AER errors pending (%08X)%s:\n",
+                      xveAerFlags,
+                      pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU) ?
+                          " [external GPU - may indicate Thunderbolt link instability]" : "");
 #ifdef DEBUG
             if (xveAerFlags & NV2080_CTRL_BUS_INFO_PCIE_LINK_AER_UNCORR_TRAINING_ERR)
             {

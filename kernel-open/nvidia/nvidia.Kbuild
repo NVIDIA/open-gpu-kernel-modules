@@ -206,6 +206,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += remove_memory_has_nid_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += add_memory_driver_managed_has_mhp_flags_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += num_registered_fb
 NV_CONFTEST_TYPE_COMPILE_TESTS += pci_driver_has_driver_managed_dma
+NV_CONFTEST_TYPE_COMPILE_TESTS += pci_dev_has_is_thunderbolt
 NV_CONFTEST_TYPE_COMPILE_TESTS += vm_area_struct_has_const_vm_flags
 NV_CONFTEST_TYPE_COMPILE_TESTS += memory_failure_queue_has_trapno_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += foll_longterm_present
