@@ -1,0 +1,80 @@
+# shared make defines for Makefile and Kbuild
+
+SRC_COMMON := ../common
+
+NV_INCLUDE :=
+NV_INCDIRS :=
+NV_DEFINES :=
+
+NV_INCLUDE += $(SRC_COMMON)/sdk/nvidia/inc/cpuopsys.h
+
+NV_INCDIRS += kernel/inc
+NV_INCDIRS += interface
+NV_INCDIRS += $(SRC_COMMON)/sdk/nvidia/inc
+NV_INCDIRS += $(SRC_COMMON)/sdk/nvidia/inc/hw
+NV_INCDIRS += arch/nvalloc/common/inc
+NV_INCDIRS += arch/nvalloc/common/inc/gsp
+NV_INCDIRS += arch/nvalloc/common/inc/deprecated
+NV_INCDIRS += arch/nvalloc/unix/include
+NV_INCDIRS += inc
+NV_INCDIRS += inc/os
+NV_INCDIRS += $(SRC_COMMON)/shared/inc
+NV_INCDIRS += $(SRC_COMMON)/inc
+
+NV_INCDIRS += $(SRC_COMMON)/uproc/os/libos-v2.0.0/include
+NV_INCDIRS += $(SRC_COMMON)/uproc/os/common/include
+NV_INCDIRS += $(SRC_COMMON)/inc/swref
+NV_INCDIRS += $(SRC_COMMON)/inc/swref/published
+
+NV_INCDIRS += generated
+NV_INCDIRS += $(SRC_COMMON)/nvswitch/kernel/inc
+NV_INCDIRS += $(SRC_COMMON)/nvswitch/interface
+NV_INCDIRS += $(SRC_COMMON)/nvswitch/common/inc/
+NV_INCDIRS += $(SRC_COMMON)/inc/displayport
+NV_INCDIRS += $(SRC_COMMON)/nvlink/interface/
+NV_INCDIRS += $(SRC_COMMON)/nvlink/inband/interface
+NV_INCDIRS += src/mm/uvm/interface
+NV_INCDIRS += inc/libraries
+NV_INCDIRS += src/libraries
+NV_INCDIRS += inc/kernel
+
+#if NV_USE_MBEDTLS
+MBEDTLS_VERSION ?= 3.6.2
+NV_INCDIRS += $(SRC_COMMON)/mbedtls/$(MBEDTLS_VERSION)/include
+NV_INCDIRS += $(SRC_COMMON)/mbedtls/$(MBEDTLS_VERSION)/nvidia
+NV_DEFINES += -D"MBEDTLS_USER_CONFIG_FILE=<nvrm_mbedtls_config.h>"
+#endif
+
+NV_DEFINES += -D_LANGUAGE_C
+NV_DEFINES += -D__NO_CTYPE
+NV_DEFINES += -DNVRM
+NV_DEFINES += -DLOCK_VAL_ENABLED=0
+NV_DEFINES += -DPORT_ATOMIC_64_BIT_SUPPORTED=1
+NV_DEFINES += -DPORT_IS_KERNEL_BUILD=1
+NV_DEFINES += -DPORT_IS_CHECKED_BUILD=0
+NV_DEFINES += -DPORT_MODULE_atomic=1
+NV_DEFINES += -DPORT_MODULE_core=1
+NV_DEFINES += -DPORT_MODULE_cpu=1
+NV_DEFINES += -DPORT_MODULE_crypto=1
+NV_DEFINES += -DPORT_MODULE_debug=1
+NV_DEFINES += -DPORT_MODULE_memory=1
+NV_DEFINES += -DPORT_MODULE_safe=1
+NV_DEFINES += -DPORT_MODULE_string=1
+NV_DEFINES += -DPORT_MODULE_sync=1
+NV_DEFINES += -DPORT_MODULE_thread=1
+NV_DEFINES += -DPORT_MODULE_time=1
+NV_DEFINES += -DPORT_MODULE_util=1
+NV_DEFINES += -DPORT_MODULE_example=0
+NV_DEFINES += -DPORT_MODULE_mmio=0
+NV_DEFINES += -DRS_STANDALONE=0
+NV_DEFINES += -DRS_STANDALONE_TEST=0
+NV_DEFINES += -DRS_COMPATABILITY_MODE=1
+NV_DEFINES += -DRS_PROVIDES_API_STATE=0
+NV_DEFINES += -DNV_CONTAINERS_NO_TEMPLATES
+
+NV_DEFINES += -DINCLUDE_NVLINK_LIB
+NV_DEFINES += -DINCLUDE_NVSWITCH_LIB
+
+NV_DEFINES += -DNV_PRINTF_STRINGS_ALLOWED=1
+NV_DEFINES += -DNV_ASSERT_FAILED_USES_STRINGS=1
+NV_DEFINES += -DPORT_ASSERT_FAILED_USES_STRINGS=1
