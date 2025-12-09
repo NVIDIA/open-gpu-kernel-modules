@@ -9,6 +9,7 @@ VERSION_MK_DIR = ../../
 include ../../utils.mk
 
 include srcs.mk
+include defs.mk
 
 ##############################################################################
 # Helper functions to determine the compiler type
@@ -22,52 +23,16 @@ GET_COMPILER_TYPE = \
 ALL_SRCS = $(SRCS) $(SRCS_CXX)
 ALL_SRCS += $(NVIDSTRING)
 
-SRC_COMMON = ../common
 CONDITIONAL_CFLAGS :=
 
-CFLAGS += -include $(SRC_COMMON)/sdk/nvidia/inc/cpuopsys.h
-
-CFLAGS += -I kernel/inc
-CFLAGS += -I interface
-CFLAGS += -I $(SRC_COMMON)/sdk/nvidia/inc
-CFLAGS += -I $(SRC_COMMON)/sdk/nvidia/inc/hw
-CFLAGS += -I arch/nvalloc/common/inc
-CFLAGS += -I arch/nvalloc/common/inc/gsp
-CFLAGS += -I arch/nvalloc/common/inc/deprecated
-CFLAGS += -I arch/nvalloc/unix/include
-CFLAGS += -I inc
-CFLAGS += -I inc/os
-CFLAGS += -I $(SRC_COMMON)/shared/inc
-CFLAGS += -I $(SRC_COMMON)/inc
-
-CFLAGS += -I $(SRC_COMMON)/uproc/os/libos-v2.0.0/include
-CFLAGS += -I $(SRC_COMMON)/uproc/os/common/include
-CFLAGS += -I $(SRC_COMMON)/inc/swref
-CFLAGS += -I $(SRC_COMMON)/inc/swref/published
-
-CFLAGS += -I generated
-CFLAGS += -I $(SRC_COMMON)/nvswitch/kernel/inc
-CFLAGS += -I $(SRC_COMMON)/nvswitch/interface
-CFLAGS += -I $(SRC_COMMON)/nvswitch/common/inc/
-CFLAGS += -I $(SRC_COMMON)/inc/displayport
-CFLAGS += -I $(SRC_COMMON)/nvlink/interface/
-CFLAGS += -I $(SRC_COMMON)/nvlink/inband/interface
-CFLAGS += -I src/mm/uvm/interface
-CFLAGS += -I inc/libraries
-CFLAGS += -I src/libraries
-CFLAGS += -I inc/kernel
+CFLAGS += $(addprefix -include ,$(NV_INCLUDE))
+CFLAGS += $(addprefix -I ,$(NV_INCDIRS))
+CFLAGS += $(NV_DEFINES)
 
 # Libspdm source requires additional include paths and build flags.
 include src/libraries/libspdm/nvidia/openspdm.mk
 $(call BUILD_OBJECT_LIST,$(LIBSPDM_SOURCES)): CFLAGS += $(addprefix -I ,$(LIBSPDM_INCLUDES))
 $(call BUILD_OBJECT_LIST,$(LIBSPDM_SOURCES)): CFLAGS += $(addprefix -D,$(LIBSPDM_DEFINES))
-
-#if NV_USE_MBEDTLS
-MBEDTLS_VERSION ?= 3.6.2
-CFLAGS += -I $(SRC_COMMON)/mbedtls/$(MBEDTLS_VERSION)/include
-CFLAGS += -I $(SRC_COMMON)/mbedtls/$(MBEDTLS_VERSION)/nvidia
-CFLAGS += -D"MBEDTLS_USER_CONFIG_FILE=<nvrm_mbedtls_config.h>"
-#endif
 
 CFLAGS += -Werror-implicit-function-declaration
 CFLAGS += -Wwrite-strings
@@ -102,40 +67,6 @@ ifeq ($(TARGET_ARCH),riscv64)
 endif
 
 CFLAGS += -fno-pic
-
-CFLAGS += -D_LANGUAGE_C
-CFLAGS += -D__NO_CTYPE
-CFLAGS += -DNVRM
-CFLAGS += -DLOCK_VAL_ENABLED=0
-CFLAGS += -DPORT_ATOMIC_64_BIT_SUPPORTED=1
-CFLAGS += -DPORT_IS_KERNEL_BUILD=1
-CFLAGS += -DPORT_IS_CHECKED_BUILD=0
-CFLAGS += -DPORT_MODULE_atomic=1
-CFLAGS += -DPORT_MODULE_core=1
-CFLAGS += -DPORT_MODULE_cpu=1
-CFLAGS += -DPORT_MODULE_crypto=1
-CFLAGS += -DPORT_MODULE_debug=1
-CFLAGS += -DPORT_MODULE_memory=1
-CFLAGS += -DPORT_MODULE_safe=1
-CFLAGS += -DPORT_MODULE_string=1
-CFLAGS += -DPORT_MODULE_sync=1
-CFLAGS += -DPORT_MODULE_thread=1
-CFLAGS += -DPORT_MODULE_time=1
-CFLAGS += -DPORT_MODULE_util=1
-CFLAGS += -DPORT_MODULE_example=0
-CFLAGS += -DPORT_MODULE_mmio=0
-CFLAGS += -DRS_STANDALONE=0
-CFLAGS += -DRS_STANDALONE_TEST=0
-CFLAGS += -DRS_COMPATABILITY_MODE=1
-CFLAGS += -DRS_PROVIDES_API_STATE=0
-CFLAGS += -DNV_CONTAINERS_NO_TEMPLATES
-
-CFLAGS += -DINCLUDE_NVLINK_LIB
-CFLAGS += -DINCLUDE_NVSWITCH_LIB
-
-CFLAGS += -DNV_PRINTF_STRINGS_ALLOWED=1
-CFLAGS += -DNV_ASSERT_FAILED_USES_STRINGS=1
-CFLAGS += -DPORT_ASSERT_FAILED_USES_STRINGS=1
 
 ifeq ($(DEBUG),1)
   CFLAGS += -gsplit-dwarf
