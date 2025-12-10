@@ -550,6 +550,9 @@ typedef struct
 #ifndef __mutable_const
 #define __mutable_const
 #endif
+#ifndef __nolocal
+#define __nolocal
+#endif
 
 #if defined(_MSC_VER)
 
