@@ -31,6 +31,7 @@
 #include <linux/semaphore.h>
 
 #include "conftest.h"
+#include "nvtypes.h"
 
 struct nv_kthread_q
 {
@@ -45,14 +46,14 @@ struct nv_kthread_q
     struct task_struct *q_kthread;
 
     bool is_unload_flush_ongoing;
-};
+} __nolocal;
 
 struct nv_kthread_q_item
 {
     struct list_head q_list_node;
     nv_q_func_t function_to_run;
     void *function_args;
-};
+} __nolocal;
 
 
 #ifndef NUMA_NO_NODE
