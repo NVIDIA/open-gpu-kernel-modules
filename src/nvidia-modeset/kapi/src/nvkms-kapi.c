@@ -644,8 +644,13 @@ static void FreeDevice(struct NvKmsKapiDevice *device)
  * faults or hangs when trying to access unmapped GPU memory.
  *
  * We only:
- * 1. Release the GPU reference count (nvkms_close_gpu)
- * 2. Free kernel memory resources (semaphore, device struct)
+ * 1. Mark GPU as lost to prevent hardware access
+ * 2. Release the GPU reference count (nvkms_close_gpu)
+ * 3. Clean up kernel memory resources (handle allocator, semaphore, device struct)
+ *
+ * We skip:
+ * - KmsFreeDevice() - would call nvkms_ioctl_from_kapi() which accesses hardware
+ * - RmFreeDevice() - would call nvRmApiFree() which accesses hardware
  *
  * The hardware resources will be cleaned up when the GPU is physically
  * removed from the system.
@@ -664,10 +669,31 @@ static void FreeDeviceForSurpriseRemoval(struct NvKmsKapiDevice *device)
     nvkms_gpu_lost(device->gpuId);
 
     /*
-     * Skip KmsFreeDevice() and RmFreeDevice() - these try to access
-     * GPU hardware via ioctls and RM API calls, which will crash
-     * since the GPU memory is unmapped after surprise removal.
+     * Clear device handles to prevent any stale references.
+     * Don't call nvRmApiFree() as that would access hardware.
      */
+    device->hKmsDevice = 0;
+    device->hKmsDisp = 0;
+    device->hRmSubDevice = 0;
+    device->hRmDevice = 0;
+    device->hRmClient = 0;
+    device->smgGpuInstSubscriptionHdl = 0;
+    device->smgComputeInstSubscriptionHdl = 0;
+
+    /*
+     * Tear down the handle allocator - this only frees kernel memory
+     * (bitmaps), no hardware access.
+     */
+    nvTearDownUnixRmHandleAllocator(&device->handleAllocator);
+    device->deviceInstance = 0;
+
+    /*
+     * Clear pKmsOpen - we can't call nvkms_close_from_kapi() as that
+     * would try to access hardware through nvKmsClose(). The popen
+     * structure will be leaked, but this only happens during surprise
+     * removal which is an abnormal condition.
+     */
+    device->pKmsOpen = NULL;
 
     /* Lower the reference count of gpu - this is safe, no hardware access */
     nvkms_close_gpu(device->gpuId);
@@ -675,6 +701,7 @@ static void FreeDeviceForSurpriseRemoval(struct NvKmsKapiDevice *device)
     /* Free kernel memory resources */
     if (device->pSema != NULL) {
         nvkms_sema_free(device->pSema);
+        device->pSema = NULL;
     }
 
     nvKmsKapiFree(device);

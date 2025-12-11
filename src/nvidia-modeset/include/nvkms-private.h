@@ -35,6 +35,8 @@ struct NvKmsPerOpenDev *nvAllocPerOpenDev(struct NvKmsPerOpen *pOpen,
 
 void nvRevokeDevice(NVDevEvoPtr pDevEvo);
 
+void nvInvalidateDeviceReferences(NVDevEvoPtr pDevEvo);
+
 void nvFreePerOpenDev(struct NvKmsPerOpen *pOpen,
                       struct NvKmsPerOpenDev *pOpenDev);
 
@@ -72,8 +74,6 @@ const NVEvoApiHandlesRec *nvGetSurfaceHandlesFromOpenDevConst(
     const struct NvKmsPerOpenDev *pOpenDev);
 
 void nvKmsServiceNonStallInterrupt(void *dataPtr, NvU32 dataU32);
-
-void nvKmsReinitializeGlobalClient(void);
 
 #ifdef __cplusplus
 };

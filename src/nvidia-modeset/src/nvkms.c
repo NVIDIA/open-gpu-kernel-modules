@@ -1621,6 +1621,16 @@ static void DisableRemainingVblankSemControls(
 static void FreeDeviceReference(struct NvKmsPerOpen *pOpen,
                                 struct NvKmsPerOpenDev *pOpenDev)
 {
+    /*
+     * If pDevEvo is NULL, the device was already freed due to GPU loss
+     * (surprise removal). In this case, skip all hardware-related cleanup
+     * and just free the software structures.
+     */
+    if (pOpenDev->pDevEvo == NULL) {
+        nvFreePerOpenDev(pOpen, pOpenDev);
+        return;
+    }
+
     /* Disable all client-owned vblank sync objects that still exist. */
     DisableRemainingVblankSyncObjects(pOpen, pOpenDev);
 
@@ -5277,6 +5287,31 @@ void nvRevokeDevice(NVDevEvoPtr pDevEvo)
     }
 }
 
+/*
+ * Invalidate all pOpenDev references to a device.
+ * Called when GPU is lost to ensure nvKmsClose doesn't access freed pDevEvo.
+ * This sets pOpenDev->pDevEvo to NULL for all open handles.
+ */
+void nvInvalidateDeviceReferences(NVDevEvoPtr pDevEvo)
+{
+    struct NvKmsPerOpen *pOpen;
+    struct NvKmsPerOpenDev *pOpenDev;
+    NvKmsGenericHandle dev;
+
+    if (pDevEvo == NULL) {
+        return;
+    }
+
+    nvListForEachEntry(pOpen, &perOpenIoctlList, perOpenIoctlListEntry) {
+        FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpen->ioctl.devHandles,
+                                            pOpenDev, dev) {
+            if (pOpenDev->pDevEvo == pDevEvo) {
+                pOpenDev->pDevEvo = NULL;
+            }
+        }
+    }
+}
+
 /*!
  * Open callback.
  *
@@ -6263,44 +6298,6 @@ static void FreeGlobalState(void)
     }
 
     nvClearDpyOverrides();
-}
-
-/*
- * Reinitialize the global RM client after a GPU surprise removal.
- * When a GPU is removed, the RM client handle may become invalid.
- * This function re-creates the client handle so that newly attached
- * GPUs can be used.
- */
-void nvKmsReinitializeGlobalClient(void)
-{
-    NvU32 ret;
-
-    /*
-     * First, try to free the old client handle. This may fail if RM
-     * already invalidated it, but that's OK.
-     */
-    if (nvEvoGlobal.clientHandle != 0) {
-        nvRmApiFree(nvEvoGlobal.clientHandle, nvEvoGlobal.clientHandle,
-                    nvEvoGlobal.clientHandle);
-        nvEvoGlobal.clientHandle = 0;
-    }
-
-    /* Allocate a new root client */
-    ret = nvRmApiAlloc(NV01_NULL_OBJECT,
-                       NV01_NULL_OBJECT,
-                       NV01_NULL_OBJECT,
-                       NV01_ROOT,
-                       &nvEvoGlobal.clientHandle);
-
-    if (ret != NVOS_STATUS_SUCCESS) {
-        nvEvoLog(EVO_LOG_ERROR, "Failed to reinitialize client after GPU removal");
-        return;
-    }
-
-    /* Update the RM context */
-    nvEvoGlobal.rmSmgContext.clientHandle = nvEvoGlobal.clientHandle;
-
-    nvEvoLog(EVO_LOG_INFO, "Reinitialized global client after GPU surprise removal");
 }
 
 /*

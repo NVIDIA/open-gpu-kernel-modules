@@ -8838,14 +8838,21 @@ NvBool nvFreeDevEvo(NVDevEvoPtr pDevEvo)
     /*
      * If the GPU was lost (surprise removal), skip all hardware-related
      * cleanup. Just free software resources and remove from device list.
+     *
+     * NOTE: We do NOT call nvFreePerOpenDev() here because the pNvKmsOpenDev
+     * is still in the global open list. It will be properly cleaned up during
+     * module unload when nvKmsClose iterates through all open handles.
+     * Calling nvFreePerOpenDev here would cause a double-free crash.
      */
     if (pDevEvo->gpuLost) {
         nvEvoLogDev(pDevEvo, EVO_LOG_INFO,
                     "Freeing device after GPU lost, skipping hardware cleanup");
 
-        /* Still need to free the per-open data (software resources only) */
-        nvFreePerOpenDev(nvEvoGlobal.nvKmsPerOpen, pDevEvo->pNvKmsOpenDev);
-        pDevEvo->pNvKmsOpenDev = NULL;
+        /*
+         * Invalidate all pOpenDev references to this device before freeing it.
+         * This ensures nvKmsClose won't try to access the freed pDevEvo.
+         */
+        nvInvalidateDeviceReferences(pDevEvo);
 
         goto free_software_resources;
     }
@@ -8913,12 +8920,16 @@ free_software_resources:
         nvFree(pDevEvo);
 
         /*
-         * If the GPU was lost and the device list is now empty, reinitialize
-         * the global RM client so that newly attached GPUs can be used.
+         * NOTE: We intentionally do NOT call nvKmsReinitializeGlobalClient()
+         * here even if the device list is empty. The global client handle
+         * is still referenced by open handles (pNvKmsOpenDev) that will be
+         * cleaned up during module unload by nvKmsClose(). Reinitializing
+         * the client here would corrupt those handles and cause a crash.
+         *
+         * If the user reconnects the GPU before unloading the module, it will
+         * work because AllocDevice checks for stale gpuLost devices and cleans
+         * them up. The global client doesn't need to be reinitialized for that.
          */
-        if (wasGpuLost && nvListIsEmpty(&nvEvoGlobal.devList)) {
-            nvKmsReinitializeGlobalClient();
-        }
 
         return TRUE;
     }
