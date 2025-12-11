@@ -407,7 +407,10 @@ static NV_STATUS _threadNodeCheckTimeout(OBJGPU *pGpu, THREAD_STATE_NODE *pThrea
     {
         if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu))
         {
-            NV_PRINTF(LEVEL_ERROR, "API_GPU_ATTACHED_SANITY_CHECK failed!\n");
+            //
+            // Don't log error during surprise removal - this is expected
+            // when GPU is hot-unplugged (e.g., Thunderbolt eGPU).
+            //
             return NV_ERR_TIMEOUT;
         }
     }

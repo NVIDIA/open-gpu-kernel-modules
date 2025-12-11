@@ -8748,7 +8748,26 @@ NvBool nvFreeDevEvo(NVDevEvoPtr pDevEvo)
         return FALSE;
     }
 
-    FreeDIFRState(pDevEvo);
+    /*
+     * If the GPU was lost (surprise removal), skip all hardware-related
+     * cleanup. Just free software resources and remove from device list.
+     */
+    if (pDevEvo->gpuLost) {
+        nvEvoLogDev(pDevEvo, EVO_LOG_INFO,
+                    "Freeing device after GPU lost, skipping hardware cleanup");
+
+        /* Still need to free the per-open data (software resources only) */
+        nvFreePerOpenDev(nvEvoGlobal.nvKmsPerOpen, pDevEvo->pNvKmsOpenDev);
+        pDevEvo->pNvKmsOpenDev = NULL;
+
+        goto free_software_resources;
+    }
+
+    if (pDevEvo->pDifrState) {
+        nvRmUnregisterDIFREventHandler(pDevEvo);
+        nvDIFRFree(pDevEvo->pDifrState);
+        pDevEvo->pDifrState = NULL;
+    }
 
     if (pDevEvo->pNvKmsOpenDev != NULL) {
         /*
@@ -8783,22 +8802,42 @@ NvBool nvFreeDevEvo(NVDevEvoPtr pDevEvo)
 
     nvRmDestroyDisplays(pDevEvo);
 
-    nvkms_free_timer(pDevEvo->consoleRestoreTimer);
-    pDevEvo->consoleRestoreTimer = NULL;
+free_software_resources:
+    {
+        NvBool wasGpuLost = pDevEvo->gpuLost;
 
-    nvkms_free_timer(pDevEvo->gpuCpuTimeDiffRefreshTimer);
-    pDevEvo->gpuCpuTimeDiffRefreshTimer = NULL;
+        nvkms_free_timer(pDevEvo->consoleRestoreTimer);
+        pDevEvo->consoleRestoreTimer = NULL;
 
-    nvPreallocFree(pDevEvo);
+        nvkms_free_timer(pDevEvo->gpuCpuTimeDiffRefreshTimer);
+        pDevEvo->gpuCpuTimeDiffRefreshTimer = NULL;
 
-    nvRmFreeDeviceEvo(pDevEvo);
+        nvPreallocFree(pDevEvo);
 
-    nvListDel(&pDevEvo->devListEntry);
+        /*
+         * Skip RM device cleanup if GPU is lost - handles are already invalid
+         * and RM API calls will fail.
+         */
+        if (!pDevEvo->gpuLost) {
+            nvRmFreeDeviceEvo(pDevEvo);
+        }
 
-    nvkms_free_ref_ptr(pDevEvo->ref_ptr);
+        nvListDel(&pDevEvo->devListEntry);
 
-    nvFree(pDevEvo);
-    return TRUE;
+        nvkms_free_ref_ptr(pDevEvo->ref_ptr);
+
+        nvFree(pDevEvo);
+
+        /*
+         * If the GPU was lost and the device list is now empty, reinitialize
+         * the global RM client so that newly attached GPUs can be used.
+         */
+        if (wasGpuLost && nvListIsEmpty(&nvEvoGlobal.devList)) {
+            nvKmsReinitializeGlobalClient();
+        }
+
+        return TRUE;
+    }
 }
 
 static void AssignNumberOfApiHeads(NVDevEvoRec *pDevEvo)
@@ -9888,4 +9927,3 @@ NvBool nvEvoIsConsoleActive(const NVDevEvoRec *pDevEvo)
 
     return FALSE;
 }
-

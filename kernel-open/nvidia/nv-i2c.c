@@ -44,6 +44,15 @@ static int nv_i2c_algo_master_xfer(struct i2c_adapter *adapter, struct i2c_msg m
 #endif
     ;
 
+    /*
+     * Check if the GPU is in surprise removal (e.g., Thunderbolt unplug).
+     * If so, return immediately to avoid hanging on RPC calls to GSP.
+     */
+    if (nv_check_gpu_state(nv) != NV_OK)
+    {
+        return -ENODEV;
+    }
+
     rc = nv_kmem_cache_alloc_stack(&sp);
     if (rc != 0)
     {
@@ -92,6 +101,15 @@ static int nv_i2c_algo_smbus_xfer(
     int rc;
     NV_STATUS rmStatus = NV_OK;
     nvidia_stack_t *sp = NULL;
+
+    /*
+     * Check if the GPU is in surprise removal (e.g., Thunderbolt unplug).
+     * If so, return immediately to avoid hanging on RPC calls to GSP.
+     */
+    if (nv_check_gpu_state(nv) != NV_OK)
+    {
+        return -ENODEV;
+    }
 
     rc = nv_kmem_cache_alloc_stack(&sp);
     if (rc != 0)
@@ -195,6 +213,15 @@ static u32 nv_i2c_algo_functionality(struct i2c_adapter *adapter)
     nv_state_t *nv = (nv_state_t *)adapter->algo_data;
     u32 ret = I2C_FUNC_I2C;
     nvidia_stack_t *sp = NULL;
+
+    /*
+     * Check if the GPU is in surprise removal (e.g., Thunderbolt unplug).
+     * If so, return 0 to indicate no functionality available.
+     */
+    if (nv_check_gpu_state(nv) != NV_OK)
+    {
+        return 0;
+    }
 
     if (nv_kmem_cache_alloc_stack(&sp) != 0)
     {
