@@ -2225,6 +2225,24 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_VM_OPS_ACCESS_SIZE_T_LEN" "" "types"
         ;;
 
+        atomic_unchecked_t)
+            #
+            # Determine if atomic_unchecked_t is available.
+            #
+            # atomic*_unchecked_t is a grsecurity-specific type extension.
+            #
+            CODE="
+            #include <linux/atomic.h>
+
+            static atomic_unchecked_t a;
+
+            int conftest_atomic_unchecked_t(void) {
+                return atomic_inc_return(&a);
+            }"
+
+            compile_check_conftest "$CODE" "NV_HAVE_ATOMIC_UNCHECKED_T" "" "types"
+        ;;
+
         is_export_symbol_present_*)
             export_symbol_present_conftest $(echo $1 | cut -f5- -d_)
         ;;
