@@ -2561,6 +2561,11 @@ static void LowerDispBandwidth(void *dataPtr, NvU32 dataU32)
     NvU32 head;
     NvBool ret;
 
+    /* Skip if GPU has been lost (e.g., Thunderbolt unplug) */
+    if (pDevEvo->gpuLost) {
+        return;
+    }
+
     guaranteedAndCurrent =
         nvCalloc(1, sizeof(*guaranteedAndCurrent) * NVKMS_MAX_HEADS_PER_DISP);
     if (guaranteedAndCurrent == NULL) {
@@ -2747,6 +2752,11 @@ TryToDoPostFlipIMP(void *dataPtr, NvU32 dataU32)
     NVDispEvoPtr pDispEvo;
 
     pDevEvo->postFlipIMPTimer = NULL;
+
+    /* Skip if GPU has been lost (e.g., Thunderbolt unplug) */
+    if (pDevEvo->gpuLost) {
+        return;
+    }
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
         NVEvoUpdateState updateState = { };

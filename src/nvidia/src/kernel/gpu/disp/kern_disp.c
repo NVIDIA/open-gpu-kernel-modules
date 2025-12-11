@@ -308,7 +308,7 @@ kdispDestroyCommonHandle_IMPL
     rmStatus = pRmApi->FreeWithSecInfo(pRmApi, pKernelDisplay->hInternalClient,
                                         pKernelDisplay->hDispCommonHandle,
                                         RMAPI_ALLOC_FLAGS_NONE, &pRmApi->defaultSecInfo);
-    NV_ASSERT(rmStatus == NV_OK);
+    NV_ASSERT((rmStatus == NV_OK) || (rmStatus == NV_ERR_GPU_IN_FULLCHIP_RESET) || (rmStatus == NV_ERR_GPU_IS_LOST));
 
     rmapiutilFreeClientAndDeviceHandles(pRmApi, &pKernelDisplay->hInternalClient,
                                         &pKernelDisplay->hInternalDevice,

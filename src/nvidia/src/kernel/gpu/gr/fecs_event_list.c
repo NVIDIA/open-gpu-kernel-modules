@@ -1620,8 +1620,8 @@ fecsBufferDisableHw
                              NV2080_CTRL_CMD_INTERNAL_GR_GET_FECS_TRACE_HW_ENABLE,
                              &getHwEnableParams,
                              sizeof(getHwEnableParams));
-    NV_ASSERT_OR_RETURN_VOID((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET));
-    if (status == NV_ERR_GPU_IN_FULLCHIP_RESET)
+    NV_ASSERT_OR_RETURN_VOID((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET) || (status == NV_ERR_GPU_IS_LOST));
+    if ((status == NV_ERR_GPU_IN_FULLCHIP_RESET) || (status == NV_ERR_GPU_IS_LOST))
         return;
  
     if (getHwEnableParams.bEnable)
@@ -1636,7 +1636,7 @@ fecsBufferDisableHw
                                  NV2080_CTRL_CMD_INTERNAL_GR_SET_FECS_TRACE_HW_ENABLE,
                                  &setHwEnableParams,
                                  sizeof(setHwEnableParams));
-        NV_ASSERT_OR_RETURN_VOID((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET));
+        NV_ASSERT_OR_RETURN_VOID((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET) || (status == NV_ERR_GPU_IS_LOST));
     }
 }
 

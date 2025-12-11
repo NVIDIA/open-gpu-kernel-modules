@@ -5180,6 +5180,17 @@ gpuSetDisconnectedProperties_IMPL
     OBJGPU *pGpu
 )
 {
+    //
+    // Log GPU disconnection once. This is expected during Thunderbolt eGPU
+    // hot-unplug but should be noted for debugging purposes.
+    //
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+    {
+        NV_PRINTF(LEVEL_NOTICE,
+                  "GPU 0x%x marked as disconnected/lost\n",
+                  pGpu->gpuInstance);
+    }
+
     pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_LOST, NV_TRUE);
     pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_CONNECTED, NV_FALSE);
     pGpu->setProperty(pGpu, PDB_PROP_GPU_IN_PM_CODEPATH, NV_FALSE);

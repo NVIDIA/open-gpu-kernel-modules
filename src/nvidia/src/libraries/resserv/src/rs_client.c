@@ -841,7 +841,7 @@ clientFreeResource_IMPL
     _refRemoveAllDependencies(pResourceRef);
 
     status = serverFreeResourceRpcUnderLock(pServer, pParams);
-    NV_ASSERT((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET));
+    NV_ASSERT((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET) || (status == NV_ERR_GPU_IS_LOST));
 
     // NV_PRINTF(LEVEL_INFO, "hClient %x: Freeing hResource: %x\n",
     //          pClient->hClient, pResourceRef->hResource);

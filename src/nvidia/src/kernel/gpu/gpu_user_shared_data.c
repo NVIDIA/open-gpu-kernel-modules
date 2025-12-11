@@ -242,12 +242,15 @@ _gpushareddataDestroyGsp
 
     params.bInit = NV_FALSE;
 
-    // Free Memdesc on GSP-side
-    NV_CHECK_OK(status, LEVEL_ERROR,
-                pRmApi->Control(pRmApi, pGpu->hInternalClient,
-                                pGpu->hInternalSubdevice,
-                                NV2080_CTRL_CMD_INTERNAL_INIT_USER_SHARED_DATA,
-                                &params, sizeof(params)));
+    // Free Memdesc on GSP-side - ignore GPU_IS_LOST during surprise removal
+    status = pRmApi->Control(pRmApi, pGpu->hInternalClient,
+                             pGpu->hInternalSubdevice,
+                             NV2080_CTRL_CMD_INTERNAL_INIT_USER_SHARED_DATA,
+                             &params, sizeof(params));
+    if ((status != NV_OK) && (status != NV_ERR_GPU_IS_LOST))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to free user shared data on GSP: 0x%x\n", status);
+    }
 }
 
 static NV_STATUS
@@ -460,9 +463,9 @@ _gpushareddataSendDataPollRpc
                              NV2080_CTRL_CMD_INTERNAL_USER_SHARED_DATA_SET_DATA_POLL,
                              &params, sizeof(params));
     NV_CHECK_OR_RETURN(LEVEL_ERROR,
-                      (status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET),
+                      (status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET) || (status == NV_ERR_GPU_IS_LOST),
                        status);
-    if (status == NV_ERR_GPU_IN_FULLCHIP_RESET)
+    if ((status == NV_ERR_GPU_IN_FULLCHIP_RESET) || (status == NV_ERR_GPU_IS_LOST))
         return status;
     pGpu->userSharedData.lastPolledDataMask = polledDataMask;
     pGpu->userSharedData.pollingIntervalMs = pollingIntervalMs;

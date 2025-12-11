@@ -31,6 +31,7 @@ void nv_init_rsync_info(
 )
 {
     g_rsync_info.relaxed_ordering_mode = NV_FALSE;
+    g_rsync_info.had_surprise_removal = NV_FALSE;
     g_rsync_info.usage_count = 0;
     g_rsync_info.data = NULL;
     NV_INIT_MUTEX(&g_rsync_info.lock);
@@ -40,9 +41,17 @@ void nv_destroy_rsync_info(
     void
 )
 {
-    WARN_ON(g_rsync_info.data);
-    WARN_ON(g_rsync_info.usage_count);
-    WARN_ON(g_rsync_info.relaxed_ordering_mode);
+    /*
+     * After GPU surprise removal (e.g., Thunderbolt eGPU hot-unplug),
+     * these may not have been properly cleaned up. Skip warnings in
+     * that case since the cleanup failure is expected.
+     */
+    if (!g_rsync_info.had_surprise_removal)
+    {
+        WARN_ON(g_rsync_info.data);
+        WARN_ON(g_rsync_info.usage_count);
+        WARN_ON(g_rsync_info.relaxed_ordering_mode);
+    }
 }
 
 int nv_get_rsync_info(
@@ -98,6 +107,18 @@ void nv_put_rsync_info(
     }
 
     up(&g_rsync_info.lock);
+}
+
+/*
+ * Mark that a GPU surprise removal occurred. This is used to suppress
+ * warnings about unclean rsync state during module unload, since the
+ * cleanup may be incomplete after forced removal.
+ */
+void nv_set_rsync_had_surprise_removal(
+    void
+)
+{
+    g_rsync_info.had_surprise_removal = NV_TRUE;
 }
 
 int nv_register_rsync_driver(

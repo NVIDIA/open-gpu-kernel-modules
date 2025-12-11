@@ -1386,6 +1386,23 @@ static NvBool AllocDevice(struct NvKmsPerOpen *pOpen,
 
     pDevEvo = nvFindDevEvoByDeviceId(pParams->request.deviceId);
 
+    /*
+     * If we found an existing device that was marked as lost (e.g., from a
+     * previous Thunderbolt surprise removal), we need to clean it up before
+     * allocating a new device for the reconnected GPU.
+     */
+    if (pDevEvo != NULL && pDevEvo->gpuLost) {
+        nvEvoLogDev(pDevEvo, EVO_LOG_INFO,
+                    "Cleaning up stale device from previous surprise removal");
+        /*
+         * Force cleanup of the stale device. Set allocRefCnt to 1 so that
+         * nvFreeDevEvo will actually free it.
+         */
+        pDevEvo->allocRefCnt = 1;
+        nvFreeDevEvo(pDevEvo);
+        pDevEvo = NULL;
+    }
+
     if (pDevEvo == NULL) {
         pDevEvo = nvAllocDevEvo(&pParams->request, &pParams->reply.status);
         if (pDevEvo == NULL) {
@@ -6249,6 +6266,44 @@ static void FreeGlobalState(void)
 }
 
 /*
+ * Reinitialize the global RM client after a GPU surprise removal.
+ * When a GPU is removed, the RM client handle may become invalid.
+ * This function re-creates the client handle so that newly attached
+ * GPUs can be used.
+ */
+void nvKmsReinitializeGlobalClient(void)
+{
+    NvU32 ret;
+
+    /*
+     * First, try to free the old client handle. This may fail if RM
+     * already invalidated it, but that's OK.
+     */
+    if (nvEvoGlobal.clientHandle != 0) {
+        nvRmApiFree(nvEvoGlobal.clientHandle, nvEvoGlobal.clientHandle,
+                    nvEvoGlobal.clientHandle);
+        nvEvoGlobal.clientHandle = 0;
+    }
+
+    /* Allocate a new root client */
+    ret = nvRmApiAlloc(NV01_NULL_OBJECT,
+                       NV01_NULL_OBJECT,
+                       NV01_NULL_OBJECT,
+                       NV01_ROOT,
+                       &nvEvoGlobal.clientHandle);
+
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvEvoLog(EVO_LOG_ERROR, "Failed to reinitialize client after GPU removal");
+        return;
+    }
+
+    /* Update the RM context */
+    nvEvoGlobal.rmSmgContext.clientHandle = nvEvoGlobal.clientHandle;
+
+    nvEvoLog(EVO_LOG_INFO, "Reinitialized global client after GPU surprise removal");
+}
+
+/*
  * Wrappers to help SMG access NvKmsKAPI's RM context.
  */
 static NvU32 EvoGlobalRMControl(nvRMContextPtr rmctx, NvU32 client, NvU32 object, NvU32 cmd, void *params, NvU32 paramsSize)
@@ -6342,6 +6397,11 @@ static void SendEvent(struct NvKmsPerOpen *pOpen,
 static void ConsoleRestoreTimerFired(void *dataPtr, NvU32 dataU32)
 {
     NVDevEvoPtr pDevEvo = dataPtr;
+
+    /* Skip if GPU has been lost (e.g., Thunderbolt unplug) */
+    if (pDevEvo->gpuLost) {
+        return;
+    }
 
     if (pDevEvo->modesetOwner == NULL && pDevEvo->handleConsoleHotplugs) {
         pDevEvo->skipConsoleRestore = FALSE;
@@ -6831,6 +6891,43 @@ void nvKmsResume(NvU32 gpuId)
                     pDevEvo->skipConsoleRestore = FALSE;
                     RestoreConsole(pDevEvo);
                 }
+            }
+        }
+    }
+}
+
+/*!
+ * Mark a GPU as lost (e.g., Thunderbolt/eGPU hot-unplug).
+ *
+ * This prevents any hardware access attempts that would cause kernel crashes.
+ * The device's timers are cancelled and the gpuLost flag is set so that
+ * subsequent operations bail out early.
+ */
+void nvKmsGpuLost(NvU32 gpuId)
+{
+    NVDevEvoPtr pDevEvo;
+    NvU32 i;
+
+    FOR_ALL_EVO_DEVS(pDevEvo) {
+        for (i = 0; i < ARRAY_LEN(pDevEvo->openedGpuIds); i++) {
+            if (pDevEvo->openedGpuIds[i] == gpuId) {
+                nvEvoLogDev(pDevEvo, EVO_LOG_INFO,
+                            "GPU lost (surprise removal), disabling hardware access");
+
+                /* Mark device as lost to prevent hardware access */
+                pDevEvo->gpuLost = TRUE;
+
+                /* Cancel timers that might try to access hardware */
+                nvkms_free_timer(pDevEvo->consoleRestoreTimer);
+                pDevEvo->consoleRestoreTimer = NULL;
+
+                nvkms_free_timer(pDevEvo->postFlipIMPTimer);
+                pDevEvo->postFlipIMPTimer = NULL;
+
+                nvkms_free_timer(pDevEvo->lowerDispBandwidthTimer);
+                pDevEvo->lowerDispBandwidthTimer = NULL;
+
+                return;
             }
         }
     }

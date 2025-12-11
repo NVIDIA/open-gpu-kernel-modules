@@ -356,18 +356,33 @@ osHandleGpuLost
     pmc_boot_0 = NV_PRIV_REG_RD32(nv->regs->map_u, NV_PMC_BOOT_0);
     if (pmc_boot_0 != nvp->pmc_boot_0)
     {
+        NvBool bIsExternalGpu = pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU);
+
         //
         // This doesn't support PEX Reset and Recovery yet.
         // This will help to prevent accessing registers of a GPU
         // which has fallen off the bus.
         //
-        nvErrorLog_va((void *)pGpu, ROBUST_CHANNEL_GPU_HAS_FALLEN_OFF_THE_BUS,
-                      "GPU has fallen off the bus.");
+        // For external GPUs (eGPUs), this is an expected condition during
+        // hot-unplug, so we keep logging minimal to avoid noise.
+        //
+        if (!bIsExternalGpu)
+        {
+            nvErrorLog_va((void *)pGpu, ROBUST_CHANNEL_GPU_HAS_FALLEN_OFF_THE_BUS,
+                          "GPU has fallen off the bus.");
+        }
 
         gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_GPU_UNAVAILABLE, NULL,
                                 0, ROBUST_CHANNEL_GPU_HAS_FALLEN_OFF_THE_BUS, 0);
 
-        NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "GPU has fallen off the bus.\n");
+        if (bIsExternalGpu)
+        {
+            NV_DEV_PRINTF(NV_DBG_WARNINGS, nv, "External GPU disconnected.\n");
+        }
+        else
+        {
+            NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "GPU has fallen off the bus.\n");
+        }
 
         if (pGpu->boardInfo != NULL && pGpu->boardInfo->serialNumber[0] != '\0')
         {
@@ -2479,13 +2494,28 @@ void RmShutdownAdapter(
                 if (nvp->flags & NV_INIT_FLAG_GPU_STATE_LOAD)
                 {
                     rmStatus = gpuStateUnload(pGpu, GPU_STATE_DEFAULT);
-                    NV_ASSERT(rmStatus == NV_OK);
+                    //
+                    // During surprise removal (e.g., Thunderbolt eGPU hot-unplug),
+                    // this may fail. Log but don't assert since we're tearing down anyway.
+                    //
+                    if (rmStatus != NV_OK)
+                    {
+                        NV_PRINTF(LEVEL_WARNING,
+                                  "gpuStateUnload failed during teardown: 0x%x\n", rmStatus);
+                    }
                 }
 
                 if (nvp->flags & NV_INIT_FLAG_GPU_STATE)
                 {
                     rmStatus = gpuStateDestroy(pGpu);
-                    NV_ASSERT(rmStatus == NV_OK);
+                    //
+                    // During surprise removal, this may fail. Log but don't assert.
+                    //
+                    if (rmStatus != NV_OK)
+                    {
+                        NV_PRINTF(LEVEL_WARNING,
+                                  "gpuStateDestroy failed during teardown: 0x%x\n", rmStatus);
+                    }
                 }
 
                 if (IS_DCE_CLIENT(pGpu))
@@ -2639,7 +2669,14 @@ void RmDisableAdapter(
             if (nvp->flags & NV_INIT_FLAG_GPU_STATE_LOAD)
             {
                 rmStatus = gpuStateUnload(pGpu, GPU_STATE_DEFAULT);
-                NV_ASSERT(rmStatus == NV_OK);
+                //
+                // During surprise removal, this may fail. Log but don't assert.
+                //
+                if (rmStatus != NV_OK)
+                {
+                    NV_PRINTF(LEVEL_WARNING,
+                              "gpuStateUnload failed during eGPU teardown: 0x%x\n", rmStatus);
+                }
                 nvp->flags &= ~NV_INIT_FLAG_GPU_STATE_LOAD;
             }
 

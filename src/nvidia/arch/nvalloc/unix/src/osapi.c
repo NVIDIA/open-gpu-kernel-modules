@@ -308,6 +308,17 @@ void
 RmLogGpuCrash(OBJGPU *pGpu)
 {
     NvBool bGpuIsLost, bGpuIsConnected;
+    NvBool bIsExternalGpu = pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU);
+
+    //
+    // For external GPUs (eGPUs) that have been disconnected, skip the crash
+    // dump entirely. The GPU is simply gone and attempting to save crash data
+    // will just produce noise in the logs.
+    //
+    if (bIsExternalGpu && pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+    {
+        return;
+    }
 
     //
     // Re-evaluate whether or not the GPU is accessible. This could be called
@@ -4277,7 +4288,30 @@ void NV_API_CALL rm_power_source_change_event(
         OBJGPU *pGpu = gpumgrGetGpu(0);
         if (pGpu != NULL)
         {
+            //
+            // Check if the GPU is lost or inaccessible before proceeding.
+            // This can happen during hot-unplug (e.g., Thunderbolt eGPU removal)
+            // where ACPI events may still be delivered after the GPU is gone.
+            //
+            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST) ||
+                !pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_CONNECTED))
+            {
+                rmapiLockRelease();
+                goto done;
+            }
+
             nv = NV_GET_NV_STATE(pGpu);
+
+            //
+            // For external GPUs (Thunderbolt eGPU), check if we're in surprise
+            // removal before proceeding with power state changes.
+            //
+            if (nv->flags & NV_FLAG_IN_SURPRISE_REMOVAL)
+            {
+                rmapiLockRelease();
+                goto done;
+            }
+
             if ((rmStatus = os_ref_dynamic_power(nv, NV_DYNAMIC_PM_FINE)) ==
                                                                          NV_OK)
             {
@@ -4297,6 +4331,7 @@ void NV_API_CALL rm_power_source_change_event(
         }
     }
 
+done:
     if (rmStatus != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -5858,7 +5893,30 @@ void NV_API_CALL rm_acpi_nvpcf_notify(
         OBJGPU *pGpu = gpumgrGetGpu(0);
         if (pGpu != NULL)
         {
+            //
+            // Check if the GPU is lost or inaccessible before proceeding.
+            // This can happen during hot-unplug (e.g., Thunderbolt eGPU removal)
+            // where ACPI events may still be delivered after the GPU is gone.
+            //
+            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST) ||
+                !pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_CONNECTED))
+            {
+                rmapiLockRelease();
+                goto done_nvpcf;
+            }
+
             nv_state_t *nv = NV_GET_NV_STATE(pGpu);
+
+            //
+            // For external GPUs (Thunderbolt eGPU), check if we're in surprise
+            // removal before proceeding with power state changes.
+            //
+            if (nv->flags & NV_FLAG_IN_SURPRISE_REMOVAL)
+            {
+                rmapiLockRelease();
+                goto done_nvpcf;
+            }
+
             if ((rmStatus = os_ref_dynamic_power(nv, NV_DYNAMIC_PM_FINE)) ==
                                                                          NV_OK)
             {
@@ -5870,6 +5928,7 @@ void NV_API_CALL rm_acpi_nvpcf_notify(
         rmapiLockRelease();
     }
 
+done_nvpcf:
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
 }

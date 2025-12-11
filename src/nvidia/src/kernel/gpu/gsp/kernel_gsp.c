@@ -149,6 +149,8 @@ static NV_STATUS _kgspRpcRecvPoll(OBJGPU *, OBJRPC *, NvU32, NvU32);
 static NV_STATUS _kgspRpcDrainEvents(OBJGPU *, KernelGsp *, NvU32, NvU32, KernelGspRpcEventHandlerContext);
 static void      _kgspRpcIncrementTimeoutCountAndRateLimitPrints(OBJGPU *, OBJRPC *);
 
+static NvBool _kgspIsExternalGpuSurpriseRemoval(OBJGPU *);
+
 static NV_STATUS _kgspAllocSimAccessBuffer(OBJGPU *pGpu, KernelGsp *pKernelGsp);
 static void _kgspFreeSimAccessBuffer(OBJGPU *pGpu, KernelGsp *pKernelGsp);
 
@@ -306,11 +308,13 @@ _kgspRpcSanityCheck(OBJGPU *pGpu, KernelGsp *pKernelGsp, OBJRPC *pRpc)
         pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
     {
         NV_PRINTF(LEVEL_INFO, "GPU lost, skipping RPC\n");
+        pRpc->bQuietPrints = NV_TRUE;
         return NV_ERR_GPU_IS_LOST;
     }
     if (osIsGpuShutdown(pGpu))
     {
         NV_PRINTF(LEVEL_INFO, "GPU shutdown, skipping RPC\n");
+        pRpc->bQuietPrints = NV_TRUE;
         return NV_ERR_GPU_IS_LOST;
     }
     if (!gpuIsGpuFullPowerForPmResume(pGpu))
@@ -2029,6 +2033,20 @@ kgspLogRpcDebugInfoToProtobuf
     prbEncNestedEnd(pProtobufData);
 }
 
+/*!
+ * Check if this is an expected external GPU surprise removal.
+ * Used to suppress noisy debug output during normal eGPU hot-unplug.
+ */
+static NvBool
+_kgspIsExternalGpuSurpriseRemoval
+(
+    OBJGPU *pGpu
+)
+{
+    return pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU) &&
+           pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST);
+}
+
 void
 kgspLogRpcDebugInfo
 (
@@ -2043,6 +2061,15 @@ kgspLogRpcDebugInfo
     NvU32  historyEntry;
     NvU64  activeData[2];
     const NvU32 rpcEntriesToLog = (RPC_HISTORY_DEPTH > 8) ? 8 : RPC_HISTORY_DEPTH;
+
+    //
+    // Suppress detailed RPC debug output for expected external GPU surprise removal.
+    // This keeps the log clean during normal Thunderbolt eGPU hot-unplug.
+    //
+    if (_kgspIsExternalGpuSurpriseRemoval(pGpu))
+    {
+        return;
+    }
 
     _kgspGetActiveRpcDebugData(pRpc, pMsgHdr->function,
                                &activeData[0], &activeData[1]);
@@ -2096,6 +2123,15 @@ _kgspCheckSlowRpc
 
     NV_ASSERT_OR_RETURN_VOID(tsFreqUs > 0);
 
+    //
+    // Suppress slow RPC warnings for expected external GPU surprise removal.
+    // During normal Thunderbolt eGPU hot-unplug, slow/stalled RPCs are expected.
+    //
+    if (_kgspIsExternalGpuSurpriseRemoval(pGpu))
+    {
+        return;
+    }
+
     duration = (pHistoryEntry->ts_end - pHistoryEntry->ts_start) / tsFreqUs;
 
     if (duration > SLOW_RPC_THRESHOLD_US)
@@ -2145,7 +2181,15 @@ _kgspLogXid119
     KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
     KernelFalcon *pKernelFlcn = staticCast(pKernelGsp, KernelFalcon);
 
-    if (pRpc->timeoutCount == 1)
+    //
+    // Suppress Xid 119 logging for expected external GPU surprise removal.
+    // During normal Thunderbolt eGPU hot-unplug, RPC timeouts are expected.
+    //
+    if (_kgspIsExternalGpuSurpriseRemoval(pGpu))
+    {
+        return;
+    }
+
     {
         NV_PRINTF(LEVEL_ERROR,
                   "********************************* GSP Timeout **********************************\n");

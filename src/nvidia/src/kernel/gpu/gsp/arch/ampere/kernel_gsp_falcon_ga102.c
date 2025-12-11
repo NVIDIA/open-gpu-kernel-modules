@@ -179,6 +179,10 @@ kgspExecuteHsFalcon_GA102
     NvU32 data = 0;
     NvU32 dmaCmd;
 
+    // Check for surprise removal (e.g., Thunderbolt eGPU hot-unplug)
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+        return NV_ERR_GPU_IS_LOST;
+
     NV_ASSERT_OR_RETURN(pFlcnUcode != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(pKernelFlcn != NULL, NV_ERR_INVALID_STATE);
 

@@ -1208,6 +1208,27 @@ void nvkms_close_gpu(NvU32 gpuId)
     __rm_ops.free_stack(stack);
 }
 
+void nvkms_gpu_lost(NvU32 gpuId)
+{
+    /*
+     * Mark the GPU as lost in NVKMS. This prevents hardware access
+     * and cancels pending timers that might try to access the removed GPU.
+     *
+     * NOTE: We intentionally do NOT take nvkms_lock here because this function
+     * may be called from contexts that already hold the lock (e.g., during
+     * module unload). The gpuLost flag is a simple boolean that can be safely
+     * written without a lock - any racing operation will either:
+     * 1. See gpuLost=TRUE and bail out early
+     * 2. See gpuLost=FALSE but hit the 0xFFFFFFFF check when reading hardware
+     *
+     * A memory barrier ensures the write is visible to other CPUs promptly.
+     */
+    nvKmsGpuLost(gpuId);
+
+    /* Ensure gpuLost write is visible to other CPUs */
+    smp_wmb();
+}
+
 NvU32 nvkms_enumerate_gpus(nv_gpu_info_t *gpu_info)
 {
     return __rm_ops.enumerate_gpus(gpu_info);

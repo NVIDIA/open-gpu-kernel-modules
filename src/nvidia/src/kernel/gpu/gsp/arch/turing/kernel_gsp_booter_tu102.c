@@ -145,6 +145,10 @@ kgspExecuteBooterUnloadIfNeeded_TU102
     if (API_GPU_IN_RESET_SANITY_CHECK(pGpu))
         return NV_ERR_GPU_IN_FULLCHIP_RESET;
 
+    // Check for surprise removal (e.g., Thunderbolt eGPU hot-unplug)
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+        return NV_ERR_GPU_IS_LOST;
+
     // skip actually executing Booter Unload if WPR2 is not up
     if (!kgspIsWpr2Up_HAL(pGpu, pKernelGsp))
     {
@@ -155,7 +159,16 @@ kgspExecuteBooterUnloadIfNeeded_TU102
     NV_PRINTF(LEVEL_INFO, "executing Booter Unload\n");
     NV_ASSERT_OR_RETURN(pKernelGsp->pBooterUnloadUcode != NULL, NV_ERR_INVALID_STATE);
 
-    NV_ASSERT_OK(kflcnReset_HAL(pGpu, staticCast(pKernelSec2, KernelFalcon)));
+    // Falcon reset may timeout during surprise removal - don't assert
+    status = kflcnReset_HAL(pGpu, staticCast(pKernelSec2, KernelFalcon));
+    if ((status != NV_OK) && (status != NV_ERR_TIMEOUT) && (status != NV_ERR_GPU_IS_LOST))
+    {
+        NV_ASSERT(0);
+    }
+    if (status != NV_OK)
+    {
+        return status;
+    }
 
     // SR code
     if (sysmemAddrOfSuspendResumeData != 0)

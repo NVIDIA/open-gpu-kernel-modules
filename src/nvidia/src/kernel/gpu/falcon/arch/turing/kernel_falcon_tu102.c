@@ -184,8 +184,13 @@ kflcnReset_TU102
     NV_ASSERT_OK_OR_RETURN(kflcnPreResetWait_HAL(pGpu, pKernelFlcn));
     NV_ASSERT_OK(kflcnResetHw(pGpu, pKernelFlcn));
     status = kflcnWaitForResetToFinish_HAL(pGpu, pKernelFlcn);
-    NV_ASSERT_OR_RETURN((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET), status);
-    if (status == NV_ERR_GPU_IN_FULLCHIP_RESET)
+    //
+    // During surprise removal, this may return NV_ERR_TIMEOUT in addition to
+    // NV_ERR_GPU_IS_LOST. Both are acceptable during teardown.
+    //
+    NV_ASSERT_OR_RETURN((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET) ||
+                        (status == NV_ERR_GPU_IS_LOST) || (status == NV_ERR_TIMEOUT), status);
+    if (status != NV_OK)
         return status;
     kflcnSwitchToFalcon_HAL(pGpu, pKernelFlcn);
     kflcnRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_RM,

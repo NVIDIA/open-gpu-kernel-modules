@@ -120,6 +120,18 @@ intrServiceStall_IMPL(OBJGPU *pGpu, Intr *pIntr)
     if (!RMCFG_FEATURE_PLATFORM_GSP)
     {
         //
+        // Check if GPU is already known to be lost/detached before doing any
+        // register reads. This prevents log spam during surprise removal
+        // (e.g., Thunderbolt eGPU hot-unplug).
+        //
+        if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu) ||
+            API_GPU_IN_RESET_SANITY_CHECK(pGpu) ||
+            pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+        {
+            goto exit;
+        }
+
+        //
         // If the GPU is off the BUS or surprise removed during servicing DPC for ISRs
         // we wont know about GPU state until after we start processing DPCs for every
         // pending engine. This is because, the reg read to determine pending engines
@@ -134,18 +146,17 @@ intrServiceStall_IMPL(OBJGPU *pGpu, Intr *pIntr)
 
         if (regReadValue == GPU_REG_VALUE_INVALID)
         {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Failed GPU reg read : 0x%x. Check whether GPU is present on the bus\n",
-                      regReadValue);
-        }
-
-        if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu))
-        {
-            goto exit;
-        }
-
-        if (API_GPU_IN_RESET_SANITY_CHECK(pGpu))
-        {
+            //
+            // GPU has been surprise removed. Mark it as lost and return early.
+            // Log once when first detected.
+            //
+            if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+            {
+                NV_PRINTF(LEVEL_WARNING,
+                          "GPU 0x%x surprise removed (reg read returned 0xFFFFFFFF)\n",
+                          pGpu->gpuInstance);
+                pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_LOST, NV_TRUE);
+            }
             goto exit;
         }
     }
@@ -1556,6 +1567,18 @@ _intrServiceStallCommonCheckBegin
     if (!RMCFG_FEATURE_PLATFORM_GSP)
     {
         //
+        // Check if GPU is already known to be lost/detached before doing any
+        // register reads. This prevents log spam during surprise removal
+        // (e.g., Thunderbolt eGPU hot-unplug).
+        //
+        if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu) ||
+            API_GPU_IN_RESET_SANITY_CHECK(pGpu) ||
+            pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+        {
+            return NV_ERR_GPU_IS_LOST;
+        }
+
+        //
         // If the GPU is off the BUS or surprise removed during servicing DPC for ISRs
         // we wont know about GPU state until after we start processing DPCs for every
         // pending engine. This is because, the reg read to determine pending engines
@@ -1570,14 +1593,17 @@ _intrServiceStallCommonCheckBegin
 
         if (regReadValue == GPU_REG_VALUE_INVALID)
         {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Failed GPU reg read : 0x%x. Check whether GPU is present on the bus\n",
-                      regReadValue);
-        }
-
-        // Dont service interrupts if GPU is surprise removed
-        if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu) || API_GPU_IN_RESET_SANITY_CHECK(pGpu))
-        {
+            //
+            // GPU has been surprise removed. Mark it as lost and return early.
+            // Log once when first detected.
+            //
+            if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+            {
+                NV_PRINTF(LEVEL_WARNING,
+                          "GPU 0x%x surprise removed (reg read returned 0xFFFFFFFF)\n",
+                          pGpu->gpuInstance);
+                pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_LOST, NV_TRUE);
+            }
             return NV_ERR_GPU_IS_LOST;
         }
     }
@@ -1635,7 +1661,16 @@ intrServiceStallList_IMPL
     NvBool              bPending;
     CALL_CONTEXT       *pOldContext = NULL;
 
-    NV_ASSERT_OK_OR_ELSE(status, _intrServiceStallCommonCheckBegin(pGpu, pIntr, &pOldContext), return);
+    //
+    // Don't use NV_ASSERT_OK_OR_ELSE here - NV_ERR_GPU_IS_LOST is expected
+    // during surprise removal (e.g., Thunderbolt eGPU hot-unplug) and
+    // should not spam the logs with assertion messages.
+    //
+    status = _intrServiceStallCommonCheckBegin(pGpu, pIntr, &pOldContext);
+    if (status != NV_OK)
+    {
+        return;
+    }
 
     do
     {
@@ -1688,7 +1723,16 @@ intrServiceStallSingle_IMPL
     bitVectorClrAll(&engines);
     bitVectorSet(&engines, engIdx);
 
-    NV_ASSERT_OK_OR_ELSE(status, _intrServiceStallCommonCheckBegin(pGpu, pIntr, &pOldContext), return);
+    //
+    // Don't use NV_ASSERT_OK_OR_ELSE here - NV_ERR_GPU_IS_LOST is expected
+    // during surprise removal (e.g., Thunderbolt eGPU hot-unplug) and
+    // should not spam the logs with assertion messages.
+    //
+    status = _intrServiceStallCommonCheckBegin(pGpu, pIntr, &pOldContext);
+    if (status != NV_OK)
+    {
+        return;
+    }
 
     do
     {

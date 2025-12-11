@@ -2191,14 +2191,49 @@ nvidia_close_callback(
 static void nvidia_close_deferred(void *data)
 {
     nv_linux_file_private_t *nvlfp = data;
+    nv_linux_state_t *nvl = nvlfp->nvptr;
+    nv_state_t *nv = nvl ? NV_STATE_PTR(nvl) : NULL;
+    NvBool got_lock = NV_FALSE;
+    NvBool in_surprise_removal = NV_FALSE;
 
     nv_wait_open_complete(nvlfp);
 
-    down_read(&nv_system_pm_lock);
+    /*
+     * Check if we're in surprise removal before trying to acquire the lock.
+     * If the device is being removed (e.g., Thunderbolt unplug), we should
+     * not block on the PM lock as it may be held by the removal path.
+     */
+    if (nv != NULL)
+    {
+        in_surprise_removal = NV_IS_DEVICE_IN_SURPRISE_REMOVAL(nv);
+    }
+
+    if (in_surprise_removal)
+    {
+        /*
+         * For surprise removal, try to acquire the lock but don't block.
+         * If we can't get it, proceed without it - cleanup will be minimal
+         * anyway since the hardware is gone.
+         */
+        got_lock = down_read_trylock(&nv_system_pm_lock);
+        if (!got_lock)
+        {
+            nv_printf(NV_DBG_INFO,
+                      "NVRM: Surprise removal - proceeding with close without PM lock\n");
+        }
+    }
+    else
+    {
+        down_read(&nv_system_pm_lock);
+        got_lock = NV_TRUE;
+    }
 
     nvidia_close_callback(nvlfp);
 
-    up_read(&nv_system_pm_lock);
+    if (got_lock)
+    {
+        up_read(&nv_system_pm_lock);
+    }
 }
 
 int
@@ -2209,6 +2244,9 @@ nvidia_close(
 {
     int rc;
     nv_linux_file_private_t *nvlfp = NV_GET_LINUX_FILE_PRIVATE(file);
+    nv_linux_state_t *nvl;
+    nv_state_t *nv;
+    NvBool in_surprise_removal = NV_FALSE;
 
     nv_printf(NV_DBG_INFO,
               "NVRM: nvidia_close on GPU with minor number %d\n",
@@ -2221,10 +2259,44 @@ nvidia_close(
 
     NV_SET_FILE_PRIVATE(file, NULL);
 
+    /*
+     * Check if the device is in surprise removal (e.g., Thunderbolt unplug).
+     * If so, we should not block waiting for the PM lock as it may be held
+     * by the removal path, causing a deadlock.
+     */
+    nvl = nvlfp->nvptr;
+    if (nvl != NULL)
+    {
+        nv = NV_STATE_PTR(nvl);
+        in_surprise_removal = NV_IS_DEVICE_IN_SURPRISE_REMOVAL(nv);
+    }
+
     rc = nv_wait_open_complete_interruptible(nvlfp);
     if (rc == 0)
     {
-        rc = nv_down_read_interruptible(&nv_system_pm_lock);
+        if (in_surprise_removal)
+        {
+            /*
+             * For surprise removal, try to acquire the lock but don't block.
+             * If we can't get it, defer the close to a worker thread that
+             * will handle it properly.
+             */
+            if (down_read_trylock(&nv_system_pm_lock))
+            {
+                nvidia_close_callback(nvlfp);
+                up_read(&nv_system_pm_lock);
+                return 0;
+            }
+            /*
+             * Couldn't get the lock - fall through to defer the close.
+             * Set rc to indicate we need to defer.
+             */
+            rc = -EAGAIN;
+        }
+        else
+        {
+            rc = nv_down_read_interruptible(&nv_system_pm_lock);
+        }
     }
 
     if (rc == 0)
@@ -5202,15 +5274,25 @@ int nvidia_dev_get(NvU32 gpu_id, nvidia_stack_t *sp)
 void nvidia_dev_put(NvU32 gpu_id, nvidia_stack_t *sp)
 {
     nv_linux_state_t *nvl;
+    nv_state_t *nv;
+    NV_STATUS status;
 
     /* Takes nvl->ldata_lock */
     nvl = find_gpu_id(gpu_id);
     if (!nvl)
         return;
 
-    nv_close_device(NV_STATE_PTR(nvl), sp);
+    nv = NV_STATE_PTR(nvl);
 
-    WARN_ON(rm_set_external_kernel_client_count(sp, NV_STATE_PTR(nvl), NV_FALSE) != NV_OK);
+    nv_close_device(nv, sp);
+
+    /*
+     * During surprise removal (e.g., Thunderbolt eGPU hot-unplug),
+     * this may fail because the GPU is already gone. Don't warn in
+     * that case - it's expected.
+     */
+    status = rm_set_external_kernel_client_count(sp, nv, NV_FALSE);
+    WARN_ON((status != NV_OK) && !NV_IS_DEVICE_IN_SURPRISE_REMOVAL(nv));
 
     up(&nvl->ldata_lock);
 }

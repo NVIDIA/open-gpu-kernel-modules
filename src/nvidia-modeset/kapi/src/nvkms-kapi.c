@@ -635,6 +635,51 @@ static void FreeDevice(struct NvKmsKapiDevice *device)
     nvKmsKapiFree(device);
 }
 
+/*
+ * FreeDeviceForSurpriseRemoval - Free device without hardware access.
+ *
+ * This is used for Thunderbolt eGPU hot-unplug or other surprise removal
+ * scenarios where the GPU hardware is no longer accessible. We skip all
+ * hardware operations (NVKMS ioctls, RM API calls) that would cause page
+ * faults or hangs when trying to access unmapped GPU memory.
+ *
+ * We only:
+ * 1. Release the GPU reference count (nvkms_close_gpu)
+ * 2. Free kernel memory resources (semaphore, device struct)
+ *
+ * The hardware resources will be cleaned up when the GPU is physically
+ * removed from the system.
+ */
+static void FreeDeviceForSurpriseRemoval(struct NvKmsKapiDevice *device)
+{
+    if (device == NULL) {
+        return;
+    }
+
+    /*
+     * Mark the GPU as lost in NVKMS. This sets the gpuLost flag to prevent
+     * any hardware access, and cancels pending timers that might try to
+     * access the removed GPU.
+     */
+    nvkms_gpu_lost(device->gpuId);
+
+    /*
+     * Skip KmsFreeDevice() and RmFreeDevice() - these try to access
+     * GPU hardware via ioctls and RM API calls, which will crash
+     * since the GPU memory is unmapped after surprise removal.
+     */
+
+    /* Lower the reference count of gpu - this is safe, no hardware access */
+    nvkms_close_gpu(device->gpuId);
+
+    /* Free kernel memory resources */
+    if (device->pSema != NULL) {
+        nvkms_sema_free(device->pSema);
+    }
+
+    nvKmsKapiFree(device);
+}
+
 NvBool nvKmsKapiAllocateSystemMemory(struct NvKmsKapiDevice *device,
                                      NvU32 hRmHandle,
                                      enum NvKmsSurfaceMemoryLayout layout,
@@ -4013,6 +4058,7 @@ NvBool nvKmsKapiGetFunctionsTableInternal
 
     funcsTable->allocateDevice = AllocateDevice;
     funcsTable->freeDevice     = FreeDevice;
+    funcsTable->freeDeviceForSurpriseRemoval = FreeDeviceForSurpriseRemoval;
 
     funcsTable->grabOwnership    = GrabOwnership;
     funcsTable->releaseOwnership = ReleaseOwnership;

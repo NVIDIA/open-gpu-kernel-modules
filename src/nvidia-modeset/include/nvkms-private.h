@@ -73,6 +73,8 @@ const NVEvoApiHandlesRec *nvGetSurfaceHandlesFromOpenDevConst(
 
 void nvKmsServiceNonStallInterrupt(void *dataPtr, NvU32 dataU32);
 
+void nvKmsReinitializeGlobalClient(void);
+
 #ifdef __cplusplus
 };
 #endif

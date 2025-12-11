@@ -852,6 +852,43 @@ static void nv_drm_dev_unload(struct drm_device *dev)
         return;
     }
 
+    /*
+     * During surprise removal (e.g., Thunderbolt eGPU hot-unplug),
+     * the GPU hardware is no longer accessible. Skip NVKMS calls that
+     * would access hardware to prevent page faults and crashes.
+     * Use freeDeviceForSurpriseRemoval which only releases kernel resources
+     * without attempting any hardware access.
+     */
+    if (nv_dev->inSurpriseRemoval) {
+        NV_DRM_DEV_LOG_INFO(nv_dev,
+            "Surprise removal detected, skipping hardware access");
+
+        cancel_delayed_work_sync(&nv_dev->hotplug_event_work);
+        mutex_lock(&nv_dev->lock);
+
+        atomic_set(&nv_dev->enable_event_handling, false);
+        drm_kms_helper_poll_fini(dev);
+        drm_mode_config_cleanup(dev);
+
+        pDevice = nv_dev->pDevice;
+        nv_dev->pDevice = NULL;
+
+        mutex_unlock(&nv_dev->lock);
+
+        /*
+         * Use freeDeviceForSurpriseRemoval instead of freeDevice.
+         * This skips KmsFreeDevice() and RmFreeDevice() which would try
+         * to access GPU hardware via ioctls/RM API calls and cause
+         * page faults since the GPU memory is unmapped.
+         * It only calls nvkms_close_gpu() to release the GPU reference
+         * count, allowing the eGPU to be re-initialized when reconnected.
+         */
+        if (pDevice != NULL) {
+            nvKms->freeDeviceForSurpriseRemoval(pDevice);
+        }
+        return;
+    }
+
     /* Release modeset ownership if fbdev is enabled */
 
 #if defined(NV_DRM_FBDEV_AVAILABLE)
@@ -2168,6 +2205,28 @@ static void nv_drm_dev_destroy(struct nv_drm_device *nv_dev)
 }
 
 /*
+ * Helper to get PCI device from DRM device, handling both old and new kernels.
+ * Returns NULL if not a PCI device or device not available.
+ */
+static struct pci_dev *nv_drm_get_pci_dev(struct drm_device *dev)
+{
+    if (dev == NULL) {
+        return NULL;
+    }
+
+#if defined(NV_DRM_DEVICE_HAS_PDEV)
+    return dev->pdev;
+#else
+    /* On newer kernels (5.14+), drm_device.pdev was removed.
+     * Get PCI device from the parent device. */
+    if (dev->dev != NULL && dev->dev->bus == &pci_bus_type) {
+        return to_pci_dev(dev->dev);
+    }
+    return NULL;
+#endif
+}
+
+/*
  * Unregister a single NVIDIA DRM device.
  */
 void nv_drm_remove(NvU32 gpuId)
@@ -2175,7 +2234,26 @@ void nv_drm_remove(NvU32 gpuId)
     struct nv_drm_device *nv_dev = nv_drm_find_and_remove_device(gpuId);
 
     if (nv_dev) {
+        struct pci_dev *pdev;
+
         NV_DRM_DEV_LOG_INFO(nv_dev, "Removing device");
+
+        /*
+         * Check if this is a surprise removal (hot-unplug) by testing
+         * if the PCI channel is offline. This happens when:
+         * - Thunderbolt eGPU is physically disconnected
+         * - GPU falls off the bus unexpectedly
+         * 
+         * For normal driver unload (rmmod), the PCI channel remains online.
+         * We only skip NVKMS hardware access during surprise removal.
+         */
+        pdev = nv_drm_get_pci_dev(nv_dev->dev);
+        if (pdev != NULL && pci_channel_offline(pdev)) {
+            NV_DRM_DEV_LOG_INFO(nv_dev,
+                "PCI channel offline - surprise removal detected");
+            nv_dev->inSurpriseRemoval = NV_TRUE;
+        }
+
         drm_dev_unplug(nv_dev->dev);
         nv_drm_dev_destroy(nv_dev);
     }

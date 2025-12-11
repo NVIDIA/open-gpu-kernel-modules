@@ -1872,6 +1872,16 @@ static NV_STATUS _issueRpcAndWait(OBJGPU *pGpu, OBJRPC *pRpc)
     NvU32 expectedFunc = vgpu_rpc_message_header_v->function;
     NvU32 expectedSequence = 0;
 
+    //
+    // Suppress RPC error logging for expected external GPU surprise removal.
+    // During normal Thunderbolt eGPU hot-unplug, RPC failures are expected.
+    //
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU) &&
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+    {
+        pRpc->bQuietPrints = NV_TRUE;
+    }
+
     status = rpcSendMessage(pGpu, pRpc, &expectedSequence);
     if (status != NV_OK)
     {
