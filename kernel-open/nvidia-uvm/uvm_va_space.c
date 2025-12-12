@@ -32,6 +32,7 @@
 #include "uvm_tools.h"
 #include "uvm_thread_context.h"
 #include "uvm_hal.h"
+#include "uvm_gpu_isr.h"
 #include "uvm_map_external.h"
 #include "uvm_ats.h"
 #include "uvm_gpu_access_counters.h"
@@ -1436,6 +1437,13 @@ void uvm_gpu_va_space_unset_page_dir(uvm_gpu_va_space_t *gpu_va_space)
     if (gpu_va_space->did_set_page_directory) {
         NV_STATUS status;
 
+        // Skip RM call if GPU has been surprise removed. Calling RM with stale
+        // handles will result in NV_ERR_INVALID_OBJECT_HANDLE errors.
+        if (!uvm_parent_gpu_is_accessible(gpu_va_space->gpu->parent)) {
+            gpu_va_space->did_set_page_directory = false;
+            return;
+        }
+
         status = uvm_rm_locked_call(nvUvmInterfaceUnsetPageDirectory(gpu_va_space->duped_gpu_va_space));
         UVM_ASSERT_MSG(status == NV_OK,
                        "nvUvmInterfaceUnsetPageDirectory() failed: %s, GPU %s\n",
@@ -1487,7 +1495,9 @@ static void destroy_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space)
     if (gpu_va_space->page_tables.root)
         uvm_page_tree_deinit(&gpu_va_space->page_tables);
 
-    if (gpu_va_space->duped_gpu_va_space)
+    // Skip RM call if GPU has been surprise removed. Calling RM with stale
+    // handles will result in NV_ERR_INVALID_OBJECT_HANDLE errors.
+    if (gpu_va_space->duped_gpu_va_space && uvm_parent_gpu_is_accessible(gpu_va_space->gpu->parent))
         uvm_rm_locked_call_void(nvUvmInterfaceAddressSpaceDestroy(gpu_va_space->duped_gpu_va_space));
 
     // If the state is DEAD, then this GPU VA space is tracked in

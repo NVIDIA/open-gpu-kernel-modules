@@ -23,6 +23,7 @@
 
 #include "uvm_rm_mem.h"
 #include "uvm_gpu.h"
+#include "uvm_gpu_isr.h"
 #include "uvm_global.h"
 #include "uvm_kvmalloc.h"
 #include "uvm_linux.h"
@@ -298,8 +299,11 @@ void uvm_rm_mem_unmap_cpu(uvm_rm_mem_t *rm_mem)
     if (!uvm_rm_mem_mapped_on_cpu(rm_mem))
         return;
 
-    uvm_rm_locked_call_void(nvUvmInterfaceMemoryCpuUnMap(rm_mem->gpu_owner->rm_address_space,
-                                                         uvm_rm_mem_get_cpu_va(rm_mem)));
+    // Skip RM call if GPU has been surprise removed. Calling RM with stale
+    // handles will result in NV_ERR_INVALID_OBJECT_HANDLE errors.
+    if (uvm_parent_gpu_is_accessible(rm_mem->gpu_owner->parent))
+        uvm_rm_locked_call_void(nvUvmInterfaceMemoryCpuUnMap(rm_mem->gpu_owner->rm_address_space,
+                                                             uvm_rm_mem_get_cpu_va(rm_mem)));
 
     rm_mem_clear_cpu_va(rm_mem);
 }
@@ -355,7 +359,12 @@ static void rm_mem_unmap_gpu(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu)
     rm_mem_unmap_gpu_proxy(rm_mem, gpu);
 
     va = uvm_rm_mem_get_gpu_uvm_va(rm_mem, gpu);
-    uvm_rm_locked_call_void(nvUvmInterfaceMemoryFree(gpu->rm_address_space, va));
+
+    // Skip RM call if GPU has been surprise removed. Calling RM with stale
+    // handles will result in NV_ERR_INVALID_OBJECT_HANDLE errors.
+    if (uvm_parent_gpu_is_accessible(gpu->parent))
+        uvm_rm_locked_call_void(nvUvmInterfaceMemoryFree(gpu->rm_address_space, va));
+
     rm_mem_clear_gpu_va(rm_mem, gpu);
 }
 
