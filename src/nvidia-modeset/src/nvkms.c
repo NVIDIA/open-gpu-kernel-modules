@@ -1632,12 +1632,20 @@ static void DisableRemainingVblankSemControls(
 static void FreeDeviceReference(struct NvKmsPerOpen *pOpen,
                                 struct NvKmsPerOpenDev *pOpenDev)
 {
+    NVDevEvoPtr pDevEvo = pOpenDev->pDevEvo;
+
     /*
      * If pDevEvo is NULL, the device was already freed due to GPU loss
      * (surprise removal). In this case, skip all hardware-related cleanup
      * and just free the software structures.
+     *
+     * Also check if the device is marked as gpuLost - this can happen if
+     * nvInvalidateDeviceReferences hasn't been called yet (e.g., during
+     * concurrent cleanup) or if there's a race between GPU loss detection
+     * and this close path.
      */
-    if (pOpenDev->pDevEvo == NULL) {
+    if (pDevEvo == NULL || pDevEvo->gpuLost) {
+        pOpenDev->pDevEvo = NULL;
         nvFreePerOpenDev(pOpen, pOpenDev);
         return;
     }
