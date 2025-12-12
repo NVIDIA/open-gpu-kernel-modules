@@ -37,6 +37,8 @@ void nvRevokeDevice(NVDevEvoPtr pDevEvo);
 
 void nvInvalidateDeviceReferences(NVDevEvoPtr pDevEvo);
 
+NvBool nvReinitializeGlobalClientAfterGpuLost(void);
+
 void nvFreePerOpenDev(struct NvKmsPerOpen *pOpen,
                       struct NvKmsPerOpenDev *pOpenDev);
 

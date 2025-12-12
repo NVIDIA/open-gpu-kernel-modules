@@ -1401,6 +1401,17 @@ static NvBool AllocDevice(struct NvKmsPerOpen *pOpen,
         pDevEvo->allocRefCnt = 1;
         nvFreeDevEvo(pDevEvo);
         pDevEvo = NULL;
+
+        /*
+         * After cleaning up a gpuLost device, reinitialize the global RM
+         * client handle. RM may have invalidated internal state when the
+         * GPU was lost, causing subsequent API calls to fail with
+         * NV_ERR_INVALID_OBJECT_HANDLE.
+         */
+        if (!nvReinitializeGlobalClientAfterGpuLost()) {
+            pParams->reply.status = NVKMS_ALLOC_DEVICE_STATUS_FATAL_ERROR;
+            return FALSE;
+        }
     }
 
     if (pDevEvo == NULL) {
@@ -6298,6 +6309,40 @@ static void FreeGlobalState(void)
     }
 
     nvClearDpyOverrides();
+}
+
+NvBool nvReinitializeGlobalClientAfterGpuLost(void)
+{
+    NvU32 ret;
+
+    /* Only reinitialize if we have a client handle */
+    if (nvEvoGlobal.clientHandle == 0) {
+        return TRUE;
+    }
+
+    nvEvoLog(EVO_LOG_INFO, "Reinitializing global client after GPU lost");
+
+    /* Free the old client handle */
+    nvRmApiFree(nvEvoGlobal.clientHandle, nvEvoGlobal.clientHandle,
+                nvEvoGlobal.clientHandle);
+    nvEvoGlobal.clientHandle = 0;
+
+    /* Allocate a new client handle */
+    ret = nvRmApiAlloc(NV01_NULL_OBJECT,
+                       NV01_NULL_OBJECT,
+                       NV01_NULL_OBJECT,
+                       NV01_ROOT,
+                       &nvEvoGlobal.clientHandle);
+
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvEvoLog(EVO_LOG_ERROR, "Failed to reinitialize global client");
+        return FALSE;
+    }
+
+    /* Update RM context */
+    nvEvoGlobal.rmSmgContext.clientHandle = nvEvoGlobal.clientHandle;
+
+    return TRUE;
 }
 
 /*
