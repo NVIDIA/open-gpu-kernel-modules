@@ -27,6 +27,7 @@
 #include "uvm_linux.h"
 #include "uvm_global.h"
 #include "uvm_gpu_replayable_faults.h"
+#include "uvm_gpu_isr.h"
 #include "uvm_hal.h"
 #include "uvm_kvmalloc.h"
 #include "uvm_tools.h"
@@ -677,8 +678,20 @@ NV_STATUS uvm_gpu_fault_buffer_flush(uvm_gpu_t *gpu)
 
     UVM_ASSERT(gpu->parent->replayable_faults_supported);
 
+    // Check if GPU hardware is still accessible before attempting to flush.
+    // After hot-unplug, the GPU registers are no longer mapped and accessing
+    // them would cause a page fault crash.
+    if (!uvm_parent_gpu_is_accessible(gpu->parent))
+        return NV_ERR_GPU_IS_LOST;
+
     // Disables replayable fault interrupts and fault servicing
     uvm_parent_gpu_replayable_faults_isr_lock(gpu->parent);
+
+    // Re-check after acquiring the lock in case GPU was removed concurrently
+    if (!uvm_parent_gpu_is_accessible(gpu->parent)) {
+        uvm_parent_gpu_replayable_faults_isr_unlock(gpu->parent);
+        return NV_ERR_GPU_IS_LOST;
+    }
 
     status = fault_buffer_flush_locked(gpu->parent,
                                        gpu,
