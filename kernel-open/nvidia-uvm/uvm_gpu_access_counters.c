@@ -25,6 +25,7 @@
 #include "uvm_gpu_access_counters.h"
 #include "uvm_global.h"
 #include "uvm_api.h"
+#include "uvm_gpu_isr.h"
 #include "uvm_gpu.h"
 #include "uvm_hal.h"
 #include "uvm_kvmalloc.h"
@@ -1766,6 +1767,11 @@ void uvm_service_access_counters(uvm_access_counter_buffer_t *access_counters)
 {
     NV_STATUS status = NV_OK;
     uvm_access_counter_service_batch_context_t *batch_context;
+    uvm_parent_gpu_t *parent_gpu = access_counters->parent_gpu;
+
+    // Check if GPU is still accessible (e.g., not hot-unplugged)
+    if (!uvm_parent_gpu_is_accessible(parent_gpu))
+        return;
 
     batch_context = &access_counters->batch_service_context;
 
