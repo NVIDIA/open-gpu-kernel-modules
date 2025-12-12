@@ -27,6 +27,8 @@
 #include "uvm_common.h"
 #include "uvm_global.h"
 #include "uvm_hal.h"
+#include "uvm_gpu.h"
+#include "uvm_gpu_isr.h"
 #include "uvm_procfs.h"
 #include "uvm_push.h"
 #include "uvm_gpu_semaphore.h"
@@ -2310,10 +2312,14 @@ static void channel_destroy(uvm_channel_pool_t *pool, uvm_channel_t *channel)
             free_conf_computing_buffers(channel);
     }
 
-    if (uvm_channel_is_proxy(channel))
-        uvm_rm_locked_call_void(nvUvmInterfacePagingChannelDestroy(channel->proxy.handle));
-    else
-        uvm_rm_locked_call_void(nvUvmInterfaceChannelDestroy(channel->handle));
+    // Skip RM calls if GPU has been surprise removed. Calling RM with stale
+    // handles will result in NV_ERR_INVALID_OBJECT_HANDLE errors.
+    if (uvm_parent_gpu_is_accessible(pool->manager->gpu->parent)) {
+        if (uvm_channel_is_proxy(channel))
+            uvm_rm_locked_call_void(nvUvmInterfacePagingChannelDestroy(channel->proxy.handle));
+        else
+            uvm_rm_locked_call_void(nvUvmInterfaceChannelDestroy(channel->handle));
+    }
 
     uvm_gpu_tracking_semaphore_free(&channel->tracking_sem);
 
@@ -2657,7 +2663,11 @@ static void tsg_destroy(uvm_channel_pool_t *pool, uvmGpuTsgHandle tsg_handle)
 {
     UVM_ASSERT(pool->num_tsgs > 0);
 
-    uvm_rm_locked_call_void(nvUvmInterfaceTsgDestroy(tsg_handle));
+    // Skip RM call if GPU has been surprise removed. Calling RM with stale
+    // handles will result in NV_ERR_INVALID_OBJECT_HANDLE errors.
+    if (uvm_parent_gpu_is_accessible(pool->manager->gpu->parent))
+        uvm_rm_locked_call_void(nvUvmInterfaceTsgDestroy(tsg_handle));
+
     pool->num_tsgs--;
 }
 
