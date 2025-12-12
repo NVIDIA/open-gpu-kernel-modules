@@ -166,6 +166,7 @@
 #include "nv_uvm_interface.h"
 #include "uvm_api.h"
 #include "uvm_gpu.h"
+#include "uvm_gpu_isr.h"
 #include "uvm_pmm_gpu.h"
 #include "uvm_mem.h"
 #include "uvm_mmu.h"
@@ -2065,6 +2066,14 @@ void free_root_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_root_chunk_t *root_chunk, free_
 
     if (chunk->is_zero)
         flags |= UVM_PMA_FREE_IS_ZERO;
+
+    // Skip PMA free if GPU is not accessible (e.g., hot-unplugged).
+    // Calling into the nvidia module with a gone GPU causes hangs
+    // due to corrupted locks.
+    if (!uvm_parent_gpu_is_accessible(gpu->parent)) {
+        uvm_up_read(&pmm->pma_lock);
+        return;
+    }
 
     nvUvmInterfacePmaFreePages(pmm->pma, &chunk->address, 1, UVM_CHUNK_SIZE_MAX, flags);
 
