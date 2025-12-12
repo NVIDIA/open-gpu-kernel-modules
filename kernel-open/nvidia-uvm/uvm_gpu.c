@@ -45,6 +45,7 @@
 #include "uvm_linux.h"
 #include "uvm_mmu.h"
 #include "uvm_kvmalloc.h"
+#include "uvm_gpu_isr.h"
 
 #define UVM_PROC_GPUS_PEER_DIR_NAME "peers"
 
@@ -1362,7 +1363,8 @@ static NV_STATUS configure_address_space(uvm_gpu_t *gpu)
 
 static void deconfigure_address_space(uvm_gpu_t *gpu)
 {
-    if (gpu->rm_address_space_moved_to_page_tree)
+    // Skip RM call if GPU is not accessible (e.g., hot-unplugged).
+    if (gpu->rm_address_space_moved_to_page_tree && uvm_parent_gpu_is_accessible(gpu->parent))
         uvm_rm_locked_call_void(nvUvmInterfaceUnsetPageDirectory(gpu->rm_address_space));
 
     if (gpu->address_space_tree.root)
@@ -1780,6 +1782,10 @@ static void remove_gpu_from_parent_gpu(uvm_gpu_t *gpu)
 
 static void deinit_parent_gpu(uvm_parent_gpu_t *parent_gpu)
 {
+    // Check GPU accessibility before pci_dev is cleared.
+    // If the GPU was hot-unplugged, skip RM calls that would crash.
+    bool gpu_accessible = uvm_parent_gpu_is_accessible(parent_gpu);
+
     // All channels should have been removed before the retained count went to 0
     UVM_ASSERT(uvm_rb_tree_empty(&parent_gpu->instance_ptr_table));
     UVM_ASSERT(uvm_rb_tree_empty(&parent_gpu->tsg_table));
@@ -1805,7 +1811,9 @@ static void deinit_parent_gpu(uvm_parent_gpu_t *parent_gpu)
     if (parent_gpu->rm_info.isSimulated)
         --g_uvm_global.num_simulated_devices;
 
-    if (parent_gpu->rm_device != 0)
+    // Skip RM call if GPU was not accessible (e.g., hot-unplugged).
+    // The nvidia module's internal state is corrupted when the GPU is gone.
+    if (parent_gpu->rm_device != 0 && gpu_accessible)
         uvm_rm_locked_call_void(nvUvmInterfaceDeviceDestroy(parent_gpu->rm_device));
 
     uvm_parent_gpu_kref_put(parent_gpu);
@@ -1848,15 +1856,19 @@ static void deinit_gpu(uvm_gpu_t *gpu)
 
     uvm_pmm_gpu_deinit(&gpu->pmm);
 
-    if (gpu->rm_address_space != 0)
-        uvm_rm_locked_call_void(nvUvmInterfaceAddressSpaceDestroy(gpu->rm_address_space));
+    // Skip RM calls if GPU is not accessible (e.g., hot-unplugged).
+    // The nvidia module's internal state is corrupted when the GPU is gone.
+    if (uvm_parent_gpu_is_accessible(gpu->parent)) {
+        if (gpu->rm_address_space != 0)
+            uvm_rm_locked_call_void(nvUvmInterfaceAddressSpaceDestroy(gpu->rm_address_space));
+
+        if (gpu->parent->smc.enabled) {
+            if (gpu->smc.rm_device != 0)
+                uvm_rm_locked_call_void(nvUvmInterfaceDeviceDestroy(gpu->smc.rm_device));
+        }
+    }
 
     deinit_procfs_dirs(gpu);
-
-    if (gpu->parent->smc.enabled) {
-        if (gpu->smc.rm_device != 0)
-            uvm_rm_locked_call_void(nvUvmInterfaceDeviceDestroy(gpu->smc.rm_device));
-    }
 
     gpu->magic = 0;
 }
