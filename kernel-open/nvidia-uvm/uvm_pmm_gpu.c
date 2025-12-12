@@ -3369,7 +3369,9 @@ void uvm_pmm_gpu_device_p2p_init(uvm_parent_gpu_t *parent_gpu)
 
 void uvm_pmm_gpu_device_p2p_deinit(uvm_parent_gpu_t *parent_gpu)
 {
-    if (parent_gpu->device_p2p_initialised && !uvm_parent_gpu_is_coherent(parent_gpu)) {
+        // Check device_p2p_initialised first before accessing pci_dev.
+    // During partial GPU init/deinit, pci_dev may be NULL or P2P was never initialized.
+    if (parent_gpu->device_p2p_initialised && !uvm_parent_gpu_is_coherent(parent_gpu) && parent_gpu->pci_dev != NULL) {
         struct page *p2p_page = pfn_to_page(pci_resource_start(parent_gpu->pci_dev,
                                             uvm_device_p2p_static_bar(parent_gpu)) >> PAGE_SHIFT);
 
