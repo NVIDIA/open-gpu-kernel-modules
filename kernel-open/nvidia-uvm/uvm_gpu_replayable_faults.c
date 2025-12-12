@@ -306,11 +306,15 @@ void uvm_parent_gpu_fault_buffer_deinit(uvm_parent_gpu_t *parent_gpu)
     fault_buffer_deinit_replayable_faults(parent_gpu);
 
     if (parent_gpu->fault_buffer.rm_info.faultBufferHandle) {
-        status = uvm_rm_locked_call(nvUvmInterfaceOwnPageFaultIntr(parent_gpu->rm_device, NV_FALSE));
-        UVM_ASSERT(status == NV_OK);
+        // Skip RM calls if GPU is not accessible (e.g., hot-unplugged).
+        // The nvidia module's internal state is corrupted when the GPU is gone.
+        if (uvm_parent_gpu_is_accessible(parent_gpu)) {
+            status = uvm_rm_locked_call(nvUvmInterfaceOwnPageFaultIntr(parent_gpu->rm_device, NV_FALSE));
+            UVM_ASSERT(status == NV_OK);
 
-        uvm_rm_locked_call_void(nvUvmInterfaceDestroyFaultInfo(parent_gpu->rm_device,
-                                                               &parent_gpu->fault_buffer.rm_info));
+            uvm_rm_locked_call_void(nvUvmInterfaceDestroyFaultInfo(parent_gpu->rm_device,
+                                                                   &parent_gpu->fault_buffer.rm_info));
+        }
 
         parent_gpu->fault_buffer.rm_info.faultBufferHandle = 0;
     }
