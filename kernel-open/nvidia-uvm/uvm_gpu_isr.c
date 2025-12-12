@@ -29,6 +29,7 @@
 #include "uvm_gpu_access_counters.h"
 #include "uvm_gpu_non_replayable_faults.h"
 #include "uvm_thread_context.h"
+#include <linux/pci.h>
 
 // Level-based vs pulse-based interrupts
 // =====================================
@@ -62,6 +63,21 @@ static void non_replayable_faults_isr_bottom_half_entry(void *args);
 // For use by the nv_kthread_q that is servicing the replayable fault bottom
 // half, only.
 static void access_counters_isr_bottom_half_entry(void *args);
+
+// Check if GPU hardware is accessible (not hot-unplugged).
+// This must be called before any HAL function that accesses GPU registers.
+static bool uvm_parent_gpu_is_accessible(uvm_parent_gpu_t *parent_gpu)
+{
+    // If pci_dev is NULL, the GPU has been unregistered
+    if (parent_gpu->pci_dev == NULL)
+        return false;
+
+    // Check if PCI channel is offline (surprise removal/hot-unplug)
+    if (pci_channel_offline(parent_gpu->pci_dev))
+        return false;
+
+    return true;
+}
 
 // Increments the reference count tracking whether replayable page fault
 // interrupts should be disabled. The caller is guaranteed that replayable page
@@ -881,7 +897,9 @@ static void uvm_parent_gpu_replayable_faults_intr_disable(uvm_parent_gpu_t *pare
 {
     uvm_assert_spinlock_locked(&parent_gpu->isr.interrupts_lock);
 
-    if (parent_gpu->isr.replayable_faults.handling && parent_gpu->isr.replayable_faults.disable_intr_ref_count == 0)
+    if (parent_gpu->isr.replayable_faults.handling &&
+        parent_gpu->isr.replayable_faults.disable_intr_ref_count == 0 &&
+        uvm_parent_gpu_is_accessible(parent_gpu))
         parent_gpu->fault_buffer_hal->disable_replayable_faults(parent_gpu);
 
     ++parent_gpu->isr.replayable_faults.disable_intr_ref_count;
@@ -893,7 +911,9 @@ static void uvm_parent_gpu_replayable_faults_intr_enable(uvm_parent_gpu_t *paren
     UVM_ASSERT(parent_gpu->isr.replayable_faults.disable_intr_ref_count > 0);
 
     --parent_gpu->isr.replayable_faults.disable_intr_ref_count;
-    if (parent_gpu->isr.replayable_faults.handling && parent_gpu->isr.replayable_faults.disable_intr_ref_count == 0)
+    if (parent_gpu->isr.replayable_faults.handling &&
+        parent_gpu->isr.replayable_faults.disable_intr_ref_count == 0 &&
+        uvm_parent_gpu_is_accessible(parent_gpu))
         parent_gpu->fault_buffer_hal->enable_replayable_faults(parent_gpu);
 }
 
@@ -910,7 +930,8 @@ void uvm_access_counters_intr_disable(uvm_access_counter_buffer_t *access_counte
     // (disable_intr_ref_count > 0), so the check always returns false when the
     // race occurs
     if (parent_gpu->isr.access_counters[notif_buf_index].handling_ref_count > 0 &&
-        parent_gpu->isr.access_counters[notif_buf_index].disable_intr_ref_count == 0) {
+        parent_gpu->isr.access_counters[notif_buf_index].disable_intr_ref_count == 0 &&
+        uvm_parent_gpu_is_accessible(parent_gpu)) {
         parent_gpu->access_counter_buffer_hal->disable_access_counter_notifications(access_counters);
     }
 
@@ -929,7 +950,8 @@ void uvm_access_counters_intr_enable(uvm_access_counter_buffer_t *access_counter
     --parent_gpu->isr.access_counters[notif_buf_index].disable_intr_ref_count;
 
     if (parent_gpu->isr.access_counters[notif_buf_index].handling_ref_count > 0 &&
-        parent_gpu->isr.access_counters[notif_buf_index].disable_intr_ref_count == 0) {
+        parent_gpu->isr.access_counters[notif_buf_index].disable_intr_ref_count == 0 &&
+        uvm_parent_gpu_is_accessible(parent_gpu)) {
         parent_gpu->access_counter_buffer_hal->enable_access_counter_notifications(access_counters);
     }
 }
