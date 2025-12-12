@@ -2919,6 +2919,11 @@ void uvm_parent_gpu_service_replayable_faults(uvm_parent_gpu_t *parent_gpu)
     uvm_replayable_fault_buffer_t *replayable_faults = &parent_gpu->fault_buffer.replayable;
     uvm_fault_service_batch_context_t *batch_context = &replayable_faults->batch_service_context;
 
+    // Check if GPU is still accessible before servicing faults.
+    // After hot-unplug, accessing GPU registers would cause a crash.
+    if (!uvm_parent_gpu_is_accessible(parent_gpu))
+        return;
+
     uvm_tracker_init(&batch_context->tracker);
 
     // Process all faults in the buffer
