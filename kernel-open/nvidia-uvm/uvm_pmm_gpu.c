@@ -3574,7 +3574,10 @@ void uvm_pmm_gpu_deinit(uvm_pmm_gpu_t *pmm)
     UVM_ASSERT(uvm_pmm_gpu_check_orphan_pages(pmm));
     release_free_root_chunks(pmm);
 
-    if (gpu->mem_info.size != 0 && gpu_supports_pma_eviction(gpu))
+    // Skip unregistering callbacks if GPU is not accessible (hot-unplugged).
+    // The nvidia module's internal state is corrupted when the GPU is gone.
+    if (gpu->mem_info.size != 0 && gpu_supports_pma_eviction(gpu) &&
+        uvm_parent_gpu_is_accessible(gpu->parent))
         nvUvmInterfacePmaUnregisterEvictionCallbacks(pmm->pma);
 
     // TODO: Bug 1766184: Handle ECC/RC
