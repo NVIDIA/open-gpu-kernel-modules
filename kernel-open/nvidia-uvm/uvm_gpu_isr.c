@@ -66,7 +66,7 @@ static void access_counters_isr_bottom_half_entry(void *args);
 
 // Check if GPU hardware is accessible (not hot-unplugged).
 // This must be called before any HAL function that accesses GPU registers.
-static bool uvm_parent_gpu_is_accessible(uvm_parent_gpu_t *parent_gpu)
+bool uvm_parent_gpu_is_accessible(uvm_parent_gpu_t *parent_gpu)
 {
     // If pci_dev is NULL, the GPU has been unregistered
     if (parent_gpu->pci_dev == NULL)
