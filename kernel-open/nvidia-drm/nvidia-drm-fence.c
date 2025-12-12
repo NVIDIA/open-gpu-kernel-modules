@@ -213,6 +213,19 @@ static void __nv_drm_prime_fence_context_destroy(
         to_nv_prime_fence_context(nv_fence_context);
 
     /*
+     * Skip nvKms calls if device is being surprise-removed.
+     * The nvidia_modeset internal state may be corrupted.
+     */
+    if (nv_dev->pDevice == NULL || nv_dev->inSurpriseRemoval) {
+        /* Force signal pending fences and free */
+        spin_lock(&nv_prime_fence_context->lock);
+        nv_drm_gem_prime_force_fence_signal(nv_prime_fence_context);
+        spin_unlock(&nv_prime_fence_context->lock);
+        nv_drm_free(nv_fence_context);
+        return;
+    }
+
+    /*
      * Free channel event before destroying the fence context, otherwise event
      * callback continue to get called.
      */
