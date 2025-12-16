@@ -44,13 +44,25 @@ SPATCH_OPTS += --jobs $(JOBS)
 endif
 
 # order here is important and defines patch order too!
-COCCI_SCRIPTS_ARGS :=
+COCCI_SCRIPTS_ARGS := fix_nvoc_dtor.cocci	# only two instances left!
+COCCI_SCRIPTS_ARGS += fix_nvoc_pfunc_type.cocci
+COCCI_SCRIPTS_ARGS += fix_nvoc_pfunc_null.cocci:pfunc
+COCCI_SCRIPTS_ARGS += fix_nvoc_pfunc_cast.cocci:pfunc
+COCCI_SCRIPTS_ARGS += fix_nvoc_pfunc_2args.cocci
+COCCI_SCRIPTS_ARGS += fix_nvoc_pfunc_use.cocci
+COCCI_SCRIPTS_ARGS += fix_hal_iface_init.cocci
+COCCI_SCRIPTS_ARGS += fix_rpc_hal_init.cocci:rpc_hal_init
 
 COCCI_SCRIPTS := $(filter %.cocci,$(subst :, ,$(COCCI_SCRIPTS_ARGS)))
 COCCI_PATCHES  = $(addprefix 0???-,$(COCCI_SCRIPTS:.cocci=.diff))
 COCCI_PATCH_MARKER := .cocci_patched
 
-PATCH_CANDIDATES := $(filter $(nvidia_src)/generated/%,$(ALL_SRCS))
+# XXX:
+# Unfortunately, some cocci scripts override the --dir option, making more
+# than generated/ be affected. Even worse, some changes have to be done to
+# header files, impacting potentially all sources. Be safe and prevent any
+# compilation from happening until all files are patched.
+PATCH_CANDIDATES := $(ALL_SRCS)
 PATCH_CANDIDATES := $(PATCH_CANDIDATES:.c=.o)
 PATCH_CANDIDATES := $(PATCH_CANDIDATES:.cpp=.o)
 $(addprefix $(obj)/,$(PATCH_CANDIDATES)): $(obj)/$(nvidia_src)/$(COCCI_PATCH_MARKER)
