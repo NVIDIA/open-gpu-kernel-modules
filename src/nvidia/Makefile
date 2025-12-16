@@ -2,6 +2,10 @@
 # Makefile for nv-kernel.o
 ###########################################################################
 
+ifeq ($(USE_KBUILD),1)
+$(error nv-kernel.o gets build as part of kernel-open/)
+endif
+
 NV_MODULE_LOGGING_NAME ?= nvidia
 
 VERSION_MK_DIR = ../../

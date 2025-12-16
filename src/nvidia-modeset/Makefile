@@ -2,6 +2,10 @@
 # Makefile for nv-modeset-kernel.o
 ###########################################################################
 
+ifeq ($(USE_KBUILD),1)
+$(error nv-modeset-kernel.o gets build as part of kernel-open/)
+endif
+
 NV_MODULE_LOGGING_NAME ?= nvidia-modeset
 
 VERSION_MK_DIR = ../../

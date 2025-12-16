@@ -57,6 +57,10 @@ DEBUG - Set this to "1" to build the kernel modules as debug.  By default, the
     build compiles without debugging information.  This also enables
     various debug log messages in the kernel modules.
 
+USE_KBUILD - Set this to "1" to build all sources using the linux kernel build
+    system.  This is needed to support features like RANDSTRUCT, kCFI or
+    grsecurity kernels.
+
 These variables can be set on the make command line.  E.g.,
 
     make modules -j$(nproc) NV_VERBOSE=1
