@@ -1109,6 +1109,23 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, GpuHalspecOwner 
         }
     }
 
+    // kgspDumpMailbox -- halified (3 hals) body
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kgspDumpMailbox__ = &kgspDumpMailbox_f2d351;
+    }
+    else
+    {
+        if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00005000UL) )) /* ChipHal: T234D | T264D */ 
+        {
+            pThis->__kgspDumpMailbox__ = &kgspDumpMailbox_f2d351;
+        }
+        else
+        {
+            pThis->__kgspDumpMailbox__ = &kgspDumpMailbox_TU102;
+        }
+    }
+
     // kgspService -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
@@ -1885,13 +1902,13 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, GpuHalspecOwner 
 
     // kgspGetWFL0Offset -- virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn)
     pThis->__kgspGetWFL0Offset__ = &__nvoc_up_thunk_KernelCrashCatEngine_kgspGetWFL0Offset;
-} // End __nvoc_init_funcTable_KernelGsp_1 with approximately 257 basic block(s).
+} // End __nvoc_init_funcTable_KernelGsp_1 with approximately 260 basic block(s).
 
 
-// Initialize vtable(s) for 92 virtual method(s).
+// Initialize vtable(s) for 93 virtual method(s).
 void __nvoc_init_funcTable_KernelGsp(KernelGsp *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 66 per-object function pointer(s).
+    // Initialize vtable(s) with 67 per-object function pointer(s).
     __nvoc_init_funcTable_KernelGsp_1(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 

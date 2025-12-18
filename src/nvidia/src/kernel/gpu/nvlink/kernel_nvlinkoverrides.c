@@ -42,8 +42,8 @@
 NV_STATUS
 knvlinkApplyRegkeyOverrides_IMPL
 (
-	OBJGPU       *pGpu,
-	KernelNvlink *pKernelNvlink
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink
 )
 {
     NvU32 regdata;
@@ -275,7 +275,7 @@ knvlinkApplyRegkeyOverrides_IMPL
             pKernelNvlink->setProperty(pGpu, PDB_PROP_KNVLINK_FORCED_LOOPBACK_ON_SWITCH_MODE_ENABLED, NV_TRUE);
             NV_PRINTF(LEVEL_INFO,
                       "Forced Loopback on switch is enabled\n");
-        }        
+        }
     }
 
     // Registry override to enable nvlink encryption
@@ -307,5 +307,33 @@ knvlinkApplyRegkeyOverrides_IMPL
             }
         }
     }
+    // ABM settings
+    if (NV_OK == osReadRegistryDword(pGpu, NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE, &regdata))
+    {
+        if (FLD_TEST_DRF(_REG_STR_RM, _NVLINK_ADAPTIVE_BW_MODE, _ENABLE, _NO, regdata))
+        {
+            NV_PRINTF(LEVEL_INFO, "Adaptive Bandwidth Mode (ABM) disabled via regkey\n");
+            pKernelNvlink->bAbmEnabled = NV_FALSE;
+        }
+        else if (FLD_TEST_DRF(_REG_STR_RM, _NVLINK_ADAPTIVE_BW_MODE, _ENABLE, _YES, regdata))
+        {
+            NV_PRINTF(LEVEL_INFO, "Adaptive Bandwidth Mode (ABM) enabled via regkey\n");
+            pKernelNvlink->bAbmEnabled = NV_TRUE;
+        }
+    }
+    else
+    {
+        pKernelNvlink->bAbmEnabled = NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE_ENABLE_DEFAULT;
+
+        if (pKernelNvlink->bAbmEnabled == NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE_ENABLE_YES)
+        {
+            NV_PRINTF(LEVEL_INFO, "Adaptive Bandwidth Mode (ABM) enabled by default\n");
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_INFO, "Adaptive Bandwidth Mode (ABM) disabled by default\n");
+        }
+    }
+
     return NV_OK;
 }

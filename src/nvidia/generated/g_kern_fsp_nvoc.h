@@ -237,13 +237,13 @@ static inline void kfspCleanupBootState(OBJGPU *pGpu, struct KernelFsp *pKernelF
 #define kfspCleanupBootState(pGpu, pKernelFsp) kfspCleanupBootState_IMPL(pGpu, pKernelFsp)
 #endif // __nvoc_kern_fsp_h_disabled
 
-void kfspReleaseProxyImage_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+void kfspReleaseProxyImage_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU32 flags);
 #ifdef __nvoc_kern_fsp_h_disabled
-static inline void kfspReleaseProxyImage(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+static inline void kfspReleaseProxyImage(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU32 flags) {
     NV_ASSERT_FAILED_PRECOMP("KernelFsp was disabled!");
 }
 #else // __nvoc_kern_fsp_h_disabled
-#define kfspReleaseProxyImage(pGpu, pKernelFsp) kfspReleaseProxyImage_IMPL(pGpu, pKernelFsp)
+#define kfspReleaseProxyImage(pGpu, pKernelFsp, flags) kfspReleaseProxyImage_IMPL(pGpu, pKernelFsp, flags)
 #endif // __nvoc_kern_fsp_h_disabled
 
 NV_STATUS kfspSendAndReadMessage_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPayload, NvU32 size, NvU32 nvdmType, NvU8 *pResponsePayload, NvU32 responseBufferSize);

@@ -3425,6 +3425,12 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
                                   _CONNECTION_UNHEALTHY, _FALSE, healthMask);
     }
     else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _CONNECTION_UNHEALTHY,
+                          _TRUE_RESET_REQUIRED, mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                  _CONNECTION_UNHEALTHY, _TRUE, healthMask);
+    }
+    else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _CONNECTION_UNHEALTHY,
                           _NOT_SUPPORTED, mask))
     {
         healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,

@@ -1675,6 +1675,7 @@ static int nv_open_device(nv_state_t *nv, nvidia_stack_t *sp)
     nv_assert_not_in_gpu_exclusion_list(sp, nv);
 
     NV_ATOMIC_INC(nvl->usage_count);
+
     return 0;
 }
 

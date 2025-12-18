@@ -1160,7 +1160,7 @@ struct OBJGPU {
     NV_STATUS (*__gpuRequireGrCePresence__)(struct OBJGPU * /*this*/, ENGDESCRIPTOR, NvBool *);  // halified (2 hals) body
     NvBool (*__gpuGetIsCmpSku__)(struct OBJGPU * /*this*/);  // halified (2 hals) body
 
-    // 122 PDB properties
+    // 123 PDB properties
     NvBool PDB_PROP_GPU_HIGH_SPEED_BRIDGE_CONNECTED;
     NvBool PDB_PROP_GPU_IN_STANDBY;
     NvBool PDB_PROP_GPU_IN_HIBERNATE;
@@ -1279,9 +1279,10 @@ struct OBJGPU {
     NvBool PDB_PROP_GPU_FASTPATH_SEQ_ENABLED;
     NvBool PDB_PROP_GPU_PREPARING_FULLCHIP_RESET;
     NvBool PDB_PROP_GPU_RECOVERY_DRAIN_P2P_REQUIRED;
+    NvBool PDB_PROP_GPU_RECOVERY_REBOOT_REQUIRED;
+    NvBool PDB_PROP_GPU_RECOVERY_SQUASH_XID154;
     NvBool PDB_PROP_GPU_REUSE_INIT_CONTING_MEM;
     NvBool PDB_PROP_GPU_RUSD_POLLING_SUPPORT_MONOLITHIC;
-    NvBool PDB_PROP_GPU_RECOVERY_REBOOT_REQUIRED;
     NvBool PDB_PROP_GPU_ALLOC_ISO_SYS_MEM_FROM_CARVEOUT;
 
     // Data members
@@ -1765,12 +1766,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGPU;
 #define PDB_PROP_GPU_PREPARING_FULLCHIP_RESET_BASE_NAME PDB_PROP_GPU_PREPARING_FULLCHIP_RESET
 #define PDB_PROP_GPU_RECOVERY_DRAIN_P2P_REQUIRED_BASE_CAST
 #define PDB_PROP_GPU_RECOVERY_DRAIN_P2P_REQUIRED_BASE_NAME PDB_PROP_GPU_RECOVERY_DRAIN_P2P_REQUIRED
+#define PDB_PROP_GPU_RECOVERY_REBOOT_REQUIRED_BASE_CAST
+#define PDB_PROP_GPU_RECOVERY_REBOOT_REQUIRED_BASE_NAME PDB_PROP_GPU_RECOVERY_REBOOT_REQUIRED
+#define PDB_PROP_GPU_RECOVERY_SQUASH_XID154_BASE_CAST
+#define PDB_PROP_GPU_RECOVERY_SQUASH_XID154_BASE_NAME PDB_PROP_GPU_RECOVERY_SQUASH_XID154
 #define PDB_PROP_GPU_REUSE_INIT_CONTING_MEM_BASE_CAST
 #define PDB_PROP_GPU_REUSE_INIT_CONTING_MEM_BASE_NAME PDB_PROP_GPU_REUSE_INIT_CONTING_MEM
 #define PDB_PROP_GPU_RUSD_POLLING_SUPPORT_MONOLITHIC_BASE_CAST
 #define PDB_PROP_GPU_RUSD_POLLING_SUPPORT_MONOLITHIC_BASE_NAME PDB_PROP_GPU_RUSD_POLLING_SUPPORT_MONOLITHIC
-#define PDB_PROP_GPU_RECOVERY_REBOOT_REQUIRED_BASE_CAST
-#define PDB_PROP_GPU_RECOVERY_REBOOT_REQUIRED_BASE_NAME PDB_PROP_GPU_RECOVERY_REBOOT_REQUIRED
 #define PDB_PROP_GPU_ALLOC_ISO_SYS_MEM_FROM_CARVEOUT_BASE_CAST
 #define PDB_PROP_GPU_ALLOC_ISO_SYS_MEM_FROM_CARVEOUT_BASE_NAME PDB_PROP_GPU_ALLOC_ISO_SYS_MEM_FROM_CARVEOUT
 
@@ -2692,6 +2695,14 @@ static inline void gpuSetRecoveryDrainP2P(struct OBJGPU *pGpu, NvBool bDrainP2P)
 #endif // __nvoc_gpu_h_disabled
 
 #ifdef __nvoc_gpu_h_disabled
+static inline void gpuUnmarkDeviceForDrainP2P(struct OBJGPU *pGpu) {
+    NV_ASSERT_FAILED_PRECOMP("OBJGPU was disabled!");
+}
+#else // __nvoc_gpu_h_disabled
+#define gpuUnmarkDeviceForDrainP2P(pGpu) gpuUnmarkDeviceForDrainP2P_KERNEL(pGpu)
+#endif // __nvoc_gpu_h_disabled
+
+#ifdef __nvoc_gpu_h_disabled
 static inline void gpuLogOobXidMessage(struct OBJGPU *pGpu, NvU32 xid, const char *string, NvU32 len) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPU was disabled!");
 }
@@ -3420,6 +3431,7 @@ static inline void gpuSetRecoveryRebootRequired(struct OBJGPU *pGpu, NvBool bReb
 #define gpuGetRecoveryAction_HAL(pGpu, pParams) gpuGetRecoveryAction(pGpu, pParams)
 #define gpuRefreshRecoveryAction_HAL(pGpu, inLock) gpuRefreshRecoveryAction(pGpu, inLock)
 #define gpuSetRecoveryDrainP2P_HAL(pGpu, bDrainP2P) gpuSetRecoveryDrainP2P(pGpu, bDrainP2P)
+#define gpuUnmarkDeviceForDrainP2P_HAL(pGpu) gpuUnmarkDeviceForDrainP2P(pGpu)
 #define gpuLogOobXidMessage_HAL(pGpu, xid, string, len) gpuLogOobXidMessage(pGpu, xid, string, len)
 #define gpuPrivSecInitRegistryOverrides_HAL(pGpu) gpuPrivSecInitRegistryOverrides(pGpu)
 #define gpuPowerOff_FNPTR(pGpu) pGpu->__gpuPowerOff__
@@ -4281,6 +4293,15 @@ static inline void gpuSetRecoveryDrainP2P_b3696a(struct OBJGPU *pGpu, NvBool bDr
 void gpuSetRecoveryDrainP2P_UCODE(struct OBJGPU *pGpu, NvBool bDrainP2P);
 
 void gpuSetRecoveryDrainP2P_KERNEL(struct OBJGPU *pGpu, NvBool bDrainP2P);
+
+
+static inline void gpuUnmarkDeviceForDrainP2P_b3696a(struct OBJGPU *pGpu) {
+    return;
+}
+
+void gpuUnmarkDeviceForDrainP2P_UCODE(struct OBJGPU *pGpu);
+
+void gpuUnmarkDeviceForDrainP2P_KERNEL(struct OBJGPU *pGpu);
 
 
 void gpuLogOobXidMessage_KERNEL(struct OBJGPU *pGpu, NvU32 xid, const char *string, NvU32 len);

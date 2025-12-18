@@ -110,7 +110,8 @@ const struct
     {NV_DP_REGKEY_EXPOSE_DSC_DEVID_WAR,                  &dpRegkeyDatabase.bEnableDevId,                      DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_HDMI_ON_DP_PLUS_PLUS,                  &dpRegkeyDatabase.bHDMIOnDPPlusPlus,                 DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_IGNORE_CAPS_AND_FORCE_HIGHEST_LC,      &dpRegkeyDatabase.bIgnoreCapsAndForceHighestLc,      DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_OPTIMIZE_DSC_BPP_FOR_TUNNELLING_BW,    &dpRegkeyDatabase.bOptimizeDscBppForTunnellingBw,    DP_REG_VAL_BOOL}
+    {NV_DP_REGKEY_OPTIMIZE_DSC_BPP_FOR_TUNNELLING_BW,    &dpRegkeyDatabase.bOptimizeDscBppForTunnellingBw,    DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_USE_MAX_DSC_COMPRESSION_MST,           &dpRegkeyDatabase.bUseMaxDSCCompressionMST,          DP_REG_VAL_BOOL}
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :

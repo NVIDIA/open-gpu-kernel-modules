@@ -1375,6 +1375,23 @@ exit_fail_cleanup:
 }
 
 void
+kgspDumpMailbox_TU102
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+    NvU32 idx;
+    NvU32 data;
+
+    for (idx = 0; idx < NV_PGSP_MAILBOX__SIZE_1; idx++)
+    {
+        data = GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(idx));
+        NV_PRINTF(LEVEL_ERROR, "GSP: MAILBOX(%d) = 0x%08X\n", idx, data);
+    }
+}
+
+void
 kgspReadEmem_TU102
 (
     KernelGsp *pKernelGsp,

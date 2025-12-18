@@ -1689,7 +1689,7 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
     nvEvoLogInfoString(pInfoString,
             "DSCPassThrough: %s", flags->dscPassThrough ? "Yes" : "No");
 
-    if (pTimingsEvo->yuv420Mode != NV_YUV420_MODE_NONE) {
+    if (pModeTimings->yuv420Mode != NV_YUV420_MODE_NONE) {
         dpyColor.format = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420;
         dpyColor.bpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
         dpyColor.range = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_LIMITED;

@@ -26,6 +26,14 @@
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/diagnostics/nv_debug_dump.h"
 #include "kernel/gpu_mgr/gpu_mgr.h"
+#include "kernel/gpu/gpu.h"
+#include "kernel/gpu/bus/p2p_api.h"
+#include "kernel/gpu/fifo/kernel_fifo.h"
+#include "gpu/gpu_fabric_probe.h"
+#include "rmapi/rs_utils.h"
+
+static void _knvlinkP2PIdleCallback(OBJGPU *pGpu, void *pArgs);
+void knvlinkABM_WORKITEM(OBJGPU *pGpu, void *pArgs);
 
 NV_STATUS
 knvlinkGetSupportedCounters_GB100
@@ -337,6 +345,36 @@ knvlinkGetHshubSupportedRbmModes_GB100
     return status;
 }
 
+/**
+ * @brief Calculate the effective peer link mask for HS_HUB configuration
+ *
+ * @param[in]   pGpu               OBJGPU pointer of local GPU
+ * @param[in]   pKernelNvlink      reference of KernelNvlink
+ * @param[in]   pRemoteGpu         OBJGPU pointer of remote GPU
+ * @param[in/out] pPeerLinkMask    reference of peerLinkMask
+ */
+void
+knvlinkGetEffectivePeerLinkMask_GB100
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink,
+    OBJGPU *pRemoteGpu,
+    NvU64  *pPeerLinkMask
+)
+{
+    NvU32 linkMaskToBeReduced;
+
+    if (knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink))
+    {
+        if (gpuFabricProbeGetlinkMaskToBeReduced(pGpu->pGpuFabricProbeInfoKernel,
+                                                 &linkMaskToBeReduced) == NV_OK)
+        {
+            *pPeerLinkMask &= (~linkMaskToBeReduced);
+            NV_PRINTF(LEVEL_INFO, "Reducing nvlinkMask from 0x%x  to updated 0x%llx\n", linkMaskToBeReduced, *pPeerLinkMask);
+        }
+    }
+}
+
 /*!
  * Retrieve list of supported BW modes
  */
@@ -405,6 +443,91 @@ knvlinkValidateFabricBaseAddress_GB100
 
     return NV_OK;
 
+}
+
+void
+knvlinkABMIdle_WORKITEM
+(
+    NvU32 gpuInstance,
+    void *pArgs
+)
+{
+    OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    NvU64 enabledLinkMask = knvlinkGetEnabledLinkMask(pGpu, pKernelNvlink);
+
+    if (knvlinkIsP2PActive_IMPL(pGpu, pKernelNvlink))
+    {
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_RECOVERY_SQUASH_XID154, NV_TRUE);
+        gpuSetRecoveryDrainP2P(pGpu, NV_TRUE);
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_RECOVERY_SQUASH_XID154, NV_FALSE);
+        return;
+    }
+
+    NV_PRINTF(LEVEL_NOTICE, "GPU%u Detected fabric idle. Applying linkMask 0x%llx and Unmarking Drain P2P.\n",
+            gpuInstance,
+            (enabledLinkMask & pKernelNvlink->pendingAbmLinkMaskToBeReduced));
+
+    // Reuse linkMaskToBeReduced so RBM/ABM flows are the same
+    gpuFabricProbeSetlinkMaskToBeReduced(pGpu->pGpuFabricProbeInfoKernel,
+                                                 pKernelNvlink->pendingAbmLinkMaskToBeReduced);
+
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_RECOVERY_SQUASH_XID154, NV_TRUE);
+    gpuUnmarkDeviceForDrainP2P(pGpu);
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_RECOVERY_SQUASH_XID154, NV_FALSE);
+
+    osRemove1HzCallback(pGpu, knvlinkABM_WORKITEM, pArgs);
+}
+
+void
+knvlinkABM_WORKITEM
+(
+    OBJGPU *pGpu,
+    void *pArgs
+)
+{
+    // Queue a work item to check P2P with proper locks
+    NV_STATUS status = osQueueWorkItem(pGpu,
+                                      knvlinkABMIdle_WORKITEM,
+                                      NULL,
+                                      (
+                                       OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
+                                       OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS |
+                                       OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RO
+                                      ));
+
+    if (status != NV_OK) {
+        NV_PRINTF(LEVEL_ERROR, "Failed to queue P2P idle check.\n");
+    }
+}
+
+NV_STATUS
+knvlinkABMLinkMaskUpdate_GB100
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NvBool bNeedsRCRecovery
+)
+{
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+    // Need to kill channels with AMAP of 16 on switch tray removal
+    if (bNeedsRCRecovery)
+    {
+        // Perform PF GFID RC error recovery on all usermode channels.
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            pRmApi->Control(pRmApi,
+                            pGpu->hInternalClient,
+                            pGpu->hInternalSubdevice,
+                            NV2080_CTRL_CMD_INTERNAL_NVLINK_RC_USER_MODE_CHANNELS,
+                            NULL,
+                            0));
+    }
+
+    // Launch repeated 1Hz workitem to await drainP2P completion and apply link mask
+    (void)osSchedule1HzCallback(pGpu, knvlinkABM_WORKITEM, NULL, NV_OS_1HZ_REPEAT);
+
+    return NV_OK;
 }
 
 /*!
@@ -588,3 +711,69 @@ knvlinkGetSupportedCoreLinkStateMask_GB100
 #endif // defined(INCLUDE_NVLINK_LIB)
 }
 
+void
+knvlinkP2PIdleCheck_WORKITEM
+(
+    NvU32 gpuInstance,
+    void *pArgs
+)
+{
+    OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    if (knvlinkIsP2PActive_IMPL(pGpu, pKernelNvlink))
+    {
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_RECOVERY_SQUASH_XID154, NV_TRUE);
+        gpuSetRecoveryDrainP2P(pGpu, NV_TRUE);
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_RECOVERY_SQUASH_XID154, NV_FALSE);
+        return;
+    }
+
+    // Invalidate/Suspend probe
+    gpuFabricProbeSuspend(pGpu->pGpuFabricProbeInfoKernel);
+    gpuFabricProbeInvalidate(pGpu->pGpuFabricProbeInfoKernel);
+
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_RECOVERY_SQUASH_XID154, NV_TRUE);
+    gpuUnmarkDeviceForDrainP2P(pGpu);
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_RECOVERY_SQUASH_XID154, NV_FALSE);
+
+    // Send requested probe
+    NV_ASSERT_OK(gpuFabricProbeResume(pGpu->pGpuFabricProbeInfoKernel));
+
+    osRemove1HzCallback(pGpu, _knvlinkP2PIdleCallback, NULL);
+}
+
+static void
+_knvlinkP2PIdleCallback
+(
+    OBJGPU *pGpu,
+    void *pArgs
+)
+{
+    // Queue a work item to check P2P with proper locks
+    NV_STATUS status = osQueueWorkItem(pGpu,
+                                      knvlinkP2PIdleCheck_WORKITEM,
+                                      NULL,
+                                      (
+                                       OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
+                                       OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS |
+                                       OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RO
+                                      ));
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to queue P2P idle check.\n");
+    }
+}
+
+NV_STATUS
+knvlinkTriggerProbeRequest_GB100
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    (void)osSchedule1HzCallback(pGpu, _knvlinkP2PIdleCallback, NULL, NV_OS_1HZ_REPEAT);
+
+    return NV_OK;
+}

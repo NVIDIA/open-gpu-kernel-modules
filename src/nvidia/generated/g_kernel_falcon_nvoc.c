@@ -695,6 +695,214 @@ static void __nvoc_init_funcTable_KernelFalcon_1(KernelFalcon *pThis, GpuHalspec
         }
     }
 
+    // kflcnRiscvIcdWaitForIdle -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->__kflcnRiscvIcdWaitForIdle__ = &kflcnRiscvIcdWaitForIdle_TU102;
+    }
+    // default
+    else
+    {
+        pThis->__kflcnRiscvIcdWaitForIdle__ = &kflcnRiscvIcdWaitForIdle_46f6a7;
+    }
+
+    // kflcnRiscvIcdReadMem -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->__kflcnRiscvIcdReadMem__ = &kflcnRiscvIcdReadMem_TU102;
+    }
+    // default
+    else
+    {
+        pThis->__kflcnRiscvIcdReadMem__ = &kflcnRiscvIcdReadMem_46f6a7;
+    }
+
+    // kflcnRiscvIcdReadReg -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->__kflcnRiscvIcdReadReg__ = &kflcnRiscvIcdReadReg_TU102;
+    }
+    // default
+    else
+    {
+        pThis->__kflcnRiscvIcdReadReg__ = &kflcnRiscvIcdReadReg_46f6a7;
+    }
+
+    // kflcnRiscvIcdRcsr -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->__kflcnRiscvIcdRcsr__ = &kflcnRiscvIcdRcsr_TU102;
+    }
+    // default
+    else
+    {
+        pThis->__kflcnRiscvIcdRcsr__ = &kflcnRiscvIcdRcsr_46f6a7;
+    }
+
+    // kflcnRiscvIcdRstat -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->__kflcnRiscvIcdRstat__ = &kflcnRiscvIcdRstat_TU102;
+    }
+    // default
+    else
+    {
+        pThis->__kflcnRiscvIcdRstat__ = &kflcnRiscvIcdRstat_46f6a7;
+    }
+
+    // kflcnRiscvIcdRpc -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->__kflcnRiscvIcdRpc__ = &kflcnRiscvIcdRpc_TU102;
+    }
+    // default
+    else
+    {
+        pThis->__kflcnRiscvIcdRpc__ = &kflcnRiscvIcdRpc_46f6a7;
+    }
+
+    // kflcnRiscvIcdHalt -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->__kflcnRiscvIcdHalt__ = &kflcnRiscvIcdHalt_TU102;
+    }
+    // default
+    else
+    {
+        pThis->__kflcnRiscvIcdHalt__ = &kflcnRiscvIcdHalt_46f6a7;
+    }
+
+    // kflcnIcdReadCmdReg -- halified (3 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+    {
+        pThis->__kflcnIcdReadCmdReg__ = &kflcnIcdReadCmdReg_TU102;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0f800UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->__kflcnIcdReadCmdReg__ = &kflcnIcdReadCmdReg_GA102;
+    }
+    // default
+    else
+    {
+        pThis->__kflcnIcdReadCmdReg__ = &kflcnIcdReadCmdReg_4a4dee;
+    }
+
+    // kflcnRiscvIcdReadRdata -- halified (3 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+    {
+        pThis->__kflcnRiscvIcdReadRdata__ = &kflcnRiscvIcdReadRdata_TU102;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0f800UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->__kflcnRiscvIcdReadRdata__ = &kflcnRiscvIcdReadRdata_GA102;
+    }
+    // default
+    else
+    {
+        pThis->__kflcnRiscvIcdReadRdata__ = &kflcnRiscvIcdReadRdata_4a4dee;
+    }
+
+    // kflcnRiscvIcdWriteAddress -- halified (3 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+    {
+        pThis->__kflcnRiscvIcdWriteAddress__ = &kflcnRiscvIcdWriteAddress_TU102;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0f800UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->__kflcnRiscvIcdWriteAddress__ = &kflcnRiscvIcdWriteAddress_GA102;
+    }
+    // default
+    else
+    {
+        pThis->__kflcnRiscvIcdWriteAddress__ = &kflcnRiscvIcdWriteAddress_b3696a;
+    }
+
+    // kflcnIcdWriteCmdReg -- halified (3 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+    {
+        pThis->__kflcnIcdWriteCmdReg__ = &kflcnIcdWriteCmdReg_TU102;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0f800UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->__kflcnIcdWriteCmdReg__ = &kflcnIcdWriteCmdReg_GA102;
+    }
+    // default
+    else
+    {
+        pThis->__kflcnIcdWriteCmdReg__ = &kflcnIcdWriteCmdReg_b3696a;
+    }
+
+    // kflcnCoreDumpPc -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0f800UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->__kflcnCoreDumpPc__ = &kflcnCoreDumpPc_GA102;
+    }
+    // default
+    else
+    {
+        pThis->__kflcnCoreDumpPc__ = &kflcnCoreDumpPc_46f6a7;
+    }
+
+    // kflcnDumpCoreRegs -- halified (4 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+    {
+        pThis->__kflcnDumpCoreRegs__ = &kflcnDumpCoreRegs_TU102;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe0UL) )) /* ChipHal: GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->__kflcnDumpCoreRegs__ = &kflcnDumpCoreRegs_GB202;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0f800UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 */ 
+    {
+        pThis->__kflcnDumpCoreRegs__ = &kflcnDumpCoreRegs_GA102;
+    }
+    // default
+    else
+    {
+        pThis->__kflcnDumpCoreRegs__ = &kflcnDumpCoreRegs_b3696a;
+    }
+
+    // kflcnDumpTracepc -- halified (3 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+    {
+        pThis->__kflcnDumpTracepc__ = &kflcnDumpTracepc_TU102;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0f800UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->__kflcnDumpTracepc__ = &kflcnDumpTracepc_GA102;
+    }
+    // default
+    else
+    {
+        pThis->__kflcnDumpTracepc__ = &kflcnDumpTracepc_b3696a;
+    }
+
+    // kflcnDumpPeripheralRegs -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->__kflcnDumpPeripheralRegs__ = &kflcnDumpPeripheralRegs_TU102;
+    }
+    // default
+    else
+    {
+        pThis->__kflcnDumpPeripheralRegs__ = &kflcnDumpPeripheralRegs_b3696a;
+    }
+
     // kflcnGetEccInterruptMask -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) ) ||
         ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 */ 
@@ -715,13 +923,13 @@ static void __nvoc_init_funcTable_KernelFalcon_1(KernelFalcon *pThis, GpuHalspec
 
     // kflcnGetWFL0Offset -- virtual halified (2 hals) inherited (kcrashcatEngine) base (kcrashcatEngine)
     pThis->__kflcnGetWFL0Offset__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnGetWFL0Offset;
-} // End __nvoc_init_funcTable_KernelFalcon_1 with approximately 84 basic block(s).
+} // End __nvoc_init_funcTable_KernelFalcon_1 with approximately 121 basic block(s).
 
 
-// Initialize vtable(s) for 36 virtual method(s).
+// Initialize vtable(s) for 51 virtual method(s).
 void __nvoc_init_funcTable_KernelFalcon(KernelFalcon *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 26 per-object function pointer(s).
+    // Initialize vtable(s) with 41 per-object function pointer(s).
     __nvoc_init_funcTable_KernelFalcon_1(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 

@@ -45,6 +45,8 @@
 #include "platform/sli/sli.h"
 #include "gpu/gpu_fabric_probe.h"
 #include "swref/common_def_nvlink.h"
+#include "kernel/gpu/gpu.h"
+#include "kernel/mem_mgr/fabric_vaspace.h"
 #include "compute/imex_session_api.h"
 #include "compute/fabric.h"
 #include "mem_mgr/mem_multicast_fabric.h"
@@ -2157,6 +2159,49 @@ knvlinkProcessInitDisabledLinks_IMPL
                                     sizeof(pKernelNvlink->initDisabledLinksMask), NULL));
 
     return NV_OK;
+}
+
+NvBool
+knvlinkIsP2PActive_IMPL
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    RmClient **ppClient;
+
+    // Check FLA/MC FLA callers are idle
+    FABRIC_VASPACE *pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
+    if (pFabricVAS != NULL && fabricvaspaceIsInUse(pFabricVAS))
+        return NV_TRUE;
+
+    // For each client
+    for (ppClient = serverutilGetFirstClientUnderLock(); ppClient; ppClient = serverutilGetNextClientUnderLock(ppClient))
+    {
+        RmClient *pClient = *ppClient;
+        RsClient *pRsClient = staticCast(pClient, RsClient);
+
+        RS_ITERATOR p2pIt;
+
+        // For each P2P object
+        p2pIt = clientRefIter(pRsClient, NULL, classId(P2PApi), RS_ITERATE_CHILDREN, NV_TRUE);
+        while (clientRefIterNext(p2pIt.pClient, &p2pIt))
+        {
+            P2PApi *pP2PApi = dynamicCast(p2pIt.pResourceRef->pResource, P2PApi);
+            if (pP2PApi == NULL)
+                continue;
+
+            // Skip ATS P2P objects as those may be allocated internally
+            if (FLD_TEST_DRF(_P2PAPI, _ATTRIBUTES, _LINK_TYPE, _SPA, pP2PApi->attributes))
+                continue;
+
+            // Actve peer connection with this GPU
+            if ((pP2PApi->peer1 == pGpu) || (pP2PApi->peer2 == pGpu))
+                return NV_TRUE;
+        }
+    }
+
+    return NV_FALSE;
 }
 
 void

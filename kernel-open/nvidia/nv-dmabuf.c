@@ -468,9 +468,28 @@ nv_dma_buf_dup_mem_handles(
     return NV_OK;
 
 failed:
-    nv_dma_buf_undup_mem_handles_unlocked(sp, params->index, count, priv);
+    if (!priv->acquire_release_all_gpu_lock_on_dup)
+    {
+        //
+        // Undup requires taking all-GPUs lock.
+        // So if single GPU lock was taken,
+        // release it first so all-GPUs lock can be taken in
+        // nv_dma_buf_undup_mem_handles().
+        //
+        nv_dma_buf_release_gpu_lock(sp, priv);
 
-    nv_dma_buf_release_gpu_lock(sp, priv);
+        nv_dma_buf_undup_mem_handles(sp, params->index, count, priv);
+    }
+    else
+    {
+        //
+        // Here, all-GPUs lock is already taken, so undup the handles under
+        // the unlocked version of the function and then release the locks.
+        //
+        nv_dma_buf_undup_mem_handles_unlocked(sp, params->index, count, priv);
+
+        nv_dma_buf_release_gpu_lock(sp, priv);
+    }
 
 unlock_api_lock:
     rm_release_api_lock(sp);

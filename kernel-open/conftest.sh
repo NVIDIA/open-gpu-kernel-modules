@@ -1330,6 +1330,27 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_EVENTFD_SIGNAL_HAS_COUNTER_ARG" "" "types"
         ;;
 
+        get_dev_pagemap_has_pgmap_arg)
+            #
+            # Determine if the get_dev_pagemap() function has an additional
+            # 'pgmap' argument.
+            #
+            # This argument was removed by commit dd57f5feb19a
+            # (mm/memremap: remove unused get_dev_pagemap() parameter)
+            # in linux-next, expected in v6.18.
+            #
+            CODE="
+            #include <linux/memremap.h>
+
+            struct dev_pagemap *get_dev_pagemap_has_pgmap_arg(void) {
+                struct dev_pagemap *pgmap;
+
+                get_dev_pagemap(0, pgmap);
+            }"
+
+            compile_check_conftest "$CODE" "NV_GET_DEV_PAGEMAP_HAS_PGMAP_ARG" "" "types"
+        ;;
+
         drm_available)
             # Determine if the DRM subsystem is usable
             CODE="

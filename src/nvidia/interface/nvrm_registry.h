@@ -2712,18 +2712,22 @@
 
 //
 // Type: Dword
+// This regkey is used to enable/disable Adatpive Bandwidth Mode (ABM)
+//
+#define NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE                   "RmNvlinkAdaptiveBwMode"
+#define NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE_ENABLE            0:0
+#define NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE_ENABLE_DEFAULT    0x00000001
+#define NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE_ENABLE_YES        0x00000001
+#define NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE_ENABLE_NO         0x00000000
+
+//
+// Type: Dword
 // This regkey overrides the state of the GR scrubber channel and determines
 // whether it should be created or not.
 //
 #define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL             "RmForceGrScrubberChannel"
 #define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_DISABLE     0x00000000
 #define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_ENABLE      0x00000001
-
-// Type DWORD
-// Allows extending PMU FB Operationg Timeout (DMA / FBFlush) on certain profiles
-// This currently takes effect on GB10X profile only
-#define NV_REG_STR_RM_PMU_FB_TIMEOUT_US                    "RmPmuFBTimeoutUs"
-#define NV_REG_STR_RM_PMU_FB_TIMEOUT_US_DEFAULT            (0)
 
 //
 // Type: Dword

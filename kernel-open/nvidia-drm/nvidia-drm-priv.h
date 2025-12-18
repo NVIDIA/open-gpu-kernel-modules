@@ -30,6 +30,7 @@
 #if defined(NV_DRM_DRMP_H_PRESENT)
 #include <drm/drmP.h>
 #endif
+#include <drm/drm_print.h>
 
 #include <drm/drm_device.h>
 #include <drm/drm_gem.h>

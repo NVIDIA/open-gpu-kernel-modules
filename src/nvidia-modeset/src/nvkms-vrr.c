@@ -263,6 +263,19 @@ nvGetAllowedDpyVrrType(const NVDpyEvoRec *pDpyEvo,
         if ((pTimings->vVisible < 720) || (pTimings->RRx1k < 50000)) {
             return NVKMS_DPY_VRR_TYPE_NONE;
         }
+
+        if (pDpyEvo->parsedEdid.valid &&
+            ((pDpyEvo->parsedEdid.info.product_id == 0x7232) &&
+             (pDpyEvo->parsedEdid.info.manuf_id == 0x2D4C))) {
+
+            const NvU32 vVisible = pTimings->vVisible;
+            const NvU32 hVisible = pTimings->hVisible;
+
+            // Filter out non-16:9 modes
+            if ((vVisible * 16) != (hVisible * 9)) {
+                return NVKMS_DPY_VRR_TYPE_NONE;
+            }
+        }
     }
 
     /*

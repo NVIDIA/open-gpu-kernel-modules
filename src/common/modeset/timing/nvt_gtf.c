@@ -103,6 +103,7 @@ NVT_STATUS NvTiming_CalcGTF(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT
 
     // A proper way to calculate fixed HTotal*VTotal*Rr/10000
     pT->pclk = axb_div_c(dwHTCells*dwVTotal, dwRefreshRate, 10000/NVT_GTF_CELL_GRAN);
+    pT->pclk1khz = pT->pclk * 10;
 
     pT->HSyncPol = NVT_H_SYNC_NEGATIVE;
     pT->VSyncPol = NVT_V_SYNC_POSITIVE;
@@ -111,7 +112,7 @@ NVT_STATUS NvTiming_CalcGTF(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT
     // fill in the extra timing info
     pT->etc.flag = 0;
     pT->etc.rr = (NvU16)rr;
-    pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk, (NvU32)10000*(NvU32)1000, (NvU32)pT->HTotal*(NvU32)pT->VTotal);
+    pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk1khz, (NvU32)1000*(NvU32)1000, (NvU32)pT->HTotal*(NvU32)pT->VTotal);
     pT->etc.aspect = 0;
     pT->etc.rep = 0x1; 
     pT->etc.status = NVT_STATUS_GTF;   
@@ -128,6 +129,7 @@ NVT_STATUS NvTiming_CalcGTF(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT
             pT->interlaced = NVT_INTERLACED_NO_EXTRA_VBLANK_ON_FIELD2;
 
         pT->pclk   >>= 1;
+        pT->pclk1khz >>= 1;
         pT->VTotal >>= 1;
         pT->VVisible = (pT->VVisible + 1) / 2;
     }

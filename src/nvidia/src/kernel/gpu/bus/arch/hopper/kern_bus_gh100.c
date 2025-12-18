@@ -50,6 +50,7 @@
 #include "published/hopper/gh100/dev_xtl_ep_pcfg_gpu.h"
 #include "published/hopper/gh100/dev_vm.h"
 #include "published/hopper/gh100/dev_mmu.h"
+#include "published/hopper/gh100/dev_fb.h"
 #include "ctrl/ctrl2080/ctrl2080fla.h" // NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK
 
 #include "nvrm_registry.h"
@@ -60,7 +61,7 @@
      PCIE_P2P_WRITE_MAILBOX_SIZE)
 
 // RM reserved memory region is mapped separately as it is not added to the kernel
-#define COHERENT_CPU_MAPPING_RM_RESV_REGION             COHERENT_CPU_MAPPING_REGION_1
+#define COHERENT_CPU_MAPPING_RM_RESV_REGION_START       COHERENT_CPU_MAPPING_REGION_1
 #define COHERENT_CPU_MAPPING_RM_KERNEL_ONLINED_REGION   COHERENT_CPU_MAPPING_REGION_0
 
 /*!
@@ -977,6 +978,12 @@ kbusCreateCoherentCpuMapping_GH100
     NvU64               busAddrSize[COHERENT_CPU_MAPPING_TOTAL_REGIONS];
     NvU32               i;
     NvU64               memblockSize;
+    NvU32               data;
+    NvU64               start;
+    NvU64               end;
+    NV_RANGE            wprRegions[2];
+    NV_RANGE            reservedRegions[COHERENT_CPU_MAPPING_TOTAL_REGIONS - 1];
+    NvU32               numReservedRegions = 0;
     NvU32               cachingMode[COHERENT_CPU_MAPPING_TOTAL_REGIONS];
 
     NV_ASSERT_OR_RETURN(gpuIsSelfHosted(pGpu) && pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_IS_C2C_LINK_UP), NV_ERR_INVALID_STATE);
@@ -986,22 +993,74 @@ kbusCreateCoherentCpuMapping_GH100
                         NV_ERR_INVALID_STATE);
     NV_ASSERT_OR_RETURN(listCount(&pKernelBus->virtualBar2[GPU_GFID_PF].usedMapList) == 0,
                         NV_ERR_INVALID_STATE);
-
     fbSize = (pMemoryManager->Ram.fbTotalMemSizeMb << 20);
 
     NV_ASSERT_OK_OR_RETURN(osNumaMemblockSize(&memblockSize));
 
-    pKernelBus->coherentCpuMapping.nrMapping = 2;
-
+    // NUMA region
     pKernelBus->coherentCpuMapping.physAddr[COHERENT_CPU_MAPPING_REGION_0] = pMemoryManager->Ram.fbRegion[0].base;
     pKernelBus->coherentCpuMapping.size[COHERENT_CPU_MAPPING_REGION_0] = numaOnlineMemorySize;
     cachingMode[COHERENT_CPU_MAPPING_REGION_0] = NV_MEMORY_CACHED;
 
-    pKernelBus->coherentCpuMapping.physAddr[COHERENT_CPU_MAPPING_RM_RESV_REGION] =
-        pKernelBus->coherentCpuMapping.physAddr[COHERENT_CPU_MAPPING_REGION_0] +
-        pKernelBus->coherentCpuMapping.size[COHERENT_CPU_MAPPING_REGION_0];
-    pKernelBus->coherentCpuMapping.size[COHERENT_CPU_MAPPING_RM_RESV_REGION] =
-        fbSize - pKernelBus->coherentCpuMapping.size[COHERENT_CPU_MAPPING_REGION_0];
+    pKernelBus->coherentCpuMapping.nrMapping = 1;
+
+    // reserved regions
+    start = pMemoryManager->Ram.fbRegion[0].base + numaOnlineMemorySize,
+    end = pMemoryManager->Ram.fbRegion[0].base + fbSize;
+
+    if (start != end)
+    {
+        numReservedRegions = 1;
+        reservedRegions[0] = rangeMake(start, end - 1);
+
+        if (!IS_VIRTUAL(pGpu))
+        {
+            // carving out WPRs
+            data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR1_ADDR_LO);
+            data = DRF_VAL(_PFB, _PRI_MMU_WPR1_ADDR_LO, _VAL, data);
+            start = (NvU64)data << NV_PFB_PRI_MMU_WPR1_ADDR_LO_ALIGNMENT;
+        
+            data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR1_ADDR_HI);
+            data = DRF_VAL(_PFB, _PRI_MMU_WPR1_ADDR_HI, _VAL, data);
+            end = (NvU64)data << NV_PFB_PRI_MMU_WPR1_ADDR_HI_ALIGNMENT;
+        
+            if (start != end && end != 0)
+                wprRegions[0] = rangeMake(start, end - 1);
+            else
+                wprRegions[0] = NV_RANGE_EMPTY;
+        
+            data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR2_ADDR_LO);
+            data = DRF_VAL(_PFB, _PRI_MMU_WPR2_ADDR_LO, _VAL, data);
+            start = (NvU64)data << NV_PFB_PRI_MMU_WPR2_ADDR_LO_ALIGNMENT;
+        
+            data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR2_ADDR_HI);
+            data = DRF_VAL(_PFB, _PRI_MMU_WPR2_ADDR_HI, _VAL, data);
+            end = (NvU64)data << NV_PFB_PRI_MMU_WPR2_ADDR_HI_ALIGNMENT;
+        
+            if (start != end && end != 0)
+                wprRegions[1] = rangeMake(start, end - 1);
+            else
+                wprRegions[1] = NV_RANGE_EMPTY;
+        
+            NV_PRINTF(LEVEL_INFO, "wpr1 0x%llx->0x%llx, wpr2 0x%llx->0x%llx\n",
+                wprRegions[0].lo, wprRegions[0].hi, wprRegions[1].lo, wprRegions[1].hi);
+        
+            status = rangesCarveout(
+                reservedRegions, COHERENT_CPU_MAPPING_TOTAL_REGIONS - 1,
+                &numReservedRegions, wprRegions, 2);
+        
+            NV_ASSERT(numReservedRegions <= COHERENT_CPU_MAPPING_TOTAL_REGIONS - 1);
+        }
+    
+        for (i = 0; i < numReservedRegions; ++i)
+        {
+            pKernelBus->coherentCpuMapping.physAddr[pKernelBus->coherentCpuMapping.nrMapping] =
+                reservedRegions[i].lo;
+            pKernelBus->coherentCpuMapping.size[pKernelBus->coherentCpuMapping.nrMapping] =
+                rangeLength(reservedRegions[i]);
+            pKernelBus->coherentCpuMapping.nrMapping++;
+        }
+    }
 
     for (i = COHERENT_CPU_MAPPING_REGION_0; i < pKernelBus->coherentCpuMapping.nrMapping; ++i)
     {
@@ -1018,8 +1077,14 @@ kbusCreateCoherentCpuMapping_GH100
             // For passthrough case, reserved memory guest physical address
             // comes from BAR1 address.
             //
-            busAddrStart[COHERENT_CPU_MAPPING_RM_RESV_REGION] =
-                pKernelMemorySystem->coherentRsvdFbBase;
+            //
+            NvU64 originalBase = busAddrStart[COHERENT_CPU_MAPPING_RM_RESV_REGION_START];
+            NvU64 shiftBase = pKernelMemorySystem->coherentRsvdFbBase;
+
+            for (i = COHERENT_CPU_MAPPING_RM_RESV_REGION_START; i < pKernelBus->coherentCpuMapping.nrMapping; ++i)
+            {
+                busAddrStart[i] = busAddrStart[i] - originalBase + shiftBase;
+            }
         }
 
         //
@@ -1028,11 +1093,17 @@ kbusCreateCoherentCpuMapping_GH100
         // kernel ioremap_wc which actually uses the normal non-cacheable type
         // PROT_NORMAL_NC
         //
-        cachingMode[COHERENT_CPU_MAPPING_RM_RESV_REGION] = NV_MEMORY_WRITECOMBINED;
+        for (i = COHERENT_CPU_MAPPING_RM_RESV_REGION_START; i < pKernelBus->coherentCpuMapping.nrMapping; ++i)
+        {
+            cachingMode[i] = NV_MEMORY_WRITECOMBINED;
+        }
     }
     else
     {
-        cachingMode[COHERENT_CPU_MAPPING_RM_RESV_REGION] = NV_MEMORY_CACHED;
+        for (i = COHERENT_CPU_MAPPING_RM_RESV_REGION_START; i < pKernelBus->coherentCpuMapping.nrMapping; ++i)
+        {
+            cachingMode[i] = NV_MEMORY_CACHED;
+        }
     }
 
     for (i = COHERENT_CPU_MAPPING_REGION_0; i < pKernelBus->coherentCpuMapping.nrMapping; ++i)
@@ -1252,7 +1323,7 @@ kbusMapCoherentCpuMapping_GH100
         {
             return osMapSystemMemory(pMemDesc, offset, length, NV_TRUE, protect, ppAddress, ppPriv);
         }
-        regionIndex = COHERENT_CPU_MAPPING_RM_RESV_REGION;
+        regionIndex = COHERENT_CPU_MAPPING_RM_RESV_REGION_START;
     }
 
     NV_ASSERT_OR_RETURN(memdescGetContiguity(pMemDesc, AT_CPU), NV_ERR_NOT_SUPPORTED);
@@ -1311,7 +1382,7 @@ kbusUnmapCoherentCpuMapping_GH100
             kbusFlush_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), BUS_FLUSH_VIDEO_MEMORY);
             return;
         }
-        regionIndex = COHERENT_CPU_MAPPING_RM_RESV_REGION;
+        regionIndex = COHERENT_CPU_MAPPING_RM_RESV_REGION_START;
     }
 
     NV_ASSERT_OR_RETURN_VOID(memdescGetContiguity(pMemDesc, AT_CPU));

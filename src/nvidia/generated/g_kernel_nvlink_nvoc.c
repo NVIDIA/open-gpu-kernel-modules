@@ -242,6 +242,18 @@ void __nvoc_init_dataField_KernelNvlink(KernelNvlink *pThis, RmHalspecOwner *pRm
         pThis->setProperty(pThis, PDB_PROP_KNVLINK_ENABLED, NV_FALSE);
     }
 
+    // NVOC Property Hal field -- PDB_PROP_KNVLINK_RESET_HSHUBNVL_ON_TEARDOWN
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xe0000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->setProperty(pThis, PDB_PROP_KNVLINK_RESET_HSHUBNVL_ON_TEARDOWN, NV_TRUE);
+    }
+    // default
+    else
+    {
+        pThis->setProperty(pThis, PDB_PROP_KNVLINK_RESET_HSHUBNVL_ON_TEARDOWN, NV_FALSE);
+    }
+
     // NVOC Property Hal field -- PDB_PROP_KNVLINK_UNSET_NVLINK_PEER_SUPPORTED
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0fc00UL) ) ||
         ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
@@ -760,10 +772,15 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
         pThis->__knvlinkDumpCallbackRegister__ = &knvlinkDumpCallbackRegister_b3696a;
     }
 
-    // knvlinkGetEffectivePeerLinkMask -- halified (2 hals) body
+    // knvlinkGetEffectivePeerLinkMask -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__knvlinkGetEffectivePeerLinkMask__ = &knvlinkGetEffectivePeerLinkMask_GH100;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 */ 
+    {
+        pThis->__knvlinkGetEffectivePeerLinkMask__ = &knvlinkGetEffectivePeerLinkMask_GB100;
     }
     else
     {
@@ -832,6 +849,18 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
         pThis->__knvlinkPostSchedulingEnableCallbackRegister__ = &knvlinkPostSchedulingEnableCallbackRegister_b3696a;
     }
 
+    // knvlinkTriggerProbeRequest -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 */ 
+    {
+        pThis->__knvlinkTriggerProbeRequest__ = &knvlinkTriggerProbeRequest_GB100;
+    }
+    // default
+    else
+    {
+        pThis->__knvlinkTriggerProbeRequest__ = &knvlinkTriggerProbeRequest_46f6a7;
+    }
+
     // knvlinkPostSchedulingEnableCallbackUnregister -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) ) ||
         ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 */ 
@@ -858,6 +887,18 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
     else
     {
         pThis->__knvlinkGetSupportedBwMode__ = &knvlinkGetSupportedBwMode_46f6a7;
+    }
+
+    // knvlinkABMLinkMaskUpdate -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 */ 
+    {
+        pThis->__knvlinkABMLinkMaskUpdate__ = &knvlinkABMLinkMaskUpdate_GB100;
+    }
+    // default
+    else
+    {
+        pThis->__knvlinkABMLinkMaskUpdate__ = &knvlinkABMLinkMaskUpdate_46f6a7;
     }
 
     // knvlinkDirectConnectCheck -- halified (2 hals) body
@@ -974,13 +1015,13 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
     {
         pThis->__knvlinkEncryptionUpdateTopology__ = &knvlinkEncryptionUpdateTopology_46f6a7;
     }
-} // End __nvoc_init_funcTable_KernelNvlink_1 with approximately 102 basic block(s).
+} // End __nvoc_init_funcTable_KernelNvlink_1 with approximately 107 basic block(s).
 
 
-// Initialize vtable(s) for 59 virtual method(s).
+// Initialize vtable(s) for 61 virtual method(s).
 void __nvoc_init_funcTable_KernelNvlink(KernelNvlink *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
 
-    // Initialize vtable(s) with 46 per-object function pointer(s).
+    // Initialize vtable(s) with 48 per-object function pointer(s).
     __nvoc_init_funcTable_KernelNvlink_1(pThis, pRmhalspecowner, pGpuhalspecowner);
 }
 

@@ -552,7 +552,7 @@ namespace DisplayPort
         virtual bool readPrSinkDebugInfo(panelReplaySinkDebugInfo *prDbgInfo) = 0;
 
         virtual bool     isDpInTunnelingSupported() = 0;
-        virtual void     enableDpTunnelingBwAllocationSupport() = 0;
+        virtual void     setDpTunnelingBwAllocationSupport(bool bEnable) = 0;
         virtual bool     isDpTunnelBwAllocationEnabled() = 0;
         virtual bool     getDpTunnelEstimatedBw(NvU8 &estimatedBw) = 0;
         virtual bool     getDpTunnelGranularityMultiplier(NvU8 &granularityMultiplier) = 0;
@@ -1474,10 +1474,9 @@ namespace DisplayPort
         {
             return caps.dpInTunnelingCaps.bIsSupported;
         }
-
-        virtual void     enableDpTunnelingBwAllocationSupport()
+        virtual void     setDpTunnelingBwAllocationSupport(bool bEnable)
         {
-            bEnableDpTunnelBwAllocationSupport = true;
+            bEnableDpTunnelBwAllocationSupport = bEnable;
         }
 
         virtual bool     isDpTunnelBwAllocationEnabled()

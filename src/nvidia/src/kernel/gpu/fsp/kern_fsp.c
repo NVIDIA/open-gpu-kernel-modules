@@ -161,22 +161,50 @@ void
 kfspReleaseProxyImage_IMPL
 (
     OBJGPU    *pGpu,
-    KernelFsp *pKernelFsp
+    KernelFsp *pKernelFsp,
+    NvU32      flags
 )
 {
+    //
+    // We are not in a PM transition - GPU_STATE_FLAGS_PRESERVING not set, or
+    // PDB_PROP_GPU_REUSE_INIT_CONTING_MEM is not set
+    // = free init mem
+    //
+    NvBool bFreeInitMem = !pGpu->getProperty(pGpu, PDB_PROP_GPU_REUSE_INIT_CONTING_MEM) ||
+                          !(flags & GPU_STATE_FLAGS_PRESERVING);
+
     if (pKernelFsp->pSysmemFrtsMemdesc != NULL)
     {
         kfspFrtsSysmemLocationClear_HAL(pGpu, pKernelFsp);
         memdescUnmap(pKernelFsp->pSysmemFrtsMemdesc, NV_TRUE,
             memdescGetKernelMapping(pKernelFsp->pSysmemFrtsMemdesc),
             memdescGetKernelMappingPriv(pKernelFsp->pSysmemFrtsMemdesc));
-        memdescFree(pKernelFsp->pSysmemFrtsMemdesc);
-        memdescDestroy(pKernelFsp->pSysmemFrtsMemdesc);
-        pKernelFsp->pSysmemFrtsMemdesc = NULL;
+        if (bFreeInitMem)
+        {
+            memdescFree(pKernelFsp->pSysmemFrtsMemdesc);
+            memdescDestroy(pKernelFsp->pSysmemFrtsMemdesc);
+            pKernelFsp->pSysmemFrtsMemdesc = NULL;
+        }
     }
 
-    // With Keep WPR feature, keep the GSP-FMC and BootArgsMemdesc.
-    if (!(pGpu->getProperty(pGpu, PDB_PROP_GPU_KEEP_WPR_ACROSS_GC6_SUPPORTED) && IS_GPU_GC6_STATE_ENTERING(pGpu)))
+    //
+    // Keep GSP-FMC and BootArgsMemdesc when Keep WPR feature is supported
+    //
+    // Free the descriptors if:
+    // - Keep WPR feature is NOT supported (hardware cannot preserve WPR memory), OR
+    // - Keep WPR IS supported but BOTH of the following are true:
+    //   * NOT entering GC6 state, AND
+    //   * bFreeInitMem is TRUE (should free init memory)
+    //
+    // Keep the descriptors ONLY when:
+    // - Keep WPR feature IS supported (hardware capability), AND
+    // - EITHER:
+    //   * Entering GC6 state (original behavior), OR
+    //   * bFreeInitMem is FALSE (PDB_PROP_GPU_REUSE_INIT_CONTIG_MEM extends
+    //     the 'keep' behavior to all PM transitions to avoid memory fragmentation)
+    //
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_KEEP_WPR_ACROSS_GC6_SUPPORTED) ||
+        (!IS_GPU_GC6_STATE_ENTERING(pGpu) && bFreeInitMem))
     {
         if (pKernelFsp->pGspFmcMemdesc != NULL)
         {
@@ -213,7 +241,7 @@ kfspCleanupBootState_IMPL
     portMemFree(pKernelFsp->pCotPayload);
     pKernelFsp->pCotPayload = NULL;
 
-    kfspReleaseProxyImage(pGpu, pKernelFsp);
+    kfspReleaseProxyImage(pGpu, pKernelFsp, GPU_STATE_DEFAULT);
 
     if (pKernelFsp->bClockBoostSupported)
     {
@@ -242,7 +270,9 @@ kfspStateUnload_IMPL
     NvU32      flags
 )
 {
-    kfspReleaseProxyImage(pGpu, pKernelFsp);
+
+    kfspReleaseProxyImage(pGpu, pKernelFsp, flags);
+
     return NV_OK;
 }
 

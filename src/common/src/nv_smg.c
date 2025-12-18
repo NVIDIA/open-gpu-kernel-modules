@@ -601,6 +601,11 @@ static NvBool GetGraphicsPartitionUUIDForDevice(nvRMContextPtr rmctx, nvMIGDevic
     smg_memcpy(migDev->migUuid,
                ws->getUuidParams.uuidStr,
                NV_MIG_DEVICE_UUID_STR_LENGTH);
+
+    ct_assert(NVC638_UUID_LEN == NV_GPU_UUID_LEN);
+    smg_memcpy(migDev->migUuidBin,
+               ws->getUuidParams.uuid,
+               NV_GPU_UUID_LEN);
     success = NV_TRUE;
 
 out:

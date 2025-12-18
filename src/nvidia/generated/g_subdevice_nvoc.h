@@ -5641,6 +5641,16 @@ static inline NV_STATUS subdeviceCtrlCmdInternalNvlinkHshubGetSysmemNvlinkMask(s
 #define subdeviceCtrlCmdInternalNvlinkHshubGetSysmemNvlinkMask(pSubdevice, pParams) subdeviceCtrlCmdInternalNvlinkHshubGetSysmemNvlinkMask_IMPL(pSubdevice, pParams)
 #endif // __nvoc_subdevice_h_disabled
 
+NV_STATUS subdeviceCtrlCmdInternalNvlinkRCUserModeChannels_IMPL(struct Subdevice *pSubdevice);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdInternalNvlinkRCUserModeChannels(struct Subdevice *pSubdevice) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdInternalNvlinkRCUserModeChannels(pSubdevice) subdeviceCtrlCmdInternalNvlinkRCUserModeChannels_IMPL(pSubdevice)
+#endif // __nvoc_subdevice_h_disabled
+
 NV_STATUS subdeviceCtrlCmdInternalSetP2pCaps_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_SET_P2P_CAPS_PARAMS *pParams);
 #ifdef __nvoc_subdevice_h_disabled
 static inline NV_STATUS subdeviceCtrlCmdInternalSetP2pCaps(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_SET_P2P_CAPS_PARAMS *pParams) {
@@ -8223,6 +8233,8 @@ NV_STATUS subdeviceCtrlCmdInternalNvlinkSyncLaneShutdownProps_IMPL(struct Subdev
 NV_STATUS subdeviceCtrlCmdInternalNvlinkEnableSysmemNvlinkAts_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_ENABLE_SYSMEM_NVLINK_ATS_PARAMS *pParams);
 
 NV_STATUS subdeviceCtrlCmdInternalNvlinkHshubGetSysmemNvlinkMask_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_HSHUB_GET_SYSMEM_NVLINK_MASK_PARAMS *pParams);
+
+NV_STATUS subdeviceCtrlCmdInternalNvlinkRCUserModeChannels_IMPL(struct Subdevice *pSubdevice);
 
 NV_STATUS subdeviceCtrlCmdInternalSetP2pCaps_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_SET_P2P_CAPS_PARAMS *pParams);
 

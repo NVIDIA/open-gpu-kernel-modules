@@ -43,8 +43,6 @@
 
 #ifdef UVM_MIGRATE_VMA_SUPPORTED
 
-static struct kmem_cache *g_uvm_migrate_vma_state_cache __read_mostly;
-
 static const gfp_t g_migrate_vma_gfp_flags = NV_UVM_GFP_FLAGS | GFP_HIGHUSER_MOVABLE | __GFP_THISNODE;
 
 static uvm_sgt_t *uvm_select_sgt(uvm_processor_id_t src_id, int src_nid, migrate_vma_state_t *state)
@@ -1497,7 +1495,7 @@ NV_STATUS uvm_migrate_pageable(uvm_migrate_args_t *uvm_migrate_args)
         uvm_migrate_args->dst_node_id = uvm_gpu_numa_node(gpu);
     }
 
-    state = nv_kmem_cache_zalloc(g_uvm_migrate_vma_state_cache, NV_UVM_GFP_FLAGS);
+    state = uvm_kvmalloc_zero(sizeof(migrate_vma_state_t));
     if (!state)
         return NV_ERR_NO_MEMORY;
 
@@ -1519,22 +1517,17 @@ NV_STATUS uvm_migrate_pageable(uvm_migrate_args_t *uvm_migrate_args)
 out:
     uvm_kvfree(state->dma.sgt_cpu);
     uvm_kvfree(state->cpu_page_mask);
-    kmem_cache_free(g_uvm_migrate_vma_state_cache, state);
+    uvm_kvfree(state);
 
     return status;
 }
 
 NV_STATUS uvm_migrate_pageable_init(void)
 {
-    g_uvm_migrate_vma_state_cache = NV_KMEM_CACHE_CREATE("migrate_vma_state_t", migrate_vma_state_t);
-    if (!g_uvm_migrate_vma_state_cache)
-        return NV_ERR_NO_MEMORY;
-
     return NV_OK;
 }
 
 void uvm_migrate_pageable_exit(void)
 {
-    kmem_cache_destroy_safe(&g_uvm_migrate_vma_state_cache);
 }
 #endif

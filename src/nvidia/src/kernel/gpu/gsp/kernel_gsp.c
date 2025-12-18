@@ -24,6 +24,7 @@
 #include "resserv/rs_server.h"
 
 #include "gpu/gsp/kernel_gsp.h"
+#include "gpu/falcon/kernel_falcon.h"
 
 #include "kernel/core/thread_state.h"
 #include "kernel/core/locks.h"
@@ -2107,6 +2108,7 @@ _kgspLogXid119
     NvU64 duration;
     char  durationUnitsChar;
     KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+    KernelFalcon *pKernelFlcn = staticCast(pKernelGsp, KernelFalcon);
 
     if (pRpc->timeoutCount == 1)
     {
@@ -2149,8 +2151,21 @@ _kgspLogXid119
         kgspLogRpcDebugInfo(pGpu, pRpc, GSP_RPC_TIMEOUT, NV_TRUE/*bPollingForRpcResponse*/);
         osAssertFailed();
 
+        //
+        // Dump registers / core state, non-destructively here.
+        // On production boards, ICD dump cannot be done because halt is final.
+        // Do not print this if we already consider GSP dead (prevents spam overload)
+        //
+        kgspDumpMailbox_HAL(pGpu, pKernelGsp);
+        kflcnCoreDumpNondestructive(pGpu, pKernelFlcn, 2);
+
         NV_PRINTF(LEVEL_ERROR,
                   "********************************************************************************\n");
+    }
+    else
+    {
+        kgspDumpMailbox_HAL(pGpu, pKernelGsp);             // Always dump mailboxes
+        kflcnCoreDumpNondestructive(pGpu, pKernelFlcn, 0); // simple version
     }
 }
 
@@ -2348,8 +2363,14 @@ _kgspRpcRecvPoll
             goto done;
         }
 
+        // 
+        // Today, we will soldier on if GSP times out. This can cause future issues if the action
+        // requested never actually occurs.
+        // 
         if (timeoutStatus == NV_ERR_TIMEOUT)
         {
+            KernelFalcon *pKernelFlcn = staticCast(pKernelGsp, KernelFalcon);
+
             rpcStatus = timeoutStatus;
 
             _kgspRpcIncrementTimeoutCountAndRateLimitPrints(pGpu, pRpc);
@@ -2366,6 +2387,9 @@ _kgspRpcRecvPoll
                 NV_ASSERT_FAILED("Back to back GSP RPC timeout detected! GPU marked for reset");
                 gpuMarkDeviceForReset(pGpu);
                 pKernelGsp->bFatalError = NV_TRUE;
+
+                // Do a destructive ICD dump - core is unrecoverable.
+                kflcnCoreDumpDestructive(pGpu, pKernelFlcn);
 
                 // For Windows, if TDR is supported, trigger TDR to recover the system.
                 if (pGpu->getProperty(pGpu, PDB_PROP_GPU_SUPPORTS_TDR_EVENT))

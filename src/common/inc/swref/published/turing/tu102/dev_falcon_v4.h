@@ -33,6 +33,7 @@
 #define NV_PFALCON_FALCON_IRQSTAT_HALT_TRUE                                                            0x00000001     /* R---V */
 #define NV_PFALCON_FALCON_IRQSTAT_SWGEN0                                                               6:6            /* R-XVF */
 #define NV_PFALCON_FALCON_IRQSTAT_SWGEN0_TRUE                                                          0x00000001     /* R---V */
+#define NV_PFALCON_FALCON_IRQMODE                                                                      0x0000000c     /* RW-4R */
 #define NV_PFALCON_FALCON_IRQMSET                                                                      0x00000010     /* -W-4R */
 #define NV_PFALCON_FALCON_IRQMCLR                                                                      0x00000014     /* -W-4R */
 #define NV_PFALCON_FALCON_IRQMASK                                                                      0x00000018     /* R--4R */

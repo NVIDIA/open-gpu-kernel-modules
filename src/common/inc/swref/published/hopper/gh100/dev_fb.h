@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2025 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,5 +29,26 @@
 #define NV_PFB_FBHUB_PCIE_FLUSH_SYSMEM_ADDR_HI           0x00100A38 /* RW-4R */
 #define NV_PFB_FBHUB_PCIE_FLUSH_SYSMEM_ADDR_HI_ADR             31:0 /* RWIVF */
 #define NV_PFB_FBHUB_PCIE_FLUSH_SYSMEM_ADDR_HI_ADR_MASK  0x000FFFFF /* ----V */
+
+#define NV_PFB_PRI_MMU_WPR1_ADDR_LO                                            0x001FA81C /* RW-4R */
+#define NV_PFB_PRI_MMU_WPR1_ADDR_LO__PRIV_LEVEL_MASK       0x001FA7CC /*       */
+#define NV_PFB_PRI_MMU_WPR1_ADDR_LO_VAL                                              31:4 /* RWEVF */
+#define NV_PFB_PRI_MMU_WPR1_ADDR_LO_VAL_INIT                                   0x0fffffff /* RWE-V */
+#define NV_PFB_PRI_MMU_WPR1_ADDR_LO_ALIGNMENT                                  0x0000000c /*       */
+#define NV_PFB_PRI_MMU_WPR1_ADDR_HI                                            0x001FA820 /* RW-4R */
+#define NV_PFB_PRI_MMU_WPR1_ADDR_HI__PRIV_LEVEL_MASK       0x001FA7CC /*       */
+#define NV_PFB_PRI_MMU_WPR1_ADDR_HI_VAL                                              31:4 /* RWEVF */
+#define NV_PFB_PRI_MMU_WPR1_ADDR_HI_VAL_INIT                                   0x00000000 /* RWE-V */
+#define NV_PFB_PRI_MMU_WPR1_ADDR_HI_ALIGNMENT                                  0x0000000c /*       */
+#define NV_PFB_PRI_MMU_WPR2_ADDR_LO                                            0x001FA824 /* RW-4R */
+#define NV_PFB_PRI_MMU_WPR2_ADDR_LO__PRIV_LEVEL_MASK       0x001FA7CC /*       */
+#define NV_PFB_PRI_MMU_WPR2_ADDR_LO_VAL                                              31:4 /* RWEVF */
+#define NV_PFB_PRI_MMU_WPR2_ADDR_LO_VAL_INIT                                   0x0fffffff /* RWE-V */
+#define NV_PFB_PRI_MMU_WPR2_ADDR_LO_ALIGNMENT                                  0x0000000c /*       */
+#define NV_PFB_PRI_MMU_WPR2_ADDR_HI                                            0x001FA828 /* RW-4R */
+#define NV_PFB_PRI_MMU_WPR2_ADDR_HI__PRIV_LEVEL_MASK       0x001FA7CC /*       */
+#define NV_PFB_PRI_MMU_WPR2_ADDR_HI_VAL                                              31:4 /* RWEVF */
+#define NV_PFB_PRI_MMU_WPR2_ADDR_HI_VAL_INIT                                   0x00000000 /* RWE-V */
+#define NV_PFB_PRI_MMU_WPR2_ADDR_HI_ALIGNMENT                                  0x0000000c /*       */
 
 #endif // __gh100_dev_fb_h_

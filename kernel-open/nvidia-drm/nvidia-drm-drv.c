@@ -1717,6 +1717,11 @@ static long nv_drm_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
     return retcode;
 }
 
+static int nv_drm_load_noop(struct drm_device *dev, unsigned long flags)
+{
+    return 0;
+}
+
 static const struct file_operations nv_drm_fops = {
     .owner          = THIS_MODULE,
 
@@ -1898,6 +1903,8 @@ static struct drm_driver nv_drm_driver = {
 #if defined(NV_DRM_DRIVER_HAS_GEM_PRIME_RES_OBJ)
     .gem_prime_res_obj      = nv_drm_gem_prime_res_obj,
 #endif
+
+    .load                   = nv_drm_load_noop,
 
     .postclose              = nv_drm_postclose,
     .open                   = nv_drm_open,

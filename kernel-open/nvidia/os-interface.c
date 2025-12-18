@@ -371,7 +371,7 @@ NvBool NV_API_CALL os_semaphore_may_sleep(void)
 
 NvBool NV_API_CALL os_is_isr(void)
 {
-    return (in_irq());
+    return (nv_in_hardirq());
 }
 
 // return TRUE if the caller is the super-user

@@ -149,6 +149,10 @@ typedef struct
     NvBool  bStarted;
 } ENGLIST_ITER, *PENGLIST_ITER;
 
+typedef struct _GPU_REFRESH_RECOVERY_ACTION_PARAMS {
+    NvBool bSquashXid;
+} GPU_REFRESH_RECOVERY_ACTION_PARAMS;
+
 static ENGLIST_ITER gpuGetEngineOrderListIter(OBJGPU *pGpu, NvU32 flags);
 static NvBool gpuGetNextInEngineOrderList(OBJGPU *pGpu, ENGLIST_ITER *pIt, ENGDESCRIPTOR *pEngDesc);
 
@@ -6968,14 +6972,16 @@ _gpuRefreshRecoveryActionInLock
     void  *pParams
 )
 {
-    OBJSYS                          *pSys = SYS_GET_INSTANCE();
-    OBJGPU                          *pGpu = gpumgrGetGpu(gpuInstance);
-    NV_STATUS                        rmStatus;
-    NvBool                           bResetRequired;
-    NvBool                           bDrainAndReset;
-    NV2080_CTRL_GPU_RECOVERY_ACTION  newAction;
-    NV2080_CTRL_GPU_RECOVERY_ACTION  oldAction;
-    
+    OBJSYS                             *pSys = SYS_GET_INSTANCE();
+    OBJGPU                             *pGpu = gpumgrGetGpu(gpuInstance);
+    GPU_REFRESH_RECOVERY_ACTION_PARAMS *pActionParams = (GPU_REFRESH_RECOVERY_ACTION_PARAMS *)pParams;
+    NV_STATUS                           rmStatus;
+    NvBool                              bResetRequired;
+    NvBool                              bDrainAndReset;
+    NV2080_CTRL_GPU_RECOVERY_ACTION     newAction;
+    NV2080_CTRL_GPU_RECOVERY_ACTION     oldAction;
+    NvBool                              bSquashXid = (pActionParams != NULL) ? pActionParams->bSquashXid : NV_FALSE;
+
     if (pGpu == NULL)
     {
         // Call-back is too late. pGpu is already NULL
@@ -7025,8 +7031,12 @@ _gpuRefreshRecoveryActionInLock
             gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_GPU_RECOVERY_ACTION, NULL, 0, 0, newAction);
 
             // Log XID 154 to indicate new recovery action.
-            nvErrorLog_va(pGpu, GPU_RECOVERY_ACTION_CHANGED, "GPU recovery action changed from 0x%x (%s) to 0x%x (%s)",
-                oldAction, _gpuRecoveryActionName(oldAction), newAction, _gpuRecoveryActionName(newAction));
+            if (!bSquashXid)
+            {
+                nvErrorLog_va(pGpu, GPU_RECOVERY_ACTION_CHANGED, "GPU recovery action changed from 0x%x (%s) to 0x%x (%s)",
+                    oldAction, _gpuRecoveryActionName(oldAction), newAction, _gpuRecoveryActionName(newAction));
+
+            }
         }
     }
 }
@@ -7048,21 +7058,38 @@ gpuRefreshRecoveryAction_KERNEL
     NvBool  inLock
 )
 {
+    NvBool bSquashXid = pGpu->getProperty(pGpu, PDB_PROP_GPU_RECOVERY_SQUASH_XID154);
+
     if (!inLock)
     {
         //
         // Schedule a workitem to acquire GPUS_LOCK_ALL and perform the refresh
         // as the current thread could be in any IRQL / lock context.
         //
-        NV_ASSERT_OK(osQueueWorkItem(pGpu,
-                                     _gpuRefreshRecoveryActionInLock,
-                                     NULL,
-                                     OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS));
+        GPU_REFRESH_RECOVERY_ACTION_PARAMS *pActionParams = portMemAllocNonPaged(sizeof(GPU_REFRESH_RECOVERY_ACTION_PARAMS));
+        if (pActionParams == NULL)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to allocate memory for recovery action params\n");
+            return;
+        }
+
+        pActionParams->bSquashXid = bSquashXid;
+
+        NV_STATUS status = osQueueWorkItem(pGpu,
+                                           _gpuRefreshRecoveryActionInLock,
+                                           pActionParams,
+                                           OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to queue recovery action work item: 0x%x\n", status);
+            portMemFree(pActionParams);
+        }
     }
     else
     {
         // Lock requirement is already satisfied, perform the refresh directly.
-        _gpuRefreshRecoveryActionInLock(pGpu->gpuInstance, NULL);
+        GPU_REFRESH_RECOVERY_ACTION_PARAMS actionParams = { .bSquashXid = bSquashXid };
+        _gpuRefreshRecoveryActionInLock(pGpu->gpuInstance, &actionParams);
     }
 }
 
@@ -7088,6 +7115,17 @@ gpuSetRecoveryDrainP2P_KERNEL
         gpuRefreshRecoveryAction_KERNEL(pGpu, NV_FALSE);
     }
 }
+
+void
+gpuUnmarkDeviceForDrainP2P_KERNEL
+(
+    OBJGPU *pGpu
+)
+{
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_RECOVERY_DRAIN_P2P_REQUIRED, NV_FALSE);
+    gpuRefreshRecoveryAction_KERNEL(pGpu, NV_FALSE);
+}
+
 /*!
  * @brief Set partition error attribution
  *

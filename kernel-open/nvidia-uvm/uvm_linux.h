@@ -132,6 +132,12 @@
 
 #define NV_UVM_GFP_FLAGS (GFP_KERNEL | __GFP_NOMEMALLOC)
 
+#if defined(NV_GET_DEV_PAGEMAP_HAS_PGMAP_ARG)
+    #define NV_GET_DEV_PAGEMAP(pfn) get_dev_pagemap(pfn, NULL)
+#else
+    #define NV_GET_DEV_PAGEMAP get_dev_pagemap
+#endif
+
 /* Return a nanosecond-precise value */
 static inline NvU64 NV_GETTIME(void)
 {

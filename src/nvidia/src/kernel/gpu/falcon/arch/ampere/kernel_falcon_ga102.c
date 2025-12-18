@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,11 +27,13 @@
  */
 
 #include "gpu/falcon/kernel_falcon.h"
+#include "gpu/falcon/kernel_falcon_core_dump.h"
 #include "os/os.h"
 
 #include "published/ampere/ga102/dev_falcon_v4.h"
 #include "published/ampere/ga102/dev_falcon_v4_addendum.h"
 #include "published/ampere/ga102/dev_riscv_pri.h"
+#include "published/ampere/ga102/dev_fbif_v4.h"
 
 
 #define PRE_RESET_PRE_SILICON_TIMEOUT_US    300000
@@ -316,5 +318,159 @@ kflcnRiscvReadIntrStatus_GA102
     return (kflcnRegRead_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_IRQSTAT) &
             kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_IRQMASK) &
             kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_IRQDEST));
+}
+
+/*!
+ * Function to read the ICD_CMD register.
+ */
+NvU32 kflcnIcdReadCmdReg_GA102
+(
+    OBJGPU *pGpu,
+    KernelFalcon *pKernelFlcn
+)
+{
+    return kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_ICD_CMD);
+}
+
+/*!
+ * Function to read the ICD_RDATA register pair.
+ */
+NvU64 kflcnRiscvIcdReadRdata_GA102
+(
+    OBJGPU *pGpu,
+    KernelFalcon *pKernelFlcn
+)
+{
+    return (((NvU64)kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_ICD_RDATA1)) << 32) |
+        kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_ICD_RDATA0);
+}
+
+/*!
+ * Function to write the ICD_ADDR register pair.
+ */
+void kflcnRiscvIcdWriteAddress_GA102
+(
+    OBJGPU *pGpu,
+    KernelFalcon *pKernelFlcn,
+    NvU64 address
+)
+{
+    kflcnRiscvRegWrite_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_ICD_ADDR1, address >> 32);
+    kflcnRiscvRegWrite_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_ICD_ADDR0, (NvU32) address);
+}
+
+/*!
+ * Function to write the ICD_CMD register.
+ */
+void kflcnIcdWriteCmdReg_GA102
+(
+    OBJGPU *pGpu,
+    KernelFalcon *pKernelFlcn,
+    NvU32 value
+)
+{
+    kflcnRiscvRegWrite_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_ICD_CMD, value);
+}
+
+void
+kflcnDumpTracepc_GA102
+(
+    OBJGPU *pGpu,
+    KernelFalcon *pKernelFlcn,
+    CoreDumpRegs *pCore
+)
+{
+    NvU64 pc;
+    NvU32 ctl;
+    NvU32 r, w, size;
+    NvU32 entry;
+    NvU32 count;
+
+    r = kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_TRACE_RDIDX);
+    w = kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_TRACE_WTIDX);
+
+    if (((r & 0xbadf0000) == 0xbadf0000) &&
+        ((w & 0xbadf0000) == 0xbadf0000))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Trace buffer blocked, skipping.\n");
+        return;
+    }
+
+    size = DRF_VAL(_PRISCV_RISCV, _TRACE_RDIDX, _MAXIDX, r);
+
+    if (size > __RISCV_MAX_TRACE_ENTRIES)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Trace buffer larger than expected. Bailing!\n");
+        return;
+    }
+
+    r = DRF_VAL(_PRISCV_RISCV, _TRACE_RDIDX, _RDIDX, r);
+    w = DRF_VAL(_PRISCV_RISCV, _TRACE_WTIDX, _WTIDX, w);
+
+    ctl = kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_TRACECTL);
+
+    if ((w == r) && (DRF_VAL(_PRISCV_RISCV, _TRACECTL, _FULL, ctl) == 0))
+    {
+        count = 0;
+    }
+    else
+    {
+        //
+        // The number of entries in trace buffer is how far the w (put) pointer
+        // is ahead of the r (get) pointer. If this value is negative, add
+        // the size of the circular buffer to bring the element count back into range.
+        //
+        count = w > r ? w - r : w - r + size;
+    }
+
+    pCore->tracePCEntries = count;
+
+    if (count)
+    {
+        for (entry = 0; entry < count; ++entry)
+        {
+            if (entry > w)
+                w += size;
+            kflcnRiscvRegWrite_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_TRACE_RDIDX, w - entry);
+
+            pc = ((NvU64)kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_TRACEPC_HI) << 32ull) |
+                    kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_TRACEPC_LO);
+            pCore->tracePC[entry] = pc;
+        }
+    }
+
+    // Restore original value
+    kflcnRiscvRegWrite_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_TRACE_RDIDX, r);
+    return;
+}
+
+NV_STATUS kflcnCoreDumpPc_GA102(OBJGPU *pGpu, KernelFalcon *pKernelFlcn, NvU64 *pc)
+{
+    // 
+    // This code originally handled 0xbadfxxxx values and returned failure,
+    // however we may want to see badf values so it is now wired to return the read
+    // register always. We want to also ensure any automated processing will know to
+    // attempt a soft decode of the lower 32 bits as it is not a complete address.
+    //
+    *pc = 0xfa11bacc00000000ull | (NvU64)kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_RPC);
+    return NV_OK;
+}
+
+void
+kflcnDumpCoreRegs_GA102(OBJGPU *pGpu, KernelFalcon *pKernelFlcn, CoreDumpRegs *pCore)
+{
+#define __CORE_DUMP_RISCV_REG(x,y) do { pCore->x = kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, (y)); } while (0)
+    __CORE_DUMP_RISCV_REG(riscvCpuctl,       NV_PRISCV_RISCV_CPUCTL);
+    __CORE_DUMP_RISCV_REG(riscvIrqmask,      NV_PRISCV_RISCV_IRQMASK);
+    __CORE_DUMP_RISCV_REG(riscvIrqdest,      NV_PRISCV_RISCV_IRQDEST);
+
+    __CORE_DUMP_RISCV_REG(riscvPc,           NV_PRISCV_RISCV_RPC);
+    __CORE_DUMP_RISCV_REG(riscvIrqdeleg,     NV_PRISCV_RISCV_IRQDELEG);
+    __CORE_DUMP_RISCV_REG(riscvPrivErrStat,  NV_PRISCV_RISCV_PRIV_ERR_STAT);
+    __CORE_DUMP_RISCV_REG(riscvPrivErrInfo,  NV_PRISCV_RISCV_PRIV_ERR_INFO);
+    __CORE_DUMP_RISCV_REG(riscvPrivErrAddrH, NV_PRISCV_RISCV_PRIV_ERR_ADDR_HI);
+    __CORE_DUMP_RISCV_REG(riscvPrivErrAddrL, NV_PRISCV_RISCV_PRIV_ERR_ADDR);
+    __CORE_DUMP_RISCV_REG(riscvHubErrStat,   NV_PRISCV_RISCV_HUB_ERR_STAT);
+#undef __CORE_DUMP_RISCV_REG
 }
 

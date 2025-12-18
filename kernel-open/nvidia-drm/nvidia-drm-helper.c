@@ -54,7 +54,7 @@
  * drm_atomic_helper_disable_all() is copied from
  * linux/drivers/gpu/drm/drm_atomic_helper.c and modified to use
  * nv_drm_for_each_crtc instead of drm_for_each_crtc to loop over all crtcs,
- * use nv_drm_for_each_*_in_state instead of for_each_connector_in_state to loop
+ * use for_each_new_*_in_state instead of for_each_connector_in_state to loop
  * over all modeset object states, and use drm_atomic_state_free() if
  * drm_atomic_state_put() is not available.
  *
@@ -139,13 +139,13 @@ int nv_drm_atomic_helper_disable_all(struct drm_device *dev,
         plane_state->rotation = DRM_MODE_ROTATE_0;
     }
 
-    nv_drm_for_each_connector_in_state(state, conn, conn_state, i) {
+    for_each_new_connector_in_state(state, conn, conn_state, i) {
         ret = drm_atomic_set_crtc_for_connector(conn_state, NULL);
         if (ret < 0)
             goto free;
     }
 
-    nv_drm_for_each_plane_in_state(state, plane, plane_state, i) {
+    for_each_new_plane_in_state(state, plane, plane_state, i) {
         ret = drm_atomic_set_crtc_for_plane(plane_state, NULL);
         if (ret < 0)
             goto free;

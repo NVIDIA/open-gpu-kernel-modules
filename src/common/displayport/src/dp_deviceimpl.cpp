@@ -3306,6 +3306,8 @@ bool DeviceImpl::setModeList(DisplayPort::DpModesetParams *modeList, unsigned nu
 
     maxModeBwRequired = 0;
 
+    DP_PRINTF(DP_NOTICE, "DP-DEV> setModeList: numModes: %d", numModes);
+
     for (unsigned modeItr = 0; modeItr < numModes; modeItr++)
     {
         connector->beginCompoundQuery();
@@ -3335,9 +3337,8 @@ bool DeviceImpl::setModeList(DisplayPort::DpModesetParams *modeList, unsigned nu
 
     DP_PRINTF(DP_INFO, "Computed Max mode BW: %" NvU64_fmtu " Mbps", maxModeBwRequired / (1000 * 1000));
 
-    connector->updateDpTunnelBwAllocation();
+    return connector->updateDpTunnelBwAllocation();
 
-    return true;
 }
 
 void

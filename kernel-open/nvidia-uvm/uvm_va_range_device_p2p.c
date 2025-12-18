@@ -360,7 +360,7 @@ static NV_STATUS alloc_device_p2p_mem(uvm_gpu_t *gpu,
         // a reference to them, so take one now if using DEVICE_COHERENT pages.
         if (gpu->parent->cdmm_enabled) {
             get_page(page);
-            get_dev_pagemap(page_to_pfn(page), NULL);
+            NV_GET_DEV_PAGEMAP(page_to_pfn(page));
         }
 #else
         // CDMM P2PDMA will never be enabled for this case

@@ -1136,17 +1136,9 @@ hdmiQueryFRLConfigC671(NVHDMIPKT_CLASS                         *pThis,
         NvU32 bppMinX16Itr, bppMaxX16Itr;
         NvBool bHasPreCalcFRLData = NV_FALSE;
 
-        NvBool forceFRLRateDSC = pClientCtrl->forceFRLRate;
-        HDMI_FRL_DATA_RATE requestedFRLRate = pClientCtrl->frlRate;
- 
 #if defined(NVHDMIPKT_NVKMS)
-        NvU32 rr = (pVidTransInfo->pTiming->pclk * (NvU64)10000) /
-                   (pVidTransInfo->pTiming->HTotal * (NvU64)pVidTransInfo->pTiming->VTotal);
-
-        if (!pVidTransInfo->pTiming->interlaced && (rr >= 480)) {
-            forceFRLRateDSC = NV_TRUE;
-            requestedFRLRate = dscMaxFRLRate;
-        }
+        NvU32 hVisible, vVisible, rr;
+        NvBool clampBpp;
 #endif
 
         // DSC_All_bpp = 1:
@@ -1256,16 +1248,16 @@ hdmiQueryFRLConfigC671(NVHDMIPKT_CLASS                         *pThis,
             frlParams.compressionInfo.hSlices    = NV_UNSIGNED_DIV_CEIL(pVidTransInfo->pTiming->HVisible, pClientCtrl->sliceWidth);
         }
 
-        if (forceFRLRateDSC)
+        if (pClientCtrl->forceFRLRate)
         {
-            if (requestedFRLRate > dscMaxFRLRate)
+            if (pClientCtrl->frlRate > dscMaxFRLRate)
             {
                 result = NVHDMIPKT_FAIL;
                 goto frlQuery_fail;
             }
 
-            minFRLRateItr = requestedFRLRate;
-            maxFRLRateItr = requestedFRLRate;
+            minFRLRateItr = pClientCtrl->frlRate;
+            maxFRLRateItr = pClientCtrl->frlRate;
         }
 
         if (pClientCtrl->forceBppx16)
@@ -1273,6 +1265,23 @@ hdmiQueryFRLConfigC671(NVHDMIPKT_CLASS                         *pThis,
             bppMinX16Itr = pClientCtrl->bitsPerPixelX16;
             bppMaxX16Itr = pClientCtrl->bitsPerPixelX16;
         }
+
+#if defined(NVHDMIPKT_NVKMS)
+        hVisible = pVidTransInfo->pTiming->HVisible;
+        vVisible = pVidTransInfo->pTiming->VVisible;
+
+        rr = (pVidTransInfo->pTiming->pclk * (NvU64)10000) /
+             (pVidTransInfo->pTiming->HTotal * (NvU64)pVidTransInfo->pTiming->VTotal);
+
+        clampBpp = ((rr >= 480) || ((rr >= 165) && (hVisible == 5120) && (vVisible == 2160))) &&
+                   (!pVidTransInfo->pTiming->interlaced) &&
+                   (bppMinX16Itr <= 8 * 16) &&
+                   (bppMaxX16Itr >= 8 * 16);
+
+        if (clampBpp) {
+            bppMaxX16Itr = 8 * 16;
+        }
+#endif
 
         // Determine Primary Compressed Format
         // First determine the FRL rate at which video transport is possible even at bppMin

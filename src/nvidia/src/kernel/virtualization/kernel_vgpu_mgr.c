@@ -1323,7 +1323,10 @@ kvgpumgrGuestRegister(OBJGPU *pGpu,
     }
 
     /* On device-vm, swizzId is reserved during A084 object creation */
-    if (IS_MIG_ENABLED(pGpu) && (osIsVgpuDeviceVmPresent() == NV_OK))
+    if (IS_MIG_ENABLED(pGpu) &&
+        (osIsVgpuDeviceVmPresent() == NV_OK)
+        )
+
     {
         NvU32 partitionFlag;
 
@@ -2017,6 +2020,7 @@ _kvgpumgrSetAssignedSwizzIdMask(OBJGPU       *pGpu,
     KERNEL_PHYS_GPU_INFO *pPhysGpuInfo;
     NvU32 i;
     NvU64 mask;
+    NvBool bHeterogeneousModeEnabled = NV_FALSE;
 
     if (swizzId >= KMIGMGR_MAX_GPU_SWIZZID)
     {
@@ -2034,7 +2038,13 @@ _kvgpumgrSetAssignedSwizzIdMask(OBJGPU       *pGpu,
     /* Validate that same ID is not already set and then set the ID */
     mask = NVBIT64(swizzId);
 
-    if (pPhysGpuInfo->assignedSwizzIdVgpuCount[swizzId] < vgpuTypeInfo->maxInstancePerGI)
+    if (IS_MIG_ENABLED(pGpu) && kvgpumgrIsMigTimeslicingModeEnabled(pGpu))
+    {
+        kvgpuMgrGetHeterogeneousMode(pGpu, swizzId, &bHeterogeneousModeEnabled);
+    }
+
+    if ((pPhysGpuInfo->assignedSwizzIdVgpuCount[swizzId] < vgpuTypeInfo->maxInstancePerGI) ||
+         bHeterogeneousModeEnabled)
     {
         pPhysGpuInfo->assignedSwizzIdVgpuCount[swizzId]++;
         pPhysGpuInfo->assignedSwizzIdMask |= mask;
@@ -2115,6 +2125,7 @@ kvgpumgrGetSwizzId(OBJGPU *pGpu,
     NV_STATUS rmStatus = NV_OK;
     VGPU_TYPE *existingVgpuTypeInfo = NULL;
     NvBool bIsSwizzIdReserved = NV_FALSE;
+    NvBool bFoundCreatableHeterogeneousType = NV_FALSE;
 
     swizzIdInUseMask = kmigmgrGetSwizzIdInUseMask(pGpu, pKernelMIGManager);
 
@@ -2151,7 +2162,6 @@ kvgpumgrGetSwizzId(OBJGPU *pGpu,
                         // search creatable heterogeneous type contains the current type
                         NvU32 *pSupportedTypeId = kvgpuMgrGetVgpuCreatableTypeIdFromSwizzId(pGpu,
                                                                                             pPhysGpuInfo, id);
-                        NvBool bFoundCreatableHeterogeneousType = NV_FALSE;
                         for (NvU32 i = 0; i < pPhysGpuInfo->numVgpuTypes; i++)
                         {
                             if (pSupportedTypeId[i] == vgpuTypeInfo->vgpuTypeId)
@@ -2185,7 +2195,8 @@ kvgpumgrGetSwizzId(OBJGPU *pGpu,
                 }
 
                 // Validate that same ID is not already set and then set the ID
-                if (pPhysGpuInfo->assignedSwizzIdVgpuCount[id] < vgpuTypeInfo->maxInstancePerGI )
+                if ((pPhysGpuInfo->assignedSwizzIdVgpuCount[id] < vgpuTypeInfo->maxInstancePerGI) ||
+                     bFoundCreatableHeterogeneousType)
                 {
                     NV_ASSERT_OK_OR_RETURN(_kvgpumgrSetAssignedSwizzIdMask(pGpu, vgpuTypeInfo, pKernelMIGGpuInstance->swizzId));
                     *swizzId = pKernelMIGGpuInstance->swizzId;

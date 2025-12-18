@@ -184,7 +184,8 @@ typedef enum
 #define COHERENT_CPU_MAPPING_REGION_0       0x0
 #define COHERENT_CPU_MAPPING_REGION_1       0x1
 #define COHERENT_CPU_MAPPING_REGION_2       0x2
-#define COHERENT_CPU_MAPPING_TOTAL_REGIONS  0x3   // Should change it when num of regions changed
+#define COHERENT_CPU_MAPPING_REGION_3       0x3
+#define COHERENT_CPU_MAPPING_TOTAL_REGIONS  0x4   // Should change it when num of regions changed
 
 #define ALIGN_64K(addr)                   (NV_ALIGN_DOWN64(addr, 0x10000))
 #define ALIGN_64K_OFFSET(addr)            (addr & 0xFFFF)
@@ -367,10 +368,10 @@ struct __nvoc_inner_struc_KernelBus_3__ {
 struct __nvoc_inner_struc_KernelBus_4__ {
     NvBool bCoherentCpuMapping;
     NvU32 nrMapping;
-    NvP64 pCpuMapping[3];
-    NvU64 size[3];
-    NvU64 refcnt[3];
-    RmPhysAddr physAddr[3];
+    NvP64 pCpuMapping[4];
+    NvU64 size[4];
+    NvU64 refcnt[4];
+    RmPhysAddr physAddr[4];
 };
 
 struct __nvoc_inner_struc_KernelBus_5__ {

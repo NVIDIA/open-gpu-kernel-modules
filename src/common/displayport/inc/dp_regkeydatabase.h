@@ -100,6 +100,8 @@
 // Bug 5088957 : Force head shutdown in DpLib
 #define NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN                          "DP_WAR_5088957"
 
+// Use max DSC compression for MST topologies
+#define NV_DP_REGKEY_USE_MAX_DSC_COMPRESSION_MST                  "DP_USE_MAX_DSC_COMPRESSION_MST"
 // This regkey forces devID to be exposed to vendors via DPCD 0x309 for DSC-enabled SKUs.
 #define NV_DP_REGKEY_EXPOSE_DSC_DEVID_WAR                         "DP_DSC_DEVID_WAR"
 
@@ -157,6 +159,7 @@ struct DP_REGKEY_DATABASE
     bool  bHDMIOnDPPlusPlus;
     bool  bIgnoreCapsAndForceHighestLc;
     bool  bOptimizeDscBppForTunnellingBw;
+    bool  bUseMaxDSCCompressionMST;
 };
 
 extern struct DP_REGKEY_DATABASE dpRegkeyDatabase;

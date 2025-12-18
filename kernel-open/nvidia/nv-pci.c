@@ -1310,11 +1310,6 @@ nv_pci_probe
     nv_printf(NV_DBG_SETUP, "NVRM: probing 0x%x 0x%x, class 0x%x\n",
         pci_dev->vendor, pci_dev->device, pci_dev->class);
 
-    if (nv_kmem_cache_alloc_stack(&sp) != 0)
-    {
-        return -1;
-    }
-
 #ifdef NV_PCI_SRIOV_SUPPORT
     if (pci_dev->is_virtfn)
     {
@@ -1330,20 +1325,24 @@ nv_pci_probe
                       "since IOMMU is not present on the system.\n",
                        NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
                        NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
-            goto failed;
+            return -1;
         }
 
-        nv_kmem_cache_free_stack(sp);
         return 0;
 #else
         nv_printf(NV_DBG_ERRORS, "NVRM: Ignoring probe for VF %04x:%02x:%02x.%x ",
                   NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
                   NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
 
-        goto failed;
+        return -1;
 #endif /* NV_VGPU_KVM_BUILD */
     }
 #endif /* NV_PCI_SRIOV_SUPPORT */
+
+    if (nv_kmem_cache_alloc_stack(&sp) != 0)
+    {
+        return -1;
+    }
 
     if (!rm_is_supported_pci_device(
                 (pci_dev->class >> 16) & 0xFF,

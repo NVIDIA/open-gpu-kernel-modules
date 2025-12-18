@@ -477,6 +477,7 @@ SRCS += src/kernel/gpu/external_device/kern_external_device.c
 SRCS += src/kernel/gpu/falcon/arch/ampere/kernel_falcon_ga100.c
 SRCS += src/kernel/gpu/falcon/arch/ampere/kernel_falcon_ga102.c
 SRCS += src/kernel/gpu/falcon/arch/blackwell/kernel_falcon_gb100.c
+SRCS += src/kernel/gpu/falcon/arch/blackwell/kernel_falcon_gb202.c
 SRCS += src/kernel/gpu/falcon/arch/turing/kernel_crashcat_engine_tu102.c
 SRCS += src/kernel/gpu/falcon/arch/turing/kernel_falcon_tu102.c
 SRCS += src/kernel/gpu/falcon/kernel_crashcat_engine.c

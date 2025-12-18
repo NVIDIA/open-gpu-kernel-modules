@@ -363,7 +363,9 @@ namespace DisplayPort
 
         bool        bForceHeadShutdownPerMonitor;
 
-        //
+        // Use max DSC compression for MST topologies
+        bool        bUseMaxDSCCompressionMST;
+
         // Dual SST Partner connector object pointer
         ConnectorImpl *pCoupledConnector;
 
@@ -632,6 +634,7 @@ namespace DisplayPort
         bool     allocateMaxDpTunnelBw();
         NvU64    getMaxTunnelBw();
         void     enableDpTunnelingBwAllocationSupport();
+        void     cancelDpTunnelBwAllocation();
 
         void assessLink(LinkTrainingType trainType = NORMAL_LINK_TRAINING);
 

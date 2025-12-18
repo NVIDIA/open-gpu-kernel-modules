@@ -108,8 +108,11 @@ static bool __will_generate_flip_event(struct drm_crtc *crtc,
         return false;
     }
 
-    /* Find out whether primary & overlay flip done events will be generated. */
-    nv_drm_for_each_plane_in_state(old_crtc_state->state,
+    /*
+     * Find out whether primary & overlay flip done events will be generated.
+     * Only called after drm_atomic_helper_swap_state, so we use old state.
+     */
+    for_each_old_plane_in_state(old_crtc_state->state,
         plane, old_plane_state, i) {
         if (old_plane_state->crtc != crtc) {
            continue;
@@ -193,7 +196,7 @@ static int __nv_drm_convert_in_fences(
         return 0;
     }
 
-    nv_drm_for_each_new_plane_in_state(state, plane, plane_state, i) {
+    for_each_new_plane_in_state(state, plane, plane_state, i) {
         if ((plane->type == DRM_PLANE_TYPE_CURSOR) ||
             (plane_state->crtc != crtc) ||
             (plane_state->fence == NULL)) {
@@ -334,7 +337,8 @@ static int __nv_drm_get_syncpt_data(
 
     head_reply_config = &reply_config->headReplyConfig[nv_crtc->head];
 
-    nv_drm_for_each_plane_in_state(old_crtc_state->state, plane, old_plane_state, i) {
+    /* Use old state because this is only called after drm_atomic_helper_swap_state */
+    for_each_old_plane_in_state(old_crtc_state->state, plane, old_plane_state, i) {
         struct nv_drm_plane *nv_plane = to_nv_plane(plane);
 
         if (plane->type == DRM_PLANE_TYPE_CURSOR || old_plane_state->crtc != crtc) {
@@ -395,7 +399,7 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
         &(to_nv_atomic_state(state)->config);
     struct NvKmsKapiModeSetReplyConfig reply_config = { };
     struct drm_crtc *crtc;
-    struct drm_crtc_state *crtc_state;
+    struct drm_crtc_state *old_crtc_state, *new_crtc_state;
     int i;
     int ret;
 
@@ -429,18 +433,10 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
     memset(requested_config, 0, sizeof(*requested_config));
 
     /* Loop over affected crtcs and construct NvKmsKapiRequestedModeSetConfig */
-    nv_drm_for_each_crtc_in_state(state, crtc, crtc_state, i) {
-        /*
-         * When committing a state, the new state is already stored in
-         * crtc->state. When checking a proposed state, the proposed state is
-         * stored in crtc_state.
-         */
-        struct drm_crtc_state *new_crtc_state =
-                               commit ? crtc->state : crtc_state;
+    for_each_oldnew_crtc_in_state(state, crtc, old_crtc_state, new_crtc_state, i) {
         struct nv_drm_crtc *nv_crtc = to_nv_crtc(crtc);
 
         if (commit) {
-            struct drm_crtc_state *old_crtc_state = crtc_state;
             struct nv_drm_crtc_state *nv_new_crtc_state =
                 to_nv_crtc_state(new_crtc_state);
 
@@ -497,10 +493,11 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
     }
 
     if (commit && nv_dev->supportsSyncpts) {
-        nv_drm_for_each_crtc_in_state(state, crtc, crtc_state, i) {
+        /* commit is true so we check old state */
+        for_each_old_crtc_in_state(state, crtc, old_crtc_state, i) {
             /*! loop over affected crtcs and get NvKmsKapiModeSetReplyConfig */
             ret = __nv_drm_get_syncpt_data(
-                      nv_dev, crtc, crtc_state, requested_config, &reply_config);
+                      nv_dev, crtc, old_crtc_state, requested_config, &reply_config);
             if (ret != 0) {
                 return ret;
             }
@@ -523,7 +520,7 @@ int nv_drm_atomic_check(struct drm_device *dev,
     struct drm_crtc_state *crtc_state;
     int i;
 
-    nv_drm_for_each_crtc_in_state(state, crtc, crtc_state, i) {
+    for_each_new_crtc_in_state(state, crtc, crtc_state, i) {
         /*
          * if the color management changed on the crtc, we need to update the
          * crtc's plane's CSC matrices, so add the crtc's planes to the commit
@@ -619,7 +616,7 @@ int nv_drm_atomic_commit(struct drm_device *dev,
      * Our system already implements such a queue, but due to
      * bug 4054608, it is currently not used.
      */
-    nv_drm_for_each_crtc_in_state(state, crtc, crtc_state, i) {
+    for_each_new_crtc_in_state(state, crtc, crtc_state, i) {
         struct nv_drm_crtc *nv_crtc = to_nv_crtc(crtc);
 
         /*
@@ -726,7 +723,7 @@ int nv_drm_atomic_commit(struct drm_device *dev,
         goto done;
     }
 
-    nv_drm_for_each_crtc_in_state(state, crtc, crtc_state, i) {
+    for_each_old_crtc_in_state(state, crtc, crtc_state, i) {
         struct nv_drm_crtc *nv_crtc = to_nv_crtc(crtc);
         struct nv_drm_crtc_state *nv_new_crtc_state =
             to_nv_crtc_state(crtc->state);

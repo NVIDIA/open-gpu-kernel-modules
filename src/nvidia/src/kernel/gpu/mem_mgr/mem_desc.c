@@ -4261,7 +4261,6 @@ NvU64 memdescGetPageSize
     ADDRESS_TRANSLATION addressTranslation
 )
 {
-    NV_ASSERT(!memdescHasSubDeviceMemDescs(pMemDesc));
     return pMemDesc->_pageSize;
 }
 

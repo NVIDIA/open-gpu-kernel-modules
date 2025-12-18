@@ -196,7 +196,8 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     this->bSkipZeroOuiCache                 = dpRegkeyDatabase.bSkipZeroOuiCache;
     this->bForceHeadShutdownFromRegkey      = dpRegkeyDatabase.bForceHeadShutdown;
     this->bEnableDevId                      = dpRegkeyDatabase.bEnableDevId;
-    this->bIgnoreCapsAndForceHighestLc     = dpRegkeyDatabase.bIgnoreCapsAndForceHighestLc;
+    this->bIgnoreCapsAndForceHighestLc      = dpRegkeyDatabase.bIgnoreCapsAndForceHighestLc;
+    this->bUseMaxDSCCompressionMST          = dpRegkeyDatabase.bUseMaxDSCCompressionMST;
     this->bDisableEffBppSST8b10b            = dpRegkeyDatabase.bDisableEffBppSST8b10b;
     this->bHDMIOnDPPlusPlus                 = dpRegkeyDatabase.bHDMIOnDPPlusPlus;
     this->bOptimizeDscBppForTunnellingBw    = dpRegkeyDatabase.bOptimizeDscBppForTunnellingBw;
@@ -1492,11 +1493,19 @@ bool ConnectorImpl::compoundQueryAttachMSTDsc(Group * target,
 
     if (!pDscParams->bitsPerPixelX16)
     {
-        //
-        // For now, we will keep a pre defined value for bitsPerPixel for MST = 10
-        // bitsPerPixelX16 = 160
-        //
-        pDscParams->bitsPerPixelX16 = PREDEFINED_DSC_MST_BPPX16;
+        if (this->bUseMaxDSCCompressionMST)
+        {
+            //do max dsc compression so that the desired mode can be supported
+            pDscParams->bitsPerPixelX16 = MAX_DSC_COMPRESSION_BPPX16;
+        }
+        else
+        {
+            //
+            // For now, we will keep a pre defined value for bitsPerPixel for MST = 10
+            // bitsPerPixelX16 = 160
+            //
+            pDscParams->bitsPerPixelX16 = PREDEFINED_DSC_MST_BPPX16;
+        }
     }
     else
     {
@@ -4175,7 +4184,7 @@ void ConnectorImpl::enableDpTunnelingBwAllocationSupport()
         return;
     }
 
-    hal->enableDpTunnelingBwAllocationSupport();
+    hal->setDpTunnelingBwAllocationSupport(true);
 }
 
 /*!
@@ -4187,6 +4196,31 @@ void ConnectorImpl::enableDpTunnelingBwAllocationSupport()
 NvU64 ConnectorImpl::getMaxTunnelBw()
 {
     return highestAssessedLC.getTotalDataRate() * 8;
+}
+
+/*!
+ * @brief Function to cancel the tunnel bw allocation.
+ *        This function is called when the tunneling chip does not respond to the initial or fallback BW request
+ *        This function also re-assesses the link to get the updated link config
+ */
+void ConnectorImpl::cancelDpTunnelBwAllocation()
+{
+    LinkConfiguration _origHighestAssessedLC = highestAssessedLC;
+    hal->setDpTunnelBwAllocation(false);
+    hal->setDpTunnelingBwAllocationSupport(false);
+    hal->notifyHPD(true, false);
+    assessLink();
+    if (highestAssessedLC != _origHighestAssessedLC)
+    {
+        for (Device *i = enumDevices(0); i; i = enumDevices(i))
+        {
+            DeviceImpl *dev = (DeviceImpl *)i;
+            if ((dev->activeGroup != NULL) && (dev->plugged))
+            {
+                sink->bandwidthChangeNotification(dev, false);
+            }
+        }
+    }
 }
 
 /*!
@@ -4248,7 +4282,8 @@ bool ConnectorImpl::allocateDpTunnelBw(NvU64 bandwidth)
     // This shouldn't be Indeterminate. The request can succeed or fail. Indeterminate means something else went wrong
     if (requestStatus == Indeterminate)
     {
-        DP_PRINTF(DP_ERROR, "Tunneling chip didn't reply for the BW request\n");
+        DP_PRINTF(DP_ERROR, "Tunneling chip didn't reply for the initial BW request, cancel tunnel bw allocation support");
+        cancelDpTunnelBwAllocation();
         return false;
     }
 
@@ -4276,6 +4311,8 @@ bool ConnectorImpl::allocateDpTunnelBw(NvU64 bandwidth)
         //
         if (requestStatus == Indeterminate)
         {
+            DP_PRINTF(DP_ERROR, "Tunneling chip didn't reply for the fallback BW request, cancel tunnel bw allocation support");
+            cancelDpTunnelBwAllocation();
             return false;
         }
     }
@@ -5123,9 +5160,10 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
             }
         }
 
-        if (bPConConnected)
+        if (bPConConnected || bKeepOptLinkAlive)
         {
             // When PCON is connected, always LT to max to avoid LT.
+            // When bKeepOptLinkAlive is set, we need to LT to max to avoid LT.
             bSkipLowestConfigCheck = true;
         }
 

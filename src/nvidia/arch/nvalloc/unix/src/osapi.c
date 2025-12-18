@@ -351,7 +351,7 @@ RmLogGpuCrash(OBJGPU *pGpu)
                 "NVRM: A GPU crash dump has been created. If possible, please run\n"
                 "NVRM: nvidia-bug-report.sh as root to collect this data before\n"
                 "NVRM: the NVIDIA kernel module is unloaded.\n");
-            if (hypervisorIsVgxHyper())
+            if (!IS_GSP_CLIENT(pGpu) && hypervisorIsVgxHyper())
             {
                 nv_printf(NV_DBG_ERRORS, "NVRM: Dumping nvlogs buffers\n");
                 nvlogDumpToKernelLog(NV_FALSE);
@@ -1327,7 +1327,7 @@ RmDmabufVerifyMemHandle(
     }
 
     // Check if hMemory belongs to the same pGpu
-    if ((pMemDesc->pGpu != pGpu) &&
+    if ((pMemDesc->pGpu != pGpu) ||
         (pSrcMemory->pGpu != pGpu))
     {
         return NV_ERR_INVALID_OBJECT_PARENT;

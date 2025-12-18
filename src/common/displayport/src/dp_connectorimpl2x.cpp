@@ -110,6 +110,9 @@ bool ConnectorImpl2x::getValidLowestLinkConfig
         {
             // Get next entry.
             lowestSelected = this->allPossibleLinkCfgs[i+1];
+            // Update enhancedFraming/bDisableDownspread/bEnableFEC for target config
+            lowestSelected.enhancedFraming = lConfig.enhancedFraming;
+            lowestSelected.bDisableDownspread = lConfig.bDisableDownspread;
             lowestSelected.enableFEC(lConfig.bEnableFEC);
         }
     }

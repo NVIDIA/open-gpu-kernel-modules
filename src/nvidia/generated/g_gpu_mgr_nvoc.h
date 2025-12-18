@@ -575,6 +575,9 @@ typedef struct GPUATTACHARG
 
 typedef struct WindowsFirmwarePolicyArg
 {
+    NvU32  devId;
+    NvU32  ssId;
+    NvU32  bEnableGpuFirmwareOnWsServerSkus;
     NvBool bIsTccOrMcdm;
 } WindowsFirmwarePolicyArg;
 

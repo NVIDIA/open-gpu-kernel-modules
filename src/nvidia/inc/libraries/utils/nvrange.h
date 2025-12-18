@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -251,9 +251,9 @@ static NV_INLINE NvBool rangeBorders(NV_RANGE range1, NV_RANGE range2)
 /**
  * @brief Splits \a pBigRange
  *
- * @param[in] pBigRange             Pointer to starting range.
- * @param[in] rangeToSplit          Range to split the first range over.
- * @param[in] pSecondPartAfterSplit Second range after split.
+ * @param[in/out] pBigRange             Pointer to starting range.
+ * @param[in]    rangeToSplit          Range to split the first range over.
+ * @param[out]   pSecondPartAfterSplit Second range after split.
  *
  * @par Example:
  * @snippet nv_range-test.cpp rangeSplitExample
@@ -268,8 +268,104 @@ static NV_INLINE NV_STATUS rangeSplit(NV_RANGE *pBigRange,
     }
 
     pSecondPartAfterSplit->hi = pBigRange->hi;
-    pBigRange->hi = rangeToSplit.lo;
-    pSecondPartAfterSplit->lo = rangeToSplit.hi + 1;
+
+    // make sure we don't overflow/underflow
+    if (pBigRange->lo == rangeToSplit.lo)
+    {
+        *pBigRange = NV_RANGE_EMPTY;
+    }
+    else
+    {
+        pBigRange->hi = rangeToSplit.lo - 1;
+    }
+
+    if (pSecondPartAfterSplit->hi == rangeToSplit.hi)
+    {
+        *pSecondPartAfterSplit = NV_RANGE_EMPTY;
+    }
+    else
+    {
+        pSecondPartAfterSplit->lo = rangeToSplit.hi + 1;
+    }
+
+    return NV_OK;
+}
+
+/**
+ * @brief carve out ranges from base ranges
+ *
+ * @param[in/out] baseRanges             array of the base ranges to be operated on
+ * @param[in]    arraySize              the size of the baseRanges array
+ * @param[in/out] numBaseRanges          the number of valid ranges in the array
+ * @param[in]    carveouts              array of ranges that need to be carved out
+ * @param[in]    numCarveouts           number of the valid carveout entries
+ *
+ * @note need to satsify: arraySize >= *numBaseRanges + numCarveouts
+ */
+static NV_INLINE NV_STATUS rangesCarveout
+(
+    NV_RANGE   *baseRanges,
+    NvU32       arraySize,
+    NvU32      *numBaseRanges,
+    NV_RANGE   *carveouts,
+    NvU32       numCarveouts
+)
+{
+    NvU32 i;
+    NvU32 j;
+    NvU32 count = *numBaseRanges;
+    NV_RANGE swap;
+
+    if (count > arraySize)
+        return NV_ERR_INVALID_ARGUMENT;
+    if (numCarveouts > arraySize - count)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    for (i = 0; i < numCarveouts; i++)
+    {
+        if (rangeIsEmpty(carveouts[i]))
+            continue;
+
+        for (j = 0; j < count; j++)
+        {
+            if (rangeContains(baseRanges[j], carveouts[i]))
+            {
+                rangeSplit(&baseRanges[j], carveouts[i], &baseRanges[count]);
+                count += 1;
+                break;
+            }
+        }
+    }
+
+    // remove all empty ranges, and sort results by lo
+    // a rather inefficient in-place sort for its simpilcity, the number
+    // of ranges is expected to be low
+    i = 0;
+    while (i < count)
+    {
+        if (rangeIsEmpty(baseRanges[i]))
+        {
+            baseRanges[i] = baseRanges[count-1];
+            baseRanges[count-1] = NV_RANGE_EMPTY;
+            count -= 1;
+            continue;
+        }
+
+        for (j = i + 1; j < count; j++)
+        {
+            if (!rangeIsEmpty(baseRanges[j]) && 
+                baseRanges[j].lo < baseRanges[i].lo)
+            {
+                swap = baseRanges[i];
+                baseRanges[i] = baseRanges[j];
+                baseRanges[j] = swap;
+            }
+        }
+
+        i++;
+    }
+
+    *numBaseRanges = count;
 
     return NV_OK;
 }

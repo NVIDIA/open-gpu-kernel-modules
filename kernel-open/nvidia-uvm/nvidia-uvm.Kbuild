@@ -61,6 +61,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += mmu_notifier_ops_arch_invalidate_secondary_tlb
 NV_CONFTEST_TYPE_COMPILE_TESTS += migrate_vma_added_flags
 NV_CONFTEST_TYPE_COMPILE_TESTS += migrate_device_range
 NV_CONFTEST_TYPE_COMPILE_TESTS += handle_mm_fault_has_pt_regs_arg
+NV_CONFTEST_TYPE_COMPILE_TESTS += get_dev_pagemap_has_pgmap_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += mempolicy_has_unified_nodes
 NV_CONFTEST_TYPE_COMPILE_TESTS += mempolicy_has_home_node
 NV_CONFTEST_TYPE_COMPILE_TESTS += mpol_preferred_many_present

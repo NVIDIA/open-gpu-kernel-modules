@@ -5409,4 +5409,14 @@ typedef struct NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS 
 
 typedef NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS NV2080_CTRL_INTERNAL_STATIC_KGR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS;
 
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_NVLINK_RC_USER_MODE_CHANNELS
+ *
+ * This command is used to perform recovery actions after the fabric has been
+ * idled due to a fatal nvlink error.
+ * This command accepts no parameters.
+ *
+ */
+#define NV2080_CTRL_CMD_INTERNAL_NVLINK_RC_USER_MODE_CHANNELS (0x20800b08) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_2_INTERFACE_ID << 8) | 0x08" */
+
 /* ctrl2080internal_h */

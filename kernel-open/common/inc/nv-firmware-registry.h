@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -59,8 +59,9 @@
 #define NV_REG_ENABLE_GPU_FIRMWARE_MODE_ENABLED           0x00000001
 #define NV_REG_ENABLE_GPU_FIRMWARE_MODE_DEFAULT           0x00000002
 
-#define NV_REG_ENABLE_GPU_FIRMWARE_POLICY_MASK            0x000000F0
-#define NV_REG_ENABLE_GPU_FIRMWARE_POLICY_ALLOW_FALLBACK  0x00000010
+#define NV_REG_ENABLE_GPU_FIRMWARE_POLICY_MASK                  0x000000F0
+#define NV_REG_ENABLE_GPU_FIRMWARE_POLICY_ALLOW_FALLBACK        0x00000010
+#define NV_REG_ENABLE_GPU_FIRMWARE_POLICY_DEFAULT_ON_WS_SERVER  0x00000020
 
 #define NV_REG_ENABLE_GPU_FIRMWARE_DEFAULT_VALUE          0x00000012
 
