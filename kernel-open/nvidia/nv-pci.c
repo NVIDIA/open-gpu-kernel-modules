@@ -2765,13 +2765,6 @@ static void nv_pci_remove_helper(struct pci_dev *pci_dev, bool block_if_gpu_in_u
 
     nv = NV_STATE_PTR(nvl);
 
-    /*
-     * Note: For external GPUs (eGPU via Thunderbolt), the NV_FLAG_IN_SURPRISE_REMOVAL
-     * flag is set later in the removal process - either when waiting for usage count
-     * times out, or when actual surprise removal is detected. Setting it too early
-     * can interfere with normal cleanup operations that need to acquire GPU locks.
-     */
-
 #if NV_IS_EXPORT_SYMBOL_GPL_iommu_dev_disable_feature
 #if defined(CONFIG_IOMMU_SVA) && \
     (defined(NV_IOASID_GET_PRESENT) || defined(NV_MM_PASID_DROP_PRESENT))
@@ -2828,7 +2821,7 @@ static void nv_pci_remove_helper(struct pci_dev *pci_dev, bool block_if_gpu_in_u
      * We still wait for a short time to allow in-progress close operations
      * to complete, but with a timeout to prevent hangs.
      */
-    if ((atomic64_read(&nvl->usage_count) != 0) && !(nv->is_external_gpu))
+    if (atomic64_read(&nvl->usage_count) != 0)
     {
         /*
          * For external GPU: wait up to 5 seconds (10 iterations * 500ms)
@@ -2840,10 +2833,10 @@ static void nv_pci_remove_helper(struct pci_dev *pci_dev, bool block_if_gpu_in_u
         int wait_iterations = 0;
 
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: Attempting to remove device %04x:%02x:%02x.%x with non-zero usage count (%d)%s\n",
+                  "NVRM: Attempting to remove device %04x:%02x:%02x.%x with non-zero usage count (%lld)%s\n",
                   NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
                   NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn),
-                  NV_ATOMIC_READ(nvl->usage_count),
+                  atomic64_read(&nvl->usage_count),
                   nv->is_external_gpu ? " (external GPU)" : "");
 
         /*
@@ -2880,13 +2873,13 @@ static void nv_pci_remove_helper(struct pci_dev *pci_dev, bool block_if_gpu_in_u
             down(&nvl->ldata_lock);
         }
 
-        if (NV_ATOMIC_READ(nvl->usage_count) != 0)
+        if (atomic64_read(&nvl->usage_count) != 0)
         {
             nv_printf(NV_DBG_ERRORS,
-                      "NVRM: Timeout waiting for usage count on device %04x:%02x:%02x.%x (remaining: %d). Forcing removal.\n",
+                      "NVRM: Timeout waiting for usage count on device %04x:%02x:%02x.%x (remaining: %lld). Forcing removal.\n",
                       NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
                       NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn),
-                      NV_ATOMIC_READ(nvl->usage_count));
+                      atomic64_read(&nvl->usage_count));
             /*
              * Force the surprise removal flag so that any remaining
              * close operations will take the fast-path.
