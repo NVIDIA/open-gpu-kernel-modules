@@ -27,6 +27,7 @@
 #include "nv-msi.h"
 #include "nv-hypervisor.h"
 #include "nv-reg.h"
+#include "nv-rsync.h"
 
 #if defined(NV_VGPU_KVM_BUILD)
 #include "nv-vgpu-vfio-interface.h"
