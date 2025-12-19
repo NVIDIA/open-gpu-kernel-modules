@@ -2830,6 +2830,15 @@ static void nv_pci_remove_helper(struct pci_dev *pci_dev, bool block_if_gpu_in_u
      */
     if ((atomic64_read(&nvl->usage_count) != 0) && !(nv->is_external_gpu))
     {
+        /*
+         * For external GPU: wait up to 5 seconds (10 iterations * 500ms)
+         * For internal GPU: wait up to 60 seconds (120 iterations * 500ms)
+         * This prevents indefinite hangs while still allowing time for
+         * graceful cleanup of in-progress operations.
+         */
+        int max_wait_iterations = nv->is_external_gpu ? 10 : 120;
+        int wait_iterations = 0;
+
         nv_printf(NV_DBG_ERRORS,
                   "NVRM: Attempting to remove device %04x:%02x:%02x.%x with non-zero usage count (%d)%s\n",
                   NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
@@ -2841,7 +2850,8 @@ static void nv_pci_remove_helper(struct pci_dev *pci_dev, bool block_if_gpu_in_u
          * We can't return from this function without corrupting state, so we wait for
          * the usage count to go to zero, but with a timeout.
          */
-        while (atomic64_read(&nvl->usage_count) != 0)
+        while ((atomic64_read(&nvl->usage_count) != 0) &&
+               (wait_iterations < max_wait_iterations))
         {
             /*
              * While waiting, release the locks so that other threads can make
