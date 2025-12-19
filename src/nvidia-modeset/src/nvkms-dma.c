@@ -60,7 +60,6 @@ void nvDmaKickoffEvo(NVEvoChannelPtr pChannel)
 
 static void EvoCoreKickoff(NVDmaBufferEvoPtr push_buffer, NvU32 putOffset)
 {
-    NVEvoDmaPtr pDma = &push_buffer->dma;
     NVDevEvoPtr pDevEvo = push_buffer->pDevEvo;
     int i;
 
@@ -73,55 +72,6 @@ static void EvoCoreKickoff(NVDmaBufferEvoPtr push_buffer, NvU32 putOffset)
      */
     if (pDevEvo == NULL || pDevEvo->gpuLost) {
         return;
-    }
-
-    /* If needed, copy the chunk to be kicked off into each GPU's FB */
-    if (pDma->isBar1Mapping) {
-        int sd;
-
-        NV0080_CTRL_DMA_FLUSH_PARAMS flushParams = { 0 };
-        NvU32 ret;
-
-        NvU32 *endAddress;
-
-        if (putOffset < push_buffer->put_offset) {
-            /* If we've wrapped, copy to the end of the pushbuffer */
-            nvAssert(putOffset == 0);
-            endAddress = push_buffer->base + push_buffer->offset_max /
-                                             sizeof(NvU32);
-        } else {
-            endAddress = push_buffer->buffer;
-        }
-
-        for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
-            NvU32 startOffset = push_buffer->put_offset / sizeof(NvU32);
-
-            NvU32 *src = push_buffer->base;
-            NvU32 *dst = pDma->subDeviceAddress[sd];
-
-            nvAssert(dst != NULL);
-
-            src += startOffset;
-            dst += startOffset;
-            while (src < endAddress) {
-                *dst++ = *src++;
-            }
-        }
-
-        /*
-         * Finally, tell RM to flush so that the data actually lands in FB
-         * before telling the GPU to fetch it.
-         */
-        flushParams.targetUnit = DRF_DEF(0080_CTRL_DMA, _FLUSH_TARGET,
-                                         _UNIT_FB, _ENABLE);
-
-        ret = nvRmApiControl(nvEvoGlobal.clientHandle,
-                             pDevEvo->deviceHandle,
-                             NV0080_CTRL_CMD_DMA_FLUSH,
-                             &flushParams, sizeof(flushParams));
-        if (ret != NVOS_STATUS_SUCCESS) {
-            nvAssert(!"NV0080_CTRL_CMD_DMA_FLUSH failed");
-        }
     }
 
 #if NVCPU_IS_X86_64
@@ -346,7 +296,7 @@ void nvWriteEvoCoreNotifier(
     }
 
     pSubChannel = &pDevEvo->core->notifiersDma[sd];
-    pNotifiers = pSubChannel->subDeviceAddress[sd];
+    pNotifiers = pSubChannel->cpuAddress;
 
     EvoWriteNotifier(pNotifiers + offset, value);
 }
@@ -377,7 +327,7 @@ static NvBool EvoCheckNotifier(const NVDispEvoRec *pDispEvo,
     pSubChannel = &pDevEvo->core->notifiersDma[sd];
     p = &pDevEvo->core->pb;
 
-    pNotifier = pSubChannel->subDeviceAddress[sd];
+    pNotifier = pSubChannel->cpuAddress;
 
     nvAssert(pNotifier != NULL);
     pNotifier += offset;
