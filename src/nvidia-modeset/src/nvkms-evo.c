@@ -8835,6 +8835,28 @@ NvBool nvFreeDevEvo(NVDevEvoPtr pDevEvo)
         return FALSE;
     }
 
+    /*
+     * If the GPU was lost (surprise removal), skip all hardware-related
+     * cleanup. Just free software resources and remove from device list.
+     *
+     * NOTE: We do NOT call nvFreePerOpenDev() here because the pNvKmsOpenDev
+     * is still in the global open list. It will be properly cleaned up during
+     * module unload when nvKmsClose iterates through all open handles.
+     * Calling nvFreePerOpenDev here would cause a double-free crash.
+     */
+    if (pDevEvo->gpuLost) {
+        nvEvoLogDev(pDevEvo, EVO_LOG_INFO,
+                    "Freeing device after GPU lost, skipping hardware cleanup");
+
+        /*
+         * Invalidate all pOpenDev references to this device before freeing it.
+         * This ensures nvKmsClose won't try to access the freed pDevEvo.
+         */
+        nvInvalidateDeviceReferences(pDevEvo);
+
+        goto free_software_resources;
+    }
+
     if (pDevEvo->pDifrState) {
         nvRmUnregisterDIFREventHandler(pDevEvo);
         nvDIFRFree(pDevEvo->pDifrState);
@@ -8874,19 +8896,43 @@ NvBool nvFreeDevEvo(NVDevEvoPtr pDevEvo)
 
     nvRmDestroyDisplays(pDevEvo);
 
-    nvkms_free_timer(pDevEvo->consoleRestoreTimer);
-    pDevEvo->consoleRestoreTimer = NULL;
+free_software_resources:
+    {
+        NvBool wasGpuLost = pDevEvo->gpuLost;
 
-    nvPreallocFree(pDevEvo);
+        nvkms_free_timer(pDevEvo->consoleRestoreTimer);
+        pDevEvo->consoleRestoreTimer = NULL;
 
-    nvRmFreeDeviceEvo(pDevEvo);
+        nvPreallocFree(pDevEvo);
 
-    nvListDel(&pDevEvo->devListEntry);
+        /*
+         * Skip RM device cleanup if GPU is lost - handles are already invalid
+         * and RM API calls will fail.
+         */
+        if (!pDevEvo->gpuLost) {
+            nvRmFreeDeviceEvo(pDevEvo);
+        }
 
-    nvkms_free_ref_ptr(pDevEvo->ref_ptr);
+        nvListDel(&pDevEvo->devListEntry);
 
-    nvFree(pDevEvo);
-    return TRUE;
+        nvkms_free_ref_ptr(pDevEvo->ref_ptr);
+
+        nvFree(pDevEvo);
+
+        /*
+         * NOTE: We intentionally do NOT call nvKmsReinitializeGlobalClient()
+         * here even if the device list is empty. The global client handle
+         * is still referenced by open handles (pNvKmsOpenDev) that will be
+         * cleaned up during module unload by nvKmsClose(). Reinitializing
+         * the client here would corrupt those handles and cause a crash.
+         *
+         * If the user reconnects the GPU before unloading the module, it will
+         * work because AllocDevice checks for stale gpuLost devices and cleans
+         * them up. The global client doesn't need to be reinitialized for that.
+         */
+
+        return TRUE;
+    }
 }
 
 static void AssignNumberOfApiHeads(NVDevEvoRec *pDevEvo)

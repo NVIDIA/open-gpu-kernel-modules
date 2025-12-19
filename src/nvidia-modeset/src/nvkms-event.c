@@ -61,6 +61,11 @@ nvHandleHotplugEventDeferredWork(void *dataPtr, NvU32 dataU32)
     NVDpyEvoPtr pDpyEvo;
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
 
+    /* Skip hardware access if GPU has been lost (e.g., Thunderbolt unplug) */
+    if (pDevEvo->gpuLost) {
+        return;
+    }
+
     // Get the hotplug state.
     hotplugParams.subDeviceInstance = pDispEvo->displayOwner;
 

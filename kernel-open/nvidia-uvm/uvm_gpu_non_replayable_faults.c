@@ -24,6 +24,7 @@
 #include "uvm_common.h"
 #include "uvm_api.h"
 #include "uvm_gpu_non_replayable_faults.h"
+#include "uvm_gpu_isr.h"
 #include "uvm_gpu.h"
 #include "uvm_hal.h"
 #include "uvm_lock.h"
@@ -777,6 +778,11 @@ static NV_STATUS service_fault(uvm_parent_gpu_t *parent_gpu, uvm_fault_buffer_en
 void uvm_parent_gpu_service_non_replayable_fault_buffer(uvm_parent_gpu_t *parent_gpu)
 {
     NvU32 cached_faults;
+
+    // Check if GPU is still accessible before servicing faults.
+    // After hot-unplug, accessing GPU registers would cause a crash.
+    if (!uvm_parent_gpu_is_accessible(parent_gpu))
+        return;
 
     // If this handler is modified to handle fewer than all of the outstanding
     // faults, then special handling will need to be added to uvm_suspend()

@@ -636,7 +636,18 @@ kgspTeardown_TU102
 
         // Reset GSP so we can load FWSEC-SB
         status = kflcnReset_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon));
-        NV_ASSERT((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET));
+        //
+        // During surprise removal, this may return NV_ERR_TIMEOUT in addition to
+        // NV_ERR_GPU_IS_LOST. Both are acceptable during teardown.
+        //
+        NV_ASSERT((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET) ||
+                  (status == NV_ERR_GPU_IS_LOST) || (status == NV_ERR_TIMEOUT));
+
+        // Skip remaining hardware operations if GPU is lost/timeout - can't talk to it anyway
+        if (status != NV_OK)
+        {
+            goto skip_fwsec;
+        }
 
         // Invoke FWSEC-SB to put back PreOsApps during driver unload
         status = kgspPrepareForFwsecSb_HAL(pGpu, pKernelGsp, pKernelGsp->pFwsecUcode, &preparedCmd);
@@ -648,13 +659,15 @@ kgspTeardown_TU102
         else
         {
             status = kgspExecuteFwsec_HAL(pGpu, pKernelGsp, &preparedCmd);
-            if ((status != NV_OK) && (status != NV_ERR_GPU_IN_FULLCHIP_RESET))
+            if ((status != NV_OK) && (status != NV_ERR_GPU_IN_FULLCHIP_RESET) && (status != NV_ERR_GPU_IS_LOST))
             {
                 NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC-SB for PreOsApps during driver unload: 0x%x\n", status);
                 NV_ASSERT_FAILED("FWSEC-SB failed");
             }
         }
     }
+
+skip_fwsec:
 
     // Execute Booter Unload
     status = kgspExecuteBooterUnloadIfNeeded_HAL(pGpu, pKernelGsp,

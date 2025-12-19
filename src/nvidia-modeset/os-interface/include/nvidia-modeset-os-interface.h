@@ -310,6 +310,12 @@ void* nvkms_get_per_open_data(int fd);
 NvBool nvkms_open_gpu(NvU32 gpuId);
 void nvkms_close_gpu(NvU32 gpuId);
 
+/*!
+ * Mark a GPU as lost (surprise removal, e.g., Thunderbolt eGPU unplug).
+ * This prevents hardware access and cancels pending timers.
+ */
+void nvkms_gpu_lost(NvU32 gpuId);
+
 
 /*!
  * Enumerate nvidia gpus.

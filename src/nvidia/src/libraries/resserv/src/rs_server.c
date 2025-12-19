@@ -256,7 +256,7 @@ NV_STATUS serverFreeResourceTreeUnderLock(RsServer *pServer, RS_RES_FREE_PARAMS 
             goto done;
 
         status = clientFreeResource(pResourceRef->pClient, pServer, pFreeParams);
-        NV_ASSERT((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET));
+        NV_ASSERT((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET) || (status == NV_ERR_GPU_IS_LOST));
 
         serverResLock_Epilogue(pServer, LOCK_ACCESS_WRITE, pLockInfo, &releaseFlags);
     }
@@ -1372,7 +1372,7 @@ serverFreeResourceTree
         freeParams.bInvalidateOnly = bInvalidateOnly;
         freeParams.pSecInfo = pParams->pSecInfo;
         status = serverFreeResourceTreeUnderLock(pServer, &freeParams);
-        NV_ASSERT((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET));
+        NV_ASSERT((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET) || (status == NV_ERR_GPU_IS_LOST));
 
         if (pServer->bDebugFreeList)
         {

@@ -148,6 +148,21 @@ struct nv_drm_device {
     NvBool subOwnershipGranted;
     NvBool hasFramebufferConsole;
 
+    /*
+     * Set to NV_TRUE for external GPUs (e.g., Thunderbolt/USB4 eGPU).
+     * External GPUs use the fast removal path to avoid hangs during
+     * both surprise removal and "safe" software-initiated disconnect.
+     */
+    NvBool isExternalGpu;
+
+    /*
+     * Set to NV_TRUE when the device is being removed due to
+     * surprise removal (e.g., Thunderbolt eGPU hot-unplug).
+     * When set, NVKMS operations that would access GPU hardware
+     * are skipped to prevent crashes from accessing unmapped memory.
+     */
+    NvBool inSurpriseRemoval;
+
     struct drm_property *nv_out_fence_property;
     struct drm_property *nv_input_colorspace_property;
 

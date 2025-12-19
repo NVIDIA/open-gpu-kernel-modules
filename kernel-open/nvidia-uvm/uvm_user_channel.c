@@ -32,6 +32,7 @@
 #include "uvm_kvmalloc.h"
 #include "uvm_api.h"
 #include "uvm_gpu.h"
+#include "uvm_gpu_isr.h"
 #include "uvm_tracker.h"
 #include "uvm_map_external.h"
 #include "nv_uvm_interface.h"
@@ -782,6 +783,14 @@ void uvm_user_channel_stop(uvm_user_channel_t *user_channel)
     //       write mode.
     uvm_assert_rwsem_locked_read(&va_space->lock);
 
+    // Skip RM call if GPU has been surprise removed. Calling RM with stale
+    // client handles will result in repeated NV_ERR_INVALID_OBJECT_HANDLE
+    // errors during teardown.
+    if (!uvm_parent_gpu_is_accessible(user_channel->gpu->parent)) {
+        atomic_set(&user_channel->is_bound, 0);
+        return;
+    }
+
     // TODO: Bug 1737765. This doesn't stop the user from putting the
     //       channel back on the runlist, which could put stale instance
     //       pointers back in the fault buffer.
@@ -854,7 +863,9 @@ void uvm_user_channel_destroy_detached(uvm_user_channel_t *user_channel)
         uvm_kvfree(user_channel->resources);
     }
 
-    if (user_channel->rm_retained_channel)
+    // Skip RM call if GPU has been surprise removed. Calling RM with stale
+    // handles will result in NV_ERR_INVALID_OBJECT_HANDLE errors.
+    if (user_channel->rm_retained_channel && uvm_parent_gpu_is_accessible(user_channel->gpu->parent))
         uvm_rm_locked_call_void(nvUvmInterfaceReleaseChannel(user_channel->rm_retained_channel));
 
     uvm_user_channel_release(user_channel);

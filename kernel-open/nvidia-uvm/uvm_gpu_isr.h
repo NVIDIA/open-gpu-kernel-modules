@@ -198,4 +198,9 @@ void uvm_access_counters_intr_enable(uvm_access_counter_buffer_t *access_counter
 // g_uvm_global.global_lock is held so that the returned pointer remains valid.
 uvm_gpu_t *uvm_parent_gpu_find_first_valid_gpu(uvm_parent_gpu_t *parent_gpu);
 
+// Check if GPU hardware is accessible (not hot-unplugged).
+// This must be called before any HAL function that accesses GPU registers.
+// Returns false if pci_dev is NULL or PCI channel is offline.
+bool uvm_parent_gpu_is_accessible(uvm_parent_gpu_t *parent_gpu);
+
 #endif // __UVM_GPU_ISR_H__

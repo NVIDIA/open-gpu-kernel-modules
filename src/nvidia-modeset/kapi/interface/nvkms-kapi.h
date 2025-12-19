@@ -657,6 +657,17 @@ struct NvKmsKapiFunctionsTable {
     void (*freeDevice)(struct NvKmsKapiDevice *device);
 
     /*!
+     * Frees a device during surprise removal (e.g., Thunderbolt eGPU unplug).
+     * This skips all hardware access and only releases kernel resources.
+     * Use this instead of freeDevice() when the GPU hardware is no longer
+     * accessible to avoid page faults and hangs.
+     *
+     * \param [in]  device  A device returned by allocateDevice().
+     *                      This function is a no-op if device is not valid.
+     */
+    void (*freeDeviceForSurpriseRemoval)(struct NvKmsKapiDevice *device);
+
+    /*!
      * Grab ownership of device, ownership is required to do modeset.
      *
      * \param [in]  device  A device returned by allocateDevice().

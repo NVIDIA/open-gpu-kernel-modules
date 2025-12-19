@@ -27,6 +27,7 @@
 #include "nvkms-utils.h"
 #include "nvkms-rmapi.h"
 #include "class/cl917d.h" // NV917DDispControlDma, NV917D_DMA_*
+#include <ctrl/ctrl0080/ctrl0080dma.h> // NV0080_CTRL_CMD_DMA_FLUSH
 #include "nvos.h"
 
 #define NV_DMA_PUSHER_CHASE_PAD 5
@@ -37,7 +38,18 @@ static void EvoCoreKickoff(NVDmaBufferEvoPtr push_buffer, NvU32 putOffset);
 void nvDmaKickoffEvo(NVEvoChannelPtr pChannel)
 {
     NVDmaBufferEvoPtr p = &pChannel->pb;
-    NvU32 putOffset = (NvU32)((char *)p->buffer - (char *)p->base);
+    NvU32 putOffset;
+
+    /*
+     * Skip DMA kickoff if the GPU has been lost (e.g., Thunderbolt eGPU
+     * surprise removal). Attempting to access DMA control registers when
+     * the GPU is gone will crash the kernel.
+     */
+    if (p->pDevEvo == NULL || p->pDevEvo->gpuLost) {
+        return;
+    }
+
+    putOffset = (NvU32)((char *)p->buffer - (char *)p->base);
 
     if (p->put_offset == putOffset) {
         return;
@@ -48,10 +60,19 @@ void nvDmaKickoffEvo(NVEvoChannelPtr pChannel)
 
 static void EvoCoreKickoff(NVDmaBufferEvoPtr push_buffer, NvU32 putOffset)
 {
+    NVDevEvoPtr pDevEvo = push_buffer->pDevEvo;
     int i;
 
     nvAssert(putOffset % 4 == 0);
     nvAssert(putOffset <= push_buffer->offset_max);
+
+    /*
+     * Defense-in-depth: check gpuLost again. The caller should have already
+     * checked this, but verify to avoid writing to invalid mapped memory.
+     */
+    if (pDevEvo == NULL || pDevEvo->gpuLost) {
+        return;
+    }
 
 #if NVCPU_IS_X86_64
     __asm__ __volatile__ ("sfence\n\t" : : : "memory");
@@ -110,8 +131,23 @@ NvBool nvEvoPollForEmptyChannel(NVEvoChannelPtr pChannel, NvU32 sd,
 {
     NVDmaBufferEvoPtr push_buffer = &pChannel->pb;
 
+    /* Return early if GPU is lost to avoid accessing invalid registers. */
+    if (push_buffer->pDevEvo == NULL || push_buffer->pDevEvo->gpuLost) {
+        return FALSE;
+    }
+
     do {
-        if (EvoCoreReadGet(push_buffer, sd) == push_buffer->put_offset) {
+        NvU32 getOffset = EvoCoreReadGet(push_buffer, sd);
+
+        /*
+         * Check for GPU removal: reading 0xFFFFFFFF typically indicates
+         * the device has been removed from the bus.
+         */
+        if (getOffset == 0xFFFFFFFF) {
+            return FALSE;
+        }
+
+        if (getOffset == push_buffer->put_offset) {
             break;
         }
 
@@ -132,6 +168,21 @@ void nvEvoMakeRoom(NVEvoChannelPtr pChannel, NvU32 count)
     NvU32 putOffset;
     NvU64 startTime = 0;
     const NvU64 timeout = 5000000; /* 5 seconds */
+    /*
+     * Maximum number of consecutive timeouts before we give up.
+     * This prevents infinite hangs when the GPU is removed (e.g., Thunderbolt
+     * unplug). After 5 timeouts (25 seconds), we assume the GPU is gone.
+     */
+    const NvU32 maxTimeoutCount = 5;
+    NvU32 timeoutCount = 0;
+
+    /*
+     * Skip if the GPU has been lost. No point trying to make room in a
+     * push buffer for a GPU that's no longer there.
+     */
+    if (push_buffer->pDevEvo == NULL || push_buffer->pDevEvo->gpuLost) {
+        return;
+    }
 
     putOffset = (NvU32) ((char *)push_buffer->buffer -
                          (char *)push_buffer->base);
@@ -145,6 +196,16 @@ void nvEvoMakeRoom(NVEvoChannelPtr pChannel, NvU32 count)
 
     while (1) {
         getOffset = EvoReadGetOffset(push_buffer, TRUE);
+
+        /*
+         * Check for GPU removal: reading 0xFFFFFFFF from PCI config space
+         * typically indicates the device has been removed from the bus.
+         */
+        if (getOffset == 0xFFFFFFFF) {
+            nvEvoLogDev(push_buffer->pDevEvo, EVO_LOG_ERROR,
+                "GPU appears to have been removed (read 0xFFFFFFFF)");
+            break;
+        }
 
         if (putOffset >= getOffset) {
             push_buffer->fifo_free_count =
@@ -179,16 +240,25 @@ void nvEvoMakeRoom(NVEvoChannelPtr pChannel, NvU32 count)
         }
 
         /*
-         * If we have been waiting too long, print an error message.  There
-         * isn't much we can do as currently structured, so just reset
-         * startTime.
+         * If we have been waiting too long, print an error message.
+         * After too many consecutive timeouts, give up to prevent
+         * infinite hangs during GPU surprise removal.
          */
         if (nvExceedsTimeoutUSec(push_buffer->pDevEvo, &startTime, timeout)) {
+            timeoutCount++;
             nvEvoLogDev(push_buffer->pDevEvo, EVO_LOG_ERROR,
                 "Error while waiting for GPU progress: "
-                "0x%08x:%d %d:%d:%d:%d",
+                "0x%08x:%d %d:%d:%d:%d (timeout %d/%d)",
                 pChannel->hwclass, pChannel->instance,
-                count, push_buffer->fifo_free_count, getOffset, putOffset);
+                count, push_buffer->fifo_free_count, getOffset, putOffset,
+                timeoutCount, maxTimeoutCount);
+
+            if (timeoutCount >= maxTimeoutCount) {
+                nvEvoLogDev(push_buffer->pDevEvo, EVO_LOG_ERROR,
+                    "GPU not responding after %d timeouts, assuming removed",
+                    timeoutCount);
+                break;
+            }
             startTime = 0;
         }
 
@@ -217,8 +287,16 @@ void nvWriteEvoCoreNotifier(
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     const NvU32 sd = pDispEvo->displayOwner;
-    NVEvoDmaPtr pSubChannel = &pDevEvo->core->notifiersDma[sd];
-    volatile NvU32 *pNotifiers = pSubChannel->cpuAddress;
+    NVEvoDmaPtr pSubChannel;
+    volatile NvU32 *pNotifiers;
+
+    /* Skip if GPU is lost to avoid writing to invalid memory. */
+    if (pDevEvo->gpuLost || pDevEvo->core == NULL) {
+        return;
+    }
+
+    pSubChannel = &pDevEvo->core->notifiersDma[sd];
+    pNotifiers = pSubChannel->cpuAddress;
 
     EvoWriteNotifier(pNotifiers + offset, value);
 }
@@ -230,10 +308,24 @@ static NvBool EvoCheckNotifier(const NVDispEvoRec *pDispEvo,
 {
     const NvU32 sd = pDispEvo->displayOwner;
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    NVEvoDmaPtr pSubChannel = &pDevEvo->core->notifiersDma[sd];
-    NVDmaBufferEvoPtr p = &pDevEvo->core->pb;
+    NVEvoDmaPtr pSubChannel;
+    NVDmaBufferEvoPtr p;
     volatile NvU32 *pNotifier;
     NvU64 startTime = 0;
+    /*
+     * Maximum number of timeout cycles before giving up.
+     * Prevents infinite hangs during GPU surprise removal.
+     */
+    const NvU32 maxTimeoutCount = 5;
+    NvU32 timeoutCount = 0;
+
+    /* Return early if GPU is lost to avoid accessing invalid memory. */
+    if (pDevEvo->gpuLost || pDevEvo->core == NULL) {
+        return FALSE;
+    }
+
+    pSubChannel = &pDevEvo->core->notifiersDma[sd];
+    p = &pDevEvo->core->pb;
 
     pNotifier = pSubChannel->cpuAddress;
 
@@ -245,6 +337,17 @@ static NvBool EvoCheckNotifier(const NVDispEvoRec *pDispEvo,
         const NvU32 val = *pNotifier;
         const NvU32 done_mask = DRF_SHIFTMASK(done_extent_bit:done_base_bit);
         const NvU32 done_val = done_value << done_base_bit;
+        NvU32 getOffset;
+
+        /*
+         * Check for GPU removal: reading 0xFFFFFFFF typically indicates
+         * the device has been removed from the bus.
+         */
+        if (val == 0xFFFFFFFF) {
+            nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
+                         "GPU appears removed (notifier read 0xFFFFFFFF)");
+            return FALSE;
+        }
 
         if ((val & done_mask) == done_val) {
             return TRUE;
@@ -257,14 +360,39 @@ static NvBool EvoCheckNotifier(const NVDispEvoRec *pDispEvo,
         if (nvExceedsTimeoutUSec(
                 pDevEvo,
                 &startTime,
-                NV_EVO_NOTIFIER_SHORT_TIMEOUT_USEC) &&
-            (p->put_offset == EvoCoreReadGet(p, sd)))
+                NV_EVO_NOTIFIER_SHORT_TIMEOUT_USEC))
         {
-            nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
-                         "Lost display notification (%d:0x%08x); "
-                         "continuing.", sd, val);
-            EvoWriteNotifier(pNotifier, done_value << done_base_bit);
-            return TRUE;
+            getOffset = EvoCoreReadGet(p, sd);
+
+            /*
+             * Check for GPU removal in get offset as well.
+             */
+            if (getOffset == 0xFFFFFFFF) {
+                nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
+                             "GPU appears removed (GET read 0xFFFFFFFF)");
+                return FALSE;
+            }
+
+            if (p->put_offset == getOffset)
+            {
+                nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
+                             "Lost display notification (%d:0x%08x); "
+                             "continuing.", sd, val);
+                EvoWriteNotifier(pNotifier, done_value << done_base_bit);
+                return TRUE;
+            }
+
+            /*
+             * Count timeouts. After too many, assume GPU is gone.
+             */
+            timeoutCount++;
+            if (timeoutCount >= maxTimeoutCount) {
+                nvEvoLogDisp(pDispEvo, EVO_LOG_ERROR,
+                             "GPU not responding after %d timeouts (%d:0x%08x)",
+                             timeoutCount, sd, val);
+                return FALSE;
+            }
+            startTime = 0;
         }
 
         nvkms_yield();

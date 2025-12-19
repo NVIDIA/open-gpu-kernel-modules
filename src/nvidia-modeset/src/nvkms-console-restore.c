@@ -765,6 +765,11 @@ NvBool nvEvoRestoreConsole(NVDevEvoPtr pDevEvo, const NvBool allowMST)
                                      pDevEvo->fbConsoleSurfaceHandle);
     struct NvKmsSetModeParams *params;
 
+    /* Skip if GPU has been lost (e.g., Thunderbolt unplug) */
+    if (pDevEvo->gpuLost) {
+        goto done;
+    }
+
     /*
      * If this function fails to restore a console then NVKMS frees
      * and reallocates the core channel, to attempt the console

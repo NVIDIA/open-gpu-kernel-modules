@@ -27,6 +27,7 @@
 #include "uvm_kvmalloc.h"
 #include "uvm_channel.h" // For UVM_GPU_SEMAPHORE_MAX_JUMP
 #include "uvm_conf_computing.h"
+#include "uvm_gpu_isr.h"
 
 #define UVM_SEMAPHORE_SIZE 4
 #define UVM_SEMAPHORE_PAGE_SIZE PAGE_SIZE
@@ -822,9 +823,17 @@ static NvU64 update_completed_value_locked(uvm_gpu_tracking_semaphore_t *trackin
 NvU64 uvm_gpu_tracking_semaphore_update_completed_value(uvm_gpu_tracking_semaphore_t *tracking_semaphore)
 {
     NvU64 completed;
+    uvm_gpu_t *gpu = tracking_semaphore->semaphore.page->pool->gpu;
 
     // Check that the GPU which owns the semaphore is still present
     UVM_ASSERT(tracking_semaphore_check_gpu(tracking_semaphore));
+
+    // If the GPU is not accessible (surprise removed), return the cached
+    // completed value without reading from GPU memory. Reading from GPU
+    // memory after surprise removal returns garbage values that cause
+    // assertion failures.
+    if (!uvm_parent_gpu_is_accessible(gpu->parent))
+        return atomic64_read(&tracking_semaphore->completed_value);
 
     if (tracking_semaphore_uses_mutex(tracking_semaphore))
         uvm_mutex_lock(&tracking_semaphore->m_lock);
@@ -844,9 +853,15 @@ NvU64 uvm_gpu_tracking_semaphore_update_completed_value(uvm_gpu_tracking_semapho
 bool uvm_gpu_tracking_semaphore_is_value_completed(uvm_gpu_tracking_semaphore_t *tracking_sem, NvU64 value)
 {
     NvU64 completed = atomic64_read(&tracking_sem->completed_value);
+    uvm_gpu_t *gpu = tracking_sem->semaphore.page->pool->gpu;
 
     // Check that the GPU which owns the semaphore is still present
     UVM_ASSERT(tracking_semaphore_check_gpu(tracking_sem));
+
+    // If the GPU is not accessible, consider all values completed to avoid
+    // spinning forever waiting for a GPU that's gone.
+    if (!uvm_parent_gpu_is_accessible(gpu->parent))
+        return true;
 
     if (completed >= value) {
         // atomic64_read() doesn't imply any memory barriers and we need all

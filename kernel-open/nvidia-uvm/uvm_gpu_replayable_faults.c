@@ -27,6 +27,7 @@
 #include "uvm_linux.h"
 #include "uvm_global.h"
 #include "uvm_gpu_replayable_faults.h"
+#include "uvm_gpu_isr.h"
 #include "uvm_hal.h"
 #include "uvm_kvmalloc.h"
 #include "uvm_tools.h"
@@ -305,11 +306,15 @@ void uvm_parent_gpu_fault_buffer_deinit(uvm_parent_gpu_t *parent_gpu)
     fault_buffer_deinit_replayable_faults(parent_gpu);
 
     if (parent_gpu->fault_buffer.rm_info.faultBufferHandle) {
-        status = uvm_rm_locked_call(nvUvmInterfaceOwnPageFaultIntr(parent_gpu->rm_device, NV_FALSE));
-        UVM_ASSERT(status == NV_OK);
+        // Skip RM calls if GPU is not accessible (e.g., hot-unplugged).
+        // The nvidia module's internal state is corrupted when the GPU is gone.
+        if (uvm_parent_gpu_is_accessible(parent_gpu)) {
+            status = uvm_rm_locked_call(nvUvmInterfaceOwnPageFaultIntr(parent_gpu->rm_device, NV_FALSE));
+            UVM_ASSERT(status == NV_OK);
 
-        uvm_rm_locked_call_void(nvUvmInterfaceDestroyFaultInfo(parent_gpu->rm_device,
-                                                               &parent_gpu->fault_buffer.rm_info));
+            uvm_rm_locked_call_void(nvUvmInterfaceDestroyFaultInfo(parent_gpu->rm_device,
+                                                                   &parent_gpu->fault_buffer.rm_info));
+        }
 
         parent_gpu->fault_buffer.rm_info.faultBufferHandle = 0;
     }
@@ -677,8 +682,20 @@ NV_STATUS uvm_gpu_fault_buffer_flush(uvm_gpu_t *gpu)
 
     UVM_ASSERT(gpu->parent->replayable_faults_supported);
 
+    // Check if GPU hardware is still accessible before attempting to flush.
+    // After hot-unplug, the GPU registers are no longer mapped and accessing
+    // them would cause a page fault crash.
+    if (!uvm_parent_gpu_is_accessible(gpu->parent))
+        return NV_ERR_GPU_IS_LOST;
+
     // Disables replayable fault interrupts and fault servicing
     uvm_parent_gpu_replayable_faults_isr_lock(gpu->parent);
+
+    // Re-check after acquiring the lock in case GPU was removed concurrently
+    if (!uvm_parent_gpu_is_accessible(gpu->parent)) {
+        uvm_parent_gpu_replayable_faults_isr_unlock(gpu->parent);
+        return NV_ERR_GPU_IS_LOST;
+    }
 
     status = fault_buffer_flush_locked(gpu->parent,
                                        gpu,
@@ -2913,6 +2930,11 @@ void uvm_parent_gpu_service_replayable_faults(uvm_parent_gpu_t *parent_gpu)
     uvm_fault_service_batch_context_t *batch_context = &replayable_faults->batch_service_context;
 
     UVM_ASSERT(parent_gpu->replayable_faults_supported);
+
+    // Check if GPU is still accessible before servicing faults.
+    // After hot-unplug, accessing GPU registers would cause a crash.
+    if (!uvm_parent_gpu_is_accessible(parent_gpu))
+        return;
 
     uvm_tracker_init(&batch_context->tracker);
 

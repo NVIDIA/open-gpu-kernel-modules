@@ -42,6 +42,17 @@ static void __nv_drm_gem_nvkms_memory_free(struct nv_drm_gem_object *nv_gem)
     struct nv_drm_gem_nvkms_memory *nv_nvkms_memory =
         to_nv_nvkms_memory(nv_gem);
 
+    /*
+     * Skip nvKms calls if pDevice is NULL or inSurpriseRemoval is set.
+     * During hot-unplug, the nvidia_modeset internal state (semaphores,
+     * memory handles) may be corrupted or freed before this destructor
+     * runs from delayed_fput. The memory resources are gone with the GPU.
+     */
+    if (nv_dev->pDevice == NULL || nv_dev->inSurpriseRemoval) {
+        nv_drm_free(nv_nvkms_memory);
+        return;
+    }
+
     if (nv_nvkms_memory->physically_mapped) {
         if (nv_nvkms_memory->pWriteCombinedIORemapAddress != NULL) {
             iounmap(nv_nvkms_memory->pWriteCombinedIORemapAddress);

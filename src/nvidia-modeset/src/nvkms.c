@@ -1386,6 +1386,34 @@ static NvBool AllocDevice(struct NvKmsPerOpen *pOpen,
 
     pDevEvo = nvFindDevEvoByDeviceId(pParams->request.deviceId);
 
+    /*
+     * If we found an existing device that was marked as lost (e.g., from a
+     * previous Thunderbolt surprise removal), we need to clean it up before
+     * allocating a new device for the reconnected GPU.
+     */
+    if (pDevEvo != NULL && pDevEvo->gpuLost) {
+        nvEvoLogDev(pDevEvo, EVO_LOG_INFO,
+                    "Cleaning up stale device from previous surprise removal");
+        /*
+         * Force cleanup of the stale device. Set allocRefCnt to 1 so that
+         * nvFreeDevEvo will actually free it.
+         */
+        pDevEvo->allocRefCnt = 1;
+        nvFreeDevEvo(pDevEvo);
+        pDevEvo = NULL;
+
+        /*
+         * After cleaning up a gpuLost device, reinitialize the global RM
+         * client handle. RM may have invalidated internal state when the
+         * GPU was lost, causing subsequent API calls to fail with
+         * NV_ERR_INVALID_OBJECT_HANDLE.
+         */
+        if (!nvReinitializeGlobalClientAfterGpuLost()) {
+            pParams->reply.status = NVKMS_ALLOC_DEVICE_STATUS_FATAL_ERROR;
+            return FALSE;
+        }
+    }
+
     if (pDevEvo == NULL) {
         pDevEvo = nvAllocDevEvo(&pParams->request, &pParams->reply.status);
         if (pDevEvo == NULL) {
@@ -1604,6 +1632,24 @@ static void DisableRemainingVblankSemControls(
 static void FreeDeviceReference(struct NvKmsPerOpen *pOpen,
                                 struct NvKmsPerOpenDev *pOpenDev)
 {
+    NVDevEvoPtr pDevEvo = pOpenDev->pDevEvo;
+
+    /*
+     * If pDevEvo is NULL, the device was already freed due to GPU loss
+     * (surprise removal). In this case, skip all hardware-related cleanup
+     * and just free the software structures.
+     *
+     * Also check if the device is marked as gpuLost - this can happen if
+     * nvInvalidateDeviceReferences hasn't been called yet (e.g., during
+     * concurrent cleanup) or if there's a race between GPU loss detection
+     * and this close path.
+     */
+    if (pDevEvo == NULL || pDevEvo->gpuLost) {
+        pOpenDev->pDevEvo = NULL;
+        nvFreePerOpenDev(pOpen, pOpenDev);
+        return;
+    }
+
     /* Disable all client-owned vblank sync objects that still exist. */
     DisableRemainingVblankSyncObjects(pOpen, pOpenDev);
 
@@ -5260,6 +5306,31 @@ void nvRevokeDevice(NVDevEvoPtr pDevEvo)
     }
 }
 
+/*
+ * Invalidate all pOpenDev references to a device.
+ * Called when GPU is lost to ensure nvKmsClose doesn't access freed pDevEvo.
+ * This sets pOpenDev->pDevEvo to NULL for all open handles.
+ */
+void nvInvalidateDeviceReferences(NVDevEvoPtr pDevEvo)
+{
+    struct NvKmsPerOpen *pOpen;
+    struct NvKmsPerOpenDev *pOpenDev;
+    NvKmsGenericHandle dev;
+
+    if (pDevEvo == NULL) {
+        return;
+    }
+
+    nvListForEachEntry(pOpen, &perOpenIoctlList, perOpenIoctlListEntry) {
+        FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpen->ioctl.devHandles,
+                                            pOpenDev, dev) {
+            if (pOpenDev->pDevEvo == pDevEvo) {
+                pOpenDev->pDevEvo = NULL;
+            }
+        }
+    }
+}
+
 /*!
  * Open callback.
  *
@@ -6248,6 +6319,40 @@ static void FreeGlobalState(void)
     nvClearDpyOverrides();
 }
 
+NvBool nvReinitializeGlobalClientAfterGpuLost(void)
+{
+    NvU32 ret;
+
+    /* Only reinitialize if we have a client handle */
+    if (nvEvoGlobal.clientHandle == 0) {
+        return TRUE;
+    }
+
+    nvEvoLog(EVO_LOG_INFO, "Reinitializing global client after GPU lost");
+
+    /* Free the old client handle */
+    nvRmApiFree(nvEvoGlobal.clientHandle, nvEvoGlobal.clientHandle,
+                nvEvoGlobal.clientHandle);
+    nvEvoGlobal.clientHandle = 0;
+
+    /* Allocate a new client handle */
+    ret = nvRmApiAlloc(NV01_NULL_OBJECT,
+                       NV01_NULL_OBJECT,
+                       NV01_NULL_OBJECT,
+                       NV01_ROOT,
+                       &nvEvoGlobal.clientHandle);
+
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvEvoLog(EVO_LOG_ERROR, "Failed to reinitialize global client");
+        return FALSE;
+    }
+
+    /* Update RM context */
+    nvEvoGlobal.rmSmgContext.clientHandle = nvEvoGlobal.clientHandle;
+
+    return TRUE;
+}
+
 /*
  * Wrappers to help SMG access NvKmsKAPI's RM context.
  */
@@ -6342,6 +6447,11 @@ static void SendEvent(struct NvKmsPerOpen *pOpen,
 static void ConsoleRestoreTimerFired(void *dataPtr, NvU32 dataU32)
 {
     NVDevEvoPtr pDevEvo = dataPtr;
+
+    /* Skip if GPU has been lost (e.g., Thunderbolt unplug) */
+    if (pDevEvo->gpuLost) {
+        return;
+    }
 
     if (pDevEvo->modesetOwner == NULL && pDevEvo->handleConsoleHotplugs) {
         pDevEvo->skipConsoleRestore = FALSE;
@@ -6831,6 +6941,43 @@ void nvKmsResume(NvU32 gpuId)
                     pDevEvo->skipConsoleRestore = FALSE;
                     RestoreConsole(pDevEvo);
                 }
+            }
+        }
+    }
+}
+
+/*!
+ * Mark a GPU as lost (e.g., Thunderbolt/eGPU hot-unplug).
+ *
+ * This prevents any hardware access attempts that would cause kernel crashes.
+ * The device's timers are cancelled and the gpuLost flag is set so that
+ * subsequent operations bail out early.
+ */
+void nvKmsGpuLost(NvU32 gpuId)
+{
+    NVDevEvoPtr pDevEvo;
+    NvU32 i;
+
+    FOR_ALL_EVO_DEVS(pDevEvo) {
+        for (i = 0; i < ARRAY_LEN(pDevEvo->openedGpuIds); i++) {
+            if (pDevEvo->openedGpuIds[i] == gpuId) {
+                nvEvoLogDev(pDevEvo, EVO_LOG_INFO,
+                            "GPU lost (surprise removal), disabling hardware access");
+
+                /* Mark device as lost to prevent hardware access */
+                pDevEvo->gpuLost = TRUE;
+
+                /* Cancel timers that might try to access hardware */
+                nvkms_free_timer(pDevEvo->consoleRestoreTimer);
+                pDevEvo->consoleRestoreTimer = NULL;
+
+                nvkms_free_timer(pDevEvo->postFlipIMPTimer);
+                pDevEvo->postFlipIMPTimer = NULL;
+
+                nvkms_free_timer(pDevEvo->lowerDispBandwidthTimer);
+                pDevEvo->lowerDispBandwidthTimer = NULL;
+
+                return;
             }
         }
     }

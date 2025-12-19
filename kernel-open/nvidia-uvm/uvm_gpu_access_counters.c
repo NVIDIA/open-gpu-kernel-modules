@@ -25,6 +25,7 @@
 #include "uvm_gpu_access_counters.h"
 #include "uvm_global.h"
 #include "uvm_api.h"
+#include "uvm_gpu_isr.h"
 #include "uvm_gpu.h"
 #include "uvm_hal.h"
 #include "uvm_kvmalloc.h"
@@ -505,11 +506,15 @@ void uvm_parent_gpu_deinit_access_counters(uvm_parent_gpu_t *parent_gpu, NvU32 n
     }
 
     if (access_counters && access_counters->rm_info.accessCntrBufferHandle) {
-        NV_STATUS status = uvm_rm_locked_call(nvUvmInterfaceDestroyAccessCntrInfo(parent_gpu->rm_device,
-                                                                                  &access_counters->rm_info));
         uvm_access_counter_service_batch_context_t *batch_context = &access_counters->batch_service_context;
 
-        UVM_ASSERT(status == NV_OK);
+        // Skip RM call if GPU is not accessible (e.g., hot-unplugged).
+        // The nvidia module's internal state is corrupted when the GPU is gone.
+        if (uvm_parent_gpu_is_accessible(parent_gpu)) {
+            NV_STATUS status = uvm_rm_locked_call(nvUvmInterfaceDestroyAccessCntrInfo(parent_gpu->rm_device,
+                                                                                      &access_counters->rm_info));
+            UVM_ASSERT(status == NV_OK);
+        }
 
         access_counters->rm_info.accessCntrBufferHandle = 0;
         uvm_kvfree(batch_context->notification_cache);
@@ -593,9 +598,12 @@ static void access_counters_yield_ownership(uvm_parent_gpu_t *parent_gpu, NvU32 
     if (status != NV_OK)
         UVM_ASSERT(status == uvm_global_get_status());
 
-    status = uvm_rm_locked_call(nvUvmInterfaceDisableAccessCntr(parent_gpu->rm_device,
-                                                                &access_counters->rm_info));
-    UVM_ASSERT(status == NV_OK);
+    // Skip RM call if GPU is not accessible (e.g., hot-unplugged).
+    if (uvm_parent_gpu_is_accessible(parent_gpu)) {
+        status = uvm_rm_locked_call(nvUvmInterfaceDisableAccessCntr(parent_gpu->rm_device,
+                                                                    &access_counters->rm_info));
+        UVM_ASSERT(status == NV_OK);
+    }
 }
 
 // Increment the refcount of access counter enablement. If this is the first
@@ -1766,6 +1774,11 @@ void uvm_service_access_counters(uvm_access_counter_buffer_t *access_counters)
 {
     NV_STATUS status = NV_OK;
     uvm_access_counter_service_batch_context_t *batch_context;
+    uvm_parent_gpu_t *parent_gpu = access_counters->parent_gpu;
+
+    // Check if GPU is still accessible (e.g., not hot-unplugged)
+    if (!uvm_parent_gpu_is_accessible(parent_gpu))
+        return;
 
     batch_context = &access_counters->batch_service_context;
 

@@ -1156,6 +1156,13 @@ typedef struct _NVEvoDevRec {
      */
     NvBool              supportsVblankSemControl : 1;
 
+    /*
+     * Indicates the GPU has been lost (e.g., Thunderbolt/eGPU hot-unplug).
+     * When set, any operations that would access GPU hardware should be
+     * skipped to avoid kernel crashes.
+     */
+    NvBool              gpuLost : 1;
+
     nvkms_timer_handle_t *postFlipIMPTimer;
     nvkms_timer_handle_t *consoleRestoreTimer;
 

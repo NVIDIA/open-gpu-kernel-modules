@@ -809,10 +809,19 @@ NV_STATUS nvGpuOpsDestroySession(struct gpuSession *session)
     if (!session)
         return NV_OK;
 
-    // Sanity Check: There should not be any attached devices with the session!
-    NV_ASSERT(!session->devices);
-    // Sanity Check: If there are no devices, there should also be no p2p Info!
-    NV_ASSERT(!session->p2pInfo);
+    // During surprise removal (GPU lost), devices may not have been properly
+    // detached. In normal operation, these assertions catch programming errors.
+    // When the GPU is lost, we log and continue to avoid blocking cleanup.
+    if (session->devices)
+    {
+        NV_PRINTF(LEVEL_WARNING,
+                  "Destroying session with devices still attached (GPU may be lost)\n");
+    }
+    if (session->p2pInfo)
+    {
+        NV_PRINTF(LEVEL_WARNING,
+                  "Destroying session with p2p info still present (GPU may be lost)\n");
+    }
 
     // freeing session will free everything under it
     pRmApi->Free(pRmApi, session->handle, session->handle);

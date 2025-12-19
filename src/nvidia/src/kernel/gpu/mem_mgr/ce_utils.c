@@ -343,10 +343,17 @@ ceutilsDestruct_IMPL
     // process all callbacks while CeUtils is fully functional
     _ceutilsProcessCompletionCallbacks(pCeUtils);
     portSyncSpinlockAcquire(pCeUtils->pCallbackLock);
-    NV_ASSERT(listCount(&pCeUtils->completionCallbacks) == 0);
+    // During surprise removal, callbacks may not complete cleanly - skip assertion if GPU is lost
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+    {
+        NV_ASSERT(listCount(&pCeUtils->completionCallbacks) == 0);
+    }
     portSyncSpinlockRelease(pCeUtils->pCallbackLock);
     // make sure no new work was queued from callbacks
-    NV_ASSERT(pCeUtils->lastCompletedPayload == lastSubmittedPayload);
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+    {
+        NV_ASSERT(pCeUtils->lastCompletedPayload == lastSubmittedPayload);
+    }
 
     if ((pChannel->bClientUserd) && (pChannel->pControlGPFifo != NULL))
     {
