@@ -2172,6 +2172,11 @@ void nv_drm_suspend_resume(NvBool suspend)
 
     /*
      * NVKMS shuts down all heads on suspend. Update DRM state accordingly.
+     *
+     * BUGFIX: Previously, drm_mode_config_reset() was called on suspend
+     * but nothing restored the display modes on resume, causing black screen
+     * after suspend/resume. Now we properly restore the mode config on resume.
+     * See: https://github.com/NVIDIA/open-gpu-kernel-modules/issues/450
      */
     for (nv_dev = dev_list; nv_dev; nv_dev = nv_dev->next) {
         struct drm_device *dev = nv_dev->dev;
@@ -2191,6 +2196,8 @@ void nv_drm_suspend_resume(NvBool suspend)
             drm_fb_helper_set_suspend_unlocked(dev->fb_helper, 0);
 #endif
             drm_kms_helper_poll_enable(dev);
+            /* Restore mode config to re-enable display output after resume */
+            drm_mode_config_reset(dev);
         }
     }
 
