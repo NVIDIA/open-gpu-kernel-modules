@@ -5281,7 +5281,7 @@ case "$5" in
 
         if [ -n "$VGX_BUILD" ]; then
             if [ -f /proc/xen/capabilities ]; then
-                if [ "`cat /proc/xen/capabilities`" == "control_d" ]; then
+                if [ "`cat /proc/xen/capabilities`" = "control_d" ]; then
                     exit 0
                 fi
             else
