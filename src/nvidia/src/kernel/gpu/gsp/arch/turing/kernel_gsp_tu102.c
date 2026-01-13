@@ -54,6 +54,8 @@
 #include "g_all_dcl_pb.h"
 #include "lib/protobuf/prb.h"
 
+static NvBool _kgspIsProcessorSuspended(OBJGPU *pGpu, void *pVoid);
+
 void
 kgspConfigureFalcon_TU102
 (
@@ -544,8 +546,9 @@ kgspBootstrap_TU102
     RM_RISCV_UCODE_DESC *pRiscvDesc = pKernelGsp->pGspRmBootUcodeDesc;
     kflcnRegWrite_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_OS, pRiscvDesc->appVersion);
 
-    // Ensure the CPU is started
-    if (kflcnIsRiscvActive_HAL(pGpu, pKernelFalcon))
+    // Ensure the CPU has started
+    // Note: In rare cases, GSP-RM may make enough progress by this point to suspend waiting for Kernel RM.
+    if (kflcnIsRiscvActive_HAL(pGpu, pKernelFalcon) || _kgspIsProcessorSuspended(pGpu, pKernelGsp))
     {
         NV_PRINTF(LEVEL_INFO, "GSP ucode loaded and RISCV started.\n");
     }

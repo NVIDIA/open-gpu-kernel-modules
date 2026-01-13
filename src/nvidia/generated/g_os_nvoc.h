@@ -768,6 +768,7 @@ NV_STATUS osGetAtsTargetAddressRange(OBJGPU *pGpu,
                                      NvU32   peerIndex);
 NV_STATUS osGetFbNumaInfo(OBJGPU *pGpu,
                           NvU64  *pAddrPhys,
+                          NvU64  *pSizePhys,
                           NvU64  *pAddrRsvdPhys,
                           NvS32  *pNodeId);
 NV_STATUS osGetEgmInfo(OBJGPU *pGpu,

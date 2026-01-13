@@ -1139,6 +1139,45 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PFN_ADDRESS_SPACE_STRUCT_PRESENT" "" "types"
         ;;
 
+        irq_bypass_producer_has_token)
+            #
+            # Determine if 'struct irq_bypass_producer' has 'token' field
+            #
+            # Added by commit 2b521d86ee80 ("irqbypass: Take ownership of 
+            # producer/consumer token tracking") in v6.17
+            #
+            CODE="
+            #include <linux/irqbypass.h>
+            int conftest_irq_bypass_producer_has_token(void) {
+                return offsetof(struct irq_bypass_producer, token);
+            }"
+
+            compile_check_conftest "$CODE" "NV_IRQ_BYPASS_PRODUCER_HAS_TOKEN" "" "types"
+        ;;
+
+        irq_bypass_register_producer_has_eventfd_and_irq_args)
+            #
+            # Determine if irq_bypass_register_producer() function has 
+            # additional 'eventfd' and 'irq' arguments.
+            #
+            # Added by commits 2b521d86ee80 ("irqbypass: Take ownership of
+            # producer/consumer token tracking") and 23b54381cee2 
+            # ("irqbypass: Require producers to pass in Linux IRQ number 
+            # during registration") in v6.17
+            #
+            CODE="
+            #include <linux/irqbypass.h>
+            #include <linux/eventfd.h>
+            void conftest_irq_bypass_register_producer_has_eventfd_and_irq_args(void) {
+                struct irq_bypass_producer *prod = NULL;
+                struct eventfd_ctx *eventfd = NULL;
+                int irq = 0;
+                irq_bypass_register_producer(prod, eventfd, irq);
+            }"
+
+            compile_check_conftest "$CODE" "NV_IRQ_BYPASS_REGISTER_PRODUCER_HAS_EVENTFD_AND_IRQ_ARGS" "" "types"
+        ;;
+
         egm_module_helper_api_present)
             #
             # Determine if egm management api are present or not.
@@ -1349,6 +1388,45 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_GET_DEV_PAGEMAP_HAS_PGMAP_ARG" "" "types"
+        ;;
+
+        zone_device_page_init_has_order_arg)
+            #
+            # Determine if the zone_device_page_init() has an extra argument
+            #
+            # This change was introduced by d245f9b4ab80
+            # ("mm/zone_device: support large zone device private folios")
+            #
+            # in linux-next, expected in v6.19.
+            #
+            CODE="
+            #include <linux/memremap.h>
+            void init_page(void) {
+                struct page *page;
+                zone_device_page_init(page, 0);
+            }"
+            compile_check_conftest "$CODE" "NV_ZONE_DEVICE_PAGE_INIT_HAS_ORDER_ARG" "" "types"
+        ;;
+
+        dev_pagemap_ops_has_folio_free)
+            #
+            # Determine if the zone device now uses a folio_free() as the callback
+            # function instead of page_free()
+            #
+            # This change was introduced by 3a5a06554566
+            # (mm/zone_device: rename page_free callback to folio_free)
+            #
+            # in linux-next, expected in v6.19.
+            #
+            CODE="
+            #include <linux/memremap.h>
+            void test_folio_free(struct folio *folio) {
+            }
+            void set_folio_free_ops(void) {
+                struct dev_pagemap_ops ops;
+                ops.folio_free = test_folio_free;
+            }"
+            compile_check_conftest "$CODE" "NV_PAGEMAP_OPS_HAS_FOLIO_FREE" "" "types"
         ;;
 
         drm_available)
@@ -2221,6 +2299,35 @@ compile_test() {
                 return get_backlight_device_by_name();
             }"
             compile_check_conftest "$CODE" "NV_GET_BACKLIGHT_DEVICE_BY_NAME_PRESENT" "" "functions"
+        ;;
+
+        dma_map_ops_has_map_phys)
+            #
+            # Determine if .map_phys exists in struct dma_map_ops.
+            #
+            # Commit 14cb413af00c ("dma-mapping: remove unused mapping resource callbacks")
+            # removed .map_resource operation and replaced it with .map_phys.
+            #
+            echo "$CONFTEST_PREAMBLE
+            #include <linux/dma-map-ops.h>
+            int conftest_dma_map_ops_has_map_phys(void) {
+                return offsetof(struct dma_map_ops, map_phys);
+            }
+            int conftest_dma_map_ops_has_unmap_phys(void) {
+                return offsetof(struct dma_map_ops, unmap_phys);
+            }" > conftest$$.c
+
+            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+            rm -f conftest$$.c
+
+            if [ -f conftest$$.o ]; then
+                echo "#define NV_DMA_MAP_OPS_HAS_MAP_PHYS" | append_conftest "types"
+                rm -f conftest$$.o
+                return
+            else
+                echo "#undef NV_DMA_MAP_OPS_HAS_MAP_PHYS" | append_conftest "types"
+                return
+            fi
         ;;
 
         dma_buf_ops_has_map)
@@ -3938,6 +4045,27 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PCI_REBAR_GET_POSSIBLE_SIZES_PRESENT" "" "functions"
         ;;
 
+        pci_resize_resource_has_exclude_bars_arg)
+            #
+            # Determine if pci_resize_resource() has exclude_bars argument.
+            #
+            # exclude_bars argument was added to pci_resize_resource by commit
+            # 337b1b566db0 (11/14/2025) ("PCI: Fix restoring BARs on BAR resize rollback path")
+            # in linux-next.
+            #
+            CODE="
+            #include <linux/pci.h>
+
+            typeof(pci_resize_resource) conftest_pci_resize_resource_has_exclude_bars_arg;
+            int __must_check conftest_pci_resize_resource_has_exclude_bars_arg(struct pci_dev *dev,
+                                                                               int i, int size,
+                                                                               int exclude_bars) {
+                return 0;
+            }"
+
+            compile_check_conftest "$CODE" "NV_PCI_RESIZE_RESOURCE_HAS_EXCLUDE_BARS_ARG" "" "types"
+        ;;
+
         drm_connector_has_override_edid)
             #
             # Determine if 'struct drm_connector' has an 'override_edid' member.
@@ -3976,22 +4104,39 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_IOMMU_SVA_BIND_DEVICE_HAS_DRVDATA_ARG" "" "types"
         ;;
 
-        vm_area_struct_has_const_vm_flags)
+        vm_flags_set)
             #
-            # Determine if the 'vm_area_struct' structure has
-            # const 'vm_flags'.
+            # Determine if the vm_flags_set() function is present. The
+            # presence of this function indicates that the vm_flags_clear()
+            # function is also present.
             #
-            # A union of '__vm_flags' and 'const vm_flags' was added by
+            # The functions vm_flags_set()/ vm_flags_clear() were added by
             # commit bc292ab00f6c ("mm: introduce vma->vm_flags wrapper
-            # functions") in v6.3.
+            # functions") in v6.3-rc1 (2023-02-09).
             #
             CODE="
-            #include <linux/mm_types.h>
-            int conftest_vm_area_struct_has_const_vm_flags(void) {
-                return offsetof(struct vm_area_struct, __vm_flags);
+            #include <linux/mm.h>
+            void conftest_vm_flags_set(void) {
+                vm_flags_set();
             }"
 
-            compile_check_conftest "$CODE" "NV_VM_AREA_STRUCT_HAS_CONST_VM_FLAGS" "" "types"
+            compile_check_conftest "$CODE" "NV_VM_FLAGS_SET_PRESENT" "" "functions"
+        ;;
+
+        vma_flags_set_word)
+            #
+            # Determine if the vma_flags_set_word() function is present.
+            #
+            # Added by commit c3f7c506e8f1 ("mm: introduce VMA flags bitmap type")
+            # in v6.19-rc1.
+            #
+            CODE="
+            #include <linux/mm.h>
+            void conftest_vma_flags_set_word(void) {
+                vma_flags_set_word();
+            }"
+
+            compile_check_conftest "$CODE" "NV_VMA_FLAGS_SET_WORD_PRESENT" "" "functions"
         ;;
 
         drm_driver_has_dumb_destroy)

@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 580.119.02.
+version 580.126.09.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-580.119.02 driver release.  This can be achieved by installing
+580.126.09 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -185,7 +185,7 @@ table below).
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/580.119.02/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/580.126.09/README/kernel_open.html
 
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
@@ -971,6 +971,7 @@ Subsystem Device ID.
 | NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition | 2BB4 10DE 204C |
 | NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition | 2BB4 17AA 204C |
 | NVIDIA RTX PRO 6000 Blackwell Server Edition            | 2BB5 10DE 204E |
+| NVIDIA RTX PRO 6000 Blackwell Server Edition            | 2BB5 10DE 220B |
 | NVIDIA RTX 6000D                                        | 2BB9 10DE 2091 |
 | NVIDIA GeForce RTX 5080                                 | 2C02           |
 | NVIDIA GeForce RTX 5070 Ti                              | 2C05           |

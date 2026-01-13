@@ -3425,12 +3425,6 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
                                   _CONNECTION_UNHEALTHY, _FALSE, healthMask);
     }
     else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _CONNECTION_UNHEALTHY,
-                          _TRUE_RESET_REQUIRED, mask))
-    {
-        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
-                                  _CONNECTION_UNHEALTHY, _TRUE, healthMask);
-    }
-    else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _CONNECTION_UNHEALTHY,
                           _NOT_SUPPORTED, mask))
     {
         healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
@@ -3481,10 +3475,36 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
                                   _INCORRECT_CONFIGURATION, _INVALID_LOCATION, healthMask);
     }
     else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _INCORRECT_CONFIGURATION,
+                          _GPU_STATE_INVALID, mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                  _INCORRECT_CONFIGURATION, _GPU_STATE_INVALID, healthMask);
+    }
+    else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _INCORRECT_CONFIGURATION,
                           _NOT_SUPPORTED, mask))
     {
         healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
                                    _INCORRECT_CONFIGURATION, _NOT_SUPPORTED, healthMask);
+    }
+
+    // Fabric Partition Assigned
+    if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _PARTITION_ASSIGNED, _TRUE,
+                     mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                  _PARTITION_ASSIGNED, _TRUE, healthMask);
+    }
+    else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _PARTITION_ASSIGNED,
+                          _FALSE, mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                  _PARTITION_ASSIGNED, _FALSE, healthMask);
+    }
+    else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _PARTITION_ASSIGNED,
+                          _NOT_SUPPORTED, mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                  _PARTITION_ASSIGNED, _NOT_SUPPORTED, healthMask);
     }
 
     if (gpuGetChipArch(pGpu) >= GPU_ARCHITECTURE_BLACKWELL_GB1XX)

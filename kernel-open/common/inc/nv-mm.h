@@ -196,14 +196,33 @@ static inline struct rw_semaphore *nv_mmap_get_lock(struct mm_struct *mm)
  * Commit 45ad9f5290dc updated vma_start_write() to call __vma_start_write().
  */
 void nv_vma_start_write(struct vm_area_struct *);
+
+static inline void nv_vma_flags_set_word(struct vm_area_struct *vma, unsigned long flags)
+{
+    nv_vma_start_write(vma);
+#if defined(NV_VMA_FLAGS_SET_WORD_PRESENT)
+    vma_flags_set_word(&vma->flags, flags);
+#else
+    ACCESS_PRIVATE(vma, __vm_flags) |= flags;
 #endif
+}
+
+static inline void nv_vma_flags_clear_word(struct vm_area_struct *vma, unsigned long flags)
+{
+    nv_vma_start_write(vma);
+#if defined(NV_VMA_FLAGS_SET_WORD_PRESENT)
+    vma_flags_clear_word(&vma->flags, flags);
+#else
+    ACCESS_PRIVATE(vma, __vm_flags) &= ~flags;
+#endif
+}
+#endif // !NV_CAN_CALL_VMA_START_WRITE
 
 static inline void nv_vm_flags_set(struct vm_area_struct *vma, vm_flags_t flags)
 {
 #if !NV_CAN_CALL_VMA_START_WRITE
-    nv_vma_start_write(vma);
-    ACCESS_PRIVATE(vma, __vm_flags) |= flags;
-#elif defined(NV_VM_AREA_STRUCT_HAS_CONST_VM_FLAGS)
+    nv_vma_flags_set_word(vma, flags);
+#elif defined(NV_VM_FLAGS_SET_PRESENT)
     vm_flags_set(vma, flags);
 #else
     vma->vm_flags |= flags;
@@ -213,9 +232,8 @@ static inline void nv_vm_flags_set(struct vm_area_struct *vma, vm_flags_t flags)
 static inline void nv_vm_flags_clear(struct vm_area_struct *vma, vm_flags_t flags)
 {
 #if !NV_CAN_CALL_VMA_START_WRITE
-    nv_vma_start_write(vma);
-    ACCESS_PRIVATE(vma, __vm_flags) &= ~flags;
-#elif defined(NV_VM_AREA_STRUCT_HAS_CONST_VM_FLAGS)
+    nv_vma_flags_clear_word(vma, flags);
+#elif defined(NV_VM_FLAGS_SET_PRESENT)
     vm_flags_clear(vma, flags);
 #else
     vma->vm_flags &= ~flags;

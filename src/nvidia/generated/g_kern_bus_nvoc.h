@@ -363,6 +363,8 @@ struct __nvoc_inner_struc_KernelBus_3__ {
     NvU64 base;
     NvU64 size;
     NvBool bToggleBindPoint;
+    RmPhysAddr imbPhysAddress;
+    NvU32 imbAddrSpace;
 };
 
 struct __nvoc_inner_struc_KernelBus_4__ {

@@ -2896,4 +2896,52 @@ typedef struct NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS {
     NV_DECLARE_ALIGNED(NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO carveoutRegion[NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_MAX_ENTRIES], 8);
 } NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS;
 
+/*
+ * NV2080_CTRL_CMD_FB_GET_CPU_COHERENT_RANGE
+ *
+ * This command returns the CPU-coherent FB range.
+ * Only applicable on self-hosted platforms.
+ *
+ *   coherentCpuFbBase
+ *     FB offset of the start of the CPU-coherent range
+ *   coherentCpuFbEnd
+ *     FB offset of the end (exclusive) of the CPU-coherent range
+ */
+#define NV2080_CTRL_CMD_FB_GET_CPU_COHERENT_RANGE (0x20801361U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_GET_CPU_COHERENT_RANGE_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_FB_GET_CPU_COHERENT_RANGE_PARAMS_MESSAGE_ID (0x61U)
+
+typedef struct NV2080_CTRL_FB_GET_CPU_COHERENT_RANGE_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 coherentCpuFbBase, 8);
+    NV_DECLARE_ALIGNED(NvU64 coherentCpuFbEnd, 8);
+} NV2080_CTRL_FB_GET_CPU_COHERENT_RANGE_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_FB_GET_WPR_REGION_INFO
+ *
+ * This command returns information about WPR regions.
+ *
+ *   wpr1Start
+ *     FB offset of the start of WPR1
+ *   wpr1End
+ *     FB offset of the end (exclusive) of WPR1
+ *   wpr2Start
+ *     FB offset of the start of WPR1
+ *   wpr2End
+ *     FB offset of the end (exclusive) of WPR1
+ *   fbRegionOfWpr2Start
+ *     FB offset of the start of the FB region (as tracked by RM) that contains WPR2
+ */
+#define NV2080_CTRL_CMD_FB_GET_WPR_REGION_INFO (0x20801362U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_GET_WPR_REGION_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_FB_GET_WPR_REGION_INFO_PARAMS_MESSAGE_ID (0x62U)
+
+typedef struct NV2080_CTRL_FB_GET_WPR_REGION_INFO_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 wpr1Start, 8);
+    NV_DECLARE_ALIGNED(NvU64 wpr1End, 8);
+    NV_DECLARE_ALIGNED(NvU64 wpr2Start, 8);
+    NV_DECLARE_ALIGNED(NvU64 wpr2End, 8);
+    NV_DECLARE_ALIGNED(NvU64 fbRegionOfWpr2Start, 8);
+} NV2080_CTRL_FB_GET_WPR_REGION_INFO_PARAMS;
+
 /* _ctrl2080fb_h_ */

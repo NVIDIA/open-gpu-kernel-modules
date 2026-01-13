@@ -3159,6 +3159,11 @@ static void devmem_page_free(struct page *page)
                                  &gpu->pmm.root_chunks.va_block_lazy_free_q_item);
 }
 
+static void devmem_folio_free(struct folio *folio)
+{
+    devmem_page_free(&folio->page);
+}
+
 // This is called by HMM when the CPU faults on a ZONE_DEVICE private entry.
 static vm_fault_t devmem_fault(struct vm_fault *vmf)
 {
@@ -3177,7 +3182,11 @@ static vm_fault_t devmem_fault_entry(struct vm_fault *vmf)
 
 static const struct dev_pagemap_ops uvm_pmm_devmem_ops =
 {
+#if defined(NV_PAGEMAP_OPS_HAS_FOLIO_FREE)
+    .folio_free = devmem_folio_free,
+#else
     .page_free = devmem_page_free,
+#endif
     .migrate_to_ram = devmem_fault_entry,
 };
 
@@ -3272,6 +3281,11 @@ static void device_p2p_page_free(struct page *page)
     page->zone_device_data = NULL;
     nv_kref_put(&p2p_mem->refcount, device_p2p_page_free_wake);
 }
+
+static void device_p2p_folio_free(struct folio *folio)
+{
+    device_p2p_page_free(&folio->page);
+}
 #endif
 
 #if UVM_CDMM_PAGES_SUPPORTED()
@@ -3280,9 +3294,18 @@ static void device_coherent_page_free(struct page *page)
     device_p2p_page_free(page);
 }
 
+static void device_coherent_folio_free(struct folio *folio)
+{
+    device_p2p_page_free(&folio->page);
+}
+
 static const struct dev_pagemap_ops uvm_device_coherent_pgmap_ops =
 {
+#if defined(NV_PAGEMAP_OPS_HAS_FOLIO_FREE)
+    .folio_free = device_coherent_folio_free,
+#else
     .page_free = device_coherent_page_free,
+#endif
 };
 
 static NV_STATUS uvm_pmm_cdmm_init(uvm_parent_gpu_t *parent_gpu)
@@ -3419,7 +3442,11 @@ static bool uvm_pmm_gpu_check_orphan_pages(uvm_pmm_gpu_t *pmm)
 
 static const struct dev_pagemap_ops uvm_device_p2p_pgmap_ops =
 {
+#if defined(NV_PAGEMAP_OPS_HAS_FOLIO_FREE)
+    .folio_free = device_p2p_folio_free,
+#else
     .page_free = device_p2p_page_free,
+#endif
 };
 
 void uvm_pmm_gpu_device_p2p_init(uvm_parent_gpu_t *parent_gpu)
@@ -3477,12 +3504,10 @@ void uvm_pmm_gpu_device_p2p_init(uvm_parent_gpu_t *parent_gpu)
 
 void uvm_pmm_gpu_device_p2p_deinit(uvm_parent_gpu_t *parent_gpu)
 {
-    unsigned long pci_start_pfn = pci_resource_start(parent_gpu->pci_dev,
-                                                     uvm_device_p2p_static_bar(parent_gpu)) >> PAGE_SHIFT;
-    struct page *p2p_page;
-
     if (parent_gpu->device_p2p_initialised && !uvm_parent_gpu_is_coherent(parent_gpu)) {
-        p2p_page = pfn_to_page(pci_start_pfn);
+        struct page *p2p_page = pfn_to_page(pci_resource_start(parent_gpu->pci_dev,
+                                            uvm_device_p2p_static_bar(parent_gpu)) >> PAGE_SHIFT);
+
         devm_memunmap_pages(&parent_gpu->pci_dev->dev, page_pgmap(p2p_page));
     }
 

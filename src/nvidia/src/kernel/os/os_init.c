@@ -219,9 +219,8 @@ void vgpuDevWriteReg032(
     OBJSYS        *pSys = SYS_GET_INSTANCE();
     OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
 
-    if(!pGpu ||
-       !pHypervisor || !pHypervisor->bDetected || !pHypervisor->bIsHVMGuest ||
-       !GPU_GET_KERNEL_BIF(pGpu))
+    if (!pGpu || !GPU_GET_KERNEL_BIF(pGpu) ||
+        (!IS_VIRTUAL(pGpu) && !(pHypervisor && pHypervisor->bDetected && pHypervisor->bIsHVMGuest)))
     {
         *vgpuHandled = NV_FALSE;
         return;
@@ -298,7 +297,6 @@ NvU32 vgpuDevReadReg032(
     NvU32          configSpaceMirrorSize = 0;
     OBJSYS        *pSys = SYS_GET_INSTANCE();
     OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
-
 
     if (!pGpu || !GPU_GET_KERNEL_BIF(pGpu) ||
         (!IS_VIRTUAL(pGpu) && !(pHypervisor && pHypervisor->bDetected && pHypervisor->bIsHVMGuest)))

@@ -62,6 +62,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_plane_create_color_properties
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_atomic_helper_legacy_gamma_set
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += vmf_insert_mixed
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_gem_prime_mmap
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += vm_flags_set
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_driver_has_legacy_dev_list
 NV_CONFTEST_TYPE_COMPILE_TESTS += vm_ops_fault_removed_vma_arg
@@ -91,7 +92,6 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += reservation_object_reserve_shared_has_num_fenc
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_connector_has_override_edid
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_file_get_master
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_modeset_lock_all_end
-NV_CONFTEST_TYPE_COMPILE_TESTS += vm_area_struct_has_const_vm_flags
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_driver_has_dumb_destroy
 NV_CONFTEST_TYPE_COMPILE_TESTS += fence_ops_use_64bit_seqno
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_aperture_remove_conflicting_framebuffers_has_driver_arg

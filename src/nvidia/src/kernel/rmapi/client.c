@@ -90,6 +90,7 @@ rmclientConstruct_IMPL
     pClient->pSecurityToken  = NULL;
     pClient->pOSInfo         = pSecInfo->clientOSInfo;
     pClient->imexChannel     = -1;
+    pClient->clientGfid      = GPU_GFID_PF;
 
     pClient->cachedPrivilege = pSecInfo->privLevel;
 

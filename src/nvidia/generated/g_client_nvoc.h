@@ -203,6 +203,7 @@ struct RmClient {
     PSECURITY_TOKEN pSecurityToken;
     struct UserInfo *pUserInfo;
     NvBool bIsClientVirtualMode;
+    NvU32 clientGfid;
     NvS32 imexChannel;
     PNODE pCliSyncGpuBoostTree;
     NvS32 lockStressCounter;

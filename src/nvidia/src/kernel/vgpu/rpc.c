@@ -588,7 +588,6 @@ static NV_STATUS _setupGspHibernateShrdBuff(OBJGPU *pGpu, OBJVGPU *pVGpu)
     NV_STATUS status;
     NvU32 memFlags = 0;
 
-    portDbgPrintf("Alloc shared hibernation buffer for vGPU GSP\n");
     status = _allocRpcMemDesc(pGpu,
                               VGPU_GSP_HIBERNATION_SHRD_BUFF_SIZE,
                               NV_MEMORY_CONTIGUOUS,

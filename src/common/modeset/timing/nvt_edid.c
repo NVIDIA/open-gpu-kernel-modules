@@ -1265,6 +1265,8 @@ void updateColorFormatAndBpcTiming(NVT_EDID_INFO *pInfo)
             // DisplayId2.0 spec has its own way of determining color format support which includes bpc + color format
             updateColorFormatForDisplayId20ExtnTimings(pInfo, i);
         }
+
+        updateBpcForYuv420OnlyTiming(&pInfo->timing[i], &pInfo->ext861);
     }
 
     // Go through all the timings and set CTA format accordingly. If a timing is a CTA 861b timing, store the

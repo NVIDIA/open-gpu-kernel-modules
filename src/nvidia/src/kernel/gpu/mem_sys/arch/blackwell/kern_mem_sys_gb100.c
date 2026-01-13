@@ -31,6 +31,10 @@
 #include "published/blackwell/gb100/dev_top.h"
 #include "published/blackwell/gb100/dev_hshub_base.h"
 
+#include "published/blackwell/gb100/dev_fb.h"
+#include "published/blackwell/gb100/dev_gc6_island.h"
+#include "published/blackwell/gb100/dev_gc6_island_addendum.h"
+
 /*!
  * @brief Function used to return the HSHUB0 IoAperture
  *        Used by sysmem flush buffer code, since it gets called
@@ -232,4 +236,53 @@ kmemsysAssertFbAckTimeoutPending_GB100
 #else
     return NV_FALSE;
 #endif
+}
+
+/*!
+ * @brief Extract FB offset from LOCAL_MEMORY_RANGE register value
+ */
+static inline NvU64 _kmemsysGetFbOffsetFromLocalMemoryRangeRegVal_GB100(NvU32 regVal)
+{
+    NvU32 lowerRangeMag   = DRF_VAL(_PFB, _PRI_MMU_LOCAL_MEMORY_RANGE, _LOWER_MAG, regVal);
+    NvU32 lowerRangeScale = DRF_VAL(_PFB, _PRI_MMU_LOCAL_MEMORY_RANGE, _LOWER_SCALE, regVal);
+    return ((NvU64) lowerRangeMag << (lowerRangeScale + 20));
+}
+
+/*!
+ * @brief Read HDM top address from VBIOS (or 0 if not supported)
+ */
+NV_STATUS
+kmemsysReadHdmTopFromVbios_GB100
+(
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem,
+    NvU64 *pHdmTopOut
+)
+{
+    /*
+     * On GB100, some VBIOS versions emulate an HDM top by setting
+     * LOCAL_MEMORY_RANGE to a smaller value after reset, then restoring
+     * the true LOCAL_MEMORY_RANGE value after FSP boot commands. VBIOS then
+     * stores the emulated HDM top value in a secure scratch register.
+     *
+     * Compare secure scratch vs. local memory range to determine if emulated
+     * HDM top is present.
+     */
+
+    NvU64 localMemoryRange = _kmemsysGetFbOffsetFromLocalMemoryRangeRegVal_GB100(
+        GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_LOCAL_MEMORY_RANGE));
+
+    NvU64 scratchHdmTop = _kmemsysGetFbOffsetFromLocalMemoryRangeRegVal_GB100(
+        GPU_REG_RD32(pGpu, NV_PGC6_BSI_SECURE_SCRATCH_MMU_LOCAL_MEMORY_RANGE));
+
+    if (localMemoryRange != scratchHdmTop)
+    {
+        *pHdmTopOut = scratchHdmTop;
+    }
+    else
+    {
+        *pHdmTopOut = 0;
+    }
+
+    return NV_OK;
 }

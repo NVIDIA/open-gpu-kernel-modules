@@ -1823,6 +1823,26 @@ static inline NV_STATUS subdeviceCtrlCmdFbGetCarveoutRegionInfo(struct Subdevice
 #define subdeviceCtrlCmdFbGetCarveoutRegionInfo(pSubdevice, pParams) subdeviceCtrlCmdFbGetCarveoutRegionInfo_IMPL(pSubdevice, pParams)
 #endif // __nvoc_subdevice_h_disabled
 
+NV_STATUS subdeviceCtrlCmdFbGetCpuCoherentRange_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_FB_GET_CPU_COHERENT_RANGE_PARAMS *pParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdFbGetCpuCoherentRange(struct Subdevice *pSubdevice, NV2080_CTRL_FB_GET_CPU_COHERENT_RANGE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdFbGetCpuCoherentRange(pSubdevice, pParams) subdeviceCtrlCmdFbGetCpuCoherentRange_IMPL(pSubdevice, pParams)
+#endif // __nvoc_subdevice_h_disabled
+
+NV_STATUS subdeviceCtrlCmdFbGetWprRegionInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_FB_GET_WPR_REGION_INFO_PARAMS *pParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdFbGetWprRegionInfo(struct Subdevice *pSubdevice, NV2080_CTRL_FB_GET_WPR_REGION_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdFbGetWprRegionInfo(pSubdevice, pParams) subdeviceCtrlCmdFbGetWprRegionInfo_IMPL(pSubdevice, pParams)
+#endif // __nvoc_subdevice_h_disabled
+
 NV_STATUS subdeviceCtrlCmdFbGetInfoV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_FB_GET_INFO_V2_PARAMS *pFbInfoParams);
 #ifdef __nvoc_subdevice_h_disabled
 static inline NV_STATUS subdeviceCtrlCmdFbGetInfoV2(struct Subdevice *pSubdevice, NV2080_CTRL_FB_GET_INFO_V2_PARAMS *pFbInfoParams) {
@@ -7279,6 +7299,10 @@ static inline NV_STATUS subdeviceCtrlCmdInternalMemmgrMemoryTransferWithGsp_46f6
 }
 
 NV_STATUS subdeviceCtrlCmdFbGetCarveoutRegionInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS *pParams);
+
+NV_STATUS subdeviceCtrlCmdFbGetCpuCoherentRange_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_FB_GET_CPU_COHERENT_RANGE_PARAMS *pParams);
+
+NV_STATUS subdeviceCtrlCmdFbGetWprRegionInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_FB_GET_WPR_REGION_INFO_PARAMS *pParams);
 
 NV_STATUS subdeviceCtrlCmdFbGetInfoV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_FB_GET_INFO_V2_PARAMS *pFbInfoParams);
 

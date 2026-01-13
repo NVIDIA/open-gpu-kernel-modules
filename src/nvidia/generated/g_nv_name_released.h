@@ -5435,6 +5435,7 @@ static const CHIPS_RELEASED sChipsReleased[] = {
     { 0x2BB4, 0x204c, 0x10de, "NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition" },
     { 0x2BB4, 0x204c, 0x17aa, "NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition" },
     { 0x2BB5, 0x204e, 0x10de, "NVIDIA RTX PRO 6000 Blackwell Server Edition" },
+    { 0x2BB5, 0x220b, 0x10de, "NVIDIA RTX PRO 6000 Blackwell Server Edition" },
     { 0x2BB9, 0x2091, 0x10de, "NVIDIA RTX 6000D" },
     { 0x2C02, 0x0000, 0x0000, "NVIDIA GeForce RTX 5080" },
     { 0x2C05, 0x0000, 0x0000, "NVIDIA GeForce RTX 5070 Ti" },
