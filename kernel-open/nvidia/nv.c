@@ -311,7 +311,7 @@ nv_alloc_t *nvos_create_alloc(
     }
 
     memset(at->page_table, 0, pt_size);
-    NV_ATOMIC_SET(at->usage_count, 0);
+    atomic64_set(&at->usage_count, 0);
 
     for (i = 0; i < at->num_pages; i++)
     {
@@ -341,7 +341,7 @@ int nvos_free_alloc(
     if (at == NULL)
         return -1;
 
-    if (NV_ATOMIC_READ(at->usage_count))
+    if (atomic64_read(&at->usage_count))
         return 1;
 
     for (i = 0; i < at->num_pages; i++)
@@ -1455,13 +1455,10 @@ static int nv_open_device(nv_state_t *nv, nvidia_stack_t *sp)
         return -ENODEV;
     }
 
-    if (unlikely(NV_ATOMIC_READ(nvl->usage_count) >= NV_S32_MAX))
-        return -EMFILE;
-
     if ( ! (nv->flags & NV_FLAG_OPEN))
     {
         /* Sanity check: !NV_FLAG_OPEN requires usage_count == 0 */
-        if (NV_ATOMIC_READ(nvl->usage_count) != 0)
+        if (atomic64_read(&nvl->usage_count) != 0)
         {
             NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
                           "Minor device %u is referenced without being open!\n",
@@ -1481,7 +1478,8 @@ static int nv_open_device(nv_state_t *nv, nvidia_stack_t *sp)
         return -EBUSY;
     }
 
-    NV_ATOMIC_INC(nvl->usage_count);
+    atomic64_inc(&nvl->usage_count);
+
     return 0;
 }
 
@@ -1780,7 +1778,7 @@ static void nv_close_device(nv_state_t *nv, nvidia_stack_t *sp)
 {
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
 
-    if (NV_ATOMIC_READ(nvl->usage_count) == 0)
+    if (atomic64_read(&nvl->usage_count) == 0)
     {
         nv_printf(NV_DBG_ERRORS,
                   "NVRM: Attempting to close unopened minor device %u!\n",
@@ -1789,7 +1787,7 @@ static void nv_close_device(nv_state_t *nv, nvidia_stack_t *sp)
         return;
     }
 
-    if (NV_ATOMIC_DEC_AND_TEST(nvl->usage_count))
+    if (atomic64_dec_and_test(&nvl->usage_count))
         nv_stop_device(nv, sp);
 }
 
@@ -1820,7 +1818,7 @@ nvidia_close_callback(
     nv_close_device(nv, sp);
 
     bRemove = (!NV_IS_DEVICE_IN_SURPRISE_REMOVAL(nv)) &&
-              (NV_ATOMIC_READ(nvl->usage_count) == 0) &&
+              (atomic64_read(&nvl->usage_count) == 0) &&
               rm_get_device_remove_flag(sp, nv->gpu_id);
 
     for (i = 0; i < NV_FOPS_STACK_INDEX_COUNT; ++i)
@@ -1844,7 +1842,7 @@ nvidia_close_callback(
      * any cleanup related to linux layer locks and nv linux state struct.
      * nvidia_pci_remove when scheduled will do necessary cleanup.
      */
-    if ((NV_ATOMIC_READ(nvl->usage_count) == 0) && nv->removed)
+    if ((atomic64_read(&nvl->usage_count) == 0) && nv->removed)
     {
         nvidia_frontend_remove_device((void *)&nv_fops, nvl);
         nv_lock_destroy_locks(sp, nv);
@@ -2309,7 +2307,7 @@ nvidia_ioctl(
                      * Only the current client should have an open file
                      * descriptor for the device, to allow safe offlining.
                      */
-                    if (NV_ATOMIC_READ(nvl->usage_count) > 1)
+                    if (atomic64_read(&nvl->usage_count) > 1)
                     {
                         status = -EBUSY;
                         goto unlock;
@@ -2687,12 +2685,12 @@ nvidia_ctl_open(
     /* save the nv away in file->private_data */
     nvlfp->nvptr = nvl;
 
-    if (NV_ATOMIC_READ(nvl->usage_count) == 0)
+    if (atomic64_read(&nvl->usage_count) == 0)
     {
         nv->flags |= (NV_FLAG_OPEN | NV_FLAG_CONTROL);
     }
 
-    NV_ATOMIC_INC(nvl->usage_count);
+    atomic64_inc(&nvl->usage_count);
     up(&nvl->ldata_lock);
 
     return 0;
@@ -2718,7 +2716,7 @@ nvidia_ctl_close(
     nv_printf(NV_DBG_INFO, "NVRM: nvidia_ctl_close\n");
 
     down(&nvl->ldata_lock);
-    if (NV_ATOMIC_DEC_AND_TEST(nvl->usage_count))
+    if (atomic64_dec_and_test(&nvl->usage_count))
     {
         nv->flags &= ~NV_FLAG_OPEN;
     }
@@ -2887,7 +2885,7 @@ nv_alias_pages(
 
     at->guest_id = guest_id;
     *priv_data = at;
-    NV_ATOMIC_INC(at->usage_count);
+    atomic64_inc(&at->usage_count);
 
     NV_PRINT_AT(NV_DBG_MEMINFO, at);
 
@@ -3462,7 +3460,7 @@ NV_STATUS NV_API_CALL nv_alloc_pages(
     }
 
     *priv_data = at;
-    NV_ATOMIC_INC(at->usage_count);
+    atomic64_inc(&at->usage_count);
 
     NV_PRINT_AT(NV_DBG_MEMINFO, at);
 
@@ -3498,7 +3496,7 @@ NV_STATUS NV_API_CALL nv_free_pages(
      * This is described in greater detail in the comments above the
      * nvidia_vma_(open|release)() callbacks in nv-mmap.c.
      */
-    if (!NV_ATOMIC_DEC_AND_TEST(at->usage_count))
+    if (!atomic64_dec_and_test(&at->usage_count))
         return NV_OK;
 
     if (!at->flags.guest)
@@ -3526,7 +3524,7 @@ NvBool nv_lock_init_locks
     NV_INIT_MUTEX(&nvl->ldata_lock);
     NV_INIT_MUTEX(&nvl->mmap_lock);
 
-    NV_ATOMIC_SET(nvl->usage_count, 0);
+    atomic64_set(&nvl->usage_count, 0);
 
     if (!rm_init_event_locks(sp, nv))
         return NV_FALSE;

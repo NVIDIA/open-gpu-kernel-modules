@@ -167,7 +167,7 @@ NvBool nv_get_rsync_relaxed_ordering_mode(
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
 
     /* shouldn't be called without opening a device */
-    WARN_ON(NV_ATOMIC_READ(nvl->usage_count) == 0);
+    WARN_ON(atomic64_read(&nvl->usage_count) == 0);
 
     /*
      * g_rsync_info.relaxed_ordering_mode can be safely accessed outside of
@@ -185,7 +185,7 @@ void nv_wait_for_rsync(
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
 
     /* shouldn't be called without opening a device */
-    WARN_ON(NV_ATOMIC_READ(nvl->usage_count) == 0);
+    WARN_ON(atomic64_read(&nvl->usage_count) == 0);
 
     /*
      * g_rsync_info.relaxed_ordering_mode can be safely accessed outside of

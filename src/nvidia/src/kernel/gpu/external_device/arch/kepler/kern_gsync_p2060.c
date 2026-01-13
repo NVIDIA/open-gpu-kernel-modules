@@ -1163,6 +1163,8 @@ gsyncReadUniversalFrameCount_P2060
     OBJTMR *pTmpTmr = NULL;
     OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
 
+    NV_CHECK_OR_RETURN(LEVEL_INFO, gsyncIsFrameLocked_P2060(pThis), NV_ERR_INVALID_STATE);
+
     if (!(pThis->FrameCountData.iface == NV_P2060_MAX_IFACES_PER_GSYNC))
     {
         //
@@ -1207,7 +1209,8 @@ gsyncReadUniversalFrameCount_P2060
         // P2060 refreshrate is in 0.00001 Hz, so divide by 10000 to get Hz.
         // divide 1000000 by refreshRate to get the frame time in us.
         //
-        pThis->FrameCountData.frameTime = 1000000 / (pThis->RefreshRate/10000); //in us
+        NV_CHECK_OR_RETURN(LEVEL_INFO, pThis->RefreshRate >= 10, NV_ERR_INVALID_STATE);
+        pThis->FrameCountData.frameTime = 1000*1000*1000 / (pThis->RefreshRate/10); //in us
 
         //
         // Enable FrameCountTimerService to verify FrameCountData.initialDifference.

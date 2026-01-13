@@ -358,6 +358,7 @@ kgraphicsStateLoad_IMPL
     NvU32 flags
 )
 {
+
     if (pGpu->fecsCtxswLogConsumerCount > 0)
     {
         fecsBufferMap(pGpu, pKernelGraphics);
