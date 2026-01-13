@@ -720,7 +720,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifDoFunctionLevelReset__ = &kbifDoFunctionLevelReset_GH100;
     }
 
-    // kbifInitXveRegMap -- halified (3 hals) body
+    // kbifInitXveRegMap -- halified (4 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GA100 */ 
     {
         pThis->__kbifInitXveRegMap__ = &kbifInitXveRegMap_GA100;
@@ -728,6 +728,10 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
         pThis->__kbifInitXveRegMap__ = &kbifInitXveRegMap_TU102;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 */ 
+    {
+        pThis->__kbifInitXveRegMap__ = &kbifInitXveRegMap_AD102;
     }
     else
     {
@@ -1120,7 +1124,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
     {
         pThis->__kbifDoSecondaryBusHotReset__ = &kbifDoSecondaryBusHotReset_GH100;
     }
-} // End __nvoc_init_funcTable_KernelBif_1 with approximately 160 basic block(s).
+} // End __nvoc_init_funcTable_KernelBif_1 with approximately 161 basic block(s).
 
 
 // Initialize vtable(s) for 75 virtual method(s).

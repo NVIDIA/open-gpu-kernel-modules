@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -350,7 +350,7 @@ RmLogGpuCrash(OBJGPU *pGpu)
                 "NVRM: A GPU crash dump has been created. If possible, please run\n"
                 "NVRM: nvidia-bug-report.sh as root to collect this data before\n"
                 "NVRM: the NVIDIA kernel module is unloaded.\n");
-            if (hypervisorIsVgxHyper())
+            if (!IS_GSP_CLIENT(pGpu) && hypervisorIsVgxHyper())
             {
                 nv_printf(NV_DBG_ERRORS, "NVRM: Dumping nvlogs buffers\n");
                 nvlogDumpToKernelLog(NV_FALSE);

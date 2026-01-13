@@ -1030,7 +1030,7 @@ nv_pci_remove(struct pci_dev *pci_dev)
      * For eGPU, fall off the bus along with clients active is a valid scenario.
      * Hence skipping the sanity check for eGPU.
      */
-    if ((NV_ATOMIC_READ(nvl->usage_count) != 0) && !(nv->is_external_gpu))
+    if ((atomic64_read(&nvl->usage_count) != 0) && !(nv->is_external_gpu))
     {
         nv_printf(NV_DBG_ERRORS,
                   "NVRM: Attempting to remove device %04x:%02x:%02x.%x with non-zero usage count!\n",
@@ -1041,7 +1041,7 @@ nv_pci_remove(struct pci_dev *pci_dev)
          * We can't return from this function without corrupting state, so we wait for
          * the usage count to go to zero.
          */
-        while (NV_ATOMIC_READ(nvl->usage_count) != 0)
+        while (atomic64_read(&nvl->usage_count) != 0)
         {
 
             /*
@@ -1113,7 +1113,7 @@ nv_pci_remove(struct pci_dev *pci_dev)
         nvl->sysfs_config_file = NULL;
     }
 
-    if (NV_ATOMIC_READ(nvl->usage_count) == 0)
+    if (atomic64_read(&nvl->usage_count) == 0)
     {
         nv_lock_destroy_locks(sp, nv);
     }
@@ -1129,7 +1129,7 @@ nv_pci_remove(struct pci_dev *pci_dev)
 
     num_nv_devices--;
 
-    if (NV_ATOMIC_READ(nvl->usage_count) == 0)
+    if (atomic64_read(&nvl->usage_count) == 0)
     {
         NV_PCI_DISABLE_DEVICE(pci_dev);
         NV_KFREE(nvl, sizeof(nv_linux_state_t));

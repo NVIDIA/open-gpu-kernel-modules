@@ -79,7 +79,7 @@ ccflags-y += -I$(src)/common/inc
 ccflags-y += -I$(src)
 ccflags-y += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-format-extra-args
 ccflags-y += -D__KERNEL__ -DMODULE -DNVRM
-ccflags-y += -DNV_VERSION_STRING=\"570.207\"
+ccflags-y += -DNV_VERSION_STRING=\"570.211.01\"
 
 ifneq ($(SYSSRCHOST1X),)
  ccflags-y += -I$(SYSSRCHOST1X)
@@ -181,6 +181,7 @@ NV_CONFTEST_CFLAGS += $(filter -std=%,$(KBUILD_CFLAGS))
 NV_CONFTEST_CFLAGS += $(call cc-disable-warning,pointer-sign)
 NV_CONFTEST_CFLAGS += $(call cc-option,-fshort-wchar,)
 NV_CONFTEST_CFLAGS += $(call cc-option,-Werror=incompatible-pointer-types,)
+NV_CONFTEST_CFLAGS += $(call cc-option,-fms-extensions,)
 NV_CONFTEST_CFLAGS += -Wno-error
 
 NV_CONFTEST_COMPILE_TEST_HEADERS := $(obj)/conftest/macros.h

@@ -3,6 +3,7 @@
 NV_HEADER_PRESENCE_TESTS = \
   asm/system.h \
   drm/drmP.h \
+  drm/drm_print.h \
   drm/drm_aperture.h \
   drm/drm_auth.h \
   drm/drm_gem.h \

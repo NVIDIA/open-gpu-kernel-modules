@@ -31,6 +31,10 @@
 #include <drm/drmP.h>
 #endif
 
+#if defined(NV_DRM_PRINT_H_PRESENT)
+#include <drm/drm_print.h>
+#endif
+
 #if defined(NV_DRM_DRM_DEVICE_H_PRESENT)
 #include <drm/drm_device.h>
 #endif

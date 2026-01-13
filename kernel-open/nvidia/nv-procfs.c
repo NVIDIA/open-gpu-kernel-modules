@@ -886,7 +886,7 @@ nv_procfs_close_unbind_lock(
         down(&nvl->ldata_lock);
         if ((value == 1) && !(nv->flags & NV_FLAG_UNBIND_LOCK))
         {
-            if (NV_ATOMIC_READ(nvl->usage_count) == 0)
+            if (atomic64_read(&nvl->usage_count) == 0)
                 rm_unbind_lock(sp, nv);
 
             if (nv->flags & NV_FLAG_UNBIND_LOCK)

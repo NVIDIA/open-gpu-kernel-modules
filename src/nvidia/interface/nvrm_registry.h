@@ -2576,12 +2576,6 @@
 #define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_DISABLE     0x00000000
 #define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_ENABLE      0x00000001
 
-// Type DWORD
-// Allows extending PMU FB Operationg Timeout (DMA / FBFlush) on certain profiles
-// This currently takes effect on GB10X profile only
-#define NV_REG_STR_RM_PMU_FB_TIMEOUT_US                    "RmPmuFBTimeoutUs"
-#define NV_REG_STR_RM_PMU_FB_TIMEOUT_US_DEFAULT            (0)
-
 //
 // Type: Dword
 //

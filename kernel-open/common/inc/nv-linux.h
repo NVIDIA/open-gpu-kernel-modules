@@ -833,9 +833,9 @@ static inline dma_addr_t nv_phys_to_dma(struct device *dev, NvU64 pa)
 #define NV_PRINT_AT(nv_debug_level,at)                                           \
     {                                                                            \
         nv_printf(nv_debug_level,                                                \
-            "NVRM: VM: %s:%d: 0x%p, %d page(s), count = %d, "                    \
+            "NVRM: VM: %s:%d: 0x%p, %d page(s), count = %lld, "                  \
             "page_table = 0x%p\n",  __FUNCTION__, __LINE__, at,                  \
-            at->num_pages, NV_ATOMIC_READ(at->usage_count),                      \
+            at->num_pages, (long long)atomic64_read(&at->usage_count),           \
             at->page_table);                                                     \
     }
 
@@ -1174,7 +1174,7 @@ struct nv_dma_buf
 typedef struct nv_alloc_s {
     struct nv_alloc_s *next;
     struct device     *dev;
-    atomic_t       usage_count;
+    atomic64_t       usage_count;
     struct {
         NvBool contig      : 1;
         NvBool guest       : 1;
@@ -1486,7 +1486,7 @@ typedef struct
 typedef struct nv_linux_state_s {
     nv_state_t nv_state;
 
-    atomic_t   usage_count;
+    atomic64_t usage_count;
 
     NvU32    suspend_count;
 
@@ -1825,9 +1825,9 @@ static inline NvBool nv_alloc_release(nv_linux_file_private_t *nvlfp, nv_alloc_t
 {
     NV_PRINT_AT(NV_DBG_MEMINFO, at);
 
-    if (NV_ATOMIC_DEC_AND_TEST(at->usage_count))
+    if (atomic64_dec_and_test(&at->usage_count))
     {
-        NV_ATOMIC_INC(at->usage_count);
+        atomic64_inc(&at->usage_count);
 
         at->next = nvlfp->free_list;
         nvlfp->free_list = at;
