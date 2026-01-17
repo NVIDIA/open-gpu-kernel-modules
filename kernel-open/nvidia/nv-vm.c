@@ -409,6 +409,8 @@ typedef struct nv_page_pool_t
 
 nv_page_pool_t *sysmem_page_pools[MAX_NUMNODES][NV_MAX_PAGE_ORDER + 1];
 
+#include <linux/rcupdate.h>
+
 #ifdef NV_SHRINKER_ALLOC_PRESENT
 static nv_page_pool_t *nv_mem_pool_get_from_shrinker(struct shrinker *shrinker)
 {
@@ -420,6 +422,13 @@ static void nv_mem_pool_shrinker_free(nv_page_pool_t *mem_pool)
     if (mem_pool->shrinker != NULL)
     {
         shrinker_free(mem_pool->shrinker);
+        mem_pool->shrinker = NULL;
+
+        /*
+         * Ensure RCU grace period completes before continuing destruction.
+         * This prevents use-after-free if kswapd is iterating shrinkers.
+         */
+        synchronize_rcu();
     }
 }
 
@@ -445,6 +454,13 @@ static void nv_mem_pool_shrinker_free(nv_page_pool_t *mem_pool)
     if (mem_pool->shrinker != NULL)
     {
         unregister_shrinker(mem_pool->shrinker);
+        mem_pool->shrinker = NULL;
+
+        /*
+         * Ensure RCU grace period completes before continuing destruction.
+         * This prevents use-after-free if kswapd is iterating shrinkers.
+         */
+        synchronize_rcu();
     }
 }
 
@@ -692,6 +708,9 @@ nv_mem_pool_destroy(nv_page_pool_t *mem_pool)
 {
     NV_STATUS status;
 
+    // Unregister shrinker FIRST to prevent callbacks during cleanup
+    nv_mem_pool_shrinker_free(mem_pool);
+
     status = os_acquire_mutex(mem_pool->lock);
     WARN_ON(status != NV_OK);
     nv_mem_pool_free_page_list(&mem_pool->dirty_list, mem_pool->order);
@@ -705,8 +724,6 @@ nv_mem_pool_destroy(nv_page_pool_t *mem_pool)
     // free clean pages after scrubber can't add any new
     nv_mem_pool_free_page_list(&mem_pool->clean_list, mem_pool->order);
     os_release_mutex(mem_pool->lock);
-
-    nv_mem_pool_shrinker_free(mem_pool);
 
     os_free_mutex(mem_pool->lock);
 
@@ -759,6 +776,7 @@ nv_page_pool_t* nv_mem_pool_init(int node_id, unsigned int order)
      nv_mem_pool_shrinker_register(mem_pool, shrinker);
 
      mem_pool->shrinker = shrinker;
+
      return mem_pool;
 
 failed:
