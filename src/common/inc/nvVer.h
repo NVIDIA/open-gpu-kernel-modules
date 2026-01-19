@@ -6,7 +6,7 @@
 #define NV_COPYRIGHT_YEAR               "2025"
 #define NV_COPYRIGHT                    "(C) " NV_COPYRIGHT_YEAR " NVIDIA Corporation. All rights reserved."  // Please do not use the non-ascii copyright symbol for (C).
 
-#if defined(NV_LINUX) || defined(NV_BSD) || defined(NV_SUNOS) || defined(NV_VMWARE) || defined(NV_QNX) || defined(NV_INTEGRITY) || \
+#if defined(NV_LINUX) || defined(NV_BSD) || defined(NV_SUNOS) || defined(NV_VMWARE) || defined(NV_QNX) || defined(NV_INTEGRITY) || defined(NV_HAIKU) || \
     (defined(RMCFG_FEATURE_PLATFORM_GSP) && RMCFG_FEATURE_PLATFORM_GSP == 1) || \
     defined(NV_DCECORE)
 
