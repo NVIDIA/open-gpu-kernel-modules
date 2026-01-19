@@ -89,7 +89,7 @@ CFLAGS += -O2
 ifeq ($(TARGET_ARCH),x86_64)
   CFLAGS += -msoft-float
   CFLAGS += -mno-red-zone
-  CFLAGS += -mcmodel=kernel
+#  CFLAGS += -mcmodel=kernel
   CFLAGS += -mno-mmx
   CFLAGS += -mno-sse
   CFLAGS += -mno-sse2
@@ -110,9 +110,9 @@ ifeq ($(TARGET_ARCH),riscv64)
   CFLAGS += -mno-relax
 endif
 
-CFLAGS += -fno-pic
+CFLAGS += -fpic
 CFLAGS += -fno-common
-CFLAGS += -fomit-frame-pointer
+CFLAGS += -fno-omit-frame-pointer
 CFLAGS += -fno-strict-aliasing
 CFLAGS += -ffunction-sections
 CFLAGS += -fdata-sections
@@ -153,8 +153,8 @@ ifeq ($(TARGET_ARCH),x86_64)
     CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -fcf-protection=branch)
   endif
   CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -fno-jump-tables)
-  CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mindirect-branch=thunk-extern)
-  CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mindirect-branch-register)
+#  CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mindirect-branch=thunk-extern)
+#  CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mindirect-branch-register)
 endif
 
 CFLAGS += $(CONDITIONAL_CFLAGS)
