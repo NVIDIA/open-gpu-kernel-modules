@@ -88,8 +88,12 @@
 #   define NV_BSD
 #endif /* defined(__FreeBSD__) */
 
+#if defined(__HAIKU__)
+#   define NV_HAIKU
+#endif /* defined(__HAIKU__) */
+
 /* XXXar don't define NV_UNIX on MacOSX or vxworks or QNX */
-#if (defined(__unix__) || defined(__unix) || defined(__INTEGRITY) ) && !defined(nvmacosx) && !defined(vxworks) && !defined(NV_UNIX) && !defined(__QNX__) && !defined(__QNXNTO__)/* XXX until removed from Makefiles */
+#if (defined(__unix__) || defined(__unix) || defined(__INTEGRITY) || defined(NV_HAIKU) ) && !defined(nvmacosx) && !defined(vxworks) && !defined(NV_UNIX) && !defined(__QNX__) && !defined(__QNXNTO__)/* XXX until removed from Makefiles */
 #   define NV_UNIX
 #endif /* defined(__unix__) */
 
