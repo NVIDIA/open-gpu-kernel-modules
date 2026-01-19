@@ -254,7 +254,7 @@ typedef struct NVOC_CLASS_INFO
 #pragma warning(error: 1786) // treat deprecated as error (globally affected)
 #define NVOC_PRIVATE_FIELD(x)       __attribute__((deprecated(#x " is a private field"))) x
 #define NVOC_PRIVATE_FUNCTION(x)    __attribute__((deprecated(#x " is a private function"))) x
-#elif defined(__GNUC__) || defined(__GNUG__) // gcc
+#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5) // gcc
 #pragma GCC diagnostic error "-Wdeprecated-declarations" // treat deprecated as error (globally affected)
 #define NVOC_PRIVATE_FIELD(x)       __attribute__((deprecated(#x " is a private field"))) x
 #define NVOC_PRIVATE_FUNCTION(x)    __attribute__((error(#x " is a private function"))) x
