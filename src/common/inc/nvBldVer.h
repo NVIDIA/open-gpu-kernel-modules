@@ -42,7 +42,7 @@
     #define NV_PUBLIC_BRANCH             r591_47
 #endif
 
-#if defined(NV_LINUX) || defined(NV_BSD) || defined(NV_SUNOS)
+#if defined(NV_LINUX) || defined(NV_BSD) || defined(NV_SUNOS) || defined(NV_HAIKU)
 #define NV_BUILD_BRANCH_VERSION         "rel/gpu_drv/r590/r591_47-174"
 #define NV_BUILD_CHANGELIST_NUM         (37007394)
 #define NV_BUILD_TYPE                   "Official"
