@@ -96,7 +96,7 @@ ifeq ($(TARGET_ARCH),aarch64)
 endif
 
 ifeq ($(TARGET_ARCH),riscv64)
-  CFLAGS += -march=rv64imac_zicsr_zifencei
+  CFLAGS += -march=rv64gc
   CFLAGS += -mabi=lp64
   CFLAGS += -mcmodel=medany
   CFLAGS += -mno-relax
