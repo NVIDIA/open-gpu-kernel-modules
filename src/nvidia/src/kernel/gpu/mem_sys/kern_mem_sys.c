@@ -896,7 +896,7 @@ kmemsysSetupCoherentCpuLink_IMPL
     KernelBus     *pKernelBus     = GPU_GET_KERNEL_BUS(pGpu);
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     NvU64          numaOnlineSize = 0;
-    NvU64          fbSize         = (pMemoryManager->Ram.fbTotalMemSizeMb << 20);
+    NvU64          coherentCpuFbSize = 0;
     NvU32          data32;
     NvS32          numaNodeId     = NV0000_CTRL_NO_NUMA_NODE;
     NvU64          memblockSize   = 0;
@@ -917,8 +917,27 @@ kmemsysSetupCoherentCpuLink_IMPL
 
     NV_ASSERT_OK_OR_RETURN(kmemsysGetFbNumaInfo_HAL(pGpu, pKernelMemorySystem,
                                                     &pKernelMemorySystem->coherentCpuFbBase,
+                                                    &coherentCpuFbSize,
                                                     &pKernelMemorySystem->coherentRsvdFbBase,
                                                     &numaNodeId));
+
+    if (coherentCpuFbSize == 0)
+    {
+        //
+        // For passthrough, OS layer may be unable to provide the CPU-coherent size of FB (as it
+        // won't be available in ACPI DSD), so try to determine it from VBIOS scratch.
+        //
+        if (IS_PASSTHRU(pGpu))
+        {
+            NV_ASSERT_OK_OR_RETURN(kmemsysReadHdmTopFromVbios_HAL(pGpu, pKernelMemorySystem, &coherentCpuFbSize));
+        }
+
+        // Otherwise, if we are still unable to determine the CPU-coherent size, assume whole FB is CPU-coherent
+        if (coherentCpuFbSize == 0)
+        {
+            coherentCpuFbSize = (pMemoryManager->Ram.fbTotalMemSizeMb << 20);
+        }
+    }
 
     if ((osReadRegistryDword(pGpu,
                              NV_REG_STR_OVERRIDE_GPU_NUMA_NODE_ID, &data32)) == NV_OK)
@@ -955,7 +974,7 @@ kmemsysSetupCoherentCpuLink_IMPL
         return NV_ERR_INVALID_STATE;
     }
 
-    pKernelMemorySystem->coherentCpuFbEnd = pKernelMemorySystem->coherentCpuFbBase + fbSize;
+    pKernelMemorySystem->coherentCpuFbEnd = pKernelMemorySystem->coherentCpuFbBase + coherentCpuFbSize;
 
     NV_ASSERT_OK_OR_RETURN(osNumaMemblockSize(&memblockSize));
 
@@ -984,7 +1003,7 @@ kmemsysSetupCoherentCpuLink_IMPL
     // one can access it. If FB size itself is memblock size unaligned(because
     // of CBC and row remapper deductions), then the memory wastage is unavoidable.
     //
-    numaOnlineSize = KMEMSYS_FB_NUMA_ONLINE_SIZE(fbSize - totalRsvdBytes, memblockSize);
+    numaOnlineSize = KMEMSYS_FB_NUMA_ONLINE_SIZE(coherentCpuFbSize - totalRsvdBytes, memblockSize);
 
     if (IS_PASSTHRU(pGpu) && pKernelMemorySystem->bBug3656943WAR)
     {
@@ -1000,12 +1019,12 @@ kmemsysSetupCoherentCpuLink_IMPL
         // wasted being part of non onlined region which can't be avoided
         // per the design.
         //
-        numaOnlineSize = KMEMSYS_FB_NUMA_ONLINE_SIZE(fbSize - totalRsvdBytes, 512 * 1024 * 1024);
+        numaOnlineSize = KMEMSYS_FB_NUMA_ONLINE_SIZE(coherentCpuFbSize - totalRsvdBytes, 512 * 1024 * 1024);
     }
 
     NV_PRINTF(LEVEL_INFO,
-              "fbSize: 0x%llx NUMA reserved memory size: 0x%llx online memory size: 0x%llx\n",
-              fbSize, totalRsvdBytes, numaOnlineSize);
+              "coherentCpuFbSize: 0x%llx NUMA reserved memory size: 0x%llx online memory size: 0x%llx\n",
+              coherentCpuFbSize, totalRsvdBytes, numaOnlineSize);
 
     if (osNumaOnliningEnabled(pGpu->pOsGpuInfo))
     {
@@ -1156,6 +1175,40 @@ kmemsysPostHeapCreate_KERNEL
     if (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
     {
         NV_ASSERT_OK_OR_RETURN(kbusVerifyCoherentLink_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu)));
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+kmemsysGetCpuCoherentFbRange_IMPL
+(
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem,
+    NvU64 *pCpuCoherentFbBase,
+    NvU64 *pCpuCoherentFbEnd
+)
+{
+    if ((pCpuCoherentFbBase == NULL) || (pCpuCoherentFbEnd == NULL))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    // CPU-coherent FB memory only applicable to Self-Hosted platforms
+    if (!gpuIsSelfHosted(pGpu))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    if (pKernelMemorySystem->coherentCpuFbBase != 0)
+    {
+        *pCpuCoherentFbBase = pKernelMemorySystem->coherentCpuFbBase;
+        *pCpuCoherentFbEnd = pKernelMemorySystem->coherentCpuFbEnd;
+    }
+    else
+    {
+        *pCpuCoherentFbBase = 0;
+        *pCpuCoherentFbEnd = 0;
     }
 
     return NV_OK;

@@ -111,8 +111,8 @@ _gpuFabricProbeCheckResetRequired
     nvlink_inband_gpu_probe_rsp_msg_t *pProbeRespMsg
 )
 {
-    if (REF_VAL(NVLINK_INBAND_FABRIC_HEALTH_MASK_CONNECTION_UNHEALTHY, pProbeRespMsg->probeRsp.fabricHealthMask) ==
-        NVLINK_INBAND_FABRIC_HEALTH_MASK_CONNECTION_UNHEALTHY_TRUE_RESET_REQUIRED)
+    if (REF_VAL(NVLINK_INBAND_FABRIC_HEALTH_MASK_INCORRECT_CONFIGURATION, pProbeRespMsg->probeRsp.fabricHealthMask) ==
+        NVLINK_INBAND_FABRIC_HEALTH_MASK_INCORRECT_CONFIGURATION_GPU_STATE_INVALID)
     {
         pGpu->setProperty(pGpu, PDB_PROP_GPU_RECOVERY_SQUASH_XID154, NV_TRUE);
         gpuMarkDeviceForDrainAndReset(pGpu);

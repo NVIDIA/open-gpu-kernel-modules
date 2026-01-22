@@ -372,6 +372,18 @@ static void __nvoc_init_funcTable_KernelMemorySystem_1(KernelMemorySystem *pThis
         pThis->__kmemsysGetUsableFbSize__ = &kmemsysGetUsableFbSize_KERNEL;
     }
 
+    // kmemsysReadHdmTopFromVbios -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 */ 
+    {
+        pThis->__kmemsysReadHdmTopFromVbios__ = &kmemsysReadHdmTopFromVbios_GB100;
+    }
+    // default
+    else
+    {
+        pThis->__kmemsysReadHdmTopFromVbios__ = &kmemsysReadHdmTopFromVbios_2e93d0;
+    }
+
     // kmemsysCacheOp -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf0000000UL) ) ||
         ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
@@ -845,13 +857,13 @@ static void __nvoc_init_funcTable_KernelMemorySystem_1(KernelMemorySystem *pThis
     {
         pThis->__kmemsysIsNonPasidAtsSupported__ = &kmemsysIsNonPasidAtsSupported_3dd2c9;
     }
-} // End __nvoc_init_funcTable_KernelMemorySystem_1 with approximately 93 basic block(s).
+} // End __nvoc_init_funcTable_KernelMemorySystem_1 with approximately 95 basic block(s).
 
 
-// Initialize vtable(s) for 50 virtual method(s).
+// Initialize vtable(s) for 51 virtual method(s).
 void __nvoc_init_funcTable_KernelMemorySystem(KernelMemorySystem *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 36 per-object function pointer(s).
+    // Initialize vtable(s) with 37 per-object function pointer(s).
     __nvoc_init_funcTable_KernelMemorySystem_1(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 

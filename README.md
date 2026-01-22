@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 580.94.13.
+version 580.94.16.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-580.94.13 driver release.  This can be achieved by installing
+580.94.16 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -185,7 +185,7 @@ table below).
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/580.94.13/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/580.94.16/README/kernel_open.html
 
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
@@ -749,7 +749,6 @@ Subsystem Device ID.
 | NVIDIA A10                                              | 2236 10DE 1482 |
 | NVIDIA A10G                                             | 2237 10DE 152F |
 | NVIDIA A10M                                             | 2238 10DE 1677 |
-| NVIDIA H20 NVL16                                        | 230E 10DE 20DF |
 | NVIDIA H100 NVL                                         | 2321 10DE 1839 |
 | NVIDIA H800 PCIe                                        | 2322 10DE 17A4 |
 | NVIDIA H800                                             | 2324 10DE 17A6 |
@@ -950,28 +949,21 @@ Subsystem Device ID.
 | NVIDIA GB200                                            | 2941 10DE 20D5 |
 | NVIDIA GB200                                            | 2941 10DE 21C9 |
 | NVIDIA GB200                                            | 2941 10DE 21CA |
-| NVIDIA DRIVE P2021                                      | 29BB 10DE 207C |
 | NVIDIA GeForce RTX 5090                                 | 2B85           |
 | NVIDIA GeForce RTX 5090 D                               | 2B87           |
-| NVIDIA GeForce RTX 5090 D v2                            | 2B8C           |
+| NVIDIA GeForce RTX 5090 D v2                            | 2B8C 17AA 530C |
 | NVIDIA RTX PRO 6000 Blackwell Workstation Edition       | 2BB1 1028 204B |
 | NVIDIA RTX PRO 6000 Blackwell Workstation Edition       | 2BB1 103C 204B |
 | NVIDIA RTX PRO 6000 Blackwell Workstation Edition       | 2BB1 10DE 204B |
 | NVIDIA RTX PRO 6000 Blackwell Workstation Edition       | 2BB1 17AA 204B |
 | NVIDIA RTX PRO 5000 Blackwell                           | 2BB3 1028 204D |
-| NVIDIA RTX PRO 5000 72GB Blackwell                      | 2BB3 1028 227A |
 | NVIDIA RTX PRO 5000 Blackwell                           | 2BB3 103C 204D |
-| NVIDIA RTX PRO 5000 72GB Blackwell                      | 2BB3 103C 227A |
 | NVIDIA RTX PRO 5000 Blackwell                           | 2BB3 10DE 204D |
-| NVIDIA RTX PRO 5000 72GB Blackwell                      | 2BB3 10DE 227A |
 | NVIDIA RTX PRO 5000 Blackwell                           | 2BB3 17AA 204D |
-| NVIDIA RTX PRO 5000 72GB Blackwell                      | 2BB3 17AA 227A |
 | NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition | 2BB4 1028 204C |
 | NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition | 2BB4 103C 204C |
 | NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition | 2BB4 10DE 204C |
 | NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition | 2BB4 17AA 204C |
-| NVIDIA RTX PRO 6000 Blackwell Server Edition            | 2BB5 10DE 204E |
-| NVIDIA RTX 6000D                                        | 2BB9 10DE 2091 |
 | NVIDIA GeForce RTX 5080                                 | 2C02           |
 | NVIDIA GeForce RTX 5070 Ti                              | 2C05           |
 | NVIDIA GeForce RTX 5090 Laptop GPU                      | 2C18           |
@@ -982,7 +974,6 @@ Subsystem Device ID.
 | NVIDIA RTX PRO 4500 Blackwell                           | 2C31 17AA 2051 |
 | NVIDIA RTX PRO 4000 Blackwell SFF Edition               | 2C33 1028 2053 |
 | NVIDIA RTX PRO 4000 Blackwell SFF Edition               | 2C33 103C 2053 |
-| NVIDIA RTX PRO 4000 Blackwell SFF Edition               | 2C33 10DE 2053 |
 | NVIDIA RTX PRO 4000 Blackwell SFF Edition               | 2C33 17AA 2053 |
 | NVIDIA RTX PRO 4000 Blackwell                           | 2C34 1028 2052 |
 | NVIDIA RTX PRO 4000 Blackwell                           | 2C34 103C 2052 |
@@ -992,7 +983,6 @@ Subsystem Device ID.
 | NVIDIA RTX PRO 4000 Blackwell Generation Laptop GPU     | 2C39           |
 | NVIDIA GeForce RTX 5090 Laptop GPU                      | 2C58           |
 | NVIDIA GeForce RTX 5080 Laptop GPU                      | 2C59           |
-| NVIDIA RTX PRO 5000 Blackwell Embedded GPU              | 2C77           |
 | NVIDIA RTX PRO 4000 Blackwell Embedded GPU              | 2C79           |
 | NVIDIA GeForce RTX 5060 Ti                              | 2D04           |
 | NVIDIA GeForce RTX 5060                                 | 2D05           |
@@ -1000,22 +990,18 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 5060 Laptop GPU                      | 2D19           |
 | NVIDIA RTX PRO 2000 Blackwell                           | 2D30 1028 2054 |
 | NVIDIA RTX PRO 2000 Blackwell                           | 2D30 103C 2054 |
-| NVIDIA RTX PRO 2000 Blackwell                           | 2D30 10DE 2054 |
 | NVIDIA RTX PRO 2000 Blackwell                           | 2D30 17AA 2054 |
 | NVIDIA RTX PRO 2000 Blackwell Generation Laptop GPU     | 2D39           |
 | NVIDIA GeForce RTX 5070 Laptop GPU                      | 2D58           |
 | NVIDIA GeForce RTX 5060 Laptop GPU                      | 2D59           |
 | NVIDIA RTX PRO 2000 Blackwell Embedded GPU              | 2D79           |
-| NVIDIA GeForce RTX 5050                                 | 2D83           |
+| NVIDIA GeForce RTX 5050                                 | 2D83 17AA C791 |
 | NVIDIA GeForce RTX 5050 Laptop GPU                      | 2D98           |
 | NVIDIA RTX PRO 1000 Blackwell Generation Laptop GPU     | 2DB8           |
 | NVIDIA RTX PRO 500 Blackwell Generation Laptop GPU      | 2DB9           |
 | NVIDIA GeForce RTX 5050 Laptop GPU                      | 2DD8           |
 | NVIDIA RTX PRO 500 Blackwell Embedded GPU               | 2DF9           |
-| NVIDIA GB10                                             | 2E12 10DE 21EC |
 | NVIDIA GeForce RTX 5070                                 | 2F04           |
 | NVIDIA GeForce RTX 5070 Ti Laptop GPU                   | 2F18           |
 | NVIDIA RTX PRO 3000 Blackwell Generation Laptop GPU     | 2F38           |
 | NVIDIA GeForce RTX 5070 Ti Laptop GPU                   | 2F58           |
-| NVIDIA B300 SXM6 AC                                     | 3182 10DE 20E6 |
-| NVIDIA GB300                                            | 31C2 10DE 21F1 |

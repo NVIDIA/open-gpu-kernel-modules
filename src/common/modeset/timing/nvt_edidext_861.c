@@ -284,7 +284,8 @@ static const NVT_TIMING EIA861B[]=
     // the end
     EIA_TIMING(0,0,0,0,'-',0,0,0,0,'-',0,'p',4:3,0,0)
 };
-static NvU32 MAX_CEA861B_FORMAT = sizeof(EIA861B)/sizeof(EIA861B[0]) - 1;
+
+static const NvU32 MAX_CEA861B_FORMAT = sizeof(EIA861B)/sizeof(EIA861B[0]) - 1;
 
 static const NvU32 EIA861B_DUAL_ASPECT_VICS[][2] =
 {
@@ -969,6 +970,40 @@ void parse861bShortYuv420Timing(NVT_EDID_CEA861_INFO *pExt861,
                 break;
             }
         }
+    }
+}
+
+// If a timing is present in the YUV420 VDB, consider it
+// incompatible with other sampling modes
+CODE_SEGMENT(PAGE_DD_CODE)
+void updateBpcForYuv420OnlyTiming(NVT_TIMING *pT,
+                                  const NVT_EDID_CEA861_INFO *p861Info)
+{
+    NvU32 i;
+    const NvU8 *pYuv420Vic = p861Info->svd_y420vdb;
+    NvBool yuv420Only = NV_FALSE;
+
+    for (i = 0; i < p861Info->total_y420vdb; i++)
+    { 
+        NVT_TIMING y420vdbTiming;
+        NvU8 vic = NVT_GET_CTA_8BIT_VIC(pYuv420Vic[i]);
+        if (vic == 0 || vic > MAX_CEA861B_FORMAT)
+            continue;
+
+        y420vdbTiming = EIA861B[vic-1]; 
+
+        if (NvTiming_IsTimingExactEqual(pT, &y420vdbTiming))
+        {
+            yuv420Only = NV_TRUE;
+            break; 
+        }
+    }
+    
+    if (yuv420Only)
+    {
+        pT->etc.rgb444.bpcs = 0;
+        pT->etc.yuv444.bpcs = 0;
+        pT->etc.yuv422.bpcs = 0;
     }
 }
 

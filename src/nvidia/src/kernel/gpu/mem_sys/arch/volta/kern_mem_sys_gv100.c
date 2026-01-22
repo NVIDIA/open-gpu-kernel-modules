@@ -38,6 +38,7 @@
  * @param[in] pGpu                OBJGPU pointer
  * @param[in] pKernelMemorySystem pointer to the kernel side KernelMemorySystem instance.
  * @param[in] physAddr            Physical Address of FB memory
+ * @param[in] physSize            Size of FB memory onlined to the OS
  * @param[in] numaNodeId          NUMA node id where FB memory is added to the
  *                                kernel
  *
@@ -49,13 +50,14 @@ kmemsysGetFbNumaInfo_GV100
     OBJGPU             *pGpu,
     KernelMemorySystem *pKernelMemorySystem,
     NvU64              *physAddr,
+    NvU64              *physSize,
     NvU64              *rsvdPhysAddr,
     NvS32              *numaNodeId
 )
 {
     NV_STATUS     status;
 
-    status = osGetFbNumaInfo(pGpu, physAddr, rsvdPhysAddr, numaNodeId);
+    status = osGetFbNumaInfo(pGpu, physAddr, physSize, rsvdPhysAddr, numaNodeId);
     if (status == NV_OK)
     {
         if (pKernelMemorySystem->coherentCpuFbBaseOverride.bEnabled)
@@ -65,8 +67,8 @@ kmemsysGetFbNumaInfo_GV100
                       *physAddr);
         }
 
-        NV_PRINTF(LEVEL_INFO, "NUMA FB Physical address: 0x%llx Node ID: 0x%x\n",
-                  *physAddr, *numaNodeId);
+        NV_PRINTF(LEVEL_INFO, "NUMA FB Physical address: 0x%llx Size: 0x%llxsNode ID: 0x%x\n",
+                  *physAddr, *physSize, *numaNodeId);
     }
 
     return status;

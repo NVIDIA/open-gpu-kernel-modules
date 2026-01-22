@@ -253,7 +253,7 @@ nv_inc_and_check_one_phys_refcount(
     return is_one;
 }
 
-// Must be called with RMAPI lock and GPU lock taken
+// Must be called with RMAPI lock and all-GPU lock taken
 static void
 nv_dma_buf_undup_mem_handles_unlocked(
     nvidia_stack_t            *sp,
@@ -284,6 +284,28 @@ nv_dma_buf_undup_mem_handles_unlocked(
     }
 }
 
+// Must be called with RMAPI lock taken
+static void
+nv_dma_buf_undup_mem_handles_gpus_locked(
+    nvidia_stack_t            *sp,
+    NvU32                      start_index,
+    NvU32                      num_objects,
+    nv_dma_buf_file_private_t *priv
+)
+{
+    NV_STATUS status;
+
+    status = rm_acquire_all_gpus_lock(sp);
+    if (WARN_ON(status != NV_OK))
+    {
+        return;
+    }
+
+    nv_dma_buf_undup_mem_handles_unlocked(sp, start_index, num_objects, priv);
+
+    rm_release_all_gpus_lock(sp);
+}
+
 static void
 nv_dma_buf_undup_mem_handles(
     nvidia_stack_t            *sp,
@@ -300,17 +322,8 @@ nv_dma_buf_undup_mem_handles(
         return;
     }
 
-    status = rm_acquire_all_gpus_lock(sp);
-    if (WARN_ON(status != NV_OK))
-    {
-        goto unlock_api_lock;
-    }
+    nv_dma_buf_undup_mem_handles_gpus_locked(sp, index, num_objects, priv);
 
-    nv_dma_buf_undup_mem_handles_unlocked(sp, index, num_objects, priv);
-
-    rm_release_all_gpus_lock(sp);
-
-unlock_api_lock:
     rm_release_api_lock(sp);
 }
 
@@ -478,7 +491,7 @@ failed:
         //
         nv_dma_buf_release_gpu_lock(sp, priv);
 
-        nv_dma_buf_undup_mem_handles(sp, params->index, count, priv);
+        nv_dma_buf_undup_mem_handles_gpus_locked(sp, params->index, count, priv);
     }
     else
     {

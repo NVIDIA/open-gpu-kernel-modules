@@ -72,7 +72,7 @@ nvidia_vma_open(struct vm_area_struct *vma)
 
     if (at != NULL)
     {
-        NV_ATOMIC_INC(at->usage_count);
+        atomic64_inc(&at->usage_count);
 
         NV_PRINT_AT(NV_DBG_MEMINFO, at);
     }
@@ -128,6 +128,9 @@ nvidia_vma_access(
     void *kernel_mapping;
     const nv_alloc_mapping_context_t *mmap_context = &nvlfp->mmap_context;
     NvU64 offsInVma = addr - vma->vm_start;
+    NvBool bIsNuma = NV_FALSE;
+
+    bIsNuma = pfn_valid(mmap_context->access_start >> PAGE_SHIFT);
 
     pageIndex = (offsInVma >> PAGE_SHIFT);
     pageOffset = (offsInVma & ~PAGE_MASK);
@@ -164,10 +167,17 @@ nvidia_vma_access(
         pageIndex = nv_array_index_no_speculate(pageIndex, at->num_pages);
         kernel_mapping = (void *)(at->page_table[pageIndex].virt_addr + pageOffset);
     }
+    else if (bIsNuma)
+    {
+        struct page *pPage = NV_GET_PAGE_STRUCT(mmap_context->page_array[pageIndex]);
+        NvU8 *pPagePtr = (NvU8 *) page_address(pPage);
+        kernel_mapping = &pPagePtr[pageOffset];
+    }
     else
     {
         NvU64 idx = 0;
         NvU64 curOffs = 0;
+        
         for(; idx < mmap_context->memArea.numRanges; idx++)
         {
             NvU64 nextOffs = mmap_context->memArea.pRanges[idx].size + curOffs;
@@ -195,7 +205,7 @@ found:
     else
         memcpy(buffer, kernel_mapping, length);
 
-    if (at == NULL)
+    if (at == NULL && !bIsNuma)
     {
         kernel_mapping = ((char *)kernel_mapping - pageOffset);
         os_unmap_kernel_space(kernel_mapping, PAGE_SIZE);
@@ -408,7 +418,7 @@ static int nvidia_mmap_sysmem(
     int ret = 0;
     unsigned long start = 0;
 
-    NV_ATOMIC_INC(at->usage_count);
+    atomic64_inc(&at->usage_count);
 
     start = vma->vm_start;
     for (j = page_index; j < (page_index + pages); j++)
@@ -444,7 +454,7 @@ static int nvidia_mmap_sysmem(
 
         if (ret)
         {
-            NV_ATOMIC_DEC(at->usage_count);
+            atomic64_dec(&at->usage_count);
             nv_printf(NV_DBG_ERRORS,
                       "NVRM: Userspace mapping creation failed [%d]!\n", ret);
             return -EAGAIN;

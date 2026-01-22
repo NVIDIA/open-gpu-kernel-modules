@@ -2769,16 +2769,6 @@ NV_STATUS heapAllocHint_IMPL
         alignment = memUtilsLeastCommonAlignment(alignment, hostPageSize);
     }
 
-    if (memmgrAllocGetAddrSpace(pMemoryManager, pAllocHint->flags, *pAllocHint->pAttr) == ADDR_FBMEM)
-    {
-        if (alignment >= pHeap->total)
-        {
-            status = NV_ERR_INVALID_ARGUMENT;
-            NV_PRINTF(LEVEL_ERROR, "heapAllocHint failed due to alignmend >= pHeap->total\n");
-            goto exit;
-        }
-    }
-
     *pAllocHint->pHeight = pFbAllocInfo->height;
     pAllocHint->pad = pFbAllocInfo->pad;
 

@@ -3972,7 +3972,7 @@ osGetAtsTargetAddressRange
     }
     else
     {
-        NV_STATUS status = nv_get_device_memory_config(nv, pAddrSysPhys, NULL, NULL,
+        NV_STATUS status = nv_get_device_memory_config(nv, pAddrSysPhys, NULL, NULL, NULL,
                                                        pAddrWidth, NULL);
         if (status == NV_OK)
         {
@@ -3999,6 +3999,7 @@ osGetAtsTargetAddressRange
  * @param[in]   pGpu             GPU object pointer
  * @param[out]  pAddrPhys        Pointer to hold the physical address of FB in
  *                               CPU address map
+ * @param[out]  pSizePhys        Pointer to hold the size of FB mapped to CPU
  * @param[out]  pNodeId          NUMA nodeID of respective GPU memory
  *
  * @return      NV_OK or NV_ERR_NOT_SUPPORTED
@@ -4009,6 +4010,7 @@ osGetFbNumaInfo
 (
     OBJGPU *pGpu,
     NvU64  *pAddrPhys,
+    NvU64  *pSizePhys,
     NvU64  *pAddrRsvdPhys,
     NvS32  *pNodeId
 )
@@ -4025,7 +4027,7 @@ osGetFbNumaInfo
 
     nv = NV_GET_NV_STATE(pGpu);
 
-    NV_STATUS status = nv_get_device_memory_config(nv, NULL, pAddrPhys,
+    NV_STATUS status = nv_get_device_memory_config(nv, NULL, pAddrPhys, pSizePhys,
                                                    pAddrRsvdPhys, NULL, pNodeId);
 
     return status;
@@ -4301,7 +4303,7 @@ osNumaOnliningEnabled
     // Note that this numaNodeId value fetched from Linux layer might not be
     // accurate since it is possible to overwrite it with regkey on some configs
     //
-    if (nv_get_device_memory_config(pOsGpuInfo, NULL, NULL, NULL, NULL,
+    if (nv_get_device_memory_config(pOsGpuInfo, NULL, NULL, NULL, NULL, NULL,
                                     &numaNodeId) != NV_OK)
     {
         return NV_FALSE;

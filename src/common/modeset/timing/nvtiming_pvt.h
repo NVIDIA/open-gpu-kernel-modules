@@ -77,6 +77,7 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *pEdid, NvU32 size, NVT_EDID_CEA861_INF
 void       parse861ExtDetailedTiming(NvU8 *pEdidExt, NvU8 basicCaps, NVT_EDID_INFO *pInfo);
 void       parse861bShortTiming(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 void       parse861bShortYuv420Timing(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
+void       updateBpcForYuv420OnlyTiming(NVT_TIMING *pT, const NVT_EDID_CEA861_INFO *p861Info);
 void       parseCta861VideoFormatDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo);
 void       parseCta861NativeOrPreferredTiming(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 void       parseCta861VsdbBlocks(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
