@@ -3060,7 +3060,9 @@ static vm_fault_t devmem_fault_entry(struct vm_fault *vmf)
 
 static const struct dev_pagemap_ops uvm_pmm_devmem_ops =
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 19, 0)
     .page_free = devmem_page_free,
+#endif
     .migrate_to_ram = devmem_fault_entry,
 };
 
@@ -3165,7 +3167,9 @@ static void device_coherent_page_free(struct page *page)
 
 static const struct dev_pagemap_ops uvm_device_coherent_pgmap_ops =
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 19, 0)
     .page_free = device_coherent_page_free,
+#endif
 };
 
 static NV_STATUS uvm_pmm_cdmm_init(uvm_parent_gpu_t *parent_gpu)
