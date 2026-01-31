@@ -152,6 +152,7 @@ ifeq ($(TARGET_ARCH),x86_64)
     CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -fcf-protection=branch)
   endif
   CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -fno-jump-tables)
+	CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -fno-asynchronous-unwind-tables)
   CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mindirect-branch-register)
   CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mindirect-branch=thunk-extern)
   CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mharden-sls=all)
