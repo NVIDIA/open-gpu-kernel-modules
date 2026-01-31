@@ -74,6 +74,7 @@ CFLAGS += -Werror-implicit-function-declaration
 CFLAGS += -Wwrite-strings
 CFLAGS += -Wundef
 CFLAGS += -fno-common
+CFLAGS += -fno-strict-aliasing
 CFLAGS += -ffreestanding
 CFLAGS += -fno-stack-protector
 
