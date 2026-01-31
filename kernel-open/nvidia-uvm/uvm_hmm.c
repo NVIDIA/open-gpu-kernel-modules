@@ -2140,10 +2140,10 @@ static void fill_dst_pfn(uvm_va_block_t *va_block,
 
         UVM_ASSERT(!page_count(dpage));
         UVM_ASSERT(!dpage->zone_device_data);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 19, 0)
-        zone_device_page_init(dpage);
-#else
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 19, 0)
         zone_device_page_init(dpage, 0);
+#else
+        zone_device_page_init(dpage);
 #endif
         dpage->zone_device_data = gpu_chunk;
         atomic64_inc(&va_block->hmm.va_space->hmm.allocated_page_count);
