@@ -74,6 +74,7 @@ CFLAGS += -Werror-implicit-function-declaration
 CFLAGS += -Wwrite-strings
 CFLAGS += -Wundef
 CFLAGS += -fno-common
+CFLAGS += -fno-strict-aliasing
 CFLAGS += -ffreestanding
 CFLAGS += -fno-stack-protector
 
@@ -160,7 +161,7 @@ ifeq ($(TARGET_ARCH),x86_64)
 
   #
   # GCC flags -fcf-protection=branch and -mindirect-branch=extern-thunk can
-  # be used together after GCC version 9.4.0. See 
+  # be used together after GCC version 9.4.0. See
   # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93654 for details.
   # Check if GCC version is appropriate.
   #
@@ -184,7 +185,9 @@ ifeq ($(TARGET_ARCH),x86_64)
   endif
   CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -fno-jump-tables)
   CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mindirect-branch-register)
-    CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mindirect-branch=thunk-extern)
+  CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mindirect-branch=thunk-extern)
+  CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mharden-sls=all)
+  CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mfunction-return=thunk-extern)
 endif
 
 CFLAGS += $(CONDITIONAL_CFLAGS)
