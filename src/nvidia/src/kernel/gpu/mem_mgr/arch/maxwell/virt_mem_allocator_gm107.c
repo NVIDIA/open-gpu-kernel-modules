@@ -1655,7 +1655,7 @@ dmaFreeMapping_GM107
 
     if (pCliMapInfo != NULL && pCliMapInfo->pDmaMappingInfo->bNeedL2InvalidateAtUnmap)
     {
-        GMMU_APERTURE aperture = (pCliMapInfo->pDmaMappingInfo->aperture == GMMU_APERTURE_PEER) ?
+        FB_CACHE_MEMTYPE aperture = (pCliMapInfo->pDmaMappingInfo->aperture == GMMU_APERTURE_PEER) ?
             FB_CACHE_PEER_MEMORY : FB_CACHE_SYSTEM_MEMORY;
 
         kmemsysCacheOp_HAL(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu), NULL, aperture, FB_CACHE_INVALIDATE);
