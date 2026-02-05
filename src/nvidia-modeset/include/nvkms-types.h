@@ -790,6 +790,25 @@ typedef struct {
     NvU32 surfaceCount;
 } NVHsStateOneHeadAllDisps;
 
+typedef enum NVEvoLockAction {
+    NV_EVO_PROHIBIT_LOCK,
+    NV_EVO_PROHIBIT_LOCK_DISABLE,
+    NV_EVO_LOCK_HEADS,
+    NV_EVO_UNLOCK_HEADS,
+    NV_EVO_ADD_FRAME_LOCK_SERVER,
+    NV_EVO_REM_FRAME_LOCK_SERVER,
+    NV_EVO_ADD_FRAME_LOCK_HOUSE_SYNC,
+    NV_EVO_REM_FRAME_LOCK_HOUSE_SYNC,
+    NV_EVO_ADD_FRAME_LOCK_CLIENT,
+    NV_EVO_REM_FRAME_LOCK_CLIENT,
+    NV_EVO_ADD_FRAME_LOCK_REF,
+    NV_EVO_REM_FRAME_LOCK_REF,
+    NV_EVO_ADD_SLI_SECONDARY,
+    NV_EVO_ADD_SLI_LAST_SECONDARY,
+    NV_EVO_ADD_SLI_PRIMARY,
+    NV_EVO_REM_SLI,
+} NVEvoLockAction;
+
 /* Subdevice-specific, channel-independent state */
 typedef struct _NVEvoSubDevRec {
     NvU32                       subDeviceInstance;
@@ -803,7 +822,7 @@ typedef struct _NVEvoSubDevRec {
     NVEvoHeadControl            headControlAssy[NVKMS_MAX_HEADS_PER_DISP];
     NvBool                      (*scanLockState)(NVDispEvoPtr pDispEvo,
                                                  NVEvoSubDevPtr pEvoSubDev,
-                                                 NvU32 action,
+                                                 NVEvoLockAction action,
                                                  /* NV_INVALID_HEAD-terminated
                                                   * array of head indices */
                                                  const NvU32 *pHeads);
