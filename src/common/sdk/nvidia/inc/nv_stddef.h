@@ -30,8 +30,26 @@
 #include <sys/stddef.h>
 #include <sys/types.h>
 #elif defined(NV_KERNEL_INTERFACE_LAYER) && NVOS_IS_LINUX
+#ifdef __cplusplus
+// Keep Linux's C boolean declarations from clashing with C++ keywords.
+#define _Bool int
+#define bool  LINUX_bool
+#define true  LINUX_true
+#define false LINUX_false
+#endif
 #include <linux/types.h>
 #include <linux/limits.h>
+#ifdef __cplusplus
+#undef _Bool
+#undef bool
+#undef true
+#undef false
+// Full kbuild builds of the C++ sources use -std=gnu++11.
+#if __cplusplus >= 201103L
+#undef NULL
+#define NULL nullptr
+#endif
+#endif
 #else
 #include <stddef.h>
 #endif
