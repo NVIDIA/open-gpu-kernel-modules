@@ -200,10 +200,17 @@ found:
 
     length = NV_MIN(length, (int)(PAGE_SIZE - pageOffset));
 
+#if defined(NVCPU_AARCH64)
+    if (write)
+        memcpy_toio(kernel_mapping, buffer, length);
+    else
+        memcpy_fromio(buffer, kernel_mapping, length);
+#else
     if (write)
         memcpy(kernel_mapping, buffer, length);
     else
         memcpy(buffer, kernel_mapping, length);
+#endif // defined(NVCPU_AARCH64)
 
     if (at == NULL && !bIsNuma)
     {

@@ -5309,6 +5309,7 @@ static const CHIPS_RELEASED sChipsReleased[] = {
     { 0x25B2, 0x1879, 0x1028, "NVIDIA RTX A400" },
     { 0x25B2, 0x1879, 0x103c, "NVIDIA RTX A400" },
     { 0x25B2, 0x8d95, 0x103c, "NVIDIA RTX A400" },
+    { 0x25B2, 0x8f5b, 0x103c, "NVIDIA RTX A400" },
     { 0x25B2, 0x1879, 0x10de, "NVIDIA RTX A400" },
     { 0x25B2, 0x1879, 0x17aa, "NVIDIA RTX A400" },
     { 0x25B6, 0x14a9, 0x10de, "NVIDIA A16" },
