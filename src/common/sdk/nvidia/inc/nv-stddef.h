@@ -28,9 +28,27 @@
 #if defined(NV_KERNEL_INTERFACE_LAYER) && defined(__FreeBSD__)
   #include <sys/stddef.h>   // NULL
 #elif defined(NV_KERNEL_INTERFACE_LAYER) && defined(NV_LINUX)
+  #ifdef __cplusplus
+    // Hack to prevent <linux/stddef.h> from redefining 'bool'
+    #define _Bool int
+    #define bool  LINUX_bool
+    #define true  LINUX_true
+    #define false LINUX_false
+  #endif
   #include <linux/stddef.h> // NULL
   #include <linux/types.h>  // size_t
   #include <linux/limits.h> // SIZE_MAX,...
+  #ifdef __cplusplus
+    #undef _Bool
+    #undef bool
+    #undef true
+    #undef false
+    // XXX: no fallback for pre-C++11 but we enforce it via -std=gnu++11
+    #if __cplusplus >= 201103L
+      #undef NULL
+      #define NULL nullptr
+    #endif
+  #endif
 #else
   #include <stddef.h>       // NULL
 #endif
