@@ -16,6 +16,17 @@ obj-m += nvidia-modeset.o
 nvidia-modeset-y := $(NVIDIA_MODESET_OBJECTS)
 endif
 
+ifeq ($(USE_KBUILD),1)
+# build nv-modeset-kernel.o using Linux's kbuild system
+nvidia_modeset_src := ../src/nvidia-modeset
+include $(src)/$(nvidia_modeset_src)/nvidia-modeset.Kbuild
+
+nvidia-modeset-y += $(NV_MODESET_KERNEL_O)
+
+NV_OBJECTS_DEPEND_ON_CONFTEST += $(NV_MODESET_KERNEL_O_OBJS)
+
+else # !USE_KBUILD
+
 NVIDIA_MODESET_KO = nvidia-modeset/nvidia-modeset.ko
 
 NV_KERNEL_MODULE_TARGETS += $(NVIDIA_MODESET_KO)
@@ -48,6 +59,7 @@ $(obj)/$(NVIDIA_MODESET_BINARY_OBJECT_O): $(NVIDIA_MODESET_BINARY_OBJECT) FORCE
 	$(call if_changed,symlink)
 
 nvidia-modeset-y += $(NVIDIA_MODESET_BINARY_OBJECT_O)
+endif
 
 
 #
@@ -84,8 +96,10 @@ NVIDIA_MODESET_INTERFACE := nvidia-modeset/nv-modeset-interface.o
 # before v5.6 looks at "always"; kernel versions between v5.12 and v5.6
 # look at both.
 
+ifneq ($(NV_PREPARE_ONLY),1)
 always += $(NVIDIA_MODESET_INTERFACE)
 always-y += $(NVIDIA_MODESET_INTERFACE)
+endif
 
 $(obj)/$(NVIDIA_MODESET_INTERFACE): $(addprefix $(obj)/,$(NVIDIA_MODESET_OBJECTS))
 	$(LD) -r -o $@ $^
