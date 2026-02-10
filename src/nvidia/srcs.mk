@@ -1,5 +1,5 @@
-SRCS ?=
-SRCS_CXX ?=
+SRCS :=
+SRCS_CXX :=
 
 SRCS += generated/g_access_cntr_buffer_nvoc.c
 SRCS += generated/g_all_dcl_pb.c
