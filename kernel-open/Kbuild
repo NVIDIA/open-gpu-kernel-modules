@@ -98,12 +98,15 @@ quiet_cmd_symlink = SYMLINK $@
  cmd_symlink = ln -sf $(abspath $<) $@
 
 
+# early flags, which may be filtered for USE_KBUILD=1 builds
+ccflags-y += -I$(src)/common/inc
+ccflags-y += -I$(src)
+
+
 $(foreach _module, $(NV_KERNEL_MODULES), \
  $(eval include $(src)/$(_module)/$(_module).Kbuild))
 
 
-ccflags-y += -I$(src)/common/inc
-ccflags-y += -I$(src)
 ccflags-y += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-format-extra-args
 ccflags-y += -D__KERNEL__ -DMODULE -DNVRM
 ccflags-y += -DNV_VERSION_STRING=\"615.78.08\"
