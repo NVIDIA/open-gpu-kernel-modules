@@ -1,5 +1,5 @@
-SRCS ?=
-SRCS_CXX ?=
+SRCS :=
+SRCS_CXX :=
 
 SRCS += ../common/shared/nvstatus/nvstatus.c
 SRCS += ../common/softfloat/source/8086-SSE/s_commonNaNToF16UI.c
