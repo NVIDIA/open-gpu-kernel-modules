@@ -14,6 +14,17 @@ obj-m += nvidia.o
 nvidia-y := $(NVIDIA_OBJECTS)
 endif
 
+ifeq ($(USE_KBUILD),1)
+# build nv-kernel.o using Linux's kbuild system
+nvidia_src := ../src/nvidia
+include $(src)/$(nvidia_src)/nvidia.Kbuild
+
+nvidia-y += $(NV_KERNEL_O)
+
+NV_OBJECTS_DEPEND_ON_CONFTEST += $(NV_KERNEL_O_OBJS)
+
+else # !USE_KBUILD
+
 NVIDIA_KO = nvidia/nvidia.ko
 
 
@@ -48,6 +59,7 @@ $(obj)/$(NVIDIA_BINARY_OBJECT_O): $(NVIDIA_BINARY_OBJECT) FORCE
 	$(call if_changed,symlink)
 
 nvidia-y += $(NVIDIA_BINARY_OBJECT_O)
+endif
 
 
 #
