@@ -52,6 +52,68 @@ ASSIGN_PER_OBJ_CFLAGS_REMOVE = \
 
 
 #
+# Define rule for generating a source file containing identification information
+# for the build.
+#
+# $(1) string name
+# $(2) module name
+# $(3) prerequisite object files
+##############################################################################
+
+NV_BUILD_USER         ?= $(shell whoami)
+NV_BUILD_HOST         ?= $(shell hostname)
+
+ifndef TARGET_OS
+  TARGET_OS           := $(shell uname)
+endif
+
+ifndef TARGET_ARCH
+  ifneq ($(TARGET_OS),SunOS)
+    TARGET_ARCH       := $(shell uname -m)
+  else
+    TARGET_ARCH       := $(shell isainfo -n)
+  endif
+  TARGET_ARCH         := $(subst i386,x86,$(TARGET_ARCH))
+  TARGET_ARCH         := $(subst i486,x86,$(TARGET_ARCH))
+  TARGET_ARCH         := $(subst i586,x86,$(TARGET_ARCH))
+  TARGET_ARCH         := $(subst i686,x86,$(TARGET_ARCH))
+  TARGET_ARCH         := $(subst amd64,x86_64,$(TARGET_ARCH))
+endif
+
+DATE                  ?= date
+
+NVIDSTRING ?= g_nvid_string.c
+
+ifeq ($(NV_BUILD_TYPE),debug)
+  NVIDSTRING_BUILD_TYPE_STRING = Debug Build
+else ifeq ($(NV_BUILD_TYPE),develop)
+  NVIDSTRING_BUILD_TYPE_STRING = Develop Build
+else ifeq ($(NV_BUILD_TYPE),release)
+  NVIDSTRING_BUILD_TYPE_STRING = Release Build
+else
+  NVIDSTRING_BUILD_TYPE_STRING = Custom '$(NV_BUILD_TYPE)' Build
+endif
+
+# NV_VERSION_STRING is set as preprocessor define
+NVIDIA_NVID_VERSION := \"NV_VERSION_STRING\"
+
+define GENERATE_NVIDSTRING
+  $(1)_BUILD_NVID := NVIDIA $$(strip $(2)) for $$(TARGET_ARCH)  $$(NVIDIA_NVID_VERSION)
+  $(1)_BUILD_NVID := $$($$(strip $(1))_BUILD_NVID)  $$(NVIDSTRING_BUILD_TYPE_STRING)
+  ifneq ($$(NVIDIA_NVID_EXTRA),)
+    $(1)_BUILD_NVID := $$($$(strip $(1))_BUILD_NVID)  $$(NVIDIA_NVID_EXTRA)
+  endif
+  $(1)_BUILD_NVID := $$($$(strip $(1))_BUILD_NVID)  ($$(NV_BUILD_USER)@$$(NV_BUILD_HOST))
+  # g_nvid_string.c depends on all objects except g_nvid_string.o, and version.mk
+  # $(NVIDSTRING) evaluated early, to allow reusing it
+  $$(obj)/$(NVIDSTRING): $$(adprefix $$(obj)/,$$(filter-out $(NVIDSTRING:.c=.o), $(3))) $$(VERSION_MK)
+	@mkdir -p $$(dir $$@)
+	@echo "const char $(1)[] = \"nvidia id: $$($$(strip $(1))_BUILD_NVID)  `$$(DATE)`\";" > $$@
+	@echo "const char *const p$$(strip $(1)) = $(1) + 11;" >> $$@;
+endef
+
+
+#
 # Include the specifics of the individual NVIDIA kernel modules.
 #
 # Each of these should:
