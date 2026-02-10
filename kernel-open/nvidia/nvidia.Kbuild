@@ -9,8 +9,10 @@
 include $(src)/nvidia/nvidia-sources.Kbuild
 NVIDIA_OBJECTS = $(patsubst %.c,%.o,$(NVIDIA_SOURCES))
 
+ifneq ($(NV_PREPARE_ONLY),1)
 obj-m += nvidia.o
 nvidia-y := $(NVIDIA_OBJECTS)
+endif
 
 NVIDIA_KO = nvidia/nvidia.ko
 
@@ -97,8 +99,10 @@ NVIDIA_INTERFACE := nvidia/nv-interface.o
 # before v5.6 looks at "always"; kernel versions between v5.12 and v5.6
 # look at both.
 
+ifneq ($(NV_PREPARE_ONLY),1)
 always += $(NVIDIA_INTERFACE)
 always-y += $(NVIDIA_INTERFACE)
+endif
 
 $(obj)/$(NVIDIA_INTERFACE): $(addprefix $(obj)/,$(NVIDIA_OBJECTS))
 	$(LD) -r -o $@ $^

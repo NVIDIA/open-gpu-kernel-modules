@@ -11,8 +11,10 @@ NVIDIA_MODESET_SOURCES += nvidia-modeset/nv-kthread-q.c
 
 NVIDIA_MODESET_OBJECTS = $(patsubst %.c,%.o,$(NVIDIA_MODESET_SOURCES))
 
+ifneq ($(NV_PREPARE_ONLY),1)
 obj-m += nvidia-modeset.o
 nvidia-modeset-y := $(NVIDIA_MODESET_OBJECTS)
+endif
 
 NVIDIA_MODESET_KO = nvidia-modeset/nvidia-modeset.ko
 
