@@ -156,6 +156,30 @@ endif
 quiet_cmd_symlink = SYMLINK $@
  cmd_symlink = ln -sf $(abspath $<) $@
 
+#
+# Command to neuter .modinfo section for stub modules which are our hacky
+# attempt to make kbuild support nested compound objects.
+#
+# Intended usage:
+#
+#   # stub module
+#   obj-m += nv-kernel.stub.o
+#   nv-kernel.stub-y := ...
+#
+#   # real module wanting to make use of nv-kernel.o
+#   obj-m += ndidia.o
+#   nvidia-y += nv-kernel.clean.o ...
+#
+
+MOD_STUB := common/mod_stub.o
+
+# not really needed, but to have conftest be the very first
+NV_OBJECTS_DEPEND_ON_CONFTEST += $(MOD_STUB)
+
+$(obj)/%.clean.o: OBJCOPYFLAGS += --rename-section .modinfo=.discard.modinfo
+$(obj)/%.clean.o: $(obj)/%.stub.o FORCE
+	$(call if_changed,objcopy)
+
 # early flags, which may be filtered for USE_KBUILD=1 builds
 ccflags-y += -I$(src)/common/inc
 ccflags-y += -I$(src)
