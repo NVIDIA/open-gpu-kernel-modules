@@ -225,3 +225,10 @@ SRCS += ../common/unix/xzminidec/src/xz_crc32.c
 SRCS += ../common/unix/xzminidec/src/xz_dec_bcj.c
 SRCS += ../common/unix/xzminidec/src/xz_dec_lzma2.c
 SRCS += ../common/unix/xzminidec/src/xz_dec_stream.c
+
+# shaders
+SHADERS += turing
+SHADERS += ampere
+SHADERS += hopper
+SHADERS += blackwell
+SHADERS += gb20x
