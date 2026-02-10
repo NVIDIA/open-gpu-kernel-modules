@@ -64,12 +64,14 @@ else
             from CONFIG_CC_VERSION_TEXT in the kernel configuration.)
       else
           CC=$(cc_version_text)
+          CXX=$(subst cc,++,$(cc_version_text))
       endif
     endif
   endif
 
   CC ?= cc
   LD ?= ld
+  CXX ?= c++
   OBJDUMP ?= objdump
 
   ifndef ARCH
@@ -120,7 +122,7 @@ else
 
   .PHONY: modules module clean clean_conftest modules_install
   modules clean modules_install:
-	@$(MAKE) "LD=$(LD)" "CC=$(CC)" "OBJDUMP=$(OBJDUMP)" \
+	@$(MAKE) "LD=$(LD)" "CC=$(CC)" "CXX=$(CXX)" "OBJDUMP=$(OBJDUMP)" \
 	  PAHOLE=$(CURDIR)/pahole.sh $(KBUILD_PARAMS) $@
 	@if [ "$@" = "modules" ]; then \
 	  for module in $(NV_KERNEL_MODULES); do \
