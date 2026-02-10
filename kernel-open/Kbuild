@@ -42,6 +42,14 @@ ASSIGN_PER_OBJ_CFLAGS = \
  $(sort $(notdir $(1)) $(1)), \
  $(eval $(addprefix CFLAGS_,$(_cflags_variable)) += $(2)))
 
+#
+# As ASSIGN_PER_OBJ_CFLAGS, just for per-object CFLAGS_REMOVE.
+#
+ASSIGN_PER_OBJ_CFLAGS_REMOVE = \
+ $(foreach _cflags_variable, \
+ $(sort $(notdir $(1)) $(1)), \
+ $(eval $(addprefix CFLAGS_REMOVE_,$(_cflags_variable)) += $(2)))
+
 
 #
 # Include the specifics of the individual NVIDIA kernel modules.
@@ -70,13 +78,15 @@ endif
 quiet_cmd_symlink = SYMLINK $@
  cmd_symlink = ln -sf $(abspath $<) $@
 
+# early flags, which may be filtered for USE_KBUILD=1 builds
+ccflags-y += -I$(src)/common/inc
+ccflags-y += -I$(src)
+
 
 $(foreach _module, $(NV_KERNEL_MODULES), \
  $(eval include $(src)/$(_module)/$(_module).Kbuild))
 
 
-ccflags-y += -I$(src)/common/inc
-ccflags-y += -I$(src)
 ccflags-y += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-format-extra-args
 ccflags-y += -D__KERNEL__ -DMODULE -DNVRM
 ccflags-y += -DNV_VERSION_STRING=\"610.57.04\"
