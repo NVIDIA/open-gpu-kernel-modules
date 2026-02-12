@@ -270,22 +270,22 @@ RmInitX86EmuState(OBJGPU *pGpu) {
     int                     i;
     struct x86emu_mem_seg   *pseg;
     X86EMU_intrFuncs        *intFuncs;
-    X86EMU_pioFuncs         pioFuncs = {
-        (&x_inb),
-        (&x_inw),
-        (&x_inl),
-        (&x_outb),
-        (&x_outw),
-        (&x_outl)
+    static const X86EMU_pioFuncs pioFuncs = {
+        .inb = x_inb,
+        .inw = x_inw,
+        .inl = x_inl,
+        .outb = x_outb,
+        .outw = x_outw,
+        .outl = x_outl
     };
 
-    X86EMU_memFuncs         memFuncs = {
-        (&Mem_rb),
-        (&Mem_rw),
-        (&Mem_rl),
-        (&Mem_wb),
-        (&Mem_ww),
-        (&Mem_wl)
+    static const X86EMU_memFuncs memFuncs = {
+        .rdb = Mem_rb,
+        .rdw = Mem_rw,
+        .rdl = Mem_rl,
+        .wrb = Mem_wb,
+        .wrw = Mem_ww,
+        .wrl = Mem_wl
     };
 
     if (!NV_PRIMARY_VGA(NV_GET_NV_STATE(pGpu)))     // not the primary GPU
