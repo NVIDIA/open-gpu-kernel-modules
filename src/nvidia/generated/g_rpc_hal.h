@@ -29,7 +29,7 @@ typedef struct RPC_OBJ_IFACES {
     RpcDestroy                  *__rpcDestroy__              ; /* Destroy the RPC object */
     RpcSendMessage              *__rpcSendMessage__          ; /* Send an RPC message */
     RpcRecvPoll                 *__rpcRecvPoll__             ; /* Receive an RPC message */
-} RPC_OBJ_IFACES;
+} __no_const RPC_OBJ_IFACES;
 
 
 
@@ -387,7 +387,7 @@ typedef struct RPC_HAL_IFACES {
     RpcUnmapMemoryDma           *rpcUnmapMemoryDma;           /* UNMAP_MEMORY_DMA */
     RpcSetGuestSystemInfoExt    *rpcSetGuestSystemInfoExt;    /* SET_GUEST_SYSTEM_INFO_EXT */
     Rpc_iGrp_ipVersions_getInfo  *rpc_iGrp_ipVersions_getInfo; /* Return lookup table of hal interface ptrs based on IP_VERSION */
-} RPC_HAL_IFACES;
+} __no_const RPC_HAL_IFACES;
 
 
 //
