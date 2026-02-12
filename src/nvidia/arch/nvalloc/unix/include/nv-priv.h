@@ -69,7 +69,7 @@ typedef struct nv_work_item_s
     {
         OSWorkItemFunction *pGpuFunction;
         OSSystemWorkItemFunction *pSystemFunction;
-    } func;
+    } __no_const func;
     void *pData;
 } nv_work_item_t;
 
