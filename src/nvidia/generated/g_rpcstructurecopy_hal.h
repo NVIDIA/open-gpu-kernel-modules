@@ -160,7 +160,7 @@ typedef struct RPCSTRUCTURECOPY_HAL_IFACES {
     Deserialize_NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS  *deserialize_NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS; /* HAL function to deserialize NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS */
     Deserialize_VGPU_GET_LATENCY_BUFFER_SIZE  *deserialize_VGPU_GET_LATENCY_BUFFER_SIZE; /* HAL function to deserialize VGPU_GET_LATENCY_BUFFER_SIZE */
     Rpcstructurecopy_iGrp_ipVersions_getInfo  *rpcstructurecopy_iGrp_ipVersions_getInfo; /* Return lookup table of hal interface ptrs based on IP_VERSION */
-} RPCSTRUCTURECOPY_HAL_IFACES;
+} __no_const RPCSTRUCTURECOPY_HAL_IFACES;
 
 
 //
