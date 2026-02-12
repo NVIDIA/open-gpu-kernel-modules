@@ -20,6 +20,63 @@ SRCS := $(filter-out %/gcc_helper.c,$(SRCS))
 SRCS := $(addprefix $(nvidia_src)/,$(SRCS))
 SRCS_CXX := $(addprefix $(nvidia_src)/,$(SRCS_CXX))
 NVIDSTRING := $(addprefix $(nvidia_src)/,g_nvid_string.c)
+ALL_SRCS := $(SRCS) $(SRCS_CXX) $(NVIDSTRING)
+
+COCCI  := $(SHELL) cocci.sh
+PATCH  ?= patch
+SPATCH ?= spatch
+
+# generated/ is most insteresting to us, but some cocci scripts require
+# overriding the --dir option, making the leading './' important to still have
+# --ignore filter the bindata files which don't need any fixups but make spatch
+# complain about exhausting its stack space.
+SPATCH_OPTS := --dir ./generated/
+SPATCH_OPTS += --ignore ./generated/g_bindata
+SPATCH_OPTS += -I generated/
+SPATCH_OPTS += --include-headers	# headers should be processed (patched) too
+SPATCH_OPTS += --patch .		# for 'patch -p1 …'
+SPATCH_OPTS += --smpl-spacing		# don't mess with spacing too much to keep diffs small
+SPATCH_OPTS += --very-quiet
+
+JOBS := $(patsubst -j%,%,$(filter -j%,$(MAKEFLAGS)))
+ifneq ($(JOBS),)
+SPATCH_OPTS += --jobs $(JOBS)
+endif
+
+# order here is important and defines patch order too!
+COCCI_SCRIPTS_ARGS :=
+
+COCCI_SCRIPTS := $(filter %.cocci,$(subst :, ,$(COCCI_SCRIPTS_ARGS)))
+COCCI_PATCHES  = $(addprefix 0???-,$(COCCI_SCRIPTS:.cocci=.diff))
+COCCI_PATCH_MARKER := .cocci_patched
+
+PATCH_CANDIDATES := $(filter $(nvidia_src)/generated/%,$(ALL_SRCS))
+PATCH_CANDIDATES := $(PATCH_CANDIDATES:.c=.o)
+PATCH_CANDIDATES := $(PATCH_CANDIDATES:.cpp=.o)
+$(addprefix $(obj)/,$(PATCH_CANDIDATES)): $(obj)/$(nvidia_src)/$(COCCI_PATCH_MARKER)
+
+$(obj)/$(nvidia_src)/$(COCCI_PATCH_MARKER): $(addprefix $(obj)/$(nvidia_src)/,$(COCCI_SCRIPTS))
+	@echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+	@echo '!!! Generating cocci patches, this may take a while. !!!'
+	@echo '!!! DO NOT INTERRUPT, OR SOURCES WILL BE MESSED UP!  !!!'
+	@echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+	@cd $(src)/$(nvidia_src) && i=0 && \
+	 for s in $(COCCI_SCRIPTS_ARGS); do \
+		i=$$((i+1)); \
+		c=$${s%:*}; \
+		p=$$(printf "%04d-%s" $$i "$${c%.cocci}.diff"); \
+		t=.tmp.$$p; \
+		echo "  COCCI $$c"; \
+		$(COCCI) "$$s" "$(SPATCH)" $(SPATCH_OPTS) > $$t || exit 1; \
+		mv $$t $$p; \
+		echo "  PATCH $$p"; \
+		$(PATCH) -p1 <$$p; \
+	 done
+	@touch $@
+
+# XXX: better reverse apply the patches on clean
+#clean-files += $(addprefix $(nvidia_src)/,$(COCCI_PATCH_MARKER) $(COCCI_PATCHES))
+clean-files += $(addprefix $(nvidia_src)/,pfunc.list)
 
 nv-kernel-objs := $(SRCS:.c=.o)
 nv-kernel-objs += $(SRCS_CXX:.cpp=.o)
