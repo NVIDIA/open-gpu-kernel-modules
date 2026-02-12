@@ -532,6 +532,20 @@ typedef struct
     #define NV_ATTRIBUTE_UNUSED
 #endif
 
+// grsecurity compatibility
+#ifndef __no_const
+#define __no_const
+#endif
+#ifndef __do_const
+#define __do_const
+#endif
+#ifndef __mutable_const
+#define __mutable_const
+#endif
+#ifndef __nolocal
+#define __nolocal
+#endif
+
     #if defined(__GNUC__)
         #if (__GNUC__ > 3) || \
             ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 1) && (__GNUC_PATCHLEVEL__ >= 1))

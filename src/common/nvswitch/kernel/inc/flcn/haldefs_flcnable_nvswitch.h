@@ -107,6 +107,6 @@ typedef struct {
                                         struct ENGINE_DESCRIPTOR_TYPE  *pEngDescUc,
                                         struct ENGINE_DESCRIPTOR_TYPE  *pEngDescBc);
 
-} flcnable_hal;
+} __mutable_const flcnable_hal;
 
 #endif //_HALDEFS_FLCNABLE_NVSWITCH_H_
