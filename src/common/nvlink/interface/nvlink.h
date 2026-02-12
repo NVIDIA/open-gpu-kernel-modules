@@ -291,7 +291,7 @@ struct nvlink_link_handlers
     NV_API_CALL void      (*get_uphy_load)              (struct nvlink_link *link, NvBool* bUnlocked);
     NV_API_CALL NvlStatus (*get_cci_link_mode)          (struct nvlink_link *link, NvU64 *mode);
     NV_API_CALL NvlStatus (*ali_training)               (struct nvlink_link *link);
-};
+} __mutable_const;
 
 //
 // Represents an intranode connections in single/multi-node system.
