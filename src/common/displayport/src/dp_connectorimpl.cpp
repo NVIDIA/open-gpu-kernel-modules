@@ -1395,6 +1395,49 @@ bool ConnectorImpl::compoundQueryAttachMST(Group * target,
 
     if (compoundQueryAttachMSTIsDscPossible(target, modesetParams, pDscParams))
     {
+        //
+        // Before entering the DSC path, check if the mode can be supported
+        // without compression. The SST path (compoundQueryAttachSST) already
+        // does this correctly: it only enables DSC when willLinkSupportModeSST
+        // fails. For MST, perform an equivalent pre-check using PBN to avoid
+        // unnecessary DSC on links with sufficient bandwidth.
+        //
+        // Unnecessary DSC adds link training complexity and can cause
+        // instability through MST hubs and USB-C docks, manifesting as
+        // spurious HPD short pulses and DPCD AUX channel failures during
+        // DSC capability negotiation.
+        //
+        bool bForceDsc = pDscParams &&
+                         (pDscParams->forceDsc == DSC_FORCE_ENABLE);
+        bool bDscDualRequested =
+                         (modesetParams.modesetInfo.mode == DSC_DUAL);
+
+        if (!bForceDsc && !bDscDualRequested)
+        {
+            unsigned base_pbn, slots, slots_pbn;
+            localInfo.lc.pbnRequired(localInfo.localModesetInfo,
+                                     base_pbn, slots, slots_pbn);
+
+            if (compoundQueryLocalLinkPBN + slots_pbn <=
+                localInfo.lc.pbnTotal())
+            {
+                //
+                // The uncompressed mode fits within available local link PBN.
+                // Skip the DSC path and proceed directly to the full generic
+                // validation (watermark, per-device bandwidth). If the generic
+                // check fails for non-bandwidth reasons, the mode is not
+                // supportable regardless of DSC.
+                //
+                return compoundQueryAttachMSTGeneric(target, modesetParams,
+                                                     &localInfo, pDscParams,
+                                                     pErrorCode);
+            }
+        }
+
+        //
+        // DSC is required: either forced by client, DSC_DUAL requested,
+        // or local link bandwidth is insufficient for uncompressed mode.
+        //
         unsigned int forceDscBitsPerPixelX16 = pDscParams->bitsPerPixelX16;
         result = compoundQueryAttachMSTDsc(target, modesetParams, &localInfo,
                                            pDscParams, pErrorCode);
@@ -1406,13 +1449,12 @@ bool ConnectorImpl::compoundQueryAttachMST(Group * target,
         compoundQueryResult = compoundQueryAttachMSTGeneric(target, modesetParams, &localInfo,
                                                             pDscParams, pErrorCode);
         //
-        // compoundQueryAttachMST Generic might fail due to the insufficient bandwidth ,
-        // We only check whether bpp can be fit in the available bandwidth based on the tranied link config in compoundQueryAttachMSTDsc function.
-        // There might be cases where the default 10 bpp might fit in the available bandwidth based on the trained link config,
-        // however, the bandwidth might be insufficient at the actual bottleneck link between source and sink to drive the mode, causing CompoundQueryAttachMSTGeneric to fail.
-        // Incase of CompoundQueryAttachMSTGeneric failure, instead of returning false, check whether the mode can be supported with the max dsc compression bpp
-        // and return true if it can be supported.
-
+        // compoundQueryAttachMSTGeneric might fail due to insufficient bandwidth
+        // at a bottleneck link between source and sink. The default 10 bpp might
+        // fit based on the trained link config, but the actual available bandwidth
+        // at intermediate MST branches may be lower. If so, retry with max DSC
+        // compression (8 bpp) to check if that can support the mode.
+        //
         if (!compoundQueryResult && forceDscBitsPerPixelX16 == 0U)
         {
             pDscParams->bitsPerPixelX16 = MAX_DSC_COMPRESSION_BPPX16;
