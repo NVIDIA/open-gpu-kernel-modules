@@ -6375,8 +6375,15 @@ void NV_API_CALL nv_get_screen_info(
      * After commit b8466fe82b79 ("efi: move screen_info into efi init code")
      * in v6.7, 'screen_info' is exported as GPL licensed symbol for ARM64.
      */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 20, 0)
+    // Rel. commit "sysfb: Replace screen_info with sysfb_primary_display" (Thomas Zimmermann, 26 Nov 2025)
+    const struct screen_info *si = &sysfb_primary_display.screen;
+#elif NV_CHECK_EXPORT_SYMBOL(screen_info)
+    const struct screen_info *si = &screen_info;
+#endif
 
-#if NV_CHECK_EXPORT_SYMBOL(screen_info)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 20, 0)) || \
+    NV_CHECK_EXPORT_SYMBOL(screen_info)
     /*
      * If there is not a framebuffer console, return 0 size.
      *
@@ -6384,13 +6391,13 @@ void NV_API_CALL nv_get_screen_info(
      * initialization, and then will be set to a value, such as
      * VIDEO_TYPE_VLFB or VIDEO_TYPE_EFI if an fbdev console is used.
      */
-    if (screen_info.orig_video_isVGA > 1)
+    if (si->orig_video_isVGA > 1)
     {
-        NvU64 physAddr = screen_info.lfb_base;
+        NvU64 physAddr = si->lfb_base;
 #if defined(VIDEO_CAPABILITY_64BIT_BASE)
-        if  (screen_info.capabilities & VIDEO_CAPABILITY_64BIT_BASE)
+        if  (si->capabilities & VIDEO_CAPABILITY_64BIT_BASE)
         {
-            physAddr |= (NvU64)screen_info.ext_lfb_base << 32;
+            physAddr |= (NvU64)si->ext_lfb_base << 32;
         }
 #endif
         /*
@@ -6402,10 +6409,10 @@ void NV_API_CALL nv_get_screen_info(
             NV_IS_CONSOLE_MAPPED(nv, physAddr))
         {
             *pPhysicalAddress = physAddr;
-            *pFbWidth = screen_info.lfb_width;
-            *pFbHeight = screen_info.lfb_height;
-            *pFbDepth = screen_info.lfb_depth;
-            *pFbPitch = screen_info.lfb_linelength;
+            *pFbWidth = si->lfb_width;
+            *pFbHeight = si->lfb_height;
+            *pFbDepth = si->lfb_depth;
+            *pFbPitch = si->lfb_linelength;
             *pFbSize = (NvU64)(*pFbHeight) * (NvU64)(*pFbPitch);
             return;
         }

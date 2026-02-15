@@ -169,6 +169,9 @@
 #include <linux/efi.h>              /* efi_enabled                      */
 #include <linux/fb.h>               /* fb_info struct                   */
 #include <linux/screen_info.h>      /* screen_info                      */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 20, 0)
+#include <linux/sysfb.h>            /* sysfb_primary_display            */
+#endif
 
 #if !defined(CONFIG_PCI)
 #warning "Attempting to build driver for a platform with no PCI support!"
