@@ -1390,22 +1390,28 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_GET_DEV_PAGEMAP_HAS_PGMAP_ARG" "" "types"
         ;;
 
-        zone_device_page_init_has_order_arg)
+        zone_device_page_init_has_pgmap_and_order_args)
             #
-            # Determine if the zone_device_page_init() has an extra argument
+            # Determine if the zone_device_page_init() has two additional
+            # arguments
             #
             # This change was introduced by d245f9b4ab80
             # ("mm/zone_device: support large zone device private folios")
             #
-            # in linux-next, expected in v6.19.
+            # It was further amended in 9387a71ec62c
+            # (mm/zone_device: reinitialize large zone device private folios)
+            #
+            # both commits are in linux-next, expected in v6.19.
             #
             CODE="
             #include <linux/memremap.h>
             void init_page(void) {
                 struct page *page;
-                zone_device_page_init(page, 0);
+                struct dev_pagemap *pgmap;
+
+                zone_device_page_init(page, pgmap, 0);
             }"
-            compile_check_conftest "$CODE" "NV_ZONE_DEVICE_PAGE_INIT_HAS_ORDER_ARG" "" "types"
+            compile_check_conftest "$CODE" "NV_ZONE_DEVICE_PAGE_INIT_HAS_PGMAP_AND_ORDER_ARGS" "" "types"
         ;;
 
         dev_pagemap_ops_has_folio_free)

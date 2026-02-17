@@ -78,11 +78,14 @@ module_param(uvm_disable_hmm, bool, 0444);
 // Pass 0 as the order, when actual large order support is added this
 // function will need to be revisited
 //
-#if defined(NV_ZONE_DEVICE_PAGE_INIT_HAS_ORDER_ARG)
-#define ZONE_DEVICE_PAGE_INIT(page)   zone_device_page_init(page, 0)
+static __always_inline void nv_zone_device_page_init(struct page *page)
+{
+#if defined(NV_ZONE_DEVICE_PAGE_INIT_HAS_PGMAP_AND_ORDER_ARGS)
+    zone_device_page_init(page, page_pgmap(page), 0);
 #else
-#define ZONE_DEVICE_PAGE_INIT(page)   zone_device_page_init(page)
+    zone_device_page_init(page);
 #endif
+}
 
 // The function nv_PageSwapCache() wraps the check for page swap cache flag in
 // order to support a wide variety of kernel versions.
@@ -2156,7 +2159,7 @@ static void fill_dst_pfn(uvm_va_block_t *va_block,
 
         UVM_ASSERT(!page_count(dpage));
         UVM_ASSERT(!dpage->zone_device_data);
-        ZONE_DEVICE_PAGE_INIT(dpage);
+        nv_zone_device_page_init(dpage);
         dpage->zone_device_data = gpu_chunk;
         atomic64_inc(&va_block->hmm.va_space->hmm.allocated_page_count);
     }
