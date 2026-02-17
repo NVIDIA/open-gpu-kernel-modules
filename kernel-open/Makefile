@@ -92,10 +92,11 @@ else
   #     system(pahole_cmd)
   # }
   PAHOLE_AWK_PROGRAM = BEGIN { pahole_cmd = \"pahole\"; for (i = 1; i < ARGC; i++) { if (ARGV[i] ~ /--lang_exclude=/) { pahole_cmd = pahole_cmd sprintf(\" %s,c++\", ARGV[i]); } else { pahole_cmd = pahole_cmd sprintf(\" %s\", ARGV[i]); } } system(pahole_cmd); }
-  # If scripts/pahole-flags.sh is not present in the kernel tree, add PAHOLE and
-  # PAHOLE_AWK_PROGRAM assignments to PAHOLE_VARIABLES; otherwise assign the
-  # empty string to PAHOLE_VARIABLES.
-  PAHOLE_VARIABLES=$(if $(wildcard $(KERNEL_SOURCES)/scripts/pahole-flags.sh),,"PAHOLE=$(AWK) '$(PAHOLE_AWK_PROGRAM)'")
+  # If scripts/pahole-flags.sh or scripts/Makefile.btf is present in the kernel
+  # tree, the kernel handles BTF generation natively; otherwise add PAHOLE and
+  # PAHOLE_AWK_PROGRAM assignments to PAHOLE_VARIABLES.
+  # Kernel 6.15+ uses Makefile.btf + gen-btf.sh instead of pahole-flags.sh.
+  PAHOLE_VARIABLES=$(if $(or $(wildcard $(KERNEL_SOURCES)/scripts/pahole-flags.sh),$(wildcard $(KERNEL_SOURCES)/scripts/Makefile.btf)),,"PAHOLE=$(AWK) '$(PAHOLE_AWK_PROGRAM)'")
 
   ifndef ARCH
     ARCH := $(shell uname -m | sed -e 's/i.86/i386/' \
