@@ -666,7 +666,7 @@ AuxRetry::status DPCDHALImpl::setOuiSource
     NvU8 chipRevision
 )
 {
-    NvU8 ouiBuffer[16];
+    NvU8 ouiBuffer[10] = {0};
 
     //  The first 3 bytes are IEEE_OUI. 2 hex digits per register.
     ouiBuffer[0] = (ouiId >> 16) & 0xFF;
@@ -690,9 +690,6 @@ AuxRetry::status DPCDHALImpl::setOuiSource
             model++;
     }
     ouiBuffer[9] = chipRevision;
-
-    for (int i = 0xA; i<=0xF; ++i)
-        ouiBuffer[i] = 0;
 
     return bus.write(NV_DPCD_SOURCE_IEEE_OUI, &ouiBuffer[0], sizeof ouiBuffer);
 }
