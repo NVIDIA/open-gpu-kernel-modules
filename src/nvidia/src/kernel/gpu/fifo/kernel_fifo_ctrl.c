@@ -598,6 +598,43 @@ subdeviceCtrlCmdFifoUpdateChannelInfo_IMPL
     return status;
 }
 
+/*!
+ * @brief subdeviceCtrlCmdFifoConfigCtxswTimeout
+ *
+ * Forward engine context-switch timeout configuration to GSP physical RM.
+ * Without this, NV2080_CTRL_CMD_FIFO_CONFIG_CTXSW_TIMEOUT always returns
+ * NV_ERR_NOT_SUPPORTED for physical GPUs, preventing runtimes from extending
+ * the default ~4 s timeout on compute-heavy workloads (Xid 109).
+ *
+ * Lock Requirements:
+ *      Assert that API lock and GPUs lock held on entry
+ */
+NV_STATUS
+subdeviceCtrlCmdFifoConfigCtxswTimeout_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FIFO_CONFIG_CTXSW_TIMEOUT_PARAMS *pParams
+)
+{
+    CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
+    RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
+    OBJGPU       *pGpu          = GPU_RES_GET_GPU(pSubdevice);
+    RM_API       *pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+    NV_ASSERT_OR_RETURN(pRmCtrlParams->bDeferredApi || rmGpuLockIsOwner(),
+        NV_ERR_INVALID_LOCK_STATE);
+
+    if (!IS_GSP_CLIENT(pGpu))
+        return NV_ERR_NOT_SUPPORTED;
+
+    return pRmApi->Control(pRmApi,
+                           pRmCtrlParams->hClient,
+                           pRmCtrlParams->hObject,
+                           pRmCtrlParams->cmd,
+                           pRmCtrlParams->pParams,
+                           pRmCtrlParams->paramsSize);
+}
+
 NV_STATUS
 diagapiCtrlCmdFifoGetChannelState_IMPL
 (
