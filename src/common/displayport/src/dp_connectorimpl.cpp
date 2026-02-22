@@ -1422,22 +1422,91 @@ bool ConnectorImpl::compoundQueryAttachMST(Group * target,
             {
                 //
                 // The uncompressed mode fits within available local link PBN.
-                // Try the full generic validation (watermark, per-device
-                // bandwidth at intermediate MST branches). If it succeeds,
-                // DSC is unnecessary.
+                // Speculatively try the full generic validation (watermark,
+                // per-device bandwidth at intermediate MST branches). If it
+                // succeeds, DSC is unnecessary.
                 //
+                // compoundQueryAttachMSTGeneric mutates connector and
+                // per-device state (compoundQueryResult, compoundQueryLocalLinkPBN,
+                // and device compound_query_state). Since this is a speculative
+                // check, save the state before and restore it on failure so the
+                // DSC path starts from a clean slate.
+                //
+                bool savedCompoundQueryResult = compoundQueryResult;
+
+                //
+                // Save per-device compound_query_state for all devices in this
+                // group's MST path. On failure, intermediate branch devices may
+                // retain stale timeslot allocations from the uncompressed attempt
+                // which would cause the DSC path to either skip them (via
+                // bandwidthAllocatedForIndex) or over-count their timeslots.
+                //
+                struct {
+                    DeviceImpl *dev;
+                    unsigned timeslots_used_by_query;
+                    unsigned bandwidthAllocatedForIndex;
+                } savedDevState[63];
+                unsigned savedDevCount = 0;
+                bool savedDevOverflow = false;
+
+                for (Device * d = target->enumDevices(0);
+                     d && !savedDevOverflow;
+                     d = target->enumDevices(d))
+                {
+                    DeviceImpl * tail = (DeviceImpl *)d;
+                    while (tail && tail->getParent())
+                    {
+                        if (savedDevCount >= 63)
+                        {
+                            savedDevOverflow = true;
+                            break;
+                        }
+                        savedDevState[savedDevCount].dev = tail;
+                        savedDevState[savedDevCount].timeslots_used_by_query =
+                            tail->bandwidth.compound_query_state.timeslots_used_by_query;
+                        savedDevState[savedDevCount].bandwidthAllocatedForIndex =
+                            tail->bandwidth.compound_query_state.bandwidthAllocatedForIndex;
+                        savedDevCount++;
+                        tail = (DeviceImpl*)tail->getParent();
+                    }
+                }
+
+                //
+                // If we couldn't save all device state (extremely deep MST
+                // topology), skip the speculative pre-check to avoid partial
+                // state restoration on failure.
+                //
+                if (savedDevOverflow)
+                    goto skipPreCheck;
+
                 if (compoundQueryAttachMSTGeneric(target, modesetParams,
                                                   &localInfo, pDscParams,
                                                   pErrorCode))
                 {
                     return true;
                 }
+
                 //
-                // Generic validation failed — possibly due to insufficient
-                // bandwidth at an intermediate MST branch link. DSC can
-                // reduce PBN enough to fit through the bottleneck, so fall
-                // through to the DSC path below.
+                // Generic validation failed — restore all state so the DSC
+                // path runs on a clean slate.
                 //
+                // compoundQueryLocalLinkPBN is already rolled back by
+                // compoundQueryAttachMSTGeneric on failure.
+                //
+                compoundQueryResult = savedCompoundQueryResult;
+                for (unsigned idx = 0; idx < savedDevCount; idx++)
+                {
+                    savedDevState[idx].dev->bandwidth.compound_query_state
+                        .timeslots_used_by_query =
+                            savedDevState[idx].timeslots_used_by_query;
+                    savedDevState[idx].dev->bandwidth.compound_query_state
+                        .bandwidthAllocatedForIndex =
+                            savedDevState[idx].bandwidthAllocatedForIndex;
+                }
+
+                if (pErrorCode)
+                    *pErrorCode = DP_IMP_ERROR_NONE;
+            skipPreCheck:
             }
         }
 
