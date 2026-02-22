@@ -1417,20 +1417,27 @@ bool ConnectorImpl::compoundQueryAttachMST(Group * target,
             unsigned base_pbn, slots, slots_pbn;
             localInfo.lc.pbnRequired(localInfo.localModesetInfo,
                                      base_pbn, slots, slots_pbn);
-
             if (compoundQueryLocalLinkPBN + slots_pbn <=
                 localInfo.lc.pbnTotal())
             {
                 //
                 // The uncompressed mode fits within available local link PBN.
-                // Skip the DSC path and proceed directly to the full generic
-                // validation (watermark, per-device bandwidth). If the generic
-                // check fails for non-bandwidth reasons, the mode is not
-                // supportable regardless of DSC.
+                // Try the full generic validation (watermark, per-device
+                // bandwidth at intermediate MST branches). If it succeeds,
+                // DSC is unnecessary.
                 //
-                return compoundQueryAttachMSTGeneric(target, modesetParams,
-                                                     &localInfo, pDscParams,
-                                                     pErrorCode);
+                if (compoundQueryAttachMSTGeneric(target, modesetParams,
+                                                  &localInfo, pDscParams,
+                                                  pErrorCode))
+                {
+                    return true;
+                }
+                //
+                // Generic validation failed — possibly due to insufficient
+                // bandwidth at an intermediate MST branch link. DSC can
+                // reduce PBN enough to fit through the bottleneck, so fall
+                // through to the DSC path below.
+                //
             }
         }
 
