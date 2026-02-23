@@ -43,11 +43,11 @@
 #endif
 
 #if defined(NV_LINUX) || defined(NV_BSD) || defined(NV_SUNOS)
-#define NV_BUILD_BRANCH_VERSION         "rel/gpu_drv/r580/r582_12-405"
-#define NV_BUILD_CHANGELIST_NUM         (37332263)
+#define NV_BUILD_BRANCH_VERSION         "rel/gpu_drv/r580/r582_12-407"
+#define NV_BUILD_CHANGELIST_NUM         (37365001)
 #define NV_BUILD_TYPE                   "Official"
-#define NV_BUILD_NAME                   "rel/gpu_drv/r580/r582_12-405"
-#define NV_LAST_OFFICIAL_CHANGELIST_NUM (37332263)
+#define NV_BUILD_NAME                   "rel/gpu_drv/r580/r582_12-407"
+#define NV_LAST_OFFICIAL_CHANGELIST_NUM (37365001)
 
 #else     /* Windows builds */
 #define NV_BUILD_BRANCH_VERSION         "r582_12-5"
