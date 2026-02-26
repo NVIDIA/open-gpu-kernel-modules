@@ -50,6 +50,22 @@ ASSIGN_PER_OBJ_CFLAGS_REMOVE = \
  $(sort $(notdir $(1)) $(1)), \
  $(eval $(addprefix CFLAGS_REMOVE_,$(_cflags_variable)) += $(2)))
 
+#
+# As ASSIGN_PER_OBJ_CFLAGS, just for per-object LDFLAGS.
+#
+ASSIGN_PER_OBJ_LDFLAGS = \
+ $(foreach _ldflags_variable, \
+ $(sort $(notdir $(1)) $(1)), \
+ $(eval $(addprefix LDFLAGS_,$(_ldflags_variable)) += $(2)))
+
+#
+# As ASSIGN_PER_OBJ_CFLAGS, just for per-object OBJCOPYFLAGS.
+#
+ASSIGN_PER_OBJ_OBJCOPYFLAGS = \
+ $(foreach _objcopyflags_variable, \
+ $(sort $(notdir $(1)) $(1)i), \
+ $(eval $(addprefix OBJCOPYFLAGS_,$(_objcopyflags_variable)) += $(2)))
+
 
 #
 # Define rule for generating a source file containing identification information
