@@ -1100,3 +1100,6 @@ SRCS += src/libraries/utils/nvassert.c
 SRCS += ../common/uproc/os/libos-v3.1.0/lib/libdwarf.c
 SRCS += ../common/uproc/os/libos-v3.1.0/lib/libelf.c
 SRCS += ../common/uproc/os/libos-v3.1.0/lib/liblogdecode.c
+
+LINKER_SCRIPT := nv-kernel.ld
+EXPORTS_LINK_COMMAND := exports_link_command.txt
