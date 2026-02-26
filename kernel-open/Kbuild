@@ -39,7 +39,7 @@ NV_BUILD_TYPE ?= release
 #
 ASSIGN_PER_OBJ_CFLAGS = \
  $(foreach _cflags_variable, \
- $(notdir $(1)) $(1), \
+ $(sort $(notdir $(1)) $(1)), \
  $(eval $(addprefix CFLAGS_,$(_cflags_variable)) += $(2)))
 
 
