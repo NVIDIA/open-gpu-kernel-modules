@@ -80,7 +80,6 @@ endif
 CFLAGS += -ffunction-sections
 CFLAGS += -fdata-sections
 NV_KERNEL_O_LDFLAGS += --gc-sections
-EXPORTS_LINK_COMMAND = exports_link_command.txt
 
 ifeq ($(TARGET_ARCH),x86_64)
   COMPILER_TYPE := $(call GET_COMPILER_TYPE, $(CC))
@@ -136,8 +135,6 @@ NV_KERNEL_O = $(OUTPUTDIR)/nv-kernel.o
 
 .PHONY: all
 all: $(NV_KERNEL_O)
-
-LINKER_SCRIPT = nv-kernel.ld
 
 NV_KERNEL_O_LDFLAGS += $(LDFLAGS)
 NV_KERNEL_O_LDFLAGS += -T $(LINKER_SCRIPT)
