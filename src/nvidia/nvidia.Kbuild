@@ -10,8 +10,13 @@ NV_KERNEL_O_OBJS = $(nv-kernel-objs)
 include $(src)/$(nvidia_src)/srcs.mk
 include $(src)/$(nvidia_src)/defs.mk
 
-# The source files for nv-kernel.o are all SRCS and SRCS_CXX defined in
-# srcs.mk, and the NVIDIA ID string
+# The source files for nv-kernel.o are all SRCS, except gcc_helper.c, and
+# SRCS_CXX defined in srcs.mk, and the NVIDIA ID string
+#
+# We filter gcc_helper.c to avoid creating loops, os_mem_set() calling memset()
+# calling os_mem_set()... The approach of the OS-agnostic build of localizing
+# symbols and having --gc-sections drop them doesn't work here, unfortunately.
+SRCS := $(filter-out %/gcc_helper.c,$(SRCS))
 SRCS := $(addprefix $(nvidia_src)/,$(SRCS))
 SRCS_CXX := $(addprefix $(nvidia_src)/,$(SRCS_CXX))
 NVIDSTRING := $(addprefix $(nvidia_src)/,g_nvid_string.c)
@@ -48,20 +53,22 @@ nv-kernel-cflags += -Wno-implicit-fallthrough
 # lots of missing prototypes, all accross the board
 nv-kernel-cflags-remove := -Wmissing-declarations -Wmissing-prototypes
 
-# Define how to perform dead code elimination: place each symbol in its own
-# section at compile time, and garbage collect unreachable sections at link
-# time.  exports_link_command.txt tells the linker which symbols need to be
-# exported from $(NV_KERNEL_O) so the linker can determine which symbols are
-# unreachable.
-nv-kernel-cflags += -ffunction-sections
-nv-kernel-cflags += -fdata-sections
+# XXX: We cannot make use of --gc-sections, as that would also drop crucial
+# XXX: sections like .alt_instructions or .return_sites.
+## Define how to perform dead code elimination: place each symbol in its own
+## section at compile time, and garbage collect unreachable sections at link
+## time.  exports_link_command.txt tells the linker which symbols need to be
+## exported from $(NV_KERNEL_O) so the linker can determine which symbols are
+## unreachable.
+#nv-kernel-cflags += -ffunction-sections
+#nv-kernel-cflags += -fdata-sections
+#
+#nv-kernel-ldflags := --gc-sections
+#nv-kernel-ldflags += @$(src)/$(nvidia_src)/$(EXPORTS_LINK_COMMAND)
+#nv-kernel-ldflags += -T $(src)/$(nvidia_src)/$(LINKER_SCRIPT)
 
-nv-kernel-ldflags := --gc-sections
-nv-kernel-ldflags += @$(src)/$(nvidia_src)/$(EXPORTS_LINK_COMMAND)
-nv-kernel-ldflags += -T $(src)/$(nvidia_src)/$(LINKER_SCRIPT)
-
-nv-kernel-objcopyflags := --localize-symbol=memset
-nv-kernel-objcopyflags += --localize-symbol=memcpy
+#nv-kernel-objcopyflags := --localize-symbol=memset
+#nv-kernel-objcopyflags += --localize-symbol=memcpy
 #nv-kernel-objcopyflags += --remove-section=.note.gnu.property
 
 # move early -I... flags to after ours -- what a hack!
