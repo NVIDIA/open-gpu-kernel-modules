@@ -604,7 +604,7 @@ struct NvKmsKapiCallbacks {
     void (*remove)(NvU32 gpuId);
     void (*probe)(const struct NvKmsKapiGpuInfo *gpu_info);
 /* https://github.com/NVIDIA/open-gpu-kernel-modules/issues/1033 */
-#if defined(CONFIG_RANDSTRUCT_PERFORMANCE) || defined(CONFIG_RANDSTRUCT_FULL)
+#if defined(CONFIG_RANDSTRUCT_PERFORMANCE) || defined(CONFIG_RANDSTRUCT_FULL) || defined(CONFIG_GCC_PLUGIN_RANDSTRUCT)
 } __attribute__((no_randomize_layout));
 #else
 };
