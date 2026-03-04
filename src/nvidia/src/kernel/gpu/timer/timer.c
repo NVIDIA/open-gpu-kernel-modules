@@ -1791,14 +1791,14 @@ static NV_STATUS _tmrCallbackWrapperfunction
     void *pCallbackData_Outer   = pEvent->pUserData;
 
     // Swap in the inner function and data
-    pEvent->pTimeProc = (TIMEPROC) pObj_Inner->pTimeProc; // Intentionally the wrong type!
+    pEvent->pTimeProcWrap = pObj_Inner->pTimeProc;
     pEvent->pUserData = pObj_Inner->pCallbackData;
 
     // Perform the actual callback the way the user expects it
     pObj_Inner->pTimeProc((void *)pEvent->pUserData);
 
     // Rewrap whatever changes the user may have made
-    pObj_Inner->pTimeProc     = (TMR_CALLBACK_FUNCTION) pEvent->pTimeProc;
+    pObj_Inner->pTimeProc     = pEvent->pTimeProcWrap;
     pObj_Inner->pCallbackData = pEvent->pUserData;
 
     // Restore the wrapper function and data
